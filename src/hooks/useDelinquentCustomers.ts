@@ -71,9 +71,29 @@ export interface DelinquentCustomer {
   is_active?: boolean;
 }
 
+type AmountRangeFilter = '0-1000' | '1000-5000' | '5000-10000' | '10000+';
+
+const isAmountInRange = (amount: number, range?: AmountRangeFilter) => {
+  if (!range) return true;
+
+  switch (range) {
+    case '0-1000':
+      return amount < 1000;
+    case '1000-5000':
+      return amount >= 1000 && amount < 5000;
+    case '5000-10000':
+      return amount >= 5000 && amount < 10000;
+    case '10000+':
+      return amount >= 10000;
+    default:
+      return true;
+  }
+};
+
 interface UseDelinquentCustomersFilters {
   riskLevel?: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW' | 'MONITOR';
   overduePeriod?: '<30' | '30-60' | '60-90' | '>90';
+  amountRange?: AmountRangeFilter;
   hasViolations?: boolean;
   search?: string;
   useCachedData?: boolean; // Default: true, use cached table data
@@ -94,7 +114,7 @@ export const useDelinquentCustomers = (filters?: UseDelinquentCustomersFilters) 
   return useQuery({
     queryKey: ['delinquent-customers', companyFilter, filters, useCached],
     queryFn: async (): Promise<DelinquentCustomer[]> => {
-      console.time('⏱️ [DELINQUENT] Total fetch time');
+      const fetchStartedAt = performance.now();
       
       if (!user?.id) throw new Error('User not authenticated');
 
@@ -185,9 +205,16 @@ export const useDelinquentCustomers = (filters?: UseDelinquentCustomersFilters) 
             }
 
             // فلترة العملاء الذين لديهم مهام تدقيق معلقة
+            if (filters?.amountRange) {
+              filteredData = filteredData.filter((c: any) =>
+                isAmountInRange(Number(c.total_debt || 0), filters.amountRange)
+              );
+            }
             const dataWithoutPendingVerification = filteredData.filter((row: any) => 
               !contractsWithPendingVerification.has(row.contract_id)
             );
+
+            console.debug(`[DELINQUENT] cached fetch completed in ${Math.round(performance.now() - fetchStartedAt)}ms`);
 
             // Convert to DelinquentCustomer format
             return dataWithoutPendingVerification.map((row: any) => ({
@@ -241,7 +268,7 @@ export const useDelinquentCustomers = (filters?: UseDelinquentCustomersFilters) 
 
       // Fallback: Dynamic calculation (original logic)
       const result = await calculateDelinquentCustomersDynamically(companyId, filters, contractsWithPendingVerification);
-      console.timeEnd('⏱️ [DELINQUENT] Total fetch time');
+      console.debug(`[DELINQUENT] fetch completed in ${Math.round(performance.now() - fetchStartedAt)}ms`);
       return result;
     },
     enabled: !!user?.id && !isCompanyLoading,
@@ -556,12 +583,11 @@ async function calculateDelinquentCustomersDynamically(
       );
       const expectedPayments = Math.max(0, monthsSinceStart);
       
-      // Calculate days_overdue from oldest unpaid invoice (accounting for payments)
-      // نحسب كم فاتورة متأخرة مغطاة بالدفعات
-      const paidInvoicesCount = monthlyAmount > 0 ? Math.floor(totalPaidFromContract / monthlyAmount) : 0;
-      
-      // الفواتير المتأخرة غير المغطاة بالدفعات (نتخطى الأقدم التي تم دفعها)
-      const unpaidOverdueInvoices = contractOverdueInvoicesForAmount.slice(paidInvoicesCount);
+      const unpaidOverdueInvoices = contractOverdueInvoicesForAmount.filter((invoice) => {
+        const totalAmount = Number(invoice.total_amount) || 0;
+        const paidAmount = Number(invoice.paid_amount) || 0;
+        return Math.max(0, totalAmount - paidAmount) > 0;
+      });
       
       let daysOverdue = 0;
       
@@ -743,6 +769,12 @@ async function calculateDelinquentCustomersDynamically(
   if (filters?.hasViolations !== undefined) {
     filteredCustomers = filteredCustomers.filter(c =>
       filters.hasViolations ? c.violations_count > 0 : c.violations_count === 0
+    );
+  }
+
+  if (filters?.amountRange) {
+    filteredCustomers = filteredCustomers.filter(c =>
+      isAmountInRange(c.total_debt || 0, filters.amountRange)
     );
   }
 

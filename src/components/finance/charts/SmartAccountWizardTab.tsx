@@ -24,6 +24,7 @@ import { useCreateSmartAccount, useSuggestAccountCode } from '@/hooks/useChartVa
 import { useCreateAccount } from '@/hooks/useChartOfAccounts';
 import { SmartParentSelector } from '../enhanced-editing/SmartParentSelector';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
+import { systemColorPattern } from '@/lib/design-system/systemColorPattern';
 
 interface WizardData {
   accountName: string;
@@ -44,6 +45,8 @@ const ACCOUNT_TYPES = [
   { value: 'revenue', label: 'الإيرادات', balanceType: 'credit' },
   { value: 'expenses', label: 'المصروفات', balanceType: 'debit' },
 ];
+
+const smartWizardTheme = systemColorPattern.colors;
 
 export const SmartAccountWizardTab: React.FC = () => {
   const [currentStep, setCurrentStep] = useState(1);
@@ -494,23 +497,23 @@ export const SmartAccountWizardTab: React.FC = () => {
   );
 
   return (
-    <Card>
+    <Card className="smart-account-wizard">
       <CardContent className="space-y-6">
         {/* Progress Steps */}
-        <div className="flex items-center justify-between">
+        <div className="smart-account-steps">
           {steps.map((step, index) => (
-            <div key={step.id} className="flex items-center">
+            <div key={step.id} className="smart-account-step">
               <div className="flex items-center">
                 <div className={`
-                  w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium
+                  smart-account-step-index
                   ${currentStep >= step.id 
-                    ? 'bg-primary text-primary-foreground' 
-                    : 'bg-muted text-muted-foreground'
+                    ? 'is-active' 
+                    : ''
                   }
                 `}>
                   {step.id}
                 </div>
-                <div className="ml-3 hidden sm:block">
+                <div className="mr-3 hidden sm:block">
                   <div className={`text-sm font-medium ${
                     currentStep >= step.id ? 'text-foreground' : 'text-muted-foreground'
                   }`}>
@@ -522,7 +525,7 @@ export const SmartAccountWizardTab: React.FC = () => {
                 </div>
               </div>
               {index < steps.length - 1 && (
-                <ChevronRight className="h-4 w-4 text-muted-foreground mx-4" />
+                <ChevronLeft className="h-4 w-4 text-muted-foreground mx-4" />
               )}
             </div>
           ))}
@@ -582,6 +585,76 @@ export const SmartAccountWizardTab: React.FC = () => {
           </div>
         </div>
       </CardContent>
+      <style>{`
+        .smart-account-wizard {
+          border: 0 !important;
+          box-shadow: none !important;
+          background: ${smartWizardTheme.surface} !important;
+        }
+        .smart-account-wizard [data-card],
+        .smart-account-wizard .rounded-lg {
+          border-radius: 10px !important;
+        }
+        .smart-account-wizard input,
+        .smart-account-wizard [role="combobox"] {
+          height: 44px;
+          border-color: ${smartWizardTheme.border} !important;
+          background: ${smartWizardTheme.innerSurface} !important;
+          color: ${smartWizardTheme.text};
+        }
+        .smart-account-wizard label {
+          color: ${smartWizardTheme.text};
+          font-weight: 800;
+        }
+        .smart-account-steps {
+          display: grid;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: 10px;
+          border: 1px solid ${smartWizardTheme.border};
+          border-radius: 12px;
+          background: ${smartWizardTheme.innerSurface};
+          padding: 10px;
+        }
+        .smart-account-step {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          min-width: 0;
+        }
+        .smart-account-step-index {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 34px;
+          height: 34px;
+          border-radius: 10px;
+          background: white;
+          color: ${smartWizardTheme.secondaryText};
+          font-size: 13px;
+          font-weight: 950;
+          border: 1px solid ${smartWizardTheme.border};
+        }
+        .smart-account-step-index.is-active {
+          background: ${smartWizardTheme.success};
+          border-color: ${smartWizardTheme.success};
+          color: white;
+        }
+        .smart-account-wizard button:not([data-state]) {
+          border-radius: 10px;
+        }
+        .smart-account-wizard button.bg-primary,
+        .smart-account-wizard button:not(.border):not([variant="outline"]) {
+          background: ${smartWizardTheme.success};
+        }
+        @media (max-width: 700px) {
+          .smart-account-steps {
+            grid-template-columns: 1fr;
+          }
+          .smart-account-step {
+            justify-content: flex-start;
+          }
+        }
+      `}</style>
     </Card>
   );
 };

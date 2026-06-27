@@ -123,16 +123,16 @@ const ActivityTab = ({ customerId, companyId, contracts, payments, violations }:
       animate={{ opacity: 1, y: 0 }}
       className="space-y-4"
     >
-      <div className="flex items-center justify-between mb-4">
+      <div className="mb-4 rounded-xl border border-[#DDE5EF] bg-[#F8FAFC] p-4">
         <div>
-          <h4 className="text-sm font-bold text-neutral-900">سجل النشاط الكامل</h4>
-          <p className="text-xs text-neutral-500">{allActivities.length} نشاط مسجل</p>
+          <h4 className="text-sm font-black text-[#142033]">سجل النشاط الكامل</h4>
+          <p className="text-xs font-semibold text-[#6A7688]">{allActivities.length} نشاط مسجل</p>
         </div>
       </div>
 
       {allActivities.length > 0 ? (
         <div className="relative">
-          <div className="absolute right-6 top-0 bottom-0 w-0.5 bg-gradient-to-b from-coral-300 via-neutral-200 to-neutral-100" />
+          <div className="absolute right-6 top-0 bottom-0 w-0.5 bg-[#DDE5EF]" />
           <div className="space-y-3">
             {allActivities.slice(0, 50).map((activity, index) => (
               <motion.div
@@ -148,7 +148,7 @@ const ActivityTab = ({ customerId, companyId, contracts, payments, violations }:
                 )}>
                   {getIcon(activity.type, activity.icon)}
                 </div>
-                <div className="bg-white rounded-xl p-4 border border-neutral-200 hover:border-rose-200 hover:shadow-sm transition-all">
+                <div className="rounded-xl border border-[#DDE5EF] bg-white p-4 shadow-sm transition-all hover:border-[#173A63] hover:shadow-md">
                   <div className="flex items-start justify-between mb-1">
                     <Badge variant="outline" className={cn("text-xs", getColorClasses(activity.color))}>
                       {getTypeLabel(activity.type)}
@@ -164,10 +164,10 @@ const ActivityTab = ({ customerId, companyId, contracts, payments, violations }:
           </div>
         </div>
       ) : (
-        <div className="bg-neutral-50 rounded-2xl p-12 text-center border border-neutral-200">
-          <Activity className="w-12 h-12 text-neutral-300 mx-auto mb-3" />
-          <p className="text-neutral-600 font-medium">لا توجد أنشطة مسجلة حتى الآن</p>
-          <p className="text-neutral-400 text-sm mt-1">سيظهر سجل النشاط هنا عند إجراء أي عمليات</p>
+        <div className="rounded-xl border border-dashed border-[#B8C6D8] bg-[#F8FAFC] p-12 text-center">
+          <Activity className="w-12 h-12 text-[#9AA6B6] mx-auto mb-3" />
+          <p className="font-bold text-[#536173]">لا توجد أنشطة مسجلة حتى الآن</p>
+          <p className="text-[#6A7688] text-sm mt-1">سيظهر سجل النشاط هنا عند إجراء أي عمليات</p>
         </div>
       )}
     </motion.div>

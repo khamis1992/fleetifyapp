@@ -20,20 +20,17 @@ import {
 import { useEnhancedFinancialReports } from "@/hooks/useEnhancedFinancialReports";
 import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter";
 import { toast } from "sonner";
-import jsPDF from "jspdf";
-import "jspdf-autotable";
 import * as XLSX from 'xlsx';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { format, subMonths, startOfMonth, endOfMonth } from 'date-fns';
 import { ar } from 'date-fns/locale';
+import { buildIncomeStatementReport } from "@/utils/standardFinancialReportRules";
+import {
+  exportOfficialFinancialReportToPDF,
+  type OfficialFinancialReportExportPayload,
+} from "@/utils/officialFinancialReportExport";
 
 import { useFleetifyTranslation } from "@/hooks/useTranslation";
-// Extend jsPDF type
-declare module 'jspdf' {
-  interface jsPDF {
-    autoTable: (options: any) => jsPDF;
-  }
-}
 
 export function IncomeStatementReport() {
   const { t } = useFleetifyTranslation("ui");
@@ -183,120 +180,78 @@ export function IncomeStatementReport() {
   };
 
   // Export to PDF
-  const handleExportPDF = () => {
+  const handleExportPDF = async () => {
     if (!reportData || !reportData.sections || reportData.sections.length === 0) {
-      toast.error("لا توجد بيانات للتصدير");
+      toast.error("\u0644\u0627 \u062a\u0648\u062c\u062f \u0628\u064a\u0627\u0646\u0627\u062a \u0644\u0644\u062a\u0635\u062f\u064a\u0631");
       return;
     }
 
+    const revenueAccounts = reportData.sections[0]?.accounts || [];
+    const expenseAccounts = reportData.sections[1]?.accounts || [];
+    const sourceReport = buildIncomeStatementReport([
+      ...revenueAccounts.map((acc: any) => ({
+        accountCode: acc.accountCode,
+        accountName: acc.accountNameAr || acc.accountName,
+        accountType: "revenue",
+        debit: 0,
+        credit: Number(acc.balance || 0),
+      })),
+      ...expenseAccounts.map((acc: any) => ({
+        accountCode: acc.accountCode,
+        accountName: acc.accountNameAr || acc.accountName,
+        accountType: "expense",
+        debit: Number(acc.balance || 0),
+        credit: 0,
+      })),
+    ]);
+
+    const payload: OfficialFinancialReportExportPayload = {
+      metadata: {
+        reportTitle: "\u0642\u0627\u0626\u0645\u0629 \u0627\u0644\u062f\u062e\u0644",
+        reportType: "income_statement",
+        companyName: "Fleetify",
+        periodStart: startDate || undefined,
+        periodEnd: endDate,
+        currency: "QAR",
+        generatedAt: new Date().toISOString(),
+        status: "published",
+        sourceFingerprint: sourceReport.sourceFingerprint,
+        reportHash: sourceReport.sourceFingerprint,
+      },
+      columns: [
+        { key: "section", header: "\u0627\u0644\u0628\u0646\u062f", width: 18 },
+        { key: "accountCode", header: "\u0631\u0645\u0632 \u0627\u0644\u062d\u0633\u0627\u0628", width: 18 },
+        { key: "accountName", header: "\u0627\u0633\u0645 \u0627\u0644\u062d\u0633\u0627\u0628", width: 42 },
+        { key: "amount", header: "\u0627\u0644\u0645\u0628\u0644\u063a", type: "money", width: 18 },
+      ],
+      rows: [
+        ...revenueAccounts.map((acc: any) => ({
+          section: "\u0627\u0644\u0625\u064a\u0631\u0627\u062f\u0627\u062a",
+          accountCode: acc.accountCode,
+          accountName: acc.accountNameAr || acc.accountName,
+          amount: Number(acc.balance || 0),
+        })),
+        ...expenseAccounts.map((acc: any) => ({
+          section: "\u0627\u0644\u0645\u0635\u0631\u0648\u0641\u0627\u062a",
+          accountCode: acc.accountCode,
+          accountName: acc.accountNameAr || acc.accountName,
+          amount: Number(acc.balance || 0),
+        })),
+      ],
+      summaryRows: [
+        { section: "\u0627\u0644\u0625\u062c\u0645\u0627\u0644\u064a", accountCode: "", accountName: "\u0625\u062c\u0645\u0627\u0644\u064a \u0627\u0644\u0625\u064a\u0631\u0627\u062f\u0627\u062a", amount: totalRevenue },
+        { section: "\u0627\u0644\u0625\u062c\u0645\u0627\u0644\u064a", accountCode: "", accountName: "\u0625\u062c\u0645\u0627\u0644\u064a \u0627\u0644\u0645\u0635\u0631\u0648\u0641\u0627\u062a", amount: totalExpenses },
+        { section: "\u0627\u0644\u0646\u062a\u064a\u062c\u0629", accountCode: "", accountName: "\u0635\u0627\u0641\u064a \u0627\u0644\u062f\u062e\u0644", amount: netIncome },
+        { section: "\u0627\u0644\u0646\u0633\u0628\u0629", accountCode: "", accountName: "\u0647\u0627\u0645\u0634 \u0627\u0644\u0631\u0628\u062d", amount: `${profitMargin.toFixed(2)}%` },
+      ],
+    };
+
     try {
-      const doc = new jsPDF('p', 'mm', 'a4');
-      
-      doc.setFont('helvetica');
-      doc.setFontSize(18);
-      doc.text('Income Statement', 105, 15, { align: 'center' });
-      doc.setFontSize(14);
-      doc.text('قائمة الدخل', 105, 25, { align: 'center' });
-      
-      doc.setFontSize(10);
-      const periodText = startDate 
-        ? `Period: ${startDate} to ${endDate}`
-        : `As of: ${endDate}`;
-      doc.text(periodText, 105, 32, { align: 'center' });
-      doc.text(`Generated: ${new Date().toLocaleDateString('en-US')}`, 105, 38, { align: 'center' });
-
-      let currentY = 50;
-
-      // Revenue Section
-      doc.setFontSize(12);
-      doc.setFillColor(34, 197, 94);
-      doc.rect(14, currentY - 5, 182, 8, 'F');
-      doc.setTextColor(255, 255, 255);
-      doc.text('Revenue / الإيرادات', 20, currentY);
-      doc.setTextColor(0, 0, 0);
-      currentY += 10;
-
-      const revenueData = reportData.sections[0]?.accounts?.map(acc => [
-        acc.accountCode,
-        acc.accountNameAr || acc.accountName,
-        formatCurrency(Number(acc.balance))
-      ]) || [];
-
-      doc.autoTable({
-        startY: currentY,
-        head: [['Code', 'Account Name', 'Amount']],
-        body: revenueData,
-        theme: 'grid',
-        styles: { fontSize: 9 },
-        headStyles: { fillColor: [34, 197, 94], textColor: 255 }
-      });
-
-      currentY = (doc as any).lastAutoTable.finalY + 2;
-      doc.setFontSize(11);
-      doc.setFont('helvetica', 'bold');
-      doc.text(`Total Revenue: ${formatCurrency(totalRevenue)}`, 20, currentY);
-      currentY += 10;
-
-      // Expenses Section
-      doc.setFontSize(12);
-      doc.setFont('helvetica', 'normal');
-      doc.setFillColor(239, 68, 68);
-      doc.rect(14, currentY - 5, 182, 8, 'F');
-      doc.setTextColor(255, 255, 255);
-      doc.text('Expenses / المصروفات', 20, currentY);
-      doc.setTextColor(0, 0, 0);
-      currentY += 10;
-
-      const expenseData = reportData.sections[1]?.accounts?.map(acc => [
-        acc.accountCode,
-        acc.accountNameAr || acc.accountName,
-        formatCurrency(Number(acc.balance))
-      ]) || [];
-
-      doc.autoTable({
-        startY: currentY,
-        head: [['Code', 'Account Name', 'Amount']],
-        body: expenseData,
-        theme: 'grid',
-        styles: { fontSize: 9 },
-        headStyles: { fillColor: [239, 68, 68], textColor: 255 }
-      });
-
-      currentY = (doc as any).lastAutoTable.finalY + 2;
-      doc.setFontSize(11);
-      doc.setFont('helvetica', 'bold');
-      doc.text(`Total Expenses: ${formatCurrency(totalExpenses)}`, 20, currentY);
-      currentY += 10;
-
-      // Net Income
-      doc.setFillColor(netIncome >= 0 ? 34 : 239, netIncome >= 0 ? 197 : 68, netIncome >= 0 ? 94 : 68);
-      doc.rect(14, currentY - 5, 182, 12, 'F');
-      doc.setTextColor(255, 255, 255);
-      doc.setFontSize(14);
-      doc.text(`Net Income / صافي الدخل: ${formatCurrency(netIncome)}`, 20, currentY + 3);
-      doc.setTextColor(0, 0, 0);
-      currentY += 12;
-
-      // Profit Margin
-      doc.setFontSize(10);
-      doc.text(`Profit Margin / هامش الربح: ${profitMargin.toFixed(2)}%`, 20, currentY + 5);
-
-      // Footer
-      doc.setFontSize(8);
-      doc.setTextColor(128, 128, 128);
-      doc.text(
-        'Generated by FleetifyApp - نظام FleetifyApp',
-        105,
-        doc.internal.pageSize.height - 10,
-        { align: 'center' }
-      );
-
-      const fileName = `income_statement_${endDate}.pdf`;
-      doc.save(fileName);
-      toast.success("تم تصدير التقرير بنجاح");
+      await exportOfficialFinancialReportToPDF(payload);
+      toast.success("\u062a\u0645 \u062a\u0635\u062f\u064a\u0631 \u0642\u0627\u0626\u0645\u0629 \u0627\u0644\u062f\u062e\u0644 \u0628\u0635\u064a\u063a\u0629 \u0643\u062a\u0627\u0628 \u0631\u0633\u0645\u064a");
     } catch (error) {
-      console.error('PDF export error:', error);
-      toast.error("حدث خطأ أثناء تصدير التقرير");
+      console.error("PDF export error:", error);
+      toast.error("\u062a\u0639\u0630\u0631 \u062a\u0635\u062f\u064a\u0631 \u0645\u0644\u0641 PDF");
     }
   };
 

@@ -17,6 +17,7 @@ import AccountCreatedDialog from '@/components/hr/AccountCreatedDialog';
 import EmployeePayrollDetails from '@/components/hr/EmployeePayrollDetails';
 import { EmployeeFormData } from '@/components/hr/EmployeeForm';
 import { AttendancePermissionsPanel } from '@/components/hr/AttendancePermissionsPanel';
+import { HRMetricCard, HRPageHeader, HRPageShell, HRSectionCard, hrButtonClassName, hrFieldClassName } from '@/components/hr/HRDesignSystem';
 import { useCreatePayroll, CreatePayrollData } from '@/hooks/usePayroll';
 import { useCompanyFilter } from '@/hooks/useUnifiedCompanyAccess';
 import { PageHelp } from "@/components/help";
@@ -535,89 +536,45 @@ export default function Employees() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 p-4 md:p-6 space-y-4 md:space-y-6" dir="rtl">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <div className="p-3 bg-teal-500 rounded-xl shadow-sm">
-            <Users className="h-6 w-6 text-white" />
-          </div>
-          <div>
-            <h1 className="text-xl md:text-2xl font-bold text-slate-900 dark:text-slate-100">إدارة الموظفين</h1>
-            <p className="text-sm text-slate-600 dark:text-slate-400">إدارة بيانات الموظفين والمناصب</p>
-          </div>
-        </div>
-        <Button onClick={() => setIsDialogOpen(true)} className="w-full sm:w-auto min-h-[44px] bg-teal-500 hover:bg-teal-600 text-white shadow-sm">
-          <Plus className="h-4 w-4 ml-2" />
-          إضافة موظف جديد
-        </Button>
-      </div>
+    <HRPageShell>
+      <HRPageHeader
+        title="إدارة الموظفين"
+        description="ملف موحد للموظفين يشمل البيانات الأساسية، الرواتب، الصلاحيات، وحالة العمل."
+        icon={Users}
+        action={
+          <Button onClick={() => setIsDialogOpen(true)} className={`${hrButtonClassName} w-full sm:w-auto`}>
+            <Plus className="h-4 w-4 ml-2" />
+            إضافة موظف جديد
+          </Button>
+        }
+      />
 
       {/* Quick Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <div className="p-3 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-blue-500 rounded-lg">
-              <Users className="h-4 w-4 text-white" />
-            </div>
-            <div>
-              <p className="text-xs text-slate-600 dark:text-slate-400">إجمالي الموظفين</p>
-              <p className="text-xl font-bold text-slate-900 dark:text-slate-100">{stats.total}</p>
-            </div>
-          </div>
-        </div>
-        <div className="p-3 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-emerald-500 rounded-lg">
-              <UserCheck className="h-4 w-4 text-white" />
-            </div>
-            <div>
-              <p className="text-xs text-slate-600 dark:text-slate-400">نشط</p>
-              <p className="text-xl font-bold text-slate-900 dark:text-slate-100">{stats.active}</p>
-            </div>
-          </div>
-        </div>
-        <div className="p-3 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-amber-500 rounded-lg">
-              <UserX className="h-4 w-4 text-white" />
-            </div>
-            <div>
-              <p className="text-xs text-slate-600 dark:text-slate-400">إجازة</p>
-              <p className="text-xl font-bold text-slate-900 dark:text-slate-100">{stats.onLeave}</p>
-            </div>
-          </div>
-        </div>
-        <div className="p-3 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-purple-500 rounded-lg">
-              <Building2 className="h-4 w-4 text-white" />
-            </div>
-            <div>
-              <p className="text-xs text-slate-600 dark:text-slate-400">الأقسام</p>
-              <p className="text-xl font-bold text-slate-900 dark:text-slate-100">{stats.departments}</p>
-            </div>
-          </div>
-        </div>
+        <HRMetricCard title="إجمالي الموظفين" value={stats.total} icon={Users} tone="info" />
+        <HRMetricCard title="نشط" value={stats.active} icon={UserCheck} tone="success" />
+        <HRMetricCard title="غير نشط" value={stats.onLeave} icon={UserX} tone="danger" />
+        <HRMetricCard title="الأقسام" value={stats.departments} icon={Building2} tone="focus" />
       </div>
 
       {/* Advanced Filters */}
-      <Card className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm">
+      <HRSectionCard>
         <button
           onClick={() => setShowAdvancedFilters(!showAdvancedfilters)}
-          className="w-full p-4 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors rounded-xl"
+          className="w-full p-4 flex items-center justify-between hover:bg-[#F6F8FB] transition-colors rounded-2xl"
         >
           <div className="flex items-center gap-2">
-            <Filter className="h-4 w-4 text-slate-600 dark:text-slate-400" />
-            <span className="font-medium text-slate-900 dark:text-slate-100">الفلاتر المتقدمة</span>
+            <Filter className="h-4 w-4 text-[#38BDF8]" />
+            <span className="font-black text-[#020617]">الفلاتر المتقدمة</span>
           </div>
           {showAdvancedfilters ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
         </button>
         {showAdvancedfilters && (
-          <div className="p-4 pt-0 border-t border-slate-200 dark:border-slate-700 mt-2 grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="p-4 pt-0 border-t border-slate-200 mt-2 grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <label className="text-sm text-slate-600 dark:text-slate-400 mb-1 block">القسم</label>
               <Select value={filterDepartment} onValueChange={setFilterDepartment}>
-                <SelectTrigger className="min-h-[44px] bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl">
+                <SelectTrigger className={hrFieldClassName}>
                   <SelectValue placeholder="جميع الأقسام" />
                 </SelectTrigger>
                 <SelectContent>
@@ -631,7 +588,7 @@ export default function Employees() {
             <div>
               <label className="text-sm text-slate-600 dark:text-slate-400 mb-1 block">الحالة</label>
               <Select value={filterStatus} onValueChange={setFilterStatus}>
-                <SelectTrigger className="min-h-[44px] bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl">
+                <SelectTrigger className={hrFieldClassName}>
                   <SelectValue placeholder="جميع الحالات" />
                 </SelectTrigger>
                 <SelectContent>
@@ -645,7 +602,7 @@ export default function Employees() {
             <div>
               <label className="text-sm text-slate-600 dark:text-slate-400 mb-1 block">نوع العقد</label>
               <Select value={filterContractType} onValueChange={setFilterContractType}>
-                <SelectTrigger className="min-h-[44px] bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl">
+                <SelectTrigger className={hrFieldClassName}>
                   <SelectValue placeholder="جميع العقود" />
                 </SelectTrigger>
                 <SelectContent>
@@ -658,7 +615,7 @@ export default function Employees() {
             </div>
           </div>
         )}
-      </Card>
+      </HRSectionCard>
 
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
         <div className="relative flex-1 sm:max-w-md">
@@ -667,7 +624,7 @@ export default function Employees() {
             placeholder="البحث عن موظف..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pr-10 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl"
+            className={`${hrFieldClassName} pr-10`}
           />
         </div>
       </div>
@@ -828,6 +785,6 @@ export default function Employees() {
       <EmployeesPageHelpContent />
     </PageHelp>
 
-    </div>
+    </HRPageShell>
   );
 }

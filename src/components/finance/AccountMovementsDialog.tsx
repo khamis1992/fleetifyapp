@@ -8,9 +8,11 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { useAccountMovements } from "@/hooks/useGeneralLedger";
+import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter";
+import { systemColorPattern } from "@/lib/design-system/systemColorPattern";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
-import { Filter, Calendar } from "lucide-react";
+import { Filter, Calendar, Search, X, Activity } from "lucide-react";
 
 interface AccountMovementsDialogProps {
   open: boolean;
@@ -30,6 +32,8 @@ export function AccountMovementsDialog({
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
+  const { formatCurrency } = useCurrencyFormatter();
+  const formatQar = (amount: number) => formatCurrency(amount || 0, { currency: "QAR", minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
   const { data: movements, isLoading } = useAccountMovements(accountId, {
     dateFrom,
@@ -45,17 +49,22 @@ export function AccountMovementsDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-6xl max-h-[90vh] overflow-hidden">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Calendar className="h-5 w-5" />
-            حركات الحساب: {accountCode} - {accountName}
+      <DialogContent className="ledger-movements-dialog max-w-6xl max-h-[90vh] overflow-hidden" dir="rtl">
+        <DialogHeader className="ledger-movements-header">
+          <DialogTitle className="flex items-center gap-3 text-right">
+            <span className="ledger-movements-icon">
+              <Activity className="h-5 w-5" />
+            </span>
+            <span>
+              <span className="block text-xs font-black">حركات الحساب</span>
+              <strong className="block text-xl">{accountCode} - {accountName}</strong>
+            </span>
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-4">
+        <div className="ledger-movements-body">
           {/* Filters */}
-          <Card>
+          <Card className="ledger-movements-card">
             <CardHeader className="pb-3">
               <CardTitle className="flex items-center gap-2 text-sm">
                 <Filter className="h-4 w-4" />
@@ -63,7 +72,7 @@ export function AccountMovementsDialog({
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
                 <div className="space-y-2">
                   <Label htmlFor="date-from">من تاريخ</Label>
                   <Input
@@ -84,16 +93,20 @@ export function AccountMovementsDialog({
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="search">البحث</Label>
-                  <Input
-                    id="search"
-                    placeholder="البحث في الوصف أو رقم القيد..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                  />
+                  <div className="ledger-movements-search">
+                    <Search className="h-4 w-4" />
+                    <Input
+                      id="search"
+                      placeholder="الوصف أو رقم القيد..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                  </div>
                 </div>
               </div>
               <div className="flex justify-end">
-                <Button variant="outline" onClick={handleClearFilters}>
+                <Button variant="outline" onClick={handleClearFilters} className="ledger-movements-outline">
+                  <X className="ml-2 h-4 w-4" />
                   مسح الفلاتر
                 </Button>
               </div>
@@ -101,7 +114,7 @@ export function AccountMovementsDialog({
           </Card>
 
           {/* Movements Table */}
-          <Card>
+          <Card className="ledger-movements-card">
             <CardHeader>
               <CardTitle>تفاصيل الحركات</CardTitle>
               <CardDescription>
@@ -114,7 +127,7 @@ export function AccountMovementsDialog({
                   <LoadingSpinner />
                 </div>
               ) : movements && movements.length > 0 ? (
-                <div className="max-h-[400px] overflow-auto">
+                <div className="max-h-[430px] overflow-auto rounded-lg border border-[#E5EAF1]">
                   <Table>
                     <TableHeader>
                       <TableRow>
@@ -158,8 +171,8 @@ export function AccountMovementsDialog({
                           </TableCell>
                           <TableCell className="text-right">
                             {movement.debit_amount > 0 ? (
-                              <span className="text-green-600 font-medium">
-                                {movement.debit_amount.toFixed(3)} د.ك
+                              <span className="font-black text-[#22C7A1]">
+                                {formatQar(movement.debit_amount)}
                               </span>
                             ) : (
                               <span className="text-muted-foreground">-</span>
@@ -167,19 +180,19 @@ export function AccountMovementsDialog({
                           </TableCell>
                           <TableCell className="text-right">
                             {movement.credit_amount > 0 ? (
-                              <span className="text-red-600 font-medium">
-                                {movement.credit_amount.toFixed(3)} د.ك
+                              <span className="font-black text-[#FB6B7A]">
+                                {formatQar(movement.credit_amount)}
                               </span>
                             ) : (
                               <span className="text-muted-foreground">-</span>
                             )}
                           </TableCell>
-                          <TableCell className="text-right font-medium">
-                            {movement.running_balance.toFixed(3)} د.ك
+                          <TableCell className="text-right font-black">
+                            {formatQar(movement.running_balance)}
                           </TableCell>
                           <TableCell>
                             <Badge
-                              variant={movement.status === 'posted' ? 'default' : 'secondary'}
+                              className={movement.status === 'posted' ? 'ledger-movements-badge tone-success' : 'ledger-movements-badge tone-focus'}
                             >
                               {movement.status === 'posted' ? 'مرحل' : 
                                movement.status === 'draft' ? 'مسودة' : 'معكوس'}
@@ -198,6 +211,113 @@ export function AccountMovementsDialog({
             </CardContent>
           </Card>
         </div>
+        <style>{`
+          .ledger-movements-dialog {
+            border: 1px solid ${systemColorPattern.colors.border} !important;
+            border-radius: 14px !important;
+            background: ${systemColorPattern.colors.surface} !important;
+            color: ${systemColorPattern.colors.text};
+          }
+          .ledger-movements-header {
+            border-bottom: 1px solid ${systemColorPattern.colors.border};
+            padding-bottom: 14px;
+          }
+          .ledger-movements-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 42px;
+            height: 42px;
+            border-radius: 10px;
+            color: ${systemColorPattern.colors.success};
+            background: color-mix(in srgb, ${systemColorPattern.colors.success} 14%, white);
+            border: 1px solid color-mix(in srgb, ${systemColorPattern.colors.success} 24%, white);
+          }
+          .ledger-movements-header .text-xs {
+            color: ${systemColorPattern.colors.success};
+          }
+          .ledger-movements-header strong {
+            color: ${systemColorPattern.colors.text};
+            font-weight: 950;
+          }
+          .ledger-movements-body {
+            display: grid;
+            gap: 12px;
+            padding-top: 14px;
+          }
+          .ledger-movements-card {
+            border-color: ${systemColorPattern.colors.border} !important;
+            border-radius: 12px !important;
+            box-shadow: none !important;
+          }
+          .ledger-movements-card h3 {
+            color: ${systemColorPattern.colors.text};
+            font-weight: 950;
+          }
+          .ledger-movements-card p,
+          .ledger-movements-card label {
+            color: ${systemColorPattern.colors.secondaryText};
+            font-weight: 800;
+          }
+          .ledger-movements-dialog input {
+            height: 42px;
+            border-color: ${systemColorPattern.colors.border} !important;
+            border-radius: 10px !important;
+            background: ${systemColorPattern.colors.innerSurface} !important;
+            color: ${systemColorPattern.colors.text};
+          }
+          .ledger-movements-search {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border: 1px solid ${systemColorPattern.colors.border};
+            border-radius: 10px;
+            background: ${systemColorPattern.colors.innerSurface};
+            padding: 0 10px;
+          }
+          .ledger-movements-search svg {
+            color: ${systemColorPattern.colors.secondaryText};
+          }
+          .ledger-movements-search input {
+            border: 0 !important;
+            background: transparent !important;
+            box-shadow: none !important;
+          }
+          .ledger-movements-outline {
+            border-color: ${systemColorPattern.colors.border} !important;
+            border-radius: 10px !important;
+            background: white !important;
+            color: ${systemColorPattern.colors.text} !important;
+          }
+          .ledger-movements-dialog table thead tr {
+            background: ${systemColorPattern.colors.innerSurface} !important;
+          }
+          .ledger-movements-dialog table th {
+            color: ${systemColorPattern.colors.secondaryText} !important;
+            font-size: 12px;
+            font-weight: 950;
+          }
+          .ledger-movements-dialog table td {
+            color: ${systemColorPattern.colors.text};
+            border-color: ${systemColorPattern.colors.border} !important;
+          }
+          .ledger-movements-dialog table tbody tr:hover {
+            background: color-mix(in srgb, ${systemColorPattern.colors.info} 6%, white) !important;
+          }
+          .ledger-movements-badge {
+            --badge-tone: ${systemColorPattern.colors.secondaryText};
+            border: 1px solid color-mix(in srgb, var(--badge-tone) 32%, white) !important;
+            background: color-mix(in srgb, var(--badge-tone) 10%, white) !important;
+            color: var(--badge-tone) !important;
+            font-weight: 900;
+          }
+          .ledger-movements-badge.tone-success {
+            --badge-tone: ${systemColorPattern.colors.success};
+          }
+          .ledger-movements-badge.tone-focus {
+            --badge-tone: ${systemColorPattern.colors.focus};
+          }
+        `}</style>
       </DialogContent>
     </Dialog>
   );

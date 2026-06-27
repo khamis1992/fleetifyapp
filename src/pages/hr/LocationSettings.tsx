@@ -10,6 +10,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
+import { HRPageHeader, HRPageShell, hrButtonClassName } from '@/components/hr/HRDesignSystem';
 
 interface FormData {
   office_latitude: string;
@@ -157,14 +158,14 @@ export default function LocationSettings() {
   }
 
   return (
-    <div className="container mx-auto p-6 max-w-4xl" dir="rtl">
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold">إعدادات الموقع</h1>
-          <p className="text-muted-foreground mt-2">
-            تكوين موقع المكتب وإعدادات الحضور لـ {company?.name}
-          </p>
-        </div>
+    <HRPageShell>
+      <div className="mx-auto max-w-4xl space-y-6">
+        <HRPageHeader
+          title="إعدادات الموقع"
+          description={`تكوين موقع المكتب ونطاق تسجيل الحضور${company?.name ? ` لـ ${company.name}` : ""}.`}
+          icon={MapPin}
+          badge="الموقع والحضور"
+        />
 
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Office Location */}
@@ -294,7 +295,7 @@ export default function LocationSettings() {
             <Button 
               type="submit" 
               disabled={updateLocationSettings.isPending}
-              className="w-full sm:w-auto"
+              className={`w-full sm:w-auto ${hrButtonClassName}`}
             >
               {updateLocationSettings.isPending ? (
                 <>
@@ -311,6 +312,6 @@ export default function LocationSettings() {
           </div>
         </form>
       </div>
-    </div>
+    </HRPageShell>
   );
 }

@@ -1,288 +1,285 @@
-/**
- * صفحة التدقيق والإعدادات - تصميم جديد متوافق مع الداشبورد
- */
-import { useState, Suspense, lazy, useMemo } from "react";
-import { useSearchParams, useNavigate } from "react-router-dom";
-import { motion, AnimatePresence } from "framer-motion";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { PageSkeletonFallback } from "@/components/common/LazyPageWrapper";
+import { Suspense, lazy, useMemo } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { motion } from "framer-motion";
 import {
-  Shield,
   ArrowLeft,
-  FileSearch,
-  Cog,
-  RefreshCw,
+  CheckCircle2,
   Clock,
-  Activity,
-  Settings,
-  History,
+  Cog,
+  FileSearch,
+  KeyRound,
+  Link2,
   Lock,
-  Users,
-  AlertTriangle,
-  CheckCircle,
+  Shield,
+  Sparkles,
 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { PageSkeletonFallback } from "@/components/common/LazyPageWrapper";
+import { FinancialIntegrityPanel } from "@/components/finance/FinancialIntegrityPanel";
+import { FinancialApprovalsPanel } from "@/components/finance/FinancialApprovalsPanel";
+import { MonthlyClosePanel } from "@/components/finance/MonthlyClosePanel";
+import { FinancePermissionsMatrixPanel } from "@/components/finance/FinancePermissionsMatrixPanel";
 import { cn } from "@/lib/utils";
 
-// Lazy load the tab content components
 const AuditTrailPage = lazy(() => import("./AuditTrailPage"));
 const FinanceSettings = lazy(() => import("./FinanceSettings"));
 
-// Tab configuration
-const TABS = [
+const topTabs = [
   {
     id: "audit",
     label: "سجل التدقيق",
+    description: "تتبع العمليات والتعديلات المالية",
     icon: FileSearch,
-    description: "تتبع جميع التعديلات والعمليات",
-    gradient: "from-red-500 to-rose-500",
+    color: "#38BDF8",
+    bg: "#EAF8FE",
   },
   {
     id: "settings",
     label: "الإعدادات",
+    description: "الربط والصلاحيات وضبط النظام المالي",
     icon: Cog,
-    description: "إعدادات النظام المالي",
-    gradient: "from-slate-600 to-slate-600",
+    color: "#22C7A1",
+    bg: "#E8FBF6",
   },
 ];
 
-// Stat Card Component
-interface StatCardProps {
-  title: string;
-  value: string | number;
-  subtitle?: string;
-  icon: React.ElementType;
-  iconBg: string;
-  delay?: number;
-}
+const settingSections = [
+  { id: "settings", label: "ربط الحسابات", icon: Link2, color: "#22C7A1", bg: "#E8FBF6" },
+  { id: "wizard", label: "معالج الإعداد", icon: Sparkles, color: "#7C83F6", bg: "#ECEEFE" },
+  { id: "permissions", label: "الصلاحيات", icon: KeyRound, color: "#FB6B7A", bg: "#FFF0F2" },
+];
 
-const StatCard: React.FC<StatCardProps> = ({
-  title,
-  value,
-  subtitle,
-  icon: Icon,
-  iconBg,
-  delay = 0,
-}) => (
-  <motion.div
-    className="bg-white rounded-xl p-5 shadow-sm hover:shadow-md transition-all border border-slate-100"
-    initial={{ opacity: 0, y: 20 }}
-    animate={{ opacity: 1, y: 0 }}
-    transition={{ duration: 0.3, delay }}
-  >
-    <div className="flex items-center justify-between mb-3">
-      <div className={cn("w-12 h-12 rounded-xl flex items-center justify-center", iconBg)}>
-        <Icon className="w-6 h-6 text-white" />
-      </div>
-    </div>
-    <p className="text-sm text-neutral-500 mb-1">{title}</p>
-    <p className="text-2xl font-bold text-neutral-900">{value}</p>
-    {subtitle && <p className="text-xs text-neutral-400 mt-1">{subtitle}</p>}
-  </motion.div>
-);
+const currentDate = new Intl.DateTimeFormat("en-QA", {
+  year: "numeric",
+  month: "short",
+  day: "2-digit",
+}).format(new Date());
 
 const AuditAndSettings = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
-  const currentTab = searchParams.get("tab") || "audit";
+  const requestedTab = searchParams.get("tab") || "audit";
+  const currentTab = requestedTab === "audit" ? "audit" : "settings";
 
-  const handleTabChange = (value: string) => {
+  const settingsInitialTab = useMemo(() => {
+    if (requestedTab === "permissions") return "permissions";
+    if (requestedTab === "wizard") return "wizard";
+    if (requestedTab === "audit-log") return "audit";
+    return "mappings";
+  }, [requestedTab]);
+
+  const handleTopTabChange = (value: string) => {
     setSearchParams({ tab: value });
   };
 
-  // Get current date for display
-  const currentDate = new Date().toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  });
+  const handleSettingsSectionChange = (value: string) => {
+    setSearchParams({ tab: value === "mappings" ? "settings" : value });
+  };
 
   return (
-    <div className="min-h-screen bg-[#f0efed] p-6" dir="rtl">
-      {/* Hero Header */}
-      <motion.div
-        className="bg-gradient-to-r from-rose-500 to-orange-500 rounded-xl p-6 mb-6 text-white shadow-lg"
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-      >
-        <div className="flex items-center justify-between flex-wrap gap-4">
-          <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
-              <Shield className="w-7 h-7 text-white" />
+    <div className="min-h-screen bg-[#F6F8FB] px-4 py-5 sm:px-6" dir="rtl">
+      <div className="mx-auto w-full max-w-[1500px] space-y-5">
+        <motion.div
+          initial={{ opacity: 0, y: -12 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5"
+        >
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex items-start gap-3">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#EAF8FE] text-[#38BDF8]">
+                <Shield className="h-6 w-6" />
+              </div>
+              <div>
+                <div className="mb-1 flex flex-wrap items-center gap-2">
+                  <span className="rounded-full bg-[#E8FBF6] px-3 py-1 text-xs font-black text-[#22C7A1]">
+                    مراقبة مالية
+                  </span>
+                  <span className="rounded-full bg-[#F6F8FB] px-3 py-1 text-xs font-black text-[#94A3B8]">
+                    {currentDate}
+                  </span>
+                </div>
+                <h1 className="text-2xl font-black text-[#020617]">التدقيق والإعدادات</h1>
+                <p className="mt-1 max-w-2xl text-sm leading-6 text-[#94A3B8]">
+                  مركز واحد لمراجعة أثر التغييرات المالية، ضبط الربط المحاسبي، وإدارة صلاحيات الوصول الحساسة.
+                </p>
+              </div>
             </div>
-            <div>
-              <h1 className="text-2xl font-bold">التدقيق والإعدادات</h1>
-              <p className="text-white/80 text-sm mt-1">
-                إدارة سجلات التدقيق وإعدادات النظام المالي
-              </p>
-            </div>
-          </div>
-          <div className="flex gap-2">
+
             <Button
-              onClick={() => navigate('/finance/hub')}
-              variant="secondary"
-              size="sm"
-              className="bg-white/20 hover:bg-white/30 text-white border-white/20"
+              variant="outline"
+              onClick={() => navigate("/finance/hub")}
+              className="h-11 gap-2 rounded-xl border-slate-200 text-[#020617] hover:bg-[#F6F8FB]"
             >
-              <ArrowLeft className="h-4 w-4 ml-2" />
-              العودة
+              <ArrowLeft className="h-4 w-4" />
+              العودة للمركز المالي
             </Button>
           </div>
-        </div>
+        </motion.div>
 
-        {/* Quick Summary */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
-          <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4">
-            <p className="text-white/70 text-sm">سجل التدقيق</p>
-            <p className="text-2xl font-bold mt-1">نشط</p>
-            <p className="text-xs text-white/60">تتبع جميع العمليات</p>
-          </div>
-          <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4">
-            <p className="text-white/70 text-sm">حالة النظام</p>
-            <p className="text-2xl font-bold mt-1 text-green-200">آمن</p>
-            <p className="text-xs text-white/60">لا توجد مشاكل</p>
-          </div>
-          <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4">
-            <p className="text-white/70 text-sm">الإعدادات</p>
-            <p className="text-2xl font-bold mt-1">مكتملة</p>
-            <p className="text-xs text-white/60">جميع الإعدادات محددة</p>
-          </div>
-          <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4">
-            <p className="text-white/70 text-sm">آخر تحديث</p>
-            <p className="text-lg font-bold mt-1">{currentDate}</p>
-            <p className="text-xs text-white/60">التاريخ الحالي</p>
-          </div>
-        </div>
-      </motion.div>
-
-      {/* Statistics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <StatCard
-          title="سجل التدقيق"
-          value="نشط"
-          subtitle="Audit Trail Active"
-          icon={History}
-          iconBg="bg-gradient-to-br from-red-500 to-rose-500"
-          delay={0.1}
-        />
-        <StatCard
-          title="أمان النظام"
-          value="محمي"
-          subtitle="System Secured"
-          icon={Lock}
-          iconBg="bg-gradient-to-br from-green-500 to-emerald-500"
-          delay={0.15}
-        />
-        <StatCard
-          title="المستخدمين النشطين"
-          value="متصل"
-          subtitle="Connected"
-          icon={Users}
-          iconBg="bg-gradient-to-br from-blue-500 to-cyan-500"
-          delay={0.2}
-        />
-        <StatCard
-          title="الإعدادات"
-          value="مكتملة"
-          subtitle="Configured"
-          icon={Settings}
-          iconBg="bg-gradient-to-br from-purple-500 to-indigo-500"
-          delay={0.25}
-        />
-      </div>
-
-      {/* Tab Navigation Cards */}
-      <motion.div
-        className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.2 }}
-      >
-        {TABS.map((tab, index) => (
-          <Card
-            key={tab.id}
-            className={cn(
-              "cursor-pointer transition-all hover:shadow-lg border-2",
-              currentTab === tab.id 
-                ? "border-rose-500 bg-rose-50/50 shadow-md" 
-                : "border-transparent hover:border-slate-200"
-            )}
-            onClick={() => handleTabChange(tab.id)}
-          >
-            <CardContent className="p-6">
-              <div className="flex items-center gap-4">
-                <div className={cn(
-                  "w-14 h-14 rounded-xl flex items-center justify-center bg-gradient-to-br",
-                  tab.gradient
-                )}>
-                  <tab.icon className="w-7 h-7 text-white" />
+        <div className="grid gap-3 md:grid-cols-3">
+          <Card className="rounded-2xl border-slate-200 bg-white shadow-sm">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-xs font-bold text-[#94A3B8]">سجل التدقيق</p>
+                  <p className="mt-1 text-lg font-black text-[#020617]">مفعل</p>
                 </div>
-                <div className="flex-1">
-                  <div className="flex items-center justify-between">
-                    <p className="font-semibold text-lg text-neutral-900">{tab.label}</p>
-                    {currentTab === tab.id && (
-                      <Badge className="bg-rose-500 text-white">نشط</Badge>
-                    )}
-                  </div>
-                  <p className="text-sm text-neutral-500 mt-1">{tab.description}</p>
+                <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[#EAF8FE] text-[#38BDF8]">
+                  <FileSearch className="h-5 w-5" />
                 </div>
               </div>
             </CardContent>
           </Card>
-        ))}
-      </motion.div>
+          <Card className="rounded-2xl border-slate-200 bg-white shadow-sm">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-xs font-bold text-[#94A3B8]">حالة الحماية</p>
+                  <p className="mt-1 text-lg font-black text-[#22C7A1]">آمنة</p>
+                </div>
+                <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[#E8FBF6] text-[#22C7A1]">
+                  <Lock className="h-5 w-5" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="rounded-2xl border-slate-200 bg-white shadow-sm">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-xs font-bold text-[#94A3B8]">جاهزية الإعدادات</p>
+                  <p className="mt-1 text-lg font-black text-[#020617]">قابلة للمراجعة</p>
+                </div>
+                <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[#ECEEFE] text-[#7C83F6]">
+                  <CheckCircle2 className="h-5 w-5" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
 
-      {/* Tabs Content */}
-      <Tabs value={currentTab} onValueChange={handleTabChange} className="space-y-6">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-        >
-          <TabsList className="bg-white dark:bg-slate-900 p-1.5 rounded-xl shadow-sm">
-            {TABS.map((tab) => (
-              <TabsTrigger
-                key={tab.id}
-                value={tab.id}
-                className="data-[state=active]:bg-rose-500 data-[state=active]:text-white rounded-lg px-6 py-2.5 gap-2 transition-all"
-              >
-                <tab.icon className="w-4 h-4" />
-                {tab.label}
-              </TabsTrigger>
-            ))}
-          </TabsList>
-        </motion.div>
+        <FinancialIntegrityPanel />
 
-        {/* سجل التدقيق */}
-        <TabsContent value="audit">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3 }}
-            className="bg-white rounded-xl shadow-sm overflow-hidden"
-          >
-            <Suspense fallback={<PageSkeletonFallback />}>
-              <AuditTrailPage />
-            </Suspense>
-          </motion.div>
-        </TabsContent>
+        <MonthlyClosePanel />
 
-        {/* الإعدادات */}
-        <TabsContent value="settings">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3 }}
-            className="bg-white rounded-xl shadow-sm overflow-hidden"
-          >
-            <Suspense fallback={<PageSkeletonFallback />}>
-              <FinanceSettings />
-            </Suspense>
-          </motion.div>
-        </TabsContent>
-      </Tabs>
+        <FinancialApprovalsPanel />
+
+        <FinancePermissionsMatrixPanel />
+
+        <Tabs value={currentTab} onValueChange={handleTopTabChange} className="space-y-5">
+          <div className="grid gap-3 lg:grid-cols-[1fr_auto] lg:items-stretch">
+            <div className="grid gap-3 md:grid-cols-2">
+              {topTabs.map((tab) => {
+                const Icon = tab.icon;
+                const isActive = currentTab === tab.id;
+                return (
+                  <Card
+                    key={tab.id}
+                    onClick={() => handleTopTabChange(tab.id)}
+                    className={cn(
+                      "cursor-pointer rounded-2xl border bg-white shadow-sm transition",
+                      isActive ? "border-[#22C7A1] ring-2 ring-[#22C7A1]/15" : "border-slate-200 hover:border-slate-300"
+                    )}
+                  >
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-3">
+                          <div className="flex h-11 w-11 items-center justify-center rounded-2xl" style={{ backgroundColor: tab.bg, color: tab.color }}>
+                            <Icon className="h-5 w-5" />
+                          </div>
+                          <div>
+                            <p className="font-black text-[#020617]">{tab.label}</p>
+                            <p className="mt-1 text-xs font-medium text-[#94A3B8]">{tab.description}</p>
+                          </div>
+                        </div>
+                        {isActive && (
+                          <span className="rounded-full bg-[#E8FBF6] px-3 py-1 text-xs font-black text-[#22C7A1]">نشط</span>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+
+            <TabsList className="h-auto rounded-2xl border border-slate-200 bg-white p-1 shadow-sm">
+              {topTabs.map((tab) => {
+                const Icon = tab.icon;
+                return (
+                  <TabsTrigger
+                    key={tab.id}
+                    value={tab.id}
+                    className="h-11 rounded-xl px-4 text-[#94A3B8] data-[state=active]:bg-[#22C7A1] data-[state=active]:text-white"
+                  >
+                    <Icon className="ml-2 h-4 w-4" />
+                    {tab.label}
+                  </TabsTrigger>
+                );
+              })}
+            </TabsList>
+          </div>
+
+          {currentTab === "settings" && (
+            <div className="grid gap-3 md:grid-cols-3">
+              {settingSections.map((section) => {
+                const Icon = section.icon;
+                const isActive = requestedTab === section.id || (section.id === "settings" && requestedTab === "settings");
+                return (
+                  <button
+                    key={section.id}
+                    type="button"
+                    onClick={() => handleSettingsSectionChange(section.id === "settings" ? "mappings" : section.id)}
+                    className={cn(
+                      "flex items-center gap-3 rounded-2xl border bg-white p-4 text-right shadow-sm transition",
+                      isActive ? "border-[#22C7A1] ring-2 ring-[#22C7A1]/15" : "border-slate-200 hover:border-slate-300"
+                    )}
+                  >
+                    <span className="flex h-10 w-10 items-center justify-center rounded-2xl" style={{ backgroundColor: section.bg, color: section.color }}>
+                      <Icon className="h-5 w-5" />
+                    </span>
+                    <span>
+                      <span className="block text-sm font-black text-[#020617]">{section.label}</span>
+                      <span className="mt-1 block text-xs font-bold text-[#94A3B8]">فتح القسم مباشرة</span>
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
+          <TabsContent value="audit" className="mt-0">
+            <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
+              <Suspense fallback={<PageSkeletonFallback />}>
+                <AuditTrailPage />
+              </Suspense>
+            </motion.div>
+          </TabsContent>
+
+          <TabsContent value="settings" className="mt-0">
+            <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
+              <Suspense fallback={<PageSkeletonFallback />}>
+                <FinanceSettings initialTab={settingsInitialTab} onSectionChange={handleSettingsSectionChange} />
+              </Suspense>
+            </motion.div>
+          </TabsContent>
+        </Tabs>
+
+        <div className="rounded-2xl border border-slate-200 bg-white p-4">
+          <div className="flex items-start gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-[#FFF0F2] text-[#FB6B7A]">
+              <Clock className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="text-sm font-black text-[#020617]">نصيحة تشغيلية</p>
+              <p className="mt-1 text-xs leading-5 text-[#94A3B8]">
+                راجع سجل التدقيق بعد أي تعديل على الربط أو الصلاحيات، لأن هذه المناطق تؤثر مباشرة على القيود والفواتير والتقارير.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };

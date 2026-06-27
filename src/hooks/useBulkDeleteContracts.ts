@@ -39,28 +39,35 @@ export const useBulkDeleteContracts = () => {
         console.warn(`Warning fetching invoices for contract ${contractId}:`, invoicesFetchError);
       }
 
-      // 1. Delete payments related to invoices first
-      if (invoices && invoices.length > 0) {
-        for (const invoice of invoices) {
-          const { error: paymentsError } = await supabase
-            .from('payments')
-            .delete()
-            .eq('invoice_id', invoice.id);
-          
-          if (paymentsError) {
-            console.warn(`Warning deleting payments for invoice ${invoice.id}:`, paymentsError);
-          }
+      const invoiceIds = (invoices || []).map(invoice => invoice.id);
+      let relatedPaymentsCount = 0;
+
+      if (invoiceIds.length > 0) {
+        const { count, error: invoicePaymentsCheckError } = await supabase
+          .from('payments')
+          .select('id', { count: 'exact', head: true })
+          .in('invoice_id', invoiceIds);
+
+        if (invoicePaymentsCheckError) {
+          throw invoicePaymentsCheckError;
         }
+
+        relatedPaymentsCount += count || 0;
       }
 
-      // 2. Delete any payments directly linked to contract
-      const { error: contractPaymentsError } = await supabase
+      const { count: contractPaymentsCount, error: contractPaymentsCheckError } = await supabase
         .from('payments')
-        .delete()
+        .select('id', { count: 'exact', head: true })
         .eq('contract_id', contractId);
-      
-      if (contractPaymentsError) {
-        console.warn(`Warning deleting contract payments for ${contractId}:`, contractPaymentsError);
+
+      if (contractPaymentsCheckError) {
+        throw contractPaymentsCheckError;
+      }
+
+      relatedPaymentsCount += contractPaymentsCount || 0;
+
+      if (relatedPaymentsCount > 0) {
+        throw new Error('Cannot permanently delete a contract with recorded payments. Archive or cancel the contract to preserve the financial audit trail.');
       }
 
       // 3. Delete vehicle condition reports
@@ -73,11 +80,17 @@ export const useBulkDeleteContracts = () => {
         console.warn(`Warning deleting vehicle condition reports for contract ${contractId}:`, conditionReportsError);
       }
 
-      // 4. Delete invoices (after payments are deleted)
+      // 4. Cancel unpaid invoices instead of deleting financial history
       const { error: invoiceError } = await supabase
         .from('invoices')
-        .delete()
-        .eq('contract_id', contractId);
+        .update({
+          status: 'cancelled',
+          payment_status: 'cancelled',
+          balance_due: 0,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('contract_id', contractId)
+        .or('paid_amount.eq.0,paid_amount.is.null');
       
       if (invoiceError) {
         console.warn(`Warning deleting invoices for contract ${contractId}:`, invoiceError);

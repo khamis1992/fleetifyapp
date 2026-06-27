@@ -301,17 +301,18 @@ class PaymentStateMachine {
       
       if (event === PaymentEvent.REVERSE) {
         // التحقق من أن القيد المحاسبي لم يتم مرحله بعد
-        if (payment.journal_entry_id) {
+        const journalEntryId = await this.getPaymentJournalEntryId(payment);
+        if (journalEntryId) {
           const { data: journalEntry } = await supabase
             .from('journal_entries')
             .select('status')
-            .eq('id', payment.journal_entry_id)
+            .eq('id', journalEntryId)
             .single();
 
           if (journalEntry?.status === 'posted') {
             return {
               isValid: false,
-              error: 'لا يمكن فك دفعة ذات قيد محاسبي مرحل'
+              error: 'Cannot reverse a payment with a posted journal entry'
             };
           }
         }
@@ -324,6 +325,27 @@ class PaymentStateMachine {
   /**
    * التحقق من overpayment
    */
+  private async getPaymentJournalEntryId(payment: any): Promise<string | null> {
+    if (payment.journal_entry_id) {
+      return payment.journal_entry_id;
+    }
+
+    const { data: journalEntry, error } = await supabase
+      .from('journal_entries')
+      .select('id')
+      .eq('company_id', payment.company_id)
+      .eq('reference_type', 'payment')
+      .eq('reference_id', payment.id)
+      .maybeSingle();
+
+    if (error) {
+      logger.warn('Failed to resolve payment journal entry reference', { paymentId: payment.id, error });
+      return null;
+    }
+
+    return journalEntry?.id || null;
+  }
+
   private async checkOverpayment(
     payment: any
   ): Promise<{ isOverpayment: boolean; percentage: number }> {

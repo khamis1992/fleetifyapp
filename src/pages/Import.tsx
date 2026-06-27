@@ -23,6 +23,7 @@ import { useDropzone } from 'react-dropzone';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
+import { usePaymentOperations } from '@/hooks/business/usePaymentOperations';
 import { supabase } from '@/integrations/supabase/client';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 
@@ -47,6 +48,11 @@ interface ImportTemplate {
 const ImportInner: React.FC = () => {
   const { user } = useAuth();
   const { companyId, hasCompanyAdminAccess } = useUnifiedCompanyAccess();
+  const { createPayment } = usePaymentOperations({
+    autoCreateJournalEntry: true,
+    autoUpdateBankBalance: true,
+    enableNotifications: false,
+  });
   
   const [activeTab, setActiveTab] = useState('customers');
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
@@ -243,27 +249,36 @@ const ImportInner: React.FC = () => {
                 return arabicToEnglish[type] || type;
               };
 
-              const processedPayment = {
-                ...row,
-                company_id: companyId,
-                payment_number: row.payment_number || `PAY-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-                payment_type: normalizePaymentType(row.payment_type || row.payment_method || 'cash'),
-                payment_method: normalizePaymentType(row.payment_method || row.payment_type || 'cash'),
-                amount: typeof row.amount === 'string' 
-                  ? parseFloat(row.amount.replace(/[^\d.-]/g, '')) 
-                  : parseFloat(row.amount) || 0,
-                payment_status: row.payment_status || 'completed',
-                transaction_type: row.transaction_type || (row.customer_id ? 'customer_payment' : 'vendor_payment'),
-                currency: row.currency || 'KWD'
-              };
+              const importedPaymentMethod = normalizePaymentType(row.payment_type || row.payment_method || 'cash');
+              const normalizedPaymentMethod = importedPaymentMethod === 'debit_card' ? 'credit_card' : importedPaymentMethod;
+              const importedAmount = typeof row.amount === 'string'
+                ? parseFloat(row.amount.replace(/[^\d.-]/g, ''))
+                : parseFloat(row.amount) || 0;
 
-              if (processedPayment.amount <= 0) {
-                throw new Error(`مبلغ غير صحيح: ${row.amount}`);
+              if (importedAmount <= 0) {
+                throw new Error(`???? ??? ????: ${row.amount}`);
               }
 
-              result = await supabase
-                .from('payments')
-                .insert([processedPayment]);
+              const isReceipt = row.transaction_type === 'customer_payment' || row.transaction_type === 'receipt' || !!row.customer_id;
+
+              await createPayment.mutateAsync({
+                payment_number: row.payment_number || undefined,
+                amount: importedAmount,
+                payment_date: row.payment_date || new Date().toISOString().split('T')[0],
+                payment_method: normalizedPaymentMethod as 'cash' | 'check' | 'bank_transfer' | 'credit_card',
+                reference_number: row.reference_number || undefined,
+                notes: row.notes || undefined,
+                customer_id: row.customer_id || undefined,
+                vendor_id: row.vendor_id || undefined,
+                invoice_id: row.invoice_id || undefined,
+                contract_id: row.contract_id || undefined,
+                type: isReceipt ? 'receipt' : 'payment',
+                transaction_type: row.invoice_id ? 'invoice_payment' : isReceipt ? 'customer_payment' : 'vendor_payment',
+                payment_status: row.payment_status || 'completed',
+                currency: row.currency || 'QAR',
+              });
+
+              result = { error: null };
               break;
             default:
               throw new Error('نوع غير مدعوم');

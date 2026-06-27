@@ -3,7 +3,7 @@
  * Handles route rendering with lazy loading, error boundaries, and layout management
  */
 
-import React, { Suspense } from 'react';
+import React, { Suspense, useCallback, useMemo } from 'react';
 import { Route, Routes, Navigate } from 'react-router-dom';
 import { RouteConfig } from '@/routes/types';
 import { PageSkeletonFallback } from '@/components/common/LazyPageWrapper';
@@ -32,7 +32,7 @@ const RouteRenderer: React.FC<RouteRendererProps> = ({
 
 
   const { t } = useFleetifyTranslation("ui");
-  const renderRoute = React.useCallback((route: RouteConfig) => {
+  const renderRoute = useCallback((route: RouteConfig) => {
     if (route.redirectTo) {
       return <Navigate to={route.redirectTo} replace />;
     }
@@ -136,7 +136,7 @@ const RouteRenderer: React.FC<RouteRendererProps> = ({
   }, [FallbackComponent]);
 
   // Memoize sorted routes to prevent recalculation on every render
-  const sortedRoutes = React.useMemo(() => {
+  const sortedRoutes = useMemo(() => {
     return routes.sort((a, b) => a.priority - b.priority);
   }, [routes]);
 

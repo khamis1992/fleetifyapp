@@ -14,6 +14,7 @@ import {
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { usePaymentOperations } from '@/hooks/business/usePaymentOperations';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 import { useFleetifyTranslation } from "@/hooks/useTranslation";
@@ -38,6 +39,11 @@ const MobileOverdue: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const { createPayment } = usePaymentOperations({
+    autoCreateJournalEntry: true,
+    autoUpdateBankBalance: true,
+    enableNotifications: false,
+  });
   const [contracts, setContracts] = useState<OverdueContract[]>([]);
   const [filteredContracts, setFilteredContracts] = useState<OverdueContract[]>([]);
   const [activeFilter, setActiveFilter] = useState<FilterType>('all');
@@ -162,24 +168,26 @@ const MobileOverdue: React.FC = () => {
 
     setProcessing(true);
     try {
-      const companyId = user?.profile?.company_id || user?.company?.id || '';
+      const normalizedPaymentMethod = {
+        cash: 'cash',
+        bank: 'bank_transfer',
+        card: 'credit_card',
+        cheque: 'check',
+      }[paymentMethod] as 'cash' | 'bank_transfer' | 'credit_card' | 'check';
 
-      // Create payment record
-      const { error: paymentError } = await supabase
-        .from('payments')
-        .insert({
-          company_id: companyId,
-          customer_id: selectedContract.customer_id,
-          contract_id: selectedContract.contract_id,
-          amount: parseFloat(paymentAmount),
-          payment_date: new Date().toISOString(),
-          payment_method: paymentMethod,
-          reference_number: paymentReference,
-          payment_status: 'verified',
-          notes: 'Recorded via mobile app',
-        });
-
-      if (paymentError) throw paymentError;
+      await createPayment.mutateAsync({
+        customer_id: selectedContract.customer_id,
+        contract_id: selectedContract.contract_id,
+        amount: parseFloat(paymentAmount),
+        payment_date: new Date().toISOString().split('T')[0],
+        payment_method: normalizedPaymentMethod,
+        reference_number: paymentReference || undefined,
+        payment_status: 'completed',
+        notes: 'Recorded via mobile app',
+        type: 'receipt',
+        transaction_type: 'customer_payment',
+        currency: 'QAR',
+      });
 
       // Close modal and refresh
       setShowPaymentModal(false);

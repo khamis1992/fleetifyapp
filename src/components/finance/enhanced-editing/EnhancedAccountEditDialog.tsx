@@ -27,6 +27,7 @@ import { SmartParentSelector } from './SmartParentSelector';
 import { AccountMoveValidator } from './AccountMoveValidator';
 import { ChartOfAccount } from '@/hooks/useChartOfAccounts';
 import { toast } from 'sonner';
+import { systemColorPattern } from '@/lib/design-system/systemColorPattern';
 
 interface EnhancedAccountEditDialogProps {
   open: boolean;
@@ -40,6 +41,8 @@ interface ValidationIssue {
   message: string;
   suggestion?: string;
 }
+
+const editDialogTheme = systemColorPattern.colors;
 
 export const EnhancedAccountEditDialog: React.FC<EnhancedAccountEditDialogProps> = ({
   open,
@@ -232,33 +235,38 @@ export const EnhancedAccountEditDialog: React.FC<EnhancedAccountEditDialogProps>
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-7xl max-h-[95vh] overflow-y-auto bg-gradient-card shadow-elevated" dir="rtl">
-        <DialogHeader className="border-b border-border/50 pb-6">
-          <DialogTitle className="arabic-heading-sm text-right flex items-center gap-3 text-foreground">
-            <TreePine className="h-6 w-6 text-primary" />
-            تعديل الحساب: {account.account_name || account.account_name_ar}
+      <DialogContent className="account-edit-dialog max-w-7xl max-h-[95vh] overflow-y-auto" dir="rtl">
+        <DialogHeader className="account-edit-header">
+          <DialogTitle className="text-right flex items-center gap-3">
+            <span className="account-edit-icon">
+              <TreePine className="h-5 w-5" />
+            </span>
+            <span>
+              <span className="block text-xs font-black">تعديل حساب محاسبي</span>
+              <strong className="block text-xl">{account.account_name_ar || account.account_name}</strong>
+            </span>
           </DialogTitle>
         </DialogHeader>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full mt-6">
-          <TabsList className="grid w-full grid-cols-3 bg-background/50 p-1 rounded-lg h-12">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full mt-5">
+          <TabsList className="account-edit-tabs grid w-full grid-cols-3">
             <TabsTrigger 
               value="basic" 
-              className="arabic-body-sm flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-md transition-smooth"
+              className="flex items-center gap-2"
             >
               <Target className="h-4 w-4" />
               المعلومات الأساسية
             </TabsTrigger>
             <TabsTrigger 
               value="hierarchy" 
-              className="arabic-body-sm flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-md transition-smooth"
+              className="flex items-center gap-2"
             >
               <TreePine className="h-4 w-4" />
               الهيكل الهرمي
             </TabsTrigger>
             <TabsTrigger 
               value="preview" 
-              className="arabic-body-sm flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-md transition-smooth"
+              className="flex items-center gap-2"
             >
               <Eye className="h-4 w-4" />
               معاينة التغييرات
@@ -515,7 +523,7 @@ export const EnhancedAccountEditDialog: React.FC<EnhancedAccountEditDialogProps>
         </Tabs>
 
         {/* Action Buttons */}
-        <div className="flex justify-between items-center pt-6 border-t border-border/50 bg-background/50 -mx-6 -mb-6 px-6 pb-6 mt-8">
+        <div className="account-edit-footer">
           <div className="flex items-center gap-2">
             {hasChanges && (
               <Badge variant="secondary" className="arabic-body-sm flex items-center gap-2 bg-warning/10 text-warning border-warning/20">
@@ -529,20 +537,119 @@ export const EnhancedAccountEditDialog: React.FC<EnhancedAccountEditDialogProps>
             <Button 
               variant="outline" 
               onClick={() => onOpenChange(false)}
-              className="arabic-body px-6 h-11 border-border/50 hover:bg-background/80 transition-smooth"
+              className="account-edit-cancel px-6 h-11"
             >
               إلغاء
             </Button>
             <Button 
               onClick={handleSave} 
               disabled={!hasChanges || updateAccount.isPending || validationIssues.some(i => i.type === 'error')}
-              className="arabic-body flex items-center gap-2 bg-gradient-primary hover:shadow-glow transition-smooth px-6 h-11"
+              className="account-edit-save flex items-center gap-2 px-6 h-11"
             >
               <Save className="h-4 w-4" />
               {updateAccount.isPending ? 'جاري الحفظ...' : 'حفظ التغييرات'}
             </Button>
           </div>
         </div>
+        <style>{`
+          .account-edit-dialog {
+            border: 1px solid ${editDialogTheme.border} !important;
+            border-radius: 14px !important;
+            background: ${editDialogTheme.surface} !important;
+            color: ${editDialogTheme.text};
+          }
+          .account-edit-header {
+            border-bottom: 1px solid ${editDialogTheme.border};
+            padding-bottom: 14px;
+          }
+          .account-edit-header .text-xs {
+            color: ${editDialogTheme.success};
+          }
+          .account-edit-header strong {
+            color: ${editDialogTheme.text};
+            font-weight: 950;
+          }
+          .account-edit-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            height: 42px;
+            width: 42px;
+            border-radius: 10px;
+            background: color-mix(in srgb, ${editDialogTheme.success} 14%, white);
+            color: ${editDialogTheme.success};
+            border: 1px solid color-mix(in srgb, ${editDialogTheme.success} 22%, white);
+          }
+          .account-edit-tabs {
+            height: auto !important;
+            gap: 8px;
+            border: 1px solid ${editDialogTheme.border};
+            border-radius: 12px;
+            background: ${editDialogTheme.innerSurface} !important;
+            padding: 8px !important;
+          }
+          .account-edit-tabs [role="tab"] {
+            min-height: 42px;
+            border-radius: 9px !important;
+            color: ${editDialogTheme.secondaryText} !important;
+            font-weight: 900;
+          }
+          .account-edit-tabs [role="tab"][data-state="active"] {
+            background: ${editDialogTheme.success} !important;
+            color: white !important;
+          }
+          .account-edit-dialog .bg-gradient-card,
+          .account-edit-dialog .bg-background\\/50,
+          .account-edit-dialog .bg-accent\\/20 {
+            background: ${editDialogTheme.innerSurface} !important;
+          }
+          .account-edit-dialog .border-0 {
+            border: 1px solid ${editDialogTheme.border} !important;
+          }
+          .account-edit-dialog input,
+          .account-edit-dialog textarea,
+          .account-edit-dialog [role="combobox"] {
+            border-color: ${editDialogTheme.border} !important;
+            background: white !important;
+            color: ${editDialogTheme.text};
+            border-radius: 10px !important;
+          }
+          .account-edit-dialog label,
+          .account-edit-dialog h3,
+          .account-edit-dialog h4 {
+            color: ${editDialogTheme.text} !important;
+          }
+          .account-edit-footer {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin: 28px -24px -24px;
+            padding: 16px 24px;
+            border-top: 1px solid ${editDialogTheme.border};
+            background: ${editDialogTheme.innerSurface};
+          }
+          .account-edit-cancel {
+            border: 1px solid ${editDialogTheme.border} !important;
+            background: white !important;
+            color: ${editDialogTheme.text} !important;
+            border-radius: 10px !important;
+          }
+          .account-edit-save {
+            background: ${editDialogTheme.success} !important;
+            color: white !important;
+            border-radius: 10px !important;
+          }
+          @media (max-width: 700px) {
+            .account-edit-tabs {
+              grid-template-columns: 1fr !important;
+            }
+            .account-edit-footer {
+              flex-direction: column;
+              align-items: stretch;
+            }
+          }
+        `}</style>
       </DialogContent>
     </Dialog>
   );

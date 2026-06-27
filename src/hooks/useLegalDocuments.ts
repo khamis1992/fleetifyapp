@@ -48,7 +48,7 @@ interface UseLegalDocumentsFilters {
   search?: string;
 }
 
-export const useLegalDocuments = (filters?: UseLegalDocumentsFilters) => {
+export const useLegalDocuments = (filters?: UseLegalDocumentsFilters, enabled: boolean = true) => {
   const { user } = useAuth();
   const companyFilter = useCompanyFilter();
 
@@ -89,7 +89,7 @@ export const useLegalDocuments = (filters?: UseLegalDocumentsFilters) => {
       if (error) throw error;
       return data as LegalDocument[];
     },
-    enabled: !!user?.id,
+    enabled: !!user?.id && enabled,
   });
 };
 

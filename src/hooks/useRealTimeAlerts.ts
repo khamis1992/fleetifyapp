@@ -249,7 +249,7 @@ export const useRealTimeAlerts = () => {
             if ('Notification' in window && Notification.permission === 'granted') {
               new Notification('مهمة تدقيق جديدة', {
                 body: newNotification.message || 'تم تكليفك بمهمة تدقيق بيانات عميل',
-                icon: '/favicon.ico',
+                icon: '/uploads/7453c280-3175-4ccf-a73b-24921ec5990b.png',
                 tag: 'verification-task',
                 requireInteraction: true
               });

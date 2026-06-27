@@ -21,11 +21,12 @@ import WhatsAppMonitor from '@/components/whatsapp/WhatsAppMonitor';
 import { WhatsAppMessagesReport } from '@/components/whatsapp/WhatsAppMessagesReport';
 
 import { useFleetifyTranslation } from "@/hooks/useTranslation";
+import '@/styles/legal-system.css';
 const WhatsAppReminders: React.FC = () => {
   const { t } = useFleetifyTranslation("ui");
   return (
-    <div className="container mx-auto p-6">
-      <div className="mb-6">
+    <div className="legal-system min-h-screen p-4 md:p-6">
+      <div className="legal-hero mb-6 p-4">
         <h1 className="text-3xl font-bold flex items-center gap-2">
           <MessageSquare className="h-8 w-8 text-purple-600" />
           تذكيرات الدفع عبر واتساب

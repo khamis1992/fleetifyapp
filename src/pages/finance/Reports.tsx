@@ -1,4 +1,4 @@
-/**
+﻿/**
  * صفحة التقارير المالية - تصميم جديد متوافق مع الداشبورد
  */
 import { useState, useMemo } from "react";
@@ -45,6 +45,7 @@ import { cn } from "@/lib/utils";
 import { StatCard } from "@/components/ui/StatCard";
 import { FinancePageHeader } from "@/components/ui/FinancePageHeader";
 import { toast } from "sonner";
+import { buildOfficialReportDocumentHtml, exportOfficialHtmlToPDF } from "@/utils/officialFinancialReportExport";
 
 // Tab Configuration
 const TABS = [
@@ -81,10 +82,31 @@ const exportToCSV = (data: any[], filename: string) => {
   toast.success("تم تصدير الملف بنجاح");
 };
 
-const exportToPDF = (title: string) => {
-  window.document.title = title;
-  window.print();
-  toast.success("استخدم Ctrl+P للطباعة");
+const exportToPDF = async (title: string) => {
+  const reportDate = new Date().toISOString().slice(0, 10);
+  const officialHtml = buildOfficialReportDocumentHtml({
+    metadata: {
+      reportTitle: title,
+      reportType: "finance_reports_page",
+      currency: "QAR",
+      asOfDate: reportDate,
+      sourceFingerprint: `finance-reports:${title}:${reportDate}`,
+      status: "published",
+    },
+    bodyHtml: `
+      <p>تم إنشاء هذا التقرير من مركز التقارير المالية. للقوائم التفصيلية استخدم زر التصدير داخل التبويب المختص.</p>
+      <table>
+        <tbody>
+          <tr><th>اسم التقرير</th><td>${title}</td></tr>
+          <tr><th>القسم</th><td>النظام المالي</td></tr>
+          <tr><th>العملة</th><td>ريال قطري QAR</td></tr>
+        </tbody>
+      </table>
+    `,
+  });
+
+  await exportOfficialHtmlToPDF(officialHtml, `financial-report-${reportDate}.pdf`);
+  toast.success("تم تحميل التقرير بصيغة رسمية");
 };
 
 const Reports = () => {
@@ -452,3 +474,4 @@ const Reports = () => {
 };
 
 export default Reports;
+

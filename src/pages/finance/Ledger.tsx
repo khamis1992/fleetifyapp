@@ -1,158 +1,162 @@
-/**
- * صفحة القيود اليومية - تصميم جديد متوافق مع الداشبورد
- */
-import React, { useState, useMemo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { useNavigate, Link } from 'react-router-dom';
-import { FinanceErrorBoundary } from '@/components/finance/FinanceErrorBoundary';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
-import { useEnhancedJournalEntries } from '@/hooks/useGeneralLedger';
-import { useChartOfAccounts } from '@/hooks/useChartOfAccounts';
-import { 
-  FileText, 
-  Plus, 
-  Search, 
-  Filter, 
-  Eye,
-  Edit,
-  Trash2,
-  Download,
-  CalendarDays,
-  Receipt,
-  Loader2,
+import { type CSSProperties, useMemo, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
+import { Link, useNavigate } from "react-router-dom";
+import { FinanceErrorBoundary } from "@/components/finance/FinanceErrorBoundary";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { systemColorPattern } from "@/lib/design-system/systemColorPattern";
+import { cn } from "@/lib/utils";
+import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter";
+import { useEnhancedJournalEntries } from "@/hooks/useGeneralLedger";
+import { useChartOfAccounts } from "@/hooks/useChartOfAccounts";
+import {
   ArrowLeft,
+  CalendarDays,
+  CheckCircle2,
+  Clock3,
+  Download,
+  Edit,
+  Eye,
+  FileText,
+  Filter,
+  Loader2,
+  Plus,
+  Receipt,
   RefreshCw,
-  TrendingUp,
-  TrendingDown,
-  CheckCircle,
-  Clock,
+  Search,
+  ShieldAlert,
+  Trash2,
   XCircle,
-} from 'lucide-react';
-import { cn } from '@/lib/utils';
+} from "lucide-react";
 
-// Stat Card Component
-interface StatCardProps {
-  title: string;
+const ledgerColors = {
+  text: systemColorPattern.colors.text,
+  surface: systemColorPattern.colors.surface,
+  inner: systemColorPattern.colors.innerSurface,
+  muted: systemColorPattern.colors.secondaryText,
+  border: systemColorPattern.colors.border,
+  info: systemColorPattern.colors.info,
+  alert: systemColorPattern.colors.alert,
+  focus: systemColorPattern.colors.focus,
+  success: systemColorPattern.colors.success,
+};
+
+const ledgerStyle = {
+  "--ledger-text": ledgerColors.text,
+  "--ledger-surface": ledgerColors.surface,
+  "--ledger-inner": ledgerColors.inner,
+  "--ledger-muted": ledgerColors.muted,
+  "--ledger-border": ledgerColors.border,
+  "--ledger-info": ledgerColors.info,
+  "--ledger-alert": ledgerColors.alert,
+  "--ledger-focus": ledgerColors.focus,
+  "--ledger-success": ledgerColors.success,
+} as CSSProperties;
+
+interface SummaryTileProps {
+  label: string;
   value: string | number;
-  subtitle?: string;
+  helper: string;
   icon: React.ElementType;
-  iconBg: string;
-  delay?: number;
+  accent: string;
 }
 
-const StatCard: React.FC<StatCardProps> = ({
-  title,
-  value,
-  subtitle,
-  icon: Icon,
-  iconBg,
-  delay = 0,
-}) => (
-  <motion.div
-    className="bg-white rounded-xl p-5 shadow-sm hover:shadow-md transition-all border border-slate-100"
-    initial={{ opacity: 0, y: 20 }}
-    animate={{ opacity: 1, y: 0 }}
-    transition={{ duration: 0.3, delay }}
-  >
-    <div className="flex items-center justify-between mb-3">
-      <div className={cn("w-12 h-12 rounded-xl flex items-center justify-center", iconBg)}>
-        <Icon className="w-6 h-6 text-white" />
-      </div>
+const SummaryTile = ({ label, value, helper, icon: Icon, accent }: SummaryTileProps) => (
+  <div className="daily-ledger-tile">
+    <div className="flex items-center justify-between gap-3">
+      <span className="daily-ledger-tile-icon" style={{ color: accent, backgroundColor: `${accent}14` }}>
+        <Icon className="h-5 w-5" />
+      </span>
+      <span className="text-xs font-bold" style={{ color: ledgerColors.muted }}>
+        {helper}
+      </span>
     </div>
-    <p className="text-sm text-neutral-500 mb-1">{title}</p>
-    <p className="text-2xl font-bold text-neutral-900">{value}</p>
-    {subtitle && <p className="text-xs text-neutral-400 mt-1">{subtitle}</p>}
-  </motion.div>
+    <p className="mt-5 text-sm font-bold" style={{ color: ledgerColors.muted }}>
+      {label}
+    </p>
+    <p className="mt-2 text-2xl font-black tracking-normal" style={{ color: ledgerColors.text }}>
+      {value}
+    </p>
+  </div>
 );
+
+const getStatusText = (status: string) => {
+  switch (status) {
+    case "posted":
+      return "مرحل";
+    case "draft":
+      return "مسودة";
+    case "cancelled":
+      return "ملغي";
+    case "reversed":
+      return "معكوس";
+    default:
+      return status;
+  }
+};
+
+const getStatusMeta = (status: string) => {
+  switch (status) {
+    case "posted":
+      return { icon: CheckCircle2, color: ledgerColors.success, tone: "مكتمل" };
+    case "draft":
+      return { icon: Clock3, color: ledgerColors.focus, tone: "قيد العمل" };
+    case "cancelled":
+    case "reversed":
+      return { icon: XCircle, color: ledgerColors.alert, tone: "مستبعد" };
+    default:
+      return { icon: ShieldAlert, color: ledgerColors.info, tone: "مراجعة" };
+  }
+};
 
 const Ledger = () => {
   const navigate = useNavigate();
   const { formatCurrency } = useCurrencyFormatter();
-  const [searchTerm, setSearchTerm] = useState('');
-  const [dateFrom, setDateFrom] = useState('');
-  const [dateTo, setDateTo] = useState('');
-  const [selectedAccount, setSelectedAccount] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
+  const [searchTerm, setSearchTerm] = useState("");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
+  const [selectedAccount, setSelectedAccount] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
 
-  // Fetch journal entries from database
-  const { 
-    data: journalEntries, 
-    isLoading: isLoadingEntries, 
+  const {
+    data: journalEntries,
+    isLoading: isLoadingEntries,
     error: entriesError,
-    refetch: refetchEntries
+    refetch: refetchEntries,
   } = useEnhancedJournalEntries({
     searchTerm: searchTerm || undefined,
     dateFrom: dateFrom || undefined,
     dateTo: dateTo || undefined,
-    accountId: selectedAccount !== 'all' ? selectedAccount : undefined,
-    status: statusFilter !== 'all' ? statusFilter : undefined,
+    accountId: selectedAccount !== "all" ? selectedAccount : undefined,
+    status: statusFilter !== "all" ? statusFilter : undefined,
   });
 
-  // Fetch chart of accounts for filtering
-  const { 
-    data: accounts, 
-    isLoading: isLoadingAccounts 
-  } = useChartOfAccounts();
+  const { data: accounts, isLoading: isLoadingAccounts } = useChartOfAccounts();
 
-  // Calculate statistics
   const stats = useMemo(() => {
-    if (!journalEntries) {
-      return {
-        totalEntries: 0,
-        postedEntries: 0,
-        draftEntries: 0,
-        cancelledEntries: 0,
-        totalDebit: 0,
-        totalCredit: 0,
-      };
-    }
-
-    const posted = journalEntries.filter(e => e.status === 'posted');
-    const draft = journalEntries.filter(e => e.status === 'draft');
-    const cancelled = journalEntries.filter(e => e.status === 'cancelled' || e.status === 'reversed');
-    
-    const totalDebit = journalEntries.reduce((sum, e) => sum + (e.total_debit || 0), 0);
-    const totalCredit = journalEntries.reduce((sum, e) => sum + (e.total_credit || 0), 0);
+    const entries = journalEntries || [];
+    const posted = entries.filter((entry) => entry.status === "posted");
+    const draft = entries.filter((entry) => entry.status === "draft");
+    const cancelled = entries.filter((entry) => entry.status === "cancelled" || entry.status === "reversed");
+    const totalDebit = entries.reduce((sum, entry) => sum + (entry.total_debit || 0), 0);
+    const totalCredit = entries.reduce((sum, entry) => sum + (entry.total_credit || 0), 0);
 
     return {
-      totalEntries: journalEntries.length,
+      totalEntries: entries.length,
       postedEntries: posted.length,
       draftEntries: draft.length,
       cancelledEntries: cancelled.length,
       totalDebit,
       totalCredit,
+      difference: Math.abs(totalDebit - totalCredit),
     };
   }, [journalEntries]);
 
-  const getStatusText = (status: string) => {
-    switch (status) {
-      case 'posted': return 'مرحّل';
-      case 'draft': return 'مسودة';
-      case 'cancelled': return 'ملغي';
-      case 'reversed': return 'معكوس';
-      default: return status;
-    }
-  };
-
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'posted':
-        return <Badge className="bg-green-100 text-green-700 hover:bg-green-100">{getStatusText(status)}</Badge>;
-      case 'draft':
-        return <Badge className="bg-amber-100 text-amber-700 hover:bg-amber-100">{getStatusText(status)}</Badge>;
-      case 'cancelled':
-      case 'reversed':
-        return <Badge className="bg-red-100 text-red-700 hover:bg-red-100">{getStatusText(status)}</Badge>;
-      default:
-        return <Badge variant="outline">{getStatusText(status)}</Badge>;
-    }
-  };
+  const activeFilterCount = [searchTerm, dateFrom, dateTo, selectedAccount && selectedAccount !== "all", statusFilter !== "all"].filter(Boolean).length;
 
   return (
     <FinanceErrorBoundary
@@ -160,156 +164,157 @@ const Ledger = () => {
       isLoading={isLoadingEntries}
       onRetry={refetchEntries}
       title="خطأ في القيود اليومية"
-      context="صفحة القيود اليومية"
+      context="تبويبة القيود اليومية"
     >
-      <div className="min-h-screen bg-[#f0efed] p-6" dir="rtl">
-        {/* Hero Header */}
-        <motion.div
-          className="bg-gradient-to-r from-rose-500 to-orange-500 rounded-xl p-6 mb-6 text-white shadow-lg"
-          initial={{ opacity: 0, y: -20 }}
+      <div className="daily-ledger" dir="rtl" style={ledgerStyle}>
+        <motion.section
+          className="daily-ledger-command"
+          initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
         >
-          <div className="flex items-center justify-between flex-wrap gap-4">
-            <div className="flex items-center gap-4">
-              <div className="w-14 h-14 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
-                <FileText className="w-7 h-7 text-white" />
-              </div>
+          <div className="flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
+            <div className="flex items-start gap-4">
+              <span className="daily-ledger-command-icon">
+                <FileText className="h-6 w-6" />
+              </span>
               <div>
-                <h1 className="text-2xl font-bold">القيود اليومية</h1>
-                <p className="text-white/80 text-sm mt-1">
-                  إنشاء وإدارة القيود المحاسبية والحركات المالية
+                <div className="mb-2 flex flex-wrap items-center gap-2">
+                  <Badge className="border-0 bg-[#FB6B7A]/10 text-[#FB6B7A] hover:bg-[#FB6B7A]/10">
+                    دفتر القيود اليومية
+                  </Badge>
+                  <span className="text-xs font-bold" style={{ color: ledgerColors.muted }}>
+                    إدخال، مراجعة، ترحيل
+                  </span>
+                </div>
+                <h2 className="text-2xl font-black tracking-normal" style={{ color: ledgerColors.text }}>
+                  القيود اليومية
+                </h2>
+                <p className="mt-2 max-w-2xl text-sm leading-7" style={{ color: ledgerColors.muted }}>
+                  راجع القيود حسب الحالة والحساب والتاريخ، مع عرض سريع لتوازن المدين والدائن قبل الترحيل.
                 </p>
               </div>
             </div>
-            <div className="flex gap-2">
-              <Button
-                asChild
-                className="bg-white text-coral-600 hover:bg-white/90"
-              >
-                <Link to="/finance/new-entry">
-                  <Plus className="h-4 w-4 ml-2" />
+
+            <div className="flex flex-wrap gap-2">
+              <Button asChild className="gap-2 bg-[#020617] text-white hover:bg-[#020617]/90">
+                <Link to="/finance/accounting?tab=entries&action=new">
+                  <Plus className="h-4 w-4" />
                   قيد جديد
                 </Link>
               </Button>
               <Button
                 onClick={() => refetchEntries()}
-                variant="secondary"
-                size="sm"
-                className="bg-white/20 hover:bg-white/30 text-white border-white/20"
+                variant="outline"
+                className="gap-2 border-[#E5EAF1] bg-white text-[#020617] hover:bg-[#F6F8FB]"
               >
-                <RefreshCw className="h-4 w-4 ml-2" />
+                <RefreshCw className="h-4 w-4" />
                 تحديث
               </Button>
               <Button
-                onClick={() => navigate('/finance/accounting')}
-                variant="secondary"
-                size="sm"
-                className="bg-white/20 hover:bg-white/30 text-white border-white/20"
+                onClick={() => navigate("/finance/accounting")}
+                variant="outline"
+                className="gap-2 border-[#E5EAF1] bg-white text-[#020617] hover:bg-[#F6F8FB]"
               >
-                <ArrowLeft className="h-4 w-4 ml-2" />
-                العودة
+                <ArrowLeft className="h-4 w-4" />
+                المحاسبة
               </Button>
             </div>
           </div>
 
-          {/* Quick Summary */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
-            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4">
-              <p className="text-white/70 text-sm">إجمالي القيود</p>
-              <p className="text-2xl font-bold mt-1">{stats.totalEntries}</p>
-            </div>
-            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4">
-              <p className="text-white/70 text-sm">القيود المرحّلة</p>
-              <p className="text-2xl font-bold mt-1 text-green-200">{stats.postedEntries}</p>
-            </div>
-            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4">
-              <p className="text-white/70 text-sm">إجمالي المدين</p>
-              <p className="text-2xl font-bold mt-1">{formatCurrency(stats.totalDebit)}</p>
-            </div>
-            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4">
-              <p className="text-white/70 text-sm">إجمالي الدائن</p>
-              <p className="text-2xl font-bold mt-1">{formatCurrency(stats.totalCredit)}</p>
-            </div>
+          <div className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            <SummaryTile
+              label="إجمالي القيود"
+              value={stats.totalEntries}
+              helper="كل الحالات"
+              icon={Receipt}
+              accent={ledgerColors.info}
+            />
+            <SummaryTile
+              label="القيود المرحلة"
+              value={stats.postedEntries}
+              helper={`${stats.draftEntries} مسودة`}
+              icon={CheckCircle2}
+              accent={ledgerColors.success}
+            />
+            <SummaryTile
+              label="إجمالي المدين"
+              value={formatCurrency(stats.totalDebit)}
+              helper="Debit"
+              icon={Download}
+              accent={ledgerColors.focus}
+            />
+            <SummaryTile
+              label="فرق التوازن"
+              value={formatCurrency(stats.difference)}
+              helper={stats.difference === 0 ? "متوازن" : "راجع القيد"}
+              icon={ShieldAlert}
+              accent={stats.difference === 0 ? ledgerColors.success : ledgerColors.alert}
+            />
           </div>
-        </motion.div>
+        </motion.section>
 
-        {/* Statistics Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          <StatCard
-            title="إجمالي القيود"
-            value={stats.totalEntries}
-            subtitle="جميع القيود"
-            icon={FileText}
-            iconBg="bg-gradient-to-br from-rose-500 to-orange-500"
-            delay={0.1}
-          />
-          <StatCard
-            title="القيود المرحّلة"
-            value={stats.postedEntries}
-            subtitle="Posted Entries"
-            icon={CheckCircle}
-            iconBg="bg-gradient-to-br from-green-500 to-emerald-500"
-            delay={0.15}
-          />
-          <StatCard
-            title="المسودات"
-            value={stats.draftEntries}
-            subtitle="Draft Entries"
-            icon={Clock}
-            iconBg="bg-gradient-to-br from-amber-500 to-yellow-500"
-            delay={0.2}
-          />
-          <StatCard
-            title="الملغاة"
-            value={stats.cancelledEntries}
-            subtitle="Cancelled/Reversed"
-            icon={XCircle}
-            iconBg="bg-gradient-to-br from-red-500 to-rose-500"
-            delay={0.25}
-          />
-        </div>
-
-        {/* Filters Card */}
-        <motion.div
-          className="bg-white rounded-xl shadow-sm p-4 mb-6"
-          initial={{ opacity: 0, y: 20 }}
+        <motion.section
+          className="daily-ledger-filters"
+          initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
+          transition={{ delay: 0.05 }}
         >
-          <div className="flex items-center gap-2 mb-4">
-            <Filter className="h-5 w-5 text-rose-500" />
-            <h3 className="font-semibold text-neutral-900">البحث والفلترة</h3>
+          <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex items-center gap-3">
+              <span className="daily-ledger-filter-icon">
+                <Filter className="h-5 w-5" />
+              </span>
+              <div>
+                <h3 className="text-sm font-black" style={{ color: ledgerColors.text }}>
+                  البحث والتصفية
+                </h3>
+                <p className="text-xs" style={{ color: ledgerColors.muted }}>
+                  {activeFilterCount > 0 ? `${activeFilterCount} فلاتر نشطة` : "لا توجد فلاتر نشطة"}
+                </p>
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {["all", "posted", "draft", "cancelled"].map((status) => (
+                <button
+                  key={status}
+                  type="button"
+                  onClick={() => setStatusFilter(status)}
+                  className={cn("daily-ledger-status-chip", statusFilter === status && "is-active")}
+                >
+                  {status === "all" ? "الكل" : getStatusText(status)}
+                </button>
+              ))}
+            </div>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-[1.2fr_0.8fr_0.8fr_1.2fr]">
             <div className="relative">
-              <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-neutral-400 h-4 w-4" />
+              <Search className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2" style={{ color: ledgerColors.muted }} />
               <Input
-                placeholder="البحث في القيود..."
+                placeholder="ابحث برقم القيد، البيان، أو المرجع..."
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pr-10 bg-slate-50 border-slate-200"
+                onChange={(event) => setSearchTerm(event.target.value)}
+                className="daily-ledger-input pr-10"
               />
             </div>
-            
+
             <Input
               type="date"
-              placeholder="من تاريخ"
               value={dateFrom}
-              onChange={(e) => setDateFrom(e.target.value)}
-              className="bg-slate-50 border-slate-200"
+              onChange={(event) => setDateFrom(event.target.value)}
+              className="daily-ledger-input"
             />
-            
+
             <Input
               type="date"
-              placeholder="إلى تاريخ"
               value={dateTo}
-              onChange={(e) => setDateTo(e.target.value)}
-              className="bg-slate-50 border-slate-200"
+              onChange={(event) => setDateTo(event.target.value)}
+              className="daily-ledger-input"
             />
 
             <Select value={selectedAccount} onValueChange={setSelectedAccount}>
-              <SelectTrigger className="bg-slate-50 border-slate-200">
-                <SelectValue placeholder="اختر الحساب" />
+              <SelectTrigger className="daily-ledger-input">
+                <SelectValue placeholder={isLoadingAccounts ? "جاري تحميل الحسابات..." : "اختر الحساب"} />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">جميع الحسابات</SelectItem>
@@ -320,182 +325,411 @@ const Ledger = () => {
                 ))}
               </SelectContent>
             </Select>
-
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="bg-slate-50 border-slate-200">
-                <SelectValue placeholder="الحالة" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">جميع الحالات</SelectItem>
-                <SelectItem value="posted">مرحّل</SelectItem>
-                <SelectItem value="draft">مسودة</SelectItem>
-                <SelectItem value="cancelled">ملغي</SelectItem>
-              </SelectContent>
-            </Select>
           </div>
-        </motion.div>
+        </motion.section>
 
-        {/* Journal Entries */}
-        <motion.div
-          className="space-y-4"
-          initial={{ opacity: 0, y: 20 }}
+        <motion.section
+          className="daily-ledger-list"
+          initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
+          transition={{ delay: 0.1 }}
         >
+          <div className="daily-ledger-list-header">
+            <div>
+              <h3 className="text-base font-black" style={{ color: ledgerColors.text }}>
+                سجل القيود
+              </h3>
+              <p className="text-xs" style={{ color: ledgerColors.muted }}>
+                {stats.totalEntries} قيد مطابق للعرض الحالي
+              </p>
+            </div>
+            <Badge className="border-0 bg-[#F6F8FB] text-[#94A3B8] hover:bg-[#F6F8FB]">
+              المدين {formatCurrency(stats.totalDebit)} / الدائن {formatCurrency(stats.totalCredit)}
+            </Badge>
+          </div>
+
           {isLoadingEntries ? (
-            <div className="bg-white rounded-xl shadow-sm p-12 text-center">
-              <Loader2 className="h-10 w-10 animate-spin mx-auto mb-4 text-rose-500" />
-              <p className="text-neutral-500">جاري تحميل القيود المحاسبية...</p>
+            <div className="daily-ledger-empty">
+              <Loader2 className="h-10 w-10 animate-spin" style={{ color: ledgerColors.alert }} />
+              <p className="mt-3 text-sm font-bold" style={{ color: ledgerColors.muted }}>
+                جاري تحميل القيود المحاسبية...
+              </p>
             </div>
           ) : !journalEntries || journalEntries.length === 0 ? (
-            <div className="bg-white rounded-xl shadow-sm p-12 text-center">
-              <div className="w-16 h-16 rounded-xl bg-rose-100 flex items-center justify-center mx-auto mb-4">
-                <Receipt className="h-8 w-8 text-rose-500" />
-              </div>
-              <h3 className="text-lg font-semibold mb-2 text-neutral-900">لا توجد قيود محاسبية</h3>
-              <p className="text-neutral-500 mb-4">لم يتم العثور على قيود محاسبية تطابق معايير البحث</p>
-              <Button asChild className="bg-rose-500 hover:bg-coral-600">
-                <Link to="/finance/new-entry">
-                  <Plus className="h-4 w-4 ml-2" />
+            <div className="daily-ledger-empty">
+              <span className="daily-ledger-empty-icon">
+                <Receipt className="h-8 w-8" />
+              </span>
+              <h3 className="mt-4 text-lg font-black" style={{ color: ledgerColors.text }}>
+                لا توجد قيود محاسبية
+              </h3>
+              <p className="mt-2 text-sm" style={{ color: ledgerColors.muted }}>
+                لم يتم العثور على قيود تطابق معايير البحث الحالية.
+              </p>
+              <Button asChild className="mt-5 gap-2 bg-[#020617] text-white hover:bg-[#020617]/90">
+                <Link to="/finance/accounting?tab=entries&action=new">
+                  <Plus className="h-4 w-4" />
                   إنشاء قيد جديد
                 </Link>
               </Button>
             </div>
           ) : (
-            <AnimatePresence>
-              {journalEntries.map((entry, index) => (
-                <motion.div
-                  key={entry.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -20 }}
-                  transition={{ delay: index * 0.05 }}
-                >
-                  <Card className="overflow-hidden hover:shadow-md transition-shadow border-0 shadow-sm">
-                    <CardHeader className="bg-gradient-to-l from-slate-50 to-white border-b py-4">
-                      <div className="flex justify-between items-center">
-                        <div className="space-y-1">
-                          <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-xl bg-rose-100 flex items-center justify-center">
-                              <Receipt className="h-5 w-5 text-coral-600" />
-                            </div>
-                            <div>
-                              <h3 className="text-lg font-semibold text-neutral-900">
-                                سند قيد رقم {entry.entry_number || entry.id?.slice(0, 8)}
-                              </h3>
-                              <div className="flex items-center gap-4 text-sm text-neutral-500">
-                                <span className="flex items-center gap-1">
-                                  <CalendarDays className="h-4 w-4" />
-                                  {new Date(entry.entry_date).toLocaleDateString('en-US')}
-                                </span>
-                                {entry.reference_type && (
-                                  <span>المرجع: {entry.reference_type}</span>
-                                )}
+            <div className="space-y-3">
+              <AnimatePresence>
+                {journalEntries.map((entry, index) => {
+                  const statusMeta = getStatusMeta(entry.status);
+                  const StatusIcon = statusMeta.icon;
+                  const lines = entry.journal_entry_lines || [];
+                  const entryNumber = entry.entry_number || entry.id?.slice(0, 8);
+
+                  return (
+                    <motion.div
+                      key={entry.id}
+                      initial={{ opacity: 0, y: 14 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -14 }}
+                      transition={{ delay: Math.min(index * 0.025, 0.2) }}
+                    >
+                      <Card className="daily-ledger-entry">
+                        <CardContent className="p-0">
+                          <div className="daily-ledger-entry-head">
+                            <div className="flex min-w-0 items-start gap-3">
+                              <span className="daily-ledger-entry-icon" style={{ color: statusMeta.color, backgroundColor: `${statusMeta.color}14` }}>
+                                <StatusIcon className="h-5 w-5" />
+                              </span>
+                              <div className="min-w-0">
+                                <div className="flex flex-wrap items-center gap-2">
+                                  <h4 className="text-base font-black" style={{ color: ledgerColors.text }}>
+                                    سند قيد رقم {entryNumber}
+                                  </h4>
+                                  <Badge
+                                    className="border-0"
+                                    style={{ backgroundColor: `${statusMeta.color}14`, color: statusMeta.color }}
+                                  >
+                                    {getStatusText(entry.status)}
+                                  </Badge>
+                                </div>
+                                <div className="mt-1 flex flex-wrap items-center gap-3 text-xs font-bold" style={{ color: ledgerColors.muted }}>
+                                  <span className="flex items-center gap-1">
+                                    <CalendarDays className="h-3.5 w-3.5" />
+                                    {entry.entry_date ? new Date(entry.entry_date).toLocaleDateString("en-US") : "بدون تاريخ"}
+                                  </span>
+                                  {entry.reference_type && <span>المرجع: {entry.reference_type}</span>}
+                                  <span>{statusMeta.tone}</span>
+                                </div>
                               </div>
                             </div>
+
+                            <div className="daily-ledger-entry-actions">
+                              <Button size="icon" variant="ghost" className="h-8 w-8">
+                                <Eye className="h-4 w-4" />
+                              </Button>
+                              <Button size="icon" variant="ghost" className="h-8 w-8">
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                              <Button size="icon" variant="ghost" className="h-8 w-8 text-[#FB6B7A] hover:text-[#FB6B7A]">
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
                           </div>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          {getStatusBadge(entry.status)}
-                          <div className="flex items-center gap-1">
-                            <Button size="sm" variant="ghost" className="h-8 w-8 p-0">
-                              <Eye className="h-4 w-4 text-neutral-500" />
-                            </Button>
-                            <Button size="sm" variant="ghost" className="h-8 w-8 p-0">
-                              <Edit className="h-4 w-4 text-neutral-500" />
-                            </Button>
-                            <Button size="sm" variant="ghost" className="h-8 w-8 p-0 text-red-500 hover:text-red-600">
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
+
+                          {entry.description && (
+                            <div className="daily-ledger-description">
+                              <span>البيان</span>
+                              <p>{entry.description}</p>
+                            </div>
+                          )}
+
+                          <div className="overflow-x-auto">
+                            <Table className="min-w-[680px]">
+                              <TableHeader>
+                                <TableRow>
+                                  <TableHead className="text-right">رمز الحساب</TableHead>
+                                  <TableHead className="text-right">اسم الحساب</TableHead>
+                                  <TableHead className="text-right">البيان</TableHead>
+                                  <TableHead className="text-center text-[#22C7A1]">مدين</TableHead>
+                                  <TableHead className="text-center text-[#FB6B7A]">دائن</TableHead>
+                                </TableRow>
+                              </TableHeader>
+                              <TableBody>
+                                {lines.map((line, lineIndex) => (
+                                  <TableRow key={line.id || lineIndex}>
+                                    <TableCell className="font-mono font-bold">
+                                      {line.chart_of_accounts?.account_code || "-"}
+                                    </TableCell>
+                                    <TableCell>
+                                      <div className="font-bold">{line.chart_of_accounts?.account_name || "-"}</div>
+                                      {line.chart_of_accounts?.account_name_ar && (
+                                        <div className="text-xs" style={{ color: ledgerColors.muted }}>
+                                          {line.chart_of_accounts.account_name_ar}
+                                        </div>
+                                      )}
+                                    </TableCell>
+                                    <TableCell className="text-sm" style={{ color: ledgerColors.muted }}>
+                                      {line.line_description || entry.description || "-"}
+                                    </TableCell>
+                                    <TableCell className="text-center font-mono font-black text-[#22C7A1]">
+                                      {line.debit_amount > 0 ? formatCurrency(line.debit_amount) : "-"}
+                                    </TableCell>
+                                    <TableCell className="text-center font-mono font-black text-[#FB6B7A]">
+                                      {line.credit_amount > 0 ? formatCurrency(line.credit_amount) : "-"}
+                                    </TableCell>
+                                  </TableRow>
+                                ))}
+                              </TableBody>
+                            </Table>
                           </div>
-                        </div>
-                      </div>
-                    </CardHeader>
-                    
-                    <CardContent className="p-0">
-                      {entry.description && (
-                        <div className="bg-blue-50 px-6 py-3 border-b">
-                          <p className="text-sm font-medium text-blue-800">
-                            البيان: {entry.description}
-                          </p>
-                        </div>
-                      )}
-                    
-                      <Table>
-                        <TableHeader>
-                          <TableRow className="bg-slate-50/50">
-                            <TableHead className="text-right font-semibold">رمز الحساب</TableHead>
-                            <TableHead className="text-right font-semibold">اسم الحساب</TableHead>
-                            <TableHead className="text-center font-semibold">البيان</TableHead>
-                            <TableHead className="text-center font-semibold text-green-700">مدين</TableHead>
-                            <TableHead className="text-center font-semibold text-red-700">دائن</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {entry.journal_entry_lines?.map((line, idx) => (
-                            <TableRow key={line.id || idx} className="hover:bg-slate-50/50">
-                              <TableCell className="font-mono text-center font-medium">
-                                {line.chart_of_accounts?.account_code}
-                              </TableCell>
-                              <TableCell className="text-right">
-                                <div className="space-y-1">
-                                  <div className="font-medium">{line.chart_of_accounts?.account_name}</div>
-                                  {line.chart_of_accounts?.account_name_ar && (
-                                    <div className="text-xs text-neutral-500">{line.chart_of_accounts?.account_name_ar}</div>
-                                  )}
-                                </div>
-                              </TableCell>
-                              <TableCell className="text-center text-sm text-neutral-500">
-                                {line.line_description || entry.description}
-                              </TableCell>
-                              <TableCell className="text-center font-mono">
-                                {line.debit_amount > 0 ? (
-                                  <span className="text-green-700 font-semibold">
-                                    {formatCurrency(line.debit_amount)}
-                                  </span>
-                                ) : (
-                                  <span className="text-neutral-300">-</span>
-                                )}
-                              </TableCell>
-                              <TableCell className="text-center font-mono">
-                                {line.credit_amount > 0 ? (
-                                  <span className="text-red-700 font-semibold">
-                                    {formatCurrency(line.credit_amount)}
-                                  </span>
-                                ) : (
-                                  <span className="text-neutral-300">-</span>
-                                )}
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    
-                      {/* Totals */}
-                      <div className="bg-gradient-to-l from-slate-100 to-slate-50 border-t">
-                        <Table>
-                          <TableBody>
-                            <TableRow className="border-0">
-                              <TableCell className="font-bold text-right" colSpan={3}>
-                                المجموع
-                              </TableCell>
-                              <TableCell className="text-center font-mono font-bold text-green-700">
-                                {formatCurrency(entry.total_debit || 0)}
-                              </TableCell>
-                              <TableCell className="text-center font-mono font-bold text-red-700">
-                                {formatCurrency(entry.total_credit || 0)}
-                              </TableCell>
-                            </TableRow>
-                          </TableBody>
-                        </Table>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </motion.div>
-              ))}
-            </AnimatePresence>
+
+                          <div className="daily-ledger-entry-total">
+                            <span>المجموع</span>
+                            <div className="flex flex-wrap gap-3">
+                              <span className="text-[#22C7A1]">مدين {formatCurrency(entry.total_debit || 0)}</span>
+                              <span className="text-[#FB6B7A]">دائن {formatCurrency(entry.total_credit || 0)}</span>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </motion.div>
+                  );
+                })}
+              </AnimatePresence>
+            </div>
           )}
-        </motion.div>
+        </motion.section>
+
+        <style>{`
+          .daily-ledger {
+            display: grid;
+            gap: 16px;
+            background: transparent;
+          }
+
+          .daily-ledger-command,
+          .daily-ledger-filters,
+          .daily-ledger-list {
+            border: 1px solid var(--ledger-border);
+            background: var(--ledger-surface);
+            border-radius: 8px;
+            box-shadow: 0 12px 30px rgba(2, 6, 23, 0.055);
+          }
+
+          .daily-ledger-command {
+            padding: 20px;
+            position: relative;
+            overflow: hidden;
+          }
+
+          .daily-ledger-command::before {
+            content: "";
+            position: absolute;
+            inset-inline-start: 0;
+            top: 0;
+            bottom: 0;
+            width: 5px;
+            background: linear-gradient(180deg, var(--ledger-alert), var(--ledger-focus), var(--ledger-success));
+          }
+
+          .daily-ledger-command-icon,
+          .daily-ledger-filter-icon,
+          .daily-ledger-entry-icon,
+          .daily-ledger-empty-icon,
+          .daily-ledger-tile-icon {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            border-radius: 8px;
+          }
+
+          .daily-ledger-command-icon {
+            width: 48px;
+            height: 48px;
+            color: var(--ledger-alert);
+            background: color-mix(in srgb, var(--ledger-alert) 12%, white);
+            border: 1px solid color-mix(in srgb, var(--ledger-alert) 22%, white);
+          }
+
+          .daily-ledger-filter-icon,
+          .daily-ledger-entry-icon {
+            width: 40px;
+            height: 40px;
+          }
+
+          .daily-ledger-filter-icon {
+            color: var(--ledger-info);
+            background: color-mix(in srgb, var(--ledger-info) 12%, white);
+          }
+
+          .daily-ledger-tile {
+            min-height: 126px;
+            border: 1px solid var(--ledger-border);
+            background: var(--ledger-inner);
+            border-radius: 8px;
+            padding: 16px;
+          }
+
+          .daily-ledger-tile-icon {
+            width: 40px;
+            height: 40px;
+          }
+
+          .daily-ledger-filters {
+            padding: 16px;
+          }
+
+          .daily-ledger-status-chip {
+            min-height: 34px;
+            border-radius: 8px;
+            border: 1px solid var(--ledger-border);
+            background: var(--ledger-inner);
+            color: var(--ledger-muted);
+            padding: 0 12px;
+            font-size: 12px;
+            font-weight: 800;
+            transition: 0.18s ease;
+          }
+
+          .daily-ledger-status-chip.is-active {
+            border-color: var(--ledger-alert);
+            background: color-mix(in srgb, var(--ledger-alert) 12%, white);
+            color: var(--ledger-alert);
+          }
+
+          .daily-ledger-input,
+          .daily-ledger input,
+          .daily-ledger [role="combobox"] {
+            min-height: 42px;
+            border-radius: 8px !important;
+            border-color: var(--ledger-border) !important;
+            background: var(--ledger-inner) !important;
+            color: var(--ledger-text) !important;
+          }
+
+          .daily-ledger-list {
+            overflow: hidden;
+          }
+
+          .daily-ledger-list-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 16px;
+            border-bottom: 1px solid var(--ledger-border);
+            background: color-mix(in srgb, var(--ledger-inner) 68%, white);
+          }
+
+          .daily-ledger-empty {
+            display: flex;
+            min-height: 260px;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 32px;
+            text-align: center;
+          }
+
+          .daily-ledger-empty-icon {
+            width: 64px;
+            height: 64px;
+            background: color-mix(in srgb, var(--ledger-alert) 12%, white);
+            color: var(--ledger-alert);
+          }
+
+          .daily-ledger-entry {
+            margin: 12px;
+            overflow: hidden;
+            border: 1px solid var(--ledger-border) !important;
+            border-radius: 8px !important;
+            box-shadow: none !important;
+          }
+
+          .daily-ledger-entry-head {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 16px;
+            padding: 16px;
+            border-bottom: 1px solid var(--ledger-border);
+            background: var(--ledger-surface);
+          }
+
+          .daily-ledger-entry-actions {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+          }
+
+          .daily-ledger-description {
+            display: grid;
+            gap: 4px;
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--ledger-border);
+            background: color-mix(in srgb, var(--ledger-info) 7%, white);
+          }
+
+          .daily-ledger-description span {
+            color: var(--ledger-muted);
+            font-size: 11px;
+            font-weight: 900;
+          }
+
+          .daily-ledger-description p {
+            color: var(--ledger-text);
+            font-size: 13px;
+            font-weight: 700;
+          }
+
+          .daily-ledger table thead tr {
+            background: var(--ledger-inner) !important;
+          }
+
+          .daily-ledger table th {
+            color: var(--ledger-muted) !important;
+            font-size: 12px;
+            font-weight: 900;
+          }
+
+          .daily-ledger table td {
+            color: var(--ledger-text);
+            border-color: var(--ledger-border) !important;
+          }
+
+          .daily-ledger table tbody tr:hover {
+            background: color-mix(in srgb, var(--ledger-info) 5%, white) !important;
+          }
+
+          .daily-ledger-entry-total {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 12px 16px;
+            border-top: 1px solid var(--ledger-border);
+            background: var(--ledger-inner);
+            color: var(--ledger-text);
+            font-size: 13px;
+            font-weight: 900;
+          }
+
+          .daily-ledger *:focus-visible {
+            outline-color: var(--ledger-focus) !important;
+            --tw-ring-color: var(--ledger-focus) !important;
+          }
+
+          @media (max-width: 720px) {
+            .daily-ledger-entry-head,
+            .daily-ledger-list-header,
+            .daily-ledger-entry-total {
+              align-items: stretch;
+              flex-direction: column;
+            }
+
+            .daily-ledger-entry-actions {
+              justify-content: flex-start;
+            }
+          }
+        `}</style>
       </div>
     </FinanceErrorBoundary>
   );

@@ -200,7 +200,7 @@ export const AlarafOfficialContractComplete = ({
             <strong>السجل التجاري:</strong> 179973<br />
             <strong>الدولة:</strong> دولة قطر<br />
             <strong>المقر الرئيسي:</strong> أم صلال محمد - الشارع التجاري - مبنى رقم 79 - الطابق الأول - مكتب 2<br />
-            <strong>يمثلها السيد:</strong> خميس هاشم الجابر<br />
+            <strong>يمثلها السيد:</strong> خميس هاشم الجبر<br />
             <strong>بصفته:</strong> المدير العام المفوض بالتوقيع
           </div>
         </div>
@@ -782,7 +782,7 @@ const Signatures = ({ customerName, todayGregorian }: any) => (
         </div>
         <div className="signature-line">التوقيع</div>
         <div style={{ marginTop: '0.5rem', fontSize: '12pt' }}>
-          <strong>الاسم:</strong> خميس هاشم الجابر<br />
+          <strong>الاسم:</strong> خميس هاشم الجبر<br />
           <strong>الصفة:</strong> المدير العام المفوض بالتوقيع
         </div>
         <div className="stamp-box">

@@ -27,10 +27,10 @@ const ViolationsTab = ({ violations, navigate, isLoading }: { violations: any[],
       animate={{ opacity: 1, y: 0 }}
       className="space-y-4"
     >
-      <div className="flex items-center justify-between mb-4">
+      <div className="mb-4 rounded-xl border border-[#DDE5EF] bg-[#F8FAFC] p-4">
         <div>
-          <h4 className="text-sm font-bold text-neutral-900">المخالفات المرورية</h4>
-          <p className="text-xs text-neutral-500">{violations.length} مخالفة مسجلة</p>
+          <h4 className="text-sm font-black text-[#142033]">المخالفات المرورية</h4>
+          <p className="text-xs font-semibold text-[#6A7688]">{violations.length} مخالفة مسجلة</p>
         </div>
       </div>
 
@@ -42,7 +42,7 @@ const ViolationsTab = ({ violations, navigate, isLoading }: { violations: any[],
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: index * 0.1 }}
-              className="bg-white rounded-2xl p-5 border border-neutral-200 hover:border-red-200 hover:shadow-md transition-all"
+                className="rounded-xl border border-[#DDE5EF] bg-white p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:border-rose-300 hover:shadow-md"
             >
               <div className="flex items-start justify-between mb-4">
                 <div className="flex items-start gap-4">
@@ -87,8 +87,8 @@ const ViolationsTab = ({ violations, navigate, isLoading }: { violations: any[],
                 </Badge>
               </div>
 
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4 border-t border-neutral-100">
-                <div className="p-2 bg-neutral-50 rounded-lg">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 pt-4 border-t border-[#E7EDF4]">
+                <div className="p-3 bg-[#F8FAFC] rounded-lg">
                   <p className="text-xs text-neutral-500 mb-1">تاريخ المخالفة</p>
                   <p className="text-sm font-semibold text-neutral-900">
                     {violation.violation_date 
@@ -96,15 +96,15 @@ const ViolationsTab = ({ violations, navigate, isLoading }: { violations: any[],
                       : '-'}
                   </p>
                 </div>
-                <div className="p-2 bg-neutral-50 rounded-lg">
+                <div className="p-3 bg-[#F8FAFC] rounded-lg">
                   <p className="text-xs text-neutral-500 mb-1">الموقع</p>
                   <p className="text-sm font-semibold text-neutral-900">{violation.location || '-'}</p>
                 </div>
-                <div className="p-2 bg-neutral-50 rounded-lg">
+                <div className="p-3 bg-rose-50 rounded-lg">
                   <p className="text-xs text-neutral-500 mb-1">المبلغ</p>
                   <p className="text-sm font-bold text-red-600">{violation.fine_amount?.toLocaleString()} ر.ق</p>
                 </div>
-                <div className="p-2 bg-neutral-50 rounded-lg">
+                <div className="p-3 bg-[#F8FAFC] rounded-lg">
                   <p className="text-xs text-neutral-500 mb-1">الجهة المصدرة</p>
                   <p className="text-sm font-semibold text-neutral-900">{violation.issuing_authority || '-'}</p>
                 </div>
@@ -134,10 +134,10 @@ const ViolationsTab = ({ violations, navigate, isLoading }: { violations: any[],
           ))}
         </div>
       ) : (
-        <div className="bg-neutral-50 rounded-2xl p-12 text-center border border-neutral-200">
-          <AlertTriangle className="w-12 h-12 text-neutral-300 mx-auto mb-3" />
-          <p className="text-neutral-600 font-medium">لا توجد مخالفات مرورية مسجلة</p>
-          <p className="text-neutral-400 text-sm mt-1">لم يتم تسجيل أي مخالفات على عقود هذا العميل</p>
+        <div className="rounded-xl border border-dashed border-[#B8C6D8] bg-[#F8FAFC] p-12 text-center">
+          <AlertTriangle className="w-12 h-12 text-[#9AA6B6] mx-auto mb-3" />
+          <p className="font-bold text-[#536173]">لا توجد مخالفات مرورية مسجلة</p>
+          <p className="text-[#6A7688] text-sm mt-1">لم يتم تسجيل أي مخالفات على عقود هذا العميل</p>
         </div>
       )}
     </motion.div>

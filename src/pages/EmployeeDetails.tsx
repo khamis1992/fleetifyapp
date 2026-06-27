@@ -37,9 +37,9 @@ const GlassCard = ({ children, className, delay = 0 }: any) => (
   <motion.div
     initial={{ opacity: 0, y: 20 }}
     animate={{ opacity: 1, y: 0 }}
-    transition={{ duration: 0.5, delay, type: 'spring', bounce: 0.4 }}
+    transition={{ duration: 0.35, delay, type: 'spring', bounce: 0.18 }}
     className={cn(
-      'bg-white/70 backdrop-blur-xl border border-white/40 shadow-sm rounded-xl overflow-hidden',
+      'employee-card overflow-hidden rounded-lg border border-[#DDE5EF] bg-white shadow-sm',
       className
     )}
   >
@@ -48,20 +48,20 @@ const GlassCard = ({ children, className, delay = 0 }: any) => (
 );
 
 const StatCard = ({ title, value, subtitle, icon: Icon, color, delay }: any) => (
-  <GlassCard className="p-6 flex flex-col justify-between h-full" delay={delay}>
-    <div className="flex justify-between items-start mb-4">
-      <div className={cn('p-3 rounded-xl', color)}>
-        <Icon className="w-6 h-6 text-white" />
+  <GlassCard className="employee-stat-card flex h-full flex-col justify-between p-5" delay={delay}>
+    <div className="mb-4 flex items-start justify-between gap-4">
+      <div className={cn('rounded-lg p-3', color)}>
+        <Icon className="h-5 w-5 text-white" />
       </div>
       {subtitle && (
-        <span className="text-xs font-bold px-2 py-1 rounded-full bg-neutral-100 text-neutral-600">
+        <span className="rounded-full bg-[#F1F5F9] px-2.5 py-1 text-xs font-bold text-[#536173]">
           {subtitle}
         </span>
       )}
     </div>
     <div>
-      <h3 className="text-2xl font-black text-neutral-800 mb-1">{value}</h3>
-      <p className="text-xs font-medium text-neutral-500">{title}</p>
+      <h3 className="mb-1 text-2xl font-black text-[#142033]">{value}</h3>
+      <p className="text-sm font-bold text-[#6A7688]">{title}</p>
     </div>
   </GlassCard>
 );
@@ -160,10 +160,10 @@ export const EmployeeDetails: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-neutral-50 via-neutral-100 to-neutral-200 p-6 font-sans" dir="rtl">
+    <div className="employee-details-system min-h-screen bg-[#F6F8FB] p-4 font-sans sm:p-6" dir="rtl">
       
       {/* Header */}
-      <header className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+      <header className="employee-page-header mb-5 rounded-lg border border-[#DDE5EF] bg-white p-4 shadow-sm">
         <div>
           <Button
             variant="ghost"
@@ -180,7 +180,7 @@ export const EmployeeDetails: React.FC = () => {
             animate={{ opacity: 1, x: 0 }}
             className="flex items-center gap-4"
           >
-            <div className="w-16 h-16 rounded-full bg-teal-500 flex items-center justify-center text-white font-bold text-2xl shadow-lg">
+            <div className="flex h-16 w-16 items-center justify-center rounded-lg bg-[#173A63] text-2xl font-black text-white shadow-sm">
               {employeeName.charAt(0)}
             </div>
             <div>
@@ -200,7 +200,7 @@ export const EmployeeDetails: React.FC = () => {
           <Button
             size="sm"
             variant="outline"
-            className="bg-white/50 border-neutral-200 rounded-xl"
+            className="rounded-lg border-[#DDE5EF] bg-white text-[#536173] hover:bg-[#F8FAFC]"
             onClick={() => navigate(`/employee/${employeeId}/report`)}
           >
             <FileText className="ml-2 h-4 w-4" />
@@ -209,7 +209,7 @@ export const EmployeeDetails: React.FC = () => {
           <Button
             size="sm"
             variant="outline"
-            className="bg-white/50 border-neutral-200 rounded-xl"
+            className="rounded-lg border-[#DDE5EF] bg-white text-[#536173] hover:bg-[#F8FAFC]"
             onClick={() => {
               if (employee?.phone) {
                 window.location.href = `tel:${employee.phone}`;
@@ -223,7 +223,7 @@ export const EmployeeDetails: React.FC = () => {
           </Button>
           <Button
             size="sm"
-            className="bg-teal-500 hover:bg-teal-600 text-white rounded-xl shadow-sm"
+            className="rounded-lg bg-[#173A63] text-white shadow-sm hover:bg-[#102C4D]"
             onClick={() => setShowAssignDialog(true)}
           >
             <UserPlus className="ml-2 h-4 w-4" />
@@ -233,7 +233,7 @@ export const EmployeeDetails: React.FC = () => {
       </header>
 
       {/* Stats Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      <div className="employee-stats-grid mb-5 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
         <StatCard
           title="إجمالي العقود"
           value={stats.totalContracts}
@@ -247,7 +247,7 @@ export const EmployeeDetails: React.FC = () => {
           value={`${Math.round(performance?.performance_score || 0)}%`}
           subtitle={performance?.grade || 'N/A'}
           icon={TrendingUp}
-          color="bg-emerald-500"
+          color="bg-[#1BBF9A]"
           delay={0.2}
         />
         <StatCard
@@ -268,10 +268,10 @@ export const EmployeeDetails: React.FC = () => {
       </div>
 
       {/* Main Content Grid */}
-      <div className="grid grid-cols-12 gap-6">
+      <div className="employee-workspace grid grid-cols-12 gap-5">
         
         {/* Performance Chart */}
-        <GlassCard className="col-span-12 lg:col-span-8 p-6" delay={0.5}>
+        <GlassCard className="employee-performance-panel col-span-12 p-5 xl:col-span-8" delay={0.5}>
           <PerformanceTrendChart data={trendData} title="تطور الأداء (آخر 6 أشهر)" />
           
           {/* Performance Metrics */}
@@ -301,7 +301,7 @@ export const EmployeeDetails: React.FC = () => {
         </GlassCard>
 
         {/* Quick Stats */}
-        <GlassCard className="col-span-12 lg:col-span-4 p-6" delay={0.55}>
+        <GlassCard className="employee-quick-panel col-span-12 p-5 xl:col-span-4" delay={0.55}>
           <h3 className="text-lg font-bold text-neutral-900 mb-4">إحصائيات سريعة</h3>
           
           <div className="space-y-4">
@@ -348,7 +348,7 @@ export const EmployeeDetails: React.FC = () => {
         </GlassCard>
 
         {/* Assigned Contracts */}
-        <GlassCard className="col-span-12 lg:col-span-7 p-6" delay={0.6}>
+        <GlassCard className="employee-contracts-panel col-span-12 p-5 xl:col-span-7" delay={0.6}>
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-bold text-neutral-900">العقود المعيّنة</h3>
             <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
@@ -357,7 +357,7 @@ export const EmployeeDetails: React.FC = () => {
           </div>
 
           {contracts && contracts.length > 0 ? (
-            <ScrollArea className="h-[400px]">
+            <ScrollArea className="h-[460px] pr-1">
               <div className="space-y-3">
                 {contracts.map((contract: any, index) => (
                   <motion.div
@@ -365,7 +365,7 @@ export const EmployeeDetails: React.FC = () => {
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: index * 0.05 }}
-                    className="group p-4 bg-white rounded-xl border border-neutral-100 hover:border-teal-200 transition-all"
+                    className="group rounded-lg border border-[#DDE5EF] bg-white p-4 transition-all hover:border-[#173A63] hover:shadow-md"
                   >
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
@@ -423,7 +423,7 @@ export const EmployeeDetails: React.FC = () => {
         </GlassCard>
 
         {/* Scheduled Tasks */}
-        <GlassCard className="col-span-12 lg:col-span-5 p-6" delay={0.65}>
+        <GlassCard className="employee-tasks-panel col-span-12 p-5 xl:col-span-5" delay={0.65}>
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-bold text-neutral-900">المهام المجدولة</h3>
             <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200">
@@ -432,7 +432,7 @@ export const EmployeeDetails: React.FC = () => {
           </div>
 
           {tasks && tasks.length > 0 ? (
-            <ScrollArea className="h-[400px]">
+            <ScrollArea className="h-[460px] pr-1">
               <div className="space-y-3">
                 {tasks.map((task: any, index) => (
                   <motion.div
@@ -489,6 +489,116 @@ export const EmployeeDetails: React.FC = () => {
         onOpenChange={setShowAssignDialog}
         preselectedEmployeeId={employeeId}
       />
+      <style>{`
+        .employee-details-system {
+          color: #142033;
+          background:
+            linear-gradient(180deg, rgba(246, 248, 251, 0.82), #F6F8FB 280px),
+            #F6F8FB !important;
+        }
+
+        .employee-details-system .employee-card {
+          border-radius: 8px;
+          border-color: #DDE5EF;
+          box-shadow: 0 10px 28px rgba(2, 6, 23, 0.06);
+        }
+
+        .employee-page-header {
+          position: sticky;
+          top: 0;
+          z-index: 20;
+          backdrop-filter: blur(12px);
+          background: rgba(255, 255, 255, 0.94);
+        }
+
+        .employee-page-header > div:last-child {
+          flex-wrap: wrap;
+        }
+
+        .employee-page-header button {
+          min-height: 40px;
+          font-weight: 800;
+        }
+
+        .employee-stat-card {
+          min-height: 152px;
+        }
+
+        .employee-performance-panel,
+        .employee-quick-panel,
+        .employee-contracts-panel,
+        .employee-tasks-panel {
+          background: #fff !important;
+        }
+
+        .employee-performance-panel .grid.grid-cols-3 {
+          gap: 12px;
+        }
+
+        .employee-performance-panel .grid.grid-cols-3 > div,
+        .employee-quick-panel .space-y-4 > div {
+          border: 1px solid #DDE5EF;
+          border-radius: 8px;
+          background: #F8FAFC !important;
+          padding: 14px;
+        }
+
+        .employee-contracts-panel .group,
+        .employee-tasks-panel .space-y-3 > div {
+          border-radius: 8px !important;
+          border-color: #DDE5EF !important;
+          background: #fff !important;
+        }
+
+        .employee-contracts-panel .group button {
+          opacity: 1 !important;
+          border: 1px solid #FECACA;
+          border-radius: 8px;
+          background: #FFF7F7;
+          font-weight: 800;
+        }
+
+        .employee-details-system .text-xs {
+          font-size: 13px;
+          line-height: 1.55;
+        }
+
+        .employee-details-system .text-sm {
+          font-size: 14px;
+          line-height: 1.65;
+        }
+
+        .employee-details-system h3 {
+          color: #142033;
+          font-weight: 950;
+        }
+
+        .employee-details-system button,
+        .employee-details-system [role="progressbar"] {
+          border-radius: 8px !important;
+        }
+
+        .employee-details-system [data-radix-progress-indicator],
+        .employee-details-system .bg-primary {
+          background-color: #1BBF9A !important;
+        }
+
+        @media (max-width: 1280px) {
+          .employee-page-header {
+            position: static;
+          }
+        }
+
+        @media (max-width: 768px) {
+          .employee-page-header > div:last-child button {
+            flex: 1 1 140px;
+          }
+
+          .employee-performance-panel .grid.grid-cols-3 {
+            grid-template-columns: 1fr;
+          }
+        }
+      `}</style>
     </div>
   );
 };

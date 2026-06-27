@@ -28,37 +28,37 @@ const PersonalInfoTab = ({ customer }: { customer: any }) => {
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      className="grid grid-cols-1 lg:grid-cols-2 gap-6"
+      className="grid grid-cols-1 gap-4 xl:grid-cols-2"
     >
-      <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-teal-100 shadow-sm hover:shadow-md transition-shadow">
+      <div className="rounded-xl border border-[#DDE5EF] bg-white p-5 shadow-sm">
         <div className="flex items-center gap-3 mb-5">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-teal-500 to-teal-600 flex items-center justify-center">
+          <div className="w-10 h-10 rounded-lg bg-[#173A63] flex items-center justify-center">
             <User className="w-5 h-5 text-white" />
           </div>
-          <h4 className="text-sm font-bold text-teal-900">معلومات العميل</h4>
+          <h4 className="text-sm font-black text-[#142033]">معلومات العميل</h4>
         </div>
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
           {infoItems.map((item, index) => (
-            <div key={index} className="space-y-1.5">
-              <p className="text-xs font-medium text-teal-600/70">{item.label}</p>
-              <p className="text-sm font-semibold text-slate-800">{item.value}</p>
+            <div key={index} className="rounded-lg bg-[#F8FAFC] p-3">
+              <p className="text-[11px] font-bold text-[#6A7688]">{item.label}</p>
+              <p className="mt-1 text-sm font-black text-[#142033]">{item.value}</p>
             </div>
           ))}
         </div>
       </div>
 
-      <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-teal-100 shadow-sm hover:shadow-md transition-shadow">
+      <div className="rounded-xl border border-[#DDE5EF] bg-white p-5 shadow-sm">
         <div className="flex items-center gap-3 mb-5">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-teal-500 to-teal-600 flex items-center justify-center">
+          <div className="w-10 h-10 rounded-lg bg-[#173A63] flex items-center justify-center">
             <MapPin className="w-5 h-5 text-white" />
           </div>
-          <h4 className="text-sm font-bold text-teal-900">معلومات العنوان</h4>
+          <h4 className="text-sm font-black text-[#142033]">معلومات العنوان</h4>
         </div>
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
           {addressItems.map((item, index) => (
-            <div key={index} className="space-y-1.5">
-              <p className="text-xs font-medium text-teal-600/70">{item.label}</p>
-              <p className="text-sm font-semibold text-slate-800">{item.value}</p>
+            <div key={index} className="rounded-lg bg-[#F8FAFC] p-3">
+              <p className="text-[11px] font-bold text-[#6A7688]">{item.label}</p>
+              <p className="mt-1 text-sm font-black text-[#142033]">{item.value}</p>
             </div>
           ))}
         </div>

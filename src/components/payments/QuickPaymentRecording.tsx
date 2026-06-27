@@ -1,7 +1,6 @@
 import { useState, useRef, useMemo, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Search, Check, X, Loader2, MessageCircle, CheckCircle, FileText, Download, AlertTriangle, ChevronDown, RefreshCw } from 'lucide-react';
-import { startOfMonth, endOfMonth, addMonths, isBefore, isWithinInterval } from 'date-fns';
+import { Search, Check, X, Loader2, MessageCircle, CheckCircle, FileText, Download, AlertTriangle, ChevronDown, RefreshCw, Building2, Wallet } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -12,6 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 import { usePaymentOperations } from '@/hooks/business/usePaymentOperations';
+import { useBanks } from '@/hooks/useTreasury';
 import { PaymentReceipt } from './PaymentReceipt';
 import { generateReceiptPDF, downloadPDF, generateReceiptHTML, downloadHTML, numberToArabicWords, generateReceiptNumber, formatReceiptDate } from '@/utils/receiptGenerator';
 
@@ -51,6 +51,14 @@ interface Invoice {
   } | null;
 }
 
+interface AccountingAccount {
+  id: string;
+  account_code: string;
+  account_name: string;
+  account_name_ar: string | null;
+  account_type: string;
+}
+
 interface PaymentSuccess {
   paymentId: string;
   receiptNumber: string;
@@ -68,9 +76,12 @@ interface QuickPaymentRecordingProps {
   onStepChange?: (step: number) => void;
 }
 
+const receivablePaymentStatuses = ['unpaid', 'partial', 'partial_paid', 'partially_paid', 'overdue', 'pending'];
+
 export function QuickPaymentRecording({ onStepChange }: QuickPaymentRecordingProps) {
   const { toast } = useToast();
   const { companyId } = useUnifiedCompanyAccess();
+  const { data: banks = [], isLoading: banksLoading } = useBanks();
   const receiptRef = useRef<HTMLDivElement>(null);
   
   // استخدام hook الدفعات الموحد لإنشاء القيود المحاسبية تلقائياً
@@ -119,6 +130,10 @@ export function QuickPaymentRecording({ onStepChange }: QuickPaymentRecordingPro
   const [paymentAmount, setPaymentAmount] = useState('');
   const [amountError, setAmountError] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('cash');
+  const [selectedBankId, setSelectedBankId] = useState('');
+  const [selectedAccountId, setSelectedAccountId] = useState('');
+  const [cashAndBankAccounts, setCashAndBankAccounts] = useState<AccountingAccount[]>([]);
+  const [loadingAccounts, setLoadingAccounts] = useState(false);
   const [processing, setProcessing] = useState(false);
   const [paymentSuccess, setPaymentSuccess] = useState<PaymentSuccess | null>(null);
   const [generatingPDF, setGeneratingPDF] = useState(false);
@@ -131,6 +146,72 @@ export function QuickPaymentRecording({ onStepChange }: QuickPaymentRecordingPro
   const [dateRange, setDateRange] = useState({ start: '', end: '' });
   const [paymentStatusFilter, setPaymentStatusFilter] = useState<'all' | 'completed' | 'pending' | 'failed'>('all');
   const [showFilters, setShowFilters] = useState(false);
+
+  const methodRequiresBank = ['bank_transfer', 'check', 'credit_card'].includes(paymentMethod);
+  const selectedAccountingAccount = cashAndBankAccounts.find((account) => account.id === selectedAccountId);
+
+  useEffect(() => {
+    const loadCashAndBankAccounts = async () => {
+      if (!companyId) return;
+
+      setLoadingAccounts(true);
+      try {
+        const { data, error } = await supabase
+          .from('chart_of_accounts')
+          .select('id, account_code, account_name, account_name_ar, account_type')
+          .eq('company_id', companyId)
+          .eq('is_header', false)
+          .eq('is_active', true)
+          .eq('account_type', 'asset')
+          .order('account_code', { ascending: true });
+
+        if (error) throw error;
+
+        const accounts = (data || []).filter((account) => {
+          const haystack = `${account.account_code} ${account.account_name || ''} ${account.account_name_ar || ''}`.toLowerCase();
+          return (
+            haystack.includes('cash') ||
+            haystack.includes('bank') ||
+            haystack.includes('نقد') ||
+            haystack.includes('صندوق') ||
+            haystack.includes('بنك') ||
+            ['1010', '1110', '11101', '11102', '11151'].some((code) => account.account_code?.startsWith(code))
+          );
+        }) as AccountingAccount[];
+
+        setCashAndBankAccounts(accounts);
+      } catch (error) {
+        console.error('Error loading cash/bank accounts:', error);
+      } finally {
+        setLoadingAccounts(false);
+      }
+    };
+
+    loadCashAndBankAccounts();
+  }, [companyId]);
+
+  useEffect(() => {
+    if (paymentMethod === 'cash') {
+      setSelectedBankId('');
+    } else if (methodRequiresBank && !selectedBankId && banks.length > 0) {
+      const primaryBank = banks.find((bank) => bank.is_primary) || banks[0];
+      setSelectedBankId(primaryBank.id);
+    }
+
+    if (!selectedAccountId && cashAndBankAccounts.length > 0) {
+      const preferredCodes = paymentMethod === 'cash'
+        ? ['11101', '1010', '1110', '11151']
+        : ['11151', '11102', '1010', '1110'];
+
+      const preferredAccount = preferredCodes
+        .map((code) => cashAndBankAccounts.find((account) => account.account_code?.startsWith(code)))
+        .find(Boolean) || cashAndBankAccounts[0];
+
+      if (preferredAccount) {
+        setSelectedAccountId(preferredAccount.id);
+      }
+    }
+  }, [paymentMethod, methodRequiresBank, banks, selectedBankId, selectedAccountId, cashAndBankAccounts]);
 
   // Report step changes to parent
   useEffect(() => {
@@ -445,10 +526,6 @@ export function QuickPaymentRecording({ onStepChange }: QuickPaymentRecordingPro
 
     try {
       // تحديد تاريخ اليوم لفلترة الفواتير المستحقة فقط
-      const today = new Date().toISOString().split('T')[0];
-      const monthStart = startOfMonth(new Date()).toISOString().split('T')[0];
-      const monthEnd = endOfMonth(new Date()).toISOString().split('T')[0];
-
       const { data, error } = await supabase
         .from('invoices')
         .select(`
@@ -471,11 +548,10 @@ export function QuickPaymentRecording({ onStepChange }: QuickPaymentRecordingPro
         `)
         .eq('customer_id', customerIdToUse)
         .eq('contract_id', contract.id)  // فلترة حسب العقد المختار
-        .in('payment_status', ['unpaid', 'partial', 'overdue', 'pending'])
+        .in('payment_status', receivablePaymentStatuses)
         .neq('status', 'cancelled')
-        .gte('invoice_date', monthStart)  // ✅ عرض فواتير الشهر الحالي فصاعداً
-        .lte('due_date', monthEnd)        // ✅ مستحقة حتى نهاية الشهر الحالي
-        .order('due_date', { ascending: true });
+        .order('due_date', { ascending: true, nullsFirst: false })
+        .order('invoice_date', { ascending: true });
 
       if (error) throw error;
 
@@ -609,6 +685,24 @@ export function QuickPaymentRecording({ onStepChange }: QuickPaymentRecordingPro
       return;
     }
 
+    if (methodRequiresBank && !selectedBankId) {
+      toast({
+        title: 'اختر حساب البنك',
+        description: 'التحويل البنكي والشيك يجب ربطهما بحساب خزينة حتى تظهر الحركة في قسم الخزينة',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (!selectedAccountId && cashAndBankAccounts.length > 0) {
+      toast({
+        title: 'اختر الحساب المحاسبي',
+        description: 'يجب تحديد حساب الصندوق أو البنك لإنشاء القيد المحاسبي بشكل صحيح',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     setProcessing(true);
     try {
       const paymentDate = new Date().toISOString().split('T')[0];
@@ -641,7 +735,7 @@ export function QuickPaymentRecording({ onStepChange }: QuickPaymentRecordingPro
           `)
           .eq('customer_id', selectedCustomer.id)
           .eq('company_id', companyId)
-          .in('payment_status', ['unpaid', 'partial'])
+          .in('payment_status', receivablePaymentStatuses)
           .neq('status', 'cancelled')
           .order('due_date', { ascending: true });
 
@@ -771,6 +865,14 @@ export function QuickPaymentRecording({ onStepChange }: QuickPaymentRecordingPro
           notes: `دفعة لفاتورة ${invoice.invoice_number}`,
           idempotencyKey: `${selectedCustomer.id}-${invoice.id}-${paymentDate}-${amountToApply}`,
         };
+
+        if (selectedAccountId) {
+          paymentData.account_id = selectedAccountId;
+        }
+
+        if (methodRequiresBank && selectedBankId) {
+          paymentData.bank_id = selectedBankId;
+        }
         
         // Only include contract_id if it exists and is a valid UUID
         if (invoice.contract_id && invoice.contract_id !== '' && invoice.contract_id !== 'null' && invoice.contract_id !== 'undefined') {
@@ -843,7 +945,7 @@ export function QuickPaymentRecording({ onStepChange }: QuickPaymentRecordingPro
 
       toast({
         title: 'تم تسجيل الدفعة بنجاح ✅',
-        description: `تم تسجيل دفعة بمبلغ ${amount.toFixed(2)} ر.ق لـ ${selectedInvoices.length} فاتورة`,
+        description: `تم تسجيل دفعة بمبلغ ${amount.toFixed(2)} ر.ق وربطها بالفواتير والقيد${methodRequiresBank ? ' والخزينة' : ''}`,
       });
 
       // ✅ مسح قائمة الفواتير فوراً لمنع إعادة الاختيار
@@ -913,7 +1015,8 @@ export function QuickPaymentRecording({ onStepChange }: QuickPaymentRecordingPro
       const paymentMethodLabel = 
         paymentSuccess.paymentMethod === 'cash' ? 'نقدي' : 
         paymentSuccess.paymentMethod === 'bank_transfer' ? 'تحويل بنكي' : 
-        paymentSuccess.paymentMethod === 'check' ? 'شيك' : 'أخرى';
+        paymentSuccess.paymentMethod === 'check' ? 'شيك' :
+        paymentSuccess.paymentMethod === 'credit_card' ? 'بطاقة ائتمان' : 'أخرى';
 
       // رسالة واتساب
       const message = `سند قبض رقم: ${paymentSuccess.receiptNumber}
@@ -975,6 +1078,8 @@ export function QuickPaymentRecording({ onStepChange }: QuickPaymentRecordingPro
     setInvoices([]);
     setPaymentAmount('');
     setPaymentMethod('cash');
+    setSelectedBankId('');
+    setSelectedAccountId('');
     setSearchTerm('');
     setCustomers([]);
     setPaymentSuccess(null);
@@ -999,6 +1104,8 @@ export function QuickPaymentRecording({ onStepChange }: QuickPaymentRecordingPro
     setSelectedInvoices([]);
     setPaymentAmount('');
     setPaymentMethod('cash');
+    setSelectedBankId('');
+    setSelectedAccountId('');
     setPaymentSuccess(null);
     setShowReceipt(false);
     setReadyToPay(false);
@@ -1030,9 +1137,10 @@ export function QuickPaymentRecording({ onStepChange }: QuickPaymentRecordingPro
           )
         `)
         .eq('customer_id', currentCustomer.id)
-        .in('payment_status', ['unpaid', 'partial', 'overdue', 'pending'])
+        .in('payment_status', receivablePaymentStatuses)
         .neq('status', 'cancelled')
-        .order('due_date', { ascending: true });
+        .order('due_date', { ascending: true, nullsFirst: false })
+        .order('invoice_date', { ascending: true });
 
       // فلترة حسب العقد إذا كان محدداً
       if (currentContract) {
@@ -1174,7 +1282,7 @@ export function QuickPaymentRecording({ onStepChange }: QuickPaymentRecordingPro
                       amountInWords={numberToArabicWords(paymentSuccess.amount)}
                       amount={paymentSuccess.amount}
                       description={paymentSuccess.description}
-                      paymentMethod={paymentSuccess.paymentMethod as 'cash' | 'check' | 'bank_transfer' | 'other'}
+                      paymentMethod={(paymentSuccess.paymentMethod === 'credit_card' ? 'other' : paymentSuccess.paymentMethod) as 'cash' | 'check' | 'bank_transfer' | 'other'}
                       vehicleNumber={paymentSuccess.vehicleNumber}
                     />
                   </div>
@@ -1409,13 +1517,21 @@ export function QuickPaymentRecording({ onStepChange }: QuickPaymentRecordingPro
                           }
 
                           // جلب بيانات الفاتورة الكاملة مع العقد
-                          const { data: fullInvoice } = await supabase
+                          const { data: fullInvoice, error: fullInvoiceError } = await supabase
                             .from('invoices')
                             .select(`
-                              *,
+                              id,
+                              invoice_number,
+                              invoice_date,
+                              due_date,
+                              total_amount,
+                              balance_due,
+                              status,
+                              payment_status,
+                              contract_id,
                               contracts:contract_id (
                                 contract_number,
-                                vehicle_number,
+                                vehicle_id,
                                 vehicles:vehicle_id (
                                   plate_number
                                 )
@@ -1423,6 +1539,8 @@ export function QuickPaymentRecording({ onStepChange }: QuickPaymentRecordingPro
                             `)
                             .eq('id', invoiceResult.invoice.id)
                             .single();
+
+                          if (fullInvoiceError) throw fullInvoiceError;
 
                           console.log('✅ Full invoice fetched:', fullInvoice);
 
@@ -1435,8 +1553,10 @@ export function QuickPaymentRecording({ onStepChange }: QuickPaymentRecordingPro
                           });
 
                           // تحديث قائمة الفواتير
-                          if (fullInvoice) {
-                            setInvoices([fullInvoice as any]);
+                          await selectContract(activeContract, selectedCustomer.id);
+                          if (fullInvoice && receivablePaymentStatuses.includes(fullInvoice.payment_status)) {
+                            setSelectedInvoices([fullInvoice as any]);
+                            setPaymentAmount(String(fullInvoice.balance_due ?? fullInvoice.total_amount));
                           }
                         } catch (error: any) {
                           console.error('❌ Error creating invoice:', error);
@@ -1621,9 +1741,75 @@ export function QuickPaymentRecording({ onStepChange }: QuickPaymentRecordingPro
                     <SelectItem value="cash">نقدي</SelectItem>
                     <SelectItem value="bank_transfer">تحويل بنكي</SelectItem>
                     <SelectItem value="check">شيك</SelectItem>
-                    <SelectItem value="other">أخرى</SelectItem>
+                    <SelectItem value="credit_card">بطاقة ائتمان</SelectItem>
                   </SelectContent>
                 </Select>
+              </div>
+
+              <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-4 space-y-4">
+                <div className="flex items-start gap-3">
+                  <div className="h-10 w-10 rounded-lg bg-white border border-slate-200 flex items-center justify-center text-teal-600">
+                    {methodRequiresBank ? <Building2 className="h-5 w-5" /> : <Wallet className="h-5 w-5" />}
+                  </div>
+                  <div>
+                    <div className="font-bold text-slate-900">الربط المالي</div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      يحدد هذا الربط أين تظهر الدفعة في دفتر الأستاذ والخزينة.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="account">الحساب المحاسبي</Label>
+                    <Select value={selectedAccountId} onValueChange={setSelectedAccountId} disabled={loadingAccounts || cashAndBankAccounts.length === 0}>
+                      <SelectTrigger id="account">
+                        <SelectValue placeholder={loadingAccounts ? 'جاري تحميل الحسابات...' : 'اختر حساب الصندوق أو البنك'} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {cashAndBankAccounts.map((account) => (
+                          <SelectItem key={account.id} value={account.id}>
+                            {account.account_code} - {account.account_name_ar || account.account_name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {cashAndBankAccounts.length === 0 && !loadingAccounts && (
+                      <p className="text-xs text-amber-600">
+                        لم يتم العثور على حساب نقدية/بنك. سيتم استخدام الحساب الافتراضي إن كان موجوداً.
+                      </p>
+                    )}
+                  </div>
+
+                  {methodRequiresBank && (
+                    <div className="space-y-2">
+                      <Label htmlFor="bank">حساب الخزينة / البنك</Label>
+                      <Select value={selectedBankId} onValueChange={setSelectedBankId} disabled={banksLoading || banks.length === 0}>
+                        <SelectTrigger id="bank">
+                          <SelectValue placeholder={banksLoading ? 'جاري تحميل البنوك...' : 'اختر البنك'} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {banks.map((bank) => (
+                            <SelectItem key={bank.id} value={bank.id}>
+                              {(bank.bank_name_ar || bank.bank_name)} - {bank.account_number}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      {banks.length === 0 && !banksLoading && (
+                        <p className="text-xs text-red-600">
+                          لا يوجد حساب بنك نشط. أضف حساباً من صفحة الخزينة قبل تسجيل تحويل أو شيك.
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                <div className="rounded-lg bg-white border border-slate-200 p-3 text-xs text-slate-600">
+                  {methodRequiresBank
+                    ? 'سيتم إنشاء دفعة، قيد محاسبي، وحركة إيداع في الخزينة للحساب البنكي المختار.'
+                    : `سيتم إنشاء دفعة وقيد محاسبي على ${selectedAccountingAccount ? selectedAccountingAccount.account_name_ar || selectedAccountingAccount.account_name : 'حساب النقدية الافتراضي'}.`}
+                </div>
               </div>
 
               <div className="flex gap-2 pt-4">

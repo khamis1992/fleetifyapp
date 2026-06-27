@@ -98,11 +98,11 @@ export const FinancialDashboard = ({ contract, formatCurrency, invoices = [] }: 
   }, [financialData]);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       {/* البطاقات الإحصائية العلوية */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {/* بطاقة قيمة العقد */}
-        <Card className="border-teal-200/50 hover:border-teal-300 transition-all duration-200 hover:shadow-lg">
+        <Card className="rounded-xl border-[#DDE5EF] shadow-sm transition-colors hover:border-[#173A63]">
           <CardContent className="p-5">
             <div className="flex items-start justify-between">
               <div className="flex-1">
@@ -116,15 +116,15 @@ export const FinancialDashboard = ({ contract, formatCurrency, invoices = [] }: 
                   </p>
                 )}
               </div>
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-teal-50 to-teal-100 flex items-center justify-center">
-                <DollarSign className="w-6 h-6 text-teal-600" />
+              <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-[#EEF5FB] text-[#173A63]">
+                <DollarSign className="h-6 w-6" />
               </div>
             </div>
           </CardContent>
         </Card>
 
         {/* بطاقة المدفوع */}
-        <Card className="border-green-200/50 hover:border-green-300 transition-all duration-200 hover:shadow-lg">
+        <Card className="rounded-xl border-[#DDE5EF] shadow-sm transition-colors hover:border-[#173A63]">
           <CardContent className="p-5">
             <div className="flex items-start justify-between">
               <div className="flex-1">
@@ -142,8 +142,8 @@ export const FinancialDashboard = ({ contract, formatCurrency, invoices = [] }: 
                   <span>{financialData.paymentStatus.label}</span>
                 </div>
               </div>
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-green-50 to-green-100 flex items-center justify-center">
-                <Wallet className="w-6 h-6 text-green-600" />
+              <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-[#EEF5FB] text-[#173A63]">
+                <Wallet className="h-6 w-6" />
               </div>
             </div>
             {/* شريط التقدم */}
@@ -155,7 +155,7 @@ export const FinancialDashboard = ({ contract, formatCurrency, invoices = [] }: 
 
         {/* بطاقة المتبقي */}
         <Card className={cn(
-          "border transition-all duration-200 hover:shadow-lg",
+          "rounded-xl border-[#DDE5EF] shadow-sm transition-colors hover:border-[#173A63]",
           financialData.balanceDue > 0
             ? "border-red-200/50 hover:border-red-300"
             : "border-slate-200/50 hover:border-slate-300"
@@ -183,10 +183,10 @@ export const FinancialDashboard = ({ contract, formatCurrency, invoices = [] }: 
                 )}
               </div>
               <div className={cn(
-                "w-12 h-12 rounded-xl flex items-center justify-center",
+                "flex h-12 w-12 items-center justify-center rounded-lg",
                 financialData.balanceDue > 0
-                  ? "bg-gradient-to-br from-red-50 to-red-100"
-                  : "bg-gradient-to-br from-slate-50 to-slate-100"
+                  ? "bg-red-50"
+                  : "bg-[#EEF5FB]"
               )}>
                 <AlertCircle className={cn(
                   "w-6 h-6",
@@ -200,13 +200,13 @@ export const FinancialDashboard = ({ contract, formatCurrency, invoices = [] }: 
       </div>
 
       {/* الرسم البياني والتفاصيل */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
         {/* الرسم البياني الدائري */}
-        <Card className="lg:col-span-1">
+        <Card className="rounded-xl border-[#DDE5EF] shadow-sm lg:col-span-1">
           <CardHeader className="pb-4">
             <CardTitle className="text-lg flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-teal-50 to-teal-100 flex items-center justify-center">
-                <DollarSign className="w-4 h-4 text-teal-600" />
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#EEF5FB] text-[#173A63]">
+                <DollarSign className="h-4 w-4" />
               </div>
               توزيع المدفوعات
             </CardTitle>
@@ -272,11 +272,11 @@ export const FinancialDashboard = ({ contract, formatCurrency, invoices = [] }: 
         </Card>
 
         {/* ملخص تفصيلي */}
-        <Card className="lg:col-span-2">
+        <Card className="rounded-xl border-[#DDE5EF] shadow-sm lg:col-span-2">
           <CardHeader className="pb-4">
             <CardTitle className="text-lg flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-50 to-blue-100 flex items-center justify-center">
-                <TrendingUp className="w-4 h-4 text-blue-600" />
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#EEF5FB] text-[#173A63]">
+                <TrendingUp className="h-4 w-4" />
               </div>
               تفاصيل المدفوعات
             </CardTitle>
@@ -284,10 +284,10 @@ export const FinancialDashboard = ({ contract, formatCurrency, invoices = [] }: 
           <CardContent>
             <div className="space-y-3">
               {/* صف قيمة العقد */}
-              <div className="flex items-center justify-between p-4 rounded-xl bg-gradient-to-r from-teal-50 to-teal-50/50 border border-teal-200/50 hover:shadow-md transition-all">
+              <div className="flex items-center justify-between rounded-xl border border-[#DDE5EF] bg-[#FCFDFE] p-4 transition-colors hover:border-[#173A63]">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-teal-100 flex items-center justify-center">
-                    <DollarSign className="w-5 h-5 text-teal-600" />
+                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#EEF5FB] text-[#173A63]">
+                    <DollarSign className="h-5 w-5" />
                   </div>
                   <div>
                     <p className="text-sm font-medium text-slate-700">قيمة العقد الأساسية</p>
@@ -303,10 +303,10 @@ export const FinancialDashboard = ({ contract, formatCurrency, invoices = [] }: 
               </div>
 
               {/* صف المدفوع */}
-              <div className="flex items-center justify-between p-4 rounded-xl bg-gradient-to-r from-green-50 to-green-50/50 border border-green-200/50 hover:shadow-md transition-all">
+              <div className="flex items-center justify-between rounded-xl border border-[#DDE5EF] bg-[#FCFDFE] p-4 transition-colors hover:border-[#173A63]">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-green-100 flex items-center justify-center">
-                    <Wallet className="w-5 h-5 text-green-600" />
+                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#EEF5FB] text-[#173A63]">
+                    <Wallet className="h-5 w-5" />
                   </div>
                   <div>
                     <p className="text-sm font-medium text-slate-700">المدفوع حتى الآن</p>
@@ -323,9 +323,9 @@ export const FinancialDashboard = ({ contract, formatCurrency, invoices = [] }: 
 
               {/* صف المبالغ الإضافية */}
               {financialData.extraPayments > 0 && (
-                <div className="flex items-center justify-between p-4 rounded-xl bg-gradient-to-r from-orange-50 to-orange-50/50 border border-orange-200/50 hover:shadow-md transition-all">
+                <div className="flex items-center justify-between rounded-xl border border-amber-200 bg-amber-50 p-4 transition-colors hover:border-amber-300">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-lg bg-orange-100 flex items-center justify-center">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-100">
                       <TrendingUp className="w-5 h-5 text-orange-600" />
                     </div>
                     <div>
@@ -342,9 +342,9 @@ export const FinancialDashboard = ({ contract, formatCurrency, invoices = [] }: 
 
               {/* صف المتبقي */}
               {financialData.balanceDue > 0 && (
-                <div className="flex items-center justify-between p-4 rounded-xl bg-gradient-to-r from-red-50 to-red-50/50 border border-red-200/50 hover:shadow-md transition-all">
+                <div className="flex items-center justify-between rounded-xl border border-red-200 bg-red-50 p-4 transition-colors hover:border-red-300">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-lg bg-red-100 flex items-center justify-center">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-red-100">
                       <AlertCircle className="w-5 h-5 text-red-600" />
                     </div>
                     <div>
@@ -362,10 +362,10 @@ export const FinancialDashboard = ({ contract, formatCurrency, invoices = [] }: 
               )}
 
               {/* صف الإجمالي الكلي */}
-              <div className="flex items-center justify-between p-4 rounded-xl bg-gradient-to-r from-slate-100 to-slate-100/50 border border-slate-300 hover:shadow-md transition-all">
+              <div className="flex items-center justify-between rounded-xl border border-[#DDE5EF] bg-white p-4 transition-colors hover:border-[#173A63]">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-slate-200 flex items-center justify-center">
-                    <CheckCircle className="w-5 h-5 text-slate-600" />
+                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#EEF5FB] text-[#173A63]">
+                    <CheckCircle className="h-5 w-5" />
                   </div>
                   <div>
                     <p className="text-sm font-bold text-slate-800">الإجمالي الكلي</p>

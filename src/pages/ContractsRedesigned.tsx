@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import { CSSProperties, useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { PageCustomizer } from "@/components/PageCustomizer";
@@ -92,6 +92,7 @@ import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter";
 import { useUnifiedCompanyAccess } from "@/hooks/useUnifiedCompanyAccess";
 import { supabase, supabaseConfig } from "@/integrations/supabase/client";
 import { EmptyState } from '@/components/ui/EmptyState';
+import { systemColorPattern } from "@/lib/design-system/systemColorPattern";
 
 // Types
 interface Contract {
@@ -125,6 +126,19 @@ interface Contract {
     plate_number?: string;
   };
 }
+
+const contractsTheme = systemColorPattern.colors;
+const contractsSystemStyle = {
+  '--contracts-text': contractsTheme.text,
+  '--contracts-surface': contractsTheme.surface,
+  '--contracts-inner': contractsTheme.innerSurface,
+  '--contracts-muted': contractsTheme.secondaryText,
+  '--contracts-border': contractsTheme.border,
+  '--contracts-info': contractsTheme.info,
+  '--contracts-alert': contractsTheme.alert,
+  '--contracts-focus': contractsTheme.focus,
+  '--contracts-success': contractsTheme.success,
+} as CSSProperties;
 
 // Animation variants
 const containerVariants = {
@@ -981,10 +995,13 @@ function ContractsRedesigned() {
 
   if (isInitialLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
+      <div
+        className="flex items-center justify-center min-h-screen bg-[#F6F8FB]"
+        style={contractsSystemStyle}
+      >
         <div className="text-center">
           <LoadingSpinner size="lg" className="mx-auto mb-4" />
-          <p className="text-slate-500">جاري تحميل العقود...</p>
+          <p className="text-[#94A3B8]">جاري تحميل العقود...</p>
         </div>
       </div>
     );
@@ -992,7 +1009,11 @@ function ContractsRedesigned() {
 
   return (
     <PageCustomizer pageId="contracts-page" title="" titleAr="">
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100" dir="rtl">
+      <div
+        className="contracts-system min-h-screen bg-[#F6F8FB]"
+        dir="rtl"
+        style={contractsSystemStyle}
+      >
         {/* Header Section */}
         <header className="sticky top-0 z-40 bg-white border-b border-slate-200">
           <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8">
@@ -1535,6 +1556,242 @@ function ContractsRedesigned() {
             </motion.div>
           )}
         </AnimatePresence>
+        <style>{`
+          .contracts-system {
+            --contracts-radius: 8px;
+            color: var(--contracts-text);
+          }
+
+          .contracts-system header,
+          .contracts-system .bg-white {
+            background-color: var(--contracts-surface) !important;
+          }
+
+          .contracts-system .bg-slate-50,
+          .contracts-system .bg-slate-100,
+          .contracts-system .bg-gray-50,
+          .contracts-system .bg-neutral-50 {
+            background-color: var(--contracts-inner) !important;
+          }
+
+          .contracts-system .border-slate-100,
+          .contracts-system .border-slate-200,
+          .contracts-system .border-slate-200\\/50,
+          .contracts-system .border-slate-200\\/60,
+          .contracts-system .border-slate-300,
+          .contracts-system .border-gray-200,
+          .contracts-system .border-neutral-100 {
+            border-color: var(--contracts-border) !important;
+          }
+
+          .contracts-system .text-slate-900,
+          .contracts-system .text-slate-800,
+          .contracts-system .text-slate-700,
+          .contracts-system .text-gray-900,
+          .contracts-system .text-neutral-900 {
+            color: var(--contracts-text) !important;
+          }
+
+          .contracts-system .text-slate-600,
+          .contracts-system .text-slate-500,
+          .contracts-system .text-slate-400,
+          .contracts-system .text-gray-500,
+          .contracts-system .text-neutral-500 {
+            color: var(--contracts-muted) !important;
+          }
+
+          .contracts-system .rounded-2xl,
+          .contracts-system .rounded-xl,
+          .contracts-system .rounded-lg,
+          .contracts-system .rounded-md {
+            border-radius: var(--contracts-radius) !important;
+          }
+
+          .contracts-system .shadow-sm,
+          .contracts-system .shadow-md,
+          .contracts-system .shadow-lg,
+          .contracts-system .shadow-xl {
+            box-shadow: 0 14px 30px -24px rgba(2, 6, 23, 0.42) !important;
+          }
+
+          .contracts-system .bg-teal-500,
+          .contracts-system .bg-teal-600,
+          .contracts-system .bg-emerald-500,
+          .contracts-system .bg-green-500 {
+            background-color: var(--contracts-success) !important;
+          }
+
+          .contracts-system .hover\\:bg-teal-600:hover,
+          .contracts-system .hover\\:bg-emerald-700:hover,
+          .contracts-system .hover\\:bg-green-100:hover {
+            background-color: rgba(34, 199, 161, 0.16) !important;
+          }
+
+          .contracts-system .text-teal-500,
+          .contracts-system .text-teal-600,
+          .contracts-system .text-emerald-500,
+          .contracts-system .text-emerald-600,
+          .contracts-system .text-emerald-700,
+          .contracts-system .text-green-600,
+          .contracts-system .focus\\:text-emerald-600:focus {
+            color: var(--contracts-success) !important;
+          }
+
+          .contracts-system .bg-teal-50,
+          .contracts-system .bg-emerald-50,
+          .contracts-system .bg-emerald-100,
+          .contracts-system .bg-green-50 {
+            background-color: rgba(34, 199, 161, 0.1) !important;
+          }
+
+          .contracts-system .border-teal-500,
+          .contracts-system .border-emerald-200,
+          .contracts-system .border-emerald-500,
+          .contracts-system .focus\\:border-teal-500:focus {
+            border-color: rgba(34, 199, 161, 0.32) !important;
+          }
+
+          .contracts-system .bg-blue-50,
+          .contracts-system .bg-blue-100,
+          .contracts-system .bg-violet-50,
+          .contracts-system .bg-violet-100,
+          .contracts-system .bg-purple-50,
+          .contracts-system .bg-purple-100,
+          .contracts-system .bg-indigo-100,
+          .contracts-system .bg-indigo-200 {
+            background-color: rgba(124, 131, 246, 0.1) !important;
+          }
+
+          .contracts-system .bg-blue-500,
+          .contracts-system .bg-violet-500,
+          .contracts-system .bg-purple-500,
+          .contracts-system .bg-indigo-500 {
+            background-color: var(--contracts-focus) !important;
+          }
+
+          .contracts-system .text-blue-500,
+          .contracts-system .text-blue-600,
+          .contracts-system .text-blue-700,
+          .contracts-system .text-blue-800,
+          .contracts-system .text-violet-500,
+          .contracts-system .text-violet-600,
+          .contracts-system .text-violet-700,
+          .contracts-system .text-purple-500,
+          .contracts-system .text-purple-600,
+          .contracts-system .text-purple-700,
+          .contracts-system .text-purple-800,
+          .contracts-system .text-purple-900,
+          .contracts-system .text-indigo-800,
+          .contracts-system .text-indigo-900,
+          .contracts-system .focus\\:text-purple-600:focus {
+            color: var(--contracts-focus) !important;
+          }
+
+          .contracts-system .border-blue-200,
+          .contracts-system .border-blue-500,
+          .contracts-system .border-violet-200,
+          .contracts-system .border-violet-500,
+          .contracts-system .border-purple-200,
+          .contracts-system .border-purple-300,
+          .contracts-system .border-purple-400,
+          .contracts-system .border-purple-500,
+          .contracts-system .border-indigo-300 {
+            border-color: rgba(124, 131, 246, 0.28) !important;
+          }
+
+          .contracts-system .bg-rose-50,
+          .contracts-system .bg-rose-100,
+          .contracts-system .bg-red-50,
+          .contracts-system .bg-red-100,
+          .contracts-system .bg-orange-50,
+          .contracts-system .bg-orange-100 {
+            background-color: rgba(251, 107, 122, 0.1) !important;
+          }
+
+          .contracts-system .bg-rose-500,
+          .contracts-system .bg-red-500,
+          .contracts-system .bg-orange-500 {
+            background-color: var(--contracts-alert) !important;
+          }
+
+          .contracts-system .text-rose-500,
+          .contracts-system .text-rose-600,
+          .contracts-system .text-rose-700,
+          .contracts-system .text-red-500,
+          .contracts-system .text-red-600,
+          .contracts-system .text-red-700,
+          .contracts-system .text-orange-500,
+          .contracts-system .text-orange-600,
+          .contracts-system .text-orange-700,
+          .contracts-system .focus\\:text-rose-600:focus {
+            color: var(--contracts-alert) !important;
+          }
+
+          .contracts-system .border-rose-200,
+          .contracts-system .border-rose-500,
+          .contracts-system .border-red-200,
+          .contracts-system .border-orange-200 {
+            border-color: rgba(251, 107, 122, 0.28) !important;
+          }
+
+          .contracts-system .bg-amber-50,
+          .contracts-system .bg-amber-100,
+          .contracts-system .bg-yellow-50 {
+            background-color: rgba(56, 189, 248, 0.12) !important;
+          }
+
+          .contracts-system .bg-amber-500,
+          .contracts-system .bg-yellow-500 {
+            background-color: var(--contracts-info) !important;
+          }
+
+          .contracts-system .text-amber-500,
+          .contracts-system .text-amber-600,
+          .contracts-system .text-amber-700,
+          .contracts-system .text-yellow-600 {
+            color: var(--contracts-info) !important;
+          }
+
+          .contracts-system .border-amber-200,
+          .contracts-system .border-amber-500 {
+            border-color: rgba(56, 189, 248, 0.28) !important;
+          }
+
+          .contracts-system input,
+          .contracts-system select,
+          .contracts-system textarea {
+            background-color: var(--contracts-surface) !important;
+            border-color: var(--contracts-border) !important;
+            color: var(--contracts-text) !important;
+            border-radius: var(--contracts-radius) !important;
+          }
+
+          .contracts-system input:focus,
+          .contracts-system select:focus,
+          .contracts-system textarea:focus {
+            border-color: var(--contracts-success) !important;
+            box-shadow: 0 0 0 3px rgba(34, 199, 161, 0.12) !important;
+          }
+
+          .contracts-system button[class*="bg-teal-500"],
+          .contracts-system button[class*="bg-emerald-600"],
+          .contracts-system button[class*="bg-slate-900"] {
+            background-color: var(--contracts-success) !important;
+            color: #ffffff !important;
+            box-shadow: 0 12px 24px -18px rgba(34, 199, 161, 0.72) !important;
+          }
+
+          .contracts-system .hover\\:bg-slate-50:hover,
+          .contracts-system .hover\\:bg-slate-200:hover,
+          .contracts-system .hover\\:bg-white\\/50:hover {
+            background-color: rgba(56, 189, 248, 0.08) !important;
+          }
+
+          .contracts-system .bg-gradient-to-br,
+          .contracts-system .bg-gradient-to-r {
+            background: var(--contracts-inner) !important;
+          }
+        `}</style>
       </div>
     </PageCustomizer>
   );

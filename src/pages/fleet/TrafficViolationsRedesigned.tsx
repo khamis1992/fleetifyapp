@@ -47,6 +47,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
+import { systemColorPattern } from '@/lib/design-system/systemColorPattern';
 
 // Lazy load heavy components for better performance
 const TrafficViolationForm = lazy(() =>
@@ -61,6 +62,7 @@ const TrafficViolationPDFImport = lazy(() =>
 
 export default function TrafficViolationsRedesigned() {
   const navigate = useNavigate();
+  const violationTheme = systemColorPattern.colors;
   
   // State Management
   const [searchTerm, setSearchTerm] = useState('');
@@ -431,7 +433,21 @@ export default function TrafficViolationsRedesigned() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-teal-50/30 font-sans text-slate-800" dir="rtl">
+    <div
+      className="traffic-violations-system min-h-screen bg-[#F6F8FB] font-sans text-[#020617]"
+      dir="rtl"
+      style={{
+        '--tv-text': violationTheme.text,
+        '--tv-surface': violationTheme.surface,
+        '--tv-inner': violationTheme.innerSurface,
+        '--tv-muted': violationTheme.secondaryText,
+        '--tv-border': violationTheme.border,
+        '--tv-info': violationTheme.info,
+        '--tv-alert': violationTheme.alert,
+        '--tv-focus': violationTheme.focus,
+        '--tv-success': violationTheme.success,
+      } as React.CSSProperties}
+    >
       
       {/* Side Panel */}
       <TrafficViolationSidePanel
@@ -475,7 +491,7 @@ export default function TrafficViolationsRedesigned() {
         setIsRelinkDialogOpen(open);
         if (!open) resetRelinkResult();
       }}>
-        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+        <DialogContent className="traffic-violations-dialog max-w-2xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Link2 className="w-5 h-5 text-orange-600" />
@@ -705,7 +721,7 @@ export default function TrafficViolationsRedesigned() {
                 تسجيل مخالفة
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogContent className="traffic-violations-dialog max-w-2xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>{modalData ? 'تعديل المخالفة' : 'تسجيل مخالفة جديدة'}</DialogTitle>
               </DialogHeader>
@@ -1092,6 +1108,200 @@ export default function TrafficViolationsRedesigned() {
 
       {/* Print Styles */}
       <style>{`
+        .traffic-violations-system {
+          --tv-radius: 8px;
+          color: var(--tv-text);
+        }
+
+        .traffic-violations-system header,
+        .traffic-violations-system .bg-white {
+          background-color: var(--tv-surface) !important;
+        }
+
+        .traffic-violations-system .bg-slate-50,
+        .traffic-violations-system .bg-neutral-50,
+        .traffic-violations-system .bg-neutral-100 {
+          background-color: var(--tv-inner) !important;
+        }
+
+        .traffic-violations-system .border-slate-200,
+        .traffic-violations-system .border-neutral-100,
+        .traffic-violations-system .border-slate-300,
+        .traffic-violations-system .divide-neutral-100 > :not([hidden]) ~ :not([hidden]) {
+          border-color: var(--tv-border) !important;
+        }
+
+        .traffic-violations-system .text-neutral-900,
+        .traffic-violations-system .text-neutral-800,
+        .traffic-violations-system .text-neutral-700,
+        .traffic-violations-system .text-slate-800,
+        .traffic-violations-system .text-slate-700 {
+          color: var(--tv-text) !important;
+        }
+
+        .traffic-violations-system .text-neutral-600,
+        .traffic-violations-system .text-neutral-500,
+        .traffic-violations-system .text-neutral-400,
+        .traffic-violations-system .text-slate-500,
+        .traffic-violations-system .text-slate-400 {
+          color: var(--tv-muted) !important;
+        }
+
+        .traffic-violations-system .rounded-\\[1\\.25rem\\],
+        .traffic-violations-system .rounded-xl,
+        .traffic-violations-system .rounded-lg {
+          border-radius: var(--tv-radius) !important;
+        }
+
+        .traffic-violations-system .shadow-sm,
+        .traffic-violations-system .shadow-md,
+        .traffic-violations-system .shadow-lg {
+          box-shadow: 0 12px 28px -24px rgba(2, 6, 23, 0.38) !important;
+        }
+
+        .traffic-violations-system .bg-teal-500,
+        .traffic-violations-system .data-\\[state\\=active\\]\\:bg-teal-500[data-state="active"],
+        .traffic-violations-system .bg-green-500 {
+          background-color: var(--tv-success) !important;
+        }
+
+        .traffic-violations-system .hover\\:bg-teal-600:hover,
+        .traffic-violations-system .hover\\:bg-green-100:hover {
+          background-color: rgba(34, 199, 161, 0.16) !important;
+        }
+
+        .traffic-violations-system .text-teal-600,
+        .traffic-violations-system .text-green-600,
+        .traffic-violations-system .text-green-700,
+        .traffic-violations-system .text-green-500,
+        .traffic-violations-system .hover\\:text-teal-600:hover {
+          color: var(--tv-success) !important;
+        }
+
+        .traffic-violations-system .border-teal-500,
+        .traffic-violations-system .focus\\:border-teal-500:focus,
+        .traffic-violations-system .hover\\:border-teal-500\\/50:hover {
+          border-color: var(--tv-success) !important;
+        }
+
+        .traffic-violations-system .focus\\:ring-teal-500:focus {
+          --tw-ring-color: rgba(34, 199, 161, 0.18) !important;
+        }
+
+        .traffic-violations-system .bg-green-50,
+        .traffic-violations-system .bg-teal-50,
+        .traffic-violations-system .bg-gradient-to-r {
+          background: rgba(34, 199, 161, 0.1) !important;
+        }
+
+        .traffic-violations-system .bg-blue-50,
+        .traffic-violations-system .bg-purple-50 {
+          background-color: rgba(124, 131, 246, 0.1) !important;
+        }
+
+        .traffic-violations-system .text-blue-600,
+        .traffic-violations-system .text-blue-700,
+        .traffic-violations-system .text-blue-800,
+        .traffic-violations-system .text-purple-600,
+        .traffic-violations-system .text-purple-500 {
+          color: var(--tv-focus) !important;
+        }
+
+        .traffic-violations-system .border-blue-200 {
+          border-color: rgba(124, 131, 246, 0.24) !important;
+        }
+
+        .traffic-violations-system .bg-rose-50,
+        .traffic-violations-system .bg-red-50,
+        .traffic-violations-system .bg-red-100,
+        .traffic-violations-system .bg-orange-50,
+        .traffic-violations-system .bg-orange-100 {
+          background-color: rgba(251, 107, 122, 0.1) !important;
+        }
+
+        .traffic-violations-system .text-rose-500,
+        .traffic-violations-system .text-coral-600,
+        .traffic-violations-system .text-red-600,
+        .traffic-violations-system .text-red-700,
+        .traffic-violations-system .text-orange-600,
+        .traffic-violations-system .text-orange-700,
+        .traffic-violations-system .text-orange-800 {
+          color: var(--tv-alert) !important;
+        }
+
+        .traffic-violations-system .bg-red-500,
+        .traffic-violations-system .bg-orange-500 {
+          background-color: var(--tv-alert) !important;
+        }
+
+        .traffic-violations-system .border-red-100,
+        .traffic-violations-system .border-red-200,
+        .traffic-violations-system .border-orange-200,
+        .traffic-violations-system .hover\\:border-orange-500\\/30:hover {
+          border-color: rgba(251, 107, 122, 0.28) !important;
+        }
+
+        .traffic-violations-system .bg-amber-50,
+        .traffic-violations-system .bg-amber-100 {
+          background-color: rgba(56, 189, 248, 0.12) !important;
+        }
+
+        .traffic-violations-system .text-amber-500,
+        .traffic-violations-system .text-amber-600,
+        .traffic-violations-system .text-amber-700 {
+          color: var(--tv-info) !important;
+        }
+
+        .traffic-violations-system .bg-amber-500 {
+          background-color: var(--tv-info) !important;
+        }
+
+        .traffic-violations-system .border-amber-200,
+        .traffic-violations-system .hover\\:border-amber-500\\/30:hover {
+          border-color: rgba(56, 189, 248, 0.28) !important;
+        }
+
+        .traffic-violations-system input,
+        .traffic-violations-system select {
+          background-color: var(--tv-surface) !important;
+          border-color: var(--tv-border) !important;
+          color: var(--tv-text) !important;
+          border-radius: var(--tv-radius) !important;
+        }
+
+        .traffic-violations-system input:focus,
+        .traffic-violations-system select:focus {
+          border-color: var(--tv-success) !important;
+          box-shadow: 0 0 0 3px rgba(34, 199, 161, 0.12) !important;
+        }
+
+        .traffic-violations-system table thead {
+          background-color: var(--tv-inner) !important;
+          color: var(--tv-muted) !important;
+        }
+
+        .traffic-violations-system tbody tr:hover {
+          background-color: rgba(56, 189, 248, 0.06) !important;
+        }
+
+        .traffic-violations-system button[class*="bg-teal-500"],
+        .traffic-violations-system .data-\\[state\\=active\\]\\:bg-teal-500[data-state="active"] {
+          background-color: var(--tv-success) !important;
+          color: #ffffff !important;
+          box-shadow: 0 12px 24px -18px rgba(34, 199, 161, 0.72) !important;
+        }
+
+        .traffic-violations-system .hover\\:bg-slate-50:hover,
+        .traffic-violations-system .hover\\:bg-neutral-50:hover,
+        .traffic-violations-system .hover\\:bg-neutral-100:hover {
+          background-color: rgba(56, 189, 248, 0.08) !important;
+        }
+
+        .traffic-violations-dialog {
+          border-radius: 8px !important;
+          border-color: #E5EAF1 !important;
+        }
+
         @media print {
           body, #root, .min-h-screen {
             background: white !important;

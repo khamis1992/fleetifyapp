@@ -49,18 +49,35 @@ export const useBulkDeleteCustomers = () => {
         console.warn(`Warning fetching invoices for customer ${customerId}:`, invoicesFetchError);
       }
 
-      // 1. Delete payments related to invoices first
-      if (invoices && invoices.length > 0) {
-        for (const invoice of invoices) {
-          const { error: paymentsError } = await supabase
-            .from('payments')
-            .delete()
-            .eq('invoice_id', invoice.id);
-          
-          if (paymentsError) {
-            console.warn(`Warning deleting payments for invoice ${invoice.id}:`, paymentsError);
-          }
+      const invoiceIds = (invoices || []).map(invoice => invoice.id);
+      let relatedPaymentsCount = 0;
+
+      if (invoiceIds.length > 0) {
+        const { count, error: invoicePaymentsCheckError } = await supabase
+          .from('payments')
+          .select('id', { count: 'exact', head: true })
+          .in('invoice_id', invoiceIds);
+
+        if (invoicePaymentsCheckError) {
+          throw invoicePaymentsCheckError;
         }
+
+        relatedPaymentsCount += count || 0;
+      }
+
+      const { count: customerPaymentsCount, error: customerPaymentsCheckError } = await supabase
+        .from('payments')
+        .select('id', { count: 'exact', head: true })
+        .eq('customer_id', customerId);
+
+      if (customerPaymentsCheckError) {
+        throw customerPaymentsCheckError;
+      }
+
+      relatedPaymentsCount += customerPaymentsCount || 0;
+
+      if (relatedPaymentsCount > 0) {
+        throw new Error('Cannot permanently delete a customer with recorded payments. Archive or deactivate the customer to preserve the financial audit trail.');
       }
 
       // 2. Delete invoices

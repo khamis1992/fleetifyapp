@@ -1,4 +1,4 @@
-/**
+﻿/**
  * PDF Export Utility
  *
  * Provides functions for exporting charts, tables, and dashboards to PDF format
@@ -14,9 +14,9 @@
  * - Arabic/RTL text support
  */
 
-import jsPDF from 'jspdf';
+import type { jsPDF } from 'jspdf';
+import { buildOfficialReportDocumentHtml, exportOfficialHtmlToPDF } from '@/utils/officialFinancialReportExport';
 // Lazy load html2canvas (566KB) - only when exporting
-import autoTable from 'jspdf-autotable';
 
 export interface PDFExportOptions {
   orientation?: 'portrait' | 'landscape';
@@ -195,85 +195,37 @@ export async function exportChartToPDF(
   const opts = { ...DEFAULT_OPTIONS, ...options };
 
   try {
-    // Create PDF document
-    const pdf = new jsPDF({
-      orientation: opts.orientation,
-      unit: 'mm',
-      format: opts.format,
+    const imgData = await captureElement(element, opts.scale);
+    const metadataRows = opts.metadata
+      ? Object.entries(opts.metadata)
+          .map(([key, value]) => `<tr><th>${key}</th><td>${value}</td></tr>`)
+          .join('')
+      : '';
+    const bodyHtml = `
+      <h2 style="margin: 0 0 12px; font-size: 16pt; color: #1e3a5f;">${opts.title || 'تقرير بياني'}</h2>
+      ${opts.subtitle ? `<p style="margin: 0 0 12px;">${opts.subtitle}</p>` : ''}
+      <img src="${imgData}" alt="${opts.title || 'chart'}" />
+      ${metadataRows ? `<h3>بيانات التقرير</h3><table><tbody>${metadataRows}</tbody></table>` : ''}
+    `;
+    const officialHtml = buildOfficialReportDocumentHtml({
+      metadata: {
+        reportTitle: opts.title || filename.replace(/\.pdf$/i, ''),
+        reportType: 'chart_report',
+        companyName: opts.companyName || 'Fleetify',
+        currency: 'QAR',
+        asOfDate: new Date().toISOString().slice(0, 10),
+        sourceFingerprint: `chart:${filename}:${element.id || element.className || 'element'}`,
+        status: 'published',
+      },
+      bodyHtml,
     });
 
-    // Add header
-    if (opts.includeHeader) {
-      addBrandedHeader(
-        pdf,
-        opts.companyName || 'FleetifyApp',
-        opts.title,
-        opts.companyLogo
-      );
-    }
-
-    // Capture chart as image
-    const imgData = await captureElement(element, opts.scale);
-
-    // Calculate image dimensions to fit page
-    const headerHeight = opts.includeHeader ? 30 : MARGIN;
-    const footerHeight = opts.includeFooter ? 20 : MARGIN;
-    const availableHeight = PAGE_HEIGHT - headerHeight - footerHeight;
-
-    const imgWidth = CONTENT_WIDTH;
-    const imgHeight = (element.offsetHeight / element.offsetWidth) * CONTENT_WIDTH;
-
-    // Add image to PDF
-    const yPosition = headerHeight;
-    pdf.addImage(
-      imgData,
-      'PNG',
-      MARGIN,
-      yPosition,
-      imgWidth,
-      Math.min(imgHeight, availableHeight)
-    );
-
-    // Add metadata table (if provided)
-    if (opts.metadata) {
-      const metadataY = yPosition + Math.min(imgHeight, availableHeight) + 10;
-
-      if (metadataY + 20 < PAGE_HEIGHT - footerHeight) {
-        const tableData = Object.entries(opts.metadata).map(([key, value]) => [key, value]);
-
-        autoTable(pdf, {
-          startY: metadataY,
-          head: [['المعلومة', 'القيمة']],
-          body: tableData,
-          theme: 'grid',
-          headStyles: {
-            fillColor: BRAND_COLORS.primary,
-            textColor: [255, 255, 255],
-            fontStyle: 'bold',
-          },
-          styles: {
-            font: 'helvetica',
-            fontSize: 9,
-            cellPadding: 3,
-          },
-          margin: { left: MARGIN, right: MARGIN },
-        });
-      }
-    }
-
-    // Add footer
-    if (opts.includeFooter) {
-      addBrandedFooter(pdf, 1, 1, opts.companyName);
-    }
-
-    // Save PDF
-    pdf.save(filename);
+    await exportOfficialHtmlToPDF(officialHtml, filename.endsWith('.pdf') ? filename : `${filename}.pdf`);
   } catch (error) {
     console.error('Error exporting chart to PDF:', error);
-    throw new Error('فشل تصدير الرسم البياني إلى PDF');
+    throw new Error('Failed to export chart to official PDF');
   }
 }
-
 /**
  * Export multiple charts to multi-page PDF
  */
@@ -285,215 +237,82 @@ export async function exportDashboardToPDF(
   const opts = { ...DEFAULT_OPTIONS, ...options };
 
   if (charts.length === 0) {
-    throw new Error('لا توجد رسوم بيانية لتصديرها');
+    throw new Error('No charts available for export');
   }
 
   try {
-    // Create PDF document
-    const pdf = new jsPDF({
-      orientation: opts.orientation,
-      unit: 'mm',
-      format: opts.format,
+    const sections = await Promise.all(charts.map(async (chart, index) => {
+      const imgData = await captureElement(chart.element, opts.scale);
+      const metadataRows = chart.metadata
+        ? Object.entries(chart.metadata)
+            .map(([key, value]) => `<tr><th>${key}</th><td>${value}</td></tr>`)
+            .join('')
+        : '';
+      return `
+        <section style="page-break-inside: avoid; margin-bottom: 18px;">
+          <h2 style="margin: 0 0 8px; font-size: 15pt; color: #1e3a5f;">${index + 1}. ${chart.title}</h2>
+          ${chart.subtitle ? `<p style="margin: 0 0 10px;">${chart.subtitle}</p>` : ''}
+          <img src="${imgData}" alt="${chart.title}" />
+          ${metadataRows ? `<table><tbody>${metadataRows}</tbody></table>` : ''}
+        </section>
+      `;
+    }));
+
+    const officialHtml = buildOfficialReportDocumentHtml({
+      metadata: {
+        reportTitle: opts.title || filename.replace(/\.pdf$/i, ''),
+        reportType: 'dashboard_report',
+        companyName: opts.companyName || 'Fleetify',
+        currency: 'QAR',
+        asOfDate: new Date().toISOString().slice(0, 10),
+        sourceFingerprint: `dashboard:${filename}:${charts.length}`,
+        status: 'published',
+      },
+      bodyHtml: sections.join(''),
     });
 
-    const totalPages = opts.tableOfContents ? charts.length + 1 : charts.length;
-    let currentPage = 1;
-
-    // Add table of contents (if enabled)
-    if (opts.tableOfContents) {
-      addBrandedHeader(
-        pdf,
-        opts.companyName || 'FleetifyApp',
-        'جدول المحتويات',
-        opts.companyLogo
-      );
-
-      // TOC title
-      pdf.setFontSize(14);
-      pdf.setFont('helvetica', 'bold');
-      pdf.text('جدول المحتويات', MARGIN, 40);
-
-      // TOC entries
-      pdf.setFontSize(11);
-      pdf.setFont('helvetica', 'normal');
-      let tocY = 50;
-
-      charts.forEach((chart, index) => {
-        const pageNum = index + 2; // +1 for TOC page, +1 for 1-indexed
-        pdf.text(`${index + 1}. ${chart.title}`, MARGIN + 5, tocY);
-        pdf.text(`${pageNum}`, PAGE_WIDTH - MARGIN - 10, tocY, { align: 'right' });
-        tocY += 8;
-
-        if (chart.subtitle) {
-          pdf.setFontSize(9);
-          pdf.setTextColor(128, 128, 128);
-          pdf.text(chart.subtitle, MARGIN + 10, tocY);
-          pdf.setFontSize(11);
-          pdf.setTextColor(BRAND_COLORS.text);
-          tocY += 6;
-        }
-      });
-
-      addBrandedFooter(pdf, currentPage, totalPages, opts.companyName);
-      currentPage++;
-    }
-
-    // Export each chart
-    for (let i = 0; i < charts.length; i++) {
-      const chart = charts[i];
-
-      // Add new page (except for first chart after TOC)
-      if (i > 0 || opts.tableOfContents) {
-        pdf.addPage();
-      }
-
-      // Add header
-      if (opts.includeHeader) {
-        addBrandedHeader(
-          pdf,
-          opts.companyName || 'FleetifyApp',
-          chart.title,
-          opts.companyLogo
-        );
-      }
-
-      // Capture chart as image
-      const imgData = await captureElement(chart.element, opts.scale);
-
-      // Calculate image dimensions
-      const headerHeight = opts.includeHeader ? 30 : MARGIN;
-      const footerHeight = opts.includeFooter ? 20 : MARGIN;
-      const availableHeight = PAGE_HEIGHT - headerHeight - footerHeight;
-
-      const imgWidth = CONTENT_WIDTH;
-      const imgHeight = (chart.element.offsetHeight / chart.element.offsetWidth) * CONTENT_WIDTH;
-
-      // Add image to PDF
-      const yPosition = headerHeight;
-      pdf.addImage(
-        imgData,
-        'PNG',
-        MARGIN,
-        yPosition,
-        imgWidth,
-        Math.min(imgHeight, availableHeight)
-      );
-
-      // Add metadata (if provided)
-      if (chart.metadata) {
-        const metadataY = yPosition + Math.min(imgHeight, availableHeight) + 10;
-
-        if (metadataY + 20 < PAGE_HEIGHT - footerHeight) {
-          const tableData = Object.entries(chart.metadata).map(([key, value]) => [key, value]);
-
-          autoTable(pdf, {
-            startY: metadataY,
-            head: [['المعلومة', 'القيمة']],
-            body: tableData,
-            theme: 'grid',
-            headStyles: {
-              fillColor: BRAND_COLORS.primary,
-              textColor: [255, 255, 255],
-              fontStyle: 'bold',
-            },
-            styles: {
-              font: 'helvetica',
-              fontSize: 9,
-              cellPadding: 3,
-            },
-            margin: { left: MARGIN, right: MARGIN },
-          });
-        }
-      }
-
-      // Add footer
-      if (opts.includeFooter) {
-        addBrandedFooter(pdf, currentPage, totalPages, opts.companyName);
-      }
-
-      currentPage++;
-    }
-
-    // Save PDF
-    pdf.save(filename);
+    await exportOfficialHtmlToPDF(officialHtml, filename.endsWith('.pdf') ? filename : `${filename}.pdf`);
   } catch (error) {
     console.error('Error exporting dashboard to PDF:', error);
-    throw new Error('فشل تصدير لوحة المعلومات إلى PDF');
+    throw new Error('Failed to export dashboard to official PDF');
   }
 }
-
 /**
  * Export table data to PDF
  */
-export function exportTableToPDF(
+export async function exportTableToPDF(
   data: Record<string, any>[],
   columns: { header: string; key: string }[],
   filename: string,
   options: PDFExportOptions = {}
-): void {
+): Promise<void> {
   const opts = { ...DEFAULT_OPTIONS, ...options };
 
   try {
-    // Create PDF document
-    const pdf = new jsPDF({
-      orientation: opts.orientation || 'landscape', // Tables work better in landscape
-      unit: 'mm',
-      format: opts.format,
+    const headers = columns.map((column) => `<th>${column.header}</th>`).join('');
+    const rows = data
+      .map((row) => `<tr>${columns.map((column) => `<td>${row[column.key] ?? ''}</td>`).join('')}</tr>`)
+      .join('');
+    const bodyHtml = `<table><thead><tr>${headers}</tr></thead><tbody>${rows}</tbody></table>`;
+    const officialHtml = buildOfficialReportDocumentHtml({
+      metadata: {
+        reportTitle: opts.title || filename.replace(/\.pdf$/i, ''),
+        reportType: 'table_report',
+        companyName: opts.companyName || 'Fleetify',
+        currency: 'QAR',
+        asOfDate: new Date().toISOString().slice(0, 10),
+        sourceFingerprint: `table:${filename}:${columns.length}:${data.length}`,
+        status: 'published',
+      },
+      bodyHtml,
     });
 
-    // Add header
-    if (opts.includeHeader) {
-      addBrandedHeader(
-        pdf,
-        opts.companyName || 'FleetifyApp',
-        opts.title || 'تقرير بيانات',
-        opts.companyLogo
-      );
-    }
-
-    // Prepare table data
-    const headers = columns.map(col => col.header);
-    const tableData = data.map(row => columns.map(col => row[col.key] || ''));
-
-    // Add table
-    autoTable(pdf, {
-      startY: opts.includeHeader ? 35 : MARGIN,
-      head: [headers],
-      body: tableData,
-      theme: 'grid',
-      headStyles: {
-        fillColor: BRAND_COLORS.primary,
-        textColor: [255, 255, 255],
-        fontStyle: 'bold',
-        halign: 'center',
-      },
-      styles: {
-        font: 'helvetica',
-        fontSize: 9,
-        cellPadding: 3,
-        overflow: 'linebreak',
-      },
-      columnStyles: {
-        // Auto-size columns
-      },
-      margin: { left: MARGIN, right: MARGIN },
-      didDrawPage: (data) => {
-        // Add footer on each page
-        if (opts.includeFooter) {
-          const pageCount = (pdf as any).internal.getNumberOfPages();
-          addBrandedFooter(pdf, data.pageNumber, pageCount, opts.companyName);
-        }
-      },
-    });
-
-    // Save PDF
-    pdf.save(filename);
+    await exportOfficialHtmlToPDF(officialHtml, filename.endsWith('.pdf') ? filename : `${filename}.pdf`);
   } catch (error) {
     console.error('Error exporting table to PDF:', error);
-    throw new Error('فشل تصدير الجدول إلى PDF');
+    throw new Error('Failed to export table to official PDF');
   }
 }
-
 /**
  * Generate filename with timestamp
  */
@@ -510,3 +329,4 @@ export function generateFilename(
 
   return `${baseName}_${timestamp}.${extension}`;
 }
+

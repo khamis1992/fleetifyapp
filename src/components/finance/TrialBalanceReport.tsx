@@ -1,268 +1,181 @@
-import { useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { useMemo, useState } from "react";
+import { AlertCircle, Calendar, CheckCircle2, Download, FileSpreadsheet, FileText, Scale } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
-import { Badge } from "@/components/ui/badge";
-import { Download, FileSpreadsheet, FileText, CheckCircle, AlertCircle, Calendar } from "lucide-react";
-import { useTrialBalance } from "@/hooks/useGeneralLedger";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter";
+import { TrialBalanceItem, useTrialBalance } from "@/hooks/useGeneralLedger";
+import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import jsPDF from "jspdf";
-import "jspdf-autotable";
-import * as XLSX from 'xlsx';
-
-import { useFleetifyTranslation } from "@/hooks/useTranslation";
-// Extend jsPDF type to include autoTable
-declare module 'jspdf' {
-  interface jsPDF {
-    autoTable: (options: any) => jsPDF;
-  }
-}
+import { buildTrialBalanceReport } from "@/utils/standardFinancialReportRules";
+import {
+  exportOfficialFinancialReportToExcel,
+  exportOfficialFinancialReportToPDF,
+  type OfficialFinancialReportExportPayload,
+} from "@/utils/officialFinancialReportExport";
 
 export function TrialBalanceReport() {
-  const { t } = useFleetifyTranslation("ui");
-  const [asOfDate, setAsOfDate] = useState<string>(new Date().toISOString().split('T')[0]);
+  const [asOfDate, setAsOfDate] = useState<string>(new Date().toISOString().split("T")[0]);
   const { data: trialBalanceData, isLoading, error } = useTrialBalance(asOfDate);
   const { formatCurrency } = useCurrencyFormatter();
 
-  // Calculate totals
-  const totalDebits = trialBalanceData?.reduce((sum, item) => sum + Number(item.debit_balance || 0), 0) || 0;
-  const totalCredits = trialBalanceData?.reduce((sum, item) => sum + Number(item.credit_balance || 0), 0) || 0;
-  const isBalanced = Math.abs(totalDebits - totalCredits) < 0.01;
+  const rows = trialBalanceData || [];
+  const totalDebits = rows.reduce((sum, item) => sum + Number(item.debit_balance || 0), 0);
+  const totalCredits = rows.reduce((sum, item) => sum + Number(item.credit_balance || 0), 0);
+  const difference = Math.abs(totalDebits - totalCredits);
+  const isBalanced = difference < 0.01;
 
-  // Export to Excel
-  const handleExportExcel = () => {
-    if (!trialBalanceData || trialBalanceData.length === 0) {
-      toast.error("لا توجد بيانات للتصدير");
+  const summary = useMemo(() => {
+    const activeRows = rows.filter((item) => Number(item.debit_balance || 0) > 0 || Number(item.credit_balance || 0) > 0);
+    const parentRows = rows.filter((item) => Number(item.account_level || 0) <= 2);
+    return {
+      accounts: rows.length,
+      activeAccounts: activeRows.length,
+      parentAccounts: parentRows.length,
+    };
+  }, [rows]);
+
+  const auditReport = useMemo(
+    () =>
+      buildTrialBalanceReport(
+        rows.map((item) => ({
+          accountCode: item.account_code,
+          accountName: displayName(item),
+          accountType: item.account_type || "",
+          debit: Number(item.debit_balance || 0),
+          credit: Number(item.credit_balance || 0),
+        })),
+      ),
+    [rows],
+  );
+
+  const buildOfficialPayload = (): OfficialFinancialReportExportPayload => ({
+    metadata: {
+      reportTitle: "\u0645\u064a\u0632\u0627\u0646 \u0627\u0644\u0645\u0631\u0627\u062c\u0639\u0629",
+      reportType: "trial_balance",
+      companyName: "Fleetify",
+      asOfDate,
+      currency: "QAR",
+      generatedAt: new Date().toISOString(),
+      status: isBalanced ? "published" : "draft",
+      sourceFingerprint: auditReport.sourceFingerprint,
+      reportHash: auditReport.sourceFingerprint,
+    },
+    columns: [
+      { key: "accountCode", header: "\u0631\u0645\u0632 \u0627\u0644\u062d\u0633\u0627\u0628", width: 18 },
+      { key: "accountName", header: "\u0627\u0633\u0645 \u0627\u0644\u062d\u0633\u0627\u0628", width: 42 },
+      { key: "accountType", header: "\u0627\u0644\u0646\u0648\u0639", width: 16 },
+      { key: "level", header: "\u0627\u0644\u0645\u0633\u062a\u0648\u0649", width: 10 },
+      { key: "debit", header: "\u0645\u062f\u064a\u0646", type: "money", width: 18 },
+      { key: "credit", header: "\u062f\u0627\u0626\u0646", type: "money", width: 18 },
+    ],
+    rows: rows.map((item) => ({
+      accountCode: item.account_code,
+      accountName: displayName(item),
+      accountType: accountTypeLabel(item.account_type),
+      level: item.account_level || "",
+      debit: Number(item.debit_balance || 0),
+      credit: Number(item.credit_balance || 0),
+    })),
+    summaryRows: [
+      {
+        accountCode: "",
+        accountName: "\u0627\u0644\u0625\u062c\u0645\u0627\u0644\u064a",
+        accountType: "",
+        level: "",
+        debit: totalDebits,
+        credit: totalCredits,
+      },
+      {
+        accountCode: "",
+        accountName: "\u0627\u0644\u0641\u0631\u0642",
+        accountType: isBalanced ? "\u0645\u062a\u0648\u0627\u0632\u0646" : "\u063a\u064a\u0631 \u0645\u062a\u0648\u0627\u0632\u0646",
+        level: "",
+        debit: difference,
+        credit: "",
+      },
+    ],
+  });
+
+  const handleExportExcel = async () => {
+    if (!rows.length) {
+      toast.error("\u0644\u0627 \u062a\u0648\u062c\u062f \u0628\u064a\u0627\u0646\u0627\u062a \u0644\u0644\u062a\u0635\u062f\u064a\u0631");
       return;
     }
 
     try {
-      // Prepare data for Excel
-      const excelData = trialBalanceData.map(item => ({
-        'رمز الحساب': item.account_code,
-        'اسم الحساب': item.account_name,
-        'المستوى': item.account_level,
-        'المدين': Number(item.debit_balance || 0),
-        'الدائن': Number(item.credit_balance || 0)
-      }));
-
-      // Add totals row
-      excelData.push({
-        'رمز الحساب': '',
-        'اسم الحساب': 'الإجمالي',
-        'المستوى': '',
-        'المدين': totalDebits,
-        'الدائن': totalCredits
-      });
-
-      // Create worksheet
-      const ws = XLSX.utils.json_to_sheet(excelData);
-
-      // Set column widths
-      ws['!cols'] = [
-        { wch: 15 }, // رمز الحساب
-        { wch: 40 }, // اسم الحساب
-        { wch: 10 }, // المستوى
-        { wch: 15 }, // المدين
-        { wch: 15 }  // الدائن
-      ];
-
-      // Create workbook
-      const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, 'ميزان المراجعة');
-
-      // Add metadata
-      const metadata = XLSX.utils.aoa_to_sheet([
-        ['تقرير ميزان المراجعة'],
-        ['التاريخ:', asOfDate],
-        ['تاريخ الإصدار:', new Date().toLocaleDateString('ar-EG')],
-        [''], // Empty row
-      ]);
-      XLSX.utils.book_append_sheet(wb, metadata, 'معلومات التقرير');
-
-      // Save file
-      const fileName = `ميزان_المراجعة_${asOfDate}.xlsx`;
-      XLSX.writeFile(wb, fileName);
-
-      toast.success("تم تصدير التقرير بنجاح");
-    } catch (error) {
-      console.error('Excel export error:', error);
-      toast.error("حدث خطأ أثناء تصدير التقرير");
+      await exportOfficialFinancialReportToExcel(buildOfficialPayload());
+      toast.success("\u062a\u0645 \u062a\u0635\u062f\u064a\u0631 \u0645\u064a\u0632\u0627\u0646 \u0627\u0644\u0645\u0631\u0627\u062c\u0639\u0629 \u0628\u0635\u064a\u063a\u0629 Excel \u0631\u0633\u0645\u064a\u0629");
+    } catch (err) {
+      console.error("Excel export error:", err);
+      toast.error("\u062a\u0639\u0630\u0631 \u062a\u0635\u062f\u064a\u0631 \u0645\u0644\u0641 Excel");
     }
   };
 
-  // Export to PDF
-  const handleExportPDF = () => {
-    if (!trialBalanceData || trialBalanceData.length === 0) {
-      toast.error("لا توجد بيانات للتصدير");
-      return;
-    }
-
-    try {
-      const doc = new jsPDF('p', 'mm', 'a4');
-      
-      // Add Arabic font support (using default for now, can be enhanced)
-      doc.setFont('helvetica');
-      doc.setFontSize(18);
-
-      // Header
-      doc.text('Trial Balance Report', 105, 15, { align: 'center' });
-      doc.setFontSize(14);
-      doc.text('ميزان المراجعة', 105, 25, { align: 'center' });
-      
-      doc.setFontSize(10);
-      doc.text(`As of Date / كما في: ${asOfDate}`, 105, 32, { align: 'center' });
-      doc.text(`Generated / تاريخ الإصدار: ${new Date().toLocaleDateString('en-US')}`, 105, 38, { align: 'center' });
-
-      // Prepare table data
-      const tableData = trialBalanceData.map(item => [
-        item.account_code,
-        item.account_name,
-        item.account_level?.toString() || '-',
-        formatCurrency(Number(item.debit_balance || 0)),
-        formatCurrency(Number(item.credit_balance || 0))
-      ]);
-
-      // Add totals row
-      tableData.push([
-        '',
-        'Total / الإجمالي',
-        '',
-        formatCurrency(totalDebits),
-        formatCurrency(totalCredits)
-      ]);
-
-      // Generate table
-      doc.autoTable({
-        startY: 45,
-        head: [[
-          'Account Code\nرمز الحساب',
-          'Account Name\nاسم الحساب',
-          'Level\nالمستوى',
-          'Debit\nالمدين',
-          'Credit\nالدائن'
-        ]],
-        body: tableData,
-        theme: 'striped',
-        headStyles: {
-          fillColor: [41, 128, 185],
-          textColor: 255,
-          fontStyle: 'bold',
-          halign: 'center'
-        },
-        styles: {
-          font: 'helvetica',
-          fontSize: 9,
-          cellPadding: 3
-        },
-        columnStyles: {
-          0: { halign: 'center', cellWidth: 25 },
-          1: { halign: 'left', cellWidth: 70 },
-          2: { halign: 'center', cellWidth: 15 },
-          3: { halign: 'right', cellWidth: 35 },
-          4: { halign: 'right', cellWidth: 35 }
-        },
-        footStyles: {
-          fillColor: [52, 152, 219],
-          textColor: 255,
-          fontStyle: 'bold'
-        },
-        didParseCell: (data: any) => {
-          // Highlight totals row
-          if (data.row.index === tableData.length - 1) {
-            data.cell.styles.fillColor = [46, 204, 113];
-            data.cell.styles.textColor = 255;
-            data.cell.styles.fontStyle = 'bold';
-          }
-        }
-      });
-
-      // Add balance status
-      const finalY = (doc as any).lastAutoTable.finalY + 10;
-      doc.setFontSize(12);
-      
-      if (isBalanced) {
-        doc.setTextColor(46, 204, 113); // Green
-        doc.text('✓ Trial Balance is BALANCED / الميزان متوازن', 105, finalY, { align: 'center' });
-      } else {
-        doc.setTextColor(231, 76, 60); // Red
-        doc.text('✗ Trial Balance is NOT BALANCED / الميزان غير متوازن', 105, finalY, { align: 'center' });
-        const difference = Math.abs(totalDebits - totalCredits);
-        doc.text(`Difference / الفرق: ${formatCurrency(difference)}`, 105, finalY + 7, { align: 'center' });
-      }
-
-      // Footer
-      doc.setFontSize(8);
-      doc.setTextColor(128, 128, 128);
-      doc.text(
-        'Generated by FleetifyApp - نظام FleetifyApp',
-        105,
-        doc.internal.pageSize.height - 10,
-        { align: 'center' }
-      );
-
-      // Save PDF
-      const fileName = `trial_balance_${asOfDate}.pdf`;
-      doc.save(fileName);
-
-      toast.success("تم تصدير التقرير بنجاح");
-    } catch (error) {
-      console.error('PDF export error:', error);
-      toast.error("حدث خطأ أثناء تصدير التقرير");
-    }
-  };
-
-  // Export to CSV
   const handleExportCSV = () => {
-    if (!trialBalanceData || trialBalanceData.length === 0) {
+    if (!rows.length) {
       toast.error("لا توجد بيانات للتصدير");
       return;
     }
 
+    const headers = ["رمز الحساب", "اسم الحساب", "النوع", "المستوى", "مدين", "دائن"];
+    const body = rows.map((item) => [
+      item.account_code,
+      displayName(item),
+      accountTypeLabel(item.account_type),
+      item.account_level || "",
+      Number(item.debit_balance || 0),
+      Number(item.credit_balance || 0),
+    ]);
+    body.push(["", "الإجمالي", "", "", totalDebits, totalCredits]);
+
+    const csv = [
+      "ميزان المراجعة",
+      `كما في,${asOfDate}`,
+      "",
+      headers.join(","),
+      ...body.map((line) => line.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(",")),
+      "",
+      `الفرق,${difference}`,
+      `الحالة,${isBalanced ? "متوازن" : "غير متوازن"}`,
+    ].join("\n");
+
+    const blob = new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `trial_balance_${asOfDate}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+    toast.success("تم تصدير ملف CSV");
+  };
+
+  const handleExportPDF = async () => {
+    if (!rows.length) {
+      toast.error("\u0644\u0627 \u062a\u0648\u062c\u062f \u0628\u064a\u0627\u0646\u0627\u062a \u0644\u0644\u062a\u0635\u062f\u064a\u0631");
+      return;
+    }
+
     try {
-      let csvContent = 'ميزان المراجعة - Trial Balance\n';
-      csvContent += `كما في - As of Date,${asOfDate}\n`;
-      csvContent += `تاريخ الإصدار - Generated,${new Date().toLocaleDateString('ar-EG')}\n\n`;
-      
-      csvContent += 'رمز الحساب,اسم الحساب,المستوى,المدين,الدائن\n';
-      csvContent += 'Account Code,Account Name,Level,Debit,Credit\n';
-      
-      trialBalanceData.forEach(item => {
-        csvContent += `${item.account_code},${item.account_name},${item.account_level || ''},${item.debit_balance || 0},${item.credit_balance || 0}\n`;
-      });
-      
-      csvContent += `\n,,الإجمالي - Total,${totalDebits},${totalCredits}\n`;
-      csvContent += `\nالفرق - Difference,${Math.abs(totalDebits - totalCredits)}\n`;
-      csvContent += `الحالة - Status,${isBalanced ? 'متوازن - Balanced' : 'غير متوازن - Not Balanced'}\n`;
-
-      const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
-      const link = document.createElement('a');
-      const url = URL.createObjectURL(blob);
-      link.setAttribute('href', url);
-      link.setAttribute('download', `trial_balance_${asOfDate}.csv`);
-      link.style.visibility = 'hidden';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-
-      toast.success("تم تصدير التقرير بنجاح");
-    } catch (error) {
-      console.error('CSV export error:', error);
-      toast.error("حدث خطأ أثناء تصدير التقرير");
+      await exportOfficialFinancialReportToPDF(buildOfficialPayload());
+      toast.success("\u062a\u0645 \u062a\u0635\u062f\u064a\u0631 \u0645\u064a\u0632\u0627\u0646 \u0627\u0644\u0645\u0631\u0627\u062c\u0639\u0629 \u0628\u0635\u064a\u063a\u0629 PDF \u0631\u0633\u0645\u064a\u0629");
+    } catch (err) {
+      console.error("PDF export error:", err);
+      toast.error("\u062a\u0639\u0630\u0631 \u062a\u0635\u062f\u064a\u0631 \u0645\u0644\u0641 PDF");
     }
   };
 
   if (error) {
     return (
-      <Card>
+      <Card className="trial-balance-shell border-[#E5EAF1]">
         <CardContent className="p-6">
-          <div className="flex items-center gap-2 text-destructive">
+          <div className="flex items-center gap-2 text-[#FB6B7A]">
             <AlertCircle className="h-5 w-5" />
-            <p>حدث خطأ في تحميل البيانات</p>
+            <p className="font-bold">حدث خطأ في تحميل بيانات ميزان المراجعة</p>
           </div>
         </CardContent>
       </Card>
@@ -270,206 +183,304 @@ export function TrialBalanceReport() {
   }
 
   return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
+    <div className="trial-balance-redesign space-y-5" dir="rtl">
+      <section className="trial-command">
+        <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+          <div className="flex items-start gap-3">
+            <span className="trial-command-icon">
+              <Scale className="h-6 w-6" />
+            </span>
             <div>
-              <CardTitle className="flex items-center gap-2">
-                <FileText className="h-5 w-5" />
-                ميزان المراجعة (Trial Balance)
-              </CardTitle>
-              <CardDescription>
-                قائمة بجميع الحسابات وأرصدتها المدينة والدائنة
-              </CardDescription>
-            </div>
-            <div className="flex items-center gap-2">
-              <Button
-                onClick={handleExportPDF}
-                variant="outline"
-                size="sm"
-                disabled={isLoading || !trialBalanceData || trialBalanceData.length === 0}
-              >
-                <Download className="h-4 w-4 mr-2" />{t("pdf")}</Button>
-              <Button
-                onClick={handleExportExcel}
-                variant="outline"
-                size="sm"
-                disabled={isLoading || !trialBalanceData || trialBalanceData.length === 0}
-              >
-                <FileSpreadsheet className="h-4 w-4 mr-2" />{t("excel")}</Button>
-              <Button
-                onClick={handleExportCSV}
-                variant="outline"
-                size="sm"
-                disabled={isLoading || !trialBalanceData || trialBalanceData.length === 0}
-              >
-                <FileText className="h-4 w-4 mr-2" />{t("csv")}</Button>
+              <p className="text-xs font-black uppercase tracking-[0.18em] text-[#94A3B8]">Trial Balance</p>
+              <h3 className="mt-1 text-xl font-black text-[#020617]">ميزان المراجعة</h3>
+              <p className="mt-1 text-sm leading-7 text-[#94A3B8]">
+                عرض أرصدة الحسابات المدينة والدائنة كما في تاريخ محدد مع حالة التوازن والفارق.
+              </p>
             </div>
           </div>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {/* Date Filter */}
-            <div className="flex items-end gap-4">
-              <div className="flex-1 max-w-xs">
-                <Label htmlFor="asOfDate">كما في تاريخ</Label>
-                <div className="relative mt-1">
-                  <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="asOfDate"
-                    type="date"
-                    value={asOfDate}
-                    onChange={(e) => setAsOfDate(e.target.value)}
-                    className="pl-10"
-                  />
-                </div>
+
+          <div className="flex flex-wrap items-end gap-2">
+            <div className="min-w-[190px] space-y-2">
+              <Label htmlFor="asOfDate" className="text-xs font-black text-[#94A3B8]">
+                كما في تاريخ
+              </Label>
+              <div className="relative">
+                <Calendar className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#94A3B8]" />
+                <Input
+                  id="asOfDate"
+                  type="date"
+                  value={asOfDate}
+                  onChange={(event) => setAsOfDate(event.target.value)}
+                  className="h-10 border-[#E5EAF1] bg-white pr-10"
+                />
               </div>
-              {trialBalanceData && trialBalanceData.length > 0 && (
-                <Badge
-                  variant={isBalanced ? "default" : "destructive"}
-                  className="h-8"
-                >
-                  {isBalanced ? (
-                    <>
-                      <CheckCircle className="h-3 w-3 mr-1" />
-                      متوازن
-                    </>
-                  ) : (
-                    <>
-                      <AlertCircle className="h-3 w-3 mr-1" />
-                      غير متوازن
-                    </>
-                  )}
-                </Badge>
-              )}
             </div>
-
-            {/* Trial Balance Table */}
-            {isLoading ? (
-              <div className="flex items-center justify-center h-64">
-                <LoadingSpinner />
-              </div>
-            ) : trialBalanceData && trialBalanceData.length > 0 ? (
-              <div className="border rounded-lg overflow-hidden">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="bg-muted">
-                      <TableHead className="text-center w-[120px]">رمز الحساب</TableHead>
-                      <TableHead className="w-[350px]">اسم الحساب</TableHead>
-                      <TableHead className="text-center w-[100px]">المستوى</TableHead>
-                      <TableHead className="text-right w-[150px]">المدين</TableHead>
-                      <TableHead className="text-right w-[150px]">الدائن</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {trialBalanceData.map((item, index) => (
-                      <TableRow 
-                        key={index}
-                        className={item.account_level && item.account_level <= 2 ? 'font-semibold bg-accent/30' : ''}
-                      >
-                        <TableCell className="text-center font-mono">
-                          {item.account_code}
-                        </TableCell>
-                        <TableCell className={item.account_level && item.account_level <= 2 ? 'font-bold' : ''}>
-                          {item.account_name}
-                        </TableCell>
-                        <TableCell className="text-center">
-                          <Badge variant="outline" className="text-xs">
-                            {item.account_level || '-'}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-right font-semibold">
-                          {Number(item.debit_balance || 0) > 0 ? (
-                            <span className="text-blue-600">
-                              {formatCurrency(Number(item.debit_balance))}
-                            </span>
-                          ) : (
-                            <span className="text-muted-foreground">-</span>
-                          )}
-                        </TableCell>
-                        <TableCell className="text-right font-semibold">
-                          {Number(item.credit_balance || 0) > 0 ? (
-                            <span className="text-green-600">
-                              {formatCurrency(Number(item.credit_balance))}
-                            </span>
-                          ) : (
-                            <span className="text-muted-foreground">-</span>
-                          )}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                    
-                    {/* Totals Row */}
-                    <TableRow className="bg-primary text-primary-foreground font-bold border-t-2">
-                      <TableCell colSpan={3} className="text-center text-lg">
-                        الإجمالي (Total)
-                      </TableCell>
-                      <TableCell className="text-right text-lg">
-                        {formatCurrency(totalDebits)}
-                      </TableCell>
-                      <TableCell className="text-right text-lg">
-                        {formatCurrency(totalCredits)}
-                      </TableCell>
-                    </TableRow>
-                    
-                    {/* Difference Row (if not balanced) */}
-                    {!isBalanced && (
-                      <TableRow className="bg-destructive/10 text-destructive font-semibold">
-                        <TableCell colSpan={3} className="text-center">
-                          الفرق (Difference)
-                        </TableCell>
-                        <TableCell colSpan={2} className="text-right">
-                          {formatCurrency(Math.abs(totalDebits - totalCredits))}
-                        </TableCell>
-                      </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
-              </div>
-            ) : (
-              <div className="flex flex-col items-center justify-center h-64 text-muted-foreground">
-                <FileText className="h-16 w-16 mb-4 opacity-20" />
-                <p className="text-lg">لا توجد بيانات لعرضها</p>
-                <p className="text-sm">قم بإنشاء قيود محاسبية لرؤية ميزان المراجعة</p>
-              </div>
-            )}
-
-            {/* Balance Status Card */}
-            {trialBalanceData && trialBalanceData.length > 0 && (
-              <Card className={isBalanced ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}>
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-3">
-                    {isBalanced ? (
-                      <>
-                        <CheckCircle className="h-6 w-6 text-green-600" />
-                        <div>
-                          <p className="font-semibold text-green-900">الميزان متوازن ✓</p>
-                          <p className="text-sm text-green-700">
-                            إجمالي المدين ({formatCurrency(totalDebits)}) = إجمالي الدائن ({formatCurrency(totalCredits)})
-                          </p>
-                        </div>
-                      </>
-                    ) : (
-                      <>
-                        <AlertCircle className="h-6 w-6 text-red-600" />
-                        <div>
-                          <p className="font-semibold text-red-900">الميزان غير متوازن ✗</p>
-                          <p className="text-sm text-red-700">
-                            الفرق: {formatCurrency(Math.abs(totalDebits - totalCredits))}
-                            {' '}(المدين: {formatCurrency(totalDebits)} - الدائن: {formatCurrency(totalCredits)})
-                          </p>
-                        </div>
-                      </>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
+            <Button onClick={handleExportPDF} variant="outline" size="sm" disabled={isLoading || !rows.length} className="gap-2 border-[#E5EAF1] bg-white">
+              <Download className="h-4 w-4" />
+              PDF
+            </Button>
+            <Button onClick={handleExportExcel} variant="outline" size="sm" disabled={isLoading || !rows.length} className="gap-2 border-[#E5EAF1] bg-white">
+              <FileSpreadsheet className="h-4 w-4" />
+              Excel
+            </Button>
+            <Button onClick={handleExportCSV} variant="outline" size="sm" disabled={isLoading || !rows.length} className="gap-2 border-[#E5EAF1] bg-white">
+              <FileText className="h-4 w-4" />
+              CSV
+            </Button>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+
+        <div className="mt-5 grid gap-3 md:grid-cols-4">
+          <TrialSummary title="إجمالي المدين" value={formatCurrency(totalDebits)} tone="info" />
+          <TrialSummary title="إجمالي الدائن" value={formatCurrency(totalCredits)} tone="success" />
+          <TrialSummary title="الفارق" value={formatCurrency(difference)} tone={isBalanced ? "success" : "alert"} />
+          <div className={cn("trial-status", isBalanced ? "is-balanced" : "is-unbalanced")}>
+            {isBalanced ? <CheckCircle2 className="h-5 w-5" /> : <AlertCircle className="h-5 w-5" />}
+            <span>{isBalanced ? "متوازن" : "غير متوازن"}</span>
+          </div>
+        </div>
+      </section>
+
+      <section className="grid gap-3 md:grid-cols-3">
+        <MiniStat title="الحسابات المعروضة" value={summary.accounts} />
+        <MiniStat title="حسابات لها حركة" value={summary.activeAccounts} />
+        <MiniStat title="حسابات رئيسية" value={summary.parentAccounts} />
+      </section>
+
+      <section className="trial-table-shell">
+        {isLoading ? (
+          <div className="flex min-h-[280px] items-center justify-center">
+            <LoadingSpinner />
+          </div>
+        ) : rows.length > 0 ? (
+          <div className="overflow-x-auto">
+            <Table className="min-w-[820px]">
+              <TableHeader>
+                <TableRow className="border-[#E5EAF1] bg-[#F6F8FB]">
+                  <TableHead className="text-right text-xs font-black text-[#94A3B8]">رمز الحساب</TableHead>
+                  <TableHead className="text-right text-xs font-black text-[#94A3B8]">اسم الحساب</TableHead>
+                  <TableHead className="text-center text-xs font-black text-[#94A3B8]">النوع</TableHead>
+                  <TableHead className="text-center text-xs font-black text-[#94A3B8]">المستوى</TableHead>
+                  <TableHead className="text-right text-xs font-black text-[#94A3B8]">مدين</TableHead>
+                  <TableHead className="text-right text-xs font-black text-[#94A3B8]">دائن</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {rows.map((item, index) => {
+                  const isParent = Number(item.account_level || 0) <= 2;
+                  return (
+                    <TableRow key={`${item.account_id}-${index}`} className={cn("border-[#E5EAF1]/70", isParent && "bg-[#F6F8FB] font-bold")}>
+                      <TableCell className="font-mono text-sm text-[#020617]">{item.account_code}</TableCell>
+                      <TableCell className="min-w-[280px]">
+                        <div className="font-bold text-[#020617]">{displayName(item)}</div>
+                        {item.account_name_ar && item.account_name_ar !== item.account_name && (
+                          <div className="text-xs text-[#94A3B8]">{item.account_name}</div>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <Badge variant="outline" className="border-[#E5EAF1] bg-white text-[#64748B]">
+                          {accountTypeLabel(item.account_type)}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <span className="trial-level">{item.account_level || "-"}</span>
+                      </TableCell>
+                      <TableCell className="text-right font-black text-[#38BDF8]">
+                        {Number(item.debit_balance || 0) > 0 ? formatCurrency(Number(item.debit_balance)) : <span className="text-[#CBD5E1]">-</span>}
+                      </TableCell>
+                      <TableCell className="text-right font-black text-[#22C7A1]">
+                        {Number(item.credit_balance || 0) > 0 ? formatCurrency(Number(item.credit_balance)) : <span className="text-[#CBD5E1]">-</span>}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+
+                <TableRow className="border-t-2 border-[#020617] bg-[#020617] text-white hover:bg-[#020617]">
+                  <TableCell colSpan={4} className="text-center text-base font-black text-white">
+                    الإجمالي
+                  </TableCell>
+                  <TableCell className="text-right text-base font-black text-white">{formatCurrency(totalDebits)}</TableCell>
+                  <TableCell className="text-right text-base font-black text-white">{formatCurrency(totalCredits)}</TableCell>
+                </TableRow>
+              </TableBody>
+            </Table>
+          </div>
+        ) : (
+          <div className="flex min-h-[280px] flex-col items-center justify-center p-8 text-center">
+            <FileText className="mb-4 h-14 w-14 text-[#CBD5E1]" />
+            <p className="text-lg font-black text-[#020617]">لا توجد بيانات لعرضها</p>
+            <p className="mt-1 text-sm text-[#94A3B8]">قم بإنشاء وترحيل قيود محاسبية لظهور ميزان المراجعة.</p>
+          </div>
+        )}
+      </section>
+
+      {rows.length > 0 && (
+        <section className={cn("trial-balance-note", isBalanced ? "is-balanced" : "is-unbalanced")}>
+          {isBalanced ? <CheckCircle2 className="h-5 w-5" /> : <AlertCircle className="h-5 w-5" />}
+          <div>
+            <p className="font-black">{isBalanced ? "ميزان المراجعة متوازن" : "يوجد فرق في ميزان المراجعة"}</p>
+            <p className="text-sm">
+              المدين {formatCurrency(totalDebits)}، الدائن {formatCurrency(totalCredits)}
+              {!isBalanced && `، الفارق ${formatCurrency(difference)}`}
+            </p>
+          </div>
+        </section>
+      )}
+
+      <style>{`
+        .trial-balance-redesign .trial-command,
+        .trial-balance-redesign .trial-table-shell,
+        .trial-balance-redesign .trial-balance-note {
+          border: 1px solid #E5EAF1;
+          background: #FFFFFF;
+          border-radius: 8px;
+          box-shadow: 0 14px 34px rgba(2, 6, 23, 0.06);
+        }
+
+        .trial-balance-redesign .trial-command {
+          position: relative;
+          overflow: hidden;
+          padding: 18px;
+        }
+
+        .trial-balance-redesign .trial-command::before {
+          content: "";
+          position: absolute;
+          inset-inline-start: 0;
+          top: 0;
+          bottom: 0;
+          width: 5px;
+          background: linear-gradient(180deg, #38BDF8, #22C7A1, #7C83F6, #FB6B7A);
+        }
+
+        .trial-balance-redesign .trial-command-icon {
+          display: flex;
+          width: 46px;
+          height: 46px;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+          border-radius: 8px;
+          color: #38BDF8;
+          background: rgba(56, 189, 248, 0.12);
+          border: 1px solid rgba(56, 189, 248, 0.24);
+        }
+
+        .trial-balance-redesign .trial-summary,
+        .trial-balance-redesign .trial-mini-stat {
+          border: 1px solid #E5EAF1;
+          background: #F6F8FB;
+          border-radius: 8px;
+          padding: 14px;
+        }
+
+        .trial-balance-redesign .trial-summary span,
+        .trial-balance-redesign .trial-mini-stat span {
+          display: block;
+          font-size: 12px;
+          font-weight: 900;
+          color: #94A3B8;
+        }
+
+        .trial-balance-redesign .trial-summary strong,
+        .trial-balance-redesign .trial-mini-stat strong {
+          display: block;
+          margin-top: 8px;
+          color: #020617;
+          font-size: 20px;
+          font-weight: 950;
+        }
+
+        .trial-balance-redesign .trial-status,
+        .trial-balance-redesign .trial-balance-note {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          border-radius: 8px;
+          padding: 14px;
+          font-weight: 950;
+        }
+
+        .trial-balance-redesign .trial-status.is-balanced,
+        .trial-balance-redesign .trial-balance-note.is-balanced {
+          color: #22C7A1;
+          background: rgba(34, 199, 161, 0.1);
+          border-color: rgba(34, 199, 161, 0.22);
+        }
+
+        .trial-balance-redesign .trial-status.is-unbalanced,
+        .trial-balance-redesign .trial-balance-note.is-unbalanced {
+          color: #FB6B7A;
+          background: rgba(251, 107, 122, 0.1);
+          border-color: rgba(251, 107, 122, 0.22);
+        }
+
+        .trial-balance-redesign .trial-table-shell {
+          overflow: hidden;
+        }
+
+        .trial-balance-redesign .trial-level {
+          display: inline-flex;
+          min-width: 32px;
+          height: 28px;
+          align-items: center;
+          justify-content: center;
+          border-radius: 8px;
+          border: 1px solid #E5EAF1;
+          background: #FFFFFF;
+          color: #64748B;
+          font-size: 12px;
+          font-weight: 900;
+        }
+
+        .trial-balance-redesign input,
+        .trial-balance-redesign button {
+          border-radius: 8px !important;
+        }
+
+        @media (max-width: 760px) {
+          .trial-balance-redesign .trial-command {
+            padding: 14px;
+          }
+        }
+      `}</style>
     </div>
   );
 }
 
+function displayName(item: TrialBalanceItem) {
+  return item.account_name_ar || item.account_name || "حساب غير مسمى";
+}
+
+function accountTypeLabel(type?: string) {
+  const labels: Record<string, string> = {
+    asset: "أصول",
+    assets: "أصول",
+    liability: "التزامات",
+    liabilities: "التزامات",
+    equity: "حقوق ملكية",
+    revenue: "إيرادات",
+    expense: "مصروفات",
+    expenses: "مصروفات",
+  };
+  return labels[type || ""] || type || "-";
+}
+
+function TrialSummary({ title, value, tone }: { title: string; value: string; tone: "info" | "success" | "alert" }) {
+  const color = tone === "info" ? "#38BDF8" : tone === "success" ? "#22C7A1" : "#FB6B7A";
+  return (
+    <div className="trial-summary">
+      <span style={{ color }}>{title}</span>
+      <strong>{value}</strong>
+    </div>
+  );
+}
+
+function MiniStat({ title, value }: { title: string; value: number }) {
+  return (
+    <div className="trial-mini-stat">
+      <span>{title}</span>
+      <strong>{value}</strong>
+    </div>
+  );
+}

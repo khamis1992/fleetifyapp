@@ -29,6 +29,7 @@ import { format, differenceInDays } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import { HelpIcon } from '@/components/help/HelpIcon';
 import { financialHelpContent } from '@/data/helpContent';
+import '@/styles/legal-system.css';
 
 export const DefaultersList: React.FC = () => {
   const { data: lateCustomers, isLoading, error } = useLatePaymentCustomers();
@@ -102,7 +103,7 @@ export const DefaultersList: React.FC = () => {
   const eligibleForLegalAction = lateCustomers?.filter(c => c.days_overdue >= 30).length || 0;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-teal-50/30">
+    <div className="legal-system min-h-screen">
       <div className="container mx-auto py-6 space-y-6">
         {/* Page Header */}
         <Card className="bg-white border border-slate-200 rounded-xl hover:border-teal-500/50 hover:shadow-sm transition-all duration-300">

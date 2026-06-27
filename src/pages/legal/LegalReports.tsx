@@ -27,6 +27,7 @@ import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import { HelpIcon } from '@/components/help/HelpIcon';
 import { financialHelpContent } from '@/data/helpContent';
+import '@/styles/legal-system.css';
 
 interface LegalReport {
   id: string;
@@ -340,7 +341,7 @@ export const LegalReports: React.FC = () => {
   }
 
   return (
-    <div className="container mx-auto py-6 space-y-6">
+    <div className="legal-system container mx-auto space-y-6 py-6">
       {/* Page Header */}
       <Card className="bg-gradient-to-br from-primary/5 via-primary/3 to-background border-primary/20">
         <CardHeader>

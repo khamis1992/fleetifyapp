@@ -110,6 +110,14 @@ const AutoCreateCaseTriggersConfig: React.FC<AutoCreateCaseTriggersConfigProps> 
     config.enable_broken_promises_trigger,
   ].filter(Boolean).length;
 
+  if (embedded && isLoading) {
+    return (
+      <div className="legal-panel flex min-h-40 items-center justify-center p-6">
+        <LoadingSpinner />
+      </div>
+    );
+  }
+
   // محتوى المكون الرئيسي
   const content = (
     <>
@@ -122,7 +130,7 @@ const AutoCreateCaseTriggersConfig: React.FC<AutoCreateCaseTriggersConfigProps> 
           </Alert>
 
           {/* Trigger 1: Invoice Overdue by Days */}
-          <Card className={config.enable_overdue_invoice_trigger ? 'border-primary' : 'opacity-60'}>
+          <Card className={config.enable_overdue_invoice_trigger ? 'legal-panel border-[#38BDF8]' : 'legal-panel opacity-60'}>
             <CardHeader>
               <div className="flex items-start justify-between">
                 <div className="space-y-1">
@@ -143,7 +151,7 @@ const AutoCreateCaseTriggersConfig: React.FC<AutoCreateCaseTriggersConfigProps> 
                   </CardDescription>
                 </div>
                 {config.enable_overdue_invoice_trigger && (
-                  <Badge className="bg-green-600">{t.badges.enabled}</Badge>
+                  <Badge className="bg-[#22C7A1] text-white hover:bg-[#22C7A1]">{t.badges.enabled}</Badge>
                 )}
               </div>
             </CardHeader>
@@ -175,7 +183,7 @@ const AutoCreateCaseTriggersConfig: React.FC<AutoCreateCaseTriggersConfigProps> 
           </Card>
 
           {/* Trigger 2: Total Overdue Amount */}
-          <Card className={config.enable_overdue_amount_trigger ? 'border-primary' : 'opacity-60'}>
+          <Card className={config.enable_overdue_amount_trigger ? 'legal-panel border-[#38BDF8]' : 'legal-panel opacity-60'}>
             <CardHeader>
               <div className="flex items-start justify-between">
                 <div className="space-y-1">
@@ -196,7 +204,7 @@ const AutoCreateCaseTriggersConfig: React.FC<AutoCreateCaseTriggersConfigProps> 
                   </CardDescription>
                 </div>
                 {config.enable_overdue_amount_trigger && (
-                  <Badge className="bg-green-600">{t.badges.enabled}</Badge>
+                  <Badge className="bg-[#22C7A1] text-white hover:bg-[#22C7A1]">{t.badges.enabled}</Badge>
                 )}
               </div>
             </CardHeader>
@@ -228,7 +236,7 @@ const AutoCreateCaseTriggersConfig: React.FC<AutoCreateCaseTriggersConfigProps> 
           </Card>
 
           {/* Trigger 3: Broken Payment Promises */}
-          <Card className={config.enable_broken_promises_trigger ? 'border-primary' : 'opacity-60'}>
+          <Card className={config.enable_broken_promises_trigger ? 'legal-panel border-[#38BDF8]' : 'legal-panel opacity-60'}>
             <CardHeader>
               <div className="flex items-start justify-between">
                 <div className="space-y-1">
@@ -249,7 +257,7 @@ const AutoCreateCaseTriggersConfig: React.FC<AutoCreateCaseTriggersConfigProps> 
                   </CardDescription>
                 </div>
                 {config.enable_broken_promises_trigger && (
-                  <Badge className="bg-green-600">{t.badges.enabled}</Badge>
+                  <Badge className="bg-[#22C7A1] text-white hover:bg-[#22C7A1]">{t.badges.enabled}</Badge>
                 )}
               </div>
             </CardHeader>
@@ -281,7 +289,7 @@ const AutoCreateCaseTriggersConfig: React.FC<AutoCreateCaseTriggersConfigProps> 
           </Card>
 
           {/* Default Case Settings */}
-          <Card>
+          <Card className="legal-panel">
             <CardHeader>
               <CardTitle className="text-base">{t.settings.title}</CardTitle>
               <CardDescription>
@@ -302,7 +310,7 @@ const AutoCreateCaseTriggersConfig: React.FC<AutoCreateCaseTriggersConfigProps> 
                       auto_case_priority: e.target.value as any,
                     })
                   }
-                  className="w-full px-3 py-2 border rounded-md"
+                  className="w-full rounded-lg border border-[#E5EAF1] bg-white px-3 py-2 focus:border-[#38BDF8] focus:outline-none focus:ring-2 focus:ring-[#38BDF8]/20"
                 >
                   <option value="low">{t.settings.priority.options.low}</option>
                   <option value="medium">{t.settings.priority.options.medium}</option>
@@ -311,7 +319,7 @@ const AutoCreateCaseTriggersConfig: React.FC<AutoCreateCaseTriggersConfigProps> 
                 </select>
               </div>
 
-              <div className="flex items-center gap-3 p-3 border rounded-lg">
+              <div className="flex items-center gap-3 rounded-lg border border-[#E5EAF1] bg-[#F6F8FB] p-3">
                 <Checkbox
                   checked={config.notify_on_auto_create}
                   onCheckedChange={(checked) =>
@@ -333,10 +341,10 @@ const AutoCreateCaseTriggersConfig: React.FC<AutoCreateCaseTriggersConfigProps> 
           </Card>
 
           {/* Summary */}
-          <Card className="bg-blue-50 border-blue-200">
+          <Card className="legal-panel border-[#38BDF8]/25 bg-[#38BDF8]/10">
             <CardContent className="pt-6 space-y-2">
-              <h4 className="font-medium text-blue-900">{t.summary.title}</h4>
-              <ul className="space-y-1 text-sm text-blue-800">
+              <h4 className="font-medium text-[#0369A1]">{t.summary.title}</h4>
+              <ul className="space-y-1 text-sm text-[#0284C7]">
                 {config.enable_overdue_invoice_trigger && (
                   <li>{t.summary.overdueInvoice(config.overdue_days_threshold)}</li>
                 )}
@@ -347,7 +355,7 @@ const AutoCreateCaseTriggersConfig: React.FC<AutoCreateCaseTriggersConfigProps> 
                   <li>{t.summary.brokenPromises(config.broken_promises_count)}</li>
                 )}
                 {countEnabledTriggers === 0 && (
-                  <li className="text-blue-600">{t.summary.noTriggers}</li>
+                  <li className="text-[#0284C7]">{t.summary.noTriggers}</li>
                 )}
               </ul>
             </CardContent>
@@ -359,7 +367,7 @@ const AutoCreateCaseTriggersConfig: React.FC<AutoCreateCaseTriggersConfigProps> 
             <Button variant="outline" onClick={() => onOpenChange(false)}>
               {t.buttons.cancel}
             </Button>
-            <Button onClick={handleSave}>
+            <Button onClick={handleSave} className="legal-action-primary">
               {t.buttons.save}
             </Button>
           </DialogFooter>
@@ -378,9 +386,9 @@ const AutoCreateCaseTriggersConfig: React.FC<AutoCreateCaseTriggersConfigProps> 
   // إذا كان embedded، نعرض المحتوى مباشرة
   if (embedded) {
     return (
-      <div className="space-y-6">
+      <div className="legal-system space-y-6">
         <div className="flex items-center gap-2 mb-4">
-          <Zap className="h-5 w-5 text-yellow-500" />
+          <Zap className="h-5 w-5 text-[#38BDF8]" />
           <h3 className="text-lg font-semibold">{t.dialog.title}</h3>
         </div>
         <p className="text-sm text-muted-foreground mb-4">

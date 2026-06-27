@@ -1,119 +1,115 @@
-/**
- * صفحة المحاسبة العامة الموحدة - تصميم جديد
- * تجمع: دليل الحسابات + دفتر الأستاذ + القيود اليومية
- * متوافق مع الداشبورد الرئيسي
- */
-import { useState, useMemo, Suspense, lazy } from "react";
-import { useSearchParams, useNavigate } from "react-router-dom";
-import { motion, AnimatePresence } from "framer-motion";
+import { type CSSProperties, Suspense, lazy, useMemo } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { motion } from "framer-motion";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
 import { PageSkeletonFallback } from "@/components/common/LazyPageWrapper";
-import {
-  BookOpen,
-  FileText,
-  ListTree,
-  Calculator,
-  RefreshCw,
-  TrendingUp,
-  TrendingDown,
-  ArrowLeft,
-  Wallet,
-  BarChart3,
-  CheckCircle2,
-  Clock,
-  DollarSign,
-  Building2,
-  PieChart,
-  Activity,
-} from "lucide-react";
+import { systemColorPattern } from "@/lib/design-system/systemColorPattern";
 import { cn } from "@/lib/utils";
 import { useChartOfAccounts } from "@/hooks/useChartOfAccounts";
 import { useJournalEntries } from "@/hooks/finance/useJournalEntries";
 import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter";
+import {
+  ArrowLeft,
+  BookOpen,
+  Calculator,
+  CheckCircle2,
+  FileText,
+  Landmark,
+  ListTree,
+  Plus,
+  RefreshCw,
+  Scale,
+  TrendingDown,
+  TrendingUp,
+} from "lucide-react";
 
-// Lazy load the tab content components
 const ChartOfAccounts = lazy(() => import("./ChartOfAccounts"));
 const GeneralLedger = lazy(() => import("./GeneralLedger"));
 const Ledger = lazy(() => import("./Ledger"));
 
-// Tab configuration
-const TABS = [
+const accountingColors = {
+  text: systemColorPattern.colors.text,
+  surface: systemColorPattern.colors.surface,
+  inner: systemColorPattern.colors.innerSurface,
+  muted: systemColorPattern.colors.secondaryText,
+  border: systemColorPattern.colors.border,
+  info: systemColorPattern.colors.info,
+  alert: systemColorPattern.colors.alert,
+  focus: systemColorPattern.colors.focus,
+  success: systemColorPattern.colors.success,
+};
+
+const accountingStyle = {
+  "--accounting-text": accountingColors.text,
+  "--accounting-surface": accountingColors.surface,
+  "--accounting-inner": accountingColors.inner,
+  "--accounting-muted": accountingColors.muted,
+  "--accounting-border": accountingColors.border,
+  "--accounting-info": accountingColors.info,
+  "--accounting-alert": accountingColors.alert,
+  "--accounting-focus": accountingColors.focus,
+  "--accounting-success": accountingColors.success,
+} as CSSProperties;
+
+const tabConfig = [
   {
     id: "chart",
     label: "دليل الحسابات",
+    eyebrow: "شجرة الحسابات",
+    description: "بناء الحسابات وتصنيفها ومراقبة الأرصدة",
     icon: ListTree,
-    description: "شجرة الحسابات وإدارتها",
-    gradient: "from-blue-500 to-cyan-500",
+    accent: accountingColors.info,
   },
   {
     id: "ledger",
     label: "دفتر الأستاذ",
+    eyebrow: "الأرصدة والحركة",
+    description: "قيود، أرصدة، ميزان مراجعة وتحليل مراكز التكلفة",
     icon: BookOpen,
-    description: "سجل الحركات المالية",
-    gradient: "from-green-500 to-emerald-500",
+    accent: accountingColors.focus,
   },
   {
     id: "entries",
     label: "القيود اليومية",
+    eyebrow: "الإدخال والمراجعة",
+    description: "بحث وتدقيق تفاصيل القيود اليومية",
     icon: FileText,
-    description: "إدارة القيود المحاسبية",
-    gradient: "from-purple-500 to-indigo-500",
+    accent: accountingColors.alert,
   },
 ];
 
-// Stat Card Component
-interface StatCardProps {
+const isType = (value: string | undefined, singular: string, plural: string) =>
+  value === singular || value === plural;
+
+interface MetricCardProps {
   title: string;
   value: string | number;
-  subtitle?: string;
+  helper: string;
   icon: React.ElementType;
-  iconBg: string;
-  trend?: 'up' | 'down' | 'neutral';
-  change?: string;
-  delay?: number;
+  accent: string;
 }
 
-const StatCard: React.FC<StatCardProps> = ({
-  title,
-  value,
-  subtitle,
-  icon: Icon,
-  iconBg,
-  trend = 'neutral',
-  change,
-  delay = 0,
-}) => (
-  <motion.div
-    className="bg-white rounded-xl p-5 shadow-sm hover:shadow-md transition-all border border-slate-100"
-    initial={{ opacity: 0, y: 20 }}
-    animate={{ opacity: 1, y: 0 }}
-    transition={{ duration: 0.3, delay }}
-  >
-    <div className="flex items-center justify-between mb-3">
-      <div className={cn("w-12 h-12 rounded-xl flex items-center justify-center", iconBg)}>
-        <Icon className="w-6 h-6 text-white" />
-      </div>
-      {change && (
-        <div className={cn(
-          "flex items-center gap-1 text-sm font-medium px-2 py-1 rounded-lg",
-          trend === 'up' ? 'bg-green-100 text-green-600' :
-          trend === 'down' ? 'bg-red-100 text-red-600' :
-          'bg-slate-100 text-slate-600'
-        )}>
-          {trend === 'up' && <TrendingUp className="w-3 h-3" />}
-          {trend === 'down' && <TrendingDown className="w-3 h-3" />}
-          {change}
-        </div>
-      )}
+const MetricCard = ({ title, value, helper, icon: Icon, accent }: MetricCardProps) => (
+  <div className="accounting-metric">
+    <div className="flex items-start justify-between gap-3">
+      <span className="accounting-metric-icon" style={{ color: accent, backgroundColor: `${accent}14` }}>
+        <Icon className="h-5 w-5" />
+      </span>
+      <span className="text-xs font-bold" style={{ color: accountingColors.muted }}>
+        {helper}
+      </span>
     </div>
-    <p className="text-sm text-neutral-500 mb-1">{title}</p>
-    <p className="text-2xl font-bold text-neutral-900">{value}</p>
-    {subtitle && <p className="text-xs text-neutral-400 mt-1">{subtitle}</p>}
-  </motion.div>
+    <div className="mt-5">
+      <p className="text-sm font-bold" style={{ color: accountingColors.muted }}>
+        {title}
+      </p>
+      <p className="mt-2 text-2xl font-black tracking-normal" style={{ color: accountingColors.text }}>
+        {value}
+      </p>
+    </div>
+  </div>
 );
 
 const GeneralAccounting = () => {
@@ -122,254 +118,494 @@ const GeneralAccounting = () => {
   const { formatCurrency } = useCurrencyFormatter();
   const currentTab = searchParams.get("tab") || "chart";
 
-  // Fetch data for stats
-  const { data: accounts, isLoading: accountsLoading } = useChartOfAccounts();
-  const { data: journalEntries, isLoading: entriesLoading } = useJournalEntries({});
+  const { data: accounts, refetch: refetchAccounts } = useChartOfAccounts();
+  const { data: journalEntries, refetch: refetchEntries } = useJournalEntries({});
 
-  // Calculate statistics
   const stats = useMemo(() => {
     const accountsList = accounts || [];
     const entriesList = journalEntries || [];
 
-    // Account stats
-    const totalAccounts = accountsList.length;
-    const activeAccounts = accountsList.filter(a => a.is_active).length;
-    const headerAccounts = accountsList.filter(a => a.is_header).length;
-    
-    // Calculate total balances by type
-    const assetAccounts = accountsList.filter(a => a.account_type === 'asset');
-    const liabilityAccounts = accountsList.filter(a => a.account_type === 'liability');
-    const equityAccounts = accountsList.filter(a => a.account_type === 'equity');
-    const revenueAccounts = accountsList.filter(a => a.account_type === 'revenue');
-    const expenseAccounts = accountsList.filter(a => a.account_type === 'expense');
+    const assetAccounts = accountsList.filter((account) => isType(account.account_type, "asset", "assets"));
+    const liabilityAccounts = accountsList.filter((account) => isType(account.account_type, "liability", "liabilities"));
+    const equityAccounts = accountsList.filter((account) => account.account_type === "equity");
+    const revenueAccounts = accountsList.filter((account) => account.account_type === "revenue");
+    const expenseAccounts = accountsList.filter((account) => isType(account.account_type, "expense", "expenses"));
 
-    const totalAssets = assetAccounts.reduce((sum, a) => sum + (a.current_balance || 0), 0);
-    const totalLiabilities = liabilityAccounts.reduce((sum, a) => sum + (a.current_balance || 0), 0);
-    const totalEquity = equityAccounts.reduce((sum, a) => sum + (a.current_balance || 0), 0);
-    const totalRevenue = revenueAccounts.reduce((sum, a) => sum + Math.abs(a.current_balance || 0), 0);
-    const totalExpenses = expenseAccounts.reduce((sum, a) => sum + Math.abs(a.current_balance || 0), 0);
-
-    // Journal entries stats
-    const totalEntries = entriesList.length;
-    const postedEntries = entriesList.filter(e => e.status === 'posted').length;
-    const draftEntries = entriesList.filter(e => e.status === 'draft').length;
-    const totalDebit = entriesList.reduce((sum, e) => sum + (e.total_debit || 0), 0);
-    const totalCredit = entriesList.reduce((sum, e) => sum + (e.total_credit || 0), 0);
+    const totalRevenue = revenueAccounts.reduce((sum, account) => sum + Math.abs(account.current_balance || 0), 0);
+    const totalExpenses = expenseAccounts.reduce((sum, account) => sum + Math.abs(account.current_balance || 0), 0);
 
     return {
-      totalAccounts,
-      activeAccounts,
-      headerAccounts,
-      totalAssets,
-      totalLiabilities,
-      totalEquity,
-      totalRevenue,
-      totalExpenses,
-      totalEntries,
-      postedEntries,
-      draftEntries,
-      totalDebit,
-      totalCredit,
+      totalAccounts: accountsList.length,
+      activeAccounts: accountsList.filter((account) => account.is_active !== false).length,
+      totalAssets: assetAccounts.reduce((sum, account) => sum + (account.current_balance || 0), 0),
+      totalLiabilities: liabilityAccounts.reduce((sum, account) => sum + (account.current_balance || 0), 0),
+      totalEquity: equityAccounts.reduce((sum, account) => sum + (account.current_balance || 0), 0),
+      totalEntries: entriesList.length,
+      postedEntries: entriesList.filter((entry) => entry.status === "posted").length,
+      draftEntries: entriesList.filter((entry) => entry.status === "draft").length,
       netIncome: totalRevenue - totalExpenses,
+      debitTotal: entriesList.reduce((sum, entry) => sum + (entry.total_debit || 0), 0),
+      creditTotal: entriesList.reduce((sum, entry) => sum + (entry.total_credit || 0), 0),
     };
   }, [accounts, journalEntries]);
+
+  const activeTab = tabConfig.find((tab) => tab.id === currentTab) || tabConfig[0];
+  const balanceDelta = Math.abs(stats.debitTotal - stats.creditTotal);
+  const postedPercent = stats.totalEntries > 0 ? Math.round((stats.postedEntries / stats.totalEntries) * 100) : 0;
+
+  const handleRefresh = () => {
+    refetchAccounts();
+    refetchEntries();
+  };
 
   const handleTabChange = (value: string) => {
     setSearchParams({ tab: value });
   };
 
-  const activeTabConfig = TABS.find((t) => t.id === currentTab) || TABS[0];
-
   return (
-    <div className="min-h-screen bg-[#f0efed] p-6" dir="rtl">
-      {/* Hero Header */}
-      <motion.div
-        className="bg-gradient-to-r from-rose-500 to-orange-500 rounded-xl p-6 mb-6 text-white shadow-lg"
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-      >
-        <div className="flex items-center justify-between flex-wrap gap-4">
-          <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
-              <Calculator className="w-7 h-7 text-white" />
+    <div className="accounting-system min-h-screen" dir="rtl" style={accountingStyle}>
+      <div className="mx-auto max-w-7xl space-y-5 p-4 sm:p-6">
+        <motion.section
+          initial={{ opacity: 0, y: 14 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="accounting-command"
+        >
+          <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex items-start gap-4">
+              <div className="accounting-command-icon">
+                <Calculator className="h-6 w-6" />
+              </div>
+              <div>
+                <div className="mb-2 flex flex-wrap items-center gap-2">
+                  <Badge className="border-0 bg-[#22C7A1]/10 text-[#22C7A1] hover:bg-[#22C7A1]/10">
+                    مركز محاسبي موحد
+                  </Badge>
+                  <span className="text-xs font-bold" style={{ color: accountingColors.muted }}>
+                    دليل الحسابات، الأستاذ، القيود
+                  </span>
+                </div>
+                <h1 className="text-2xl font-black tracking-normal sm:text-3xl" style={{ color: accountingColors.text }}>
+                  المحاسبة العامة
+                </h1>
+                <p className="mt-2 max-w-2xl text-sm leading-7" style={{ color: accountingColors.muted }}>
+                  مساحة عمل واحدة لتنظيم الحسابات ومراجعة القيود ومتابعة توازن المدين والدائن بدون التنقل بين صفحات متفرقة.
+                </p>
+              </div>
             </div>
+
+            <div className="flex flex-wrap gap-2">
+              <Button
+                onClick={() => navigate("/finance/accounting?tab=entries&action=new")}
+                className="gap-2 bg-[#020617] text-white hover:bg-[#020617]/90"
+              >
+                <Plus className="h-4 w-4" />
+                قيد جديد
+              </Button>
+              <Button
+                onClick={handleRefresh}
+                variant="outline"
+                className="gap-2 border-[#E5EAF1] bg-white text-[#020617] hover:bg-[#F6F8FB]"
+              >
+                <RefreshCw className="h-4 w-4" />
+                تحديث
+              </Button>
+              <Button
+                onClick={() => navigate("/finance/overview")}
+                variant="outline"
+                className="gap-2 border-[#E5EAF1] bg-white text-[#020617] hover:bg-[#F6F8FB]"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                المالية
+              </Button>
+            </div>
+          </div>
+
+          <div className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            <MetricCard
+              title="الأصول"
+              value={formatCurrency(stats.totalAssets)}
+              helper={`${stats.activeAccounts} حساب نشط`}
+              icon={TrendingUp}
+              accent={accountingColors.success}
+            />
+            <MetricCard
+              title="الالتزامات"
+              value={formatCurrency(stats.totalLiabilities)}
+              helper="تحت المراقبة"
+              icon={TrendingDown}
+              accent={accountingColors.alert}
+            />
+            <MetricCard
+              title="القيود المرحلة"
+              value={`${postedPercent}%`}
+              helper={`${stats.postedEntries}/${stats.totalEntries}`}
+              icon={CheckCircle2}
+              accent={accountingColors.focus}
+            />
+            <MetricCard
+              title="فرق التوازن"
+              value={formatCurrency(balanceDelta)}
+              helper={balanceDelta === 0 ? "متوازن" : "يحتاج مراجعة"}
+              icon={Scale}
+              accent={balanceDelta === 0 ? accountingColors.success : accountingColors.alert}
+            />
+          </div>
+        </motion.section>
+
+        <Tabs value={currentTab} onValueChange={handleTabChange} className="accounting-workspace">
+          <section className="accounting-tabs-shell">
             <div>
-              <h1 className="text-2xl font-bold">المحاسبة العامة</h1>
-              <p className="text-white/80 text-sm mt-1">
-                إدارة دليل الحسابات والقيود المحاسبية ودفتر الأستاذ
+              <p className="text-xs font-black uppercase tracking-[0.18em]" style={{ color: accountingColors.muted }}>
+                Workspace
+              </p>
+              <h2 className="mt-1 text-xl font-black" style={{ color: accountingColors.text }}>
+                {activeTab.label}
+              </h2>
+              <p className="mt-1 text-sm" style={{ color: accountingColors.muted }}>
+                {activeTab.description}
               </p>
             </div>
-          </div>
-          <div className="flex gap-2">
-            <Button
-              onClick={() => navigate('/finance/hub')}
-              variant="secondary"
-              size="sm"
-              className="bg-white/20 hover:bg-white/30 text-white border-white/20"
-            >
-              <ArrowLeft className="h-4 w-4 ml-2" />
-              العودة
-            </Button>
-          </div>
-        </div>
 
-        {/* Quick Financial Summary */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
-          <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4">
-            <p className="text-white/70 text-sm">إجمالي الأصول</p>
-            <p className="text-2xl font-bold mt-1">{formatCurrency(stats.totalAssets)}</p>
-          </div>
-          <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4">
-            <p className="text-white/70 text-sm">إجمالي الالتزامات</p>
-            <p className="text-2xl font-bold mt-1">{formatCurrency(stats.totalLiabilities)}</p>
-          </div>
-          <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4">
-            <p className="text-white/70 text-sm">حقوق الملكية</p>
-            <p className="text-2xl font-bold mt-1">{formatCurrency(stats.totalEquity)}</p>
-          </div>
-          <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4">
-            <p className="text-white/70 text-sm">صافي الدخل</p>
-            <p className={cn(
-              "text-2xl font-bold mt-1",
-              stats.netIncome >= 0 ? 'text-green-200' : 'text-red-200'
-            )}>
-              {formatCurrency(stats.netIncome)}
-            </p>
-          </div>
-        </div>
-      </motion.div>
+            <TabsList className="accounting-tabs-list">
+              {tabConfig.map((tab) => {
+                const Icon = tab.icon;
+                const isActive = currentTab === tab.id;
+                return (
+                  <TabsTrigger
+                    key={tab.id}
+                    value={tab.id}
+                    className="accounting-tab-trigger"
+                    style={{
+                      "--tab-accent": tab.accent,
+                    } as CSSProperties}
+                  >
+                    <span className="accounting-tab-icon">
+                      <Icon className="h-4 w-4" />
+                    </span>
+                    <span className="min-w-0 text-right">
+                      <span className="block truncate text-sm font-black">{tab.label}</span>
+                      <span className={cn("block truncate text-[11px] font-bold", isActive && "text-white/80")}>
+                        {tab.eyebrow}
+                      </span>
+                    </span>
+                  </TabsTrigger>
+                );
+              })}
+            </TabsList>
+          </section>
 
-      {/* Statistics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <StatCard
-          title="إجمالي الحسابات"
-          value={stats.totalAccounts}
-          subtitle={`${stats.activeAccounts} حساب نشط`}
-          icon={ListTree}
-          iconBg="bg-gradient-to-br from-blue-500 to-cyan-500"
-          delay={0.1}
-        />
-        <StatCard
-          title="القيود المسجلة"
-          value={stats.totalEntries}
-          subtitle={`${stats.postedEntries} قيد مرحّل`}
-          icon={FileText}
-          iconBg="bg-gradient-to-br from-purple-500 to-indigo-500"
-          trend={stats.postedEntries > 0 ? 'up' : 'neutral'}
-          change={stats.draftEntries > 0 ? `${stats.draftEntries} مسودة` : undefined}
-          delay={0.2}
-        />
-        <StatCard
-          title="إجمالي المدين"
-          value={formatCurrency(stats.totalDebit)}
-          icon={TrendingUp}
-          iconBg="bg-gradient-to-br from-green-500 to-emerald-500"
-          delay={0.3}
-        />
-        <StatCard
-          title="إجمالي الدائن"
-          value={formatCurrency(stats.totalCredit)}
-          icon={TrendingDown}
-          iconBg="bg-gradient-to-br from-red-500 to-rose-500"
-          delay={0.4}
-        />
+          <section className="accounting-context-strip">
+            <div className="flex items-center gap-3">
+              <span className="flex h-10 w-10 items-center justify-center rounded-lg" style={{ backgroundColor: `${activeTab.accent}14`, color: activeTab.accent }}>
+                <activeTab.icon className="h-5 w-5" />
+              </span>
+              <div>
+                <p className="text-sm font-black" style={{ color: accountingColors.text }}>
+                  {activeTab.label}
+                </p>
+                <p className="text-xs" style={{ color: accountingColors.muted }}>
+                  {activeTab.description}
+                </p>
+              </div>
+            </div>
+            <div className="hidden items-center gap-2 text-xs font-bold md:flex" style={{ color: accountingColors.muted }}>
+              <Landmark className="h-4 w-4" />
+              <span>{stats.draftEntries} مسودة قيد تحتاج متابعة</span>
+            </div>
+          </section>
+
+          <TabsContent value="chart" className="mt-0">
+            <motion.div className="accounting-tab-panel" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+              <Suspense fallback={<PageSkeletonFallback />}>
+                <ChartOfAccounts />
+              </Suspense>
+            </motion.div>
+          </TabsContent>
+
+          <TabsContent value="ledger" className="mt-0">
+            <motion.div className="accounting-tab-panel" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+              <Suspense fallback={<PageSkeletonFallback />}>
+                <GeneralLedger />
+              </Suspense>
+            </motion.div>
+          </TabsContent>
+
+          <TabsContent value="entries" className="mt-0">
+            <motion.div className="accounting-tab-panel" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+              <Suspense fallback={<PageSkeletonFallback />}>
+                <Ledger />
+              </Suspense>
+            </motion.div>
+          </TabsContent>
+        </Tabs>
       </div>
 
-      {/* Tab Navigation Cards */}
-      <motion.div
-        className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.2 }}
-      >
-        {TABS.map((tab, index) => (
-          <Card
-            key={tab.id}
-            className={cn(
-              "cursor-pointer transition-all hover:shadow-lg border-2",
-              currentTab === tab.id 
-                ? "border-rose-500 bg-rose-50/50 shadow-md" 
-                : "border-transparent hover:border-slate-200"
-            )}
-            onClick={() => handleTabChange(tab.id)}
-          >
-            <CardContent className="p-5">
-              <div className="flex items-center gap-4">
-                <div className={cn(
-                  "w-12 h-12 rounded-xl flex items-center justify-center bg-gradient-to-br",
-                  tab.gradient
-                )}>
-                  <tab.icon className="w-6 h-6 text-white" />
-                </div>
-                <div className="flex-1">
-                  <div className="flex items-center justify-between">
-                    <p className="font-semibold text-neutral-900">{tab.label}</p>
-                    {currentTab === tab.id && (
-                      <Badge className="bg-rose-500 text-white">نشط</Badge>
-                    )}
-                  </div>
-                  <p className="text-sm text-neutral-500 mt-1">{tab.description}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </motion.div>
+      <style>{`
+        .accounting-system {
+          background:
+            linear-gradient(180deg, rgba(246, 248, 251, 0.92), var(--accounting-inner) 320px),
+            var(--accounting-inner);
+          color: var(--accounting-text);
+        }
 
-      {/* Tabs Content */}
-      <Tabs value={currentTab} onValueChange={handleTabChange} className="space-y-6">
-        <TabsList className="bg-white dark:bg-slate-900 p-1.5 rounded-xl shadow-sm">
-          {TABS.map((tab) => (
-            <TabsTrigger
-              key={tab.id}
-              value={tab.id}
-              className="data-[state=active]:bg-rose-500 data-[state=active]:text-white rounded-lg px-6 py-2.5 gap-2 transition-all"
-            >
-              <tab.icon className="w-4 h-4" />
-              {tab.label}
-            </TabsTrigger>
-          ))}
-        </TabsList>
+        .accounting-command,
+        .accounting-tabs-shell,
+        .accounting-context-strip,
+        .accounting-tab-panel {
+          border: 1px solid var(--accounting-border);
+          background: var(--accounting-surface);
+          border-radius: 8px;
+          box-shadow: 0 14px 34px rgba(2, 6, 23, 0.06);
+        }
 
-        {/* دليل الحسابات */}
-        <TabsContent value="chart">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3 }}
-          >
-            <Suspense fallback={<PageSkeletonFallback />}>
-              <ChartOfAccounts />
-            </Suspense>
-          </motion.div>
-        </TabsContent>
+        .accounting-command {
+          padding: 24px;
+          overflow: hidden;
+          position: relative;
+        }
 
-        {/* دفتر الأستاذ */}
-        <TabsContent value="ledger">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3 }}
-          >
-            <Suspense fallback={<PageSkeletonFallback />}>
-              <GeneralLedger />
-            </Suspense>
-          </motion.div>
-        </TabsContent>
+        .accounting-command::before {
+          content: "";
+          position: absolute;
+          inset-inline-start: 0;
+          top: 0;
+          bottom: 0;
+          width: 5px;
+          background: linear-gradient(180deg, var(--accounting-info), var(--accounting-success), var(--accounting-focus), var(--accounting-alert));
+        }
 
-        {/* القيود اليومية */}
-        <TabsContent value="entries">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3 }}
-          >
-            <Suspense fallback={<PageSkeletonFallback />}>
-              <Ledger />
-            </Suspense>
-          </motion.div>
-        </TabsContent>
-      </Tabs>
+        .accounting-command-icon {
+          display: flex;
+          width: 48px;
+          height: 48px;
+          flex-shrink: 0;
+          align-items: center;
+          justify-content: center;
+          border-radius: 8px;
+          background: color-mix(in srgb, var(--accounting-success) 14%, white);
+          color: var(--accounting-success);
+          border: 1px solid color-mix(in srgb, var(--accounting-success) 24%, white);
+        }
+
+        .accounting-metric {
+          min-height: 132px;
+          border: 1px solid var(--accounting-border);
+          background: var(--accounting-inner);
+          border-radius: 8px;
+          padding: 16px;
+        }
+
+        .accounting-metric-icon {
+          display: flex;
+          width: 40px;
+          height: 40px;
+          align-items: center;
+          justify-content: center;
+          border-radius: 8px;
+          border: 1px solid currentColor;
+          border-color: color-mix(in srgb, currentColor 20%, transparent);
+        }
+
+        .accounting-workspace {
+          display: grid;
+          gap: 14px;
+        }
+
+        .accounting-tabs-shell {
+          display: grid;
+          grid-template-columns: minmax(220px, 0.8fr) minmax(0, 1.2fr);
+          gap: 18px;
+          padding: 16px;
+          align-items: center;
+        }
+
+        .accounting-tabs-list {
+          display: grid !important;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          height: auto !important;
+          gap: 8px;
+          background: var(--accounting-inner) !important;
+          border: 1px solid var(--accounting-border);
+          border-radius: 8px !important;
+          padding: 6px !important;
+        }
+
+        .accounting-tab-trigger {
+          min-height: 64px;
+          justify-content: flex-start !important;
+          gap: 10px !important;
+          border-radius: 8px !important;
+          padding: 10px 12px !important;
+          color: var(--accounting-muted) !important;
+          border: 1px solid transparent;
+          background: transparent !important;
+        }
+
+        .accounting-tab-trigger[data-state="active"] {
+          background: var(--tab-accent) !important;
+          color: white !important;
+          box-shadow: none !important;
+          border-color: color-mix(in srgb, var(--tab-accent) 80%, black);
+        }
+
+        .accounting-tab-icon {
+          display: flex;
+          width: 36px;
+          height: 36px;
+          flex-shrink: 0;
+          align-items: center;
+          justify-content: center;
+          border-radius: 8px;
+          background: color-mix(in srgb, var(--tab-accent) 12%, white);
+          color: var(--tab-accent);
+        }
+
+        .accounting-tab-trigger[data-state="active"] .accounting-tab-icon {
+          background: rgba(255,255,255,0.18);
+          color: white;
+        }
+
+        .accounting-context-strip {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 16px;
+          padding: 14px 16px;
+          background: color-mix(in srgb, var(--accounting-inner) 70%, white);
+        }
+
+        .accounting-tab-panel {
+          overflow: hidden;
+          padding: 0;
+        }
+
+        .accounting-tab-panel > div,
+        .accounting-tab-panel > div > div,
+        .accounting-tab-panel .min-h-screen {
+          min-height: auto !important;
+          background: transparent !important;
+        }
+
+        .accounting-tab-panel .p-6,
+        .accounting-tab-panel .min-h-screen.p-6 {
+          padding: 18px !important;
+        }
+
+        .accounting-tab-panel .bg-gradient-to-r,
+        .accounting-tab-panel .bg-gradient-to-l,
+        .accounting-tab-panel .bg-gradient-to-br {
+          background-image: none !important;
+        }
+
+        .accounting-tab-panel .from-rose-500,
+        .accounting-tab-panel .to-orange-500,
+        .accounting-tab-panel .bg-rose-500 {
+          background-color: var(--accounting-alert) !important;
+        }
+
+        .accounting-tab-panel .rounded-xl,
+        .accounting-tab-panel .rounded-2xl,
+        .accounting-tab-panel .rounded-lg,
+        .accounting-tab-panel button,
+        .accounting-tab-panel input,
+        .accounting-tab-panel [role="combobox"] {
+          border-radius: 8px !important;
+        }
+
+        .accounting-tab-panel .bg-white,
+        .accounting-tab-panel .dark\\:bg-slate-900,
+        .accounting-tab-panel [class*="bg-card"] {
+          background-color: var(--accounting-surface) !important;
+        }
+
+        .accounting-tab-panel .bg-slate-50,
+        .accounting-tab-panel .bg-slate-100,
+        .accounting-tab-panel .dark\\:bg-slate-800 {
+          background-color: var(--accounting-inner) !important;
+        }
+
+        .accounting-tab-panel .border,
+        .accounting-tab-panel .border-slate-100,
+        .accounting-tab-panel .border-slate-200 {
+          border-color: var(--accounting-border) !important;
+        }
+
+        .accounting-tab-panel .shadow-lg,
+        .accounting-tab-panel .shadow-md,
+        .accounting-tab-panel .shadow-sm {
+          box-shadow: 0 10px 26px rgba(2, 6, 23, 0.055) !important;
+        }
+
+        .accounting-tab-panel h1,
+        .accounting-tab-panel h2,
+        .accounting-tab-panel h3,
+        .accounting-tab-panel .text-slate-900,
+        .accounting-tab-panel .text-neutral-900 {
+          color: var(--accounting-text) !important;
+        }
+
+        .accounting-tab-panel .text-slate-500,
+        .accounting-tab-panel .text-neutral-500,
+        .accounting-tab-panel .text-neutral-400 {
+          color: var(--accounting-muted) !important;
+        }
+
+        .accounting-tab-panel table {
+          border-collapse: separate;
+          border-spacing: 0;
+        }
+
+        .accounting-tab-panel thead tr {
+          background: var(--accounting-inner) !important;
+        }
+
+        .accounting-tab-panel th {
+          color: var(--accounting-muted) !important;
+          font-size: 12px;
+          font-weight: 800;
+        }
+
+        .accounting-tab-panel td {
+          color: var(--accounting-text);
+        }
+
+        .accounting-tab-panel tr:hover {
+          background-color: color-mix(in srgb, var(--accounting-info) 6%, white) !important;
+        }
+
+        .accounting-tab-panel input,
+        .accounting-tab-panel [role="combobox"],
+        .accounting-tab-panel textarea {
+          background-color: var(--accounting-inner) !important;
+          border-color: var(--accounting-border) !important;
+        }
+
+        .accounting-tab-panel *:focus-visible {
+          outline-color: var(--accounting-focus) !important;
+          --tw-ring-color: var(--accounting-focus) !important;
+        }
+
+        @media (max-width: 900px) {
+          .accounting-tabs-shell {
+            grid-template-columns: 1fr;
+          }
+
+          .accounting-tabs-list {
+            grid-template-columns: 1fr;
+          }
+        }
+
+        @media (max-width: 640px) {
+          .accounting-command {
+            padding: 18px;
+          }
+
+          .accounting-tab-panel .p-6,
+          .accounting-tab-panel .min-h-screen.p-6 {
+            padding: 12px !important;
+          }
+        }
+      `}</style>
     </div>
   );
 };

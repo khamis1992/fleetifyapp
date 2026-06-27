@@ -15,9 +15,8 @@ import { useCostCenters } from "@/hooks/useCostCenters"
 import { useAuth } from "@/contexts/AuthContext"
 import { 
   Car, Wrench, Zap, FileText, Calendar, DollarSign, 
-  CreditCard, Building, Phone, Building2, X, Check
+  CreditCard, Building, Phone, Building2, Check
 } from "lucide-react"
-import { cn } from "@/lib/utils"
 import "./MaintenanceForm.css"
 
 interface MaintenanceFormProps {
@@ -169,11 +168,11 @@ export function MaintenanceForm({ maintenance, vehicleId, open, onOpenChange }: 
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="maintenance-form-dialog max-w-4xl max-h-[90vh] overflow-y-auto p-0">
         {/* Header */}
-        <div className="dialog-header-gradient text-white p-6 rounded-t-lg">
+        <div className="dialog-header-gradient p-6 rounded-t-lg">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <div className="icon-wrapper bg-white/20 p-3 rounded-lg">
-                <Wrench className="w-6 h-6 text-white" />
+              <div className="icon-wrapper p-3 rounded-lg">
+                <Wrench className="w-6 h-6" />
               </div>
               <div>
                 <h2 className="text-2xl font-bold">
@@ -184,12 +183,6 @@ export function MaintenanceForm({ maintenance, vehicleId, open, onOpenChange }: 
                 </p>
               </div>
             </div>
-            <button
-              onClick={() => onOpenChange(false)}
-              className="btn-close p-2 rounded-lg hover:bg-white/20 transition-all duration-200 hover:rotate-90"
-            >
-              <X className="w-5 h-5" />
-            </button>
           </div>
         </div>
 

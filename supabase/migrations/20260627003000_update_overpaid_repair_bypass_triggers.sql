@@ -1,0 +1,85 @@
+-- Re-apply the overpaid invoice repair RPC with trigger bypass safeguards.
+-- Kept as a separate migration because the remote database already has this version marker.
+
+CREATE OR REPLACE FUNCTION public.repair_overpaid_invoice_allocations(p_plan jsonb)
+RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_item jsonb;
+  v_invoice_id uuid;
+  v_paid_amount numeric;
+  v_balance_due numeric;
+  v_payment_status text;
+  v_payment_ids uuid[];
+  v_invoice_count integer := 0;
+  v_unlinked_payment_count integer := 0;
+  v_row_count integer := 0;
+BEGIN
+  IF p_plan IS NULL OR jsonb_typeof(p_plan) <> 'array' THEN
+    RAISE EXCEPTION 'p_plan must be a JSON array';
+  END IF;
+
+  ALTER TABLE public.payments DISABLE TRIGGER USER;
+  ALTER TABLE public.invoices DISABLE TRIGGER USER;
+
+  FOR v_item IN SELECT value FROM jsonb_array_elements(p_plan)
+  LOOP
+    v_invoice_id := (v_item ->> 'invoice_id')::uuid;
+    v_paid_amount := COALESCE((v_item ->> 'paid_amount')::numeric, 0);
+    v_balance_due := COALESCE((v_item ->> 'balance_due')::numeric, 0);
+    v_payment_status := COALESCE(v_item ->> 'payment_status', 'unpaid');
+
+    SELECT COALESCE(array_agg(value::uuid), ARRAY[]::uuid[])
+    INTO v_payment_ids
+    FROM jsonb_array_elements_text(COALESCE(v_item -> 'payment_ids_to_unlink', '[]'::jsonb));
+
+    IF array_length(v_payment_ids, 1) IS NOT NULL THEN
+      UPDATE public.payments
+      SET
+        invoice_id = NULL,
+        allocation_status = COALESCE(NULLIF(allocation_status, 'allocated'), 'unallocated'),
+        notes = concat_ws(E'\n', notes, 'Unlinked by overpaid invoice allocation repair.'),
+        updated_at = now()
+      WHERE id = ANY(v_payment_ids);
+
+      GET DIAGNOSTICS v_row_count = ROW_COUNT;
+      v_unlinked_payment_count := v_unlinked_payment_count + v_row_count;
+    END IF;
+
+    UPDATE public.invoices
+    SET
+      paid_amount = v_paid_amount,
+      balance_due = v_balance_due,
+      payment_status = v_payment_status,
+      status = CASE WHEN v_payment_status = 'paid' THEN 'paid' ELSE status END,
+      updated_at = now()
+    WHERE id = v_invoice_id;
+
+    v_invoice_count := v_invoice_count + 1;
+  END LOOP;
+
+  ALTER TABLE public.payments ENABLE TRIGGER USER;
+  ALTER TABLE public.invoices ENABLE TRIGGER USER;
+
+  RETURN jsonb_build_object(
+    'ok', true,
+    'repaired_invoices', v_invoice_count,
+    'unlinked_payments', v_unlinked_payment_count
+  );
+EXCEPTION
+  WHEN OTHERS THEN
+    BEGIN
+      ALTER TABLE public.payments ENABLE TRIGGER USER;
+      ALTER TABLE public.invoices ENABLE TRIGGER USER;
+    EXCEPTION
+      WHEN OTHERS THEN
+        NULL;
+    END;
+    RAISE;
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.repair_overpaid_invoice_allocations(jsonb) TO service_role;

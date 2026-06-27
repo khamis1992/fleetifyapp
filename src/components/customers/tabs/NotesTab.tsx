@@ -170,7 +170,7 @@ const NotesTab = ({ customerId, customerPhone, companyId }: { customerId: string
       className="space-y-5"
     >
       {/* القسم الأول: المتابعات القادمة */}
-      <div className="bg-gradient-to-r from-amber-50 to-orange-50 rounded-2xl p-4 border border-amber-200/50">
+      <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <Bell className="w-5 h-5 text-amber-600" />
@@ -206,13 +206,13 @@ const NotesTab = ({ customerId, customerPhone, companyId }: { customerId: string
                   value={newFollowup.title}
                   onChange={(e) => setNewFollowup(prev => ({ ...prev, title: e.target.value }))}
                   placeholder="عنوان المتابعة..."
-                  className="px-3 py-2 border border-neutral-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
+                  className="px-3 py-2 border border-[#DDE5EF] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
                 />
                 <input
                   type="datetime-local"
                   value={newFollowup.scheduled_date}
                   onChange={(e) => setNewFollowup(prev => ({ ...prev, scheduled_date: e.target.value }))}
-                  className="px-3 py-2 border border-neutral-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
+                  className="px-3 py-2 border border-[#DDE5EF] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
                 />
               </div>
               <div className="flex gap-2">
@@ -288,15 +288,15 @@ const NotesTab = ({ customerId, customerPhone, companyId }: { customerId: string
       </div>
 
       {/* القسم الثاني: سجل التواصل والملاحظات */}
-      <div className="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-teal-100 shadow-sm">
+      <div className="rounded-xl border border-[#DDE5EF] bg-white p-5 shadow-sm">
         <div className="flex items-center justify-between mb-5">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-teal-500 to-teal-600 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-lg bg-[#173A63] flex items-center justify-center">
               <MessageSquare className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h4 className="text-sm font-bold text-teal-900">سجل التواصل والملاحظات</h4>
-              <p className="text-xs text-teal-600/70">{activities.length} تفاعل مسجل</p>
+              <h4 className="text-sm font-black text-[#142033]">سجل التواصل والملاحظات</h4>
+              <p className="text-xs font-semibold text-[#6A7688]">{activities.length} تفاعل مسجل</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -305,7 +305,7 @@ const NotesTab = ({ customerId, customerPhone, companyId }: { customerId: string
                 <Button
                   variant="outline"
                   size="sm"
-                  className="gap-2 border-teal-200 text-teal-600 hover:bg-teal-50 hover:border-teal-300"
+                  className="gap-2 border-[#DDE5EF] text-[#173A63] hover:bg-[#EEF5FB]"
                   onClick={() => window.open(`tel:${customerPhone}`)}
                 >
                   <Phone className="w-4 h-4" />
@@ -324,7 +324,7 @@ const NotesTab = ({ customerId, customerPhone, companyId }: { customerId: string
             )}
             <Button
               size="sm"
-              className="gap-2 bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 shadow-teal-500/20"
+              className="gap-2 bg-[#173A63] hover:bg-[#142033]"
               onClick={() => setIsAdding(!isAdding)}
             >
               <Plus className="w-4 h-4" />
@@ -339,7 +339,7 @@ const NotesTab = ({ customerId, customerPhone, companyId }: { customerId: string
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
-              className="border-t border-teal-100 pt-5 space-y-4 bg-gradient-to-br from-teal-50/50 to-cyan-50/50 -mx-5 -mb-5 px-5 pb-5 rounded-b-2xl"
+              className="border-t border-[#DDE5EF] pt-5 space-y-4 bg-[#F8FAFC] -mx-5 -mb-5 px-5 pb-5"
             >
               <div className="flex gap-2">
                 <Button
@@ -349,8 +349,8 @@ const NotesTab = ({ customerId, customerPhone, companyId }: { customerId: string
                   className={cn(
                     "gap-2",
                     noteType === 'note'
-                      ? "bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 text-white shadow-teal-500/20"
-                      : "border-teal-200 text-teal-600 hover:bg-teal-50 hover:border-teal-300"
+                      ? "bg-[#173A63] hover:bg-[#142033] text-white"
+                      : "border-[#DDE5EF] text-[#173A63] hover:bg-[#EEF5FB]"
                   )}
                 >
                   <FileText className="w-4 h-4 ml-1" />
@@ -389,7 +389,7 @@ const NotesTab = ({ customerId, customerPhone, companyId }: { customerId: string
                 value={newNote}
                 onChange={(e) => setNewNote(e.target.value)}
                 placeholder="اكتب ملاحظتك هنا..."
-                className="min-h-[100px] border-teal-200 focus:border-teal-500 focus:ring-teal-500/20 bg-white dark:bg-slate-900"
+                className="min-h-[100px] border-[#DDE5EF] focus:border-[#173A63] focus:ring-[#173A63]/20 bg-white"
               />
               <div className="flex justify-end gap-2">
                 <Button
@@ -402,7 +402,7 @@ const NotesTab = ({ customerId, customerPhone, companyId }: { customerId: string
                 </Button>
                 <Button
                   size="sm"
-                  className="gap-2 bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 shadow-teal-500/20"
+                  className="gap-2 bg-[#173A63] hover:bg-[#142033]"
                   onClick={handleAddNote}
                   disabled={!newNote.trim() || isAddingActivity}
                 >
@@ -422,12 +422,12 @@ const NotesTab = ({ customerId, customerPhone, companyId }: { customerId: string
       {/* قائمة النشاطات (Timeline) */}
       {isLoading ? (
         <div className="flex items-center justify-center py-12">
-          <RefreshCw className="w-6 h-6 animate-spin text-teal-400" />
-          <span className="mr-3 text-teal-600">جاري تحميل النشاط...</span>
+          <RefreshCw className="w-6 h-6 animate-spin text-[#173A63]" />
+          <span className="mr-3 text-[#536173]">جاري تحميل النشاط...</span>
         </div>
       ) : activities.length > 0 ? (
         <div className="relative">
-          <div className="absolute right-6 top-0 bottom-0 w-0.5 bg-gradient-to-b from-teal-200 via-cyan-200 to-transparent" />
+          <div className="absolute right-6 top-0 bottom-0 w-0.5 bg-[#DDE5EF]" />
           <div className="space-y-4">
             {activities.map((activity, index) => (
               <motion.div
@@ -437,13 +437,13 @@ const NotesTab = ({ customerId, customerPhone, companyId }: { customerId: string
                 transition={{ delay: index * 0.05 }}
                 className="relative pr-14"
               >
-                <div className="absolute right-3 w-6 h-6 rounded-full bg-white border-2 border-teal-300 flex items-center justify-center shadow-sm">
+                <div className="absolute right-3 w-6 h-6 rounded-full bg-white border-2 border-[#B8C6D8] flex items-center justify-center shadow-sm">
                   {getActivityIcon(activity.note_type, activity.call_status)}
                 </div>
-                <div className="bg-white dark:bg-slate-900 rounded-xl p-4 border border-teal-100 hover:border-teal-300 hover:shadow-md transition-all">
+                <div className="rounded-xl border border-[#DDE5EF] bg-white p-4 shadow-sm transition-all hover:border-[#173A63] hover:shadow-md">
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex items-center gap-2">
-                      <Badge variant="outline" className="text-xs border-teal-200 text-teal-700 bg-teal-50/50">
+                      <Badge variant="outline" className="text-xs border-[#DDE5EF] text-[#173A63] bg-[#EEF5FB]">
                         {getActivityLabel(activity.note_type)}
                       </Badge>
                       {activity.is_important && (
@@ -463,10 +463,10 @@ const NotesTab = ({ customerId, customerPhone, companyId }: { customerId: string
           </div>
         </div>
       ) : (
-        <div className="bg-gradient-to-br from-teal-50 to-cyan-50 rounded-2xl p-12 text-center border border-teal-100">
-          <MessageSquare className="w-12 h-12 text-teal-300 mx-auto mb-3" />
-          <p className="text-teal-600 font-medium">لا توجد ملاحظات مسجلة</p>
-          <p className="text-teal-500/70 text-sm mt-1">ابدأ بإضافة ملاحظة أو تسجيل مكالمة</p>
+        <div className="rounded-xl border border-dashed border-[#B8C6D8] bg-[#F8FAFC] p-12 text-center">
+          <MessageSquare className="w-12 h-12 text-[#9AA6B6] mx-auto mb-3" />
+          <p className="font-bold text-[#536173]">لا توجد ملاحظات مسجلة</p>
+          <p className="text-[#6A7688] text-sm mt-1">ابدأ بإضافة ملاحظة أو تسجيل مكالمة</p>
         </div>
       )}
     </motion.div>

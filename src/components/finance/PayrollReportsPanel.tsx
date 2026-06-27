@@ -334,7 +334,7 @@ const [periodEnd, setPeriodEnd] = useState('');
                         <TableCell>
                           {payroll.journal_entry_number ? (
                             <Link 
-                              to={`/finance/ledger`}
+                              to={`/finance/accounting?tab=entries`}
                               className="text-primary hover:underline flex items-center gap-1"
                             >
                               {payroll.journal_entry_number}

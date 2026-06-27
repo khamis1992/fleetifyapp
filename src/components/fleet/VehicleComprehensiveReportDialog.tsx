@@ -162,7 +162,7 @@ export const VehicleComprehensiveReportDialog: React.FC<VehicleComprehensiveRepo
 <head>
   <meta charset="UTF-8">
   <title>طلب تحويل مخالفات - ${customerName}</title>
-  <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+  <link rel="icon" href="/uploads/7453c280-3175-4ccf-a73b-24921ec5990b.png" type="image/png" />
   <style>
     @page {
       size: A4;

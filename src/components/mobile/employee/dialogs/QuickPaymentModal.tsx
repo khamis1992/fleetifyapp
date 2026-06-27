@@ -14,11 +14,10 @@ import {
   AlertCircle,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
 import { useEmployeeContracts } from '@/hooks/useEmployeeContracts';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 import { useToast } from '@/hooks/use-toast';
+import { usePaymentOperations } from '@/hooks/business/usePaymentOperations';
 
 import { useFleetifyTranslation } from "@/hooks/useTranslation";
 interface QuickPaymentModalProps {
@@ -33,10 +32,14 @@ export const QuickPaymentModal: React.FC<QuickPaymentModalProps> = ({ isOpen,
   onClose,
   preselectedContractId, }) => {
   const { t } = useFleetifyTranslation("ui");
-  const { user } = useAuth();
   const { toast } = useToast();
   const { formatCurrency } = useCurrencyFormatter();
   const { contracts, refetch } = useEmployeeContracts();
+  const { createPayment } = usePaymentOperations({
+    autoCreateJournalEntry: true,
+    autoUpdateBankBalance: true,
+    enableNotifications: false,
+  });
 
   const [selectedContractId, setSelectedContractId] = useState(preselectedContractId || '');
   const [amount, setAmount] = useState('');
@@ -73,34 +76,26 @@ export const QuickPaymentModal: React.FC<QuickPaymentModalProps> = ({ isOpen,
     setIsSubmitting(true);
 
     try {
-      // Get company_id from profile
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('company_id')
-        .eq('user_id', user?.id)
-        .single();
+      const normalizedPaymentMethod = {
+        cash: 'cash',
+        bank: 'bank_transfer',
+        card: 'credit_card',
+        cheque: 'check',
+      }[paymentMethod] as 'cash' | 'bank_transfer' | 'credit_card' | 'check';
 
-      if (!profile?.company_id) {
-        throw new Error('Company ID not found');
-      }
-
-      // Create payment record
-      const { error } = await supabase
-        .from('payments')
-        .insert({
-          company_id: profile.company_id,
-          customer_id: selectedContract?.customer_id,
-          contract_id: selectedContractId,
-          amount: parseFloat(amount),
-          payment_date: new Date().toISOString(),
-          payment_method: paymentMethod,
-          reference_number: referenceNumber || null,
-          payment_status: 'verified',
-          notes: notes || 'تم التسجيل عبر تطبيق الجوال',
-          created_by: user?.id,
-        });
-
-      if (error) throw error;
+      await createPayment.mutateAsync({
+        customer_id: selectedContract?.customer_id,
+        contract_id: selectedContractId,
+        amount: parseFloat(amount),
+        payment_date: new Date().toISOString().split('T')[0],
+        payment_method: normalizedPaymentMethod,
+        reference_number: referenceNumber || undefined,
+        payment_status: 'completed',
+        notes: notes || '?? ??????? ??? ????? ??????',
+        type: 'receipt',
+        transaction_type: 'customer_payment',
+        currency: 'QAR',
+      });
 
       toast({
         title: 'تم بنجاح! ✅',

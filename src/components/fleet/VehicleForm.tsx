@@ -25,6 +25,7 @@ import { useAuth } from "@/contexts/AuthContext"
 import { useToast } from "@/hooks/use-toast"
 import { useFixedAssetByCode } from "@/hooks/useFixedAssetByCode"
 import { ImageUploadField } from "@/components/settings/ImageUploadField"
+import { useFleetifyTranslation } from "@/hooks/useTranslation";
 
 interface VehicleFormProps {
   vehicle?: Vehicle

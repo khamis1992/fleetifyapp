@@ -14,11 +14,12 @@
 
 import React from 'react';
 import { LateFeeManagement } from '@/components/invoices/LateFeeManagement';
+import '@/styles/legal-system.css';
 
 const LateFees: React.FC = () => {
   return (
-    <div className="container mx-auto p-6">
-      <div className="mb-6">
+    <div className="legal-system min-h-screen p-4 md:p-6">
+      <div className="legal-hero mb-6 p-4">
         <h1 className="text-3xl font-bold">إدارة غرامات التأخير</h1>
         <p className="text-muted-foreground mt-2">
           معالجة تلقائية يومية للفواتير المتأخرة وتطبيق الغرامات حسب سياسة الشركة

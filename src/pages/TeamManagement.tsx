@@ -54,9 +54,9 @@ const GlassCard = ({ children, className, delay = 0 }: any) => (
   <motion.div
     initial={{ opacity: 0, y: 20 }}
     animate={{ opacity: 1, y: 0 }}
-    transition={{ duration: 0.5, delay, type: "spring", bounce: 0.4 }}
+    transition={{ duration: 0.35, delay, type: "spring", bounce: 0.18 }}
     className={cn(
-      "bg-white/70 backdrop-blur-xl border border-white/40 shadow-sm rounded-xl overflow-hidden",
+      "team-card overflow-hidden rounded-lg border border-[#DDE5EF] bg-white shadow-sm",
       className
     )}
   >
@@ -65,20 +65,20 @@ const GlassCard = ({ children, className, delay = 0 }: any) => (
 );
 
 const StatCard = ({ title, value, subtitle, icon: Icon, color, delay }: any) => (
-  <GlassCard className="p-6 flex flex-col justify-between h-full group hover:shadow-md transition-all duration-300" delay={delay}>
-    <div className="flex justify-between items-start mb-4">
-      <div className={cn("p-3 rounded-xl transition-transform group-hover:scale-110 duration-300", color)}>
-        <Icon className="w-6 h-6 text-white" />
+  <GlassCard className="team-stat-card p-5 flex flex-col justify-between h-full group transition-all duration-300" delay={delay}>
+    <div className="flex justify-between items-start gap-4 mb-4">
+      <div className={cn("team-stat-icon p-3 rounded-lg transition-transform group-hover:scale-105 duration-300", color)}>
+        <Icon className="w-5 h-5 text-white" />
       </div>
       {subtitle && (
-        <span className="text-xs font-bold px-2 py-1 rounded-full bg-neutral-100 text-neutral-600">
+        <span className="team-stat-badge text-xs font-bold px-2.5 py-1 rounded-full bg-[#F1F5F9] text-[#536173]">
           {subtitle}
         </span>
       )}
     </div>
     <div>
-      <h3 className="text-2xl font-black text-neutral-800 mb-1">{value}</h3>
-      <p className="text-xs font-medium text-neutral-500">{title}</p>
+      <h3 className="team-stat-value text-2xl font-black text-[#142033] mb-1">{value}</h3>
+      <p className="team-stat-title text-sm font-bold text-[#6A7688]">{title}</p>
     </div>
   </GlassCard>
 );
@@ -228,17 +228,17 @@ export const TeamManagement: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-neutral-50 via-neutral-100 to-neutral-200 p-6 font-sans" dir="rtl">
+    <div className="team-management-system min-h-screen bg-[#F6F8FB] p-4 font-sans sm:p-6" dir="rtl">
       
       {/* Header */}
-      <header className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+      <header className="team-page-header mb-5 flex flex-col gap-4 rounded-lg border border-[#DDE5EF] bg-white p-4 shadow-sm md:flex-row md:items-center md:justify-between">
         <div>
           <motion.div 
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
-            className="flex items-center gap-3 mb-2"
+            className="flex items-center gap-3"
           >
-            <div className="w-12 h-12 rounded-xl bg-teal-500 flex items-center justify-center shadow-sm text-white">
+            <div className="team-header-icon flex h-12 w-12 items-center justify-center rounded-lg bg-[#173A63] text-white shadow-sm">
               <Users className="w-6 h-6" />
             </div>
             <div>
@@ -248,7 +248,7 @@ export const TeamManagement: React.FC = () => {
           </motion.div>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="team-header-actions flex flex-wrap items-center gap-2">
           <NotificationBell />
           <ExportButton
             onExportExcel={async () => {
@@ -263,7 +263,7 @@ export const TeamManagement: React.FC = () => {
             variant="outline"
             size="sm"
             onClick={() => navigate('/team-reports')}
-            className="bg-white/50 backdrop-blur-md border-neutral-200 hover:bg-white text-neutral-600 rounded-xl"
+            className="rounded-lg border-[#DDE5EF] bg-white text-[#536173] hover:bg-[#F8FAFC]"
           >
             <BarChart3 className="ml-2 h-4 w-4" />
             التقارير
@@ -272,7 +272,7 @@ export const TeamManagement: React.FC = () => {
             variant="outline"
             size="sm"
             onClick={() => navigate('/dashboard')}
-            className="bg-white/50 backdrop-blur-md border-neutral-200 hover:bg-white text-neutral-600 rounded-xl"
+            className="rounded-lg border-[#DDE5EF] bg-white text-[#536173] hover:bg-[#F8FAFC]"
           >
             <ArrowRight className="ml-2 h-4 w-4" />
             الرئيسية
@@ -282,7 +282,7 @@ export const TeamManagement: React.FC = () => {
             size="sm"
             onClick={() => refetch()}
             disabled={employeesLoading}
-            className="bg-white/50 backdrop-blur-md border-neutral-200 hover:bg-white text-neutral-600 rounded-xl"
+            className="rounded-lg border-[#DDE5EF] bg-white text-[#536173] hover:bg-[#F8FAFC]"
           >
             <RefreshCw className={cn("ml-2 h-4 w-4", employeesLoading && "animate-spin")} />
             تحديث
@@ -290,7 +290,7 @@ export const TeamManagement: React.FC = () => {
           <Button
             size="sm"
             onClick={() => setShowAssignDialog(true)}
-            className="bg-teal-500 hover:bg-teal-600 text-white rounded-xl shadow-sm"
+            className="rounded-lg bg-[#173A63] text-white shadow-sm hover:bg-[#102C4D]"
           >
             <UserPlus className="ml-2 h-4 w-4" />
             تعيين عقد
@@ -298,7 +298,7 @@ export const TeamManagement: React.FC = () => {
           <Button
             size="sm"
             onClick={() => setShowBulkAssignDialog(true)}
-            className="bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white rounded-xl shadow-lg shadow-purple-500/20"
+            className="rounded-lg bg-[#1BBF9A] text-white shadow-sm hover:bg-[#12A885]"
           >
             <Users className="ml-2 h-4 w-4" />
             تعيين جماعي
@@ -306,7 +306,7 @@ export const TeamManagement: React.FC = () => {
           <Button
             size="sm"
             onClick={() => setShowSmartDistribution(true)}
-            className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white rounded-xl shadow-lg shadow-indigo-500/20"
+            className="rounded-lg bg-[#EEF5FB] text-[#173A63] shadow-sm hover:bg-[#E3EEF8]"
           >
             <Sparkles className="ml-2 h-4 w-4" />
             توزيع ذكي
@@ -315,7 +315,7 @@ export const TeamManagement: React.FC = () => {
       </header>
 
       {/* Stats Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      <div className="team-stats-grid mb-5 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
         <StatCard
           title="إجمالي الموظفين"
           value={teamStats?.totalEmployees || 0}
@@ -328,7 +328,7 @@ export const TeamManagement: React.FC = () => {
           title="العقود الموزعة"
           value={teamStats?.totalContracts || 0}
           icon={Briefcase}
-          color="bg-teal-500"
+          color="bg-[#1BBF9A]"
           delay={0.2}
         />
         <StatCard
@@ -349,8 +349,8 @@ export const TeamManagement: React.FC = () => {
       </div>
 
       {/* Filters and Search */}
-      <GlassCard className="p-6 mb-6" delay={0.5}>
-        <div className="flex flex-col md:flex-row gap-4">
+      <GlassCard className="team-filter-bar mb-5 p-4" delay={0.5}>
+        <div className="flex flex-col gap-4 xl:flex-row">
           {/* Search */}
           <div className="flex-1 relative">
             <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
@@ -359,7 +359,7 @@ export const TeamManagement: React.FC = () => {
               placeholder="ابحث عن موظف..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pr-10 bg-white/50 border-neutral-200 rounded-xl"
+              className="h-11 rounded-lg border-[#DDE5EF] bg-[#F8FAFC] pr-10 text-[#142033]"
             />
           </div>
 
@@ -377,10 +377,10 @@ export const TeamManagement: React.FC = () => {
                 size="sm"
                 onClick={() => setSelectedFilter(filter.id as any)}
                 className={cn(
-                  "rounded-xl",
+                  "h-10 rounded-lg font-bold",
                   selectedFilter === filter.id
-                    ? "bg-teal-500 hover:bg-teal-600 text-white"
-                    : "bg-white/50 border-neutral-200 hover:bg-white text-neutral-600"
+                    ? "bg-[#173A63] text-white hover:bg-[#102C4D]"
+                    : "border-[#DDE5EF] bg-white text-[#536173] hover:bg-[#F8FAFC]"
                 )}
               >
                 <filter.icon className="ml-2 h-4 w-4" />
@@ -392,10 +392,10 @@ export const TeamManagement: React.FC = () => {
       </GlassCard>
 
       {/* Main Grid */}
-      <div className="grid grid-cols-12 gap-6">
+      <div className="team-workspace grid grid-cols-12 gap-5">
         
         {/* Employees List */}
-        <GlassCard className="col-span-12 lg:col-span-8 p-6" delay={0.6}>
+        <GlassCard className="team-directory col-span-12 p-5 xl:col-span-8" delay={0.6}>
           <h3 className="text-lg font-bold text-neutral-900 mb-4">الموظفون</h3>
         
         {employeesLoading ? (
@@ -404,22 +404,22 @@ export const TeamManagement: React.FC = () => {
             <p className="text-sm text-neutral-500">جاري التحميل...</p>
           </div>
         ) : employees && employees.length > 0 ? (
-          <ScrollArea className="h-[600px]">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <ScrollArea className="h-[640px] pr-1">
+            <div className="grid grid-cols-1 gap-3 2xl:grid-cols-2">
               {employees.map((employee: any, index) => (
                 <motion.div
                   key={employee.employee_id}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.05 }}
-                  className="group p-5 bg-white rounded-xl border border-neutral-100 hover:border-teal-200 hover:shadow-lg transition-all cursor-pointer"
+                  className="team-employee-card group cursor-pointer rounded-lg border border-[#DDE5EF] bg-white p-4 transition-all hover:border-[#173A63] hover:shadow-md"
                   onClick={() => navigate(`/employee/${employee.employee_id}`)}
                 >
                   {/* Employee Header */}
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex items-center gap-3">
                       <div className="relative">
-                        <div className="w-12 h-12 rounded-full bg-teal-500 flex items-center justify-center text-white font-bold text-lg shadow-lg">
+                        <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-[#173A63] text-lg font-black text-white shadow-sm">
                           {employee.employee_name?.charAt(0) || '؟'}
                         </div>
                         {/* Active Indicator */}
@@ -470,7 +470,7 @@ export const TeamManagement: React.FC = () => {
                   </div>
 
                   {/* Quick Actions */}
-                  <div className="flex gap-2 mt-3 pt-3 border-t border-neutral-100 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className="mt-3 flex gap-2 border-t border-[#EEF2F6] pt-3">
                     <Button
                       size="sm"
                       variant="outline"
@@ -525,7 +525,7 @@ export const TeamManagement: React.FC = () => {
         </GlassCard>
 
         {/* Assignment History */}
-        <GlassCard className="col-span-12 lg:col-span-4 p-6" delay={0.65}>
+        <GlassCard className="team-history-panel col-span-12 p-5 xl:col-span-4" delay={0.65}>
           <AssignmentHistoryWidget limit={10} />
         </GlassCard>
       </div>
@@ -545,6 +545,115 @@ export const TeamManagement: React.FC = () => {
         open={showSmartDistribution}
         onOpenChange={setShowSmartDistribution}
       />
+      <style>{`
+        .team-management-system {
+          color: #142033;
+          background:
+            linear-gradient(180deg, rgba(246, 248, 251, 0.82), #F6F8FB 280px),
+            #F6F8FB !important;
+        }
+
+        .team-management-system .team-card {
+          border-radius: 8px;
+          box-shadow: 0 10px 28px rgba(2, 6, 23, 0.06);
+        }
+
+        .team-page-header {
+          position: sticky;
+          top: 0;
+          z-index: 20;
+          backdrop-filter: blur(12px);
+          background: rgba(255, 255, 255, 0.94);
+        }
+
+        .team-header-actions button,
+        .team-header-actions a {
+          min-height: 40px;
+          font-weight: 800;
+        }
+
+        .team-stat-card {
+          min-height: 152px;
+          border-color: #DDE5EF !important;
+          background: #fff !important;
+        }
+
+        .team-stat-card:hover,
+        .team-employee-card:hover {
+          transform: translateY(-1px);
+        }
+
+        .team-stat-icon {
+          box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.18);
+        }
+
+        .team-filter-bar {
+          border-color: #DDE5EF !important;
+        }
+
+        .team-filter-bar button {
+          white-space: nowrap;
+        }
+
+        .team-directory,
+        .team-history-panel {
+          min-height: 720px;
+        }
+
+        .team-employee-card h4,
+        .team-employee-card p {
+          overflow-wrap: anywhere;
+        }
+
+        .team-employee-card .rounded-full {
+          border-radius: 999px;
+        }
+
+        .team-employee-card button {
+          min-width: 0;
+        }
+
+        .team-management-system [data-radix-scroll-area-viewport] {
+          padding-left: 4px;
+        }
+
+        .team-management-system .text-xs {
+          font-size: 13px;
+          line-height: 1.55;
+        }
+
+        .team-management-system .text-sm {
+          font-size: 14px;
+          line-height: 1.65;
+        }
+
+        .team-management-system button,
+        .team-management-system input {
+          border-radius: 8px !important;
+        }
+
+        @media (max-width: 1280px) {
+          .team-page-header {
+            position: static;
+          }
+
+          .team-directory,
+          .team-history-panel {
+            min-height: auto;
+          }
+        }
+
+        @media (max-width: 768px) {
+          .team-header-actions {
+            width: 100%;
+          }
+
+          .team-header-actions button,
+          .team-header-actions > div {
+            flex: 1 1 140px;
+          }
+        }
+      `}</style>
     </div>
   );
 };

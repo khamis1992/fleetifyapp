@@ -18,7 +18,6 @@ import { VerificationTaskAlert } from '@/components/notifications/VerificationTa
 import { CommandPalette } from '@/components/ui/CommandPalette';
 import { NotificationBell } from '@/components/ui/NotificationBell';
 import { GlobalSearch } from '@/components/common/GlobalSearch';
-import { QuickCreateFAB } from '@/components/common/QuickCreateFAB';
 import { cn } from '@/lib/utils';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
 
@@ -218,9 +217,6 @@ export const BentoLayout: React.FC<BentoLayoutProps> = ({ children }) => {
 
         {/* Global Search (Ctrl+K / Cmd+K) */}
         <GlobalSearch />
-
-        {/* Quick Create FAB */}
-        <QuickCreateFAB />
 
         {/* Verification Task Alert Modal */}
         <VerificationTaskAlert />

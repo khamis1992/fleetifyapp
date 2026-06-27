@@ -300,7 +300,7 @@ export const CustomerCard = React.forwardRef<HTMLDivElement, CustomerCardProps>(
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem 
-                onClick={() => customer.phone && window.open(`tel:${customer.phone}`, '_self')}
+                onClick={() => navigate(`/customers/crm?call=${customer.customer_id}`)}
                 className="gap-2"
               >
                 <Phone className="w-4 h-4" />

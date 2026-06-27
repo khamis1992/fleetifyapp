@@ -7,7 +7,6 @@
  */
 
 import { motion } from 'framer-motion';
-import { useState } from 'react';
 import { 
   Gavel, 
   Copy, 
@@ -22,15 +21,11 @@ import {
   Phone,
   Mail,
   MapPin,
-  Briefcase,
-  Link2,
-  CheckCircle
+  Briefcase
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { useLawsuitPreparationContext } from '../store';
-import { toast } from 'sonner';
 
 // ==========================================
 // Copyable Field Component
@@ -147,65 +142,6 @@ function SectionCard({ title, icon, children, delay = 0 }: SectionCardProps) {
 export function LegalTaqadi() {
   const { state } = useLawsuitPreparationContext();
   const { taqadiData } = state;
-  const [showBookmarkletModal, setShowBookmarkletModal] = useState(false);
-  const [bookmarkletCopied, setBookmarkletCopied] = useState(false);
-
-  // Function to save Taqadi data to localStorage
-  const saveTaqadiDataToLocalStorage = () => {
-    if (!taqadiData) {
-      toast.error('لا توجد بيانات تقاضي متاحة');
-      return;
-    }
-
-    try {
-      const dataToSave = {
-        title: taqadiData.caseTitle,
-        facts: taqadiData.facts,
-        claims: taqadiData.claims,
-        amount: taqadiData.amount,
-        amountInWords: taqadiData.amountInWords,
-        defendant: {
-          fullName: taqadiData.defendant.fullName,
-          firstName: taqadiData.defendant.firstName,
-          middleName: taqadiData.defendant.middleName,
-          lastName: taqadiData.defendant.lastName,
-          idNumber: taqadiData.defendant.idNumber,
-          idType: taqadiData.defendant.idType,
-          nationality: taqadiData.defendant.nationality,
-          phone: taqadiData.defendant.phone,
-          email: taqadiData.defendant.email,
-          address: taqadiData.defendant.address,
-        },
-        contract: taqadiData.contract,
-        vehicle: taqadiData.vehicle,
-        timestamp: Date.now(),
-      };
-
-      localStorage.setItem('alarafLawsuitDataFull', JSON.stringify(dataToSave));
-      setShowBookmarkletModal(true);
-      toast.success('✅ تم حفظ بيانات التقاضي بنجاح');
-    } catch (error) {
-      console.error('Error saving Taqadi data:', error);
-      toast.error('❌ فشل في حفظ البيانات');
-    }
-  };
-
-  // Generate bookmarklet JavaScript code
-  const generateBookmarkletCode = (): string => {
-    return `javascript:(function(){'use strict';const dataStr=localStorage.getItem('alarafLawsuitDataFull');if(!dataStr){alert('❌ لم يتم العثور على بيانات الدعوى!\\n\\nيرجى الذهاب إلى صفحة تجهيز الدعوى في العراف والضغط على زر "نسخ بيانات التقاضي" أولاً.');return;}let data;try{data=JSON.parse(dataStr);}catch(e){alert('❌ خطأ في قراءة البيانات!');return;}console.log('📋 بيانات الدعوى:',data);function fillField(selectors,value,fieldName){if(!value)return false;for(const selector of selectors){const elements=document.querySelectorAll(selector);for(const el of elements){if(el&&(el.tagName==='INPUT'||el.tagName==='TEXTAREA')){el.value=value;el.dispatchEvent(new Event('input',{bubbles:true}));el.dispatchEvent(new Event('change',{bubbles:true}));console.log('✅ '+fieldName+': تم الملء بنجاح');return true;}}}return false;}function fillByLabel(labelText,value,fieldName){if(!value)return false;const labels=document.querySelectorAll('label');for(const label of labels){if(label.textContent.includes(labelText)){const forId=label.getAttribute('for');if(forId){const input=document.getElementById(forId);if(input){input.value=value;input.dispatchEvent(new Event('input',{bubbles:true}));input.dispatchEvent(new Event('change',{bubbles:true}));console.log('✅ '+fieldName+': تم الملء بنجاح (via label)');return true;}}const nextInput=label.nextElementSibling;if(nextInput&&(nextInput.tagName==='INPUT'||nextInput.tagName==='TEXTAREA')){nextInput.value=value;nextInput.dispatchEvent(new Event('input',{bubbles:true}));nextInput.dispatchEvent(new Event('change',{bubbles:true}));console.log('✅ '+fieldName+': تم الملء بنجاح (via sibling)');return true;}const parent=label.parentElement;if(parent){const input=parent.querySelector('input, textarea');if(input){input.value=value;input.dispatchEvent(new Event('input',{bubbles:true}));input.dispatchEvent(new Event('change',{bubbles:true}));console.log('✅ '+fieldName+': تم الملء بنجاح (via parent)');return true;}}}return false;}function fillByPlaceholder(placeholderText,value,fieldName){if(!value)return false;const inputs=document.querySelectorAll('input, textarea');for(const input of inputs){const placeholder=input.getAttribute('placeholder')||'';if(placeholder.includes(placeholderText)){input.value=value;input.dispatchEvent(new Event('input',{bubbles:true}));input.dispatchEvent(new Event('change',{bubbles:true}));console.log('✅ '+fieldName+': تم الملء بنجاح (via placeholder)');return true;}}return false;}let filledCount=0;if(fillByLabel('عنوان',data.title,'عنوان الدعوى')||fillByPlaceholder('عنوان',data.title,'عنوان الدعوى')||fillField(['input[name*="title"]','input[name*="subject"]','#title','#subject'],data.title,'عنوان الدعوى')){filledCount++;}if(fillByLabel('وقائع',data.facts,'الوقائع')||fillByLabel('الوقائع',data.facts,'الوقائع')||fillByPlaceholder('وقائع',data.facts,'الوقائع')||fillField(['textarea[name*="fact"]','textarea[name*="detail"]','#facts','#details'],data.facts,'الوقائع')){filledCount++;}if(fillByLabel('طلبات',data.claims,'الطلبات')||fillByLabel('الطلبات',data.claims,'الطلبات')||fillByPlaceholder('طلبات',data.claims,'الطلبات')||fillField(['textarea[name*="claim"]','textarea[name*="request"]','#claims','#requests'],data.claims,'الطلبات')){filledCount++;}if(fillByLabel('مبلغ',data.amount,'المبلغ')||fillByLabel('المبلغ',data.amount,'المبلغ')||fillByPlaceholder('مبلغ',data.amount,'المبلغ')||fillField(['input[name*="amount"]','input[name*="value"]','input[type="number"]','#amount'],data.amount,'المبلغ')){filledCount++;}if(fillByLabel('كتابة',data.amountInWords,'المبلغ كتابة')||fillByLabel('بالحروف',data.amountInWords,'المبلغ كتابة')||fillByPlaceholder('كتابة',data.amountInWords,'المبلغ كتابة')||fillField(['input[name*="word"]','input[name*="text"]','#amountWords'],data.amountInWords,'المبلغ كتابة')){filledCount++;}if(filledCount>0){alert('✅ تم ملء '+filledCount+' حقول بنجاح!\\n\\nيرجى مراجعة البيانات والتأكد من صحتها قبل الإرسال.\\n\\n📋 البيانات:\\n- العنوان: '+(data.title||'غير متوفر')+'\\n- المبلغ: '+(data.amount||'غير متوفر'));}else{const copyText='عنوان الدعوى:\\n'+data.title+'\\n\\nالوقائع:\\n'+data.facts+'\\n\\nالطلبات:\\n'+data.claims+'\\n\\nالمبلغ:\\n'+data.amount+'\\n\\nالمبلغ كتابة:\\n'+data.amountInWords;const result=confirm('⚠️ لم يتم التعرف على حقول النموذج تلقائياً.\\n\\nهل تريد نسخ البيانات للصق اليدوي؟');if(result){navigator.clipboard.writeText(copyText).then(()=>{alert('✅ تم نسخ البيانات!\\n\\nيمكنك الآن لصقها في الحقول المناسبة.');}).catch(()=>{const textarea=document.createElement('textarea');textarea.value=copyText;document.body.appendChild(textarea);textarea.select();document.execCommand('copy');document.body.removeChild(textarea);alert('✅ تم نسخ البيانات!\\n\\nيمكنك الآن لصقها في الحقول المناسبة.');});}}console.log('🏁 انتهى تنفيذ Bookmarklet');})();`;
-  };
-
-  // Function to copy bookmarklet code
-  const copyBookmarkletCode = () => {
-    const bookmarkletCode = generateBookmarkletCode();
-    navigator.clipboard.writeText(bookmarkletCode).then(() => {
-      setBookmarkletCopied(true);
-      toast.success('✅ تم نسخ الكود بنجاح');
-      setTimeout(() => setBookmarkletCopied(false), 3000);
-    }).catch(() => {
-      toast.error('❌ فشل في النسخ');
-    });
-  };
   
   if (!taqadiData) {
     return (
@@ -452,106 +388,6 @@ export function LegalTaqadi() {
         />
       </SectionCard>
       
-      {/* Taqadi Bookmarklet Button */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.5 }}
-        className="pt-4"
-      >
-        <Button
-          size="lg"
-          onClick={saveTaqadiDataToLocalStorage}
-          className="w-full h-14 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold text-lg shadow-lg shadow-blue-600/25"
-        >
-          <Link2 className="h-5 w-5 ml-3" />
-          نسخ بيانات التقاضي
-        </Button>
-      </motion.div>
-
-      {/* Bookmarklet Modal */}
-      <Dialog open={showBookmarkletModal} onOpenChange={setShowBookmarkletModal}>
-        <DialogContent className="sm:max-w-md" dir="rtl">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Link2 className="h-5 w-5 text-blue-600" />
-              رفع تلقائي إلى تقاضي
-            </DialogTitle>
-            <DialogDescription>
-              تم حفظ بيانات الدعوى. اتبع الخطوات التالية لفتح القضية على موقع تقاضي.
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="space-y-4 py-4">
-            {/* Step 1 */}
-            <div className="space-y-2">
-              <h4 className="font-medium text-sm text-slate-900">الخطوة 1: اسحب الزر إلى المفضلة</h4>
-              <p className="text-xs text-slate-600">
-                اسحب هذا الزر إلى شريط المفضلة (Bookmarks) في متصفحك
-              </p>
-              <a
-                href={generateBookmarkletCode()}
-                onClick={(e) => {
-                  e.preventDefault();
-                  alert('اسحب هذا الزر إلى شريط المفضلة في متصفحك');
-                }}
-                className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg cursor-move hover:shadow-lg transition-all"
-                draggable
-              >
-                <span className="text-lg">🚀</span>
-                <span className="font-medium">ملء تقاضي - العراف</span>
-              </a>
-            </div>
-
-            {/* Step 2 */}
-            <div className="space-y-2">
-              <h4 className="font-medium text-sm text-slate-900">الخطوة 2: افتح موقع تقاضي</h4>
-              <p className="text-xs text-slate-600">
-                انتقل إلى{' '}
-                <a 
-                  href="https://taqadi.sjc.gov.qa/itc/login" 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="text-blue-600 hover:underline"
-                >
-                  taqadi.sjc.gov.qa
-                </a>{' '}
-                وسجل الدخول
-              </p>
-            </div>
-
-            {/* Step 3 */}
-            <div className="space-y-2">
-              <h4 className="font-medium text-sm text-slate-900">الخطوة 3: اضغط على الـ Bookmarklet</h4>
-              <p className="text-xs text-slate-600">
-                بعد فتح نموذج إنشاء دعوى، اضغط على "ملء تقاضي - العراف" في المفضلة
-              </p>
-            </div>
-
-            {/* Alternative: Copy Code */}
-            <div className="pt-2 border-t border-slate-200">
-              <Button
-                onClick={copyBookmarkletCode}
-                variant="outline"
-                size="sm"
-                className="w-full"
-              >
-                {bookmarkletCopied ? (
-                  <>
-                    <CheckCircle className="h-4 w-4 ml-2 text-emerald-500" />
-                    تم النسخ!
-                  </>
-                ) : (
-                  <>
-                    <Copy className="h-4 w-4 ml-2" />
-                    نسخ كود Bookmarklet
-                  </>
-                )}
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

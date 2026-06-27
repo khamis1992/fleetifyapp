@@ -404,6 +404,153 @@ export const PERMISSIONS: Permission[] = [
     category: PERMISSION_CATEGORIES[1],
     level: 'write'
   },
+  {
+    id: 'finance.invoice.create',
+    name: 'Create Financial Invoice',
+    description: 'Create financial invoices from contracts or manual billing',
+    category: PERMISSION_CATEGORIES[1],
+    level: 'write'
+  },
+  {
+    id: 'finance.invoice.edit_amount',
+    name: 'Edit Invoice Amount',
+    description: 'Edit invoice amount, tax, and financial totals',
+    category: PERMISSION_CATEGORIES[1],
+    level: 'admin'
+  },
+  {
+    id: 'finance.invoice.edit_date',
+    name: 'Edit Invoice Dates',
+    description: 'Edit invoice issue date or due date',
+    category: PERMISSION_CATEGORIES[1],
+    level: 'admin'
+  },
+  {
+    id: 'finance.invoice.edit_customer',
+    name: 'Change Invoice Customer',
+    description: 'Move an invoice to another customer or contract',
+    category: PERMISSION_CATEGORIES[1],
+    level: 'admin'
+  },
+  {
+    id: 'finance.invoice.cancel',
+    name: 'Cancel Financial Invoice',
+    description: 'Cancel invoices through controlled reversal workflow',
+    category: PERMISSION_CATEGORIES[1],
+    level: 'admin'
+  },
+  {
+    id: 'finance.payment.create',
+    name: 'Create Payment',
+    description: 'Register receipts and payments linked to invoices and treasury',
+    category: PERMISSION_CATEGORIES[1],
+    level: 'write'
+  },
+  {
+    id: 'finance.payment.edit_amount',
+    name: 'Edit Payment Amount',
+    description: 'Edit payment amount after registration',
+    category: PERMISSION_CATEGORIES[1],
+    level: 'admin'
+  },
+  {
+    id: 'finance.payment.edit_date',
+    name: 'Edit Payment Date',
+    description: 'Edit payment or bank value date',
+    category: PERMISSION_CATEGORIES[1],
+    level: 'admin'
+  },
+  {
+    id: 'finance.payment.edit_bank',
+    name: 'Change Payment Bank Account',
+    description: 'Move payments between treasury or bank accounts',
+    category: PERMISSION_CATEGORIES[1],
+    level: 'admin'
+  },
+  {
+    id: 'finance.payment.cancel',
+    name: 'Cancel Payment',
+    description: 'Cancel completed payments through controlled reversal workflow',
+    category: PERMISSION_CATEGORIES[1],
+    level: 'admin'
+  },
+  {
+    id: 'finance.payment.reconcile',
+    name: 'Reconcile Payment',
+    description: 'Match payments against confirmed bank movements',
+    category: PERMISSION_CATEGORIES[1],
+    level: 'admin'
+  },
+  {
+    id: 'finance.journal.edit_date',
+    name: 'Edit Journal Entry Date',
+    description: 'Edit journal entry date before posting',
+    category: PERMISSION_CATEGORIES[1],
+    level: 'admin'
+  },
+  {
+    id: 'finance.journal.edit_lines',
+    name: 'Edit Journal Entry Lines',
+    description: 'Edit accounts, debit, or credit lines before posting',
+    category: PERMISSION_CATEGORIES[1],
+    level: 'admin'
+  },
+  {
+    id: 'finance.period.close',
+    name: 'Close Financial Period',
+    description: 'Close monthly or yearly financial periods',
+    category: PERMISSION_CATEGORIES[1],
+    level: 'admin'
+  },
+  {
+    id: 'finance.period.reopen',
+    name: 'Reopen Closed Financial Period',
+    description: 'Temporarily reopen closed periods through controlled approval',
+    category: PERMISSION_CATEGORIES[1],
+    level: 'admin'
+  },
+  {
+    id: 'finance.bank.import_statement',
+    name: 'Import Bank Statement',
+    description: 'Import bank statements for reconciliation',
+    category: PERMISSION_CATEGORIES[1],
+    level: 'write'
+  },
+  {
+    id: 'finance.bank.reconcile',
+    name: 'Approve Bank Reconciliation',
+    description: 'Approve bank reconciliation and matching results',
+    category: PERMISSION_CATEGORIES[1],
+    level: 'admin'
+  },
+  {
+    id: 'finance.budget.override',
+    name: 'Override Budget Limit',
+    description: 'Approve financial transactions that exceed budget limits',
+    category: PERMISSION_CATEGORIES[1],
+    level: 'admin'
+  },
+  {
+    id: 'finance.budget.approve',
+    name: 'Approve Budget',
+    description: 'Approve budgets and budget limit changes',
+    category: PERMISSION_CATEGORIES[1],
+    level: 'admin'
+  },
+  {
+    id: 'finance.audit.view',
+    name: 'View Finance Audit Trail',
+    description: 'View financial audit trail records',
+    category: PERMISSION_CATEGORIES[1],
+    level: 'read'
+  },
+  {
+    id: 'finance.audit.export',
+    name: 'Export Finance Audit Trail',
+    description: 'Export financial audit trail records for auditors',
+    category: PERMISSION_CATEGORIES[1],
+    level: 'admin'
+  },
 
   // Operations Permissions
   {

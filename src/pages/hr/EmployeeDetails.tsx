@@ -32,6 +32,7 @@ import DeleteEmployeeConfirmDialog from '@/components/hr/DeleteEmployeeConfirmDi
 import EmployeePayrollDetails from '@/components/hr/EmployeePayrollDetails';
 import { useCreatePayroll, CreatePayrollData } from '@/hooks/usePayroll';
 import { useCompanyFilter } from '@/hooks/useUnifiedCompanyAccess';
+import { HRMetricCard, HRPageHeader, HRPageShell } from '@/components/hr/HRDesignSystem';
 
 interface Employee {
   id: string;
@@ -184,10 +185,14 @@ export default function EmployeeDetails() {
     : `${employee.first_name} ${employee.last_name}`;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-teal-50/30 p-4 md:p-6 space-y-6" dir="rtl">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div className="flex items-center gap-4">
+    <HRPageShell>
+      <HRPageHeader
+        title={fullName}
+        description={`${employee.position || "منصب غير محدد"} · ${employee.department || "قسم غير محدد"} · رقم الموظف ${employee.employee_number}`}
+        icon={User}
+        badge={employee.is_active ? "موظف نشط" : "غير نشط"}
+        action={
+          <div className="flex flex-wrap items-center gap-2">
           <Button 
             variant="ghost" 
             size="icon" 
@@ -196,32 +201,10 @@ export default function EmployeeDetails() {
           >
             <ArrowRight className="w-5 h-5" />
           </Button>
-          <div className="flex items-center gap-4">
-            <div className="w-16 h-16 bg-teal-500 rounded-xl shadow-sm flex items-center justify-center">
-              <User className="w-8 h-8 text-white" />
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold text-slate-900">{fullName}</h1>
-              <div className="flex items-center gap-2 mt-1">
-                <Badge variant="outline" className="text-xs">
-                  {employee.employee_number}
-                </Badge>
-                <Badge 
-                  variant={employee.is_active ? "default" : "secondary"}
-                  className={employee.is_active ? "bg-teal-500 text-white" : ""}
-                >
-                  {employee.is_active ? "نشط" : "غير نشط"}
-                </Badge>
-              </div>
-            </div>
-          </div>
-        </div>
-        
-        <div className="flex items-center gap-2">
           <Button
             variant="outline"
             onClick={() => setShowPayrollDialog(true)}
-            className="border-slate-200 hover:border-teal-500/50"
+            className="h-11 rounded-xl border-slate-200 hover:bg-[#F6F8FB]"
           >
             <DollarSign className="w-4 h-4 ml-2" />
             الرواتب
@@ -230,7 +213,7 @@ export default function EmployeeDetails() {
             <Button
               variant="outline"
               onClick={() => setIsEditDialogOpen(true)}
-              className="border-slate-200 hover:border-teal-500/50"
+              className="h-11 rounded-xl border-slate-200 hover:bg-[#F6F8FB]"
             >
               <Edit className="w-4 h-4 ml-2" />
               تعديل
@@ -240,13 +223,21 @@ export default function EmployeeDetails() {
             <Button
               variant="outline"
               onClick={() => setIsDeleteDialogOpen(true)}
-              className="border-red-200 text-red-600 hover:bg-red-50"
+              className="h-11 rounded-xl border-[#FB6B7A]/30 text-[#FB6B7A] hover:bg-[#FFF0F2]"
             >
               <Trash2 className="w-4 h-4 ml-2" />
               حذف
             </Button>
           )}
-        </div>
+          </div>
+        }
+      />
+
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <HRMetricCard title="الراتب الأساسي" value={formatCurrency(employee.basic_salary)} icon={DollarSign} tone="success" />
+        <HRMetricCard title="البدلات" value={formatCurrency(employee.allowances)} icon={CreditCard} tone="info" />
+        <HRMetricCard title="الحضور المسجل" value={attendanceRecords?.length || 0} icon={Clock} tone="focus" />
+        <HRMetricCard title="الحالة" value={employee.is_active ? "نشط" : "غير نشط"} icon={Shield} tone={employee.is_active ? "success" : "danger"} />
       </div>
 
       {/* Content Tabs */}
@@ -489,7 +480,7 @@ export default function EmployeeDetails() {
           isCreatingPayroll={createPayrollMutation.isPending}
         />
       )}
-    </div>
+    </HRPageShell>
   );
 }
 

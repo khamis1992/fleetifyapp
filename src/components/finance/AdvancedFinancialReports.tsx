@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -25,6 +25,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useReportingAccounts } from "@/hooks/useReportingAccounts";
 import { AccountLevelBadge } from "@/components/finance/AccountLevelBadge";
 import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter";
+import { buildOfficialReportDocumentHtml, exportOfficialHtmlToPDF } from "@/utils/officialFinancialReportExport";
 
 interface ReportFilters {
   dateFrom: Date | undefined;
@@ -50,9 +51,36 @@ export function AdvancedFinancialReports() {
 
   const { formatCurrency } = useCurrencyFormatter();
 
-  const generatePDFReport = (reportType: string) => {
-    // سيتم تنفيذ هذه الدالة لاحقاً
-    console.log(`Generating ${reportType} report...`);
+  const generatePDFReport = async (reportType: string) => {
+    const report = reportTypes.find((item) => item.id === reportType);
+    const reportDate = new Date().toISOString().slice(0, 10);
+    const bodyHtml = `
+      <table>
+        <tbody>
+          <tr><th>نوع التقرير</th><td>${report?.name || reportType}</td></tr>
+          <tr><th>وصف التقرير</th><td>${report?.description || '-'}</td></tr>
+          <tr><th>إجمالي الإيرادات</th><td>${formatCurrency(financialOverview?.totalRevenue || 0)}</td></tr>
+          <tr><th>إجمالي المصروفات</th><td>${formatCurrency(financialOverview?.totalExpenses || 0)}</td></tr>
+          <tr><th>صافي الربح</th><td>${formatCurrency(financialOverview?.netProfit || 0)}</td></tr>
+          <tr><th>عدد العقود النشطة</th><td>${contracts?.length || 0}</td></tr>
+          <tr><th>عدد حسابات التقارير</th><td>${reportingAccounts?.length || 0}</td></tr>
+        </tbody>
+      </table>
+    `;
+    const officialHtml = buildOfficialReportDocumentHtml({
+      metadata: {
+        reportTitle: report?.name || reportType,
+        reportType: `advanced_${reportType}`,
+        currency: "QAR",
+        asOfDate: reportDate,
+        sourceFingerprint: `advanced-financial:${reportType}:${reportDate}`,
+        status: "published",
+        generatedBy: user?.email || user?.id || null,
+      },
+      bodyHtml,
+    });
+
+    await exportOfficialHtmlToPDF(officialHtml, `advanced-financial-${reportType}-${reportDate}.pdf`);
   };
 
   const reportTypes = [

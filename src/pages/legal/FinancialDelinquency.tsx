@@ -61,7 +61,6 @@ import {
   UserCheck,
   ChevronDown,
 } from 'lucide-react';
-import { useDelinquencyStats } from '@/hooks/useDelinquencyStats';
 import { 
   useDelinquentCustomers, 
   useRefreshDelinquentCustomers,
@@ -117,8 +116,105 @@ import {
   type TabValue,
 } from './financial-delinquency';
 import { SendVerificationTaskDialog } from '@/components/legal/SendVerificationTaskDialog';
+import '@/styles/legal-system.css';
 
 import { useFleetifyTranslation } from "@/hooks/useTranslation";
+
+const legalUi = {
+  text: '#020617',
+  muted: '#94A3B8',
+  surface: '#F6F8FB',
+  success: '#22C7A1',
+  info: '#38BDF8',
+  focus: '#7C83F6',
+  danger: '#FB6B7A',
+};
+
+const getSystemRiskColor = (level: string) => {
+  switch (level) {
+    case 'CRITICAL': return legalUi.danger;
+    case 'HIGH': return '#F97316';
+    case 'MEDIUM': return legalUi.info;
+    case 'LOW': return legalUi.success;
+    default: return legalUi.focus;
+  }
+};
+
+const LegalMetricCard = ({
+  title,
+  value,
+  subtitle,
+  icon: Icon,
+  color,
+  onClick,
+}: {
+  title: string;
+  value: string | number;
+  subtitle?: string;
+  icon: React.ElementType;
+  color: string;
+  onClick?: () => void;
+}) => (
+  <button
+    type="button"
+    onClick={onClick}
+    className={cn(
+      'min-h-[132px] rounded-2xl border border-slate-200 bg-white p-4 text-right shadow-sm transition',
+      onClick && 'hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md'
+    )}
+  >
+    <div className="flex items-start justify-between gap-3">
+      <div className="min-w-0">
+        <p className="text-sm font-semibold text-[#94A3B8]">{title}</p>
+        <p className="mt-2 break-words text-2xl font-bold text-[#020617]">{value}</p>
+        {subtitle && <p className="mt-2 text-xs leading-5 text-[#94A3B8]">{subtitle}</p>}
+      </div>
+      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl" style={{ backgroundColor: `${color}1A`, color }}>
+        <Icon className="h-5 w-5" />
+      </div>
+    </div>
+    <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-[#F6F8FB]">
+      <div className="h-full w-2/3 rounded-full" style={{ backgroundColor: color }} />
+    </div>
+  </button>
+);
+
+const LegalActionButton = ({
+  icon: Icon,
+  label,
+  description,
+  color,
+  onClick,
+  badge,
+}: {
+  icon: React.ElementType;
+  label: string;
+  description: string;
+  color: string;
+  onClick: () => void;
+  badge?: string | number;
+}) => (
+  <button
+    type="button"
+    onClick={onClick}
+    className="group flex min-h-[92px] items-center gap-3 rounded-2xl border border-slate-200 bg-white p-4 text-right shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+  >
+    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl transition group-hover:scale-105" style={{ backgroundColor: `${color}1A`, color }}>
+      <Icon className="h-5 w-5" />
+    </div>
+    <div className="min-w-0 flex-1">
+      <div className="flex items-center gap-2">
+        <p className="truncate font-bold text-[#020617]">{label}</p>
+        {badge ? (
+          <span className="rounded-full px-2 py-0.5 text-xs font-bold" style={{ backgroundColor: `${color}1A`, color }}>
+            {badge}
+          </span>
+        ) : null}
+      </div>
+      <p className="mt-1 truncate text-xs text-[#94A3B8]">{description}</p>
+    </div>
+  </button>
+);
 // ===== Main Page Component =====
 const FinancialDelinquencyPage: React.FC = () => {
   const { t } = useFleetifyTranslation("ui");
@@ -127,7 +223,6 @@ const FinancialDelinquencyPage: React.FC = () => {
   const { companyId } = useUnifiedCompanyAccess();
 
   // Data States
-  const { data: stats, isLoading: statsLoading } = useDelinquencyStats();
   const refreshDelinquentCustomers = useRefreshDelinquentCustomers();
   const { deleteContractPermanently } = useContractOperations();
 
@@ -835,8 +930,22 @@ const FinancialDelinquencyPage: React.FC = () => {
     amountRangeFilter !== 'all', violationsFilter !== 'all', combinedStatusFilter !== 'all'
   ].filter(Boolean).length;
 
+  const uiStats = {
+    totalDelinquent: customers.length,
+    totalAmountAtRisk: customers.reduce((sum, customer) => sum + (customer.total_debt || 0), 0),
+    totalPenalties: customers.reduce((sum, customer) => sum + (customer.late_penalty || 0), 0),
+    averageDaysOverdue: customers.length
+      ? customers.reduce((sum, customer) => sum + (customer.days_overdue || 0), 0) / customers.length
+      : 0,
+    criticalRisk: customers.filter((customer) => customer.risk_level === 'CRITICAL').length,
+    highRisk: customers.filter((customer) => customer.risk_level === 'HIGH').length,
+    mediumRisk: customers.filter((customer) => customer.risk_level === 'MEDIUM').length,
+    lowRisk: customers.filter((customer) => customer.risk_level === 'LOW' || !customer.risk_level).length,
+    needLegalCase: customers.filter((customer) => customer.risk_level === 'CRITICAL' || (customer.days_overdue || 0) > 90).length,
+  };
+
   // Loading State
-  if (statsLoading) {
+  if (customersLoading) {
     return (
       <div className="w-full min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
@@ -848,21 +957,21 @@ const FinancialDelinquencyPage: React.FC = () => {
   }
 
   return (
-    <div className="w-full min-h-screen bg-background font-sans text-right pb-8" dir="rtl">
-      <div className="max-w-7xl mx-auto px-4 md:px-6 py-6 space-y-6">
+    <div className="legal-system min-h-screen bg-[#F6F8FB] pb-8 text-right font-sans text-[#020617]" dir="rtl">
+      <div className="mx-auto max-w-7xl space-y-5 px-4 py-5 md:px-6">
         
         {/* Page Header */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="flex flex-col md:flex-row md:items-center justify-between gap-4"
+          className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
         >
-          <div className="flex items-center gap-4">
+          <div className="flex items-start gap-3">
             <div
-              className="flex h-14 w-14 items-center justify-center rounded-xl shadow-lg"
-              style={{ background: `linear-gradient(135deg, hsl(${colors.primaryDark}), hsl(${colors.primary}))` }}
+              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#FB6B7A]/10 text-[#FB6B7A]"
+              style={{ background: 'rgba(56, 189, 248, 0.12)' }}
             >
-              <Gavel className="h-7 w-7 text-white" />
+              <Gavel className="h-7 w-7" />
             </div>
             <div>
               <h1 className="text-2xl md:text-3xl font-bold text-foreground tracking-tight">
@@ -874,35 +983,180 @@ const FinancialDelinquencyPage: React.FC = () => {
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="grid grid-cols-3 gap-2 sm:flex">
             <Button
               variant="outline"
               size="sm"
               onClick={() => refreshDelinquentCustomers.mutate()}
               disabled={refreshDelinquentCustomers.isPending}
-              className="gap-2 rounded-xl"
+              className="min-h-[42px] gap-2 rounded-xl border-slate-200 bg-white text-[#020617] hover:bg-[#F6F8FB]"
             >
               <RefreshCw className={cn("h-4 w-4", refreshDelinquentCustomers.isPending && "animate-spin")} />
               <span className="hidden sm:inline">تحديث</span>
             </Button>
-            <Button variant="outline" size="sm" onClick={handlePrintReport} className="gap-2 rounded-xl">
+            <Button variant="outline" size="sm" onClick={handlePrintReport} className="min-h-[42px] gap-2 rounded-xl border-slate-200 bg-white text-[#020617] hover:bg-[#F6F8FB]">
               <Printer className="h-4 w-4" />
               <span className="hidden sm:inline">طباعة</span>
             </Button>
-            <Button variant="outline" size="sm" onClick={handleExport} className="gap-2 rounded-xl">
+            <Button variant="outline" size="sm" onClick={handleExport} className="min-h-[42px] gap-2 rounded-xl border-slate-200 bg-white text-[#020617] hover:bg-[#F6F8FB]">
               <Download className="h-4 w-4" />
               <span className="hidden sm:inline">تصدير</span>
             </Button>
           </div>
         </motion.div>
 
-        {/* Executive Summary Banner */}
-        {stats && (
+        {(
           <motion.div
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="rounded-xl border bg-card p-5 shadow-sm overflow-hidden"
+            className="grid gap-3 lg:grid-cols-[1.25fr_.75fr]"
+          >
+            <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#22C7A1]/10 text-[#22C7A1]">
+                    <Target className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-bold text-[#020617]">مركز القرار اليومي</h2>
+                    <p className="mt-1 text-sm text-[#94A3B8]">الأولوية للحالات الحرجة، ثم المبالغ الأعلى، ثم تجاوز 90 يوم.</p>
+                  </div>
+                </div>
+                <Badge className="w-fit bg-[#22C7A1]/10 px-3 py-1 text-[#0F766E] hover:bg-[#22C7A1]/10">
+                  {uiStats.needLegalCase} تحتاج إجراء قانوني
+                </Badge>
+              </div>
+
+              <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                <button type="button" onClick={() => setRiskLevelFilter('CRITICAL')} className="rounded-xl bg-[#FB6B7A]/10 p-3 text-right transition hover:bg-[#FB6B7A]/15">
+                  <p className="text-xs font-semibold text-[#FB6B7A]">إجراء فوري</p>
+                  <p className="mt-1 text-xl font-bold text-[#020617]">{uiStats.criticalRisk + uiStats.highRisk} عميل</p>
+                </button>
+                <button type="button" onClick={() => setOverduePeriodFilter('>90')} className="rounded-xl bg-[#38BDF8]/10 p-3 text-right transition hover:bg-[#38BDF8]/15">
+                  <p className="text-xs font-semibold text-[#0284C7]">تجاوزوا 90 يوم</p>
+                  <p className="mt-1 text-xl font-bold text-[#020617]">{uiStats.criticalRisk} عميل</p>
+                </button>
+                <div className="rounded-xl bg-[#7C83F6]/10 p-3">
+                  <p className="text-xs font-semibold text-[#5B5FE8]">إجمالي المستحقات</p>
+                  <p className="mt-1 text-xl font-bold text-[#020617]">{formatCurrency(uiStats.totalAmountAtRisk)}</p>
+                </div>
+                <div className="rounded-xl bg-[#22C7A1]/10 p-3">
+                  <p className="text-xs font-semibold text-[#0F766E]">متوسط التأخير</p>
+                  <p className="mt-1 text-xl font-bold text-[#020617]">{Math.round(uiStats.averageDaysOverdue)} يوم</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-sm font-semibold text-[#94A3B8]">توزيع المخاطر</p>
+                  <p className="mt-1 text-2xl font-bold text-[#020617]">{uiStats.totalDelinquent}</p>
+                </div>
+                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#7C83F6]/10 text-[#7C83F6]">
+                  <AlertTriangle className="h-5 w-5" />
+                </div>
+              </div>
+              <div className="mt-4 space-y-2">
+                {[
+                  ['CRITICAL', 'حرج', uiStats.criticalRisk],
+                  ['HIGH', 'عالي', uiStats.highRisk],
+                  ['MEDIUM', 'متوسط', uiStats.mediumRisk],
+                  ['LOW', 'منخفض', uiStats.lowRisk],
+                ].map(([level, label, count]) => (
+                  <button
+                    key={String(level)}
+                    type="button"
+                    onClick={() => setRiskLevelFilter(String(level))}
+                    className="flex w-full items-center justify-between rounded-xl bg-[#F6F8FB] px-3 py-2 text-sm transition hover:bg-slate-100"
+                  >
+                    <span className="flex items-center gap-2 font-semibold text-[#020617]">
+                      <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: getSystemRiskColor(String(level)) }} />
+                      {label}
+                    </span>
+                    <span className="font-bold text-[#020617]">{count}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </motion.div>
+        )}
+
+        {(
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <LegalMetricCard
+              title="إجمالي العملاء المتأخرين"
+              value={uiStats.totalDelinquent}
+              subtitle={`${uiStats.criticalRisk + uiStats.highRisk} عميل عالي المخاطر`}
+              icon={Users}
+              color={legalUi.focus}
+              onClick={() => setRiskLevelFilter('all')}
+            />
+            <LegalMetricCard
+              title="المبالغ المعرضة للخطر"
+              value={formatCurrency(uiStats.totalAmountAtRisk)}
+              subtitle="إيجارات وفواتير متأخرة"
+              icon={DollarSign}
+              color={legalUi.danger}
+            />
+            <LegalMetricCard
+              title="الغرامات المتراكمة"
+              value={formatCurrency(uiStats.totalPenalties)}
+              subtitle={`متوسط ${Math.round(uiStats.averageDaysOverdue)} يوم تأخير`}
+              icon={AlertTriangle}
+              color={legalUi.info}
+            />
+            <LegalMetricCard
+              title="إجراء فوري"
+              value={uiStats.criticalRisk + uiStats.highRisk}
+              subtitle={`${uiStats.needLegalCase} يحتاجون قضية قانونية`}
+              icon={Zap}
+              color={legalUi.success}
+              onClick={() => setRiskLevelFilter('CRITICAL')}
+            />
+          </div>
+        )}
+
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <LegalActionButton
+            icon={Mail}
+            label="إرسال تذكيرات"
+            description="تذكير جماعي للعملاء المتأخرين"
+            color={legalUi.info}
+            onClick={() => toast.info('سيتم فتح نافذة إرسال التذكيرات')}
+          />
+          <LegalActionButton
+            icon={Phone}
+            label="جدولة مكالمات"
+            description="تنظيم مكالمات التحصيل اليومية"
+            color={legalUi.focus}
+            onClick={() => toast.info('سيتم فتح نافذة جدولة المكالمات')}
+          />
+          <LegalActionButton
+            icon={AlertTriangle}
+            label="الحالات العاجلة"
+            description={`${uiStats.criticalRisk || 0} عميل حرج`}
+            color={legalUi.danger}
+            badge={uiStats.criticalRisk}
+            onClick={() => setRiskLevelFilter('CRITICAL')}
+          />
+          <LegalActionButton
+            icon={FileText}
+            label="بيانات تقاضي"
+            description="إدارة الدعاوى والملفات"
+            color={legalUi.success}
+            onClick={() => navigate('/legal/lawsuit-data')}
+          />
+        </div>
+
+        {/* Executive Summary Banner */}
+        {uiStats && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="hidden"
             style={{
               background: `linear-gradient(135deg, hsl(${colors.primaryDark}), hsl(${colors.primary}))`,
               borderColor: `hsl(${colors.primary} / 0.3)`
@@ -918,37 +1172,37 @@ const FinancialDelinquencyPage: React.FC = () => {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div className="rounded-xl bg-white/10 p-3 cursor-pointer hover:bg-white/20 transition-colors" onClick={() => setRiskLevelFilter('CRITICAL')}>
                 <p className="text-xs text-white/70">يحتاجون إجراء فوري</p>
-                <p className="text-xl font-bold text-white">{stats.criticalRisk + stats.highRisk} عميل</p>
+                <p className="text-xl font-bold text-white">{uiStats.criticalRisk + uiStats.highRisk} عميل</p>
               </div>
               <div className="rounded-xl bg-white/10 p-3 cursor-pointer hover:bg-white/20 transition-colors" onClick={() => setOverduePeriodFilter('>90')}>
                 <p className="text-xs text-white/70">تجاوزوا 90 يوم</p>
-                <p className="text-xl font-bold text-white">{stats.criticalRisk} عميل</p>
-                <p className="text-xs text-white/50">{formatCurrency(stats.totalAmountAtRisk * 0.6)}</p>
+                <p className="text-xl font-bold text-white">{uiStats.criticalRisk} عميل</p>
+                <p className="text-xs text-white/50">{formatCurrency(uiStats.totalAmountAtRisk * 0.6)}</p>
               </div>
               <div className="rounded-xl bg-white/10 p-3">
                 <p className="text-xs text-white/70">إجمالي المستحقات</p>
-                <p className="text-xl font-bold text-white">{formatCurrency(stats.totalAmountAtRisk)}</p>
+                <p className="text-xl font-bold text-white">{formatCurrency(uiStats.totalAmountAtRisk)}</p>
               </div>
               <div className="rounded-xl bg-white/10 p-3">
                 <p className="text-xs text-white/70">يحتاجون قضية قانونية</p>
-                <p className="text-xl font-bold text-white">{stats.needLegalCase} عميل</p>
+                <p className="text-xl font-bold text-white">{uiStats.needLegalCase} عميل</p>
               </div>
             </div>
           </motion.div>
         )}
 
-        {/* Stats Cards */}
-        {stats && (
+        {/* uiStats Cards */}
+        {uiStats && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
-            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"
+            className="hidden"
           >
             <StatCard
               title="إجمالي العملاء المتأخرين"
-              value={stats.totalDelinquent}
-              subtitle={`${stats.criticalRisk + stats.highRisk} عميل عالي المخاطر`}
+              value={uiStats.totalDelinquent}
+              subtitle={`${uiStats.criticalRisk + uiStats.highRisk} عميل عالي المخاطر`}
               icon={Users}
               color={colors.primary}
               isActive={riskLevelFilter === 'all'}
@@ -956,22 +1210,22 @@ const FinancialDelinquencyPage: React.FC = () => {
             />
             <StatCard
               title="المبالغ المعرضة للخطر"
-              value={formatCurrency(stats.totalAmountAtRisk)}
+              value={formatCurrency(uiStats.totalAmountAtRisk)}
               subtitle="إيجارات متأخرة"
               icon={DollarSign}
               color={colors.destructive}
             />
             <StatCard
               title="الغرامات المتراكمة"
-              value={formatCurrency(stats.totalPenalties)}
-              subtitle={`متوسط ${Math.round(stats.averageDaysOverdue)} يوم تأخير`}
+              value={formatCurrency(uiStats.totalPenalties)}
+              subtitle={`متوسط ${Math.round(uiStats.averageDaysOverdue)} يوم تأخير`}
               icon={AlertTriangle}
               color={colors.accentForeground}
             />
             <StatCard
               title="يحتاجون إجراء فوري"
-              value={stats.criticalRisk + stats.highRisk}
-              subtitle={`${stats.needLegalCase} يحتاجون قضية قانونية`}
+              value={uiStats.criticalRisk + uiStats.highRisk}
+              subtitle={`${uiStats.needLegalCase} يحتاجون قضية قانونية`}
               icon={Zap}
               color={colors.destructive}
               isActive={riskLevelFilter === 'CRITICAL'}
@@ -985,7 +1239,7 @@ const FinancialDelinquencyPage: React.FC = () => {
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.25 }}
-          className="grid grid-cols-2 md:grid-cols-4 gap-3"
+          className="hidden"
         >
           <QuickAction
             icon={Mail}
@@ -1004,9 +1258,9 @@ const FinancialDelinquencyPage: React.FC = () => {
           <QuickAction
             icon={AlertTriangle}
             label="الحالات العاجلة"
-            description={`${stats?.criticalRisk || 0} عميل حرج`}
+            description={`${uiStats?.criticalRisk || 0} عميل حرج`}
             color={colors.destructive}
-            badge={stats?.criticalRisk}
+            badge={uiStats?.criticalRisk}
             onClick={() => setRiskLevelFilter('CRITICAL')}
           />
           <QuickAction
@@ -1076,12 +1330,12 @@ const FinancialDelinquencyPage: React.FC = () => {
           transition={{ delay: 0.3 }}
         >
           <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as TabValue)} className="w-full">
-            <TabsList className="grid w-full max-w-md grid-cols-2 mb-6 h-12 rounded-xl bg-muted p-1 border">
-              <TabsTrigger value="customers" className="gap-2 rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm font-semibold">
+            <TabsList className="mb-5 grid h-12 w-full max-w-md grid-cols-2 rounded-2xl border border-slate-200 bg-white p-1 shadow-sm">
+              <TabsTrigger value="customers" className="gap-2 rounded-xl font-semibold data-[state=active]:bg-[#22C7A1] data-[state=active]:text-white data-[state=active]:shadow-sm">
                 <Users className="w-4 h-4" />
                 حسب العميل ({customers?.length || 0})
               </TabsTrigger>
-              <TabsTrigger value="contracts" className="gap-2 rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm font-semibold">
+              <TabsTrigger value="contracts" className="gap-2 rounded-xl font-semibold data-[state=active]:bg-[#22C7A1] data-[state=active]:text-white data-[state=active]:shadow-sm">
                 <FileText className="w-4 h-4" />
                 حسب العقد ({overdueContracts?.length || 0})
               </TabsTrigger>
@@ -1090,17 +1344,17 @@ const FinancialDelinquencyPage: React.FC = () => {
             {/* Customers Tab */}
             <TabsContent value="customers" className="mt-0 space-y-6">
               {/* Filters & Controls */}
-              <div className="rounded-xl border bg-card shadow-sm overflow-hidden">
+              <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
                 {/* Risk Level Filters */}
-                <div className="border-b bg-muted/30 px-4 py-3">
+                <div className="border-b border-slate-100 bg-[#F6F8FB] px-4 py-3">
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="text-sm text-muted-foreground font-medium">مستوى المخاطر:</span>
                     {[
                       { id: 'all', label: 'الكل', count: customers?.length || 0, color: colors.primary },
-                      { id: 'CRITICAL', label: 'حرج', count: stats?.criticalRisk || 0, color: colors.destructive },
-                      { id: 'HIGH', label: 'عالي', count: stats?.highRisk || 0, color: colors.accentForeground },
-                      { id: 'MEDIUM', label: 'متوسط', count: stats?.mediumRisk || 0, color: colors.warning },
-                      { id: 'LOW', label: 'منخفض', count: stats?.lowRisk || 0, color: colors.success },
+                      { id: 'CRITICAL', label: 'حرج', count: uiStats?.criticalRisk || 0, color: colors.destructive },
+                      { id: 'HIGH', label: 'عالي', count: uiStats?.highRisk || 0, color: colors.accentForeground },
+                      { id: 'MEDIUM', label: 'متوسط', count: uiStats?.mediumRisk || 0, color: colors.warning },
+                      { id: 'LOW', label: 'منخفض', count: uiStats?.lowRisk || 0, color: colors.success },
                     ].map(({ id, label, count, color }) => (
                       <button
                         key={id}
@@ -1131,19 +1385,19 @@ const FinancialDelinquencyPage: React.FC = () => {
                     <div className="flex flex-wrap items-center justify-between gap-4">
                       {/* Search */}
                       <div className="relative flex-1 min-w-[250px]">
-                        <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                        <Search className="absolute right-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#94A3B8]" />
                         <Input
                           placeholder="بحث بالاسم، رقم العميل، العقد، أو المركبة..."
                           value={searchTerm}
                           onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
-                          className="pr-12 h-11 rounded-xl"
+                          className="h-11 rounded-xl border-slate-200 bg-[#F6F8FB] pr-12 text-[#020617]"
                         />
                       </div>
 
                       {/* View Mode */}
                       <div className="flex items-center gap-2">
                         <span className="text-sm text-muted-foreground">العرض:</span>
-                        <div className="inline-flex bg-muted rounded-lg p-1">
+                        <div className="inline-flex rounded-xl bg-[#F6F8FB] p-1">
                           {[
                             { id: 'cards', icon: LayoutGrid, label: 'بطاقات' },
                             { id: 'compact', icon: List, label: 'مختصر' },
@@ -1153,8 +1407,8 @@ const FinancialDelinquencyPage: React.FC = () => {
                               key={id}
                               onClick={() => setViewMode(id as ViewMode)}
                               className={cn(
-                                'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-semibold transition-all',
-                                viewMode === id ? 'bg-white shadow-sm text-foreground' : 'text-muted-foreground'
+                                'inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-semibold transition-all',
+                                viewMode === id ? 'bg-white text-[#020617] shadow-sm' : 'text-[#94A3B8]'
                               )}
                             >
                               <Icon className="w-4 h-4" />
@@ -1167,7 +1421,7 @@ const FinancialDelinquencyPage: React.FC = () => {
                       {/* Sort */}
                       <div className="flex items-center gap-2">
                         <Select value={sortField} onValueChange={(v) => setSortField(v as SortField)}>
-                          <SelectTrigger className="w-[140px] h-9 rounded-lg">
+                          <SelectTrigger className="h-10 w-[150px] rounded-xl border-slate-200 bg-[#F6F8FB]">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
@@ -1182,14 +1436,14 @@ const FinancialDelinquencyPage: React.FC = () => {
                           variant="outline"
                           size="sm"
                           onClick={() => setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc')}
-                          className="h-9 w-9 p-0 rounded-lg"
+                          className="h-10 w-10 rounded-xl border-slate-200 p-0"
                         >
                           {sortDirection === 'desc' ? <ArrowDown className="w-4 h-4" /> : <ArrowUp className="w-4 h-4" />}
                         </Button>
                       </div>
 
                       <CollapsibleTrigger asChild>
-                        <Button variant="ghost" size="sm" className="h-9 gap-2 rounded-lg">
+                        <Button variant="ghost" size="sm" className="h-10 gap-2 rounded-xl text-[#020617]">
                           <Filter className="w-4 h-4" />
                           <span>فلاتر متقدمة</span>
                           <ChevronDown className={cn('w-4 h-4 transition-transform', filtersExpanded && 'rotate-180')} />

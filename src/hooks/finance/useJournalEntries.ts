@@ -9,6 +9,8 @@ import { useUnifiedCompanyAccess } from "@/hooks/useUnifiedCompanyAccess";
 import { toast } from "sonner";
 import { queryKeys } from "@/utils/queryKeys";
 import type { ChartOfAccount } from '../useChartOfAccounts';
+import { assertFinancialPeriodOpen } from "@/services/financialControls";
+import { useFinanceAccessGuard } from "@/hooks/finance/useFinanceAccessGuard";
 
 export interface JournalEntry {
   id: string;
@@ -110,12 +112,17 @@ export const useJournalEntryLines = (journalEntryId: string) => {
 export const useCreateJournalEntry = () => {
   const { companyId } = useUnifiedCompanyAccess();
   const queryClient = useQueryClient();
+  const financeAccess = useFinanceAccessGuard();
 
   return useMutation({
     mutationFn: async (entry: Partial<JournalEntry> & { lines: Partial<JournalEntryLine>[] }) => {
       if (!companyId) throw new Error("No company access");
+      if (!financeAccess.can('finance.journal.create_draft')) {
+        throw new Error("ليس لديك صلاحية إنشاء قيد محاسبي");
+      }
 
       const { lines, ...entryData } = entry;
+      await assertFinancialPeriodOpen(companyId, entryData.entry_date);
 
       // Create journal entry
       const { data: journalEntry, error: entryError } = await supabase
@@ -162,13 +169,44 @@ export const useCreateJournalEntry = () => {
 
 export const usePostJournalEntry = () => {
   const queryClient = useQueryClient();
+  const { user } = useUnifiedCompanyAccess();
+  const financeAccess = useFinanceAccessGuard();
 
   return useMutation({
     mutationFn: async (entryId: string) => {
+      if (!financeAccess.can('finance.journal.post')) {
+        throw new Error("ليس لديك صلاحية ترحيل القيود المحاسبية");
+      }
+
+      const { data: existingEntry, error: fetchError } = await supabase
+        .from("journal_entries")
+        .select("id, company_id, entry_date, created_by, status")
+        .eq("id", entryId)
+        .single();
+
+      if (fetchError || !existingEntry) {
+        throw new Error("القيد غير موجود");
+      }
+
+      const segregationDecision = financeAccess.checkSegregationOfDuties({
+        action: 'finance.journal.post',
+        actorId: user?.id,
+        creatorId: existingEntry.created_by,
+      });
+
+      if (!segregationDecision.allowed) {
+        throw new Error(segregationDecision.reason || "تم منع العملية بسبب قاعدة فصل المهام");
+      }
+
+      if (existingEntry.company_id && existingEntry.entry_date) {
+        await assertFinancialPeriodOpen(existingEntry.company_id, existingEntry.entry_date);
+      }
+
       const { data, error } = await supabase
         .from("journal_entries")
         .update({
           status: 'posted',
+          posted_by: user?.id,
           posted_at: new Date().toISOString(),
         })
         .eq('id', entryId)

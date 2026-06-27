@@ -17,7 +17,6 @@ import { useActiveContracts } from "@/hooks/useContracts";
 import { PaymentScheduleSection } from "./PaymentScheduleSection";
 import { toast } from "sonner";
 import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter";
-import { useCompanyCurrency } from "@/hooks/useCompanyCurrency";
 
 interface InvoiceItem {
   id: string;
@@ -46,10 +45,9 @@ export function InvoiceForm({ open, onOpenChange, customerId, vendorId, type, co
   const { data: fixedAssets, isLoading: assetsLoading } = useFixedAssets();
   const createInvoice = useCreateInvoice();
   const { formatCurrency } = useCurrencyFormatter();
-  const { currency: companyCurrency } = useCompanyCurrency();
   
   // Fetch contracts for the customer/vendor
-  const { data: contracts } = useActiveContracts(customerId, vendorId);
+  const { data: contracts, isLoading: contractsLoading } = useActiveContracts(customerId, vendorId);
 
   const [invoiceData, setInvoiceData] = useState({
     invoice_number: '',
@@ -57,7 +55,7 @@ export function InvoiceForm({ open, onOpenChange, customerId, vendorId, type, co
     due_date: '',
     terms: '',
     notes: '',
-    currency: companyCurrency,
+    currency: 'QAR',
     discount_amount: 0,
     cost_center_id: '',
     fixed_asset_id: '',
@@ -140,7 +138,7 @@ export function InvoiceForm({ open, onOpenChange, customerId, vendorId, type, co
         invoice_type: type,
         customer_id: type === 'sales' ? customerId : undefined,
         vendor_id: type === 'purchase' ? vendorId : undefined,
-        contract_id: invoiceData.contract_id || undefined,
+        contract_id: invoiceData.contract_id && invoiceData.contract_id !== 'none' ? invoiceData.contract_id : undefined,
         subtotal,
         tax_amount: totalTax,
         total_amount: total,
@@ -158,7 +156,7 @@ export function InvoiceForm({ open, onOpenChange, customerId, vendorId, type, co
         due_date: '',
         terms: '',
         notes: '',
-        currency: companyCurrency,
+        currency: 'QAR',
         discount_amount: 0,
         cost_center_id: '',
         fixed_asset_id: '',
@@ -184,7 +182,7 @@ export function InvoiceForm({ open, onOpenChange, customerId, vendorId, type, co
       due_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 30 days from now
       terms: type === 'sales' ? 'الدفع خلال 30 يوماً من تاريخ الفاتورة' : 'شروط الدفع حسب الاتفاق',
       notes: type === 'sales' ? 'شكراً لثقتكم في خدماتنا' : 'فاتورة مشتريات تجريبية',
-      currency: companyCurrency,
+      currency: 'QAR',
       discount_amount: type === 'sales' ? 50 : 25,
       cost_center_id: costCenters?.[0]?.id || '',
       fixed_asset_id: '',
@@ -295,11 +293,11 @@ export function InvoiceForm({ open, onOpenChange, customerId, vendorId, type, co
 
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Invoice Header */}
-          <Card>
-            <CardHeader>
+          <Card className="overflow-hidden rounded-xl border-[#DDE5EF] bg-white shadow-lg">
+            <CardHeader className="border-b border-[#E6ECF3] bg-[#F8FAFC] px-5 py-4">
               <CardTitle>معلومات الفاتورة</CardTitle>
             </CardHeader>
-            <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <CardContent className="grid grid-cols-1 gap-4 bg-white p-5 md:grid-cols-2 lg:grid-cols-3 [&_label]:text-sm [&_label]:font-black [&_label]:text-[#142033] [&_input]:h-11 [&_button]:h-11">
               <div className="space-y-2">
                 <Label htmlFor="invoice_number">رقم الفاتورة *</Label>
                 <Input
@@ -334,11 +332,12 @@ export function InvoiceForm({ open, onOpenChange, customerId, vendorId, type, co
 
               <div className="space-y-2">
                 <Label htmlFor="currency">العملة</Label>
-                <Select value={invoiceData.currency} onValueChange={(value) => setInvoiceData({...invoiceData, currency: value})}>
-                  <SelectTrigger>
+                <Select value={invoiceData.currency || 'QAR'} onValueChange={(value) => setInvoiceData({...invoiceData, currency: value})}>
+                  <SelectTrigger className="border-[#D8E1EC] bg-[#F8FAFC] font-bold">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="QAR">ريال قطري (QAR)</SelectItem>
                     <SelectItem value="KWD">دينار كويتي (KWD)</SelectItem>
                     <SelectItem value="USD">دولار أمريكي (USD)</SelectItem>
                     <SelectItem value="EUR">يورو (EUR)</SelectItem>
@@ -391,12 +390,16 @@ export function InvoiceForm({ open, onOpenChange, customerId, vendorId, type, co
 
                 <div className="space-y-2">
                   <Label htmlFor="contract_id">العقد المرتبط (اختياري)</Label>
-                  <Select value={invoiceData.contract_id} onValueChange={(value) => setInvoiceData({...invoiceData, contract_id: value})}>
-                    <SelectTrigger>
+                  <Select value={invoiceData.contract_id || 'none'} onValueChange={(value) => setInvoiceData({...invoiceData, contract_id: value === 'none' ? '' : value})}>
+                    <SelectTrigger className="border-[#D8E1EC] bg-[#F8FAFC]">
                       <SelectValue placeholder="اختر العقد" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="none">بدون عقد</SelectItem>
+                      {contractsLoading && <SelectItem value="loading" disabled>جاري تحميل العقود...</SelectItem>}
+                      {!contractsLoading && (!contracts || contracts.length === 0) && (
+                        <SelectItem value="empty" disabled>لا توجد عقود نشطة</SelectItem>
+                      )}
                       {contracts?.map(contract => (
                         <SelectItem key={contract.id} value={contract.id}>
                           {contract.contract_number} - {contract.description}

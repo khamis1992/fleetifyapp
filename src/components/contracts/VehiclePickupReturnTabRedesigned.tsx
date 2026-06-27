@@ -195,14 +195,14 @@ const InspectionCard = ({ record, formatCurrency }: { record: InspectionRecord; 
     <motion.div
       variants={scaleIn}
       whileHover={{ y: -2 }}
-      className="bg-white rounded-2xl border border-neutral-200 p-6 shadow-sm hover:shadow-md transition-all"
+      className="rounded-xl border border-[#DDE5EF] bg-white p-5 shadow-sm transition-colors hover:border-[#173A63]"
     >
       {/* Header */}
       <div className="flex items-start justify-between mb-6">
         <div className="flex items-center gap-4">
           <div className={cn(
             "w-14 h-14 rounded-xl flex items-center justify-center",
-            isPickup ? "bg-gradient-to-br from-teal-500 to-teal-600" : "bg-gradient-to-br from-amber-500 to-amber-600"
+            isPickup ? "bg-[#173A63]" : "bg-amber-600"
           )}>
             <Car className="w-7 h-7 text-white" />
           </div>
@@ -293,7 +293,7 @@ const InspectionCard = ({ record, formatCurrency }: { record: InspectionRecord; 
 
       {/* Visual Inspection Zone Markers */}
       {record.visualZones && record.visualZones.length > 0 && (
-        <div className="mb-6 p-4 rounded-xl bg-gradient-to-br from-slate-50 to-slate-100 border border-slate-200">
+        <div className="mb-6 rounded-xl border border-[#DDE5EF] bg-[#FCFDFE] p-4">
           <h4 className="font-semibold text-neutral-900 mb-3 flex items-center gap-2">
             <AlertTriangle className="w-5 h-5 text-amber-600" />
             الفحص المرئي - المناطق المميزة
@@ -355,7 +355,7 @@ const InspectionCard = ({ record, formatCurrency }: { record: InspectionRecord; 
       {/* Accessories & Documents */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
         {/* Accessories */}
-        <div className="p-4 rounded-xl bg-neutral-50 border border-neutral-200">
+        <div className="rounded-xl border border-[#DDE5EF] bg-[#FCFDFE] p-4">
           <h5 className="font-medium text-neutral-900 mb-3 flex items-center gap-2">
             <Package className="w-4 h-4" />
             الملحقات ({record.accessories.length})
@@ -374,7 +374,7 @@ const InspectionCard = ({ record, formatCurrency }: { record: InspectionRecord; 
         </div>
 
         {/* Documents */}
-        <div className="p-4 rounded-xl bg-neutral-50 border border-neutral-200">
+        <div className="rounded-xl border border-[#DDE5EF] bg-[#FCFDFE] p-4">
           <h5 className="font-medium text-neutral-900 mb-3 flex items-center gap-2">
             <FileText className="w-4 h-4" />
             المستندات ({record.documents.length})
@@ -395,7 +395,7 @@ const InspectionCard = ({ record, formatCurrency }: { record: InspectionRecord; 
       </div>
 
       {/* Signatures */}
-      <div className="p-4 rounded-xl bg-gradient-to-br from-slate-50 to-slate-100 border border-slate-200">
+      <div className="rounded-xl border border-[#DDE5EF] bg-[#FCFDFE] p-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
@@ -437,36 +437,43 @@ const EmptyState = ({ type, onCreate }: { type: 'pickup' | 'return'; onCreate: (
   const isPickup = type === 'pickup';
 
   return (
-    <div className="text-center py-16">
+    <div className="grid gap-6 p-6 md:grid-cols-[0.9fr_1.1fr] md:items-center">
       <motion.div
         initial={{ scale: 0.9, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         transition={{ duration: 0.3 }}
         className={cn(
-          "w-24 h-24 rounded-xl bg-gradient-to-br flex items-center justify-center mx-auto mb-6",
-          isPickup ? "from-teal-50 to-teal-100" : "from-amber-50 to-amber-100"
-        )}
-      >
-        <Car className={cn("w-12 h-12", isPickup ? "text-teal-500" : "text-amber-500")} />
-      </motion.div>
-      <h3 className="text-xl font-bold text-neutral-900 mb-2">
-        لم يتم تسجيل {isPickup ? 'استلام' : 'تسليم'} المركبة
-      </h3>
-      <p className="text-neutral-500 mb-6 max-w-md mx-auto">
-        ابدأ بتسليم العملية لتوثيق حالة المركبة والوقود والمسافات
-      </p>
-      <Button
-        onClick={onCreate}
-        className={cn(
-          "gap-2 hover:shadow-lg rounded-xl",
+          "mx-auto flex h-28 w-28 items-center justify-center rounded-lg border md:mx-0",
           isPickup
-            ? "bg-gradient-to-r from-teal-500 to-teal-600 shadow-teal-200"
-            : "bg-gradient-to-r from-amber-500 to-amber-600 shadow-amber-200"
+            ? "border-[#22C7A1]/20 bg-[#22C7A1]/10"
+            : "border-[#FB6B7A]/20 bg-[#FB6B7A]/10"
         )}
       >
-        <Plus className="w-4 h-4" />
-        تسجيل {isPickup ? 'استلام' : 'تسليم'} جديد
-      </Button>
+        <Car className={cn("h-12 w-12", isPickup ? "text-[#22C7A1]" : "text-[#FB6B7A]")} />
+      </motion.div>
+      <div className="text-center md:text-right">
+        <p className={cn("mb-2 text-sm font-bold", isPickup ? "text-[#22C7A1]" : "text-[#FB6B7A]")}>
+          {isPickup ? 'استلام المركبة' : 'تسليم المركبة'}
+        </p>
+        <h3 className="mb-2 text-xl font-bold text-[#020617]">
+          لا يوجد سجل {isPickup ? 'استلام' : 'تسليم'} حتى الآن
+        </h3>
+        <p className="mb-5 max-w-xl text-sm leading-7 text-[#94A3B8]">
+          ابدأ بتوثيق حالة المركبة والوقود والعداد والملاحظات قبل متابعة دورة العقد.
+        </p>
+        <Button
+          onClick={onCreate}
+          className={cn(
+            "gap-2 rounded-lg px-5 shadow-none",
+            isPickup
+              ? "bg-[#22C7A1] text-white hover:bg-[#1fb391]"
+              : "bg-[#FB6B7A] text-white hover:bg-[#e85f6d]"
+          )}
+        >
+          <Plus className="h-4 w-4" />
+          تسجيل {isPickup ? 'استلام' : 'تسليم'} جديد
+        </Button>
+      </div>
     </div>
   );
 };
@@ -517,51 +524,65 @@ export const VehiclePickupReturnTabRedesigned = ({
   };
 
   return (
-    <div className="space-y-6">
+    <div className="overflow-hidden rounded-lg border border-[#E5EAF1] bg-white shadow-sm">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-4 border-b border-[#E5EAF1] bg-[#F6F8FB] p-5 lg:flex-row lg:items-center lg:justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-neutral-900 mb-1">استلام وتسليم المركبة</h2>
-          <p className="text-neutral-500 text-sm">
+          <p className="mb-1 text-sm font-bold text-[#22C7A1]">دورة المركبة</p>
+          <h2 className="text-2xl font-bold text-[#020617]">استلام وتسليم المركبة</h2>
+          <p className="mt-2 text-sm text-[#94A3B8]">
             {contract?.contract_number && `العقد #${contract.contract_number} • `}
             {contract?.vehicle_make} {contract?.vehicle_model} • {contract?.vehicle_plate}
           </p>
+        </div>
+
+        <div className="grid grid-cols-2 gap-2 sm:flex">
+          <div className="rounded-lg border border-[#E5EAF1] bg-white px-4 py-2">
+            <p className="text-xs font-semibold text-[#94A3B8]">سجلات الاستلام</p>
+            <p className="text-lg font-black text-[#22C7A1]">{pickupRecords.length}</p>
+          </div>
+          <div className="rounded-lg border border-[#E5EAF1] bg-white px-4 py-2">
+            <p className="text-xs font-semibold text-[#94A3B8]">سجلات التسليم</p>
+            <p className="text-lg font-black text-[#7C83F6]">{returnRecords.length}</p>
+          </div>
         </div>
       </div>
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'pickup' | 'return')} className="w-full">
-        <TabsList className="w-full justify-start bg-white border border-slate-200 p-1 rounded-xl h-auto mb-6">
+        <div className="border-b border-[#E5EAF1] p-4">
+        <TabsList className="grid h-auto w-full grid-cols-2 justify-start rounded-lg border border-[#E5EAF1] bg-[#F6F8FB] p-1">
           <TabsTrigger
             value="pickup"
-            className="data-[state=active]:bg-[#00A896] data-[state=active]:text-white rounded-lg px-5 py-2.5 gap-2 transition-all"
+            className="gap-2 rounded-lg px-5 py-3 transition-all data-[state=active]:bg-[#22C7A1] data-[state=active]:text-white"
           >
-            <ArrowRight className="w-4 h-4" />
-            استلام المركبة
-            <Badge variant="outline" className="mr-2 data-[state=active]:border-white/50 data-[state=active]:text-white">{pickupRecords.length}</Badge>
+            <ArrowRight className="h-4 w-4" />
+            <span>استلام المركبة</span>
+            <Badge variant="outline" className="mr-2 border-[#E5EAF1] bg-white text-[#020617]">{pickupRecords.length}</Badge>
           </TabsTrigger>
           <TabsTrigger
             value="return"
-            className="data-[state=active]:bg-[#00A896] data-[state=active]:text-white rounded-lg px-5 py-2.5 gap-2 transition-all"
+            className="gap-2 rounded-lg px-5 py-3 transition-all data-[state=active]:bg-[#7C83F6] data-[state=active]:text-white"
           >
-            <ArrowLeft className="w-4 h-4" />
-            تسليم المركبة
-            <Badge variant="outline" className="mr-2 data-[state=active]:border-white/50 data-[state=active]:text-white">{returnRecords.length}</Badge>
+            <ArrowLeft className="h-4 w-4" />
+            <span>تسليم المركبة</span>
+            <Badge variant="outline" className="mr-2 border-[#E5EAF1] bg-white text-[#020617]">{returnRecords.length}</Badge>
           </TabsTrigger>
         </TabsList>
+        </div>
 
         {/* Pickup Tab Content */}
-        <TabsContent value="pickup" className="mt-6">
+        <TabsContent value="pickup" className="m-0 p-5">
           {isLoading ? (
-            <Card className="border-neutral-200">
-              <CardContent className="p-12 flex flex-col items-center justify-center">
-                <Loader2 className="w-8 h-8 text-teal-500 animate-spin mb-3" />
-                <p className="text-neutral-500">جاري تحميل سجلات الاستلام...</p>
+            <Card className="border-[#E5EAF1]">
+              <CardContent className="flex flex-col items-center justify-center p-10">
+                <Loader2 className="mb-3 h-8 w-8 animate-spin text-[#22C7A1]" />
+                <p className="text-[#94A3B8]">جاري تحميل سجلات الاستلام...</p>
               </CardContent>
             </Card>
           ) : pickupRecords.length === 0 ? (
-            <Card className="border-neutral-200">
-              <CardContent className="p-6">
+            <Card className="border-[#E5EAF1] bg-white">
+              <CardContent className="p-0">
                 <EmptyState type="pickup" onCreate={() => handleCreateNew('pickup')} />
               </CardContent>
             </Card>
@@ -580,17 +601,17 @@ export const VehiclePickupReturnTabRedesigned = ({
         </TabsContent>
 
         {/* Return Tab Content */}
-        <TabsContent value="return" className="mt-6">
+        <TabsContent value="return" className="m-0 p-5">
           {isLoading ? (
-            <Card className="border-neutral-200">
-              <CardContent className="p-12 flex flex-col items-center justify-center">
-                <Loader2 className="w-8 h-8 text-amber-500 animate-spin mb-3" />
-                <p className="text-neutral-500">جاري تحميل سجلات التسليم...</p>
+            <Card className="border-[#E5EAF1]">
+              <CardContent className="flex flex-col items-center justify-center p-10">
+                <Loader2 className="mb-3 h-8 w-8 animate-spin text-[#7C83F6]" />
+                <p className="text-[#94A3B8]">جاري تحميل سجلات التسليم...</p>
               </CardContent>
             </Card>
           ) : returnRecords.length === 0 ? (
-            <Card className="border-neutral-200">
-              <CardContent className="p-6">
+            <Card className="border-[#E5EAF1] bg-white">
+              <CardContent className="p-0">
                 <EmptyState type="return" onCreate={() => handleCreateNew('return')} />
               </CardContent>
             </Card>
@@ -623,8 +644,8 @@ export const VehiclePickupReturnTabRedesigned = ({
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <Card className="max-w-md w-full bg-white">
             <CardContent className="p-6 text-center">
-              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-teal-50 to-teal-100 flex items-center justify-center mx-auto mb-4">
-                <Car className="w-8 h-8 text-teal-500" />
+              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-xl bg-[#EEF5FB]">
+                <Car className="h-8 w-8 text-[#173A63]" />
               </div>
               <h3 className="text-xl font-bold text-neutral-900 mb-2">
                 تسجيل استلام جديد
@@ -642,7 +663,7 @@ export const VehiclePickupReturnTabRedesigned = ({
                 </Button>
                 <Button
                   onClick={handleCloseDialog}
-                  className="flex-1 bg-gradient-to-r from-teal-500 to-teal-600 rounded-xl"
+                  className="flex-1 rounded-xl bg-[#173A63] hover:bg-[#173A63]/90"
                 >
                   متابعة
                 </Button>

@@ -156,7 +156,7 @@ export const MobileOptimizationProvider: React.FC<MobileOptimizationProviderProp
 
   // Register service worker for PWA features
   useEffect(() => {
-    if (!isMobile || !('serviceWorker' in navigator)) return;
+    if (import.meta.env.DEV || !isMobile || !('serviceWorker' in navigator)) return;
 
     let registration: ServiceWorkerRegistration | null = null;
     const handleUpdateFound = () => {

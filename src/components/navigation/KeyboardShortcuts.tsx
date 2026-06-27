@@ -109,7 +109,7 @@ export const KeyboardShortcuts: React.FC = () => {
         {
           keys: ['Alt', 'F', 'R'],
           description: 'التقارير المالية',
-          action: () => navigate('/finance/reports')
+          action: () => navigate('/finance/reports-analysis?tab=reports')
         }
       ]
     },

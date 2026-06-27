@@ -22,18 +22,15 @@ import {
 import { useEnhancedFinancialReports } from "@/hooks/useEnhancedFinancialReports";
 import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter";
 import { toast } from "sonner";
-import jsPDF from "jspdf";
-import "jspdf-autotable";
 import * as XLSX from 'xlsx';
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { buildBalanceSheetReport } from "@/utils/standardFinancialReportRules";
+import {
+  exportOfficialFinancialReportToPDF,
+  type OfficialFinancialReportExportPayload,
+} from "@/utils/officialFinancialReportExport";
 
 import { useFleetifyTranslation } from "@/hooks/useTranslation";
-// Extend jsPDF type
-declare module 'jspdf' {
-  interface jsPDF {
-    autoTable: (options: any) => jsPDF;
-  }
-}
 
 const COLORS = {
   assets: '#22c55e',
@@ -202,138 +199,76 @@ export function BalanceSheetReport() {
   };
 
   // Export to PDF
-  const handleExportPDF = () => {
+  const handleExportPDF = async () => {
     if (!reportData || !reportData.sections || reportData.sections.length === 0) {
-      toast.error("لا توجد بيانات للتصدير");
+      toast.error("\u0644\u0627 \u062a\u0648\u062c\u062f \u0628\u064a\u0627\u0646\u0627\u062a \u0644\u0644\u062a\u0635\u062f\u064a\u0631");
       return;
     }
 
+    const assetAccounts = assetsSection?.accounts || [];
+    const liabilityAccounts = liabilitiesSection?.accounts || [];
+    const equityAccounts = equitySection?.accounts || [];
+    const sourceReport = buildBalanceSheetReport([
+      ...assetAccounts.map((acc: any) => ({
+        accountCode: acc.accountCode,
+        accountName: acc.accountNameAr || acc.accountName,
+        accountType: "asset",
+        debit: Number(acc.balance || 0),
+        credit: 0,
+      })),
+      ...liabilityAccounts.map((acc: any) => ({
+        accountCode: acc.accountCode,
+        accountName: acc.accountNameAr || acc.accountName,
+        accountType: "liability",
+        debit: 0,
+        credit: Number(acc.balance || 0),
+      })),
+      ...equityAccounts.map((acc: any) => ({
+        accountCode: acc.accountCode,
+        accountName: acc.accountNameAr || acc.accountName,
+        accountType: "equity",
+        debit: 0,
+        credit: Number(acc.balance || 0),
+      })),
+    ]);
+
+    const payload: OfficialFinancialReportExportPayload = {
+      metadata: {
+        reportTitle: "\u0642\u0627\u0626\u0645\u0629 \u0627\u0644\u0645\u0631\u0643\u0632 \u0627\u0644\u0645\u0627\u0644\u064a",
+        reportType: "balance_sheet",
+        companyName: "Fleetify",
+        asOfDate,
+        currency: "QAR",
+        generatedAt: new Date().toISOString(),
+        status: isBalanced ? "published" : "draft",
+        sourceFingerprint: sourceReport.sourceFingerprint,
+        reportHash: sourceReport.sourceFingerprint,
+      },
+      columns: [
+        { key: "section", header: "\u0627\u0644\u0628\u0646\u062f", width: 18 },
+        { key: "accountCode", header: "\u0631\u0645\u0632 \u0627\u0644\u062d\u0633\u0627\u0628", width: 18 },
+        { key: "accountName", header: "\u0627\u0633\u0645 \u0627\u0644\u062d\u0633\u0627\u0628", width: 42 },
+        { key: "amount", header: "\u0627\u0644\u0645\u0628\u0644\u063a", type: "money", width: 18 },
+      ],
+      rows: [
+        ...assetAccounts.map((acc: any) => ({ section: "\u0627\u0644\u0623\u0635\u0648\u0644", accountCode: acc.accountCode, accountName: acc.accountNameAr || acc.accountName, amount: Number(acc.balance || 0) })),
+        ...liabilityAccounts.map((acc: any) => ({ section: "\u0627\u0644\u0627\u0644\u062a\u0632\u0627\u0645\u0627\u062a", accountCode: acc.accountCode, accountName: acc.accountNameAr || acc.accountName, amount: Number(acc.balance || 0) })),
+        ...equityAccounts.map((acc: any) => ({ section: "\u062d\u0642\u0648\u0642 \u0627\u0644\u0645\u0644\u0643\u064a\u0629", accountCode: acc.accountCode, accountName: acc.accountNameAr || acc.accountName, amount: Number(acc.balance || 0) })),
+      ],
+      summaryRows: [
+        { section: "\u0627\u0644\u0625\u062c\u0645\u0627\u0644\u064a", accountCode: "", accountName: "\u0625\u062c\u0645\u0627\u0644\u064a \u0627\u0644\u0623\u0635\u0648\u0644", amount: totalAssets },
+        { section: "\u0627\u0644\u0625\u062c\u0645\u0627\u0644\u064a", accountCode: "", accountName: "\u0625\u062c\u0645\u0627\u0644\u064a \u0627\u0644\u0627\u0644\u062a\u0632\u0627\u0645\u0627\u062a", amount: totalLiabilities },
+        { section: "\u0627\u0644\u0625\u062c\u0645\u0627\u0644\u064a", accountCode: "", accountName: "\u0625\u062c\u0645\u0627\u0644\u064a \u062d\u0642\u0648\u0642 \u0627\u0644\u0645\u0644\u0643\u064a\u0629", amount: totalEquity },
+        { section: "\u0627\u0644\u062d\u0627\u0644\u0629", accountCode: "", accountName: isBalanced ? "\u0645\u062a\u0648\u0627\u0632\u0646" : "\u063a\u064a\u0631 \u0645\u062a\u0648\u0627\u0632\u0646", amount: Math.abs(totalAssets - totalLiabilitiesAndEquity) },
+      ],
+    };
+
     try {
-      const doc = new jsPDF('p', 'mm', 'a4');
-      
-      doc.setFont('helvetica');
-      doc.setFontSize(18);
-      doc.text('Balance Sheet', 105, 15, { align: 'center' });
-      doc.setFontSize(14);
-      doc.text('قائمة المركز المالي', 105, 25, { align: 'center' });
-      
-      doc.setFontSize(10);
-      doc.text(`As of Date / كما في: ${asOfDate}`, 105, 32, { align: 'center' });
-      doc.text(`Generated / تاريخ الإصدار: ${new Date().toLocaleDateString('en-US')}`, 105, 38, { align: 'center' });
-
-      let currentY = 50;
-
-      // Assets Section
-      doc.setFontSize(12);
-      doc.setFillColor(34, 197, 94);
-      doc.rect(14, currentY - 5, 80, 8, 'F');
-      doc.setTextColor(255, 255, 255);
-      doc.text('Assets / الأصول', 20, currentY);
-      doc.setTextColor(0, 0, 0);
-      currentY += 10;
-
-      const assetsData = assetsSection?.accounts?.map((acc: any) => [
-        acc.accountCode,
-        acc.accountNameAr || acc.accountName,
-        formatCurrency(Number(acc.balance))
-      ]) || [];
-
-      doc.autoTable({
-        startY: currentY,
-        head: [['Code', 'Account', 'Amount']],
-        body: assetsData,
-        theme: 'grid',
-        styles: { fontSize: 8 },
-        headStyles: { fillColor: [34, 197, 94] },
-        columnStyles: { 0: { cellWidth: 25 }, 1: { cellWidth: 70 }, 2: { cellWidth: 35, halign: 'right' } }
-      });
-
-      currentY = (doc as any).lastAutoTable.finalY + 2;
-      doc.setFont('helvetica', 'bold');
-      doc.text(`Total Assets: ${formatCurrency(totalAssets)}`, 20, currentY);
-      currentY += 10;
-
-      // Liabilities Section
-      doc.setFont('helvetica', 'normal');
-      doc.setFillColor(239, 68, 68);
-      doc.rect(110, 50 - 5, 86, 8, 'F');
-      doc.setTextColor(255, 255, 255);
-      doc.text('Liabilities / الخصوم', 116, 50);
-      doc.setTextColor(0, 0, 0);
-
-      const liabilitiesData = liabilitiesSection?.accounts?.map((acc: any) => [
-        acc.accountCode,
-        acc.accountNameAr || acc.accountName,
-        formatCurrency(Number(acc.balance))
-      ]) || [];
-
-      doc.autoTable({
-        startY: 60,
-        head: [['Code', 'Account', 'Amount']],
-        body: liabilitiesData,
-        theme: 'grid',
-        styles: { fontSize: 8 },
-        headStyles: { fillColor: [239, 68, 68] },
-        margin: { left: 110 },
-        columnStyles: { 0: { cellWidth: 20 }, 1: { cellWidth: 50 }, 2: { cellWidth: 30, halign: 'right' } }
-      });
-
-      let liabY = (doc as any).lastAutoTable.finalY + 2;
-      doc.setFont('helvetica', 'bold');
-      doc.text(`Total: ${formatCurrency(totalLiabilities)}`, 116, liabY);
-      liabY += 10;
-
-      // Equity Section
-      doc.setFont('helvetica', 'normal');
-      doc.setFillColor(59, 130, 246);
-      doc.rect(110, liabY - 5, 86, 8, 'F');
-      doc.setTextColor(255, 255, 255);
-      doc.text('Equity / حقوق الملكية', 116, liabY);
-      doc.setTextColor(0, 0, 0);
-      liabY += 10;
-
-      const equityData = equitySection?.accounts?.map((acc: any) => [
-        acc.accountCode,
-        acc.accountNameAr || acc.accountName,
-        formatCurrency(Number(acc.balance))
-      ]) || [];
-
-      doc.autoTable({
-        startY: liabY,
-        head: [['Code', 'Account', 'Amount']],
-        body: equityData,
-        theme: 'grid',
-        styles: { fontSize: 8 },
-        headStyles: { fillColor: [59, 130, 246] },
-        margin: { left: 110 },
-        columnStyles: { 0: { cellWidth: 20 }, 1: { cellWidth: 50 }, 2: { cellWidth: 30, halign: 'right' } }
-      });
-
-      const equityY = (doc as any).lastAutoTable.finalY + 2;
-      doc.setFont('helvetica', 'bold');
-      doc.text(`Total Equity: ${formatCurrency(totalEquity)}`, 116, equityY);
-
-      // Balance Status
-      const finalY = Math.max(currentY, equityY) + 10;
-      if (isBalanced) {
-        doc.setTextColor(34, 197, 94);
-        doc.text('✓ BALANCED / متوازن', 105, finalY, { align: 'center' });
-      } else {
-        doc.setTextColor(239, 68, 68);
-        doc.text('✗ NOT BALANCED / غير متوازن', 105, finalY, { align: 'center' });
-      }
-
-      // Footer
-      doc.setFontSize(8);
-      doc.setTextColor(128, 128, 128);
-      doc.text('Generated by FleetifyApp', 105, doc.internal.pageSize.height - 10, { align: 'center' });
-
-      const fileName = `balance_sheet_${asOfDate}.pdf`;
-      doc.save(fileName);
-      toast.success("تم تصدير التقرير بنجاح");
+      await exportOfficialFinancialReportToPDF(payload);
+      toast.success("\u062a\u0645 \u062a\u0635\u062f\u064a\u0631 \u0627\u0644\u0645\u0631\u0643\u0632 \u0627\u0644\u0645\u0627\u0644\u064a \u0628\u0635\u064a\u063a\u0629 \u0643\u062a\u0627\u0628 \u0631\u0633\u0645\u064a");
     } catch (error) {
-      console.error('PDF export error:', error);
-      toast.error("حدث خطأ أثناء تصدير التقرير");
+      console.error("PDF export error:", error);
+      toast.error("\u062a\u0639\u0630\u0631 \u062a\u0635\u062f\u064a\u0631 \u0645\u0644\u0641 PDF");
     }
   };
 

@@ -64,6 +64,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { useDebounce } from '@/hooks/useDebounce';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
+import { usePaymentOperations } from '@/hooks/business/usePaymentOperations';
 import { supabase } from '@/integrations/supabase/client';
 
 interface PaymentRecord {
@@ -103,6 +104,7 @@ const statusConfig = {
 export function PaymentRegistrationTable({ searchTerm, showFilters }: PaymentRegistrationTableProps) {
   const { companyId } = useUnifiedCompanyAccess();
   const { toast } = useToast();
+  const { cancelPayment, isCancelling } = usePaymentOperations();
   const [payments, setPayments] = useState<PaymentRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshKey, setRefreshKey] = useState(0);
@@ -500,13 +502,15 @@ export function PaymentRegistrationTable({ searchTerm, showFilters }: PaymentReg
             <AlertDialogAction onClick={async () => {
               if (!selectedPayment) return;
               try {
-                const { error } = await supabase.from('payments').delete().eq('id', selectedPayment.id);
-                if (error) throw error;
-                toast({ title: 'تم حذف الدفعة' });
+                await cancelPayment.mutateAsync({
+                  paymentId: selectedPayment.id,
+                  reason: 'تم الإلغاء من جدول تسجيل الدفعات',
+                });
+                toast({ title: 'تم إلغاء الدفعة' });
                 setIsDeleteOpen(false);
                 setRefreshKey(k => k + 1);
               } catch { toast({ title: 'فشل الحذف', variant: 'destructive' }); }
-            }} className="bg-red-500 hover:bg-red-600">حذف</AlertDialogAction>
+            }} disabled={isCancelling} className="bg-red-500 hover:bg-red-600">إلغاء الدفعة</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

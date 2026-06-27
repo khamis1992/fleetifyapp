@@ -870,6 +870,17 @@ export const useDeleteJournalEntry = () => {
   
   return useMutation({
     mutationFn: async (entryId: string) => {
+      const { data: entry, error: entryFetchError } = await supabase
+        .from("journal_entries")
+        .select("id,status")
+        .eq("id", entryId)
+        .single()
+
+      if (entryFetchError) throw entryFetchError
+      if (entry?.status !== "draft") {
+        throw new Error("Only draft journal entries can be deleted. Posted entries must be reversed.")
+      }
+
       // First delete journal entry lines
       const { error: linesError } = await supabase
         .from("journal_entry_lines")
@@ -883,7 +894,6 @@ export const useDeleteJournalEntry = () => {
         .from("journal_entries")
         .delete()
         .eq("id", entryId)
-        .eq("status", "draft") // Only allow deletion of draft entries
         .select()
         .single()
       

@@ -1,14 +1,15 @@
-import React, { useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { BarChart3, Users, Clock, DollarSign, FileText, Download } from 'lucide-react';
-import { useHRStatistics } from '@/hooks/useHRReports';
-import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
-import { LoadingSpinner } from '@/components/ui/loading-spinner';
-import { AttendanceReportModal } from '@/components/hr/reports/AttendanceReportModal';
-import { EmployeeReportModal } from '@/components/hr/reports/EmployeeReportModal';
-import { PayrollReportModal } from '@/components/hr/reports/PayrollReportModal';
-import { LeaveReportModal } from '@/components/hr/reports/LeaveReportModal';
+import { useState } from "react";
+import { BarChart3, Clock, Download, FileText, Users, WalletCards } from "lucide-react";
+import { AttendanceReportModal } from "@/components/hr/reports/AttendanceReportModal";
+import { EmployeeReportModal } from "@/components/hr/reports/EmployeeReportModal";
+import { LeaveReportModal } from "@/components/hr/reports/LeaveReportModal";
+import { PayrollReportModal } from "@/components/hr/reports/PayrollReportModal";
+import { HRMetricCard, HRPageHeader, HRPageShell, HRSectionCard } from "@/components/hr/HRDesignSystem";
+import { Button } from "@/components/ui/button";
+import { CardContent } from "@/components/ui/card";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter";
+import { useHRStatistics } from "@/hooks/useHRReports";
 
 export default function HRReports() {
   const [attendanceModalOpen, setAttendanceModalOpen] = useState(false);
@@ -16,142 +17,100 @@ export default function HRReports() {
   const [payrollModalOpen, setPayrollModalOpen] = useState(false);
   const [leaveModalOpen, setLeaveModalOpen] = useState(false);
 
-const { data: statistics, isLoading: statsLoading } = useHRStatistics();
- 
-   const { formatCurrency } = useCurrencyFormatter();
+  const { data: statistics, isLoading: statsLoading } = useHRStatistics();
+  const { formatCurrency } = useCurrencyFormatter();
 
   const reports = [
     {
-      title: 'تقرير الحضور الشهري',
-      description: 'تقرير شامل عن حضور الموظفين خلال الشهر',
+      title: "تقرير الحضور الشهري",
+      description: "مراجعة الحضور، التأخير، وساعات العمل خلال فترة محددة.",
       icon: Clock,
-      color: 'bg-blue-100 text-blue-600',
+      tone: "info" as const,
       onClick: () => setAttendanceModalOpen(true),
     },
     {
-      title: 'تقرير الرواتب',
-      description: 'تفاصيل رواتب الموظفين والخصومات',
-      icon: DollarSign,
-      color: 'bg-green-100 text-green-600',
+      title: "تقرير الرواتب",
+      description: "تفاصيل الرواتب، الخصومات، وصافي المبالغ للموظفين.",
+      icon: WalletCards,
+      tone: "success" as const,
       onClick: () => setPayrollModalOpen(true),
     },
     {
-      title: 'تقرير الموظفين',
-      description: 'قائمة بجميع الموظفين ومعلوماتهم',
+      title: "تقرير الموظفين",
+      description: "قائمة الموظفين ومعلوماتهم الوظيفية والمالية الأساسية.",
       icon: Users,
-      color: 'bg-purple-100 text-purple-600',
+      tone: "focus" as const,
       onClick: () => setEmployeeModalOpen(true),
     },
     {
-      title: 'تقرير الإجازات',
-      description: 'تفاصيل الإجازات المأخوذة والمتبقية',
+      title: "تقرير الإجازات",
+      description: "تفاصيل الإجازات المستخدمة والمتبقية وحالات الطلبات.",
       icon: FileText,
-      color: 'bg-orange-100 text-orange-600',
+      tone: "danger" as const,
       onClick: () => setLeaveModalOpen(true),
     },
   ];
 
   return (
-    <div className="p-6 space-y-6" dir="rtl">
-      <div className="flex items-center gap-3">
-        <div className="p-2 bg-primary/10 rounded-lg">
-          <BarChart3 className="h-6 w-6 text-primary" />
-        </div>
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">تقارير الموارد البشرية</h1>
-          <p className="text-muted-foreground">تقارير شاملة عن الموظفين والحضور والرواتب</p>
-        </div>
+    <HRPageShell>
+      <HRPageHeader
+        title="تقارير الموارد البشرية"
+        description="مركز تقارير تشغيلي للحضور، الرواتب، الموظفين، والإجازات مع مؤشرات سريعة قبل التصدير."
+        icon={BarChart3}
+        badge="التقارير"
+      />
+
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+        {statsLoading ? (
+          <HRSectionCard className="col-span-full p-8">
+            <LoadingSpinner />
+          </HRSectionCard>
+        ) : (
+          <>
+            <HRMetricCard title="إجمالي الموظفين" value={statistics?.total_employees || 0} icon={Users} tone="info" />
+            <HRMetricCard title="معدل الحضور" value={`${statistics?.attendance_rate || 0}%`} icon={Clock} tone="success" />
+            <HRMetricCard title="إجمالي الرواتب" value={formatCurrency(statistics?.total_payroll || 0)} icon={WalletCards} tone="focus" />
+            <HRMetricCard title="الرواتب المعلقة" value={statistics?.pending_payrolls || 0} icon={FileText} tone="danger" />
+          </>
+        )}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
-        {reports.map((report) => (
-          <Card key={report.title} className="hover:shadow-lg transition-shadow">
-            <CardHeader>
-              <div className="flex items-center gap-3">
-                <div className={`p-3 rounded-lg ${report.color}`}>
-                  <report.icon className="h-6 w-6" />
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {reports.map((report) => {
+          const Icon = report.icon;
+          return (
+            <HRSectionCard key={report.title} className="transition hover:border-[#22C7A1]/40">
+              <CardContent className="p-5">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex items-start gap-3">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#F6F8FB] text-[#22C7A1]">
+                      <Icon className="h-6 w-6" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-black text-[#020617]">{report.title}</h3>
+                      <p className="mt-1 text-sm leading-6 text-[#94A3B8]">{report.description}</p>
+                    </div>
+                  </div>
                 </div>
-                <div>
-                  <CardTitle className="text-lg">{report.title}</CardTitle>
-                  <CardDescription>{report.description}</CardDescription>
+                <div className="mt-5 flex gap-2">
+                  <Button variant="outline" className="h-11 flex-1 rounded-xl border-slate-200" onClick={report.onClick}>
+                    <FileText className="h-4 w-4 ml-2" />
+                    عرض التقرير
+                  </Button>
+                  <Button variant="outline" className="h-11 rounded-xl border-slate-200" onClick={report.onClick}>
+                    <Download className="h-4 w-4" />
+                  </Button>
                 </div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="flex gap-2">
-                <Button 
-                  variant="outline" 
-                  className="flex-1"
-                  onClick={report.onClick}
-                >
-                  <FileText className="h-4 w-4 ml-2" />
-                  عرض التقرير
-                </Button>
-                <Button 
-                  variant="outline"
-                  onClick={report.onClick}
-                >
-                  <Download className="h-4 w-4" />
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+              </CardContent>
+            </HRSectionCard>
+          );
+        })}
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>إحصائيات سريعة</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {statsLoading ? (
-            <div className="flex justify-center py-8">
-              <LoadingSpinner />
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <div className="text-center p-4 bg-blue-50 rounded-lg">
-                <Users className="h-8 w-8 text-blue-600 mx-auto mb-2" />
-                <p className="text-2xl font-bold text-blue-600">{statistics?.total_employees || 0}</p>
-                <p className="text-sm text-muted-foreground">إجمالي الموظفين</p>
-              </div>
-              <div className="text-center p-4 bg-green-50 rounded-lg">
-                <Clock className="h-8 w-8 text-green-600 mx-auto mb-2" />
-                <p className="text-2xl font-bold text-green-600">{statistics?.attendance_rate || 0}%</p>
-                <p className="text-sm text-muted-foreground">معدل الحضور</p>
-              </div>
-              <div className="text-center p-4 bg-orange-50 rounded-lg">
-                <DollarSign className="h-8 w-8 text-orange-600 mx-auto mb-2" />
-                <p className="text-2xl font-bold text-orange-600">{formatCurrency(statistics?.total_payroll || 0)}</p>
-                <p className="text-sm text-muted-foreground">إجمالي الرواتب</p>
-              </div>
-              <div className="text-center p-4 bg-purple-50 rounded-lg">
-                <FileText className="h-8 w-8 text-purple-600 mx-auto mb-2" />
-                <p className="text-2xl font-bold text-purple-600">{statistics?.pending_payrolls || 0}</p>
-                <p className="text-sm text-muted-foreground">الرواتب المعلقة</p>
-              </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Report Modals */}
-      <AttendanceReportModal 
-        open={attendanceModalOpen} 
-        onOpenChange={setAttendanceModalOpen} 
-      />
-      <EmployeeReportModal 
-        open={employeeModalOpen} 
-        onOpenChange={setEmployeeModalOpen} 
-      />
-      <PayrollReportModal 
-        open={payrollModalOpen} 
-        onOpenChange={setPayrollModalOpen} 
-      />
-      <LeaveReportModal 
-        open={leaveModalOpen} 
-        onOpenChange={setLeaveModalOpen} 
-      />
-    </div>
+      <AttendanceReportModal open={attendanceModalOpen} onOpenChange={setAttendanceModalOpen} />
+      <EmployeeReportModal open={employeeModalOpen} onOpenChange={setEmployeeModalOpen} />
+      <PayrollReportModal open={payrollModalOpen} onOpenChange={setPayrollModalOpen} />
+      <LeaveReportModal open={leaveModalOpen} onOpenChange={setLeaveModalOpen} />
+    </HRPageShell>
   );
 }

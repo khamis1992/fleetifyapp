@@ -3,9 +3,8 @@
  * Utility functions for exporting data to CSV and PDF formats
  */
 
-import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
 import { toast } from 'sonner';
+import { exportOfficialReportDocumentToPDF } from '@/utils/officialFinancialReportExport';
 
 interface ExportData {
   [key: string]: any;
@@ -93,7 +92,7 @@ export const exportAnalyticsToCSV = (analytics: any[], filename: string): void =
 };
 
 /**
- * Export data to PDF format using jsPDF + html2canvas
+ * Export data to PDF format using the unified official report template
  * @param elementId - ID of the HTML element to convert to PDF
  * @param filename - Name of the file (without extension)
  * @param options - Optional PDF configuration
@@ -110,41 +109,19 @@ export const exportToPDF = async (
       return;
     }
 
-    // Show loading indicator
     toast.loading('Generating PDF...');
-
-    // Convert element to canvas
-    const canvas = await html2canvas(element, {
-      scale: 2,
-      useCORS: true,
-      logging: false,
-      letterRendering: true
+    await exportOfficialReportDocumentToPDF({
+      metadata: {
+        reportTitle: options?.title || filename,
+        reportType: options?.reportType || 'general_report',
+        companyName: options?.companyName || 'Fleetify',
+        currency: options?.currency || 'QAR',
+        asOfDate: new Date().toISOString().slice(0, 10),
+        sourceFingerprint: `dom:${elementId}:${filename}`,
+        status: 'published',
+      },
+      bodyHtml: element.outerHTML,
     });
-
-    // Get canvas dimensions
-    const imgData = canvas.toDataURL('image/jpeg', 0.98);
-    const imgWidth = 210; // A4 width in mm
-    const pageHeight = 297; // A4 height in mm
-    const imgHeight = (canvas.height * imgWidth) / canvas.width;
-    let heightLeft = imgHeight;
-
-    // Create PDF
-    const doc = new jsPDF('p', 'mm', 'a4');
-    let position = 0;
-
-    // Add image to PDF (handle multi-page)
-    doc.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
-    heightLeft -= pageHeight;
-
-    while (heightLeft >= 0) {
-      position = heightLeft - imgHeight;
-      doc.addPage();
-      doc.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
-      heightLeft -= pageHeight;
-    }
-
-    // Save PDF
-    doc.save(`${filename}.pdf`);
     toast.success('PDF exported successfully');
 
   } catch (error) {

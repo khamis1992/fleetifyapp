@@ -115,12 +115,12 @@ export const QuickNotes: React.FC<QuickNotesProps> = ({
   }
 
   return (
-    <Card className={cn('bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 rounded-xl hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all', compact && 'border-0 shadow-none')}>
+    <Card className={cn('rounded-lg border border-[#E5EAF1] bg-white shadow-sm', compact && 'border-0 shadow-none')}>
       <CardHeader className={cn('pb-3', compact && 'px-0 pt-0')}>
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg flex items-center gap-2">
-            <div className="bg-gradient-to-br from-teal-500 to-teal-600 shadow-lg shadow-teal-500/20 rounded-lg p-1">
-              <StickyNote className="h-5 w-5 text-white" />
+            <div className="rounded-lg bg-[#7C83F6]/10 p-2 text-[#7C83F6]">
+              <StickyNote className="h-5 w-5" />
             </div>
             ملاحظات سريعة
           </CardTitle>
@@ -134,8 +134,8 @@ export const QuickNotes: React.FC<QuickNotesProps> = ({
             <DialogContent dir="rtl" className="max-w-md">
               <DialogHeader>
                 <DialogTitle className="flex items-center gap-2">
-                  <div className="bg-gradient-to-br from-teal-500 to-teal-600 shadow-lg shadow-teal-500/20 rounded-lg p-1">
-                    <StickyNote className="h-5 w-5 text-white" />
+                  <div className="rounded-lg bg-[#7C83F6]/10 p-2 text-[#7C83F6]">
+                    <StickyNote className="h-5 w-5" />
                   </div>
                   ملاحظة جديدة
                 </DialogTitle>
@@ -207,7 +207,7 @@ export const QuickNotes: React.FC<QuickNotesProps> = ({
                   <Button
                     onClick={handleAddNote}
                     disabled={!newNote.content.trim() || createNote.isPending}
-                    className="bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700"
+                    className="rounded-lg bg-[#38BDF8] text-white hover:bg-[#0ea5e9]"
                   >
                     {createNote.isPending && (
                       <Loader2 className="h-4 w-4 animate-spin ml-2" />
@@ -241,7 +241,7 @@ export const QuickNotes: React.FC<QuickNotesProps> = ({
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.9 }}
                   className={cn(
-                    'relative p-4 rounded-2xl border shadow-sm hover:shadow-xl hover:shadow-teal-500/10 transition-all',
+                    'relative rounded-lg border border-[#E5EAF1] p-4 shadow-sm transition hover:border-[#38BDF8]',
                     note.is_archived && 'opacity-60'
                   )}
                   style={{ backgroundColor: note.color }}
@@ -249,7 +249,7 @@ export const QuickNotes: React.FC<QuickNotesProps> = ({
                   {/* Pin indicator */}
                   {note.is_pinned && (
                     <div className="absolute top-2 left-2">
-                      <Pin className="h-4 w-4 text-teal-500 transform -rotate-45" />
+                      <Pin className="h-4 w-4 text-[#38BDF8] transform -rotate-45" />
                     </div>
                   )}
 

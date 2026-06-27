@@ -46,10 +46,23 @@ import { VehicleComprehensiveReportDialog } from './VehicleComprehensiveReportDi
 import { VehicleStatusChangeDialog } from './VehicleStatusChangeDialog';
 import { ImagePreviewDialog } from '@/components/common/ImagePreviewDialog';
 import { cn } from '@/lib/utils';
+import { systemColorPattern } from '@/lib/design-system/systemColorPattern';
 import { format, differenceInDays } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import type { Vehicle } from '@/hooks/useVehicles';
 import { useQueryClient } from '@tanstack/react-query';
+
+const vehicleTheme = {
+  text: systemColorPattern.colors.text,
+  surface: systemColorPattern.colors.surface,
+  inner: systemColorPattern.colors.innerSurface,
+  muted: systemColorPattern.colors.secondaryText,
+  border: systemColorPattern.colors.border,
+  water: systemColorPattern.colors.info,
+  alert: systemColorPattern.colors.alert,
+  focus: systemColorPattern.colors.focus,
+  success: systemColorPattern.colors.success,
+};
 
 /**
  * مكون صفحة تفاصيل المركبة الرئيسية
@@ -324,336 +337,281 @@ const VehicleDetailsPage = () => {
     ? (typeof vehicle.images[0] === 'string' ? vehicle.images[0] : (vehicle.images[0] as any)?.url || '')
     : '';
 
+  const statusAccent = vehicle.status === 'available'
+    ? vehicleTheme.success
+    : vehicle.status === 'rented'
+    ? vehicleTheme.focus
+    : vehicle.status === 'maintenance'
+    ? vehicleTheme.alert
+    : vehicleTheme.water;
+
+  const metricCards = [
+    {
+      label: 'حالة التشغيل',
+      value: getStatusText(vehicle.status),
+      helper: vehicle.status === 'available' ? 'جاهزة للتأجير الفوري' : 'تحتاج متابعة تشغيلية',
+      icon: CheckCircle,
+      color: statusAccent,
+    },
+    {
+      label: 'العقود النشطة',
+      value: vehicleStats?.activeContracts || 0,
+      helper: 'عقود مرتبطة بالمركبة',
+      icon: FileText,
+      color: vehicleTheme.focus,
+    },
+    {
+      label: 'إجمالي الإيرادات',
+      value: formatCurrency(vehicleStats?.totalRevenue || 0),
+      helper: 'مدفوعات محصلة',
+      icon: DollarSign,
+      color: vehicleTheme.alert,
+    },
+    {
+      label: 'قراءة العداد',
+      value: vehicle.current_mileage?.toLocaleString('en-US') || 0,
+      helper: 'كيلومتر',
+      icon: Gauge,
+      color: vehicleTheme.water,
+    },
+  ];
+
+  const tabs = [
+    { value: 'overview', label: 'نظرة عامة', icon: Info },
+    { value: 'technical', label: 'تقنية', icon: Settings },
+    { value: 'financial', label: 'مالية', icon: DollarSign },
+    { value: 'pricing', label: 'التسعير', icon: Tag },
+    { value: 'contracts', label: 'العقود', icon: FileText },
+    { value: 'maintenance', label: 'الصيانة', icon: Wrench },
+    { value: 'violations', label: 'المخالفات', icon: AlertTriangle },
+    { value: 'insurance', label: 'التأمين', icon: DollarSign },
+    { value: 'documents', label: 'الوثائق', icon: Folder },
+  ];
+
   return (
-    <div className="min-h-screen bg-slate-50">
-      {/* شريط التنقل العلوي */}
-      <nav className="bg-white border-b border-slate-200 fixed top-0 left-0 right-0 z-50 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center gap-4">
-              <Button variant="ghost" size="icon" onClick={handleBack}>
-                <ArrowRight className="w-5 h-5" />
-              </Button>
-              <div>
-                <h1 className="text-lg font-semibold text-slate-900">تفاصيل المركبة</h1>
-                <p className="text-xs text-slate-500">إدارة ومتابعة بيانات المركبة</p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-3">
-              <Button
-                variant="outline"
-                className="gap-2"
-                onClick={() => setShowReportDialog(true)}
-              >
-                <FileText className="w-4 h-4" />
-                تقرير مركبة
-              </Button>
-
-              <Button
-                variant="outline"
-                className="gap-2"
-                onClick={() => setShowStatusDialog(true)}
-                disabled={!vehicle || loadingVehicle}
-              >
-                <CheckCircle className="w-4 h-4" />
-                تغيير الحالة
-              </Button>
-
-              <Button 
-                type="button"
-                onClick={handleEdit} 
-                disabled={!vehicle || loadingVehicle}
-                className="gap-2 bg-[#00A896] hover:bg-[#007D6D] disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <Edit3 className="w-4 h-4" />
-                تعديل
-              </Button>
+    <div className="min-h-screen" style={{ backgroundColor: vehicleTheme.inner, color: vehicleTheme.text }}>
+      <main className="mx-auto max-w-[1440px] px-4 py-6 sm:px-6 lg:px-8">
+        <div className="mb-5 flex flex-col gap-4 rounded-[8px] border bg-white px-4 py-4 shadow-sm sm:flex-row sm:items-center sm:justify-between" style={{ borderColor: vehicleTheme.border }}>
+          <div className="flex items-center gap-3">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handleBack}
+              className="h-10 w-10 rounded-[8px] border"
+              style={{ borderColor: vehicleTheme.border, color: vehicleTheme.text }}
+            >
+              <ArrowRight className="h-5 w-5" />
+            </Button>
+            <div>
+              <p className="text-xs font-semibold" style={{ color: vehicleTheme.muted }}>ملف المركبة</p>
+              <h1 className="text-xl font-bold sm:text-2xl" style={{ color: vehicleTheme.text }}>{vehicleName}</h1>
             </div>
           </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              variant="outline"
+              className="h-10 gap-2 rounded-[8px] border bg-white"
+              style={{ borderColor: vehicleTheme.border, color: vehicleTheme.text }}
+              onClick={() => setShowReportDialog(true)}
+            >
+              <FileText className="h-4 w-4" style={{ color: vehicleTheme.focus }} />
+              تقرير مركبة
+            </Button>
+            <Button
+              variant="outline"
+              className="h-10 gap-2 rounded-[8px] border bg-white"
+              style={{ borderColor: vehicleTheme.border, color: vehicleTheme.text }}
+              onClick={() => setShowStatusDialog(true)}
+              disabled={!vehicle || loadingVehicle}
+            >
+              <CheckCircle className="h-4 w-4" style={{ color: statusAccent }} />
+              تغيير الحالة
+            </Button>
+            <Button
+              type="button"
+              onClick={handleEdit}
+              disabled={!vehicle || loadingVehicle}
+              className="h-10 gap-2 rounded-[8px] text-white disabled:cursor-not-allowed disabled:opacity-50"
+              style={{ backgroundColor: vehicleTheme.success }}
+            >
+              <Edit3 className="h-4 w-4" />
+              تعديل
+            </Button>
+          </div>
         </div>
-      </nav>
 
-      {/* المحتوى الرئيسي */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-12">
-        {/* بطاقة رأس المركبة */}
-        <Card className="mb-6">
-          <CardContent className="p-6">
-            <div className="flex flex-col lg:flex-row gap-6">
-              {/* صورة المركبة */}
-              <div className="lg:w-1/3">
-                <div
-                  className="aspect-video bg-slate-100 rounded-lg overflow-hidden cursor-pointer hover:ring-4 hover:ring-[#00A896]/30 transition-all"
-                  onClick={() => vehicleImage && setShowImagePreview(true)}
-                >
-                  {vehicleImage ? (
-                    <img
-                      src={vehicleImage}
-                      alt={vehicleName}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center">
-                      <Car className="w-16 h-16 text-slate-400" />
-                    </div>
-                  )}
-                </div>
-                {vehicleImage && (
-                  <p className="text-xs text-slate-500 text-center mt-2">
-                    انقر على الصورة للمعاينة
-                  </p>
+        <section className="mb-5 grid gap-5 lg:grid-cols-[minmax(0,1.05fr)_minmax(360px,0.95fr)]">
+          <Card className="overflow-hidden rounded-[8px] border bg-white shadow-sm" style={{ borderColor: vehicleTheme.border }}>
+            <CardContent className="p-0">
+              <div
+                className="group relative aspect-[16/10] cursor-pointer overflow-hidden bg-white"
+                onClick={() => vehicleImage && setShowImagePreview(true)}
+              >
+                {vehicleImage ? (
+                  <img src={vehicleImage} alt={vehicleName} className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.02]" />
+                ) : (
+                  <div className="flex h-full w-full items-center justify-center" style={{ backgroundColor: vehicleTheme.inner }}>
+                    <Car className="h-20 w-20" style={{ color: vehicleTheme.muted }} />
+                  </div>
                 )}
-              </div>
-
-              {/* معلومات المركبة */}
-              <div className="flex-1">
-                <div className="flex items-start justify-between mb-4">
+                <div className="absolute inset-x-0 bottom-0 flex items-center justify-between bg-gradient-to-t from-black/65 to-transparent p-4 text-white">
                   <div>
-                    <h2 className="text-3xl font-bold text-slate-900 mb-2">{vehicleName}</h2>
-                    <p className="text-lg text-slate-600">
-                      رقم اللوحة: <span className="font-mono font-semibold">{vehicle.plate_number}</span>
-                    </p>
+                    <p className="text-xs opacity-80">رقم اللوحة</p>
+                    <p className="font-mono text-2xl font-bold tracking-normal">{vehicle.plate_number}</p>
+                  </div>
+                  {vehicleImage && <span className="text-xs opacity-80">انقر للمعاينة</span>}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="rounded-[8px] border bg-white shadow-sm" style={{ borderColor: vehicleTheme.border }}>
+            <CardContent className="flex h-full flex-col justify-between gap-5 p-5">
+              <div className="space-y-4">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                  <div>
+                    <Badge
+                      className="mb-3 rounded-[8px] border px-3 py-1 text-xs font-semibold"
+                      style={{ backgroundColor: `${statusAccent}16`, borderColor: `${statusAccent}44`, color: statusAccent }}
+                    >
+                      {getStatusText(vehicle.status)}
+                    </Badge>
+                    <h2 className="text-3xl font-bold leading-tight" style={{ color: vehicleTheme.text }}>{vehicleName}</h2>
                     {vehicle.vin && (
-                      <p className="text-sm text-slate-500 mt-1">
-                        رقم الهيكل (VIN): <span className="font-mono font-medium text-slate-700">{vehicle.vin}</span>
+                      <p className="mt-2 text-sm" style={{ color: vehicleTheme.muted }}>
+                        رقم الهيكل: <span className="font-mono font-semibold" style={{ color: vehicleTheme.text }}>{vehicle.vin}</span>
                       </p>
                     )}
                   </div>
-                  <Badge className={getStatusColor(vehicle.status)}>
-                    {getStatusText(vehicle.status)}
-                  </Badge>
+                  <div className="rounded-[8px] px-3 py-2 text-right" style={{ backgroundColor: vehicleTheme.inner }}>
+                    <p className="text-xs" style={{ color: vehicleTheme.muted }}>العداد الحالي</p>
+                    <p className="font-mono text-xl font-bold" style={{ color: vehicleTheme.water }}>
+                      {vehicle.current_mileage?.toLocaleString('en-US') || 0} كم
+                    </p>
+                  </div>
                 </div>
 
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                  {vehicle.vin && (
-                    <div>
-                      <span className="text-slate-500">رقم الهيكل:</span>
-                      <p className="font-mono font-semibold">{vehicle.vin}</p>
-                    </div>
-                  )}
-                  {vehicle.color && (
-                    <div>
-                      <span className="text-slate-500">اللون:</span>
-                      <p className="font-semibold">{vehicle.color}</p>
-                    </div>
-                  )}
+                <div className="grid grid-cols-2 gap-3">
+                  {vehicle.color && <VehicleChip label="اللون" value={vehicle.color} color={vehicleTheme.water} />}
                   {vehicle.transmission_type && (
-                    <div>
-                      <span className="text-slate-500">ناقل الحركة:</span>
-                      <p className="font-semibold">
-                        {vehicle.transmission_type === 'automatic' ? 'أوتوماتيك' : 'يدوي'}
-                      </p>
-                    </div>
+                    <VehicleChip
+                      label="ناقل الحركة"
+                      value={vehicle.transmission_type === 'automatic' ? 'أوتوماتيك' : 'يدوي'}
+                      color={vehicleTheme.focus}
+                    />
                   )}
                   {vehicle.fuel_type && (
-                    <div>
-                      <span className="text-slate-500">نوع الوقود:</span>
-                      <p className="font-semibold">
-                        {vehicle.fuel_type === 'gasoline' ? 'بنزين' :
-                         vehicle.fuel_type === 'diesel' ? 'ديزل' :
-                         vehicle.fuel_type === 'hybrid' ? 'هجين' : 'كهربائي'}
-                      </p>
-                    </div>
+                    <VehicleChip
+                      label="الوقود"
+                      value={vehicle.fuel_type === 'gasoline' ? 'بنزين' : vehicle.fuel_type === 'diesel' ? 'ديزل' : vehicle.fuel_type === 'hybrid' ? 'هجين' : 'كهربائي'}
+                      color={vehicleTheme.success}
+                    />
                   )}
+                  {vehicle.location && <VehicleChip label="الموقع" value={vehicle.location} color={vehicleTheme.alert} />}
                 </div>
               </div>
-            </div>
-          </CardContent>
-        </Card>
 
-        {/* بطاقات الإحصائيات */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
-          {/* الحالة */}
-          <Card className="transition-all hover:shadow-lg hover:-translate-y-1">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between mb-3">
-                <div className="w-10 h-10 rounded-lg bg-green-50 flex items-center justify-center">
-                  <CheckCircle className="w-5 h-5 text-green-600" />
-                </div>
-                <span className="text-xs text-slate-500">الحالة</span>
-              </div>
-              <div className="text-2xl font-bold text-green-600 mb-1">
-                {getStatusText(vehicle.status)}
-              </div>
-              <div className="text-sm text-slate-600">
-                {vehicle.status === 'available' ? 'للإيجار الفوري' : 'غير متاحة'}
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+                <Button onClick={handleNewContract} className="h-11 gap-2 rounded-[8px] text-white" style={{ backgroundColor: vehicleTheme.success }}>
+                  <Plus className="h-4 w-4" />
+                  عقد جديد
+                </Button>
+                <Button onClick={() => setShowMaintenanceForm(true)} variant="outline" className="h-11 gap-2 rounded-[8px] border bg-white" style={{ borderColor: vehicleTheme.border, color: vehicleTheme.text }}>
+                  <Wrench className="h-4 w-4" style={{ color: vehicleTheme.focus }} />
+                  صيانة
+                </Button>
+                <Button onClick={handleNewViolation} variant="outline" className="h-11 gap-2 rounded-[8px] border bg-white" style={{ borderColor: vehicleTheme.border, color: vehicleTheme.text }}>
+                  <AlertTriangle className="h-4 w-4" style={{ color: vehicleTheme.alert }} />
+                  مخالفة
+                </Button>
               </div>
             </CardContent>
           </Card>
+        </section>
 
-          {/* العقود */}
-          <Card className="transition-all hover:shadow-lg hover:-translate-y-1">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between mb-3">
-                <div className="w-10 h-10 rounded-lg bg-[#E6F7F4] flex items-center justify-center">
-                  <FileText className="w-5 h-5 text-[#00A896]" />
-                </div>
-                <span className="text-xs text-slate-500">العقود</span>
-              </div>
-              <div className="text-2xl font-bold text-[#00A896] mb-1">
-                {vehicleStats?.activeContracts || 0}
-              </div>
-              <div className="text-sm text-slate-600">عقد نشط</div>
-            </CardContent>
-          </Card>
-
-          {/* الإيرادات */}
-          <Card className="transition-all hover:shadow-lg hover:-translate-y-1">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between mb-3">
-                <div className="w-10 h-10 rounded-lg bg-orange-50 flex items-center justify-center">
-                  <DollarSign className="w-5 h-5 text-orange-600" />
-                </div>
-                <span className="text-xs text-slate-500">الإيرادات</span>
-              </div>
-              <div className="text-2xl font-bold text-orange-600 mb-1">
-                {formatCurrency(vehicleStats?.totalRevenue || 0)}
-              </div>
-              <div className="text-sm text-slate-600">إجمالي</div>
-            </CardContent>
-          </Card>
-
-          {/* العداد */}
-          <Card className="transition-all hover:shadow-lg hover:-translate-y-1">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between mb-3">
-                <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center">
-                  <Gauge className="w-5 h-5 text-blue-600" />
-                </div>
-                <span className="text-xs text-slate-500">العداد</span>
-              </div>
-              <div className="text-2xl font-bold text-blue-600 mb-1">
-                {vehicle.current_mileage?.toLocaleString('en-US') || 0}
-              </div>
-              <div className="text-sm text-slate-600">كم</div>
-            </CardContent>
-          </Card>
+        <div className="mb-5 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+          {metricCards.map((metric) => {
+            const Icon = metric.icon;
+            return (
+              <Card key={metric.label} className="rounded-[8px] border bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md" style={{ borderColor: vehicleTheme.border }}>
+                <CardContent className="p-5">
+                  <div className="mb-4 flex items-center justify-between">
+                    <div className="flex h-11 w-11 items-center justify-center rounded-[8px]" style={{ backgroundColor: `${metric.color}14` }}>
+                      <Icon className="h-5 w-5" style={{ color: metric.color }} />
+                    </div>
+                    <span className="text-xs font-semibold" style={{ color: vehicleTheme.muted }}>{metric.label}</span>
+                  </div>
+                  <p className="truncate text-2xl font-bold" style={{ color: metric.color }}>{metric.value}</p>
+                  <p className="mt-1 text-sm" style={{ color: vehicleTheme.muted }}>{metric.helper}</p>
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
 
-        {/* قسم التبويبات */}
-        <Card>
+        <Card className="rounded-[8px] border bg-white shadow-sm" style={{ borderColor: vehicleTheme.border }}>
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <div className="border-b border-slate-200 overflow-x-auto">
-              <TabsList className="w-full justify-start bg-transparent h-auto p-2 rounded-none flex gap-1">
-                <TabsTrigger
-                  value="overview"
-                  className="data-[state=active]:bg-[#E6F7F4] data-[state=active]:text-[#00A896] data-[state=active]:border-b-2 data-[state=active]:border-[#00A896] rounded-t-lg gap-2"
-                >
-                  <Info className="w-4 h-4" />
-                  نظرة عامة
-                </TabsTrigger>
-                <TabsTrigger
-                  value="technical"
-                  className="data-[state=active]:bg-[#E6F7F4] data-[state=active]:text-[#00A896] data-[state=active]:border-b-2 data-[state=active]:border-[#00A896] rounded-t-lg gap-2"
-                >
-                  <Settings className="w-4 h-4" />
-                  تقنية
-                </TabsTrigger>
-                <TabsTrigger
-                  value="financial"
-                  className="data-[state=active]:bg-[#E6F7F4] data-[state=active]:text-[#00A896] data-[state=active]:border-b-2 data-[state=active]:border-[#00A896] rounded-t-lg gap-2"
-                >
-                  <DollarSign className="w-4 h-4" />
-                  مالية
-                </TabsTrigger>
-                <TabsTrigger
-                  value="pricing"
-                  className="data-[state=active]:bg-[#E6F7F4] data-[state=active]:text-[#00A896] data-[state=active]:border-b-2 data-[state=active]:border-[#00A896] rounded-t-lg gap-2"
-                >
-                  <Tag className="w-4 h-4" />
-                  التسعير
-                </TabsTrigger>
-                <TabsTrigger
-                  value="contracts"
-                  className="data-[state=active]:bg-[#E6F7F4] data-[state=active]:text-[#00A896] data-[state=active]:border-b-2 data-[state=active]:border-[#00A896] rounded-t-lg gap-2"
-                >
-                  <FileText className="w-4 h-4" />
-                  العقود
-                </TabsTrigger>
-                <TabsTrigger
-                  value="maintenance"
-                  className="data-[state=active]:bg-[#E6F7F4] data-[state=active]:text-[#00A896] data-[state=active]:border-b-2 data-[state=active]:border-[#00A896] rounded-t-lg gap-2"
-                >
-                  <Wrench className="w-4 h-4" />
-                  الصيانة
-                </TabsTrigger>
-                <TabsTrigger
-                  value="violations"
-                  className="data-[state=active]:bg-[#E6F7F4] data-[state=active]:text-[#00A896] data-[state=active]:border-b-2 data-[state=active]:border-[#00A896] rounded-t-lg gap-2"
-                >
-                  <AlertTriangle className="w-4 h-4" />
-                  المخالفات
-                </TabsTrigger>
-                <TabsTrigger
-                  value="insurance"
-                  className="data-[state=active]:bg-[#E6F7F4] data-[state=active]:text-[#00A896] data-[state=active]:border-b-2 data-[state=active]:border-[#00A896] rounded-t-lg gap-2"
-                >
-                  <DollarSign className="w-4 h-4" />
-                  التأمين
-                </TabsTrigger>
-                <TabsTrigger
-                  value="documents"
-                  className="data-[state=active]:bg-[#E6F7F4] data-[state=active]:text-[#00A896] data-[state=active]:border-b-2 data-[state=active]:border-[#00A896] rounded-t-lg gap-2"
-                >
-                  <Folder className="w-4 h-4" />
-                  الوثائق
-                </TabsTrigger>
+            <div className="border-b px-3 py-3" style={{ borderColor: vehicleTheme.border }}>
+              <TabsList className="flex h-auto w-full justify-start gap-2 overflow-x-auto rounded-none bg-transparent p-0">
+                {tabs.map((tab) => {
+                  const Icon = tab.icon;
+                  const active = activeTab === tab.value;
+                  return (
+                    <TabsTrigger
+                      key={tab.value}
+                      value={tab.value}
+                      className="h-10 shrink-0 gap-2 rounded-[8px] border px-3 text-sm font-semibold shadow-none transition data-[state=active]:shadow-none"
+                      style={{
+                        backgroundColor: active ? `${vehicleTheme.success}14` : vehicleTheme.surface,
+                        borderColor: active ? `${vehicleTheme.success}55` : vehicleTheme.border,
+                        color: active ? vehicleTheme.success : vehicleTheme.text,
+                      }}
+                    >
+                      <Icon className="h-4 w-4" />
+                      {tab.label}
+                    </TabsTrigger>
+                  );
+                })}
               </TabsList>
             </div>
 
-            <div className="p-6">
-              {/* تبويب نظرة عامة */}
+            <div className="p-4 sm:p-6">
               <TabsContent value="overview" className="mt-0">
                 <OverviewTab vehicle={vehicle} formatCurrency={formatCurrency} />
               </TabsContent>
-
-              {/* تبويب تقنية */}
               <TabsContent value="technical" className="mt-0">
                 <TechnicalTab vehicle={vehicle} />
               </TabsContent>
-
-              {/* تبويب مالية */}
               <TabsContent value="financial" className="mt-0">
                 <FinancialTab vehicle={vehicle} formatCurrency={formatCurrency} />
               </TabsContent>
-
-              {/* تبويب التسعير */}
               <TabsContent value="pricing" className="mt-0">
                 <VehiclePricingPanel vehicleId={vehicle.id} />
               </TabsContent>
-
-              {/* تبويب التأمين */}
               <TabsContent value="insurance" className="mt-0">
                 <VehicleInsurancePanel vehicleId={vehicle.id} />
               </TabsContent>
-
-              {/* تبويب العقود */}
               <TabsContent value="contracts" className="mt-0">
-                <ContractsTab 
-                  contracts={contracts} 
-                  getCustomerName={getCustomerName} 
+                <ContractsTab
+                  contracts={contracts}
+                  getCustomerName={getCustomerName}
                   formatCurrency={formatCurrency}
                   vehicleId={vehicleId}
                   onNewContract={handleNewContract}
                 />
               </TabsContent>
-
-              {/* تبويب الصيانة */}
               <TabsContent value="maintenance" className="mt-0">
                 <MaintenanceTab maintenanceRecords={maintenanceRecords} formatCurrency={formatCurrency} vehicleId={vehicleId} onNewMaintenance={() => setShowMaintenanceForm(true)} />
               </TabsContent>
-
-              {/* تبويب المخالفات */}
               <TabsContent value="violations" className="mt-0">
-                <ViolationsTab 
-                  violations={violations} 
-                  formatCurrency={formatCurrency} 
+                <ViolationsTab
+                  violations={violations}
+                  formatCurrency={formatCurrency}
                   onNewViolation={handleNewViolation}
                   vehicleId={vehicleId}
                 />
               </TabsContent>
-
-              {/* تبويب الوثائق */}
               <TabsContent value="documents" className="mt-0">
                 <VehicleDocumentsPanel vehicleId={vehicle.id} onDocumentAdd={() => {}} />
               </TabsContent>
@@ -661,7 +619,6 @@ const VehicleDetailsPage = () => {
           </Tabs>
         </Card>
       </main>
-
       {/* Vehicle Form Dialog */}
       <VehicleForm 
         vehicle={vehicle || undefined}
@@ -738,6 +695,25 @@ interface OverviewTabProps {
   vehicle: Vehicle;
   formatCurrency: (amount: number) => string;
 }
+
+interface VehicleChipProps {
+  label: string;
+  value?: string | number;
+  color: string;
+}
+
+const VehicleChip = ({ label, value, color }: VehicleChipProps) => (
+  <div
+    className="rounded-[8px] border px-3 py-2"
+    style={{ backgroundColor: vehicleTheme.inner, borderColor: vehicleTheme.border }}
+  >
+    <div className="mb-1 flex items-center gap-2">
+      <span className="h-2 w-2 rounded-full" style={{ backgroundColor: color }} />
+      <span className="text-xs font-semibold" style={{ color: vehicleTheme.muted }}>{label}</span>
+    </div>
+    <p className="truncate text-sm font-bold" style={{ color: vehicleTheme.text }}>{value || '-'}</p>
+  </div>
+);
 
 const OverviewTab = ({ vehicle, formatCurrency }: OverviewTabProps) => (
   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -1214,6 +1190,7 @@ const ViolationsTab = ({ violations, formatCurrency, onNewViolation, vehicleId }
 };
 
 export default VehicleDetailsPage;
+
 
 
 

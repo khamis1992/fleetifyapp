@@ -23,6 +23,14 @@ function createBlobUrl(html: string): string {
   return URL.createObjectURL(blob);
 }
 
+const lawsuitDocumentTypeMap: Partial<Record<keyof DocumentsState, string>> = {
+  memo: 'explanatory_memo',
+  claims: 'claims_statement',
+  docsList: 'documents_list',
+  criminalComplaint: 'criminal_complaint',
+  violationsTransfer: 'violations_transfer',
+};
+
 function saveDocumentToStorage(
   companyId: string,
   contractId: string,
@@ -30,13 +38,16 @@ function saveDocumentToStorage(
   html: string,
   userId?: string
 ): Promise<void> {
+  const databaseDocumentType = lawsuitDocumentTypeMap[documentType];
+  if (!databaseDocumentType) return Promise.resolve();
+
   // Fire and forget - don't wait for this
   supabase
     .from('lawsuit_documents')
     .upsert({
       company_id: companyId,
       contract_id: contractId,
-      document_type: documentType,
+      document_type: databaseDocumentType,
       document_name: getDocumentName(documentType),
       html_content: html,
       created_by: userId,

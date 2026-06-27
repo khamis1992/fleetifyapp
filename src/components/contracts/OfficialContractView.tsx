@@ -8,15 +8,23 @@ import React, { useRef, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle } from '@/components/ui/card';
 import { Printer, Eye, Download } from 'lucide-react';
-import { AlarafOfficialContractComplete } from './AlarafOfficialContractComplete';
+import { OfficialContractLetterDocument } from './OfficialContractLetterDocument';
+import type { PaymentSchedule } from '@/types/payment-schedules';
+import type { VehicleInspection } from '@/hooks/useVehicleInspections';
 import '@/styles/print-contract.css';
 
 interface OfficialContractViewProps {
   contract: any;
+  paymentSchedules?: PaymentSchedule[];
+  checkInInspection?: VehicleInspection | null;
+  checkOutInspection?: VehicleInspection | null;
 }
 
 export const OfficialContractView: React.FC<OfficialContractViewProps> = ({
-  contract
+  contract,
+  paymentSchedules = [],
+  checkInInspection = null,
+  checkOutInspection = null,
 }) => {
   const printRef = useRef<HTMLDivElement>(null);
 
@@ -495,7 +503,12 @@ export const OfficialContractView: React.FC<OfficialContractViewProps> = ({
 
       {/* محتوى العقد للطباعة */}
       <div ref={printRef} className="print-container">
-      <AlarafOfficialContractComplete contract={contract} />
+      <OfficialContractLetterDocument
+        contract={contract}
+        paymentSchedules={paymentSchedules}
+        checkInInspection={checkInInspection}
+        checkOutInspection={checkOutInspection}
+      />
       </div>
     </div>
   );

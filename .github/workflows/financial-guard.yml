@@ -1,0 +1,50 @@
+name: Financial Guard
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main, develop]
+  schedule:
+    - cron: "15 2 * * *"
+  workflow_dispatch:
+
+jobs:
+  financial-guard:
+    name: Financial Integrity Guard
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run static financial checks
+        run: npm run finance:ci
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.VITE_SUPABASE_SERVICE_ROLE_KEY }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+
+      - name: Require live DB checks on schedule and main
+        if: github.event_name == 'schedule' || github.ref == 'refs/heads/main'
+        run: npm run finance:ci:required
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.VITE_SUPABASE_SERVICE_ROLE_KEY }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+
+      - name: Summary
+        run: |
+          echo "## Financial Guard" >> $GITHUB_STEP_SUMMARY
+          echo "- File integrity checked" >> $GITHUB_STEP_SUMMARY
+          echo "- TypeScript checked" >> $GITHUB_STEP_SUMMARY
+          echo "- Live financial checks run when Supabase service credentials are available or required" >> $GITHUB_STEP_SUMMARY

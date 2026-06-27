@@ -10,6 +10,7 @@ import { useUnifiedCompanyAccess } from "@/hooks/useUnifiedCompanyAccess";
 import { toast } from "sonner";
 import { queryKeys } from "@/utils/queryKeys";
 import * as Sentry from '@sentry/react';
+import { useFinanceAccessGuard } from "@/hooks/finance/useFinanceAccessGuard";
 
 // Simple permission check helper - permissions are handled at route level
 const useSimplePermissions = () => {
@@ -37,7 +38,7 @@ export interface Invoice {
   balance_due: number;
   currency: string;
   status: 'draft' | 'sent' | 'paid' | 'overdue' | 'cancelled';
-  payment_status: 'unpaid' | 'partial' | 'paid';
+  payment_status: 'unpaid' | 'partial' | 'paid' | 'cancelled';
   notes?: string;
   terms?: string;
   journal_entry_id?: string;
@@ -372,6 +373,8 @@ export const useUpdateInvoice = () => {
 export const useDeleteInvoice = () => {
   const { hasPermission } = useSimplePermissions();
   const queryClient = useQueryClient();
+  const { user } = useUnifiedCompanyAccess();
+  const financeAccess = useFinanceAccessGuard();
 
   return useMutation({
     mutationFn: async (invoiceId: string) => {
@@ -382,14 +385,64 @@ export const useDeleteInvoice = () => {
       }
 
       try {
+        if (!financeAccess.can('finance.invoice.cancel')) {
+          throw new Error('ليس لديك صلاحية إلغاء الفواتير المالية');
+        }
+
+        const { data: invoice, error: invoiceError } = await supabase
+          .from("invoices")
+          .select("id, company_id, created_by, status, payment_status, notes")
+          .eq("id", invoiceId)
+          .maybeSingle();
+
+        if (invoiceError || !invoice) {
+          throw invoiceError || new Error("Invoice not found");
+        }
+
+        const segregationDecision = financeAccess.checkSegregationOfDuties({
+          action: 'finance.invoice.cancel',
+          actorId: user?.id,
+          creatorId: invoice.created_by,
+        });
+
+        if (!segregationDecision.allowed) {
+          throw new Error(segregationDecision.reason || 'تم منع العملية بسبب قاعدة فصل المهام');
+        }
+
+        if (invoice.status === 'cancelled' || invoice.payment_status === 'cancelled') {
+          return invoice;
+        }
+
+        const { data: completedPayments, error: paymentsError } = await supabase
+          .from("payments")
+          .select("id, payment_status")
+          .eq("invoice_id", invoiceId)
+          .in("payment_status", ["completed", "paid", "confirmed"])
+          .limit(1);
+
+        if (paymentsError) throw paymentsError;
+        if (completedPayments && completedPayments.length > 0) {
+          throw new Error("Cannot cancel invoice with completed payments. Cancel linked payments first.");
+        }
+
+        const previousNotes = invoice.notes ? `${invoice.notes}\n` : "";
+        const cancellationNote = `Invoice cancelled by ${user?.email || user?.id || "system"} at ${new Date().toISOString()}`;
+
         const { error } = await supabase
           .from("invoices")
-          .delete()
-          .eq("id", invoiceId);
+          .update({
+            status: "cancelled",
+            payment_status: "cancelled",
+            balance_due: 0,
+            notes: `${previousNotes}${cancellationNote}`,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", invoiceId)
+          .eq("company_id", invoice.company_id);
 
         if (error) {
           Sentry.captureException(error, {
-            tags: { operation: 'delete_invoice', invoiceId }
+            tags: { operation: 'cancel_invoice', invoiceId }
           });
           throw error;
         }

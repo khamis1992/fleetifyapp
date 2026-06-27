@@ -44,6 +44,7 @@ import {
   generateDocumentsListHtml,
   generateClaimsStatementHtml,
 } from '@/utils/official-letter-generator';
+import '@/styles/legal-system.css';
 
 interface LawsuitTemplate {
   id: number;
@@ -449,16 +450,17 @@ export default function LawsuitDataPage() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="legal-system flex items-center justify-center min-h-screen">
         <LoadingSpinner size="lg" />
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto p-6 space-y-6" dir="rtl">
+    <div className="legal-system min-h-screen p-4 md:p-6" dir="rtl">
+      <div className="mx-auto max-w-7xl space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="legal-hero flex flex-col gap-4 p-4 md:flex-row md:items-center md:justify-between">
         <div className="flex items-center gap-4">
           <Button
             variant="ghost"
@@ -481,7 +483,7 @@ export default function LawsuitDataPage() {
             size="sm"
             onClick={handleGenerateAllDocuments}
             disabled={isGeneratingDocs}
-            className="bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-300"
+            className="legal-action-secondary"
           >
             {isGeneratingDocs ? (
               <>
@@ -499,7 +501,7 @@ export default function LawsuitDataPage() {
             variant="outline"
             size="sm"
             onClick={handleExportToExcel}
-            className="bg-green-50 hover:bg-green-100 text-green-700 border-green-300"
+            className="legal-action-secondary"
           >
             <FileSpreadsheet className="h-4 w-4 ml-2" />
             تصدير Excel
@@ -517,7 +519,7 @@ export default function LawsuitDataPage() {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="p-6 bg-gradient-to-br from-teal-50 to-white border-teal-200">
+        <Card className="legal-panel p-6">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-muted-foreground">إجمالي القضايا</p>
@@ -529,7 +531,7 @@ export default function LawsuitDataPage() {
           </div>
         </Card>
 
-        <Card className="p-6 bg-gradient-to-br from-blue-50 to-white border-blue-200">
+        <Card className="legal-panel p-6">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-muted-foreground">إجمالي المطالبات</p>
@@ -547,7 +549,7 @@ export default function LawsuitDataPage() {
           </div>
         </Card>
 
-        <Card className="p-6 bg-gradient-to-br from-amber-50 to-white border-amber-200">
+        <Card className="legal-panel p-6">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-muted-foreground">إجمالي الفواتير المتأخرة</p>
@@ -559,7 +561,7 @@ export default function LawsuitDataPage() {
           </div>
         </Card>
 
-        <Card className="p-6 bg-gradient-to-br from-red-50 to-white border-red-200">
+        <Card className="legal-panel p-6">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-muted-foreground">إجمالي المخالفات</p>
@@ -574,7 +576,7 @@ export default function LawsuitDataPage() {
 
       {/* Additional Stats - Financial Details */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="p-4 bg-gradient-to-br from-blue-50 to-white border-blue-200">
+        <Card className="legal-panel p-4">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs text-muted-foreground">إجمالي الإيجار المتأخر</p>
@@ -588,7 +590,7 @@ export default function LawsuitDataPage() {
           </div>
         </Card>
 
-        <Card className="p-4 bg-gradient-to-br from-amber-50 to-white border-amber-200">
+        <Card className="legal-panel p-4">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs text-muted-foreground">إجمالي الغرامات</p>
@@ -602,7 +604,7 @@ export default function LawsuitDataPage() {
           </div>
         </Card>
 
-        <Card className="p-4 bg-gradient-to-br from-red-50 to-white border-red-200">
+        <Card className="legal-panel p-4">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs text-muted-foreground">إجمالي قيمة المخالفات</p>
@@ -618,7 +620,7 @@ export default function LawsuitDataPage() {
       </div>
 
       {/* Search Bar */}
-      <Card className="p-4">
+      <Card className="legal-panel p-4">
         <div className="relative">
           <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
@@ -795,6 +797,7 @@ export default function LawsuitDataPage() {
 </ResponsiveTable>
         </div>
       </Card>
+      </div>
     </div>
   );
 }

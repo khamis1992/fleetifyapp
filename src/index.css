@@ -5,6 +5,7 @@
 
 /* Leaflet Map CSS */
 @import 'leaflet/dist/leaflet.css';
+@import './styles/legal-system.css';
 
 /* Custom Leaflet Popup Styles */
 .leaflet-popup-content-wrapper {
@@ -178,6 +179,15 @@ All colors MUST be HSL.
     --destructive-foreground: 0 0% 100%;
     --info: 198 93% 60%;              /* #38BDF8 */
     --info-foreground: 0 0% 100%;
+
+    /* System color pattern */
+    --pattern-text: 222 75% 5%;              /* #020617 */
+    --pattern-inner: 216 38% 97%;            /* #F6F8FB */
+    --pattern-secondary-text: 215 20% 65%;   /* #94A3B8 */
+    --pattern-info: 198 93% 60%;             /* #38BDF8 */
+    --pattern-alert: 354 94% 70%;            /* #FB6B7A */
+    --pattern-focus: 236 87% 73%;            /* #7C83F6 */
+    --pattern-success: 166 71% 46%;          /* #22C7A1 */
     
     /* Borders & Inputs */
     --border: 215 30% 92%;            /* #E5EAF1 */
@@ -335,6 +345,117 @@ All colors MUST be HSL.
     --touch-active: var(--primary-light);
     --responsive-highlight: var(--primary);
     --responsive-surface: var(--card);
+  }
+}
+
+@layer components {
+  .dashboard-system-colors {
+    color: #020617;
+  }
+
+  .dashboard-system-colors .text-neutral-900,
+  .dashboard-system-colors .text-slate-900 {
+    color: #020617;
+  }
+
+  .dashboard-system-colors .text-neutral-600,
+  .dashboard-system-colors .text-neutral-500,
+  .dashboard-system-colors .text-neutral-400,
+  .dashboard-system-colors .text-slate-500,
+  .dashboard-system-colors .text-slate-400 {
+    color: #94A3B8;
+  }
+
+  .dashboard-system-colors .bg-neutral-100,
+  .dashboard-system-colors .bg-neutral-50,
+  .dashboard-system-colors .bg-slate-100,
+  .dashboard-system-colors .bg-blue-50,
+  .dashboard-system-colors .bg-emerald-50,
+  .dashboard-system-colors .bg-teal-50,
+  .dashboard-system-colors .bg-purple-50,
+  .dashboard-system-colors .bg-orange-50 {
+    background-color: #F6F8FB;
+  }
+
+  .dashboard-system-colors .border-neutral-200,
+  .dashboard-system-colors .border-slate-200,
+  .dashboard-system-colors .border-neutral-100 {
+    border-color: #E5EAF1;
+  }
+
+  .dashboard-system-colors .text-teal-600,
+  .dashboard-system-colors .text-emerald-600 {
+    color: #22C7A1;
+  }
+
+  .dashboard-system-colors .text-blue-600,
+  .dashboard-system-colors .text-blue-700,
+  .dashboard-system-colors .text-indigo-600,
+  .dashboard-system-colors .text-purple-700 {
+    color: #7C83F6;
+  }
+
+  .dashboard-system-colors .text-red-600,
+  .dashboard-system-colors .text-red-700,
+  .dashboard-system-colors .text-orange-700 {
+    color: #FB6B7A;
+  }
+
+  .dashboard-system-colors .bg-teal-500,
+  .dashboard-system-colors .bg-teal-600,
+  .dashboard-system-colors .bg-emerald-500 {
+    background-color: #22C7A1;
+  }
+
+  .dashboard-system-colors .bg-red-500 {
+    background-color: #FB6B7A;
+  }
+
+  .dashboard-system-colors .from-teal-500,
+  .dashboard-system-colors .from-teal-600,
+  .dashboard-system-colors .from-emerald-500 {
+    --tw-gradient-from: #22C7A1 var(--tw-gradient-from-position);
+    --tw-gradient-to: rgb(34 199 161 / 0) var(--tw-gradient-to-position);
+    --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to);
+  }
+
+  .dashboard-system-colors .to-teal-500,
+  .dashboard-system-colors .to-teal-600,
+  .dashboard-system-colors .to-emerald-500 {
+    --tw-gradient-to: #22C7A1 var(--tw-gradient-to-position);
+  }
+
+  .dashboard-system-colors .from-blue-500,
+  .dashboard-system-colors .from-indigo-500,
+  .dashboard-system-colors .from-purple-500 {
+    --tw-gradient-from: #7C83F6 var(--tw-gradient-from-position);
+    --tw-gradient-to: rgb(124 131 246 / 0) var(--tw-gradient-to-position);
+    --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to);
+  }
+
+  .dashboard-system-colors .to-blue-500,
+  .dashboard-system-colors .to-indigo-500,
+  .dashboard-system-colors .to-indigo-600,
+  .dashboard-system-colors .to-purple-500 {
+    --tw-gradient-to: #7C83F6 var(--tw-gradient-to-position);
+  }
+
+  .dashboard-system-colors .from-amber-400,
+  .dashboard-system-colors .from-amber-500,
+  .dashboard-system-colors .from-orange-400,
+  .dashboard-system-colors .from-rose-500,
+  .dashboard-system-colors .from-red-500 {
+    --tw-gradient-from: #FB6B7A var(--tw-gradient-from-position);
+    --tw-gradient-to: rgb(251 107 122 / 0) var(--tw-gradient-to-position);
+    --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to);
+  }
+
+  .dashboard-system-colors .to-amber-500,
+  .dashboard-system-colors .to-orange-400,
+  .dashboard-system-colors .to-yellow-500,
+  .dashboard-system-colors .to-rose-500,
+  .dashboard-system-colors .to-red-500 {
+    --tw-gradient-to: #FB6B7A var(--tw-gradient-to-position);
   }
 }
 

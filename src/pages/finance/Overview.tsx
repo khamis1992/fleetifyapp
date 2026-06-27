@@ -3,7 +3,7 @@
  * Clean dashboard page that works with BentoSidebar navigation
  */
 
-import React, { useMemo } from 'react';
+import React, { type CSSProperties, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -33,6 +33,7 @@ import { useTreasurySummary } from '@/hooks/useTreasury';
 import { useInvoices } from '@/hooks/finance/useInvoices';
 import { useVehicleInstallmentSummary } from '@/hooks/useVehicleInstallments';
 import { cn } from '@/lib/utils';
+import { systemColorPattern } from '@/lib/design-system/systemColorPattern';
 import {
   AreaChart,
   Area,
@@ -42,6 +43,19 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from 'recharts';
+
+const financeOverviewTheme = systemColorPattern.colors;
+const financeOverviewStyle = {
+  '--finance-overview-text': financeOverviewTheme.text,
+  '--finance-overview-surface': financeOverviewTheme.surface,
+  '--finance-overview-inner': financeOverviewTheme.innerSurface,
+  '--finance-overview-muted': financeOverviewTheme.secondaryText,
+  '--finance-overview-border': financeOverviewTheme.border,
+  '--finance-overview-info': financeOverviewTheme.info,
+  '--finance-overview-alert': financeOverviewTheme.alert,
+  '--finance-overview-focus': financeOverviewTheme.focus,
+  '--finance-overview-success': financeOverviewTheme.success,
+} as CSSProperties;
 
 const Overview: React.FC = () => {
   const navigate = useNavigate();
@@ -185,7 +199,7 @@ const Overview: React.FC = () => {
       change: (stats as any)?.revenueChange || 0,
       icon: TrendingUp,
       color: 'emerald' as const,
-      path: '/finance/reports',
+      path: '/finance/reports-analysis?tab=reports',
     },
     {
       title: 'نسبة التحصيل',
@@ -249,58 +263,97 @@ const Overview: React.FC = () => {
   }, [recentActivities]);
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950" dir="rtl">
-      <div className="p-6 space-y-6">
-        {/* Page Header */}
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">النظام المالي</h1>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">لوحة التحكم المالية الشاملة</p>
-        </div>
+    <div
+      className="finance-overview-system min-h-screen bg-[#F6F8FB]"
+      style={financeOverviewStyle}
+      dir="rtl"
+    >
+      <div className="mx-auto max-w-7xl p-4 sm:p-6 space-y-6">
+        {/* Executive Header */}
+        <motion.section
+          initial={{ opacity: 0, y: 14 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="overflow-hidden rounded-lg border border-[#E5EAF1] bg-white shadow-sm"
+        >
+          <div className="grid gap-0 lg:grid-cols-[1.25fr_0.75fr]">
+            <div className="p-6 sm:p-8">
+              <div className="mb-6 flex flex-wrap items-center gap-3">
+                <Badge className="border-0 bg-[#22C7A1]/10 px-3 py-1 text-[#22C7A1] hover:bg-[#22C7A1]/10">
+                  لوحة مالية تشغيلية
+                </Badge>
+                <span className="text-sm font-semibold text-[#94A3B8]">
+                  تحصيل، فواتير، خزينة، وتقارير
+                </span>
+              </div>
+              <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+                <div>
+                  <h1 className="text-3xl font-black tracking-normal text-[#020617] sm:text-4xl">
+                    النظرة المالية
+                  </h1>
+                  <p className="mt-3 max-w-2xl text-sm leading-7 text-[#94A3B8]">
+                    ملخص تنفيذي سريع لحركة الإيرادات والتحصيل والتنبيهات المالية المهمة داخل النظام.
+                  </p>
+                </div>
+                <Button
+                  variant="outline"
+                  className="w-fit gap-2 border-[#E5EAF1] bg-[#F6F8FB] text-[#020617] hover:bg-white"
+                  onClick={() => window.location.reload()}
+                >
+                  <RefreshCw className="h-4 w-4" />
+                  تحديث البيانات
+                </Button>
+              </div>
+            </div>
 
-        {/* Quick Actions Row */}
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-          <motion.button
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0 }}
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={() => navigate('/finance/billing')}
-            className="flex items-center gap-2 px-4 py-3 bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-400 rounded-xl hover:bg-blue-100 dark:hover:bg-blue-500/20 transition-colors min-h-[44px]"
-          >
-            <FileText className="w-5 h-5" />
-            <span className="text-sm font-semibold">إنشاء فاتورة</span>
-          </motion.button>
-          <motion.button
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.05 }}
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={() => navigate('/finance/treasury')}
-            className="flex items-center gap-2 px-4 py-3 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 rounded-xl hover:bg-emerald-100 dark:hover:bg-emerald-500/20 transition-colors min-h-[44px]"
-          >
-            <CreditCard className="w-5 h-5" />
-            <span className="text-sm font-semibold">تسجيل دفعة</span>
-          </motion.button>
-          <motion.button
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={() => navigate('/finance/reports')}
-            className="flex items-center gap-2 px-4 py-3 bg-purple-50 dark:bg-purple-500/10 text-purple-700 dark:text-purple-400 rounded-xl hover:bg-purple-100 dark:hover:bg-purple-500/20 transition-colors min-h-[44px]"
-          >
-            <BarChart3 className="w-5 h-5" />
-            <span className="text-sm font-semibold">عرض التقارير</span>
-          </motion.button>
-        </div>
+            <div className="border-t border-[#E5EAF1] bg-[#F6F8FB] p-6 lg:border-r lg:border-t-0">
+              <div className="grid h-full gap-3">
+                <button
+                  onClick={() => navigate('/finance/billing')}
+                  className="flex items-center justify-between rounded-lg border border-[#E5EAF1] bg-white p-4 text-right transition hover:border-[#38BDF8]"
+                >
+                  <span>
+                    <span className="block text-sm font-bold text-[#020617]">إنشاء فاتورة</span>
+                    <span className="mt-1 block text-xs text-[#94A3B8]">إصدار ومتابعة الفواتير</span>
+                  </span>
+                  <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#38BDF8]/10 text-[#38BDF8]">
+                    <FileText className="h-5 w-5" />
+                  </span>
+                </button>
+                <button
+                  onClick={() => navigate('/finance/billing?tab=payments')}
+                  className="flex items-center justify-between rounded-lg border border-[#E5EAF1] bg-white p-4 text-right transition hover:border-[#22C7A1]"
+                >
+                  <span>
+                    <span className="block text-sm font-bold text-[#020617]">تسجيل دفعة</span>
+                    <span className="mt-1 block text-xs text-[#94A3B8]">قبض دفعات العملاء</span>
+                  </span>
+                  <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#22C7A1]/10 text-[#22C7A1]">
+                    <CreditCard className="h-5 w-5" />
+                  </span>
+                </button>
+                <button
+                  onClick={() => navigate('/finance/reports-analysis?tab=reports')}
+                  className="flex items-center justify-between rounded-lg border border-[#E5EAF1] bg-white p-4 text-right transition hover:border-[#7C83F6]"
+                >
+                  <span>
+                    <span className="block text-sm font-bold text-[#020617]">التقارير المالية</span>
+                    <span className="mt-1 block text-xs text-[#94A3B8]">تحليل الأداء والمركز المالي</span>
+                  </span>
+                  <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#7C83F6]/10 text-[#7C83F6]">
+                    <BarChart3 className="h-5 w-5" />
+                  </span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </motion.section>
 
         {/* KPI Cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {kpiCards.map((kpi, index) => {
             const Icon = kpi.icon;
+            const changeValue = Number(kpi.change);
+            const safeChange = Number.isFinite(changeValue) ? changeValue : 0;
             return (
               <motion.div
                 key={index}
@@ -336,10 +389,10 @@ const Overview: React.FC = () => {
                   {kpi.change !== undefined && (
                     <span className={cn(
                       "inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-bold",
-                      kpi.change >= 0 ? "bg-emerald-100 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400" : "bg-rose-100 dark:bg-rose-500/10 text-rose-700 dark:text-rose-400"
+                      safeChange >= 0 ? "bg-emerald-100 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400" : "bg-rose-100 dark:bg-rose-500/10 text-rose-700 dark:text-rose-400"
                     )}>
-                      {kpi.change >= 0 ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
-                      {Math.abs(kpi.change)}%
+                      {safeChange >= 0 ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
+                      {Math.abs(safeChange)}%
                     </span>
                   )}
                 </div>
@@ -592,20 +645,191 @@ const Overview: React.FC = () => {
               <FileText className="w-4 h-4 ml-2" />
               فاتورة جديدة
             </Button>
-            <Button variant="outline" onClick={() => navigate('/finance/unified-payments')}>
+            <Button variant="outline" onClick={() => navigate('/finance/billing?tab=payments')}>
               <CreditCard className="w-4 h-4 ml-2" />
               تسجيل دفعة
             </Button>
-            <Button variant="outline" onClick={() => navigate('/finance/unified-reports')}>
+            <Button variant="outline" onClick={() => navigate('/finance/reports-analysis?tab=reports')}>
               <BarChart3 className="w-4 h-4 ml-2" />
               تقرير مالي
             </Button>
-            <Button variant="outline" onClick={() => navigate('/finance/ledger')}>
+            <Button variant="outline" onClick={() => navigate('/finance/accounting?tab=ledger')}>
               <Calculator className="w-4 h-4 ml-2" />
               ميزان المراجعة
             </Button>
           </div>
         </motion.div>
+        <style>{`
+          .finance-overview-system {
+            color: var(--finance-overview-text);
+            background:
+              linear-gradient(180deg, rgba(246, 248, 251, 0.72), var(--finance-overview-inner) 280px),
+              var(--finance-overview-inner) !important;
+          }
+
+          .finance-overview-system .bg-white,
+          .finance-overview-system .dark\\:bg-slate-900,
+          .finance-overview-system [class*="bg-card"] {
+            background-color: var(--finance-overview-surface) !important;
+          }
+
+          .finance-overview-system .bg-slate-50,
+          .finance-overview-system .bg-slate-100,
+          .finance-overview-system .dark\\:bg-slate-800,
+          .finance-overview-system .dark\\:bg-slate-950 {
+            background-color: var(--finance-overview-inner) !important;
+          }
+
+          .finance-overview-system .rounded-3xl,
+          .finance-overview-system .rounded-2xl,
+          .finance-overview-system .rounded-xl,
+          .finance-overview-system .rounded-lg,
+          .finance-overview-system button {
+            border-radius: 8px !important;
+          }
+
+          .finance-overview-system .shadow-lg,
+          .finance-overview-system .shadow-md,
+          .finance-overview-system .shadow-sm {
+            box-shadow: 0 10px 28px rgba(2, 6, 23, 0.07) !important;
+          }
+
+          .finance-overview-system .border,
+          .finance-overview-system .border-slate-100,
+          .finance-overview-system .border-slate-200,
+          .finance-overview-system .border-slate-700,
+          .finance-overview-system .border-slate-800,
+          .finance-overview-system .dark\\:border-slate-800 {
+            border-color: var(--finance-overview-border) !important;
+          }
+
+          .finance-overview-system .text-slate-900,
+          .finance-overview-system .dark\\:text-white {
+            color: var(--finance-overview-text) !important;
+          }
+
+          .finance-overview-system .text-slate-600,
+          .finance-overview-system .text-slate-500,
+          .finance-overview-system .text-slate-400,
+          .finance-overview-system .dark\\:text-slate-400 {
+            color: var(--finance-overview-muted) !important;
+          }
+
+          .finance-overview-system .bg-gradient-to-r,
+          .finance-overview-system .bg-gradient-to-br {
+            background-image: none !important;
+          }
+
+          .finance-overview-system .border-r-emerald-500 {
+            border-right-color: var(--finance-overview-success) !important;
+          }
+
+          .finance-overview-system .border-r-sky-500 {
+            border-right-color: var(--finance-overview-info) !important;
+          }
+
+          .finance-overview-system .border-r-rose-500 {
+            border-right-color: var(--finance-overview-alert) !important;
+          }
+
+          .finance-overview-system .border-r-violet-500 {
+            border-right-color: var(--finance-overview-focus) !important;
+          }
+
+          .finance-overview-system .bg-emerald-50,
+          .finance-overview-system .bg-emerald-100,
+          .finance-overview-system .dark\\:bg-emerald-500\\/10 {
+            background-color: color-mix(in srgb, var(--finance-overview-success) 12%, white) !important;
+          }
+
+          .finance-overview-system .text-emerald-600,
+          .finance-overview-system .text-emerald-700,
+          .finance-overview-system .dark\\:text-emerald-400 {
+            color: var(--finance-overview-success) !important;
+          }
+
+          .finance-overview-system .bg-sky-50,
+          .finance-overview-system .bg-sky-100,
+          .finance-overview-system .bg-blue-50,
+          .finance-overview-system .dark\\:bg-sky-500\\/10 {
+            background-color: color-mix(in srgb, var(--finance-overview-info) 12%, white) !important;
+          }
+
+          .finance-overview-system .text-sky-600,
+          .finance-overview-system .text-sky-700,
+          .finance-overview-system .text-blue-700,
+          .finance-overview-system .dark\\:text-sky-400 {
+            color: var(--finance-overview-info) !important;
+          }
+
+          .finance-overview-system .bg-violet-50,
+          .finance-overview-system .bg-purple-50,
+          .finance-overview-system .dark\\:bg-violet-500\\/10 {
+            background-color: color-mix(in srgb, var(--finance-overview-focus) 12%, white) !important;
+          }
+
+          .finance-overview-system .text-violet-600,
+          .finance-overview-system .text-purple-700,
+          .finance-overview-system .dark\\:text-violet-400 {
+            color: var(--finance-overview-focus) !important;
+          }
+
+          .finance-overview-system .bg-rose-50,
+          .finance-overview-system .bg-rose-100,
+          .finance-overview-system .bg-red-50,
+          .finance-overview-system .bg-amber-50,
+          .finance-overview-system .bg-amber-100,
+          .finance-overview-system .dark\\:bg-rose-500\\/10 {
+            background-color: color-mix(in srgb, var(--finance-overview-alert) 12%, white) !important;
+          }
+
+          .finance-overview-system .bg-red-500,
+          .finance-overview-system .bg-rose-500,
+          .finance-overview-system .from-rose-500,
+          .finance-overview-system .to-orange-500 {
+            background-color: var(--finance-overview-alert) !important;
+            color: white !important;
+          }
+
+          .finance-overview-system .text-rose-600,
+          .finance-overview-system .text-rose-700,
+          .finance-overview-system .text-red-600,
+          .finance-overview-system .text-amber-600,
+          .finance-overview-system .dark\\:text-rose-400 {
+            color: var(--finance-overview-alert) !important;
+          }
+
+          .finance-overview-system .recharts-cartesian-grid line {
+            stroke: var(--finance-overview-border) !important;
+          }
+
+          .finance-overview-system .recharts-area-area {
+            fill: color-mix(in srgb, var(--finance-overview-success) 24%, transparent) !important;
+          }
+
+          .finance-overview-system .recharts-area-curve {
+            stroke: var(--finance-overview-success) !important;
+          }
+
+          .finance-overview-system input,
+          .finance-overview-system textarea,
+          .finance-overview-system [role="combobox"] {
+            border-radius: 8px !important;
+            border-color: var(--finance-overview-border) !important;
+            background: var(--finance-overview-inner) !important;
+          }
+
+          .finance-overview-system *:focus-visible {
+            outline-color: var(--finance-overview-focus) !important;
+            --tw-ring-color: var(--finance-overview-focus) !important;
+          }
+
+          @media (max-width: 768px) {
+            .finance-overview-system .grid-cols-2 {
+              grid-template-columns: 1fr !important;
+            }
+          }
+        `}</style>
       </div>
     </div>
   );

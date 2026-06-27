@@ -255,11 +255,11 @@ const ViolationsMetrics = ({
           key={idx}
           variants={scaleIn}
           whileHover={{ y: -4 }}
-          className="bg-white rounded-2xl border border-neutral-200 p-5 shadow-sm hover:shadow-lg transition-all duration-200"
+          className="rounded-xl border border-[#DDE5EF] bg-white p-4 shadow-sm transition-colors hover:border-[#173A63]"
         >
           <div className="flex items-start justify-between mb-3">
-            <div className={cn("w-11 h-11 rounded-xl bg-gradient-to-br flex items-center justify-center shadow-md", metric.color)}>
-              <metric.icon className="w-5 h-5 text-white" />
+            <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-[#EEF5FB] text-[#173A63]">
+              <metric.icon className="h-5 w-5" />
             </div>
             <div className={cn("px-2 py-1 rounded-lg text-xs font-medium", metric.bgColor, metric.textColor)}>
               {metric.subtext.split(' • ')[0]}
@@ -301,7 +301,7 @@ const ViolationCard = ({
       variants={scaleIn}
       whileHover={{ y: -2 }}
       className={cn(
-        "bg-white rounded-2xl border p-5 shadow-sm hover:shadow-md transition-all duration-200",
+        "rounded-xl border bg-white p-5 shadow-sm transition-colors hover:border-[#173A63]",
         statusInfo.borderColor
       )}
     >
@@ -377,7 +377,7 @@ const ViolationCard = ({
         </div>
 
         {/* Date */}
-        <div className="p-3 rounded-xl bg-neutral-50 border border-neutral-200">
+        <div className="rounded-xl border border-[#DDE5EF] bg-[#FCFDFE] p-3">
           <p className="text-xs text-neutral-500 mb-1">تاريخ المخالفة</p>
           <div className="flex items-center gap-2">
             <p className="text-sm font-semibold text-neutral-900" dir="ltr">
@@ -431,7 +431,7 @@ const ViolationCard = ({
           <Button
             size="sm"
             onClick={onPay}
-            className="flex-1 gap-2 bg-gradient-to-r from-teal-500 to-teal-600 hover:shadow-lg rounded-xl"
+            className="flex-1 gap-2 rounded-xl bg-[#173A63] hover:bg-[#173A63]/90"
           >
             <CreditCard className="w-4 h-4" />
             <span>دفع</span>
@@ -460,7 +460,7 @@ const ViolationTableRow = ({
   const StatusIcon = statusInfo.icon;
 
   return (
-    <tr className="hover:bg-neutral-50 transition-colors border-b border-neutral-100">
+    <tr className="border-b border-[#E6EDF5] transition-colors hover:bg-[#F7FAFD]">
       {/* Violation Number */}
       <td className="py-4 px-4">
         <div className="flex items-center gap-3">
@@ -530,7 +530,7 @@ const ViolationTableRow = ({
             <Button
               size="sm"
               onClick={onPay}
-              className="h-8 px-3 bg-gradient-to-r from-teal-500 to-teal-600 hover:shadow-md rounded-lg"
+              className="h-8 rounded-lg bg-[#173A63] px-3 hover:bg-[#173A63]/90"
             >
               <CreditCard className="w-4 h-4 ml-1" />
               دفع
@@ -568,7 +568,7 @@ const ViolationsFilters = ({
   sortOption: string;
   onSortChange: (value: string) => void;
 }) => (
-  <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between bg-white rounded-xl p-4 border border-neutral-200">
+  <div className="flex flex-col gap-3 rounded-xl border border-[#DDE5EF] bg-[#FCFDFE] p-4 sm:flex-row sm:items-center sm:justify-between">
     <div className="flex items-center gap-3 flex-1 w-full sm:w-auto">
       <div className="relative flex-1 max-w-md">
         <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
@@ -576,14 +576,14 @@ const ViolationsFilters = ({
           placeholder="بحث برقم المخالفة..."
           value={searchQuery}
           onChange={(e) => onSearchChange(e.target.value)}
-          className="pr-10 rounded-xl border-neutral-200"
+          className="rounded-xl border-[#D8E1EC] bg-white pr-10"
         />
       </div>
     </div>
 
     <div className="flex items-center gap-3 w-full sm:w-auto">
       <Select value={statusFilter} onValueChange={onStatusFilterChange}>
-        <SelectTrigger className="w-full sm:w-[160px] rounded-xl border-neutral-200">
+        <SelectTrigger className="w-full rounded-xl border-[#D8E1EC] bg-white sm:w-[160px]">
           <SelectValue placeholder="الحالة" />
         </SelectTrigger>
         <SelectContent>
@@ -596,7 +596,7 @@ const ViolationsFilters = ({
       </Select>
 
       <Select value={sortOption} onValueChange={onSortChange}>
-        <SelectTrigger className="w-full sm:w-[160px] rounded-xl border-neutral-200">
+        <SelectTrigger className="w-full rounded-xl border-[#D8E1EC] bg-white sm:w-[160px]">
           <SelectValue placeholder="الترتيب" />
         </SelectTrigger>
         <SelectContent>
@@ -617,7 +617,7 @@ const ViolationsEmptyState = () => (
       initial={{ scale: 0.9, opacity: 0 }}
       animate={{ scale: 1, opacity: 1 }}
       transition={{ duration: 0.3 }}
-      className="w-24 h-24 rounded-xl bg-gradient-to-br from-green-50 to-green-100 flex items-center justify-center mx-auto mb-6"
+      className="mx-auto mb-6 flex h-24 w-24 items-center justify-center rounded-xl bg-[#EEF5FB]"
     >
       <CheckCircle className="w-12 h-12 text-green-500" />
     </motion.div>
@@ -677,7 +677,7 @@ const ViolationDetailsDialog = ({
                   </div>
                 </div>
                 {violation.status === 'pending' && onPay && (
-                  <Button onClick={onPay} className="gap-2 bg-gradient-to-r from-teal-500 to-teal-600">
+                  <Button onClick={onPay} className="gap-2 rounded-xl bg-[#173A63] hover:bg-[#173A63]/90">
                     <CreditCard className="w-4 h-4" />
                     دفع الغرامة
                   </Button>
@@ -807,7 +807,7 @@ const ViolationDetailsDialog = ({
             إغلاق
           </Button>
           {violation.status === 'pending' && onPay && (
-            <Button onClick={onPay} className="gap-2 bg-gradient-to-r from-teal-500 to-teal-600">
+            <Button onClick={onPay} className="gap-2 rounded-xl bg-[#173A63] hover:bg-[#173A63]/90">
               <CreditCard className="w-4 h-4" />
               دفع الغرامة
             </Button>
@@ -942,7 +942,7 @@ const ViolationPaymentDialog = ({
           <Button
             onClick={handlePayment}
             disabled={isProcessing}
-            className="gap-2 bg-gradient-to-r from-teal-500 to-teal-600 hover:shadow-lg"
+            className="gap-2 rounded-xl bg-[#173A63] hover:bg-[#173A63]/90"
           >
             {isProcessing ? (
               <>
@@ -1113,7 +1113,7 @@ const AddViolationDialog = ({ open, onClose, onAdd }: AddViolationDialogProps) =
           <Button
             onClick={handleSubmit}
             disabled={isSubmitting || !formData.fine_amount || parseFloat(formData.fine_amount) <= 0}
-            className="gap-2 bg-gradient-to-r from-teal-500 to-teal-600"
+            className="gap-2 rounded-xl bg-[#173A63] hover:bg-[#173A63]/90"
           >
             {isSubmitting ? (
               <>
@@ -1319,7 +1319,7 @@ export const ContractViolationsTabRedesigned = ({
         </div>
         <Button
           onClick={() => setIsAddViolationDialogOpen(true)}
-          className="gap-2 bg-gradient-to-r from-teal-500 to-teal-600 hover:shadow-lg shadow-teal-200 rounded-xl"
+          className="gap-2 rounded-xl bg-[#173A63] hover:bg-[#173A63]/90"
         >
           <Plus className="w-4 h-4" />
           إضافة مخالفة
@@ -1328,7 +1328,7 @@ export const ContractViolationsTabRedesigned = ({
 
       {/* Empty State */}
       {violations.length === 0 ? (
-        <Card className="border-neutral-200">
+        <Card className="rounded-xl border-[#DDE5EF] shadow-sm">
           <CardContent className="p-6">
             <ViolationsEmptyState />
           </CardContent>
@@ -1350,7 +1350,7 @@ export const ContractViolationsTabRedesigned = ({
             <p className="text-sm text-neutral-500">
               عرض {filteredAndSortedViolations.length} من {violations.length} مخالفة
             </p>
-            <div className="flex items-center gap-2 bg-neutral-100 p-1 rounded-xl">
+            <div className="flex items-center gap-2 rounded-xl border border-[#DDE5EF] bg-white p-1">
               <Button
                 size="sm"
                 variant={viewMode === 'grid' ? 'default' : 'ghost'}
@@ -1378,7 +1378,7 @@ export const ContractViolationsTabRedesigned = ({
 
           {/* Violations Display */}
           {filteredAndSortedViolations.length === 0 ? (
-            <Card className="border-neutral-200">
+            <Card className="rounded-xl border-[#DDE5EF] shadow-sm">
               <CardContent className="p-12 text-center">
                 <Search className="w-12 h-12 text-neutral-300 mx-auto mb-4" />
                 <h3 className="text-lg font-semibold text-neutral-900 mb-2">لا توجد نتائج</h3>
@@ -1405,11 +1405,11 @@ export const ContractViolationsTabRedesigned = ({
               ))}
             </motion.div>
           ) : (
-            <Card className="border-neutral-200 overflow-hidden">
+            <Card className="overflow-hidden rounded-xl border-[#DDE5EF] shadow-sm">
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead>
-                    <tr className="bg-neutral-50 border-b border-neutral-200">
+                    <tr className="border-b border-[#DDE5EF] bg-[#F7FAFD]">
                       <th className="py-3 px-4 text-right text-sm font-semibold text-neutral-700">رقم المخالفة</th>
                       <th className="py-3 px-4 text-right text-sm font-semibold text-neutral-700">التاريخ</th>
                       <th className="py-3 px-4 text-right text-sm font-semibold text-neutral-700">الموقع</th>

@@ -8,7 +8,7 @@
  * 3. المراجعة والإرسال (Review & Submit)
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { CSSProperties, useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { z } from 'zod';
 import { toast } from 'sonner';
@@ -48,6 +48,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCurrentCompanyId } from '@/hooks/useUnifiedCompanyAccess';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
+import { systemColorPattern } from '@/lib/design-system/systemColorPattern';
 
 // Import our new components
 import { EnhancedCustomerDialog } from '@/components/customers/EnhancedCustomerForm';
@@ -56,6 +57,19 @@ import { AdvancedOptions } from '@/components/ui/collapsible-section';
 import { FormField } from '@/components/ui/form-field';
 
 import { useFleetifyTranslation } from "@/hooks/useTranslation";
+
+const wizardTheme = systemColorPattern.colors;
+const wizardSystemStyle = {
+  '--wizard-text': wizardTheme.text,
+  '--wizard-surface': wizardTheme.surface,
+  '--wizard-inner': wizardTheme.innerSurface,
+  '--wizard-muted': wizardTheme.secondaryText,
+  '--wizard-border': wizardTheme.border,
+  '--wizard-info': wizardTheme.info,
+  '--wizard-alert': wizardTheme.alert,
+  '--wizard-focus': wizardTheme.focus,
+  '--wizard-success': wizardTheme.success,
+} as CSSProperties;
 // === Schema ===
 const contractSchema = z.object({
   customer_id: z.string().min(1, 'يجب اختيار العميل'),
@@ -1344,12 +1358,14 @@ export const SimpleContractWizard: React.FC<SimpleContractWizardProps> = ({ open
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className={cn(
-        "max-h-[90vh] overflow-hidden flex flex-col bg-[#f0efed] p-0 transition-all",
+      <DialogContent
+        style={wizardSystemStyle}
+        className={cn(
+        "contract-wizard-system h-[min(88vh,760px)] overflow-hidden flex flex-col bg-[#F6F8FB] p-0 transition-all",
         isAssistantOpen ? "max-w-5xl" : "max-w-2xl"
       )}>
         {/* Header */}
-        <div className="bg-white px-6 py-5 border-b border-neutral-200">
+        <div className="wizard-header bg-white px-6 py-5 border-b border-neutral-200">
           <DialogHeader>
             <DialogTitle className="flex items-center justify-between text-xl">
               <div className="flex items-center gap-3">
@@ -1394,10 +1410,10 @@ export const SimpleContractWizard: React.FC<SimpleContractWizardProps> = ({ open
         </div>
 
         {/* Content with Assistant */}
-        <div className="flex-1 overflow-hidden flex">
+        <div className="flex-1 min-h-0 overflow-hidden flex">
           {/* Step Content */}
           <div className={cn(
-            "flex-1 overflow-y-auto p-6 transition-all",
+            "wizard-step-scroll flex-1 overflow-y-auto p-6 transition-all",
             isAssistantOpen ? "w-1/2" : "w-full"
           )}>
             <AnimatePresence mode="wait">
@@ -1407,7 +1423,7 @@ export const SimpleContractWizard: React.FC<SimpleContractWizardProps> = ({ open
         </div>
 
         {/* Navigation Footer */}
-        <div className="bg-white px-6 py-4 border-t border-neutral-200 flex items-center justify-between">
+        <div className="wizard-footer bg-white px-6 py-4 border-t border-neutral-200 flex items-center justify-between">
           <Button
             variant="outline"
             onClick={handlePrev}
@@ -1447,6 +1463,209 @@ export const SimpleContractWizard: React.FC<SimpleContractWizardProps> = ({ open
             </Button>
           )}
         </div>
+        <style>{`
+          .contract-wizard-system {
+            color: var(--wizard-text);
+            border: 1px solid var(--wizard-border) !important;
+            border-radius: 8px !important;
+            box-shadow: 0 24px 70px -40px rgba(2, 6, 23, 0.42) !important;
+          }
+
+          .contract-wizard-system .wizard-header,
+          .contract-wizard-system .wizard-footer,
+          .contract-wizard-system .bg-white {
+            background-color: var(--wizard-surface) !important;
+          }
+
+          .contract-wizard-system .wizard-header {
+            padding-block: 18px 16px;
+          }
+
+          .contract-wizard-system .wizard-footer {
+            padding-block: 14px;
+          }
+
+          .contract-wizard-system .bg-\\[\\#f0efed\\],
+          .contract-wizard-system .bg-neutral-50,
+          .contract-wizard-system .bg-neutral-100 {
+            background-color: var(--wizard-inner) !important;
+          }
+
+          .contract-wizard-system .border-neutral-100,
+          .contract-wizard-system .border-neutral-200,
+          .contract-wizard-system .border-neutral-300 {
+            border-color: var(--wizard-border) !important;
+          }
+
+          .contract-wizard-system .text-neutral-900,
+          .contract-wizard-system .text-neutral-800,
+          .contract-wizard-system .text-neutral-700 {
+            color: var(--wizard-text) !important;
+          }
+
+          .contract-wizard-system .text-neutral-600,
+          .contract-wizard-system .text-neutral-500,
+          .contract-wizard-system .text-neutral-400 {
+            color: var(--wizard-muted) !important;
+          }
+
+          .contract-wizard-system .rounded-2xl,
+          .contract-wizard-system .rounded-xl,
+          .contract-wizard-system .rounded-lg {
+            border-radius: 8px !important;
+          }
+
+          .contract-wizard-system .shadow-sm,
+          .contract-wizard-system .shadow-md,
+          .contract-wizard-system .shadow-lg {
+            box-shadow: 0 14px 30px -24px rgba(2, 6, 23, 0.44) !important;
+          }
+
+          .contract-wizard-system .bg-gradient-to-l,
+          .contract-wizard-system .bg-gradient-to-br {
+            background-image: none !important;
+          }
+
+          .contract-wizard-system .from-teal-50,
+          .contract-wizard-system .to-teal-100,
+          .contract-wizard-system .bg-teal-50,
+          .contract-wizard-system .bg-teal-100,
+          .contract-wizard-system .bg-teal-200 {
+            background-color: rgba(34, 199, 161, 0.1) !important;
+          }
+
+          .contract-wizard-system .from-teal-500,
+          .contract-wizard-system .to-teal-600,
+          .contract-wizard-system .bg-teal-500,
+          .contract-wizard-system .bg-teal-600 {
+            background-color: var(--wizard-success) !important;
+          }
+
+          .contract-wizard-system .text-teal-500,
+          .contract-wizard-system .text-teal-600,
+          .contract-wizard-system .text-teal-700,
+          .contract-wizard-system .text-teal-900,
+          .contract-wizard-system .hover\\:text-teal-900:hover {
+            color: var(--wizard-success) !important;
+          }
+
+          .contract-wizard-system .border-teal-200,
+          .contract-wizard-system .border-teal-300,
+          .contract-wizard-system .border-teal-400,
+          .contract-wizard-system .border-teal-500,
+          .contract-wizard-system .hover\\:border-teal-300:hover,
+          .contract-wizard-system .focus\\:border-teal-400:focus {
+            border-color: rgba(34, 199, 161, 0.34) !important;
+          }
+
+          .contract-wizard-system .hover\\:bg-teal-50:hover,
+          .contract-wizard-system .hover\\:bg-teal-50\\/50:hover,
+          .contract-wizard-system .hover\\:bg-teal-100:hover {
+            background-color: rgba(34, 199, 161, 0.08) !important;
+          }
+
+          .contract-wizard-system .bg-amber-50,
+          .contract-wizard-system .bg-amber-100 {
+            background-color: rgba(56, 189, 248, 0.12) !important;
+          }
+
+          .contract-wizard-system .text-amber-600,
+          .contract-wizard-system .text-amber-700,
+          .contract-wizard-system .text-amber-800 {
+            color: var(--wizard-info) !important;
+          }
+
+          .contract-wizard-system .border-amber-200 {
+            border-color: rgba(56, 189, 248, 0.3) !important;
+          }
+
+          .contract-wizard-system .text-red-500,
+          .contract-wizard-system .text-red-600 {
+            color: var(--wizard-alert) !important;
+          }
+
+          .contract-wizard-system input,
+          .contract-wizard-system textarea,
+          .contract-wizard-system button[role="combobox"] {
+            background-color: var(--wizard-surface) !important;
+            border-color: var(--wizard-border) !important;
+            color: var(--wizard-text) !important;
+            border-radius: 8px !important;
+          }
+
+          .contract-wizard-system input:focus,
+          .contract-wizard-system textarea:focus,
+          .contract-wizard-system button[role="combobox"]:focus {
+            border-color: var(--wizard-success) !important;
+            box-shadow: 0 0 0 3px rgba(34, 199, 161, 0.12) !important;
+          }
+
+          .contract-wizard-system button[class*="from-teal-500"],
+          .contract-wizard-system button[class*="bg-gradient-to-l"],
+          .contract-wizard-system button[class*="bg-gradient-to-br"] {
+            background: var(--wizard-success) !important;
+            color: #fff !important;
+            box-shadow: 0 14px 24px -18px rgba(34, 199, 161, 0.74) !important;
+          }
+
+          .contract-wizard-system [class*="max-h-56"] {
+            max-height: 188px !important;
+            padding-left: 2px;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(148, 163, 184, 0.35) transparent;
+          }
+
+          .contract-wizard-system .wizard-step-scroll {
+            scrollbar-width: thin;
+            scrollbar-color: rgba(148, 163, 184, 0.35) transparent;
+          }
+
+          .contract-wizard-system .wizard-step-scroll::-webkit-scrollbar,
+          .contract-wizard-system [class*="max-h-56"]::-webkit-scrollbar {
+            width: 7px;
+          }
+
+          .contract-wizard-system .wizard-step-scroll::-webkit-scrollbar-thumb,
+          .contract-wizard-system [class*="max-h-56"]::-webkit-scrollbar-thumb {
+            background: rgba(148, 163, 184, 0.35);
+            border-radius: 999px;
+          }
+
+          .contract-wizard-system .wizard-step-scroll::-webkit-scrollbar-track,
+          .contract-wizard-system [class*="max-h-56"]::-webkit-scrollbar-track {
+            background: transparent;
+          }
+
+          .contract-wizard-system button.w-full,
+          .contract-wizard-system .grid button {
+            min-height: 64px;
+          }
+
+          @media (max-width: 720px) {
+            .contract-wizard-system {
+              width: calc(100vw - 16px) !important;
+              height: calc(100vh - 24px) !important;
+              max-width: none !important;
+            }
+
+            .contract-wizard-system .wizard-header {
+              padding: 16px;
+            }
+
+            .contract-wizard-system .wizard-step-scroll {
+              padding: 16px;
+            }
+
+            .contract-wizard-system .grid-cols-2,
+            .contract-wizard-system .grid-cols-5 {
+              grid-template-columns: minmax(0, 1fr) !important;
+            }
+
+            .contract-wizard-system .wizard-footer {
+              padding: 12px 16px;
+            }
+          }
+        `}</style>
       </DialogContent>
     </Dialog>
   );

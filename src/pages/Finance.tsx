@@ -169,26 +169,8 @@ const Finance = () => {
           </ProtectedFinanceRoute>
         } 
       />
-      <Route 
-        path="journal-permissions" 
-        element={
-          <ProtectedFinanceRoute permission="finance.view">
-            <Suspense fallback={<PageSkeletonFallback />}>
-              <JournalPermissions />
-            </Suspense>
-          </ProtectedFinanceRoute>
-        } 
-      />
-      <Route 
-        path="financial-ratios" 
-        element={
-          <ProtectedFinanceRoute permission="finance.view">
-            <Suspense fallback={<PageSkeletonFallback />}>
-              <FinancialRatios />
-            </Suspense>
-          </ProtectedFinanceRoute>
-        } 
-      />
+      <Route path="journal-permissions" element={<Navigate to="/finance/audit-settings?tab=permissions" replace />} />
+      <Route path="financial-ratios" element={<Navigate to="/finance/reports-analysis?tab=ratios" replace />} />
       <Route 
         path="invoice-journal-report" 
         element={
@@ -199,46 +181,10 @@ const Finance = () => {
           </ProtectedFinanceRoute>
         } 
       />
-      <Route 
-        path="audit-trail" 
-        element={
-          <ProtectedFinanceRoute permission="finance.view">
-            <Suspense fallback={<PageSkeletonFallback />}>
-              <AuditTrailPage />
-            </Suspense>
-          </ProtectedFinanceRoute>
-        } 
-      />
-      <Route 
-        path="chart-of-accounts" 
-        element={
-          <ProtectedFinanceRoute permission="finance.accounts.view">
-            <Suspense fallback={<PageSkeletonFallback />}>
-              <ChartOfAccounts />
-            </Suspense>
-          </ProtectedFinanceRoute>
-        } 
-      />
-      <Route 
-        path="general-ledger" 
-        element={
-          <ProtectedFinanceRoute permission="finance.ledger.view">
-            <Suspense fallback={<PageSkeletonFallback />}>
-              <GeneralLedger />
-            </Suspense>
-          </ProtectedFinanceRoute>
-        } 
-      />
-      <Route 
-        path="ledger" 
-        element={
-          <ProtectedFinanceRoute permission="finance.ledger.view">
-            <Suspense fallback={<PageSkeletonFallback />}>
-              <GeneralLedger />
-            </Suspense>
-          </ProtectedFinanceRoute>
-        } 
-      />
+      <Route path="audit-trail" element={<Navigate to="/finance/audit-settings?tab=audit" replace />} />
+      <Route path="chart-of-accounts" element={<Navigate to="/finance/accounting?tab=chart" replace />} />
+      <Route path="general-ledger" element={<Navigate to="/finance/accounting?tab=ledger" replace />} />
+      <Route path="ledger" element={<Navigate to="/finance/accounting?tab=ledger" replace />} />
       {/* Redirect cash-bank to treasury */}
       <Route path="cash-bank" element={<Navigate to="/finance/treasury" replace />} />
       <Route 
@@ -251,16 +197,7 @@ const Finance = () => {
           </ProtectedFinanceRoute>
         } 
       />
-      <Route 
-        path="cost-centers" 
-        element={
-          <ProtectedFinanceRoute permission="finance.cost_centers.view">
-            <Suspense fallback={<PageSkeletonFallback />}>
-              <CostCenters />
-            </Suspense>
-          </ProtectedFinanceRoute>
-        } 
-      />
+      <Route path="cost-centers" element={<Navigate to="/finance/budgets-centers?tab=cost-centers" replace />} />
       {/* ⭐ مركز الفواتير والمدفوعات الموحد */}
       <Route 
         path="billing" 
@@ -299,26 +236,8 @@ const Finance = () => {
       {/* توجيهات التدقيق والإعدادات */}
       <Route path="audit-trail-redirect" element={<Navigate to="/finance/audit-settings?tab=audit" replace />} />
       <Route path="settings-redirect" element={<Navigate to="/finance/audit-settings?tab=settings" replace />} />
-      <Route
-        path="journal-entries" 
-        element={
-          <ProtectedFinanceRoute permission="finance.ledger.view">
-            <Suspense fallback={<PageSkeletonFallback />}>
-              <Ledger />
-            </Suspense>
-          </ProtectedFinanceRoute>
-        } 
-      />
-      <Route 
-        path="reports" 
-        element={
-          <ProtectedFinanceRoute permission="finance.view">
-            <Suspense fallback={<PageSkeletonFallback />}>
-              <Reports />
-            </Suspense>
-          </ProtectedFinanceRoute>
-        } 
-      />
+      <Route path="journal-entries" element={<Navigate to="/finance/accounting?tab=entries" replace />} />
+      <Route path="reports" element={<Navigate to="/finance/reports-analysis?tab=reports" replace />} />
       <Route 
         path="assets" 
         element={
@@ -329,16 +248,7 @@ const Finance = () => {
           </ProtectedFinanceRoute>
         } 
       />
-      <Route 
-        path="budgets" 
-        element={
-          <ProtectedFinanceRoute permission="finance.budgets.view">
-            <Suspense fallback={<PageSkeletonFallback />}>
-              <Budgets />
-            </Suspense>
-          </ProtectedFinanceRoute>
-        } 
-      />
+      <Route path="budgets" element={<Navigate to="/finance/budgets-centers?tab=budgets" replace />} />
       <Route
         path="vendors"
         element={
@@ -359,26 +269,8 @@ const Finance = () => {
           </ProtectedFinanceRoute>
         }
       />
-      <Route
-        path="analysis" 
-        element={
-          <ProtectedFinanceRoute permission="finance.analysis.view">
-            <Suspense fallback={<PageSkeletonFallback />}>
-              <FinancialAnalysis />
-            </Suspense>
-          </ProtectedFinanceRoute>
-        } 
-      />
-      <Route 
-        path="account-mappings" 
-        element={
-          <ProtectedFinanceRoute permission="finance.accounts.view">
-            <Suspense fallback={<PageSkeletonFallback />}>
-              <AccountMappings />
-            </Suspense>
-          </ProtectedFinanceRoute>
-        } 
-      />
+      <Route path="analysis" element={<Navigate to="/finance/reports-analysis?tab=analysis" replace />} />
+      <Route path="account-mappings" element={<Navigate to="/finance/audit-settings?tab=settings" replace />} />
       <Route 
         path="accounting-wizard" 
         element={
@@ -389,40 +281,13 @@ const Finance = () => {
           </ProtectedFinanceRoute>
         } 
       />
-      <Route 
-        path="new-entry" 
-        element={
-          <ProtectedFinanceRoute permission="finance.ledger.write">
-            <Suspense fallback={<PageSkeletonFallback />}>
-              <NewEntry />
-            </Suspense>
-          </ProtectedFinanceRoute>
-        } 
-      />
+      <Route path="new-entry" element={<Navigate to="/finance/accounting?tab=entries&action=new" replace />} />
       
       {/* الحاسبة المالية */}
-      <Route 
-        path="calculator" 
-        element={
-          <ProtectedFinanceRoute permission="finance.view">
-            <Suspense fallback={<PageSkeletonFallback />}>
-              <FinancialCalculator />
-            </Suspense>
-          </ProtectedFinanceRoute>
-        } 
-      />
+      <Route path="calculator" element={<Navigate to="/finance/reports-analysis?tab=calculator" replace />} />
       
       {/* إدارة الودائع */}
-      <Route 
-        path="deposits" 
-        element={
-          <ProtectedFinanceRoute permission="finance.deposits.view">
-            <Suspense fallback={<PageSkeletonFallback />}>
-              <Deposits />
-            </Suspense>
-          </ProtectedFinanceRoute>
-        } 
-      />
+      <Route path="deposits" element={<Navigate to="/finance/billing?tab=deposits" replace />} />
       
       {/* نموذج سند القبض */}
       <Route 
@@ -450,16 +315,7 @@ const Finance = () => {
       />
       
       {/* متابعة الإيجارات الشهرية */}
-      <Route 
-        path="monthly-rent-tracking" 
-        element={
-          <ProtectedFinanceRoute permission="finance.payments.view">
-            <Suspense fallback={<PageSkeletonFallback />}>
-              <MonthlyRentTracking />
-            </Suspense>
-          </ProtectedFinanceRoute>
-        } 
-      />
+      <Route path="monthly-rent-tracking" element={<Navigate to="/finance/billing?tab=rent" replace />} />
       
       {/* Finance Settings - Super Admin Only */}
       <Route 
@@ -513,36 +369,9 @@ const Finance = () => {
         } 
       />
       {/* Unified Finance Modules */}
-      <Route 
-        path="unified-reports" 
-        element={
-          <ProtectedFinanceRoute permission="finance.view">
-            <Suspense fallback={<PageSkeletonFallback />}>
-              <UnifiedReports />
-            </Suspense>
-          </ProtectedFinanceRoute>
-        } 
-      />
-      <Route 
-        path="unified-payments" 
-        element={
-          <ProtectedFinanceRoute permission="finance.payments.view">
-            <Suspense fallback={<PageSkeletonFallback />}>
-              <UnifiedPayments />
-            </Suspense>
-          </ProtectedFinanceRoute>
-        } 
-      />
-      <Route 
-        path="settings" 
-        element={
-          <ProtectedFinanceRoute permission="finance.view">
-            <Suspense fallback={<PageSkeletonFallback />}>
-              <FinanceSettings />
-            </Suspense>
-          </ProtectedFinanceRoute>
-        } 
-      />
+      <Route path="unified-reports" element={<Navigate to="/finance/reports-analysis?tab=reports" replace />} />
+      <Route path="unified-payments" element={<Navigate to="/finance/billing?tab=payments" replace />} />
+      <Route path="settings" element={<Navigate to="/finance/audit-settings?tab=settings" replace />} />
     </Routes>
   )
 }

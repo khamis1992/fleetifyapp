@@ -3,9 +3,8 @@
  * وظائف تصدير المستندات بصيغ PDF و Word و Excel
  */
 
-import html2canvas from 'html2canvas';
-import { jsPDF } from 'jspdf';
 import * as XLSX from 'xlsx';
+import { buildOfficialReportDocumentHtml, exportOfficialHtmlToPDF } from '@/utils/officialFinancialReportExport';
 
 /**
  * تحميل HTML كملف PDF
@@ -16,78 +15,20 @@ export async function downloadHtmlAsPdf(
   htmlContent: string,
   filename: string = 'document.pdf'
 ): Promise<void> {
-  // إنشاء iframe مؤقت لعرض HTML
-  const iframe = document.createElement('iframe');
-  iframe.style.position = 'absolute';
-  iframe.style.left = '-9999px';
-  iframe.style.width = '210mm'; // A4 width
-  iframe.style.height = '297mm'; // A4 height
-  document.body.appendChild(iframe);
+  const normalizedFileName = filename.endsWith('.pdf') ? filename : `${filename}.pdf`;
+  const officialHtml = buildOfficialReportDocumentHtml({
+    metadata: {
+      reportTitle: normalizedFileName.replace(/\.pdf$/i, ''),
+      reportType: 'official_document',
+      currency: 'QAR',
+      asOfDate: new Date().toISOString().slice(0, 10),
+      sourceFingerprint: `html:${normalizedFileName}`,
+      status: 'published',
+    },
+    bodyHtml: htmlContent,
+  });
 
-  const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
-  if (!iframeDoc) {
-    document.body.removeChild(iframe);
-    throw new Error('Failed to create iframe document');
-  }
-
-  iframeDoc.open();
-  iframeDoc.write(htmlContent);
-  iframeDoc.close();
-
-  // انتظار تحميل الصور
-  await new Promise((resolve) => setTimeout(resolve, 500));
-
-  try {
-    const body = iframeDoc.body;
-    
-    // استخدام html2canvas لالتقاط المحتوى
-    const canvas = await html2canvas(body, {
-      scale: 2,
-      useCORS: true,
-      allowTaint: true,
-      logging: false,
-      windowWidth: 794, // A4 width in pixels at 96 DPI
-      windowHeight: 1123, // A4 height in pixels at 96 DPI
-    });
-
-    // إنشاء PDF
-    const pdf = new jsPDF({
-      orientation: 'portrait',
-      unit: 'mm',
-      format: 'a4',
-    });
-
-    const imgData = canvas.toDataURL('image/png');
-    const pdfWidth = pdf.internal.pageSize.getWidth();
-    const pdfHeight = pdf.internal.pageSize.getHeight();
-    
-    // حساب الأبعاد مع الحفاظ على النسبة
-    const imgWidth = canvas.width;
-    const imgHeight = canvas.height;
-    
-    // إذا كان المحتوى طويلاً، نضيف صفحات متعددة
-    const pageHeight = pdfHeight;
-    const contentHeight = (imgHeight * pdfWidth) / imgWidth;
-    let heightLeft = contentHeight;
-    let position = 0;
-
-    // الصفحة الأولى
-    pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, contentHeight);
-    heightLeft -= pageHeight;
-
-    // إضافة صفحات إضافية إذا لزم الأمر
-    while (heightLeft > 0) {
-      position = heightLeft - contentHeight;
-      pdf.addPage();
-      pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, contentHeight);
-      heightLeft -= pageHeight;
-    }
-
-    // تحميل الملف
-    pdf.save(filename);
-  } finally {
-    document.body.removeChild(iframe);
-  }
+  await exportOfficialHtmlToPDF(officialHtml, normalizedFileName);
 }
 
 /**
@@ -978,6 +919,81 @@ export async function downloadHtmlAsDocx(
 /**
  * تحميل المستند بالصيغة المحددة
  */
+function removeSignatureAndStampImages(htmlContent: string): string {
+  try {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(htmlContent, 'text/html');
+
+    doc.querySelectorAll('img').forEach((image) => {
+      const src = image.getAttribute('src') || '';
+      const alt = image.getAttribute('alt') || '';
+      const isSignatureOrStamp =
+        /\/receipts\/(signature|stamp)\.png/i.test(src) ||
+        /(signature|stamp)\.png/i.test(src) ||
+        alt.includes('التوقيع') ||
+        alt.includes('توقيع') ||
+        alt.includes('الختم') ||
+        alt.includes('ختم');
+
+      if (isSignatureOrStamp) {
+        image.remove();
+      }
+    });
+
+    return `<!DOCTYPE html>${doc.documentElement.outerHTML}`;
+  } catch (error) {
+    console.warn('Failed to remove signature and stamp from Word HTML:', error);
+    return htmlContent
+      .replace(/<img\b[^>]*(?:signature|stamp)\.png[^>]*>/gi, '')
+      .replace(/<img\b[^>]*alt=["'][^"']*(?:التوقيع|توقيع|الختم|ختم)[^"']*["'][^>]*>/gi, '');
+  }
+}
+
+function buildWordCompatibleHtml(htmlContent: string): string {
+  const htmlWithoutSignatureAndStamp = removeSignatureAndStampImages(htmlContent);
+  const hasHtmlTag = /<html[\s>]/i.test(htmlWithoutSignatureAndStamp);
+  const content = hasHtmlTag ? htmlWithoutSignatureAndStamp : `<!DOCTYPE html><html dir="rtl" lang="ar"><head><meta charset="UTF-8"></head><body>${htmlWithoutSignatureAndStamp}</body></html>`;
+
+  return content.replace(
+    /<head([^>]*)>/i,
+    `<head$1>
+      <meta charset="UTF-8">
+      <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+      <meta name="ProgId" content="Word.Document">
+      <meta name="Generator" content="Fleetify">
+      <meta name="Originator" content="Fleetify">
+      <style>
+        @page WordSection1 {
+          size: 21cm 29.7cm;
+          margin: 1.5cm 1.5cm 1.5cm 1.5cm;
+        }
+        div.WordSection1 { page: WordSection1; }
+        body {
+          direction: rtl;
+          unicode-bidi: embed;
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
+        }
+        table { border-collapse: collapse; }
+        img { max-width: 100%; }
+      </style>`
+  );
+}
+
+export function convertHtmlToWordBlob(htmlContent: string): Blob {
+  return new Blob(['\ufeff', buildWordCompatibleHtml(htmlContent)], {
+    type: 'application/msword;charset=utf-8',
+  });
+}
+
+export async function downloadHtmlAsWord(
+  htmlContent: string,
+  filename: string = 'document.doc'
+): Promise<void> {
+  const { saveAs } = await import('file-saver');
+  saveAs(convertHtmlToWordBlob(htmlContent), filename.replace(/\.docx$/i, '.doc'));
+}
+
 export async function downloadDocument(
   htmlContent: string,
   format: 'pdf' | 'docx',

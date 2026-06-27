@@ -257,7 +257,7 @@ export const useActiveContracts = (customerId?: string, vendorId?: string, overr
       Sentry.addBreadcrumb({ category: 'contracts', message: 'Active contracts fetched successfully', level: 'info', data: { count: contractsWithPayments.length } });
       return contractsWithPayments
     },
-    enabled: !!targetCompanyId && !!(customerId || vendorId),
+    enabled: !!targetCompanyId && !vendorId,
     staleTime: 5 * 60 * 1000, // 5 minutes
     gcTime: 10 * 60 * 1000, // 10 minutes
     retry: 2,

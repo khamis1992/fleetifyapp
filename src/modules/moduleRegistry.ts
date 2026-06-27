@@ -24,10 +24,10 @@ export const MODULE_REGISTRY: Record<ModuleName, ModuleConfig> = {
     description: 'Financial management and accounting',
     description_ar: 'إدارة المحاسبة والشؤون المالية',
     routes: [
-      { path: '/finance/chart-of-accounts', label: 'Chart of Accounts', label_ar: 'دليل الحسابات', icon: 'BookOpen' },
+      { path: '/finance/accounting?tab=chart', label: 'Chart of Accounts', label_ar: 'دليل الحسابات', icon: 'BookOpen' },
       { path: '/finance/journal-entries', label: 'Journal Entries', label_ar: 'القيود اليومية', icon: 'FileText' },
       { path: '/finance/payments', label: 'Payments', label_ar: 'المدفوعات', icon: 'CreditCard' },
-      { path: '/finance/reports', label: 'Financial Reports', label_ar: 'التقارير المالية', icon: 'BarChart3' }
+      { path: '/finance/reports-analysis?tab=reports', label: 'Financial Reports', label_ar: 'التقارير المالية', icon: 'BarChart3' }
     ],
     permissions: ['finance.view', 'finance.manage'],
     version: '1.0.0'

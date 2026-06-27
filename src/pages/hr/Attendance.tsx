@@ -11,6 +11,7 @@ import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import { PageHelp } from "@/components/help";
 import { AttendancePageHelpContent } from "@/components/help/content";
+import { HRMetricCard, HRPageHeader, HRPageShell, HRSectionCard, hrFieldClassName } from '@/components/hr/HRDesignSystem';
 
 // Lazy load Calendar component for better performance
 const Calendar = lazy(() => import('@/components/ui/calendar').then(m => ({ default: m.Calendar })));
@@ -135,69 +136,26 @@ export default function Attendance() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 p-4 md:p-6 space-y-4 md:space-y-6" dir="rtl">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <div className="p-3 bg-teal-500 rounded-xl shadow-sm">
-            <Clock className="h-6 w-6 text-white" />
-          </div>
-          <div>
-            <h1 className="text-xl md:text-2xl font-bold text-slate-900 dark:text-slate-100">الحضور والانصراف</h1>
-            <p className="text-sm md:text-base text-slate-600 dark:text-slate-400">إدارة حضور الموظفين ومراقبة أوقات العمل</p>
-          </div>
-        </div>
-        <Button onClick={handleExport} variant="outline" className="min-h-[44px] border-slate-200 dark:border-slate-700 hover:border-teal-500/50" disabled={!attendanceRecords || attendanceRecords.length === 0}>
-          <Download className="h-4 w-4 ml-2" />
-          تصدير التقرير
-        </Button>
-      </div>
+    <HRPageShell>
+      <HRPageHeader
+        title="الحضور والانصراف"
+        description="مراقبة يومية للحضور، التأخير، الإجازات، وساعات العمل في واجهة واحدة قابلة للمسح."
+        icon={Clock}
+        badge="الوقت والحضور"
+        action={
+          <Button onClick={handleExport} variant="outline" className="h-11 rounded-xl border-slate-200 text-[#020617] hover:bg-[#F6F8FB]" disabled={!attendanceRecords || attendanceRecords.length === 0}>
+            <Download className="h-4 w-4 ml-2" />
+            تصدير التقرير
+          </Button>
+        }
+      />
 
       {/* Attendance Summary Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <div className="p-3 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-emerald-500 rounded-lg">
-              <Check className="h-4 w-4 text-white" />
-            </div>
-            <div>
-              <p className="text-xs text-slate-600 dark:text-slate-400">حاضر</p>
-              <p className="text-xl font-bold text-slate-900 dark:text-slate-100">{stats.present}</p>
-            </div>
-          </div>
-        </div>
-        <div className="p-3 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-red-500 rounded-lg">
-              <X className="h-4 w-4 text-white" />
-            </div>
-            <div>
-              <p className="text-xs text-slate-600 dark:text-slate-400">غائب</p>
-              <p className="text-xl font-bold text-slate-900 dark:text-slate-100">{stats.absent}</p>
-            </div>
-          </div>
-        </div>
-        <div className="p-3 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-amber-500 rounded-lg">
-              <Clock className="h-4 w-4 text-white" />
-            </div>
-            <div>
-              <p className="text-xs text-slate-600 dark:text-slate-400">متأخر</p>
-              <p className="text-xl font-bold text-slate-900 dark:text-slate-100">{stats.late}</p>
-            </div>
-          </div>
-        </div>
-        <div className="p-3 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-slate-500 rounded-lg">
-              <CalendarIcon className="h-4 w-4 text-white" />
-            </div>
-            <div>
-              <p className="text-xs text-slate-600 dark:text-slate-400">في إجازة</p>
-              <p className="text-xl font-bold text-slate-900 dark:text-slate-100">{stats.onLeave}</p>
-            </div>
-          </div>
-        </div>
+        <HRMetricCard title="حاضر" value={stats.present} icon={Check} tone="success" />
+        <HRMetricCard title="غائب" value={stats.absent} icon={X} tone="danger" />
+        <HRMetricCard title="متأخر" value={stats.late} icon={Clock} tone="focus" />
+        <HRMetricCard title="في إجازة" value={stats.onLeave} icon={CalendarIcon} tone="info" />
       </div>
 
       {/* Month Navigation */}
@@ -223,6 +181,7 @@ export default function Attendance() {
         </Button>
       </div>
 
+      <HRSectionCard className="p-4">
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
         <div className="relative flex-1 w-full sm:max-w-md">
           <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 h-4 w-4" />
@@ -230,13 +189,13 @@ export default function Attendance() {
             placeholder="البحث عن موظف..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pr-10 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl"
+            className={`${hrFieldClassName} pr-10`}
           />
         </div>
 
         <Popover>
           <PopoverTrigger asChild>
-            <Button variant="outline" className="w-full sm:w-auto min-h-[44px] justify-start text-right bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl hover:border-teal-500/50">
+            <Button variant="outline" className="w-full sm:w-auto h-11 justify-start text-right rounded-xl border-slate-200 bg-[#F6F8FB] hover:bg-white">
               <CalendarIcon className="ml-2 h-4 w-4" />
               {format(selectedDate, 'PPP', { locale: ar })}
             </Button>
@@ -253,6 +212,7 @@ export default function Attendance() {
           </PopoverContent>
         </Popover>
       </div>
+      </HRSectionCard>
 
       <div className="grid gap-4">
         {filteredRecords.length === 0 ? (
@@ -351,6 +311,6 @@ export default function Attendance() {
       </div>
     <PageHelp children={<AttendancePageHelpContent />} />
 
-    </div>
+    </HRPageShell>
   );
 }

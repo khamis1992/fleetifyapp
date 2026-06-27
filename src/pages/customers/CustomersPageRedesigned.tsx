@@ -95,19 +95,19 @@ const ProStatCard: React.FC<ProStatCardProps> = ({ value, label, description, ic
     initial={{ opacity: 0, y: 8 }}
     animate={{ opacity: 1, y: 0 }}
     transition={{ delay, duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-    className="relative bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6 shadow-sm hover:border-teal-500/50 dark:hover:border-teal-500/50 transition-all duration-300"
+    className="relative overflow-hidden rounded-xl border border-[#DDE5EF] bg-white p-5 shadow-sm transition-colors hover:border-[#173A63]"
   >
     <div className="flex items-start justify-between">
       <div className="flex-1">
-        <p className="text-3xl font-semibold tracking-tight text-slate-900 dark:text-slate-100">{value}</p>
-        <p className="text-sm font-medium text-slate-900 dark:text-slate-100 mt-1">{label}</p>
-        <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{description}</p>
+        <p className="text-3xl font-black tracking-tight text-[#142033]">{value}</p>
+        <p className="mt-1 text-sm font-bold text-[#142033]">{label}</p>
+        <p className="mt-0.5 text-xs text-[#6A7688]">{description}</p>
       </div>
-      <div className="p-3 rounded-xl bg-teal-500 shadow-sm">
-        <Icon className="w-5 h-5 text-white" strokeWidth={2.5} />
+      <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-[#EEF5FB] text-[#173A63]">
+        <Icon className="h-5 w-5" strokeWidth={2.5} />
       </div>
     </div>
-    <div className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-teal-200 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+    <div className="absolute inset-x-0 bottom-0 h-1 bg-[#173A63]" />
   </motion.div>
 );
 
@@ -179,30 +179,30 @@ const ProCustomerCard: React.FC<ProCustomerCardProps> = ({
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.02, duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
-      className="group relative bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-sm hover:border-teal-500/50 dark:hover:border-teal-500/50 transition-all duration-300 cursor-pointer"
+      className="group relative cursor-pointer overflow-hidden rounded-xl border border-[#DDE5EF] bg-white p-5 shadow-sm transition-colors hover:border-[#173A63]"
       onClick={onView}
     >
       {/* VIP Badge */}
       {customer.is_vip && (
         <div className="absolute top-4 right-4">
-          <Badge className="bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-700 hover:bg-amber-100 dark:hover:bg-amber-900/50 gap-1">
+          <Badge className="gap-1 border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-50">
             <Crown className="w-3 h-3" />{t("vip")}</Badge>
         </div>
       )}
 
       {/* Header */}
-      <div className="flex items-start gap-3 mb-4">
-        <Avatar className={cn("w-10 h-10", avatarColor.split(' ')[0])}>
+      <div className="mb-4 flex items-start gap-3">
+        <Avatar className={cn("h-12 w-12", avatarColor.split(' ')[0])}>
           <AvatarFallback className={cn("text-sm font-medium", avatarColor)}>
             {getInitials()}
           </AvatarFallback>
         </Avatar>
-        <div className="flex-1 min-w-0">
-          <h3 className="font-semibold text-slate-900 dark:text-slate-100 truncate group-hover:text-teal-600 dark:group-hover:text-teal-400 transition-colors">
+        <div className="min-w-0 flex-1">
+          <h3 className="truncate text-base font-black text-[#142033] transition-colors group-hover:text-[#173A63]">
             {getCustomerName()}
           </h3>
-          <div className="flex items-center gap-2 mt-1">
-            <Badge variant="outline" className="text-xs px-2 py-0 h-5">
+          <div className="mt-2 flex items-center gap-2">
+            <Badge variant="outline" className="h-6 border-[#D8E1EC] bg-[#F8FAFC] px-2 text-xs text-[#536173]">
               {customer.customer_type === 'individual' ? (
                 <><Users className="w-3 h-3 ml-1" /> فرد</>
               ) : (
@@ -210,29 +210,29 @@ const ProCustomerCard: React.FC<ProCustomerCardProps> = ({
               )}
             </Badge>
             {customer.is_active && (
-              <div className="w-2 h-2 bg-emerald-500 rounded-full" />
+              <div className="h-2 w-2 rounded-full bg-emerald-500" />
             )}
           </div>
         </div>
       </div>
 
       {/* Contact Info */}
-      <div className="space-y-2 mb-4">
-        <div className="flex items-center gap-2 text-sm text-neutral-600 dark:text-neutral-400">
-          <Mail className="w-3.5 h-3.5 flex-shrink-0 text-neutral-400" />
+      <div className="mb-4 grid gap-2">
+        <div className="flex min-h-10 items-center gap-2 rounded-lg border border-[#EDF2F7] bg-[#FCFDFE] px-3 text-sm text-[#536173]">
+          <Mail className="h-3.5 w-3.5 flex-shrink-0 text-[#8A96A8]" />
           <span className="truncate">{customer.email || '-'}</span>
         </div>
-        <div className="flex items-center gap-2 text-sm text-neutral-600 dark:text-neutral-400">
-          <Phone className="w-3.5 h-3.5 flex-shrink-0 text-neutral-400" />
+        <div className="flex min-h-10 items-center gap-2 rounded-lg border border-[#EDF2F7] bg-[#FCFDFE] px-3 text-sm text-[#536173]">
+          <Phone className="h-3.5 w-3.5 flex-shrink-0 text-[#8A96A8]" />
           <span className="font-mono truncate" dir="ltr">{customer.phone || '-'}</span>
         </div>
       </div>
 
       {/* Footer */}
-      <div className="flex items-center justify-between pt-3 border-t border-slate-200 dark:border-slate-700">
+      <div className="flex items-center justify-between border-t border-[#E6EDF5] pt-3">
         <div className="flex items-center gap-1.5 text-sm">
-          <FileText className="w-4 h-4 text-neutral-400" />
-          <span className="font-medium text-neutral-900 dark:text-neutral-100">{contractCount}</span>
+          <FileText className="h-4 w-4 text-[#8A96A8]" />
+          <span className="font-black text-[#142033]">{contractCount}</span>
           <span className="text-neutral-500 dark:text-neutral-400">عقود</span>
         </div>
 
@@ -242,7 +242,7 @@ const ProCustomerCard: React.FC<ProCustomerCardProps> = ({
               e.stopPropagation();
               onQuickRent();
             }}
-            className="text-xs font-medium text-teal-600 dark:text-teal-400 hover:text-teal-700 dark:hover:text-teal-300 transition-colors flex items-center gap-1 min-h-[44px] px-3"
+            className="flex min-h-9 items-center gap-1 rounded-lg border border-[#D8E1EC] px-3 text-xs font-bold text-[#173A63] transition-colors hover:bg-[#EEF5FB]"
           >
             <Plus className="w-3 h-3" />
             إنشاء عقد
@@ -254,7 +254,7 @@ const ProCustomerCard: React.FC<ProCustomerCardProps> = ({
             <Button
               variant="ghost"
               size="sm"
-              className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+              className="h-9 w-9 rounded-lg border border-transparent p-0 transition-colors hover:border-[#D8E1EC] hover:bg-[#EEF5FB]"
             >
               <MoreVertical className="w-4 h-4" />
             </Button>
@@ -776,7 +776,7 @@ const CustomersPageRedesigned: React.FC = () => {
   // Loading state
   if (isAuthenticating || !companyId) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-teal-50/30 flex items-center justify-center">
+      <div className="flex min-h-screen items-center justify-center bg-[#F6F8FB]">
         <div className="text-center">
           <div className="w-10 h-10 border-2 border-teal-500 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
           <p className="text-sm text-teal-600">جاري التحميل...</p>
@@ -786,37 +786,37 @@ const CustomersPageRedesigned: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-teal-50/30">
+    <div className="min-h-screen bg-[#F6F8FB]">
       {/* Header */}
-      <div className="bg-white border-b border-slate-200">
-        <div className="max-w-[1600px] mx-auto px-6 py-6">
-          <div className="flex items-center justify-between">
+      <div className="border-b border-[#DDE5EF] bg-white">
+        <div className="mx-auto max-w-[1600px] px-4 py-5 sm:px-6">
+          <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
             {/* Title */}
             <div className="flex items-center gap-4">
-              <div className="p-3 rounded-xl bg-teal-500 shadow-sm">
-                <Users className="w-6 h-6 text-white" strokeWidth={2.5} />
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#173A63] text-white shadow-sm">
+                <Users className="h-6 w-6 text-white" strokeWidth={2.5} />
               </div>
               <div>
-                <h1 className="text-2xl font-bold tracking-tight text-slate-900">
+                <h1 className="text-2xl font-black tracking-tight text-[#142033]">
                   العملاء
                 </h1>
-                <p className="text-sm text-slate-500 mt-1">
+                <p className="mt-1 text-sm text-[#6A7688]">
                   إدارة بيانات العملاء
                 </p>
               </div>
             </div>
 
             {/* Actions */}
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               {/* View Toggle */}
-              <div className="flex items-center bg-slate-100/80 dark:bg-slate-800/80 backdrop-blur rounded-xl p-1 border border-slate-200 dark:border-slate-700">
+              <div className="flex items-center rounded-xl border border-[#DDE5EF] bg-[#F8FAFC] p-1">
                 <button
                   onClick={() => setViewMode('grid')}
                   className={cn(
-                    "px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 min-h-[44px]",
+                    "min-h-[44px] rounded-lg px-4 py-2.5 text-sm font-bold transition-colors",
                     viewMode === 'grid'
-                      ? 'bg-white dark:bg-slate-700 shadow-sm text-slate-900 dark:text-slate-100'
-                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+                      ? 'bg-white text-[#173A63] shadow-sm'
+                      : 'text-[#6A7688] hover:text-[#142033]'
                   )}
                 >
                   <LayoutGrid className="w-4 h-4 ml-1" />
@@ -825,10 +825,10 @@ const CustomersPageRedesigned: React.FC = () => {
                 <button
                   onClick={() => setViewMode('split')}
                   className={cn(
-                    "px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 min-h-[44px]",
+                    "min-h-[44px] rounded-lg px-4 py-2.5 text-sm font-bold transition-colors",
                     viewMode === 'split'
-                      ? 'bg-white dark:bg-slate-700 shadow-sm text-slate-900 dark:text-slate-100'
-                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+                      ? 'bg-white text-[#173A63] shadow-sm'
+                      : 'text-[#6A7688] hover:text-[#142033]'
                   )}
                 >
                   <Columns className="w-4 h-4 ml-1" />
@@ -840,7 +840,7 @@ const CustomersPageRedesigned: React.FC = () => {
                 variant="outline"
                 size="default"
                 onClick={() => setShowCSVUpload(true)}
-                className="gap-2 min-h-[44px] border-slate-200 dark:border-slate-700 hover:border-teal-500/50 hover:bg-teal-50 dark:hover:bg-teal-900/20"
+                className="min-h-[44px] gap-2 border-[#D8E1EC] bg-white hover:border-[#173A63] hover:bg-[#EEF5FB]"
               >
                 <Upload className="w-4 h-4" />
                 استيراد
@@ -851,7 +851,7 @@ const CustomersPageRedesigned: React.FC = () => {
                 size="default"
                 onClick={() => setShowExportDialog(true)}
                 disabled={isLoading}
-                className="gap-2 min-h-[44px] border-slate-200 dark:border-slate-700 hover:border-teal-500/50 hover:bg-teal-50 dark:hover:bg-teal-900/20"
+                className="min-h-[44px] gap-2 border-[#D8E1EC] bg-white hover:border-[#173A63] hover:bg-[#EEF5FB]"
               >
                 <Download className="w-4 h-4" />
                 تصدير
@@ -862,7 +862,7 @@ const CustomersPageRedesigned: React.FC = () => {
                 size="default"
                 onClick={() => setShowDocumentDistribution(true)}
                 disabled={isLoading}
-                className="gap-2 min-h-[44px] border-slate-200 dark:border-slate-700 hover:border-teal-500/50 hover:bg-teal-50 dark:hover:bg-teal-900/20"
+                className="min-h-[44px] gap-2 border-[#D8E1EC] bg-white hover:border-[#173A63] hover:bg-[#EEF5FB]"
               >
                 <IdCard className="w-4 h-4" />
                 توزيع البطاقات
@@ -871,7 +871,7 @@ const CustomersPageRedesigned: React.FC = () => {
               <Button
                 size="default"
                 onClick={() => setShowCreateDialog(true)}
-                className="bg-teal-500 hover:bg-teal-600 text-white gap-2 shadow-sm min-h-[44px]"
+                className="min-h-[44px] gap-2 bg-[#173A63] text-white shadow-sm hover:bg-[#173A63]/90"
               >
                 <UserPlus className="w-4 h-4" />
                 إضافة عميل
@@ -882,10 +882,10 @@ const CustomersPageRedesigned: React.FC = () => {
       </div>
 
       {/* Main Content */}
-      <div className="max-w-[1600px] mx-auto px-6 py-6 space-y-6">
+      <div className="mx-auto max-w-[1600px] space-y-5 px-4 py-6 sm:px-6">
 
         {/* Stats Row */}
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
           <ProStatCard
             value={totalCustomersInDB}
             label="إجمالي العملاء"
@@ -910,11 +910,11 @@ const CustomersPageRedesigned: React.FC = () => {
         </div>
 
         {/* Search & Filters Bar */}
-        <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm hover:border-teal-500/50 transition-all duration-300">
-          <div className="flex flex-col lg:flex-row gap-3">
+        <div className="rounded-xl border border-[#DDE5EF] bg-white p-4 shadow-sm">
+          <div className="flex flex-col gap-3 lg:flex-row">
             {/* Search */}
             <div className="flex-1 relative">
-              <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8A96A8]" />
               <Input
                   placeholder="بحث بالاسم، الهاتف، أو البريد..."
                 value={searchTerm}
@@ -922,21 +922,21 @@ const CustomersPageRedesigned: React.FC = () => {
                   setSearchTerm(e.target.value);
                   setCurrentPage(1);
                 }}
-                className="h-11 pr-10 text-sm bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 focus:border-teal-500"
+                className="h-11 rounded-xl border-[#D8E1EC] bg-[#FCFDFE] pr-10 text-sm focus:border-[#173A63]"
               />
               {searchTerm && (
                 <button
                   onClick={() => setSearchTerm('')}
-                  className="absolute left-2 top-1/2 -translate-y-1/2 p-1 hover:bg-slate-100 rounded"
+                  className="absolute left-2 top-1/2 -translate-y-1/2 rounded p-1 hover:bg-[#EEF5FB]"
                 >
-                  <Plus className="w-3 h-3 text-slate-400 rotate-45" />
+                  <Plus className="h-3 w-3 rotate-45 text-[#8A96A8]" />
                 </button>
               )}
             </div>
 
             {/* Type Filter */}
             <Select value={customerType} onValueChange={(v: any) => { setCustomerType(v); setCurrentPage(1); }}>
-              <SelectTrigger className="h-11 w-full lg:w-40 bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
+              <SelectTrigger className="h-11 w-full rounded-xl border-[#D8E1EC] bg-[#FCFDFE] lg:w-44">
                 <SelectValue placeholder="النوع" />
               </SelectTrigger>
               <SelectContent>
@@ -948,7 +948,7 @@ const CustomersPageRedesigned: React.FC = () => {
 
             {/* Status Filter */}
             <Select value={includeInactive ? "all" : "active"} onValueChange={(v) => { setIncludeInactive(v === "all"); setCurrentPage(1); }}>
-              <SelectTrigger className="h-11 w-full lg:w-40 bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
+              <SelectTrigger className="h-11 w-full rounded-xl border-[#D8E1EC] bg-[#FCFDFE] lg:w-44">
                 <SelectValue placeholder="الحالة" />
               </SelectTrigger>
               <SelectContent>
@@ -971,15 +971,15 @@ const CustomersPageRedesigned: React.FC = () => {
             canDelete={canDelete}
           />
         ) : isLoading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
             {[...Array(8)].map((_, i) => (
-              <div key={i} className="h-48 bg-white rounded-xl border animate-pulse" />
+              <div key={i} className="h-56 animate-pulse rounded-xl border border-[#DDE5EF] bg-white" />
             ))}
           </div>
         ) : error ? (
-          <div className="bg-white border border-slate-200 rounded-xl p-12 text-center">
-            <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4">
-              <AlertCircle className="w-8 h-8 text-red-500" />
+          <div className="rounded-xl border border-[#DDE5EF] bg-white p-12 text-center shadow-sm">
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-xl bg-red-50">
+              <AlertCircle className="h-8 w-8 text-red-500" />
             </div>
             <h3 className="text-lg font-semibold text-slate-900 mb-2">خطأ في التحميل</h3>
             <p className="text-sm text-slate-500 mb-6">
@@ -988,16 +988,16 @@ const CustomersPageRedesigned: React.FC = () => {
             <Button
               variant="outline"
               onClick={() => refetch()}
-              className="gap-2 border-slate-200 hover:border-teal-500/50 hover:bg-teal-50"
+              className="gap-2 border-[#D8E1EC] hover:border-[#173A63] hover:bg-[#EEF5FB]"
             >
               <RefreshCw className="w-4 h-4" />
               إعادة المحاولة
             </Button>
           </div>
         ) : customers.length === 0 ? (
-          <div className="bg-white border border-slate-200 rounded-xl p-12 text-center">
-            <div className="w-16 h-16 bg-gradient-to-br from-teal-500/10 to-teal-600/10 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Users className="w-8 h-8 text-teal-500" />
+          <div className="rounded-xl border border-[#DDE5EF] bg-white p-12 text-center shadow-sm">
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-xl bg-[#EEF5FB]">
+              <Users className="h-8 w-8 text-[#173A63]" />
             </div>
             <h3 className="text-lg font-semibold text-slate-900 mb-2">لا توجد عملاء</h3>
             <p className="text-sm text-slate-500 mb-6">
@@ -1005,7 +1005,7 @@ const CustomersPageRedesigned: React.FC = () => {
             </p>
             <Button
               onClick={() => setShowCreateDialog(true)}
-              className="bg-teal-500 hover:bg-teal-600 text-white shadow-sm min-h-[44px]"
+              className="min-h-[44px] bg-[#173A63] text-white shadow-sm hover:bg-[#173A63]/90"
             >
               <UserPlus className="w-4 h-4 ml-2" />
               إضافة عميل
@@ -1014,15 +1014,15 @@ const CustomersPageRedesigned: React.FC = () => {
         ) : (
           <>
             {/* Results Count */}
-            <div className="flex items-center justify-between">
-              <p className="text-sm text-slate-500">
+            <div className="flex items-center justify-between rounded-xl border border-[#DDE5EF] bg-white px-4 py-3 shadow-sm">
+              <p className="text-sm text-[#6A7688]">
                 <span className="font-medium text-slate-900">{customers.length}</span> من{' '}
                 <span className="font-medium text-slate-900">{totalCustomersInDB}</span> عميل
               </p>
             </div>
 
             {/* Customer Grid */}
-          <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
               {customers.map((customer, index) => (
                 <ProCustomerCard
                   key={customer.id}
@@ -1042,8 +1042,8 @@ const CustomersPageRedesigned: React.FC = () => {
 
             {/* Pagination */}
             {totalPages > 1 && (
-              <div className="flex items-center justify-between bg-white border border-slate-200 rounded-xl p-4">
-                <p className="text-sm text-slate-500">
+              <div className="flex flex-col gap-3 rounded-xl border border-[#DDE5EF] bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+                <p className="text-sm text-[#6A7688]">
                   صفحة <span className="font-medium text-slate-900">{currentPage}</span> من{' '}
                   <span className="font-medium text-slate-900">{totalPages}</span>
                 </p>
@@ -1054,7 +1054,7 @@ const CustomersPageRedesigned: React.FC = () => {
                     size="default"
                     onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                     disabled={currentPage === 1}
-                    className="min-h-[44px] border-slate-200 dark:border-slate-700 hover:border-teal-500/50 hover:bg-teal-50 dark:hover:bg-teal-900/20"
+                    className="min-h-[44px] border-[#D8E1EC] hover:border-[#173A63] hover:bg-[#EEF5FB]"
                   >
                     <ChevronRight className="w-4 h-4" />
                   </Button>
@@ -1068,8 +1068,8 @@ const CustomersPageRedesigned: React.FC = () => {
                       className={cn(
                         "min-h-[44px] min-w-[44px]",
                         currentPage === page
-                          ? "bg-teal-500 text-white hover:bg-teal-600"
-                          : "hover:bg-slate-100 dark:hover:bg-slate-800"
+                          ? "bg-[#173A63] text-white hover:bg-[#173A63]/90"
+                          : "hover:bg-[#EEF5FB]"
                       )}
                     >
                       {page}
@@ -1085,8 +1085,8 @@ const CustomersPageRedesigned: React.FC = () => {
                         className={cn(
                           "h-9 w-9",
                           currentPage === totalPages
-                            ? "bg-teal-500 text-white hover:bg-teal-600"
-                            : "hover:bg-slate-100"
+                            ? "bg-[#173A63] text-white hover:bg-[#173A63]/90"
+                            : "hover:bg-[#EEF5FB]"
                         )}
                       >
                         {totalPages}
@@ -1099,7 +1099,7 @@ const CustomersPageRedesigned: React.FC = () => {
                     size="default"
                     onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                     disabled={currentPage === totalPages}
-                    className="min-h-[44px] border-slate-200 dark:border-slate-700 hover:border-teal-500/50 hover:bg-teal-50 dark:hover:bg-teal-900/20"
+                    className="min-h-[44px] border-[#D8E1EC] hover:border-[#173A63] hover:bg-[#EEF5FB]"
                   >
                     <ChevronLeft className="w-4 h-4" />
                   </Button>

@@ -17,6 +17,7 @@ import {
   BarChart3,
   Search
 } from 'lucide-react';
+import { systemColorPattern } from '@/lib/design-system/systemColorPattern';
 
 interface AccountNode {
   id: string;
@@ -31,6 +32,7 @@ interface AccountNode {
   isHeader: boolean;
   isActive: boolean;
   isSystem: boolean;
+  sourceAccount?: any;
 }
 
 interface AccountsTreeViewProps {
@@ -40,7 +42,21 @@ interface AccountsTreeViewProps {
   onDeleteAccount?: (account: any) => void;
   onAddChildAccount?: (parentAccount: any) => void;
   onViewStatement?: (account: any) => void;
+  searchEnabled?: boolean;
 }
+
+const treeTheme = systemColorPattern.colors;
+
+const getTypeTone = (type: string) => {
+  const tones: Record<string, string> = {
+    assets: 'tone-success',
+    liabilities: 'tone-alert',
+    equity: 'tone-info',
+    revenue: 'tone-focus',
+    expenses: 'tone-alert',
+  };
+  return tones[type] || 'tone-muted';
+};
 
 export const AccountsTreeView: React.FC<AccountsTreeViewProps> = ({
   accounts,
@@ -48,7 +64,8 @@ export const AccountsTreeView: React.FC<AccountsTreeViewProps> = ({
   onEditAccount,
   onDeleteAccount,
   onAddChildAccount,
-  onViewStatement
+  onViewStatement,
+  searchEnabled = true
 }) => {
   const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set());
   const [searchTerm, setSearchTerm] = useState('');
@@ -93,7 +110,8 @@ export const AccountsTreeView: React.FC<AccountsTreeViewProps> = ({
       balanceType: account.balance_type,
       isHeader: account.is_header || false,
       isActive: account.is_active !== false,
-      isSystem: account.is_system || false
+      isSystem: account.is_system || false,
+      sourceAccount: account
     }));
 
     // Sort nodes by account code to ensure proper hierarchy
@@ -177,6 +195,21 @@ export const AccountsTreeView: React.FC<AccountsTreeViewProps> = ({
     return labels[type] || type;
   };
 
+  const getNodePayload = (node: AccountNode) => ({
+    ...(node.sourceAccount || {}),
+    id: node.id,
+    account_code: node.accountCode,
+    account_name: node.accountName,
+    account_name_ar: node.accountNameAr,
+    account_type: node.accountType,
+    balance_type: node.balanceType,
+    account_level: node.level,
+    parent_account_id: node.parentId,
+    is_header: node.isHeader,
+    is_active: node.isActive,
+    is_system: node.isSystem,
+  });
+
   const renderNode = (node: AccountNode, depth: number = 0): React.ReactNode => {
     const isExpanded = expandedNodes.has(node.id);
     const hasChildren = node.children.length > 0;
@@ -185,11 +218,7 @@ export const AccountsTreeView: React.FC<AccountsTreeViewProps> = ({
     return (
       <div key={node.id} className="select-none">
         <div 
-          className={`
-            flex items-center gap-2 p-2 rounded cursor-pointer hover:bg-slate-50 transition-colors
-            ${!node.isActive ? 'opacity-60 bg-slate-100' : ''}
-            ${node.isSystem ? 'bg-blue-50 border border-blue-200' : ''}
-          `}
+          className={`accounts-tree-row ${!node.isActive ? 'is-inactive' : ''} ${node.isSystem ? 'is-system' : ''}`}
           style={{ paddingRight: `${indentLevel + 8}px` }}
           onClick={() => hasChildren && toggleExpanded(node.id)}
         >
@@ -197,9 +226,9 @@ export const AccountsTreeView: React.FC<AccountsTreeViewProps> = ({
           <div className="w-4 h-4 flex items-center justify-center">
             {hasChildren ? (
               isExpanded ? (
-                <ChevronDown className="h-4 w-4 text-slate-600" />
+                <ChevronDown className="h-4 w-4" />
               ) : (
-                <ChevronRight className="h-4 w-4 text-slate-600" />
+                <ChevronRight className="h-4 w-4" />
               )
             ) : (
               <div className="w-4 h-4" />
@@ -215,12 +244,12 @@ export const AccountsTreeView: React.FC<AccountsTreeViewProps> = ({
                 <Folder className="h-4 w-4 text-blue-600" />
               )
             ) : (
-              <FileText className="h-4 w-4 text-slate-600" />
+              <FileText className="h-4 w-4" />
             )}
           </div>
 
           {/* Account Code */}
-          <Badge variant="outline" className="font-mono text-xs">
+          <Badge variant="outline" className="accounts-tree-code font-mono text-xs">
             {node.accountCode}
           </Badge>
 
@@ -239,22 +268,22 @@ export const AccountsTreeView: React.FC<AccountsTreeViewProps> = ({
           </div>
 
           {/* Account Type */}
-          <Badge variant="outline" className="text-xs">
+          <Badge variant="outline" className={`accounts-tree-badge ${getTypeTone(node.accountType)} text-xs`}>
             {getAccountTypeLabel(node.accountType)}
           </Badge>
 
           {/* Level Badge */}
-          <Badge variant="secondary" className="text-xs">
+          <Badge variant="secondary" className="accounts-tree-badge tone-level text-xs">
             مستوى {node.level}
           </Badge>
 
           {/* Balance Type */}
-          <Badge variant={node.balanceType === 'debit' ? 'default' : 'secondary'} className="text-xs">
+          <Badge variant={node.balanceType === 'debit' ? 'default' : 'secondary'} className={`accounts-tree-badge ${node.balanceType === 'debit' ? 'tone-debit' : 'tone-credit'} text-xs`}>
             {node.balanceType === 'debit' ? 'مدين' : 'دائن'}
           </Badge>
 
           {/* Status Badge */}
-          <Badge variant={node.isActive ? 'default' : 'destructive'} className="text-xs">
+          <Badge variant={node.isActive ? 'default' : 'destructive'} className={`accounts-tree-badge ${node.isActive ? 'tone-active' : 'tone-inactive'} text-xs`}>
             {node.isActive ? 'نشط' : 'غير نشط'}
           </Badge>
 
@@ -267,7 +296,7 @@ export const AccountsTreeView: React.FC<AccountsTreeViewProps> = ({
                 className="h-6 w-6 p-0"
                 onClick={(e) => {
                   e.stopPropagation();
-                  onViewAccount(node);
+                  onViewAccount(getNodePayload(node));
                 }}
                 title="معاينة"
               >
@@ -282,7 +311,7 @@ export const AccountsTreeView: React.FC<AccountsTreeViewProps> = ({
                 className="h-6 w-6 p-0 text-blue-600 hover:text-blue-700"
                 onClick={(e) => {
                   e.stopPropagation();
-                  onViewStatement(node);
+                  onViewStatement(getNodePayload(node));
                 }}
                 title="كشف الحساب"
               >
@@ -297,21 +326,7 @@ export const AccountsTreeView: React.FC<AccountsTreeViewProps> = ({
                 className="h-6 w-6 p-0"
                 onClick={(e) => {
                   e.stopPropagation();
-                  // Convert AccountNode to ChartOfAccount format
-                  const convertedAccount = {
-                    id: node.id,
-                    account_code: node.accountCode,
-                    account_name: node.accountName,
-                    account_name_ar: node.accountNameAr,
-                    account_type: node.accountType,
-                    balance_type: node.balanceType,
-                    account_level: node.level,
-                    parent_account_id: node.parentId,
-                    is_header: node.isHeader,
-                    is_active: node.isActive,
-                    is_system: node.isSystem
-                  };
-                  onEditAccount(convertedAccount);
+                  onEditAccount(getNodePayload(node));
                 }}
                 title="تعديل"
               >
@@ -326,7 +341,7 @@ export const AccountsTreeView: React.FC<AccountsTreeViewProps> = ({
                 className="h-6 w-6 p-0 text-red-600 hover:text-red-700"
                 onClick={(e) => {
                   e.stopPropagation();
-                  onDeleteAccount(node);
+                  onDeleteAccount(getNodePayload(node));
                 }}
                 title="حذف"
               >
@@ -341,7 +356,7 @@ export const AccountsTreeView: React.FC<AccountsTreeViewProps> = ({
                 className="h-6 w-6 p-0 text-green-600 hover:text-green-700"
                 onClick={(e) => {
                   e.stopPropagation();
-                  onAddChildAccount(node);
+                  onAddChildAccount(getNodePayload(node));
                 }}
                 title="إضافة حساب فرعي"
               >
@@ -368,7 +383,7 @@ export const AccountsTreeView: React.FC<AccountsTreeViewProps> = ({
 
   if (totalNodes === 0) {
     return (
-      <Card>
+      <Card className="accounts-tree-empty">
         <CardContent className="p-8 text-center">
           <Layers className="h-12 w-12 text-slate-400 mx-auto mb-4" />
           <p className="text-lg font-medium text-slate-600">لا توجد حسابات لعرضها</p>
@@ -379,29 +394,29 @@ export const AccountsTreeView: React.FC<AccountsTreeViewProps> = ({
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Layers className="h-5 w-5" />
-          شجرة الحسابات
-        </CardTitle>
-        <CardDescription>
-          عرض هرمي للحسابات مع إمكانية التعديل والإدارة
-        </CardDescription>
+    <Card className="accounts-tree-card">
+      <CardHeader className="accounts-tree-header">
+        <div>
+          <CardTitle className="flex items-center gap-2">
+            <Layers className="h-5 w-5" />
+            شجرة الحسابات
+          </CardTitle>
+          <CardDescription>
+            عرض هرمي للحسابات مع إجراءات مباشرة لكل حساب
+          </CardDescription>
+        </div>
+        <div className="accounts-tree-header-actions">
+          <Button variant="outline" size="sm" onClick={expandAll}>
+            توسيع الكل
+          </Button>
+          <Button variant="outline" size="sm" onClick={collapseAll}>
+            طي الكل
+          </Button>
+        </div>
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Controls */}
-        <div className="flex items-center justify-between">
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={expandAll}>
-              توسيع الكل
-            </Button>
-            <Button variant="outline" size="sm" onClick={collapseAll}>
-              طي الكل
-            </Button>
-          </div>
-          
-          <div className="flex gap-2">
+        <div className="accounts-tree-meta">
             <Badge variant="outline" className="flex items-center gap-1">
               <FileText className="h-3 w-3 text-green-600" />
               نشط: {activeNodes}
@@ -421,25 +436,26 @@ export const AccountsTreeView: React.FC<AccountsTreeViewProps> = ({
             <Badge variant="secondary">
               إجمالي: {totalNodes}
             </Badge>
-          </div>
         </div>
 
         {/* Search */}
-        <div className="relative">
-          <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 h-4 w-4" />
-          <Input
-            type="text"
-            placeholder="البحث في الحسابات (الاسم، الرمز، أو رقم الحساب)..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10 text-right"
-            dir="rtl"
-          />
-        </div>
+        {searchEnabled && (
+          <div className="accounts-tree-search">
+            <Search className="h-4 w-4" />
+            <Input
+              type="text"
+              placeholder="البحث في الحسابات (الاسم، الرمز، أو رقم الحساب)..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="text-right"
+              dir="rtl"
+            />
+          </div>
+        )}
 
         {/* Tree */}
-        <div className="border rounded-lg bg-white">
-          <div className="max-h-96 overflow-auto p-2">
+        <div className="accounts-tree-surface">
+          <div className="max-h-[540px] overflow-auto p-2">
             {treeData.length > 0 ? (
               <div className="space-y-1">
                 {treeData.map(node => renderNode(node))}
@@ -453,8 +469,8 @@ export const AccountsTreeView: React.FC<AccountsTreeViewProps> = ({
         </div>
 
         {/* Legend */}
-        <div className="text-sm text-slate-600 space-y-1">
-          <p className="font-medium">دليل الرموز:</p>
+        <div className="accounts-tree-legend">
+          <p>دليل الرموز:</p>
           <div className="flex flex-wrap gap-4">
             <div className="flex items-center gap-1">
               <Folder className="h-4 w-4 text-blue-600" />
@@ -479,6 +495,155 @@ export const AccountsTreeView: React.FC<AccountsTreeViewProps> = ({
           </div>
         </div>
       </CardContent>
+      <style>{`
+        .accounts-tree-card,
+        .accounts-tree-empty {
+          border-color: ${treeTheme.border} !important;
+          border-radius: 12px !important;
+          box-shadow: none !important;
+        }
+        .accounts-tree-header {
+          display: flex;
+          flex-direction: row;
+          align-items: center;
+          justify-content: space-between;
+          gap: 16px;
+          border-bottom: 1px solid ${treeTheme.border};
+          padding-bottom: 14px;
+        }
+        .accounts-tree-header h3 {
+          color: ${treeTheme.text};
+          font-weight: 950;
+        }
+        .accounts-tree-header p,
+        .accounts-tree-legend,
+        .accounts-tree-meta {
+          color: ${treeTheme.secondaryText};
+        }
+        .accounts-tree-header-actions {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 8px;
+        }
+        .accounts-tree-header-actions button {
+          border-color: ${treeTheme.border} !important;
+          border-radius: 9px !important;
+          color: ${treeTheme.text} !important;
+        }
+        .accounts-tree-meta {
+          display: flex;
+          flex-wrap: wrap;
+          justify-content: flex-end;
+          gap: 8px;
+        }
+        .accounts-tree-meta .inline-flex,
+        .accounts-tree-code {
+          border-color: ${treeTheme.border} !important;
+        }
+        .accounts-tree-search {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          border: 1px solid ${treeTheme.border};
+          border-radius: 10px;
+          background: ${treeTheme.innerSurface};
+          padding: 0 12px;
+        }
+        .accounts-tree-search svg {
+          color: ${treeTheme.secondaryText};
+        }
+        .accounts-tree-search input {
+          height: 44px;
+          border: 0 !important;
+          background: transparent !important;
+          box-shadow: none !important;
+        }
+        .accounts-tree-surface {
+          border: 1px solid ${treeTheme.border};
+          border-radius: 12px;
+          background: ${treeTheme.innerSurface};
+        }
+        .accounts-tree-row {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          min-height: 44px;
+          border: 1px solid transparent;
+          border-radius: 10px;
+          padding: 7px 10px 7px 8px;
+          background: white;
+          color: ${treeTheme.text};
+          cursor: pointer;
+          transition: 150ms ease;
+        }
+        .accounts-tree-row:hover {
+          border-color: color-mix(in srgb, ${treeTheme.info} 26%, white);
+          background: color-mix(in srgb, ${treeTheme.info} 6%, white);
+        }
+        .accounts-tree-row.is-inactive {
+          opacity: 0.62;
+          background: ${treeTheme.innerSurface};
+        }
+        .accounts-tree-row.is-system {
+          border-color: color-mix(in srgb, ${treeTheme.info} 26%, white);
+          background: color-mix(in srgb, ${treeTheme.info} 9%, white);
+        }
+        .accounts-tree-row svg {
+          color: ${treeTheme.secondaryText};
+        }
+        .accounts-tree-code {
+          background: white !important;
+          color: ${treeTheme.text} !important;
+          min-width: 64px;
+          justify-content: center;
+        }
+        .accounts-tree-badge {
+          --badge-tone: ${treeTheme.secondaryText};
+          border-color: color-mix(in srgb, var(--badge-tone) 32%, white) !important;
+          background: color-mix(in srgb, var(--badge-tone) 10%, white) !important;
+          color: var(--badge-tone) !important;
+          white-space: nowrap;
+          font-weight: 900;
+        }
+        .accounts-tree-badge.tone-success,
+        .accounts-tree-badge.tone-active,
+        .accounts-tree-badge.tone-debit {
+          --badge-tone: ${treeTheme.success};
+        }
+        .accounts-tree-badge.tone-alert,
+        .accounts-tree-badge.tone-inactive {
+          --badge-tone: ${treeTheme.alert};
+        }
+        .accounts-tree-badge.tone-info {
+          --badge-tone: ${treeTheme.info};
+        }
+        .accounts-tree-badge.tone-focus,
+        .accounts-tree-badge.tone-credit {
+          --badge-tone: ${treeTheme.focus};
+        }
+        .accounts-tree-badge.tone-level {
+          --badge-tone: ${treeTheme.secondaryText};
+        }
+        .accounts-tree-legend {
+          border-top: 1px solid ${treeTheme.border};
+          padding-top: 12px;
+          font-size: 13px;
+        }
+        .accounts-tree-legend p {
+          margin-bottom: 8px;
+          color: ${treeTheme.text};
+          font-weight: 900;
+        }
+        @media (max-width: 900px) {
+          .accounts-tree-header {
+            align-items: stretch;
+            flex-direction: column;
+          }
+          .accounts-tree-row {
+            flex-wrap: wrap;
+          }
+        }
+      `}</style>
     </Card>
   );
 };

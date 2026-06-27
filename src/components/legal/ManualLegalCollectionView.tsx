@@ -37,7 +37,7 @@ import {
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
-import { FileText, Plus, Folder, Trash2, Check, ChevronsUpDown, Search } from 'lucide-react';
+import { FileText, Plus, Folder, Trash2, Check, ChevronsUpDown } from 'lucide-react';
 import { cn, formatCurrency } from '@/lib/utils';
 import { useManualLegalCollections, ManualCollectionItem } from '@/hooks/useManualLegalCollections';
 import { useCustomerFinancialSummary } from '@/hooks/useCustomerFinancialSummary';
@@ -151,14 +151,14 @@ export const ManualLegalCollectionView: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-64">
+      <div className="legal-panel flex h-64 items-center justify-center">
         <LoadingSpinner size="lg" />
       </div>
     );
   }
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-500">
+    <div className="legal-system space-y-6 animate-in fade-in duration-500">
       
       {/* Header Actions */}
       <div className="flex justify-between items-center">

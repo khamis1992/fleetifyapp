@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { NavLink, useLocation, useNavigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
@@ -15,7 +15,6 @@ import {
   UserCog,
   BarChart3,
   CalendarDays,
-  Truck,
   PanelLeftClose,
   PanelLeft,
   Search,
@@ -36,16 +35,48 @@ import {
   Gavel,
   FolderOpen,
   FileWarning,
-  Target,
   X,
   Sparkles,
-  CircleDot,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { useTourGuide } from '@/components/tour-guide';
+import { systemColorPattern } from '@/lib/design-system/systemColorPattern';
 
 import { useFleetifyTranslation } from "@/hooks/useTranslation";
+
+const sidebarColors = {
+  text: systemColorPattern.colors.text,
+  inner: systemColorPattern.colors.innerSurface,
+  secondary: systemColorPattern.colors.secondaryText,
+  border: systemColorPattern.colors.border,
+  water: systemColorPattern.colors.info,
+  alert: systemColorPattern.colors.alert,
+  focus: systemColorPattern.colors.focus,
+  success: systemColorPattern.colors.success,
+};
+
+const categoryAccents: Record<string, string> = {
+  main: sidebarColors.success,
+  core: sidebarColors.water,
+  'finance-admin': sidebarColors.alert,
+  compliance: sidebarColors.focus,
+  tools: sidebarColors.success,
+};
+
+const itemAccents: Record<string, string> = {
+  dashboard: sidebarColors.success,
+  fleet: sidebarColors.water,
+  'quotations-contracts': sidebarColors.focus,
+  customers: sidebarColors.success,
+  finance: sidebarColors.alert,
+  hr: sidebarColors.focus,
+  legal: sidebarColors.focus,
+  tasks: sidebarColors.alert,
+  'dispatch-permits': sidebarColors.water,
+  reports: sidebarColors.success,
+  settings: sidebarColors.focus,
+};
 // === Types ===
 interface SubItem {
   id: string;
@@ -66,6 +97,11 @@ interface NavItem {
 interface BentoSidebarProps {
   isMobile?: boolean;
   onCloseMobile?: () => void;
+}
+
+interface SidebarScrollState {
+  top: number;
+  remaining: number;
 }
 
 // === Navigation Configuration with Icons for Sub-items ===
@@ -122,11 +158,12 @@ const navigation: NavItem[] = [
     category: 'finance-admin',
     children: [
       { id: 'finance-overview', label: 'لوحة التحكم', href: '/finance/overview', icon: LayoutDashboard },
-      { id: 'finance-billing', label: 'الفواتير والمدفوعات', href: '/finance/billing', icon: Receipt },
+      { id: 'finance-billing', label: 'الفوترة والتحصيل', href: '/finance/billing', icon: Receipt },
+      { id: 'finance-accounting', label: 'المحاسبة العامة', href: '/finance/accounting', icon: BookOpen },
       { id: 'finance-treasury', label: 'الخزينة والبنوك', href: '/finance/treasury', icon: Building2 },
-      { id: 'finance-ledger', label: 'دفتر الأستاذ', href: '/finance/general-ledger', icon: BookOpen },
-      { id: 'finance-chart-of-accounts', label: 'دليل الحسابات', href: '/finance/chart-of-accounts', icon: Scale },
-      { id: 'finance-reports', label: 'التقارير المالية', href: '/finance/reports', icon: BarChart3 },
+      { id: 'finance-reports-analysis', label: 'التقارير والتحليل', href: '/finance/reports-analysis', icon: BarChart3 },
+      { id: 'finance-planning', label: 'التخطيط والرقابة', href: '/finance/budgets-centers', icon: Scale },
+      { id: 'finance-audit-settings', label: 'الإعدادات والتدقيق', href: '/finance/audit-settings', icon: Settings },
     ],
   },
   {
@@ -220,6 +257,11 @@ const BentoSidebar: React.FC<BentoSidebarProps> = ({
   const [expandedItems, setExpandedItems] = useState<string[]>(['customers', 'fleet']);
   const [recentPages, setRecentPages] = useState<Array<{label: string; href: string; icon: React.ElementType}>>([]);
   const { startTour } = useTourGuide();
+  const navScrollRef = useRef<HTMLElement | null>(null);
+  const savedScrollRef = useRef<SidebarScrollState | null>(null);
+  const ignoreScrollSaveUntilRef = useRef(0);
+  const scrollStorageKey = isMobile ? 'fleetify:bento-sidebar-scroll:mobile' : 'fleetify:bento-sidebar-scroll:desktop';
+  const scrollRestoreKey = `${scrollStorageKey}:restore`;
 
   const allNavItems = navigation.flatMap(item =>
     item.children ? [item, ...item.children] : [item]
@@ -239,13 +281,63 @@ const BentoSidebar: React.FC<BentoSidebarProps> = ({
     }
   }, [location.pathname]);
 
-  const handleLinkClick = () => {
+  const saveSidebarScroll = (force = false) => {
+    if (typeof window === 'undefined' || !navScrollRef.current) return;
+    if (!force && Date.now() < ignoreScrollSaveUntilRef.current) return;
+    const nav = navScrollRef.current;
+    const scrollState = {
+      top: nav.scrollTop,
+      remaining: nav.scrollHeight - nav.clientHeight - nav.scrollTop,
+    };
+    savedScrollRef.current = scrollState;
+    window.sessionStorage.setItem(scrollStorageKey, JSON.stringify(scrollState));
+    if (force) {
+      window.sessionStorage.setItem(scrollRestoreKey, JSON.stringify(scrollState));
+    }
+  };
+
+  const restoreSidebarScroll = () => {
+    if (typeof window === 'undefined') return;
+    const applyRestore = () => {
+      const nav = navScrollRef.current;
+      const savedScroll = window.sessionStorage.getItem(scrollRestoreKey) || window.sessionStorage.getItem(scrollStorageKey);
+      if (!nav || (savedScroll === null && !savedScrollRef.current)) return;
+      ignoreScrollSaveUntilRef.current = Date.now() + 250;
+      try {
+        const parsed = savedScrollRef.current || JSON.parse(savedScroll || '{}') as SidebarScrollState;
+        const remaining = typeof parsed.remaining === 'number' ? parsed.remaining : 0;
+        nav.scrollTop = Math.max(0, nav.scrollHeight - nav.clientHeight - remaining);
+      } catch {
+        nav.scrollTop = Number(savedScroll || 0);
+      }
+    };
+
+    window.requestAnimationFrame(applyRestore);
+    window.setTimeout(applyRestore, 60);
+    window.setTimeout(applyRestore, 180);
+    window.setTimeout(() => window.sessionStorage.removeItem(scrollRestoreKey), 700);
+  };
+
+  useEffect(() => {
+    restoreSidebarScroll();
+  }, [location.pathname, collapsed, isMobile]);
+
+  useEffect(() => {
+    restoreSidebarScroll();
+  }, [expandedItems]);
+
+  const handleLinkClick = (event?: React.MouseEvent<HTMLElement>) => {
+    saveSidebarScroll(true);
+    ignoreScrollSaveUntilRef.current = Date.now() + 1200;
+    event?.currentTarget.blur();
     if (isMobile && onCloseMobile) {
       onCloseMobile();
     }
   };
 
   const toggleExpanded = (id: string) => {
+    saveSidebarScroll(true);
+    ignoreScrollSaveUntilRef.current = Date.now() + 400;
     setExpandedItems((prev) =>
       prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
     );
@@ -273,46 +365,47 @@ const BentoSidebar: React.FC<BentoSidebarProps> = ({
     const isExpanded = expandedItems.includes(item.id);
     const isParentItemActive = hasChildren && isParentActive(item.children);
     const isDirectActive = item.href && isActiveLink(item.href);
+    const accent = itemAccents[item.id] || categoryAccents[item.category || 'main'] || sidebarColors.success;
 
     if (hasChildren) {
       return (
-        <div key={item.id}>
+        <div key={item.id} className="relative">
           <button
             onClick={() => toggleExpanded(item.id)}
             className={cn(
-              'group relative w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium transition-all duration-200',
-              'hover:bg-white/50 dark:hover:bg-stone-800/50',
-              isParentItemActive
-                ? 'text-stone-900 dark:text-rose-50'
-                : 'text-stone-500 dark:text-stone-400'
+              'group relative w-full flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition-all duration-200',
+              !isParentItemActive && 'hover:bg-white'
             )}
+            style={{
+              backgroundColor: isParentItemActive ? `${accent}14` : 'transparent',
+              color: isParentItemActive ? sidebarColors.text : sidebarColors.secondary,
+              boxShadow: isParentItemActive ? `inset 0 0 0 1px ${accent}26` : undefined,
+            }}
             aria-expanded={isExpanded}
           >
             {isParentItemActive && (
-              <span className="absolute right-0 top-1/2 -translate-y-1/2 w-[3px] h-7 bg-rose-500 dark:bg-rose-400" />
+              <span className="absolute right-0 top-1/2 h-7 w-1 -translate-y-1/2 rounded-l-full" style={{ backgroundColor: accent }} />
             )}
-            <span className={cn(
-              'flex-shrink-0 flex items-center justify-center w-8 h-8 transition-all duration-200',
-              'border border-white/20 dark:border-stone-700/40',
-              'group-hover:border-rose-300 dark:group-hover:border-rose-500/40',
-              isParentItemActive && 'border-rose-400 dark:border-rose-500/50 bg-rose-50 dark:bg-rose-500/10'
-            )}>
-              <item.icon className={cn(
-                'w-4 h-4 transition-colors',
-                isParentItemActive ? 'text-rose-600 dark:text-rose-400' : 'text-stone-400 dark:text-stone-500 group-hover:text-rose-500 dark:group-hover:text-rose-400'
-              )} />
+            <span
+              className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg border transition-all duration-200 group-hover:scale-[1.03]"
+              style={{
+                backgroundColor: isParentItemActive ? '#FFFFFF' : `${accent}10`,
+                borderColor: isParentItemActive ? `${accent}40` : `${accent}1F`,
+              }}
+            >
+              <item.icon className="h-4 w-4 transition-colors" style={{ color: accent }} />
             </span>
             {(!collapsed || isMobile) && (
               <>
-                <span className={cn('flex-1 text-right transition-colors', isParentItemActive && 'font-semibold')}>
+                <span className="flex-1 text-right transition-colors">
                   {item.label}
                 </span>
                 <ChevronDown
                   className={cn(
-                    'w-3.5 h-3.5 transition-transform duration-200',
-                    isExpanded && 'rotate-180',
-                    isParentItemActive ? 'text-rose-500 dark:text-rose-400' : 'text-stone-300 dark:text-stone-600'
+                    'h-3.5 w-3.5 transition-transform duration-200',
+                    isExpanded && 'rotate-180'
                   )}
+                  style={{ color: isParentItemActive ? accent : sidebarColors.secondary }}
                 />
               </>
             )}
@@ -324,7 +417,8 @@ const BentoSidebar: React.FC<BentoSidebarProps> = ({
                 animate={{ height: 'auto', opacity: 1 }}
                 exit={{ height: 0, opacity: 0 }}
                 transition={{ duration: 0.2, ease: 'easeOut' }}
-                className="overflow-hidden mr-4 mt-0.5 space-y-px border-r border-rose-200/60 dark:border-rose-500/15"
+                className="mr-4 mt-1 space-y-1 overflow-hidden border-r pr-2"
+                style={{ borderColor: `${accent}26` }}
               >
                 {item.children!.map((child) => {
                   const ChildIcon = child.icon;
@@ -333,22 +427,23 @@ const BentoSidebar: React.FC<BentoSidebarProps> = ({
                     <li key={child.id}>
                       <NavLink
                         to={child.href}
+                        onPointerDown={() => saveSidebarScroll(true)}
                         onClick={handleLinkClick}
                         className={cn(
-                          'group flex items-center gap-2.5 px-3 py-2 mr-2 text-sm transition-all duration-200 relative',
-                          isChildActive
-                            ? 'bg-rose-500 text-stone-900 dark:text-rose-50 font-semibold'
-                            : 'text-stone-400 dark:text-stone-500 hover:bg-white/50 dark:hover:bg-stone-800/50 hover:text-stone-700 dark:hover:text-rose-50'
+                          'group relative mr-1 flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition-all duration-200',
+                          isChildActive && 'font-semibold'
                         )}
+                        style={{
+                          backgroundColor: isChildActive ? '#FFFFFF' : 'transparent',
+                          color: isChildActive ? sidebarColors.text : sidebarColors.secondary,
+                          boxShadow: isChildActive ? `inset 0 0 0 1px ${sidebarColors.border}` : undefined,
+                        }}
                       >
                         {isChildActive && (
-                          <span className="absolute right-[-9px] top-1/2 -translate-y-1/2 w-1.5 h-1.5 bg-rose-500 dark:bg-rose-400" />
+                          <span className="absolute right-[-12px] top-1/2 h-2 w-2 -translate-y-1/2 rounded-full" style={{ backgroundColor: accent }} />
                         )}
-                        <span className="flex-shrink-0 flex items-center justify-center">
-                          <ChildIcon className={cn(
-                            'w-3.5 h-3.5 transition-transform group-hover:scale-110',
-                            isChildActive ? 'text-stone-900 dark:text-rose-50' : 'text-stone-300 dark:text-stone-600'
-                          )} />
+                        <span className="flex flex-shrink-0 items-center justify-center">
+                          <ChildIcon className="h-3.5 w-3.5 transition-transform group-hover:scale-110" style={{ color: isChildActive ? accent : sidebarColors.secondary }} />
                         </span>
                         <span>{child.label}</span>
                       </NavLink>
@@ -366,31 +461,32 @@ const BentoSidebar: React.FC<BentoSidebarProps> = ({
       <NavLink
         key={item.id}
         to={item.href!}
+        onPointerDown={() => saveSidebarScroll(true)}
         onClick={handleLinkClick}
         className={cn(
-          'group relative w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium transition-all duration-200',
-          isDirectActive
-            ? 'bg-rose-500 text-stone-900 dark:text-rose-50 font-semibold'
-            : 'text-stone-500 dark:text-stone-400 hover:bg-white/50 dark:hover:bg-stone-800/50 hover:text-stone-800 dark:hover:text-rose-50'
+          'group relative flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition-all duration-200',
+          !isDirectActive && 'hover:bg-white'
         )}
+        style={{
+          backgroundColor: isDirectActive ? `${accent}14` : 'transparent',
+          color: isDirectActive ? sidebarColors.text : sidebarColors.secondary,
+          boxShadow: isDirectActive ? `inset 0 0 0 1px ${accent}26` : undefined,
+        }}
       >
         {isDirectActive && (
-          <span className="absolute right-0 top-1/2 -translate-y-1/2 w-[3px] h-7 bg-rose-600 dark:bg-rose-300" />
+          <span className="absolute right-0 top-1/2 h-7 w-1 -translate-y-1/2 rounded-l-full" style={{ backgroundColor: accent }} />
         )}
-        <span className={cn(
-          'flex-shrink-0 flex items-center justify-center w-8 h-8 transition-all duration-200',
-          'border border-white/20 dark:border-stone-700/40',
-          isDirectActive
-            ? 'border-rose-600 dark:border-rose-400 bg-rose-100/50 dark:bg-rose-400/10'
-            : 'group-hover:border-rose-300 dark:group-hover:border-rose-500/40'
-        )}>
-          <item.icon className={cn(
-            'w-4 h-4',
-            isDirectActive ? 'text-rose-700 dark:text-rose-300' : 'text-stone-400 dark:text-stone-500 group-hover:text-rose-500 dark:group-hover:text-rose-400'
-          )} />
+        <span
+          className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg border transition-all duration-200 group-hover:scale-[1.03]"
+          style={{
+            backgroundColor: isDirectActive ? '#FFFFFF' : `${accent}10`,
+            borderColor: isDirectActive ? `${accent}40` : `${accent}1F`,
+          }}
+        >
+          <item.icon className="h-4 w-4" style={{ color: accent }} />
         </span>
         {(!collapsed || isMobile) && (
-          <span className={cn(isDirectActive && 'font-semibold')}>{item.label}</span>
+          <span>{item.label}</span>
         )}
       </NavLink>
     );
@@ -409,18 +505,17 @@ const BentoSidebar: React.FC<BentoSidebarProps> = ({
           : "top-3 right-3 bottom-3 h-[calc(100vh-1.5rem)]",
         "flex flex-col",
         "rounded-2xl",
-        "backdrop-blur-2xl",
-        "bg-white/75 dark:bg-stone-900/75",
-        "border border-white/20 dark:border-stone-700/30",
-        "shadow-2xl shadow-black/5 dark:shadow-black/30",
+        "border bg-white",
+        "shadow-[0_18px_45px_rgba(2,6,23,0.08)]",
         isMobile && "rounded-none border-none"
       )}
+      style={{ borderColor: sidebarColors.border }}
     >
       {/* Subtle top border for glass edge definition */}
-      <div className="absolute top-0 left-0 right-0 h-px rounded-t-2xl bg-gradient-to-l from-rose-400/40 via-rose-300/20 to-transparent dark:from-rose-500/30 dark:via-rose-400/15" />
+      <div className="absolute left-4 right-4 top-0 h-1 rounded-b-full" style={{ background: `linear-gradient(90deg, ${sidebarColors.water}, ${sidebarColors.success}, ${sidebarColors.focus}, ${sidebarColors.alert})` }} />
 
       {/* === Header: Logo & Collapse Button === */}
-      <div className="h-16 flex items-center justify-between px-4 border-b border-white/10 dark:border-stone-700/20 flex-shrink-0">
+      <div className="flex h-20 flex-shrink-0 items-center justify-between border-b px-4" style={{ borderColor: sidebarColors.border }}>
         {(!collapsed || isMobile) && (
           <motion.div
             initial={{ opacity: 0, x: 10 }}
@@ -428,13 +523,13 @@ const BentoSidebar: React.FC<BentoSidebarProps> = ({
             transition={{ duration: 0.3, ease: 'easeOut' }}
             className="flex items-center gap-3"
           >
-            <div className="relative w-9 h-9 border-2 border-rose-500 dark:border-rose-400 flex items-center justify-center bg-stone-900 dark:bg-stone-900">
-              <span className="text-rose-400 dark:text-rose-300 font-bold text-lg tracking-tight" style={{ fontFamily: 'Georgia, "Times New Roman", serif' }}>F</span>
-              <span className="absolute -top-1 -right-1 w-2 h-2 bg-rose-400 dark:bg-rose-300" />
+            <div className="relative flex h-11 w-11 items-center justify-center rounded-xl" style={{ backgroundColor: sidebarColors.text }}>
+              <span className="text-lg font-black tracking-tight text-white">F</span>
+              <span className="absolute -top-1 -right-1 h-3 w-3 rounded-full ring-2 ring-white" style={{ backgroundColor: sidebarColors.success }} />
             </div>
             <div className="flex flex-col leading-none">
-              <span className="font-bold text-stone-900 dark:text-amber-50 text-base tracking-tight">{t("fleetify")}</span>
-              <span className="text-[9px] text-rose-600 dark:text-rose-400 font-medium mt-0.5 tracking-[0.2em] uppercase" style={{ fontFamily: 'ui-monospace, "Cascadia Code", "Source Code Pro", monospace' }}>Fleet Mgmt</span>
+              <span className="text-base font-black tracking-tight" style={{ color: sidebarColors.text }}>{t("fleetify")}</span>
+              <span className="mt-1 text-[10px] font-bold uppercase tracking-[0.16em]" style={{ color: sidebarColors.secondary }}>Fleet operations</span>
             </div>
           </motion.div>
         )}
@@ -443,18 +538,20 @@ const BentoSidebar: React.FC<BentoSidebarProps> = ({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.2 }}
-            className="w-9 h-9 mx-auto border-2 border-rose-500 dark:border-rose-400 flex items-center justify-center bg-stone-900 dark:bg-stone-900"
+            className="mx-auto flex h-10 w-10 items-center justify-center rounded-xl"
+            style={{ backgroundColor: sidebarColors.text }}
           >
-            <span className="text-rose-400 dark:text-rose-300 font-bold text-lg" style={{ fontFamily: 'Georgia, "Times New Roman", serif' }}>F</span>
+            <span className="text-lg font-black text-white">F</span>
           </motion.div>
         )}
         {!isMobile && (
           <button
             onClick={() => setCollapsed(!collapsed)}
             className={cn(
-              'p-1.5 transition-all text-stone-400 dark:text-stone-500 hover:text-rose-600 dark:hover:text-rose-400',
+              'rounded-lg p-1.5 transition-all hover:bg-slate-50',
               collapsed && 'absolute left-2 top-4'
             )}
+            style={{ color: sidebarColors.secondary }}
             title={collapsed ? 'توسيع' : 'تصغير'}
             aria-label={collapsed ? 'توسيع القائمة' : 'تصغير القائمة'}
           >
@@ -465,37 +562,32 @@ const BentoSidebar: React.FC<BentoSidebarProps> = ({
 
       {/* === Search Trigger === */}
       {(!collapsed || isMobile) && (
-        <div className="px-3 py-2.5 border-b border-white/10 dark:border-stone-700/20">
+        <div className="border-b px-3 py-3" style={{ borderColor: sidebarColors.border }}>
           <button
             onClick={() => document.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', metaKey: true }))}
-            className={cn(
-              'group w-full flex items-center gap-2.5 px-3 py-2.5',
-              'border border-white/20 dark:border-stone-700/40',
-              'hover:border-rose-400 dark:hover:border-rose-500/50',
-              'bg-white/40 dark:bg-stone-800/40',
-              'hover:bg-rose-50/40 dark:hover:bg-rose-500/5',
-              'text-stone-400 dark:text-stone-500 text-xs transition-all duration-200'
-            )}
+            className="group flex w-full items-center gap-2.5 rounded-xl border px-3 py-2.5 text-xs transition-all duration-200 hover:bg-white"
+            style={{ backgroundColor: sidebarColors.inner, borderColor: sidebarColors.border, color: sidebarColors.secondary }}
             aria-label="بحث سريع"
           >
-            <Search className="w-3.5 h-3.5 group-hover:text-rose-600 dark:group-hover:text-rose-400 transition-colors" />
+            <Search className="h-3.5 w-3.5 transition-colors" style={{ color: sidebarColors.water }} />
             <span className="flex-1 text-right">بحث سريع...</span>
-            <kbd className="text-[10px] bg-white/50 dark:bg-stone-800/50 px-1.5 py-0.5 border border-white/20 dark:border-stone-700/40 font-mono text-stone-500 dark:text-stone-400" style={{ fontFamily: 'ui-monospace, "Cascadia Code", monospace' }}>⌘K</kbd>
+            <kbd className="rounded-md border bg-white px-1.5 py-0.5 font-mono text-[10px]" style={{ borderColor: sidebarColors.border, color: sidebarColors.secondary }}>⌘K</kbd>
           </button>
         </div>
       )}
 
       {/* === Recent Pages === */}
       {(!collapsed || isMobile) && recentPages.length > 0 && (
-        <div className="px-3 py-2 border-b border-white/10 dark:border-stone-700/20">
+        <div className="border-b px-3 py-2" style={{ borderColor: sidebarColors.border }}>
           <div className="flex items-center justify-between mb-1.5 px-1">
-            <span className="text-[10px] font-bold text-stone-400 dark:text-stone-600 uppercase tracking-[0.15em] flex items-center gap-1.5" style={{ fontFamily: 'ui-monospace, "Cascadia Code", monospace' }}>
-              <span className="w-1 h-1 bg-rose-500 dark:bg-rose-400" />
+            <span className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.15em]" style={{ color: sidebarColors.secondary }}>
+              <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: sidebarColors.alert }} />
               المؤخر
             </span>
             <button
               onClick={() => setRecentPages([])}
-              className="text-stone-300 hover:text-stone-500 dark:text-stone-700 dark:hover:text-stone-400 transition-colors"
+              className="transition-colors"
+              style={{ color: sidebarColors.secondary }}
               aria-label="مسح الصفحات الأخيرة"
             >
               <X className="w-3 h-3" />
@@ -506,10 +598,12 @@ const BentoSidebar: React.FC<BentoSidebarProps> = ({
               <Link
                 key={page.href}
                 to={page.href}
+                onPointerDown={() => saveSidebarScroll(true)}
                 onClick={handleLinkClick}
-                className="group flex items-center gap-2 px-2 py-1.5 text-xs text-stone-500 dark:text-stone-400 hover:bg-rose-50/50 dark:hover:bg-rose-500/5 hover:text-rose-700 dark:hover:text-rose-400 transition-all"
+                className="group flex items-center gap-2 rounded-lg px-2 py-1.5 text-xs transition-all hover:bg-white"
+                style={{ color: sidebarColors.secondary }}
               >
-                {page.icon && <page.icon className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" />}
+                {page.icon && <page.icon className="w-3.5 h-3.5 transition-transform group-hover:scale-110" style={{ color: sidebarColors.water }} />}
                 {page.label}
               </Link>
             ))}
@@ -517,28 +611,66 @@ const BentoSidebar: React.FC<BentoSidebarProps> = ({
         </div>
       )}
 
-      {/* === Start Tour Button === */}
+      {/* === Start Tour Entry === */}
       {(!collapsed || isMobile) && (
-        <div className="px-3 py-2 border-b border-white/10 dark:border-stone-700/20">
+        <div className="border-b px-3 py-3" style={{ borderColor: sidebarColors.border }}>
           <button
             onClick={() => startTour('dashboard-overview')}
-            className={cn(
-              'group w-full flex items-center gap-2.5 px-3 py-2.5',
-              'border border-rose-400 dark:border-rose-500/50',
-              'bg-rose-50 dark:bg-rose-500/5',
-              'hover:bg-rose-100 dark:hover:bg-rose-500/10',
-              'text-rose-700 dark:text-rose-400 text-xs font-semibold transition-all duration-200',
-              'hover:tracking-wider'
-            )}
+            className="group relative w-full overflow-hidden rounded-xl border bg-white p-3 text-right shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
+            style={{ borderColor: `${sidebarColors.success}38` }}
+            aria-label="ابدأ جولة تعريفية"
           >
-            <Sparkles className="w-3.5 h-3.5 flex-shrink-0" />
-            <span className="flex-1 text-right">ابدأ جولة تعريفية</span>
+            <span
+              className="pointer-events-none absolute inset-y-0 right-0 w-1"
+              style={{ backgroundColor: sidebarColors.success }}
+            />
+            <span className="flex items-start gap-3">
+              <span
+                className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg transition-transform duration-200 group-hover:scale-105"
+                style={{ backgroundColor: `${sidebarColors.success}14`, color: sidebarColors.success }}
+              >
+                <Sparkles className="h-4 w-4" />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-sm font-black" style={{ color: sidebarColors.text }}>
+                  ابدأ جولة تعريفية
+                </span>
+                <span className="mt-0.5 block text-[11px] font-medium leading-5" style={{ color: sidebarColors.secondary }}>
+                  تعرّف على أهم الأدوات في أقل من دقيقة
+                </span>
+              </span>
+            </span>
+            <span className="mt-3 flex items-center justify-between gap-2">
+              <span className="flex items-center gap-1">
+                {[0, 1, 2].map((step) => (
+                  <span
+                    key={step}
+                    className="h-1.5 rounded-full transition-all duration-200"
+                    style={{
+                      width: step === 0 ? 18 : 7,
+                      backgroundColor: step === 0 ? sidebarColors.success : `${sidebarColors.success}30`,
+                    }}
+                  />
+                ))}
+              </span>
+              <span
+                className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-[10px] font-black"
+                style={{ backgroundColor: `${sidebarColors.success}10`, color: sidebarColors.success }}
+              >
+                بدء الجولة
+              </span>
+            </span>
           </button>
         </div>
       )}
 
       {/* === Navigation with Categories === */}
-      <nav className="flex-1 overflow-y-auto overflow-x-hidden py-3 px-3 scrollbar-thin scrollbar-thumb-stone-200 dark:scrollbar-thumb-stone-800 scrollbar-track-transparent">
+      <nav
+        ref={navScrollRef}
+        onScroll={saveSidebarScroll}
+        className="flex-1 overflow-y-auto overflow-x-hidden px-3 py-3 scrollbar-thin scrollbar-track-transparent"
+        style={{ scrollbarColor: `${sidebarColors.border} transparent` }}
+      >
         {categoryEntries.map(([category, items], categoryIndex) => (
           <motion.div
             key={category}
@@ -550,13 +682,13 @@ const BentoSidebar: React.FC<BentoSidebarProps> = ({
             {/* Category Label */}
             {categoryLabels[category] && (!collapsed || isMobile) && (
               <div className="flex items-center gap-2 px-2 py-1.5 mb-1.5">
-                <span className="text-[9px] font-bold text-rose-600 dark:text-rose-500 tabular-nums" style={{ fontFamily: 'ui-monospace, "Cascadia Code", "Source Code Pro", monospace' }}>
+                <span className="text-[9px] font-bold tabular-nums" style={{ color: categoryAccents[category], fontFamily: 'ui-monospace, "Cascadia Code", "Source Code Pro", monospace' }}>
                   {String(categoryIndex).padStart(2, '0')}
                 </span>
-                <span className="text-[10px] font-bold text-stone-400 dark:text-stone-600 uppercase tracking-[0.15em]" style={{ fontFamily: 'ui-monospace, "Cascadia Code", monospace' }}>
+                <span className="text-[10px] font-bold uppercase tracking-[0.12em]" style={{ color: sidebarColors.secondary }}>
                   {categoryLabels[category]}
                 </span>
-                <span className="flex-1 h-px bg-gradient-to-l from-transparent via-white/20 dark:via-stone-700/20 to-transparent" />
+                <span className="h-px flex-1" style={{ backgroundColor: sidebarColors.border }} />
               </div>
             )}
 
@@ -569,7 +701,7 @@ const BentoSidebar: React.FC<BentoSidebarProps> = ({
 
             {/* Separator between categories (collapsed) */}
             {categoryIndex < categoryEntries.length - 1 && (collapsed && !isMobile) && (
-              <div className="mt-4 mx-3 border-b border-white/10 dark:border-stone-700/20" />
+              <div className="mx-3 mt-4 border-b" style={{ borderColor: sidebarColors.border }} />
             )}
           </motion.div>
         ))}
@@ -577,26 +709,25 @@ const BentoSidebar: React.FC<BentoSidebarProps> = ({
 
       {/* === Footer: Theme Toggle === */}
       {!isMobile && (
-        <div className="px-3 py-1.5 border-t border-white/10 dark:border-stone-700/20 flex items-center justify-between">
+        <div className="flex items-center justify-between border-t px-3 py-2" style={{ borderColor: sidebarColors.border }}>
           <ThemeToggle />
           {(!collapsed) && (
-            <span className="text-[10px] text-stone-400 dark:text-stone-600 uppercase tracking-[0.15em]" style={{ fontFamily: 'ui-monospace, "Cascadia Code", monospace' }}>النظام</span>
+            <span className="text-[10px] uppercase tracking-[0.15em]" style={{ color: sidebarColors.secondary }}>النظام</span>
           )}
         </div>
       )}
 
       {/* === User Profile Card === */}
-      <div className="p-2.5 border-t border-white/10 dark:border-stone-700/20 flex-shrink-0 bg-white/30 dark:bg-stone-900/30">
+      <div className="flex-shrink-0 border-t p-2.5" style={{ backgroundColor: sidebarColors.inner, borderColor: sidebarColors.border }}>
         <div
           className={cn(
-            'group relative flex items-center gap-2.5 p-2',
-            'border border-white/20 dark:border-stone-700/30',
-            'hover:border-rose-300 dark:hover:border-rose-500/40 transition-all duration-200',
+            'group relative flex items-center gap-2.5 rounded-xl border bg-white p-2 transition-all duration-200',
             collapsed && !isMobile && 'justify-center'
           )}
+          style={{ borderColor: sidebarColors.border }}
         >
           {(!collapsed || isMobile) && (
-            <span className="absolute top-1 right-1 w-2 h-2 bg-rose-400 dark:bg-rose-300 ring-2 ring-white/50 dark:ring-stone-900 z-10" />
+            <span className="absolute right-2 top-2 z-10 h-2.5 w-2.5 rounded-full ring-2 ring-white" style={{ backgroundColor: sidebarColors.success }} />
           )}
 
           {/* Avatar */}
@@ -606,13 +737,10 @@ const BentoSidebar: React.FC<BentoSidebarProps> = ({
               navigate('/profile');
             }}
             className={cn(
-              'relative flex items-center justify-center font-semibold text-xs flex-shrink-0 transition-all cursor-pointer',
-              'w-9 h-9',
-              'border-2 border-rose-500 dark:border-rose-400',
-              'bg-stone-900 dark:bg-stone-900 text-rose-400 dark:text-rose-300',
+              'relative flex h-9 w-9 flex-shrink-0 cursor-pointer items-center justify-center rounded-lg text-xs font-black text-white transition-all',
               'hover:scale-105'
             )}
-            style={{ fontFamily: 'Georgia, "Times New Roman", serif' }}
+            style={{ backgroundColor: sidebarColors.text }}
             title="الملف الشخصي"
             aria-label="الملف الشخصي"
           >
@@ -630,15 +758,15 @@ const BentoSidebar: React.FC<BentoSidebarProps> = ({
                 className="min-w-0 text-right transition-colors cursor-pointer"
                 title="الملف الشخصي"
               >
-                <p className="text-xs font-semibold text-stone-800 dark:text-rose-50 truncate">{userName}</p>
-                <p className="text-[10px] text-stone-400 dark:text-stone-500 truncate" style={{ fontFamily: 'ui-monospace, "Cascadia Code", monospace' }}>{user?.email}</p>
+                <p className="truncate text-xs font-bold" style={{ color: sidebarColors.text }}>{userName}</p>
+                <p className="truncate text-[10px]" style={{ color: sidebarColors.secondary }}>{user?.email}</p>
               </button>
               <button
                 onClick={handleSignOut}
                 className={cn(
-                  'p-2 transition-all duration-200 flex-shrink-0',
-                  'text-stone-400 hover:text-red-500 dark:hover:text-red-400'
+                  'flex-shrink-0 rounded-lg p-2 transition-all duration-200 hover:bg-slate-50'
                 )}
+                style={{ color: sidebarColors.alert }}
                 title="تسجيل الخروج"
                 aria-label="تسجيل الخروج"
               >
@@ -651,7 +779,8 @@ const BentoSidebar: React.FC<BentoSidebarProps> = ({
           {collapsed && !isMobile && (
             <button
               onClick={handleSignOut}
-              className="absolute -top-1 -left-1 p-1.5 bg-white/60 dark:bg-stone-900/60 border border-white/30 dark:border-stone-700/40 text-stone-400 hover:text-red-500 dark:hover:text-red-400 transition-all"
+              className="absolute -left-1 -top-1 rounded-lg border bg-white p-1.5 transition-all"
+              style={{ borderColor: sidebarColors.border, color: sidebarColors.alert }}
               title="تسجيل الخروج"
               aria-label="تسجيل الخروج"
             >

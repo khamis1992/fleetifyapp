@@ -23,6 +23,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 import { usePermissions } from '@/hooks/usePermissions';
+import { usePaymentOperations } from '@/hooks/business/usePaymentOperations';
 import * as Sentry from '@sentry/react';
 import { toast } from 'sonner';
 
@@ -356,6 +357,11 @@ export const useCreatePayment = () => {
   const queryClient = useQueryClient();
   const { user, companyId } = useUnifiedCompanyAccess();
   const { hasPermission } = usePermissions();
+  const { createPayment: createCentralPayment } = usePaymentOperations({
+    autoCreateJournalEntry: true,
+    autoUpdateBankBalance: true,
+    enableNotifications: true,
+  });
   
   return useMutation({
     mutationFn: async (paymentData: CreatePaymentData) => {
@@ -387,113 +393,30 @@ export const useCreatePayment = () => {
       }
 
       try {
-        // Get company_id from invoice if available, otherwise from user
-        let targetCompanyId: string | undefined;
-        
-        if (paymentData.invoice_id) {
-          // Get company_id from invoice
-          const { data: invoice, error: invoiceError } = await supabase
-            .from("invoices")
-            .select("company_id")
-            .eq("id", paymentData.invoice_id)
-            .single();
-          
-          if (invoiceError) {
-            Sentry.captureException(invoiceError, {
-              tags: {
-                feature: 'payments',
-                action: 'create',
-                component: 'useCreatePayment.unified',
-                step: 'fetch_invoice'
-              },
-              extra: { 
-                userId: user?.id, 
-                invoiceId: paymentData.invoice_id 
-              }
-            });
-            throw new Error('خطأ في جلب بيانات الفاتورة');
-          }
-          
-          if (invoice?.company_id) {
-            targetCompanyId = invoice.company_id;
-          }
-        }
-        
-        // Use companyId from useUnifiedCompanyAccess as fallback
-        if (!targetCompanyId) {
-          targetCompanyId = companyId || user?.profile?.company_id;
-        }
-        
-        if (!targetCompanyId || !user?.id) {
-          throw new Error('بيانات المستخدم والشركة مطلوبة');
-        }
-        
-        // Generate payment number
-        const { data: existingPayments, error: fetchError } = await supabase
-          .from("payments")
-          .select("payment_number")
-          .eq("company_id", targetCompanyId)
-          .order("created_at", { ascending: false })
-          .limit(1);
-        
-        if (fetchError) {
-          Sentry.captureException(fetchError, {
-            tags: {
-              feature: 'payments',
-              action: 'create',
-              component: 'useCreatePayment.unified',
-              step: 'generate_number'
-            },
-            extra: { userId: user?.id, companyId: targetCompanyId }
-          });
-          throw new Error('خطأ في توليد رقم الدفع');
-        }
-        
-        let newNumber = 1;
-        if (existingPayments && existingPayments.length > 0) {
-          const lastNumber = existingPayments[0]?.payment_number || "PAY-0000";
-          const numberPart = lastNumber.split('-')[1];
-          newNumber = parseInt(numberPart) + 1;
-        }
-        const paymentNumber = `PAY-${newNumber.toString().padStart(4, '0')}`;
-        
-        // Create payment
-        const { data: payment, error: paymentError } = await supabase
-          .from("payments")
-          .insert({
-            ...paymentData,
-            payment_number: paymentNumber,
-            company_id: targetCompanyId,
-            payment_status: 'completed',
-            transaction_type: paymentData.customer_id ? 'receipt' : 'payment',
-            created_by: user.id
-          })
-          .select()
-          .single();
-        
-        if (paymentError) {
-          Sentry.captureException(paymentError, {
-            tags: {
-              feature: 'payments',
-              action: 'create',
-              component: 'useCreatePayment.unified',
-              step: 'insert_payment'
-            },
-            extra: { 
-              userId: user?.id, 
-              companyId: targetCompanyId,
-              paymentData 
-            }
-          });
-          throw new Error(`خطأ في إنشاء الدفع: ${paymentError.message}`);
-        }
-        
-        // Note: Invoice update (paid_amount, balance_due, payment_status) is now 
-        // handled automatically by the database trigger 'trigger_update_invoice_payment_status'
-        // which fires AFTER INSERT/UPDATE/DELETE on payments table.
-        // This eliminates race conditions and ensures data consistency.
-        
-        return payment;
+        const normalizedPaymentMethod = paymentData.payment_type === 'online_transfer'
+          ? 'bank_transfer'
+          : paymentData.payment_type;
+        const isReceipt = paymentData.payment_method === 'received' || !!paymentData.customer_id;
+
+        return await createCentralPayment.mutateAsync({
+          amount: paymentData.amount,
+          payment_date: paymentData.payment_date,
+          payment_method: normalizedPaymentMethod as 'cash' | 'check' | 'bank_transfer' | 'credit_card',
+          reference_number: paymentData.reference_number,
+          notes: paymentData.notes,
+          customer_id: paymentData.customer_id,
+          vendor_id: paymentData.vendor_id,
+          invoice_id: paymentData.invoice_id,
+          contract_id: paymentData.contract_id,
+          type: isReceipt ? 'receipt' : 'payment',
+          transaction_type: paymentData.invoice_id
+            ? 'invoice_payment'
+            : isReceipt
+              ? 'customer_payment'
+              : 'vendor_payment',
+          payment_status: 'completed',
+          currency: 'QAR',
+        });
       } catch (error) {
         // Log unexpected errors
         Sentry.captureException(error, {
@@ -796,11 +719,11 @@ export const useBulkDeletePayments = () => {
         invoiceSpan.finish();
 
         // ============================================================================
-        // DELETE PAYMENTS IN BATCHES
+        // CANCEL PAYMENTS IN BATCHES (preserve audit trail)
         // ============================================================================
         const deleteSpan = transaction.startChild({
-          op: 'db.delete',
-          description: 'Delete payments in batches',
+          op: 'db.update',
+          description: 'Cancel payments in batches',
         });
 
         const batchSize = 100;
@@ -813,7 +736,12 @@ export const useBulkDeletePayments = () => {
 
           const { error: deleteError, count } = await supabase
             .from('payments')
-            .delete({ count: 'exact' })
+            .update({
+              payment_status: 'cancelled',
+              cancelled_at: new Date().toISOString(),
+              cancelled_by: user?.id,
+              cancellation_reason: 'Bulk payment cancellation',
+            }, { count: 'exact' })
             .in('id', ids)
             .eq('company_id', effectiveCompanyId);
 
@@ -1261,11 +1189,16 @@ export const useDeletePayment = () => {
         }
 
         // ============================================================================
-        // DELETE PAYMENT
+        // CANCEL PAYMENT (preserve audit trail)
         // ============================================================================
         const { error: deleteError } = await supabase
           .from('payments')
-          .delete()
+          .update({
+            payment_status: 'cancelled',
+            cancelled_at: new Date().toISOString(),
+            cancelled_by: user?.id,
+            cancellation_reason: 'Payment cancellation',
+          })
           .eq('id', paymentId)
           .eq('company_id', companyId);
 

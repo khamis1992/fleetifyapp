@@ -43,6 +43,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useNavigate } from 'react-router-dom';
+import { systemColorPattern } from '@/lib/design-system/systemColorPattern';
 
 // Import Financial Analysis components
 import {
@@ -220,6 +221,7 @@ const MaintenanceAlertItem: React.FC<{
 // ===== Main Component =====
 const FleetReportsPage: React.FC = () => {
   const navigate = useNavigate();
+  const reportsTheme = systemColorPattern.colors;
   const [activeTab, setActiveTab] = useState('overview');
   const [filters, setFilters] = useState<IReportFilters>({
     period: 'month',
@@ -265,17 +267,30 @@ const FleetReportsPage: React.FC = () => {
 
   if (isLoading && !analytics) {
     return (
-      <div className="min-h-screen bg-[#f0efed] flex items-center justify-center">
+      <div className="min-h-screen bg-[#F6F8FB] flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
-          <div className="w-12 h-12 border-4 border-rose-500 border-t-transparent rounded-full animate-spin" />
-          <p className="text-sm text-neutral-500 font-medium">جاري تحميل التقارير...</p>
+          <div className="w-12 h-12 border-4 border-[#22C7A1] border-t-transparent rounded-full animate-spin" />
+          <p className="text-sm text-[#94A3B8] font-medium">جاري تحميل التقارير...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#f0efed]">
+    <div
+      className="fleet-reports-system min-h-screen bg-[#F6F8FB] text-[#020617]"
+      style={{
+        '--fr-text': reportsTheme.text,
+        '--fr-surface': reportsTheme.surface,
+        '--fr-inner': reportsTheme.innerSurface,
+        '--fr-muted': reportsTheme.secondaryText,
+        '--fr-border': reportsTheme.border,
+        '--fr-info': reportsTheme.info,
+        '--fr-alert': reportsTheme.alert,
+        '--fr-focus': reportsTheme.focus,
+        '--fr-success': reportsTheme.success,
+      } as React.CSSProperties}
+    >
       <div className="container mx-auto px-4 py-6 max-w-7xl">
         {/* Header */}
         <motion.header
@@ -1090,6 +1105,193 @@ const FleetReportsPage: React.FC = () => {
           </div>
         </motion.div>
       </div>
+
+      <style>{`
+        .fleet-reports-system {
+          --fr-radius: 8px;
+        }
+
+        .fleet-reports-system .bg-white,
+        .fleet-reports-system .dark\\:bg-slate-900 {
+          background-color: var(--fr-surface) !important;
+        }
+
+        .fleet-reports-system .bg-neutral-50,
+        .fleet-reports-system .bg-neutral-100,
+        .fleet-reports-system .bg-slate-50,
+        .fleet-reports-system .bg-slate-100 {
+          background-color: var(--fr-inner) !important;
+        }
+
+        .fleet-reports-system .border-slate-200,
+        .fleet-reports-system .border-neutral-100,
+        .fleet-reports-system .border-neutral-200,
+        .fleet-reports-system .divide-neutral-100 > :not([hidden]) ~ :not([hidden]) {
+          border-color: var(--fr-border) !important;
+        }
+
+        .fleet-reports-system .text-neutral-900,
+        .fleet-reports-system .text-slate-900,
+        .fleet-reports-system .text-neutral-800,
+        .fleet-reports-system .text-slate-800,
+        .fleet-reports-system .text-neutral-700,
+        .fleet-reports-system .text-slate-700 {
+          color: var(--fr-text) !important;
+        }
+
+        .fleet-reports-system .text-neutral-600,
+        .fleet-reports-system .text-slate-600,
+        .fleet-reports-system .text-neutral-500,
+        .fleet-reports-system .text-slate-500,
+        .fleet-reports-system .text-neutral-400,
+        .fleet-reports-system .text-slate-400 {
+          color: var(--fr-muted) !important;
+        }
+
+        .fleet-reports-system .rounded-xl,
+        .fleet-reports-system .rounded-lg {
+          border-radius: var(--fr-radius) !important;
+        }
+
+        .fleet-reports-system .shadow-sm,
+        .fleet-reports-system .shadow-lg,
+        .fleet-reports-system .shadow-xl {
+          box-shadow: 0 12px 28px -24px rgba(2, 6, 23, 0.38) !important;
+        }
+
+        .fleet-reports-system .bg-teal-600,
+        .fleet-reports-system .bg-teal-500,
+        .fleet-reports-system .data-\\[state\\=active\\]\\:bg-teal-600[data-state="active"],
+        .fleet-reports-system .bg-green-500 {
+          background-color: var(--fr-success) !important;
+        }
+
+        .fleet-reports-system .hover\\:bg-teal-700:hover,
+        .fleet-reports-system .hover\\:bg-teal-600:hover {
+          background-color: #1DB390 !important;
+        }
+
+        .fleet-reports-system .text-teal-500,
+        .fleet-reports-system .text-teal-600,
+        .fleet-reports-system .text-green-500,
+        .fleet-reports-system .text-green-600,
+        .fleet-reports-system .text-green-700,
+        .fleet-reports-system .text-emerald-500 {
+          color: var(--fr-success) !important;
+        }
+
+        .fleet-reports-system .bg-green-50,
+        .fleet-reports-system .bg-green-100,
+        .fleet-reports-system .bg-emerald-500\\/10 {
+          background-color: rgba(34, 199, 161, 0.1) !important;
+        }
+
+        .fleet-reports-system .border-green-100,
+        .fleet-reports-system .border-green-200,
+        .fleet-reports-system .border-emerald-500\\/30 {
+          border-color: rgba(34, 199, 161, 0.28) !important;
+        }
+
+        .fleet-reports-system .text-blue-500,
+        .fleet-reports-system .text-blue-600,
+        .fleet-reports-system .text-blue-700,
+        .fleet-reports-system .text-indigo-500,
+        .fleet-reports-system .text-indigo-600,
+        .fleet-reports-system .text-indigo-700,
+        .fleet-reports-system .text-violet-500,
+        .fleet-reports-system .text-violet-600,
+        .fleet-reports-system .text-purple-500,
+        .fleet-reports-system .text-purple-600 {
+          color: var(--fr-focus) !important;
+        }
+
+        .fleet-reports-system .bg-blue-50,
+        .fleet-reports-system .bg-blue-100,
+        .fleet-reports-system .bg-indigo-50,
+        .fleet-reports-system .bg-indigo-100,
+        .fleet-reports-system .bg-violet-100,
+        .fleet-reports-system .bg-purple-50 {
+          background-color: rgba(124, 131, 246, 0.1) !important;
+        }
+
+        .fleet-reports-system .border-blue-100,
+        .fleet-reports-system .border-blue-200,
+        .fleet-reports-system .border-indigo-100 {
+          border-color: rgba(124, 131, 246, 0.28) !important;
+        }
+
+        .fleet-reports-system .text-cyan-500,
+        .fleet-reports-system .text-cyan-600,
+        .fleet-reports-system .text-amber-500,
+        .fleet-reports-system .text-amber-600,
+        .fleet-reports-system .text-amber-700,
+        .fleet-reports-system .text-orange-500 {
+          color: var(--fr-info) !important;
+        }
+
+        .fleet-reports-system .bg-amber-50,
+        .fleet-reports-system .bg-amber-100,
+        .fleet-reports-system .bg-orange-50,
+        .fleet-reports-system .bg-orange-100 {
+          background-color: rgba(56, 189, 248, 0.12) !important;
+        }
+
+        .fleet-reports-system .border-amber-100,
+        .fleet-reports-system .border-amber-200 {
+          border-color: rgba(56, 189, 248, 0.3) !important;
+        }
+
+        .fleet-reports-system .text-rose-500,
+        .fleet-reports-system .text-rose-600,
+        .fleet-reports-system .text-coral-600,
+        .fleet-reports-system .text-red-500,
+        .fleet-reports-system .text-red-600,
+        .fleet-reports-system .text-red-700 {
+          color: var(--fr-alert) !important;
+        }
+
+        .fleet-reports-system .bg-rose-50,
+        .fleet-reports-system .bg-rose-100,
+        .fleet-reports-system .bg-red-50,
+        .fleet-reports-system .bg-red-100,
+        .fleet-reports-system .bg-rose-500\\/10 {
+          background-color: rgba(251, 107, 122, 0.1) !important;
+        }
+
+        .fleet-reports-system .bg-red-500,
+        .fleet-reports-system .from-rose-500,
+        .fleet-reports-system .to-orange-500,
+        .fleet-reports-system .bg-gradient-to-l {
+          background: var(--fr-alert) !important;
+        }
+
+        .fleet-reports-system .border-rose-100,
+        .fleet-reports-system .border-rose-200,
+        .fleet-reports-system .border-red-200,
+        .fleet-reports-system .border-rose-500\\/30 {
+          border-color: rgba(251, 107, 122, 0.28) !important;
+        }
+
+        .fleet-reports-system button,
+        .fleet-reports-system [role="tab"],
+        .fleet-reports-system [role="combobox"] {
+          border-radius: var(--fr-radius) !important;
+        }
+
+        .fleet-reports-system [role="combobox"] {
+          background-color: var(--fr-surface) !important;
+          border-color: var(--fr-border) !important;
+          color: var(--fr-text) !important;
+        }
+
+        .fleet-reports-system table thead tr {
+          background-color: var(--fr-inner) !important;
+        }
+
+        .fleet-reports-system tbody tr:hover {
+          background-color: rgba(56, 189, 248, 0.06) !important;
+        }
+      `}</style>
     </div>
   );
 };

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -32,6 +33,8 @@ import { HelpIcon } from '@/components/help/HelpIcon';
 import { ChartOfAccountsCSVUpload } from './ChartOfAccountsCSVUpload';
 import { DemoDataGenerator } from './DemoDataGenerator';
 import { AccountsTreeView } from './AccountsTreeView';
+import { systemColorPattern } from '@/lib/design-system/systemColorPattern';
+import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 
 interface AccountFormData {
   account_code: string;
@@ -44,6 +47,18 @@ interface AccountFormData {
   is_header: boolean;
   description?: string;
 }
+
+const chartManagementTheme = systemColorPattern.colors;
+
+const accountTypeFilters = [
+  { value: 'all', label: 'الكل', helper: 'All', color: chartManagementTheme.success },
+  { value: 'assets', label: 'الأصول', helper: '1xxx', color: chartManagementTheme.success },
+  { value: 'liabilities', label: 'الخصوم', helper: '2xxx', color: chartManagementTheme.alert },
+  { value: 'equity', label: 'حقوق الملكية', helper: '3xxx', color: chartManagementTheme.info },
+  { value: 'revenue', label: 'الإيرادات', helper: '4xxx', color: chartManagementTheme.focus },
+  { value: 'expenses', label: 'المصروفات', helper: '5xxx', color: chartManagementTheme.alert },
+];
+
 export const EnhancedChartOfAccountsManagement: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState('all');
@@ -63,6 +78,7 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
   const [activeTab, setActiveTab] = useState('tree');
   const [showSmartWizard, setShowSmartWizard] = useState(false);
   const [showCSVUpload, setShowCSVUpload] = useState(false);
+  const [searchParams, setSearchParams] = useSearchParams();
   
   
   // تفعيل الصلاحيات الافتراضية
@@ -116,6 +132,17 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
   } = useToast();
   const createAccount = useCreateAccount();
   const updateAccount = useUpdateAccount();
+  const { formatCurrency } = useCurrencyFormatter();
+  const formatQar = React.useCallback(
+    (amount: number) => formatCurrency(amount || 0, { currency: 'QAR', minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+    [formatCurrency]
+  );
+
+  React.useEffect(() => {
+    if (searchParams.get('action') === 'new') {
+      setShowSmartWizard(true);
+    }
+  }, [searchParams]);
 
   // دالة لتوليد رقم الحساب الفرعي التالي
   const generateNextChildAccountCode = (parentAccount: any, allAccounts: any[]): string => {
@@ -464,81 +491,187 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
     };
     return types[type as keyof typeof types] || type;
   };
+
+  const filteredAccounts = React.useMemo(() => {
+    return filterAccounts(allAccounts || []);
+  }, [allAccounts, searchTerm, filterType, filterLevel, filterStatus]);
+
+  const accountSummary = React.useMemo(() => {
+    const list = allAccounts || [];
+    const active = list.filter(account => account.is_active !== false);
+    const headers = list.filter(account => account.is_header);
+    const maxLevel = list.reduce((max, account) => Math.max(max, account.account_level || 1), 1);
+    const visible = filteredAccounts.length;
+
+    return {
+      total: list.length,
+      visible,
+      active: active.length,
+      inactive: Math.max(list.length - active.length, 0),
+      headers: headers.length,
+      posting: Math.max(list.length - headers.length, 0),
+      maxLevel,
+    };
+  }, [allAccounts, filteredAccounts]);
+
+  const closeSmartWizard = (open: boolean) => {
+    setShowSmartWizard(open);
+    if (!open && searchParams.get('action') === 'new') {
+      const next = new URLSearchParams(searchParams);
+      next.delete('action');
+      setSearchParams(next, { replace: true });
+    }
+  };
+
   if (allAccountsLoading) {
     return <div className="flex items-center justify-center h-64">
         <LoadingSpinner />
       </div>;
   }
-  return <div className="space-y-6">
-      {/* Header */}
-      <div className="flex justify-between items-center" dir="rtl">
-        <div className="text-right">
-          <div className="flex items-center gap-2">
-            <h2 className="text-2xl font-bold">دليل الحسابات</h2>
-            <HelpIcon topic="chartOfAccounts" />
+  return <div className="chart-management space-y-5" dir="rtl">
+      <section className="chart-management-toolbar">
+        <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
+          <div>
+            <div className="flex items-center gap-2">
+              <h2 className="text-xl font-black tracking-normal">مركز دليل الحسابات</h2>
+              <HelpIcon topic="chartOfAccounts" />
+            </div>
+            <p className="mt-1 text-sm">
+              ابحث، صف الحسابات، وافتح القوالب أو العرض التفاعلي من نفس المساحة.
+            </p>
           </div>
-          <p className="text-muted-foreground">نظام ذكي لإدارة وتنظيم دليل الحسابات</p>
-        </div>
-      </div>
 
-      {/* Enhanced Tabs */}
+          <div className="flex flex-wrap gap-2">
+            <Button onClick={() => setShowSmartWizard(true)} className="chart-management-primary">
+              <Plus className="h-4 w-4 ml-2" />
+              حساب جديد
+            </Button>
+            <Button onClick={() => setShowCSVUpload(true)} variant="outline" className="chart-management-action">
+              <Upload className="h-4 w-4 ml-2" />
+              استيراد
+            </Button>
+            {canDeleteAll && (
+              <Button onClick={() => setShowDeleteAllDialog(true)} variant="destructive" className="gap-2">
+                <Skull className="h-4 w-4" />
+                حذف الجميع
+              </Button>
+            )}
+          </div>
+        </div>
+
+        <div className="chart-management-summary">
+          <div>
+            <span>{accountSummary.total}</span>
+            <p>إجمالي الحسابات</p>
+          </div>
+          <div>
+            <span>{accountSummary.visible}</span>
+            <p>نتائج الفلترة</p>
+          </div>
+          <div>
+            <span>{accountSummary.active}</span>
+            <p>حساب نشط</p>
+          </div>
+          <div>
+            <span>{accountSummary.headers}</span>
+            <p>حساب رئيسي</p>
+          </div>
+          <div>
+            <span>{accountSummary.maxLevel}</span>
+            <p>أعمق مستوى</p>
+          </div>
+        </div>
+
+        <div className="chart-management-controls">
+          <div className="chart-management-search">
+            <Search className="h-4 w-4" />
+            <Input
+              value={searchTerm}
+              onChange={(event) => setSearchTerm(event.target.value)}
+              placeholder="ابحث برقم الحساب، الاسم العربي، أو الاسم الإنجليزي..."
+              dir="rtl"
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+            <Select value={filterStatus} onValueChange={setFilterStatus}>
+              <SelectTrigger className="chart-management-select">
+                <SelectValue placeholder="الحالة" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="active">النشطة فقط</SelectItem>
+                <SelectItem value="inactive">غير النشطة</SelectItem>
+                <SelectItem value="all">كل الحالات</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={filterLevel} onValueChange={setFilterLevel}>
+              <SelectTrigger className="chart-management-select">
+                <SelectValue placeholder="المستوى" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">كل المستويات</SelectItem>
+                {[1, 2, 3, 4, 5, 6].map(level => (
+                  <SelectItem key={level} value={String(level)}>مستوى {level}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <label className="chart-management-switch">
+              <Switch checked={showInactiveAccounts} onCheckedChange={setShowInactiveAccounts} />
+              <span>تحميل غير النشطة</span>
+            </label>
+          </div>
+
+          <div className="chart-management-result">
+            <strong>{accountSummary.visible}</strong>
+            <span>حساب ظاهر</span>
+          </div>
+        </div>
+
+        <div className="chart-management-type-filters" aria-label="تصفية حسب نوع الحساب">
+          {accountTypeFilters.map(type => (
+            <button
+              key={type.value}
+              type="button"
+              onClick={() => setFilterType(type.value)}
+              className={filterType === type.value ? 'is-active' : ''}
+              style={{ '--type-color': type.color } as React.CSSProperties}
+            >
+              <span>{type.label}</span>
+              <small>{type.helper}</small>
+            </button>
+          ))}
+        </div>
+      </section>
+
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full" dir="rtl">
-        <TabsList className={`grid w-full ${isSystemCompany ? 'grid-cols-4' : 'grid-cols-3'}`}>
-          <TabsTrigger value="tree" className="flex items-center gap-2">
-            <span>شجرة الحسابات</span>
+        <TabsList className={`chart-management-tabs ${isSystemCompany ? 'chart-management-tabs-system' : ''}`}>
+          <TabsTrigger value="tree">
             <Folder className="h-4 w-4" />
+            <span>الشجرة</span>
           </TabsTrigger>
-          <TabsTrigger value="visualization" className="flex items-center gap-2">
-            <span>العرض التفاعلي</span>
+          <TabsTrigger value="visualization">
             <Eye className="h-4 w-4" />
+            <span>العرض التفاعلي</span>
           </TabsTrigger>
-          <TabsTrigger value="templates" className="flex items-center gap-2">
+          <TabsTrigger value="templates">
+            <FileText className="h-4 w-4" />
             <span>القوالب</span>
-            <Folder className="h-4 w-4" />
           </TabsTrigger>
           {isSystemCompany && (
-            <TabsTrigger value="demo-data" className="flex items-center gap-2">
-              <span>بيانات تجريبية</span>
+            <TabsTrigger value="demo-data">
               <Database className="h-4 w-4" />
+              <span>بيانات تجريبية</span>
             </TabsTrigger>
           )}
         </TabsList>
 
 
         {/* Tree Tab */}
-        <TabsContent value="tree" className="space-y-6">
-          <div className="flex justify-between items-center">
-            <div className="flex gap-2">
-              <Button onClick={() => setShowSmartWizard(true)} className="flex items-center gap-2">
-                <span>إضافة حساب جديد</span>
-                <Plus className="h-4 w-4" />
-              </Button>
-              <Button 
-                onClick={() => setShowCSVUpload(true)} 
-                variant="outline" 
-                className="flex items-center gap-2"
-              >
-                <span>استيراد من ملف</span>
-                <Upload className="h-4 w-4" />
-              </Button>
-              {canDeleteAll && (
-                <Button 
-                  onClick={() => setShowDeleteAllDialog(true)} 
-                  variant="destructive" 
-                  className="flex items-center gap-2"
-                >
-                  <span>حذف جميع الحسابات</span>
-                  <Skull className="h-4 w-4" />
-                </Button>
-              )}
-            </div>
-          </div>
-
-
-
+        <TabsContent value="tree" className="mt-4 space-y-4">
           {/* Tree View */}
           <AccountsTreeView
-            accounts={allAccounts || []}
+            accounts={filteredAccounts}
+            searchEnabled={false}
             onViewAccount={(account) => {
               setViewingAccount(account);
               setShowViewDialog(true);
@@ -562,18 +695,18 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
 
 
         {/* Templates Tab */}
-        <TabsContent value="templates">
+        <TabsContent value="templates" className="mt-4">
           <AccountTemplateManager />
         </TabsContent>
 
         {/* Visualization Tab */}
-        <TabsContent value="visualization">
+        <TabsContent value="visualization" className="mt-4">
           <EnhancedAccountsVisualization />
         </TabsContent>
 
         {/* Demo Data Tab - Only for System Company */}
         {isSystemCompany && (
-          <TabsContent value="demo-data">
+          <TabsContent value="demo-data" className="mt-4">
             <DemoDataGenerator />
           </TabsContent>
         )}
@@ -581,10 +714,10 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
       </Tabs>
 
       {/* Smart Wizard Dialog */}
-      <Dialog open={showSmartWizard} onOpenChange={setShowSmartWizard}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto" dir="rtl">
-          <DialogHeader>
-            <DialogTitle className="text-right">انشاء حساب جديد</DialogTitle>
+      <Dialog open={showSmartWizard} onOpenChange={closeSmartWizard}>
+        <DialogContent className="chart-management-dialog max-w-4xl max-h-[90vh] overflow-y-auto" dir="rtl">
+          <DialogHeader className="chart-management-dialog-header">
+            <DialogTitle className="text-right">إنشاء حساب جديد</DialogTitle>
           </DialogHeader>
           <SmartAccountWizardTab />
         </DialogContent>
@@ -592,72 +725,52 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
 
       {/* View Account Dialog */}
       <Dialog open={showViewDialog} onOpenChange={setShowViewDialog}>
-        <DialogContent className="max-w-2xl" dir="rtl">
-          <DialogHeader>
+        <DialogContent className="chart-account-view-dialog max-w-2xl" dir="rtl">
+          <DialogHeader className="chart-account-view-header">
             <DialogTitle className="text-right">معاينة الحساب</DialogTitle>
           </DialogHeader>
           {viewingAccount && <div dir="rtl" className="w-full">
             <Tabs defaultValue="info" className="w-full" dir="rtl">
-              <TabsList className="grid w-full grid-cols-2">
+              <TabsList className="chart-account-view-tabs grid w-full grid-cols-2">
                 <TabsTrigger value="info">معلومات الحساب</TabsTrigger>
                 <TabsTrigger value="history">سجل التغييرات</TabsTrigger>
               </TabsList>
               
-              <TabsContent value="info" className="space-y-4 text-right">
-                <div className="grid grid-cols-2 gap-4">
+              <TabsContent value="info" className="chart-account-view-content text-right">
+                <div className="chart-account-balance-card">
                   <div>
-                    <Label>رمز الحساب</Label>
-                    <div className="p-2 bg-muted rounded">{viewingAccount.account_code}</div>
+                    <p>الرصيد الحالي</p>
+                    <strong>{formatQar(viewingAccount.current_balance || 0)}</strong>
+                    <span>{viewingAccount.balance_type === 'debit' ? 'رصيد مدين' : 'رصيد دائن'}</span>
                   </div>
-                  <div>
-                    <Label>اسم الحساب</Label>
-                    <div className="p-2 bg-muted rounded">{viewingAccount.account_name}</div>
-                  </div>
-                  <div>
-                    <Label>اسم الحساب بالعربية</Label>
-                    <div className="p-2 bg-muted rounded">{viewingAccount.account_name_ar || '-'}</div>
-                  </div>
-                  <div>
-                    <Label>نوع الحساب</Label>
-                    <div className="p-2 bg-muted rounded">{getAccountTypeLabel(viewingAccount.account_type)}</div>
-                  </div>
-                  <div>
-                    <Label>طبيعة الرصيد</Label>
-                    <div className="p-2 bg-muted rounded">{viewingAccount.balance_type === 'debit' ? 'مدين' : 'دائن'}</div>
-                  </div>
-                  <div>
-                    <Label>المستوى</Label>
-                    <div className="p-2 bg-muted rounded">{viewingAccount.account_level}</div>
-                  </div>
-                  <div>
-                    <Label>الحالة</Label>
-                    <div className="p-2 bg-muted rounded">
-                      <Badge variant={viewingAccount.is_active ? 'default' : 'destructive'}>
-                        {viewingAccount.is_active ? 'نشط' : 'غير نشط'}
-                      </Badge>
-                    </div>
-                  </div>
-                  <div>
-                    <Label>حساب إجمالي</Label>
-                    <div className="p-2 bg-muted rounded">{viewingAccount.is_header ? 'نعم' : 'لا'}</div>
-                  </div>
-                  <div className="col-span-2">
-                    <Label>الوصف</Label>
-                    <div className="p-2 bg-muted rounded">{viewingAccount.description || '-'}</div>
-                  </div>
-                  <div>
-                    <Label>الرصيد الحالي</Label>
-                    <div className="p-2 bg-muted rounded">{viewingAccount.current_balance?.toFixed(3) || '0.000'} د.ك</div>
-                  </div>
-                  <div>
-                    <Label>تاريخ الإنشاء</Label>
-                    <div className="p-2 bg-muted rounded">
-                      {new Date(viewingAccount.created_at).toLocaleDateString('en-GB', {
+                  <Badge className={viewingAccount.is_active ? 'chart-badge-active' : 'chart-badge-inactive'}>
+                    {viewingAccount.is_active ? 'نشط' : 'غير نشط'}
+                  </Badge>
+                </div>
+
+                <div className="chart-account-info-grid">
+                  {[
+                    ['رمز الحساب', viewingAccount.account_code],
+                    ['اسم الحساب', viewingAccount.account_name],
+                    ['اسم الحساب بالعربية', viewingAccount.account_name_ar || '-'],
+                    ['نوع الحساب', getAccountTypeLabel(viewingAccount.account_type)],
+                    ['طبيعة الرصيد', viewingAccount.balance_type === 'debit' ? 'مدين' : 'دائن'],
+                    ['المستوى', viewingAccount.account_level],
+                    ['حساب إجمالي', viewingAccount.is_header ? 'نعم' : 'لا'],
+                    ['تاريخ الإنشاء', viewingAccount.created_at ? new Date(viewingAccount.created_at).toLocaleDateString('en-GB', {
                       year: 'numeric',
                       month: '2-digit',
                       day: '2-digit'
-                    })}
+                    }) : '-'],
+                  ].map(([label, value]) => (
+                    <div className="chart-account-info-item" key={label}>
+                      <Label>{label}</Label>
+                      <div>{value}</div>
                     </div>
+                  ))}
+                  <div className="chart-account-info-item chart-account-info-wide">
+                    <Label>الوصف</Label>
+                    <div>{viewingAccount.description || '-'}</div>
                   </div>
                 </div>
               </TabsContent>
@@ -721,5 +834,317 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
           // The data will refresh automatically due to query invalidation
         }}
       />
+      <style>{`
+        .chart-management {
+          color: ${chartManagementTheme.text};
+        }
+        .chart-management-toolbar,
+        .chart-management-dialog,
+        .chart-management-tabs {
+          border-color: ${chartManagementTheme.border} !important;
+        }
+        .chart-management-toolbar {
+          border: 1px solid ${chartManagementTheme.border};
+          border-radius: 12px;
+          background: ${chartManagementTheme.surface};
+          padding: 18px;
+          box-shadow: 0 12px 28px rgba(2, 6, 23, 0.05);
+        }
+        .chart-management-toolbar h2 {
+          color: ${chartManagementTheme.text};
+        }
+        .chart-management-toolbar p {
+          color: ${chartManagementTheme.secondaryText};
+        }
+        .chart-management-primary {
+          background: ${chartManagementTheme.success} !important;
+          color: white !important;
+          border-radius: 10px !important;
+          box-shadow: 0 10px 20px rgba(34, 199, 161, 0.18);
+        }
+        .chart-management-primary:hover {
+          background: #1fb391 !important;
+        }
+        .chart-management-action,
+        .chart-management-select {
+          border-color: ${chartManagementTheme.border} !important;
+          background: white !important;
+          color: ${chartManagementTheme.text} !important;
+          border-radius: 10px !important;
+        }
+        .chart-management-action:hover {
+          background: ${chartManagementTheme.innerSurface} !important;
+        }
+        .chart-management-summary {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(148px, 1fr));
+          gap: 10px;
+          margin-top: 16px;
+        }
+        .chart-management-summary > div {
+          border: 1px solid ${chartManagementTheme.border};
+          border-radius: 10px;
+          background: ${chartManagementTheme.innerSurface};
+          padding: 12px;
+          min-height: 74px;
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+        }
+        .chart-management-summary span,
+        .chart-management-result strong {
+          display: block;
+          color: ${chartManagementTheme.text};
+          font-size: 22px;
+          font-weight: 950;
+          line-height: 1;
+        }
+        .chart-management-summary p,
+        .chart-management-result span,
+        .chart-management-switch span {
+          margin-top: 6px;
+          color: ${chartManagementTheme.secondaryText};
+          font-size: 12px;
+          font-weight: 800;
+        }
+        .chart-management-search {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          border: 1px solid ${chartManagementTheme.border};
+          border-radius: 10px;
+          background: ${chartManagementTheme.innerSurface};
+          min-height: 46px;
+          padding: 0 12px;
+        }
+        .chart-management-controls {
+          display: grid;
+          grid-template-columns: minmax(0, 1fr) 128px;
+          align-items: stretch;
+          gap: 10px;
+          margin-top: 12px;
+        }
+        .chart-management-controls .chart-management-search {
+          grid-column: 1 / -1;
+        }
+        .chart-management-controls > * {
+          min-height: 46px;
+        }
+        .chart-management-controls > .grid {
+          min-height: 46px;
+          align-content: stretch;
+        }
+        .chart-management-controls > .grid > * {
+          height: 46px;
+        }
+        .chart-management-select {
+          height: 46px !important;
+        }
+        .chart-management-search svg {
+          color: ${chartManagementTheme.secondaryText};
+          flex: 0 0 auto;
+        }
+        .chart-management-search input {
+          height: 44px;
+          border: 0 !important;
+          background: transparent !important;
+          box-shadow: none !important;
+          color: ${chartManagementTheme.text};
+        }
+        .chart-management-switch {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+          min-height: 46px;
+          border: 1px solid ${chartManagementTheme.border};
+          border-radius: 10px;
+          background: white;
+          padding: 0 10px;
+        }
+        .chart-management-result {
+          min-width: 118px;
+          min-height: 46px;
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+          border: 1px solid ${chartManagementTheme.border};
+          border-radius: 10px;
+          background: ${chartManagementTheme.innerSurface};
+          padding: 8px 12px;
+          text-align: center;
+        }
+        .chart-management-type-filters {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 8px;
+          margin-top: 14px;
+        }
+        .chart-management-type-filters button {
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          border: 1px solid ${chartManagementTheme.border};
+          border-radius: 999px;
+          background: white;
+          color: ${chartManagementTheme.text};
+          padding: 8px 12px;
+          font-size: 13px;
+          font-weight: 900;
+          transition: 160ms ease;
+          min-height: 38px;
+        }
+        .chart-management-type-filters button small {
+          color: ${chartManagementTheme.secondaryText};
+          font-size: 11px;
+          font-weight: 900;
+        }
+        .chart-management-type-filters button.is-active {
+          border-color: color-mix(in srgb, var(--type-color) 38%, white);
+          background: color-mix(in srgb, var(--type-color) 12%, white);
+          color: var(--type-color);
+        }
+        .chart-management-tabs {
+          display: grid !important;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          height: auto !important;
+          gap: 8px;
+          border: 1px solid ${chartManagementTheme.border};
+          border-radius: 12px;
+          background: ${chartManagementTheme.innerSurface} !important;
+          padding: 8px !important;
+        }
+        .chart-management-tabs-system {
+          grid-template-columns: repeat(4, minmax(0, 1fr));
+        }
+        .chart-management-tabs [role="tab"] {
+          min-height: 42px;
+          gap: 8px;
+          border-radius: 9px !important;
+          color: ${chartManagementTheme.secondaryText} !important;
+          font-weight: 900;
+        }
+        .chart-management-tabs [role="tab"][data-state="active"] {
+          background: ${chartManagementTheme.success} !important;
+          color: white !important;
+          box-shadow: 0 10px 20px rgba(34, 199, 161, 0.16);
+        }
+        .chart-management-dialog {
+          border-radius: 14px !important;
+          background: ${chartManagementTheme.surface} !important;
+        }
+        .chart-management-dialog-header {
+          border-bottom: 1px solid ${chartManagementTheme.border};
+          padding-bottom: 14px;
+        }
+        .chart-account-view-dialog {
+          border: 1px solid ${chartManagementTheme.border} !important;
+          border-radius: 14px !important;
+          background: ${chartManagementTheme.surface} !important;
+          color: ${chartManagementTheme.text};
+        }
+        .chart-account-view-header {
+          border-bottom: 1px solid ${chartManagementTheme.border};
+          padding-bottom: 12px;
+        }
+        .chart-account-view-tabs {
+          height: auto !important;
+          gap: 8px;
+          border: 1px solid ${chartManagementTheme.border};
+          border-radius: 12px;
+          background: ${chartManagementTheme.innerSurface} !important;
+          padding: 6px !important;
+        }
+        .chart-account-view-tabs [role="tab"] {
+          min-height: 38px;
+          border-radius: 9px !important;
+          color: ${chartManagementTheme.secondaryText} !important;
+          font-weight: 900;
+        }
+        .chart-account-view-tabs [role="tab"][data-state="active"] {
+          background: ${chartManagementTheme.success} !important;
+          color: white !important;
+        }
+        .chart-account-view-content {
+          margin-top: 14px;
+          display: grid;
+          gap: 12px;
+        }
+        .chart-account-balance-card {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 12px;
+          border: 1px solid ${chartManagementTheme.border};
+          border-radius: 12px;
+          background: ${chartManagementTheme.innerSurface};
+          padding: 14px;
+        }
+        .chart-account-balance-card p,
+        .chart-account-balance-card span,
+        .chart-account-info-item label {
+          color: ${chartManagementTheme.secondaryText};
+          font-size: 12px;
+          font-weight: 900;
+        }
+        .chart-account-balance-card strong {
+          display: block;
+          color: ${chartManagementTheme.success};
+          font-size: 24px;
+          font-weight: 950;
+          line-height: 1.2;
+          direction: ltr;
+          text-align: right;
+        }
+        .chart-account-info-grid {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 10px;
+        }
+        .chart-account-info-item {
+          border: 1px solid ${chartManagementTheme.border};
+          border-radius: 10px;
+          background: white;
+          padding: 10px 12px;
+          min-height: 64px;
+        }
+        .chart-account-info-item div {
+          margin-top: 5px;
+          color: ${chartManagementTheme.text};
+          font-weight: 900;
+          word-break: break-word;
+        }
+        .chart-account-info-wide {
+          grid-column: 1 / -1;
+        }
+        .chart-badge-active {
+          border: 1px solid color-mix(in srgb, ${chartManagementTheme.success} 35%, white) !important;
+          background: color-mix(in srgb, ${chartManagementTheme.success} 14%, white) !important;
+          color: ${chartManagementTheme.success} !important;
+        }
+        .chart-badge-inactive {
+          border: 1px solid color-mix(in srgb, ${chartManagementTheme.alert} 35%, white) !important;
+          background: color-mix(in srgb, ${chartManagementTheme.alert} 12%, white) !important;
+          color: ${chartManagementTheme.alert} !important;
+        }
+        @media (max-width: 900px) {
+          .chart-management-summary {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+          }
+          .chart-management-tabs,
+          .chart-management-tabs-system {
+            grid-template-columns: 1fr;
+          }
+          .chart-management-controls {
+            grid-template-columns: 1fr;
+          }
+          .chart-management-controls .chart-management-search {
+            grid-column: auto;
+          }
+          .chart-account-info-grid {
+            grid-template-columns: 1fr;
+          }
+        }
+      `}</style>
     </div>;
 };

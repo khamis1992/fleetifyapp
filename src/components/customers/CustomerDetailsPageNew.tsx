@@ -5,7 +5,7 @@
  * @component CustomerDetailsPageNew
  */
 
-import React, { useState, useMemo, useCallback, useRef } from 'react';
+import React, { type CSSProperties, useState, useMemo, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -103,6 +103,21 @@ import {
 import type { CustomerDocument } from './tabs';
 
 import { useFleetifyTranslation } from "@/hooks/useTranslation";
+import { systemColorPattern } from '@/lib/design-system/systemColorPattern';
+
+const customerDetailsTheme = systemColorPattern.colors;
+const customerDetailsSystemStyle = {
+  '--customer-details-text': customerDetailsTheme.text,
+  '--customer-details-surface': customerDetailsTheme.surface,
+  '--customer-details-inner': customerDetailsTheme.innerSurface,
+  '--customer-details-muted': customerDetailsTheme.secondaryText,
+  '--customer-details-border': customerDetailsTheme.border,
+  '--customer-details-info': customerDetailsTheme.info,
+  '--customer-details-alert': customerDetailsTheme.alert,
+  '--customer-details-focus': customerDetailsTheme.focus,
+  '--customer-details-success': customerDetailsTheme.success,
+} as CSSProperties;
+
 // ===== Main Component =====
 const CustomerDetailsPageNew = () => {
   const { t } = useFleetifyTranslation("ui");
@@ -393,7 +408,10 @@ const CustomerDetailsPageNew = () => {
 
   if (customerError || !customer) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
+      <div
+        className="customer-details-system min-h-screen flex items-center justify-center bg-[#F6F8FB] p-4"
+        style={customerDetailsSystemStyle}
+      >
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -414,19 +432,39 @@ const CustomerDetailsPageNew = () => {
   }
 
   const overdueFollowups = scheduledFollowups.filter(f => new Date(f.scheduled_date) <= new Date()).length;
+  const primaryContract = contracts.find((contract: any) => contract.status === 'active') || contracts[0];
+  const latestPayment = payments[0];
+  const latestInvoice = customerInvoices[0];
+  const identityNumber = customer?.national_id || customer?.id_number || customer?.qatar_id || '-';
+  const completionChecks = [
+    Boolean(customerName && customerName !== 'غير محدد'),
+    Boolean(customer?.phone || customer?.mobile_number),
+    Boolean(identityNumber && identityNumber !== '-'),
+    Boolean(customer?.email),
+    documents.length > 0,
+  ];
+  const profileCompletion = Math.round((completionChecks.filter(Boolean).length / completionChecks.length) * 100);
+  const riskState = stats.totalLateAmount > 0
+    ? { label: 'متابعة عاجلة', tone: 'danger', helper: 'توجد مبالغ متأخرة تحتاج إجراء' }
+    : stats.activeContracts > 0
+      ? { label: 'عميل نشط', tone: 'success', helper: 'العلاقة نشطة ولا توجد متأخرات حرجة' }
+      : { label: 'ملف هادئ', tone: 'neutral', helper: 'لا توجد عقود نشطة حالياً' };
 
   return (
     <TooltipProvider>
-    <div className="min-h-screen bg-slate-50">
+    <div
+      className="customer-details-system min-h-screen bg-[#F6F8FB]"
+      style={customerDetailsSystemStyle}
+    >
       {/* ─── Slim Header ─── */}
-        <header className="bg-white dark:bg-slate-900 border-b border-slate-200/60 sticky top-0 z-40">
+        <header className="sticky top-0 z-40 border-b border-[#DDE5EF] bg-white/95 backdrop-blur">
           <div className="max-w-7xl mx-auto px-4 sm:px-6">
             <div className="flex items-center justify-between h-14">
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={handleBack}
-                className="gap-2 text-slate-500 hover:text-slate-900 -mr-2"
+                className="-mr-2 gap-2 text-[#536173] hover:bg-[#EEF5FB] hover:text-[#173A63]"
               >
                 <ArrowRight className="w-4 h-4" />
                 <span className="text-sm font-medium">العملاء</span>
@@ -447,7 +485,7 @@ const CustomerDetailsPageNew = () => {
                             }
                             window.open(`tel:${customer.phone}`, '_self');
                           }}
-                          className="w-9 h-9 p-0 text-sky-600 hover:bg-sky-50 hover:text-sky-700 rounded-xl"
+                          className="h-9 w-9 rounded-lg p-0 text-[#173A63] hover:bg-[#EEF5FB] hover:text-[#173A63]"
                         >
                           <Phone className="w-4 h-4" />
                         </Button>
@@ -472,7 +510,7 @@ const CustomerDetailsPageNew = () => {
                             }
                             window.open(`https://wa.me/${cleanedNumber}`, '_blank');
                           }}
-                          className="w-9 h-9 p-0 text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700 rounded-xl"
+                          className="h-9 w-9 rounded-lg p-0 text-emerald-700 hover:bg-emerald-50 hover:text-emerald-700"
                         >
                           <MessageSquare className="w-4 h-4" />
                         </Button>
@@ -490,7 +528,7 @@ const CustomerDetailsPageNew = () => {
                         if (!customerId) { toast({ title: 'خطأ', description: 'معرف العميل غير متوفر', variant: 'destructive' }); return; }
                         navigate(`/customers/crm?customer=${customerId}`);
                       }}
-                      className="w-9 h-9 p-0 text-violet-600 hover:bg-violet-50 hover:text-violet-700 rounded-xl"
+                      className="h-9 w-9 rounded-lg p-0 text-[#173A63] hover:bg-[#EEF5FB] hover:text-[#173A63]"
                     >
                       <Activity className="w-4 h-4" />
                     </Button>
@@ -506,7 +544,7 @@ const CustomerDetailsPageNew = () => {
                         if (!customerId) { toast({ title: 'خطأ', description: 'معرف العميل غير متوفر', variant: 'destructive' }); return; }
                         navigate(`/contracts?customer=${customerId}`);
                       }}
-                      className="w-9 h-9 p-0 text-indigo-600 hover:bg-indigo-50 hover:text-indigo-700 rounded-xl"
+                      className="h-9 w-9 rounded-lg p-0 text-[#173A63] hover:bg-[#EEF5FB] hover:text-[#173A63]"
                     >
                       <Plus className="w-4 h-4" />
                     </Button>
@@ -514,12 +552,12 @@ const CustomerDetailsPageNew = () => {
                   <TooltipContent><p>إنشاء عقد جديد</p></TooltipContent>
                 </Tooltip>
 
-                <div className="w-px h-6 bg-slate-200 mx-1" />
+                <div className="mx-1 h-6 w-px bg-[#DDE5EF]" />
 
                 <Button
                   size="sm"
                   onClick={handleEdit}
-                  className="h-8 gap-1.5 text-xs bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg px-3"
+                  className="h-9 gap-1.5 rounded-lg bg-[#173A63] px-3 text-xs text-white hover:bg-[#173A63]/90"
                 >
                   <Edit3 className="w-3.5 h-3.5" />
                   تعديل
@@ -527,7 +565,7 @@ const CustomerDetailsPageNew = () => {
 
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="sm" className="w-9 h-9 p-0 text-slate-500 hover:text-slate-900 rounded-xl">
+                    <Button variant="ghost" size="sm" className="h-9 w-9 rounded-lg p-0 text-[#536173] hover:bg-[#EEF5FB] hover:text-[#173A63]">
                       <MoreHorizontal className="w-5 h-5" />
                     </Button>
                   </DropdownMenuTrigger>
@@ -589,22 +627,440 @@ const CustomerDetailsPageNew = () => {
           </div>
         </header>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-5">
+      <main className="w-full max-w-none px-4 py-6 sm:px-6 lg:px-8">
+        <div className="customer-command-grid grid gap-5 xl:grid-cols-[360px_minmax(0,1fr)]">
+          <motion.aside
+            initial={{ opacity: 0, x: 18 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.35 }}
+            className="space-y-4 xl:sticky xl:top-[76px] xl:self-start"
+          >
+            <section className="overflow-hidden rounded-xl border border-[#DDE5EF] bg-white shadow-sm">
+              <div className="bg-[#142033] px-5 py-5 text-white">
+                <div className="flex items-start justify-between gap-4">
+                  <Avatar className="h-16 w-16 rounded-xl border border-white/20 bg-white/10">
+                    <AvatarFallback className="rounded-xl bg-white text-xl font-black text-[#142033]">
+                      {getInitials(customerName)}
+                    </AvatarFallback>
+                  </Avatar>
+                  <Badge
+                    className={cn(
+                      "border-0 px-3 py-1 text-xs font-bold",
+                      riskState.tone === 'danger' ? "bg-rose-500 text-white" : riskState.tone === 'success' ? "bg-emerald-500 text-white" : "bg-white/15 text-white"
+                    )}
+                  >
+                    {riskState.label}
+                  </Badge>
+                </div>
+                <div className="mt-5">
+                  <p className="text-xs font-semibold text-white/55">ملف العميل</p>
+                  <h1 className="mt-1 text-2xl font-black leading-tight tracking-normal text-white">{customerName}</h1>
+                  <p className="mt-2 text-sm leading-6 text-white/70">{riskState.helper}</p>
+                </div>
+              </div>
+
+              <div className="space-y-4 p-5">
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="rounded-lg border border-[#DDE5EF] bg-[#F8FAFC] p-3">
+                    <p className="text-[11px] font-bold text-[#6A7688]">رقم الهوية</p>
+                    <p className="mt-1 truncate text-sm font-black text-[#142033]" dir="ltr">{identityNumber}</p>
+                  </div>
+                  <div className="rounded-lg border border-[#DDE5EF] bg-[#F8FAFC] p-3">
+                    <p className="text-[11px] font-bold text-[#6A7688]">اكتمال الملف</p>
+                    <p className="mt-1 text-sm font-black text-[#142033]">{profileCompletion}%</p>
+                  </div>
+                </div>
+
+                <div className="h-2 overflow-hidden rounded-full bg-[#E7EDF4]">
+                  <div className="h-full rounded-full bg-[#173A63]" style={{ width: `${profileCompletion}%` }} />
+                </div>
+
+                <div className="space-y-2">
+                  <a href={customer?.phone ? `tel:${customer.phone}` : undefined} className="flex items-center justify-between rounded-lg border border-[#DDE5EF] bg-white px-3 py-2.5 text-sm transition-colors hover:border-[#173A63] hover:bg-[#F8FAFC]">
+                    <span className="flex items-center gap-2 font-bold text-[#142033]"><Phone className="h-4 w-4 text-[#173A63]" /> الهاتف</span>
+                    <span className="font-semibold text-[#536173]" dir="ltr">{customer?.phone || customer?.mobile_number || '-'}</span>
+                  </a>
+                  <div className="flex items-center justify-between rounded-lg border border-[#DDE5EF] bg-white px-3 py-2.5 text-sm">
+                    <span className="flex items-center gap-2 font-bold text-[#142033]"><Mail className="h-4 w-4 text-[#173A63]" /> البريد</span>
+                    <span className="max-w-[160px] truncate font-semibold text-[#536173]">{customer?.email || '-'}</span>
+                  </div>
+                  <div className="flex items-center justify-between rounded-lg border border-[#DDE5EF] bg-white px-3 py-2.5 text-sm">
+                    <span className="flex items-center gap-2 font-bold text-[#142033]"><Cake className="h-4 w-4 text-[#173A63]" /> الميلاد</span>
+                    <span className="font-semibold text-[#536173]">{customer?.date_of_birth || '-'}</span>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <Button className="h-10 gap-2 bg-[#173A63] text-white hover:bg-[#142033]" onClick={() => setIsPaymentDialogOpen(true)}>
+                    <CreditCard className="h-4 w-4" />
+                    تسجيل دفعة
+                  </Button>
+                  <Button variant="outline" className="h-10 gap-2 border-[#DDE5EF] text-[#173A63] hover:bg-[#EEF5FB]" onClick={() => navigate(`/customers/crm?customer=${customerId}`)}>
+                    <Activity className="h-4 w-4" />
+                    CRM
+                  </Button>
+                  <Button variant="outline" className="h-10 gap-2 border-[#DDE5EF] text-[#536173] hover:bg-[#F8FAFC]" onClick={() => setActiveTab('notes')}>
+                    <MessageSquare className="h-4 w-4" />
+                    ملاحظة
+                  </Button>
+                  <Button variant="outline" className="h-10 gap-2 border-[#DDE5EF] text-[#536173] hover:bg-[#F8FAFC]" onClick={() => fileInputRef.current?.click()}>
+                    <Upload className="h-4 w-4" />
+                    مستند
+                  </Button>
+                </div>
+              </div>
+            </section>
+
+            <section className="rounded-xl border border-[#DDE5EF] bg-white p-4 shadow-sm">
+              <div className="mb-3 flex items-center justify-between">
+                <h2 className="text-sm font-black text-[#142033]">مختصر العلاقة</h2>
+                <Badge className="border border-[#DDE5EF] bg-[#F8FAFC] text-[#536173]">{contracts.length} عقد</Badge>
+              </div>
+              <div className="space-y-3">
+                <button type="button" onClick={() => primaryContract && navigate(`/contracts/${primaryContract.contract_number || primaryContract.id}`)} className="w-full rounded-lg border border-[#DDE5EF] bg-[#F8FAFC] p-3 text-right transition-colors hover:border-[#173A63]">
+                  <p className="text-[11px] font-bold text-[#6A7688]">العقد الحالي</p>
+                  <p className="mt-1 truncate text-sm font-black text-[#142033]">{primaryContract?.contract_number || primaryContract?.id || 'لا يوجد عقد'}</p>
+                </button>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="rounded-lg bg-[#F8FAFC] p-3">
+                    <p className="text-[11px] font-bold text-[#6A7688]">آخر فاتورة</p>
+                    <p className="mt-1 truncate text-sm font-black text-[#142033]">{latestInvoice?.invoice_number || '-'}</p>
+                  </div>
+                  <div className="rounded-lg bg-[#F8FAFC] p-3">
+                    <p className="text-[11px] font-bold text-[#6A7688]">آخر دفعة</p>
+                    <p className="mt-1 text-sm font-black text-[#142033]">{latestPayment ? formatCurrency(latestPayment.amount || 0) : '-'}</p>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <MissingDataWarnings customer={customer} />
+          </motion.aside>
+
+          <div className="min-w-0 space-y-5">
+            <motion.section
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.35 }}
+              className="overflow-hidden rounded-xl border border-[#DDE5EF] bg-white shadow-sm"
+            >
+              <div className="grid gap-0 lg:grid-cols-[1.1fr_0.9fr]">
+                <div className="border-b border-[#DDE5EF] p-5 lg:border-b-0 lg:border-l">
+                  <div className="mb-4 flex items-center justify-between gap-3">
+                    <div>
+                      <p className="text-xs font-bold text-[#6A7688]">لوحة القرار المالي</p>
+                      <h2 className="mt-1 text-xl font-black text-[#142033]">ما الذي يحتاج انتباهك الآن؟</h2>
+                    </div>
+                    <Button variant="outline" className="h-9 gap-2 border-[#DDE5EF] text-[#173A63] hover:bg-[#EEF5FB]" onClick={() => setActiveTab('activity')}>
+                      <Activity className="h-4 w-4" />
+                      النشاط
+                    </Button>
+                  </div>
+                  <div className="grid gap-3 sm:grid-cols-3">
+                    <div className="rounded-lg border border-[#DDE5EF] bg-[#F8FAFC] p-4">
+                      <p className="text-xs font-bold text-[#6A7688]">المستحق</p>
+                      <p className="mt-2 text-2xl font-black text-[#142033]">{formatCurrency(stats.outstandingAmount)}</p>
+                    </div>
+                    <div className="rounded-lg border border-rose-200 bg-rose-50 p-4">
+                      <p className="text-xs font-bold text-rose-700">المتأخر</p>
+                      <p className="mt-2 text-2xl font-black text-rose-700">{formatCurrency(stats.totalLateAmount)}</p>
+                    </div>
+                    <div className="rounded-lg border border-[#DDE5EF] bg-[#F8FAFC] p-4">
+                      <p className="text-xs font-bold text-[#6A7688]">المدفوع</p>
+                      <p className="mt-2 text-2xl font-black text-[#142033]">{formatCurrency(stats.totalPayments)}</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="p-5">
+                  <div className="mb-4 flex items-center justify-between">
+                    <h2 className="text-sm font-black text-[#142033]">إجراءات مقترحة</h2>
+                    {overdueFollowups > 0 && <Badge className="bg-rose-500 text-white">{overdueFollowups} متابعة متأخرة</Badge>}
+                  </div>
+                  <div className="space-y-2">
+                    <Button className="h-11 w-full justify-between bg-[#173A63] px-4 text-white hover:bg-[#142033]" onClick={() => setIsPaymentDialogOpen(true)}>
+                      <span className="flex items-center gap-2"><CreditCard className="h-4 w-4" /> تسجيل دفعة لهذا العميل</span>
+                      <ArrowRight className="h-4 w-4 rotate-180" />
+                    </Button>
+                    <Button variant="outline" className="h-11 w-full justify-between border-[#DDE5EF] px-4 text-[#142033] hover:bg-[#F8FAFC]" onClick={() => setActiveTab('invoices')}>
+                      <span className="flex items-center gap-2"><Wallet className="h-4 w-4 text-[#173A63]" /> مراجعة الفواتير والمخالفات</span>
+                      <ArrowRight className="h-4 w-4 rotate-180" />
+                    </Button>
+                    <Button variant="outline" className="h-11 w-full justify-between border-[#DDE5EF] px-4 text-[#142033] hover:bg-[#F8FAFC]" onClick={() => navigate(`/customers/crm?customer=${customerId}`)}>
+                      <span className="flex items-center gap-2"><Phone className="h-4 w-4 text-[#173A63]" /> فتح سجل الاتصال والمتابعة</span>
+                      <ArrowRight className="h-4 w-4 rotate-180" />
+                    </Button>
+                    {stats.totalLateAmount > 0 && (
+                      <Button variant="outline" className="h-11 w-full justify-between border-rose-200 bg-rose-50 px-4 text-rose-700 hover:bg-rose-100" onClick={() => {
+                        if (primaryContract) navigate(`/legal/lawsuit/prepare/${primaryContract.id}`);
+                        else toast({ title: 'لا يوجد عقد نشط', description: 'يجب توفر عقد للبدء في الإجراء القانوني', variant: 'destructive' });
+                      }}>
+                        <span className="flex items-center gap-2"><Gavel className="h-4 w-4" /> بدء إجراء قانوني</span>
+                        <ArrowRight className="h-4 w-4 rotate-180" />
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </motion.section>
+
+            <motion.section
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.08 }}
+              className="grid gap-3 md:grid-cols-2 xl:grid-cols-4"
+            >
+              {[
+                { label: 'العقود النشطة', value: stats.activeContracts, icon: FileText, action: () => setActiveTab('contracts') },
+                { label: 'الفواتير', value: customerInvoices.length, icon: Wallet, action: () => setActiveTab('invoices') },
+                { label: 'المخالفات', value: trafficViolations.length, icon: AlertTriangle, action: () => setActiveTab('violations'), danger: trafficViolations.length > 0 },
+                { label: 'المرفقات', value: documents.length, icon: Folder, action: () => fileInputRef.current?.click() },
+              ].map((item) => (
+                <button
+                  key={item.label}
+                  type="button"
+                  onClick={item.action}
+                  className={cn(
+                    "group rounded-xl border bg-white p-4 text-right shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md",
+                    item.danger ? "border-rose-200 hover:border-rose-300" : "border-[#DDE5EF] hover:border-[#173A63]"
+                  )}
+                >
+                  <div className="mb-4 flex items-center justify-between">
+                    <div className={cn("flex h-10 w-10 items-center justify-center rounded-lg", item.danger ? "bg-rose-50 text-rose-600" : "bg-[#EEF5FB] text-[#173A63]")}>
+                      <item.icon className="h-5 w-5" />
+                    </div>
+                    <ArrowRight className="h-4 w-4 rotate-180 text-[#9AA6B6] transition-transform group-hover:-translate-x-1" />
+                  </div>
+                  <p className="text-2xl font-black text-[#142033]">{item.value}</p>
+                  <p className="mt-1 text-xs font-bold text-[#6A7688]">{item.label}</p>
+                </button>
+              ))}
+            </motion.section>
+
+            <motion.section
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.14 }}
+              className="overflow-hidden rounded-xl border border-[#DDE5EF] bg-white shadow-sm"
+            >
+              <Tabs value={activeTab} onValueChange={setActiveTab} className="grid min-h-[620px] lg:grid-cols-[230px_minmax(0,1fr)]">
+                <div className="border-b border-[#DDE5EF] bg-[#F8FAFC] p-3 lg:border-b-0 lg:border-l">
+                  <div className="mb-3 px-2">
+                    <p className="text-xs font-bold text-[#6A7688]">ملف العميل الكامل</p>
+                    <p className="mt-1 text-sm font-black text-[#142033]">اختر القسم المطلوب</p>
+                  </div>
+                  <TabsList className="flex h-auto w-full flex-row gap-1 overflow-x-auto bg-transparent p-0 lg:flex-col lg:overflow-visible">
+                    {[
+                      { value: 'info', label: 'البيانات', icon: User },
+                      { value: 'phones', label: 'الأرقام', icon: Phone },
+                      { value: 'contracts', label: 'العقود', icon: FileText },
+                      { value: 'vehicles', label: 'المركبات', icon: Car },
+                      { value: 'invoices', label: 'الفواتير', icon: Wallet },
+                      { value: 'payments', label: 'المدفوعات', icon: CreditCard },
+                      { value: 'violations', label: 'المخالفات', icon: AlertTriangle, badge: trafficViolations.length > 0 ? trafficViolations.length : null },
+                      { value: 'notes', label: 'المتابعة', icon: MessageSquare },
+                      { value: 'activity', label: 'النشاط', icon: Activity },
+                    ].map((tab) => (
+                      <TabsTrigger
+                        key={tab.value}
+                        value={tab.value}
+                        className={cn(
+                          "h-10 min-w-fit justify-start gap-2 rounded-lg border border-transparent px-3 text-xs font-black transition-colors lg:w-full",
+                          "data-[state=active]:border-[#173A63] data-[state=active]:bg-[#173A63] data-[state=active]:text-white",
+                          "data-[state=inactive]:bg-white data-[state=inactive]:text-[#536173] hover:text-[#142033]"
+                        )}
+                      >
+                        <tab.icon className="h-4 w-4" />
+                        {tab.label}
+                        {'badge' in tab && tab.badge && (
+                          <Badge className="mr-auto h-5 min-w-5 border-0 bg-rose-100 px-1.5 text-[10px] font-black text-rose-700">
+                            {tab.badge}
+                          </Badge>
+                        )}
+                      </TabsTrigger>
+                    ))}
+                  </TabsList>
+                </div>
+
+                <div className="min-w-0 p-5">
+                  <TabsContent value="info" className="mt-0">
+                    {loadingCustomer ? (
+                      <div className="flex items-center justify-center h-32">
+                        <RefreshCw className="w-6 h-6 animate-spin text-slate-300" />
+                      </div>
+                    ) : (
+                      <PersonalInfoTab customer={customer} />
+                    )}
+                  </TabsContent>
+                  <TabsContent value="phones" className="mt-0">
+                    {loadingCustomer ? (
+                      <div className="flex items-center justify-center h-32">
+                        <RefreshCw className="w-6 h-6 animate-spin text-slate-300" />
+                      </div>
+                    ) : (
+                      <PhoneNumbersTab customer={customer} />
+                    )}
+                  </TabsContent>
+                  <TabsContent value="contracts" className="mt-0">
+                    {loadingContracts ? (
+                      <div className="flex items-center justify-center h-32">
+                        <RefreshCw className="w-6 h-6 animate-spin text-slate-300" />
+                      </div>
+                    ) : (
+                      <ContractsTab contracts={contracts} navigate={navigate} customerId={customerId || ''} />
+                    )}
+                  </TabsContent>
+                  <TabsContent value="vehicles" className="mt-0">
+                    {loadingContracts ? (
+                      <div className="flex items-center justify-center h-32">
+                        <RefreshCw className="w-6 h-6 animate-spin text-slate-300" />
+                      </div>
+                    ) : (
+                      <VehiclesTab contracts={contracts} navigate={navigate} />
+                    )}
+                  </TabsContent>
+                  <TabsContent value="invoices" className="mt-0">
+                    {loadingInvoices ? (
+                      <div className="flex items-center justify-center h-32">
+                        <RefreshCw className="w-6 h-6 animate-spin text-slate-300" />
+                      </div>
+                    ) : (
+                      <InvoicesTab
+                        invoices={customerInvoices}
+                        onInvoiceClick={(invoice) => {
+                          setSelectedInvoice(invoice);
+                          setIsInvoiceDialogOpen(true);
+                        }}
+                        violations={trafficViolations}
+                        customerName={customerName}
+                        customerPhone={customer?.phone || customer?.mobile_number}
+                        customerIdNumber={customer?.id_number || customer?.qatar_id}
+                      />
+                    )}
+                  </TabsContent>
+                  <TabsContent value="payments" className="mt-0">
+                    {loadingPayments ? (
+                      <div className="flex items-center justify-center h-32">
+                        <RefreshCw className="w-6 h-6 animate-spin text-slate-300" />
+                      </div>
+                    ) : (
+                      <PaymentsTab 
+                        payments={payments} 
+                        navigate={navigate} 
+                        onAddPayment={() => setIsPaymentDialogOpen(true)} 
+                        customerName={customerName}
+                        customerPhone={customer?.phone || customer?.mobile_number}
+                        customerIdNumber={customer?.id_number || customer?.qatar_id}
+                      />
+                    )}
+                  </TabsContent>
+                  <TabsContent value="violations" className="mt-0">
+                    {loadingViolations ? (
+                      <div className="flex items-center justify-center h-32">
+                        <RefreshCw className="w-6 h-6 animate-spin text-slate-300" />
+                      </div>
+                    ) : (
+                      <ViolationsTab violations={trafficViolations} navigate={navigate} isLoading={loadingViolations} />
+                    )}
+                  </TabsContent>
+                  <TabsContent value="activity" className="mt-0">
+                    <ActivityTab 
+                      customerId={customerId || ''} 
+                      companyId={companyId || ''} 
+                      contracts={contracts}
+                      payments={payments}
+                      violations={trafficViolations}
+                    />
+                  </TabsContent>
+                  <TabsContent value="notes" className="mt-0">
+                    {loadingCustomer ? (
+                      <div className="flex items-center justify-center h-32">
+                        <RefreshCw className="w-6 h-6 animate-spin text-slate-300" />
+                      </div>
+                    ) : (
+                      <NotesTab 
+                        customerId={customerId || ''} 
+                        customerPhone={customer?.phone || customer?.mobile_number}
+                        companyId={companyId || ''}
+                      />
+                    )}
+                  </TabsContent>
+                </div>
+              </Tabs>
+            </motion.section>
+
+            <motion.section
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+              className="rounded-xl border border-[#DDE5EF] bg-white p-5 shadow-sm"
+            >
+              <div className="mb-5 flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
+                <div>
+                  <h3 className="text-base font-black text-[#142033]">مستندات العميل</h3>
+                  <p className="mt-1 text-xs font-semibold text-[#6A7688]">{documents.length} مستند محفوظ في ملف العميل</p>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-9 gap-2 border-[#DDE5EF] text-[#173A63] hover:bg-[#EEF5FB]"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isUploading}
+                >
+                  {isUploading ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                  {isUploading ? 'جاري الرفع...' : 'رفع مستند'}
+                </Button>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  className="hidden"
+                  onChange={handleFileSelect}
+                  accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                />
+              </div>
+
+              {documents.length > 0 ? (
+                <div className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-4">
+                  {documents.map((doc: CustomerDocument, index: number) => (
+                    <DocumentCard key={doc.id} doc={doc} index={index} />
+                  ))}
+                </div>
+              ) : (
+                <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                  {['صورة العميل', 'رخصة القيادة', 'الهوية الوطنية', 'عقد الإيجار'].map((placeholder, index) => (
+                    <button
+                      type="button"
+                      key={index}
+                      className="aspect-[4/3] rounded-xl border border-dashed border-[#B8C6D8] bg-[#F8FAFC] text-[#6A7688] transition-colors hover:border-[#173A63] hover:bg-[#EEF5FB] hover:text-[#173A63]"
+                      onClick={() => fileInputRef.current?.click()}
+                    >
+                      <FileImage className="mx-auto mb-2 h-7 w-7" />
+                      <p className="text-xs font-black">{placeholder}</p>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </motion.section>
+          </div>
+        </div>
+
+        {false && (
+          <>
         {/* ─── Hero Profile Card ─── */}
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4 }}
-          className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden"
+          className="overflow-hidden rounded-xl border border-[#DDE5EF] bg-white shadow-sm"
         >
           <div className="p-6">
             <div className="flex flex-col lg:flex-row lg:items-center gap-6">
               {/* Avatar & Identity */}
               <div className="flex items-center gap-5 min-w-0">
                 <div className="relative flex-shrink-0">
-                  <div className="w-[76px] h-[76px] rounded-2xl bg-gradient-to-br from-indigo-500 via-violet-500 to-fuchsia-500 p-[3px] shadow-lg shadow-indigo-500/20">
+                  <div className="h-[76px] w-[76px] rounded-xl bg-[#173A63] p-[3px] shadow-sm">
                     <Avatar className="w-full h-full rounded-[13px] border-2 border-white">
-                      <AvatarFallback className="bg-slate-900 text-white text-xl font-bold rounded-[13px]">
+                      <AvatarFallback className="rounded-lg bg-[#142033] text-xl font-bold text-white">
                         {getInitials(customerName)}
                       </AvatarFallback>
                     </Avatar>
@@ -616,7 +1072,7 @@ const CustomerDetailsPageNew = () => {
 
                 <div className="min-w-0">
                   <div className="flex items-center gap-3 mb-1">
-                    <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight truncate">{customerName}</h1>
+                    <h1 className="truncate text-2xl font-black tracking-tight text-[#142033] sm:text-3xl">{customerName}</h1>
                     {customer.is_blacklisted && (
                       <Badge className="bg-amber-50 text-amber-700 border border-amber-200 gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold flex-shrink-0">
                         <Star className="w-3 h-3 fill-amber-400 text-amber-400" />{t("vip")}</Badge>
@@ -628,9 +1084,9 @@ const CustomerDetailsPageNew = () => {
 
               {/* Info Pills */}
               <div className="flex-1 flex flex-wrap items-center gap-3 lg:justify-end">
-                <div className="flex items-center gap-3 px-4 py-2.5 bg-rose-50/70 rounded-xl border border-rose-100">
-                  <div className="w-9 h-9 rounded-lg bg-rose-100 flex items-center justify-center flex-shrink-0">
-                    <Cake className="w-[18px] h-[18px] text-rose-500" />
+                <div className="flex items-center gap-3 rounded-xl border border-[#DDE5EF] bg-[#FCFDFE] px-4 py-2.5">
+                  <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-[#EEF5FB]">
+                    <Cake className="h-[18px] w-[18px] text-[#173A63]" />
                   </div>
                   <div>
                     <p className="text-[11px] font-medium text-rose-500/80">تاريخ الميلاد</p>
@@ -638,9 +1094,9 @@ const CustomerDetailsPageNew = () => {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-3 px-4 py-2.5 bg-sky-50/70 rounded-xl border border-sky-100">
-                  <div className="w-9 h-9 rounded-lg bg-sky-100 flex items-center justify-center flex-shrink-0">
-                    <Phone className="w-[18px] h-[18px] text-sky-500" />
+                <div className="flex items-center gap-3 rounded-xl border border-[#DDE5EF] bg-[#FCFDFE] px-4 py-2.5">
+                  <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-[#EEF5FB]">
+                    <Phone className="h-[18px] w-[18px] text-[#173A63]" />
                   </div>
                   <div>
                     <p className="text-[11px] font-medium text-sky-500/80">رقم الهاتف</p>
@@ -648,9 +1104,9 @@ const CustomerDetailsPageNew = () => {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-3 px-4 py-2.5 bg-violet-50/70 rounded-xl border border-violet-100">
-                  <div className="w-9 h-9 rounded-lg bg-violet-100 flex items-center justify-center flex-shrink-0">
-                    <Mail className="w-[18px] h-[18px] text-violet-500" />
+                <div className="flex items-center gap-3 rounded-xl border border-[#DDE5EF] bg-[#FCFDFE] px-4 py-2.5">
+                  <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-[#EEF5FB]">
+                    <Mail className="h-[18px] w-[18px] text-[#173A63]" />
                   </div>
                   <div>
                     <p className="text-[11px] font-medium text-violet-500/80">البريد الإلكتروني</p>
@@ -671,15 +1127,15 @@ const CustomerDetailsPageNew = () => {
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.08 }}
-            className="relative bg-white rounded-xl p-4 border border-slate-200 hover:shadow-md hover:border-slate-300 transition-all group overflow-hidden"
+            className="group relative overflow-hidden rounded-xl border border-[#DDE5EF] bg-white p-4 shadow-sm transition-colors hover:border-[#173A63]"
           >
-            <div className="absolute right-0 top-3 bottom-3 w-1 rounded-full bg-sky-500" />
+            <div className="absolute bottom-3 right-0 top-3 w-1 rounded-full bg-[#173A63]" />
             <div className="flex items-center justify-between mb-3">
-              <div className="w-10 h-10 rounded-xl bg-sky-50 flex items-center justify-center group-hover:scale-110 transition-transform">
-                <FileText className="w-5 h-5 text-sky-600" />
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#EEF5FB] text-[#173A63]">
+                <FileText className="h-5 w-5" />
               </div>
             </div>
-            <p className="text-2xl font-bold text-slate-900">{stats.activeContracts}</p>
+            <p className="text-2xl font-black text-[#142033]">{stats.activeContracts}</p>
             <p className="text-xs font-medium text-slate-500 mt-0.5">العقود النشطة</p>
           </motion.div>
 
@@ -688,15 +1144,15 @@ const CustomerDetailsPageNew = () => {
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.14 }}
-            className="relative bg-white rounded-xl p-4 border border-slate-200 hover:shadow-md hover:border-slate-300 transition-all group overflow-hidden"
+            className="group relative overflow-hidden rounded-xl border border-[#DDE5EF] bg-white p-4 shadow-sm transition-colors hover:border-[#173A63]"
           >
-            <div className="absolute right-0 top-3 bottom-3 w-1 rounded-full bg-amber-500" />
+            <div className="absolute bottom-3 right-0 top-3 w-1 rounded-full bg-amber-500" />
             <div className="flex items-center justify-between mb-3">
-              <div className="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center group-hover:scale-110 transition-transform">
-                <Wallet className="w-5 h-5 text-amber-600" />
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-50 text-amber-700">
+                <Wallet className="h-5 w-5" />
               </div>
             </div>
-            <p className="text-2xl font-bold text-slate-900">
+            <p className="text-2xl font-black text-[#142033]">
               {stats.outstandingAmount.toLocaleString()}
               <span className="text-sm font-semibold text-slate-400 mr-1">ر.ق</span>
             </p>
@@ -708,7 +1164,7 @@ const CustomerDetailsPageNew = () => {
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
-            className="relative bg-white rounded-xl p-4 border border-slate-200 hover:shadow-md hover:border-slate-300 transition-all group overflow-hidden"
+            className="group relative overflow-hidden rounded-xl border border-[#DDE5EF] bg-white p-4 shadow-sm transition-colors hover:border-red-300"
           >
             <div className="absolute right-0 top-3 bottom-3 w-1 rounded-full bg-rose-500" />
             <div className="flex items-center justify-between mb-3">
@@ -759,15 +1215,15 @@ const CustomerDetailsPageNew = () => {
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.26 }}
-            className="relative bg-white rounded-xl p-4 border border-slate-200 hover:shadow-md hover:border-slate-300 transition-all group overflow-hidden"
+            className="group relative overflow-hidden rounded-xl border border-[#DDE5EF] bg-white p-4 shadow-sm transition-colors hover:border-[#173A63]"
           >
-            <div className="absolute right-0 top-3 bottom-3 w-1 rounded-full bg-indigo-500" />
+            <div className="absolute bottom-3 right-0 top-3 w-1 rounded-full bg-[#173A63]" />
             <div className="flex items-center justify-between mb-3">
-              <div className="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center group-hover:scale-110 transition-transform">
-                <CreditCard className="w-5 h-5 text-indigo-600" />
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#EEF5FB] text-[#173A63]">
+                <CreditCard className="h-5 w-5" />
               </div>
             </div>
-            <p className="text-2xl font-bold text-slate-900">
+            <p className="text-2xl font-black text-[#142033]">
               {stats.totalPayments.toLocaleString()}
               <span className="text-sm font-semibold text-slate-400 mr-1">ر.ق</span>
             </p>
@@ -780,11 +1236,11 @@ const CustomerDetailsPageNew = () => {
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
-          className="bg-white rounded-xl px-5 py-3.5 border border-slate-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3"
+          className="flex flex-col items-start justify-between gap-3 rounded-xl border border-[#DDE5EF] bg-white px-5 py-3.5 shadow-sm sm:flex-row sm:items-center"
         >
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center shadow-sm shadow-indigo-500/20 flex-shrink-0">
-              <MessageSquare className="w-[18px] h-[18px] text-white" />
+            <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-[#173A63] text-white shadow-sm">
+              <MessageSquare className="h-[18px] w-[18px]" />
             </div>
             <div>
               <p className="text-sm font-semibold text-slate-800">مركز إدارة العلاقات</p>
@@ -802,7 +1258,7 @@ const CustomerDetailsPageNew = () => {
                 <Button
                   variant="outline"
                   size="sm"
-                  className="h-8 gap-1.5 text-xs border-slate-200 text-slate-600 hover:bg-sky-50 hover:text-sky-700 hover:border-sky-200 rounded-lg"
+                  className="h-8 gap-1.5 rounded-lg border-[#D8E1EC] text-xs text-[#536173] hover:border-[#173A63] hover:bg-[#EEF5FB] hover:text-[#173A63]"
                   onClick={() => window.open(`tel:${customer.phone}`)}
                 >
                   <Phone className="w-3.5 h-3.5" />
@@ -811,7 +1267,7 @@ const CustomerDetailsPageNew = () => {
                 <Button
                   variant="outline"
                   size="sm"
-                  className="h-8 gap-1.5 text-xs border-slate-200 text-slate-600 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-200 rounded-lg"
+                  className="h-8 gap-1.5 rounded-lg border-[#D8E1EC] text-xs text-[#536173] hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700"
                   onClick={() => window.open(`https://wa.me/${customer.phone?.replace(/[^0-9]/g, '')}`)}
                 >
                   <MessageSquare className="w-3.5 h-3.5" />
@@ -821,7 +1277,7 @@ const CustomerDetailsPageNew = () => {
             )}
             <Button
               size="sm"
-              className="h-8 gap-1.5 text-xs bg-slate-900 hover:bg-slate-800 text-white rounded-lg"
+              className="h-8 gap-1.5 rounded-lg bg-[#173A63] text-xs text-white hover:bg-[#173A63]/90"
               onClick={() => setActiveTab('notes')}
             >
               <Plus className="w-3.5 h-3.5" />
@@ -830,7 +1286,7 @@ const CustomerDetailsPageNew = () => {
             <Button
               variant="outline"
               size="sm"
-              className="h-8 gap-1.5 text-xs border-slate-200 text-slate-600 hover:bg-amber-50 hover:text-amber-700 hover:border-amber-200 rounded-lg"
+              className="h-8 gap-1.5 rounded-lg border-[#D8E1EC] text-xs text-[#536173] hover:border-amber-200 hover:bg-amber-50 hover:text-amber-700"
               onClick={() => setActiveTab('notes')}
             >
               <Bell className="w-3.5 h-3.5" />
@@ -844,11 +1300,11 @@ const CustomerDetailsPageNew = () => {
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.25 }}
-          className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm"
+          className="overflow-hidden rounded-xl border border-[#DDE5EF] bg-white shadow-sm"
         >
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <div className="px-4 pt-4 pb-0">
-              <TabsList className="w-full justify-start bg-slate-100/80 border border-slate-200 dark:border-slate-800 rounded-xl h-auto p-1 gap-0.5 overflow-x-auto flex-nowrap">
+              <TabsList className="flex h-auto w-full flex-nowrap justify-start gap-1 overflow-x-auto rounded-xl border border-[#DDE5EF] bg-[#F8FAFC] p-1">
                 {[
                   { value: 'info', label: 'معلومات العميل', icon: User },
                   { value: 'phones', label: 'أرقام الهاتف', icon: Phone },
@@ -864,9 +1320,9 @@ const CustomerDetailsPageNew = () => {
                     key={tab.value}
                     value={tab.value}
                     className={cn(
-                      "px-3.5 py-2 text-xs font-medium rounded-lg transition-all gap-1.5 whitespace-nowrap",
-                      "data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-sm data-[state=active]:border data-[state=active]:border-slate-200 dark:border-slate-800",
-                      "data-[state=inactive]:text-slate-500 hover:text-slate-700"
+                      "whitespace-nowrap rounded-lg px-3.5 py-2 text-xs font-bold transition-colors gap-1.5",
+                      "data-[state=active]:border data-[state=active]:border-[#173A63] data-[state=active]:bg-[#173A63] data-[state=active]:text-white data-[state=active]:shadow-sm",
+                      "data-[state=inactive]:text-[#6A7688] hover:text-[#142033]"
                     )}
                   >
                     <tab.icon className="w-3.5 h-3.5" />
@@ -1054,6 +1510,8 @@ const CustomerDetailsPageNew = () => {
             </div>
           )}
         </motion.div>
+          </>
+        )}
       </main>
 
       {/* ─── Edit Dialog ─── */}
@@ -1172,6 +1630,306 @@ const CustomerDetailsPageNew = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <style>{`
+        .customer-details-system {
+          color: var(--customer-details-text);
+          font-size: 16px;
+          background:
+            linear-gradient(180deg, rgba(246, 248, 251, 0.72), var(--customer-details-inner) 260px),
+            var(--customer-details-inner) !important;
+        }
+
+        .customer-details-system .text-\\[11px\\] {
+          font-size: 13.5px !important;
+          line-height: 1.6 !important;
+        }
+
+        .customer-details-system .text-xs {
+          font-size: 14px !important;
+          line-height: 1.65 !important;
+        }
+
+        .customer-details-system .text-sm {
+          font-size: 15.5px !important;
+          line-height: 1.7 !important;
+        }
+
+        .customer-details-system button,
+        .customer-details-system input,
+        .customer-details-system textarea,
+        .customer-details-system [role="combobox"] {
+          font-size: 15px !important;
+        }
+
+        .customer-details-system header {
+          background: color-mix(in srgb, var(--customer-details-surface) 94%, transparent) !important;
+          border-color: var(--customer-details-border) !important;
+          backdrop-filter: blur(14px);
+        }
+
+        .customer-details-system main {
+          max-width: none !important;
+        }
+
+        .customer-details-system .bg-white,
+        .customer-details-system [class*="bg-card"] {
+          background-color: var(--customer-details-surface) !important;
+        }
+
+        .customer-details-system .bg-slate-50,
+        .customer-details-system .bg-slate-100,
+        .customer-details-system .bg-gray-50,
+        .customer-details-system .bg-neutral-50 {
+          background-color: var(--customer-details-inner) !important;
+        }
+
+        .customer-details-system .rounded-3xl,
+        .customer-details-system .rounded-2xl,
+        .customer-details-system .rounded-xl,
+        .customer-details-system .rounded-lg,
+        .customer-details-system .rounded-md {
+          border-radius: 8px !important;
+        }
+
+        .customer-details-system .shadow-xl,
+        .customer-details-system .shadow-lg,
+        .customer-details-system .shadow-md,
+        .customer-details-system .shadow-sm {
+          box-shadow: 0 10px 28px rgba(2, 6, 23, 0.07) !important;
+        }
+
+        .customer-details-system .border,
+        .customer-details-system .border-slate-100,
+        .customer-details-system .border-slate-200,
+        .customer-details-system .border-slate-300,
+        .customer-details-system .border-gray-200 {
+          border-color: var(--customer-details-border) !important;
+        }
+
+        .customer-details-system .text-slate-900,
+        .customer-details-system .text-gray-900,
+        .customer-details-system .text-neutral-900,
+        .customer-details-system .text-foreground {
+          color: var(--customer-details-text) !important;
+        }
+
+        .customer-details-system .text-slate-800,
+        .customer-details-system .text-slate-700,
+        .customer-details-system .text-slate-600,
+        .customer-details-system .text-slate-500,
+        .customer-details-system .text-gray-600,
+        .customer-details-system .text-muted-foreground {
+          color: var(--customer-details-muted) !important;
+        }
+
+        .customer-details-system .bg-gradient-to-br,
+        .customer-details-system .bg-gradient-to-r,
+        .customer-details-system .bg-gradient-to-l {
+          background-image: none !important;
+        }
+
+        .customer-details-system .from-indigo-500,
+        .customer-details-system .via-violet-500,
+        .customer-details-system .to-fuchsia-500,
+        .customer-details-system .bg-indigo-600,
+        .customer-details-system .bg-violet-600,
+        .customer-details-system .bg-indigo-500,
+        .customer-details-system .bg-violet-500 {
+          background-color: var(--customer-details-focus) !important;
+          color: white !important;
+        }
+
+        .customer-details-system .bg-slate-900,
+        .customer-details-system .hover\\:bg-slate-800:hover {
+          background-color: var(--customer-details-text) !important;
+          color: white !important;
+        }
+
+        .customer-details-system .bg-emerald-50,
+        .customer-details-system .bg-green-50,
+        .customer-details-system .bg-teal-50 {
+          background-color: color-mix(in srgb, var(--customer-details-success) 12%, white) !important;
+        }
+
+        .customer-details-system .text-emerald-600,
+        .customer-details-system .text-emerald-700,
+        .customer-details-system .text-green-600,
+        .customer-details-system .text-teal-600 {
+          color: var(--customer-details-success) !important;
+        }
+
+        .customer-details-system .bg-sky-50,
+        .customer-details-system .bg-blue-50,
+        .customer-details-system .bg-cyan-50 {
+          background-color: color-mix(in srgb, var(--customer-details-info) 12%, white) !important;
+        }
+
+        .customer-details-system .text-sky-500,
+        .customer-details-system .text-sky-600,
+        .customer-details-system .text-sky-700,
+        .customer-details-system .text-blue-600,
+        .customer-details-system .text-blue-700 {
+          color: var(--customer-details-info) !important;
+        }
+
+        .customer-details-system .bg-violet-50,
+        .customer-details-system .bg-indigo-50 {
+          background-color: color-mix(in srgb, var(--customer-details-focus) 12%, white) !important;
+        }
+
+        .customer-details-system .text-violet-500,
+        .customer-details-system .text-violet-600,
+        .customer-details-system .text-violet-700,
+        .customer-details-system .text-indigo-600,
+        .customer-details-system .text-indigo-700 {
+          color: var(--customer-details-focus) !important;
+        }
+
+        .customer-details-system .bg-rose-50,
+        .customer-details-system .bg-amber-50,
+        .customer-details-system .bg-orange-50 {
+          background-color: color-mix(in srgb, var(--customer-details-alert) 12%, white) !important;
+        }
+
+        .customer-details-system .bg-rose-500,
+        .customer-details-system .bg-rose-600 {
+          background-color: var(--customer-details-alert) !important;
+          color: white !important;
+        }
+
+        .customer-details-system .text-rose-500,
+        .customer-details-system .text-rose-600,
+        .customer-details-system .text-rose-700,
+        .customer-details-system .text-amber-700,
+        .customer-details-system .text-amber-800 {
+          color: var(--customer-details-alert) !important;
+        }
+
+        .customer-details-system main > div:nth-of-type(1) {
+          border-top: 4px solid var(--customer-details-focus) !important;
+        }
+
+        .customer-details-system main > div:nth-of-type(1) > div {
+          padding: 1.5rem !important;
+        }
+
+        .customer-details-system main > div:nth-of-type(1) .w-\\[76px\\] {
+          width: 68px !important;
+          height: 68px !important;
+          padding: 0 !important;
+          background: var(--customer-details-focus) !important;
+          box-shadow: none !important;
+        }
+
+        .customer-details-system main > div:nth-of-type(1) [class*="AvatarFallback"],
+        .customer-details-system main > div:nth-of-type(1) .bg-slate-900 {
+          background: var(--customer-details-text) !important;
+        }
+
+        .customer-details-system main > div:nth-of-type(3) > div {
+          min-height: 132px;
+          border-radius: 8px !important;
+        }
+
+        .customer-details-system main > div:nth-of-type(3) > div:nth-child(1) .absolute {
+          background-color: var(--customer-details-info) !important;
+        }
+
+        .customer-details-system main > div:nth-of-type(3) > div:nth-child(2) .absolute,
+        .customer-details-system main > div:nth-of-type(3) > div:nth-child(4) .absolute {
+          background-color: var(--customer-details-focus) !important;
+        }
+
+        .customer-details-system main > div:nth-of-type(3) > div:nth-child(3) .absolute {
+          background-color: var(--customer-details-alert) !important;
+        }
+
+        .customer-details-system [role="tablist"] {
+          background: var(--customer-details-inner) !important;
+          border-color: var(--customer-details-border) !important;
+          gap: 0.25rem !important;
+          scrollbar-width: thin;
+        }
+
+        .customer-details-system [role="tab"] {
+          min-height: 40px;
+          color: var(--customer-details-muted) !important;
+          border-radius: 8px !important;
+        }
+
+        .customer-details-system [role="tab"][data-state="active"] {
+          background: var(--customer-details-focus) !important;
+          color: white !important;
+          border-color: var(--customer-details-focus) !important;
+          box-shadow: 0 8px 18px rgba(23, 58, 99, 0.18) !important;
+        }
+
+        .customer-details-system [role="tab"][data-state="active"] svg,
+        .customer-details-system [role="tab"][data-state="active"] span {
+          color: white !important;
+        }
+
+        .customer-details-system button,
+        .customer-details-system input,
+        .customer-details-system textarea,
+        .customer-details-system [role="combobox"] {
+          border-radius: 8px !important;
+        }
+
+        .customer-details-system input,
+        .customer-details-system textarea,
+        .customer-details-system [role="combobox"] {
+          background: var(--customer-details-inner) !important;
+          border-color: var(--customer-details-border) !important;
+        }
+
+        .customer-details-system .border-dashed:hover {
+          border-color: var(--customer-details-focus) !important;
+          background: color-mix(in srgb, var(--customer-details-focus) 6%, white) !important;
+          color: var(--customer-details-focus) !important;
+        }
+
+        .customer-details-system *:focus-visible {
+          outline-color: var(--customer-details-focus) !important;
+          --tw-ring-color: var(--customer-details-focus) !important;
+        }
+
+        .customer-details-system .customer-command-grid {
+          border-top: 0 !important;
+        }
+
+        .customer-details-system .customer-command-grid > div,
+        .customer-details-system .customer-command-grid > aside {
+          padding: 0 !important;
+        }
+
+        .customer-details-system .customer-command-grid [role="tablist"] {
+          border: 0 !important;
+          background: transparent !important;
+          padding: 0 !important;
+        }
+
+        @media (max-width: 768px) {
+          .customer-details-system header {
+            position: static !important;
+          }
+
+          .customer-details-system main {
+            padding-left: 1rem !important;
+            padding-right: 1rem !important;
+          }
+
+          .customer-details-system main > div:nth-of-type(1) .flex-1 {
+            justify-content: stretch !important;
+          }
+
+          .customer-details-system [role="tab"] {
+            flex: 0 0 auto;
+            padding-inline: 0.85rem !important;
+          }
+        }
+      `}</style>
     </div>
     </TooltipProvider>
   );

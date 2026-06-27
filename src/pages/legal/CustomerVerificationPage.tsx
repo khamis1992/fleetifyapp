@@ -34,6 +34,7 @@ import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
+import { usePaymentOperations } from '@/hooks/business/usePaymentOperations';
 import { formatCurrency } from '@/lib/utils';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
@@ -65,6 +66,7 @@ import {
 } from 'lucide-react';
 import { sendWhatsAppMessage } from '@/utils/whatsappWebSender';
 import { ContractDocuments } from '@/components/contracts/ContractDocuments';
+import '@/styles/legal-system.css';
 
 export default function CustomerVerificationPage() {
   const { taskId } = useParams<{ taskId: string }>();
@@ -72,6 +74,11 @@ export default function CustomerVerificationPage() {
   const { user } = useAuth();
   const { companyId } = useUnifiedCompanyAccess();
   const queryClient = useQueryClient();
+  const { createPayment } = usePaymentOperations({
+    autoCreateJournalEntry: true,
+    autoUpdateBankBalance: true,
+    enableNotifications: false,
+  });
 
   // حالات التعديل
   const [isEditing, setIsEditing] = useState(false);
@@ -323,34 +330,19 @@ export default function CustomerVerificationPage() {
         throw new Error('مبلغ غير صالح');
       }
 
-      // إنشاء سجل الدفعة
-      const { error: paymentError } = await supabase
-        .from('payments')
-        .insert({
-          company_id: companyId,
-          contract_id: task?.contract_id,
-          customer_id: task?.customer_id,
-          invoice_id: selectedInvoice.id,
-          amount: amount,
-          payment_date: new Date().toISOString().split('T')[0],
-          payment_method: 'cash',
-          notes: paymentNote || `دفعة مسجلة أثناء التدقيق بواسطة ${user.email}`,
-          created_by: user.id,
-        });
-
-      if (paymentError) throw paymentError;
-
-      // تحديث المبلغ المدفوع في الفاتورة
-      const newPaidAmount = (selectedInvoice.paid_amount || 0) + amount;
-      const { error: invoiceError } = await supabase
-        .from('invoices')
-        .update({
-          paid_amount: newPaidAmount,
-          status: newPaidAmount >= selectedInvoice.total_amount ? 'paid' : 'partial',
-        })
-        .eq('id', selectedInvoice.id);
-
-      if (invoiceError) throw invoiceError;
+      await createPayment.mutateAsync({
+        contract_id: task?.contract_id,
+        customer_id: task?.customer_id,
+        invoice_id: selectedInvoice.id,
+        amount,
+        payment_date: new Date().toISOString().split('T')[0],
+        payment_method: 'cash',
+        notes: paymentNote || `???? ????? ????? ??????? ?????? ${user.email}`,
+        type: 'receipt',
+        transaction_type: 'invoice_payment',
+        payment_status: 'completed',
+        currency: 'QAR',
+      });
     },
     onSuccess: () => {
       toast.success('تم تسجيل الدفعة بنجاح');
@@ -375,10 +367,29 @@ export default function CustomerVerificationPage() {
 
       const contractId = task.contract_id;
 
+      const { count: existingPaymentsCount, error: paymentsCountError } = await supabase
+        .from('payments')
+        .select('id', { count: 'exact', head: true })
+        .eq('contract_id', contractId);
+
+      if (paymentsCountError) throw paymentsCountError;
+
+      if ((existingPaymentsCount || 0) > 0) {
+        throw new Error('لا يمكن حذف عقد لديه مدفوعات مسجلة. قم بإلغاء العقد أو أرشفته للحفاظ على السجل المالي.');
+      }
+
       // 1. حذف البيانات المرتبطة
       await supabase.from('delinquent_customers').delete().eq('contract_id', contractId);
-      await supabase.from('payments').delete().eq('contract_id', contractId);
-      await supabase.from('invoices').delete().eq('contract_id', contractId);
+      await supabase
+        .from('invoices')
+        .update({
+          status: 'cancelled',
+          payment_status: 'cancelled',
+          balance_due: 0,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('contract_id', contractId)
+        .or('paid_amount.eq.0,paid_amount.is.null');
       await supabase.from('contract_payment_schedules').delete().eq('contract_id', contractId);
       await supabase.from('traffic_violations').update({ contract_id: null }).eq('contract_id', contractId);
       await supabase.from('contract_documents').delete().eq('contract_id', contractId);
@@ -576,7 +587,7 @@ export default function CustomerVerificationPage() {
 
   if (!task) {
     return (
-      <div className="container mx-auto p-4">
+      <div className="legal-system container mx-auto p-4">
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>لم يتم العثور على المهمة</AlertDescription>
@@ -599,7 +610,7 @@ export default function CustomerVerificationPage() {
   };
 
   return (
-    <div className="container mx-auto p-4 max-w-4xl" dir="rtl">
+    <div className="legal-system container mx-auto max-w-4xl p-4" dir="rtl">
       {/* زر الرجوع */}
       <Button variant="ghost" onClick={() => navigate(-1)} className="mb-4">
         <ArrowLeft className="h-4 w-4 ml-2" />
@@ -612,7 +623,7 @@ export default function CustomerVerificationPage() {
         animate={{ opacity: 1, y: 0 }}
         className="mb-6"
       >
-        <Card className="bg-gradient-to-r from-teal-600 to-teal-700 text-white border-0 shadow-lg">
+        <Card className="legal-panel">
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">

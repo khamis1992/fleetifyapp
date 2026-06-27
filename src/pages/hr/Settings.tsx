@@ -13,6 +13,7 @@ import { useHRSettings, type HRSettings } from '@/hooks/useHRSettings';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
+import { HRPageHeader, HRPageShell, hrButtonClassName } from '@/components/hr/HRDesignSystem';
 
 export default function HRSettings() {
   const {
@@ -124,16 +125,19 @@ export default function HRSettings() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-teal-50/30 p-6 space-y-6" dir="rtl">
-      <div className="flex items-center gap-3">
-        <div className="p-3 bg-teal-500 rounded-xl shadow-sm">
-          <Settings className="h-6 w-6 text-white" />
-        </div>
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">إعدادات الموارد البشرية</h1>
-          <p className="text-slate-600">إدارة إعدادات النظام والرواتب</p>
-        </div>
-      </div>
+    <HRPageShell>
+      <HRPageHeader
+        title="إعدادات الموارد البشرية"
+        description="ضبط ساعات العمل، الرواتب، الإجازات، وسياسات النظام من صفحة واحدة متناسقة."
+        icon={Settings}
+        badge="الإعدادات"
+        action={
+          <Button onClick={handleSaveSettings} disabled={isUpdating} className={hrButtonClassName}>
+            <Save className="h-4 w-4 ml-2" />
+            {isUpdating ? "جاري الحفظ..." : "حفظ الإعدادات"}
+          </Button>
+        }
+      />
 
       <div className="grid gap-6">
         {/* إعدادات الحضور */}
@@ -580,6 +584,6 @@ export default function HRSettings() {
           </Button>
         </div>
       </div>
-    </div>
+    </HRPageShell>
   );
 }

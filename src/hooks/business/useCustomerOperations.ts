@@ -303,6 +303,20 @@ export const useCustomerOperations = (options: CustomerOperationsOptions = {}) =
         throw new Error('العميل غير موجود');
       }
 
+      const { count: paymentsCount, error: paymentsCountError } = await supabase
+        .from('payments')
+        .select('id', { count: 'exact', head: true })
+        .eq('customer_id', customerId)
+        .eq('company_id', companyId);
+
+      if (paymentsCountError) {
+        throw paymentsCountError;
+      }
+
+      if ((paymentsCount || 0) > 0) {
+        throw new Error('Cannot delete a customer with recorded payments. Archive or deactivate the customer to keep the financial audit trail.');
+      }
+
       // Use the enhanced database function for fast deletion
       const { data, error } = await supabase.rpc('enhanced_delete_customer_and_relations', {
         target_customer_id: customerId,

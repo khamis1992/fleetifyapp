@@ -535,7 +535,7 @@ const DashboardLanding: React.FC = () => {
               </motion.button>
               <motion.button
                 title="عرض التقارير المالية"
-                onClick={() => navigate('/finance/reports')}
+                onClick={() => navigate('/finance/reports-analysis?tab=reports')}
                 className="flex items-center gap-2 px-4 py-3 bg-purple-50 dark:bg-purple-500/10 text-purple-700 dark:text-purple-400 rounded-xl hover:bg-purple-100 dark:hover:bg-purple-500/20 transition-colors min-h-[44px]"
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}

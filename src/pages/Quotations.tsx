@@ -137,8 +137,6 @@ export default function Quotations() {
       let query = supabase
         .from('vehicles')
         .select('id, plate_number, make, model, year')
-        .eq('is_active', true)
-        .in('status', ['available', 'reserved'])
 
       // Apply company filter for non-global access users
       if (!hasGlobalAccess && filter.company_id) {

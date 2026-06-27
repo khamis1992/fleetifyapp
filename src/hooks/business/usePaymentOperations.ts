@@ -14,6 +14,8 @@ import {
   reverseBankTransactionForPayment 
 } from '@/utils/bankTransactionHelper';
 import { calculateInvoiceTotalsAfterPaymentReversal } from '@/utils/invoiceHelpers';
+import { assertFinancialPeriodOpen } from '@/services/financialControls';
+import { useFinanceAccessGuard } from '@/hooks/finance/useFinanceAccessGuard';
 
 export interface PaymentOperationsOptions {
   autoCreateJournalEntry?: boolean;
@@ -35,6 +37,7 @@ interface Payment {
 export const usePaymentOperations = (options: PaymentOperationsOptions = {}) => {
   const { companyId, user } = useUnifiedCompanyAccess();
   const queryClient = useQueryClient();
+  const financeAccess = useFinanceAccessGuard();
 
   const {
     autoCreateJournalEntry = true,
@@ -60,6 +63,10 @@ export const usePaymentOperations = (options: PaymentOperationsOptions = {}) => 
     mutationFn: async (data: EnhancedPaymentData & { idempotencyKey?: string }) => {
       console.log('💰 [usePaymentOperations] Starting payment creation:', data);
 
+      if (!financeAccess.can('finance.payment.create')) {
+        throw new Error('ليس لديك صلاحية تسجيل دفعة مالية');
+      }
+
       // Check company access
       if (!companyId) {
         throw new Error('لم يتم تحديد الشركة');
@@ -75,6 +82,8 @@ export const usePaymentOperations = (options: PaymentOperationsOptions = {}) => 
         const errorMessage = zodError.errors?.map((e: any) => e.message).join(', ') || 'خطأ في البيانات المدخلة';
         throw new Error(errorMessage);
       }
+
+      await assertFinancialPeriodOpen(companyId, validatedData.payment_date);
 
       // ========== DUPLICATE PREVENTION LAYER ==========
       // 1. Check for existing idempotency key (retry detection)
@@ -211,6 +220,21 @@ export const usePaymentOperations = (options: PaymentOperationsOptions = {}) => 
       if (validatedData.bank_id && validatedData.bank_id !== '' && validatedData.bank_id !== 'undefined') {
         paymentData.bank_id = validatedData.bank_id;
       }
+      if (!paymentData.bank_id && ['bank_transfer', 'check', 'credit_card', 'debit_card'].includes(validatedData.payment_method)) {
+        const { data: defaultBank } = await supabase
+          .from('banks')
+          .select('id')
+          .eq('company_id', companyId)
+          .eq('is_active', true)
+          .order('is_primary', { ascending: false })
+          .order('created_at', { ascending: true })
+          .limit(1)
+          .maybeSingle();
+
+        if (defaultBank?.id) {
+          paymentData.bank_id = defaultBank.id;
+        }
+      }
       if (validatedData.account_id && validatedData.account_id !== '' && validatedData.account_id !== 'undefined') {
         paymentData.account_id = validatedData.account_id;
       }
@@ -273,6 +297,47 @@ export const usePaymentOperations = (options: PaymentOperationsOptions = {}) => 
       });
 
       console.log('📝 Final payment data for insert:', JSON.stringify(paymentData, null, 2));
+
+
+      if (paymentData.invoice_id && paymentData.payment_status === 'completed') {
+        const { data: invoice, error: invoiceError } = await supabase
+          .from('invoices')
+          .select('id,total_amount,paid_amount,payment_status')
+          .eq('id', paymentData.invoice_id)
+          .eq('company_id', companyId)
+          .maybeSingle();
+
+        if (invoiceError) {
+          throw invoiceError;
+        }
+
+        if (!invoice) {
+          throw new Error('Invoice not found for payment allocation');
+        }
+
+        const { data: existingInvoicePayments, error: existingPaymentsError } = await supabase
+          .from('payments')
+          .select('id,amount,payment_status')
+          .eq('invoice_id', paymentData.invoice_id)
+          .eq('company_id', companyId)
+          .eq('payment_status', 'completed');
+
+        if (existingPaymentsError) {
+          throw existingPaymentsError;
+        }
+
+        const alreadyPaid = (existingInvoicePayments || []).reduce(
+          (sum, payment) => sum + (Number(payment.amount) || 0),
+          0
+        );
+        const invoiceTotal = Number(invoice.total_amount) || 0;
+        const newTotalPaid = alreadyPaid + (Number(paymentData.amount) || 0);
+
+        if (invoiceTotal > 0 && newTotalPaid - invoiceTotal > 0.01) {
+          const overpaidAmount = (newTotalPaid - invoiceTotal).toFixed(2);
+          throw new Error('Payment would overpay invoice by QAR ' + overpaidAmount + '. Link the excess amount to another invoice or record it as an advance payment.');
+        }
+      }
 
       // Insert payment with timeout protection
       const { data: insertedPayment, error } = await supabase
@@ -386,6 +451,18 @@ export const usePaymentOperations = (options: PaymentOperationsOptions = {}) => 
 
       if (fetchError || !existingPayment) {
         throw new Error('الدفعة غير موجودة أو لا تملك صلاحية للتعديل');
+      }
+
+      if (data.amount !== undefined && Number(data.amount) !== Number(existingPayment.amount) && !financeAccess.canEditField('payment', 'amount')) {
+        throw new Error('ليس لديك صلاحية تعديل مبلغ الدفعة');
+      }
+
+      if (data.payment_date !== undefined && data.payment_date !== existingPayment.payment_date && !financeAccess.canEditField('payment', 'payment_date')) {
+        throw new Error('ليس لديك صلاحية تعديل تاريخ الدفعة');
+      }
+
+      if (data.bank_id !== undefined && data.bank_id !== existingPayment.bank_id && !financeAccess.canEditField('payment', 'bank_account_id')) {
+        throw new Error('ليس لديك صلاحية تغيير حساب البنك للدفعة');
       }
 
       // Check if payment can be updated
@@ -519,10 +596,14 @@ export const usePaymentOperations = (options: PaymentOperationsOptions = {}) => 
         throw new Error('لم يتم تحديد الشركة');
       }
 
+      if (!financeAccess.can('finance.payment.cancel')) {
+        throw new Error('ليس لديك صلاحية إلغاء الدفعات المالية');
+      }
+
       // Fetch payment first (needed to reverse invoice totals safely)
       const { data: existingPayment, error: fetchPaymentError } = await supabase
         .from('payments')
-        .select('id, invoice_id, amount, payment_status')
+        .select('id, invoice_id, amount, payment_status, created_by')
         .eq('id', paymentId)
         .eq('company_id', companyId)
         .single();
@@ -535,6 +616,16 @@ export const usePaymentOperations = (options: PaymentOperationsOptions = {}) => 
       if (existingPayment.payment_status === 'cancelled') {
         // Idempotent: nothing to do
         return existingPayment as any;
+      }
+
+      const segregationDecision = financeAccess.checkSegregationOfDuties({
+        action: 'finance.payment.cancel',
+        actorId: user?.id,
+        creatorId: existingPayment.created_by,
+      });
+
+      if (!segregationDecision.allowed) {
+        throw new Error(segregationDecision.reason || 'تم منع العملية بسبب قاعدة فصل المهام');
       }
 
       // If linked to invoice, reverse invoice paid totals
@@ -765,13 +856,14 @@ export const usePaymentOperations = (options: PaymentOperationsOptions = {}) => 
   const generatePaymentNumber = async (type: 'receipt' | 'payment' | 'invoice_payment'): Promise<string> => {
     const prefix = type === 'receipt' ? 'REC' : type === 'payment' ? 'PAY' : 'INV';
     const year = new Date().getFullYear().toString().slice(-2);
+    const transactionType = type === 'payment' ? 'payment' : 'receipt';
     
     // Get count of existing payments to generate next number
     const { count, error } = await supabase
       .from('payments')
       .select('*', { count: 'exact', head: true })
       .eq('company_id', companyId)
-      .eq('payment_type', type);
+      .eq('transaction_type', transactionType);
 
     if (error) {
       console.error('Error generating payment number:', error);
@@ -783,88 +875,101 @@ export const usePaymentOperations = (options: PaymentOperationsOptions = {}) => 
     return `${prefix}-${year}-${nextNumber.toString().padStart(3, '0')}`;
   };
 
-  const createJournalEntry = async (payment: Payment) => {
+  const createJournalEntry = async (payment: Payment): Promise<string> => {
     try {
-      console.log('📝 Creating journal entry for payment:', payment.id);
+      console.log('Creating journal entry for payment:', payment.id);
 
       if (!companyId || !payment.amount) {
-        console.warn('⚠️ Missing required data for journal entry');
-        return;
+        throw new Error('Missing company or payment amount for journal entry');
       }
 
-      // جلب حسابات القيد المحاسبي
-      // حساب النقدية/البنك (مدين) - حساب 11151
-      const { data: cashAccount } = await supabase
-        .from('chart_of_accounts')
-        .select('id')
-        .eq('company_id', companyId)
-        .eq('account_code', '11151')
-        .eq('is_header', false)
-        .single();
+      let cashAccount: { id: string } | null = null;
 
-      // حساب الذمم المدينة (دائن) - حساب 12101 أو إيرادات 41101
-      const { data: receivableAccount } = await supabase
+      if (payment.account_id && typeof payment.account_id === 'string') {
+        const { data: selectedAccount } = await supabase
+          .from('chart_of_accounts')
+          .select('id')
+          .eq('company_id', companyId)
+          .eq('id', payment.account_id)
+          .eq('is_header', false)
+          .eq('is_active', true)
+          .maybeSingle();
+
+        cashAccount = selectedAccount;
+      }
+
+      if (!cashAccount) {
+        const { data: defaultCashAccount } = await supabase
+          .from('chart_of_accounts')
+          .select('id')
+          .eq('company_id', companyId)
+          .in('account_code', ['11151', '11111', '1010'])
+          .eq('is_header', false)
+          .eq('is_active', true)
+          .order('account_code')
+          .limit(1)
+          .maybeSingle();
+
+        cashAccount = defaultCashAccount;
+      }
+
+      const { data: receivableCandidates } = await supabase
         .from('chart_of_accounts')
-        .select('id')
+        .select('id, account_code')
         .eq('company_id', companyId)
-        .eq('account_code', '12101')
+        .in('account_code', ['12101', '11211', '11212', '11221', '11222'])
         .eq('is_header', false)
-        .single();
+        .eq('is_active', true);
+
+      const receivablePriority = ['12101', '11211', '11212', '11221', '11222'];
+      const receivableAccount = (receivableCandidates || []).sort(
+        (a, b) => receivablePriority.indexOf(a.account_code) - receivablePriority.indexOf(b.account_code)
+      )[0];
 
       if (!cashAccount || !receivableAccount) {
-        console.warn('⚠️ Required accounts not found for journal entry (11151, 12101)');
-        return;
+        throw new Error('Payment journal entry accounts are not configured. Required: cash/bank account and customer receivables account.');
       }
 
       const entryNumber = `JE-PAY-${payment.payment_number}`;
       const entryDate = (payment as any).payment_date || new Date().toISOString().split('T')[0];
 
-      // إنشاء القيد الرئيسي
       const { data: journalEntry, error: entryError } = await supabase
         .from('journal_entries')
         .insert({
           company_id: companyId,
           entry_number: entryNumber,
           entry_date: entryDate,
-          entry_type: 'standard',
           status: 'posted',
-          description: `قيد دفعة رقم ${payment.payment_number}`,
+          description: `Payment receipt ${payment.payment_number}`,
           reference_type: 'payment',
           reference_id: payment.id,
           total_debit: payment.amount,
           total_credit: payment.amount,
-          created_by: user?.id,
-          notes: 'تم الإنشاء تلقائياً من نظام الدفعات'
+          created_by: user?.id
         })
         .select()
         .single();
 
       if (entryError) {
-        console.error('❌ Error creating journal entry:', entryError);
-        return;
+        throw entryError;
       }
 
-      // إنشاء سطور القيد
       const lines = [
         {
           journal_entry_id: journalEntry.id,
           account_id: cashAccount.id,
           line_number: 1,
-          line_description: `استلام دفعة - ${payment.payment_number}`,
+          line_description: `Payment received - ${payment.payment_number}`,
           debit_amount: payment.amount,
-          credit_amount: 0,
-          reference_type: 'payment',
-          reference_id: payment.id
+          credit_amount: 0
         },
         {
           journal_entry_id: journalEntry.id,
           account_id: receivableAccount.id,
           line_number: 2,
-          line_description: `تسديد ذمم - دفعة ${payment.payment_number}`,
+          line_description: `Receivables settlement - ${payment.payment_number}`,
           debit_amount: 0,
-          credit_amount: payment.amount,
-          reference_type: 'payment',
-          reference_id: payment.id
+          credit_amount: payment.amount
         }
       ];
 
@@ -873,33 +978,180 @@ export const usePaymentOperations = (options: PaymentOperationsOptions = {}) => 
         .insert(lines);
 
       if (linesError) {
-        console.error('❌ Error creating journal entry lines:', linesError);
-        // حذف القيد الرئيسي في حالة فشل السطور
         await supabase.from('journal_entries').delete().eq('id', journalEntry.id);
-        return;
+        throw linesError;
       }
 
-      // تحديث الدفعة بربط القيد المحاسبي
-      await supabase
+      const { error: paymentLinkError } = await supabase
         .from('payments')
         .update({ journal_entry_id: journalEntry.id })
-        .eq('id', payment.id);
+        .eq('id', payment.id)
+        .eq('company_id', companyId);
 
-      console.log('✅ Journal entry created successfully:', entryNumber);
+      if (paymentLinkError) {
+        console.warn('Payment journal entry was created but direct payment link was blocked by validation. Using journal reference link instead.', {
+          paymentId: payment.id,
+          journalEntryId: journalEntry.id,
+          error: paymentLinkError.message,
+        });
+      }
+
+      console.log('Journal entry created successfully:', entryNumber);
+      return journalEntry.id;
     } catch (error) {
       console.error('Error in createJournalEntry:', error);
+      throw error;
     }
   };
-
-  const reverseJournalEntry = async (paymentId: string) => {
+  const reverseJournalEntry = async (paymentId: string): Promise<string | null> => {
     try {
-      console.log('🔄 Reversing journal entry for payment:', paymentId);
-      
-      // For now, just log the reversal - implement actual reversal logic later
-      // when the necessary database functions are available
-      console.log('Journal entry reversal placeholder for payment ID:', paymentId);
+      console.log('Reversing journal entry for payment:', paymentId);
+
+      if (!companyId) {
+        throw new Error('Missing company for journal reversal');
+      }
+
+      const { data: payment, error: paymentError } = await supabase
+        .from('payments')
+        .select('id,payment_number,journal_entry_id,payment_date')
+        .eq('id', paymentId)
+        .eq('company_id', companyId)
+        .single();
+
+      if (paymentError || !payment) {
+        throw paymentError || new Error('Payment not found for journal reversal');
+      }
+
+      let journalEntryId = payment.journal_entry_id as string | null;
+
+      if (!journalEntryId) {
+        const { data: referencedJournalEntry, error: referenceError } = await supabase
+          .from('journal_entries')
+          .select('id')
+          .eq('company_id', companyId)
+          .eq('reference_type', 'payment')
+          .eq('reference_id', paymentId)
+          .maybeSingle();
+
+        if (referenceError) {
+          throw referenceError;
+        }
+
+        journalEntryId = referencedJournalEntry?.id || null;
+      }
+
+      if (!journalEntryId) {
+        console.warn('No journal entry found to reverse for payment:', paymentId);
+        return null;
+      }
+
+      const { data: originalEntry, error: originalEntryError } = await supabase
+        .from('journal_entries')
+        .select('id,entry_number,entry_date,status,total_debit,total_credit,reversal_entry_id')
+        .eq('id', journalEntryId)
+        .eq('company_id', companyId)
+        .single();
+
+      if (originalEntryError || !originalEntry) {
+        throw originalEntryError || new Error('Original journal entry not found');
+      }
+
+      if (originalEntry.reversal_entry_id) {
+        return originalEntry.reversal_entry_id;
+      }
+
+      const { data: originalLines, error: linesError } = await supabase
+        .from('journal_entry_lines')
+        .select('account_id,line_description,debit_amount,credit_amount,line_number,cost_center_id,asset_id,employee_id')
+        .eq('journal_entry_id', journalEntryId)
+        .order('line_number', { ascending: true });
+
+      if (linesError) {
+        throw linesError;
+      }
+
+      if (!originalLines || originalLines.length === 0) {
+        throw new Error('Original journal entry has no lines to reverse');
+      }
+
+      const reversalEntryNumber = `REV-${originalEntry.entry_number}-${Date.now().toString().slice(-6)}`;
+      const reversalDate = new Date().toISOString().split('T')[0];
+
+      const { data: reversalEntry, error: reversalEntryError } = await supabase
+        .from('journal_entries')
+        .insert({
+          company_id: companyId,
+          entry_number: reversalEntryNumber,
+          entry_date: reversalDate,
+          status: 'draft',
+          description: `Reversal of payment journal entry ${originalEntry.entry_number}`,
+          reference_type: 'payment_reversal',
+          reference_id: paymentId,
+          total_debit: originalEntry.total_credit,
+          total_credit: originalEntry.total_debit,
+          created_by: user?.id,
+        })
+        .select('id')
+        .single();
+
+      if (reversalEntryError || !reversalEntry) {
+        throw reversalEntryError || new Error('Failed to create reversal journal entry');
+      }
+
+      const reversalLines = originalLines.map((line: any, index: number) => ({
+        journal_entry_id: reversalEntry.id,
+        account_id: line.account_id,
+        line_number: index + 1,
+        line_description: `Reversal - ${line.line_description || originalEntry.entry_number}`,
+        debit_amount: Number(line.credit_amount) || 0,
+        credit_amount: Number(line.debit_amount) || 0,
+        cost_center_id: line.cost_center_id || null,
+        asset_id: line.asset_id || null,
+        employee_id: line.employee_id || null,
+      }));
+
+      const { error: reversalLinesError } = await supabase
+        .from('journal_entry_lines')
+        .insert(reversalLines);
+
+      if (reversalLinesError) {
+        await supabase.from('journal_entries').delete().eq('id', reversalEntry.id);
+        throw reversalLinesError;
+      }
+
+      const { error: postReversalError } = await supabase
+        .from('journal_entries')
+        .update({
+          status: 'posted',
+          posted_by: user?.id,
+          posted_at: new Date().toISOString(),
+        })
+        .eq('id', reversalEntry.id)
+        .eq('company_id', companyId);
+
+      if (postReversalError) {
+        throw postReversalError;
+      }
+
+      const { error: originalUpdateError } = await supabase
+        .from('journal_entries')
+        .update({
+          status: 'reversed',
+          reversal_entry_id: reversalEntry.id,
+          reversed_at: new Date().toISOString(),
+          reversed_by: user?.id,
+        })
+        .eq('id', originalEntry.id)
+        .eq('company_id', companyId);
+
+      if (originalUpdateError) {
+        throw originalUpdateError;
+      }
+
+      return reversalEntry.id;
     } catch (error) {
       console.error('Error in reverseJournalEntry:', error);
+      throw error;
     }
   };
 

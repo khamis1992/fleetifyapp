@@ -1,19 +1,18 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useTasks, useTaskStatistics } from '@/hooks/useTasks';
+import { useTasks } from '@/hooks/useTasks';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUpcomingReminders } from '@/hooks/usePersonalReminders';
 import { useActiveGoals } from '@/hooks/useUserGoals';
 import { cn } from '@/lib/utils';
+import { systemColorPattern } from '@/lib/design-system/systemColorPattern';
 import {
-  CheckCircle2,
   Clock,
   AlertTriangle,
-  TrendingUp,
   Calendar,
   Target,
   Bell,
@@ -23,43 +22,30 @@ import {
 import { format, isToday, isPast, parseISO } from 'date-fns';
 import { ar } from 'date-fns/locale';
 
+const taskTheme = systemColorPattern.colors;
+
 export const MyTasksDashboard: React.FC = () => {
   const { user } = useAuth();
   const userId = user?.profile?.id;
 
-  // Fetch my tasks
   const { data: myTasks = [], isLoading: tasksLoading } = useTasks({
     assigned_to: userId,
     status: ['pending', 'in_progress'],
   });
-
-  // Fetch upcoming reminders
   const { data: reminders = [], isLoading: remindersLoading } = useUpcomingReminders(5);
-
-  // Fetch active goals
   const { data: goals = [], isLoading: goalsLoading } = useActiveGoals();
 
-  // Calculate statistics
-  const todayTasks = myTasks.filter((task) => {
-    if (!task.due_date) return false;
-    return isToday(parseISO(task.due_date));
-  });
-
+  const todayTasks = myTasks.filter((task) => task.due_date && isToday(parseISO(task.due_date)));
   const overdueTasks = myTasks.filter((task) => {
     if (!task.due_date) return false;
     return isPast(parseISO(task.due_date)) && !isToday(parseISO(task.due_date));
   });
-
   const inProgressTasks = myTasks.filter((task) => task.status === 'in_progress');
-
   const urgentTasks = myTasks.filter((task) => task.priority === 'urgent');
 
-  // Calculate goals progress
   const goalsProgress = goals.length > 0
     ? Math.round(
-        goals.reduce((acc, goal) => {
-          return acc + (goal.current_count / goal.target_count) * 100;
-        }, 0) / goals.length
+        goals.reduce((acc, goal) => acc + (goal.current_count / goal.target_count) * 100, 0) / goals.length
       )
     : 0;
 
@@ -67,253 +53,177 @@ export const MyTasksDashboard: React.FC = () => {
 
   const statsCards = [
     {
-      title: 'مهامي اليوم',
+      title: 'مهام اليوم',
       value: todayTasks.length,
-      icon: <Calendar className="h-5 w-5" />,
-      color: 'text-teal-600',
-      bgColor: 'bg-teal-50',
-      borderColor: 'border-teal-200',
+      icon: Calendar,
+      color: taskTheme.info,
+      caption: 'مستحقة اليوم',
     },
     {
       title: 'قيد التنفيذ',
       value: inProgressTasks.length,
-      icon: <Clock className="h-5 w-5" />,
-      color: 'text-blue-600',
-      bgColor: 'bg-blue-50',
-      borderColor: 'border-blue-200',
+      icon: Clock,
+      color: taskTheme.focus,
+      caption: 'تحتاج متابعة',
     },
     {
-      title: 'المتأخرة',
+      title: 'متأخرة',
       value: overdueTasks.length,
-      icon: <AlertTriangle className="h-5 w-5" />,
-      color: 'text-red-600',
-      bgColor: 'bg-red-50',
-      borderColor: 'border-red-200',
+      icon: AlertTriangle,
+      color: taskTheme.alert,
+      caption: 'تجاوزت الموعد',
       highlight: overdueTasks.length > 0,
     },
     {
       title: 'تقدم الأهداف',
       value: `${goalsProgress}%`,
-      icon: <Target className="h-5 w-5" />,
-      color: 'text-green-600',
-      bgColor: 'bg-green-50',
-      borderColor: 'border-green-200',
+      icon: Target,
+      color: taskTheme.success,
+      caption: 'متوسط الإنجاز',
     },
   ];
 
   if (isLoading) {
     return (
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+      <div className="grid gap-3 md:grid-cols-4">
         {[1, 2, 3, 4].map((i) => (
-          <Skeleton key={i} className="h-24 rounded-xl" />
+          <Skeleton key={i} className="h-28 rounded-lg" />
         ))}
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      {/* Stats Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {statsCards.map((stat, index) => (
-          <motion.div
-            key={stat.title}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: index * 0.1 }}
-          >
-            <Card
-              className={cn(
-                'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all',
-                stat.highlight && 'ring-2 ring-red-400 ring-offset-2'
-              )}
+    <div className="space-y-5">
+      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+        {statsCards.map((stat, index) => {
+          const Icon = stat.icon;
+          return (
+            <motion.div
+              key={stat.title}
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.05 }}
             >
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
+              <Card
+                className={cn(
+                  'rounded-lg border bg-white shadow-sm',
+                  stat.highlight && 'ring-2 ring-[#FB6B7A]/25'
+                )}
+                style={{ borderColor: taskTheme.border }}
+              >
+                <CardContent className="flex items-center justify-between gap-4 p-4">
                   <div>
-                    <p className="text-sm text-slate-500">{stat.title}</p>
-                    <p className={cn('text-2xl font-bold mt-1', stat.color)}>
-                      {stat.value}
-                    </p>
+                    <p className="text-sm font-medium" style={{ color: taskTheme.secondaryText }}>{stat.title}</p>
+                    <p className="mt-1 text-2xl font-bold" style={{ color: taskTheme.text }}>{stat.value}</p>
+                    <p className="mt-1 text-xs" style={{ color: taskTheme.secondaryText }}>{stat.caption}</p>
                   </div>
-                  <div className={cn('p-3 rounded-xl bg-gradient-to-br from-teal-500 to-teal-600 shadow-lg shadow-teal-500/20', 'text-white')}>
-                    {stat.icon}
+                  <div className="flex h-11 w-11 items-center justify-center rounded-lg" style={{ backgroundColor: `${stat.color}14`, color: stat.color }}>
+                    <Icon className="h-5 w-5" />
                   </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+          );
+        })}
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-3">
+        <OverviewCard icon={ListTodo} title="مهام اليوم" subtitle={`${todayTasks.length} مهمة`}>
+          {todayTasks.length === 0 ? (
+            <EmptyText text="لا توجد مهام مستحقة اليوم" />
+          ) : (
+            <div className="space-y-2">
+              {todayTasks.slice(0, 3).map((task) => (
+                <div key={task.id} className="flex items-center gap-2 rounded-lg border border-[#E5EAF1] bg-[#F6F8FB] p-2">
+                  <span
+                    className="h-2.5 w-2.5 rounded-full"
+                    style={{
+                      backgroundColor:
+                        task.priority === 'urgent'
+                          ? taskTheme.alert
+                          : task.priority === 'high'
+                          ? '#F59E0B'
+                          : task.priority === 'medium'
+                          ? taskTheme.info
+                          : '#94A3B8',
+                    }}
+                  />
+                  <span className="min-w-0 flex-1 truncate text-sm text-[#020617]">{task.title}</span>
+                  {task.status === 'in_progress' && (
+                    <Badge className="rounded-md bg-[#38BDF8]/10 text-[#38BDF8] hover:bg-[#38BDF8]/10">جاري</Badge>
+                  )}
                 </div>
-              </CardContent>
-            </Card>
-          </motion.div>
-        ))}
-      </div>
+              ))}
+              {todayTasks.length > 3 && <MoreText count={todayTasks.length - 3} label="مهام أخرى" />}
+            </div>
+          )}
+        </OverviewCard>
 
-      {/* Quick Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {/* Today's Tasks */}
-        <Card className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 rounded-xl hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base flex items-center gap-2">
-              <div className="bg-gradient-to-br from-teal-500 to-teal-600 shadow-lg shadow-teal-500/20 rounded-lg p-1">
-                <ListTodo className="h-4 w-4 text-white" />
-              </div>
-              مهام اليوم
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {todayTasks.length === 0 ? (
-              <p className="text-sm text-slate-400 text-center py-4">
-                لا توجد مهام لليوم
-              </p>
-            ) : (
-              <div className="space-y-2">
-                {todayTasks.slice(0, 3).map((task) => (
-                  <div
-                    key={task.id}
-                    className="flex items-center gap-2 p-2 rounded-lg bg-slate-50"
-                  >
-                    <div
-                      className={cn(
-                        'w-2 h-2 rounded-full',
-                        task.priority === 'urgent' && 'bg-red-500',
-                        task.priority === 'high' && 'bg-orange-500',
-                        task.priority === 'medium' && 'bg-blue-500',
-                        task.priority === 'low' && 'bg-slate-400'
-                      )}
-                    />
-                    <span className="text-sm truncate flex-1">{task.title}</span>
-                    {task.status === 'in_progress' && (
-                      <Badge variant="secondary" className="text-xs bg-blue-100 text-blue-700">
-                        جاري
-                      </Badge>
-                    )}
-                  </div>
-                ))}
-                {todayTasks.length > 3 && (
-                  <p className="text-xs text-slate-400 text-center">
-                    +{todayTasks.length - 3} مهام أخرى
-                  </p>
-                )}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+        <OverviewCard icon={Bell} title="تذكيرات قادمة" subtitle={`${reminders.length} تذكير`}>
+          {reminders.length === 0 ? (
+            <EmptyText text="لا توجد تذكيرات قادمة" />
+          ) : (
+            <div className="space-y-2">
+              {reminders.slice(0, 3).map((reminder) => (
+                <div key={reminder.id} className="flex items-center gap-2 rounded-lg border border-[#E5EAF1] bg-[#F6F8FB] p-2">
+                  <Clock className="h-3.5 w-3.5 text-slate-400" />
+                  <span className="min-w-0 flex-1 truncate text-sm text-[#020617]">{reminder.title}</span>
+                  {reminder.reminder_time && (
+                    <span className="text-xs text-slate-500">
+                      {format(parseISO(reminder.reminder_time), 'HH:mm', { locale: ar })}
+                    </span>
+                  )}
+                </div>
+              ))}
+              {reminders.length > 3 && <MoreText count={reminders.length - 3} label="تذكيرات أخرى" />}
+            </div>
+          )}
+        </OverviewCard>
 
-        {/* Upcoming Reminders */}
-        <Card className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 rounded-xl hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base flex items-center gap-2">
-              <div className="bg-gradient-to-br from-teal-500 to-teal-600 shadow-lg shadow-teal-500/20 rounded-lg p-1">
-                <Bell className="h-4 w-4 text-white" />
-              </div>
-              تذكيرات قادمة
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {reminders.length === 0 ? (
-              <p className="text-sm text-slate-400 text-center py-4">
-                لا توجد تذكيرات قادمة
-              </p>
-            ) : (
-              <div className="space-y-2">
-                {reminders.slice(0, 3).map((reminder) => (
-                  <div
-                    key={reminder.id}
-                    className="flex items-center gap-2 p-2 rounded-lg bg-slate-50"
-                  >
-                    <Clock className="h-3 w-3 text-slate-400 flex-shrink-0" />
-                    <span className="text-sm truncate flex-1">{reminder.title}</span>
-                    {reminder.reminder_time && (
+        <OverviewCard icon={Target} title="تقدم الأهداف" subtitle={`${goals.length} هدف نشط`}>
+          {goals.length === 0 ? (
+            <EmptyText text="لا توجد أهداف نشطة" />
+          ) : (
+            <div className="space-y-3">
+              {goals.slice(0, 3).map((goal) => {
+                const percentage = Math.round((goal.current_count / goal.target_count) * 100);
+                return (
+                  <div key={goal.id} className="space-y-1.5">
+                    <div className="flex items-center justify-between gap-2 text-sm">
+                      <span className="min-w-0 flex-1 truncate text-[#020617]">{goal.title}</span>
                       <span className="text-xs text-slate-500">
-                        {format(parseISO(reminder.reminder_time), 'HH:mm', { locale: ar })}
+                        {goal.current_count}/{goal.target_count}
                       </span>
-                    )}
-                  </div>
-                ))}
-                {reminders.length > 3 && (
-                  <p className="text-xs text-slate-400 text-center">
-                    +{reminders.length - 3} تذكيرات أخرى
-                  </p>
-                )}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Goals Progress */}
-        <Card className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 rounded-xl hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base flex items-center gap-2">
-              <div className="bg-gradient-to-br from-teal-500 to-teal-600 shadow-lg shadow-teal-500/20 rounded-lg p-1">
-                <Target className="h-4 w-4 text-white" />
-              </div>
-              تقدم الأهداف
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {goals.length === 0 ? (
-              <p className="text-sm text-slate-400 text-center py-4">
-                لا توجد أهداف نشطة
-              </p>
-            ) : (
-              <div className="space-y-3">
-                {goals.slice(0, 3).map((goal) => {
-                  const percentage = Math.round(
-                    (goal.current_count / goal.target_count) * 100
-                  );
-                  return (
-                    <div key={goal.id} className="space-y-1">
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="truncate flex-1">{goal.title}</span>
-                        <span className="text-xs text-slate-500 mr-2">
-                          {goal.current_count}/{goal.target_count}
-                        </span>
-                      </div>
-                      <Progress
-                        value={percentage}
-                        className="h-1.5"
-                        indicatorClassName={cn(
-                          percentage >= 100
-                            ? 'bg-green-500'
-                            : percentage >= 50
-                            ? 'bg-blue-500'
-                            : 'bg-orange-500'
-                        )}
-                      />
                     </div>
-                  );
-                })}
-                {goals.length > 3 && (
-                  <p className="text-xs text-slate-400 text-center">
-                    +{goals.length - 3} أهداف أخرى
-                  </p>
-                )}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+                    <Progress value={percentage} className="h-1.5" />
+                  </div>
+                );
+              })}
+              {goals.length > 3 && <MoreText count={goals.length - 3} label="أهداف أخرى" />}
+            </div>
+          )}
+        </OverviewCard>
       </div>
 
-      {/* Urgent/Overdue Alert */}
       {(urgentTasks.length > 0 || overdueTasks.length > 0) && (
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-gradient-to-r from-red-50 to-orange-50 border border-red-200 rounded-xl p-4"
+          className="rounded-lg border bg-white p-4 shadow-sm"
+          style={{ borderColor: `${taskTheme.alert}55` }}
         >
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-red-100 rounded-xl">
-              <Flame className="h-5 w-5 text-red-600" />
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg" style={{ backgroundColor: `${taskTheme.alert}14`, color: taskTheme.alert }}>
+              <Flame className="h-5 w-5" />
             </div>
-            <div className="flex-1">
-              <h4 className="font-medium text-red-900">يتطلب انتباهك</h4>
-              <p className="text-sm text-red-700">
+            <div>
+              <h4 className="font-bold text-[#020617]">يتطلب انتباهك</h4>
+              <p className="mt-1 text-sm text-slate-600">
                 لديك{' '}
-                {urgentTasks.length > 0 && (
-                  <span className="font-medium">{urgentTasks.length} مهمة عاجلة</span>
-                )}
+                {urgentTasks.length > 0 && <span className="font-semibold text-[#FB6B7A]">{urgentTasks.length} مهمة عاجلة</span>}
                 {urgentTasks.length > 0 && overdueTasks.length > 0 && ' و '}
-                {overdueTasks.length > 0 && (
-                  <span className="font-medium">{overdueTasks.length} مهمة متأخرة</span>
-                )}
+                {overdueTasks.length > 0 && <span className="font-semibold text-[#FB6B7A]">{overdueTasks.length} مهمة متأخرة</span>}
               </p>
             </div>
           </div>
@@ -323,11 +233,41 @@ export const MyTasksDashboard: React.FC = () => {
   );
 };
 
+function OverviewCard({
+  icon: Icon,
+  title,
+  subtitle,
+  children,
+}: {
+  icon: React.ElementType;
+  title: string;
+  subtitle: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <Card className="rounded-lg border bg-white shadow-sm" style={{ borderColor: taskTheme.border }}>
+      <CardContent className="space-y-4 p-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#F6F8FB] text-[#38BDF8]">
+              <Icon className="h-4 w-4" />
+            </div>
+            <h3 className="font-bold text-[#020617]">{title}</h3>
+          </div>
+          <span className="text-xs text-slate-500">{subtitle}</span>
+        </div>
+        {children}
+      </CardContent>
+    </Card>
+  );
+}
+
+function EmptyText({ text }: { text: string }) {
+  return <p className="rounded-lg bg-[#F6F8FB] py-6 text-center text-sm text-slate-400">{text}</p>;
+}
+
+function MoreText({ count, label }: { count: number; label: string }) {
+  return <p className="text-center text-xs text-slate-400">+{count} {label}</p>;
+}
+
 export default MyTasksDashboard;
-
-
-
-
-
-
-

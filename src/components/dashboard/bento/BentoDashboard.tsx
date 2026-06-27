@@ -1,281 +1,243 @@
-import React, { useState, useCallback, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { useDashboardStats } from '@/hooks/useDashboardStats';
-import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
-import { useAuth } from '@/contexts/AuthContext';
-import { useStableCompanyId } from '@/contexts/CompanyContext';
+import React, { useCallback, useRef, useState } from 'react';
+import { motion } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { useNavigate, Link } from 'react-router-dom';
-import { SimpleContractWizard } from '@/components/contracts/SimpleContractWizard';
-import { UnifiedNotificationBell } from '@/components/notifications/UnifiedNotificationBell';
-import { useAIChat } from '@/contexts/AIChatContext';
+import { Link, useNavigate } from 'react-router-dom';
 import {
-  Car,
-  FileText,
-  Users,
-  Banknote,
-  TrendingUp,
-  TrendingDown,
-  Wrench,
+  Activity,
   AlertTriangle,
-  Clock,
+  Banknote,
+  BarChart3,
+  Briefcase,
   Calendar,
-  Brain,
-  ArrowUp,
-  ArrowDown,
-  Search,
-  Plus,
+  Car,
+  CheckCircle2,
+  ChevronLeft,
+  Clock,
   CreditCard,
   FilePlus,
-  ShoppingCart,
-  ChevronLeft,
-  Activity,
+  FileText,
+  Search,
+  ShieldAlert,
   Target,
-  Briefcase,
+  Users,
   Wallet,
-  BarChart3,
+  Wrench,
 } from 'lucide-react';
 import {
-  AreaChart,
   Area,
-  PieChart,
-  Pie,
+  AreaChart,
+  CartesianGrid,
   Cell,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  Tooltip,
   XAxis,
   YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
 } from 'recharts';
+
+import { SimpleContractWizard } from '@/components/contracts/SimpleContractWizard';
+import { UnifiedNotificationBell } from '@/components/notifications/UnifiedNotificationBell';
+import { useStableCompanyId } from '@/contexts/CompanyContext';
+import { useAuth } from '@/contexts/AuthContext';
+import { useDashboardStats } from '@/hooks/useDashboardStats';
+import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
+import { systemColorPattern } from '@/lib/design-system/systemColorPattern';
 
-import { useFleetifyTranslation } from "@/hooks/useTranslation";
-// ===== FAB Menu Component =====
-interface FABMenuProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onActionSelect: (actionId: string) => void;
-}
-
-const FABMenu: React.FC<FABMenuProps> = ({ isOpen, onClose, onActionSelect }) => {
-  const { t } = useFleetifyTranslation("ui");
-  const actions = [
-    { id: 'payment', label: 'تسجيل دفعة', icon: CreditCard, color: 'from-emerald-400 to-emerald-600' },
-    { id: 'contract', label: 'إنشاء عقد', icon: FilePlus, color: 'from-blue-400 to-blue-600' },
-    { id: 'search', label: 'البحث', icon: Search, color: 'from-amber-400 to-amber-600' },
-    { id: 'purchase', label: 'أمر شراء', icon: ShoppingCart, color: 'from-teal-400 to-teal-600' },
-  ];
-
-  const handleAction = (actionId: string) => {
-    onClose();
-    onActionSelect(actionId);
-  };
-
-  return (
-    <>
-      <AnimatePresence>
-        {isOpen && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/20 dark:bg-black/40 backdrop-blur-[2px] z-40"
-            onClick={onClose}
-          />
-        )}
-      </AnimatePresence>
-
-      </>
-  );
+const dashboardColors = {
+  text: systemColorPattern.colors.text,
+  inner: systemColorPattern.colors.innerSurface,
+  secondaryText: systemColorPattern.colors.secondaryText,
+  border: systemColorPattern.colors.border,
+  info: systemColorPattern.colors.info,
+  alert: systemColorPattern.colors.alert,
+  focus: systemColorPattern.colors.focus,
+  success: systemColorPattern.colors.success,
+  navy: '#173A63',
+  amber: '#F59E0B',
 };
 
-// ===== Compact Stat Card Component =====
-interface StatCardProps {
+type FleetStatus = {
+  available: number;
+  rented: number;
+  maintenance: number;
+  reserved: number;
+};
+
+type MaintenanceItem = {
+  id: string;
+  maintenance_type: string | null;
+  scheduled_date: string | null;
+  status: string | null;
+  vehicles?: { plate_number?: string | null } | null;
+};
+
+type WorkItem = {
+  id: string;
   title: string;
-  value: string | number;
-  change?: string | number;
+  detail: string;
+  value: string;
+  tone: 'danger' | 'warning' | 'success' | 'info';
   icon: React.ElementType;
-  iconGradient: string;
-  progressLabel?: string;
-  progressValue?: number;
-  progressColor?: string;
-  linkTo?: string;
-  onClick?: () => void;
-}
-
-const StatCard: React.FC<StatCardProps> = ({
-  title,
-  value,
-  change,
-  icon: Icon,
-  iconGradient,
-  progressLabel,
-  progressValue,
-  progressColor = 'from-teal-500 to-teal-600',
-  linkTo,
-  onClick,
-}) => {
-  const navigate = useNavigate();
-  const changeStr = String(change || '');
-  const isPositive = changeStr.includes('+') || (typeof change === 'number' && change > 0);
-  const isClickable = !!linkTo || !!onClick;
-
-  const handleClick = () => {
-    if (onClick) onClick();
-    else if (linkTo) navigate(linkTo);
-  };
-
-  // Extract colors from gradient for dark mode
-  const colorMatch = iconGradient.match(/from-(\w+)-/);
-  const colorBase = colorMatch ? colorMatch[1] : 'teal';
-  const lightBg = `bg-${colorBase}-50`;
-  const darkBg = `dark:bg-${colorBase}-500/10`;
-
-  return (
-    <motion.div
-      className={cn(
-        "bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm hover:shadow-sm transition-all h-full",
-        isClickable && "cursor-pointer"
-      )}
-      onClick={isClickable ? handleClick : undefined}
-      whileHover={isClickable ? { y: -4 } : undefined}
-      whileTap={isClickable ? { scale: 0.98 } : undefined}
-      initial={{ opacity: 0, y: 30 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3 }}
-    >
-      <div className="p-4">
-        <div className="flex items-center justify-between mb-3">
-          <div className={cn('p-2 rounded-lg', lightBg, darkBg)}>
-            <Icon className={cn('w-5 h-5', `text-${colorBase}-600 dark:text-${colorBase}-400`)} />
-          </div>
-          {change !== undefined && change !== null && (
-            <span
-              className={cn(
-                'inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-bold',
-                isPositive
-                  ? 'bg-emerald-100 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400'
-                  : 'bg-red-100 dark:bg-red-500/10 text-red-700 dark:text-red-400'
-              )}
-            >
-              {isPositive ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
-              {changeStr}
-            </span>
-          )}
-        </div>
-
-        <h3 className="text-xs text-slate-500 dark:text-slate-400 mb-1">{title}</h3>
-        <p className="text-xl font-bold text-slate-900 dark:text-white">{value}</p>
-
-        {progressLabel && progressValue !== undefined && (
-          <div className="mt-2">
-            <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 mb-1">
-              <span>{progressLabel}</span>
-              <span className="font-bold text-teal-600 dark:text-teal-400">{progressValue}%</span>
-            </div>
-            <div className="h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-              <motion.div
-                className={cn('h-full rounded-full bg-gradient-to-r', progressColor)}
-                initial={{ width: 0 }}
-                animate={{ width: `${progressValue}%` }}
-                transition={{ duration: 1.2, ease: [0.25, 0.1, 0.25, 1], delay: 0.3 }}
-              />
-            </div>
-          </div>
-        )}
-      </div>
-    </motion.div>
-  );
+  action: string;
+  path: string;
 };
 
-// ===== Glass Card Component =====
-interface GlassCardProps {
-  children: React.ReactNode;
-  className?: string;
-  delay?: number;
-  onClick?: () => void;
-}
+type MetricCardProps = {
+  label: string;
+  value: string | number;
+  hint: string;
+  icon: React.ElementType;
+  tone: 'danger' | 'warning' | 'success' | 'info' | 'navy';
+  path: string;
+};
 
-const GlassCard: React.FC<GlassCardProps> = ({ children, className, delay = 0, onClick }) => (
+const toneMap = {
+  danger: { color: dashboardColors.alert, bg: '#FFF1F2', border: '#FECACA' },
+  warning: { color: dashboardColors.amber, bg: '#FFFBEB', border: '#FDE68A' },
+  success: { color: dashboardColors.success, bg: '#ECFDF5', border: '#A7F3D0' },
+  info: { color: dashboardColors.info, bg: '#EFF6FF', border: '#BFDBFE' },
+  navy: { color: dashboardColors.navy, bg: '#F1F5F9', border: '#CBD5E1' },
+};
+
+const formatQar = (value: number) =>
+  new Intl.NumberFormat('ar-QA', {
+    style: 'currency',
+    currency: 'QAR',
+    maximumFractionDigits: 0,
+  }).format(Number.isFinite(value) ? value : 0);
+
+const getStatNumber = (stats: any, keys: string[], fallback = 0) => {
+  for (const key of keys) {
+    const value = stats?.[key];
+    if (typeof value === 'number' && Number.isFinite(value)) return value;
+  }
+  return fallback;
+};
+
+const ShellCard: React.FC<React.PropsWithChildren<{ className?: string; onClick?: () => void }>> = ({
+  children,
+  className,
+  onClick,
+}) => (
   <motion.div
     className={cn(
-      "relative overflow-hidden bg-white dark:bg-slate-900 rounded-xl p-6 shadow-sm hover:shadow-xl transition-all duration-500 border border-slate-200 dark:border-slate-800",
-      onClick && "cursor-pointer",
+      'rounded-lg border bg-white shadow-sm transition-all',
+      onClick && 'cursor-pointer hover:-translate-y-0.5 hover:shadow-md',
       className
     )}
+    style={{ borderColor: dashboardColors.border }}
     onClick={onClick}
-    initial={{ opacity: 0, y: 30 }}
+    initial={{ opacity: 0, y: 16 }}
     animate={{ opacity: 1, y: 0 }}
-    transition={{ duration: 0.5, delay, type: "spring", bounce: 0.4 }}
-    whileHover={onClick ? { y: -4, scale: 1.01 } : { y: -2 }}
+    transition={{ duration: 0.28 }}
   >
     {children}
   </motion.div>
 );
 
-// ===== Main Dashboard Component =====
+const MetricCard: React.FC<MetricCardProps> = ({ label, value, hint, icon: Icon, tone, path }) => {
+  const navigate = useNavigate();
+  const colors = toneMap[tone];
+
+  return (
+    <ShellCard onClick={() => navigate(path)} className="min-h-[118px] p-4">
+      <div className="flex h-full items-start justify-between gap-3">
+        <div className="space-y-2">
+          <p className="text-sm font-semibold" style={{ color: dashboardColors.secondaryText }}>
+            {label}
+          </p>
+          <p className="text-2xl font-black tracking-normal" style={{ color: dashboardColors.text }}>
+            {value}
+          </p>
+          <p className="text-xs font-medium" style={{ color: dashboardColors.secondaryText }}>
+            {hint}
+          </p>
+        </div>
+        <div className="rounded-lg p-3" style={{ backgroundColor: colors.bg, color: colors.color }}>
+          <Icon className="h-5 w-5" />
+        </div>
+      </div>
+    </ShellCard>
+  );
+};
+
+const QuickAction: React.FC<{
+  label: string;
+  icon: React.ElementType;
+  onClick?: () => void;
+  to?: string;
+  primary?: boolean;
+}> = ({ label, icon: Icon, onClick, to, primary }) => {
+  const className = cn(
+    'inline-flex min-h-[40px] items-center justify-center gap-2 rounded-lg border px-4 text-sm font-bold transition-colors',
+    primary ? 'border-transparent text-white' : 'bg-white text-slate-800 hover:bg-slate-50'
+  );
+  const style = primary
+    ? { backgroundColor: dashboardColors.navy }
+    : { borderColor: dashboardColors.border };
+
+  if (to) {
+    return (
+      <Link to={to} className={className} style={style}>
+        <Icon className="h-4 w-4" />
+        {label}
+      </Link>
+    );
+  }
+
+  return (
+    <button type="button" onClick={onClick} className={className} style={style}>
+      <Icon className="h-4 w-4" />
+      {label}
+    </button>
+  );
+};
+
 const BentoDashboard: React.FC = () => {
-  const { t } = useFleetifyTranslation("ui");
   const { user } = useAuth();
   const navigate = useNavigate();
-  const { formatCurrency } = useCurrencyFormatter();
   const { data: statsData } = useDashboardStats();
   const stats = statsData as any;
-  const { openChat: openAIChat } = useAIChat();
-  const [fabOpen, setFabOpen] = useState(false);
   const [showContractWizard, setShowContractWizard] = useState(false);
-  const [activeFleetIndex, setActiveFleetIndex] = useState<number | null>(null);
 
-  // Get company_id from either profile or company object (with fallback)
   const rawCompanyId = user?.profile?.company_id || user?.company?.id;
-  
-  // CRITICAL FIX: Use stable company ID from CompanyContext (persists across navigation)
-  // plus local ref as fallback for brief auth flickers.
   const contextStableId = useStableCompanyId();
   const stableCompanyIdRef = useRef<string | null>(null);
   if (rawCompanyId) stableCompanyIdRef.current = rawCompanyId;
   const companyId = rawCompanyId || contextStableId || stableCompanyIdRef.current;
-  
-  // Only enable queries when company_id is available
   const isReady = !!companyId;
 
-  // Fleet Status Query
-  const { data: fleetStatus } = useQuery({
-    queryKey: ['fleet-status-redesign', companyId],
+  const { data: fleetStatus } = useQuery<FleetStatus>({
+    queryKey: ['fleet-status-operations-center', companyId],
     queryFn: async () => {
-      if (!companyId) {
-        console.warn('[BentoDashboard] Fleet query called without company_id');
-        return null;
-      }
+      if (!companyId) return { available: 0, rented: 0, maintenance: 0, reserved: 0 };
+
       const { data } = await supabase
         .from('vehicles')
         .select('status')
         .eq('company_id', companyId)
         .eq('is_active', true);
 
-      const counts = { available: 0, rented: 0, maintenance: 0, reserved: 0 };
-      data?.forEach((v) => {
-        const status = v.status || 'available';
-        if (counts[status as keyof typeof counts] !== undefined) {
-          counts[status as keyof typeof counts]++;
-        }
+      const counts: FleetStatus = { available: 0, rented: 0, maintenance: 0, reserved: 0 };
+      data?.forEach((vehicle) => {
+        const status = String(vehicle.status || 'available') as keyof FleetStatus;
+        if (status in counts) counts[status] += 1;
       });
+
       return counts;
     },
     enabled: isReady,
-    staleTime: 2 * 60 * 1000, // Cache for 2 minutes
-    placeholderData: (prev: any) => prev, // Keep previous data during refetch
+    staleTime: 2 * 60 * 1000,
+    placeholderData: (previous) => previous,
   });
 
-  // Maintenance Query
-  const { data: maintenanceData } = useQuery({
-    queryKey: ['maintenance-redesign', companyId],
+  const { data: maintenanceData = [] } = useQuery<MaintenanceItem[]>({
+    queryKey: ['maintenance-operations-center', companyId],
     queryFn: async () => {
-      if (!companyId) {
-        console.warn('[BentoDashboard] Maintenance query called without company_id');
-        return [];
-      }
+      if (!companyId) return [];
+
       const { data } = await supabase
         .from('vehicle_maintenance')
         .select('id, maintenance_type, scheduled_date, status, vehicles(plate_number)')
@@ -283,26 +245,24 @@ const BentoDashboard: React.FC = () => {
         .in('status', ['pending', 'in_progress'])
         .order('scheduled_date', { ascending: true })
         .limit(5);
-      return data || [];
+
+      return (data || []) as MaintenanceItem[];
     },
     enabled: isReady,
-    staleTime: 2 * 60 * 1000, // Cache for 2 minutes
-    placeholderData: (prev: any) => prev, // Keep previous data during refetch
+    staleTime: 2 * 60 * 1000,
+    placeholderData: (previous) => previous,
   });
 
-  // Revenue Chart Data
-  const { data: revenueData } = useQuery({
-    queryKey: ['revenue-chart-redesign', companyId],
+  const { data: revenueData = [] } = useQuery<Array<{ name: string; value: number }>>({
+    queryKey: ['revenue-operations-center', companyId],
     queryFn: async () => {
-      if (!companyId) {
-        console.warn('[BentoDashboard] Revenue query called without company_id');
-        return [];
-      }
-      const months = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو'];
-      const currentMonth = new Date().getMonth();
+      if (!companyId) return [];
 
-      const results = [];
-      for (let i = 5; i >= 0; i--) {
+      const monthNames = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
+      const currentMonth = new Date().getMonth();
+      const results: Array<{ name: string; value: number }> = [];
+
+      for (let i = 5; i >= 0; i -= 1) {
         const date = new Date();
         date.setMonth(currentMonth - i);
         const monthEnd = new Date(date.getFullYear(), date.getMonth() + 1, 0);
@@ -314,740 +274,558 @@ const BentoDashboard: React.FC = () => {
           .eq('status', 'active')
           .lte('start_date', monthEnd.toISOString().split('T')[0]);
 
-        const total = data?.reduce((sum, c) => sum + (c.monthly_amount || 0), 0) || 0;
-        results.push({ name: months[date.getMonth()], value: Math.round(total / 1000) });
+        const total = data?.reduce((sum, contract) => sum + (contract.monthly_amount || 0), 0) || 0;
+        results.push({ name: monthNames[date.getMonth()], value: Math.round(total / 1000) });
       }
+
       return results;
     },
     enabled: isReady,
-    staleTime: 5 * 60 * 1000, // Cache for 5 minutes (revenue data changes less frequently)
-    placeholderData: (prev: any) => prev, // Keep previous data during refetch
+    staleTime: 5 * 60 * 1000,
+    placeholderData: (previous) => previous,
   });
 
-  const totalVehicles = (fleetStatus?.available || 0) + (fleetStatus?.rented || 0) +
-                        (fleetStatus?.maintenance || 0) + (fleetStatus?.reserved || 0);
-  const occupancyRate = totalVehicles > 0 ? Math.round((fleetStatus?.rented || 0) / totalVehicles * 100) : 0;
+  const totalVehicles =
+    (fleetStatus?.available || 0) +
+    (fleetStatus?.rented || 0) +
+    (fleetStatus?.maintenance || 0) +
+    (fleetStatus?.reserved || 0);
+  const occupancyRate = totalVehicles > 0 ? Math.round(((fleetStatus?.rented || 0) / totalVehicles) * 100) : 0;
+
+  const monthlyRevenue = getStatNumber(stats, ['monthlyRevenue', 'totalRevenue', 'revenue']);
+  const overdueAmount = getStatNumber(stats, ['overdueAmount', 'totalOverdue', 'outstandingAmount', 'pendingAmount']);
+  const activeContracts = getStatNumber(stats, ['activeContracts', 'totalActiveContracts']);
+  const totalCustomers = getStatNumber(stats, ['totalCustomers', 'customersCount']);
+  const pendingInvoices = getStatNumber(stats, ['pendingInvoices', 'unpaidInvoices', 'overdueInvoices']);
 
   const today = new Date();
-  const dayName = today.toLocaleDateString('ar-EG', { weekday: 'long' });
-  const dayNumber = today.getDate();
-  const gregorianDate = today.toLocaleDateString('ar-EG', { month: 'long', year: 'numeric' });
+  const dateLabel = today.toLocaleDateString('ar-QA', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  });
 
   const fleetChartData = [
-    { name: 'متاح', value: fleetStatus?.available || 0, color: '#10b981' },
-    { name: 'مؤجر', value: fleetStatus?.rented || 0, color: '#e85a4f' },
-    { name: 'صيانة', value: fleetStatus?.maintenance || 0, color: '#f59e0b' },
-    { name: 'محجوز', value: fleetStatus?.reserved || 0, color: '#3b82f6' },
+    { name: 'متاح', value: fleetStatus?.available || 0, color: dashboardColors.success, path: '/fleet?status=available' },
+    { name: 'مؤجر', value: fleetStatus?.rented || 0, color: dashboardColors.info, path: '/fleet?status=rented' },
+    { name: 'صيانة', value: fleetStatus?.maintenance || 0, color: dashboardColors.amber, path: '/fleet/maintenance' },
+    { name: 'محجوز', value: fleetStatus?.reserved || 0, color: dashboardColors.focus, path: '/fleet/reservations' },
   ];
 
-  const getWeekDays = () => {
-    const days = [];
-    for (let i = 0; i < 7; i++) {
-      const date = new Date();
-      date.setDate(today.getDate() + i);
-      const occupancy = Math.floor(Math.random() * 50) + 40;
-      days.push({
-        day: date.getDate(),
-        isToday: i === 0,
-        occupancy,
-      });
-    }
-    return days;
-  };
-  const weekDays = getWeekDays();
+  const workItems: WorkItem[] = [
+    {
+      id: 'collections',
+      title: 'تحصيل المستحقات المفتوحة',
+      detail: `${pendingInvoices || 0} فاتورة تحتاج متابعة مالية`,
+      value: formatQar(overdueAmount),
+      tone: overdueAmount > 0 ? 'danger' : 'success',
+      icon: Wallet,
+      action: 'تسجيل دفعة',
+      path: '/finance/payments/quick',
+    },
+    {
+      id: 'contracts',
+      title: 'مراجعة العقود النشطة',
+      detail: 'تابع العقود التي تحتاج تجديد أو إجراء',
+      value: `${activeContracts || 0} عقد`,
+      tone: 'info',
+      icon: FileText,
+      action: 'فتح العقود',
+      path: '/contracts',
+    },
+    {
+      id: 'maintenance',
+      title: 'مركبات تحتاج متابعة',
+      detail: 'الصيانة والحجوزات تؤثر على جاهزية الأسطول',
+      value: `${maintenanceData.length || 0} طلب`,
+      tone: maintenanceData.length > 0 ? 'warning' : 'success',
+      icon: Wrench,
+      action: 'عرض الصيانة',
+      path: '/fleet/maintenance',
+    },
+    {
+      id: 'team',
+      title: 'تنسيق عمل الفريق',
+      detail: 'راجع الحمل التشغيلي والمهام اليومية',
+      value: 'اليوم',
+      tone: 'info',
+      icon: Users,
+      action: 'إدارة الفريق',
+      path: '/team-management',
+    },
+  ];
+
+  const operationLanes = [
+    {
+      title: 'المال والتحصيل',
+      subtitle: 'الأموال التي تحتاج حركة الآن',
+      icon: Banknote,
+      color: dashboardColors.success,
+      path: '/finance',
+      items: [
+        { label: 'إيراد الشهر', value: formatQar(monthlyRevenue) },
+        { label: 'مستحقات مفتوحة', value: formatQar(overdueAmount) },
+        { label: 'فواتير تحتاج مراجعة', value: pendingInvoices || 0 },
+      ],
+      actions: [
+        { label: 'تسجيل دفعة', path: '/finance/payments/quick' },
+        { label: 'الفواتير', path: '/finance/billing' },
+      ],
+    },
+    {
+      title: 'العقود والمخاطر',
+      subtitle: 'تجديد، تحصيل، أو تحويل قانوني',
+      icon: ShieldAlert,
+      color: dashboardColors.navy,
+      path: '/contracts',
+      items: [
+        { label: 'العقود النشطة', value: activeContracts || 0 },
+        { label: 'العملاء', value: totalCustomers || 0 },
+        { label: 'نسبة الإشغال', value: `${occupancyRate}%` },
+      ],
+      actions: [
+        { label: 'عقد جديد', path: 'contract-wizard' },
+        { label: 'سجل العقود', path: '/contracts' },
+      ],
+    },
+    {
+      title: 'الأسطول',
+      subtitle: 'جاهزية المركبات والحجوزات',
+      icon: Car,
+      color: dashboardColors.info,
+      path: '/fleet',
+      items: [
+        { label: 'إجمالي المركبات', value: totalVehicles },
+        { label: 'متاحة', value: fleetStatus?.available || 0 },
+        { label: 'في الصيانة', value: fleetStatus?.maintenance || 0 },
+      ],
+      actions: [
+        { label: 'إدارة الأسطول', path: '/fleet' },
+        { label: 'الحجوزات', path: '/fleet/reservations' },
+      ],
+    },
+    {
+      title: 'الفريق والمتابعة',
+      subtitle: 'من المسؤول عن الخطوة التالية؟',
+      icon: Briefcase,
+      color: dashboardColors.focus,
+      path: '/team-management',
+      items: [
+        { label: 'متابعات اليوم', value: workItems.length },
+        { label: 'حالات عاجلة', value: workItems.filter((item) => item.tone === 'danger' || item.tone === 'warning').length },
+        { label: 'إجراءات جاهزة', value: 4 },
+      ],
+      actions: [
+        { label: 'إدارة الفريق', path: '/team-management' },
+        { label: 'مساحة عملي', path: '/employee-workspace' },
+      ],
+    },
+  ];
 
   const triggerQuickSearch = useCallback(() => {
-    const event = new KeyboardEvent('keydown', {
-      key: 'k',
-      ctrlKey: true,
-      bubbles: true,
-    });
-    document.dispatchEvent(event);
+    document.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        key: 'k',
+        ctrlKey: true,
+        bubbles: true,
+      })
+    );
   }, []);
 
-  const handleActionSelect = useCallback((actionId: string) => {
-    switch (actionId) {
-      case 'payment':
-        navigate('/finance/payments/quick');
-        break;
-      case 'contract':
-        setShowContractWizard(true);
-        break;
-      case 'search':
-        triggerQuickSearch();
-        break;
-      case 'purchase':
-        navigate('/finance/purchase-orders');
-        break;
+  const handleLaneAction = (path: string) => {
+    if (path === 'contract-wizard') {
+      setShowContractWizard(true);
+      return;
     }
-  }, [navigate, triggerQuickSearch]);
+    navigate(path);
+  };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-neutral-100 via-neutral-50 to-neutral-100 dark:from-neutral-900 dark:via-neutral-950 dark:to-neutral-900">
-      <FABMenu isOpen={fabOpen} onClose={() => setFabOpen(!fabOpen)} onActionSelect={handleActionSelect} />
-
-      {/* NEW STICKY HEADER - Clean, Professional */}
-      <header className="bg-white dark:bg-neutral-900 border-b border-neutral-200 dark:border-neutral-800 sticky top-0 z-30">
-        <div className="px-6 py-3">
-          <div className="flex items-center justify-between">
-            {/* Left - Logo & Date */}
-                <div className="flex items-center gap-6">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 bg-teal-500 rounded-lg flex items-center justify-center">
-                  <Activity className="w-5 h-5 text-white" />
-                </div>
-                <span className="font-bold text-neutral-900 dark:text-white">لوحة التحكم</span>
-              </div>
-
-              <div className="h-6 w-px bg-neutral-200 dark:bg-neutral-700" />
-
-              <div className="flex items-center gap-2 text-sm">
-                <span className="font-bold text-neutral-900 dark:text-white">{dayNumber}</span>
-                <span className="text-neutral-600 dark:text-neutral-300">{dayName}</span>
-                <span className="text-neutral-400 dark:text-neutral-500">{gregorianDate}</span>
-              </div>
+    <div dir="rtl" className="min-h-screen" style={{ backgroundColor: dashboardColors.inner }}>
+      <header className="sticky top-0 z-30 border-b bg-white/95 backdrop-blur" style={{ borderColor: dashboardColors.border }}>
+        <div className="flex w-full flex-wrap items-center justify-between gap-4 px-6 py-4">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg text-white" style={{ backgroundColor: dashboardColors.navy }}>
+              <Activity className="h-5 w-5" />
             </div>
-
-            {/* Right - Search, Notifications, User */}
-            <div className="flex items-center gap-3">
-              <div className="relative">
-                <input
-                  type="text"
-                  placeholder="بحث..."
-                  className="w-64 pl-4 pr-10 py-2 bg-neutral-100 dark:bg-neutral-800 rounded-lg text-sm text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-rose-500/20"
-                />
-                <Search className="w-4 h-4 text-neutral-400 absolute right-3 top-1/2 -translate-y-1/2" />
-              </div>
-
-              <div className="h-6 w-px bg-neutral-200 dark:bg-neutral-700" />
-
-              {/* Employee Workspace Button */}
-              <motion.button
-                className="flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 text-white rounded-lg text-sm font-semibold hover:shadow-lg shadow-teal-500/20 transition-all"
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={() => navigate('/employee-workspace')}
-              >
-                <Briefcase className="w-4 h-4" />
-                <span>مساحة عملي</span>
-              </motion.button>
-
-              {/* Team Management Button - Visible only to specific user */}
-              {user?.email && user.email.toLowerCase().trim() === 'khamis-1992@hotmail.com' && (
-                <motion.button
-                  className="flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-indigo-500 to-indigo-600 hover:from-indigo-600 hover:to-indigo-700 text-white rounded-lg text-sm font-semibold hover:shadow-lg shadow-indigo-500/20 transition-all"
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={() => navigate('/team-management')}
-                >
-                  <Users className="w-4 h-4" />
-                  <span>إدارة الفريق</span>
-                </motion.button>
-              )}
-
-              {/* Fleetify AI Assistant */}
-              <motion.button
-                className="flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 text-white rounded-lg text-sm font-semibold hover:shadow-lg shadow-teal-500/20 transition-all"
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={() => openAIChat()}
-              >
-                <Brain className="w-4 h-4" />
-                <span>{t("aiAssistant")}</span>
-              </motion.button>
-
-              <UnifiedNotificationBell />
-
-              <div className="w-8 h-8 bg-neutral-200 rounded-full flex items-center justify-center">
-                <span className="text-xs font-bold text-neutral-600">م</span>
-              </div>
+            <div>
+              <h1 className="text-xl font-black" style={{ color: dashboardColors.text }}>
+                لوحة القيادة التشغيلية
+              </h1>
+              <p className="text-xs font-medium" style={{ color: dashboardColors.secondaryText }}>
+                {dateLabel}
+              </p>
             </div>
+          </div>
+
+          <div className="flex flex-1 items-center justify-end gap-2">
+            <button
+              type="button"
+              onClick={triggerQuickSearch}
+              className="hidden min-w-[260px] items-center justify-between rounded-lg border bg-slate-50 px-3 py-2 text-sm font-semibold text-slate-500 transition-colors hover:bg-white lg:flex"
+              style={{ borderColor: dashboardColors.border }}
+            >
+              <span>بحث سريع...</span>
+              <Search className="h-4 w-4" />
+            </button>
+            <QuickAction label="فاتورة جديدة" icon={FilePlus} to="/finance/billing" />
+            <QuickAction label="تسجيل دفعة" icon={CreditCard} to="/finance/payments/quick" primary />
+            <QuickAction label="عقد جديد" icon={FileText} onClick={() => setShowContractWizard(true)} />
+            <UnifiedNotificationBell />
           </div>
         </div>
       </header>
 
-      {/* Main Content - Glassmorphism Design */}
-      <div className="p-6">
+      <main className="w-full space-y-6 px-6 py-6">
+        <section>
+          <ShellCard className="overflow-hidden">
+            <div className="grid grid-cols-1 2xl:grid-cols-[minmax(0,1fr)_390px]">
+              <div className="p-6">
+                <div className="mb-5 flex flex-wrap items-center justify-between gap-4">
+                  <div>
+                    <p className="text-sm font-bold" style={{ color: dashboardColors.success }}>
+                      مركز القرار اليومي
+                    </p>
+                    <h2 className="mt-1 text-2xl font-black lg:text-3xl" style={{ color: dashboardColors.text }}>
+                      ابدأ من الحالات التي تحتاج قرارًا الآن
+                    </h2>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => navigate('/tasks')}
+                    className="inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-bold text-white"
+                    style={{ backgroundColor: dashboardColors.navy }}
+                  >
+                    فتح قائمة العمل
+                    <ChevronLeft className="h-4 w-4" />
+                  </button>
+                </div>
 
-        {/* Stats Row - 4 Compact cards */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-          <StatCard
-            title="إجمالي المركبات"
-            value={stats?.totalVehicles || 0}
-            change="+12%"
-            icon={Car}
-            iconGradient="from-teal-500 to-teal-600"
-            progressLabel="نشاط"
-            progressValue={stats?.vehicleActivityRate || 85}
-            progressColor="from-teal-500 to-teal-600"
-            linkTo="/fleet"
-          />
+                <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+                  {workItems.map((item) => {
+                    const colors = toneMap[item.tone];
+                    const Icon = item.icon;
 
-          <StatCard
-            title="العقود النشطة"
-            value={stats?.activeContracts || 0}
-            change="+5%"
-            icon={FileText}
-            iconGradient="from-blue-500 to-indigo-500"
-            progressLabel="إكمال"
-            progressValue={stats?.contractCompletionRate || 78}
-            progressColor="from-blue-500 to-indigo-500"
-            linkTo="/contracts"
-          />
-
-          <StatCard
-            title="إجمالي العملاء"
-            value={stats?.totalCustomers || 0}
-            change="+8%"
-            icon={Users}
-            iconGradient="from-emerald-500 to-teal-500"
-            progressLabel="رضا"
-            progressValue={stats?.customerSatisfactionRate || 92}
-            progressColor="from-emerald-500 to-teal-500"
-            linkTo="/customers"
-          />
-
-          <StatCard
-            title="إيرادات الشهر"
-            value={formatCurrency(stats?.monthlyRevenue || 0)}
-            change="-3%"
-            icon={Banknote}
-            iconGradient="from-amber-500 to-yellow-500"
-            linkTo="/finance"
-          />
-        </div>
-
-        {/* Quick Actions Section */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-          <Link to="/finance/billing" title="إنشاء فاتورة جديدة" className="flex items-center gap-3 p-3 bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-400 rounded-xl hover:bg-blue-100 dark:hover:bg-blue-500/20 transition-colors min-h-[44px]">
-            <FileText className="w-5 h-5" />
-            <span className="text-sm font-medium">فاتورة جديدة</span>
-          </Link>
-          <Link to="/finance/treasury" title="تسجيل دفعة" className="flex items-center gap-3 p-3 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 rounded-xl hover:bg-emerald-100 dark:hover:bg-emerald-500/20 transition-colors min-h-[44px]">
-            <Wallet className="w-5 h-5" />
-            <span className="text-sm font-medium">تسجيل دفعة</span>
-          </Link>
-          <Link to="/finance/reports" title="عرض التقارير المالية" className="flex items-center gap-3 p-3 bg-purple-50 dark:bg-purple-500/10 text-purple-700 dark:text-purple-400 rounded-xl hover:bg-purple-100 dark:hover:bg-purple-500/20 transition-colors min-h-[44px]">
-            <BarChart3 className="w-5 h-5" />
-            <span className="text-sm font-medium">عرض التقارير</span>
-          </Link>
-          <Link to="/fleet" title="إضافة مركبة جديدة" className="flex items-center gap-3 p-3 bg-orange-50 dark:bg-orange-500/10 text-orange-700 dark:text-orange-400 rounded-xl hover:bg-orange-100 dark:hover:bg-orange-500/20 transition-colors min-h-[44px]">
-            <Car className="w-5 h-5" />
-            <span className="text-sm font-medium">إضافة مركبة</span>
-          </Link>
-        </div>
-
-        {/* Main Grid */}
-        <div className="grid grid-cols-12 gap-6">
-
-          {/* Financial Performance Chart */}
-          <GlassCard className="col-span-5" delay={0.1} onClick={() => navigate('/finance')}>
-            <div className="flex items-start justify-between mb-6">
-              <div>
-                <h3 className="text-lg font-black text-neutral-900 mb-1">الأداء المالي</h3>
-                <p className="text-xs text-neutral-500 font-medium">تحليل الإيرادات الشهرية</p>
+                    return (
+                      <button
+                        type="button"
+                        key={item.id}
+                        onClick={() => navigate(item.path)}
+                        className="group min-h-[118px] rounded-lg border p-5 text-right transition-all hover:-translate-y-0.5 hover:shadow-md"
+                        style={{ borderColor: colors.border, backgroundColor: colors.bg }}
+                      >
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="space-y-2">
+                            <div className="flex items-center gap-2">
+                              <span className="rounded-lg p-2" style={{ color: colors.color, backgroundColor: '#FFFFFFB8' }}>
+                                <Icon className="h-5 w-5" />
+                              </span>
+                              <h3 className="text-base font-black" style={{ color: dashboardColors.text }}>
+                                {item.title}
+                              </h3>
+                            </div>
+                            <p className="text-sm font-medium" style={{ color: dashboardColors.secondaryText }}>
+                              {item.detail}
+                            </p>
+                          </div>
+                          <div className="text-left">
+                            <p className="text-lg font-black" style={{ color: colors.color }}>
+                              {item.value}
+                            </p>
+                            <span className="mt-3 inline-flex items-center gap-1 text-sm font-bold" style={{ color: dashboardColors.navy }}>
+                              {item.action}
+                              <ChevronLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" />
+                            </span>
+                          </div>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-teal-500 to-teal-600 flex items-center justify-center shadow-lg shadow-teal-500/30">
-                <Activity className="w-5 h-5 text-white" />
+
+              <div className="border-t bg-slate-50 p-6 2xl:border-r 2xl:border-t-0" style={{ borderColor: dashboardColors.border }}>
+                <p className="mb-4 text-sm font-black" style={{ color: dashboardColors.text }}>
+                  نبض اليوم
+                </p>
+                <div className="space-y-3">
+                  {[
+                    { label: 'الإيراد الشهري', value: formatQar(monthlyRevenue), icon: Banknote, color: dashboardColors.success },
+                    { label: 'المستحقات المفتوحة', value: formatQar(overdueAmount), icon: AlertTriangle, color: dashboardColors.alert },
+                    { label: 'إشغال الأسطول', value: `${occupancyRate}%`, icon: Car, color: dashboardColors.info },
+                    { label: 'العقود النشطة', value: activeContracts || 0, icon: FileText, color: dashboardColors.navy },
+                  ].map((item) => {
+                    const Icon = item.icon;
+                    return (
+                      <div key={item.label} className="flex items-center justify-between rounded-lg border bg-white p-3" style={{ borderColor: dashboardColors.border }}>
+                        <div>
+                          <p className="text-xs font-semibold" style={{ color: dashboardColors.secondaryText }}>
+                            {item.label}
+                          </p>
+                          <p className="mt-1 text-lg font-black" style={{ color: dashboardColors.text }}>
+                            {item.value}
+                          </p>
+                        </div>
+                        <div className="rounded-lg p-2" style={{ backgroundColor: `${item.color}16`, color: item.color }}>
+                          <Icon className="h-5 w-5" />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             </div>
+          </ShellCard>
+        </section>
 
-            <div className="h-48 mb-6">
+        <section className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-5">
+          <MetricCard label="إجمالي المركبات" value={totalVehicles} hint={`${fleetStatus?.available || 0} متاحة الآن`} icon={Car} tone="info" path="/fleet" />
+          <MetricCard label="العقود النشطة" value={activeContracts || 0} hint="اضغط لفتح سجل العقود" icon={FileText} tone="navy" path="/contracts" />
+          <MetricCard label="العملاء" value={totalCustomers || 0} hint="ملفات العملاء والمتابعة" icon={Users} tone="success" path="/customers" />
+          <MetricCard label="إيراد الشهر" value={formatQar(monthlyRevenue)} hint="لوحة المالية والتحصيل" icon={Banknote} tone="success" path="/finance" />
+          <MetricCard label="تنبيهات تشغيلية" value={maintenanceData.length + (pendingInvoices || 0)} hint="صيانة وفواتير تحتاج إجراء" icon={ShieldAlert} tone="warning" path="/tasks" />
+        </section>
+
+        <section className="grid grid-cols-1 gap-4 lg:grid-cols-2 2xl:grid-cols-4">
+          {operationLanes.map((lane) => {
+            const Icon = lane.icon;
+            return (
+              <ShellCard key={lane.title} className="p-5">
+                <div className="mb-4 flex items-start justify-between gap-3">
+                  <div>
+                    <div className="mb-2 inline-flex rounded-lg p-2" style={{ backgroundColor: `${lane.color}14`, color: lane.color }}>
+                      <Icon className="h-5 w-5" />
+                    </div>
+                    <h3 className="text-lg font-black" style={{ color: dashboardColors.text }}>
+                      {lane.title}
+                    </h3>
+                    <p className="text-xs font-medium" style={{ color: dashboardColors.secondaryText }}>
+                      {lane.subtitle}
+                    </p>
+                  </div>
+                  <button type="button" onClick={() => navigate(lane.path)} className="rounded-lg border p-2 hover:bg-slate-50" style={{ borderColor: dashboardColors.border }}>
+                    <ChevronLeft className="h-4 w-4" />
+                  </button>
+                </div>
+
+                <div className="space-y-2">
+                  {lane.items.map((item) => (
+                    <div key={item.label} className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2">
+                      <span className="text-sm font-semibold" style={{ color: dashboardColors.secondaryText }}>
+                        {item.label}
+                      </span>
+                      <span className="text-sm font-black" style={{ color: dashboardColors.text }}>
+                        {item.value}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="mt-4 grid grid-cols-2 gap-2">
+                  {lane.actions.map((action) => (
+                    <button
+                      type="button"
+                      key={action.label}
+                      onClick={() => handleLaneAction(action.path)}
+                      className="rounded-lg border px-3 py-2 text-sm font-bold transition-colors hover:bg-slate-50"
+                      style={{ borderColor: dashboardColors.border, color: dashboardColors.navy }}
+                    >
+                      {action.label}
+                    </button>
+                  ))}
+                </div>
+              </ShellCard>
+            );
+          })}
+        </section>
+
+        <section className="grid grid-cols-1 gap-5 xl:grid-cols-[1.15fr_0.85fr]">
+          <ShellCard className="p-5">
+            <div className="mb-5 flex items-center justify-between">
+              <div>
+                <h3 className="text-xl font-black" style={{ color: dashboardColors.text }}>
+                  حركة الإيرادات
+                </h3>
+                <p className="text-sm font-medium" style={{ color: dashboardColors.secondaryText }}>
+                  قراءة مختصرة لآخر ستة أشهر
+                </p>
+              </div>
+              <button type="button" onClick={() => navigate('/finance/reports-analysis?tab=reports')} className="rounded-lg border px-3 py-2 text-sm font-bold" style={{ borderColor: dashboardColors.border }}>
+                عرض التقارير
+              </button>
+            </div>
+
+            <div className="h-[260px]">
               <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={revenueData || []}>
+                <AreaChart data={revenueData}>
                   <defs>
-                    <linearGradient id="colorRevenueRedesign" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#e85a4f" stopOpacity={0.4} />
-                      <stop offset="95%" stopColor="#e85a4f" stopOpacity={0} />
+                    <linearGradient id="dashboardRevenueFill" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor={dashboardColors.success} stopOpacity={0.28} />
+                      <stop offset="95%" stopColor={dashboardColors.success} stopOpacity={0} />
                     </linearGradient>
                   </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" strokeOpacity={0.5} />
-                  <XAxis dataKey="name" tick={{ fontSize: 11, fill: '#78716c', fontWeight: 500 }} />
-                  <YAxis tick={{ fontSize: 11, fill: '#78716c', fontWeight: 500 }} tickFormatter={(v) => `${v}K`} />
+                  <CartesianGrid strokeDasharray="3 3" stroke={dashboardColors.border} />
+                  <XAxis dataKey="name" tick={{ fontSize: 12, fill: dashboardColors.secondaryText }} />
+                  <YAxis tick={{ fontSize: 12, fill: dashboardColors.secondaryText }} tickFormatter={(value) => `${value}K`} />
                   <Tooltip
-                    formatter={(value) => [`${value}K`, 'الإيرادات']}
-                    contentStyle={{
-                      borderRadius: '12px',
-                      border: 'none',
-                      boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
-                      fontSize: '13px',
-                      padding: '12px'
-                    }}
-                    cursor={{ stroke: '#e85a4f', strokeWidth: 2, strokeDasharray: '5 5' }}
+                    formatter={(value) => [`${value}K`, 'الإيراد']}
+                    contentStyle={{ borderRadius: 8, borderColor: dashboardColors.border, fontSize: 13 }}
                   />
-                  <Area
-                    type="monotone"
-                    dataKey="value"
-                    stroke="#e85a4f"
-                    strokeWidth={3}
-                    fill="url(#colorRevenueRedesign)"
-                    animationDuration={1500}
-                    animationEasing="ease-out"
-                  />
+                  <Area type="monotone" dataKey="value" stroke={dashboardColors.success} strokeWidth={3} fill="url(#dashboardRevenueFill)" />
                 </AreaChart>
               </ResponsiveContainer>
             </div>
+          </ShellCard>
 
-            <div className="grid grid-cols-3 gap-4 pt-4 border-t border-neutral-200/60">
-              {[
-                { value: '+22%', label: 'معدل النمو', color: 'text-emerald-600', bg: 'bg-emerald-50' },
-                { value: formatCurrency(stats?.monthlyRevenue || 0), label: 'الإيرادات', color: 'text-blue-600', bg: 'bg-blue-50' },
-                { value: stats?.activeContracts || 0, label: 'العقود', color: 'text-teal-600', bg: 'bg-teal-50' },
-              ].map((item, index) => (
-                <motion.div
-                  key={index}
-                  className={cn('text-center p-3 rounded-2xl', item.bg)}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.3 + index * 0.1 }}
-                  whileHover={{ scale: 1.05 }}
-                >
-                  <motion.p
-                    className={`text-lg font-black ${item.color}`}
-                    key={String(item.value)}
-                    initial={{ scale: 0.8 }}
-                    animate={{ scale: 1 }}
-                  >
-                    {item.value}
-                  </motion.p>
-                  <p className="text-[10px] text-neutral-600 font-semibold uppercase tracking-wide">{item.label}</p>
-                </motion.div>
-              ))}
-            </div>
-          </GlassCard>
-
-          {/* Fleet Status */}
-          <GlassCard className="col-span-3" delay={0.15}>
-            <div className="flex items-center justify-between mb-4">
+          <ShellCard className="p-5">
+            <div className="mb-5 flex items-center justify-between">
               <div>
-                <h3 className="text-lg font-black text-neutral-900">حالة الأسطول</h3>
-                <p className="text-xs text-neutral-500">توزيع المركبات</p>
+                <h3 className="text-xl font-black" style={{ color: dashboardColors.text }}>
+                  جاهزية الأسطول
+                </h3>
+                <p className="text-sm font-medium" style={{ color: dashboardColors.secondaryText }}>
+                  توزيع المركبات حسب الحالة
+                </p>
               </div>
-              <motion.span
-                className="px-3 py-1.5 bg-gradient-to-r from-teal-500 to-teal-600 text-white rounded-xl text-xs font-bold shadow-lg shadow-teal-500/30 cursor-pointer"
-                whileHover={{ scale: 1.05 }}
-                onClick={() => navigate('/fleet')}
-              >
-                {occupancyRate}% مستغل
-              </motion.span>
+              <span className="rounded-lg px-3 py-1 text-sm font-black" style={{ backgroundColor: `${dashboardColors.info}14`, color: dashboardColors.info }}>
+                {occupancyRate}% إشغال
+              </span>
             </div>
 
-            <div className="h-36 relative flex items-center justify-center mb-4">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={fleetChartData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius="60%"
-                    outerRadius="90%"
-                    dataKey="value"
-                    onMouseEnter={(_, index) => setActiveFleetIndex(index)}
-                    onMouseLeave={() => setActiveFleetIndex(null)}
-                  >
-                    {fleetChartData.map((entry, index) => (
-                      <Cell
-                        key={`cell-${index}`}
-                        fill={entry.color}
-                        style={{
-                          cursor: 'pointer',
-                          filter: activeFleetIndex === index
-                            ? 'brightness(1.15) drop-shadow(0 4px 8px rgba(0,0,0,0.2))'
-                            : 'drop-shadow(0 2px 4px rgba(0,0,0,0.1))',
-                          transform: activeFleetIndex === index ? 'scale(1.05)' : 'scale(1)',
-                          transformOrigin: 'center',
-                          transition: 'all 0.3s ease'
-                        }}
-                        onClick={() => navigate(`/fleet?status=${entry.name}`)}
-                      />
-                    ))}
-                  </Pie>
-                  <Tooltip
-                    content={({ payload }) => {
-                      if (!payload?.[0]) return null;
-                      const data = payload[0].payload;
-                      return (
-                        <motion.div
-                          className="bg-white px-4 py-3 rounded-2xl shadow-xl border border-neutral-100"
-                          initial={{ opacity: 0, scale: 0.9 }}
-                          animate={{ opacity: 1, scale: 1 }}
-                        >
-                          <p className="font-bold text-sm text-neutral-900">{data.name}</p>
-                          <p className="text-neutral-600 text-xs mt-1">{data.value} مركبة</p>
-                          <p className="text-[10px] text-teal-600 mt-2 font-semibold">انقر للتصفية ←</p>
-                        </motion.div>
-                      );
-                    }}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
-              <motion.div
-                className="absolute text-center"
-                key={totalVehicles}
-                initial={{ scale: 0.8, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                transition={{ type: "spring", stiffness: 300 }}
-              >
-                <p className="text-3xl font-black text-neutral-900">{totalVehicles}</p>
-                <p className="text-[10px] text-neutral-400 font-semibold uppercase tracking-wide">إجمالي</p>
-              </motion.div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-2">
-              {fleetChartData.map((item, index) => (
-                <motion.div
-                  key={item.name}
-                  className={cn(
-                    "flex items-center gap-2 p-3 rounded-xl cursor-pointer transition-all",
-                    activeFleetIndex === index
-                      ? 'bg-neutral-100 ring-2 ring-neutral-200'
-                      : 'bg-neutral-50/60 hover:bg-neutral-100'
-                  )}
-                  onClick={() => navigate(`/fleet?status=${item.name}`)}
-                  onMouseEnter={() => setActiveFleetIndex(index)}
-                  onMouseLeave={() => setActiveFleetIndex(null)}
-                  whileHover={{ scale: 1.02, x: 2 }}
-                  whileTap={{ scale: 0.98 }}
-                >
-                  <motion.div
-                    className="w-3 h-3 rounded-full shadow-sm"
-                    style={{ backgroundColor: item.color }}
-                    animate={{ scale: activeFleetIndex === index ? 1.3 : 1 }}
-                    transition={{ type: "spring", stiffness: 400 }}
-                  />
-                  <div className="flex-1">
-                    <p className="text-sm font-black text-neutral-900">{item.value}</p>
-                    <p className="text-[10px] text-neutral-500 font-medium">{item.name}</p>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-          </GlassCard>
-
-          {/* Maintenance Schedule */}
-          <GlassCard className="col-span-4" delay={0.2}>
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <h3 className="text-lg font-black text-neutral-900">جدول الصيانة</h3>
-                <p className="text-xs text-neutral-500">الصيانات القادمة</p>
-              </div>
-              <motion.span
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-amber-400 to-orange-400 text-white rounded-xl text-xs font-bold shadow-lg shadow-amber-500/30 cursor-pointer"
-                whileHover={{ scale: 1.05 }}
-                onClick={() => navigate('/fleet/maintenance')}
-              >
-                <Clock className="w-3.5 h-3.5" />
-                {maintenanceData?.length || 0} قريباً
-              </motion.span>
-            </div>
-
-            <div className="space-y-2">
-              {maintenanceData && maintenanceData.length > 0 ? (
-                maintenanceData.slice(0, 3).map((item: any, index: number) => (
-                  <motion.div
-                    key={item.id}
-                    className={cn(
-                      'group flex items-center gap-3 p-3 rounded-xl border-r-4 cursor-pointer transition-all',
-                      index === 0
-                        ? 'bg-red-50/80 border-red-500 hover:bg-red-100'
-                        : 'bg-amber-50/80 border-amber-500 hover:bg-amber-100'
-                    )}
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: index * 0.1 }}
-                    whileHover={{ x: 4, scale: 1.01 }}
-                    whileTap={{ scale: 0.98 }}
-                    onClick={() => navigate(`/fleet/maintenance`)}
-                  >
-                    <motion.div
-                      className="w-10 h-10 rounded-xl flex items-center justify-center"
-                      animate={index === 0 ? { rotate: [0, 10, -10, 0] } : {}}
-                      transition={{ repeat: index === 0 ? Infinity : 0, duration: 3, repeatDelay: 1 }}
-                    >
-                      {index === 0 ? (
-                        <div className="bg-red-500 text-white p-2 rounded-xl"><AlertTriangle className="w-5 h-5" /></div>
-                      ) : (
-                        <div className="bg-amber-500 text-white p-2 rounded-xl"><Wrench className="w-5 h-5" /></div>
-                      )}
-                    </motion.div>
-                    <div className="flex-1">
-                      <p className="text-sm font-bold text-neutral-900">
-                        {item.vehicles?.plate_number || 'غير محدد'}
-                      </p>
-                      <p className="text-xs text-neutral-600">{item.maintenance_type}</p>
-                    </div>
-                    <motion.div
-                      className="opacity-0 group-hover:opacity-100 transition-opacity"
-                      initial={{ x: -5 }}
-                      animate={{ x: 0 }}
-                    >
-                      <ChevronLeft className="w-5 h-5 text-neutral-400" />
-                    </motion.div>
-                  </motion.div>
-                ))
-              ) : (
-                <motion.div
-                  className="text-center py-8 text-neutral-400"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                >
-                  <Wrench className="w-12 h-12 mx-auto mb-3 opacity-40" />
-                  <p className="text-sm font-medium">لا توجد صيانات</p>
-                </motion.div>
-              )}
-            </div>
-
-            <motion.button
-              className="w-full mt-4 py-3 text-xs font-bold text-teal-600 bg-teal-50 rounded-xl hover:bg-teal-100 transition-all"
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              onClick={() => navigate('/fleet/maintenance')}
-            >
-              عرض الكل ({maintenanceData?.length || 0})
-            </motion.button>
-          </GlassCard>
-
-          {/* Reservations Calendar */}
-          <GlassCard className="col-span-4" delay={0.25} onClick={() => navigate('/fleet/reservations')}>
-            <div className="flex items-center justify-between mb-5">
-              <div>
-                <h3 className="text-lg font-black text-neutral-900">تقويم الحجوزات</h3>
-                <p className="text-xs text-neutral-500">الأسبوع القادم</p>
-              </div>
-              <motion.button
-                className="p-2 bg-teal-50 rounded-xl hover:bg-teal-100 transition-colors"
-                whileHover={{ rotate: 15 }}
-              >
-                <Calendar className="w-4 h-4 text-teal-600" />
-              </motion.button>
-            </div>
-
-            <div className="grid grid-cols-7 gap-2 text-center mb-2">
-              {['أحد', 'إثن', 'ثلا', 'أرب', 'خمي', 'جمع', 'سبت'].map((day) => (
-                <span key={day} className="text-[10px] text-neutral-500 font-semibold uppercase">{day}</span>
-              ))}
-            </div>
-
-            <div className="grid grid-cols-7 gap-2 mb-4">
-              {weekDays.map((day, index) => (
-                <motion.div
-                  key={index}
-                  className={cn(
-                    'aspect-square rounded-2xl flex flex-col items-center justify-center cursor-pointer transition-all',
-                    day.isToday
-                      ? 'bg-gradient-to-br from-teal-500 to-teal-600 text-white shadow-lg shadow-teal-500/30'
-                      : day.occupancy > 80
-                      ? 'bg-red-50 border-2 border-red-200 hover:border-red-400 hover:bg-red-100'
-                      : day.occupancy > 60
-                      ? 'bg-orange-50 border-2 border-orange-200 hover:border-orange-400 hover:bg-orange-100'
-                      : 'bg-emerald-50 border-2 border-emerald-200 hover:border-emerald-400 hover:bg-emerald-100'
-                  )}
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ delay: index * 0.05 }}
-                  whileHover={{ scale: 1.15, zIndex: 10 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    const targetDate = new Date();
-                    targetDate.setDate(today.getDate() + index);
-                    navigate(`/fleet/reservations?date=${targetDate.toISOString().split('T')[0]}`);
-                  }}
-                >
-                  <span className={cn('text-sm font-black', day.isToday ? 'text-white' : 'text-neutral-700')}>
-                    {day.day}
-                  </span>
-                  <span className={cn('text-[9px] font-bold', day.isToday ? 'text-white/80' : 'text-neutral-500')}>
-                    {day.isToday ? 'اليوم' : `${day.occupancy}%`}
-                  </span>
-                </motion.div>
-              ))}
-            </div>
-
-            <motion.div
-              className="p-4 bg-gradient-to-r from-teal-50 to-emerald-50 rounded-2xl cursor-pointer hover:from-teal-100 hover:to-emerald-100 transition-all"
-              whileHover={{ scale: 1.02 }}
-              onClick={(e) => {
-                e.stopPropagation();
-                navigate('/fleet/reservations');
-              }}
-            >
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-xs font-bold text-neutral-900">ملخص الأسبوع</span>
-                <span className="text-[10px] text-neutral-500">
-                  {dayNumber}-{dayNumber + 6} {gregorianDate.split(' ')[0]}
-                </span>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="text-center">
-                  <motion.p
-                    className="text-2xl font-black text-teal-600"
-                    key={occupancyRate}
-                    initial={{ scale: 0.8 }}
-                    animate={{ scale: 1 }}
-                  >
-                    {occupancyRate}%
-                  </motion.p>
-                  <p className="text-[10px] text-neutral-600 font-semibold uppercase">الإشغال</p>
-                </div>
-                <div className="text-center">
-                  <motion.p
-                    className="text-2xl font-black text-emerald-600"
-                    key={stats?.activeContracts}
-                    initial={{ scale: 0.8 }}
-                    animate={{ scale: 1 }}
-                  >
-                    {stats?.activeContracts || 0}
-                  </motion.p>
-                  <p className="text-[10px] text-neutral-600 font-semibold uppercase">عقود</p>
-                </div>
-              </div>
-            </motion.div>
-          </GlassCard>
-
-          {/* Revenue Forecast */}
-          <GlassCard className="col-span-4" delay={0.3} onClick={() => navigate('/finance')}>
-            <div className="flex items-start justify-between mb-5">
-              <div>
-                <h3 className="text-lg font-black text-neutral-900">توقعات الإيرادات</h3>
-                <p className="text-xs text-neutral-500">تحليل ذكي باستخدام AI</p>
-              </div>
-              <motion.div
-                className="w-12 h-12 bg-gradient-to-br from-teal-500 to-teal-600 rounded-2xl flex items-center justify-center shadow-lg shadow-teal-500/30"
-                animate={{ rotate: [0, 10, -10, 0] }}
-                transition={{ repeat: Infinity, duration: 5, repeatDelay: 2 }}
-              >
-                <Brain className="w-6 h-6 text-white" />
-              </motion.div>
-            </div>
-
-            <div className="space-y-4 mb-5">
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs text-neutral-600 font-semibold">الشهر الحالي</span>
-                  <motion.span
-                    className="text-sm font-black text-neutral-900"
-                    key={stats?.monthlyRevenue}
-                    initial={{ opacity: 0, y: -5 }}
-                    animate={{ opacity: 1, y: 0 }}
-                  >
-                    {formatCurrency(stats?.monthlyRevenue || 0)}
-                  </motion.span>
-                </div>
-                <div className="h-2 bg-neutral-200/60 rounded-full overflow-hidden">
-                  <motion.div
-                    className="h-full rounded-full bg-gradient-to-r from-teal-500 to-teal-600 shadow-inner"
-                    initial={{ width: 0 }}
-                    animate={{ width: '80%' }}
-                    transition={{ duration: 1.2, ease: [0.25, 0.1, 0.25, 1] }}
-                  />
-                </div>
+            <div className="grid grid-cols-1 items-center gap-4 md:grid-cols-[220px_1fr]">
+              <div className="h-[220px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie data={fleetChartData} dataKey="value" innerRadius={58} outerRadius={88} paddingAngle={3}>
+                      {fleetChartData.map((item) => (
+                        <Cell key={item.name} fill={item.color} onClick={() => navigate(item.path)} className="cursor-pointer" />
+                      ))}
+                    </Pie>
+                    <Tooltip contentStyle={{ borderRadius: 8, borderColor: dashboardColors.border, fontSize: 13 }} />
+                  </PieChart>
+                </ResponsiveContainer>
               </div>
 
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs text-neutral-600 font-semibold">توقع الشهر القادم</span>
-                  <motion.span
-                    className="text-sm font-black text-emerald-600"
-                    initial={{ opacity: 0, y: -5 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.2 }}
-                  >
-                    {formatCurrency((stats?.monthlyRevenue || 0) * 1.22)}
-                  </motion.span>
-                </div>
-                <div className="h-2 bg-neutral-200/60 rounded-full overflow-hidden">
-                  <motion.div
-                    className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-teal-500 shadow-inner"
-                    initial={{ width: 0 }}
-                    animate={{ width: '97%' }}
-                    transition={{ duration: 1.4, ease: [0.25, 0.1, 0.25, 1], delay: 0.3 }}
-                  />
-                </div>
-              </div>
-            </div>
-
-            <motion.div
-              className="p-4 bg-gradient-to-br from-teal-50 to-emerald-50 rounded-2xl"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.5 }}
-            >
-              <p className="text-xs font-black text-neutral-900 mb-3 flex items-center gap-2">
-                <Target className="w-4 h-4 text-teal-600" />
-                العوامل المؤثرة
-              </p>
               <div className="space-y-2">
-                {[
-                  { icon: ArrowUp, color: 'text-emerald-600', bg: 'bg-emerald-100', text: 'العامل الموسمي (+8%)' },
-                  { icon: ArrowUp, color: 'text-emerald-600', bg: 'bg-emerald-100', text: 'عقود جديدة (+12%)' },
-                  { icon: ArrowDown, color: 'text-red-600', bg: 'bg-red-100', text: 'تأثير الصيانة (-2%)' },
-                ].map((factor, index) => (
-                  <motion.div
-                    key={index}
-                    className="flex items-center gap-2"
-                    initial={{ opacity: 0, x: -10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.6 + index * 0.1 }}
+                {fleetChartData.map((item) => (
+                  <button
+                    type="button"
+                    key={item.name}
+                    onClick={() => navigate(item.path)}
+                    className="flex w-full items-center justify-between rounded-lg border px-3 py-3 text-right transition-colors hover:bg-slate-50"
+                    style={{ borderColor: dashboardColors.border }}
                   >
-                    <div className={cn('w-7 h-7 rounded-lg flex items-center justify-center', factor.bg)}>
-                      <factor.icon className={`w-3.5 h-3.5 ${factor.color}`} strokeWidth={3} />
-                    </div>
-                    <span className="text-[11px] font-semibold text-neutral-700">{factor.text}</span>
-                  </motion.div>
+                    <span className="flex items-center gap-2 text-sm font-bold" style={{ color: dashboardColors.text }}>
+                      <span className="h-3 w-3 rounded-full" style={{ backgroundColor: item.color }} />
+                      {item.name}
+                    </span>
+                    <span className="text-lg font-black" style={{ color: item.color }}>
+                      {item.value}
+                    </span>
+                  </button>
                 ))}
               </div>
-            </motion.div>
-          </GlassCard>
+            </div>
+          </ShellCard>
+        </section>
 
-          {/* Recent Activities */}
-          <GlassCard className="col-span-4" delay={0.35}>
-            <div className="flex items-center justify-between mb-5">
+        <section className="grid grid-cols-1 gap-5 xl:grid-cols-[0.8fr_1.2fr]">
+          <ShellCard className="p-5">
+            <div className="mb-4 flex items-center justify-between">
               <div>
-                <h3 className="text-lg font-black text-neutral-900">النشاطات الأخيرة</h3>
-                <p className="text-xs text-neutral-500">آخر التحديثات</p>
+                <h3 className="text-xl font-black" style={{ color: dashboardColors.text }}>
+                  الصيانة القريبة
+                </h3>
+                <p className="text-sm font-medium" style={{ color: dashboardColors.secondaryText }}>
+                  طلبات تؤثر على جاهزية المركبات
+                </p>
               </div>
-              <motion.button
-                className="text-xs font-bold text-teal-600 hover:text-teal-700"
-                whileHover={{ scale: 1.05 }}
-                onClick={() => navigate('/reports')}
-              >
-                عرض الكل
-              </motion.button>
+              <Wrench className="h-5 w-5" style={{ color: dashboardColors.amber }} />
             </div>
 
-            <motion.div
-              className="text-center py-10 text-neutral-400"
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-            >
-              <motion.div
-                className="w-20 h-20 mx-auto mb-4 rounded-full bg-neutral-100 flex items-center justify-center"
-                animate={{ y: [0, -10, 0] }}
-                transition={{ repeat: Infinity, duration: 3, ease: "easeInOut" }}
-              >
-                <Clock className="w-10 h-10 opacity-40" />
-              </motion.div>
-              <p className="text-base font-medium text-neutral-600 mb-1">لا توجد نشاطات حديثة</p>
-              <p className="text-xs text-neutral-400 mb-4">ابدأ بإنشاء عقد جديد أو إجراء عملية</p>
-              <motion.button
-                className="px-6 py-3 bg-gradient-to-r from-teal-500 to-teal-600 text-white rounded-xl font-bold text-sm hover:shadow-lg hover:shadow-teal-500/30 transition-all"
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => navigate('/contracts')}
-              >
-                إنشاء عقد جديد ←
-              </motion.button>
-            </motion.div>
-          </GlassCard>
-        </div>
+            {maintenanceData.length > 0 ? (
+              <div className="space-y-2">
+                {maintenanceData.slice(0, 4).map((item) => (
+                  <button
+                    type="button"
+                    key={item.id}
+                    onClick={() => navigate('/fleet/maintenance')}
+                    className="flex w-full items-center justify-between rounded-lg border bg-white px-3 py-3 text-right transition-colors hover:bg-amber-50"
+                    style={{ borderColor: dashboardColors.border }}
+                  >
+                    <div>
+                      <p className="text-sm font-black" style={{ color: dashboardColors.text }}>
+                        {item.vehicles?.plate_number || 'مركبة غير محددة'}
+                      </p>
+                      <p className="text-xs font-medium" style={{ color: dashboardColors.secondaryText }}>
+                        {item.maintenance_type || 'صيانة'}
+                      </p>
+                    </div>
+                    <Clock className="h-4 w-4" style={{ color: dashboardColors.amber }} />
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <div className="rounded-lg border border-dashed p-8 text-center" style={{ borderColor: dashboardColors.border }}>
+                <CheckCircle2 className="mx-auto mb-3 h-9 w-9" style={{ color: dashboardColors.success }} />
+                <p className="text-sm font-bold" style={{ color: dashboardColors.text }}>
+                  لا توجد طلبات صيانة مفتوحة
+                </p>
+              </div>
+            )}
+          </ShellCard>
 
-        {/* Contract Wizard */}
-        <SimpleContractWizard
-          open={showContractWizard}
-          onOpenChange={setShowContractWizard}
-        />
-      </div>
+          <ShellCard className="p-5">
+            <div className="mb-4 flex items-center justify-between">
+              <div>
+                <h3 className="text-xl font-black" style={{ color: dashboardColors.text }}>
+                  قائمة العمل المختصرة
+                </h3>
+                <p className="text-sm font-medium" style={{ color: dashboardColors.secondaryText }}>
+                  إجراءات تنفيذية من لوحة التحكم مباشرة
+                </p>
+              </div>
+              <Target className="h-5 w-5" style={{ color: dashboardColors.navy }} />
+            </div>
+
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+              {[
+                { label: 'إنشاء فاتورة جديدة', detail: 'إضافة مطالبة مالية مرتبطة بعقد أو عميل', icon: FilePlus, path: '/finance/billing' },
+                { label: 'تسجيل دفعة', detail: 'تسجيل دفعة مباشرة وربطها بالفواتير', icon: CreditCard, path: '/finance/payments/quick' },
+                { label: 'مراجعة التقارير', detail: 'فتح التقارير المالية والتحليل', icon: BarChart3, path: '/finance/reports-analysis?tab=reports' },
+                { label: 'إدارة الحجوزات', detail: 'متابعة حجوزات المركبات القادمة', icon: Calendar, path: '/fleet/reservations' },
+              ].map((item) => {
+                const Icon = item.icon;
+                return (
+                  <button
+                    type="button"
+                    key={item.label}
+                    onClick={() => navigate(item.path)}
+                    className="group rounded-lg border p-4 text-right transition-all hover:-translate-y-0.5 hover:shadow-sm"
+                    style={{ borderColor: dashboardColors.border }}
+                  >
+                    <div className="mb-3 flex items-center justify-between">
+                      <span className="rounded-lg p-2" style={{ backgroundColor: `${dashboardColors.navy}10`, color: dashboardColors.navy }}>
+                        <Icon className="h-5 w-5" />
+                      </span>
+                      <ChevronLeft className="h-4 w-4 text-slate-400 transition-transform group-hover:-translate-x-1" />
+                    </div>
+                    <p className="text-base font-black" style={{ color: dashboardColors.text }}>
+                      {item.label}
+                    </p>
+                    <p className="mt-1 text-sm font-medium" style={{ color: dashboardColors.secondaryText }}>
+                      {item.detail}
+                    </p>
+                  </button>
+                );
+              })}
+            </div>
+          </ShellCard>
+        </section>
+      </main>
+
+      <SimpleContractWizard open={showContractWizard} onOpenChange={setShowContractWizard} />
     </div>
   );
 };

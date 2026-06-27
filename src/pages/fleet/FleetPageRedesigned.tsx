@@ -39,6 +39,7 @@ import {
   MoreHorizontal,
   X,
   Filter,
+  AlertTriangle,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -76,15 +77,27 @@ import {
 import { VehicleForm } from '@/components/fleet/VehicleForm';
 import { VehicleGroupManagement } from '@/components/fleet/VehicleGroupManagement';
 import { VehicleCSVUpload } from '@/components/fleet/VehicleCSVUpload';
-import { FleetSmartDashboard } from '@/components/fleet/FleetSmartDashboard';
 import { useSyncVehicleStatus } from '@/hooks/useSyncVehicleStatus';
 import { VehicleStatusChangeDialog } from '@/components/fleet/VehicleStatusChangeDialog';
 import VehicleDocumentDistributionDialog from '@/components/fleet/VehicleDocumentDistributionDialog';
 import { supabase } from '@/integrations/supabase/client';
 import { openVehicleFleetHTMLReport } from '@/components/fleet/VehicleFleetHTMLReport';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { systemColorPattern } from '@/lib/design-system/systemColorPattern';
 
 import { useFleetifyTranslation } from "@/hooks/useTranslation";
+
+const fleetTheme = {
+  text: systemColorPattern.colors.text,
+  surface: systemColorPattern.colors.surface,
+  inner: systemColorPattern.colors.innerSurface,
+  muted: systemColorPattern.colors.secondaryText,
+  border: systemColorPattern.colors.border,
+  water: systemColorPattern.colors.info,
+  alert: systemColorPattern.colors.alert,
+  focus: systemColorPattern.colors.focus,
+  success: systemColorPattern.colors.success,
+};
 // ===== Helper Functions for Missing Data Detection =====
 
 const getMissingVehicleFields = (vehicle: Vehicle): string[] => {
@@ -612,16 +625,17 @@ const exportVehiclesToExcel = async (
 
 // ===== Status Config =====
 const statusConfig = {
-  available: { label: 'متاحة', color: 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-700', dot: 'bg-emerald-500' },
-  rented: { label: 'مؤجرة', color: 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-700', dot: 'bg-blue-500' },
-  street_52: { label: 'شارع 52', color: 'bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-700', dot: 'bg-purple-500' },
-  maintenance: { label: 'صيانة', color: 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-700', dot: 'bg-amber-500' },
-  out_of_service: { label: 'خارج الخدمة', color: 'bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300 border-red-200 dark:border-red-700', dot: 'bg-red-500' },
-  accident: { label: 'حادث', color: 'bg-rose-50 dark:bg-rose-900/30 text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-700', dot: 'bg-rose-500' },
-  stolen: { label: 'مسروقة', color: 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700', dot: 'bg-slate-500' },
-  police_station: { label: 'في مركز الشرطة', color: 'bg-orange-50 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 border-orange-200 dark:border-orange-700', dot: 'bg-orange-500' },
-  reserved_employee: { label: 'محجوزة لموظف', color: 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 border-indigo-200 dark:border-indigo-700', dot: 'bg-indigo-500' },
-  municipality: { label: 'البلدية', color: 'bg-teal-50 dark:bg-teal-900/30 text-teal-700 dark:text-teal-300 border-teal-200 dark:border-teal-700', dot: 'bg-teal-500' },
+  available: { label: 'متاحة', accent: fleetTheme.success },
+  rented: { label: 'مؤجرة', accent: fleetTheme.focus },
+  street_52: { label: 'شارع 52', accent: fleetTheme.water },
+  maintenance: { label: 'صيانة', accent: fleetTheme.alert },
+  out_of_service: { label: 'خارج الخدمة', accent: fleetTheme.alert },
+  accident: { label: 'حادث', accent: fleetTheme.alert },
+  stolen: { label: 'مسروقة', accent: fleetTheme.text },
+  police_station: { label: 'في مركز الشرطة', accent: fleetTheme.focus },
+  reserved: { label: 'محجوزة', accent: fleetTheme.water },
+  reserved_employee: { label: 'محجوزة لموظف', accent: fleetTheme.focus },
+  municipality: { label: 'البلدية', accent: fleetTheme.water },
 };
 
 // Status cycle for quick status changes
@@ -647,10 +661,16 @@ const VehicleCard: React.FC<VehicleCardProps> = ({
   onCopy,
   onStatusChange,
   onQuickAction,
-}) => 
- {
-  const { t } = useFleetifyTranslation("ui");
+}) => {
   const config = statusConfig[vehicle.status as keyof typeof statusConfig] || statusConfig.available;
+  const accent = config.accent;
+  const vehicleImage = vehicle.images?.[0] || vehicle.image_url || '';
+  const mileage = vehicle.current_mileage ? vehicle.current_mileage.toLocaleString('en-US') : '0';
+  const transmission = vehicle.transmission_type === 'automatic' || vehicle.transmission === 'automatic'
+    ? 'أوتوماتيك'
+    : vehicle.transmission_type || vehicle.transmission
+    ? 'يدوي'
+    : '-';
 
   const handleCopyVin = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -660,197 +680,122 @@ const VehicleCard: React.FC<VehicleCardProps> = ({
     }
   };
 
-  const getMaintenanceTags = () => {
-    const tags: string[] = [];
-    if (vehicle.next_service_due) {
-      const serviceDate = new Date(vehicle.next_service_due);
-      if (serviceDate <= new Date()) tags.push('فحص دوري');
-    }
-    if (vehicle.current_mileage && vehicle.current_mileage > 50000) {
-      tags.push('تغيير زيت');
-    }
-    if (vehicle.insurance_expiry) {
-      const insuranceDate = new Date(vehicle.insurance_expiry);
-      const daysUntilExpiry = Math.ceil((insuranceDate.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
-      if (daysUntilExpiry <= 30 && daysUntilExpiry > 0) tags.push('تجديد تأمين');
-    }
-    return tags.length > 0 ? tags : ['جاهزة للاستخدام'];
-  };
-
-  const maintenanceTags = getMaintenanceTags();
-
   return (
     <motion.div
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.02, duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
-      className="group relative rounded-xl border bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md hover:border-teal-500/50 hover:shadow-sm transition-all cursor-pointer overflow-hidden"
+      transition={{ delay: index * 0.015, duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
+      className="group relative cursor-pointer overflow-hidden rounded-[8px] border bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+      style={{ borderColor: fleetTheme.border }}
       onClick={onView}
     >
-      {/* Status Bar */}
-      <div className={cn("h-1 w-full", config.dot)} />
+      <div className="h-1 w-full" style={{ backgroundColor: accent }} />
 
-      {/* Header */}
-      <div className="p-4 pb-3">
-        <div className="flex items-start justify-between mb-3">
-          {/* Status Badge - Clickable to cycle */}
+      <div className="p-3">
+        <div className="mb-3 flex items-center justify-between gap-2">
           <button
             onClick={(e) => {
               e.stopPropagation();
               onStatusChange();
             }}
-            className={cn(
-              "flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border transition-all hover:scale-105",
-              config.color
-            )}
+            className="inline-flex h-8 items-center gap-2 rounded-[8px] border px-2.5 text-xs font-semibold transition hover:opacity-90"
+            style={{ backgroundColor: `${accent}14`, borderColor: `${accent}44`, color: accent }}
           >
-            <span className="w-1.5 h-1.5 rounded-full bg-current" />
+            <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: accent }} />
             {config.label}
           </button>
 
-          {/* Quick Actions Menu */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-              <Button variant="ghost" size="sm" className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100">
-                <MoreHorizontal className="w-4 h-4" />
+              <Button variant="ghost" size="sm" className="h-8 w-8 rounded-[8px] p-0 opacity-100 lg:opacity-0 lg:group-hover:opacity-100">
+                <MoreHorizontal className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem 
-                onClick={(e) => {
-                  e.stopPropagation();
-                  e.preventDefault();
-                  onQuickAction('rent');
-                }} 
-                className="gap-2"
-              >
-                <FileText className="w-4 h-4 text-blue-500" />
+              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); e.preventDefault(); onQuickAction('rent'); }} className="gap-2">
+                <FileText className="h-4 w-4" style={{ color: fleetTheme.focus }} />
                 عقد جديد
               </DropdownMenuItem>
-              <DropdownMenuItem 
-                onClick={(e) => {
-                  e.stopPropagation();
-                  e.preventDefault();
-                  onQuickAction('maintenance');
-                }} 
-                className="gap-2"
-              >
-                <Wrench className="w-4 h-4 text-amber-500" />
+              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); e.preventDefault(); onQuickAction('maintenance'); }} className="gap-2">
+                <Wrench className="h-4 w-4" style={{ color: fleetTheme.alert }} />
                 صيانة
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem 
-                onClick={(e) => {
-                  e.stopPropagation();
-                  e.preventDefault();
-                  onCopy();
-                }} 
-                className="gap-2"
-              >
-                <Copy className="w-4 h-4" />
+              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); e.preventDefault(); onCopy(); }} className="gap-2">
+                <Copy className="h-4 w-4" />
                 نسخ
               </DropdownMenuItem>
-              <DropdownMenuItem 
-                onClick={(e) => {
-                  e.stopPropagation();
-                  e.preventDefault();
-                  onEdit();
-                }} 
-                className="gap-2"
-              >
-                <Edit3 className="w-4 h-4" />
+              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); e.preventDefault(); onEdit(); }} className="gap-2">
+                <Edit3 className="h-4 w-4" />
                 تعديل
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem 
-                onClick={(e) => {
-                  e.stopPropagation();
-                  e.preventDefault();
-                  onDelete();
-                }} 
-                className="gap-2 text-red-600"
-              >
-                <Trash2 className="w-4 h-4" />
+              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); e.preventDefault(); onDelete(); }} className="gap-2 text-red-600">
+                <Trash2 className="h-4 w-4" />
                 حذف
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
 
-        {/* Vehicle Image */}
-        <div className="h-36 rounded-lg overflow-hidden bg-neutral-100 dark:bg-slate-800 mb-3 relative">
-          {vehicle.images && vehicle.images[0] ? (
+        <div className="relative mb-4 aspect-[16/10] overflow-hidden rounded-[8px]" style={{ backgroundColor: fleetTheme.inner }}>
+          {vehicleImage ? (
             <img
-          src={vehicle.images?.[0] || vehicle.image_url || ''}
-          alt={`${vehicle.make} ${vehicle.model}`}
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-          onError={(e) => {
-            (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?w=400';
-          }}
-        />
+              src={vehicleImage}
+              alt={`${vehicle.make} ${vehicle.model}`}
+              className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.03]"
+              onError={(e) => {
+                (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?w=600';
+              }}
+            />
           ) : (
-            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-neutral-100 to-neutral-50 dark:from-slate-800 dark:to-slate-900">
-              <Car className="w-12 h-12 text-neutral-300 dark:text-slate-600" />
+            <div className="flex h-full w-full items-center justify-center">
+              <Car className="h-12 w-12" style={{ color: fleetTheme.muted }} />
             </div>
           )}
-
-          {/* Plate Number Overlay */}
-          <div className="absolute bottom-2 right-2 px-2 py-1 bg-black/70 backdrop-blur-sm rounded text-white text-xs font-mono">
-            {vehicle.plate_number}
+          <div className="absolute inset-x-0 bottom-0 flex items-end justify-between bg-gradient-to-t from-black/70 to-transparent p-3 text-white">
+            <div>
+              <p className="text-[10px] opacity-75">رقم اللوحة</p>
+              <p className="font-mono text-xl font-bold tracking-normal">{vehicle.plate_number || '-'}</p>
+            </div>
+            <ChevronLeft className="h-4 w-4 opacity-80" />
           </div>
         </div>
 
-        {/* Vehicle Info */}
-        <div className="space-y-2">
-          <h3 className="font-semibold text-neutral-900 dark:text-slate-100 text-sm truncate">
-            {vehicle.year} {vehicle.make} {vehicle.model}
-          </h3>
-
-            <div className="flex items-center gap-3 text-xs text-neutral-500 dark:text-slate-400">
-              <div className="flex items-center gap-1">
-                <Settings className="w-3 h-3" />
-                <span>{'2.5L'}</span>
-              </div>
-              <span>•</span>
-              <span>{vehicle.transmission === 'automatic' ? 'أوتوماتيك' : 'يدوي'}</span>
-            </div>
-
-          {/* VIN */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-1 text-xs text-neutral-400 dark:text-slate-500">
-              <Tag className="w-3 h-3" />
-              <span className="font-mono truncate max-w-[120px]">{vehicle.vin || 'N/A'}</span>
-            </div>
-            {vehicle.vin && (
-              <button
-                onClick={handleCopyVin}
-                className="p-1 hover:bg-neutral-100 dark:hover:bg-slate-800 rounded transition-colors"
-              >
-                <Copy className="w-3 h-3 text-neutral-400 hover:text-rose-500 dark:text-slate-500" />
-              </button>
-            )}
+        <div className="space-y-3">
+          <div>
+            <h3 className="truncate text-base font-bold" style={{ color: fleetTheme.text }}>
+              {vehicle.make} {vehicle.model} {vehicle.year || ''}
+            </h3>
+            <p className="mt-1 truncate text-xs" style={{ color: fleetTheme.muted }}>
+              {vehicle.color || 'بدون لون'} · {transmission}
+            </p>
           </div>
 
-          {/* Maintenance Tags */}
-          <div className="flex items-center gap-1.5 flex-wrap pt-2 border-t border-neutral-100 dark:border-slate-800">
-            {maintenanceTags.slice(0, 2).map((tag, i) => (
-              <Badge
-                key={i}
-                variant="outline"
-                className={cn(
-                  "text-[10px] px-2 py-0 rounded",
-                  tag === 'جاهزة للاستخدام'
-                    ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-300 border-emerald-200 dark:border-emerald-700'
-                    : 'bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-300 border-amber-200 dark:border-amber-700'
-                )}
+          <div className="grid grid-cols-2 gap-2">
+            <div className="rounded-[8px] px-3 py-2" style={{ backgroundColor: fleetTheme.inner }}>
+              <p className="text-[11px]" style={{ color: fleetTheme.muted }}>العداد</p>
+              <p className="font-mono text-sm font-bold" style={{ color: fleetTheme.water }}>{mileage} كم</p>
+            </div>
+            <div className="rounded-[8px] px-3 py-2" style={{ backgroundColor: fleetTheme.inner }}>
+              <p className="text-[11px]" style={{ color: fleetTheme.muted }}>القيمة اليومية</p>
+              <p className="font-mono text-sm font-bold" style={{ color: fleetTheme.alert }}>{vehicle.daily_rate || 0}</p>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between border-t pt-3" style={{ borderColor: fleetTheme.border }}>
+            <div className="min-w-0 flex items-center gap-1.5 text-xs" style={{ color: fleetTheme.muted }}>
+              <Tag className="h-3.5 w-3.5 shrink-0" />
+              <span className="truncate font-mono">{vehicle.vin || vehicle.vin_number || 'N/A'}</span>
+            </div>
+            {(vehicle.vin || vehicle.vin_number) && (
+              <button
+                onClick={handleCopyVin}
+                className="rounded-[8px] p-1.5 transition hover:bg-slate-100"
+                style={{ color: fleetTheme.muted }}
               >
-                {tag}
-              </Badge>
-            ))}
-            {maintenanceTags.length > 2 && (
-              <Badge variant="outline" className="text-[10px] px-2 py-0 rounded bg-neutral-50 dark:bg-slate-800 text-neutral-500 dark:text-slate-400">
-                +{maintenanceTags.length - 2}
-              </Badge>
+                <Copy className="h-3.5 w-3.5" />
+              </button>
             )}
           </div>
         </div>
@@ -858,7 +803,6 @@ const VehicleCard: React.FC<VehicleCardProps> = ({
     </motion.div>
   );
 };
-
 // ===== Quick Status Filter Chips =====
 interface StatusChipProps {
   label: string;
@@ -869,21 +813,24 @@ interface StatusChipProps {
 }
 
 const StatusChip: React.FC<StatusChipProps> = ({ label, count, status, active, onClick }) => {
-  const config = statusConfig[status as keyof typeof statusConfig];
+  const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.available;
+  const accent = config.accent;
   return (
     <button
       onClick={onClick}
-      className={cn(
-        "flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium transition-all",
-        active ? config.color : "bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 hover:border-neutral-300 dark:hover:border-slate-600"
-      )}
+      className="flex items-center gap-2 rounded-[8px] border px-3 py-2 text-sm font-semibold transition-all hover:-translate-y-0.5"
+      style={{
+        backgroundColor: active ? `${accent}14` : fleetTheme.surface,
+        borderColor: active ? `${accent}55` : fleetTheme.border,
+        color: active ? accent : fleetTheme.text,
+      }}
     >
-      <span className="w-1.5 h-1.5 rounded-full bg-current" />
+      <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: accent }} />
       {label}
-      <span className={cn(
-        "px-1.5 py-0.5 rounded-full text-xs",
-        active ? "bg-white/20" : "bg-neutral-100 dark:bg-slate-800"
-      )}>
+      <span
+        className="rounded-full px-1.5 py-0.5 text-xs"
+        style={{ backgroundColor: active ? `${accent}20` : fleetTheme.inner, color: active ? accent : fleetTheme.muted }}
+      >
         {count}
       </span>
     </button>
@@ -928,6 +875,53 @@ const FleetPageRedesigned: React.FC = () => {
   const activeFiltersCount = Object.values(filters).filter(v => v !== undefined && v !== '' && v !== false).length;
   const totalPages = vehiclesData?.totalPages || 1;
   const allSelected = vehiclesData?.data && vehiclesData.data.length > 0 && selectedVehicles.size === vehiclesData.data.length;
+  const totalVehicles = fleetStatus?.total || vehiclesData?.count || 0;
+  const unavailableVehicles = (fleetStatus?.maintenance || 0) + (fleetStatus?.outOfService || 0) + (fleetStatus?.accident || 0) + (fleetStatus?.stolen || 0);
+  const readinessRate = totalVehicles ? Math.round(((fleetStatus?.available || 0) / totalVehicles) * 100) : 0;
+  const activeVehicles = (fleetStatus?.available || 0) + (fleetStatus?.rented || 0);
+
+  const fleetMetrics = [
+    {
+      label: 'إجمالي المركبات',
+      value: totalVehicles,
+      helper: `${vehiclesData?.count || 0} مركبة في القائمة الحالية`,
+      icon: Car,
+      color: fleetTheme.water,
+    },
+    {
+      label: 'جاهزية الأسطول',
+      value: `${readinessRate}%`,
+      helper: `${fleetStatus?.available || 0} مركبة متاحة`,
+      icon: RotateCcw,
+      color: fleetTheme.success,
+      status: 'available',
+    },
+    {
+      label: 'قيد التشغيل',
+      value: activeVehicles,
+      helper: `${fleetStatus?.rented || 0} مؤجرة حالياً`,
+      icon: FileText,
+      color: fleetTheme.focus,
+      status: 'rented',
+    },
+    {
+      label: 'تحتاج متابعة',
+      value: unavailableVehicles,
+      helper: 'صيانة أو توقف أو حادث',
+      icon: AlertTriangle,
+      color: fleetTheme.alert,
+      status: 'maintenance',
+    },
+  ];
+
+  const quickStatusFilters = [
+    { label: 'متاحة', status: 'available', count: fleetStatus?.available || 0 },
+    { label: 'مؤجرة', status: 'rented', count: fleetStatus?.rented || 0 },
+    { label: 'صيانة', status: 'maintenance', count: fleetStatus?.maintenance || 0 },
+    { label: 'خارج الخدمة', status: 'out_of_service', count: fleetStatus?.outOfService || 0 },
+    { label: 'محجوزة', status: 'reserved', count: fleetStatus?.reserved || 0 },
+    { label: 'حادث', status: 'accident', count: fleetStatus?.accident || 0 },
+  ];
 
   // Handlers
   const handleFilterChange = (key: keyof IVehicleFilters, value: any) => {
@@ -1073,327 +1067,279 @@ const FleetPageRedesigned: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
-      {/* Header */}
-      <div className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 sticky top-0 z-10">
-        <div className="max-w-[1600px] mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            {/* Title */}
-            <div>
-              <h1 className="text-2xl font-semibold tracking-tight text-slate-900 dark:text-slate-100">
-                الأسطول
-              </h1>
-              <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-                إدارة وتتبع جميع المركبات ({vehiclesData?.count || 0} مركبة)
+    <div className="min-h-screen" style={{ backgroundColor: fleetTheme.inner, color: fleetTheme.text }}>
+      <main className="mx-auto max-w-[1600px] space-y-5 px-4 py-6 sm:px-6 lg:px-8">
+        <section className="rounded-[8px] border bg-white p-4 shadow-sm sm:p-5" style={{ borderColor: fleetTheme.border }}>
+          <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+            <div className="space-y-1">
+              <p className="text-xs font-semibold" style={{ color: fleetTheme.muted }}>إدارة الأسطول</p>
+              <h1 className="text-2xl font-bold sm:text-3xl" style={{ color: fleetTheme.text }}>المركبات</h1>
+              <p className="text-sm" style={{ color: fleetTheme.muted }}>
+                متابعة المركبات والحالات والمستندات من مساحة تشغيل واحدة ({vehiclesData?.count || 0} مركبة)
               </p>
             </div>
 
-            {/* Actions - Prominent Add Button First */}
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <Button
-                size="default"
                 onClick={() => setShowVehicleForm(true)}
-                className="bg-teal-500 hover:bg-teal-600 text-white gap-2 shadow-sm min-h-[44px]"
+                className="h-10 gap-2 rounded-[8px] text-white"
+                style={{ backgroundColor: fleetTheme.success }}
               >
-                <Plus className="w-4 h-4" />
+                <Plus className="h-4 w-4" />
                 إضافة مركبة
               </Button>
-              
+
               <Button
                 variant="outline"
-                size="default"
                 onClick={() => setShowFilters(!showFilters)}
-                className={cn(
-                  "gap-2 min-h-[44px] border-slate-200 dark:border-slate-700",
-                  showFilters && "bg-slate-100 dark:bg-slate-800 border-slate-300 dark:border-slate-600"
-                )}
+                className="h-10 gap-2 rounded-[8px] border bg-white"
+                style={{ borderColor: showFilters ? `${fleetTheme.focus}66` : fleetTheme.border, color: fleetTheme.text }}
               >
-                <Filter className="w-4 h-4" />
-                الفلاتر
+                <Filter className="h-4 w-4" style={{ color: fleetTheme.focus }} />
+                فلاتر متقدمة
                 {activeFiltersCount > 0 && (
-                  <Badge className="ml-1 px-1.5 py-0.5 text-xs bg-teal-500 text-white">
+                  <Badge className="px-1.5 py-0.5 text-xs text-white" style={{ backgroundColor: fleetTheme.focus }}>
                     {activeFiltersCount}
                   </Badge>
                 )}
-                {showFilters ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                {showFilters ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
               </Button>
 
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="outline"
-                    size="default"
-                    className="gap-2 min-h-[44px] border-slate-200 dark:border-slate-700 hover:border-teal-500 dark:hover:border-teal-500"
-                  >
-                    <Download className="w-4 h-4" />
+                  <Button variant="outline" className="h-10 gap-2 rounded-[8px] border bg-white" style={{ borderColor: fleetTheme.border, color: fleetTheme.text }}>
+                    <Download className="h-4 w-4" style={{ color: fleetTheme.water }} />
                     تصدير
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
                   <DropdownMenuItem onClick={() => handleExport()} className="gap-2">
-                    <FileText className="w-4 h-4 text-green-600" />
+                    <FileText className="h-4 w-4" style={{ color: fleetTheme.success }} />
                     <div className="flex flex-col">
                       <span className="font-medium">{t("excelXlsx")}</span>
-                      <span className="text-xs text-slate-500 dark:text-slate-400">ملف جدول بيانات</span>
+                      <span className="text-xs" style={{ color: fleetTheme.muted }}>ملف جدول بيانات</span>
                     </div>
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => handleExport('html')} className="gap-2">
-                    <FileText className="w-4 h-4 text-blue-600" />
+                    <FileText className="h-4 w-4" style={{ color: fleetTheme.focus }} />
                     <div className="flex flex-col">
                       <span className="font-medium">تقرير HTML</span>
-                      <span className="text-xs text-slate-500 dark:text-slate-400">تقرير منسق للطباعة</span>
+                      <span className="text-xs" style={{ color: fleetTheme.muted }}>تقرير منسق للطباعة</span>
                     </div>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
 
-              <Button
-                variant="outline"
-                size="default"
-                onClick={() => setShowGroupManagement(true)}
-                className="gap-2 min-h-[44px] border-slate-200 dark:border-slate-700 hover:border-teal-500 dark:hover:border-teal-500"
-              >
-                <Layers3 className="w-4 h-4" />
+              <Button variant="outline" onClick={() => setShowGroupManagement(true)} className="h-10 gap-2 rounded-[8px] border bg-white" style={{ borderColor: fleetTheme.border, color: fleetTheme.text }}>
+                <Layers3 className="h-4 w-4" style={{ color: fleetTheme.focus }} />
                 المجموعات
               </Button>
 
-              <Button
-                variant="outline"
-                size="default"
-                onClick={handleSyncVehicleStatus}
-                disabled={isSyncing}
-                className="gap-2 min-h-[44px] border-slate-200 dark:border-slate-700 hover:border-teal-500 dark:hover:border-teal-500"
-              >
-                <RotateCcw className={cn("w-4 h-4", isSyncing && "animate-spin")} />
+              <Button variant="outline" onClick={handleSyncVehicleStatus} disabled={isSyncing} className="h-10 gap-2 rounded-[8px] border bg-white" style={{ borderColor: fleetTheme.border, color: fleetTheme.text }}>
+                <RotateCcw className={cn("h-4 w-4", isSyncing && "animate-spin")} style={{ color: fleetTheme.success }} />
                 {isSyncing ? 'مزامنة...' : 'مزامنة'}
               </Button>
 
-              <Button
-                variant="outline"
-                size="default"
-                onClick={() => setShowDocumentDistribution(true)}
-                className="gap-2 min-h-[44px] border-slate-200 dark:border-slate-700 hover:border-teal-500 dark:hover:border-teal-500"
-                title="توزيع المستندات"
-              >
-                <FileText className="w-4 h-4" />
+              <Button variant="outline" onClick={() => setShowDocumentDistribution(true)} className="h-10 gap-2 rounded-[8px] border bg-white" style={{ borderColor: fleetTheme.border, color: fleetTheme.text }}>
+                <FileText className="h-4 w-4" style={{ color: fleetTheme.alert }} />
                 توزيع المستندات
               </Button>
 
               {user?.roles?.includes('super_admin') && (
-                <Button
-                  variant="outline"
-                  size="default"
-                  onClick={() => setShowCSVUpload(true)}
-                  className="gap-2 min-h-[44px] border-slate-200 dark:border-slate-700 hover:border-teal-500 dark:hover:border-teal-500"
-                >
-                  <Upload className="w-4 h-4" />
+                <Button variant="outline" onClick={() => setShowCSVUpload(true)} className="h-10 w-10 rounded-[8px] border bg-white p-0" style={{ borderColor: fleetTheme.border, color: fleetTheme.text }} title="رفع CSV">
+                  <Upload className="h-4 w-4" />
                 </Button>
               )}
             </div>
           </div>
-        </div>
-      </div>
+        </section>
 
-      {/* Main Content */}
-      <div className="max-w-[1600px] mx-auto px-6 py-6 space-y-4">
-
-        {/* Smart Dashboard */}
-        <FleetSmartDashboard
-          onFilterByStatus={handleStatCardClick}
-          activeStatus={filters.status}
-        />
-
-        {/* Collapsible Filters Panel */}
-        {showFilters && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-4 shadow-sm"
-          >
-            <div className="space-y-4">
-              {/* Search and Sort Row */}
-              <div className="flex flex-col lg:flex-row gap-3">
-                {/* Search */}
-                <div className="flex-1 relative">
-                  <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 dark:text-slate-500" />
-                  <Input
-                    placeholder="بحث باللوحة، الموديل، VIN..."
-                    value={searchQuery}
-                    onChange={(e) => {
-                      setSearchQuery(e.target.value);
-                      setCurrentPage(1);
-                    }}
-                    className="h-11 pr-10 text-sm bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 focus:border-teal-500 dark:focus:border-teal-500"
-                  />
-                  {searchQuery && (
-                    <button
-                      onClick={() => setSearchQuery('')}
-                      className="absolute left-2 top-1/2 -translate-y-1/2 p-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded"
-                    >
-                      <X className="w-3 h-3 text-slate-400 dark:text-slate-500" />
-                    </button>
-                  )}
+        <section className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+          {fleetMetrics.map((metric) => {
+            const Icon = metric.icon;
+            const isActive = metric.status && filters.status === metric.status;
+            return (
+              <button
+                key={metric.label}
+                type="button"
+                onClick={() => metric.status && handleStatCardClick(metric.status)}
+                className="rounded-[8px] border bg-white p-5 text-right shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+                style={{ borderColor: isActive ? `${metric.color}66` : fleetTheme.border }}
+              >
+                <div className="mb-4 flex items-center justify-between">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-[8px]" style={{ backgroundColor: `${metric.color}14` }}>
+                    <Icon className="h-5 w-5" style={{ color: metric.color }} />
+                  </div>
+                  <span className="text-xs font-semibold" style={{ color: fleetTheme.muted }}>{metric.label}</span>
                 </div>
+                <p className="text-3xl font-bold" style={{ color: metric.color }}>{metric.value}</p>
+                <p className="mt-1 text-sm" style={{ color: fleetTheme.muted }}>{metric.helper}</p>
+              </button>
+            );
+          })}
+        </section>
 
-                {/* Sort */}
-                <Select value={sortBy} onValueChange={setSortBy}>
-                  <SelectTrigger className="h-11 w-40 bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
-                    <SlidersHorizontal className="w-4 h-4 ml-2" />
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="newest">الأحدث</SelectItem>
-                    <SelectItem value="oldest">الأقدم</SelectItem>
-                    <SelectItem value="name">الاسم</SelectItem>
-                    <SelectItem value="mileage">المسافة</SelectItem>
-                  </SelectContent>
-                </Select>
-
-                {/* Status Filter Dropdown */}
-                <Select
-                  value={filters.status || "all"}
-                  onValueChange={(v) => handleFilterChange('status', v === 'all' ? undefined : v as any)}
+        <section className="rounded-[8px] border bg-white p-4 shadow-sm" style={{ borderColor: fleetTheme.border }}>
+          <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_180px_190px_auto]">
+            <div className="relative">
+              <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2" style={{ color: fleetTheme.muted }} />
+              <Input
+                placeholder="بحث باللوحة، الموديل، VIN..."
+                value={searchQuery}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  setCurrentPage(1);
+                }}
+                className="h-11 rounded-[8px] border bg-white pr-10 text-sm"
+                style={{ borderColor: fleetTheme.border, color: fleetTheme.text }}
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery('')}
+                  className="absolute left-2 top-1/2 -translate-y-1/2 rounded-[8px] p-1 transition hover:bg-slate-100"
                 >
-                  <SelectTrigger className="h-11 w-40 bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
-                    <SelectValue placeholder="الحالة" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">جميع الحالات</SelectItem>
-                    <SelectItem value="available">متاحة</SelectItem>
-                    <SelectItem value="rented">مؤجرة</SelectItem>
-                    <SelectItem value="street_52">شارع 52</SelectItem>
-                    <SelectItem value="maintenance">صيانة</SelectItem>
-                    <SelectItem value="out_of_service">خارج الخدمة</SelectItem>
-                    <SelectItem value="accident">حادث</SelectItem>
-                    <SelectItem value="stolen">مسروقة</SelectItem>
-                    <SelectItem value="police_station">في مركز الشرطة</SelectItem>
-                    <SelectItem value="reserved_employee">محجوزة لموظف</SelectItem>
-                    <SelectItem value="municipality">البلدية</SelectItem>
-                  </SelectContent>
-                </Select>
-
-                {/* Reset */}
-                {(activeFiltersCount > 0 || searchQuery) && (
-                  <Button
-                    variant="outline"
-                    size="default"
-                    onClick={handleResetFilters}
-                    className="min-h-[44px] border-slate-200 dark:border-slate-700 hover:border-teal-500 dark:hover:border-teal-500"
-                  >
-                    <RotateCcw className="w-4 h-4 ml-1" />
-                  </Button>
-                )}
-              </div>
-
-              {/* Quick Status Filter Bar */}
-              <div className="flex items-center gap-3 flex-wrap">
-                <span className="text-sm text-slate-500 dark:text-slate-400 font-medium">تصفية سريع:</span>
-
-                <StatusChip
-                  label="متاحة"
-                  status="available"
-                  count={fleetStatus?.available || 0}
-                  active={filters.status === 'available'}
-                  onClick={() => handleStatCardClick('available')}
-                />
-
-                <StatusChip
-                  label="مؤجرة"
-                  status="rented"
-                  count={fleetStatus?.rented || 0}
-                  active={filters.status === 'rented'}
-                  onClick={() => handleStatCardClick('rented')}
-                />
-
-                <StatusChip
-                  label="صيانة"
-                  status="maintenance"
-                  count={fleetStatus?.maintenance || 0}
-                  active={filters.status === 'maintenance'}
-                  onClick={() => handleStatCardClick('maintenance')}
-                />
-
-                <StatusChip
-                  label="خارج الخدمة"
-                  status="out_of_service"
-                  count={fleetStatus?.outOfService || 0}
-                  active={filters.status === 'out_of_service'}
-                  onClick={() => handleStatCardClick('out_of_service')}
-                />
-
-                <div className="h-6 w-px bg-slate-200 dark:bg-slate-700 mx-2" />
-
-                <StatusChip
-                  label="محجوزة"
-                  status="reserved"
-                  count={fleetStatus?.reserved || 0}
-                  active={filters.status === 'reserved'}
-                  onClick={() => handleStatCardClick('reserved')}
-                />
-
-                <StatusChip
-                  label="حادث"
-                  status="accident"
-                  count={fleetStatus?.accident || 0}
-                  active={filters.status === 'accident'}
-                  onClick={() => handleStatCardClick('accident')}
-                />
-
-                {filters.status && (
-                  <button
-                    onClick={() => handleStatCardClick(filters.status!)}
-                    className="flex items-center gap-1 px-3 py-1.5 rounded-full text-sm font-medium bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-all"
-                  >
-                    <X className="w-3 h-3" />
-                    مسح الفلتر
-                  </button>
-                )}
-              </div>
+                  <X className="h-3.5 w-3.5" style={{ color: fleetTheme.muted }} />
+                </button>
+              )}
             </div>
-          </motion.div>
-        )}
 
-        {/* Vehicle List */}
+            <Select value={sortBy} onValueChange={setSortBy}>
+              <SelectTrigger className="h-11 rounded-[8px] border bg-white" style={{ borderColor: fleetTheme.border }}>
+                <SlidersHorizontal className="ml-2 h-4 w-4" />
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="newest">الأحدث</SelectItem>
+                <SelectItem value="oldest">الأقدم</SelectItem>
+                <SelectItem value="name">الاسم</SelectItem>
+                <SelectItem value="mileage">المسافة</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select
+              value={filters.status || "all"}
+              onValueChange={(v) => handleFilterChange('status', v === 'all' ? undefined : v as any)}
+            >
+              <SelectTrigger className="h-11 rounded-[8px] border bg-white" style={{ borderColor: fleetTheme.border }}>
+                <SelectValue placeholder="الحالة" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">جميع الحالات</SelectItem>
+                <SelectItem value="available">متاحة</SelectItem>
+                <SelectItem value="rented">مؤجرة</SelectItem>
+                <SelectItem value="street_52">شارع 52</SelectItem>
+                <SelectItem value="maintenance">صيانة</SelectItem>
+                <SelectItem value="out_of_service">خارج الخدمة</SelectItem>
+                <SelectItem value="accident">حادث</SelectItem>
+                <SelectItem value="stolen">مسروقة</SelectItem>
+                <SelectItem value="police_station">في مركز الشرطة</SelectItem>
+                <SelectItem value="reserved_employee">محجوزة لموظف</SelectItem>
+                <SelectItem value="municipality">البلدية</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <div className="flex items-center gap-2">
+              <Button variant="outline" onClick={handleSelectAll} className="h-11 flex-1 rounded-[8px] border bg-white" style={{ borderColor: fleetTheme.border, color: fleetTheme.text }}>
+                {allSelected ? 'إلغاء التحديد' : 'تحديد الصفحة'}
+              </Button>
+              {(activeFiltersCount > 0 || searchQuery) && (
+                <Button variant="outline" onClick={handleResetFilters} className="h-11 w-11 rounded-[8px] border bg-white p-0" style={{ borderColor: fleetTheme.border, color: fleetTheme.text }}>
+                  <RotateCcw className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
+          </div>
+
+          <div className="mt-4 flex flex-wrap items-center gap-2">
+            <span className="text-sm font-semibold" style={{ color: fleetTheme.muted }}>تصفية سريعة:</span>
+            {quickStatusFilters.map((item) => (
+              <StatusChip
+                key={item.status}
+                label={item.label}
+                status={item.status}
+                count={item.count}
+                active={filters.status === item.status}
+                onClick={() => handleStatCardClick(item.status)}
+              />
+            ))}
+            {filters.status && (
+              <button
+                onClick={() => handleStatCardClick(filters.status!)}
+                className="flex items-center gap-1 rounded-[8px] border px-3 py-2 text-sm font-semibold transition hover:bg-slate-50"
+                style={{ borderColor: fleetTheme.border, color: fleetTheme.muted }}
+              >
+                <X className="h-3.5 w-3.5" />
+                مسح الفلتر
+              </button>
+            )}
+          </div>
+
+          {showFilters && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className="mt-4 grid gap-3 border-t pt-4 sm:grid-cols-2 lg:grid-cols-4"
+              style={{ borderColor: fleetTheme.border }}
+            >
+              <div className="rounded-[8px] px-3 py-2" style={{ backgroundColor: fleetTheme.inner }}>
+                <p className="text-xs" style={{ color: fleetTheme.muted }}>نتيجة البحث</p>
+                <p className="font-bold" style={{ color: fleetTheme.text }}>{vehiclesData?.count || 0} مركبة</p>
+              </div>
+              <div className="rounded-[8px] px-3 py-2" style={{ backgroundColor: fleetTheme.inner }}>
+                <p className="text-xs" style={{ color: fleetTheme.muted }}>الفلاتر النشطة</p>
+                <p className="font-bold" style={{ color: fleetTheme.focus }}>{activeFiltersCount}</p>
+              </div>
+              <div className="rounded-[8px] px-3 py-2" style={{ backgroundColor: fleetTheme.inner }}>
+                <p className="text-xs" style={{ color: fleetTheme.muted }}>المحدد حالياً</p>
+                <p className="font-bold" style={{ color: fleetTheme.success }}>{selectedVehicles.size}</p>
+              </div>
+              <div className="rounded-[8px] px-3 py-2" style={{ backgroundColor: fleetTheme.inner }}>
+                <p className="text-xs" style={{ color: fleetTheme.muted }}>الصفحة</p>
+                <p className="font-bold" style={{ color: fleetTheme.water }}>{currentPage} / {totalPages}</p>
+              </div>
+            </motion.div>
+          )}
+        </section>
+
         {vehiclesLoading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {[...Array(8)].map((_, i) => (
-              <div key={i} className="h-72 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 animate-pulse" />
+              <div key={i} className="h-80 animate-pulse rounded-[8px] border bg-white" style={{ borderColor: fleetTheme.border }} />
             ))}
           </div>
         ) : vehiclesData?.data && vehiclesData.data.length > 0 ? (
           <>
-            {/* Bulk Actions Bar */}
             {selectedVehicles.size > 0 && (
               <motion.div
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="bg-teal-50 dark:bg-teal-900/20 border border-teal-200 dark:border-teal-800 rounded-xl p-3 flex items-center justify-between shadow-sm"
+                className="flex flex-col gap-3 rounded-[8px] border bg-white p-3 shadow-sm sm:flex-row sm:items-center sm:justify-between"
+                style={{ borderColor: `${fleetTheme.success}55` }}
               >
-                <p className="text-sm text-teal-700 dark:text-teal-300">
-                  <span className="font-semibold">{selectedVehicles.size}</span> مركبة محددة
+                <p className="text-sm" style={{ color: fleetTheme.text }}>
+                  <span className="font-bold" style={{ color: fleetTheme.success }}>{selectedVehicles.size}</span> مركبة محددة
                 </p>
                 <div className="flex items-center gap-2">
-                  <Button size="default" variant="outline" className="min-h-[44px] border-teal-200 dark:border-teal-700 hover:border-teal-500 dark:hover:border-teal-500 bg-white dark:bg-slate-900">
+                  <Button variant="outline" className="h-10 rounded-[8px] border bg-white" style={{ borderColor: fleetTheme.border, color: fleetTheme.text }}>
                     تصدير
                   </Button>
-                  <Button size="default" variant="outline" className="min-h-[44px] border-teal-200 dark:border-teal-700 hover:border-teal-500 dark:hover:border-teal-500" onClick={() => setSelectedVehicles(new Set())}>
+                  <Button variant="outline" className="h-10 rounded-[8px] border bg-white" style={{ borderColor: fleetTheme.border, color: fleetTheme.text }} onClick={() => setSelectedVehicles(new Set())}>
                     إلغاء التحديد
                   </Button>
                 </div>
               </motion.div>
             )}
 
-            {/* Vehicle Grid */}
-            <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
               {vehiclesData.data.map((vehicle, index) => (
                 <div key={vehicle.id} className="relative">
-                  {/* Checkbox */}
                   <input
                     type="checkbox"
                     checked={selectedVehicles.has(vehicle.id)}
                     onChange={() => handleSelectVehicle(vehicle.id)}
-                    className="absolute top-4 left-4 z-10 w-4 h-4 rounded border-neutral-300 dark:border-slate-600 bg-white dark:bg-slate-800 checked:bg-rose-500 focus:ring-rose-500 cursor-pointer"
+                    className="absolute left-4 top-4 z-10 h-4 w-4 cursor-pointer rounded border-slate-300 bg-white"
+                    style={{ accentColor: fleetTheme.success }}
                     onClick={(e) => e.stopPropagation()}
                   />
 
@@ -1411,35 +1357,25 @@ const FleetPageRedesigned: React.FC = () => {
               ))}
             </div>
 
-            {/* Pagination */}
             {totalPages > 1 && (
-              <div className="flex items-center justify-between bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-3 shadow-sm">
-                <p className="text-sm text-slate-500 dark:text-slate-400">
-                  صفحة <span className="font-medium text-slate-900 dark:text-slate-100">{currentPage}</span> من{' '}
-                  <span className="font-medium text-slate-900 dark:text-slate-100">{totalPages}</span>
+              <div className="flex flex-col gap-3 rounded-[8px] border bg-white p-3 shadow-sm sm:flex-row sm:items-center sm:justify-between" style={{ borderColor: fleetTheme.border }}>
+                <p className="text-sm" style={{ color: fleetTheme.muted }}>
+                  صفحة <span className="font-bold" style={{ color: fleetTheme.text }}>{currentPage}</span> من{' '}
+                  <span className="font-bold" style={{ color: fleetTheme.text }}>{totalPages}</span>
                 </p>
 
                 <div className="flex items-center gap-1">
-                  <Button
-                    variant="outline"
-                    size="default"
-                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                    disabled={currentPage === 1}
-                    className="min-h-[44px] border-slate-200 dark:border-slate-700 hover:border-teal-500 dark:hover:border-teal-500"
-                  >
-                    <ChevronRight className="w-4 h-4" />
+                  <Button variant="outline" onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} className="h-10 rounded-[8px] border bg-white" style={{ borderColor: fleetTheme.border }}>
+                    <ChevronRight className="h-4 w-4" />
                   </Button>
 
                   {Array.from({ length: Math.min(5, totalPages) }, (_, i) => i + 1).map(page => (
                     <Button
                       key={page}
                       variant={currentPage === page ? "default" : "ghost"}
-                      size="default"
                       onClick={() => setCurrentPage(page)}
-                      className={cn(
-                        "min-h-[44px] min-w-[44px]",
-                        currentPage === page && "bg-teal-500 text-white hover:bg-teal-600"
-                      )}
+                      className="h-10 min-w-10 rounded-[8px]"
+                      style={currentPage === page ? { backgroundColor: fleetTheme.success, color: '#fff' } : { color: fleetTheme.text }}
                     >
                       {page}
                     </Button>
@@ -1447,51 +1383,41 @@ const FleetPageRedesigned: React.FC = () => {
 
                   {totalPages > 5 && (
                     <>
-                      <span className="px-2 text-slate-400 dark:text-slate-500">...</span>
+                      <span className="px-2" style={{ color: fleetTheme.muted }}>...</span>
                       <Button
                         variant={currentPage === totalPages ? "default" : "ghost"}
-                        size="default"
                         onClick={() => setCurrentPage(totalPages)}
-                        className={cn(
-                          "min-h-[44px] min-w-[44px]",
-                          currentPage === totalPages && "bg-teal-500 text-white hover:bg-teal-600"
-                        )}
+                        className="h-10 min-w-10 rounded-[8px]"
+                        style={currentPage === totalPages ? { backgroundColor: fleetTheme.success, color: '#fff' } : { color: fleetTheme.text }}
                       >
                         {totalPages}
                       </Button>
                     </>
                   )}
 
-                  <Button
-                    variant="outline"
-                    size="default"
-                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                    disabled={currentPage === totalPages}
-                    className="min-h-[44px] border-slate-200 dark:border-slate-700 hover:border-teal-500 dark:hover:border-teal-500"
-                  >
-                    <ChevronLeft className="w-4 h-4" />
+                  <Button variant="outline" onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} className="h-10 rounded-[8px] border bg-white" style={{ borderColor: fleetTheme.border }}>
+                    <ChevronLeft className="h-4 w-4" />
                   </Button>
                 </div>
               </div>
             )}
           </>
         ) : (
-          <div className="bg-white dark:bg-slate-900 rounded-xl p-12 text-center border border-slate-200 dark:border-slate-800 shadow-sm">
-            <Car className="w-16 h-16 text-slate-300 dark:text-slate-600 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-2">لا توجد مركبات</h3>
-            <p className="text-sm text-slate-500 dark:text-slate-400 mb-6">
+          <div className="rounded-[8px] border bg-white p-12 text-center shadow-sm" style={{ borderColor: fleetTheme.border }}>
+            <Car className="mx-auto mb-4 h-16 w-16" style={{ color: fleetTheme.muted }} />
+            <h3 className="mb-2 text-lg font-bold" style={{ color: fleetTheme.text }}>لا توجد مركبات</h3>
+            <p className="mb-6 text-sm" style={{ color: fleetTheme.muted }}>
               {activeFiltersCount > 0 || searchQuery
                 ? 'لم يتم العثور على مركبات تطابق البحث'
                 : 'ابدأ بإضافة أول مركبة للأسطول'}
             </p>
-            <Button onClick={() => setShowVehicleForm(true)} className="bg-teal-500 hover:bg-teal-600 text-white min-h-[44px]">
-              <Plus className="w-4 h-4 ml-2" />
+            <Button onClick={() => setShowVehicleForm(true)} className="h-10 rounded-[8px] text-white" style={{ backgroundColor: fleetTheme.success }}>
+              <Plus className="ml-2 h-4 w-4" />
               إضافة مركبة
             </Button>
           </div>
         )}
-      </div>
-
+      </main>
       {/* Dialogs */}
       <Dialog open={showVehicleForm} onOpenChange={handleVehicleFormClose}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">

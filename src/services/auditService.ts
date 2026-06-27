@@ -79,6 +79,8 @@ class FinancialAuditService {
       const { data: companyContext } = await supabase
         .rpc('user_company_id');
 
+      const complianceFlags = this.detectComplianceViolations(params);
+
       // Prepare audit log data
       const auditLogData = {
         user_id: user.id,
@@ -96,6 +98,7 @@ class FinancialAuditService {
           ...params.metadata,
           financial_data: params.financial_data,
           event_type: params.event_type,
+          ...(complianceFlags.length > 0 ? { compliance_flags: complianceFlags } : {}),
         },
         notes: params.notes,
         status: params.status || 'success',
@@ -113,9 +116,6 @@ class FinancialAuditService {
         logger.error('Failed to create financial audit log', { error, params });
         return null;
       }
-
-      // Check for compliance violations
-      await this.checkComplianceViolations(data.id, params);
 
       logger.info('Financial audit log created', {
         auditLogId: data.id,
@@ -498,7 +498,7 @@ class FinancialAuditService {
     return 'low';
   }
 
-  private async checkComplianceViolations(auditLogId: string, params: CreateFinancialAuditLogParams): Promise<void> {
+  private detectComplianceViolations(params: CreateFinancialAuditLogParams): string[] {
     const flags: string[] = [];
 
     // Check for high-value transactions
@@ -515,14 +515,7 @@ class FinancialAuditService {
     // Check for rapid transactions
     // This would require checking recent transactions from the same user
 
-    if (flags.length > 0) {
-      await supabase
-        .from('audit_logs')
-        .update({
-          metadata: { compliance_flags: flags }
-        })
-        .eq('id', auditLogId);
-    }
+    return flags;
   }
 
   private transformAuditLog(log: any): FinancialAuditLog {
@@ -881,83 +874,22 @@ class FinancialAuditService {
    * Archive old audit logs
    */
   async archiveAuditLogs(beforeDate: string): Promise<{ archived: number; errors: string[] }> {
-    try {
-      const { data, error } = await supabase
-        .from('audit_logs')
-        .update({
-          metadata: {
-            archived: true,
-            archival_date: new Date().toISOString()
-          }
-        })
-        .lt('created_at', beforeDate)
-        .eq('archived', false);
+    void beforeDate;
 
-      if (error) {
-        throw error;
-      }
-
-      // Move to archive table if it exists
-      const archivedCount = data?.length || 0;
-
-      return {
-        archived: archivedCount,
-        errors: []
-      };
-    } catch (error) {
-      console.error('Failed to archive audit logs:', error);
-      return {
-        archived: 0,
-        errors: [error instanceof Error ? error.message : 'Unknown error']
-      };
-    }
+    return {
+      archived: 0,
+      errors: ['Audit logs are append-only. Create an audit retention snapshot instead of mutating audit_log rows.'],
+    };
   }
 
   /**
    * Delete audit logs older than retention period
    */
   async deleteOldAuditLogs(): Promise<{ deleted: number; errors: string[] }> {
-    try {
-      const policies = await this.getRetentionPolicy();
-      const deletionPromises = policies.map(async (policy) => {
-        if (!policy.auto_delete || !policy.archival_after_days) {
-          return { deleted: 0, entityType: policy.entity_type };
-        }
-
-        const cutoffDate = new Date();
-        cutoffDate.setDate(cutoffDate.getDate() - policy.archival_after_days);
-
-        const { data, error } = await supabase
-          .from('audit_logs')
-          .delete()
-          .eq('resource_type', policy.entity_type)
-          .lt('created_at', cutoffDate.toISOString())
-          .eq('archived', true);
-
-        return {
-          deleted: data?.length || 0,
-          entityType: policy.entity_type
-        };
-      });
-
-      const results = await Promise.all(deletionPromises);
-
-      const totalDeleted = results.reduce((sum, result) => sum + result.deleted);
-      const errors = results
-        .filter(result => result.deleted === 0)
-        .map(result => `Failed to delete ${result.entityType} records`);
-
-      return {
-        deleted: totalDeleted,
-        errors
-      };
-    } catch (error) {
-      console.error('Failed to delete old audit logs:', error);
-      return {
-        deleted: 0,
-        errors: [error instanceof Error ? error.message : 'Unknown error']
-      };
-    }
+    return {
+      deleted: 0,
+      errors: ['Audit logs are immutable and cannot be deleted. Use retention snapshots outside the append-only ledger.'],
+    };
   }
 }
 

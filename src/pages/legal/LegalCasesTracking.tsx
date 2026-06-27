@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -117,6 +117,8 @@ import AutoCreateCaseTriggersConfig from '@/components/legal/AutoCreateCaseTrigg
 import EnhancedLegalNoticeGenerator from '@/components/legal/EnhancedLegalNoticeGenerator';
 import { CHART_COLORS, StatusBadge, TabButton, KPICard } from './legal-cases';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
+import '@/styles/legal-system.css';
 // DelinquentCustomersTab removed - use /legal/delinquency instead
 
 // --- Main Component ---
@@ -141,6 +143,8 @@ export const LegalCasesTracking: React.FC = () => {
   const [showCaseDetails, setShowCaseDetails] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [caseToDelete, setCaseToDelete] = useState<LegalCase | null>(null);
+  const [selectedCaseIds, setSelectedCaseIds] = useState<string[]>([]);
+  const [showBulkDeleteDialog, setShowBulkDeleteDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [caseToEdit, setCaseToEdit] = useState<LegalCase | null>(null);
   const [editFormData, setEditFormData] = useState({
@@ -206,6 +210,29 @@ export const LegalCasesTracking: React.FC = () => {
     },
   });
 
+  const bulkDeleteCasesMutation = useMutation({
+    mutationFn: async (caseIds: string[]) => {
+      if (caseIds.length === 0) return;
+
+      const { error } = await supabase
+        .from('legal_cases')
+        .delete()
+        .in('id', caseIds);
+
+      if (error) throw error;
+    },
+    onSuccess: (_data, caseIds) => {
+      queryClient.invalidateQueries({ queryKey: ['legal-cases'] });
+      queryClient.invalidateQueries({ queryKey: ['legal-case-stats'] });
+      toast.success(`تم حذف ${caseIds.length} قضية بنجاح`);
+      setSelectedCaseIds([]);
+      setShowBulkDeleteDialog(false);
+    },
+    onError: (error: any) => {
+      toast.error(`فشل حذف القضايا المحددة: ${error.message}`);
+    },
+  });
+
   // Update case mutation
   const updateCaseMutation = useUpdateLegalCase();
 
@@ -216,7 +243,8 @@ export const LegalCasesTracking: React.FC = () => {
 
   // Fetch documents for selected case
   const { data: caseDocuments, isLoading: isLoadingDocuments } = useLegalDocuments(
-    selectedCase ? { case_id: selectedCase.id } : undefined
+    selectedCase ? { case_id: selectedCase.id } : undefined,
+    !!selectedCase
   );
 
   // Handlers for case actions
@@ -609,6 +637,38 @@ export const LegalCasesTracking: React.FC = () => {
   const cases = casesResponse?.data || [];
   const totalCases = casesResponse?.count || 0;
   const totalPages = Math.ceil(totalCases / pageSize);
+  const visibleCaseIds = useMemo(() => cases.map((legalCase) => legalCase.id), [cases]);
+  const allVisibleCasesSelected = visibleCaseIds.length > 0
+    && visibleCaseIds.every((caseId) => selectedCaseIds.includes(caseId));
+
+  useEffect(() => {
+    setSelectedCaseIds([]);
+  }, [currentPage, searchTerm, statusFilter, typeFilter]);
+
+  const handleToggleCaseSelection = useCallback((caseId: string) => {
+    setSelectedCaseIds((prev) =>
+      prev.includes(caseId)
+        ? prev.filter((selectedId) => selectedId !== caseId)
+        : [...prev, caseId]
+    );
+  }, []);
+
+  const handleToggleAllVisibleCases = useCallback(() => {
+    setSelectedCaseIds((prev) => {
+      if (allVisibleCasesSelected) {
+        return prev.filter((caseId) => !visibleCaseIds.includes(caseId));
+      }
+
+      const next = new Set(prev);
+      visibleCaseIds.forEach((caseId) => next.add(caseId));
+      return Array.from(next);
+    });
+  }, [allVisibleCasesSelected, visibleCaseIds]);
+
+  const confirmBulkDelete = useCallback(() => {
+    if (selectedCaseIds.length === 0) return;
+    bulkDeleteCasesMutation.mutate(selectedCaseIds);
+  }, [bulkDeleteCasesMutation, selectedCaseIds]);
 
   // Calculate KPI data
   const kpiData = useMemo(() => {
@@ -762,6 +822,19 @@ export const LegalCasesTracking: React.FC = () => {
       .sort((a, b) => a.daysUntil - b.daysUntil); // Sort by nearest date
   }, [cases]);
 
+  const caseTaskReminders = useMemo(() => {
+    return upcomingHearings
+      .filter(h => h.daysUntil >= 0)
+      .slice(0, 5)
+      .map(h => ({
+        id: h.caseId,
+        title: `جلسة ${h.caseId} - ${h.title}`,
+        dueDate: h.displayDate,
+        daysUntil: h.daysUntil,
+        completed: false,
+      }));
+  }, [upcomingHearings]);
+
   const handleCaseCreated = () => {
     setShowCaseWizard(false);
     toast.success('تم إنشاء القضية بنجاح');
@@ -832,7 +905,7 @@ export const LegalCasesTracking: React.FC = () => {
       {/* Charts Section */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Financial Chart */}
-        <div className="lg:col-span-2 bg-white dark:bg-slate-900 p-6 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 hover:border-teal-500/50 dark:hover:border-teal-500/50 transition-all duration-300">
+        <div className="legal-panel p-5 lg:col-span-2">
           <div className="flex justify-between items-center mb-6">
             <div>
               <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">التحليل المالي للقضايا</h3>
@@ -850,13 +923,13 @@ export const LegalCasesTracking: React.FC = () => {
                   <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 12 }} />
                   <YAxis axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 12 }} />
                   <Tooltip
-                    cursor={{ fill: '#f8fafc' }}
-                    contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 40px -12px rgba(0, 0, 0, 0.15)' }}
+                    cursor={{ fill: '#F6F8FB' }}
+                    contentStyle={{ borderRadius: '8px', border: '1px solid #E5EAF1', boxShadow: '0 1px 3px rgba(2, 6, 23, 0.04)' }}
                     formatter={(value: number) => [formatCurrency(value), '']}
                   />
                   <Legend iconType="circle" wrapperStyle={{ paddingTop: '20px' }} />
-                  <Bar dataKey="claimed" name="إجمالي المطالبات" fill="#fb7185" radius={[6, 6, 0, 0]} barSize={24} />
-                  <Bar dataKey="recovered" name="تم تحصيله" fill="#10b981" radius={[6, 6, 0, 0]} barSize={24} />
+                  <Bar dataKey="claimed" name="إجمالي المطالبات" fill="#38BDF8" radius={[6, 6, 0, 0]} barSize={24} />
+                  <Bar dataKey="recovered" name="تم تحصيله" fill="#22C7A1" radius={[6, 6, 0, 0]} barSize={24} />
                 </BarChart>
               </ResponsiveContainer>
             ) : (
@@ -870,7 +943,7 @@ export const LegalCasesTracking: React.FC = () => {
         </div>
 
         {/* Case Types Pie Chart */}
-        <div className="bg-white dark:bg-slate-900 p-6 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 hover:border-teal-500/50 dark:hover:border-teal-500/50 transition-all duration-300">
+        <div className="legal-panel p-5">
           <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100 mb-6">أنواع القضايا</h3>
           {caseTypesData.length > 0 ? (
             <>
@@ -920,11 +993,11 @@ export const LegalCasesTracking: React.FC = () => {
 
       {/* Quick Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        <Card className="bg-white border-slate-200 shadow-sm">
+        <Card className="legal-panel">
           <CardHeader className="pb-3">
             <CardTitle className="text-sm flex items-center gap-2">
-              <div className="w-8 h-8 bg-gradient-to-br from-rose-500 to-rose-600 rounded-lg flex items-center justify-center">
-                <Scale className="w-4 h-4 text-white" />
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#38BDF8]/10 text-[#38BDF8]">
+                <Scale className="w-4 h-4" />
               </div>
               إجمالي القضايا
             </CardTitle>
@@ -937,11 +1010,11 @@ export const LegalCasesTracking: React.FC = () => {
           </CardContent>
         </Card>
 
-        <Card className="bg-white border-slate-200 shadow-sm">
+        <Card className="legal-panel">
           <CardHeader className="pb-3">
             <CardTitle className="text-sm flex items-center gap-2">
-              <div className="w-8 h-8 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-lg flex items-center justify-center">
-                <Users className="w-4 h-4 text-white" />
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#22C7A1]/10 text-[#22C7A1]">
+                <Users className="w-4 h-4" />
               </div>
               عملاء متأثرين
             </CardTitle>
@@ -954,11 +1027,11 @@ export const LegalCasesTracking: React.FC = () => {
           </CardContent>
         </Card>
 
-        <Card className="bg-white border-slate-200 shadow-sm">
+        <Card className="legal-panel">
           <CardHeader className="pb-3">
             <CardTitle className="text-sm flex items-center gap-2">
-              <div className="w-8 h-8 bg-gradient-to-br from-amber-500 to-amber-600 rounded-lg flex items-center justify-center">
-                <Clock className="w-4 h-4 text-white" />
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#7C83F6]/10 text-[#7C83F6]">
+                <Clock className="w-4 h-4" />
               </div>
               الجلسات القادمة
             </CardTitle>
@@ -976,39 +1049,61 @@ export const LegalCasesTracking: React.FC = () => {
 
   // --- Cases List View ---
   const CasesListView = () => (
-    <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 overflow-hidden animate-in fade-in duration-500">
-      <div className="p-4 md:p-6 border-b border-slate-100 flex flex-col md:flex-row justify-between items-center gap-4">
+    <div className="legal-panel overflow-hidden animate-in fade-in duration-500">
+      <div className="flex flex-col items-center justify-between gap-4 border-b border-[#E5EAF1] p-4 md:flex-row md:p-5">
         <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
           <div className="relative flex-1 w-full sm:w-72">
-            <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400" size={16} />
+            <Search className="absolute right-3 top-1/2 -translate-y-1/2 text-[#94A3B8]" size={16} />
             <Input
               type="text"
               placeholder="بحث برقم اللوحة، اسم العميل..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-4 pr-10 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all"
+              className="w-full rounded-lg border-[#E5EAF1] bg-[#F6F8FB] py-2.5 pl-4 pr-10 text-sm focus:border-[#38BDF8] focus:ring-2 focus:ring-[#38BDF8]/20"
             />
           </div>
           <Button
             variant="outline"
             onClick={() => setShowFilters(!showFilters)}
-            className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-600 text-sm hover:bg-slate-100 transition-all min-h-[44px]"
+            className="legal-action-secondary flex min-h-[44px] w-full items-center justify-center gap-2 px-4 py-2.5 text-sm sm:w-auto"
           >
             <Filter size={16} />
             <span>تصفية</span>
           </Button>
         </div>
         <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
+          {cases.length > 0 && (
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleToggleAllVisibleCases}
+              className="legal-action-secondary flex min-h-[44px] w-full items-center justify-center gap-2 px-4 py-2.5 text-sm sm:w-auto"
+            >
+              <CheckCircle2 size={16} />
+              <span>{allVisibleCasesSelected ? 'إلغاء تحديد الكل' : 'تحديد كل المعروض'}</span>
+            </Button>
+          )}
+          {selectedCaseIds.length > 0 && (
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setShowBulkDeleteDialog(true)}
+              className="flex min-h-[44px] w-full items-center justify-center gap-2 border-red-200 bg-red-50 px-4 py-2.5 text-sm text-red-700 hover:bg-red-100 sm:w-auto"
+            >
+              <Trash2 size={16} />
+              <span>حذف المحدد ({selectedCaseIds.length})</span>
+            </Button>
+          )}
           <Button
             variant="outline"
-            className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-slate-600 text-sm hover:bg-slate-50 transition-all min-h-[44px]"
+            className="legal-action-secondary flex min-h-[44px] w-full items-center justify-center gap-2 px-4 py-2.5 text-sm sm:w-auto"
           >
             <Download size={16} />
             <span>تصدير</span>
           </Button>
           <Button
             onClick={() => setShowCaseWizard(true)}
-            className="w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-2.5 bg-teal-600 text-white rounded-xl text-sm hover:bg-teal-700 shadow-md transition-all min-h-[44px]"
+            className="legal-action-primary flex min-h-[44px] w-full items-center justify-center gap-2 px-5 py-2.5 text-sm sm:w-auto"
           >
             <Plus size={16} />
             <span>تسجيل قضية جديدة</span>
@@ -1023,11 +1118,11 @@ export const LegalCasesTracking: React.FC = () => {
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            className="border-b border-slate-100 overflow-hidden"
+            className="overflow-hidden border-b border-[#E5EAF1]"
           >
-            <div className="p-5 bg-slate-50/50 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 gap-4 bg-[#F6F8FB] p-5 sm:grid-cols-2 lg:grid-cols-3">
               <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="border-slate-200 rounded-xl">
+                <SelectTrigger className="rounded-lg border-[#E5EAF1] bg-white">
                   <SelectValue placeholder="تصفية حسب الحالة" />
                 </SelectTrigger>
                 <SelectContent>
@@ -1039,7 +1134,7 @@ export const LegalCasesTracking: React.FC = () => {
                 </SelectContent>
               </Select>
               <Select value={typeFilter} onValueChange={setTypeFilter}>
-                <SelectTrigger className="border-slate-200 rounded-xl">
+                <SelectTrigger className="rounded-lg border-[#E5EAF1] bg-white">
                   <SelectValue placeholder="تصفية حسب النوع" />
                 </SelectTrigger>
                 <SelectContent>
@@ -1056,13 +1151,49 @@ export const LegalCasesTracking: React.FC = () => {
         )}
       </AnimatePresence>
 
+      {selectedCaseIds.length > 0 && (
+        <div className="flex flex-col gap-3 border-b border-[#E5EAF1] bg-red-50/80 p-4 text-sm sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-2 text-red-700">
+            <AlertTriangle className="h-4 w-4" />
+            <span>تم تحديد {selectedCaseIds.length} قضية من السجل الحالي.</span>
+          </div>
+          <div className="flex gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setSelectedCaseIds([])}
+              className="border-red-200 bg-white text-red-700 hover:bg-red-50"
+            >
+              إلغاء التحديد
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              onClick={() => setShowBulkDeleteDialog(true)}
+              className="bg-red-600 text-white hover:bg-red-700"
+            >
+              <Trash2 className="ml-2 h-4 w-4" />
+              حذف القضايا المحددة
+            </Button>
+          </div>
+        </div>
+      )}
+
       {/* Table */}
       <div className="overflow-x-auto -mx-4 md:mx-0">
         <Table className="w-full min-w-[600px]">
           <TableHeader>
-            <TableRow className="bg-slate-50/50 text-slate-500 border-b border-slate-100 hover:bg-slate-50/50">
+            <TableRow className="border-b border-[#E5EAF1] bg-[#F6F8FB] text-[#64748B] hover:bg-[#F6F8FB]">
               <TableHead className="px-6 py-4 font-medium w-10">
-                <input type="checkbox" className="rounded border-slate-300 text-rose-500 focus:ring-rose-500" />
+                <input
+                  type="checkbox"
+                  checked={allVisibleCasesSelected}
+                  disabled={cases.length === 0}
+                  onChange={handleToggleAllVisibleCases}
+                  aria-label="تحديد كل القضايا المعروضة"
+                  className="rounded border-[#CBD5E1] text-[#38BDF8] focus:ring-[#38BDF8]"
+                />
               </TableHead>
               <TableHead className="px-6 py-4 font-medium">رقم الملف</TableHead>
               <TableHead className="px-6 py-4 font-medium">العميل</TableHead>
@@ -1073,7 +1204,7 @@ export const LegalCasesTracking: React.FC = () => {
               <TableHead className="px-6 py-4 font-medium"></TableHead>
             </TableRow>
           </TableHeader>
-          <TableBody className="divide-y divide-slate-50">
+          <TableBody className="divide-y divide-[#E5EAF1]">
             {isLoading ? (
               <TableRow>
                 <TableCell colSpan={8} className="text-center py-12">
@@ -1082,14 +1213,20 @@ export const LegalCasesTracking: React.FC = () => {
               </TableRow>
             ) : cases.length > 0 ? (
               cases.map((item) => (
-                <TableRow key={item.id} className="hover:bg-rose-50/30 transition-colors group">
+                <TableRow key={item.id} className="group transition-colors hover:bg-[#38BDF8]/5">
                   <TableCell className="px-6 py-4">
-                    <input type="checkbox" className="rounded border-slate-300 text-rose-500 focus:ring-rose-500" />
+                    <input
+                      type="checkbox"
+                      checked={selectedCaseIds.includes(item.id)}
+                      onChange={() => handleToggleCaseSelection(item.id)}
+                      aria-label={`تحديد القضية ${item.case_number}`}
+                      className="rounded border-[#CBD5E1] text-[#38BDF8] focus:ring-[#38BDF8]"
+                    />
                   </TableCell>
-                  <TableCell className="px-6 py-4 font-semibold text-slate-800">{item.case_number}</TableCell>
+                  <TableCell className="px-6 py-4 font-semibold text-[#020617]">{item.case_number}</TableCell>
                   <TableCell className="px-6 py-4">
-                    <div className="font-medium text-slate-800">{item.client_name || 'غير محدد'}</div>
-                    <div className="text-xs text-slate-400 mt-0.5">
+                    <div className="font-medium text-[#020617]">{item.client_name || 'غير محدد'}</div>
+                    <div className="mt-0.5 text-xs text-[#94A3B8]">
                       {item.case_title_ar || item.case_title}
                     </div>
                   </TableCell>
@@ -1098,16 +1235,16 @@ export const LegalCasesTracking: React.FC = () => {
                       {getTypeLabel(item.case_type)}
                     </span>
                   </TableCell>
-                  <TableCell className="px-6 py-4 font-medium text-slate-800">
+                  <TableCell className="px-6 py-4 font-medium text-[#020617]">
                     {formatCurrency(item.case_value || item.total_costs || 0)}
                   </TableCell>
                   <TableCell className="px-6 py-4">
                     <StatusBadge status={item.case_status} />
                   </TableCell>
-                  <TableCell className="px-6 py-4 text-slate-500">
+                  <TableCell className="px-6 py-4 text-[#64748B]">
                     {item.hearing_date ? (
                       <span className="flex items-center gap-1.5">
-                        <CalendarDays size={14} className="text-rose-500" />
+                        <CalendarDays size={14} className="text-[#38BDF8]" />
                         {format(new Date(item.hearing_date), 'dd MMM yyyy', { locale: ar })}
                       </span>
                     ) : (
@@ -1120,12 +1257,12 @@ export const LegalCasesTracking: React.FC = () => {
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="text-slate-400 hover:text-rose-500 p-1 rounded-md hover:bg-rose-50 transition-colors"
+                          className="rounded-lg p-1 text-[#94A3B8] transition-colors hover:bg-[#38BDF8]/10 hover:text-[#38BDF8]"
                         >
                           <MoreHorizontal size={18} />
                         </Button>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="rounded-xl border-slate-200">
+                      <DropdownMenuContent align="end" className="rounded-lg border-[#E5EAF1]">
                         <DropdownMenuItem
                           className="gap-2 cursor-pointer"
                           onClick={() => handleViewDetails(item as LegalCase)}
@@ -1184,13 +1321,13 @@ export const LegalCasesTracking: React.FC = () => {
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={8} className="text-center py-16 text-slate-400">
+                <TableCell colSpan={8} className="py-16 text-center text-[#94A3B8]">
                   <div className="flex flex-col items-center gap-4">
-                    <div className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center">
-                      <Folder className="w-8 h-8 text-slate-300" />
+                    <div className="flex h-16 w-16 items-center justify-center rounded-lg bg-[#38BDF8]/10">
+                      <Folder className="h-8 w-8 text-[#38BDF8]" />
                     </div>
-                    <p className="font-medium text-slate-500">لا توجد قضايا حالياً</p>
-                    <Button onClick={() => setShowCaseWizard(true)} variant="outline" className="gap-2 border-slate-200 rounded-xl">
+                    <p className="font-medium text-[#64748B]">لا توجد قضايا حالياً</p>
+                    <Button onClick={() => setShowCaseWizard(true)} variant="outline" className="legal-action-secondary gap-2">
                       <Plus size={16} />
                       إنشاء قضية جديدة
                     </Button>
@@ -1204,7 +1341,7 @@ export const LegalCasesTracking: React.FC = () => {
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="p-4 border-t border-slate-100 flex justify-between items-center text-xs text-slate-500">
+        <div className="flex items-center justify-between border-t border-[#E5EAF1] p-4 text-xs text-[#64748B]">
           <span>عرض {(currentPage - 1) * pageSize + 1}-{Math.min(currentPage * pageSize, totalCases)} من أصل {totalCases} قضية</span>
           <div className="flex gap-1">
             <Button
@@ -1212,7 +1349,7 @@ export const LegalCasesTracking: React.FC = () => {
               size="sm"
               onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
               disabled={currentPage === 1}
-              className="rounded-lg border-slate-200 hover:bg-slate-50"
+              className="legal-action-secondary"
             >
               السابق
             </Button>
@@ -1225,8 +1362,8 @@ export const LegalCasesTracking: React.FC = () => {
                 className={cn(
                   "rounded-lg",
                   currentPage === page
-                    ? 'bg-gradient-to-r from-rose-500 to-rose-600 text-white border-rose-500 shadow-md'
-                    : 'border-slate-200 hover:bg-slate-50'
+                    ? 'border-[#38BDF8] bg-[#38BDF8] text-white shadow-none'
+                    : 'border-[#E5EAF1] hover:bg-[#F6F8FB]'
                 )}
               >
                 {page}
@@ -1237,7 +1374,7 @@ export const LegalCasesTracking: React.FC = () => {
               size="sm"
               onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
               disabled={currentPage === totalPages}
-              className="rounded-lg border-slate-200 hover:bg-slate-50"
+              className="legal-action-secondary"
             >
               التالي
             </Button>
@@ -1253,17 +1390,6 @@ export const LegalCasesTracking: React.FC = () => {
     const futureHearings = upcomingHearings.filter(h => h.daysUntil >= 0);
     const pastHearings = upcomingHearings.filter(h => h.daysUntil < 0);
     const nextHearing = futureHearings[0];
-
-    // Generate task reminders from cases with upcoming hearings
-    const caseTaskReminders = useMemo(() => {
-      return futureHearings.slice(0, 5).map(h => ({
-        id: h.caseId,
-        title: `جلسة ${h.caseId} - ${h.title}`,
-        dueDate: h.displayDate,
-        daysUntil: h.daysUntil,
-        completed: false,
-      }));
-    }, [futureHearings]);
 
     return (
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-in fade-in duration-500">
@@ -1435,43 +1561,128 @@ export const LegalCasesTracking: React.FC = () => {
   // --- Legal Collection View ---
 
   // --- Settings View ---
-  const SettingsView = () => (
-    <div className="space-y-6 animate-in fade-in duration-500">
-      <Card className="rounded-xl border-slate-200 shadow-sm">
-        <CardHeader>
-          <CardTitle className="text-lg">الإنشاء التلقائي للقضايا</CardTitle>
-          <CardDescription className="text-slate-500">
-            إعداد المحفزات التلقائية لإنشاء قضايا قانونية عند حدوث شروط معينة
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <AutoCreateCaseTriggersConfig
-            open={true}
-            onOpenChange={() => {}}
-            companyId={companyId || ''}
-            embedded={true}
-          />
-        </CardContent>
-      </Card>
+  const SettingsView = () => {
+    if (isLoadingCompany || !companyId) {
+      return (
+        <div className="legal-panel flex min-h-40 flex-col items-center justify-center p-6 text-center">
+          <LoadingSpinner />
+          <p className="mt-3 text-sm text-[#64748B]">جاري تحميل بيانات الشركة...</p>
+        </div>
+      );
+    }
 
-      <Card className="rounded-xl border-slate-200 shadow-sm">
-        <CardHeader>
-          <CardTitle className="text-lg">مولد الإنذارات القانونية</CardTitle>
-          <CardDescription className="text-slate-500">
-            إنشاء إنذارات قانونية احترافية تلقائياً
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
+    return (
+      <div className="space-y-6 animate-in fade-in duration-500">
+        <div className="legal-hero p-5">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <p className="text-sm font-semibold text-[#38BDF8]">إعدادات الشؤون القانونية</p>
+              <h2 className="mt-2 text-2xl font-bold text-[#020617]">تشغيل الخدمات القانونية</h2>
+              <p className="mt-2 max-w-3xl text-sm leading-6 text-[#64748B]">
+                إدارة المحفزات التلقائية للقضايا وقواعد إنشاء الملفات القانونية من بيانات العملاء والفواتير غير المسددة.
+              </p>
+            </div>
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:w-[360px]">
+              {[
+                { label: 'الشركة', value: 'متصلة', icon: CheckCircle2, color: '#22C7A1' },
+                { label: 'المحفزات', value: 'جاهزة', icon: Zap, color: '#38BDF8' },
+              ].map((item) => (
+                <div key={item.label} className="rounded-lg border border-[#E5EAF1] bg-white p-3">
+                  <div className="flex items-center gap-2">
+                    <span className="flex h-8 w-8 items-center justify-center rounded-lg" style={{ backgroundColor: `${item.color}14`, color: item.color }}>
+                      <item.icon className="h-4 w-4" />
+                    </span>
+                    <div>
+                      <div className="text-xs text-[#64748B]">{item.label}</div>
+                      <div className="text-sm font-semibold text-[#020617]">{item.value}</div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <Card className="legal-panel">
+          <CardHeader className="border-b border-[#E5EAF1]">
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <Zap className="h-5 w-5 text-[#38BDF8]" />
+              الإنشاء التلقائي للقضايا
+            </CardTitle>
+            <CardDescription className="text-[#64748B]">
+              إعداد المحفزات التي تنشئ قضايا قانونية عند تجاوز أيام التأخير أو قيمة المديونية أو تكرار الوعود المكسورة.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="pt-5">
+            <ErrorBoundary>
+              <AutoCreateCaseTriggersConfig
+                open={true}
+                onOpenChange={() => {}}
+                companyId={companyId}
+                embedded={true}
+              />
+            </ErrorBoundary>
+          </CardContent>
+        </Card>
+
+      </div>
+    );
+  };
+
+  const NoticesView = () => {
+    if (isLoadingCompany || !companyId) {
+      return (
+        <div className="legal-panel flex min-h-40 flex-col items-center justify-center p-6 text-center">
+          <LoadingSpinner />
+          <p className="mt-3 text-sm text-[#64748B]">جاري تحميل بيانات الشركة...</p>
+        </div>
+      );
+    }
+
+    return (
+      <div className="space-y-6 animate-in fade-in duration-500">
+        <div className="legal-hero p-5">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <p className="text-sm font-semibold text-[#7C83F6]">الإنذارات القانونية</p>
+              <h2 className="mt-2 text-2xl font-bold text-[#020617]">مستندات رسمية قابلة للتعديل والطباعة</h2>
+              <p className="mt-2 max-w-3xl text-sm leading-6 text-[#64748B]">
+                إنشاء إنذارات ومخاطبات قانونية من بيانات العملاء والفواتير غير المسددة، مع ترويسة الشركة والشعار وبياناتها الرسمية.
+              </p>
+            </div>
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-3 lg:w-[460px]">
+              {[
+                { label: 'الشعار', value: 'مضمن', icon: CheckCircle2, color: '#22C7A1' },
+                { label: 'القوالب', value: 'متعددة', icon: FileText, color: '#7C83F6' },
+                { label: 'العملة', value: 'ريال قطري', icon: DollarSign, color: '#38BDF8' },
+              ].map((item) => (
+                <div key={item.label} className="rounded-lg border border-[#E5EAF1] bg-white p-3">
+                  <div className="flex items-center gap-2">
+                    <span className="flex h-8 w-8 items-center justify-center rounded-lg" style={{ backgroundColor: `${item.color}14`, color: item.color }}>
+                      <item.icon className="h-4 w-4" />
+                    </span>
+                    <div>
+                      <div className="text-xs text-[#64748B]">{item.label}</div>
+                      <div className="text-sm font-semibold text-[#020617]">{item.value}</div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <ErrorBoundary>
           <EnhancedLegalNoticeGenerator
-            companyId={companyId || ''}
-            onDocumentGenerated={(document) => {
+            companyId={companyId}
+            onDocumentGenerated={() => {
               toast.success('تم إنشاء المستند بنجاح');
             }}
           />
-        </CardContent>
-      </Card>
-    </div>
-  );
+        </ErrorBoundary>
+      </div>
+    );
+  };
 
   // --- Finance View removed - use /legal/delinquency instead ---
 
@@ -1486,6 +1697,8 @@ export const LegalCasesTracking: React.FC = () => {
         return <CalendarView />;
       case 'collection':
         return <ManualLegalCollectionView />;
+      case 'notices':
+        return <NoticesView />;
       case 'settings':
         return <SettingsView />;
       default:
@@ -1494,15 +1707,15 @@ export const LegalCasesTracking: React.FC = () => {
   };
 
   return (
-    <div className="w-full min-h-screen bg-slate-50 font-sans text-right pb-10" dir="rtl">
+    <div className="legal-system w-full min-h-screen font-sans text-right pb-10" dir="rtl">
       {/* Sub-System Header - Enhanced Design */}
-      <div className="bg-white border-b border-slate-200 px-4 md:px-8 py-4 sticky top-0 z-30">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
+      <div className="sticky top-0 z-30 border-b border-[#E5EAF1] bg-[#F6F8FB]/95 px-4 py-4 backdrop-blur md:px-8">
+        <div className="legal-hero mx-auto mb-4 flex max-w-7xl flex-col gap-4 p-4 md:flex-row md:items-center md:justify-between">
           <div className="flex items-center gap-4">
             <div className="relative">
-              <div className="absolute inset-0 bg-teal-600 rounded-xl blur-xl opacity-20" />
-              <div className="relative bg-teal-600 p-3 rounded-xl shadow-sm">
-                <Gavel className="text-white" size={24} />
+              <div className="absolute inset-0 rounded-lg bg-[#38BDF8]/20 blur-xl" />
+              <div className="legal-icon relative h-12 w-12">
+                <Gavel size={24} />
               </div>
             </div>
             <div>
@@ -1515,7 +1728,7 @@ export const LegalCasesTracking: React.FC = () => {
               onClick={() => navigate('/legal/lawsuit-data')}
               variant="outline"
               size="sm"
-              className="gap-2 border-teal-300 text-teal-700 hover:bg-teal-50"
+              className="legal-action-secondary gap-2"
             >
               <FileText className="w-4 h-4" />
               <span className="hidden sm:inline">بيانات التقاضي</span>
@@ -1524,7 +1737,7 @@ export const LegalCasesTracking: React.FC = () => {
               onClick={() => setShowTriggersConfig(true)}
               variant="outline"
               size="sm"
-              className="gap-2 border-slate-200 hover:bg-slate-50"
+              className="legal-action-secondary gap-2"
             >
               <Zap className="w-4 h-4" />
               <span className="hidden sm:inline">الإنشاء التلقائي</span>
@@ -1532,7 +1745,7 @@ export const LegalCasesTracking: React.FC = () => {
             <Button
               onClick={() => setShowCaseWizard(true)}
               size="sm"
-              className="gap-2 bg-teal-600 hover:bg-teal-700 shadow-md"
+              className="legal-action-primary gap-2"
             >
               <Plus className="w-4 h-4" />
               <span className="hidden sm:inline">قضية جديدة</span>
@@ -1550,11 +1763,12 @@ export const LegalCasesTracking: React.FC = () => {
         </div>
 
         {/* Tab Navigation */}
-        <div className="flex gap-2 overflow-x-auto pb-1 md:pb-0 scrollbar-hide">
+        <div className="legal-tabbar mx-auto flex max-w-7xl gap-2 overflow-x-auto scrollbar-hide">
           <TabButton id="dashboard" label="نظرة عامة" icon={LayoutDashboard} activeTab={activeTab} onClick={setActiveTab} />
           <TabButton id="cases" label="سجل القضايا" icon={FileText} activeTab={activeTab} onClick={setActiveTab} />
           <TabButton id="calendar" label="الجلسات والمواعيد" icon={CalendarDays} activeTab={activeTab} onClick={setActiveTab} />
           <TabButton id="collection" label="التحصيل القانوني" icon={DollarSign} activeTab={activeTab} onClick={setActiveTab} />
+          <TabButton id="notices" label="الإنذارات القانونية" icon={FileText} activeTab={activeTab} onClick={setActiveTab} />
           <TabButton id="settings" label="الإعدادات" icon={Settings} activeTab={activeTab} onClick={setActiveTab} />
         </div>
       </div>
@@ -1573,11 +1787,13 @@ export const LegalCasesTracking: React.FC = () => {
 
 
       {/* Triggers Config Dialog */}
-      <AutoCreateCaseTriggersConfig
-        open={showTriggersConfig}
-        onOpenChange={setShowTriggersConfig}
-        companyId={companyId || ''}
-      />
+      {companyId && (
+        <AutoCreateCaseTriggersConfig
+          open={showTriggersConfig}
+          onOpenChange={setShowTriggersConfig}
+          companyId={companyId}
+        />
+      )}
 
       {/* Case Details Dialog */}
       <Dialog open={showCaseDetails} onOpenChange={setShowCaseDetails}>
@@ -2259,6 +2475,33 @@ export const LegalCasesTracking: React.FC = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Bulk Delete Confirmation Dialog */}
+      <AlertDialog open={showBulkDeleteDialog} onOpenChange={setShowBulkDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-red-600">
+              <AlertTriangle className="w-5 h-5" />
+              تأكيد حذف القضايا المحددة
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-right">
+              هل أنت متأكد من حذف <strong>{selectedCaseIds.length}</strong> قضية محددة من سجل القضايا؟
+              <br />
+              هذا الإجراء لا يمكن التراجع عنه.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="gap-2">
+            <AlertDialogCancel disabled={bulkDeleteCasesMutation.isPending}>إلغاء</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmBulkDelete}
+              disabled={bulkDeleteCasesMutation.isPending || selectedCaseIds.length === 0}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              {bulkDeleteCasesMutation.isPending ? 'جاري الحذف...' : `حذف ${selectedCaseIds.length} قضية`}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>

@@ -1,7 +1,7 @@
 import React, { forwardRef, useState, useEffect } from 'react';
 
 import { useFleetifyTranslation } from "@/hooks/useTranslation";
-interface PaymentReceiptProps {
+export interface PaymentReceiptProps {
   receiptNumber: string;
   date: string;
   customerName: string;
@@ -60,6 +60,7 @@ export const PaymentReceipt = forwardRef<HTMLDivElement, PaymentReceiptProps>(({
   showPaymentDetails = false,
   vehicleNumber
 }, ref) => {
+  const { t } = useFleetifyTranslation("ui");
   const [logoBase64, setLogoBase64] = useState<string>('');
   const [stampBase64, setStampBase64] = useState<string>('');
   const [signatureBase64, setSignatureBase64] = useState<string>('');

@@ -74,6 +74,19 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { MaintenanceSidePanel } from "@/components/fleet/MaintenanceSidePanel";
 import { MaintenanceAlertsPanel } from "@/components/fleet/MaintenanceAlertsPanel";
+import { systemColorPattern } from "@/lib/design-system/systemColorPattern";
+
+const maintenanceTheme = {
+  text: systemColorPattern.colors.text,
+  surface: systemColorPattern.colors.surface,
+  inner: systemColorPattern.colors.innerSurface,
+  muted: systemColorPattern.colors.secondaryText,
+  border: systemColorPattern.colors.border,
+  water: systemColorPattern.colors.info,
+  alert: systemColorPattern.colors.alert,
+  focus: systemColorPattern.colors.focus,
+  success: systemColorPattern.colors.success,
+};
 
 // Lazy load components
 const MaintenanceForm = lazy(() =>
@@ -82,84 +95,33 @@ const MaintenanceForm = lazy(() =>
 
 // ===== Constants =====
 const statusConfig = {
-  pending: {
-    label: 'معلقة',
-    color: 'bg-sky-50 text-sky-700 border-sky-200',
-    dot: 'bg-sky-500',
-    bgGradient: 'from-sky-400 to-sky-500'
-  },
-  in_progress: {
-    label: 'قيد المعالجة',
-    color: 'bg-amber-50 text-amber-700 border-amber-200',
-    dot: 'bg-amber-500',
-    bgGradient: 'from-amber-400 to-amber-500'
-  },
-  completed: {
-    label: 'مكتملة',
-    color: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-    dot: 'bg-emerald-500',
-    bgGradient: 'from-emerald-400 to-emerald-500'
-  },
-  cancelled: {
-    label: 'ملغاة',
-    color: 'bg-slate-50 text-slate-700 border-slate-200',
-    dot: 'bg-slate-500',
-    bgGradient: 'from-slate-400 to-slate-500'
-  },
+  pending: { label: 'معلقة', accent: maintenanceTheme.water },
+  in_progress: { label: 'قيد المعالجة', accent: maintenanceTheme.focus },
+  completed: { label: 'مكتملة', accent: maintenanceTheme.success },
+  cancelled: { label: 'ملغاة', accent: maintenanceTheme.muted },
 };
 
 const priorityConfig = {
-  low: { label: 'منخفضة', color: 'bg-sky-50 text-sky-700 border-sky-200', icon: '↓' },
-  medium: { label: 'متوسطة', color: 'bg-amber-50 text-amber-700 border-amber-200', icon: '→' },
-  high: { label: 'عالية', color: 'bg-orange-50 text-orange-700 border-orange-200', icon: '↑' },
-  urgent: { label: 'عاجلة', color: 'bg-rose-50 text-rose-700 border-rose-200', icon: '⚡' },
+  low: { label: 'منخفضة', accent: maintenanceTheme.water, icon: '↓' },
+  medium: { label: 'متوسطة', accent: maintenanceTheme.focus, icon: '→' },
+  high: { label: 'عالية', accent: maintenanceTheme.alert, icon: '↑' },
+  urgent: { label: 'عاجلة', accent: maintenanceTheme.alert, icon: '!' },
 };
 
 const maintenanceTypeConfig = {
-  routine: {
-    label: 'صيانة دورية',
-    icon: RefreshCw,
-    color: 'text-sky-600',
-    bgLight: 'bg-sky-50',
-    bgGradient: 'from-sky-400 to-sky-500'
-  },
-  repair: {
-    label: 'إصلاح',
-    icon: Wrench,
-    color: 'text-purple-600',
-    bgLight: 'bg-purple-50',
-    bgGradient: 'from-purple-400 to-purple-500'
-  },
-  emergency: {
-    label: 'صيانة طارئة',
-    icon: AlertTriangle,
-    color: 'text-rose-600',
-    bgLight: 'bg-rose-50',
-    bgGradient: 'from-rose-400 to-rose-500'
-  },
-  preventive: {
-    label: 'صيانة وقائية',
-    icon: ShieldCheck,
-    color: 'text-emerald-600',
-    bgLight: 'bg-emerald-50',
-    bgGradient: 'from-emerald-400 to-emerald-500'
-  },
-  maintenance: {
-    label: 'صيانة',
-    icon: Wrench,
-    color: 'text-slate-600',
-    bgLight: 'bg-slate-50',
-    bgGradient: 'from-slate-400 to-slate-500'
-  },
+  routine: { label: 'صيانة دورية', icon: RefreshCw, accent: maintenanceTheme.water },
+  repair: { label: 'إصلاح', icon: Wrench, accent: maintenanceTheme.focus },
+  emergency: { label: 'صيانة طارئة', icon: AlertTriangle, accent: maintenanceTheme.alert },
+  preventive: { label: 'صيانة وقائية', icon: ShieldCheck, accent: maintenanceTheme.success },
+  maintenance: { label: 'صيانة', icon: Wrench, accent: maintenanceTheme.muted },
 };
-
 // ===== Enhanced Stat Card =====
 interface EnhancedStatCardProps {
   title: string;
   value: string | number;
   subtitle?: string;
   icon: React.ElementType;
-  bgGradient: string;
+  color: string;
   delay: number;
   onClick?: () => void;
   trend?: {
@@ -173,52 +135,34 @@ const EnhancedStatCard: React.FC<EnhancedStatCardProps> = ({
   value,
   subtitle,
   icon: Icon,
-  bgGradient,
+  color,
   delay,
   onClick,
   trend
 }) => (
-  <motion.div
-    initial={{ opacity: 0, y: 20 }}
+  <motion.button
+    type="button"
+    initial={{ opacity: 0, y: 12 }}
     animate={{ opacity: 1, y: 0 }}
-    transition={{ delay, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+    transition={{ delay, duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
     onClick={onClick}
-    className="group relative overflow-hidden rounded-xl bg-white border border-slate-200/60 p-6 shadow-sm hover:shadow-xl hover:border-slate-300 transition-all duration-300 cursor-pointer"
+    className="w-full rounded-[8px] border bg-white p-5 text-right shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+    style={{ borderColor: maintenanceTheme.border }}
   >
-    {/* Background gradient decoration */}
-    <div className={cn(
-      "absolute -right-8 -top-8 w-24 h-24 rounded-full opacity-10 group-hover:opacity-15 transition-opacity bg-gradient-to-br",
-      bgGradient
-    )} />
-
-    <div className="relative">
-      <div className="flex items-start justify-between mb-4">
-        <div className={cn(
-          "p-3 rounded-xl bg-gradient-to-br shadow-sm",
-          bgGradient
-        )}>
-          <Icon className="w-5 h-5 text-white" />
-        </div>
-        {trend && (
-          <div className={cn(
-            "flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium",
-            trend.isPositive ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'
-          )}>
-            <TrendingUp className={cn("w-3 h-3", !trend.isPositive && "rotate-180")} />
-            {Math.abs(trend.value)}%
-          </div>
-        )}
+    <div className="mb-4 flex items-center justify-between">
+      <div className="flex h-11 w-11 items-center justify-center rounded-[8px]" style={{ backgroundColor: `${color}14` }}>
+        <Icon className="h-5 w-5" style={{ color }} />
       </div>
-
-      <div className="space-y-1">
-        <p className="text-3xl font-bold text-slate-900 tracking-tight">{value}</p>
-        <p className="text-sm font-medium text-slate-600">{title}</p>
-        {subtitle && (
-          <p className="text-xs text-slate-400">{subtitle}</p>
-        )}
-      </div>
+      {trend && (
+        <span className="rounded-full px-2 py-1 text-xs font-semibold" style={{ backgroundColor: `${color}14`, color }}>
+          {Math.abs(trend.value)}%
+        </span>
+      )}
     </div>
-  </motion.div>
+    <p className="text-3xl font-bold" style={{ color }}>{value}</p>
+    <p className="mt-1 text-sm font-semibold" style={{ color: maintenanceTheme.text }}>{title}</p>
+    {subtitle && <p className="mt-1 text-xs" style={{ color: maintenanceTheme.muted }}>{subtitle}</p>}
+  </motion.button>
 );
 
 // ===== Type Summary Card =====
@@ -226,28 +170,18 @@ interface TypeSummaryCardProps {
   label: string;
   count: number;
   icon: React.ElementType;
-  bgGradient: string;
-  bgLight: string;
+  color: string;
 }
 
-const TypeSummaryCard: React.FC<TypeSummaryCardProps> = ({
-  label,
-  count,
-  icon: Icon,
-  bgGradient,
-  bgLight
-}) => (
-  <div className="flex items-center gap-3 p-4 rounded-xl bg-slate-50 hover:bg-slate-100 transition-colors cursor-pointer">
-    <div className={cn(
-      "p-2.5 rounded-lg bg-gradient-to-br shadow-sm",
-      bgGradient
-    )}>
-      <Icon className="w-4 h-4 text-white" />
+const TypeSummaryCard: React.FC<TypeSummaryCardProps> = ({ label, count, icon: Icon, color }) => (
+  <div className="rounded-[8px] border px-4 py-3" style={{ backgroundColor: maintenanceTheme.inner, borderColor: maintenanceTheme.border }}>
+    <div className="mb-3 flex items-center justify-between">
+      <div className="flex h-9 w-9 items-center justify-center rounded-[8px]" style={{ backgroundColor: `${color}14` }}>
+        <Icon className="h-4 w-4" style={{ color }} />
+      </div>
+      <p className="text-xs font-semibold" style={{ color: maintenanceTheme.muted }}>{label}</p>
     </div>
-    <div className="flex-1">
-      <p className="text-xs text-slate-500">{label}</p>
-      <p className="text-lg font-bold text-slate-900">{count}</p>
-    </div>
+    <p className="text-2xl font-bold" style={{ color }}>{count}</p>
   </div>
 );
 
@@ -256,41 +190,28 @@ interface AlertCardProps {
   title: string;
   count: number;
   icon: React.ElementType;
-  bgGradient: string;
-  bgLight: string;
-  onClick: () => void;
+  color: string;
+  onClick?: () => void;
 }
 
-const AlertCard: React.FC<AlertCardProps> = ({
-  title,
-  count,
-  icon: Icon,
-  bgGradient,
-  bgLight,
-  onClick
-}) => (
-  <motion.div
-    whileHover={{ scale: 1.02 }}
-    whileTap={{ scale: 0.98 }}
+const AlertCard: React.FC<AlertCardProps> = ({ title, count, icon: Icon, color, onClick }) => (
+  <motion.button
+    type="button"
+    initial={{ opacity: 0, x: 10 }}
+    animate={{ opacity: 1, x: 0 }}
     onClick={onClick}
-    className={cn(
-      "flex items-center gap-3 p-4 rounded-xl cursor-pointer transition-all",
-      bgLight
-    )}
+    className="flex w-full items-center gap-3 rounded-[8px] border bg-white p-3 text-right transition hover:-translate-y-0.5"
+    style={{ borderColor: `${color}55` }}
   >
-    <div className={cn(
-      "p-2 rounded-lg bg-gradient-to-br shadow-sm",
-      bgGradient
-    )}>
-      <Icon className="w-4 h-4 text-white" />
+    <div className="flex h-10 w-10 items-center justify-center rounded-[8px]" style={{ backgroundColor: `${color}14` }}>
+      <Icon className="h-5 w-5" style={{ color }} />
     </div>
     <div className="flex-1">
-      <p className="text-sm font-semibold text-slate-900">{title}</p>
+      <p className="text-sm font-bold" style={{ color: maintenanceTheme.text }}>{title}</p>
     </div>
-    <span className="px-3 py-1 rounded-full bg-white dark:bg-slate-900 text-sm font-bold">{count}</span>
-  </motion.div>
+    <span className="rounded-full px-3 py-1 text-sm font-bold" style={{ backgroundColor: `${color}14`, color }}>{count}</span>
+  </motion.button>
 );
-
 // ===== Maintenance Record Card =====
 interface MaintenanceRecordCardProps {
   record: any;
@@ -309,96 +230,94 @@ const MaintenanceRecordCard: React.FC<MaintenanceRecordCardProps> = ({
   onStartProgress,
   onDelete
 }) => {
-  const TypeIcon = maintenanceTypeConfig[record.maintenance_type]?.icon || Wrench;
-  const status = statusConfig[record.status];
-  const priority = priorityConfig[record.priority];
-  const typeConfig = maintenanceTypeConfig[record.maintenance_type];
+  const typeConfig = maintenanceTypeConfig[record.maintenance_type as keyof typeof maintenanceTypeConfig] || maintenanceTypeConfig.maintenance;
+  const TypeIcon = typeConfig.icon;
+  const status = statusConfig[record.status as keyof typeof statusConfig] || statusConfig.pending;
+  const priority = priorityConfig[record.priority as keyof typeof priorityConfig] || priorityConfig.medium;
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.03, duration: 0.3 }}
-      className="group bg-white rounded-xl border border-slate-200/60 hover:border-slate-300 hover:shadow-lg transition-all duration-300 overflow-hidden"
+      transition={{ delay: index * 0.02, duration: 0.28 }}
+      className="group overflow-hidden rounded-[8px] border bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+      style={{ borderColor: maintenanceTheme.border }}
     >
-      {/* Status Bar */}
-      <div className={cn("h-1 w-full", status.dot)} />
+      <div className="h-1 w-full" style={{ backgroundColor: status.accent }} />
 
-      <div className="p-5">
-        <div className="flex items-start justify-between gap-4">
-          {/* Left Section - Main Info */}
-          <div className="flex items-start gap-4 flex-1 min-w-0">
-            {/* Icon */}
-            <div className={cn(
-              "p-3 rounded-lg bg-gradient-to-br shadow-sm flex-shrink-0",
-              typeConfig?.bgGradient || 'from-slate-400 to-slate-500'
-            )}>
-              <TypeIcon className={cn("w-5 h-5", typeConfig?.color || 'text-white')} />
+      <div className="p-4 sm:p-5">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex min-w-0 flex-1 items-start gap-4">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[8px]" style={{ backgroundColor: `${typeConfig.accent}14` }}>
+              <TypeIcon className="h-5 w-5" style={{ color: typeConfig.accent }} />
             </div>
 
-            {/* Details */}
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 mb-2">
-                <h3 className="font-semibold text-slate-900 truncate">{record.maintenance_number}</h3>
-                <Badge className={status.color}>{status.label}</Badge>
+            <div className="min-w-0 flex-1">
+              <div className="mb-2 flex flex-wrap items-center gap-2">
+                <h3 className="truncate text-base font-bold" style={{ color: maintenanceTheme.text }}>{record.maintenance_number || 'طلب صيانة'}</h3>
+                <Badge className="rounded-[8px] border px-2 py-1 text-xs font-semibold" style={{ backgroundColor: `${status.accent}14`, borderColor: `${status.accent}44`, color: status.accent }}>
+                  {status.label}
+                </Badge>
               </div>
 
               {record.vehicles && (
-                <div className="flex items-center gap-2 text-sm text-slate-600 mb-2">
-                  <Car className="w-4 h-4 flex-shrink-0" />
-                  <span className="font-medium">{record.vehicles.plate_number}</span>
-                  {record.vehicles.make && (
-                    <>
-                      <span className="text-slate-400">•</span>
-                      <span className="text-slate-500">{record.vehicles.make} {record.vehicles.model}</span>
-                    </>
-                  )}
+                <div className="mb-2 flex flex-wrap items-center gap-2 text-sm" style={{ color: maintenanceTheme.muted }}>
+                  <Car className="h-4 w-4 shrink-0" style={{ color: maintenanceTheme.water }} />
+                  <span className="font-bold" style={{ color: maintenanceTheme.text }}>{record.vehicles.plate_number}</span>
+                  {record.vehicles.make && <span>{record.vehicles.make} {record.vehicles.model}</span>}
                 </div>
               )}
 
-              <div className="flex items-center gap-2 text-xs text-slate-500">
-                <span>{typeConfig?.label || 'صيانة'}</span>
+              <div className="flex flex-wrap items-center gap-2 text-xs" style={{ color: maintenanceTheme.muted }}>
+                <span>{typeConfig.label}</span>
                 {record.estimated_cost && (
                   <>
-                    <span className="text-slate-400">•</span>
-                    <span className="font-medium">{record.estimated_cost.toLocaleString()} ر.ق</span>
+                    <span>·</span>
+                    <span className="font-bold" style={{ color: maintenanceTheme.alert }}>{record.estimated_cost.toLocaleString()} ر.ق</span>
+                  </>
+                )}
+                {record.scheduled_date && (
+                  <>
+                    <span>·</span>
+                    <span>{new Date(record.scheduled_date).toLocaleDateString('ar-SA')}</span>
                   </>
                 )}
               </div>
             </div>
           </div>
 
-          {/* Right Section - Actions */}
-          <div className="flex items-center gap-2 flex-shrink-0">
-            <Badge className={priority.color}>{priority.icon} {priority.label}</Badge>
+          <div className="flex shrink-0 items-center justify-between gap-2 lg:justify-end">
+            <Badge className="rounded-[8px] border px-2 py-1 text-xs font-semibold" style={{ backgroundColor: `${priority.accent}14`, borderColor: `${priority.accent}44`, color: priority.accent }}>
+              {priority.icon} {priority.label}
+            </Badge>
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="h-9 w-9 p-0">
-                  <MoreHorizontal className="w-4 h-4" />
+                <Button variant="ghost" size="sm" className="h-9 w-9 rounded-[8px] p-0">
+                  <MoreHorizontal className="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuItem onClick={onView} className="gap-2">
-                  <Eye className="w-4 h-4" />
+                  <Eye className="h-4 w-4" style={{ color: maintenanceTheme.water }} />
                   عرض التفاصيل
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 {record.status === 'pending' && (
                   <DropdownMenuItem onClick={onStartProgress} className="gap-2">
-                    <Clock className="w-4 h-4" />
+                    <Clock className="h-4 w-4" style={{ color: maintenanceTheme.focus }} />
                     بدء الصيانة
                   </DropdownMenuItem>
                 )}
                 {record.status === 'in_progress' && (
                   <DropdownMenuItem onClick={onComplete} className="gap-2">
-                    <CheckCircle className="w-4 h-4" />
+                    <CheckCircle className="h-4 w-4" style={{ color: maintenanceTheme.success }} />
                     إكمال الصيانة
                   </DropdownMenuItem>
                 )}
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={onDelete} className="gap-2 text-red-600">
-                  <Trash2 className="w-4 h-4" />
+                  <Trash2 className="h-4 w-4" />
                   حذف
                 </DropdownMenuItem>
               </DropdownMenuContent>
@@ -416,70 +335,51 @@ interface VehicleInMaintenanceCardProps {
   index: number;
 }
 
-const VehicleInMaintenanceCard: React.FC<VehicleInMaintenanceCardProps> = ({
-  vehicle,
-  index
-}) => {
+const VehicleInMaintenanceCard: React.FC<VehicleInMaintenanceCardProps> = ({ vehicle, index }) => {
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.03, duration: 0.3 }}
-      className="group bg-white rounded-xl border border-amber-200/60 hover:border-amber-300 hover:shadow-lg transition-all duration-300 overflow-hidden"
+      transition={{ delay: index * 0.02, duration: 0.28 }}
+      className="overflow-hidden rounded-[8px] border bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+      style={{ borderColor: `${maintenanceTheme.alert}44` }}
     >
-      {/* Status Bar */}
-      <div className="h-1 w-full bg-gradient-to-r from-amber-400 to-amber-500" />
-
-      <div className="p-5">
-        <div className="flex items-start gap-4">
-          {/* Icon */}
-          <div className="p-3 rounded-lg bg-gradient-to-br from-amber-400 to-amber-500 shadow-sm flex-shrink-0">
-            <Car className="w-5 h-5 text-white" />
+      <div className="h-1 w-full" style={{ backgroundColor: maintenanceTheme.alert }} />
+      <div className="p-4">
+        <div className="flex items-start gap-3">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[8px]" style={{ backgroundColor: `${maintenanceTheme.alert}14` }}>
+            <Car className="h-5 w-5" style={{ color: maintenanceTheme.alert }} />
           </div>
-
-          {/* Details */}
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-2">
-              <h3 className="font-bold text-slate-900 text-lg">{vehicle.plate_number}</h3>
-              <Badge className="bg-amber-50 text-amber-700 border-amber-200">في الصيانة</Badge>
+          <div className="min-w-0 flex-1">
+            <div className="mb-2 flex flex-wrap items-center gap-2">
+              <h3 className="text-lg font-bold" style={{ color: maintenanceTheme.text }}>{vehicle.plate_number}</h3>
+              <Badge className="rounded-[8px] border" style={{ backgroundColor: `${maintenanceTheme.alert}14`, borderColor: `${maintenanceTheme.alert}44`, color: maintenanceTheme.alert }}>في الصيانة</Badge>
             </div>
-
-            <div className="flex items-center gap-2 text-sm text-slate-600 mb-1">
-              <span className="font-medium">{vehicle.make} {vehicle.model}</span>
-              <span className="text-slate-400">•</span>
-              <span className="text-slate-500">{vehicle.year}</span>
-            </div>
-
+            <p className="truncate text-sm font-semibold" style={{ color: maintenanceTheme.text }}>{vehicle.make} {vehicle.model} {vehicle.year}</p>
             {vehicle.current_mileage && (
-              <div className="flex items-center gap-2 text-xs text-slate-500">
-                <span>المسافة الحالية:</span>
-                <span className="font-medium">{vehicle.current_mileage.toLocaleString()} كم</span>
-              </div>
+              <p className="mt-1 text-xs" style={{ color: maintenanceTheme.muted }}>المسافة الحالية: {vehicle.current_mileage.toLocaleString()} كم</p>
             )}
-
             {vehicle.last_maintenance_date && (
-              <div className="flex items-center gap-2 text-xs text-slate-500 mt-1">
-                <Calendar className="w-3 h-3" />
-                <span>آخر صيانة: {new Date(vehicle.last_maintenance_date).toLocaleDateString('ar-SA')}</span>
-              </div>
+              <p className="mt-1 flex items-center gap-1 text-xs" style={{ color: maintenanceTheme.muted }}>
+                <Calendar className="h-3 w-3" />
+                آخر صيانة: {new Date(vehicle.last_maintenance_date).toLocaleDateString('ar-SA')}
+              </p>
             )}
           </div>
-
-          {/* Action */}
           <Button
             variant="outline"
             size="sm"
             onClick={() => window.open(`/fleet/vehicles/${vehicle.id}`, '_blank')}
-            className="flex-shrink-0 rounded-xl"
+            className="shrink-0 rounded-[8px] border bg-white"
+            style={{ borderColor: maintenanceTheme.border, color: maintenanceTheme.text }}
           >
-            عرض المركبة
+            عرض
           </Button>
         </div>
       </div>
     </motion.div>
   );
 };
-
 // ===== Main Component =====
 export default function MaintenanceRedesigned() {
   const navigate = useNavigate();
@@ -615,6 +515,48 @@ export default function MaintenanceRedesigned() {
     setCurrentPage(1);
   };
 
+  const activeFiltersCount = [statusFilter, typeFilter, priorityFilter].filter(value => value !== 'all').length + (searchQuery ? 1 : 0);
+  const maintenanceMetrics = [
+    {
+      title: 'طلبات نشطة',
+      value: stats?.pendingCount || 0,
+      subtitle: `${stats?.inProgressCount || 0} قيد المعالجة`,
+      icon: Clock,
+      color: maintenanceTheme.water,
+      onClick: () => { setViewMode('list'); setStatusFilter('pending'); },
+    },
+    {
+      title: 'مركبات في الصيانة',
+      value: stats?.vehiclesInMaintenance || 0,
+      subtitle: 'مركبات غير جاهزة للتشغيل',
+      icon: Wrench,
+      color: maintenanceTheme.alert,
+      onClick: () => { setViewMode('list'); setStatusFilter('in_progress'); },
+    },
+    {
+      title: 'مكتملة هذا الشهر',
+      value: stats?.completedThisMonth || 0,
+      subtitle: 'طلبات مغلقة',
+      icon: CheckCircle,
+      color: maintenanceTheme.success,
+      onClick: () => { setViewMode('list'); setStatusFilter('completed'); },
+    },
+    {
+      title: 'تكلفة الشهر',
+      value: formatCurrency(stats?.costThisMonth || 0),
+      subtitle: 'إجمالي تكلفة الصيانة',
+      icon: DollarSign,
+      color: maintenanceTheme.focus,
+    },
+  ];
+
+  const maintenanceTypeSummary = [
+    { label: 'دورية', count: stats?.routineCount || 0, icon: RefreshCw, color: maintenanceTheme.water },
+    { label: 'إصلاح', count: stats?.repairCount || 0, icon: Wrench, color: maintenanceTheme.focus },
+    { label: 'طوارئ', count: stats?.emergencyCount || 0, icon: AlertTriangle, color: maintenanceTheme.alert },
+    { label: 'وقائية', count: stats?.preventiveCount || 0, icon: ShieldCheck, color: maintenanceTheme.success },
+  ];
+
   // Loading state
   if (maintenanceLoading) {
     return (
@@ -628,177 +570,89 @@ export default function MaintenanceRedesigned() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-sky-50/30">
-      {/* Header */}
-      <div className="bg-white border-b border-slate-200 sticky top-0 z-10">
-        <div className="max-w-[1600px] mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            {/* Title */}
-            <div>
-              <h1 className="text-2xl font-bold tracking-tight text-slate-900">
-                الصيانة
-              </h1>
-              <p className="text-sm text-slate-500 mt-1">
-                إدارة ومتابعة طلبات صيانة الأسطول
-              </p>
+    <div className="min-h-screen" style={{ backgroundColor: maintenanceTheme.inner, color: maintenanceTheme.text }}>
+      <main className="mx-auto max-w-[1600px] space-y-5 px-4 py-6 sm:px-6 lg:px-8">
+        <section className="rounded-[8px] border bg-white p-4 shadow-sm sm:p-5" style={{ borderColor: maintenanceTheme.border }}>
+          <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+            <div className="space-y-1">
+              <p className="text-xs font-semibold" style={{ color: maintenanceTheme.muted }}>إدارة الأسطول</p>
+              <h1 className="text-2xl font-bold sm:text-3xl" style={{ color: maintenanceTheme.text }}>الصيانة</h1>
+              <p className="text-sm" style={{ color: maintenanceTheme.muted }}>متابعة طلبات الصيانة والمركبات المتوقفة والتكاليف من مساحة تشغيل واحدة</p>
             </div>
 
-            {/* Actions */}
-            <div className="flex items-center gap-2">
-              {/* View Toggle */}
-              <div className="hidden md:flex items-center bg-slate-100 rounded-xl p-1 border">
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="flex items-center rounded-[8px] border p-1" style={{ borderColor: maintenanceTheme.border, backgroundColor: maintenanceTheme.inner }}>
                 <button
                   onClick={() => setViewMode('dashboard')}
-                  className={cn(
-                    "px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2",
-                    viewMode === 'dashboard'
-                      ? 'bg-white text-slate-900 shadow-sm'
-                      : 'text-slate-600 hover:text-slate-900'
-                  )}
+                  className="flex h-9 items-center gap-2 rounded-[8px] px-3 text-sm font-semibold transition"
+                  style={viewMode === 'dashboard' ? { backgroundColor: maintenanceTheme.surface, color: maintenanceTheme.success } : { color: maintenanceTheme.muted }}
                 >
-                  <CalendarIcon className="w-4 h-4" />
+                  <CalendarIcon className="h-4 w-4" />
                   لوحة
                 </button>
                 <button
                   onClick={() => setViewMode('list')}
-                  className={cn(
-                    "px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2",
-                    viewMode === 'list'
-                      ? 'bg-white text-slate-900 shadow-sm'
-                      : 'text-slate-600 hover:text-slate-900'
-                  )}
+                  className="flex h-9 items-center gap-2 rounded-[8px] px-3 text-sm font-semibold transition"
+                  style={viewMode === 'list' ? { backgroundColor: maintenanceTheme.surface, color: maintenanceTheme.success } : { color: maintenanceTheme.muted }}
                 >
-                  <Layers className="w-4 h-4" />
+                  <Layers className="h-4 w-4" />
                   قائمة
                 </button>
               </div>
 
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleExport}
-                className="gap-2 rounded-xl"
-              >
-                <Download className="w-4 h-4" />
+              <Button variant="outline" onClick={handleExport} className="h-10 gap-2 rounded-[8px] border bg-white" style={{ borderColor: maintenanceTheme.border, color: maintenanceTheme.text }}>
+                <Download className="h-4 w-4" style={{ color: maintenanceTheme.water }} />
                 تصدير
               </Button>
 
-              <Button
-                size="sm"
-                onClick={handleCreateNew}
-                className="bg-teal-600 hover:bg-teal-700 text-white gap-2 rounded-xl shadow-sm"
-              >
-                <Plus className="w-4 h-4" />
+              <Button onClick={handleCreateNew} className="h-10 gap-2 rounded-[8px] text-white" style={{ backgroundColor: maintenanceTheme.success }}>
+                <Plus className="h-4 w-4" />
                 صيانة جديدة
               </Button>
             </div>
           </div>
-        </div>
-      </div>
+        </section>
 
-      {/* Main Content */}
-      <div className="max-w-[1600px] mx-auto px-6 py-6 space-y-6">
+        <section className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+          {maintenanceMetrics.map((metric, index) => (
+            <EnhancedStatCard
+              key={metric.title}
+              title={metric.title}
+              value={metric.value}
+              subtitle={metric.subtitle}
+              icon={metric.icon}
+              color={metric.color}
+              delay={index * 0.05}
+              onClick={metric.onClick}
+            />
+          ))}
+        </section>
 
-        {/* Dashboard View */}
         {viewMode === 'dashboard' ? (
           <>
-            {/* Stats Row */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <EnhancedStatCard
-                title="نشط"
-                value={stats?.pendingCount || 0}
-                subtitle={`${stats?.inProgressCount || 0} قيد المعالجة`}
-                icon={Clock}
-                bgGradient="from-sky-400 to-sky-500"
-                delay={0}
-                onClick={() => { setViewMode('list'); setStatusFilter('pending'); }}
-              />
-              <EnhancedStatCard
-                title="مركبات في الصيانة"
-                value={stats?.vehiclesInMaintenance || 0}
-                subtitle={`${stats?.inProgressCount || 0} قيد المعالجة`}
-                icon={Wrench}
-                bgGradient="from-amber-400 to-amber-500"
-                delay={0.1}
-                onClick={() => { setViewMode('list'); setStatusFilter('in_progress'); }}
-              />
-              <EnhancedStatCard
-                title="مكتملة"
-                value={stats?.completedThisMonth || 0}
-                subtitle="هذا الشهر"
-                icon={CheckCircle}
-                bgGradient="from-emerald-400 to-emerald-500"
-                delay={0.2}
-                onClick={() => { setViewMode('list'); setStatusFilter('completed'); }}
-              />
-              <EnhancedStatCard
-                title="التكلفة"
-                value={`${((stats?.costThisMonth || 0) / 1000).toFixed(0)}K`}
-                subtitle="ر.ق هذا الشهر"
-                icon={DollarSign}
-                bgGradient="from-purple-400 to-purple-500"
-                delay={0.3}
-              />
-            </div>
-
-            {/* Quick Summary & Alerts */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-              {/* Quick Summary */}
-              <div className="lg:col-span-2 bg-white rounded-xl border border-slate-200 p-6 hover:border-sky-500/30 hover:shadow-xl hover:shadow-sky-500/10 transition-all">
-                <div className="flex items-center justify-between mb-5">
+            <section className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+              <div className="rounded-[8px] border bg-white p-5 shadow-sm lg:col-span-2" style={{ borderColor: maintenanceTheme.border }}>
+                <div className="mb-5 flex items-center justify-between gap-3">
                   <div>
-                    <h2 className="font-bold text-lg text-slate-900">ملخص الصيانات</h2>
-                    <p className="text-sm text-slate-500 mt-1">توزيع أنواع الصيانات</p>
+                    <h2 className="text-lg font-bold" style={{ color: maintenanceTheme.text }}>ملخص الصيانات</h2>
+                    <p className="mt-1 text-sm" style={{ color: maintenanceTheme.muted }}>توزيع أنواع الصيانة الحالية</p>
                   </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setViewMode('list')}
-                    className="rounded-xl"
-                  >
+                  <Button variant="outline" onClick={() => setViewMode('list')} className="h-10 rounded-[8px] border bg-white" style={{ borderColor: maintenanceTheme.border, color: maintenanceTheme.text }}>
                     عرض الكل
                   </Button>
                 </div>
 
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                  <TypeSummaryCard
-                    label="دورية"
-                    count={stats?.routineCount || 0}
-                    icon={RefreshCw}
-                    bgGradient="from-sky-400 to-sky-500"
-                    bgLight="bg-sky-50"
-                  />
-                  <TypeSummaryCard
-                    label="إصلاح"
-                    count={stats?.repairCount || 0}
-                    icon={Wrench}
-                    bgGradient="from-purple-400 to-purple-500"
-                    bgLight="bg-purple-50"
-                  />
-                  <TypeSummaryCard
-                    label="طوارئ"
-                    count={stats?.emergencyCount || 0}
-                    icon={AlertTriangle}
-                    bgGradient="from-rose-400 to-rose-500"
-                    bgLight="bg-rose-50"
-                  />
-                  <TypeSummaryCard
-                    label="وقائية"
-                    count={stats?.preventiveCount || 0}
-                    icon={ShieldCheck}
-                    bgGradient="from-emerald-400 to-emerald-500"
-                    bgLight="bg-emerald-50"
-                  />
+                <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+                  {maintenanceTypeSummary.map((item) => (
+                    <TypeSummaryCard key={item.label} label={item.label} count={item.count} icon={item.icon} color={item.color} />
+                  ))}
                 </div>
               </div>
 
-              {/* Alerts */}
-              <div className="bg-white rounded-xl border border-slate-200 p-6 hover:border-sky-500/30 hover:shadow-xl hover:shadow-sky-500/10 transition-all">
-                <div className="flex items-center justify-between mb-5">
-                  <div>
-                    <h2 className="font-bold text-lg text-slate-900">التنبيهات</h2>
-                    <p className="text-sm text-slate-500 mt-1">تحتاج انتباهك</p>
-                  </div>
+              <div className="rounded-[8px] border bg-white p-5 shadow-sm" style={{ borderColor: maintenanceTheme.border }}>
+                <div className="mb-5">
+                  <h2 className="text-lg font-bold" style={{ color: maintenanceTheme.text }}>التنبيهات</h2>
+                  <p className="mt-1 text-sm" style={{ color: maintenanceTheme.muted }}>طلبات تحتاج انتباهك</p>
                 </div>
 
                 <div className="space-y-3">
@@ -807,148 +661,117 @@ export default function MaintenanceRedesigned() {
                       title="متأخرة"
                       count={stats?.overdueCount || 0}
                       icon={AlertCircle}
-                      bgGradient="from-rose-400 to-rose-500"
-                      bgLight="bg-rose-50"
+                      color={maintenanceTheme.alert}
                       onClick={() => { setViewMode('list'); setPriorityFilter('urgent'); }}
                     />
                   )}
-
                   {(stats?.urgentCount || 0) > 0 && (
                     <AlertCard
                       title="عاجلة"
                       count={stats?.urgentCount || 0}
                       icon={AlertTriangle}
-                      bgGradient="from-amber-400 to-amber-500"
-                      bgLight="bg-amber-50"
+                      color={maintenanceTheme.alert}
                       onClick={() => { setViewMode('list'); setPriorityFilter('urgent'); }}
                     />
                   )}
-
                   {(stats?.overdueCount || 0) === 0 && (stats?.urgentCount || 0) === 0 && (
-                    <div className="flex flex-col items-center justify-center text-center py-8">
-                      <div className="p-3 bg-emerald-50 rounded-full mb-3">
-                        <CheckCircle className="w-8 h-8 text-emerald-500" />
+                    <div className="rounded-[8px] px-4 py-8 text-center" style={{ backgroundColor: maintenanceTheme.inner }}>
+                      <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-[8px]" style={{ backgroundColor: `${maintenanceTheme.success}14` }}>
+                        <CheckCircle className="h-6 w-6" style={{ color: maintenanceTheme.success }} />
                       </div>
-                      <p className="text-sm font-medium text-slate-700">لا توجد تنبيهات</p>
-                      <p className="text-xs text-slate-400 mt-1">كل الصيانات تسير على ما يرام</p>
+                      <p className="text-sm font-bold" style={{ color: maintenanceTheme.text }}>لا توجد تنبيهات</p>
+                      <p className="mt-1 text-xs" style={{ color: maintenanceTheme.muted }}>كل الصيانات تسير على ما يرام</p>
                     </div>
                   )}
                 </div>
               </div>
-            </div>
+            </section>
 
-            {/* Vehicles in Maintenance */}
             {(maintenanceVehicles?.length || 0) > 0 && (
-              <div className="bg-white rounded-xl border border-slate-200 hover:border-amber-500/30 hover:shadow-xl hover:shadow-amber-500/10 transition-all">
-                <div className="p-5 border-b flex items-center justify-between">
+              <section className="rounded-[8px] border bg-white shadow-sm" style={{ borderColor: maintenanceTheme.border }}>
+                <div className="flex flex-col gap-3 border-b p-5 sm:flex-row sm:items-center sm:justify-between" style={{ borderColor: maintenanceTheme.border }}>
                   <div>
-                    <h2 className="font-bold text-lg text-slate-900 flex items-center gap-2">
-                      <Car className="w-5 h-5 text-amber-500" />
+                    <h2 className="flex items-center gap-2 text-lg font-bold" style={{ color: maintenanceTheme.text }}>
+                      <Car className="h-5 w-5" style={{ color: maintenanceTheme.alert }} />
                       المركبات في الصيانة
                     </h2>
-                    <p className="text-sm text-slate-500 mt-1">المركبات التي حالتها تحت الصيانة</p>
+                    <p className="mt-1 text-sm" style={{ color: maintenanceTheme.muted }}>المركبات التي حالتها تحت الصيانة</p>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Badge className="bg-amber-50 text-amber-700 border-amber-200">
+                    <Badge className="rounded-[8px] border" style={{ backgroundColor: `${maintenanceTheme.alert}14`, borderColor: `${maintenanceTheme.alert}44`, color: maintenanceTheme.alert }}>
                       {maintenanceVehicles?.length || 0} مركبة
                     </Badge>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => navigate('/fleet')}
-                      className="text-amber-600 hover:text-amber-700 hover:bg-amber-50"
-                    >
+                    <Button variant="ghost" onClick={() => navigate('/fleet')} className="h-10 rounded-[8px]" style={{ color: maintenanceTheme.alert }}>
                       عرض الكل
                     </Button>
                   </div>
                 </div>
 
-                <div className="p-5">
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                    {maintenanceVehicles?.slice(0, 6).map((vehicle: any, index: number) => (
-                      <VehicleInMaintenanceCard
-                        key={vehicle.id}
-                        vehicle={vehicle}
-                        index={index}
-                      />
-                    ))}
-                  </div>
+                <div className="grid grid-cols-1 gap-3 p-5 lg:grid-cols-2 xl:grid-cols-3">
+                  {maintenanceVehicles?.slice(0, 6).map((vehicle: any, index: number) => (
+                    <VehicleInMaintenanceCard key={vehicle.id} vehicle={vehicle} index={index} />
+                  ))}
                 </div>
-              </div>
+              </section>
             )}
 
-            {/* Recent Activity */}
-            <div className="bg-white rounded-xl border border-slate-200 hover:border-sky-500/30 hover:shadow-xl hover:shadow-sky-500/10 transition-all">
-              <div className="p-5 border-b flex items-center justify-between">
+            <section className="rounded-[8px] border bg-white shadow-sm" style={{ borderColor: maintenanceTheme.border }}>
+              <div className="flex flex-col gap-3 border-b p-5 sm:flex-row sm:items-center sm:justify-between" style={{ borderColor: maintenanceTheme.border }}>
                 <div>
-                  <h2 className="font-bold text-lg text-slate-900">النشاط الأخير</h2>
-                  <p className="text-sm text-slate-500 mt-1">آخر طلبات الصيانة</p>
+                  <h2 className="text-lg font-bold" style={{ color: maintenanceTheme.text }}>النشاط الأخير</h2>
+                  <p className="mt-1 text-sm" style={{ color: maintenanceTheme.muted }}>آخر طلبات الصيانة</p>
                 </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setViewMode('list')}
-                  className="text-sky-600 hover:text-sky-700 hover:bg-sky-50"
-                >
+                <Button variant="ghost" onClick={() => setViewMode('list')} className="h-10 rounded-[8px]" style={{ color: maintenanceTheme.water }}>
                   عرض الكل
                 </Button>
               </div>
 
-              <div className="p-5">
-                <div className="space-y-3">
-                  {filteredRecords.slice(0, 5).map((record: any, index: number) => (
-                    <MaintenanceRecordCard
-                      key={record.id}
-                      record={record}
-                      index={index}
-                      onView={() => handleViewDetails(record)}
-                      onComplete={() => handleCompleteMaintenance(record)}
-                      onStartProgress={() => handleStartProgress(record)}
-                      onDelete={() => setRecordToDelete(record)}
-                    />
-                  ))}
-                </div>
+              <div className="space-y-3 p-5">
+                {filteredRecords.slice(0, 5).map((record: any, index: number) => (
+                  <MaintenanceRecordCard
+                    key={record.id}
+                    record={record}
+                    index={index}
+                    onView={() => handleViewDetails(record)}
+                    onComplete={() => handleCompleteMaintenance(record)}
+                    onStartProgress={() => handleStartProgress(record)}
+                    onDelete={() => setRecordToDelete(record)}
+                  />
+                ))}
 
                 {filteredRecords.length === 0 && (
-                  <div className="text-center py-12">
-                    <div className="p-4 bg-slate-50 rounded-full w-16 h-16 mx-auto mb-4">
-                      <Wrench className="w-8 h-8 text-slate-400 mx-auto" />
-                    </div>
-                    <h3 className="font-semibold text-slate-900 mb-2">لا توجد سجلات صيانة</h3>
-                    <p className="text-sm text-slate-500">ابدأ بإنشاء طلب صيانة جديد</p>
+                  <div className="rounded-[8px] py-12 text-center" style={{ backgroundColor: maintenanceTheme.inner }}>
+                    <Wrench className="mx-auto mb-4 h-10 w-10" style={{ color: maintenanceTheme.muted }} />
+                    <h3 className="mb-2 font-bold" style={{ color: maintenanceTheme.text }}>لا توجد سجلات صيانة</h3>
+                    <p className="text-sm" style={{ color: maintenanceTheme.muted }}>ابدأ بإنشاء طلب صيانة جديد</p>
                   </div>
                 )}
               </div>
-            </div>
+            </section>
           </>
         ) : (
           <>
-            {/* Search & Filters Bar */}
-            <div className="bg-white rounded-xl border border-slate-200 p-4 hover:border-sky-500/30 hover:shadow-xl hover:shadow-sky-500/10 transition-all">
-              <div className="flex flex-col lg:flex-row gap-3">
-                {/* Search */}
-                <div className="flex-1 relative">
-                  <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <section className="rounded-[8px] border bg-white p-4 shadow-sm" style={{ borderColor: maintenanceTheme.border }}>
+              <div className="flex flex-col gap-3 lg:flex-row">
+                <div className="relative flex-1">
+                  <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2" style={{ color: maintenanceTheme.muted }} />
                   <Input
-                    placeholder="بحث برقم الطلب، المركبة..."
+                    placeholder="بحث برقم الطلب أو المركبة..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="h-11 pr-10 text-sm rounded-xl"
+                    className="h-11 rounded-[8px] border bg-white pr-10 text-sm"
+                    style={{ borderColor: maintenanceTheme.border }}
                   />
                   {searchQuery && (
-                    <button
-                      onClick={() => setSearchQuery('')}
-                      className="absolute left-2 top-1/2 -translate-y-1/2 p-1.5 hover:bg-slate-100 rounded-lg transition-colors"
-                    >
-                      <X className="w-3.5 h-3.5 text-slate-400" />
+                    <button onClick={() => setSearchQuery('')} className="absolute left-2 top-1/2 -translate-y-1/2 rounded-[8px] p-1.5 transition hover:bg-slate-100">
+                      <X className="h-3.5 w-3.5" style={{ color: maintenanceTheme.muted }} />
                     </button>
                   )}
                 </div>
 
-                {/* Filters */}
-                <div className="flex items-center gap-2 flex-wrap">
+                <div className="flex flex-wrap items-center gap-2">
                   <Select value={statusFilter} onValueChange={setStatusFilter}>
-                    <SelectTrigger className="h-11 w-36 rounded-xl">
+                    <SelectTrigger className="h-11 w-40 rounded-[8px] border bg-white" style={{ borderColor: maintenanceTheme.border }}>
                       <SelectValue placeholder="الحالة" />
                     </SelectTrigger>
                     <SelectContent>
@@ -961,7 +784,7 @@ export default function MaintenanceRedesigned() {
                   </Select>
 
                   <Select value={typeFilter} onValueChange={setTypeFilter}>
-                    <SelectTrigger className="h-11 w-40 rounded-xl">
+                    <SelectTrigger className="h-11 w-44 rounded-[8px] border bg-white" style={{ borderColor: maintenanceTheme.border }}>
                       <SelectValue placeholder="النوع" />
                     </SelectTrigger>
                     <SelectContent>
@@ -974,7 +797,7 @@ export default function MaintenanceRedesigned() {
                   </Select>
 
                   <Select value={priorityFilter} onValueChange={setPriorityFilter}>
-                    <SelectTrigger className="h-11 w-36 rounded-xl">
+                    <SelectTrigger className="h-11 w-40 rounded-[8px] border bg-white" style={{ borderColor: maintenanceTheme.border }}>
                       <SelectValue placeholder="الأولوية" />
                     </SelectTrigger>
                     <SelectContent>
@@ -986,29 +809,28 @@ export default function MaintenanceRedesigned() {
                     </SelectContent>
                   </Select>
 
-                  {(statusFilter !== 'all' || typeFilter !== 'all' || priorityFilter !== 'all' || searchQuery) && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={handleResetFilters}
-                      className="h-11 rounded-xl hover:bg-slate-100"
-                    >
-                      <RefreshCw className="w-4 h-4 ml-1" />
+                  {activeFiltersCount > 0 && (
+                    <Button variant="outline" onClick={handleResetFilters} className="h-11 rounded-[8px] border bg-white" style={{ borderColor: maintenanceTheme.border, color: maintenanceTheme.text }}>
+                      <RefreshCw className="ml-1 h-4 w-4" />
+                      تصفير
                     </Button>
                   )}
                 </div>
               </div>
 
-              {/* Results count */}
-              <div className="flex items-center justify-between pt-3 border-t mt-3">
-                <p className="text-sm text-slate-500">
-                  <span className="font-bold text-slate-900">{filteredRecords.length}</span> سجل
+              <div className="mt-3 flex items-center justify-between border-t pt-3" style={{ borderColor: maintenanceTheme.border }}>
+                <p className="text-sm" style={{ color: maintenanceTheme.muted }}>
+                  <span className="font-bold" style={{ color: maintenanceTheme.text }}>{filteredRecords.length}</span> سجل
                 </p>
+                {activeFiltersCount > 0 && (
+                  <Badge className="rounded-[8px] border" style={{ backgroundColor: `${maintenanceTheme.focus}14`, borderColor: `${maintenanceTheme.focus}44`, color: maintenanceTheme.focus }}>
+                    {activeFiltersCount} فلتر نشط
+                  </Badge>
+                )}
               </div>
-            </div>
+            </section>
 
-            {/* Records Grid */}
-            <div className="space-y-3">
+            <section className="space-y-3">
               {paginatedRecords.map((record: any, index: number) => (
                 <MaintenanceRecordCard
                   key={record.id}
@@ -1022,95 +844,57 @@ export default function MaintenanceRedesigned() {
               ))}
 
               {paginatedRecords.length === 0 && (
-                <div className="bg-white rounded-xl border border-slate-200 p-12 text-center">
-                  <div className="p-4 bg-slate-50 rounded-full w-16 h-16 mx-auto mb-4">
-                    <Wrench className="w-8 h-8 text-slate-400 mx-auto" />
-                  </div>
-                  <h3 className="text-lg font-bold text-slate-900 mb-2">لا توجد سجلات</h3>
-                  <p className="text-sm text-slate-500 mb-6">
-                    {searchQuery || statusFilter !== 'all' || typeFilter !== 'all' || priorityFilter !== 'all'
-                      ? 'جرب تغيير معايير البحث أو الفلاتر'
-                      : 'ابدأ بإنشاء طلب صيانة جديد'}
+                <div className="rounded-[8px] border bg-white p-12 text-center shadow-sm" style={{ borderColor: maintenanceTheme.border }}>
+                  <Wrench className="mx-auto mb-4 h-12 w-12" style={{ color: maintenanceTheme.muted }} />
+                  <h3 className="mb-2 text-lg font-bold" style={{ color: maintenanceTheme.text }}>لا توجد سجلات</h3>
+                  <p className="mb-6 text-sm" style={{ color: maintenanceTheme.muted }}>
+                    {activeFiltersCount > 0 ? 'جرب تغيير معايير البحث أو الفلاتر' : 'ابدأ بإنشاء طلب صيانة جديد'}
                   </p>
-                  {!searchQuery && statusFilter === 'all' && typeFilter === 'all' && priorityFilter === 'all' && (
-                    <Button onClick={handleCreateNew} className="bg-gradient-to-r from-sky-500 to-sky-600 hover:from-sky-600 hover:to-sky-700 rounded-xl">
-                      <Plus className="w-4 h-4 ml-2" />
+                  {activeFiltersCount === 0 && (
+                    <Button onClick={handleCreateNew} className="h-10 rounded-[8px] text-white" style={{ backgroundColor: maintenanceTheme.success }}>
+                      <Plus className="ml-2 h-4 w-4" />
                       صيانة جديدة
                     </Button>
                   )}
                 </div>
               )}
-            </div>
+            </section>
 
-            {/* Pagination */}
             {totalPages > 1 && (
-              <div className="bg-white rounded-xl border border-slate-200 p-4 hover:border-sky-500/30 hover:shadow-xl hover:shadow-sky-500/10 transition-all">
-                <div className="flex items-center justify-between">
-                  <p className="text-sm text-slate-500">
-                    صفحة <span className="font-bold text-slate-900">{currentPage}</span> من{' '}
-                    <span className="font-bold text-slate-900">{totalPages}</span>
-                  </p>
+              <section className="flex flex-col gap-3 rounded-[8px] border bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between" style={{ borderColor: maintenanceTheme.border }}>
+                <p className="text-sm" style={{ color: maintenanceTheme.muted }}>
+                  صفحة <span className="font-bold" style={{ color: maintenanceTheme.text }}>{currentPage}</span> من{' '}
+                  <span className="font-bold" style={{ color: maintenanceTheme.text }}>{totalPages}</span>
+                </p>
 
-                  <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2">
+                  <Button variant="outline" onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} className="h-10 rounded-[8px] border bg-white" style={{ borderColor: maintenanceTheme.border }}>
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+
+                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => i + 1).map(page => (
                     <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                      disabled={currentPage === 1}
-                      className="h-9 rounded-xl"
+                      key={page}
+                      variant={currentPage === page ? "default" : "ghost"}
+                      onClick={() => setCurrentPage(page)}
+                      className="h-10 min-w-10 rounded-[8px]"
+                      style={currentPage === page ? { backgroundColor: maintenanceTheme.success, color: '#fff' } : { color: maintenanceTheme.text }}
                     >
-                      <ChevronRight className="w-4 h-4" />
+                      {page}
                     </Button>
+                  ))}
 
-                    {Array.from({ length: Math.min(5, totalPages) }, (_, i) => i + 1).map(page => (
-                      <Button
-                        key={page}
-                        variant={currentPage === page ? "default" : "ghost"}
-                        size="sm"
-                        onClick={() => setCurrentPage(page)}
-                        className={cn(
-                          "h-9 w-9 rounded-xl",
-                          currentPage === page && "bg-gradient-to-r from-sky-500 to-sky-600 text-white hover:from-sky-600 hover:to-sky-700"
-                        )}
-                      >
-                        {page}
-                      </Button>
-                    ))}
+                  {totalPages > 5 && <span className="px-2" style={{ color: maintenanceTheme.muted }}>...</span>}
 
-                    {totalPages > 5 && (
-                      <>
-                        <span className="px-2 text-slate-400">...</span>
-                        <Button
-                          variant={currentPage === totalPages ? "default" : "ghost"}
-                          size="sm"
-                          onClick={() => setCurrentPage(totalPages)}
-                          className={cn(
-                            "h-9 w-9 rounded-xl",
-                            currentPage === totalPages && "bg-gradient-to-r from-sky-500 to-sky-600 text-white hover:from-sky-600 hover:to-sky-700"
-                          )}
-                        >
-                          {totalPages}
-                        </Button>
-                      </>
-                    )}
-
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                      disabled={currentPage === totalPages}
-                      className="h-9 rounded-xl"
-                    >
-                      <ChevronLeft className="w-4 h-4" />
-                    </Button>
-                  </div>
+                  <Button variant="outline" onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} className="h-10 rounded-[8px] border bg-white" style={{ borderColor: maintenanceTheme.border }}>
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
                 </div>
-              </div>
+              </section>
             )}
           </>
         )}
-      </div>
-
+      </main>
       {/* Side Panels */}
       <MaintenanceSidePanel
         isOpen={sidePanelOpen}

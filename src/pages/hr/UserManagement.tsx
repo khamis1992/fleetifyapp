@@ -35,6 +35,7 @@ import { useUpdateUserPermissions, useUpdateUserRoles } from '@/hooks/useUserPer
 import { UserRole } from '@/types/permissions';
 import { AdminGuard } from '@/components/auth/RoleGuard';
 import { cn } from '@/lib/utils';
+import { HRMetricCard, HRPageHeader, HRPageShell, HRSectionCard, hrButtonClassName, hrFieldClassName } from '@/components/hr/HRDesignSystem';
 
 // Type definitions
 interface EmployeeWithAccess {
@@ -493,38 +494,24 @@ function UserManagementContent() {
   }
 
   return (
-    <div className="min-h-screen bg-[#f0efed]">
-      {/* Header */}
-      <header className="bg-white border-b border-neutral-200 sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center gap-4">
+    <HRPageShell>
+      <HRPageHeader
+        title={activeView === 'users' ? 'إدارة المستخدمين' : 'تعديل الصلاحيات'}
+        description={activeView === 'users' ? 'إدارة حسابات المستخدمين، الأدوار، وصلاحيات الوصول للنظام.' : selectedUserForMatrix ? `${selectedUserForMatrix.first_name} ${selectedUserForMatrix.last_name}` : 'مصفوفة الصلاحيات'}
+        icon={activeView === 'users' ? Users : Shield}
+        badge="المستخدمون والصلاحيات"
+        action={
+          <div className="flex items-center gap-2">
               {activeView === 'permissions' && (
                 <button
                   onClick={handleBackToUsers}
-                  className="p-2 hover:bg-neutral-100 rounded-lg transition-colors"
+                  className="p-2 hover:bg-[#F6F8FB] rounded-xl transition-colors"
                 >
-                  <ChevronLeft className="w-5 h-5 text-neutral-600" />
+                  <ChevronLeft className="w-5 h-5 text-[#020617]" />
                 </button>
               )}
-              <div>
-                <h1 className="text-xl font-bold text-neutral-900">
-                  {activeView === 'users' ? 'إدارة المستخدمين' : 'تعديل الصلاحيات'}
-                </h1>
-                <p className="text-xs text-neutral-500">
-                  {activeView === 'users' 
-                    ? 'إدارة حسابات المستخدمين والصلاحيات'
-                    : selectedUserForMatrix 
-                      ? `${selectedUserForMatrix.first_name} ${selectedUserForMatrix.last_name}`
-                      : ''
-                  }
-                </p>
-              </div>
-            </div>
-
-            {/* Save/Cancel buttons for permissions view */}
             {activeView === 'permissions' && hasUnsavedChanges && (
-              <div className="flex items-center gap-2">
+              <>
                 <Button
                   variant="outline"
                   size="sm"
@@ -538,18 +525,18 @@ function UserManagementContent() {
                   size="sm"
                   onClick={handleSaveChanges}
                   disabled={updatePermissionsMutation.isPending || updateRolesMutation.isPending}
-                  className="gap-1 bg-rose-500 hover:bg-coral-600"
+                  className={`gap-1 ${hrButtonClassName}`}
                 >
                   <Save className="w-4 h-4" />
                   حفظ
                 </Button>
-              </div>
+              </>
             )}
           </div>
-        </div>
-      </header>
+        }
+      />
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <main className="space-y-6">
         <AnimatePresence mode="wait">
           {activeView === 'users' ? (
             <motion.div
@@ -566,41 +553,17 @@ function UserManagementContent() {
                 animate="visible"
                 className="grid grid-cols-2 lg:grid-cols-4 gap-4"
               >
-                <StatCard
-                  title="بدون حساب"
-                  value={employeesWithoutAccess?.length || 0}
-                  icon={UserPlus}
-                  iconBg="bg-amber-50"
-                  iconColor="text-amber-600"
-                />
-                <StatCard
-                  title="لديهم حساب"
-                  value={employeesWithAccess?.length || 0}
-                  icon={UserCheck}
-                  iconBg="bg-emerald-50"
-                  iconColor="text-emerald-600"
-                />
-                <StatCard
-                  title="طلبات معلقة"
-                  value={accountRequests?.length || 0}
-                  icon={Clock}
-                  iconBg="bg-orange-50"
-                  iconColor="text-orange-600"
-                />
-                <StatCard
-                  title="إجمالي الموظفين"
-                  value={(employeesWithoutAccess?.length || 0) + (employeesWithAccess?.length || 0)}
-                  icon={Users}
-                  iconBg="bg-rose-50"
-                  iconColor="text-coral-600"
-                />
+                <HRMetricCard title="بدون حساب" value={employeesWithoutAccess?.length || 0} icon={UserPlus} tone="danger" />
+                <HRMetricCard title="لديهم حساب" value={employeesWithAccess?.length || 0} icon={UserCheck} tone="success" />
+                <HRMetricCard title="طلبات معلقة" value={accountRequests?.length || 0} icon={Clock} tone="focus" />
+                <HRMetricCard title="إجمالي الموظفين" value={(employeesWithoutAccess?.length || 0) + (employeesWithAccess?.length || 0)} icon={Users} tone="info" />
               </motion.div>
 
               {/* Search & Filter */}
               <motion.div
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="bg-white rounded-xl p-4 shadow-sm flex flex-col sm:flex-row gap-3"
+                className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm flex flex-col sm:flex-row gap-3"
               >
                 <div className="relative flex-1">
                   <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-neutral-400 w-5 h-5" />
@@ -608,12 +571,12 @@ function UserManagementContent() {
                     placeholder="البحث بالاسم أو المنصب..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pr-10 bg-neutral-50 border-neutral-200 focus:border-coral-400 focus:ring-coral-400"
+                    className={`${hrFieldClassName} pr-10`}
                     dir="rtl"
                   />
                 </div>
                 <Select value={filterRole} onValueChange={setFilterRole}>
-                  <SelectTrigger className="w-full sm:w-[180px] bg-neutral-50">
+                  <SelectTrigger className={`w-full sm:w-[180px] ${hrFieldClassName}`}>
                     <Filter className="w-4 h-4 ml-2 text-neutral-400" />
                     <SelectValue placeholder="تصفية حسب الدور" />
                   </SelectTrigger>
@@ -774,6 +737,6 @@ function UserManagementContent() {
           onOpenChange={setShowPermissionsDialog}
         />
       )}
-    </div>
+    </HRPageShell>
   );
 }

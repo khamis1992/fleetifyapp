@@ -1,24 +1,168 @@
-import { useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
-import { Target, TrendingUp, DollarSign, Plus, Search, Building, Eye, Edit, Trash2 } from "lucide-react";
-import { useCreateCostCenter, useUpdateCostCenter, useDeleteCostCenter, CostCenter } from "@/hooks/useFinance";
-import { useCostCenters } from "@/hooks/useCostCenters";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { useMemo, useState } from "react";
+import {
+  Building,
+  Edit,
+  Eye,
+  Layers3,
+  Plus,
+  Search,
+  Target,
+  Trash2,
+  TrendingUp,
+  WalletCards,
+} from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { LoadingSpinner } from "@/components/ui/loading-spinner";
-import { HelpIcon } from '@/components/help/HelpIcon';
-import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
-import { StatCard } from "@/components/ui/StatCard";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { motion } from "framer-motion";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { Progress } from "@/components/ui/progress";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Textarea } from "@/components/ui/textarea";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { CostCenter, useCreateCostCenter, useDeleteCostCenter, useUpdateCostCenter } from "@/hooks/useFinance";
+import { useCostCenters } from "@/hooks/useCostCenters";
+
+const qarFormatter = new Intl.NumberFormat("en-QA", {
+  style: "currency",
+  currency: "QAR",
+  minimumFractionDigits: 2,
+});
+
+const formatQar = (value?: number | null) => qarFormatter.format(value || 0);
+
+const fieldClassName =
+  "h-11 rounded-xl border-slate-200 bg-[#F6F8FB] text-[#020617] shadow-none focus-visible:ring-[#22C7A1]";
+
+const utilizationTone = (value: number) => {
+  if (value > 100) return { text: "#FB6B7A", bg: "#FFF0F2", label: "تجاوز" };
+  if (value >= 80) return { text: "#F59E0B", bg: "#FFF7E6", label: "مرتفع" };
+  return { text: "#22C7A1", bg: "#E8FBF6", label: "ضمن الخطة" };
+};
+
+const CostCenterForm = ({
+  value,
+  onChange,
+  onSubmit,
+  isPending,
+  submitLabel,
+}: {
+  value: Partial<CostCenter>;
+  onChange: (value: Partial<CostCenter>) => void;
+  onSubmit: () => void;
+  isPending: boolean;
+  submitLabel: string;
+}) => {
+  const budgetAmount = value.budget_amount || 0;
+  const actualAmount = value.actual_amount || 0;
+  const remaining = budgetAmount - actualAmount;
+  const utilization = budgetAmount > 0 ? (actualAmount / budgetAmount) * 100 : 0;
+  const tone = utilizationTone(utilization);
+
+  return (
+    <div className="space-y-5">
+      <div className="grid gap-3 md:grid-cols-3">
+        <div className="rounded-2xl border border-slate-200 bg-[#F6F8FB] p-4">
+          <p className="text-xs font-bold text-[#94A3B8]">المخصص</p>
+          <p className="mt-1 font-black text-[#020617]">{formatQar(budgetAmount)}</p>
+        </div>
+        <div className="rounded-2xl border border-slate-200 bg-[#F6F8FB] p-4">
+          <p className="text-xs font-bold text-[#94A3B8]">الفعلي</p>
+          <p className="mt-1 font-black text-[#7C83F6]">{formatQar(actualAmount)}</p>
+        </div>
+        <div className="rounded-2xl border border-slate-200 bg-[#F6F8FB] p-4">
+          <p className="text-xs font-bold text-[#94A3B8]">المتبقي</p>
+          <p className={remaining >= 0 ? "mt-1 font-black text-[#22C7A1]" : "mt-1 font-black text-[#FB6B7A]"}>
+            {formatQar(remaining)}
+          </p>
+        </div>
+      </div>
+
+      <div className="rounded-2xl p-4" style={{ backgroundColor: tone.bg }}>
+        <div className="mb-2 flex items-center justify-between text-sm">
+          <span className="font-bold text-[#020617]">نسبة الاستغلال</span>
+          <span className="font-black" style={{ color: tone.text }}>{utilization.toFixed(1)}%</span>
+        </div>
+        <Progress value={Math.min(utilization, 100)} className="h-2" />
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-2">
+        <div className="space-y-2">
+          <Label htmlFor="centerCode">رمز المركز *</Label>
+          <Input
+            id="centerCode"
+            value={value.center_code || ""}
+            onChange={(event) => onChange({ ...value, center_code: event.target.value })}
+            placeholder="CC001"
+            className={fieldClassName}
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="centerName">اسم المركز *</Label>
+          <Input
+            id="centerName"
+            value={value.center_name || ""}
+            onChange={(event) => onChange({ ...value, center_name: event.target.value })}
+            placeholder="تشغيل الأسطول"
+            className={fieldClassName}
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="centerNameAr">الاسم بالعربية</Label>
+          <Input
+            id="centerNameAr"
+            value={value.center_name_ar || ""}
+            onChange={(event) => onChange({ ...value, center_name_ar: event.target.value })}
+            placeholder="اسم مركز التكلفة بالعربية"
+            className={fieldClassName}
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="budgetAmount">المبلغ المخصص</Label>
+          <Input
+            id="budgetAmount"
+            type="number"
+            value={value.budget_amount || 0}
+            onChange={(event) => onChange({ ...value, budget_amount: Number(event.target.value) })}
+            className={fieldClassName}
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="actualAmount">المصروف الفعلي</Label>
+          <Input
+            id="actualAmount"
+            type="number"
+            value={value.actual_amount || 0}
+            onChange={(event) => onChange({ ...value, actual_amount: Number(event.target.value) })}
+            className={fieldClassName}
+          />
+        </div>
+        <div className="space-y-2 md:col-span-2">
+          <Label htmlFor="centerDescription">الوصف</Label>
+          <Textarea
+            id="centerDescription"
+            value={value.description || ""}
+            onChange={(event) => onChange({ ...value, description: event.target.value })}
+            placeholder="وصف مختصر لطبيعة المصروفات التي تسجل على هذا المركز"
+            className="min-h-24 rounded-xl border-slate-200 bg-[#F6F8FB] text-[#020617] focus-visible:ring-[#22C7A1]"
+          />
+        </div>
+      </div>
+
+      <Button
+        onClick={onSubmit}
+        className="h-11 w-full rounded-xl bg-[#22C7A1] font-black text-white hover:bg-[#1DAE8D]"
+        disabled={isPending}
+      >
+        {isPending ? "جاري الحفظ..." : submitLabel}
+      </Button>
+    </div>
+  );
+};
 
 export default function CostCenters() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -26,53 +170,77 @@ export default function CostCenters() {
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [selectedCostCenter, setSelectedCostCenter] = useState<CostCenter | null>(null);
-  
+
   const { data: costCenters, isLoading, error } = useCostCenters();
   const createCostCenter = useCreateCostCenter();
   const updateCostCenter = useUpdateCostCenter();
   const deleteCostCenter = useDeleteCostCenter();
-  const { formatCurrency } = useCurrencyFormatter();
 
   const [newCostCenter, setNewCostCenter] = useState<Partial<CostCenter>>({
-    center_code: '',
-    center_name: '',
-    center_name_ar: '',
-    description: '',
+    center_code: "",
+    center_name: "",
+    center_name_ar: "",
+    description: "",
     budget_amount: 0,
     actual_amount: 0,
-    is_active: true
+    is_active: true,
   });
+
+  const filteredCostCenters = useMemo(() => {
+    const query = searchTerm.toLowerCase();
+    return costCenters?.filter((center) => {
+      return (
+        center.center_name.toLowerCase().includes(query) ||
+        (center.center_name_ar || "").toLowerCase().includes(query) ||
+        center.center_code.toLowerCase().includes(query)
+      );
+    });
+  }, [costCenters, searchTerm]);
+
+  const totals = useMemo(() => {
+    const totalBudget = costCenters?.reduce((sum, center) => sum + (center.budget_amount || 0), 0) || 0;
+    const totalActual = costCenters?.reduce((sum, center) => sum + (center.actual_amount || 0), 0) || 0;
+    const activeCenters = costCenters?.filter((center) => center.is_active !== false).length || 0;
+    return {
+      count: costCenters?.length || 0,
+      activeCenters,
+      totalBudget,
+      totalActual,
+      remaining: totalBudget - totalActual,
+      utilization: totalBudget > 0 ? (totalActual / totalBudget) * 100 : 0,
+    };
+  }, [costCenters]);
 
   const handleCreateCostCenter = async () => {
     if (!newCostCenter.center_code || !newCostCenter.center_name) return;
 
     await createCostCenter.mutateAsync({
-      center_code: newCostCenter.center_code!,
-      center_name: newCostCenter.center_name!,
+      center_code: newCostCenter.center_code,
+      center_name: newCostCenter.center_name,
       center_name_ar: newCostCenter.center_name_ar,
       description: newCostCenter.description,
       budget_amount: newCostCenter.budget_amount,
-      actual_amount: newCostCenter.actual_amount
+      actual_amount: newCostCenter.actual_amount,
     });
 
     setNewCostCenter({
-      center_code: '',
-      center_name: '',
-      center_name_ar: '',
-      description: '',
+      center_code: "",
+      center_name: "",
+      center_name_ar: "",
+      description: "",
       budget_amount: 0,
       actual_amount: 0,
-      is_active: true
+      is_active: true,
     });
     setIsCreateDialogOpen(false);
   };
 
-  const handleViewCostCenter = (center: any) => {
+  const handleViewCostCenter = (center: CostCenter) => {
     setSelectedCostCenter(center);
     setIsViewDialogOpen(true);
   };
 
-  const handleEditCostCenter = (center: any) => {
+  const handleEditCostCenter = (center: CostCenter) => {
     setSelectedCostCenter(center);
     setIsEditDialogOpen(true);
   };
@@ -87,7 +255,7 @@ export default function CostCenters() {
       center_name_ar: selectedCostCenter.center_name_ar,
       description: selectedCostCenter.description,
       budget_amount: selectedCostCenter.budget_amount,
-      actual_amount: selectedCostCenter.actual_amount
+      actual_amount: selectedCostCenter.actual_amount,
     });
 
     setIsEditDialogOpen(false);
@@ -98,446 +266,355 @@ export default function CostCenters() {
     await deleteCostCenter.mutateAsync(centerId);
   };
 
-  const filteredCostCenters = costCenters?.filter(center =>
-    center.center_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    center.center_code.includes(searchTerm)
-  );
-
-  const totalBudget = costCenters?.reduce((sum, center) => sum + (center.budget_amount || 0), 0) || 0;
-  const totalActual = costCenters?.reduce((sum, center) => sum + (center.actual_amount || 0), 0) || 0;
-  const budgetUtilization = totalBudget > 0 ? (totalActual / totalBudget) * 100 : 0;
-  const activeCenters = costCenters?.filter(c => c.is_active !== false).length || 0;
-
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-48">
+      <div className="flex h-56 items-center justify-center rounded-2xl border border-slate-200 bg-white">
         <LoadingSpinner />
       </div>
     );
   }
 
   if (error) {
-    return (
-      <div className="text-center text-destructive">
-        حدث خطأ في تحميل البيانات
-      </div>
-    );
+    return <div className="rounded-2xl border border-[#FB6B7A]/20 bg-[#FFF0F2] p-5 text-center font-bold text-[#FB6B7A]">حدث خطأ في تحميل البيانات</div>;
   }
 
   return (
     <TooltipProvider>
-    <div className="p-6 space-y-6" dir="rtl">
-      {/* Breadcrumb */}
-      <Breadcrumb>
-        <BreadcrumbList>
-          <BreadcrumbItem>
-            <BreadcrumbLink href="/finance">المالية</BreadcrumbLink>
-          </BreadcrumbItem>
-          <BreadcrumbSeparator />
-          <BreadcrumbItem>
-            <BreadcrumbPage>مراكز التكلفة</BreadcrumbPage>
-          </BreadcrumbItem>
-        </BreadcrumbList>
-      </Breadcrumb>
-
-      {/* Header */}
-      <div className="flex justify-between items-start">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">مراكز التكلفة</h1>
-          <p className="text-sm text-slate-500 mt-1">
-            إدارة وتتبع مراكز التكلفة والموازنات
-          </p>
+      <div className="space-y-5" dir="rtl">
+        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+          <Card className="rounded-2xl border-slate-200 bg-white shadow-sm">
+            <CardContent className="p-4">
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-xs font-bold text-[#94A3B8]">إجمالي المراكز</p>
+                  <p className="mt-2 text-xl font-black text-[#020617]">{totals.count}</p>
+                  <p className="mt-1 text-xs font-bold text-[#22C7A1]">{totals.activeCenters} نشط</p>
+                </div>
+                <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[#EAF8FE] text-[#38BDF8]">
+                  <Building className="h-5 w-5" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="rounded-2xl border-slate-200 bg-white shadow-sm">
+            <CardContent className="p-4">
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-xs font-bold text-[#94A3B8]">إجمالي الموازنة</p>
+                  <p className="mt-2 text-xl font-black text-[#020617]">{formatQar(totals.totalBudget)}</p>
+                </div>
+                <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[#ECEEFE] text-[#7C83F6]">
+                  <Target className="h-5 w-5" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="rounded-2xl border-slate-200 bg-white shadow-sm">
+            <CardContent className="p-4">
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-xs font-bold text-[#94A3B8]">المصروف الفعلي</p>
+                  <p className="mt-2 text-xl font-black text-[#020617]">{formatQar(totals.totalActual)}</p>
+                </div>
+                <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[#E8FBF6] text-[#22C7A1]">
+                  <WalletCards className="h-5 w-5" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="rounded-2xl border-slate-200 bg-white shadow-sm">
+            <CardContent className="p-4">
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-xs font-bold text-[#94A3B8]">نسبة الاستغلال</p>
+                  <p className="mt-2 text-xl font-black text-[#020617]">{totals.utilization.toFixed(1)}%</p>
+                </div>
+                <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[#FFF0F2] text-[#FB6B7A]">
+                  <TrendingUp className="h-5 w-5" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
-        <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-           <DialogTrigger asChild>
-             <Button className="bg-slate-900 hover:bg-slate-800">
-               <Plus className="h-4 w-4 mr-2" aria-hidden="true" />
-               مركز تكلفة جديد
-             </Button>
-           </DialogTrigger>
-          <DialogContent className="max-w-md">
+
+        <div className="grid gap-5 xl:grid-cols-[0.75fr_1.25fr]">
+          <Card className="rounded-2xl border-slate-200 bg-white shadow-sm">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-lg font-black text-[#020617]">
+                <Layers3 className="h-5 w-5 text-[#7C83F6]" />
+                قراءة سريعة
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="rounded-2xl bg-[#F6F8FB] p-4">
+                <div className="mb-2 flex items-center justify-between text-sm">
+                  <span className="font-bold text-[#020617]">استهلاك الموازنة</span>
+                  <span className="font-black text-[#22C7A1]">{totals.utilization.toFixed(1)}%</span>
+                </div>
+                <Progress value={Math.min(totals.utilization, 100)} className="h-2" />
+                <div className="mt-3 flex justify-between text-xs font-bold text-[#94A3B8]">
+                  <span>الفعلي {formatQar(totals.totalActual)}</span>
+                  <span>المخصص {formatQar(totals.totalBudget)}</span>
+                </div>
+              </div>
+              <div className="rounded-2xl border border-slate-200 p-4">
+                <p className="text-xs font-bold text-[#94A3B8]">المتبقي على مستوى كل المراكز</p>
+                <p className={totals.remaining >= 0 ? "mt-1 text-2xl font-black text-[#22C7A1]" : "mt-1 text-2xl font-black text-[#FB6B7A]"}>
+                  {formatQar(totals.remaining)}
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="rounded-2xl border-slate-200 bg-white shadow-sm">
+            <CardHeader className="pb-3">
+              <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                <div>
+                  <CardTitle className="text-lg font-black text-[#020617]">مراكز التكلفة</CardTitle>
+                  <p className="mt-1 text-sm text-[#94A3B8]">بحث بالرمز أو الاسم العربي/الإنجليزي مع متابعة الاستغلال</p>
+                </div>
+                <div className="flex flex-col gap-2 sm:flex-row">
+                  <div className="relative">
+                    <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#94A3B8]" />
+                    <Input
+                      placeholder="ابحث عن مركز تكلفة..."
+                      value={searchTerm}
+                      onChange={(event) => setSearchTerm(event.target.value)}
+                      className={`${fieldClassName} w-full pr-9 sm:w-72`}
+                    />
+                  </div>
+                  <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+                    <DialogTrigger asChild>
+                      <Button className="h-11 rounded-xl bg-[#22C7A1] font-black text-white hover:bg-[#1DAE8D]">
+                        <Plus className="ml-2 h-4 w-4" />
+                        مركز جديد
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-2xl rounded-2xl" dir="rtl">
+                      <DialogHeader>
+                        <DialogTitle className="text-2xl font-black text-[#020617]">إنشاء مركز تكلفة</DialogTitle>
+                        <DialogDescription>عرّف المركز وحدد المخصص المالي ليظهر أثره في المتابعة.</DialogDescription>
+                      </DialogHeader>
+                      <CostCenterForm
+                        value={newCostCenter}
+                        onChange={setNewCostCenter}
+                        onSubmit={handleCreateCostCenter}
+                        isPending={createCostCenter.isPending}
+                        submitLabel="إنشاء المركز"
+                      />
+                    </DialogContent>
+                  </Dialog>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="overflow-x-auto rounded-2xl border border-slate-200">
+                <Table className="min-w-[900px]" aria-label="جدول مراكز التكلفة">
+                  <TableHeader className="bg-[#F6F8FB]">
+                    <TableRow>
+                      <TableHead className="text-[#64748B]">المركز</TableHead>
+                      <TableHead className="text-[#64748B]">المخصص</TableHead>
+                      <TableHead className="text-[#64748B]">الفعلي</TableHead>
+                      <TableHead className="text-[#64748B]">المتبقي</TableHead>
+                      <TableHead className="text-[#64748B]">الاستغلال</TableHead>
+                      <TableHead className="text-[#64748B]">الحالة</TableHead>
+                      <TableHead className="text-[#64748B]">الإجراءات</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredCostCenters?.map((center) => {
+                      const budgetAmount = center.budget_amount || 0;
+                      const actualAmount = center.actual_amount || 0;
+                      const remaining = budgetAmount - actualAmount;
+                      const utilization = budgetAmount > 0 ? (actualAmount / budgetAmount) * 100 : 0;
+                      const tone = utilizationTone(utilization);
+
+                      return (
+                        <TableRow key={center.id} className="hover:bg-[#F6F8FB]/70">
+                          <TableCell>
+                            <div>
+                              <p className="font-black text-[#020617]">{center.center_name}</p>
+                              <div className="mt-1 flex flex-wrap items-center gap-2">
+                                <span className="rounded-full bg-[#F6F8FB] px-2 py-0.5 text-xs font-bold text-[#64748B]">
+                                  {center.center_code}
+                                </span>
+                                {center.center_name_ar && <span className="text-xs text-[#94A3B8]">{center.center_name_ar}</span>}
+                              </div>
+                            </div>
+                          </TableCell>
+                          <TableCell className="font-bold text-[#020617]">{formatQar(budgetAmount)}</TableCell>
+                          <TableCell className="font-bold text-[#7C83F6]">{formatQar(actualAmount)}</TableCell>
+                          <TableCell className={remaining >= 0 ? "font-black text-[#22C7A1]" : "font-black text-[#FB6B7A]"}>
+                            {formatQar(remaining)}
+                          </TableCell>
+                          <TableCell>
+                            <Badge
+                              variant="outline"
+                              className="rounded-full border-transparent px-3 py-1 font-black"
+                              style={{ backgroundColor: tone.bg, color: tone.text }}
+                            >
+                              {tone.label} · {utilization.toFixed(1)}%
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <Badge
+                              variant="outline"
+                              className={
+                                center.is_active !== false
+                                  ? "rounded-full border-[#22C7A1]/25 bg-[#E8FBF6] px-3 py-1 font-black text-[#0F9F82]"
+                                  : "rounded-full border-[#94A3B8]/25 bg-[#F6F8FB] px-3 py-1 font-black text-[#64748B]"
+                              }
+                            >
+                              {center.is_active !== false ? "نشط" : "غير نشط"}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-1">
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => handleViewCostCenter(center as CostCenter)}
+                                    className="h-9 w-9 rounded-xl text-[#38BDF8] hover:bg-[#EAF8FE]"
+                                    aria-label="عرض التفاصيل"
+                                  >
+                                    <Eye className="h-4 w-4" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>عرض التفاصيل</TooltipContent>
+                              </Tooltip>
+
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => handleEditCostCenter(center as CostCenter)}
+                                    className="h-9 w-9 rounded-xl text-[#7C83F6] hover:bg-[#ECEEFE]"
+                                    aria-label="تعديل"
+                                  >
+                                    <Edit className="h-4 w-4" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>تعديل</TooltipContent>
+                              </Tooltip>
+
+                              <AlertDialog>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <AlertDialogTrigger asChild>
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-9 w-9 rounded-xl text-[#FB6B7A] hover:bg-[#FFF0F2]"
+                                        aria-label="حذف"
+                                      >
+                                        <Trash2 className="h-4 w-4" />
+                                      </Button>
+                                    </AlertDialogTrigger>
+                                  </TooltipTrigger>
+                                  <TooltipContent>حذف</TooltipContent>
+                                </Tooltip>
+                                <AlertDialogContent dir="rtl" className="rounded-2xl">
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle className="text-[#020617]">تأكيد حذف مركز التكلفة</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      سيتم حذف "{center.center_name}". هذا الإجراء لا يمكن التراجع عنه.
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>إلغاء</AlertDialogCancel>
+                                    <AlertDialogAction
+                                      onClick={() => handleDeleteCostCenter(center.id)}
+                                      className="bg-[#FB6B7A] text-white hover:bg-[#E75B69]"
+                                    >
+                                      حذف
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
+              {filteredCostCenters?.length === 0 && (
+                <div className="p-6">
+                  <EmptyState
+                    icon={Target}
+                    title="لا توجد مراكز تكلفة"
+                    description="أنشئ مركز تكلفة لتوزيع المصروفات ومراقبة الاستغلال حسب الإدارة أو المشروع."
+                    onAction={() => setIsCreateDialogOpen(true)}
+                    actionLabel="مركز جديد"
+                  />
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+
+        <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
+          <DialogContent className="max-w-2xl rounded-2xl" dir="rtl">
             <DialogHeader>
-              <DialogTitle>إنشاء مركز تكلفة جديد</DialogTitle>
-              <DialogDescription>
-                أدخل تفاصيل مركز التكلفة الجديد
-              </DialogDescription>
+              <DialogTitle className="text-2xl font-black text-[#020617]">تفاصيل مركز التكلفة</DialogTitle>
+              <DialogDescription>عرض المخصص والفعلي والمتبقي لهذا المركز.</DialogDescription>
             </DialogHeader>
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="centerCode">رمز المركز</Label>
-                <Input
-                  id="centerCode"
-                  value={newCostCenter.center_code}
-                  onChange={(e) => setNewCostCenter({ ...newCostCenter, center_code: e.target.value })}
-                  placeholder="CC001"
-                />
+            {selectedCostCenter && (
+              <div className="space-y-4">
+                <div className="rounded-2xl bg-[#F6F8FB] p-4">
+                  <p className="text-xs font-bold text-[#94A3B8]">المركز</p>
+                  <p className="mt-1 text-xl font-black text-[#020617]">{selectedCostCenter.center_name}</p>
+                  <p className="mt-1 text-sm font-bold text-[#94A3B8]">{selectedCostCenter.center_code}</p>
+                </div>
+                <div className="grid gap-3 md:grid-cols-3">
+                  <div className="rounded-2xl border border-slate-200 p-4">
+                    <p className="text-xs font-bold text-[#94A3B8]">المخصص</p>
+                    <p className="mt-1 font-black text-[#020617]">{formatQar(selectedCostCenter.budget_amount)}</p>
+                  </div>
+                  <div className="rounded-2xl border border-slate-200 p-4">
+                    <p className="text-xs font-bold text-[#94A3B8]">الفعلي</p>
+                    <p className="mt-1 font-black text-[#7C83F6]">{formatQar(selectedCostCenter.actual_amount)}</p>
+                  </div>
+                  <div className="rounded-2xl border border-slate-200 p-4">
+                    <p className="text-xs font-bold text-[#94A3B8]">المتبقي</p>
+                    <p className="mt-1 font-black text-[#22C7A1]">
+                      {formatQar((selectedCostCenter.budget_amount || 0) - (selectedCostCenter.actual_amount || 0))}
+                    </p>
+                  </div>
+                </div>
+                {selectedCostCenter.description && (
+                  <div className="rounded-2xl border border-slate-200 p-4">
+                    <p className="text-xs font-bold text-[#94A3B8]">الوصف</p>
+                    <p className="mt-2 text-sm leading-6 text-[#020617]">{selectedCostCenter.description}</p>
+                  </div>
+                )}
               </div>
-              <div>
-                <Label htmlFor="centerName">اسم المركز</Label>
-                <Input
-                  id="centerName"
-                  value={newCostCenter.center_name}
-                  onChange={(e) => setNewCostCenter({ ...newCostCenter, center_name: e.target.value })}
-                  placeholder="اسم مركز التكلفة"
-                />
-              </div>
-              <div>
-                <Label htmlFor="centerNameAr">الاسم بالعربية</Label>
-                <Input
-                  id="centerNameAr"
-                  value={newCostCenter.center_name_ar}
-                  onChange={(e) => setNewCostCenter({ ...newCostCenter, center_name_ar: e.target.value })}
-                  placeholder="الاسم بالعربية"
-                />
-              </div>
-              <div>
-                <Label htmlFor="budgetAmount">المبلغ المخصص</Label>
-                <Input
-                  id="budgetAmount"
-                  type="number"
-                  value={newCostCenter.budget_amount}
-                  onChange={(e) => setNewCostCenter({ ...newCostCenter, budget_amount: Number(e.target.value) })}
-                  placeholder="0.000"
-                />
-              </div>
-              <div>
-                <Label htmlFor="description">الوصف</Label>
-                <Textarea
-                  id="description"
-                  value={newCostCenter.description}
-                  onChange={(e) => setNewCostCenter({ ...newCostCenter, description: e.target.value })}
-                  placeholder="وصف مركز التكلفة"
-                />
-              </div>
-              <Button onClick={handleCreateCostCenter} className="w-full" disabled={createCostCenter.isPending}>
-                {createCostCenter.isPending ? "جاري الإنشاء..." : "إنشاء المركز"}
-              </Button>
-            </div>
+            )}
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+          <DialogContent className="max-w-2xl rounded-2xl" dir="rtl">
+            <DialogHeader>
+              <DialogTitle className="text-2xl font-black text-[#020617]">تعديل مركز التكلفة</DialogTitle>
+              <DialogDescription>حدّث بيانات المركز وراجع نسبة الاستغلال قبل الحفظ.</DialogDescription>
+            </DialogHeader>
+            {selectedCostCenter && (
+              <CostCenterForm
+                value={selectedCostCenter}
+                onChange={(value) => setSelectedCostCenter(value as CostCenter)}
+                onSubmit={handleUpdateCostCenter}
+                isPending={updateCostCenter.isPending}
+                submitLabel="تحديث المركز"
+              />
+            )}
           </DialogContent>
         </Dialog>
       </div>
-
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
-          <StatCard
-            title="إجمالي المراكز"
-            value={costCenters?.length || 0}
-            subtitle={`${activeCenters} مركز نشط`}
-            icon={Building}
-            variant="coral"
-          />
-        </motion.div>
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}>
-          <StatCard
-            title="إجمالي الموازنة"
-            value={formatCurrency(totalBudget)}
-            subtitle="الموازنة المخصصة"
-            icon={Target}
-            variant="sky"
-          />
-        </motion.div>
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
-          <StatCard
-            title="المصروف الفعلي"
-            value={formatCurrency(totalActual)}
-            subtitle="المبلغ المصروف"
-            icon={DollarSign}
-            variant="emerald"
-          />
-        </motion.div>
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}>
-          <StatCard
-            title="نسبة الاستغلال"
-            value={`${budgetUtilization.toFixed(1)}%`}
-            subtitle="من إجمالي الموازنة"
-            icon={TrendingUp}
-            variant={budgetUtilization > 100 ? 'danger' : budgetUtilization > 80 ? 'amber' : 'emerald'}
-          />
-        </motion.div>
-      </div>
-
-      {/* Main Content */}
-      <Card className="bg-white rounded-xl border border-slate-200 shadow-sm">
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="flex items-center gap-2">
-                <CardTitle>مراكز التكلفة</CardTitle>
-                <HelpIcon topic="accountTypes" />
-              </div>
-              <CardDescription>قائمة جميع مراكز التكلفة المسجلة</CardDescription>
-            </div>
-            <div className="flex items-center space-x-2">
-              <Search className="h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="البحث في المراكز..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-64"
-              />
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-           <div className="overflow-x-auto -mx-4 md:mx-0">
-             <Table className="min-w-[600px]" aria-label="جدول مراكز التكلفة">
-               <TableHeader>
-                 <TableRow className="bg-slate-50 text-slate-600 text-xs uppercase tracking-wide">
-                   <TableHead scope="col">رمز المركز</TableHead>
-                   <TableHead scope="col">اسم المركز</TableHead>
-                   <TableHead scope="col">الموازنة المخصصة</TableHead>
-                   <TableHead scope="col">المصروف الفعلي</TableHead>
-                   <TableHead scope="col">المتبقي</TableHead>
-                   <TableHead scope="col">نسبة الاستغلال</TableHead>
-                   <TableHead scope="col">الحالة</TableHead>
-                   <TableHead scope="col">الإجراءات</TableHead>
-                 </TableRow>
-               </TableHeader>
-            <TableBody>
-              {filteredCostCenters?.map((center) => {
-                const budgetAmount = center.budget_amount ?? 0;
-                const actualAmount = center.actual_amount ?? 0;
-                const remaining = budgetAmount - actualAmount;
-                const utilization = budgetAmount > 0 ? (actualAmount / budgetAmount) * 100 : 0;
-                
-                return (
-                  <TableRow key={center.id} className="hover:bg-slate-50 border-b border-slate-100">
-                    <TableCell className="font-medium">{center.center_code}</TableCell>
-                    <TableCell>
-                      <div>
-                        <div className="font-medium">{center.center_name}</div>
-                        {center.center_name_ar && (
-                          <div className="text-sm text-muted-foreground">{center.center_name_ar}</div>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell>{formatCurrency(center.budget_amount || 0)}</TableCell>
-                    <TableCell>{formatCurrency(center.actual_amount || 0)}</TableCell>
-                    <TableCell className={remaining < 0 ? 'text-red-600' : 'text-emerald-600'}>
-                      {formatCurrency(remaining)}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center space-x-2">
-                        <span className={utilization > 100 ? 'text-red-600' : utilization > 80 ? 'text-amber-600' : 'text-emerald-600'}>
-                          {utilization.toFixed(1)}%
-                        </span>
-                        {utilization > 100 && (
-                          <Badge variant="destructive" className="text-xs">تجاوز</Badge>
-                        )}
-                        {utilization > 80 && utilization <= 100 && (
-                          <Badge variant="secondary" className="text-xs">تحذير</Badge>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                     <Badge variant={center.is_active ? "default" : "secondary"} aria-label={`الحالة: ${center.is_active ? "نشط" : "غير نشط"}`}>
-                       {center.is_active ? "نشط" : "غير نشط"}
-                     </Badge>
-                    </TableCell>
-                     <TableCell>
-                         <div className="flex items-center space-x-2">
-                           <Tooltip>
-                             <TooltipTrigger asChild>
-                               <Button 
-                                 variant="ghost" 
-                                 size="icon"
-                                 onClick={() => handleViewCostCenter(center as CostCenter)}
-                                 className="h-8 w-8"
-                                 aria-label="عرض التفاصيل"
-                               >
-                                 <Eye className="h-4 w-4" aria-hidden="true" />
-                               </Button>
-                             </TooltipTrigger>
-                             <TooltipContent>
-                               <p>عرض التفاصيل</p>
-                             </TooltipContent>
-                           </Tooltip>
-                           
-                           <Tooltip>
-                             <TooltipTrigger asChild>
-                               <Button 
-                                 variant="ghost" 
-                                 size="icon"
-                                 onClick={() => handleEditCostCenter(center as CostCenter)}
-                                 className="h-8 w-8"
-                                 aria-label="تعديل"
-                               >
-                                 <Edit className="h-4 w-4" aria-hidden="true" />
-                               </Button>
-                             </TooltipTrigger>
-                             <TooltipContent>
-                               <p>تعديل</p>
-                             </TooltipContent>
-                           </Tooltip>
-                           
-                           <AlertDialog>
-                             <Tooltip>
-                               <TooltipTrigger asChild>
-                                 <AlertDialogTrigger asChild>
-                                   <Button 
-                                     variant="ghost" 
-                                     size="icon"
-                                     className="h-8 w-8 text-destructive hover:text-destructive"
-                                     aria-label="حذف"
-                                   >
-                                     <Trash2 className="h-4 w-4" aria-hidden="true" />
-                                   </Button>
-                                 </AlertDialogTrigger>
-                               </TooltipTrigger>
-                               <TooltipContent>
-                                 <p>حذف</p>
-                               </TooltipContent>
-                             </Tooltip>
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>تأكيد الحذف</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  هل أنت متأكد من حذف مركز التكلفة "{center.center_name}"؟ هذا الإجراء لا يمكن التراجع عنه.
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>إلغاء</AlertDialogCancel>
-                                <AlertDialogAction 
-                                  onClick={() => handleDeleteCostCenter(center.id)}
-                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                >
-                                  حذف
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
-                        </div>
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-            </Table>
-            </div>
-            {filteredCostCenters?.length === 0 && (
-              <div className="p-6">
-                <EmptyState
-                  icon={Target}
-                  title="لا توجد مراكز تكلفة"
-                  description="لم يتم إنشاء أي مراكز تكلفة بعد. ابدأ بإنشاء مركز تكلفة جديد لتتبع المصروفات"
-                  onAction={() => setIsCreateDialogOpen(true)}
-                  actionLabel="مركز تكلفة جديد"
-                />
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-      {/* View Dialog */}
-      <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>تفاصيل مركز التكلفة</DialogTitle>
-            <DialogDescription>
-              عرض تفاصيل مركز التكلفة
-            </DialogDescription>
-          </DialogHeader>
-          {selectedCostCenter && (
-            <div className="space-y-4">
-              <div>
-                <Label>رمز المركز</Label>
-                <p className="mt-1 font-medium">{selectedCostCenter.center_code}</p>
-              </div>
-              <div>
-                <Label>اسم المركز</Label>
-                <p className="mt-1 font-medium">{selectedCostCenter.center_name}</p>
-              </div>
-              {selectedCostCenter.center_name_ar && (
-                <div>
-                  <Label>الاسم بالعربية</Label>
-                  <p className="mt-1 font-medium">{selectedCostCenter.center_name_ar}</p>
-                </div>
-              )}
-              <div>
-                <Label>المبلغ المخصص</Label>
-                <p className="mt-1 font-medium">{formatCurrency(selectedCostCenter.budget_amount || 0)}</p>
-              </div>
-              <div>
-                <Label>المصروف الفعلي</Label>
-                <p className="mt-1 font-medium">{formatCurrency(selectedCostCenter.actual_amount || 0)}</p>
-              </div>
-              {selectedCostCenter.description && (
-                <div>
-                  <Label>الوصف</Label>
-                  <p className="mt-1">{selectedCostCenter.description}</p>
-                </div>
-              )}
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
-
-      {/* Edit Dialog */}
-      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>تعديل مركز التكلفة</DialogTitle>
-            <DialogDescription>
-              تعديل تفاصيل مركز التكلفة
-            </DialogDescription>
-          </DialogHeader>
-          {selectedCostCenter && (
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="editCenterCode">رمز المركز</Label>
-                <Input
-                  id="editCenterCode"
-                  value={selectedCostCenter.center_code}
-                  onChange={(e) => setSelectedCostCenter({ ...selectedCostCenter, center_code: e.target.value })}
-                  placeholder="CC001"
-                />
-              </div>
-              <div>
-                <Label htmlFor="editCenterName">اسم المركز</Label>
-                <Input
-                  id="editCenterName"
-                  value={selectedCostCenter.center_name}
-                  onChange={(e) => setSelectedCostCenter({ ...selectedCostCenter, center_name: e.target.value })}
-                  placeholder="اسم مركز التكلفة"
-                />
-              </div>
-              <div>
-                <Label htmlFor="editCenterNameAr">الاسم بالعربية</Label>
-                <Input
-                  id="editCenterNameAr"
-                  value={selectedCostCenter.center_name_ar || ''}
-                  onChange={(e) => setSelectedCostCenter({ ...selectedCostCenter, center_name_ar: e.target.value })}
-                  placeholder="الاسم بالعربية"
-                />
-              </div>
-              <div>
-                <Label htmlFor="editBudgetAmount">المبلغ المخصص</Label>
-                <Input
-                  id="editBudgetAmount"
-                  type="number"
-                  value={selectedCostCenter.budget_amount || 0}
-                  onChange={(e) => setSelectedCostCenter({ ...selectedCostCenter, budget_amount: Number(e.target.value) })}
-                  placeholder="0.000"
-                />
-              </div>
-              <div>
-                <Label htmlFor="editDescription">الوصف</Label>
-                <Textarea
-                  id="editDescription"
-                  value={selectedCostCenter.description || ''}
-                  onChange={(e) => setSelectedCostCenter({ ...selectedCostCenter, description: e.target.value })}
-                  placeholder="وصف مركز التكلفة"
-                />
-              </div>
-              <Button onClick={handleUpdateCostCenter} className="w-full" disabled={updateCostCenter.isPending}>
-                {updateCostCenter.isPending ? "جاري التحديث..." : "تحديث المركز"}
-              </Button>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
-    </div>
     </TooltipProvider>
   );
 }

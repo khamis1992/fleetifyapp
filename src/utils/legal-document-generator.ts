@@ -257,8 +257,9 @@ export function generateLegalComplaintHTML(data: LegalDocumentData): string {
 <head>
   <meta charset="UTF-8">
   <title>مذكرة شارحة - ${customer.customer_name}</title>
-  <link rel="icon" type="image/x-icon" href="/favicon.ico" />
-  <link rel="shortcut icon" href="/favicon.ico" />
+  <link rel="icon" href="/uploads/7453c280-3175-4ccf-a73b-24921ec5990b.png" type="image/png" />
+  <link rel="shortcut icon" href="/uploads/7453c280-3175-4ccf-a73b-24921ec5990b.png" type="image/png" />
+  <link rel="apple-touch-icon" href="/uploads/7453c280-3175-4ccf-a73b-24921ec5990b.png" />
   <style>
     @page {
       size: A4;

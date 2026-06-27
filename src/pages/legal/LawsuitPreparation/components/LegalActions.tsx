@@ -1,320 +1,103 @@
-/**
- * Legal Actions Component
- * مكون الإجراءات القانونية النهائية
- * 
- * Displays final action buttons, readiness checklist, and case status
- * for the lawsuit preparation workflow.
- */
-
 import { motion } from 'framer-motion';
-import { useTranslation } from 'react-i18next';
-import {
-  FileStack,
-  CheckCircle,
-  FolderDown,
-  Gavel,
-  Shield,
-  ListCheck,
-  FileText,
-  Database,
-  Circle,
-  AlertCircle,
-  Clock,
-} from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { AlertCircle, CheckCircle2, Circle, Database, Download, FileStack, FileText, FolderCheck, Gavel, ListChecks, Loader2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
-import { LoadingSpinner } from '@/components/ui/loading-spinner';
+import { Button } from '@/components/ui/button';
 import { useLawsuitPreparationContext } from '../store';
 
-interface ChecklistItemProps {
-  label: string;
-  isComplete: boolean;
-  isLoading?: boolean;
-  icon: React.ReactNode;
-}
+const mandatoryDocIds = ['memo', 'claims', 'docsList', 'contract', 'commercialRegister', 'ibanCertificate', 'representativeId'] as const;
 
-function ChecklistItem({ label, isComplete, isLoading, icon }: ChecklistItemProps) {
+function ChecklistItem({ complete, label, note }: { complete: boolean; label: string; note: string }) {
   return (
-    <div className="flex items-center gap-3 p-2 rounded-md transition-colors hover:bg-slate-100">
-      <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
-        isComplete
-          ? 'bg-emerald-500/20 text-emerald-500'
-          : isLoading
-          ? 'bg-teal-600/20 text-teal-600'
-          : 'bg-slate-200 text-slate-500'
-      }`}>
-        {isLoading ? (
-          <LoadingSpinner className="h-4 w-4" />
-        ) : isComplete ? (
-          <CheckCircle className="h-4 w-4" />
-        ) : (
-          <Circle className="h-4 w-4" />
-        )}
-      </div>
-      <div className="flex-1">
-        <p className={`text-sm font-medium ${
-          isComplete ? 'text-slate-900' : 'text-slate-600'
-        }`}>
-          {label}
-        </p>
-      </div>
-      <div className="flex-shrink-0">
-        {icon}
+    <div className={`lawsuit-check-row ${complete ? 'is-complete' : ''}`}>
+      <span>{complete ? <CheckCircle2 className="h-5 w-5" /> : <Circle className="h-5 w-5" />}</span>
+      <div>
+        <strong>{label}</strong>
+        <small>{note}</small>
       </div>
     </div>
   );
 }
 
 export function LegalActions() {
-  const { t: _t } = useTranslation();
   const { state, actions } = useLawsuitPreparationContext();
-  const { documents, ui, taqadiData } = state;
-  
+  const { documents, taqadiData, ui } = state;
 
-
-  // Check mandatory documents readiness
-  const mandatoryDocs = [
-    documents.memo,
-    documents.claims,
-    documents.docsList,
-    documents.contract,
-    documents.commercialRegister,
-    documents.ibanCertificate,
-    documents.representativeId,
-  ].filter(doc => doc.type === 'mandatory');
-
-  const allMandatoryDocsReady = mandatoryDocs.every(doc => doc.status === 'ready');
-  const readyCount = mandatoryDocs.filter(doc => doc.status === 'ready').length;
-
-  // Check Taqadi data
-  const hasTaqadiData = !!(taqadiData !== null && taqadiData.caseTitle && taqadiData.defendant.fullName);
-
-  // Check contract upload
-  const contractUploaded = documents.contract.status === 'ready';
-
-  // Overall readiness
-  const allRequirementsMet = allMandatoryDocsReady && hasTaqadiData && contractUploaded;
-
-  // Check if any documents can be downloaded
-  const hasDocumentsForZip = mandatoryDocs.some(doc => doc.status === 'ready');
+  const readyCount = mandatoryDocIds.filter((docId) => documents[docId].status === 'ready').length;
+  const allDocumentsReady = readyCount === mandatoryDocIds.length;
+  const contractReady = documents.contract.status === 'ready';
+  const taqadiReady = Boolean(taqadiData?.caseTitle && taqadiData?.defendant?.fullName);
+  const allReady = allDocumentsReady && contractReady && taqadiReady;
+  const hasDocumentsForZip = mandatoryDocIds.some((docId) => documents[docId].status === 'ready');
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.4 }}
-      className="space-y-4"
-    >
-      {/* Readiness Checklist Card */}
-      <Card className="bg-white border-slate-200 shadow-xl">
-        <CardHeader className="pb-3 border-b border-slate-200">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-teal-600/20 flex items-center justify-center">
-                <ListCheck className="h-5 w-5 text-teal-600" />
-              </div>
-              <div>
-                <CardTitle className="text-slate-900 text-lg">
-                  قائمة التحقق
-                </CardTitle>
-                <CardDescription className="text-slate-600">
-                  متطلبات فتح القضية
-                </CardDescription>
-              </div>
-            </div>
-            <Badge
-              variant={allRequirementsMet ? 'default' : 'secondary'}
-              className={`${
-                allRequirementsMet
-                  ? 'bg-emerald-500/20 text-emerald-500 hover:bg-emerald-500/30'
-                  : 'bg-teal-600/20 text-teal-600'
-              }`}
-            >
-              {allRequirementsMet ? (
-                <>
-                  <CheckCircle className="h-3 w-3 ml-1" />
-                  جاهز
-                </>
-              ) : (
-                <>
-                  <Clock className="h-3 w-3 ml-1" />
-                  قيد الإعداد
-                </>
-              )}
-            </Badge>
+    <motion.div className="lawsuit-actions-redesign" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
+      <section className="lawsuit-section-panel">
+        <div className="lawsuit-section-heading">
+          <div>
+            <Badge className="bg-[#EAF2F9] text-[#173A63] hover:bg-[#EAF2F9]">الإغلاق والمتابعة</Badge>
+            <h2>قرار فتح القضية</h2>
+            <p>تأكد من اكتمال المتطلبات ثم سجل فتح القضية أو حمل الحزمة النهائية.</p>
           </div>
-        </CardHeader>
+          <Badge className={allReady ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-100' : 'bg-amber-100 text-amber-700 hover:bg-amber-100'}>
+            {allReady ? 'جاهز للإغلاق' : 'قيد الإعداد'}
+          </Badge>
+        </div>
 
-        <CardContent className="pt-4 space-y-2">
-          <ChecklistItem
-            label="جميع المستندات الإلزامية جاهزة"
-            isComplete={allMandatoryDocsReady}
-            isLoading={ui.isGeneratingAll}
-            icon={
-              <Badge variant="outline" className="border-slate-300 text-slate-600">
-                {readyCount}/{mandatoryDocs.length}
-              </Badge>
-            }
-          />
+        <div className="lawsuit-final-grid">
+          <div className="lawsuit-decision-card">
+            <FolderCheck className="h-7 w-7" />
+            <span>حالة الملف النهائية</span>
+            <strong>{allReady ? 'يمكن فتح القضية الآن' : 'توجد متطلبات ناقصة'}</strong>
+            <p>{allReady ? 'المستندات وبيانات التقاضي جاهزة للتسجيل.' : 'أكمل الحافظة وراجع بيانات التقاضي قبل تسجيل القضية.'}</p>
+          </div>
 
-          <ChecklistItem
-            label="بيانات تقدي مكتملة"
-            isComplete={hasTaqadiData}
-            icon={<Database className="h-4 w-4 text-slate-500" />}
-          />
-
-          <ChecklistItem
-            label="عقد الإيجار مرفوع"
-            isComplete={contractUploaded}
-            isLoading={documents.contract.isUploading}
-            icon={<FileText className="h-4 w-4 text-slate-500" />}
-          />
-
-          {!allRequirementsMet && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              className="mt-4 p-3 rounded-md bg-teal-600/10 border border-teal-600/20"
-            >
-              <div className="flex items-start gap-2">
-                <AlertCircle className="h-4 w-4 text-teal-600 mt-0.5 flex-shrink-0" />
-                <p className="text-xs text-teal-700/80">
-                  يجب إكمال جميع المتطلبات قبل فتح القضية. تأكد من توليد جميع المستندات ورفع العقد.
-                </p>
-              </div>
-            </motion.div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Status Indicators */}
-      <div className="grid grid-cols-2 gap-3">
-        <Card className="bg-white border-slate-200">
-          <CardContent className="p-3">
-            <div className="flex items-center gap-2">
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${allMandatoryDocsReady ? 'bg-emerald-500/20 text-emerald-500' : 'bg-teal-600/20 text-teal-600'}`}>
-                <Shield className="h-4 w-4" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-xs text-slate-600">المستندات</p>
-                <p className={`text-sm font-medium truncate ${allMandatoryDocsReady ? 'text-emerald-600' : 'text-teal-600'}`}>
-                  {allMandatoryDocsReady ? 'جاهزة' : 'غير مكتملة'}
-                </p>
-              </div>
+          <div className="lawsuit-checklist-card">
+            <div className="lawsuit-checklist-title">
+              <ListChecks className="h-5 w-5" />
+              <h3>قائمة التحقق</h3>
             </div>
-          </CardContent>
-        </Card>
+            <ChecklistItem complete={allDocumentsReady} label="المستندات الإلزامية جاهزة" note={`${readyCount}/${mandatoryDocIds.length} مستند جاهز`} />
+            <ChecklistItem complete={contractReady} label="عقد الإيجار متوفر" note="يجب وجود نسخة موقعة أو مرفوعة" />
+            <ChecklistItem complete={taqadiReady} label="بيانات التقاضي مكتملة" note="العنوان، الوقائع، الطلبات، وبيانات المدعى عليه" />
+          </div>
+        </div>
 
-        <Card className="bg-white border-slate-200">
-          <CardContent className="p-3">
-            <div className="flex items-center gap-2">
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${ui.isRegistering ? 'bg-teal-500/20 text-teal-500' : 'bg-slate-200 text-slate-500'}`}>
-                <Gavel className="h-4 w-4" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-xs text-slate-600">حالة القضية</p>
-                <p className={`text-sm font-medium truncate ${ui.isRegistering ? 'text-teal-600' : 'text-slate-600'}`}>
-                  {ui.isRegistering ? 'جاري التسجيل...' : 'لم تسجل'}
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+        {!allReady && (
+          <div className="lawsuit-warning-strip">
+            <AlertCircle className="h-5 w-5" />
+            <span>لن يتم تفعيل قرار فتح القضية بشكل آمن حتى تكتمل المتطلبات أعلاه.</span>
+          </div>
+        )}
+      </section>
 
-      <Separator className="bg-slate-200" />
-
-      {/* Action Buttons */}
-      <div className="space-y-3">
-        {/* Primary Action - Mark Case as Opened */}
-        <Button
-          size="lg"
-          onClick={actions.markCaseAsOpened}
-          disabled={ui.isMarkingCaseOpened || !allRequirementsMet}
-          className="w-full h-14 bg-gradient-to-r from-teal-600 to-teal-700 hover:from-teal-700 hover:to-teal-800 text-white font-semibold text-lg shadow-lg shadow-teal-600/25 disabled:shadow-none"
-        >
-          {ui.isMarkingCaseOpened ? (
-            <>
-              <LoadingSpinner className="h-5 w-5 ml-3" />
-              جاري فتح القضية...
-            </>
-          ) : (
-            <>
-              <CheckCircle className="h-5 w-5 ml-3" />
-              تم فتح قضية
-            </>
-          )}
-        </Button>
-
-        {/* Secondary Actions Grid */}
-        <div className="grid grid-cols-2 gap-2">
-          {/* Generate All Documents */}
-          <Button
-            size="default"
-            onClick={actions.generateAllDocuments}
-            disabled={ui.isGeneratingAll || ui.isRegistering}
-            variant="outline"
-            className="h-11 border-slate-300 text-slate-700 hover:bg-slate-100 hover:text-slate-900"
-          >
-            {ui.isGeneratingAll ? (
-              <>
-                <LoadingSpinner className="h-4 w-4 ml-2" />
-                جاري التوليد...
-              </>
-            ) : (
-              <>
-                <FileStack className="h-4 w-4 ml-2 text-teal-600" />
-                توليد الكل
-              </>
-            )}
+      <section className="lawsuit-section-panel">
+        <div className="lawsuit-action-grid">
+          <Button type="button" size="lg" onClick={actions.markCaseAsOpened} disabled={!allReady || ui.isMarkingCaseOpened} className="lawsuit-primary-command">
+            {ui.isMarkingCaseOpened ? <Loader2 className="h-5 w-5 animate-spin" /> : <Gavel className="h-5 w-5" />}
+            تم فتح قضية
           </Button>
-
-          {/* Download All as ZIP */}
-          <Button
-            size="default"
-            onClick={actions.downloadAllAsZip}
-            disabled={!hasDocumentsForZip || ui.isDownloadingZip}
-            variant="outline"
-            className="h-11 border-slate-300 text-slate-700 hover:bg-slate-100 hover:text-slate-900"
-          >
-            {ui.isDownloadingZip ? (
-              <>
-                <LoadingSpinner className="h-4 w-4 ml-2" />
-                جاري التحميل...
-              </>
-            ) : (
-              <>
-                <FolderDown className="h-4 w-4 ml-2 text-emerald-500" />
-                تحميل ZIP
-              </>
-            )}
+          <Button type="button" variant="outline" onClick={actions.generateAllDocuments} disabled={ui.isGeneratingAll}>
+            {ui.isGeneratingAll ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileStack className="h-4 w-4" />}
+            توليد كل المستندات
+          </Button>
+          <Button type="button" variant="outline" onClick={actions.downloadAllAsZip} disabled={!hasDocumentsForZip || ui.isDownloadingZip}>
+            {ui.isDownloadingZip ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+            تحميل الحزمة ZIP
+          </Button>
+          <Button type="button" variant="outline" onClick={actions.registerCase} disabled={!allReady || ui.isRegistering}>
+            {ui.isRegistering ? <Loader2 className="h-4 w-4 animate-spin" /> : <Database className="h-4 w-4" />}
+            تسجيل القضية في النظام
           </Button>
         </div>
 
-        {/* Register Legal Case Button */}
-        <Button
-          size="default"
-          onClick={actions.registerCase}
-          disabled={ui.isRegistering || !allRequirementsMet}
-          variant="ghost"
-          className="w-full h-10 text-slate-600 hover:text-slate-800 hover:bg-slate-100"
-        >
-          {ui.isRegistering ? (
-            <>
-              <LoadingSpinner className="h-4 w-4 ml-2" />
-              جاري تسجيل القضية...
-            </>
-          ) : (
-            <>
-              <Gavel className="h-4 w-4 ml-2" />
-              تسجيل القضية في النظام
-            </>
-          )}
-        </Button>
-      </div>
-
+        <div className="lawsuit-followup-note">
+          <FileText className="h-5 w-5" />
+          <div>
+            <strong>بعد التسجيل</strong>
+            <span>سيتم تحويل العقد إلى إجراء قانوني ويمكن متابعة القضية من سجل القضايا.</span>
+          </div>
+        </div>
+      </section>
     </motion.div>
   );
 }

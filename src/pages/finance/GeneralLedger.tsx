@@ -1,10 +1,7 @@
-/**
- * صفحة دفتر الأستاذ العام - تصميم جديد متوافق مع الداشبورد
- */
-import { useState, useMemo } from "react";
+﻿import { type CSSProperties, useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -12,7 +9,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AccountMovementsDialog } from "@/components/finance/AccountMovementsDialog";
 import { EnhancedJournalEntriesTab } from "@/components/finance/EnhancedJournalEntriesTab";
 import { JournalEntryForm } from "@/components/finance/JournalEntryForm";
-import { StatCard } from "@/components/ui/StatCard";
 import { 
   Plus, 
   Calculator, 
@@ -24,7 +20,6 @@ import {
   Building2,
   BarChart3,
   CheckCircle,
-  Clock,
   Activity,
 } from "lucide-react";
 import { useSimpleBreakpoint } from "@/hooks/use-mobile-simple";
@@ -47,18 +42,89 @@ import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { AuthChecker } from "@/components/auth/AuthChecker";
 import { SessionValidator } from "@/components/auth/SessionValidator";
 import { cn } from "@/lib/utils";
+import { systemColorPattern } from "@/lib/design-system/systemColorPattern";
+
+const ledgerTheme = {
+  text: systemColorPattern.colors.text,
+  surface: systemColorPattern.colors.surface,
+  inner: systemColorPattern.colors.innerSurface,
+  muted: systemColorPattern.colors.secondaryText,
+  border: systemColorPattern.colors.border,
+  info: systemColorPattern.colors.info,
+  alert: systemColorPattern.colors.alert,
+  focus: systemColorPattern.colors.focus,
+  success: systemColorPattern.colors.success,
+};
+
+const ledgerStyle = {
+  "--gl-text": ledgerTheme.text,
+  "--gl-surface": ledgerTheme.surface,
+  "--gl-inner": ledgerTheme.inner,
+  "--gl-muted": ledgerTheme.muted,
+  "--gl-border": ledgerTheme.border,
+  "--gl-info": ledgerTheme.info,
+  "--gl-alert": ledgerTheme.alert,
+  "--gl-focus": ledgerTheme.focus,
+  "--gl-success": ledgerTheme.success,
+} as CSSProperties;
 
 const TABS = [
-  { id: "entries", label: "القيود المحاسبية", icon: FileText },
-  { id: "balances", label: "أرصدة الحسابات", icon: Scale },
-  { id: "trial", label: "ميزان المراجعة", icon: BarChart3 },
-  { id: "costcenters", label: "مراكز التكلفة", icon: Building2 },
-  { id: "analysis", label: "التحليل المالي", icon: Activity },
+  { id: "entries", label: "القيود", helper: "Journal", icon: FileText, accent: ledgerTheme.alert },
+  { id: "balances", label: "أرصدة الحسابات", helper: "Balances", icon: Scale, accent: ledgerTheme.success },
+  { id: "trial", label: "ميزان المراجعة", helper: "Trial", icon: BarChart3, accent: ledgerTheme.focus },
+  { id: "costcenters", label: "مراكز التكلفة", helper: "Cost centers", icon: Building2, accent: ledgerTheme.info },
+  { id: "analysis", label: "التحليل المالي", helper: "Analysis", icon: Activity, accent: ledgerTheme.success },
 ];
+
+interface LedgerMetricProps {
+  label: string;
+  value: string | number;
+  helper: string;
+  icon: React.ElementType;
+  accent: string;
+}
+
+const LedgerMetric = ({ label, value, helper, icon: Icon, accent }: LedgerMetricProps) => (
+  <div className="general-ledger-metric">
+    <div className="flex items-start justify-between gap-3">
+      <span className="general-ledger-metric-icon" style={{ color: accent, backgroundColor: `${accent}14` }}>
+        <Icon className="h-4 w-4" />
+      </span>
+      <span className="text-[11px] font-black" style={{ color: ledgerTheme.muted }}>
+        {helper}
+      </span>
+    </div>
+    <p>{label}</p>
+    <strong>{value}</strong>
+  </div>
+);
+
+const getAccountTypeLabel = (type?: string) => {
+  const labels: Record<string, string> = {
+    assets: "الأصول",
+    asset: "الأصول",
+    liabilities: "الخصوم",
+    liability: "الخصوم",
+    equity: "حقوق الملكية",
+    revenue: "الإيرادات",
+    expenses: "المصروفات",
+    expense: "المصروفات",
+  };
+  return labels[type || ""] || type || "-";
+};
+
+const accountTypeTone = (type?: string) => {
+  if (type === "assets" || type === "asset") return "tone-success";
+  if (type === "liabilities" || type === "liability" || type === "expenses" || type === "expense") return "tone-alert";
+  if (type === "equity") return "tone-info";
+  if (type === "revenue") return "tone-focus";
+  return "tone-muted";
+};
 
 export default function GeneralLedger() {
   const navigate = useNavigate();
   const { formatCurrency } = useCurrencyFormatter();
+  const formatQar = (amount: number) => formatCurrency(amount || 0, { currency: "QAR", minimumFractionDigits: 2, maximumFractionDigits: 2 });
   const { isMobile } = useSimpleBreakpoint();
   
   const [filters, setFilters] = useState<LedgerFilters>({
@@ -87,6 +153,10 @@ export default function GeneralLedger() {
   const exportData = useExportLedgerData();
 
   const stats = useMemo(() => {
+    const trialItems = trialBalance || [];
+    const totalDebitBalance = trialItems.reduce((sum, item) => sum + (item.debit_balance || 0), 0);
+    const totalCreditBalance = trialItems.reduce((sum, item) => sum + (item.credit_balance || 0), 0);
+
     return {
       totalEntries: journalEntries?.length || 0,
       postedEntries: journalEntries?.filter(e => e.status === 'posted').length || 0,
@@ -94,8 +164,11 @@ export default function GeneralLedger() {
       reversedEntries: journalEntries?.filter(e => e.status === 'reversed').length || 0,
       totalAccounts: accounts?.length || 0,
       totalCostCenters: costCenters?.length || 0,
+      trialDifference: Math.abs(totalDebitBalance - totalCreditBalance),
+      totalDebitBalance,
+      totalCreditBalance,
     };
-  }, [journalEntries, accounts, costCenters]);
+  }, [journalEntries, accounts, costCenters, trialBalance]);
 
   const updateFilters = (newFilters: Partial<LedgerFilters>) => {
     setFilters(prev => ({ ...prev, ...newFilters }));
@@ -135,10 +208,10 @@ export default function GeneralLedger() {
 
   if (entriesLoading && summaryLoading) {
     return (
-      <div className="min-h-screen bg-[#f0efed] flex items-center justify-center">
+      <div className="flex min-h-[360px] items-center justify-center">
         <div className="flex flex-col items-center gap-4">
-          <RefreshCw className="w-10 h-10 animate-spin text-rose-500" />
-          <p className="text-neutral-500">جاري تحميل دفتر الأستاذ...</p>
+          <RefreshCw className="h-10 w-10 animate-spin text-[#22C7A1]" />
+          <p className="text-[#94A3B8]">جاري تحميل دفتر الأستاذ...</p>
         </div>
       </div>
     );
@@ -147,96 +220,95 @@ export default function GeneralLedger() {
   return (
     <SessionValidator>
       <AuthChecker>
-        <div className="p-6" dir="rtl">
-          <div className="space-y-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-2xl font-bold text-slate-900">دفتر الأستاذ العام</h1>
-                <p className="text-sm text-slate-500 mt-1">
-                  عرض وإدارة جميع القيود المحاسبية والتقارير المالية
-                </p>
+        <div className="general-ledger-page" dir="rtl" style={ledgerStyle}>
+          <div className="space-y-5">
+            <motion.section
+              className="general-ledger-command"
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+            >
+              <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+                <div className="flex items-start gap-3">
+                  <span className="general-ledger-command-icon">
+                    <Calculator className="h-5 w-5" />
+                  </span>
+                  <div>
+                    <p className="text-xs font-black uppercase tracking-normal" style={{ color: ledgerTheme.success }}>
+                      General ledger
+                    </p>
+                    <h1 className="mt-1 text-2xl font-black tracking-normal" style={{ color: ledgerTheme.text }}>
+                      دفتر الأستاذ العام
+                    </h1>
+                    <p className="mt-2 max-w-2xl text-sm leading-7" style={{ color: ledgerTheme.muted }}>
+                      مركز متابعة القيود، أرصدة الحسابات، ميزان المراجعة، ومراكز التكلفة من شاشة واحدة قابلة للمراجعة السريعة.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap gap-2">
+                  <Button onClick={() => setIsCreateDialogOpen(true)} className="general-ledger-primary">
+                    <Plus className="h-4 w-4 ml-2" aria-hidden="true" />
+                    قيد جديد
+                  </Button>
+                  <Button onClick={() => refetchEntries()} variant="outline" size="sm" className="general-ledger-outline">
+                    <RefreshCw className="h-4 w-4 ml-2" aria-hidden="true" />
+                    تحديث
+                  </Button>
+                  <Button onClick={() => navigate('/finance/accounting')} variant="outline" size="sm" className="general-ledger-outline">
+                    <ArrowLeft className="h-4 w-4 ml-2" aria-hidden="true" />
+                    العودة
+                  </Button>
+                </div>
               </div>
-               <div className="flex gap-2">
-                 <Button
-                   onClick={() => setIsCreateDialogOpen(true)}
-                   className="bg-slate-900 hover:bg-slate-800"
-                 >
-                   <Plus className="h-4 w-4 ml-2" aria-hidden="true" />
-                   قيد جديد
-                 </Button>
-                 <Button
-                   onClick={() => refetchEntries()}
-                   variant="outline"
-                   size="sm"
-                   aria-label="تحديث"
-                 >
-                   <RefreshCw className="h-4 w-4 ml-2" aria-hidden="true" />
-                   تحديث
-                 </Button>
-                 <Button
-                   onClick={() => navigate('/finance/accounting')}
-                   variant="outline"
-                   size="sm"
-                   aria-label="رجوع"
-                 >
-                   <ArrowLeft className="h-4 w-4 ml-2" aria-hidden="true" />
-                   العودة
-                 </Button>
-               </div>
-            </div>
 
-             <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              <StatCard
-                title="إجمالي القيود"
-                value={stats.totalEntries}
-                subtitle="All Entries"
-                icon={FileText}
-                variant="coral"
-                delay={0.1}
-              />
-              <StatCard
-                title="القيود المرحّلة"
-                value={stats.postedEntries}
-                subtitle="Posted Entries"
-                icon={CheckCircle}
-                variant="emerald"
-                trend="up"
-                change={`${stats.totalEntries > 0 ? ((stats.postedEntries / stats.totalEntries) * 100).toFixed(0) : 0}%`}
-                delay={0.15}
-              />
-              <StatCard
-                title="المسودات"
-                value={stats.draftEntries}
-                subtitle="Draft Entries"
-                icon={Clock}
-                variant="amber"
-                delay={0.2}
-              />
-              <StatCard
-                title="عدد الحسابات"
-                value={stats.totalAccounts}
-                subtitle={`${stats.totalCostCenters} مركز تكلفة`}
-                icon={Layers}
-                variant="violet"
-                delay={0.25}
-              />
-            </div>
+              <div className="general-ledger-metrics">
+                <LedgerMetric
+                  label="إجمالي القيود"
+                  value={stats.totalEntries}
+                  helper="All entries"
+                  icon={FileText}
+                  accent={ledgerTheme.alert}
+                />
+                <LedgerMetric
+                  label="القيود المرحّلة"
+                  value={stats.postedEntries}
+                  helper={`${stats.draftEntries} مسودة`}
+                  icon={CheckCircle}
+                  accent={ledgerTheme.success}
+                />
+                <LedgerMetric
+                  label="عدد الحسابات"
+                  value={stats.totalAccounts}
+                  helper={`${stats.totalCostCenters} مركز تكلفة`}
+                  icon={Layers}
+                  accent={ledgerTheme.info}
+                />
+                <LedgerMetric
+                  label="فرق ميزان المراجعة"
+                  value={formatQar(stats.trialDifference)}
+                  helper={stats.trialDifference === 0 ? "متوازن" : "تحتاج مراجعة"}
+                  icon={Scale}
+                  accent={stats.trialDifference === 0 ? ledgerTheme.success : ledgerTheme.alert}
+                />
+              </div>
+            </motion.section>
 
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="general-ledger-workspace">
               <motion.div
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.05 }}
               >
-                <TabsList className="bg-white rounded-xl shadow-sm border border-slate-200 p-1.5">
+                <TabsList className="general-ledger-tabs">
                   {TABS.map((tab) => (
                     <TabsTrigger
                       key={tab.id}
                       value={tab.id}
-                      className="data-[state=active]:bg-slate-900 data-[state=active]:text-white rounded-lg px-4 py-2 gap-2 transition-all"
+                      style={{ "--tab-accent": tab.accent } as CSSProperties}
                     >
-                      <tab.icon className="w-4 h-4" />
+                      <tab.icon className="h-4 w-4" />
                       <span className={isMobile ? "hidden" : ""}>{tab.label}</span>
+                      {!isMobile && <small>{tab.helper}</small>}
                     </TabsTrigger>
                   ))}
                 </TabsList>
@@ -247,7 +319,7 @@ export default function GeneralLedger() {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.1 }}
-                  className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden"
+                  className="general-ledger-panel"
                 >
                   <EnhancedJournalEntriesTab
                     entries={journalEntries || []}
@@ -267,35 +339,33 @@ export default function GeneralLedger() {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.1 }}
-                  className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden"
+                  className="general-ledger-panel"
                 >
-                  <div className="p-6 border-b border-slate-100">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-sky-100 flex items-center justify-center">
-                        <Scale className="w-5 h-5 text-sky-700" />
-                      </div>
-                      <div>
-                        <h3 className="font-semibold text-slate-900">أرصدة الحسابات</h3>
-                        <p className="text-sm text-slate-500">عرض أرصدة جميع الحسابات مع الحركات المدينة والدائنة</p>
-                      </div>
+                  <div className="general-ledger-panel-header">
+                    <span className="general-ledger-panel-icon tone-success">
+                      <Scale className="h-5 w-5" />
+                    </span>
+                    <div>
+                      <h3>أرصدة الحسابات</h3>
+                      <p>عرض أرصدة جميع الحسابات مع الحركات المدينة والدائنة</p>
                     </div>
                   </div>
-                  <div className="p-6">
+                  <div className="p-4">
                     {balancesLoading ? (
                       <div className="flex justify-center py-8">
                         <LoadingSpinner />
                       </div>
                     ) : (
-                       <div className="overflow-x-auto -mx-4 md:mx-0">
-                         <Table className="min-w-[600px]" aria-label="جدول القيود المحاسبية - أرصدة الحسابات">
+                       <div className="overflow-x-auto">
+                         <Table className="min-w-[760px]" aria-label="دفتر الأستاذ - أرصدة الحسابات">
                            <TableHeader>
-                             <TableRow className="bg-slate-50 text-slate-600 text-xs uppercase tracking-wide">
+                             <TableRow>
                                <TableHead className="text-right" scope="col">رمز الحساب</TableHead>
                                <TableHead className="text-right" scope="col">اسم الحساب</TableHead>
                                <TableHead className="text-center" scope="col">نوع الحساب</TableHead>
                                <TableHead className="text-center" scope="col">الرصيد الافتتاحي</TableHead>
-                               <TableHead className="text-center text-emerald-700" scope="col">إجمالي المدين</TableHead>
-                               <TableHead className="text-center text-red-700" scope="col">إجمالي الدائن</TableHead>
+                               <TableHead className="text-center text-[#22C7A1]" scope="col">إجمالي المدين</TableHead>
+                               <TableHead className="text-center text-[#FB6B7A]" scope="col">إجمالي الدائن</TableHead>
                                <TableHead className="text-center font-bold" scope="col">الرصيد الختامي</TableHead>
                              </TableRow>
                            </TableHeader>
@@ -307,30 +377,30 @@ export default function GeneralLedger() {
                                   initial={{ opacity: 0, y: 10 }}
                                   animate={{ opacity: 1, y: 0 }}
                                   exit={{ opacity: 0, y: -10 }}
-                                  transition={{ delay: index * 0.02 }}
-                                  className="cursor-pointer hover:bg-slate-50 transition-colors border-b border-slate-100"
+                                  transition={{ delay: Math.min(index * 0.015, 0.18) }}
+                                  className="cursor-pointer"
                                   onClick={() => setSelectedAccount({
                                     id: balance.account_id,
                                     code: balance.account_code,
                                     name: balance.account_name
                                   })}
                                 >
-                                  <TableCell className="font-mono font-medium">{balance.account_code}</TableCell>
+                                  <TableCell className="font-mono font-black">{balance.account_code}</TableCell>
                                   <TableCell>
-                                    <div>
-                                      <div className="font-medium">{balance.account_name}</div>
-                                      {balance.account_name_ar && (
-                                        <div className="text-sm text-slate-500">{balance.account_name_ar}</div>
-                                      )}
-                                    </div>
+                                    <div className="font-black">{balance.account_name}</div>
+                                    {balance.account_name_ar && (
+                                      <div className="text-xs" style={{ color: ledgerTheme.muted }}>{balance.account_name_ar}</div>
+                                    )}
                                   </TableCell>
                                   <TableCell className="text-center">
-                                    <Badge variant="outline">{balance.account_type}</Badge>
+                                    <Badge className={`general-ledger-badge ${accountTypeTone(balance.account_type)}`}>
+                                      {getAccountTypeLabel(balance.account_type)}
+                                    </Badge>
                                   </TableCell>
-                                  <TableCell className="text-center">{formatCurrency(balance.opening_balance)}</TableCell>
-                                  <TableCell className="text-center text-emerald-600 font-medium">{formatCurrency(balance.total_debits)}</TableCell>
-                                  <TableCell className="text-center text-red-600 font-medium">{formatCurrency(balance.total_credits)}</TableCell>
-                                  <TableCell className="text-center font-bold">{formatCurrency(balance.closing_balance)}</TableCell>
+                                  <TableCell className="text-center">{formatQar(balance.opening_balance)}</TableCell>
+                                  <TableCell className="text-center font-black text-[#22C7A1]">{formatQar(balance.total_debits)}</TableCell>
+                                  <TableCell className="text-center font-black text-[#FB6B7A]">{formatQar(balance.total_credits)}</TableCell>
+                                  <TableCell className="text-center font-black">{formatQar(balance.closing_balance)}</TableCell>
                                 </motion.tr>
                               ))}
                             </AnimatePresence>
@@ -347,35 +417,36 @@ export default function GeneralLedger() {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.1 }}
-                  className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden"
+                  className="general-ledger-panel"
                 >
-                  <div className="p-6 border-b border-slate-100">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-violet-100 flex items-center justify-center">
-                        <BarChart3 className="w-5 h-5 text-violet-700" />
-                      </div>
-                      <div>
-                        <h3 className="font-semibold text-slate-900">ميزان المراجعة</h3>
-                        <p className="text-sm text-slate-500">عرض ميزان المراجعة لجميع الحسابات</p>
-                      </div>
+                  <div className="general-ledger-panel-header">
+                    <span className="general-ledger-panel-icon tone-focus">
+                      <BarChart3 className="h-5 w-5" />
+                    </span>
+                    <div>
+                      <h3>ميزان المراجعة</h3>
+                      <p>مراجعة توازن أرصدة الحسابات المدينة والدائنة</p>
                     </div>
+                    <Badge className={stats.trialDifference === 0 ? "general-ledger-badge tone-success" : "general-ledger-badge tone-alert"}>
+                      الفرق {formatQar(stats.trialDifference)}
+                    </Badge>
                   </div>
-                  <div className="p-6">
+                  <div className="p-4">
                     {trialLoading ? (
                       <div className="flex justify-center py-8">
                         <LoadingSpinner />
                       </div>
                     ) : (
-                       <div className="overflow-x-auto -mx-4 md:mx-0">
-                         <Table className="min-w-[600px]" aria-label="جدول القيود المحاسبية - ميزان المراجعة">
+                       <div className="overflow-x-auto">
+                         <Table className="min-w-[720px]" aria-label="دفتر الأستاذ - ميزان المراجعة">
                            <TableHeader>
-                             <TableRow className="bg-slate-50 text-slate-600 text-xs uppercase tracking-wide">
+                             <TableRow>
                                <TableHead className="text-right" scope="col">رمز الحساب</TableHead>
                                <TableHead className="text-right" scope="col">اسم الحساب</TableHead>
                                <TableHead className="text-center" scope="col">نوع الحساب</TableHead>
                                <TableHead className="text-center" scope="col">المستوى</TableHead>
-                               <TableHead className="text-center text-emerald-700" scope="col">الرصيد المدين</TableHead>
-                               <TableHead className="text-center text-red-700" scope="col">الرصيد الدائن</TableHead>
+                               <TableHead className="text-center text-[#22C7A1]" scope="col">الرصيد المدين</TableHead>
+                               <TableHead className="text-center text-[#FB6B7A]" scope="col">الرصيد الدائن</TableHead>
                              </TableRow>
                            </TableHeader>
                           <TableBody>
@@ -386,27 +457,28 @@ export default function GeneralLedger() {
                                   initial={{ opacity: 0, y: 10 }}
                                   animate={{ opacity: 1, y: 0 }}
                                   exit={{ opacity: 0, y: -10 }}
-                                  transition={{ delay: index * 0.02 }}
-                                  className="border-b border-slate-100 hover:bg-slate-50 transition-colors"
+                                  transition={{ delay: Math.min(index * 0.015, 0.18) }}
                                 >
-                                  <TableCell className="font-mono font-medium">{item.account_code}</TableCell>
+                                  <TableCell className="font-mono font-black">{item.account_code}</TableCell>
                                   <TableCell>
-                                    <div>
-                                      <div className="font-medium">{item.account_name}</div>
-                                      {item.account_name_ar && (
-                                        <div className="text-sm text-slate-500">{item.account_name_ar}</div>
-                                      )}
-                                    </div>
+                                    <div className="font-black">{item.account_name}</div>
+                                    {item.account_name_ar && (
+                                      <div className="text-xs" style={{ color: ledgerTheme.muted }}>{item.account_name_ar}</div>
+                                    )}
                                   </TableCell>
                                   <TableCell className="text-center">
-                                    <Badge variant="outline">{item.account_type}</Badge>
+                                    <Badge className={`general-ledger-badge ${accountTypeTone(item.account_type)}`}>
+                                      {getAccountTypeLabel(item.account_type)}
+                                    </Badge>
                                   </TableCell>
-                                  <TableCell className="text-center">{item.account_level}</TableCell>
-                                  <TableCell className="text-center text-emerald-600 font-medium">
-                                    {item.debit_balance > 0 ? formatCurrency(item.debit_balance) : '-'}
+                                  <TableCell className="text-center">
+                                    <Badge className="general-ledger-badge tone-muted">مستوى {item.account_level}</Badge>
                                   </TableCell>
-                                  <TableCell className="text-center text-red-600 font-medium">
-                                    {item.credit_balance > 0 ? formatCurrency(item.credit_balance) : '-'}
+                                  <TableCell className="text-center font-black text-[#22C7A1]">
+                                    {item.debit_balance > 0 ? formatQar(item.debit_balance) : '-'}
+                                  </TableCell>
+                                  <TableCell className="text-center font-black text-[#FB6B7A]">
+                                    {item.credit_balance > 0 ? formatQar(item.credit_balance) : '-'}
                                   </TableCell>
                                 </motion.tr>
                               ))}
@@ -424,33 +496,31 @@ export default function GeneralLedger() {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.1 }}
-                  className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden"
+                  className="general-ledger-panel"
                 >
-                  <div className="p-6 border-b border-slate-100">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center">
-                        <Building2 className="w-5 h-5 text-amber-700" />
-                      </div>
-                      <div>
-                        <h3 className="font-semibold text-slate-900">تحليل مراكز التكلفة</h3>
-                        <p className="text-sm text-slate-500">عرض وتحليل الأداء المالي لمراكز التكلفة</p>
-                      </div>
+                  <div className="general-ledger-panel-header">
+                    <span className="general-ledger-panel-icon tone-info">
+                      <Building2 className="h-5 w-5" />
+                    </span>
+                    <div>
+                      <h3>تحليل مراكز التكلفة</h3>
+                      <p>عرض وتحليل الأداء المالي لمراكز التكلفة</p>
                     </div>
                   </div>
-                  <div className="p-6">
+                  <div className="p-4">
                     {costCenterLoading ? (
                       <div className="flex justify-center py-8">
                         <LoadingSpinner />
                       </div>
                     ) : (
-                       <div className="overflow-x-auto -mx-4 md:mx-0">
-                         <Table className="min-w-[600px]" aria-label="جدول القيود المحاسبية - مراكز التكلفة">
+                       <div className="overflow-x-auto">
+                         <Table className="min-w-[700px]" aria-label="دفتر الأستاذ - مراكز التكلفة">
                            <TableHeader>
-                             <TableRow className="bg-slate-50 text-slate-600 text-xs uppercase tracking-wide">
+                             <TableRow>
                                <TableHead className="text-right" scope="col">رمز المركز</TableHead>
                                <TableHead className="text-right" scope="col">اسم المركز</TableHead>
-                               <TableHead className="text-center text-emerald-700" scope="col">إجمالي المدين</TableHead>
-                               <TableHead className="text-center text-red-700" scope="col">إجمالي الدائن</TableHead>
+                               <TableHead className="text-center text-[#22C7A1]" scope="col">إجمالي المدين</TableHead>
+                               <TableHead className="text-center text-[#FB6B7A]" scope="col">إجمالي الدائن</TableHead>
                                <TableHead className="text-center" scope="col">صافي المبلغ</TableHead>
                                <TableHead className="text-center" scope="col">عدد القيود</TableHead>
                              </TableRow>
@@ -463,28 +533,25 @@ export default function GeneralLedger() {
                                   initial={{ opacity: 0, y: 10 }}
                                   animate={{ opacity: 1, y: 0 }}
                                   exit={{ opacity: 0, y: -10 }}
-                                  transition={{ delay: index * 0.02 }}
-                                  className="border-b border-slate-100 hover:bg-slate-50 transition-colors"
+                                  transition={{ delay: Math.min(index * 0.015, 0.18) }}
                                 >
-                                  <TableCell className="font-mono font-medium">{center.center_code}</TableCell>
+                                  <TableCell className="font-mono font-black">{center.center_code}</TableCell>
                                   <TableCell>
-                                    <div>
-                                      <div className="font-medium">{center.center_name}</div>
-                                      {center.center_name_ar && (
-                                        <div className="text-sm text-slate-500">{center.center_name_ar}</div>
-                                      )}
-                                    </div>
+                                    <div className="font-black">{center.center_name}</div>
+                                    {center.center_name_ar && (
+                                      <div className="text-xs" style={{ color: ledgerTheme.muted }}>{center.center_name_ar}</div>
+                                    )}
                                   </TableCell>
-                                  <TableCell className="text-center text-emerald-600 font-medium">{formatCurrency(center.total_debits)}</TableCell>
-                                  <TableCell className="text-center text-red-600 font-medium">{formatCurrency(center.total_credits)}</TableCell>
+                                  <TableCell className="text-center font-black text-[#22C7A1]">{formatQar(center.total_debits)}</TableCell>
+                                  <TableCell className="text-center font-black text-[#FB6B7A]">{formatQar(center.total_credits)}</TableCell>
                                   <TableCell className={cn(
-                                    "text-center font-bold",
-                                    center.net_amount >= 0 ? "text-emerald-600" : "text-red-600"
+                                    "text-center font-black",
+                                    center.net_amount >= 0 ? "text-[#22C7A1]" : "text-[#FB6B7A]"
                                   )}>
-                                    {formatCurrency(center.net_amount)}
+                                    {formatQar(center.net_amount)}
                                   </TableCell>
                                   <TableCell className="text-center">
-                                    <Badge variant="secondary">{center.entry_count}</Badge>
+                                    <Badge className="general-ledger-badge tone-info">{center.entry_count}</Badge>
                                   </TableCell>
                                 </motion.tr>
                               ))}
@@ -502,16 +569,16 @@ export default function GeneralLedger() {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.1 }}
-                  className="grid grid-cols-1 lg:grid-cols-2 gap-6"
+                  className="grid grid-cols-1 gap-4 lg:grid-cols-2"
                 >
-                  <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
-                    <div className="flex items-center gap-3 mb-6">
-                      <div className="w-10 h-10 rounded-xl bg-rose-100 flex items-center justify-center">
-                        <Calculator className="w-5 h-5 text-rose-700" />
-                      </div>
+                  <div className="general-ledger-panel p-4">
+                    <div className="general-ledger-panel-header -m-4 mb-4">
+                      <span className="general-ledger-panel-icon tone-alert">
+                        <Calculator className="h-5 w-5" />
+                      </span>
                       <div>
-                        <h3 className="font-semibold text-slate-900">الملخص المالي</h3>
-                        <p className="text-sm text-slate-500">نظرة عامة على الوضع المالي</p>
+                        <h3>الملخص المالي</h3>
+                        <p>نظرة عامة على الوضع المالي</p>
                       </div>
                     </div>
                     
@@ -520,76 +587,54 @@ export default function GeneralLedger() {
                         <LoadingSpinner />
                       </div>
                     ) : financialSummary ? (
-                      <div className="space-y-4">
-                        <div className="flex justify-between items-center p-3 bg-slate-50 rounded-xl">
-                          <span className="text-slate-600">إجمالي الأصول</span>
-                          <span className="font-bold text-emerald-600">{formatCurrency(financialSummary.total_assets)}</span>
-                        </div>
-                        <div className="flex justify-between items-center p-3 bg-slate-50 rounded-xl">
-                          <span className="text-slate-600">إجمالي الالتزامات</span>
-                          <span className="font-bold text-red-600">{formatCurrency(financialSummary.total_liabilities)}</span>
-                        </div>
-                        <div className="flex justify-between items-center p-3 bg-slate-50 rounded-xl">
-                          <span className="text-slate-600">حقوق الملكية</span>
-                          <span className="font-bold">{formatCurrency(financialSummary.total_equity)}</span>
-                        </div>
-                        <div className="flex justify-between items-center p-3 bg-slate-50 rounded-xl">
-                          <span className="text-slate-600">إجمالي الإيرادات</span>
-                          <span className="font-bold text-emerald-600">{formatCurrency(financialSummary.total_revenue)}</span>
-                        </div>
-                        <div className="flex justify-between items-center p-3 bg-slate-50 rounded-xl">
-                          <span className="text-slate-600">إجمالي المصروفات</span>
-                          <span className="font-bold text-red-600">{formatCurrency(financialSummary.total_expenses)}</span>
-                        </div>
-                        <div className="flex justify-between items-center p-4 bg-slate-50 rounded-xl border border-slate-200">
-                          <span className="font-medium text-slate-700">صافي الدخل</span>
-                          <span className={cn(
-                            "text-xl font-bold",
-                            financialSummary.net_income >= 0 ? 'text-emerald-600' : 'text-red-600'
-                          )}>
-                            {formatCurrency(financialSummary.net_income)}
-                          </span>
+                      <div className="general-ledger-analysis-list">
+                        {[
+                          ["إجمالي الأصول", financialSummary.total_assets, "tone-success"],
+                          ["إجمالي الالتزامات", financialSummary.total_liabilities, "tone-alert"],
+                          ["حقوق الملكية", financialSummary.total_equity, "tone-info"],
+                          ["إجمالي الإيرادات", financialSummary.total_revenue, "tone-focus"],
+                          ["إجمالي المصروفات", financialSummary.total_expenses, "tone-alert"],
+                        ].map(([label, value, tone]) => (
+                          <div className="general-ledger-analysis-row" key={label as string}>
+                            <span>{label}</span>
+                            <strong className={tone as string}>{formatQar(value as number)}</strong>
+                          </div>
+                        ))}
+                        <div className="general-ledger-analysis-row is-total">
+                          <span>صافي الدخل</span>
+                          <strong className={financialSummary.net_income >= 0 ? "tone-success" : "tone-alert"}>
+                            {formatQar(financialSummary.net_income)}
+                          </strong>
                         </div>
                       </div>
                     ) : null}
                   </div>
 
-                  <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
-                    <div className="flex items-center gap-3 mb-6">
-                      <div className="w-10 h-10 rounded-xl bg-sky-100 flex items-center justify-center">
-                        <Activity className="w-5 h-5 text-sky-700" />
-                      </div>
+                  <div className="general-ledger-panel p-4">
+                    <div className="general-ledger-panel-header -m-4 mb-4">
+                      <span className="general-ledger-panel-icon tone-info">
+                        <Activity className="h-5 w-5" />
+                      </span>
                       <div>
-                        <h3 className="font-semibold text-slate-900">إحصائيات أخرى</h3>
-                        <p className="text-sm text-slate-500">معلومات إضافية عن النظام</p>
+                        <h3>إحصائيات التشغيل</h3>
+                        <p>قياس جاهزية دفتر الأستاذ للمراجعة</p>
                       </div>
                     </div>
                     
-                    <div className="space-y-4">
-                      <div className="flex justify-between items-center p-3 bg-slate-50 rounded-xl">
-                        <span className="text-slate-600">إجمالي القيود</span>
-                        <span className="font-bold">{stats.totalEntries}</span>
-                      </div>
-                      <div className="flex justify-between items-center p-3 bg-emerald-50 rounded-xl">
-                        <span className="text-slate-600">القيود المرحّلة</span>
-                        <span className="font-bold text-emerald-600">{stats.postedEntries}</span>
-                      </div>
-                      <div className="flex justify-between items-center p-3 bg-amber-50 rounded-xl">
-                        <span className="text-slate-600">المسودات</span>
-                        <span className="font-bold text-amber-600">{stats.draftEntries}</span>
-                      </div>
-                      <div className="flex justify-between items-center p-3 bg-red-50 rounded-xl">
-                        <span className="text-slate-600">القيود الملغية</span>
-                        <span className="font-bold text-red-600">{stats.reversedEntries}</span>
-                      </div>
-                      <div className="flex justify-between items-center p-3 bg-slate-50 rounded-xl">
-                        <span className="text-slate-600">عدد الحسابات</span>
-                        <span className="font-bold">{stats.totalAccounts}</span>
-                      </div>
-                      <div className="flex justify-between items-center p-3 bg-slate-50 rounded-xl">
-                        <span className="text-slate-600">مراكز التكلفة</span>
-                        <span className="font-bold">{stats.totalCostCenters}</span>
-                      </div>
+                    <div className="general-ledger-analysis-list">
+                      {[
+                        ["إجمالي القيود", stats.totalEntries, "tone-muted"],
+                        ["القيود المرحّلة", stats.postedEntries, "tone-success"],
+                        ["المسودات", stats.draftEntries, "tone-focus"],
+                        ["القيود المعكوسة", stats.reversedEntries, "tone-alert"],
+                        ["عدد الحسابات", stats.totalAccounts, "tone-info"],
+                        ["مراكز التكلفة", stats.totalCostCenters, "tone-info"],
+                      ].map(([label, value, tone]) => (
+                        <div className="general-ledger-analysis-row" key={label as string}>
+                          <span>{label}</span>
+                          <strong className={tone as string}>{value}</strong>
+                        </div>
+                      ))}
                     </div>
                   </div>
                 </motion.div>
@@ -612,6 +657,260 @@ export default function GeneralLedger() {
               accountName={selectedAccount?.name || ''}
             />
           </div>
+
+          <style>{`
+            .general-ledger-page {
+              color: var(--gl-text);
+            }
+            .general-ledger-command,
+            .general-ledger-panel,
+            .general-ledger-tabs {
+              border: 1px solid var(--gl-border);
+              background: var(--gl-surface);
+              box-shadow: 0 14px 32px rgba(2, 6, 23, 0.055);
+            }
+            .general-ledger-command {
+              position: relative;
+              overflow: hidden;
+              border-radius: 12px;
+              padding: 20px;
+            }
+            .general-ledger-command::before {
+              content: "";
+              position: absolute;
+              inset-block: 0;
+              inset-inline-start: 0;
+              width: 5px;
+              background: linear-gradient(180deg, var(--gl-success), var(--gl-info), var(--gl-focus), var(--gl-alert));
+            }
+            .general-ledger-command-icon,
+            .general-ledger-metric-icon,
+            .general-ledger-panel-icon {
+              display: inline-flex;
+              align-items: center;
+              justify-content: center;
+              flex: 0 0 auto;
+              border-radius: 10px;
+            }
+            .general-ledger-command-icon {
+              width: 44px;
+              height: 44px;
+              color: var(--gl-success);
+              background: color-mix(in srgb, var(--gl-success) 14%, white);
+              border: 1px solid color-mix(in srgb, var(--gl-success) 24%, white);
+            }
+            .general-ledger-primary {
+              background: var(--gl-success) !important;
+              color: white !important;
+              border-radius: 10px !important;
+              box-shadow: 0 10px 20px rgba(34, 199, 161, 0.18);
+            }
+            .general-ledger-outline {
+              border-color: var(--gl-border) !important;
+              background: white !important;
+              color: var(--gl-text) !important;
+              border-radius: 10px !important;
+            }
+            .general-ledger-metrics {
+              display: grid;
+              grid-template-columns: repeat(4, minmax(0, 1fr));
+              gap: 12px;
+              margin-top: 18px;
+            }
+            .general-ledger-metric {
+              min-height: 116px;
+              border: 1px solid var(--gl-border);
+              background: var(--gl-inner);
+              border-radius: 10px;
+              padding: 14px;
+            }
+            .general-ledger-metric-icon {
+              width: 36px;
+              height: 36px;
+            }
+            .general-ledger-metric p {
+              margin-top: 14px;
+              color: var(--gl-muted);
+              font-size: 12px;
+              font-weight: 900;
+            }
+            .general-ledger-metric strong {
+              display: block;
+              margin-top: 6px;
+              color: var(--gl-text);
+              font-size: 22px;
+              font-weight: 950;
+              line-height: 1.2;
+            }
+            .general-ledger-workspace {
+              display: grid;
+              gap: 14px;
+            }
+            .general-ledger-tabs {
+              display: grid !important;
+              grid-template-columns: repeat(5, minmax(0, 1fr));
+              height: auto !important;
+              gap: 8px;
+              border-radius: 12px;
+              background: var(--gl-inner) !important;
+              padding: 8px !important;
+            }
+            .general-ledger-tabs [role="tab"] {
+              display: flex;
+              min-height: 48px;
+              gap: 8px;
+              border-radius: 9px !important;
+              color: var(--gl-muted) !important;
+              font-weight: 900;
+            }
+            .general-ledger-tabs [role="tab"] small {
+              color: inherit;
+              font-size: 10px;
+              font-weight: 900;
+              opacity: 0.8;
+            }
+            .general-ledger-tabs [role="tab"][data-state="active"] {
+              background: var(--tab-accent) !important;
+              color: white !important;
+              box-shadow: 0 10px 20px rgba(2, 6, 23, 0.08);
+            }
+            .general-ledger-panel {
+              overflow: hidden;
+              border-radius: 12px;
+            }
+            .general-ledger-panel-header {
+              display: flex;
+              align-items: center;
+              gap: 12px;
+              border-bottom: 1px solid var(--gl-border);
+              background: color-mix(in srgb, var(--gl-inner) 72%, white);
+              padding: 14px 16px;
+            }
+            .general-ledger-panel-header h3 {
+              color: var(--gl-text);
+              font-size: 15px;
+              font-weight: 950;
+            }
+            .general-ledger-panel-header p {
+              margin-top: 3px;
+              color: var(--gl-muted);
+              font-size: 12px;
+              font-weight: 700;
+            }
+            .general-ledger-panel-icon {
+              width: 40px;
+              height: 40px;
+              --icon-tone: var(--gl-muted);
+              color: var(--icon-tone);
+              background: color-mix(in srgb, var(--icon-tone) 12%, white);
+              border: 1px solid color-mix(in srgb, var(--icon-tone) 22%, white);
+            }
+            .general-ledger-panel-icon.tone-success { --icon-tone: var(--gl-success); }
+            .general-ledger-panel-icon.tone-alert { --icon-tone: var(--gl-alert); }
+            .general-ledger-panel-icon.tone-info { --icon-tone: var(--gl-info); }
+            .general-ledger-panel-icon.tone-focus { --icon-tone: var(--gl-focus); }
+            .general-ledger-badge {
+              --badge-tone: var(--gl-muted);
+              border: 1px solid color-mix(in srgb, var(--badge-tone) 32%, white) !important;
+              background: color-mix(in srgb, var(--badge-tone) 10%, white) !important;
+              color: var(--badge-tone) !important;
+              font-weight: 900;
+            }
+            .general-ledger-badge.tone-success { --badge-tone: var(--gl-success); }
+            .general-ledger-badge.tone-alert { --badge-tone: var(--gl-alert); }
+            .general-ledger-badge.tone-info { --badge-tone: var(--gl-info); }
+            .general-ledger-badge.tone-focus { --badge-tone: var(--gl-focus); }
+            .general-ledger-badge.tone-muted { --badge-tone: var(--gl-muted); }
+            .general-ledger-page table thead tr {
+              background: var(--gl-inner) !important;
+            }
+            .general-ledger-page table th {
+              color: var(--gl-muted) !important;
+              font-size: 12px;
+              font-weight: 950;
+              border-color: var(--gl-border) !important;
+            }
+            .general-ledger-page table td {
+              color: var(--gl-text);
+              border-color: var(--gl-border) !important;
+            }
+            .general-ledger-page table tbody tr:hover {
+              background: color-mix(in srgb, var(--gl-info) 6%, white) !important;
+            }
+            .general-ledger-analysis-list {
+              display: grid;
+              gap: 10px;
+            }
+            .general-ledger-analysis-row {
+              display: flex;
+              align-items: center;
+              justify-content: space-between;
+              gap: 12px;
+              min-height: 48px;
+              border: 1px solid var(--gl-border);
+              border-radius: 10px;
+              background: var(--gl-inner);
+              padding: 10px 12px;
+            }
+            .general-ledger-analysis-row span {
+              color: var(--gl-muted);
+              font-size: 13px;
+              font-weight: 900;
+            }
+            .general-ledger-analysis-row strong {
+              color: var(--gl-text);
+              font-size: 15px;
+              font-weight: 950;
+            }
+            .general-ledger-analysis-row.is-total {
+              background: color-mix(in srgb, var(--gl-success) 8%, white);
+            }
+            .general-ledger-analysis-row .tone-success { color: var(--gl-success); }
+            .general-ledger-analysis-row .tone-alert { color: var(--gl-alert); }
+            .general-ledger-analysis-row .tone-info { color: var(--gl-info); }
+            .general-ledger-analysis-row .tone-focus { color: var(--gl-focus); }
+            .general-ledger-analysis-row .tone-muted { color: var(--gl-text); }
+            .general-ledger-page .bg-white,
+            .general-ledger-page .bg-slate-50,
+            .general-ledger-page .bg-emerald-50,
+            .general-ledger-page .bg-amber-50,
+            .general-ledger-page .bg-red-50 {
+              background-color: var(--gl-inner) !important;
+            }
+            .general-ledger-page input,
+            .general-ledger-page [role="combobox"] {
+              border-color: var(--gl-border) !important;
+              background: var(--gl-inner) !important;
+              color: var(--gl-text) !important;
+              border-radius: 10px !important;
+            }
+            .general-ledger-page button {
+              border-radius: 10px;
+            }
+            .general-ledger-page *:focus-visible {
+              outline-color: var(--gl-focus) !important;
+              --tw-ring-color: var(--gl-focus) !important;
+            }
+            @media (max-width: 1100px) {
+              .general-ledger-metrics,
+              .general-ledger-tabs {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+              }
+            }
+            @media (max-width: 640px) {
+              .general-ledger-command {
+                padding: 16px;
+              }
+              .general-ledger-metrics,
+              .general-ledger-tabs {
+                grid-template-columns: 1fr;
+              }
+              .general-ledger-panel-header {
+                align-items: flex-start;
+                flex-direction: column;
+              }
+            }
+          `}</style>
         </div>
       </AuthChecker>
     </SessionValidator>

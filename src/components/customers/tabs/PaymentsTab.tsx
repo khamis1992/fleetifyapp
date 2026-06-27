@@ -45,7 +45,7 @@ const PaymentsTab = ({ payments, navigate, onAddPayment, customerName, customerP
       <head>
         <meta charset="UTF-8">
         <title>إيصال سداد رسمي - ${receiptNumber}</title>
-        <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+        <link rel="icon" href="/uploads/7453c280-3175-4ccf-a73b-24921ec5990b.png" type="image/png" />
         <style>
           @page { size: A4; margin: 15mm 20mm 20mm 20mm; }
           @media print {
@@ -153,21 +153,21 @@ const PaymentsTab = ({ payments, navigate, onAddPayment, customerName, customerP
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
     >
-      <div className="flex items-center justify-between mb-5">
+      <div className="mb-4 flex flex-col gap-3 rounded-xl border border-[#DDE5EF] bg-[#F8FAFC] p-4 md:flex-row md:items-center md:justify-between">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-teal-500 to-teal-600 flex items-center justify-center">
+          <div className="w-10 h-10 rounded-lg bg-[#173A63] flex items-center justify-center">
             <CreditCard className="w-5 h-5 text-white" />
           </div>
           <div>
-            <h4 className="text-sm font-bold text-teal-900">سجل المدفوعات</h4>
-            <p className="text-xs text-teal-600/70">{payments.length} عملية</p>
+            <h4 className="text-sm font-black text-[#142033]">سجل المدفوعات</h4>
+            <p className="text-xs font-semibold text-[#6A7688]">{payments.length} عملية</p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {payments.length > 0 && (
             <Button
               variant="outline"
-              className="gap-2 border-teal-200 text-teal-600 hover:bg-teal-50 hover:border-teal-300"
+              className="h-9 gap-2 border-[#DDE5EF] bg-white text-[#173A63] hover:bg-[#EEF5FB]"
               onClick={handlePrintPayments}
             >
               <Printer className="w-4 h-4" />
@@ -175,7 +175,7 @@ const PaymentsTab = ({ payments, navigate, onAddPayment, customerName, customerP
             </Button>
           )}
           <Button
-            className="bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 text-white gap-2 shadow-teal-500/20"
+            className="h-9 gap-2 bg-[#173A63] text-white hover:bg-[#142033]"
             onClick={onAddPayment}
           >
             <Plus className="w-4 h-4" />
@@ -185,25 +185,25 @@ const PaymentsTab = ({ payments, navigate, onAddPayment, customerName, customerP
       </div>
 
       {payments.length > 0 ? (
-        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-teal-100 overflow-hidden">
+        <div className="overflow-hidden rounded-xl border border-[#DDE5EF] bg-white shadow-sm">
           <table className="w-full">
-            <thead className="bg-gradient-to-r from-teal-50 to-cyan-50 border-b border-teal-200">
+            <thead className="border-b border-[#DDE5EF] bg-[#F8FAFC]">
               <tr>
-                <th className="px-4 py-3 text-right text-xs font-bold text-teal-900">رقم الدفعة</th>
-                <th className="px-4 py-3 text-right text-xs font-bold text-teal-900">تاريخ السداد</th>
-                <th className="px-4 py-3 text-right text-xs font-bold text-teal-900">المبلغ</th>
-                <th className="px-4 py-3 text-right text-xs font-bold text-teal-900">الطريقة</th>
-                <th className="px-4 py-3 text-right text-xs font-bold text-teal-900">الحالة</th>
+                <th className="px-4 py-3 text-right text-xs font-black text-[#142033]">رقم الدفعة</th>
+                <th className="px-4 py-3 text-right text-xs font-black text-[#142033]">تاريخ السداد</th>
+                <th className="px-4 py-3 text-right text-xs font-black text-[#142033]">المبلغ</th>
+                <th className="px-4 py-3 text-right text-xs font-black text-[#142033]">الطريقة</th>
+                <th className="px-4 py-3 text-right text-xs font-black text-[#142033]">الحالة</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-teal-50">
-              {payments.slice(0, 5).map((payment, index) => (
+            <tbody className="divide-y divide-[#E7EDF4]">
+              {payments.map((payment, index) => (
                 <motion.tr
                   key={payment.id}
                   initial={{ opacity: 0, x: -10 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: index * 0.05 }}
-                  className="hover:bg-teal-50/30 transition-colors"
+                  className="hover:bg-[#F8FAFC] transition-colors"
                 >
                   <td className="px-4 py-3 text-sm font-mono text-slate-900">#{payment.payment_number || payment.id.substring(0, 8)}</td>
                   <td className="px-4 py-3 text-sm text-slate-600">
@@ -227,9 +227,9 @@ const PaymentsTab = ({ payments, navigate, onAddPayment, customerName, customerP
           </table>
         </div>
       ) : (
-        <div className="bg-gradient-to-br from-teal-50 to-cyan-50 rounded-2xl p-12 text-center border border-teal-100">
-          <CreditCard className="w-12 h-12 text-teal-300 mx-auto mb-3" />
-          <p className="text-teal-600 font-medium">لا توجد مدفوعات مسجلة</p>
+        <div className="rounded-xl border border-dashed border-[#B8C6D8] bg-[#F8FAFC] p-12 text-center">
+          <CreditCard className="w-12 h-12 text-[#9AA6B6] mx-auto mb-3" />
+          <p className="font-bold text-[#536173]">لا توجد مدفوعات مسجلة</p>
         </div>
       )}
     </motion.div>

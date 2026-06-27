@@ -24,6 +24,7 @@ import EditPayrollDialog from '@/components/hr/EditPayrollDialog';
 import PayrollActionButtons from '@/components/hr/PayrollActionButtons';
 import { PageHelp } from "@/components/help";
 import { PayrollPageHelpContent } from "@/components/help/content";
+import { HRMetricCard, HRPageHeader, HRPageShell, HRSectionCard, hrButtonClassName, hrFieldClassName } from '@/components/hr/HRDesignSystem';
 
 interface PayrollReview {
   id: string;
@@ -134,6 +135,13 @@ const deletePayrollMutation = useDeletePayroll();
     record.payroll_number.toLowerCase().includes(searchTerm.toLowerCase())
   ) || [];
 
+  const payrollStats = {
+    records: payrollRecords?.length || 0,
+    reviews: payrollReviews?.length || 0,
+    totalNet: payrollRecords?.reduce((sum, record) => sum + (record.net_amount || 0), 0) || 0,
+    pending: payrollRecords?.filter(record => record.status !== 'paid').length || 0,
+  };
+
   if (recordsLoading || reviewsLoading) {
     return (
       <div className="p-6">
@@ -146,29 +154,34 @@ const deletePayrollMutation = useDeletePayroll();
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 p-4 md:p-6 space-y-4 md:space-y-6" dir="rtl">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <div className="p-3 bg-teal-500 rounded-xl shadow-sm">
-            <DollarSign className="h-6 w-6 text-white" />
-          </div>
-          <div>
-            <h1 className="text-xl md:text-2xl font-bold text-slate-900 dark:text-slate-100">إدارة الرواتب</h1>
-            <p className="text-sm md:text-base text-slate-600 dark:text-slate-400">إدارة ومراجعة رواتب الموظفين</p>
-          </div>
-        </div>
-        <Button onClick={() => setShowCreatePayroll(true)} className="w-full sm:w-auto min-h-[44px] bg-teal-500 hover:bg-teal-600 text-white shadow-sm">
-          <Plus className="h-4 w-4 ml-2" />
-          إضافة راتب جديد
-        </Button>
+    <HRPageShell>
+      <HRPageHeader
+        title="إدارة الرواتب"
+        description="إدارة سجلات الرواتب، المراجعات، الاعتماد، والتكامل المحاسبي من مساحة تشغيلية واحدة."
+        icon={DollarSign}
+        badge="الرواتب"
+        action={
+          <Button onClick={() => setShowCreatePayroll(true)} className={`${hrButtonClassName} w-full sm:w-auto`}>
+            <Plus className="h-4 w-4 ml-2" />
+            إضافة راتب جديد
+          </Button>
+        }
+      />
+
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <HRMetricCard title="سجلات الرواتب" value={payrollStats.records} icon={FileText} tone="info" />
+        <HRMetricCard title="مراجعات الرواتب" value={payrollStats.reviews} icon={Calculator} tone="focus" />
+        <HRMetricCard title="إجمالي الصافي" value={formatCurrency(payrollStats.totalNet)} icon={DollarSign} tone="success" />
+        <HRMetricCard title="غير مدفوعة" value={payrollStats.pending} icon={Clock} tone="danger" />
       </div>
 
       <Tabs defaultValue="records" className="space-y-4">
-        <TabsList className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl">
-          <TabsTrigger value="records">سجلات الرواتب</TabsTrigger>
-          <TabsTrigger value="reviews">مراجعات الرواتب</TabsTrigger>
+        <TabsList className="h-auto rounded-2xl border border-slate-200 bg-white p-1 shadow-sm">
+          <TabsTrigger value="records" className="h-11 rounded-xl px-4 text-[#94A3B8] data-[state=active]:bg-[#22C7A1] data-[state=active]:text-white">سجلات الرواتب</TabsTrigger>
+          <TabsTrigger value="reviews" className="h-11 rounded-xl px-4 text-[#94A3B8] data-[state=active]:bg-[#22C7A1] data-[state=active]:text-white">مراجعات الرواتب</TabsTrigger>
         </TabsList>
 
+        <HRSectionCard className="p-4">
         <div className="flex items-center gap-4">
           <div className="relative flex-1 w-full sm:max-w-md">
             <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 h-4 w-4" />
@@ -176,10 +189,11 @@ const deletePayrollMutation = useDeletePayroll();
               placeholder="البحث..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pr-10 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl"
+              className={`${hrFieldClassName} pr-10`}
             />
           </div>
         </div>
+        </HRSectionCard>
 
         <TabsContent value="records">
           <div className="grid gap-4">
@@ -364,6 +378,6 @@ const deletePayrollMutation = useDeletePayroll();
       />
     <PageHelp content={<PayrollPageHelpContent />} />
 
-    </div>
+    </HRPageShell>
   );
 }

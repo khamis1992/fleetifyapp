@@ -5,6 +5,7 @@
 
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
+import { usePaymentOperations } from '@/hooks/business/usePaymentOperations';
 import { supabase } from '@/integrations/supabase/client';
 import { useDebounce } from '@/hooks/useDebounce';
 import { Button } from '@/components/ui/button';
@@ -37,6 +38,7 @@ import { PaymentRegistrationPageHelpContent } from "@/components/help/content";
 
 interface ActiveContract {
   contractId: string;
+  contractNumber: string;
   customerId: string;
   customerName: string;
   phone: string;
@@ -62,6 +64,11 @@ interface PaymentAnalysis {
 
 const PaymentRegistration = () => {
   const { companyId } = useUnifiedCompanyAccess();
+  const { createPayment } = usePaymentOperations({
+    autoCreateJournalEntry: true,
+    autoUpdateBankBalance: true,
+    enableNotifications: false,
+  });
   const [contracts, setContracts] = useState<ActiveContract[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
@@ -254,7 +261,8 @@ const PaymentRegistration = () => {
         const monthlyPayment = contract.monthly_amount || 0;
         
         return {
-          contractId: contract.contract_number || contract.id,
+          contractId: contract.id,
+          contractNumber: contract.contract_number || contract.id,
           customerId: contract.customer_id,
           customerName: contract.customers?.customer_type === 'corporate'
             ? (contract.customers?.company_name_ar || contract.customers?.company_name || '')
@@ -458,36 +466,38 @@ const PaymentRegistration = () => {
     }
 
     try {
-      // Prepare payment records for database
-      const today = new Date().toISOString().split('T')[0]; // Actual payment date (today)
-      
-      const paymentRecords = paymentsToSave.map(payment => ({
-        company_id: companyId,
-        contract_id: payment.contractId,
-        customer_id: payment.customerId,
-        amount: payment.amountPaid + payment.lateFeeAmount, // Total amount including late fee
-        monthly_amount: payment.monthlyPayment, // ✅ Monthly installment due
-        amount_paid: payment.amountPaid, // ✅ Actual amount paid
-        remaining_amount: payment.remainingAmount, // ✅ Remaining balance
-        payment_date: today, // ✅ Actual date the payment was made
-        payment_month: payment.paymentMonth, // ✅ Accounting month (YYYY-MM)
-        due_date: `${payment.paymentMonth}-01`, // ✅ Due date (first of month)
-        days_overdue: payment.daysOverdue, // ✅ Days overdue
-        late_fee_amount: payment.lateFeeAmount, // ✅ Late fee charged
-        payment_method: payment.paymentMethod,
-        payment_type: 'rental_payment',
-        notes: payment.notes,
-        transaction_type: 'inflow' as const
-        // payment_completion_status will be auto-calculated by trigger
-      }));
+      const today = new Date().toISOString().split('T')[0];
 
-      // Insert payments into database
-      const { data, error } = await supabase
-        .from('payments')
-        .insert(paymentRecords)
-        .select();
+      for (const payment of paymentsToSave) {
+        const createdPayment = await createPayment.mutateAsync({
+          contract_id: payment.contractId,
+          customer_id: payment.customerId,
+          amount: payment.amountPaid + payment.lateFeeAmount,
+          payment_date: today,
+          payment_method: payment.paymentMethod as 'cash' | 'bank_transfer' | 'check' | 'credit_card',
+          notes: payment.notes,
+          type: 'receipt',
+          transaction_type: 'customer_payment',
+          payment_status: 'completed',
+          currency: 'QAR',
+        });
 
-      if (error) throw error;
+        const { error: updatePaymentDetailsError } = await supabase
+          .from('payments')
+          .update({
+            monthly_amount: payment.monthlyPayment,
+            amount_paid: payment.amountPaid,
+            remaining_amount: payment.remainingAmount,
+            payment_month: payment.paymentMonth,
+            due_date: `${payment.paymentMonth}-01`,
+            days_overdue: payment.daysOverdue,
+            late_fee_amount: payment.lateFeeAmount,
+          })
+          .eq('id', createdPayment.id)
+          .eq('company_id', companyId);
+
+        if (updatePaymentDetailsError) throw updatePaymentDetailsError;
+      }
 
       toast.success(`تم حفظ ${paymentsToSave.length} دفعة بنجاح!`);
       

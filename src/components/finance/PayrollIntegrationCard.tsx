@@ -173,7 +173,7 @@ export const PayrollIntegrationCard = () => {
 
           {/* Action Buttons */}
           <div className="flex gap-3 mt-6">
-            <Link to="/finance/reports" className="flex-1">
+            <Link to="/finance/reports-analysis?tab=reports" className="flex-1">
               <Button variant="outline" className="w-full">
                 عرض تقرير الرواتب المالي
               </Button>

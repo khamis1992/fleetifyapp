@@ -34,7 +34,7 @@ export default function JournalEntriesSettings() {
         </Card>
 
         <Card className="hover:shadow-md transition-shadow cursor-pointer"
-              onClick={() => navigate("/finance/ledger")}>
+              onClick={() => navigate("/finance/accounting?tab=entries")}>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <FileText className="h-5 w-5 text-primary" />
@@ -47,7 +47,7 @@ export default function JournalEntriesSettings() {
         </Card>
 
         <Card className="hover:shadow-md transition-shadow cursor-pointer"
-              onClick={() => navigate("/finance/ledger")}>
+              onClick={() => navigate("/finance/accounting?tab=entries")}>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Search className="h-5 w-5 text-primary" />

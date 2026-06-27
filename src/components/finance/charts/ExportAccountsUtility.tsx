@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -13,6 +13,7 @@ import { ChartOfAccount } from '@/hooks/useChartOfAccounts';
 import { useToast } from '@/hooks/use-toast';
 
 import { useFleetifyTranslation } from "@/hooks/useTranslation";
+import { buildOfficialReportDocumentHtml, exportOfficialHtmlToPDF } from "@/utils/officialFinancialReportExport";
 interface ExportAccountsUtilityProps {
   accounts: ChartOfAccount[];
   expandedNodes: Set<string>;
@@ -29,65 +30,25 @@ export const ExportAccountsUtility: React.FC<ExportAccountsUtilityProps> = ({ ac
   
   const exportToPDF = async () => {
     try {
-      // Dynamic import to avoid bundling jsPDF if not used
-      const jsPDF = (await import('jspdf')).default;
-      const html2canvas = (await import('html2canvas')).default;
+      const reportDate = new Date().toISOString().split('T')[0];
+      const officialHtml = buildOfficialReportDocumentHtml({
+        metadata: {
+          reportTitle: 'دليل الحسابات',
+          reportType: 'chart_of_accounts',
+          currency: 'QAR',
+          asOfDate: reportDate,
+          sourceFingerprint: `chart-of-accounts:${accounts.length}:${filterType}:${searchTerm || 'all'}`,
+          status: 'published',
+        },
+        bodyHtml: generateHTMLReport(),
+      });
 
-      const element = document.createElement('div');
-      element.innerHTML = generateHTMLReport();
-      element.style.direction = 'rtl';
-      element.style.fontFamily = 'Arial, sans-serif';
-      element.style.position = 'absolute';
-      element.style.left = '-9999px';
-      document.body.appendChild(element);
+      await exportOfficialHtmlToPDF(officialHtml, `chart-of-accounts-${reportDate}.pdf`);
 
-      try {
-        // Convert to canvas
-        const canvas = await html2canvas(element, {
-          scale: 2,
-          useCORS: true,
-          logging: false
-        });
-
-        // Get image data
-        const imgData = canvas.toDataURL('image/jpeg', 0.98);
-
-        // Create PDF
-        const doc = new jsPDF({
-          unit: 'mm',
-          format: 'a4',
-          orientation: 'portrait'
-        });
-
-        const imgWidth = 210; // A4 width in mm
-        const imgHeight = (canvas.height * imgWidth) / canvas.width;
-        const pageHeight = 297; // A4 height in mm
-
-        let heightLeft = imgHeight;
-        let position = 0;
-
-        // Add image to PDF
-        doc.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
-        heightLeft -= pageHeight;
-
-        while (heightLeft >= 0) {
-          position = heightLeft - imgHeight;
-          doc.addPage();
-          doc.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
-          heightLeft -= pageHeight;
-        }
-
-        // Save PDF
-        doc.save(`chart-of-accounts-${new Date().toISOString().split('T')[0]}.pdf`);
-
-        toast({
-          title: "تم التصدير بنجاح",
-          description: "تم تصدير دليل الحسابات إلى ملف PDF",
-        });
-      } finally {
-        // Clean up
-        document.body.removeChild(element);
-      }
+      toast({
+        title: "تم التصدير بنجاح",
+        description: "تم تصدير دليل الحسابات بالقالب الرسمي",
+      });
     } catch (error) {
       toast({
         title: "خطأ في التصدير",

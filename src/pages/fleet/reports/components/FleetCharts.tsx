@@ -34,6 +34,7 @@ import {
   PieChart as PieChartIcon,
   Activity,
 } from 'lucide-react';
+import { systemColorPattern } from '@/lib/design-system/systemColorPattern';
 import type { 
   FleetAnalyticsSummary, 
   MonthlyRevenueData,
@@ -41,23 +42,25 @@ import type {
   VehicleReportData,
 } from '../types/reports.types';
 
-// ألوان متناسقة مع التصميم
+const chartTheme = systemColorPattern.colors;
+
+// ألوان متناسقة مع تصميم النظام
 const CHART_COLORS = {
-  violet: '#8b5cf6',
-  cyan: '#06b6d4',
-  emerald: '#10b981',
-  amber: '#f59e0b',
-  rose: '#f43f5e',
-  indigo: '#6366f1',
-  teal: '#14b8a6',
-  orange: '#f97316',
+  violet: chartTheme.focus,
+  cyan: chartTheme.info,
+  emerald: chartTheme.success,
+  amber: chartTheme.info,
+  rose: chartTheme.alert,
+  indigo: chartTheme.focus,
+  teal: chartTheme.success,
+  orange: chartTheme.alert,
 };
 
 const STATUS_COLORS = {
-  available: '#22c55e',
-  rented: '#f43f5e',
-  maintenance: '#f59e0b',
-  reserved: '#3b82f6',
+  available: chartTheme.success,
+  rented: chartTheme.focus,
+  maintenance: chartTheme.alert,
+  reserved: chartTheme.info,
 };
 
 interface ChartContainerProps {

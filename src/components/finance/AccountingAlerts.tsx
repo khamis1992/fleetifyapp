@@ -94,7 +94,7 @@ export function AccountingAlerts() {
         count: unbalancedEntries.length,
         action: {
           label: 'عرض القيود',
-          href: '/finance/ledger'
+          href: '/finance/accounting?tab=entries'
         },
         details: unbalancedEntries.slice(0, 3).map((entry: any) => 
           `قيد #${entry.entry_number}: فرق ${formatCurrency(Math.abs(Number(entry.total_debit) - Number(entry.total_credit)))}`
@@ -119,7 +119,7 @@ export function AccountingAlerts() {
         count: oldDraftEntries.length,
         action: {
           label: 'مراجعة القيود',
-          href: '/finance/ledger'
+          href: '/finance/accounting?tab=entries'
         },
         details: oldDraftEntries.slice(0, 3).map((entry: any) => 
           `قيد #${entry.entry_number}: ${differenceInDays(today, parseISO(entry.entry_date))} يوم`
@@ -142,7 +142,7 @@ export function AccountingAlerts() {
         count: underReviewEntries.length,
         action: {
           label: 'مراجعة القيود',
-          href: '/finance/ledger'
+          href: '/finance/accounting?tab=entries'
         }
       });
     }
@@ -162,7 +162,7 @@ export function AccountingAlerts() {
         count: approvedNotPostedEntries.length,
         action: {
           label: 'ترحيل القيود',
-          href: '/finance/ledger'
+          href: '/finance/accounting?tab=entries'
         }
       });
     }
@@ -194,7 +194,7 @@ export function AccountingAlerts() {
         count: entriesWithNegativeBalances.length,
         action: {
           label: 'فحص الأرصدة',
-          href: '/finance/chart-of-accounts'
+          href: '/finance/accounting?tab=chart'
         }
       });
     }
@@ -214,7 +214,7 @@ export function AccountingAlerts() {
         count: entriesWithoutCostCenter.length,
         action: {
           label: 'تحديث القيود',
-          href: '/finance/ledger'
+          href: '/finance/accounting?tab=entries'
         }
       });
     }
@@ -237,7 +237,7 @@ export function AccountingAlerts() {
         count: recentPostedEntries.length,
         action: {
           label: 'عرض القيود',
-          href: '/finance/ledger'
+          href: '/finance/accounting?tab=entries'
         }
       });
     }

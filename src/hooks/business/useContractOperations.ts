@@ -596,7 +596,12 @@ export const useContractOperations = (options: ContractOperationsOptions = {}) =
       // 1. حذف الفواتير غير المدفوعة
       const { error: deleteInvoicesError } = await supabase
         .from('invoices')
-        .delete()
+        .update({
+          status: 'cancelled',
+          payment_status: 'cancelled',
+          balance_due: 0,
+          updated_at: new Date().toISOString(),
+        })
         .eq('contract_id', contractId)
         .in('payment_status', ['unpaid', 'pending'])
         .or('paid_amount.eq.0,paid_amount.is.null');
@@ -734,6 +739,46 @@ export const useContractOperations = (options: ContractOperationsOptions = {}) =
         throw new Error('العقد غير موجود');
       }
 
+
+      const { data: contractInvoices, error: contractInvoicesError } = await supabase
+        .from('invoices')
+        .select('id')
+        .eq('contract_id', contractId);
+
+      if (contractInvoicesError) {
+        throw contractInvoicesError;
+      }
+
+      const invoiceIds = (contractInvoices || []).map(invoice => invoice.id);
+      let relatedPaymentsCount = 0;
+
+      if (invoiceIds.length > 0) {
+        const { count, error: invoicePaymentsCheckError } = await supabase
+          .from('payments')
+          .select('id', { count: 'exact', head: true })
+          .in('invoice_id', invoiceIds);
+
+        if (invoicePaymentsCheckError) {
+          throw invoicePaymentsCheckError;
+        }
+
+        relatedPaymentsCount += count || 0;
+      }
+
+      const { count: contractPaymentsCount, error: contractPaymentsCheckError } = await supabase
+        .from('payments')
+        .select('id', { count: 'exact', head: true })
+        .eq('contract_id', contractId);
+
+      if (contractPaymentsCheckError) {
+        throw contractPaymentsCheckError;
+      }
+
+      relatedPaymentsCount += contractPaymentsCount || 0;
+
+      if (relatedPaymentsCount > 0) {
+        throw new Error('Cannot permanently delete a contract with recorded payments. Archive or cancel the contract to preserve the financial audit trail.');
+      }
       // 2. Delete related records in order (due to foreign key constraints)
       
       // Delete delinquent_customers records
@@ -744,16 +789,6 @@ export const useContractOperations = (options: ContractOperationsOptions = {}) =
       
       if (delinquentError) {
         console.warn('Error deleting delinquent_customers:', delinquentError);
-      }
-
-      // Delete payments
-      const { error: paymentsError } = await supabase
-        .from('payments')
-        .delete()
-        .eq('contract_id', contractId);
-      
-      if (paymentsError) {
-        console.warn('Error deleting payments:', paymentsError);
       }
 
       // Delete invoices

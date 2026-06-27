@@ -37,9 +37,9 @@ const GlassCard = ({ children, className, delay = 0 }: any) => (
   <motion.div
     initial={{ opacity: 0, y: 20 }}
     animate={{ opacity: 1, y: 0 }}
-    transition={{ duration: 0.5, delay, type: 'spring', bounce: 0.4 }}
+    transition={{ duration: 0.35, delay, type: 'spring', bounce: 0.18 }}
     className={cn(
-      'bg-white/70 backdrop-blur-xl border border-white/40 shadow-sm rounded-xl overflow-hidden',
+      'report-card overflow-hidden rounded-lg border border-[#DDE5EF] bg-white shadow-sm',
       className
     )}
   >
@@ -48,14 +48,14 @@ const GlassCard = ({ children, className, delay = 0 }: any) => (
 );
 
 const StatCard = ({ title, value, subtitle, icon: Icon, color, trend, delay }: any) => (
-  <GlassCard className="p-6" delay={delay}>
-    <div className="flex items-start justify-between mb-3">
-      <div className={cn('p-3 rounded-xl', color)}>
-        <Icon className="w-6 h-6 text-white" />
+  <GlassCard className="report-stat-card p-5" delay={delay}>
+    <div className="mb-4 flex items-start justify-between gap-4">
+      <div className={cn('rounded-lg p-3', color)}>
+        <Icon className="h-5 w-5 text-white" />
       </div>
       {trend && (
         <div className={cn(
-          'flex items-center gap-1 text-xs font-bold px-2 py-1 rounded-full',
+          'flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-bold',
           trend > 0 ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'
         )}>
           {trend > 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
@@ -63,8 +63,8 @@ const StatCard = ({ title, value, subtitle, icon: Icon, color, trend, delay }: a
         </div>
       )}
     </div>
-    <h3 className="text-2xl font-black text-neutral-800 mb-1">{value}</h3>
-    <p className="text-xs font-medium text-neutral-500">{title}</p>
+    <h3 className="mb-1 text-2xl font-black text-[#142033]">{value}</h3>
+    <p className="text-sm font-bold text-[#6A7688]">{title}</p>
     {subtitle && (
       <p className="text-xs text-neutral-400 mt-1">{subtitle}</p>
     )}
@@ -128,10 +128,10 @@ export const EmployeeDetailedReport: React.FC = () => {
     : employee?.email || 'موظف';
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-neutral-50 via-neutral-100 to-neutral-200 p-6 font-sans" dir="rtl">
+    <div className="employee-report-system min-h-screen bg-[#F6F8FB] p-4 font-sans sm:p-6" dir="rtl">
       
       {/* Header */}
-      <header className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+      <header className="employee-report-header mb-5 rounded-lg border border-[#DDE5EF] bg-white p-4 shadow-sm">
         <div>
           <Button
             variant="ghost"
@@ -148,7 +148,7 @@ export const EmployeeDetailedReport: React.FC = () => {
             animate={{ opacity: 1, x: 0 }}
             className="flex items-center gap-4"
           >
-            <div className="w-16 h-16 rounded-full bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center text-white font-bold text-2xl shadow-lg">
+            <div className="flex h-16 w-16 items-center justify-center rounded-lg bg-[#173A63] text-2xl font-black text-white shadow-sm">
               {employeeName.charAt(0)}
             </div>
             <div>
@@ -165,7 +165,7 @@ export const EmployeeDetailedReport: React.FC = () => {
           <Button
             size="sm"
             variant="outline"
-            className="bg-white/50 border-neutral-200 rounded-xl"
+            className="rounded-lg border-[#DDE5EF] bg-white text-[#536173] hover:bg-[#F8FAFC]"
           >
             <Download className="ml-2 h-4 w-4" />
             تصدير PDF
@@ -174,20 +174,20 @@ export const EmployeeDetailedReport: React.FC = () => {
       </header>
 
       {/* Stats Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      <div className="report-stats-grid mb-5 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
         <StatCard
           title="الفواتير غير المحصّلة"
           value={stats.totalUnpaid}
           subtitle={formatCurrency(stats.totalUnpaidAmount)}
           icon={DollarSign}
-          color="bg-red-500"
+          color="bg-[#EF5B68]"
           delay={0.1}
         />
         <StatCard
           title="المهام المتأخرة"
           value={stats.totalOverdueTasks}
           icon={Clock}
-          color="bg-orange-500"
+          color="bg-[#F59E0B]"
           delay={0.2}
         />
         <StatCard
@@ -195,7 +195,7 @@ export const EmployeeDetailedReport: React.FC = () => {
           value={`${Math.round(collectionAnalysis?.collection_rate || 0)}%`}
           subtitle="الهدف: 85%"
           icon={TrendingUp}
-          color="bg-emerald-500"
+          color="bg-[#1BBF9A]"
           delay={0.3}
         />
         <StatCard
@@ -203,15 +203,15 @@ export const EmployeeDetailedReport: React.FC = () => {
           value={stats.criticalIssues}
           subtitle="تحتاج اهتمام فوري"
           icon={AlertCircle}
-          color="bg-amber-500"
+          color="bg-[#173A63]"
           delay={0.4}
         />
       </div>
 
       {/* Main Content */}
-      <GlassCard className="p-6" delay={0.5}>
+      <GlassCard className="report-workbench p-5" delay={0.5}>
         <Tabs defaultValue="invoices" className="w-full">
-          <TabsList className="grid w-full grid-cols-3 mb-6">
+          <TabsList className="report-tabs mb-5 grid h-auto w-full grid-cols-1 gap-2 rounded-lg border border-[#DDE5EF] bg-[#F8FAFC] p-1 md:grid-cols-3">
             <TabsTrigger value="invoices" className="gap-2">
               <DollarSign className="w-4 h-4" />
               الفواتير غير المحصّلة
@@ -237,7 +237,7 @@ export const EmployeeDetailedReport: React.FC = () => {
 
           {/* Unpaid Invoices Tab */}
           <TabsContent value="invoices">
-            <ScrollArea className="h-[600px]">
+            <ScrollArea className="h-[640px] pr-1">
               {unpaidInvoices && unpaidInvoices.length > 0 ? (
                 <div className="space-y-3">
                   {unpaidInvoices.map((invoice: any, index) => (
@@ -351,7 +351,7 @@ export const EmployeeDetailedReport: React.FC = () => {
 
           {/* Overdue Tasks Tab */}
           <TabsContent value="tasks">
-            <ScrollArea className="h-[600px]">
+            <ScrollArea className="h-[640px] pr-1">
               {overdueTasks && overdueTasks.length > 0 ? (
                 <div className="space-y-3">
                   {overdueTasks.map((task: any, index) => (
@@ -520,6 +520,124 @@ export const EmployeeDetailedReport: React.FC = () => {
           </TabsContent>
         </Tabs>
       </GlassCard>
+      <style>{`
+        .employee-report-system {
+          color: #142033;
+          background:
+            linear-gradient(180deg, rgba(246, 248, 251, 0.82), #F6F8FB 280px),
+            #F6F8FB !important;
+        }
+
+        .employee-report-system .report-card {
+          border-radius: 8px;
+          border-color: #DDE5EF;
+          box-shadow: 0 10px 28px rgba(2, 6, 23, 0.06);
+        }
+
+        .employee-report-header {
+          position: sticky;
+          top: 0;
+          z-index: 20;
+          display: flex;
+          flex-direction: column;
+          gap: 16px;
+          backdrop-filter: blur(12px);
+          background: rgba(255, 255, 255, 0.94);
+        }
+
+        @media (min-width: 768px) {
+          .employee-report-header {
+            flex-direction: row;
+            align-items: center;
+            justify-content: space-between;
+          }
+        }
+
+        .employee-report-header button {
+          min-height: 40px;
+          font-weight: 800;
+        }
+
+        .report-stat-card {
+          min-height: 152px;
+        }
+
+        .report-workbench {
+          background: #fff !important;
+        }
+
+        .report-tabs [role="tab"] {
+          min-height: 44px;
+          border-radius: 8px !important;
+          color: #536173;
+          font-weight: 900;
+        }
+
+        .report-tabs [role="tab"][data-state="active"] {
+          background: #173A63 !important;
+          color: white !important;
+          box-shadow: 0 8px 18px rgba(23, 58, 99, 0.16);
+        }
+
+        .report-tabs [role="tab"][data-state="active"] svg {
+          color: white !important;
+        }
+
+        .employee-report-system [data-radix-scroll-area-viewport] {
+          padding-left: 4px;
+        }
+
+        .employee-report-system [data-state="active"] .rounded-xl,
+        .employee-report-system [data-state="active"] .rounded-lg,
+        .employee-report-system .rounded-xl,
+        .employee-report-system .rounded-lg {
+          border-radius: 8px !important;
+        }
+
+        .employee-report-system .border-neutral-200,
+        .employee-report-system .border-neutral-100 {
+          border-color: #DDE5EF !important;
+        }
+
+        .employee-report-system .bg-white {
+          background-color: #fff !important;
+        }
+
+        .employee-report-system .text-xs {
+          font-size: 13px;
+          line-height: 1.55;
+        }
+
+        .employee-report-system .text-sm {
+          font-size: 14px;
+          line-height: 1.65;
+        }
+
+        .employee-report-system button {
+          border-radius: 8px !important;
+          font-weight: 800;
+        }
+
+        .employee-report-system h3,
+        .employee-report-system h4 {
+          color: #142033;
+        }
+
+        .employee-report-system .border-r-4 {
+          border-right-width: 6px;
+          background: #fff !important;
+          border-top: 1px solid #DDE5EF;
+          border-bottom: 1px solid #DDE5EF;
+          border-left: 1px solid #DDE5EF;
+          box-shadow: 0 8px 20px rgba(2, 6, 23, 0.04);
+        }
+
+        @media (max-width: 1280px) {
+          .employee-report-header {
+            position: static;
+          }
+        }
+      `}</style>
     </div>
   );
 };

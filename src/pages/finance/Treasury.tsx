@@ -1,43 +1,108 @@
-/**
- * Treasury - Professional Bank & Cash Management Redesign
- * Clean design with bank cards, progress bars, and transaction table
- */
-
-import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { type CSSProperties, useMemo, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import { Landmark, Building2, ArrowDownRight, ArrowUpRight, ArrowRightLeft, Plus, Search, RefreshCw, Wallet, Activity } from "lucide-react";
-import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import {
+  Activity,
+  ArrowDownRight,
+  ArrowLeft,
+  ArrowRightLeft,
+  ArrowUpRight,
+  Building2,
+  Landmark,
+  Plus,
+  RefreshCw,
+  Search,
+  Wallet,
+} from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { BankReconciliationPanel } from "@/components/finance/BankReconciliationPanel";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { Input } from "@/components/ui/input";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
-import { cn } from "@/lib/utils";
-import { useBanks, useCreateBank, useBankTransactions, useTreasurySummary, useCreateBankTransaction, useDeleteBankTransaction, Bank, BankTransaction } from "@/hooks/useTreasury";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/contexts/AuthContext";
-import { toast } from "sonner";
-import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter";
 import { useCompanyCurrency } from "@/hooks/useCompanyCurrency";
-import { StatCard } from "@/components/ui/StatCard";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { EmptyState } from "@/components/ui/EmptyState";
+import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter";
+import { Bank, BankTransaction, useBankTransactions, useBanks, useCreateBank, useCreateBankTransaction, useDeleteBankTransaction, useTreasurySummary } from "@/hooks/useTreasury";
+import { systemColorPattern } from "@/lib/design-system/systemColorPattern";
+import { cn } from "@/lib/utils";
+import { toast } from "sonner";
+
+const treasuryColors = {
+  text: systemColorPattern.colors.text,
+  surface: systemColorPattern.colors.surface,
+  inner: systemColorPattern.colors.innerSurface,
+  muted: systemColorPattern.colors.secondaryText,
+  border: systemColorPattern.colors.border,
+  info: systemColorPattern.colors.info,
+  alert: systemColorPattern.colors.alert,
+  focus: systemColorPattern.colors.focus,
+  success: systemColorPattern.colors.success,
+};
+
+const treasuryStyle = {
+  "--treasury-text": treasuryColors.text,
+  "--treasury-surface": treasuryColors.surface,
+  "--treasury-inner": treasuryColors.inner,
+  "--treasury-muted": treasuryColors.muted,
+  "--treasury-border": treasuryColors.border,
+  "--treasury-info": treasuryColors.info,
+  "--treasury-alert": treasuryColors.alert,
+  "--treasury-focus": treasuryColors.focus,
+  "--treasury-success": treasuryColors.success,
+} as CSSProperties;
+
+const accountTypeLabels: Record<string, string> = {
+  checking: "جاري",
+  savings: "توفير",
+  business: "تجاري",
+};
+
+interface TreasuryMetricProps {
+  title: string;
+  value: string | number;
+  helper: string;
+  icon: React.ElementType;
+  accent: string;
+}
+
+const TreasuryMetric = ({ title, value, helper, icon: Icon, accent }: TreasuryMetricProps) => (
+  <div className="treasury-metric">
+    <div className="flex items-start justify-between gap-3">
+      <span className="treasury-metric-icon" style={{ color: accent, backgroundColor: `${accent}14` }}>
+        <Icon className="h-5 w-5" />
+      </span>
+      <span className="text-xs font-bold" style={{ color: treasuryColors.muted }}>
+        {helper}
+      </span>
+    </div>
+    <div className="mt-5">
+      <p className="text-sm font-bold" style={{ color: treasuryColors.muted }}>
+        {title}
+      </p>
+      <p className="mt-2 text-2xl font-black tracking-normal" style={{ color: treasuryColors.text }}>
+        {value}
+      </p>
+    </div>
+  </div>
+);
 
 export default function Treasury() {
   const [searchTerm, setSearchTerm] = useState("");
-  const [activeTab, setActiveTab] = useState("banks");
   const [isCreateBankDialogOpen, setIsCreateBankDialogOpen] = useState(false);
   const [isCreateTransactionDialogOpen, setIsCreateTransactionDialogOpen] = useState(false);
-  
+
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { data: banks, isLoading: banksLoading, error: banksError, refetch } = useBanks();
-  const { data: transactions, isLoading: transactionsLoading } = useBankTransactions();
-  const { data: summary, isLoading: summaryLoading } = useTreasurySummary();
+  const { data: banks, isLoading: banksLoading, error: banksError, refetch: refetchBanks } = useBanks();
+  const { data: transactions, isLoading: transactionsLoading, refetch: refetchTransactions } = useBankTransactions();
+  const { data: summary, isLoading: summaryLoading, refetch: refetchSummary } = useTreasurySummary();
   const createBank = useCreateBank();
   const createTransaction = useCreateBankTransaction();
   const deleteTransaction = useDeleteBankTransaction();
@@ -45,23 +110,45 @@ export default function Treasury() {
   const { currency: companyCurrency } = useCompanyCurrency();
 
   const [newBank, setNewBank] = useState<Partial<Bank>>({
-    bank_name: '',
-    account_number: '',
-    account_type: 'checking',
+    bank_name: "",
+    account_number: "",
+    account_type: "checking",
     currency: companyCurrency,
     current_balance: 0,
     opening_balance: 0,
     is_active: true,
-    is_primary: false
+    is_primary: false,
   });
 
   const [newTransaction, setNewTransaction] = useState({
-    transaction_type: 'deposit',
+    transaction_type: "deposit",
     amount: 0,
-    description: '',
-    reference_number: '',
-    bank_id: ''
+    description: "",
+    reference_number: "",
+    bank_id: "",
   });
+
+  const filteredBanks = useMemo(() => {
+    const term = searchTerm.trim().toLowerCase();
+    if (!term) return banks || [];
+
+    return (banks || []).filter((bank) =>
+      bank.bank_name.toLowerCase().includes(term) ||
+      bank.account_number.includes(term)
+    );
+  }, [banks, searchTerm]);
+
+  const recentTransactions = useMemo(() => {
+    const term = searchTerm.trim().toLowerCase();
+    const list = transactions || [];
+    if (!term) return list.slice(0, 10);
+
+    return list.filter((transaction) =>
+      transaction.transaction_number.toLowerCase().includes(term) ||
+      transaction.description.toLowerCase().includes(term) ||
+      transaction.reference_number?.toLowerCase().includes(term)
+    ).slice(0, 10);
+  }, [searchTerm, transactions]);
 
   const handleCreateBank = async () => {
     if (!newBank.bank_name || !newBank.account_number || !user?.profile?.company_id) return;
@@ -69,47 +156,47 @@ export default function Treasury() {
     await createBank.mutateAsync({
       ...newBank,
       company_id: user.profile.company_id,
-    } as Omit<Bank, 'id' | 'created_at' | 'updated_at'>);
+    } as Omit<Bank, "id" | "created_at" | "updated_at">);
 
     setNewBank({
-      bank_name: '',
-      account_number: '',
-      account_type: 'checking',
+      bank_name: "",
+      account_number: "",
+      account_type: "checking",
       currency: companyCurrency,
       current_balance: 0,
       opening_balance: 0,
       is_active: true,
-      is_primary: false
+      is_primary: false,
     });
     setIsCreateBankDialogOpen(false);
   };
 
   const handleCreateTransaction = async () => {
     if (!newTransaction.description) {
-      toast.error('يرجى إدخال وصف المعاملة');
+      toast.error("يرجى إدخال وصف المعاملة");
       return;
     }
     if (!newTransaction.bank_id) {
-      toast.error('يرجى اختيار البنك');
+      toast.error("يرجى اختيار البنك");
       return;
     }
     if (!newTransaction.amount || newTransaction.amount <= 0) {
-      toast.error('يرجى إدخال مبلغ صحيح');
+      toast.error("يرجى إدخال مبلغ صحيح");
       return;
     }
     if (!user?.profile?.company_id) {
-      toast.error('خطأ في بيانات المستخدم');
+      toast.error("خطأ في بيانات المستخدم");
       return;
     }
 
     const transactionNumber = `TRX-${Date.now()}`;
-    const selectedBank = banks?.find(bank => bank.id === newTransaction.bank_id);
+    const selectedBank = banks?.find((bank) => bank.id === newTransaction.bank_id);
     if (!selectedBank) {
-      toast.error('البنك المحدد غير موجود');
+      toast.error("البنك المحدد غير موجود");
       return;
     }
 
-    const balanceAfter = newTransaction.transaction_type === 'deposit' 
+    const balanceAfter = newTransaction.transaction_type === "deposit"
       ? selectedBank.current_balance + newTransaction.amount
       : selectedBank.current_balance - newTransaction.amount;
 
@@ -118,62 +205,57 @@ export default function Treasury() {
         company_id: user.profile.company_id,
         bank_id: newTransaction.bank_id,
         transaction_number: transactionNumber,
-        transaction_date: new Date().toISOString().split('T')[0],
+        transaction_date: new Date().toISOString().split("T")[0],
         transaction_type: newTransaction.transaction_type,
         amount: newTransaction.amount,
         balance_after: balanceAfter,
         description: newTransaction.description,
         reference_number: newTransaction.reference_number,
-        status: 'completed',
-        reconciled: false
-      } as Omit<BankTransaction, 'id' | 'created_at' | 'updated_at'>);
-      
+        status: "completed",
+        reconciled: false,
+      } as Omit<BankTransaction, "id" | "created_at" | "updated_at">);
+
       setNewTransaction({
-        transaction_type: 'deposit',
+        transaction_type: "deposit",
         amount: 0,
-        description: '',
-        reference_number: '',
-        bank_id: ''
+        description: "",
+        reference_number: "",
+        bank_id: "",
       });
       setIsCreateTransactionDialogOpen(false);
     } catch (error) {
-      toast.error('حدث خطأ في إنشاء المعاملة: ' + (error as Error).message);
+      toast.error(`حدث خطأ في إنشاء المعاملة: ${(error as Error).message}`);
     }
   };
 
-  const filteredBanks = banks?.filter(bank =>
-    bank.bank_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    bank.account_number.includes(searchTerm)
-  );
+  const handleRefresh = () => {
+    refetchBanks();
+    refetchTransactions();
+    refetchSummary();
+  };
 
   const getTransactionIcon = (type: string) => {
-    switch (type) {
-      case 'deposit':
-        return <ArrowDownRight className="h-4 w-4 text-emerald-600" aria-hidden="true" />;
-      case 'withdrawal':
-        return <ArrowUpRight className="h-4 w-4 text-rose-600" aria-hidden="true" />;
-      default:
-        return <ArrowRightLeft className="h-4 w-4 text-sky-600" aria-hidden="true" />;
-    }
+    if (type === "deposit") return <ArrowDownRight className="h-4 w-4 text-[#22C7A1]" aria-hidden="true" />;
+    if (type === "withdrawal") return <ArrowUpRight className="h-4 w-4 text-[#FB6B7A]" aria-hidden="true" />;
+    return <ArrowRightLeft className="h-4 w-4 text-[#38BDF8]" aria-hidden="true" />;
   };
 
   const getTransactionBadge = (type: string) => {
-    switch (type) {
-      case 'deposit':
-        return <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200" aria-label="الحالة: إيداع">إيداع</Badge>;
-      case 'withdrawal':
-        return <Badge className="bg-rose-100 text-rose-700 border-rose-200" aria-label="الحالة: سحب">سحب</Badge>;
-      default:
-        return <Badge className="bg-sky-100 text-sky-700 border-sky-200" aria-label="الحالة: تحويل">تحويل</Badge>;
+    if (type === "deposit") {
+      return <Badge className="border-0 bg-[#22C7A1]/10 text-[#22C7A1] hover:bg-[#22C7A1]/10">إيداع</Badge>;
     }
+    if (type === "withdrawal") {
+      return <Badge className="border-0 bg-[#FB6B7A]/10 text-[#FB6B7A] hover:bg-[#FB6B7A]/10">سحب</Badge>;
+    }
+    return <Badge className="border-0 bg-[#38BDF8]/10 text-[#38BDF8] hover:bg-[#38BDF8]/10">تحويل</Badge>;
   };
 
   if (!user || banksLoading || summaryLoading) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-        <div className="flex flex-col items-center gap-4">
-          <RefreshCw className="w-10 h-10 animate-spin text-rose-500" />
-          <p className="text-slate-500">جاري تحميل بيانات الخزينة...</p>
+      <div className="treasury-system flex min-h-screen items-center justify-center" dir="rtl" style={treasuryStyle}>
+        <div className="treasury-state">
+          <RefreshCw className="h-10 w-10 animate-spin text-[#FB6B7A]" />
+          <p>جاري تحميل بيانات الخزينة...</p>
         </div>
       </div>
     );
@@ -181,338 +263,388 @@ export default function Treasury() {
 
   if (banksError) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-16 h-16 rounded-full bg-rose-100 flex items-center justify-center mx-auto mb-4">
-            <Landmark className="w-8 h-8 text-rose-500" />
-          </div>
-          <p className="text-rose-600 font-medium">حدث خطأ في تحميل البيانات</p>
-          <Button onClick={() => refetch()} className="mt-4">إعادة المحاولة</Button>
+      <div className="treasury-system flex min-h-screen items-center justify-center" dir="rtl" style={treasuryStyle}>
+        <div className="treasury-state">
+          <span className="treasury-state-icon">
+            <Landmark className="h-8 w-8" />
+          </span>
+          <p className="font-bold text-[#FB6B7A]">حدث خطأ في تحميل البيانات</p>
+          <Button onClick={() => refetchBanks()} className="mt-2 bg-[#020617] text-white hover:bg-[#020617]/90">
+            إعادة المحاولة
+          </Button>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="p-6" dir="rtl">
-      {/* Header */}
-      <motion.div
-        className="mb-6"
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-      >
-        <div className="flex items-center justify-between flex-wrap gap-4">
-          <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-rose-500 to-orange-500 flex items-center justify-center shadow-lg">
-              <Landmark className="w-7 h-7 text-white" />
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold text-slate-900">الخزينة والبنوك</h1>
-              <p className="text-sm text-slate-500">إدارة الحسابات المصرفية والمعاملات النقدية</p>
-            </div>
-          </div>
-           <div className="flex gap-2">
-             <Button variant="outline" onClick={() => navigate('/finance/hub')} aria-label="رجوع">
-               العودة للوحة التحكم
-             </Button>
-             <Button className="bg-gradient-to-r from-rose-500 to-orange-500 hover:from-rose-600 hover:to-orange-600 text-white shadow-lg" onClick={() => setIsCreateBankDialogOpen(true)}>
-               <Plus className="w-4 h-4 ml-2" aria-hidden="true" />
-               حساب جديد
-             </Button>
-           </div>
-        </div>
-      </motion.div>
-
-      {/* KPI Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <StatCard
-          title="إجمالي الأرصدة"
-          value={formatCurrency(summary?.totalBalance || 0)}
-          subtitle={`${summary?.totalBanks || 0} حساب مصرفي`}
-          icon={Wallet}
-          variant="coral"
-          delay={0.1}
-        />
-        <StatCard
-          title="الإيداعات الشهرية"
-          value={formatCurrency(summary?.monthlyDeposits || 0)}
-          subtitle="آخر 30 يوم"
-          icon={ArrowDownRight}
-          variant="success"
-          trend="up"
-          change="+إيداع"
-          delay={0.15}
-        />
-        <StatCard
-          title="المسحوبات الشهرية"
-          value={formatCurrency(summary?.monthlyWithdrawals || 0)}
-          subtitle="آخر 30 يوم"
-          icon={ArrowUpRight}
-          variant="danger"
-          trend="down"
-          change="-سحب"
-          delay={0.2}
-        />
-        <StatCard
-          title="صافي التدفق النقدي"
-          value={formatCurrency(summary?.netFlow || 0)}
-          subtitle="آخر 30 يوم"
-          icon={Activity}
-          variant="sky"
-          trend={(summary?.netFlow || 0) >= 0 ? 'up' : 'down'}
-          change={(summary?.netFlow || 0) >= 0 ? 'موجب' : 'سالب'}
-          delay={0.25}
-        />
-      </div>
-
-      {/* Bank Cards Grid */}
-      <motion.div
-        className="mb-6"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.3 }}
-      >
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-bold text-slate-900">الحسابات المصرفية</h2>
-          <Button variant="outline" size="sm" onClick={() => setActiveTab('banks')}>
-            عرض الكل
-            <ArrowRightLeft className="w-4 h-4 mr-1" />
-          </Button>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {filteredBanks?.slice(0, 4).map((bank, index) => {
-            const creditLimit = bank.opening_balance * 1.5;
-            const usagePercent = (bank.current_balance / creditLimit) * 100;
-            return (
-              <motion.div
-                key={bank.id}
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: index * 0.05 }}
-                whileHover={{ y: -2 }}
-                className="bg-white rounded-xl p-5 border border-slate-200 shadow-sm hover:shadow-md cursor-pointer transition-all"
-                onClick={() => setActiveTab('banks')}
-              >
-                <div className="flex items-start justify-between mb-3">
-                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-sky-500 to-cyan-500 flex items-center justify-center shadow-lg shadow-sky-500/20">
-                    <Building2 className="w-6 h-6 text-white" />
-                  </div>
-                  {bank.is_primary && (
-                    <Badge className="bg-amber-100 text-amber-700 border-amber-200 text-xs" aria-label="الحالة: رئيسي">
-                      رئيسي
-                    </Badge>
-                  )}
-                </div>
-                <h3 className="font-bold text-slate-900 mb-1">{bank.bank_name}</h3>
-                <p className="text-xs text-slate-500 mb-3">{bank.account_number}</p>
-                <div className="mb-3">
-                  <div className="flex justify-between text-xs mb-1">
-                    <span className="text-slate-600">الرصيد الحالي</span>
-                    <span className="font-bold text-slate-900">{formatCurrency(bank.current_balance, { currency: bank.currency })}</span>
-                  </div>
-                  <div className="w-full bg-slate-100 rounded-full h-2">
-                    <div 
-                      className={cn(
-                        "h-2 rounded-full transition-all",
-                        usagePercent > 80 ? "bg-rose-500" : usagePercent > 60 ? "bg-amber-500" : "bg-emerald-500"
-                      )}
-                      style={{ width: `${Math.min(usagePercent, 100)}%` }}
-                    />
-                  </div>
-                </div>
-                <div className="flex items-center justify-between">
-                  <Badge variant="outline" className="text-xs">
-                    {bank.account_type === 'checking' && 'جاري'}
-                    {bank.account_type === 'savings' && 'توفير'}
-                    {bank.account_type === 'business' && 'تجاري'}
-                  </Badge>
-                  <Badge className={cn(
-                    bank.is_active ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-700"
-                  )} aria-label={`الحالة: ${bank.is_active ? 'نشط' : 'غير نشط'}`}>
-                    {bank.is_active ? 'نشط' : 'غير نشط'}
-                  </Badge>
-                </div>
-              </motion.div>
-            );
-          })}
-          
-          {/* Add New Bank Card */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 4 * 0.05 }}
-            whileHover={{ y: -2 }}
-            className="bg-slate-50 rounded-xl p-5 border-2 border-dashed border-slate-300 hover:border-rose-500 cursor-pointer transition-all flex flex-col items-center justify-center gap-3"
-            onClick={() => setIsCreateBankDialogOpen(true)}
-          >
-            <div className="w-12 h-12 rounded-full bg-slate-200 flex items-center justify-center">
-              <Plus className="w-6 h-6 text-slate-500" />
-            </div>
-            <p className="text-sm font-medium text-slate-600">إضافة حساب جديد</p>
-          </motion.div>
-        </div>
-      </motion.div>
-
-      {/* Transactions Table */}
-      <motion.div
-        className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.35 }}
-      >
-        <div className="p-6 border-b border-slate-100">
-          <div className="flex items-center justify-between flex-wrap gap-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-purple-500 flex items-center justify-center shadow-lg shadow-violet-500/20">
-                <ArrowRightLeft className="w-5 h-5 text-white" />
+    <div className="treasury-system min-h-screen" dir="rtl" style={treasuryStyle}>
+      <div className="mx-auto max-w-7xl space-y-5 p-4 sm:p-6">
+        <motion.section
+          initial={{ opacity: 0, y: 14 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="treasury-command"
+        >
+          <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex items-start gap-4">
+              <div className="treasury-command-icon">
+                <Landmark className="h-6 w-6" />
               </div>
               <div>
-                <h3 className="font-bold text-slate-900">المعاملات البنكية</h3>
-                <p className="text-sm text-slate-500">تاريخ جميع المعاملات المصرفية</p>
+                <div className="mb-2 flex flex-wrap items-center gap-2">
+                  <Badge className="border-0 bg-[#FB6B7A]/10 text-[#FB6B7A] hover:bg-[#FB6B7A]/10">
+                    مركز السيولة
+                  </Badge>
+                  <span className="text-xs font-bold" style={{ color: treasuryColors.muted }}>
+                    الحسابات البنكية، الحركة النقدية، التسويات
+                  </span>
+                </div>
+                <h1 className="text-2xl font-black tracking-normal sm:text-3xl" style={{ color: treasuryColors.text }}>
+                  الخزينة والبنوك
+                </h1>
+                <p className="mt-2 max-w-2xl text-sm leading-7" style={{ color: treasuryColors.muted }}>
+                  متابعة موحدة للأرصدة والتدفقات النقدية والمعاملات اليومية بنفس أسلوب مركز المحاسبة العام.
+                </p>
               </div>
             </div>
-            <div className="flex gap-3">
-              <div className="relative">
-                <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" aria-hidden="true" />
-                <Input
-                  placeholder="البحث..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pr-10 w-64"
-                  aria-label="بحث"
-                />
-              </div>
-              <Button className="bg-gradient-to-r from-rose-500 to-orange-500" onClick={() => setIsCreateTransactionDialogOpen(true)}>
-                <Plus className="w-4 h-4 ml-2" aria-hidden="true" />
+
+            <div className="flex flex-wrap gap-2">
+              <Button
+                onClick={() => setIsCreateTransactionDialogOpen(true)}
+                className="gap-2 bg-[#020617] text-white hover:bg-[#020617]/90"
+              >
+                <Plus className="h-4 w-4" />
                 معاملة جديدة
+              </Button>
+              <Button
+                onClick={() => setIsCreateBankDialogOpen(true)}
+                variant="outline"
+                className="gap-2 border-[#E5EAF1] bg-white text-[#020617] hover:bg-[#F6F8FB]"
+              >
+                <Building2 className="h-4 w-4" />
+                حساب جديد
+              </Button>
+              <Button
+                onClick={handleRefresh}
+                variant="outline"
+                className="gap-2 border-[#E5EAF1] bg-white text-[#020617] hover:bg-[#F6F8FB]"
+              >
+                <RefreshCw className="h-4 w-4" />
+                تحديث
+              </Button>
+              <Button
+                onClick={() => navigate("/finance/hub")}
+                variant="outline"
+                className="gap-2 border-[#E5EAF1] bg-white text-[#020617] hover:bg-[#F6F8FB]"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                المالية
               </Button>
             </div>
           </div>
-        </div>
 
-        {transactionsLoading ? (
-          <div className="flex items-center justify-center py-16">
-            <RefreshCw className="w-10 h-10 animate-spin text-rose-500" />
-          </div>
-        ) : (
-          <div className="overflow-x-auto -mx-4 md:mx-0">
-            <Table className="min-w-[600px]" aria-label="جدول المعاملات">
-              <TableHeader>
-                <TableRow className="bg-slate-50 border-b border-slate-100">
-                  <TableHead className="text-right font-semibold" scope="col">رقم المعاملة</TableHead>
-                  <TableHead className="text-right font-semibold" scope="col">التاريخ</TableHead>
-                  <TableHead className="text-right font-semibold" scope="col">النوع</TableHead>
-                  <TableHead className="text-right font-semibold" scope="col">المبلغ</TableHead>
-                  <TableHead className="text-right font-semibold" scope="col">الوصف</TableHead>
-                  <TableHead className="text-right font-semibold" scope="col">الحالة</TableHead>
-                  <TableHead className="text-right font-semibold" scope="col">الإجراءات</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                <AnimatePresence>
-                  {transactions?.slice(0, 10).map((transaction, index) => (
-                    <motion.tr
-                      key={transaction.id}
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      exit={{ opacity: 0, x: 20 }}
-                      transition={{ delay: index * 0.03 }}
-                      className={cn(
-                        "border-b border-slate-50 hover:bg-slate-50/50 transition-colors",
-                        transaction.transaction_type === 'deposit' && 'bg-emerald-50/30',
-                        transaction.transaction_type === 'withdrawal' && 'bg-rose-50/30'
-                      )}
-                    >
-                      <TableCell className="font-mono text-sm text-slate-600">
-                        {transaction.transaction_number}
-                      </TableCell>
-                      <TableCell className="text-slate-600">
-                        {new Date(transaction.transaction_date).toLocaleDateString('ar-SA')}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          {getTransactionIcon(transaction.transaction_type)}
-                          {getTransactionBadge(transaction.transaction_type)}
-                        </div>
-                      </TableCell>
-                      <TableCell className={cn(
-                        "font-semibold",
-                        transaction.transaction_type === 'deposit' ? 'text-emerald-600' : 'text-rose-600'
-                      )}>
-                        {transaction.transaction_type === 'deposit' ? '+' : '-'}
-                        {formatCurrency(transaction.amount)}
-                      </TableCell>
-                      <TableCell className="text-slate-600 max-w-[200px] truncate">
-                        {transaction.description}
-                      </TableCell>
-                      <TableCell>
-                        <Badge className={cn(
-                          transaction.status === 'completed'
-                            ? "bg-emerald-100 text-emerald-700 border-emerald-200"
-                            : "bg-amber-100 text-amber-700 border-amber-200"
-                        )} aria-label={`الحالة: ${transaction.status === 'completed' ? 'مكتملة' : 'معلقة'}`}>
-                          {transaction.status === 'completed' ? 'مكتملة' : 'معلقة'}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button variant="ghost" size="sm" className="text-rose-500 hover:text-rose-600 hover:bg-rose-50">
-                              حذف
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>تأكيد حذف المعاملة</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                هل أنت متأكد من حذف المعاملة رقم {transaction.transaction_number}؟
-                                <br />
-                                هذا الإجراء لا يمكن التراجع عنه.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>إلغاء</AlertDialogCancel>
-                              <AlertDialogAction
-                                onClick={() => deleteTransaction.mutate(transaction.id)}
-                                className="bg-rose-500 hover:bg-rose-600"
-                                disabled={deleteTransaction.isPending}
-                              >
-                                {deleteTransaction.isPending ? "جاري الحذف..." : "حذف"}
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                      </TableCell>
-                    </motion.tr>
-                  ))}
-                </AnimatePresence>
-              </TableBody>
-            </Table>
-          </div>
-        )}
-
-        {transactions?.length === 0 && !transactionsLoading && (
-          <div className="p-6">
-            <EmptyState
-              icon={ArrowRightLeft}
-              title="لا توجد معاملات"
-              description="لم يتم تسجيل أي معاملات بنكية بعد. ابدأ بإضافة معاملة جديدة"
-              onAction={() => setIsCreateTransactionDialogOpen(true)}
-              actionLabel="معاملة جديدة"
+          <div className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            <TreasuryMetric
+              title="إجمالي الأرصدة"
+              value={formatCurrency(summary?.totalBalance || 0)}
+              helper={`${summary?.totalBanks || 0} حساب نشط`}
+              icon={Wallet}
+              accent={treasuryColors.alert}
+            />
+            <TreasuryMetric
+              title="الإيداعات الشهرية"
+              value={formatCurrency(summary?.monthlyDeposits || 0)}
+              helper="آخر 30 يوم"
+              icon={ArrowDownRight}
+              accent={treasuryColors.success}
+            />
+            <TreasuryMetric
+              title="المسحوبات الشهرية"
+              value={formatCurrency(summary?.monthlyWithdrawals || 0)}
+              helper="آخر 30 يوم"
+              icon={ArrowUpRight}
+              accent={treasuryColors.focus}
+            />
+            <TreasuryMetric
+              title="صافي التدفق النقدي"
+              value={formatCurrency(summary?.netFlow || 0)}
+              helper={(summary?.netFlow || 0) >= 0 ? "موجب" : "سالب"}
+              icon={Activity}
+              accent={(summary?.netFlow || 0) >= 0 ? treasuryColors.success : treasuryColors.alert}
             />
           </div>
-        )}
-      </motion.div>
+        </motion.section>
 
-      {/* Create Bank Dialog */}
+        <section className="treasury-toolbar">
+          <div>
+            <p className="text-xs font-black uppercase tracking-[0.18em]" style={{ color: treasuryColors.muted }}>
+              Treasury Workspace
+            </p>
+            <h2 className="mt-1 text-xl font-black" style={{ color: treasuryColors.text }}>
+              الحسابات المصرفية
+            </h2>
+            <p className="mt-1 text-sm" style={{ color: treasuryColors.muted }}>
+              عرض مختصر للحسابات النشطة وأحدث المعاملات المصرفية.
+            </p>
+          </div>
+          <div className="relative w-full sm:w-80">
+            <Search className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#94A3B8]" aria-hidden="true" />
+            <Input
+              placeholder="بحث عن حساب أو معاملة..."
+              value={searchTerm}
+              onChange={(event) => setSearchTerm(event.target.value)}
+              className="h-11 rounded-lg border-[#E5EAF1] bg-[#F6F8FB] pr-10"
+              aria-label="بحث في الخزينة"
+            />
+          </div>
+        </section>
+
+        <BankReconciliationPanel />
+
+        <motion.section
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="treasury-panel"
+        >
+          <div className="treasury-panel-header">
+            <div className="flex items-center gap-3">
+              <span className="treasury-panel-icon" style={{ color: treasuryColors.info, backgroundColor: `${treasuryColors.info}14` }}>
+                <Building2 className="h-5 w-5" />
+              </span>
+              <div>
+                <h3 className="text-base font-black" style={{ color: treasuryColors.text }}>
+                  الحسابات البنكية
+                </h3>
+                <p className="text-xs" style={{ color: treasuryColors.muted }}>
+                  {filteredBanks.length} حساب مطابق للبحث
+                </p>
+              </div>
+            </div>
+            <Button variant="outline" size="sm" className="gap-2 border-[#E5EAF1] bg-white" onClick={() => setIsCreateBankDialogOpen(true)}>
+              <Plus className="h-4 w-4" />
+              إضافة حساب
+            </Button>
+          </div>
+
+          <div className="grid gap-3 p-4 md:grid-cols-2 xl:grid-cols-4">
+            {filteredBanks.slice(0, 4).map((bank, index) => {
+              const creditLimit = Math.max(Math.abs(bank.opening_balance || 0) * 1.5, Math.abs(bank.current_balance || 0), 1);
+              const usagePercent = Math.min(Math.round((Math.abs(bank.current_balance || 0) / creditLimit) * 100), 100);
+
+              return (
+                <motion.div
+                  key={bank.id}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.04 }}
+                  className="treasury-bank-card"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <span className="treasury-bank-icon">
+                      <Building2 className="h-5 w-5" />
+                    </span>
+                    <div className="flex flex-wrap justify-end gap-1">
+                      {bank.is_primary && (
+                        <Badge className="border-0 bg-[#7C83F6]/10 text-[#7C83F6] hover:bg-[#7C83F6]/10">
+                          رئيسي
+                        </Badge>
+                      )}
+                      <Badge className={cn(
+                        "border-0",
+                        bank.is_active ? "bg-[#22C7A1]/10 text-[#22C7A1]" : "bg-slate-100 text-slate-500"
+                      )}>
+                        {bank.is_active ? "نشط" : "غير نشط"}
+                      </Badge>
+                    </div>
+                  </div>
+
+                  <div className="mt-4">
+                    <h4 className="truncate text-sm font-black" style={{ color: treasuryColors.text }}>
+                      {bank.bank_name}
+                    </h4>
+                    <p className="mt-1 truncate text-xs font-bold" style={{ color: treasuryColors.muted }}>
+                      {bank.account_number}
+                    </p>
+                  </div>
+
+                  <div className="mt-5">
+                    <div className="mb-2 flex items-center justify-between gap-3 text-xs">
+                      <span style={{ color: treasuryColors.muted }}>الرصيد الحالي</span>
+                      <span className="font-black" style={{ color: treasuryColors.text }}>
+                        {formatCurrency(bank.current_balance, { currency: bank.currency })}
+                      </span>
+                    </div>
+                    <div className="treasury-progress">
+                      <span
+                        className="treasury-progress-fill"
+                        style={{
+                          width: `${usagePercent}%`,
+                          backgroundColor: usagePercent > 80 ? treasuryColors.alert : usagePercent > 60 ? treasuryColors.focus : treasuryColors.success,
+                        }}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="mt-4 flex items-center justify-between">
+                    <Badge variant="outline" className="border-[#E5EAF1] text-xs">
+                      {accountTypeLabels[bank.account_type] || bank.account_type}
+                    </Badge>
+                    <span className="text-xs font-bold" style={{ color: treasuryColors.muted }}>
+                      {usagePercent}% من الحد المرجعي
+                    </span>
+                  </div>
+                </motion.div>
+              );
+            })}
+
+            <button type="button" className="treasury-add-card" onClick={() => setIsCreateBankDialogOpen(true)}>
+              <span className="treasury-add-icon">
+                <Plus className="h-5 w-5" />
+              </span>
+              <span className="text-sm font-black">إضافة حساب جديد</span>
+              <span className="text-xs">فتح حساب خزينة أو بنك</span>
+            </button>
+          </div>
+        </motion.section>
+
+        <motion.section
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="treasury-panel overflow-hidden"
+        >
+          <div className="treasury-panel-header">
+            <div className="flex items-center gap-3">
+              <span className="treasury-panel-icon" style={{ color: treasuryColors.focus, backgroundColor: `${treasuryColors.focus}14` }}>
+                <ArrowRightLeft className="h-5 w-5" />
+              </span>
+              <div>
+                <h3 className="text-base font-black" style={{ color: treasuryColors.text }}>
+                  المعاملات البنكية
+                </h3>
+                <p className="text-xs" style={{ color: treasuryColors.muted }}>
+                  أحدث 10 حركات مع بحث سريع
+                </p>
+              </div>
+            </div>
+            <Button className="gap-2 bg-[#020617] text-white hover:bg-[#020617]/90" onClick={() => setIsCreateTransactionDialogOpen(true)}>
+              <Plus className="h-4 w-4" />
+              معاملة جديدة
+            </Button>
+          </div>
+
+          {transactionsLoading ? (
+            <div className="flex items-center justify-center py-16">
+              <RefreshCw className="h-10 w-10 animate-spin text-[#FB6B7A]" />
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <Table className="min-w-[720px]" aria-label="جدول المعاملات البنكية">
+                <TableHeader>
+                  <TableRow className="border-b border-[#E5EAF1] bg-[#F6F8FB]">
+                    <TableHead className="text-right text-xs font-black text-[#94A3B8]" scope="col">رقم المعاملة</TableHead>
+                    <TableHead className="text-right text-xs font-black text-[#94A3B8]" scope="col">التاريخ</TableHead>
+                    <TableHead className="text-right text-xs font-black text-[#94A3B8]" scope="col">النوع</TableHead>
+                    <TableHead className="text-right text-xs font-black text-[#94A3B8]" scope="col">المبلغ</TableHead>
+                    <TableHead className="text-right text-xs font-black text-[#94A3B8]" scope="col">الوصف</TableHead>
+                    <TableHead className="text-right text-xs font-black text-[#94A3B8]" scope="col">الحالة</TableHead>
+                    <TableHead className="text-right text-xs font-black text-[#94A3B8]" scope="col">الإجراءات</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  <AnimatePresence>
+                    {recentTransactions.map((transaction, index) => (
+                      <motion.tr
+                        key={transaction.id}
+                        initial={{ opacity: 0, x: -12 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: 12 }}
+                        transition={{ delay: index * 0.025 }}
+                        className="border-b border-[#E5EAF1]/70 transition-colors hover:bg-[#F6F8FB]"
+                      >
+                        <TableCell className="font-mono text-sm text-[#020617]">{transaction.transaction_number}</TableCell>
+                        <TableCell className="text-sm text-[#64748B]">
+                          {new Date(transaction.transaction_date).toLocaleDateString("ar-SA")}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            {getTransactionIcon(transaction.transaction_type)}
+                            {getTransactionBadge(transaction.transaction_type)}
+                          </div>
+                        </TableCell>
+                        <TableCell className={cn(
+                          "text-sm font-black",
+                          transaction.transaction_type === "deposit" ? "text-[#22C7A1]" : "text-[#FB6B7A]"
+                        )}>
+                          {transaction.transaction_type === "deposit" ? "+" : "-"}
+                          {formatCurrency(transaction.amount)}
+                        </TableCell>
+                        <TableCell className="max-w-[240px] truncate text-sm text-[#64748B]">
+                          {transaction.description}
+                        </TableCell>
+                        <TableCell>
+                          <Badge className={cn(
+                            "border-0",
+                            transaction.status === "completed"
+                              ? "bg-[#22C7A1]/10 text-[#22C7A1]"
+                              : "bg-[#7C83F6]/10 text-[#7C83F6]"
+                          )}>
+                            {transaction.status === "completed" ? "مكتملة" : "معلقة"}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button variant="ghost" size="sm" className="text-[#FB6B7A] hover:bg-[#FB6B7A]/10 hover:text-[#FB6B7A]">
+                                حذف
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent dir="rtl">
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>تأكيد حذف المعاملة</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  هل أنت متأكد من حذف المعاملة رقم {transaction.transaction_number}؟ هذا الإجراء لا يمكن التراجع عنه.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>إلغاء</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() => deleteTransaction.mutate(transaction.id)}
+                                  className="bg-[#FB6B7A] hover:bg-[#FB6B7A]/90"
+                                  disabled={deleteTransaction.isPending}
+                                >
+                                  {deleteTransaction.isPending ? "جاري الحذف..." : "حذف"}
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </TableCell>
+                      </motion.tr>
+                    ))}
+                  </AnimatePresence>
+                </TableBody>
+              </Table>
+            </div>
+          )}
+
+          {recentTransactions.length === 0 && !transactionsLoading && (
+            <div className="p-6">
+              <EmptyState
+                icon={ArrowRightLeft}
+                title="لا توجد معاملات"
+                description="لم يتم تسجيل أي معاملات بنكية مطابقة. ابدأ بإضافة معاملة جديدة."
+                onAction={() => setIsCreateTransactionDialogOpen(true)}
+                actionLabel="معاملة جديدة"
+              />
+            </div>
+          )}
+        </motion.section>
+      </div>
+
       <Dialog open={isCreateBankDialogOpen} onOpenChange={setIsCreateBankDialogOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md" dir="rtl">
           <DialogHeader>
             <DialogTitle>إنشاء حساب مصرفي جديد</DialogTitle>
-            <DialogDescription>
-              أدخل تفاصيل الحساب المصرفي الجديد
-            </DialogDescription>
+            <DialogDescription>أدخل تفاصيل الحساب المصرفي الجديد</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div>
@@ -520,7 +652,7 @@ export default function Treasury() {
               <Input
                 id="bankName"
                 value={newBank.bank_name}
-                onChange={(e) => setNewBank({ ...newBank, bank_name: e.target.value })}
+                onChange={(event) => setNewBank({ ...newBank, bank_name: event.target.value })}
                 placeholder="اسم البنك"
                 className="mt-1"
               />
@@ -530,18 +662,15 @@ export default function Treasury() {
               <Input
                 id="accountNumber"
                 value={newBank.account_number}
-                onChange={(e) => setNewBank({ ...newBank, account_number: e.target.value })}
+                onChange={(event) => setNewBank({ ...newBank, account_number: event.target.value })}
                 placeholder="رقم الحساب"
                 className="mt-1"
               />
             </div>
             <div>
               <Label htmlFor="accountType">نوع الحساب</Label>
-              <Select
-                value={newBank.account_type}
-                onValueChange={(value) => setNewBank({ ...newBank, account_type: value })}
-              >
-                <SelectTrigger className="mt-1">
+              <Select value={newBank.account_type} onValueChange={(value) => setNewBank({ ...newBank, account_type: value })}>
+                <SelectTrigger id="accountType" className="mt-1">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -557,12 +686,12 @@ export default function Treasury() {
                 id="openingBalance"
                 type="number"
                 value={newBank.opening_balance}
-                onChange={(e) => setNewBank({ ...newBank, opening_balance: Number(e.target.value), current_balance: Number(e.target.value) })}
+                onChange={(event) => setNewBank({ ...newBank, opening_balance: Number(event.target.value), current_balance: Number(event.target.value) })}
                 placeholder="0.000"
                 className="mt-1"
               />
             </div>
-            <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl">
+            <div className="flex items-center justify-between rounded-lg border border-[#E5EAF1] bg-[#F6F8FB] p-3">
               <Label htmlFor="isPrimary" className="cursor-pointer">حساب رئيسي</Label>
               <Switch
                 id="isPrimary"
@@ -572,7 +701,7 @@ export default function Treasury() {
             </div>
             <Button
               onClick={handleCreateBank}
-              className="w-full bg-gradient-to-r from-rose-500 to-orange-500 hover:from-rose-600 hover:to-orange-600"
+              className="w-full bg-[#020617] text-white hover:bg-[#020617]/90"
               disabled={createBank.isPending}
             >
               {createBank.isPending ? "جاري الإنشاء..." : "إنشاء الحساب"}
@@ -581,23 +710,17 @@ export default function Treasury() {
         </DialogContent>
       </Dialog>
 
-      {/* Create Transaction Dialog */}
       <Dialog open={isCreateTransactionDialogOpen} onOpenChange={setIsCreateTransactionDialogOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md" dir="rtl">
           <DialogHeader>
             <DialogTitle>إنشاء معاملة مصرفية جديدة</DialogTitle>
-            <DialogDescription>
-              أدخل تفاصيل المعاملة المصرفية الجديدة
-            </DialogDescription>
+            <DialogDescription>أدخل تفاصيل المعاملة المصرفية الجديدة</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div>
               <Label htmlFor="bankSelect">البنك</Label>
-              <Select
-                value={newTransaction.bank_id}
-                onValueChange={(value) => setNewTransaction({ ...newTransaction, bank_id: value })}
-              >
-                <SelectTrigger className="mt-1">
+              <Select value={newTransaction.bank_id} onValueChange={(value) => setNewTransaction({ ...newTransaction, bank_id: value })}>
+                <SelectTrigger id="bankSelect" className="mt-1">
                   <SelectValue placeholder="اختر البنك" />
                 </SelectTrigger>
                 <SelectContent>
@@ -611,26 +734,13 @@ export default function Treasury() {
             </div>
             <div>
               <Label htmlFor="transactionType">نوع المعاملة</Label>
-              <Select
-                value={newTransaction.transaction_type}
-                onValueChange={(value) => setNewTransaction({ ...newTransaction, transaction_type: value })}
-              >
-                <SelectTrigger className="mt-1">
+              <Select value={newTransaction.transaction_type} onValueChange={(value) => setNewTransaction({ ...newTransaction, transaction_type: value })}>
+                <SelectTrigger id="transactionType" className="mt-1">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="deposit">
-                    <div className="flex items-center gap-2">
-                      <ArrowDownRight className="w-4 h-4 text-emerald-500" />
-                      إيداع
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="withdrawal">
-                    <div className="flex items-center gap-2">
-                      <ArrowUpRight className="w-4 h-4 text-rose-500" />
-                      سحب
-                    </div>
-                  </SelectItem>
+                  <SelectItem value="deposit">إيداع</SelectItem>
+                  <SelectItem value="withdrawal">سحب</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -640,7 +750,7 @@ export default function Treasury() {
                 id="amount"
                 type="number"
                 value={newTransaction.amount}
-                onChange={(e) => setNewTransaction({ ...newTransaction, amount: Number(e.target.value) })}
+                onChange={(event) => setNewTransaction({ ...newTransaction, amount: Number(event.target.value) })}
                 placeholder="0.000"
                 className="mt-1"
               />
@@ -650,7 +760,7 @@ export default function Treasury() {
               <Textarea
                 id="description"
                 value={newTransaction.description}
-                onChange={(e) => setNewTransaction({ ...newTransaction, description: e.target.value })}
+                onChange={(event) => setNewTransaction({ ...newTransaction, description: event.target.value })}
                 placeholder="وصف المعاملة"
                 rows={2}
                 className="mt-1"
@@ -661,14 +771,14 @@ export default function Treasury() {
               <Input
                 id="referenceNumber"
                 value={newTransaction.reference_number}
-                onChange={(e) => setNewTransaction({ ...newTransaction, reference_number: e.target.value })}
+                onChange={(event) => setNewTransaction({ ...newTransaction, reference_number: event.target.value })}
                 placeholder="رقم المرجع"
                 className="mt-1"
               />
             </div>
             <Button
               onClick={handleCreateTransaction}
-              className="w-full bg-gradient-to-r from-rose-500 to-orange-500 hover:from-rose-600 hover:to-orange-600"
+              className="w-full bg-[#020617] text-white hover:bg-[#020617]/90"
               disabled={createTransaction.isPending}
             >
               {createTransaction.isPending ? "جاري الإنشاء..." : "إنشاء المعاملة"}
@@ -676,6 +786,201 @@ export default function Treasury() {
           </div>
         </DialogContent>
       </Dialog>
+
+      <style>{`
+        .treasury-system {
+          background:
+            linear-gradient(180deg, rgba(246, 248, 251, 0.92), var(--treasury-inner) 320px),
+            var(--treasury-inner);
+          color: var(--treasury-text);
+        }
+
+        .treasury-command,
+        .treasury-toolbar,
+        .treasury-panel {
+          border: 1px solid var(--treasury-border);
+          background: var(--treasury-surface);
+          border-radius: 8px;
+          box-shadow: 0 14px 34px rgba(2, 6, 23, 0.06);
+        }
+
+        .treasury-command {
+          padding: 24px;
+          overflow: hidden;
+          position: relative;
+        }
+
+        .treasury-command::before {
+          content: "";
+          position: absolute;
+          inset-inline-start: 0;
+          top: 0;
+          bottom: 0;
+          width: 5px;
+          background: linear-gradient(180deg, var(--treasury-alert), var(--treasury-success), var(--treasury-focus), var(--treasury-info));
+        }
+
+        .treasury-command-icon,
+        .treasury-panel-icon,
+        .treasury-metric-icon,
+        .treasury-bank-icon,
+        .treasury-add-icon,
+        .treasury-state-icon {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          border-radius: 8px;
+        }
+
+        .treasury-command-icon {
+          width: 48px;
+          height: 48px;
+          flex-shrink: 0;
+          background: color-mix(in srgb, var(--treasury-alert) 14%, white);
+          color: var(--treasury-alert);
+          border: 1px solid color-mix(in srgb, var(--treasury-alert) 24%, white);
+        }
+
+        .treasury-metric {
+          min-height: 132px;
+          border: 1px solid var(--treasury-border);
+          background: var(--treasury-inner);
+          border-radius: 8px;
+          padding: 16px;
+        }
+
+        .treasury-metric-icon,
+        .treasury-panel-icon {
+          width: 40px;
+          height: 40px;
+          border: 1px solid color-mix(in srgb, currentColor 20%, transparent);
+        }
+
+        .treasury-toolbar {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 16px;
+          padding: 16px;
+        }
+
+        .treasury-panel-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 16px;
+          padding: 16px;
+          border-bottom: 1px solid var(--treasury-border);
+          background: color-mix(in srgb, var(--treasury-inner) 70%, white);
+        }
+
+        .treasury-bank-card {
+          min-height: 220px;
+          border: 1px solid var(--treasury-border);
+          background: var(--treasury-surface);
+          border-radius: 8px;
+          padding: 16px;
+          transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+        }
+
+        .treasury-bank-card:hover {
+          border-color: color-mix(in srgb, var(--treasury-info) 36%, var(--treasury-border));
+          box-shadow: 0 10px 26px rgba(2, 6, 23, 0.055);
+          transform: translateY(-2px);
+        }
+
+        .treasury-bank-icon {
+          width: 40px;
+          height: 40px;
+          background: color-mix(in srgb, var(--treasury-info) 14%, white);
+          color: var(--treasury-info);
+          border: 1px solid color-mix(in srgb, var(--treasury-info) 24%, white);
+        }
+
+        .treasury-progress {
+          height: 8px;
+          overflow: hidden;
+          border-radius: 999px;
+          background: var(--treasury-inner);
+        }
+
+        .treasury-progress-fill {
+          display: block;
+          height: 100%;
+          border-radius: inherit;
+          transition: width 220ms ease;
+        }
+
+        .treasury-add-card {
+          min-height: 220px;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+          border: 1px dashed color-mix(in srgb, var(--treasury-alert) 42%, var(--treasury-border));
+          background: var(--treasury-inner);
+          border-radius: 8px;
+          color: var(--treasury-text);
+          transition: border-color 160ms ease, background-color 160ms ease;
+        }
+
+        .treasury-add-card:hover {
+          border-color: var(--treasury-alert);
+          background: color-mix(in srgb, var(--treasury-alert) 5%, white);
+        }
+
+        .treasury-add-card span:last-child {
+          color: var(--treasury-muted);
+        }
+
+        .treasury-add-icon {
+          width: 40px;
+          height: 40px;
+          background: color-mix(in srgb, var(--treasury-alert) 12%, white);
+          color: var(--treasury-alert);
+        }
+
+        .treasury-state {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 14px;
+          color: var(--treasury-muted);
+          text-align: center;
+        }
+
+        .treasury-state-icon {
+          width: 64px;
+          height: 64px;
+          color: var(--treasury-alert);
+          background: color-mix(in srgb, var(--treasury-alert) 12%, white);
+        }
+
+        .treasury-system button,
+        .treasury-system input,
+        .treasury-system textarea,
+        .treasury-system [role="combobox"] {
+          border-radius: 8px !important;
+        }
+
+        .treasury-system *:focus-visible {
+          outline-color: var(--treasury-focus) !important;
+          --tw-ring-color: var(--treasury-focus) !important;
+        }
+
+        @media (max-width: 760px) {
+          .treasury-command {
+            padding: 18px;
+          }
+
+          .treasury-toolbar,
+          .treasury-panel-header {
+            align-items: stretch;
+            flex-direction: column;
+          }
+        }
+      `}</style>
     </div>
   );
 }

@@ -65,7 +65,7 @@ const FinanceHub: React.FC = () => {
       change: (stats as any)?.revenueChange || 0,
       icon: TrendingUp,
       color: 'emerald' as const,
-      path: '/finance/reports',
+      path: '/finance/reports-analysis?tab=reports',
     },
     {
       title: 'نسبة التحصيل',
@@ -452,15 +452,15 @@ const FinanceHub: React.FC = () => {
               <FileText className="w-4 h-4 ml-2" />
               فاتورة جديدة
             </Button>
-            <Button variant="outline" onClick={() => navigate('/finance/unified-payments')}>
+            <Button variant="outline" onClick={() => navigate('/finance/billing?tab=payments')}>
               <CreditCard className="w-4 h-4 ml-2" />
               تسجيل دفعة
             </Button>
-            <Button variant="outline" onClick={() => navigate('/finance/unified-reports')}>
+            <Button variant="outline" onClick={() => navigate('/finance/reports-analysis?tab=reports')}>
               <BarChart3 className="w-4 h-4 ml-2" />
               تقرير مالي
             </Button>
-            <Button variant="outline" onClick={() => navigate('/finance/ledger')}>
+            <Button variant="outline" onClick={() => navigate('/finance/accounting?tab=ledger')}>
               <Calculator className="w-4 h-4 ml-2" />
               ميزان المراجعة
             </Button>

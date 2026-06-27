@@ -18,6 +18,7 @@ import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Separator } from '@/components/ui/separator';
 import { useFleetifyTranslation } from "@/hooks/useTranslation";
+import { usePaymentOperations } from '@/hooks/business/usePaymentOperations';
 import { 
   Select, 
   SelectContent, 
@@ -60,6 +61,10 @@ const ReceivePaymentWorkflow: React.FC = () => {
   const { user } = useAuth();
   const { companyId, isLoading: authLoading } = useUnifiedCompanyAccess();
   const { formatCurrency } = useCurrencyFormatter();
+  const { createPayment } = usePaymentOperations({
+    autoCreateJournalEntry: true,
+    autoUpdateBankBalance: true,
+  });
 
   // قراءة المعاملات من URL
   const contractNumberFromUrl = searchParams.get('contract');
@@ -157,7 +162,7 @@ const ReceivePaymentWorkflow: React.FC = () => {
     }
   };
 
-  // الحصول على الرصيد المستحق للعقد المختار
+  // الحصول Ø¹Ù„Ù‰ الرصيد المستحق للعقد المختار
   const balanceDue = useMemo(() => {
     if (!selectedContract) return 0;
     const total = selectedContract.contract_amount || 0;
@@ -177,7 +182,6 @@ const ReceivePaymentWorkflow: React.FC = () => {
 
       // 2. البحث عن الفاتورة المناسبة (أول فاتورة غير مدفوعة للعقد)
       let targetInvoiceId: string | null = null;
-      let remainingAmount = data.amount;
       
       const { data: unpaidInvoices, error: invoicesError } = await supabase
         .from('invoices')
@@ -189,61 +193,25 @@ const ReceivePaymentWorkflow: React.FC = () => {
       if (invoicesError) {
         console.error('Error fetching invoices:', invoicesError);
       }
-      
-      // 3. ربط الدفعة بالفاتورة الأولى غير المدفوعة
+
       if (unpaidInvoices && unpaidInvoices.length > 0) {
         targetInvoiceId = unpaidInvoices[0].id;
       }
-
-      // 4. إنشاء الدفعة مع ربطها بالفاتورة
-      const { data: paymentData, error: paymentError } = await supabase
-        .from('payments')
-        .insert({
-          company_id: companyId,
-          contract_id: data.contractId,
-          customer_id: data.customerId,
-          invoice_id: targetInvoiceId, // ✅ ربط الدفعة بالفاتورة
-          payment_number: paymentNumber,
-          amount: data.amount,
-          payment_type: data.paymentMethod,
-          payment_method: 'received',
-          payment_date: data.paymentDate,
-          payment_status: 'completed',
-          reference_number: data.referenceNumber || null,
-          notes: data.notes || null,
-          created_by: user.id,
-        })
-        .select()
-        .single();
-
-      if (paymentError) throw paymentError;
-
-      // 5. تحديث حالة الفواتير (توزيع المبلغ على الفواتير)
-      if (unpaidInvoices && unpaidInvoices.length > 0) {
-        for (const invoice of unpaidInvoices) {
-          if (remainingAmount <= 0) break;
-          
-          const invoiceBalance = invoice.total_amount - (invoice.paid_amount || 0);
-          const amountToApply = Math.min(remainingAmount, invoiceBalance);
-          
-          if (amountToApply > 0) {
-            const newPaidAmount = (invoice.paid_amount || 0) + amountToApply;
-            const newBalance = invoice.total_amount - newPaidAmount;
-            const newStatus = newBalance <= 0 ? 'paid' : 'partial';
-            
-            await supabase
-              .from('invoices')
-              .update({
-                paid_amount: newPaidAmount,
-                balance_due: newBalance,
-                payment_status: newStatus,
-              })
-              .eq('id', invoice.id);
-            
-            remainingAmount -= amountToApply;
-          }
-        }
-      }
+      
+      const paymentData = await createPayment.mutateAsync({
+        contract_id: data.contractId,
+        customer_id: data.customerId,
+        invoice_id: targetInvoiceId || undefined,
+        payment_number: paymentNumber,
+        amount: data.amount,
+        payment_method: data.paymentMethod as 'cash' | 'bank_transfer' | 'check' | 'credit_card',
+        payment_date: data.paymentDate,
+        payment_status: 'completed',
+        reference_number: data.referenceNumber || undefined,
+        notes: data.notes || undefined,
+        type: 'receipt',
+        currency: 'QAR',
+      });
 
       // 6. تحديث تاريخ آخر دفعة في العقد
       await supabase
@@ -316,9 +284,9 @@ const ReceivePaymentWorkflow: React.FC = () => {
   }
 
   const paymentMethods = [
-    { value: 'cash', label: 'نقداً', icon: Banknote },
-    { value: 'bank_transfer', label: 'تحويل بنكي', icon: Building2 },
-    { value: 'check', label: 'شيك', icon: FileText },
+    { value: 'cash', label: 'Ù†Ù‚Ø¯Ø§Ù‹', icon: Banknote },
+    { value: 'bank_transfer', label: 'تحويل Ø¨Ù†Ùƒي', icon: Building2 },
+    { value: 'check', label: 'Ø´ÙŠÙƒ', icon: FileText },
     { value: 'credit_card', label: 'بطاقة ائتمانية', icon: CreditCard },
     { value: 'debit_card', label: 'بطاقة مدين', icon: Wallet },
   ];
@@ -380,12 +348,12 @@ const ReceivePaymentWorkflow: React.FC = () => {
               </CardDescription>
             </CardHeader>
             <CardContent className="p-6 space-y-6">
-              {/* معلومات سريعة إذا كان العقد محدد من URL */}
+              {/* معلومات سريعة إذا Ùƒان العقد محدد من URL */}
               {contractNumberFromUrl && selectedContract && (
                 <div className="bg-green-50 border border-green-200 rounded-xl p-4 mb-4">
                   <div className="flex items-center gap-2 text-green-800 font-medium mb-2">
                     <CheckCircle className="h-5 w-5" />
-                    تم تحديد العقد تلقائياً
+                    تم تحديد العقد ØªÙ„Ù‚Ø§Ø¦ÙŠØ§Ù‹
                   </div>
                   <p className="text-sm text-green-700">
                     العقد رقم: {contractNumberFromUrl}
@@ -418,7 +386,7 @@ const ReceivePaymentWorkflow: React.FC = () => {
                             <div className="flex-1">
                               <div className="font-medium">عقد #{contract.contract_number}</div>
                               <div className="text-xs text-muted-foreground">
-                                {customerName} • {vehicle?.plate_number || 'لا توجد مركبة'}
+                                {customerName} • {vehicle?.plate_number || 'لا توجد Ù…Ø±Ùƒبة'}
                               </div>
                             </div>
                             <Badge variant={remaining > 0 ? 'destructive' : 'default'} className="text-xs">
@@ -450,7 +418,7 @@ const ReceivePaymentWorkflow: React.FC = () => {
                     </div>
                     
                     <div className="bg-white rounded-lg p-3 border">
-                      <div className="text-xs text-slate-500 mb-1">المركبة</div>
+                      <div className="text-xs text-slate-500 mb-1">Ø§Ù„Ù…Ø±Ùƒبة</div>
                       <div className="font-medium flex items-center gap-2">
                         <Car className="h-4 w-4 text-slate-400" />
                         {(selectedContract.vehicles as any)?.plate_number || '-'}
@@ -544,7 +512,7 @@ const ReceivePaymentWorkflow: React.FC = () => {
                       onClick={() => setFormData(prev => ({ ...prev, amount: balanceDue }))}
                       className="text-xs"
                     >
-                      كامل المتبقي ({formatCurrency(balanceDue)})
+                      Ùƒامل المتبقي ({formatCurrency(balanceDue)})
                     </Button>
                   </div>
                 )}
@@ -587,16 +555,16 @@ const ReceivePaymentWorkflow: React.FC = () => {
                 </div>
               </div>
 
-              {/* رقم المرجع (للتحويل البنكي أو الشيك) */}
+              {/* رقم المرجع (للتحويل Ø§Ù„Ø¨Ù†Ùƒي أو Ø§Ù„Ø´ÙŠÙƒ) */}
               {['bank_transfer', 'check'].includes(formData.paymentMethod) && (
                 <div className="space-y-2 animate-in fade-in-50">
                   <Label className="text-base font-medium">
-                    {formData.paymentMethod === 'check' ? 'رقم الشيك' : 'رقم المرجع'}
+                    {formData.paymentMethod === 'check' ? 'رقم Ø§Ù„Ø´ÙŠÙƒ' : 'رقم المرجع'}
                   </Label>
                   <Input
                     value={formData.referenceNumber}
                     onChange={(e) => setFormData(prev => ({ ...prev, referenceNumber: e.target.value }))}
-                    placeholder={formData.paymentMethod === 'check' ? 'أدخل رقم الشيك...' : 'أدخل رقم التحويل...'}
+                    placeholder={formData.paymentMethod === 'check' ? 'أدخل رقم Ø§Ù„Ø´ÙŠÙƒ...' : 'أدخل رقم التحويل...'}
                     className="h-12"
                   />
                 </div>
@@ -617,13 +585,13 @@ const ReceivePaymentWorkflow: React.FC = () => {
           </Card>
         )}
 
-        {/* الخطوة 3: المراجعة والتأكيد */}
+        {/* الخطوة 3: المراجعة ÙˆØ§Ù„ØªØ£Ùƒيد */}
         {currentStep === 3 && (
           <Card className="animate-in slide-in-from-right-5">
             <CardHeader className="border-b bg-gradient-to-r from-emerald-50 to-green-50">
               <CardTitle className="flex items-center gap-2 text-emerald-800">
                 <CheckCircle className="h-5 w-5" />
-                الخطوة 3: مراجعة وتأكيد
+                الخطوة 3: مراجعة ÙˆØªØ£Ùƒيد
               </CardTitle>
               <CardDescription>
                 راجع تفاصيل الدفعة قبل الحفظ
@@ -685,14 +653,14 @@ const ReceivePaymentWorkflow: React.FC = () => {
                 </div>
               </div>
 
-              {/* تحذير إذا كان المبلغ أكبر من المتبقي */}
+              {/* تحذير إذا Ùƒان المبلغ Ø£Ùƒبر من المتبقي */}
               {formData.amount > balanceDue && (
                 <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-start gap-3">
                   <AlertCircle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
                   <div>
                     <p className="text-amber-800 font-medium">تنبيه</p>
                     <p className="text-amber-700 text-sm">
-                      المبلغ المدخل أكبر من الرصيد المتبقي. سيتم تسجيل المبلغ الإضافي كرصيد دائن للعميل.
+                      المبلغ المدخل Ø£Ùƒبر من الرصيد المتبقي. سيتم تسجيل المبلغ الإضافي Ùƒرصيد دائن للعميل.
                     </p>
                   </div>
                 </div>
@@ -742,7 +710,7 @@ const ReceivePaymentWorkflow: React.FC = () => {
               ) : (
                 <>
                   <CheckCircle className="h-4 w-4" />
-                  تأكيد الدفعة
+                  ØªØ£Ùƒيد الدفعة
                 </>
               )}
             </Button>

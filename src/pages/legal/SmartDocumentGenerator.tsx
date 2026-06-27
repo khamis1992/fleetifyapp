@@ -30,6 +30,7 @@ import {
   DocumentTemplate,
   Question,
 } from '@/services/ai/ZhipuAIService';
+import '@/styles/legal-system.css';
 
 // أنواع الرسائل
 interface ChatMessage {
@@ -234,7 +235,7 @@ export default function SmartDocumentGenerator() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="legal-system min-h-screen">
       <div className="container mx-auto p-6 max-w-4xl">
         {/* Header */}
         <motion.div

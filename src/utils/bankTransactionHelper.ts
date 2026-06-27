@@ -36,7 +36,7 @@ export async function createBankTransactionFromPayment(
     }
 
     // التحقق من أن طريقة الدفع تتطلب تحديث البنك
-    const bankPaymentMethods = ['bank_transfer', 'check', 'wire_transfer', 'online_transfer'];
+    const bankPaymentMethods = ['bank_transfer', 'check', 'credit_card', 'debit_card', 'wire_transfer', 'online_transfer'];
     if (!bankPaymentMethods.includes(payment.payment_method)) {
       console.log('⚠️ Payment method does not require bank transaction:', payment.payment_method);
       return { success: true };

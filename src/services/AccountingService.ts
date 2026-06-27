@@ -69,22 +69,7 @@ class AccountingService {
       // 1. جلب الدفعة مع القيد المحاسبي
       const { data: payment } = await supabase
         .from('payments')
-        .select(`
-          *,
-          journal_entries!payments_journal_entry_id_fkey (
-            id,
-            status,
-            entry_date
-          ),
-          journal_entry_lines (
-            id,
-            line_number,
-            account_id,
-            debit,
-            credit,
-            line_description
-          )
-        `)
+        .select('*')
         .eq('id', paymentId)
         .single();
 
@@ -97,16 +82,40 @@ class AccountingService {
       }
 
       // 2. التحقق من وجود قيد محاسبي
-      if (!options.skipJournalEntryCheck && !payment.journal_entry_id) {
+      let journalEntryId = payment.journal_entry_id as string | null;
+
+      if (!journalEntryId) {
+        const { data: referencedJournalEntry } = await supabase
+          .from('journal_entries')
+          .select('id')
+          .eq('company_id', companyId)
+          .eq('reference_type', 'payment')
+          .eq('reference_id', paymentId)
+          .maybeSingle();
+
+        journalEntryId = referencedJournalEntry?.id || null;
+      }
+
+      if (!options.skipJournalEntryCheck && !journalEntryId) {
         return {
           success: false,
           updatedAccounts: [],
-          errors: ['الدفعة لا تحتوي على قيد محاسبي']
+          errors: ['Payment has no accounting journal entry']
         };
       }
 
-      // 3. جلب تفاصيل الحسابات المتأثرة
-      const accountIds = payment.journal_entry_lines
+      const { data: journalEntryLines, error: journalLinesError } = journalEntryId
+        ? await supabase
+          .from('journal_entry_lines')
+          .select('id,line_number,account_id,debit_amount,credit_amount,line_description')
+          .eq('journal_entry_id', journalEntryId)
+        : { data: [], error: null };
+
+      if (journalLinesError) {
+        throw journalLinesError;
+      }
+
+      const accountIds = journalEntryLines
         ?.map(line => line.account_id)
         .filter(id => id) as string[] || [];
 
@@ -143,11 +152,11 @@ class AccountingService {
           const currentBalanceResult = await this.getAccountBalance(account.id);
 
           // حساب التغير في الرصيد
-          const accountLines = payment.journal_entry_lines
+          const accountLines = journalEntryLines
             ?.filter(line => line.account_id === account.id) || [];
 
-          const debitChange = accountLines.reduce((sum, line) => sum + (line.debit || 0), 0);
-          const creditChange = accountLines.reduce((sum, line) => sum + (line.credit || 0), 0);
+          const debitChange = accountLines.reduce((sum, line) => sum + (line.debit_amount || 0), 0);
+          const creditChange = accountLines.reduce((sum, line) => sum + (line.credit_amount || 0), 0);
 
           const change = creditChange - debitChange;
           const newBalance = (currentBalanceResult.balance || 0) + change;

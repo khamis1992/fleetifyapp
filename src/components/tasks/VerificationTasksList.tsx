@@ -25,10 +25,10 @@ interface VerificationTasksListProps {
 }
 
 const statusColors = {
-  pending: 'bg-yellow-500',
-  in_progress: 'bg-blue-500',
-  verified: 'bg-green-500',
-  rejected: 'bg-red-500',
+  pending: 'bg-[#FFFBEB] text-[#F59E0B]',
+  in_progress: 'bg-[#38BDF8]/10 text-[#38BDF8]',
+  verified: 'bg-[#22C7A1]/10 text-[#22C7A1]',
+  rejected: 'bg-[#FB6B7A]/10 text-[#FB6B7A]',
 };
 
 const statusLabels = {
@@ -53,9 +53,9 @@ export const VerificationTasksList: React.FC<VerificationTasksListProps> = ({
 
   if (isLoading) {
     return (
-      <Card className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 rounded-xl">
+      <Card className="rounded-lg border border-[#E5EAF1] bg-white">
         <CardContent className="flex items-center justify-center h-32">
-          <Loader2 className="h-6 w-6 animate-spin text-teal-500" />
+          <Loader2 className="h-6 w-6 animate-spin text-[#38BDF8]" />
         </CardContent>
       </Card>
     );
@@ -63,18 +63,18 @@ export const VerificationTasksList: React.FC<VerificationTasksListProps> = ({
 
   return (
     <Card className={cn(
-      'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 rounded-xl hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all',
+      'rounded-lg border border-[#E5EAF1] bg-white shadow-sm',
       compact && 'border-0 shadow-none'
     )}>
       <CardHeader className={cn('pb-3', compact && 'px-0 pt-0')}>
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg flex items-center gap-2">
-            <div className="bg-gradient-to-br from-orange-500 to-orange-600 shadow-lg shadow-orange-500/20 rounded-xl p-1.5">
-              <ClipboardCheck className="h-5 w-5 text-white" />
+            <div className="rounded-lg bg-[#38BDF8]/10 p-2 text-[#38BDF8]">
+              <ClipboardCheck className="h-5 w-5" />
             </div>
             مهام التدقيق
             {tasks.length > 0 && (
-              <Badge variant="secondary" className="bg-orange-100 text-orange-700">
+              <Badge variant="secondary" className="rounded-md bg-[#F6F8FB] text-slate-600">
                 {tasks.length}
               </Badge>
             )}
@@ -135,15 +135,15 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onOpen }) => {
 
   return (
     <div
-      className="p-4 rounded-2xl border bg-white dark:bg-slate-900 hover:border-orange-500/30 hover:shadow-lg hover:shadow-orange-500/10 transition-all cursor-pointer group"
+      className="group cursor-pointer rounded-lg border border-[#E5EAF1] bg-white p-4 shadow-sm transition hover:border-[#38BDF8]"
       onClick={() => onOpen(task.id)}
     >
       <div className="flex items-start justify-between gap-4">
         <div className="flex-1 min-w-0">
           {/* Customer Name */}
           <div className="flex items-center gap-2 mb-2">
-            <div className="bg-orange-100 rounded-lg p-1.5">
-              <User className="h-4 w-4 text-orange-600" />
+            <div className="rounded-lg bg-[#F6F8FB] p-1.5 text-[#38BDF8]">
+              <User className="h-4 w-4" />
             </div>
             <h3 className="font-semibold text-slate-900 truncate">
               {customerName}
@@ -197,7 +197,7 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onOpen }) => {
           <Badge
             variant="secondary"
             className={cn(
-              'text-white text-xs',
+              'rounded-md text-xs font-semibold',
               statusColors[task.status]
             )}
           >

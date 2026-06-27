@@ -12,7 +12,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
-import { TestTube, AlertTriangle, FileText, Eye, EyeOff, DollarSign, Brain, Check, ChevronsUpDown, Search } from "lucide-react";
+import { TestTube, AlertTriangle, FileText, Eye, EyeOff, DollarSign, Brain, Check, ChevronsUpDown, Search, ReceiptText, WalletCards, UserRound, Building2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { AccountLevelBadge } from "@/components/finance/AccountLevelBadge";
 import { useBanks } from "@/hooks/useTreasury";
@@ -26,6 +26,7 @@ import { useVendors } from "@/hooks/useFinance";
 import { enhancedPaymentSchema, PaymentJournalPreview } from "@/schemas/payment.schema";
 import { usePaymentValidation } from "@/hooks/finance/usePaymentValidation";
 import { toast } from 'sonner';
+import { systemColorPattern } from "@/lib/design-system/systemColorPattern";
 
 interface UnifiedPaymentFormProps {
   open: boolean;
@@ -159,6 +160,46 @@ export const UnifiedPaymentForm: React.FC<UnifiedPaymentFormProps> = ({
   const watchedAmount = form.watch('amount');
   const watchedContractId = form.watch('contract_id');
   const watchedInvoiceId = form.watch('invoice_id');
+  const customerList = Array.isArray(customers) ? customers : customers?.data || [];
+  const vendorList = vendors || [];
+
+  const selectedCustomer = useMemo(() => {
+    if (!watchedCustomerId) return null;
+    return customerList.find((customer: any) => customer.id === watchedCustomerId) || null;
+  }, [customerList, watchedCustomerId]);
+
+  const selectedVendor = useMemo(() => {
+    if (!watchedVendorId) return null;
+    return vendorList.find((vendor: any) => vendor.id === watchedVendorId) || null;
+  }, [vendorList, watchedVendorId]);
+
+  const selectedEntityName = selectedCustomer
+    ? selectedCustomer.company_name_ar || selectedCustomer.company_name || `${selectedCustomer.first_name_ar || selectedCustomer.first_name || ''} ${selectedCustomer.last_name_ar || selectedCustomer.last_name || ''}`.trim() || 'عميل'
+    : selectedVendor?.vendor_name || 'بدون ربط';
+
+  const paymentMethodLabel = {
+    cash: 'نقداً',
+    check: 'شيك',
+    bank_transfer: 'تحويل بنكي',
+    credit_card: 'بطاقة ائتمان',
+    debit_card: 'بطاقة خصم'
+  }[paymentMethod as string] || 'غير محدد';
+
+  const amountPreview = Number(watchedAmount || 0).toLocaleString('en-US', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 3
+  });
+
+  const voucherStyle = {
+    "--voucher-text": systemColorPattern.colors.text,
+    "--voucher-inner": systemColorPattern.colors.innerSurface,
+    "--voucher-muted": systemColorPattern.colors.secondaryText,
+    "--voucher-border": systemColorPattern.colors.border,
+    "--voucher-success": systemColorPattern.colors.success,
+    "--voucher-info": systemColorPattern.colors.info,
+    "--voucher-alert": systemColorPattern.colors.alert,
+    "--voucher-focus": systemColorPattern.colors.focus,
+  } as React.CSSProperties;
 
   // Payment validation hook
   const { validationResult, validatePayment } = usePaymentValidation({
@@ -314,6 +355,10 @@ export const UnifiedPaymentForm: React.FC<UnifiedPaymentFormProps> = ({
   };
 
   const getDialogDescription = () => {
+    if (paymentSubtype === 'payment') {
+      return 'أدخل تفاصيل المبلغ المصروف وحدد المستفيد أو المورد عند الحاجة';
+    }
+
     switch (type) {
       case 'customer_payment':
         return 'أدخل تفاصيل المبلغ المقبوض من العميل';
@@ -328,14 +373,26 @@ export const UnifiedPaymentForm: React.FC<UnifiedPaymentFormProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>{getDialogTitle()}</DialogTitle>
-          <DialogDescription>
+      <DialogContent className="voucher-dialog max-h-[88dvh] max-w-5xl overflow-hidden rounded-lg border-0 p-0" dir="rtl" style={voucherStyle}>
+        <DialogHeader className="voucher-dialog-header">
+          <div className="flex min-w-0 items-start gap-3">
+            <span className="voucher-dialog-icon">
+              <ReceiptText className="h-5 w-5" />
+            </span>
+            <div className="min-w-0">
+              <DialogTitle className="text-xl font-black text-[#020617]">{getDialogTitle()}</DialogTitle>
+              <DialogDescription className="mt-1 font-bold text-[#94A3B8]">
             {getDialogDescription()}
-          </DialogDescription>
+              </DialogDescription>
+            </div>
+          </div>
+          <div className="voucher-dialog-status">
+            <span>{paymentSubtype === 'receipt' ? 'قبض' : 'صرف'}</span>
+            <strong>{watchedValues.currency || companyCurrency || 'QAR'}</strong>
+          </div>
         </DialogHeader>
 
+        <div className="voucher-dialog-body">
         {/* Permission check */}
         {!canCreatePayments && (
           <Alert variant="destructive">
@@ -346,20 +403,46 @@ export const UnifiedPaymentForm: React.FC<UnifiedPaymentFormProps> = ({
           </Alert>
         )}
 
+        <section className="voucher-summary">
+          <div className="voucher-summary-main">
+            <span className="voucher-summary-icon">
+              <WalletCards className="h-5 w-5" />
+            </span>
+            <div>
+              <p>{paymentSubtype === 'receipt' ? 'مبلغ القبض' : 'مبلغ الصرف'}</p>
+              <strong>{amountPreview} {watchedValues.currency || companyCurrency || 'QAR'}</strong>
+            </div>
+          </div>
+          <div className="voucher-summary-meta">
+            <div>
+              <span>المستفيد / الرابط</span>
+              <strong>{selectedEntityName}</strong>
+            </div>
+            <div>
+              <span>طريقة الدفع</span>
+              <strong>{paymentMethodLabel}</strong>
+            </div>
+            <div>
+              <span>رقم الإيصال</span>
+              <strong>{watchedValues.payment_number || 'لم يحدد'}</strong>
+            </div>
+          </div>
+        </section>
+
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="voucher-form">
             <Tabs value={currentTab} onValueChange={setCurrentTab}>
-              <TabsList className="grid w-full grid-cols-3">
-                <TabsTrigger value="details" className="flex items-center gap-2">
+              <TabsList className="voucher-tabs grid w-full grid-cols-3">
+                <TabsTrigger value="details" className="voucher-tab-trigger">
                   <DollarSign className="h-4 w-4" />
                   تفاصيل الدفعة
                 </TabsTrigger>
-                <TabsTrigger value="accounting" className="flex items-center gap-2">
+                <TabsTrigger value="accounting" className="voucher-tab-trigger">
                   <FileText className="h-4 w-4" />
                   الحسابات
                 </TabsTrigger>
                 {showJournalPreview && (
-                  <TabsTrigger value="preview" className="flex items-center gap-2">
+                  <TabsTrigger value="preview" className="voucher-tab-trigger">
                     <Eye className="h-4 w-4" />
                     معاينة القيد
                   </TabsTrigger>
@@ -367,24 +450,32 @@ export const UnifiedPaymentForm: React.FC<UnifiedPaymentFormProps> = ({
               </TabsList>
 
               {/* Payment Details Tab */}
-              <TabsContent value="details" className="space-y-6">
-                <Card>
-                  <CardHeader>
-                    <div className="flex items-center justify-between">
-                      <CardTitle>معلومات الدفعة الأساسية</CardTitle>
+              <TabsContent value="details" className="voucher-tab-content">
+                <Card className="voucher-card">
+                  <CardHeader className="voucher-card-header">
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex min-w-0 items-center gap-3">
+                        <span className="voucher-card-icon">
+                          <DollarSign className="h-4 w-4" />
+                        </span>
+                        <div>
+                          <CardTitle>معلومات الدفعة الأساسية</CardTitle>
+                          <p>ابدأ بالمبلغ، التاريخ، وطريقة الدفع ثم اربط العملية بالعميل أو المورد عند الحاجة.</p>
+                        </div>
+                      </div>
                       <Button
                         type="button"
                         variant="outline"
                         size="sm"
                         onClick={fillMockData}
-                        className="flex items-center gap-2"
+                        className="voucher-ghost-button"
                       >
                         <TestTube className="h-4 w-4" />
                         بيانات تجريبية
                       </Button>
                     </div>
                   </CardHeader>
-                  <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <CardContent className="voucher-card-content">
                     {/* Payment Number */}
                     <FormField
                       control={form.control}
@@ -529,7 +620,7 @@ export const UnifiedPaymentForm: React.FC<UnifiedPaymentFormProps> = ({
                               </FormControl>
                               <SelectContent>
                                 <SelectItem value="none">بدون ربط بعميل</SelectItem>
-                                {(Array.isArray(customers) ? customers : customers?.data || []).map((customer: any) => (
+                                {customerList.map((customer: any) => (
                                   <SelectItem key={customer.id} value={customer.id}>
                                     {customer.company_name || `${customer.first_name || ''} ${customer.last_name || ''}`.trim() || customer.customer_name || 'عميل'}
                                   </SelectItem>
@@ -561,7 +652,7 @@ export const UnifiedPaymentForm: React.FC<UnifiedPaymentFormProps> = ({
                               </FormControl>
                               <SelectContent>
                                 <SelectItem value="none">بدون ربط بمورد</SelectItem>
-                                {vendors?.map((vendor) => (
+                                {vendorList.map((vendor) => (
                                   <SelectItem key={vendor.id} value={vendor.id}>
                                     {vendor.vendor_name}
                                   </SelectItem>
@@ -706,12 +797,20 @@ export const UnifiedPaymentForm: React.FC<UnifiedPaymentFormProps> = ({
               </TabsContent>
 
               {/* Accounting Tab */}
-              <TabsContent value="accounting" className="space-y-6">
-                <Card>
-                  <CardHeader>
+              <TabsContent value="accounting" className="voucher-tab-content">
+                <Card className="voucher-card">
+                  <CardHeader className="voucher-card-header">
+                    <div className="flex min-w-0 items-center gap-3">
+                      <span className="voucher-card-icon">
+                        <FileText className="h-4 w-4" />
+                      </span>
+                      <div>
                     <CardTitle>الحسابات والتصنيفات</CardTitle>
+                        <p>اختر الحساب المحاسبي ومركز التكلفة والبنك ليتكون القيد بشكل صحيح.</p>
+                      </div>
+                    </div>
                   </CardHeader>
-                  <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <CardContent className="voucher-card-content accounting">
                     {/* Account - with search */}
                     <FormField
                       control={form.control}
@@ -900,8 +999,8 @@ export const UnifiedPaymentForm: React.FC<UnifiedPaymentFormProps> = ({
               {/* Journal Preview Tab */}
               {showJournalPreview && journalPreview && (
                 <TabsContent value="preview" className="space-y-6">
-                  <Card>
-                    <CardHeader>
+                  <Card className="voucher-card">
+                    <CardHeader className="voucher-card-header">
                       <CardTitle>معاينة القيد المحاسبي</CardTitle>
                     </CardHeader>
                     <CardContent>
@@ -965,7 +1064,7 @@ export const UnifiedPaymentForm: React.FC<UnifiedPaymentFormProps> = ({
             </Tabs>
 
             {/* Action Buttons */}
-            <div className="flex justify-between items-center pt-6 border-t border-border/50">
+            <div className="voucher-form-footer">
               <div className="flex gap-2">
                 {currentTab === 'details' && (
                   <Button 
@@ -973,7 +1072,7 @@ export const UnifiedPaymentForm: React.FC<UnifiedPaymentFormProps> = ({
                     variant="outline" 
                     onClick={handleGeneratePreview}
                     disabled={isPreviewLoading || watchedValues.amount <= 0}
-                    className="flex items-center gap-2"
+                    className="voucher-ghost-button"
                   >
                     {showJournalPreviewDialog ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     {isPreviewLoading ? "جاري التحضير..." : showJournalPreviewDialog ? "إخفاء المعاينة" : "معاينة القيد"}
@@ -981,12 +1080,13 @@ export const UnifiedPaymentForm: React.FC<UnifiedPaymentFormProps> = ({
                 )}
               </div>
               
-              <div className="flex space-x-2">
+              <div className="voucher-footer-actions">
                 <Button type="button" variant="outline" onClick={handleClose} disabled={isSubmitting}>
                   إلغاء
                 </Button>
                 <Button
                   type="submit"
+                  className="voucher-submit-button"
                   disabled={
                     isCreating ||
                     isUpdating ||
@@ -1002,6 +1102,308 @@ export const UnifiedPaymentForm: React.FC<UnifiedPaymentFormProps> = ({
             </div>
           </form>
         </Form>
+        </div>
+        <style>{`
+          .voucher-dialog {
+            display: grid;
+            grid-template-rows: auto minmax(0, 1fr);
+            color: var(--voucher-text);
+            background: white;
+          }
+
+          .voucher-dialog-header {
+            display: flex;
+            flex-direction: row;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 16px;
+            border-bottom: 1px solid var(--voucher-border);
+            background: linear-gradient(180deg, var(--voucher-inner), white);
+            padding: 16px 20px;
+          }
+
+          .voucher-dialog-icon,
+          .voucher-summary-icon,
+          .voucher-card-icon {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            border-radius: 8px;
+            color: var(--voucher-success);
+            background: color-mix(in srgb, var(--voucher-success) 12%, white);
+          }
+
+          .voucher-dialog-icon {
+            width: 42px;
+            height: 42px;
+            border: 1px solid color-mix(in srgb, var(--voucher-success) 24%, white);
+          }
+
+          .voucher-dialog-status {
+            display: grid;
+            gap: 2px;
+            min-width: 82px;
+            border-radius: 8px;
+            background: color-mix(in srgb, var(--voucher-info) 10%, white);
+            color: var(--voucher-info);
+            padding: 8px 10px;
+            text-align: center;
+          }
+
+          .voucher-dialog-status span {
+            font-size: 11px;
+            font-weight: 900;
+          }
+
+          .voucher-dialog-status strong {
+            font-size: 13px;
+            font-weight: 950;
+          }
+
+          .voucher-dialog-body {
+            min-height: 0;
+            overflow-y: auto;
+            background: var(--voucher-inner);
+            padding: 14px 18px;
+          }
+
+          .voucher-summary {
+            display: grid;
+            grid-template-columns: minmax(220px, 0.7fr) minmax(0, 1.3fr);
+            gap: 10px;
+            margin-bottom: 12px;
+          }
+
+          .voucher-summary-main,
+          .voucher-summary-meta > div,
+          .voucher-card {
+            border: 1px solid var(--voucher-border);
+            border-radius: 8px;
+            background: white;
+            box-shadow: 0 10px 26px rgba(2, 6, 23, 0.05);
+          }
+
+          .voucher-summary-main {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+          }
+
+          .voucher-summary-icon {
+            width: 44px;
+            height: 44px;
+          }
+
+          .voucher-summary p,
+          .voucher-summary span,
+          .voucher-card-header p {
+            color: var(--voucher-muted);
+            font-weight: 800;
+          }
+
+          .voucher-summary p {
+            margin: 0;
+            font-size: 12px;
+          }
+
+          .voucher-summary strong {
+            display: block;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            color: var(--voucher-text);
+            font-weight: 950;
+          }
+
+          .voucher-summary-main strong {
+            margin-top: 2px;
+            font-size: 22px;
+          }
+
+          .voucher-summary-meta {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 8px;
+          }
+
+          .voucher-summary-meta > div {
+            padding: 10px;
+          }
+
+          .voucher-summary-meta span {
+            display: block;
+            font-size: 11px;
+          }
+
+          .voucher-summary-meta strong {
+            margin-top: 4px;
+            font-size: 13px;
+          }
+
+          .voucher-form {
+            display: grid;
+            gap: 12px;
+          }
+
+          .voucher-tabs {
+            height: auto;
+            gap: 8px;
+            border: 1px solid var(--voucher-border);
+            border-radius: 8px;
+            background: white;
+            padding: 6px;
+          }
+
+          .voucher-tab-trigger {
+            gap: 7px;
+            min-height: 42px;
+            border-radius: 8px !important;
+            color: var(--voucher-muted);
+            font-weight: 900;
+          }
+
+          .voucher-tab-trigger[data-state="active"] {
+            background: color-mix(in srgb, var(--voucher-success) 12%, white) !important;
+            color: var(--voucher-success) !important;
+            box-shadow: none !important;
+          }
+
+          .voucher-tab-content {
+            margin-top: 12px;
+          }
+
+          .voucher-card {
+            overflow: hidden;
+          }
+
+          .voucher-card-header {
+            border-bottom: 1px solid var(--voucher-border);
+            background: white;
+            padding: 14px 16px;
+          }
+
+          .voucher-card-header h3,
+          .voucher-card-header .text-2xl {
+            color: var(--voucher-text);
+            font-size: 18px;
+            font-weight: 950;
+          }
+
+          .voucher-card-header p {
+            margin-top: 3px;
+            font-size: 12px;
+          }
+
+          .voucher-card-icon {
+            width: 36px;
+            height: 36px;
+          }
+
+          .voucher-card-content {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 14px;
+            padding: 16px;
+          }
+
+          .voucher-card-content.accounting {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+          }
+
+          .voucher-dialog label {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            color: var(--voucher-text);
+            font-size: 12px;
+            font-weight: 900;
+          }
+
+          .voucher-dialog input,
+          .voucher-dialog textarea,
+          .voucher-dialog [role="combobox"] {
+            min-height: 46px;
+            border-radius: 8px !important;
+            border-color: var(--voucher-border) !important;
+            background: var(--voucher-inner) !important;
+            color: var(--voucher-text) !important;
+            box-shadow: none !important;
+          }
+
+          .voucher-dialog input::-webkit-outer-spin-button,
+          .voucher-dialog input::-webkit-inner-spin-button {
+            margin: 0;
+            appearance: none;
+          }
+
+          .voucher-dialog input[type="number"] {
+            appearance: textfield;
+            -moz-appearance: textfield;
+          }
+
+          .voucher-dialog textarea {
+            min-height: 92px;
+          }
+
+          .voucher-ghost-button {
+            gap: 7px;
+            border-color: var(--voucher-border) !important;
+            border-radius: 8px !important;
+            background: var(--voucher-inner) !important;
+            color: var(--voucher-text) !important;
+            font-weight: 900;
+          }
+
+          .voucher-form-footer {
+            position: sticky;
+            bottom: -14px;
+            z-index: 4;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            border-top: 1px solid var(--voucher-border);
+            background: white;
+            padding: 12px 0 0;
+          }
+
+          .voucher-footer-actions {
+            display: flex;
+            gap: 8px;
+          }
+
+          .voucher-footer-actions button {
+            min-height: 42px;
+            border-radius: 8px !important;
+          }
+
+          .voucher-submit-button {
+            background: var(--voucher-success) !important;
+            color: white !important;
+          }
+
+          .voucher-dialog *:focus-visible {
+            outline-color: var(--voucher-focus) !important;
+            --tw-ring-color: var(--voucher-focus) !important;
+          }
+
+          @media (max-width: 760px) {
+            .voucher-dialog-header,
+            .voucher-form-footer {
+              flex-direction: column;
+              align-items: stretch;
+            }
+
+            .voucher-summary,
+            .voucher-summary-meta,
+            .voucher-card-content,
+            .voucher-card-content.accounting {
+              grid-template-columns: 1fr;
+            }
+          }
+        `}</style>
       </DialogContent>
       
       {/* Journal Preview Dialog */}

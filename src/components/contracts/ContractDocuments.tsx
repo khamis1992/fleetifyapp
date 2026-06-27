@@ -379,7 +379,7 @@ export function ContractDocuments({ contractId, customerId, vehicleId }: Contrac
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-16">
-        <RefreshCw className="w-8 h-8 animate-spin text-teal-500" />
+        <RefreshCw className="h-8 w-8 animate-spin text-[#173A63]" />
       </div>
     );
   }
@@ -402,7 +402,7 @@ export function ContractDocuments({ contractId, customerId, vehicleId }: Contrac
       
       {/* Document Saving Errors Summary */}
       {documentSavingErrors.length > 0 && (
-        <motion.div variants={fadeInUp} className="bg-red-50 border border-red-200 rounded-2xl p-4">
+        <motion.div variants={fadeInUp} className="rounded-xl border border-red-200 bg-red-50 p-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <AlertTriangle className="h-4 w-4 text-red-600" />
@@ -428,16 +428,16 @@ export function ContractDocuments({ contractId, customerId, vehicleId }: Contrac
       {/* Documents List */}
       <motion.div
         variants={fadeInUp}
-        className="bg-white rounded-xl border border-neutral-200 p-8 shadow-sm"
+        className="rounded-xl border border-[#DDE5EF] bg-white p-5 shadow-sm sm:p-6"
       >
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h3 className="text-xl font-bold text-neutral-900">مستندات العقد</h3>
+            <h3 className="text-xl font-black text-[#142033]">مستندات العقد</h3>
             <p className="text-sm text-neutral-500">{documents.length} مستند</p>
           </div>
           <Button
             onClick={() => setIsDialogOpen(true)}
-            className="gap-2 bg-gradient-to-r from-teal-500 to-teal-600"
+            className="gap-2 rounded-xl bg-[#173A63] hover:bg-[#173A63]/90"
           >
             <Plus className="w-4 h-4" />
             إضافة مستند
@@ -452,7 +452,7 @@ export function ContractDocuments({ contractId, customerId, vehicleId }: Contrac
                 variants={scaleIn}
                 whileHover={{ y: -4 }}
                 onClick={() => setIsDialogOpen(true)}
-                className="aspect-[4/3] bg-neutral-50 rounded-2xl border-2 border-dashed border-neutral-200 flex flex-col items-center justify-center text-neutral-400 hover:border-teal-300 hover:text-teal-500 transition-all cursor-pointer"
+                className="flex aspect-[4/3] cursor-pointer flex-col items-center justify-center rounded-xl border border-dashed border-[#C8D4E2] bg-[#FAFBFC] text-[#7A8698] transition-colors hover:border-[#173A63] hover:text-[#173A63]"
               >
                 <FileText className="w-10 h-10 mb-2" />
                 <p className="text-xs font-bold">{placeholder}</p>
@@ -473,9 +473,9 @@ export function ContractDocuments({ contractId, customerId, vehicleId }: Contrac
                     handlePreviewDocument(document);
                   }
                 }}
-                className="group relative bg-neutral-50 rounded-2xl overflow-hidden border border-neutral-200 hover:border-teal-300 hover:shadow-md transition-all cursor-pointer"
+                className="group relative cursor-pointer overflow-hidden rounded-xl border border-[#DDE5EF] bg-[#FAFBFC] transition-colors hover:border-[#173A63]"
               >
-                <div className="aspect-square bg-gradient-to-br from-neutral-100 to-neutral-200 flex items-center justify-center relative overflow-hidden">
+                <div className="relative flex aspect-square items-center justify-center overflow-hidden bg-[#EEF5FB]">
                   {document.document_type === 'condition_report' ? (
                     <Car className="w-12 h-12 text-blue-400" />
                   ) : (document.mime_type?.includes('image') || 
@@ -521,7 +521,7 @@ export function ContractDocuments({ contractId, customerId, vehicleId }: Contrac
                     }}
                   >
                     <SelectTrigger 
-                      className="h-6 text-[10px] mb-2 max-w-full px-2 border-neutral-200"
+                      className="mb-2 h-6 max-w-full border-[#D8E1EC] px-2 text-[10px]"
                       onClick={(e) => e.stopPropagation()}
                     >
                       <SelectValue />
@@ -539,11 +539,11 @@ export function ContractDocuments({ contractId, customerId, vehicleId }: Contrac
                   </p>
                   
                   {/* أزرار الإجراءات - دائماً مرئية */}
-                  <div className="flex items-center gap-2 pt-2 border-t border-neutral-200">
+                  <div className="flex items-center gap-2 border-t border-[#E6EDF5] pt-2">
                     <Button
                       size="sm"
                       variant="outline"
-                      className="flex-1 h-8 text-xs gap-1 bg-teal-50 hover:bg-teal-100 text-teal-700 border-teal-200"
+                      className="h-8 flex-1 gap-1 border-[#D8E1EC] bg-white text-xs text-[#173A63] hover:bg-[#EEF5FB]"
                       onClick={(e) => {
                         e.stopPropagation();
                         if (document.document_type === 'condition_report' && document.condition_report_id) {

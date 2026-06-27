@@ -27,6 +27,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import '@/styles/legal-system.css';
 
 interface DocumentInfo {
   name: string;
@@ -247,7 +248,7 @@ export default function LawsuitDocumentsView() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="legal-system flex items-center justify-center min-h-screen">
         <LoadingSpinner className="h-8 w-8" />
       </div>
     );
@@ -255,7 +256,7 @@ export default function LawsuitDocumentsView() {
 
   if (!contract) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="legal-system flex items-center justify-center min-h-screen">
         <Card className="w-full max-w-md">
           <CardContent className="pt-6 text-center">
             <p className="text-muted-foreground">لم يتم العثور على العقد</p>
@@ -278,7 +279,7 @@ export default function LawsuitDocumentsView() {
   const availableDocuments = documents.filter(d => d.available);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 p-4 md:p-8">
+    <div className="legal-system min-h-screen p-4 md:p-8">
       <div className="max-w-5xl mx-auto space-y-6">
         
         {/* Header */}
@@ -288,8 +289,8 @@ export default function LawsuitDocumentsView() {
           className="text-center space-y-2"
         >
           <div className="flex items-center justify-center gap-3">
-            <div className="p-3 bg-teal-500 rounded-xl shadow-lg">
-              <FileCheck className="h-8 w-8 text-white" />
+            <div className="legal-icon h-14 w-14">
+              <FileCheck className="h-8 w-8" />
             </div>
             <h1 className="text-3xl font-bold text-slate-900 dark:text-white">
               مستندات الدعوى القانونية
@@ -306,7 +307,7 @@ export default function LawsuitDocumentsView() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
         >
-          <Card className="border-2">
+          <Card className="legal-panel">
             <CardHeader className="bg-gradient-to-l from-slate-50 to-white dark:from-slate-800 dark:to-slate-900">
               <CardTitle className="text-lg flex items-center gap-2">
                 <Building2 className="h-5 w-5 text-teal-600" />
@@ -362,7 +363,7 @@ export default function LawsuitDocumentsView() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
         >
-          <Card className="border-2">
+          <Card className="legal-panel">
             <CardHeader className="bg-gradient-to-l from-slate-50 to-white dark:from-slate-800 dark:to-slate-900">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-lg flex items-center gap-2">
@@ -388,7 +389,7 @@ export default function LawsuitDocumentsView() {
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: 0.3 + index * 0.1 }}
-                      className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800 rounded-lg border-2 border-transparent hover:border-teal-500 transition-all"
+                      className="flex items-center justify-between rounded-lg border border-[#E5EAF1] bg-[#F6F8FB] p-4 transition-all hover:border-[#38BDF8]"
                     >
                       <div className="flex items-center gap-3 flex-1">
                         <div className="p-2 bg-teal-100 dark:bg-teal-900 rounded-lg text-teal-600 dark:text-teal-400">
@@ -413,7 +414,7 @@ export default function LawsuitDocumentsView() {
                         <Button
                           size="sm"
                           onClick={() => handleDownloadDocument(doc)}
-                          className="gap-2 bg-teal-600 hover:bg-teal-700"
+                          className="legal-action-primary gap-2"
                         >
                           <Download className="h-4 w-4" />
                           تحميل

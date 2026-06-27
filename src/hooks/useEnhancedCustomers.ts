@@ -497,18 +497,20 @@ export const useDeleteCustomer = () => {
         }
 
         // 5. حذف المدفوعات المرتبطة بالعميل
-        console.log('🗑️ Deleting payments...');
-        const { error: paymentsError } = await supabase
+        const { count: relatedPaymentsCount, error: paymentsCheckError } = await supabase
           .from('payments')
-          .delete()
+          .select('id', { count: 'exact', head: true })
           .eq('customer_id', customerId)
           .eq('company_id', companyId);
-        
-        if (paymentsError) {
-          console.error('Error deleting payments:', paymentsError);
+
+        if (paymentsCheckError) {
+          throw paymentsCheckError;
         }
 
-        // 6. حذف الفواتير
+        if ((relatedPaymentsCount || 0) > 0) {
+          throw new Error('Cannot permanently delete a customer with recorded payments. Archive or deactivate the customer to preserve the financial audit trail.');
+        }
+
         console.log('🗑️ Deleting invoices...');
         const { error: invoicesError } = await supabase
           .from('invoices')

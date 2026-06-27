@@ -664,7 +664,7 @@ export const DemoDataGenerator: React.FC = () => {
           amount: amount,
           payment_date: date.toISOString().split('T')[0],
           status: 'completed',
-          notes: `دفعة نقدية رقم ${i + 1}`,
+          notes: `[DEMO_DATA_GENERATOR] دفعة نقدية رقم ${i + 1}`,
           created_at: new Date().toISOString()
         });
       }
@@ -759,7 +759,11 @@ export const DemoDataGenerator: React.FC = () => {
       // حذف البيانات بالترتيب الصحيح (بسبب العلاقات الخارجية)
       
       // حذف المدفوعات أولاً
-      await supabase.from('payments').delete().eq('company_id', companyId);
+      await supabase
+        .from('payments')
+        .delete()
+        .eq('company_id', companyId)
+        .ilike('notes', '%[DEMO_DATA_GENERATOR]%');
       
       // حذف المعاملات المالية (محذوف - جدول غير موجود)
       console.log('تحذير: لم يتم حذف المعاملات المالية (جدول غير موجود)');

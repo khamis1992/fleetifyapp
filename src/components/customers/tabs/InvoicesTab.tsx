@@ -65,7 +65,7 @@ const InvoicesTab = ({
       <head>
         <meta charset="UTF-8">
         <title>كشف المستحقات المالية - ${statementNumber}</title>
-        <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+        <link rel="icon" href="/uploads/7453c280-3175-4ccf-a73b-24921ec5990b.png" type="image/png" />
         <style>
           @page { size: A4; margin: 15mm 20mm 20mm 20mm; }
           @media print {
@@ -192,23 +192,23 @@ const InvoicesTab = ({
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      className="space-y-5"
+      className="space-y-4"
     >
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 rounded-xl border border-[#DDE5EF] bg-[#F8FAFC] p-4 md:flex-row md:items-center md:justify-between">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-teal-500 to-teal-600 flex items-center justify-center">
+          <div className="w-10 h-10 rounded-lg bg-[#173A63] flex items-center justify-center">
             <Wallet className="w-5 h-5 text-white" />
           </div>
           <div>
-            <h4 className="text-sm font-bold text-teal-900">الفواتير</h4>
-            <p className="text-xs text-teal-600/70">{invoices.length} فاتورة</p>
+            <h4 className="text-sm font-black text-[#142033]">الفواتير</h4>
+            <p className="text-xs font-semibold text-[#6A7688]">{invoices.length} فاتورة</p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {hasOutstandingItems && (
             <Button
               variant="outline"
-              className="gap-2 border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300"
+              className="h-9 gap-2 border-rose-200 bg-white text-rose-700 hover:bg-rose-50"
               onClick={handlePrintOutstandingStatement}
             >
               <Printer className="w-4 h-4" />
@@ -216,7 +216,7 @@ const InvoicesTab = ({
             </Button>
           )}
           {totalOutstanding > 0 && (
-            <Badge className="bg-gradient-to-r from-red-50 to-rose-50 text-red-700 border border-red-200 px-3 py-1.5 rounded-lg font-medium">
+            <Badge className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-1.5 font-bold text-rose-700">
               مستحق: {totalOutstanding.toLocaleString()} ر.ق
             </Badge>
           )}
@@ -224,7 +224,7 @@ const InvoicesTab = ({
       </div>
 
       {invoices.length > 0 ? (
-        <div className="space-y-3">
+        <div className="grid gap-3 xl:grid-cols-2">
           {invoices.map((invoice, index) => {
             const outstanding = (invoice.total_amount || 0) - (invoice.paid_amount || 0);
             const isPaid = invoice.payment_status === 'paid';
@@ -237,16 +237,16 @@ const InvoicesTab = ({
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: index * 0.05 }}
                 className={cn(
-                  "flex items-center justify-between p-4 rounded-xl border transition-all cursor-pointer hover:shadow-md backdrop-blur-sm",
+                  "rounded-xl border bg-white p-4 transition-all cursor-pointer hover:-translate-y-0.5 hover:shadow-md",
                   isPaid
-                    ? "bg-gradient-to-r from-emerald-50 to-green-50 border-emerald-200 hover:border-emerald-300"
+                    ? "border-emerald-200 hover:border-emerald-300"
                     : isOverdue
-                    ? "bg-gradient-to-r from-red-50 to-rose-50 border-red-200 hover:border-red-300"
-                    : "bg-gradient-to-r from-amber-50 to-yellow-50 border-amber-200 hover:border-amber-300"
+                    ? "border-red-200 hover:border-red-300"
+                    : "border-amber-200 hover:border-amber-300"
                 )}
                 onClick={() => onInvoiceClick(invoice)}
               >
-                <div className="flex items-center gap-3">
+                <div className="mb-4 flex items-center gap-3">
                   <div className={cn(
                     "w-10 h-10 rounded-lg flex items-center justify-center",
                     isPaid
@@ -264,7 +264,7 @@ const InvoicesTab = ({
                     </p>
                   </div>
                 </div>
-                <div className="text-left">
+                <div className="flex items-end justify-between gap-3">
                   <p className={cn(
                     "font-bold",
                     isPaid ? "text-emerald-600" : isOverdue ? "text-red-600" : "text-amber-600"
@@ -282,14 +282,28 @@ const InvoicesTab = ({
                     {isPaid ? 'مسدد' : isOverdue ? 'متأخر' : 'مستحق'}
                   </Badge>
                 </div>
+                <div className="mt-4 grid grid-cols-3 gap-2 border-t border-[#E7EDF4] pt-3">
+                  <div className="rounded-lg bg-[#F8FAFC] p-3">
+                    <p className="text-[11px] font-bold text-[#6A7688]">الإجمالي</p>
+                    <p className="mt-1 text-sm font-black text-[#142033]">{(invoice.total_amount || 0).toLocaleString()} ر.ق</p>
+                  </div>
+                  <div className="rounded-lg bg-[#F8FAFC] p-3">
+                    <p className="text-[11px] font-bold text-[#6A7688]">المدفوع</p>
+                    <p className="mt-1 text-sm font-black text-emerald-700">{(invoice.paid_amount || 0).toLocaleString()} ر.ق</p>
+                  </div>
+                  <div className={cn("rounded-lg p-3", outstanding > 0 ? "bg-rose-50" : "bg-emerald-50")}>
+                    <p className={cn("text-[11px] font-bold", outstanding > 0 ? "text-rose-700" : "text-emerald-700")}>المتبقي</p>
+                    <p className={cn("mt-1 text-sm font-black", outstanding > 0 ? "text-rose-700" : "text-emerald-700")}>{outstanding.toLocaleString()} ر.ق</p>
+                  </div>
+                </div>
               </motion.div>
             );
           })}
         </div>
       ) : (
-        <div className="bg-gradient-to-br from-teal-50 to-cyan-50 rounded-2xl p-12 text-center border border-teal-100">
-          <Wallet className="w-12 h-12 text-teal-300 mx-auto mb-3" />
-          <p className="text-teal-600 font-medium">لا توجد فواتير لهذا العميل</p>
+        <div className="rounded-xl border border-dashed border-[#B8C6D8] bg-[#F8FAFC] p-12 text-center">
+          <Wallet className="mx-auto mb-3 h-12 w-12 text-[#9AA6B6]" />
+          <p className="font-bold text-[#536173]">لا توجد فواتير لهذا العميل</p>
         </div>
       )}
     </motion.div>

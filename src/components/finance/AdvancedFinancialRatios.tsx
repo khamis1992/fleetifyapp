@@ -1,94 +1,228 @@
-import { useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { 
-  TrendingUp, 
-  TrendingDown, 
-  DollarSign, 
+import { useMemo, useState } from "react";
+import {
   Activity,
-  Zap,
+  BarChart3,
+  Download,
   Shield,
-  FileText,
-  Download
+  Sparkles,
+  TrendingDown,
+  TrendingUp,
+  Wallet,
 } from "lucide-react";
-import { useAdvancedFinancialRatios, getRatioAssessment } from "@/hooks/useAdvancedFinancialRatios";
-import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter";
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  PolarAngleAxis,
+  PolarGrid,
+  PolarRadiusAxis,
+  Radar,
+  RadarChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
+import { format, subMonths } from "date-fns";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
-import { BarChart, Bar, LineChart, Line, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { format, subMonths } from 'date-fns';
-import { ar } from 'date-fns/locale';
+import { useAdvancedFinancialRatios } from "@/hooks/useAdvancedFinancialRatios";
+import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter";
+import { systemColorPattern } from "@/lib/design-system/systemColorPattern";
+import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
-interface RatioCardProps {
+const colors = systemColorPattern.colors;
+
+type RatioTone = "excellent" | "good" | "watch" | "risk";
+
+interface RatioDefinition {
+  key: string;
   title: string;
-  titleEn: string;
+  group: "profitability" | "liquidity" | "activity" | "leverage";
   value: number;
-  format: 'percentage' | 'ratio' | 'days' | 'currency';
-  assessment: ReturnType<typeof getRatioAssessment>;
+  format: "percentage" | "ratio" | "days" | "currency";
+  benchmark: string;
   description: string;
-  icon: any;
-  benchmark?: string;
+  tone: RatioTone;
+  icon: React.ElementType;
 }
 
-function RatioCard({ title, titleEn, value, format: formatType, assessment, description, icon: Icon, benchmark }: RatioCardProps) {
-  const { formatCurrency } = useCurrencyFormatter();
-  
-  const formatValue = () => {
-    if (formatType === 'percentage') return `${value.toFixed(2)}%`;
-    if (formatType === 'ratio') return value.toFixed(2);
-    if (formatType === 'days') return `${Math.round(value)} يوم`;
-    if (formatType === 'currency') return formatCurrency(value);
-    return value.toString();
-  };
+const toneMeta: Record<RatioTone, { label: string; color: string; bg: string }> = {
+  excellent: { label: "ممتاز", color: colors.success, bg: `${colors.success}14` },
+  good: { label: "جيد", color: colors.info, bg: `${colors.info}14` },
+  watch: { label: "مراقبة", color: colors.focus, bg: `${colors.focus}14` },
+  risk: { label: "مخاطرة", color: colors.alert, bg: `${colors.alert}14` },
+};
 
-  return (
-    <Card className="hover:shadow-md transition-shadow">
-      <CardContent className="p-6">
-        <div className="flex items-start justify-between mb-4">
-          <div className={`p-3 rounded-lg ${assessment.status === 'excellent' ? 'bg-green-100' : assessment.status === 'good' ? 'bg-blue-100' : assessment.status === 'fair' ? 'bg-yellow-100' : 'bg-red-100'}`}>
-            <Icon className={`h-6 w-6 ${assessment.color}`} />
-          </div>
-          <Badge variant={assessment.status === 'excellent' || assessment.status === 'good' ? 'default' : 'secondary'} className={assessment.color}>
-            {assessment.label}
-          </Badge>
-        </div>
-        
-        <div className="space-y-2">
-          <h3 className="text-sm font-medium text-muted-foreground">
-            {title} <span className="text-xs">({titleEn})</span>
-          </h3>
-          <div className="text-3xl font-bold">{formatValue()}</div>
-          <p className="text-xs text-muted-foreground">{description}</p>
-          {benchmark && (
-            <p className="text-xs text-blue-600 mt-2">
-              📊 المعيار: {benchmark}
-            </p>
-          )}
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
+const assess = (value: number, thresholds: { excellent: number; good: number; watch: number }, lowerIsBetter = false): RatioTone => {
+  if (lowerIsBetter) {
+    if (value <= thresholds.excellent) return "excellent";
+    if (value <= thresholds.good) return "good";
+    if (value <= thresholds.watch) return "watch";
+    return "risk";
+  }
+
+  if (value >= thresholds.excellent) return "excellent";
+  if (value >= thresholds.good) return "good";
+  if (value >= thresholds.watch) return "watch";
+  return "risk";
+};
 
 export function AdvancedFinancialRatios() {
-  const [period, setPeriod] = useState<'month' | 'quarter' | 'year'>('month');
+  const [period, setPeriod] = useState<"month" | "quarter" | "year">("month");
   const { formatCurrency } = useCurrencyFormatter();
-  
+
   const today = new Date();
   const startDate = format(
-    period === 'month' ? subMonths(today, 1) :
-    period === 'quarter' ? subMonths(today, 3) :
-    subMonths(today, 12),
-    'yyyy-MM-dd'
+    period === "month" ? subMonths(today, 1) : period === "quarter" ? subMonths(today, 3) : subMonths(today, 12),
+    "yyyy-MM-dd",
   );
-  const endDate = format(today, 'yyyy-MM-dd');
-
+  const endDate = format(today, "yyyy-MM-dd");
   const { data: ratios, isLoading } = useAdvancedFinancialRatios(startDate, endDate);
+
+  const ratioCards = useMemo<RatioDefinition[]>(() => {
+    if (!ratios) return [];
+
+    return [
+      {
+        key: "netProfitMargin",
+        title: "هامش الربح الصافي",
+        group: "profitability",
+        value: ratios.profitability.netProfitMargin,
+        format: "percentage",
+        benchmark: "5% أو أكثر",
+        description: "صافي الربح كنسبة من الإيرادات",
+        tone: assess(ratios.profitability.netProfitMargin, { excellent: 20, good: 10, watch: 5 }),
+        icon: TrendingUp,
+      },
+      {
+        key: "returnOnAssets",
+        title: "العائد على الأصول",
+        group: "profitability",
+        value: ratios.profitability.returnOnAssets,
+        format: "percentage",
+        benchmark: "5% أو أكثر",
+        description: "كفاءة استخدام الأصول لتوليد الربح",
+        tone: assess(ratios.profitability.returnOnAssets, { excellent: 15, good: 10, watch: 5 }),
+        icon: Shield,
+      },
+      {
+        key: "currentRatio",
+        title: "نسبة التداول",
+        group: "liquidity",
+        value: ratios.liquidity.currentRatio,
+        format: "ratio",
+        benchmark: "1.5 - 2.0",
+        description: "قدرة تغطية الالتزامات قصيرة الأجل",
+        tone: assess(ratios.liquidity.currentRatio, { excellent: 2, good: 1.5, watch: 1 }),
+        icon: Wallet,
+      },
+      {
+        key: "quickRatio",
+        title: "النسبة السريعة",
+        group: "liquidity",
+        value: ratios.liquidity.quickRatio,
+        format: "ratio",
+        benchmark: "1.0 أو أكثر",
+        description: "السيولة المتاحة دون الاعتماد على المخزون",
+        tone: assess(ratios.liquidity.quickRatio, { excellent: 1.5, good: 1, watch: 0.75 }),
+        icon: Sparkles,
+      },
+      {
+        key: "assetTurnover",
+        title: "دوران الأصول",
+        group: "activity",
+        value: ratios.activity.assetTurnover,
+        format: "ratio",
+        benchmark: "1.0 أو أكثر",
+        description: "كفاءة الأصول في توليد الإيرادات",
+        tone: assess(ratios.activity.assetTurnover, { excellent: 2, good: 1, watch: 0.5 }),
+        icon: Activity,
+      },
+      {
+        key: "daysSalesOutstanding",
+        title: "متوسط التحصيل",
+        group: "activity",
+        value: ratios.activity.daysSalesOutstanding,
+        format: "days",
+        benchmark: "30 - 45 يوم",
+        description: "متوسط أيام تحصيل الذمم المدينة",
+        tone: assess(ratios.activity.daysSalesOutstanding, { excellent: 30, good: 45, watch: 60 }, true),
+        icon: BarChart3,
+      },
+      {
+        key: "debtToAssets",
+        title: "الدين إلى الأصول",
+        group: "leverage",
+        value: ratios.leverage.debtToAssets,
+        format: "percentage",
+        benchmark: "أقل من 50%",
+        description: "نسبة الأصول الممولة بالالتزامات",
+        tone: assess(ratios.leverage.debtToAssets, { excellent: 30, good: 50, watch: 70 }, true),
+        icon: TrendingDown,
+      },
+      {
+        key: "equityRatio",
+        title: "نسبة حقوق الملكية",
+        group: "leverage",
+        value: ratios.leverage.equityRatio,
+        format: "percentage",
+        benchmark: "50% أو أكثر",
+        description: "حصة حقوق الملكية من إجمالي الأصول",
+        tone: assess(ratios.leverage.equityRatio, { excellent: 70, good: 50, watch: 30 }),
+        icon: Shield,
+      },
+    ];
+  }, [ratios]);
+
+  const score = useMemo(() => {
+    if (!ratioCards.length) return 0;
+    const points = { excellent: 100, good: 78, watch: 55, risk: 25 };
+    return Math.round(ratioCards.reduce((sum, ratio) => sum + points[ratio.tone], 0) / ratioCards.length);
+  }, [ratioCards]);
+
+  const radarData = ratios
+    ? [
+        { category: "الربحية", value: clamp((ratios.profitability.netProfitMargin + ratios.profitability.returnOnEquity) / 2) },
+        { category: "السيولة", value: clamp(ratios.liquidity.currentRatio * 45) },
+        { category: "النشاط", value: clamp(ratios.activity.assetTurnover * 50) },
+        { category: "الاستقرار", value: clamp(100 - ratios.leverage.debtToAssets) },
+      ]
+    : [];
+
+  const comparisonData = ratios
+    ? [
+        { name: "هامش صافي", value: ratios.profitability.netProfitMargin, benchmark: 10 },
+        { name: "عائد الأصول", value: ratios.profitability.returnOnAssets, benchmark: 5 },
+        { name: "حقوق الملكية", value: ratios.leverage.equityRatio, benchmark: 50 },
+      ]
+    : [];
+
+  const formatRatioValue = (ratio: RatioDefinition) => {
+    if (ratio.format === "percentage") return `${ratio.value.toFixed(1)}%`;
+    if (ratio.format === "ratio") return ratio.value.toFixed(2);
+    if (ratio.format === "days") return `${Math.round(ratio.value)} يوم`;
+    return formatCurrency(ratio.value);
+  };
+
+  const handleExport = () => {
+    if (!ratios) return;
+    const blob = new Blob([JSON.stringify({ period, startDate, endDate, ratios }, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `financial-ratios-${endDate}.json`;
+    link.click();
+    URL.revokeObjectURL(url);
+    toast.success("تم تصدير بيانات النسب");
+  };
 
   if (isLoading) {
     return (
-      <Card>
-        <CardContent className="p-6 flex items-center justify-center">
+      <Card className="border-[#E5EAF1] shadow-sm">
+        <CardContent className="flex min-h-[220px] items-center justify-center">
           <LoadingSpinner />
         </CardContent>
       </Card>
@@ -97,397 +231,269 @@ export function AdvancedFinancialRatios() {
 
   if (!ratios) {
     return (
-      <Card>
-        <CardContent className="p-6">
-          <p className="text-center text-muted-foreground">لا توجد بيانات متاحة</p>
-        </CardContent>
+      <Card className="border-[#E5EAF1] shadow-sm">
+        <CardContent className="p-8 text-center text-[#94A3B8]">لا توجد بيانات مالية كافية لاحتساب النسب.</CardContent>
       </Card>
     );
   }
 
-  // Prepare data for Radar Chart
-  const radarData = [
-    { 
-      category: 'الربحية', 
-      value: (ratios.profitability.netProfitMargin + ratios.profitability.returnOnEquity) / 2 
-    },
-    { 
-      category: 'السيولة', 
-      value: ratios.liquidity.currentRatio * 50 // Scale to 0-100
-    },
-    { 
-      category: 'النشاط', 
-      value: ratios.activity.assetTurnover * 50 
-    },
-    { 
-      category: 'المديونية', 
-      value: 100 - ratios.leverage.debtToAssets // Inverse (lower is better)
-    }
-  ];
-
-  // Prepare data for comparison
-  const comparisonData = [
-    { name: 'الربحية الإجمالية', value: ratios.profitability.grossProfitMargin, benchmark: 30 },
-    { name: 'الربحية التشغيلية', value: ratios.profitability.operatingProfitMargin, benchmark: 15 },
-    { name: 'الربحية الصافية', value: ratios.profitability.netProfitMargin, benchmark: 10 },
-  ];
-
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
+    <div className="ratios-redesign space-y-5" dir="rtl">
+      <section className="ratio-command">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex items-start gap-3">
+            <span className="ratio-command-icon">
+              <PercentIcon />
+            </span>
             <div>
-              <CardTitle className="flex items-center gap-2">
-                <Activity className="h-5 w-5 text-primary" />
-                التحليلات المالية المتقدمة
-              </CardTitle>
-              <CardDescription>
-                النسب والمؤشرات المالية الرئيسية لتقييم الأداء المالي
-              </CardDescription>
-            </div>
-            <div className="flex items-center gap-2">
-              <Button
-                variant={period === 'month' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setPeriod('month')}
-              >
-                شهري
-              </Button>
-              <Button
-                variant={period === 'quarter' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setPeriod('quarter')}
-              >
-                ربع سنوي
-              </Button>
-              <Button
-                variant={period === 'year' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setPeriod('year')}
-              >
-                سنوي
-              </Button>
+              <p className="text-xs font-black uppercase tracking-[0.18em] text-[#94A3B8]">Financial Health</p>
+              <h3 className="mt-1 text-xl font-black text-[#020617]">لوحة النسب المالية</h3>
+              <p className="mt-1 text-sm leading-7 text-[#94A3B8]">
+                قراءة مركزة للربحية، السيولة، النشاط، والمديونية خلال الفترة المحددة.
+              </p>
             </div>
           </div>
-        </CardHeader>
-      </Card>
-
-      {/* Overview Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card className="bg-gradient-to-br from-green-500 to-green-600 text-white">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <TrendingUp className="h-5 w-5" />
-              <span className="text-sm font-medium">الإيرادات</span>
-            </div>
-            <div className="text-2xl font-bold">{formatCurrency(ratios.rawData.revenue)}</div>
-          </CardContent>
-        </Card>
-        
-        <Card className="bg-gradient-to-br from-blue-500 to-blue-600 text-white">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <DollarSign className="h-5 w-5" />
-              <span className="text-sm font-medium">صافي الربح</span>
-            </div>
-            <div className="text-2xl font-bold">{formatCurrency(ratios.rawData.netIncome)}</div>
-          </CardContent>
-        </Card>
-        
-        <Card className="bg-gradient-to-br from-purple-500 to-purple-600 text-white">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <Shield className="h-5 w-5" />
-              <span className="text-sm font-medium">إجمالي الأصول</span>
-            </div>
-            <div className="text-2xl font-bold">{formatCurrency(ratios.rawData.totalAssets)}</div>
-          </CardContent>
-        </Card>
-        
-        <Card className="bg-gradient-to-br from-orange-500 to-orange-600 text-white">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <Zap className="h-5 w-5" />
-              <span className="text-sm font-medium">حقوق الملكية</span>
-            </div>
-            <div className="text-2xl font-bold">{formatCurrency(ratios.rawData.totalEquity)}</div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Radar Chart */}
-      <Card>
-        <CardHeader>
-          <CardTitle>نظرة شاملة على الأداء</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <ResponsiveContainer width="100%" height={300}>
-            <RadarChart data={radarData}>
-              <PolarGrid />
-              <PolarAngleAxis dataKey="category" />
-              <PolarRadiusAxis angle={90} domain={[0, 100]} />
-              <Radar name="الأداء الحالي" dataKey="value" stroke="#3b82f6" fill="#3b82f6" fillOpacity={0.6} />
-            </RadarChart>
-          </ResponsiveContainer>
-        </CardContent>
-      </Card>
-
-      {/* 1. Profitability Ratios */}
-      <div className="space-y-4">
-        <h2 className="text-2xl font-bold flex items-center gap-2">
-          <TrendingUp className="h-6 w-6 text-green-600" />
-          نسب الربحية (Profitability Ratios)
-        </h2>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          <RatioCard
-            title="هامش الربح الإجمالي"
-            titleEn="Gross Profit Margin"
-            value={ratios.profitability.grossProfitMargin}
-            format="percentage"
-            assessment={getRatioAssessment('profitability', 'grossProfitMargin', ratios.profitability.grossProfitMargin)}
-            description="نسبة الربح الإجمالي إلى الإيرادات"
-            icon={DollarSign}
-            benchmark="20% أو أكثر"
-          />
-          
-          <RatioCard
-            title="هامش الربح التشغيلي"
-            titleEn="Operating Profit Margin"
-            value={ratios.profitability.operatingProfitMargin}
-            format="percentage"
-            assessment={getRatioAssessment('profitability', 'operatingProfitMargin', ratios.profitability.operatingProfitMargin)}
-            description="نسبة الربح التشغيلي إلى الإيرادات"
-            icon={Activity}
-            benchmark="10% أو أكثر"
-          />
-          
-          <RatioCard
-            title="هامش الربح الصافي"
-            titleEn="Net Profit Margin"
-            value={ratios.profitability.netProfitMargin}
-            format="percentage"
-            assessment={getRatioAssessment('profitability', 'netProfitMargin', ratios.profitability.netProfitMargin)}
-            description="نسبة صافي الربح إلى الإيرادات"
-            icon={TrendingUp}
-            benchmark="5% أو أكثر"
-          />
-          
-          <RatioCard
-            title="العائد على الأصول"
-            titleEn="Return on Assets (ROA)"
-            value={ratios.profitability.returnOnAssets}
-            format="percentage"
-            assessment={getRatioAssessment('profitability', 'returnOnAssets', ratios.profitability.returnOnAssets)}
-            description="كفاءة استخدام الأصول لتوليد الأرباح"
-            icon={Shield}
-            benchmark="5% أو أكثر"
-          />
-          
-          <RatioCard
-            title="العائد على حقوق الملكية"
-            titleEn="Return on Equity (ROE)"
-            value={ratios.profitability.returnOnEquity}
-            format="percentage"
-            assessment={getRatioAssessment('profitability', 'returnOnEquity', ratios.profitability.returnOnEquity)}
-            description="العائد على استثمار المساهمين"
-            icon={TrendingUp}
-            benchmark="10% أو أكثر"
-          />
+          <div className="flex flex-wrap gap-2">
+            {[
+              ["month", "شهري"],
+              ["quarter", "ربع سنوي"],
+              ["year", "سنوي"],
+            ].map(([value, label]) => (
+              <Button
+                key={value}
+                variant={period === value ? "default" : "outline"}
+                size="sm"
+                onClick={() => setPeriod(value as "month" | "quarter" | "year")}
+                className={cn(period === value ? "bg-[#020617] text-white" : "border-[#E5EAF1] bg-white text-[#020617]")}
+              >
+                {label}
+              </Button>
+            ))}
+            <Button variant="outline" size="sm" onClick={handleExport} className="gap-2 border-[#E5EAF1] bg-white text-[#020617]">
+              <Download className="h-4 w-4" />
+              تصدير
+            </Button>
+          </div>
         </div>
 
-        {/* Comparison Chart */}
-        <Card>
-          <CardHeader>
-            <CardTitle>مقارنة الربحية مع المعايير</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
+        <div className="mt-5 grid gap-3 md:grid-cols-[220px_minmax(0,1fr)]">
+          <div className="ratio-score-card">
+            <span>مؤشر الصحة</span>
+            <strong>{score}%</strong>
+            <div className="ratio-score-track">
+              <i style={{ width: `${score}%` }} />
+            </div>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-4">
+            <SummaryTile title="الإيرادات" value={formatCurrency(ratios.rawData.revenue)} accent={colors.success} />
+            <SummaryTile title="صافي الربح" value={formatCurrency(ratios.rawData.netIncome)} accent={colors.focus} />
+            <SummaryTile title="الأصول" value={formatCurrency(ratios.rawData.totalAssets)} accent={colors.info} />
+            <SummaryTile title="حقوق الملكية" value={formatCurrency(ratios.rawData.totalEquity)} accent={colors.alert} />
+          </div>
+        </div>
+      </section>
+
+      <section className="grid gap-4 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
+        <Card className="ratio-chart-card">
+          <CardContent className="p-4">
+            <div className="mb-3">
+              <h4 className="font-black text-[#020617]">خريطة الأداء</h4>
+              <p className="text-xs text-[#94A3B8]">مؤشر بصري سريع لأربع مناطق مالية</p>
+            </div>
+            <ResponsiveContainer width="100%" height={260}>
+              <RadarChart data={radarData}>
+                <PolarGrid stroke="#E5EAF1" />
+                <PolarAngleAxis dataKey="category" tick={{ fill: "#64748B", fontSize: 12 }} />
+                <PolarRadiusAxis angle={90} domain={[0, 100]} tick={false} axisLine={false} />
+                <Radar dataKey="value" stroke={colors.focus} fill={colors.focus} fillOpacity={0.22} />
+              </RadarChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+
+        <Card className="ratio-chart-card">
+          <CardContent className="p-4">
+            <div className="mb-3">
+              <h4 className="font-black text-[#020617]">مقارنة مع المعايير</h4>
+              <p className="text-xs text-[#94A3B8]">أهم النسب مقابل معيار داخلي مقترح</p>
+            </div>
+            <ResponsiveContainer width="100%" height={260}>
               <BarChart data={comparisonData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" />
-                <YAxis />
+                <CartesianGrid strokeDasharray="3 3" stroke="#E5EAF1" />
+                <XAxis dataKey="name" tick={{ fill: "#64748B", fontSize: 12 }} />
+                <YAxis tick={{ fill: "#64748B", fontSize: 12 }} />
                 <Tooltip />
-                <Legend />
-                <Bar dataKey="value" fill="#3b82f6" name="القيمة الفعلية" />
-                <Bar dataKey="benchmark" fill="#10b981" name="المعيار" />
+                <Bar dataKey="value" name="القيمة" fill={colors.focus} radius={[8, 8, 0, 0]} />
+                <Bar dataKey="benchmark" name="المعيار" fill={colors.success} radius={[8, 8, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
         </Card>
-      </div>
+      </section>
 
-      {/* 2. Liquidity Ratios */}
-      <div className="space-y-4">
-        <h2 className="text-2xl font-bold flex items-center gap-2">
-          <Zap className="h-6 w-6 text-blue-600" />
-          نسب السيولة (Liquidity Ratios)
-        </h2>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          <RatioCard
-            title="نسبة التداول"
-            titleEn="Current Ratio"
-            value={ratios.liquidity.currentRatio}
-            format="ratio"
-            assessment={getRatioAssessment('liquidity', 'currentRatio', ratios.liquidity.currentRatio)}
-            description="قدرة الشركة على سداد الالتزامات قصيرة الأجل"
-            icon={Activity}
-            benchmark="1.5 - 2.0"
-          />
-          
-          <RatioCard
-            title="نسبة السيولة السريعة"
-            titleEn="Quick Ratio"
-            value={ratios.liquidity.quickRatio}
-            format="ratio"
-            assessment={getRatioAssessment('liquidity', 'quickRatio', ratios.liquidity.quickRatio)}
-            description="السيولة بدون المخزون"
-            icon={Zap}
-            benchmark="1.0 أو أكثر"
-          />
-          
-          <RatioCard
-            title="نسبة النقدية"
-            titleEn="Cash Ratio"
-            value={ratios.liquidity.cashRatio}
-            format="ratio"
-            assessment={getRatioAssessment('liquidity', 'quickRatio', ratios.liquidity.cashRatio)}
-            description="قدرة السداد بالنقد فقط"
-            icon={DollarSign}
-            benchmark="0.5 - 1.0"
-          />
-          
-          <RatioCard
-            title="رأس المال العامل"
-            titleEn="Working Capital"
-            value={ratios.liquidity.workingCapital}
-            format="currency"
-            assessment={
-              ratios.liquidity.workingCapital > 0
-                ? { status: 'excellent', label: 'إيجابي', color: 'text-green-600' }
-                : { status: 'poor', label: 'سلبي', color: 'text-red-600' }
-            }
-            description="الفرق بين الأصول والخصوم المتداولة"
-            icon={Shield}
-            benchmark="إيجابي"
-          />
-        </div>
-      </div>
+      <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+        {ratioCards.map((ratio) => {
+          const Icon = ratio.icon;
+          const meta = toneMeta[ratio.tone];
+          return (
+            <Card key={ratio.key} className="ratio-card">
+              <CardContent className="p-4">
+                <div className="mb-4 flex items-start justify-between gap-3">
+                  <span className="ratio-card-icon" style={{ color: meta.color, backgroundColor: meta.bg }}>
+                    <Icon className="h-5 w-5" />
+                  </span>
+                  <span className="ratio-badge" style={{ color: meta.color, backgroundColor: meta.bg }}>
+                    {meta.label}
+                  </span>
+                </div>
+                <p className="text-sm font-bold text-[#94A3B8]">{ratio.title}</p>
+                <p className="mt-2 text-2xl font-black text-[#020617]">{formatRatioValue(ratio)}</p>
+                <p className="mt-2 min-h-10 text-xs leading-5 text-[#64748B]">{ratio.description}</p>
+                <div className="mt-4 border-t border-[#E5EAF1] pt-3 text-xs font-bold text-[#94A3B8]">
+                  المعيار: {ratio.benchmark}
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })}
+      </section>
 
-      {/* 3. Activity Ratios */}
-      <div className="space-y-4">
-        <h2 className="text-2xl font-bold flex items-center gap-2">
-          <Activity className="h-6 w-6 text-purple-600" />
-          نسب النشاط (Activity Ratios)
-        </h2>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          <RatioCard
-            title="معدل دوران الأصول"
-            titleEn="Asset Turnover"
-            value={ratios.activity.assetTurnover}
-            format="ratio"
-            assessment={getRatioAssessment('activity', 'assetTurnover', ratios.activity.assetTurnover)}
-            description="كفاءة استخدام الأصول لتوليد الإيرادات"
-            icon={Activity}
-            benchmark="1.0 أو أكثر"
-          />
-          
-          <RatioCard
-            title="معدل دوران المخزون"
-            titleEn="Inventory Turnover"
-            value={ratios.activity.inventoryTurnover}
-            format="ratio"
-            assessment={getRatioAssessment('activity', 'assetTurnover', ratios.activity.inventoryTurnover)}
-            description="عدد مرات بيع المخزون خلال الفترة"
-            icon={TrendingUp}
-            benchmark="4 - 6 مرات"
-          />
-          
-          <RatioCard
-            title="معدل دوران المدينين"
-            titleEn="Receivables Turnover"
-            value={ratios.activity.receivablesTurnover}
-            format="ratio"
-            assessment={getRatioAssessment('activity', 'assetTurnover', ratios.activity.receivablesTurnover)}
-            description="كفاءة تحصيل المستحقات"
-            icon={DollarSign}
-            benchmark="6 - 12 مرة"
-          />
-          
-          <RatioCard
-            title="متوسط فترة التحصيل"
-            titleEn="Days Sales Outstanding"
-            value={ratios.activity.daysSalesOutstanding}
-            format="days"
-            assessment={getRatioAssessment('activity', 'daysSalesOutstanding', ratios.activity.daysSalesOutstanding)}
-            description="متوسط الوقت لتحصيل المستحقات"
-            icon={FileText}
-            benchmark="30 - 45 يوم"
-          />
-        </div>
-      </div>
+      <style>{`
+        .ratios-redesign .ratio-command,
+        .ratios-redesign .ratio-chart-card,
+        .ratios-redesign .ratio-card {
+          border: 1px solid #E5EAF1;
+          background: #FFFFFF;
+          border-radius: 8px;
+          box-shadow: 0 14px 34px rgba(2, 6, 23, 0.06);
+        }
 
-      {/* 4. Leverage Ratios */}
-      <div className="space-y-4">
-        <h2 className="text-2xl font-bold flex items-center gap-2">
-          <Shield className="h-6 w-6 text-orange-600" />
-          نسب المديونية (Leverage Ratios)
-        </h2>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          <RatioCard
-            title="نسبة الدين إلى الأصول"
-            titleEn="Debt to Assets"
-            value={ratios.leverage.debtToAssets}
-            format="percentage"
-            assessment={getRatioAssessment('leverage', 'debtToAssets', ratios.leverage.debtToAssets)}
-            description="نسبة الأصول الممولة بالديون"
-            icon={TrendingDown}
-            benchmark="أقل من 50%"
-          />
-          
-          <RatioCard
-            title="نسبة الدين إلى حقوق الملكية"
-            titleEn="Debt to Equity"
-            value={ratios.leverage.debtToEquity}
-            format="percentage"
-            assessment={getRatioAssessment('leverage', 'debtToEquity', ratios.leverage.debtToEquity)}
-            description="نسبة الديون إلى حقوق المساهمين"
-            icon={Shield}
-            benchmark="أقل من 100%"
-          />
-          
-          <RatioCard
-            title="نسبة حقوق الملكية"
-            titleEn="Equity Ratio"
-            value={ratios.leverage.equityRatio}
-            format="percentage"
-            assessment={getRatioAssessment('leverage', 'debtToEquity', 100 - ratios.leverage.equityRatio)}
-            description="نسبة الأصول الممولة بحقوق الملكية"
-            icon={TrendingUp}
-            benchmark="أكثر من 50%"
-          />
-        </div>
-      </div>
+        .ratios-redesign .ratio-command {
+          padding: 18px;
+          position: relative;
+          overflow: hidden;
+        }
 
-      {/* Export Button */}
-      <Card>
-        <CardContent className="p-4 flex items-center justify-center gap-2">
-          <Button variant="outline" className="gap-2">
-            <Download className="h-4 w-4" />
-            تصدير التحليل الكامل (PDF)
-          </Button>
-          <Button variant="outline" className="gap-2">
-            <Download className="h-4 w-4" />
-            تصدير (Excel)
-          </Button>
-        </CardContent>
-      </Card>
+        .ratios-redesign .ratio-command::before {
+          content: "";
+          position: absolute;
+          inset-inline-start: 0;
+          top: 0;
+          bottom: 0;
+          width: 5px;
+          background: linear-gradient(180deg, #7C83F6, #22C7A1, #38BDF8, #FB6B7A);
+        }
+
+        .ratios-redesign .ratio-command-icon,
+        .ratios-redesign .ratio-card-icon {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+          border-radius: 8px;
+        }
+
+        .ratios-redesign .ratio-command-icon {
+          width: 46px;
+          height: 46px;
+          color: #7C83F6;
+          background: rgba(124, 131, 246, 0.12);
+          border: 1px solid rgba(124, 131, 246, 0.22);
+        }
+
+        .ratios-redesign .ratio-score-card,
+        .ratios-redesign .ratio-summary-tile {
+          border: 1px solid #E5EAF1;
+          background: #F6F8FB;
+          border-radius: 8px;
+          padding: 14px;
+        }
+
+        .ratios-redesign .ratio-score-card span,
+        .ratios-redesign .ratio-summary-tile span {
+          display: block;
+          font-size: 12px;
+          font-weight: 900;
+          color: #94A3B8;
+        }
+
+        .ratios-redesign .ratio-score-card strong,
+        .ratios-redesign .ratio-summary-tile strong {
+          display: block;
+          margin-top: 8px;
+          color: #020617;
+          font-size: 20px;
+          font-weight: 950;
+          letter-spacing: 0;
+        }
+
+        .ratios-redesign .ratio-score-card strong {
+          font-size: 32px;
+        }
+
+        .ratios-redesign .ratio-score-track {
+          height: 8px;
+          overflow: hidden;
+          margin-top: 12px;
+          border-radius: 999px;
+          background: #E5EAF1;
+        }
+
+        .ratios-redesign .ratio-score-track i {
+          display: block;
+          height: 100%;
+          border-radius: inherit;
+          background: #22C7A1;
+        }
+
+        .ratios-redesign .ratio-card {
+          transition: transform 160ms ease, box-shadow 160ms ease;
+        }
+
+        .ratios-redesign .ratio-card:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 16px 36px rgba(2, 6, 23, 0.08);
+        }
+
+        .ratios-redesign .ratio-card-icon {
+          width: 40px;
+          height: 40px;
+        }
+
+        .ratios-redesign .ratio-badge {
+          border-radius: 8px;
+          padding: 6px 10px;
+          font-size: 11px;
+          font-weight: 950;
+        }
+
+        .ratios-redesign button {
+          border-radius: 8px !important;
+        }
+      `}</style>
     </div>
   );
 }
 
+function SummaryTile({ title, value, accent }: { title: string; value: string; accent: string }) {
+  return (
+    <div className="ratio-summary-tile">
+      <span style={{ color: accent }}>{title}</span>
+      <strong>{value}</strong>
+    </div>
+  );
+}
+
+function PercentIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M19 5 5 19" />
+      <circle cx="7" cy="7" r="2.5" />
+      <circle cx="17" cy="17" r="2.5" />
+    </svg>
+  );
+}
+
+function clamp(value: number) {
+  return Math.max(0, Math.min(100, Number.isFinite(value) ? value : 0));
+}

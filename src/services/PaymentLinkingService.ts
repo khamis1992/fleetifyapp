@@ -269,10 +269,11 @@ class PaymentLinkingService extends BaseService<Payment> {
         }
 
         // التحقق من وجود journal_entry_id للدفعة
-        if (payment.journal_entry_id) {
+        const paymentJournalEntryId = await this.getPaymentJournalEntryId(payment);
+        if (paymentJournalEntryId) {
           this.log('executeLinking', 'Payment already has journal entry, skipping invoice creation', {
             paymentId: payment.id,
-            journalEntryId: payment.journal_entry_id
+            journalEntryId: paymentJournalEntryId
           });
 
           // فقط تحديث الروابط دون إنشاء فاتورة جديدة
@@ -352,10 +353,11 @@ class PaymentLinkingService extends BaseService<Payment> {
         }
 
         // التحقق من وجود journal_entry_id
-        if (payment.journal_entry_id) {
+        const paymentJournalEntryId = await this.getPaymentJournalEntryId(payment);
+        if (paymentJournalEntryId) {
           this.log('executeLinking', 'Payment already has journal entry', {
             paymentId: payment.id,
-            journalEntryId: payment.journal_entry_id
+            journalEntryId: paymentJournalEntryId
           });
 
           const updateData: any = {
@@ -924,6 +926,29 @@ class PaymentLinkingService extends BaseService<Payment> {
     }
   }
 
+  private async getPaymentJournalEntryId(payment: Payment): Promise<string | null> {
+    if (payment.journal_entry_id) {
+      return payment.journal_entry_id;
+    }
+
+    const { data: journalEntry, error } = await supabase
+      .from('journal_entries')
+      .select('id')
+      .eq('company_id', payment.company_id)
+      .eq('reference_type', 'payment')
+      .eq('reference_id', payment.id)
+      .maybeSingle();
+
+    if (error) {
+      this.log('getPaymentJournalEntryId', 'Failed to resolve payment journal entry reference', {
+        paymentId: payment.id,
+        error: error.message,
+      });
+      return null;
+    }
+
+    return journalEntry?.id || null;
+  }
   /**
    * فك ربط دفعة
    */

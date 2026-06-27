@@ -40,7 +40,7 @@ import { useToast } from '@/components/ui/use-toast';
 
 // Brand colors
 const BRAND_COLOR = '#F15555';
-const BRAND_BG = 'bg-rose-500';
+const BRAND_BG = 'bg-[#173A63]';
 
 interface CRMActivityPanelProps {
   customerId: string | null;
@@ -121,13 +121,13 @@ function ActivityItem({ activity }: { activity: CustomerActivity }) {
       animate={{ opacity: 1, y: 0 }}
       className={cn(
         "relative pr-8 pb-4 last:pb-0",
-        "before:absolute before:right-[11px] before:top-6 before:bottom-0 before:w-0.5 before:bg-slate-200 last:before:hidden"
+        "before:absolute before:right-[11px] before:top-6 before:bottom-0 before:w-0.5 before:bg-[#DDE5EF] last:before:hidden"
       )}
     >
       {/* Timeline dot */}
       <div className={cn(
         "absolute right-0 top-1 w-6 h-6 rounded-full flex items-center justify-center",
-        activity.is_important ? "bg-amber-100" : "bg-slate-100"
+        activity.is_important ? "bg-amber-100" : "bg-[#EEF5FB]"
       )}>
         <ActivityIcon type={activity.note_type || 'note'} status={activity.call_status} />
       </div>
@@ -136,7 +136,7 @@ function ActivityItem({ activity }: { activity: CustomerActivity }) {
       <div
         className={cn(
           "rounded-xl border p-3 cursor-pointer transition-all hover:shadow-sm",
-          activity.is_important ? "bg-amber-50 border-amber-200" : "bg-white border-slate-200"
+          activity.is_important ? "bg-amber-50 border-amber-200" : "bg-white border-[#DDE5EF]"
         )}
         onClick={() => setExpanded(!expanded)}
       >
@@ -237,7 +237,7 @@ function AddActivityForm({
     <motion.div
       initial={{ opacity: 0, y: -10 }}
       animate={{ opacity: 1, y: 0 }}
-      className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm"
+      className="rounded-xl border border-[#DDE5EF] bg-white p-4 shadow-sm"
     >
       <h3 className="text-sm font-bold text-slate-800 mb-3">إضافة تفاعل جديد</h3>
 
@@ -251,7 +251,7 @@ function AddActivityForm({
               "flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg text-xs font-medium transition",
               type === value
                 ? `${BRAND_BG} text-white`
-                : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                : "bg-[#F8FAFC] text-[#536173] hover:bg-[#EEF5FB]"
             )}
           >
             <Icon size={14} />
@@ -273,7 +273,7 @@ function AddActivityForm({
               onClick={() => setCallStatus(value as any)}
               className={cn(
                 "flex-1 py-2 px-3 rounded-lg text-xs font-medium transition border",
-                callStatus === value ? color : "bg-white text-slate-600 border-slate-200"
+                callStatus === value ? color : "bg-white text-[#536173] border-[#DDE5EF]"
               )}
             >
               {label}
@@ -406,15 +406,15 @@ export function CRMActivityPanel({
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
             transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-            className="fixed left-0 top-0 h-full w-full max-w-lg bg-slate-50 shadow-2xl z-50 flex flex-col"
+            className="fixed left-0 top-0 z-50 flex h-full w-full max-w-lg flex-col bg-[#F6F8FB] shadow-2xl"
             dir="rtl"
           >
             {/* Header */}
-            <div className="flex-shrink-0 bg-white border-b">
+            <div className="flex-shrink-0 border-b border-[#DDE5EF] bg-white">
               <div className="flex items-center justify-between p-4">
                 <button
                   onClick={onClose}
-                  className="p-2 hover:bg-slate-100 rounded-lg transition text-slate-500"
+                  className="rounded-lg p-2 text-[#536173] transition hover:bg-[#F8FAFC]"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -425,7 +425,7 @@ export function CRMActivityPanel({
               <div className="px-4 pb-4">
                 <div className="flex items-center gap-3 mb-3">
                   <div className={cn(
-                    "w-12 h-12 rounded-xl flex items-center justify-center text-lg font-bold",
+                    "w-12 h-12 rounded-lg flex items-center justify-center text-lg font-bold",
                     BRAND_BG, "text-white"
                   )}>
                     {customerName?.substring(0, 2) || <User size={20} />}
@@ -436,7 +436,7 @@ export function CRMActivityPanel({
                     </h3>
                     <div className="flex items-center gap-2 text-xs text-slate-500 mt-0.5">
                       {customerCode && (
-                        <span className="flex items-center gap-1 font-mono bg-slate-100 px-1.5 py-0.5 rounded">
+                        <span className="flex items-center gap-1 rounded border border-[#DDE5EF] bg-[#F8FAFC] px-1.5 py-0.5 font-mono">
                           <Hash size={10} />
                           {customerCode}
                         </span>
@@ -467,7 +467,7 @@ export function CRMActivityPanel({
                     <Button
                       size="sm"
                       onClick={() => onCall?.(customerPhone)}
-                      className={`flex-1 ${BRAND_BG} hover:bg-opacity-90`}
+                      className={`flex-1 ${BRAND_BG} hover:bg-[#142033]`}
                     >
                       <Phone size={14} className="ml-1" />
                       اتصال
@@ -476,7 +476,7 @@ export function CRMActivityPanel({
                       size="sm"
                       variant="outline"
                       onClick={() => onWhatsApp?.(customerPhone)}
-                      className="flex-1 text-emerald-600 border-emerald-200 hover:bg-emerald-50"
+                      className="flex-1 border-[#DDE5EF] text-[#173A63] hover:bg-[#EEF5FB]"
                     >
                       <MessageCircle size={14} className="ml-1" />
                       واتساب
@@ -496,7 +496,7 @@ export function CRMActivityPanel({
             </div>
 
             {/* Filter Tabs */}
-            <div className="flex-shrink-0 bg-white border-b px-4 py-2">
+            <div className="flex-shrink-0 border-b border-[#DDE5EF] bg-white px-4 py-2">
               <div className="flex gap-1">
                 {[
                   { value: 'all', label: 'الكل' },
@@ -511,7 +511,7 @@ export function CRMActivityPanel({
                       "px-3 py-1.5 rounded-lg text-xs font-medium transition",
                       filter === value
                         ? `${BRAND_BG} text-white`
-                        : "text-slate-600 hover:bg-slate-100"
+                        : "text-[#536173] hover:bg-[#F8FAFC]"
                     )}
                   >
                     {label}
@@ -561,20 +561,20 @@ export function CRMActivityPanel({
             </div>
 
             {/* Footer Stats */}
-            <div className="flex-shrink-0 bg-white border-t p-3">
+            <div className="flex-shrink-0 border-t border-[#DDE5EF] bg-white p-3">
               <div className="flex items-center justify-around text-center">
                 <div>
                   <p className="text-lg font-bold text-slate-800">{activities.length}</p>
                   <p className="text-[10px] text-slate-500">إجمالي التفاعلات</p>
                 </div>
-                <div className="w-px h-8 bg-slate-200" />
+                <div className="w-px h-8 bg-[#DDE5EF]" />
                 <div>
                   <p className="text-lg font-bold text-green-600">
                     {activities.filter(a => a.note_type === 'phone' && a.call_status === 'answered').length}
                   </p>
                   <p className="text-[10px] text-slate-500">مكالمات ناجحة</p>
                 </div>
-                <div className="w-px h-8 bg-slate-200" />
+                <div className="w-px h-8 bg-[#DDE5EF]" />
                 <div>
                   <p className="text-lg font-bold text-red-600">
                     {activities.filter(a => a.note_type === 'phone' && a.call_status === 'no_answer').length}

@@ -72,7 +72,7 @@ export const UnifiedNotificationBell: React.FC<UnifiedNotificationBellProps> = (
       if (Notification.permission === 'granted') {
         new Notification('تنبيه هام', {
           body: `لديك ${criticalAlerts} تنبيهات هامة تحتاج لمراجعة`,
-          icon: '/favicon.ico',
+          icon: '/uploads/7453c280-3175-4ccf-a73b-24921ec5990b.png',
           tag: 'critical-alerts'
         });
       } else if (Notification.permission === 'default') {

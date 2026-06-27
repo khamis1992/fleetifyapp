@@ -20,7 +20,7 @@ export default function AccountsSettings() {
           <h1 className="text-3xl font-bold">إدارة الحسابات</h1>
           <p className="text-muted-foreground">إدارة دليل الحسابات والحسابات المحاسبية</p>
         </div>
-        <Button onClick={() => navigate("/finance/chart-of-accounts/new")} className="gap-2">
+        <Button onClick={() => navigate("/finance/accounting?tab=chart&action=new")} className="gap-2">
           <Plus className="h-4 w-4" />
           حساب جديد
         </Button>
@@ -28,7 +28,7 @@ export default function AccountsSettings() {
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         <Card className="hover:shadow-md transition-shadow cursor-pointer" 
-              onClick={() => navigate("/finance/chart-of-accounts")}>
+              onClick={() => navigate("/finance/accounting?tab=chart")}>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <FileText className="h-5 w-5 text-primary" />
@@ -41,7 +41,7 @@ export default function AccountsSettings() {
         </Card>
 
         <Card className="hover:shadow-md transition-shadow cursor-pointer" 
-              onClick={() => navigate("/finance/chart-of-accounts/new")}>
+              onClick={() => navigate("/finance/accounting?tab=chart&action=new")}>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Plus className="h-5 w-5 text-primary" />

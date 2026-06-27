@@ -17,6 +17,7 @@ import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 import { PaymentReceipt } from '@/components/payments/PaymentReceipt';
 import { generateReceiptHTML, downloadHTML, numberToArabicWords, generateReceiptNumber, formatReceiptDate } from '@/utils/receiptGenerator';
 import { useQueryClient } from '@tanstack/react-query';
+import { usePaymentOperations } from '@/hooks/business/usePaymentOperations';
 
 interface Invoice {
   id: string;
@@ -70,6 +71,11 @@ export function QuickPaymentDialog({
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { companyId } = useUnifiedCompanyAccess();
+  const { createPayment } = usePaymentOperations({
+    autoCreateJournalEntry: true,
+    autoUpdateBankBalance: true,
+    enableNotifications: false,
+  });
   const receiptRef = useRef<HTMLDivElement>(null);
   
   const [invoices, setInvoices] = useState<Invoice[]>([]);
@@ -258,11 +264,12 @@ export function QuickPaymentDialog({
       const paymentDate = new Date().toISOString().split('T')[0];
       const paymentNumber = `PAY-${Date.now()}`;
       
-      const paymentTypeMap: Record<string, string> = {
+      const paymentTypeMap: Record<string, 'cash' | 'bank_transfer' | 'check' | 'credit_card' | 'debit_card'> = {
         'cash': 'cash',
         'bank_transfer': 'bank_transfer',
         'check': 'check',
-        'other': 'cash'
+        'other': 'credit_card',
+        'credit_card': 'credit_card'
       };
 
       // ✅ معالجة حالة عدم وجود فواتير - إنشاء فاتورة تلقائياً
@@ -299,8 +306,9 @@ export function QuickPaymentDialog({
             invoice_date: paymentDate,
             due_date: paymentDate,
             total_amount: amount,
-            balance_due: 0,
-            payment_status: 'paid',
+            paid_amount: 0,
+            balance_due: amount,
+            payment_status: 'unpaid',
             status: 'draft',
             invoice_type: 'rental',
             description: `فاتورة تلقائية للدفعة - عقد ${activeContract.contract_number}`,
@@ -343,47 +351,30 @@ export function QuickPaymentDialog({
           invoice_id: invoice.id,
           amount: amountToApply,
           payment_date: paymentDate,
-          payment_method: 'received' as const,
+          payment_method: paymentTypeMap[paymentMethod] || 'cash',
           payment_number: `${paymentNumber}-${i + 1}`,
-          payment_type: paymentTypeMap[paymentMethod] || 'cash',
+          type: 'receipt' as const,
           payment_status: 'completed' as const,
-          transaction_type: 'receipt' as const,
           currency: 'QAR',
           notes: `دفعة لفاتورة ${invoice.invoice_number}`,
         };
         
         console.log(`Creating payment ${i + 1} for invoice ${invoice.invoice_number}:`, amountToApply);
         
-        const { data: payment, error: paymentError } = await supabase
-          .from('payments')
-          .insert(paymentInsertData)
-          .select()
-          .single();
-
-        if (paymentError) {
+        let payment: any;
+        try {
+          payment = await createPayment.mutateAsync(paymentInsertData);
+        } catch (paymentError: any) {
           console.error('Payment insert error:', paymentError);
-          if (paymentError.code === '23505' && paymentError.message?.includes('idx_payments_unique_transaction')) {
+          if (paymentError.message?.includes('duplicate') || paymentError.message?.includes('موجود مسبقاً')) {
             console.warn(`تخطي الفاتورة ${invoice.invoice_number} - الدفعة مسجلة بالفعل`);
             continue;
           }
-          throw new Error(`خطأ في إنشاء الدفعة: ${paymentError.message}`);
+          throw new Error(`خطأ في إنشاء الدفعة: ${paymentError.message || paymentError}`);
         }
         
         if (!firstPaymentId) firstPaymentId = payment.id;
         paymentsCreated++;
-
-        // تحديث الفاتورة
-        const newBalance = Math.max(0, invoiceBalance - amountToApply);
-        const newPaymentStatus = newBalance <= 0 ? 'paid' : 'partial';
-        
-        await supabase
-          .from('invoices')
-          .update({ 
-            payment_status: newPaymentStatus,
-            paid_amount: (invoice.total_amount - newBalance),
-            balance_due: newBalance
-          })
-          .eq('id', invoice.id);
 
         remainingAmount -= amountToApply;
       }
@@ -429,6 +420,10 @@ export function QuickPaymentDialog({
       // Invalidate queries
       queryClient.invalidateQueries({ queryKey: ['monthly-rent-tracking'] });
       queryClient.invalidateQueries({ queryKey: ['payments'] });
+      queryClient.invalidateQueries({ queryKey: ['invoices'] });
+      queryClient.invalidateQueries({ queryKey: ['financial-overview'] });
+      queryClient.invalidateQueries({ queryKey: ['bank-transactions'] });
+      queryClient.invalidateQueries({ queryKey: ['treasury-summary'] });
 
       toast({
         title: 'تم تسجيل الدفعة بنجاح ✅',
@@ -774,7 +769,7 @@ export function QuickPaymentDialog({
                       <SelectItem value="cash">نقدي</SelectItem>
                       <SelectItem value="bank_transfer">تحويل بنكي</SelectItem>
                       <SelectItem value="check">شيك</SelectItem>
-                      <SelectItem value="other">أخرى</SelectItem>
+                      <SelectItem value="credit_card">بطاقة</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>

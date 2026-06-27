@@ -120,14 +120,14 @@ function FollowupCard({
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -10 }}
       className={`
-        bg-white rounded-xl border p-4 shadow-sm hover:shadow-md transition-all
-        ${isOverdue ? 'border-red-200 bg-red-50/30' : isToday ? 'border-orange-200 bg-orange-50/20' : 'border-slate-100'}
+        rounded-xl border bg-white p-4 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md
+        ${isOverdue ? 'border-red-200 bg-red-50/30' : isToday ? 'border-orange-200 bg-orange-50/20' : 'border-[#DDE5EF]'}
       `}
     >
       {/* Header */}
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center gap-2">
-          <div className={`p-2 rounded-lg ${followup.followup_type === 'call' ? 'bg-blue-100 text-blue-600' : 'bg-emerald-100 text-emerald-600'}`}>
+          <div className={`p-2 rounded-lg ${followup.followup_type === 'call' ? 'bg-[#EEF5FB] text-[#173A63]' : 'bg-emerald-100 text-emerald-600'}`}>
             <FollowupTypeIcon type={followup.followup_type} />
           </div>
           <div>
@@ -173,12 +173,12 @@ function FollowupCard({
       )}
 
       {/* Actions */}
-      <div className="flex items-center gap-2 pt-2 border-t border-slate-100">
+      <div className="flex items-center gap-2 pt-2 border-t border-[#E7EDF4]">
         {followup.customer?.phone && (
           <Button
             size="sm"
             variant="outline"
-            className="flex-1 h-8 text-xs bg-blue-50 text-blue-600 border-blue-200 hover:bg-blue-100"
+            className="flex-1 h-8 text-xs bg-[#EEF5FB] text-[#173A63] border-[#DDE5EF] hover:bg-[#E0EBF6]"
             onClick={() => onCall(followup.customer?.phone || '')}
           >
             <Phone size={12} className="ml-1" />
@@ -270,14 +270,14 @@ export function ScheduledFollowupsPanel() {
 
   return (
     <>
-      <div className="bg-white rounded-xl border shadow-sm overflow-hidden">
+      <div className="overflow-hidden rounded-xl border border-[#DDE5EF] bg-white shadow-sm">
         {/* Header */}
         <button
           onClick={() => setIsExpanded(!isExpanded)}
-          className="w-full flex items-center justify-between p-4 bg-gradient-to-l from-blue-50 to-white hover:from-blue-100 transition-all"
+          className="flex w-full items-center justify-between bg-[#F8FAFC] p-4 transition-all hover:bg-[#EEF5FB]"
         >
           <div className="flex items-center gap-3">
-            <div className="bg-blue-100 text-blue-600 p-2 rounded-lg">
+            <div className="rounded-lg bg-[#173A63] p-2 text-white">
               <Calendar size={20} />
             </div>
             <div className="text-right">

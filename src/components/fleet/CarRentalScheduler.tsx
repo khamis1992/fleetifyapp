@@ -41,6 +41,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { format, parseISO, differenceInDays, addDays } from 'date-fns';
 import { ar } from 'date-fns/locale';
+import { systemColorPattern } from '@/lib/design-system/systemColorPattern';
 
 // ===== Types =====
 interface Vehicle {
@@ -116,6 +117,8 @@ const VEHICLE_STATUSES = [
   { id: 'maintenance', label: 'صيانة 🔧' },
 ];
 
+const reservationColors = systemColorPattern.colors;
+
 // ===== Helper Functions =====
 const getToday = () => {
   const d = new Date();
@@ -134,13 +137,13 @@ const formatDateForInput = (date: Date | null) => {
 
 const getStatusColor = (status: string) => {
   switch(status) {
-    case 'confirmed': return 'bg-[#3B82F6] border-[#2563EB] text-white'; 
-    case 'active': return 'bg-[#22C55E] border-[#16A34A] text-white';
-    case 'pending': return 'bg-[#FACC15] border-[#EAB308] text-black';
-    case 'maintenance': return 'bg-[#EF4444] border-[#DC2626] text-white stripes';
-    case 'completed': return 'bg-[#6B7280] border-[#4B5563] text-white';
-    case 'cancelled': return 'bg-[#9CA3AF] border-[#6B7280] text-white opacity-60';
-    default: return 'bg-slate-400';
+    case 'confirmed': return 'bg-[#7C83F6] border-[#7C83F6] text-white'; 
+    case 'active': return 'bg-[#22C7A1] border-[#22C7A1] text-white';
+    case 'pending': return 'bg-[#38BDF8] border-[#38BDF8] text-[#020617]';
+    case 'maintenance': return 'bg-[#FB6B7A] border-[#FB6B7A] text-white stripes';
+    case 'completed': return 'bg-[#94A3B8] border-[#94A3B8] text-white';
+    case 'cancelled': return 'bg-[#E5EAF1] border-[#94A3B8] text-[#94A3B8] opacity-70';
+    default: return 'bg-[#94A3B8] border-[#94A3B8] text-white';
   }
 };
 
@@ -533,25 +536,45 @@ export default function CarRentalScheduler() {
     return dates;
   }, [currentDate, daysToShow]);
 
-  // Statistics
   const stats = useMemo(() => {
-    const totalRevenue = bookings.reduce((acc, b) => {
-      if (b.status === 'maintenance' || b.status === 'cancelled') return acc;
-      const vehicle = vehicles.find(v => v.id === b.carId);
-      return acc + (vehicle ? vehicle.daily_rate * b.days : 0);
-    }, 0);
+    const rangeStart = new Date(currentDate);
+    rangeStart.setHours(0, 0, 0, 0);
+    const rangeEnd = new Date(currentDate);
+    rangeEnd.setDate(rangeEnd.getDate() + daysToShow);
+    rangeEnd.setHours(23, 59, 59, 999);
+
+    let totalRevenue = 0;
+    let bookedDays = 0;
+
+    bookings.forEach(b => {
+      if (b.status === 'maintenance' || b.status === 'cancelled') return;
+
+      const bookingStart = new Date(b.start);
+      bookingStart.setHours(0, 0, 0, 0);
+      const bookingEnd = new Date(b.start);
+      bookingEnd.setDate(bookingEnd.getDate() + b.days);
+      bookingEnd.setHours(23, 59, 59, 999);
+
+      const overlapStart = bookingStart > rangeStart ? bookingStart : rangeStart;
+      const overlapEnd = bookingEnd < rangeEnd ? bookingEnd : rangeEnd;
+
+      if (overlapStart <= overlapEnd) {
+        const overlapDays = Math.ceil((overlapEnd.getTime() - overlapStart.getTime()) / (1000 * 60 * 60 * 24));
+        bookedDays += overlapDays;
+
+        const vehicle = vehicles.find(v => v.id === b.carId);
+        if (vehicle) {
+          totalRevenue += vehicle.daily_rate * overlapDays;
+        }
+      }
+    });
 
     const activeBookings = bookings.filter(b => b.status === 'active').length;
-    
     const totalDays = filteredCars.length * daysToShow;
-    const bookedDays = bookings.reduce((acc, b) => {
-      if (b.status === 'cancelled' || b.status === 'maintenance') return acc;
-      return acc + b.days;
-    }, 0);
     const utilization = totalDays > 0 ? Math.round((bookedDays / totalDays) * 100) : 0;
 
     return { totalRevenue, activeBookings, utilization };
-  }, [bookings, vehicles, filteredCars.length, daysToShow]);
+  }, [bookings, vehicles, filteredCars.length, daysToShow, currentDate]);
 
   // ===== Helper Functions =====
   
@@ -831,19 +854,34 @@ export default function CarRentalScheduler() {
 
   if (isLoading) {
     return (
-      <div className="flex flex-col items-center justify-center h-96 bg-slate-50">
-        <Loader2 className="w-12 h-12 text-rose-500 animate-spin mb-4" />
-        <p className="text-slate-600 font-medium">جاري تحميل جدول الحجوزات...</p>
+      <div className="flex flex-col items-center justify-center h-96 bg-[#F6F8FB]">
+        <Loader2 className="w-12 h-12 text-[#22C7A1] animate-spin mb-4" />
+        <p className="text-[#94A3B8] font-medium">جاري تحميل جدول الحجوزات...</p>
       </div>
     );
   }
 
   return (
-    <div className="flex h-[calc(100vh-280px)] bg-slate-50 text-slate-800 font-sans overflow-hidden" dir="rtl">
+    <div
+      id="fleet-reservation-scheduler"
+      className="flex h-[calc(100vh-280px)] bg-[#F6F8FB] text-[#020617] font-sans overflow-hidden rounded-[8px] border border-[#E5EAF1] shadow-sm"
+      dir="rtl"
+      style={{
+        '--reservation-text': reservationColors.text,
+        '--reservation-surface': reservationColors.surface,
+        '--reservation-inner': reservationColors.innerSurface,
+        '--reservation-muted': reservationColors.secondaryText,
+        '--reservation-border': reservationColors.border,
+        '--reservation-info': reservationColors.info,
+        '--reservation-alert': reservationColors.alert,
+        '--reservation-focus': reservationColors.focus,
+        '--reservation-success': reservationColors.success,
+      } as React.CSSProperties}
+    >
       
       {/* Toast Error */}
       {errorMsg && (
-        <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-[100] bg-red-600 text-white px-6 py-3 rounded-full shadow-lg font-bold animate-bounce flex items-center gap-2">
+        <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-[100] bg-[#FB6B7A] text-white px-6 py-3 rounded-full shadow-lg font-bold animate-bounce flex items-center gap-2">
           <AlertTriangle className="w-5 h-5" />
           {errorMsg}
         </div>
@@ -954,10 +992,10 @@ export default function CarRentalScheduler() {
                 </div>
               </div>
               <div className="flex gap-3 text-xs font-medium">
-                <div className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-[#3B82F6]"></span> مؤكد</div>
-                <div className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-[#22C55E]"></span> جاري</div>
-                <div className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-[#FACC15]"></span> انتظار</div>
-                <div className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-[#EF4444]"></span> صيانة</div>
+                <div className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-[#7C83F6]"></span> مؤكد</div>
+                <div className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-[#22C7A1]"></span> جاري</div>
+                <div className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-[#38BDF8]"></span> انتظار</div>
+                <div className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-[#FB6B7A]"></span> صيانة</div>
               </div>
             </div>
 
@@ -1456,6 +1494,166 @@ export default function CarRentalScheduler() {
       )}
 
       <style>{`
+        #fleet-reservation-scheduler {
+          --scheduler-radius: 8px;
+          box-shadow: 0 18px 45px -36px rgba(2, 6, 23, 0.26);
+        }
+
+        #fleet-reservation-scheduler main,
+        #fleet-reservation-scheduler .bg-slate-50 {
+          background-color: var(--reservation-inner) !important;
+        }
+
+        #fleet-reservation-scheduler header,
+        #fleet-reservation-scheduler .bg-white,
+        #fleet-reservation-scheduler .bg-slate-50\\/50 {
+          background-color: var(--reservation-surface) !important;
+        }
+
+        #fleet-reservation-scheduler header {
+          min-height: 72px;
+          border-color: var(--reservation-border) !important;
+          box-shadow: 0 1px 0 rgba(2, 6, 23, 0.03);
+        }
+
+        #fleet-reservation-scheduler .border-slate-100,
+        #fleet-reservation-scheduler .border-slate-200,
+        #fleet-reservation-scheduler .border-slate-300,
+        #fleet-reservation-scheduler .divide-gray-100 > :not([hidden]) ~ :not([hidden]) {
+          border-color: var(--reservation-border) !important;
+        }
+
+        #fleet-reservation-scheduler .text-slate-900,
+        #fleet-reservation-scheduler .text-slate-800,
+        #fleet-reservation-scheduler .text-slate-700 {
+          color: var(--reservation-text) !important;
+        }
+
+        #fleet-reservation-scheduler .text-slate-600,
+        #fleet-reservation-scheduler .text-slate-500,
+        #fleet-reservation-scheduler .text-slate-400 {
+          color: var(--reservation-muted) !important;
+        }
+
+        #fleet-reservation-scheduler .rounded-2xl,
+        #fleet-reservation-scheduler .rounded-xl,
+        #fleet-reservation-scheduler .rounded-lg,
+        #fleet-reservation-scheduler .rounded-md {
+          border-radius: var(--scheduler-radius) !important;
+        }
+
+        #fleet-reservation-scheduler .shadow-2xl,
+        #fleet-reservation-scheduler .shadow-xl,
+        #fleet-reservation-scheduler .shadow-md,
+        #fleet-reservation-scheduler .shadow-sm {
+          box-shadow: 0 12px 28px -22px rgba(2, 6, 23, 0.32) !important;
+        }
+
+        #fleet-reservation-scheduler .bg-slate-100 {
+          background-color: rgba(148, 163, 184, 0.11) !important;
+        }
+
+        #fleet-reservation-scheduler .bg-rose-100,
+        #fleet-reservation-scheduler .hover\\:bg-red-50:hover,
+        #fleet-reservation-scheduler .bg-red-50\\/20,
+        #fleet-reservation-scheduler .bg-red-50\\/40,
+        #fleet-reservation-scheduler .hover\\:bg-red-50\\/10:hover {
+          background-color: rgba(251, 107, 122, 0.1) !important;
+        }
+
+        #fleet-reservation-scheduler .text-rose-500,
+        #fleet-reservation-scheduler .text-coral-600 {
+          color: var(--reservation-success) !important;
+        }
+
+        #fleet-reservation-scheduler .text-red-600,
+        #fleet-reservation-scheduler .text-red-500 {
+          color: var(--reservation-alert) !important;
+        }
+
+        #fleet-reservation-scheduler .text-blue-600,
+        #fleet-reservation-scheduler .text-blue-500 {
+          color: var(--reservation-focus) !important;
+        }
+
+        #fleet-reservation-scheduler .text-green-600,
+        #fleet-reservation-scheduler .text-green-500,
+        #fleet-reservation-scheduler .text-green-700 {
+          color: var(--reservation-success) !important;
+        }
+
+        #fleet-reservation-scheduler .bg-green-500,
+        #fleet-reservation-scheduler .bg-green-100 {
+          background-color: rgba(34, 199, 161, 0.14) !important;
+        }
+
+        #fleet-reservation-scheduler .bg-blue-500,
+        #fleet-reservation-scheduler .bg-blue-50 {
+          background-color: rgba(124, 131, 246, 0.14) !important;
+        }
+
+        #fleet-reservation-scheduler .bg-yellow-500,
+        #fleet-reservation-scheduler .bg-orange-100 {
+          background-color: rgba(56, 189, 248, 0.16) !important;
+        }
+
+        #fleet-reservation-scheduler .bg-red-500,
+        #fleet-reservation-scheduler .bg-red-600 {
+          background-color: var(--reservation-alert) !important;
+        }
+
+        #fleet-reservation-scheduler button[class*="bg-rose-500"],
+        #fleet-reservation-scheduler button[class*="bg-[#0d9488]"],
+        #fleet-reservation-scheduler .hover\\:bg-coral-600:hover {
+          background-color: var(--reservation-success) !important;
+          border-color: var(--reservation-success) !important;
+          color: #ffffff !important;
+          box-shadow: 0 12px 24px -18px rgba(34, 199, 161, 0.72) !important;
+        }
+
+        #fleet-reservation-scheduler button[class*="bg-rose-500"]:hover,
+        #fleet-reservation-scheduler button[class*="bg-[#0d9488]"]:hover {
+          background-color: #1DB390 !important;
+        }
+
+        #fleet-reservation-scheduler input,
+        #fleet-reservation-scheduler select {
+          border-color: #CBD5E1 !important;
+          background-color: var(--reservation-inner) !important;
+          color: var(--reservation-text) !important;
+          border-radius: var(--scheduler-radius) !important;
+        }
+
+        #fleet-reservation-scheduler input:focus,
+        #fleet-reservation-scheduler select:focus,
+        #fleet-reservation-scheduler .focus-within\\:border-rose-500:focus-within {
+          border-color: var(--reservation-success) !important;
+          --tw-ring-color: rgba(34, 199, 161, 0.18) !important;
+          box-shadow: 0 0 0 3px rgba(34, 199, 161, 0.12) !important;
+        }
+
+        #fleet-reservation-scheduler table thead {
+          background-color: var(--reservation-inner) !important;
+          color: var(--reservation-muted) !important;
+        }
+
+        #fleet-reservation-scheduler tbody tr:hover,
+        #fleet-reservation-scheduler .group:hover {
+          background-color: rgba(56, 189, 248, 0.06) !important;
+        }
+
+        #fleet-reservation-scheduler [class*="border-rose-500"] {
+          border-color: var(--reservation-success) !important;
+        }
+
+        #fleet-reservation-scheduler [class*="bg-rose-500"] {
+          background-color: var(--reservation-success) !important;
+        }
+
+        #fleet-reservation-scheduler [class*="shadow-rose"] {
+          box-shadow: 0 12px 24px -18px rgba(34, 199, 161, 0.72) !important;
+        }
+
         .stripes { background-image: linear-gradient(45deg,rgba(255,255,255,.15) 25%,transparent 25%,transparent 50%,rgba(255,255,255,.15) 50%,rgba(255,255,255,.15) 75%,transparent 75%,transparent); background-size: 1rem 1rem; }
         .flex-1.relative { direction: ltr; }
       `}</style>

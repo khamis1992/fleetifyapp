@@ -117,12 +117,12 @@ export const UserGoals: React.FC<UserGoalsProps> = ({ compact = false, limit }) 
   }
 
   return (
-    <Card className={cn('bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 rounded-xl hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all', compact && 'border-0 shadow-none')}>
+    <Card className={cn('rounded-lg border border-[#E5EAF1] bg-white shadow-sm', compact && 'border-0 shadow-none')}>
       <CardHeader className={cn('pb-3', compact && 'px-0 pt-0')}>
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg flex items-center gap-2">
-            <div className="bg-gradient-to-br from-teal-500 to-teal-600 shadow-lg shadow-teal-500/20 rounded-lg p-1">
-              <Target className="h-5 w-5 text-white" />
+            <div className="rounded-lg bg-[#22C7A1]/10 p-2 text-[#22C7A1]">
+              <Target className="h-5 w-5" />
             </div>
             أهدافي
           </CardTitle>
@@ -136,8 +136,8 @@ export const UserGoals: React.FC<UserGoalsProps> = ({ compact = false, limit }) 
             <DialogContent dir="rtl" className="max-w-md">
               <DialogHeader>
                 <DialogTitle className="flex items-center gap-2">
-                  <div className="bg-gradient-to-br from-teal-500 to-teal-600 shadow-lg shadow-teal-500/20 rounded-lg p-1">
-                    <Target className="h-5 w-5 text-white" />
+                  <div className="rounded-lg bg-[#22C7A1]/10 p-2 text-[#22C7A1]">
+                    <Target className="h-5 w-5" />
                   </div>
                   هدف جديد
                 </DialogTitle>
@@ -225,7 +225,7 @@ export const UserGoals: React.FC<UserGoalsProps> = ({ compact = false, limit }) 
                       newGoal.target_count < 1 ||
                       createGoal.isPending
                     }
-                    className="bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700"
+                    className="rounded-lg bg-[#38BDF8] text-white hover:bg-[#0ea5e9]"
                   >
                     {createGoal.isPending && (
                       <Loader2 className="h-4 w-4 animate-spin ml-2" />
@@ -262,7 +262,7 @@ export const UserGoals: React.FC<UserGoalsProps> = ({ compact = false, limit }) 
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, x: -100 }}
                     className={cn(
-                      'p-4 rounded-2xl border bg-white dark:bg-slate-900 hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all',
+                      'rounded-lg border border-[#E5EAF1] bg-white p-4 shadow-sm transition hover:border-[#38BDF8]',
                       isCompleted && 'bg-green-50/80 border-green-200'
                     )}
                   >

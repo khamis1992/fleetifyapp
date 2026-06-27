@@ -188,18 +188,17 @@ const ScheduleMetrics = ({
   return (
     <motion.div
       variants={fadeInUp}
-      className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"
+      className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4"
     >
       {metricCards.map((metric, idx) => (
         <motion.div
           key={idx}
           variants={scaleIn}
-          whileHover={{ y: -4 }}
-          className="bg-white rounded-2xl border border-neutral-200 p-5 shadow-sm hover:shadow-lg transition-all duration-200"
+          className="rounded-xl border border-[#DDE5EF] bg-white p-4 shadow-sm transition-colors hover:border-[#173A63]"
         >
           <div className="flex items-start justify-between mb-3">
-            <div className={cn("w-11 h-11 rounded-xl bg-gradient-to-br flex items-center justify-center shadow-md", metric.color)}>
-              <metric.icon className="w-5 h-5 text-white" />
+            <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-[#EEF5FB] text-[#173A63]">
+              <metric.icon className="h-5 w-5" />
             </div>
             <div className={cn("px-2 py-1 rounded-lg text-xs font-medium", metric.bgColor, "text-slate-700")}>
               {metric.subtext.split(' • ')[0]}
@@ -215,6 +214,135 @@ const ScheduleMetrics = ({
         </motion.div>
       ))}
     </motion.div>
+  );
+};
+
+const ScheduleFocusPanel = ({
+  stats,
+  payments,
+  selectedStatus,
+  onStatusChange,
+  formatCurrency,
+}: {
+  stats: any;
+  payments: any[];
+  selectedStatus: PaymentStatus;
+  onStatusChange: (value: PaymentStatus) => void;
+  formatCurrency: (amount: number) => string;
+}) => {
+  const nextPayment = useMemo(() => {
+    return [...payments]
+      .filter((payment) => payment.status !== 'paid' && payment.due_date)
+      .sort((a, b) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime())[0];
+  }, [payments]);
+
+  const nextDueDays = nextPayment?.due_date
+    ? differenceInDays(new Date(nextPayment.due_date), new Date())
+    : null;
+
+  const statusItems: Array<{
+    value: PaymentStatus;
+    label: string;
+    count: number;
+    icon: any;
+  }> = [
+    { value: 'all', label: 'الكل', count: payments.length, icon: Filter },
+    { value: 'paid', label: 'مدفوع', count: stats.paidCount || 0, icon: CheckCircle },
+    { value: 'pending', label: 'معلق', count: stats.pendingCount || 0, icon: Clock },
+    { value: 'overdue', label: 'متأخر', count: stats.overdueCount || 0, icon: AlertTriangle },
+  ];
+
+  return (
+    <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1.15fr_0.85fr]">
+      <div className="rounded-xl border border-[#DDE5EF] bg-[#FCFDFE] p-5 shadow-sm">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div>
+            <p className="text-sm font-semibold text-[#6A7688]">مؤشر تنفيذ جدول الدفعات</p>
+            <div className="mt-2 flex items-end gap-3">
+              <span className="text-4xl font-black text-[#142033]">
+                {stats.progressPercentage || 0}%
+              </span>
+              <span className="pb-1 text-sm text-[#6A7688]">
+                {stats.paidCount || 0} من {stats.totalPayments || 0} قسط
+              </span>
+            </div>
+          </div>
+
+          <div className="min-w-[240px] rounded-xl border border-[#DDE5EF] bg-white p-4">
+            <div className="flex items-center justify-between text-sm">
+              <span className="font-semibold text-[#142033]">المتبقي للتحصيل</span>
+              <span className="font-black text-[#173A63]">{formatCurrency(stats.balanceDue || 0)}</span>
+            </div>
+            <Progress value={stats.progressPercentage || 0} className="mt-3 h-2" />
+          </div>
+        </div>
+
+        <div className="mt-5 grid grid-cols-2 gap-2 md:grid-cols-4">
+          {statusItems.map((item) => {
+            const Icon = item.icon;
+            const isActive = selectedStatus === item.value;
+            return (
+              <button
+                key={item.value}
+                type="button"
+                onClick={() => onStatusChange(item.value)}
+                className={cn(
+                  "flex items-center justify-between rounded-xl border px-3 py-3 text-right transition-colors",
+                  isActive
+                    ? "border-[#173A63] bg-[#EEF5FB] text-[#173A63]"
+                    : "border-[#DDE5EF] bg-white text-[#536173] hover:border-[#173A63]"
+                )}
+              >
+                <span className="flex items-center gap-2 text-sm font-bold">
+                  <Icon className="h-4 w-4" />
+                  {item.label}
+                </span>
+                <span className="rounded-lg bg-white px-2 py-1 text-xs font-black">{item.count}</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      <div className="rounded-xl border border-[#DDE5EF] bg-white p-5 shadow-sm">
+        <div className="flex items-start gap-3">
+          <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-[#EEF5FB] text-[#173A63]">
+            <Bell className="h-5 w-5" />
+          </div>
+          <div className="flex-1">
+            <p className="text-sm font-semibold text-[#6A7688]">القسط القادم</p>
+            {nextPayment ? (
+              <>
+                <div className="mt-2 flex flex-wrap items-center justify-between gap-3">
+                  <p className="text-xl font-black text-[#142033]">
+                    {formatCurrency(nextPayment.amount || nextPayment.total_amount || 0)}
+                  </p>
+                  <Badge className={cn(
+                    "border-0",
+                    nextDueDays !== null && nextDueDays < 0
+                      ? "bg-red-50 text-red-700"
+                      : nextDueDays !== null && nextDueDays <= 3
+                        ? "bg-amber-50 text-amber-700"
+                        : "bg-[#EEF5FB] text-[#173A63]"
+                  )}>
+                    {nextDueDays !== null && nextDueDays < 0
+                      ? `متأخر ${Math.abs(nextDueDays)} يوم`
+                      : nextDueDays === 0
+                        ? 'مستحق اليوم'
+                        : `بعد ${nextDueDays} يوم`}
+                  </Badge>
+                </div>
+                <p className="mt-2 text-sm text-[#6A7688]" dir="ltr">
+                  {nextPayment.due_date ? format(new Date(nextPayment.due_date), 'dd MMM yyyy', { locale: ar }) : '-'}
+                </p>
+              </>
+            ) : (
+              <p className="mt-2 text-sm text-[#6A7688]">لا توجد أقساط مفتوحة حالياً.</p>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
   );
 };
 
@@ -241,7 +369,7 @@ const ScheduleCard = ({
       variants={scaleIn}
       whileHover={{ y: -2 }}
       className={cn(
-        "bg-white rounded-2xl border p-5 shadow-sm hover:shadow-md transition-all duration-200",
+        "rounded-xl border bg-white p-5 shadow-sm transition-colors hover:border-[#173A63]",
         statusInfo.borderColor,
         isOverdue && "border-red-300 bg-red-50/30"
       )}
@@ -251,7 +379,7 @@ const ScheduleCard = ({
         <div className="flex items-center gap-3">
           <div className={cn(
             "w-12 h-12 rounded-xl flex items-center justify-center shadow-md",
-            isOverdue ? "bg-gradient-to-br from-red-500 to-red-600" : "bg-gradient-to-br from-teal-500 to-teal-600"
+            isOverdue ? "bg-red-600" : "bg-[#173A63]"
           )}>
             <span className="text-white font-bold text-lg">{index + 1}</span>
           </div>
@@ -282,7 +410,7 @@ const ScheduleCard = ({
         "p-4 rounded-xl mb-4",
         payment.status === 'paid' ? "bg-green-50 border border-green-200" :
         isOverdue ? "bg-red-50 border border-red-200" :
-        "bg-teal-50 border border-teal-200"
+        "border border-[#DDE5EF] bg-[#FCFDFE]"
       )}>
         <p className="text-xs text-neutral-600 mb-1">المبلغ المستحق</p>
         <p className="text-2xl font-bold text-neutral-900">{formatCurrency(payment.amount || payment.total_amount || 0)}</p>
@@ -357,16 +485,21 @@ const PaymentTimeline = ({
   formatCurrency: (amount: number) => string;
 }) => {
   return (
-    <div className="relative">
-      {/* Timeline Line */}
-      <div className="absolute right-[19px] top-0 bottom-0 w-0.5 bg-neutral-200" />
+    <div className="space-y-3">
+      <div className="hidden rounded-xl border border-[#DDE5EF] bg-[#F7FAFD] px-4 py-3 text-sm font-bold text-[#536173] md:grid md:grid-cols-[92px_1.1fr_1fr_1fr] md:items-center md:gap-4">
+        <span>القسط</span>
+        <span>تاريخ الاستحقاق</span>
+        <span>المبلغ</span>
+        <span>حالة التحصيل</span>
+      </div>
 
-      <div className="space-y-4">
+      <div className="space-y-2">
         {payments.map((payment, index) => {
           const statusInfo = getPaymentStatusInfo(payment.status);
           const StatusIcon = statusInfo.icon;
           const isPaid = payment.status === 'paid';
           const isOverdue = payment.due_date && isPast(new Date(payment.due_date)) && payment.status !== 'paid';
+          const daysUntilDue = payment.due_date ? differenceInDays(new Date(payment.due_date), new Date()) : null;
 
           return (
             <motion.div
@@ -374,24 +507,24 @@ const PaymentTimeline = ({
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: index * 0.05 }}
-              className="relative flex gap-4"
+              className={cn(
+                "grid grid-cols-1 gap-4 rounded-xl border bg-white p-4 shadow-sm transition-colors hover:border-[#173A63] md:grid-cols-[92px_1.1fr_1fr_1fr] md:items-center",
+                isPaid ? "border-green-200" : isOverdue ? "border-red-200 bg-red-50/30" : "border-[#DDE5EF]"
+              )}
             >
               {/* Timeline Dot */}
               <div className={cn(
-                "w-10 h-10 rounded-full flex items-center justify-center z-10 flex-shrink-0",
-                isPaid ? "bg-green-500" : isOverdue ? "bg-red-500" : "bg-neutral-300"
+                "flex h-10 w-10 items-center justify-center rounded-lg",
+                isPaid ? "bg-green-600" : isOverdue ? "bg-red-600" : "bg-[#173A63]"
               )}>
                 <StatusIcon className="w-5 h-5 text-white" />
               </div>
 
               {/* Content */}
               <div className={cn(
-                "flex-1 p-4 rounded-xl border",
-                isPaid ? "bg-green-50 border-green-200" :
-                isOverdue ? "bg-red-50 border-red-200" :
-                "bg-white border-neutral-200"
+                "grid gap-4 md:col-span-3 md:grid-cols-[1.1fr_1fr_1fr] md:items-center"
               )}>
-                <div className="flex items-start justify-between mb-2">
+                <div className="min-w-0">
                   <div>
                     <h4 className="font-semibold text-neutral-900">القسط {payment.installment_number || index + 1}</h4>
                     <p className="text-sm text-neutral-500" dir="ltr">
@@ -440,7 +573,7 @@ const ScheduleFilters = ({
   sortOption: string;
   onSortChange: (value: string) => void;
 }) => (
-  <div className="flex flex-col lg:flex-row gap-3 items-start lg:items-center justify-between bg-white rounded-xl p-4 border border-neutral-200">
+  <div className="flex flex-col gap-3 rounded-xl border border-[#DDE5EF] bg-[#FCFDFE] p-4 lg:flex-row lg:items-center lg:justify-between">
     <div className="flex items-center gap-3 flex-1 w-full lg:w-auto">
       <div className="relative flex-1 max-w-md">
         <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
@@ -448,14 +581,14 @@ const ScheduleFilters = ({
           placeholder="بحث في الأقساط..."
           value={searchQuery}
           onChange={(e) => onSearchChange(e.target.value)}
-          className="pr-10 rounded-xl border-neutral-200"
+          className="rounded-xl border-[#D8E1EC] bg-white pr-10"
         />
       </div>
     </div>
 
     <div className="flex items-center gap-3 w-full lg:w-auto">
       <Select value={statusFilter} onValueChange={onStatusFilterChange}>
-        <SelectTrigger className="w-full lg:w-[140px] rounded-xl border-neutral-200">
+        <SelectTrigger className="w-full rounded-xl border-[#D8E1EC] bg-white lg:w-[140px]">
           <SelectValue placeholder="الحالة" />
         </SelectTrigger>
         <SelectContent>
@@ -468,7 +601,7 @@ const ScheduleFilters = ({
       </Select>
 
       <Select value={sortOption} onValueChange={onSortChange}>
-        <SelectTrigger className="w-full lg:w-[140px] rounded-xl border-neutral-200">
+        <SelectTrigger className="w-full rounded-xl border-[#D8E1EC] bg-white lg:w-[140px]">
           <SelectValue placeholder="الترتيب" />
         </SelectTrigger>
         <SelectContent>
@@ -495,9 +628,9 @@ const ScheduleEmptyState = ({
       initial={{ scale: 0.9, opacity: 0 }}
       animate={{ scale: 1, opacity: 1 }}
       transition={{ duration: 0.3 }}
-      className="w-24 h-24 rounded-xl bg-gradient-to-br from-teal-50 to-teal-100 flex items-center justify-center mx-auto mb-6"
+      className="mx-auto mb-6 flex h-24 w-24 items-center justify-center rounded-xl bg-[#EEF5FB]"
     >
-      <Calendar className="w-12 h-12 text-teal-500" />
+      <Calendar className="h-12 w-12 text-[#173A63]" />
     </motion.div>
     <h3 className="text-xl font-bold text-neutral-900 mb-2">لا يوجد جدول دفعات</h3>
     <p className="text-neutral-500 mb-6 max-w-md mx-auto">
@@ -508,7 +641,7 @@ const ScheduleEmptyState = ({
     {hasInvoices && onGenerate && (
       <Button
         onClick={onGenerate}
-        className="gap-2 bg-gradient-to-r from-teal-500 to-teal-600 hover:shadow-lg shadow-teal-200 rounded-xl"
+        className="gap-2 rounded-xl bg-[#173A63] hover:bg-[#173A63]/90"
       >
         <RefreshCw className="w-4 h-4" />
         إنشاء جدول الدفعات
@@ -608,21 +741,29 @@ export const EnhancedPaymentScheduleTabRedesigned = ({
   }, [payments, selectedStatus, searchText, sortOption]);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       {/* Metrics Overview */}
       <ScheduleMetrics stats={stats} formatCurrency={formatCurrency} />
 
+      <ScheduleFocusPanel
+        stats={stats}
+        payments={payments}
+        selectedStatus={selectedStatus}
+        onStatusChange={setSelectedStatus}
+        formatCurrency={formatCurrency}
+      />
+
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 rounded-xl border border-[#DDE5EF] bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-neutral-900 mb-1">جدول الدفعات</h2>
+          <h2 className="mb-1 text-xl font-black text-[#142033]">جدول الدفعات</h2>
           <p className="text-neutral-500 text-sm">{payments.length} قسط مسجل</p>
         </div>
 
         {hasInvoices && onGenerateSchedules && payments.length === 0 && (
           <Button
             onClick={onGenerateSchedules}
-            className="gap-2 bg-gradient-to-r from-teal-500 to-teal-600 hover:shadow-lg shadow-teal-200 rounded-xl"
+            className="gap-2 rounded-xl bg-[#173A63] hover:bg-[#173A63]/90"
           >
             <RefreshCw className="w-4 h-4" />
             إنشاء جدول الدفعات
@@ -632,7 +773,7 @@ export const EnhancedPaymentScheduleTabRedesigned = ({
 
       {/* Empty State */}
       {payments.length === 0 ? (
-        <Card className="border-neutral-200">
+        <Card className="rounded-xl border-[#DDE5EF] shadow-sm">
           <CardContent className="p-6">
             <ScheduleEmptyState
               hasInvoices={hasInvoices}
@@ -657,7 +798,7 @@ export const EnhancedPaymentScheduleTabRedesigned = ({
             <p className="text-sm text-neutral-500">
               عرض {filteredPayments.length} من {payments.length} قسط
             </p>
-            <div className="flex items-center gap-2 bg-neutral-100 p-1 rounded-xl">
+            <div className="flex items-center gap-2 rounded-xl border border-[#DDE5EF] bg-white p-1">
               <Button
                 size="sm"
                 variant={viewMode === 'timeline' ? 'default' : 'ghost'}
@@ -685,7 +826,7 @@ export const EnhancedPaymentScheduleTabRedesigned = ({
 
           {/* No Results */}
           {filteredPayments.length === 0 ? (
-            <Card className="border-neutral-200">
+            <Card className="rounded-xl border-[#DDE5EF] shadow-sm">
               <CardContent className="p-12 text-center">
                 <Search className="w-12 h-12 text-neutral-300 mx-auto mb-4" />
                 <h3 className="text-lg font-semibold text-neutral-900 mb-2">لا توجد نتائج</h3>
@@ -694,7 +835,7 @@ export const EnhancedPaymentScheduleTabRedesigned = ({
             </Card>
           ) : viewMode === 'timeline' ? (
             /* Timeline View */
-            <Card className="border-neutral-200">
+            <Card className="rounded-xl border-[#DDE5EF] shadow-sm">
               <CardHeader>
                 <CardTitle className="text-lg flex items-center gap-2">
                   <Calendar className="w-5 h-5 text-teal-600" />

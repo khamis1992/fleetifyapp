@@ -15,10 +15,28 @@ interface BeforeInstallPromptEvent extends Event {
 
 let deferredPrompt: BeforeInstallPromptEvent | null = null;
 
+const unregisterDevelopmentServiceWorkers = async (): Promise<void> => {
+  if (!import.meta.env.DEV || !('serviceWorker' in navigator)) {
+    return;
+  }
+
+  try {
+    const registrations = await navigator.serviceWorker.getRegistrations();
+    await Promise.all(registrations.map((registration) => registration.unregister()));
+    if (registrations.length > 0) {
+      console.log('PWA: Cleared stale development service workers');
+    }
+  } catch (error) {
+    console.log('PWA: Could not clear development service workers', error);
+  }
+};
+
 /**
  * Initialize PWA features
  */
 export const initializePWA = (): void => {
+  void unregisterDevelopmentServiceWorkers();
+
   // Listen for beforeinstallprompt event
   window.addEventListener('beforeinstallprompt', (e) => {
     // Prevent the mini-infobar from appearing on mobile

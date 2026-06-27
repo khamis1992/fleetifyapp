@@ -22,19 +22,17 @@ import {
 import { useEnhancedFinancialReports } from "@/hooks/useEnhancedFinancialReports";
 import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter";
 import { toast } from "sonner";
-import jsPDF from "jspdf";
-import "jspdf-autotable";
 import * as XLSX from 'xlsx';
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell } from 'recharts';
 import { format, subMonths, startOfMonth, endOfMonth } from 'date-fns';
 import { ar } from 'date-fns/locale';
+import { buildCashFlowReport } from "@/utils/ledgerCashFlowReportRules";
+import {
+  exportOfficialFinancialReportToPDF,
+  type OfficialFinancialReportExportPayload,
+} from "@/utils/officialFinancialReportExport";
 
 import { useFleetifyTranslation } from "@/hooks/useTranslation";
-declare module 'jspdf' {
-  interface jsPDF {
-    autoTable: (options: any) => jsPDF;
-  }
-}
 
 const COLORS = {
   operating: '#22c55e',
@@ -240,135 +238,58 @@ export function CashFlowStatementReport() {
   };
 
   // Export to PDF
-  const handleExportPDF = () => {
+  const handleExportPDF = async () => {
     if (!cashFlowData) {
-      toast.error("لا توجد بيانات للتصدير");
+      toast.error("\u0644\u0627 \u062a\u0648\u062c\u062f \u0628\u064a\u0627\u0646\u0627\u062a \u0644\u0644\u062a\u0635\u062f\u064a\u0631");
       return;
     }
 
+    const movements = [
+      ...cashFlowData.operating.map((item, index) => ({ id: `operating-${index}`, accountCode: `OP-${index + 1}`, accountType: "operating", cashFlowCategory: "operating" as const, amount: item.amount })),
+      ...cashFlowData.investing.map((item, index) => ({ id: `investing-${index}`, accountCode: `INV-${index + 1}`, accountType: "asset", cashFlowCategory: "investing" as const, amount: item.amount })),
+      ...cashFlowData.financing.map((item, index) => ({ id: `financing-${index}`, accountCode: `FIN-${index + 1}`, accountType: "liability", cashFlowCategory: "financing" as const, amount: item.amount })),
+    ];
+    const sourceReport = buildCashFlowReport(movements, cashFlowData.beginningCash);
+
+    const payload: OfficialFinancialReportExportPayload = {
+      metadata: {
+        reportTitle: "\u0642\u0627\u0626\u0645\u0629 \u0627\u0644\u062a\u062f\u0641\u0642\u0627\u062a \u0627\u0644\u0646\u0642\u062f\u064a\u0629",
+        reportType: "cash_flow_statement",
+        companyName: "Fleetify",
+        periodStart: startDate,
+        periodEnd: endDate,
+        currency: "QAR",
+        generatedAt: new Date().toISOString(),
+        status: "published",
+        sourceFingerprint: sourceReport.sourceFingerprint,
+        reportHash: sourceReport.sourceFingerprint,
+      },
+      columns: [
+        { key: "section", header: "\u0627\u0644\u0646\u0634\u0627\u0637", width: 20 },
+        { key: "description", header: "\u0627\u0644\u0628\u064a\u0627\u0646", width: 48 },
+        { key: "amount", header: "\u0627\u0644\u0645\u0628\u0644\u063a", type: "money", width: 18 },
+      ],
+      rows: [
+        ...cashFlowData.operating.map((item) => ({ section: "\u0627\u0644\u0623\u0646\u0634\u0637\u0629 \u0627\u0644\u062a\u0634\u063a\u064a\u0644\u064a\u0629", description: item.nameAr || item.name, amount: item.amount })),
+        ...cashFlowData.investing.map((item) => ({ section: "\u0627\u0644\u0623\u0646\u0634\u0637\u0629 \u0627\u0644\u0627\u0633\u062a\u062b\u0645\u0627\u0631\u064a\u0629", description: item.nameAr || item.name, amount: item.amount })),
+        ...cashFlowData.financing.map((item) => ({ section: "\u0627\u0644\u0623\u0646\u0634\u0637\u0629 \u0627\u0644\u062a\u0645\u0648\u064a\u0644\u064a\u0629", description: item.nameAr || item.name, amount: item.amount })),
+      ],
+      summaryRows: [
+        { section: "\u0627\u0644\u0645\u0644\u062e\u0635", description: "\u0635\u0627\u0641\u064a \u0627\u0644\u062a\u062f\u0641\u0642 \u0627\u0644\u062a\u0634\u063a\u064a\u0644\u064a", amount: cashFlowData.netOperating },
+        { section: "\u0627\u0644\u0645\u0644\u062e\u0635", description: "\u0635\u0627\u0641\u064a \u0627\u0644\u062a\u062f\u0641\u0642 \u0627\u0644\u0627\u0633\u062a\u062b\u0645\u0627\u0631\u064a", amount: cashFlowData.netInvesting },
+        { section: "\u0627\u0644\u0645\u0644\u062e\u0635", description: "\u0635\u0627\u0641\u064a \u0627\u0644\u062a\u062f\u0641\u0642 \u0627\u0644\u062a\u0645\u0648\u064a\u0644\u064a", amount: cashFlowData.netFinancing },
+        { section: "\u0627\u0644\u0645\u0644\u062e\u0635", description: "\u0635\u0627\u0641\u064a \u0627\u0644\u062a\u063a\u064a\u0631 \u0641\u064a \u0627\u0644\u0646\u0642\u062f", amount: cashFlowData.netCashFlow },
+        { section: "\u0627\u0644\u0645\u0644\u062e\u0635", description: "\u0631\u0635\u064a\u062f \u0627\u0644\u0646\u0642\u062f \u0623\u0648\u0644 \u0627\u0644\u0645\u062f\u0629", amount: cashFlowData.beginningCash },
+        { section: "\u0627\u0644\u0645\u0644\u062e\u0635", description: "\u0631\u0635\u064a\u062f \u0627\u0644\u0646\u0642\u062f \u0622\u062e\u0631 \u0627\u0644\u0645\u062f\u0629", amount: cashFlowData.endingCash },
+      ],
+    };
+
     try {
-      const doc = new jsPDF('p', 'mm', 'a4');
-      
-      // Header
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(18);
-      doc.text('Cash Flow Statement', 105, 15, { align: 'center' });
-      doc.setFontSize(14);
-      doc.text('قائمة التدفقات النقدية', 105, 23, { align: 'center' });
-      
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(10);
-      doc.text(`From / من: ${startDate}  To / إلى: ${endDate}`, 105, 30, { align: 'center' });
-      doc.text(`Method / الطريقة: ${method === 'direct' ? 'Direct / مباشرة' : 'Indirect / غير مباشرة'}`, 105, 36, { align: 'center' });
-
-      let currentY = 45;
-
-      // Operating Activities
-      doc.setFontSize(12);
-      doc.setFillColor(34, 197, 94);
-      doc.rect(14, currentY - 5, 182, 8, 'F');
-      doc.setTextColor(255, 255, 255);
-      doc.text('Operating Activities / الأنشطة التشغيلية', 20, currentY);
-      doc.setTextColor(0, 0, 0);
-      currentY += 10;
-
-      const operatingData = cashFlowData.operating.map(item => [
-        item.name,
-        item.nameAr,
-        formatCurrency(item.amount)
-      ]);
-
-      doc.autoTable({
-        startY: currentY,
-        head: [['Activity', 'النشاط', 'Amount']],
-        body: operatingData,
-        foot: [['', 'Net Cash from Operating', formatCurrency(cashFlowData.netOperating)]],
-        theme: 'grid',
-        styles: { fontSize: 8 },
-        headStyles: { fillColor: [34, 197, 94] },
-        footStyles: { fillColor: [200, 230, 201], fontStyle: 'bold' }
-      });
-
-      currentY = (doc as any).lastAutoTable.finalY + 10;
-
-      // Investing Activities
-      doc.setFillColor(59, 130, 246);
-      doc.rect(14, currentY - 5, 182, 8, 'F');
-      doc.setTextColor(255, 255, 255);
-      doc.text('Investing Activities / الأنشطة الاستثمارية', 20, currentY);
-      doc.setTextColor(0, 0, 0);
-      currentY += 10;
-
-      const investingData = cashFlowData.investing.map(item => [
-        item.name,
-        item.nameAr,
-        formatCurrency(item.amount)
-      ]);
-
-      doc.autoTable({
-        startY: currentY,
-        head: [['Activity', 'النشاط', 'Amount']],
-        body: investingData,
-        foot: [['', 'Net Cash from Investing', formatCurrency(cashFlowData.netInvesting)]],
-        theme: 'grid',
-        styles: { fontSize: 8 },
-        headStyles: { fillColor: [59, 130, 246] },
-        footStyles: { fillColor: [191, 219, 254], fontStyle: 'bold' }
-      });
-
-      currentY = (doc as any).lastAutoTable.finalY + 10;
-
-      // Financing Activities
-      doc.setFillColor(245, 158, 11);
-      doc.rect(14, currentY - 5, 182, 8, 'F');
-      doc.setTextColor(255, 255, 255);
-      doc.text('Financing Activities / الأنشطة التمويلية', 20, currentY);
-      doc.setTextColor(0, 0, 0);
-      currentY += 10;
-
-      const financingData = cashFlowData.financing.map(item => [
-        item.name,
-        item.nameAr,
-        formatCurrency(item.amount)
-      ]);
-
-      doc.autoTable({
-        startY: currentY,
-        head: [['Activity', 'النشاط', 'Amount']],
-        body: financingData,
-        foot: [['', 'Net Cash from Financing', formatCurrency(cashFlowData.netFinancing)]],
-        theme: 'grid',
-        styles: { fontSize: 8 },
-        headStyles: { fillColor: [245, 158, 11] },
-        footStyles: { fillColor: [254, 243, 199], fontStyle: 'bold' }
-      });
-
-      currentY = (doc as any).lastAutoTable.finalY + 10;
-
-      // Summary
-      doc.autoTable({
-        startY: currentY,
-        body: [
-          ['Net Change in Cash / صافي التغير في النقد', formatCurrency(cashFlowData.netCashFlow)],
-          ['Beginning Cash Balance / رصيد أول المدة', formatCurrency(cashFlowData.beginningCash)],
-          ['Ending Cash Balance / رصيد آخر المدة', formatCurrency(cashFlowData.endingCash)]
-        ],
-        theme: 'plain',
-        styles: { fontSize: 10, fontStyle: 'bold' },
-        columnStyles: { 0: { cellWidth: 140 }, 1: { cellWidth: 50, halign: 'right' } }
-      });
-
-      // Footer
-      doc.setFontSize(8);
-      doc.setTextColor(128, 128, 128);
-      doc.text('Generated by FleetifyApp', 105, doc.internal.pageSize.height - 10, { align: 'center' });
-
-      const fileName = `cash_flow_statement_${startDate}_to_${endDate}.pdf`;
-      doc.save(fileName);
-      toast.success("تم تصدير التقرير بنجاح");
+      await exportOfficialFinancialReportToPDF(payload);
+      toast.success("\u062a\u0645 \u062a\u0635\u062f\u064a\u0631 \u0627\u0644\u062a\u062f\u0641\u0642\u0627\u062a \u0627\u0644\u0646\u0642\u062f\u064a\u0629 \u0628\u0635\u064a\u063a\u0629 \u0643\u062a\u0627\u0628 \u0631\u0633\u0645\u064a");
     } catch (error) {
-      console.error('PDF export error:', error);
-      toast.error("حدث خطأ أثناء تصدير التقرير");
+      console.error("PDF export error:", error);
+      toast.error("\u062a\u0639\u0630\u0631 \u062a\u0635\u062f\u064a\u0631 \u0645\u0644\u0641 PDF");
     }
   };
 

@@ -296,18 +296,17 @@ const InvoiceMetrics = ({
   return (
     <motion.div
       variants={fadeInUp}
-      className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"
+      className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4"
     >
       {metricCards.map((metric, idx) => (
         <motion.div
           key={idx}
           variants={scaleIn}
-          whileHover={{ y: -4 }}
-          className="bg-white rounded-2xl border border-neutral-200 p-5 shadow-sm hover:shadow-lg transition-all duration-200"
+          className="rounded-xl border border-[#DDE5EF] bg-white p-4 shadow-sm transition-colors hover:border-[#173A63]"
         >
           <div className="flex items-start justify-between mb-3">
-            <div className={cn("w-11 h-11 rounded-xl bg-gradient-to-br flex items-center justify-center shadow-md", metric.color)}>
-              <metric.icon className="w-5 h-5 text-white" />
+            <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-[#EEF5FB] text-[#173A63]">
+              <metric.icon className="h-5 w-5" />
             </div>
             <div className={cn("px-2 py-1 rounded-lg text-xs font-medium", metric.bgColor, metric.textColor)}>
               {metric.subtext.split(' • ')[0]}
@@ -352,15 +351,15 @@ const InvoiceCard = ({
       variants={scaleIn}
       whileHover={{ y: -2 }}
       className={cn(
-        "bg-white rounded-2xl border p-5 shadow-sm hover:shadow-md transition-all duration-200",
+        "rounded-xl border bg-white p-5 shadow-sm transition-colors hover:border-[#173A63]",
         statusInfo.borderColor
       )}
     >
       {/* Header */}
       <div className="flex items-start justify-between mb-4">
         <div className="flex items-center gap-3">
-          <div className={cn("w-12 h-12 rounded-xl flex items-center justify-center", statusInfo.iconBg)}>
-            <Receipt className="w-6 h-6 text-white" />
+          <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-[#EEF5FB] text-[#173A63]">
+            <Receipt className="h-6 w-6" />
           </div>
           <div>
             <div className="flex items-center gap-2 mb-1">
@@ -408,7 +407,7 @@ const InvoiceCard = ({
       {/* Details Grid */}
       <div className="grid grid-cols-2 gap-4 mb-4">
         {/* Amount */}
-        <div className={cn("p-3 rounded-xl", statusInfo.bgColor)}>
+        <div className="rounded-xl border border-[#DDE5EF] bg-[#FCFDFE] p-3">
           <p className="text-xs text-neutral-500 mb-1">المبلغ الإجمالي</p>
           <p className="text-xl font-bold text-neutral-900">{formatCurrency(invoice.total_amount || 0)}</p>
         </div>
@@ -464,7 +463,7 @@ const InvoiceCard = ({
       </div>
 
       {/* Action Buttons */}
-      <div className="flex items-center gap-2 pt-3 border-t border-neutral-100">
+      <div className="flex items-center gap-2 border-t border-[#E6EDF5] pt-3">
         <Button
           variant="outline"
           size="sm"
@@ -478,7 +477,7 @@ const InvoiceCard = ({
           <Button
             size="sm"
             onClick={onPay}
-            className="flex-1 gap-2 bg-gradient-to-r from-teal-500 to-teal-600 hover:shadow-lg rounded-xl"
+            className="flex-1 gap-2 rounded-xl bg-[#173A63] hover:bg-[#173A63]/90"
           >
             <CreditCard className="w-4 h-4" />
             <span>دفع</span>
@@ -515,12 +514,12 @@ const InvoiceTableRow = ({
   const isOverdue = invoice.due_date && isAfter(new Date(), new Date(invoice.due_date)) && invoice.payment_status !== 'paid';
 
   return (
-    <tr className="hover:bg-neutral-50 transition-colors border-b border-neutral-100">
+    <tr className="border-b border-[#E6EDF5] transition-colors hover:bg-[#F7FAFD]">
       {/* Invoice Number */}
       <td className="py-4 px-4">
         <div className="flex items-center gap-3">
-          <div className={cn("w-10 h-10 rounded-lg flex items-center justify-center", statusInfo.iconBg)}>
-            <Receipt className="w-5 h-5 text-white" />
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#EEF5FB] text-[#173A63]">
+            <Receipt className="h-5 w-5" />
           </div>
           <div>
             <p className="font-semibold text-neutral-900">{invoice.invoice_number}</p>
@@ -590,7 +589,7 @@ const InvoiceTableRow = ({
               <Button
                 size="sm"
                 onClick={onPay}
-                className="h-8 px-3 bg-gradient-to-r from-teal-500 to-teal-600 hover:shadow-md rounded-lg"
+                className="h-8 rounded-lg bg-[#173A63] px-3 hover:bg-[#173A63]/90"
               >
                 <CreditCard className="w-4 h-4 ml-1" />
                 دفع
@@ -628,7 +627,7 @@ const InvoiceFilters = ({
   sortOption: string;
   onSortChange: (value: string) => void;
 }) => (
-  <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between bg-white rounded-xl p-4 border border-neutral-200">
+  <div className="flex flex-col gap-3 rounded-xl border border-[#DDE5EF] bg-[#FCFDFE] p-4 sm:flex-row sm:items-center sm:justify-between">
     <div className="flex items-center gap-3 flex-1 w-full sm:w-auto">
       <div className="relative flex-1 max-w-md">
         <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
@@ -636,14 +635,14 @@ const InvoiceFilters = ({
           placeholder="بحث برقم الفاتورة..."
           value={searchQuery}
           onChange={(e) => onSearchChange(e.target.value)}
-          className="pr-10 rounded-xl border-neutral-200"
+          className="rounded-xl border-[#D8E1EC] bg-white pr-10"
         />
       </div>
     </div>
 
     <div className="flex items-center gap-3 w-full sm:w-auto">
       <Select value={statusFilter} onValueChange={onStatusFilterChange}>
-        <SelectTrigger className="w-full sm:w-[160px] rounded-xl border-neutral-200">
+        <SelectTrigger className="w-full rounded-xl border-[#D8E1EC] bg-white sm:w-[160px]">
           <SelectValue placeholder="الحالة" />
         </SelectTrigger>
         <SelectContent>
@@ -657,7 +656,7 @@ const InvoiceFilters = ({
       </Select>
 
       <Select value={sortOption} onValueChange={onSortChange}>
-        <SelectTrigger className="w-full sm:w-[160px] rounded-xl border-neutral-200">
+        <SelectTrigger className="w-full rounded-xl border-[#D8E1EC] bg-white sm:w-[160px]">
           <SelectValue placeholder="الترتيب" />
         </SelectTrigger>
         <SelectContent>
@@ -686,9 +685,9 @@ const InvoicesEmptyState = ({
       initial={{ scale: 0.9, opacity: 0 }}
       animate={{ scale: 1, opacity: 1 }}
       transition={{ duration: 0.3 }}
-      className="w-24 h-24 rounded-xl bg-gradient-to-br from-teal-50 to-teal-100 flex items-center justify-center mx-auto mb-6"
+      className="mx-auto mb-6 flex h-24 w-24 items-center justify-center rounded-xl bg-[#EEF5FB]"
     >
-      <Receipt className="w-12 h-12 text-teal-500" />
+      <Receipt className="h-12 w-12 text-[#173A63]" />
     </motion.div>
     <h3 className="text-xl font-bold text-neutral-900 mb-2">لا توجد فواتير</h3>
     <p className="text-neutral-500 mb-6 max-w-md mx-auto">
@@ -699,7 +698,7 @@ const InvoicesEmptyState = ({
         <Button
           onClick={onGenerateMissingInvoices}
           disabled={isGeneratingMissingInvoices}
-          className="gap-2 bg-gradient-to-r from-teal-500 to-teal-600 hover:shadow-lg shadow-teal-200 rounded-xl"
+          className="gap-2 rounded-xl bg-[#173A63] hover:bg-[#173A63]/90"
         >
           {isGeneratingMissingInvoices ? (
             <>
@@ -719,7 +718,7 @@ const InvoicesEmptyState = ({
         variant={onGenerateMissingInvoices ? 'outline' : 'default'}
         className={cn(
           'gap-2 rounded-xl',
-          !onGenerateMissingInvoices && 'bg-gradient-to-r from-teal-500 to-teal-600 hover:shadow-lg shadow-teal-200'
+          !onGenerateMissingInvoices && 'bg-[#173A63] hover:bg-[#173A63]/90'
         )}
       >
         <Receipt className="w-4 h-4" />
@@ -797,14 +796,14 @@ export const ContractInvoicesTabRedesigned = ({
   }, [invoices, searchQuery, statusFilter, sortOption]);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       {/* Metrics Overview */}
       <InvoiceMetrics invoices={invoices} formatCurrency={formatCurrency} />
 
       {/* Header & Actions */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 rounded-xl border border-[#DDE5EF] bg-[#FCFDFE] p-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-neutral-900 mb-1">الفواتير</h2>
+          <h2 className="mb-1 text-xl font-black text-[#142033]">الفواتير</h2>
           <p className="text-neutral-500 text-sm">
             {contractNumber ? `العقد #${contractNumber} • ` : ''}
             {invoices.length} فاتورة
@@ -872,7 +871,7 @@ export const ContractInvoicesTabRedesigned = ({
                 <head>
                   <meta charset="UTF-8">
                   <title>كشف الفواتير المستحقة - ${contractNumber || ''}</title>
-                  <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+                  <link rel="icon" href="/uploads/7453c280-3175-4ccf-a73b-24921ec5990b.png" type="image/png" />
                   <style>
                     @page { 
                       size: A4; 
@@ -1410,7 +1409,7 @@ export const ContractInvoicesTabRedesigned = ({
           </Button>
           <Button
             onClick={onCreateInvoice}
-            className="gap-2 bg-gradient-to-r from-teal-500 to-teal-600 hover:shadow-lg shadow-teal-200 rounded-xl"
+            className="gap-2 rounded-xl bg-[#173A63] hover:bg-[#173A63]/90"
           >
             <Receipt className="w-4 h-4" />
             إنشاء فاتورة
@@ -1420,7 +1419,7 @@ export const ContractInvoicesTabRedesigned = ({
 
       {/* Empty State */}
       {invoices.length === 0 ? (
-        <Card className="border-neutral-200">
+        <Card className="rounded-xl border-[#DDE5EF] shadow-sm">
           <CardContent className="p-6">
             <InvoicesEmptyState
               onCreateInvoice={onCreateInvoice}
@@ -1446,7 +1445,7 @@ export const ContractInvoicesTabRedesigned = ({
             <p className="text-sm text-neutral-500">
               عرض {filteredAndSortedInvoices.length} من {invoices.length} فاتورة
             </p>
-            <div className="flex items-center gap-2 bg-neutral-100 p-1 rounded-xl">
+            <div className="flex items-center gap-2 rounded-xl border border-[#DDE5EF] bg-white p-1">
               <Button
                 size="sm"
                 variant={viewMode === 'grid' ? 'default' : 'ghost'}
@@ -1474,7 +1473,7 @@ export const ContractInvoicesTabRedesigned = ({
 
           {/* Invoices Display */}
           {filteredAndSortedInvoices.length === 0 ? (
-            <Card className="border-neutral-200">
+            <Card className="rounded-xl border-[#DDE5EF] shadow-sm">
               <CardContent className="p-12 text-center">
                 <Search className="w-12 h-12 text-neutral-300 mx-auto mb-4" />
                 <h3 className="text-lg font-semibold text-neutral-900 mb-2">لا توجد نتائج</h3>
@@ -1509,11 +1508,11 @@ export const ContractInvoicesTabRedesigned = ({
               ))}
             </motion.div>
           ) : (
-            <Card className="border-neutral-200 overflow-hidden">
+            <Card className="overflow-hidden rounded-xl border-[#DDE5EF] shadow-sm">
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead>
-                    <tr className="bg-neutral-50 border-b border-neutral-200">
+                    <tr className="border-b border-[#DDE5EF] bg-[#F7FAFD]">
                       <th className="py-3 px-4 text-right text-sm font-semibold text-neutral-700">رقم الفاتورة</th>
                       <th className="py-3 px-4 text-right text-sm font-semibold text-neutral-700">التاريخ</th>
                       <th className="py-3 px-4 text-right text-sm font-semibold text-neutral-700">المبلغ</th>

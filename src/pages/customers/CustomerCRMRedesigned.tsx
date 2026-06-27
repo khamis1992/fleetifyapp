@@ -118,10 +118,10 @@ const StatCard = ({
   const colorStyles = {
     coral: { bg: 'bg-rose-50', text: 'text-rose-600', iconBg: 'bg-rose-500' },
     green: { bg: 'bg-emerald-50', text: 'text-emerald-600', iconBg: 'bg-emerald-500' },
-    blue: { bg: 'bg-sky-50', text: 'text-sky-600', iconBg: 'bg-sky-500' },
+    blue: { bg: 'bg-[#EEF5FB]', text: 'text-[#173A63]', iconBg: 'bg-[#173A63]' },
     amber: { bg: 'bg-amber-50', text: 'text-amber-600', iconBg: 'bg-amber-500' },
-    purple: { bg: 'bg-violet-50', text: 'text-violet-600', iconBg: 'bg-violet-500' },
-    slate: { bg: 'bg-slate-50', text: 'text-slate-600', iconBg: 'bg-slate-500' },
+    purple: { bg: 'bg-[#EEF5FB]', text: 'text-[#173A63]', iconBg: 'bg-[#173A63]' },
+    slate: { bg: 'bg-[#EEF5FB]', text: 'text-[#173A63]', iconBg: 'bg-[#173A63]' },
   };
 
   const style = colorStyles[color];
@@ -129,21 +129,21 @@ const StatCard = ({
   return (
     <motion.button
       onClick={onClick}
-      className={cn('bg-white rounded-xl p-5 text-right hover:shadow-lg transition-all duration-300 border border-slate-100', onClick && 'cursor-pointer group')}
+      className={cn('rounded-xl border border-[#DDE5EF] bg-white p-5 text-right shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-[#173A63] hover:shadow-md', onClick && 'cursor-pointer group')}
       whileHover={{ y: -2 }}
     >
       <div className="flex items-start justify-between mb-3">
-        <div className={cn('w-11 h-11 rounded-xl flex items-center justify-center', style.iconBg)}>
+        <div className={cn('w-11 h-11 rounded-lg flex items-center justify-center', style.iconBg)}>
           <Icon className="w-5 h-5 text-white" />
         </div>
         {trend && (
-          <span className="text-xs font-medium text-slate-400 bg-slate-50 px-2 py-1 rounded-full">
+          <span className="rounded-lg bg-[#F8FAFC] px-2 py-1 text-xs font-bold text-[#6A7688]">
             {trend}
           </span>
         )}
       </div>
-      <p className="text-sm font-medium text-slate-500 mb-1">{title}</p>
-      <p className="text-2xl font-bold text-slate-900">
+      <p className="mb-1 text-sm font-bold text-[#6A7688]">{title}</p>
+      <p className="text-2xl font-black text-[#142033]">
         {typeof value === 'number' ? value.toLocaleString() : value}
       </p>
     </motion.button>
@@ -192,16 +192,16 @@ const CustomerTableRow = ({
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.03, duration: 0.4 }}
-      className="group hover:bg-gradient-to-l hover:from-teal-50/50 hover:to-transparent transition-all duration-300 border-b border-slate-100 last:border-0"
+      className="group border-b border-[#E7EDF4] transition-all duration-300 last:border-0 hover:bg-[#F8FAFC]"
     >
       {/* Customer Info */}
       <td className="py-4 px-4">
         <div className="flex items-center gap-3">
           <div className={cn(
-            "relative w-11 h-11 rounded-xl flex items-center justify-center text-sm font-bold flex-shrink-0 ring-2 ring-offset-2 transition-all duration-300",
+            "relative w-11 h-11 rounded-lg flex items-center justify-center text-sm font-bold flex-shrink-0 ring-2 ring-offset-2 transition-all duration-300",
             isNew
-              ? 'bg-gradient-to-br from-amber-400 to-amber-500 text-white ring-amber-200 group-hover:ring-amber-400 group-hover:scale-110'
-              : 'bg-gradient-to-br from-teal-400 to-teal-600 text-white ring-teal-200 group-hover:ring-teal-400 group-hover:scale-110'
+              ? 'bg-amber-500 text-white ring-amber-100 group-hover:ring-amber-300 group-hover:scale-105'
+              : 'bg-[#173A63] text-white ring-[#EEF5FB] group-hover:ring-[#B8C6D8] group-hover:scale-105'
           )}>
             {initials}
             {isNew && (
@@ -214,13 +214,13 @@ const CustomerTableRow = ({
             <div className="flex items-center gap-2 mb-0.5">
               <h3 className="font-semibold text-slate-900 text-sm truncate">{nameAr}</h3>
               {isNew && (
-                <span className="px-2 py-0.5 bg-gradient-to-r from-amber-100 to-amber-50 text-amber-700 text-[10px] rounded-full font-medium border border-amber-200 whitespace-nowrap">
+                <span className="rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-700 whitespace-nowrap">
                   جديد
                 </span>
               )}
             </div>
             <div className="flex items-center gap-2 text-xs text-slate-500">
-              <span className="font-mono bg-slate-50 px-2 py-0.5 rounded-md border border-slate-200">
+              <span className="rounded-md border border-[#DDE5EF] bg-[#F8FAFC] px-2 py-0.5 font-mono">
                 {customer.customer_code}
               </span>
             </div>
@@ -239,7 +239,7 @@ const CustomerTableRow = ({
       {/* Contract */}
       <td className="py-4 px-4">
         {contract ? (
-          <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-50 rounded-lg border border-slate-200">
+          <div className="inline-flex items-center gap-1.5 rounded-lg border border-[#DDE5EF] bg-[#F8FAFC] px-3 py-1.5">
             <FileText size={12} className="text-slate-400" />
             <span className="text-sm font-medium text-slate-700">{contract.contract_number}</span>
           </div>
@@ -256,12 +256,12 @@ const CustomerTableRow = ({
       {/* Last Contact */}
       <td className="py-4 px-4">
         <div className={cn(
-          "inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium border transition-all duration-300",
+          "inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold border transition-all duration-300",
           isNew
-            ? 'bg-gradient-to-r from-rose-50 to-rose-100/50 text-rose-700 border-rose-200'
+            ? 'bg-rose-50 text-rose-700 border-rose-200'
             : daysSinceContact > 7
-              ? 'bg-gradient-to-r from-amber-50 to-amber-100/50 text-amber-700 border-amber-200'
-              : 'bg-gradient-to-r from-emerald-50 to-emerald-100/50 text-emerald-700 border-emerald-200'
+              ? 'bg-amber-50 text-amber-700 border-amber-200'
+              : 'bg-emerald-50 text-emerald-700 border-emerald-200'
         )}>
           <Clock size={12} />
           {isNew ? 'لم يتم' : `${daysSinceContact} يوم`}
@@ -274,28 +274,28 @@ const CustomerTableRow = ({
           <Button
             size="sm"
             onClick={onCall}
-            className="h-8 w-8 p-0 rounded-lg bg-gradient-to-br from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white shadow-md shadow-emerald-200 hover:shadow-lg hover:shadow-emerald-300 transition-all duration-300 hover:scale-105"
+            className="h-8 w-8 rounded-lg bg-emerald-600 p-0 text-white transition-all duration-300 hover:scale-105 hover:bg-emerald-700"
           >
             <Phone size={14} />
           </Button>
           <Button
             size="sm"
             onClick={onWhatsApp}
-            className="h-8 w-8 p-0 rounded-lg bg-teal-500 hover:bg-teal-600 text-white shadow-md shadow-teal-200 hover:shadow-lg hover:shadow-teal-300 transition-all duration-300 hover:scale-105"
+            className="h-8 w-8 rounded-lg bg-[#173A63] p-0 text-white transition-all duration-300 hover:scale-105 hover:bg-[#142033]"
           >
             <MessageCircle size={14} />
           </Button>
           <Button
             size="sm"
             onClick={onNote}
-            className="h-8 w-8 p-0 rounded-lg bg-white border-2 border-slate-200 hover:border-teal-300 hover:bg-teal-50 text-slate-600 hover:text-teal-700 transition-all duration-300 hover:scale-105"
+            className="h-8 w-8 rounded-lg border border-[#DDE5EF] bg-white p-0 text-[#536173] transition-all duration-300 hover:scale-105 hover:border-[#173A63] hover:bg-[#EEF5FB] hover:text-[#173A63]"
           >
             <Plus size={14} />
           </Button>
           <Button
             size="sm"
             onClick={onViewDetails}
-            className="h-8 w-8 p-0 rounded-lg bg-gradient-to-br from-rose-500 to-rose-600 hover:from-rose-600 hover:to-rose-700 text-white shadow-md shadow-rose-200 hover:shadow-lg hover:shadow-rose-300 transition-all duration-300 hover:scale-105"
+            className="h-8 w-8 rounded-lg bg-rose-500 p-0 text-white transition-all duration-300 hover:scale-105 hover:bg-rose-600"
           >
             <ChevronDown size={14} className="transform -rotate-90" />
           </Button>
@@ -343,14 +343,14 @@ const CustomerCard = ({
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      className="bg-white rounded-xl border border-slate-100 p-5 hover:shadow-lg hover:border-slate-200 transition-all duration-300"
+      className="rounded-xl border border-[#DDE5EF] bg-white p-5 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-[#173A63] hover:shadow-md"
     >
       {/* Header */}
       <div className="flex items-start gap-4 mb-4">
         {/* Avatar */}
         <div className={cn(
-          "w-12 h-12 rounded-xl flex items-center justify-center text-lg font-bold flex-shrink-0",
-          isNew ? 'bg-amber-50 text-amber-600' : 'bg-slate-50 text-slate-600'
+          "w-12 h-12 rounded-lg flex items-center justify-center text-lg font-bold flex-shrink-0",
+          isNew ? 'bg-amber-50 text-amber-700' : 'bg-[#EEF5FB] text-[#173A63]'
         )}>
           {customer.first_name?.substring(0, 2) || customer.first_name_ar?.substring(0, 2) || 'ع'}
         </div>
@@ -360,13 +360,13 @@ const CustomerCard = ({
           <div className="flex items-center gap-2 mb-1">
             <h3 className="font-semibold text-slate-900 truncate">{nameAr}</h3>
             {isNew && (
-              <span className="px-2 py-0.5 bg-amber-50 text-amber-600 text-[10px] rounded-full font-medium border border-amber-200 flex-shrink-0">
+              <span className="rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-700 flex-shrink-0">
                 جديد
               </span>
             )}
           </div>
           <div className="flex items-center gap-2 text-xs text-slate-500">
-            <span className="flex items-center gap-1 font-mono bg-slate-50 px-2 py-0.5 rounded border">
+            <span className="flex items-center gap-1 rounded border border-[#DDE5EF] bg-[#F8FAFC] px-2 py-0.5 font-mono">
               <Hash size={10} />
               {contract?.contract_number || customer.customer_code}
             </span>
@@ -384,12 +384,12 @@ const CustomerCard = ({
           <p className="text-[10px] text-slate-400 font-medium mb-1">حالة الدفع</p>
           <StatusBadge status={paymentStatus} />
         </div>
-        <div className="w-px h-8 bg-slate-100" />
+        <div className="w-px h-8 bg-[#E7EDF4]" />
         <div className="flex-1">
           <p className="text-[10px] text-slate-400 font-medium mb-1">آخر تواصل</p>
           <div className={cn(
             "flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-lg border",
-            isNew ? 'bg-rose-50 text-rose-600 border-rose-100' : 'bg-slate-50 text-slate-600 border-slate-200'
+            isNew ? 'bg-rose-50 text-rose-600 border-rose-100' : 'bg-[#F8FAFC] text-[#536173] border-[#DDE5EF]'
           )}>
             <Clock size={12} />
             {isNew ? 'لم يتم الاتصال' : `منذ ${daysSinceContact} يوم`}
@@ -411,7 +411,7 @@ const CustomerCard = ({
           size="sm"
           variant="outline"
           onClick={onWhatsApp}
-          className="flex-1 text-emerald-600 border-emerald-200 hover:bg-emerald-50"
+          className="flex-1 border-[#DDE5EF] text-[#173A63] hover:bg-[#EEF5FB]"
         >
           <MessageCircle size={14} className="ml-1" />
           واتساب
@@ -420,14 +420,14 @@ const CustomerCard = ({
           size="sm"
           variant="outline"
           onClick={onNote}
-          className="px-3"
+          className="border-[#DDE5EF] px-3 text-[#536173] hover:bg-[#F8FAFC]"
         >
           <Plus size={14} />
         </Button>
         <Button
           size="sm"
           onClick={onViewDetails}
-          className="px-3 bg-rose-500 hover:bg-rose-600 text-white"
+          className="px-3 bg-[#173A63] hover:bg-[#142033] text-white"
         >
           <ChevronDown size={14} className="transform -rotate-90" />
         </Button>
@@ -946,7 +946,7 @@ export default function CustomerCRMRedesigned() {
   // --- Render ---
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-slate-50 p-6">
+      <div className="min-h-screen bg-[#F6F8FB] p-6">
         <div className="flex flex-col items-center justify-center py-20 text-slate-400 gap-3">
           <RefreshCw className="animate-spin" size={24} />
           <p>جاري تحميل البيانات...</p>
@@ -957,20 +957,20 @@ export default function CustomerCRMRedesigned() {
 
   return (
     <CRMErrorBoundary>
-      <div className="min-h-screen bg-slate-50" dir="rtl">
+      <div className="min-h-screen bg-[#F6F8FB]" dir="rtl">
 
         {/* Header */}
-        <div className="bg-white border-b border-slate-200 sticky top-0 z-30">
-          <div className="max-w-[1600px] mx-auto px-6 py-4">
+        <div className="sticky top-0 z-30 border-b border-[#DDE5EF] bg-white/95 backdrop-blur">
+          <div className="w-full max-w-none px-4 py-4 sm:px-6 lg:px-8">
             <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
               {/* Title & Description */}
               <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-[rgba(0,168,150,1)] rounded-xl flex items-center justify-center shadow-lg shadow-teal-200">
+                <div className="w-12 h-12 bg-[#173A63] rounded-lg flex items-center justify-center shadow-sm">
                   <Users className="w-6 h-6 text-white" />
                 </div>
                 <div>
-                  <h1 className="text-xl font-bold text-slate-900">إدارة علاقات العملاء</h1>
-                  <p className="text-sm text-slate-500">متابعة العملاء والاتصالات</p>
+                  <h1 className="text-xl font-black text-[#142033]">إدارة علاقات العملاء</h1>
+                  <p className="text-sm font-semibold text-[#6A7688]">متابعة العملاء والاتصالات</p>
                 </div>
               </div>
 
@@ -984,19 +984,19 @@ export default function CustomerCRMRedesigned() {
                     placeholder="بحث باسم العميل، الهاتف، أو الرمز..."
                     value={searchTerm}
                     onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
-                    className="w-full pr-10 pl-4 py-2.5 bg-slate-50 border-slate-200 rounded-xl focus:bg-white focus:border-rose-500 focus:ring-2 focus:ring-rose-500/20 transition-all text-sm"
+                    className="w-full rounded-lg border-[#DDE5EF] bg-[#F8FAFC] py-2.5 pl-4 pr-10 text-sm transition-all focus:border-[#173A63] focus:bg-white focus:ring-2 focus:ring-[#173A63]/20"
                   />
                   <Search className="absolute right-3 top-2.5 text-slate-400" size={18} />
-                  <kbd className="absolute left-3 top-2.5 text-[10px] text-slate-400 border border-slate-200 rounded px-1.5 py-0.5 bg-slate-50 hidden lg:block">/</kbd>
+                  <kbd className="absolute left-3 top-2.5 hidden rounded border border-[#DDE5EF] bg-[#F8FAFC] px-1.5 py-0.5 text-[10px] text-[#9AA6B6] lg:block">/</kbd>
                 </div>
 
                 {/* View Toggle */}
-                <div className="hidden md:flex items-center bg-slate-100 rounded-xl p-1">
+                <div className="hidden md:flex items-center rounded-lg border border-[#DDE5EF] bg-[#F8FAFC] p-1">
                   <button
                     onClick={() => setViewMode('list')}
                     className={cn(
                       "px-3 py-2 rounded-lg text-sm font-medium transition-all",
-                      viewMode === 'list' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+                      viewMode === 'list' ? 'bg-[#173A63] text-white shadow-sm' : 'text-[#536173] hover:text-[#142033]'
                     )}
                   >
                     قائمة
@@ -1005,7 +1005,7 @@ export default function CustomerCRMRedesigned() {
                     onClick={() => setViewMode('grid')}
                     className={cn(
                       "px-3 py-2 rounded-lg text-sm font-medium transition-all",
-                      viewMode === 'grid' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+                      viewMode === 'grid' ? 'bg-[#173A63] text-white shadow-sm' : 'text-[#536173] hover:text-[#142033]'
                     )}
                   >
                     شبكة
@@ -1017,7 +1017,7 @@ export default function CustomerCRMRedesigned() {
                   variant="outline"
                   size="icon"
                   onClick={() => refetch()}
-                  className="rounded-xl"
+                  className="rounded-lg border-[#DDE5EF] text-[#536173] hover:bg-[#F8FAFC]"
                 >
                   <RefreshCw size={18} />
                 </Button>
@@ -1026,7 +1026,7 @@ export default function CustomerCRMRedesigned() {
                 <Button
                   variant="outline"
                   onClick={handleExportCSV}
-                  className="rounded-xl gap-2"
+                  className="rounded-lg gap-2 border-[#DDE5EF] text-[#536173] hover:bg-[#F8FAFC]"
                 >
                   <Download size={18} />
                   <span className="hidden sm:inline">تصدير</span>
@@ -1035,7 +1035,7 @@ export default function CustomerCRMRedesigned() {
                 {/* Print Report */}
                 <Button
                   onClick={handlePrintLateReport}
-                  className="rounded-xl bg-teal-500 hover:bg-teal-600 gap-2"
+                  className="rounded-lg bg-[#173A63] hover:bg-[#142033] gap-2"
                 >
                   <Printer size={18} />
                   <span className="hidden sm:inline">تقرير المتأخرين</span>
@@ -1045,10 +1045,10 @@ export default function CustomerCRMRedesigned() {
           </div>
         </div>
 
-        <div className="max-w-[1600px] mx-auto px-6 py-8 space-y-8">
+        <div className="w-full max-w-none space-y-6 px-4 py-6 sm:px-6 lg:px-8">
 
           {/* Stats Grid */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
             <StatCard
               title="إجمالي العملاء"
               value={stats.total}
@@ -1084,9 +1084,9 @@ export default function CustomerCRMRedesigned() {
           <ScheduledFollowupsPanel />
 
           {/* Filters & Content */}
-          <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
+          <div className="overflow-hidden rounded-xl border border-[#DDE5EF] bg-white shadow-sm">
             {/* Filter Tabs */}
-            <div className="border-b border-slate-200 px-6 py-4 overflow-x-auto">
+            <div className="overflow-x-auto border-b border-[#DDE5EF] bg-[#F8FAFC] px-5 py-4">
               <div className="flex gap-2">
                 {[
                   { id: 'all', label: 'جميع العملاء', count: stats.total },
@@ -1099,16 +1099,16 @@ export default function CustomerCRMRedesigned() {
                     key={filter.id}
                     onClick={() => { setActiveFilter(filter.id); setCurrentPage(1); }}
                     className={cn(
-                      "flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all whitespace-nowrap",
+                      "flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-bold transition-all whitespace-nowrap",
                       activeFilter === filter.id
-                        ? "bg-rose-500 text-white shadow-md shadow-rose-200"
-                        : "bg-slate-50 text-slate-600 hover:bg-slate-100"
+                        ? "bg-[#173A63] text-white shadow-sm"
+                        : "bg-white text-[#536173] hover:bg-[#EEF5FB] hover:text-[#173A63]"
                     )}
                   >
                     {filter.label}
                     <span className={cn(
                       "px-2 py-0.5 rounded-full text-xs",
-                      activeFilter === filter.id ? "bg-white/20 text-white" : "bg-slate-200 text-slate-600"
+                      activeFilter === filter.id ? "bg-white/20 text-white" : "bg-[#E7EDF4] text-[#536173]"
                     )}>
                       {filter.count}
                     </span>
@@ -1122,35 +1122,35 @@ export default function CustomerCRMRedesigned() {
               <div className="overflow-x-auto">
                 <table className="w-full">
                   {/* Table Header */}
-                  <thead className="bg-gradient-to-r from-slate-50 to-slate-100/50 border-b border-slate-200">
+                  <thead className="border-b border-[#DDE5EF] bg-[#F8FAFC]">
                     <tr>
-                      <th className="py-3.5 px-4 text-right text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                      <th className="py-3.5 px-4 text-right text-xs font-black text-[#142033] uppercase tracking-wider">
                         العميل
                       </th>
-                      <th className="py-3.5 px-4 text-right text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                      <th className="py-3.5 px-4 text-right text-xs font-black text-[#142033] uppercase tracking-wider">
                         الهاتف
                       </th>
-                      <th className="py-3.5 px-4 text-right text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                      <th className="py-3.5 px-4 text-right text-xs font-black text-[#142033] uppercase tracking-wider">
                         العقد
                       </th>
-                      <th className="py-3.5 px-4 text-right text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                      <th className="py-3.5 px-4 text-right text-xs font-black text-[#142033] uppercase tracking-wider">
                         حالة الدفع
                       </th>
-                      <th className="py-3.5 px-4 text-right text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                      <th className="py-3.5 px-4 text-right text-xs font-black text-[#142033] uppercase tracking-wider">
                         آخر تواصل
                       </th>
-                      <th className="py-3.5 px-4 text-center text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                      <th className="py-3.5 px-4 text-center text-xs font-black text-[#142033] uppercase tracking-wider">
                         الإجراءات
                       </th>
                     </tr>
                   </thead>
 
                   {/* Table Body */}
-                  <tbody className="divide-y divide-slate-100 bg-white">
+                  <tbody className="divide-y divide-[#E7EDF4] bg-white">
                     {paginatedCustomers.length === 0 ? (
                       <tr>
                         <td colSpan={6} className="text-center py-20">
-                          <div className="w-16 h-16 bg-slate-100 rounded-xl flex items-center justify-center mx-auto mb-4">
+                          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-xl bg-[#F8FAFC]">
                             <Search className="text-slate-400" size={24} />
                           </div>
                           <h3 className="text-lg font-semibold text-slate-900">لا توجد نتائج</h3>
@@ -1184,7 +1184,7 @@ export default function CustomerCRMRedesigned() {
               <div className="p-6 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                 {paginatedCustomers.length === 0 ? (
                   <div className="col-span-full text-center py-20">
-                    <div className="w-16 h-16 bg-slate-100 rounded-xl flex items-center justify-center mx-auto mb-4">
+                    <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-xl bg-[#F8FAFC]">
                       <Search className="text-slate-400" size={24} />
                     </div>
                     <h3 className="text-lg font-semibold text-slate-900">لا توجد نتائج</h3>
@@ -1214,7 +1214,7 @@ export default function CustomerCRMRedesigned() {
 
             {/* Pagination */}
             {filteredData.length > 0 && (
-              <div className="border-t border-slate-200 px-6 py-4 flex items-center justify-between">
+              <div className="flex items-center justify-between border-t border-[#DDE5EF] bg-[#F8FAFC] px-6 py-4">
                 <span className="text-sm text-slate-500">
                   عرض {((currentPage - 1) * ITEMS_PER_PAGE) + 1} إلى {Math.min(currentPage * ITEMS_PER_PAGE, filteredData.length)} من أصل {filteredData.length} عميل
                 </span>
@@ -1233,7 +1233,7 @@ export default function CustomerCRMRedesigned() {
                       key={idx + 1}
                       variant={currentPage === idx + 1 ? "default" : "outline"}
                       onClick={() => setCurrentPage(idx + 1)}
-                      className={cn("w-9 h-9 rounded-lg", currentPage === idx + 1 && "bg-rose-500 hover:bg-rose-600")}
+                      className={cn("w-9 h-9 rounded-lg", currentPage === idx + 1 && "bg-[#173A63] hover:bg-[#142033]")}
                     >
                       {idx + 1}
                     </Button>
@@ -1261,11 +1261,11 @@ export default function CustomerCRMRedesigned() {
                 initial={{ scale: 0.95, opacity: 0, y: 20 }}
                 animate={{ scale: 1, opacity: 1, y: 0 }}
                 exit={{ scale: 0.95, opacity: 0, y: 20 }}
-                className="bg-white rounded-xl shadow-2xl w-full max-w-lg overflow-hidden border border-slate-200"
+                className="w-full max-w-lg overflow-hidden rounded-xl border border-[#DDE5EF] bg-white shadow-2xl"
               >
-                <div className="flex justify-between items-center p-6 border-b border-slate-200">
+                <div className="flex items-center justify-between border-b border-[#DDE5EF] p-6">
                   <div className="flex items-center gap-3">
-                    <div className={cn("p-2.5 rounded-xl", dialogOpen === 'call' ? 'bg-sky-50 text-sky-600' : 'bg-violet-50 text-violet-600')}>
+                    <div className={cn("rounded-lg p-2.5", dialogOpen === 'call' ? 'bg-[#EEF5FB] text-[#173A63]' : 'bg-[#EEF5FB] text-[#173A63]')}>
                       {dialogOpen === 'call' ? <Phone size={20} /> : <FileText size={20} />}
                     </div>
                     <div>
@@ -1277,7 +1277,7 @@ export default function CustomerCRMRedesigned() {
                       </p>
                     </div>
                   </div>
-                  <button onClick={() => setDialogOpen(null)} className="p-2 hover:bg-slate-100 rounded-xl transition text-slate-400">
+                  <button onClick={() => setDialogOpen(null)} className="rounded-lg p-2 text-[#9AA6B6] transition hover:bg-[#F8FAFC]">
                     <X size={20} />
                   </button>
                 </div>
@@ -1299,7 +1299,7 @@ export default function CustomerCRMRedesigned() {
                               "py-3 text-sm rounded-xl border-2 transition-all font-medium",
                               dialogData.outcome === opt.id
                                 ? `bg-${opt.color}-50 border-${opt.color}-500 text-${opt.color}-700`
-                                : 'border-slate-200 text-slate-600 hover:bg-slate-50'
+                                : 'border-[#DDE5EF] text-[#536173] hover:bg-[#F8FAFC]'
                             )}
                           >
                             {opt.label}
@@ -1314,14 +1314,14 @@ export default function CustomerCRMRedesigned() {
                     <Textarea
                       value={dialogData.content}
                       onChange={(e) => setDialogData({ ...dialogData, content: e.target.value })}
-                      className="w-full p-4 border-slate-200 rounded-xl focus:border-rose-500 focus:ring-2 focus:ring-rose-500/20 outline-none min-h-[120px] text-sm resize-none bg-slate-50 focus:bg-white transition-all"
+                      className="min-h-[120px] w-full resize-none rounded-xl border-[#DDE5EF] bg-[#F8FAFC] p-4 text-sm outline-none transition-all focus:border-[#173A63] focus:bg-white focus:ring-2 focus:ring-[#173A63]/20"
                       placeholder="اكتب التفاصيل هنا..."
                     />
                   </div>
 
                   <Button
                     onClick={handleSaveInteraction}
-                    className="w-full py-3.5 bg-rose-500 hover:bg-rose-600 text-white rounded-xl font-medium gap-2"
+                    className="w-full gap-2 rounded-xl bg-[#173A63] py-3.5 font-medium text-white hover:bg-[#142033]"
                   >
                     <Save size={18} />
                     حفظ السجل
