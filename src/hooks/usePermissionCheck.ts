@@ -34,9 +34,8 @@ export const usePermissionsCheck = (permissionIds: string[]) => {
           .eq('user_id', user.id),
         supabase
           .from('user_permissions')
-          .select('permission_id')
-          .eq('user_id', user.id)
-          .eq('granted', true),
+          .select('permission_id, granted')
+          .eq('user_id', user.id),
         supabase
           .from('employees')
           .select('id, company_id, account_status, has_system_access')
@@ -92,14 +91,6 @@ export const usePermissionsCheck = (permissionIds: string[]) => {
 
       const userRoles = rolesData.map(r => r.role);
 
-      // Super admin has all permissions
-      if (userRoles.includes('super_admin')) {
-        return permissionIds.map(id => ({
-          permissionId: id,
-          hasPermission: true
-        }));
-      }
-
       // Company admin has most permissions
       const isCompanyAdmin = userRoles.includes('company_admin');
 
@@ -108,14 +99,29 @@ export const usePermissionsCheck = (permissionIds: string[]) => {
         ROLE_PERMISSIONS[role as keyof typeof ROLE_PERMISSIONS]?.permissions || []
       );
 
-      // Get custom permissions
-      const customPermissions = permissionsData.map(p => p.permission_id);
+      // Get user-level overrides. granted=false is an explicit deny.
+      const permissionOverrides = new Map(
+        permissionsData.map(p => [p.permission_id, p.granted])
+      );
 
-      const allPermissions = [...new Set([...rolePermissions, ...customPermissions])];
+      const allPermissions = new Set(rolePermissions);
 
       // Check each requested permission
       return permissionIds.map(permissionId => {
         const permission = PERMISSIONS.find(p => p.id === permissionId);
+        const override = permissionOverrides.get(permissionId);
+
+        if (userRoles.includes('super_admin')) {
+          return { permissionId, hasPermission: override === false ? false : true };
+        }
+
+        if (override !== undefined) {
+          return {
+            permissionId,
+            hasPermission: override,
+            reason: override ? undefined : 'تم منع هذه الصلاحية لهذا المستخدم'
+          };
+        }
 
         // Company admin check for system-level permissions
         if (isCompanyAdmin) {
@@ -130,7 +136,7 @@ export const usePermissionsCheck = (permissionIds: string[]) => {
         }
 
         // Regular permission check
-        const hasPermission = allPermissions.includes(permissionId);
+        const hasPermission = allPermissions.has(permissionId);
 
         return {
           permissionId,

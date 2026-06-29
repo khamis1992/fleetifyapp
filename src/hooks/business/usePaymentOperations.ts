@@ -939,7 +939,7 @@ export const usePaymentOperations = (options: PaymentOperationsOptions = {}) => 
           company_id: companyId,
           entry_number: entryNumber,
           entry_date: entryDate,
-          status: 'posted',
+          status: 'draft',
           description: `Payment receipt ${payment.payment_number}`,
           reference_type: 'payment',
           reference_id: payment.id,
@@ -980,6 +980,22 @@ export const usePaymentOperations = (options: PaymentOperationsOptions = {}) => 
       if (linesError) {
         await supabase.from('journal_entries').delete().eq('id', journalEntry.id);
         throw linesError;
+      }
+
+      const { error: postEntryError } = await supabase
+        .from('journal_entries')
+        .update({
+          status: 'posted',
+          posted_by: user?.id,
+          posted_at: new Date().toISOString(),
+        })
+        .eq('id', journalEntry.id)
+        .eq('company_id', companyId);
+
+      if (postEntryError) {
+        await supabase.from('journal_entry_lines').delete().eq('journal_entry_id', journalEntry.id);
+        await supabase.from('journal_entries').delete().eq('id', journalEntry.id);
+        throw postEntryError;
       }
 
       const { error: paymentLinkError } = await supabase

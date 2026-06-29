@@ -76,6 +76,7 @@ const FinancialTracking = lazy(() => import('@/pages/FinancialTracking'));
 const SyncPaymentsToLedger = lazy(() => import('@/pages/SyncPaymentsToLedger'));
 const PaymentRegistration = lazy(() => import('@/pages/PaymentRegistration'));
 const QuickPayment = lazy(() => import('@/pages/payments/QuickPayment'));
+const ExcelPaymentImport = lazy(() => import('@/pages/payments/ExcelPaymentImport'));
 
 // Super Admin pages
 const SuperAdmin = lazy(() => import('@/pages/SuperAdmin'));
@@ -851,6 +852,19 @@ const routeConfigs: RouteConfig[] = [
     requiredRole: 'admin',
   },
   {
+    path: '/finance/payments/import-excel',
+    component: ExcelPaymentImport,
+    lazy: true,
+    exact: true,
+    title: 'Excel Payment Import',
+    description: 'Review historical Excel payments before posting',
+    group: 'finance',
+    priority: 29,
+    protected: true,
+    layout: 'bento',
+    requiredRole: 'admin',
+  },
+  {
     path: '/finance/vendors/categories',
     component: VendorCategories,
     lazy: true,
@@ -858,7 +872,7 @@ const routeConfigs: RouteConfig[] = [
     title: 'Vendor Categories',
     description: 'Vendor categories',
     group: 'finance',
-    priority: 29,
+    priority: 30,
     protected: true,
     layout: 'bento',
     requiredRole: 'admin',

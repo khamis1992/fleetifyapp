@@ -1,32 +1,34 @@
-import React, { useState, useMemo } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import React, { useMemo, useState } from 'react';
+import {
+  AlertTriangle,
+  BarChart3,
+  Check,
+  DollarSign,
+  Eye,
+  Lock,
+  Minus,
+  Search,
+  Settings,
+  Shield,
+  ShieldCheck,
+  Users,
+  X,
+} from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Input } from '@/components/ui/input';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
-import { 
-  Shield, 
-  Users, 
-  DollarSign, 
-  Settings, 
-  BarChart3,
-  Eye,
-  Edit,
-  ShieldCheck,
-  AlertTriangle
-} from 'lucide-react';
-import { 
-  PERMISSION_CATEGORIES, 
-  PERMISSIONS, 
-  ROLE_PERMISSIONS, 
+import {
+  PERMISSION_CATEGORIES,
+  PERMISSIONS,
+  ROLE_PERMISSIONS,
   UserRole,
-  Permission,
-  PermissionCategory 
 } from '@/types/permissions';
 import { useUserPermissions } from '@/hooks/useUserPermissions';
 import { useAuth } from '@/contexts/AuthContext';
+import { cn } from '@/lib/utils';
+
+type PermissionOverrideValue = boolean | null;
 
 interface PermissionsMatrixProps {
   selectedUser?: {
@@ -35,449 +37,337 @@ interface PermissionsMatrixProps {
     last_name: string;
     roles: UserRole[];
   };
-  onPermissionChange?: (permission: string, granted: boolean) => void;
+  onPermissionChange?: (permission: string, granted: PermissionOverrideValue) => void;
   onRoleChange?: (role: UserRole, assigned: boolean) => void;
   readOnly?: boolean;
   showRoleComparison?: boolean;
-  pendingPermissions?: Array<{ permissionId: string; granted: boolean }>;
+  pendingPermissions?: Array<{ permissionId: string; granted: PermissionOverrideValue }>;
   pendingRoles?: UserRole[];
 }
 
-const getIconForCategory = (iconName: string) => {
-  const icons = {
-    Users,
-    DollarSign,
-    Settings,
-    BarChart3,
-    Shield
-  };
-  return icons[iconName as keyof typeof icons] || Shield;
+const roleLabels: Record<UserRole, string> = {
+  super_admin: 'مدير النظام',
+  company_admin: 'مدير الشركة',
+  manager: 'مدير',
+  accountant: 'محاسب',
+  fleet_manager: 'مدير الأسطول',
+  sales_agent: 'مندوب مبيعات',
+  employee: 'موظف',
 };
 
-const getPermissionLevelIcon = (level: string) => {
-  switch (level) {
-    case 'read':
-      return <Eye className="w-3 h-3" />;
-    case 'write':
-      return <Edit className="w-3 h-3" />;
-    case 'admin':
-      return <ShieldCheck className="w-3 h-3" />;
-    default:
-      return <Eye className="w-3 h-3" />;
-  }
+const categoryIcons = {
+  Users,
+  DollarSign,
+  Settings,
+  BarChart3,
+  Shield,
+  Car: Settings,
+  Scale: Shield,
 };
 
-const getPermissionLevelColor = (level: string) => {
-  switch (level) {
-    case 'read':
-      return 'text-blue-600';
-    case 'write':
-      return 'text-green-600';
-    case 'admin':
-      return 'text-red-600';
-    default:
-      return 'text-slate-600';
-  }
-};
+function getCategoryIcon(iconName: string) {
+  return categoryIcons[iconName as keyof typeof categoryIcons] || Shield;
+}
 
-export default function PermissionsMatrix({ 
-  selectedUser, 
-  onPermissionChange, 
+function getLevelMeta(level: string) {
+  if (level === 'admin') return { label: 'إدارة', icon: ShieldCheck, className: 'text-[#FB6B7A]' };
+  if (level === 'write') return { label: 'تعديل', icon: Settings, className: 'text-[#22C7A1]' };
+  return { label: 'قراءة', icon: Eye, className: 'text-[#38BDF8]' };
+}
+
+export default function PermissionsMatrix({
+  selectedUser,
+  onPermissionChange,
   onRoleChange,
   readOnly = false,
   showRoleComparison = false,
   pendingPermissions = [],
-  pendingRoles = []
+  pendingRoles = [],
 }: PermissionsMatrixProps) {
-  const [selectedCategory, setSelectedCategory] = useState<string>('all');
-  const [selectedRole, setSelectedRole] = useState<UserRole | null>(null);
   const { user } = useAuth();
+  const [selectedCategory, setSelectedCategory] = useState('all');
+  const [searchTerm, setSearchTerm] = useState('');
+  const { data: storedOverrides = [], isLoading } = useUserPermissions(selectedUser?.user_id);
 
-  // Fetch user custom permissions from database
-  const { data: customPermissions, isLoading: loadingPermissions } = useUserPermissions(selectedUser?.user_id);
-
-  // Check what roles the current user can assign
-  const getAssignableRoles = (): UserRole[] => {
-    if (!user?.roles) return [];
-    
-    // Super admin can assign all roles
-    if (user.roles.includes('super_admin')) {
-      return Object.keys(ROLE_PERMISSIONS) as UserRole[];
-    }
-    
-    // Company admin can assign all roles except super_admin
-    if (user.roles.includes('company_admin')) {
-      return ['company_admin', 'manager', 'sales_agent', 'employee'];
-    }
-    
-    // Other roles use their defined assignable roles
-    for (const role of user.roles) {
-      const roleData = ROLE_PERMISSIONS[role as UserRole];
-      if (roleData?.canAssignRoles) {
-        return roleData.canAssignRoles;
-      }
-    }
-    
-    return [];
-  };
-
-  const assignableRoles = getAssignableRoles();
-
-  const getUserPermissions = useMemo(() => {
-    if (!selectedUser) return new Set<string>();
-    
-    const rolePermissions = new Set<string>();
-    
-    // Use pending roles if available, otherwise use current roles
-    const effectiveRoles = pendingRoles.length > 0 ? pendingRoles : selectedUser.roles;
-    
-    effectiveRoles.forEach(role => {
-      ROLE_PERMISSIONS[role]?.permissions.forEach(permission => {
-        rolePermissions.add(permission);
-      });
+  const effectiveRoles = pendingRoles.length > 0 ? pendingRoles : selectedUser?.roles || [];
+  const baseRolePermissions = useMemo(() => {
+    const permissions = new Set<string>();
+    effectiveRoles.forEach((role) => {
+      ROLE_PERMISSIONS[role]?.permissions.forEach((permission) => permissions.add(permission));
     });
-    
-    // Add custom permissions from database
-    customPermissions?.forEach(permission => {
-      if (permission.granted) {
-        rolePermissions.add(permission.permission_id);
-      }
+    return permissions;
+  }, [effectiveRoles]);
+
+  const overrideMap = useMemo(() => {
+    const map = new Map<string, PermissionOverrideValue>();
+    storedOverrides.forEach((permission) => map.set(permission.permission_id, permission.granted));
+    pendingPermissions.forEach((permission) => map.set(permission.permissionId, permission.granted));
+    return map;
+  }, [storedOverrides, pendingPermissions]);
+
+  const assignableRoles = useMemo(() => {
+    const roles = user?.roles || [];
+    if (roles.includes('super_admin')) return Object.keys(ROLE_PERMISSIONS) as UserRole[];
+    if (roles.includes('company_admin')) return ['company_admin', 'manager', 'accountant', 'fleet_manager', 'sales_agent', 'employee'] as UserRole[];
+    return roles.flatMap((role) => ROLE_PERMISSIONS[role as UserRole]?.canAssignRoles || []);
+  }, [user?.roles]);
+
+  const filteredPermissions = useMemo(() => {
+    const term = searchTerm.trim().toLowerCase();
+    return PERMISSIONS.filter((permission) => {
+      const matchesCategory = selectedCategory === 'all' || permission.category.id === selectedCategory;
+      const matchesSearch =
+        !term ||
+        permission.id.toLowerCase().includes(term) ||
+        permission.name.toLowerCase().includes(term) ||
+        permission.description.toLowerCase().includes(term) ||
+        permission.category.nameAr.toLowerCase().includes(term);
+      return matchesCategory && matchesSearch;
     });
-    
-    // Apply pending permission changes
-    pendingPermissions.forEach(pending => {
-      if (pending.granted) {
-        rolePermissions.add(pending.permissionId);
-      } else {
-        rolePermissions.delete(pending.permissionId);
-      }
+  }, [searchTerm, selectedCategory]);
+
+  const permissionStats = useMemo(() => {
+    let allowed = 0;
+    let denied = 0;
+    let inherited = 0;
+    PERMISSIONS.forEach((permission) => {
+      const override = overrideMap.get(permission.id);
+      if (override === true) allowed++;
+      else if (override === false) denied++;
+      else if (baseRolePermissions.has(permission.id)) inherited++;
     });
-    
-    return rolePermissions;
-  }, [selectedUser, customPermissions, pendingPermissions, pendingRoles]);
+    return { allowed, denied, inherited };
+  }, [baseRolePermissions, overrideMap]);
 
-  const getFilteredPermissions = () => {
-    let filtered = PERMISSIONS;
-    
-    if (selectedCategory !== 'all') {
-      filtered = filtered.filter(permission => 
-        permission.category.id === selectedCategory
-      );
-    }
-    
-    return filtered;
+  const getPermissionState = (permissionId: string) => {
+    const override = overrideMap.get(permissionId);
+    const inherited = baseRolePermissions.has(permissionId);
+    const granted = override === true || (override === undefined && inherited);
+    const mode: 'inherit' | 'allow' | 'deny' =
+      override === true ? 'allow' : override === false ? 'deny' : 'inherit';
+    return { override, inherited, granted, mode };
   };
 
-  const getRolePermissions = (role: UserRole) => {
-    return new Set(ROLE_PERMISSIONS[role]?.permissions || []);
+  const handlePermissionMode = (permissionId: string, mode: 'inherit' | 'allow' | 'deny') => {
+    if (readOnly || !onPermissionChange) return;
+    onPermissionChange(permissionId, mode === 'inherit' ? null : mode === 'allow');
   };
 
-  const userPermissions = getUserPermissions;
-  const filteredPermissions = getFilteredPermissions();
-
-  const hasPermission = (permissionId: string): boolean => {
-    return userPermissions.has(permissionId);
-  };
-
-  // Show loading state when fetching permissions
-  if (selectedUser && loadingPermissions) {
+  if (selectedUser && isLoading) {
     return (
-      <div className="flex items-center justify-center py-8">
+      <div className="flex min-h-[300px] items-center justify-center gap-3 text-[#64748B]">
         <LoadingSpinner size="lg" />
-        <span className="mr-4 text-muted-foreground">جاري تحميل الصلاحيات...</span>
+        <span className="font-bold">جاري تحميل صلاحيات المستخدم...</span>
       </div>
     );
   }
 
-  const isPermissionInRole = (permissionId: string, role: UserRole): boolean => {
-    return getRolePermissions(role).has(permissionId);
-  };
-
-  const handlePermissionToggle = (permission: string, checked: boolean) => {
-    console.log('Permission toggle:', permission, 'checked:', checked, 'readOnly:', readOnly);
-    if (!readOnly && onPermissionChange) {
-      onPermissionChange(permission, checked);
-    }
-  };
-
-  const handleRoleToggle = (role: UserRole, checked: boolean) => {
-    if (!readOnly && onRoleChange) {
-      onRoleChange(role, checked);
-    }
-  };
-
   return (
-    <div className="space-y-6">
-      {/* Role Selection */}
+    <div className="space-y-4" dir="rtl">
       {selectedUser && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <Shield className="w-5 h-5 mr-2" />
-              أدوار المستخدم
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {Object.keys(ROLE_PERMISSIONS).map(role => {
-                const roleKey = role as UserRole;
-                // Use pending roles if available, otherwise use current roles
-                const effectiveRoles = pendingRoles.length > 0 ? pendingRoles : selectedUser.roles;
-                const isAssigned = effectiveRoles.includes(roleKey);
-                const roleData = ROLE_PERMISSIONS[roleKey];
-                
-                const roleLabels: Record<UserRole, string> = {
-                  super_admin: 'مدير النظام',
-                  company_admin: 'مدير الشركة',
-                  manager: 'مدير',
-                  accountant: 'محاسب',
-                  fleet_manager: 'مدير الأسطول',
-                  sales_agent: 'مندوب مبيعات',
-                  employee: 'موظف'
-                };
-                
-                return (
-                  <Card key={`role-${roleKey}-${selectedUser?.user_id}`} className={`cursor-pointer transition-all ${
-                    isAssigned ? 'ring-2 ring-primary' : ''
-                  }`}>
-                    <CardContent className="p-4">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-2">
-                           <Checkbox
-                             checked={isAssigned}
-                             onCheckedChange={(checked) => 
-                               handleRoleToggle(roleKey, checked as boolean)
-                             }
-                             disabled={readOnly || !assignableRoles.includes(roleKey)}
-                           />
-                          <div>
-                            <p className="font-medium">{roleLabels[roleKey]}</p>
-                            <p className="text-xs text-muted-foreground">
-                              {roleData.permissions.length} صلاحية
-                            </p>
-                          </div>
-                        </div>
-                        {isAssigned && (
-                          <Badge variant="default">نشط</Badge>
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
-                );
-              })}
+        <div className="rounded-2xl border border-slate-200 bg-white p-4">
+          <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <h3 className="text-lg font-black text-[#020617]">الأدوار الأساسية</h3>
+              <p className="text-sm font-bold text-[#94A3B8]">الدور يعطي صلاحيات افتراضية، ويمكن تعديل كل صلاحية للمستخدم بشكل مستقل.</p>
             </div>
-          </CardContent>
-        </Card>
+            <div className="flex flex-wrap gap-2 text-xs font-black">
+              <span className="rounded-full bg-[#E8FBF6] px-3 py-1 text-[#22C7A1]">سماح خاص: {permissionStats.allowed}</span>
+              <span className="rounded-full bg-[#FFF0F2] px-3 py-1 text-[#FB6B7A]">منع خاص: {permissionStats.denied}</span>
+              <span className="rounded-full bg-[#EAF8FE] px-3 py-1 text-[#38BDF8]">موروث: {permissionStats.inherited}</span>
+            </div>
+          </div>
+
+          <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+            {(Object.keys(ROLE_PERMISSIONS) as UserRole[]).map((role) => {
+              const active = effectiveRoles.includes(role);
+              const disabled = readOnly || !assignableRoles.includes(role);
+              return (
+                <button
+                  key={role}
+                  type="button"
+                  disabled={disabled}
+                  onClick={() => onRoleChange?.(role, !active)}
+                  className={cn(
+                    'flex min-h-[74px] items-center justify-between rounded-xl border p-3 text-right transition',
+                    active ? 'border-[#22C7A1] bg-[#E8FBF6]' : 'border-slate-200 bg-[#F8FAFC]',
+                    disabled && 'cursor-not-allowed opacity-55'
+                  )}
+                >
+                  <div>
+                    <div className="font-black text-[#020617]">{roleLabels[role]}</div>
+                    <div className="mt-1 text-xs font-bold text-[#94A3B8]">{ROLE_PERMISSIONS[role].permissions.length} صلاحية</div>
+                  </div>
+                  <div className={cn('flex h-8 w-8 items-center justify-center rounded-lg', active ? 'bg-[#22C7A1] text-white' : 'bg-white text-[#94A3B8]')}>
+                    {active ? <Check className="h-4 w-4" /> : <Minus className="h-4 w-4" />}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
       )}
 
-      {/* Category Filter */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center">
-            <BarChart3 className="w-5 h-5 mr-2" />
-            مصفوفة الصلاحيات
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Tabs value={selectedCategory} onValueChange={setSelectedCategory}>
-            <TabsList className="grid w-full grid-cols-6">
-              <TabsTrigger value="all">الكل</TabsTrigger>
-              {PERMISSION_CATEGORIES.map(category => {
-                const IconComponent = getIconForCategory(category.icon);
-                return (
-                  <TabsTrigger key={category.id} value={category.id}>
-                    <IconComponent className="w-4 h-4 mr-1" />
-                    {category.nameAr}
-                  </TabsTrigger>
-                );
-              })}
-            </TabsList>
+      <div className="rounded-2xl border border-slate-200 bg-white p-4">
+        <div className="mb-4 flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+          <div>
+            <h3 className="text-lg font-black text-[#020617]">الصلاحيات التفصيلية</h3>
+            <p className="text-sm font-bold text-[#94A3B8]">اختر لكل صلاحية: ترث من الدور، سماح خاص، أو منع خاص.</p>
+          </div>
+          <div className="relative w-full xl:w-[360px]">
+            <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#94A3B8]" />
+            <Input
+              value={searchTerm}
+              onChange={(event) => setSearchTerm(event.target.value)}
+              placeholder="ابحث باسم الصلاحية أو الكود..."
+              className="h-11 rounded-xl border-slate-200 bg-[#F6F8FB] pr-10 text-[#020617]"
+            />
+          </div>
+        </div>
 
-            <TabsContent value={selectedCategory} className="mt-6">
-              <ScrollArea className="h-[600px]">
-                <div className="space-y-6">
-                  {PERMISSION_CATEGORIES
-                    .filter(cat => selectedCategory === 'all' || cat.id === selectedCategory)
-                    .map(category => {
-                      const categoryPermissions = filteredPermissions.filter(
-                        p => p.category.id === category.id
-                      );
-                      
-                      if (categoryPermissions.length === 0) return null;
-                      
-                      const IconComponent = getIconForCategory(category.icon);
-                      
+        <div className="mb-4 flex gap-2 overflow-x-auto pb-1">
+          <Button
+            type="button"
+            variant={selectedCategory === 'all' ? 'default' : 'outline'}
+            onClick={() => setSelectedCategory('all')}
+            className={cn('h-10 shrink-0 rounded-xl', selectedCategory === 'all' && 'bg-[#22C7A1] hover:bg-[#1DAE8D]')}
+          >
+            الكل
+          </Button>
+          {PERMISSION_CATEGORIES.map((category) => {
+            const Icon = getCategoryIcon(category.icon);
+            return (
+              <Button
+                key={category.id}
+                type="button"
+                variant={selectedCategory === category.id ? 'default' : 'outline'}
+                onClick={() => setSelectedCategory(category.id)}
+                className={cn('h-10 shrink-0 gap-2 rounded-xl', selectedCategory === category.id && 'bg-[#22C7A1] hover:bg-[#1DAE8D]')}
+              >
+                <Icon className="h-4 w-4" />
+                {category.nameAr}
+              </Button>
+            );
+          })}
+        </div>
+
+        <div className="space-y-3">
+          {filteredPermissions.map((permission) => {
+            const level = getLevelMeta(permission.level);
+            const LevelIcon = level.icon;
+            const state = getPermissionState(permission.id);
+            const roleSources = effectiveRoles.filter((role) => ROLE_PERMISSIONS[role]?.permissions.includes(permission.id));
+            const canEditSystem = !permission.isSystemLevel || user?.roles?.includes('super_admin') || user?.roles?.includes('company_admin');
+            const disabled = readOnly || !canEditSystem;
+
+            return (
+              <div
+                key={permission.id}
+                className={cn(
+                  'rounded-2xl border p-4 transition',
+                  state.mode === 'deny'
+                    ? 'border-[#FECACA] bg-[#FFF7F8]'
+                    : state.granted
+                      ? 'border-[#BBF7D0] bg-[#F7FFFC]'
+                      : 'border-slate-200 bg-[#F8FAFC]'
+                )}
+              >
+                <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+                  <div className="min-w-0 flex-1">
+                    <div className="mb-2 flex flex-wrap items-center gap-2">
+                      <span className="font-black text-[#020617]">{permission.name}</span>
+                      <Badge variant="outline" className={cn('gap-1 rounded-lg', level.className)}>
+                        <LevelIcon className="h-3 w-3" />
+                        {level.label}
+                      </Badge>
+                      {permission.isSystemLevel && (
+                        <Badge className="gap-1 rounded-lg bg-[#FFF0F2] text-[#FB6B7A] hover:bg-[#FFF0F2]">
+                          <AlertTriangle className="h-3 w-3" />
+                          حساسة
+                        </Badge>
+                      )}
+                      {state.mode === 'allow' && <Badge className="rounded-lg bg-[#E8FBF6] text-[#22C7A1] hover:bg-[#E8FBF6]">سماح خاص</Badge>}
+                      {state.mode === 'deny' && <Badge className="rounded-lg bg-[#FFF0F2] text-[#FB6B7A] hover:bg-[#FFF0F2]">منع خاص</Badge>}
+                    </div>
+                    <p className="text-sm font-bold leading-6 text-[#64748B]">{permission.description}</p>
+                    <div className="mt-2 flex flex-wrap items-center gap-2 text-xs font-bold text-[#94A3B8]">
+                      <span className="rounded-lg bg-white px-2 py-1">{permission.id}</span>
+                      {roleSources.length > 0 ? (
+                        <span>موروثة من: {roleSources.map((role) => roleLabels[role]).join('، ')}</span>
+                      ) : (
+                        <span>غير موجودة في الأدوار الحالية</span>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="grid min-w-full grid-cols-3 gap-2 rounded-xl bg-white p-1 xl:min-w-[330px]">
+                    {[
+                      { value: 'inherit' as const, label: 'يرث', icon: Minus },
+                      { value: 'allow' as const, label: 'سماح', icon: Check },
+                      { value: 'deny' as const, label: 'منع', icon: X },
+                    ].map((option) => {
+                      const Icon = option.icon;
+                      const active = state.mode === option.value;
                       return (
-                        <Card key={category.id}>
-                          <CardHeader className="pb-3">
-                            <CardTitle className="flex items-center text-lg">
-                              <IconComponent className="w-5 h-5 mr-2" />
-                              {category.nameAr}
-                              <Badge variant="outline" className="mr-2">
-                                {categoryPermissions.length}
-                              </Badge>
-                            </CardTitle>
-                            <p className="text-sm text-muted-foreground">
-                              {category.description}
-                            </p>
-                          </CardHeader>
-                          <CardContent>
-                            <div className="space-y-3">
-                              {categoryPermissions.map(permission => {
-                                const isGranted = hasPermission(permission.id);
-                                const isSystemLevel = permission.isSystemLevel;
-                                
-                                return (
-                                  <div
-                                    key={permission.id}
-                                    className={`flex items-center justify-between p-3 rounded-lg border ${
-                                      isGranted ? 'bg-green-50 border-green-200' : 'bg-slate-50'
-                                    } ${isSystemLevel ? 'ring-1 ring-red-200' : ''}`}
-                                  >
-                                    <div className="flex items-center space-x-3">
-                                      <Checkbox
-                                        checked={isGranted}
-                                        onCheckedChange={(checked) =>
-                                          handlePermissionToggle(permission.id, checked as boolean)
-                                        }
-                                        disabled={readOnly || (isSystemLevel && !user?.roles?.includes('super_admin') && !user?.roles?.includes('company_admin'))}
-                                      />
-                                      <div className="flex items-center space-x-2">
-                                        <div className={getPermissionLevelColor(permission.level)}>
-                                          {getPermissionLevelIcon(permission.level)}
-                                        </div>
-                                        <div>
-                                          <p className="font-medium">{permission.name}</p>
-                                          <p className="text-xs text-muted-foreground">
-                                            {permission.description}
-                                          </p>
-                                        </div>
-                                      </div>
-                                      {isSystemLevel && (
-                                        <Badge variant="destructive">
-                                          <AlertTriangle className="w-3 h-3 mr-1" />
-                                          صلاحية نظام
-                                        </Badge>
-                                      )}
-                                    </div>
-                                    
-                                    <div className="flex items-center space-x-2">
-                                      <Badge
-                                        variant={permission.level === 'read' ? 'secondary' : 
-                                               permission.level === 'write' ? 'default' : 'destructive'}
-                                      >
-                                        {permission.level === 'read' ? 'قراءة' : 
-                                         permission.level === 'write' ? 'كتابة' : 'إدارة'}
-                                      </Badge>
-                                      
-                                      {/* Show which roles have this permission */}
-                                      <div className="flex space-x-1">
-                                        {Object.entries(ROLE_PERMISSIONS).map(([role, data]) => {
-                                          if (data.permissions.includes(permission.id)) {
-                                            const roleLabels: Record<UserRole, string> = {
-                                              super_admin: 'س',
-                                              company_admin: 'ش',
-                                              manager: 'م',
-                                              accountant: 'ح',
-                                              fleet_manager: 'أ',
-                                              sales_agent: 'ب',
-                                              employee: 'ع'
-                                            };
-                                            
-                                            return (
-                                            <Badge
-                                              key={role}
-                                              variant="outline"
-                                              className="text-xs px-1"
-                                            >
-                                                {roleLabels[role as UserRole]}
-                                              </Badge>
-                                            );
-                                          }
-                                          return null;
-                                        })}
-                                      </div>
-                                    </div>
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          </CardContent>
-                        </Card>
+                        <button
+                          key={option.value}
+                          type="button"
+                          disabled={disabled}
+                          onClick={() => handlePermissionMode(permission.id, option.value)}
+                          className={cn(
+                            'flex h-10 items-center justify-center gap-2 rounded-lg text-sm font-black transition',
+                            active && option.value === 'inherit' && 'bg-[#EAF8FE] text-[#0284C7]',
+                            active && option.value === 'allow' && 'bg-[#E8FBF6] text-[#22C7A1]',
+                            active && option.value === 'deny' && 'bg-[#FFF0F2] text-[#FB6B7A]',
+                            !active && 'text-[#94A3B8] hover:bg-[#F6F8FB]',
+                            disabled && 'cursor-not-allowed opacity-50'
+                          )}
+                        >
+                          <Icon className="h-4 w-4" />
+                          {option.label}
+                        </button>
                       );
                     })}
+                  </div>
                 </div>
-              </ScrollArea>
-            </TabsContent>
-          </Tabs>
-        </CardContent>
-      </Card>
 
-      {/* Role Comparison */}
-      {showRoleComparison && (
-        <Card>
-          <CardHeader>
-            <CardTitle>مقارنة الأدوار</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {Object.entries(ROLE_PERMISSIONS).map(([role, data]) => {
-                const roleKey = role as UserRole;
-                const roleLabels: Record<UserRole, string> = {
-                  super_admin: 'مدير النظام',
-                  company_admin: 'مدير الشركة',
-                  manager: 'مدير',
-                  accountant: 'محاسب',
-                  fleet_manager: 'مدير الأسطول',
-                  sales_agent: 'مندوب مبيعات',
-                  employee: 'موظف'
-                };
-                
-                return (
-                  <Card key={role} className="cursor-pointer hover:shadow-md transition-shadow">
-                    <CardContent className="p-4">
-                      <div className="space-y-3">
-                        <div className="flex items-center justify-between">
-                          <h3 className="font-semibold">{roleLabels[roleKey]}</h3>
-                          <Badge>{data.permissions.length}</Badge>
-                        </div>
-                        
-                        <div className="space-y-2">
-                          {PERMISSION_CATEGORIES.map(category => {
-                            const categoryPerms = data.permissions.filter(permId =>
-                              PERMISSIONS.find(p => p.id === permId)?.category.id === category.id
-                            );
-                            
-                            if (categoryPerms.length === 0) return null;
-                            
-                            return (
-                              <div key={category.id} className="flex items-center justify-between">
-                                <span className="text-xs text-muted-foreground">
-                                  {category.nameAr}
-                                </span>
-                                <Badge variant="outline">
-                                  {categoryPerms.length}
-                                </Badge>
-                              </div>
-                            );
-                          })}
-                        </div>
-                        
-                        {data.canAssignRoles && data.canAssignRoles.length > 0 && (
-                          <div className="pt-2 border-t">
-                            <p className="text-xs text-muted-foreground">
-                              يمكن تعيين: {data.canAssignRoles.length} أدوار
-                            </p>
-                          </div>
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
-                );
-              })}
+                {permission.isSystemLevel && !canEditSystem && (
+                  <div className="mt-3 flex items-center gap-2 rounded-xl bg-[#FFF7ED] px-3 py-2 text-xs font-bold text-[#C2410C]">
+                    <Lock className="h-4 w-4" />
+                    تعديل هذه الصلاحية يحتاج مدير شركة أو مدير نظام.
+                  </div>
+                )}
+              </div>
+            );
+          })}
+
+          {filteredPermissions.length === 0 && (
+            <div className="rounded-2xl border border-dashed border-slate-200 p-10 text-center">
+              <Shield className="mx-auto mb-3 h-10 w-10 text-[#CBD5E1]" />
+              <p className="font-black text-[#020617]">لا توجد صلاحيات مطابقة</p>
+              <p className="mt-1 text-sm font-bold text-[#94A3B8]">غيّر البحث أو اختر قسمًا آخر.</p>
             </div>
-          </CardContent>
-        </Card>
+          )}
+        </div>
+      </div>
+
+      {showRoleComparison && (
+        <div className="rounded-2xl border border-slate-200 bg-white p-4">
+          <h3 className="mb-3 text-lg font-black text-[#020617]">ملخص الأدوار</h3>
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+            {(Object.entries(ROLE_PERMISSIONS) as Array<[UserRole, typeof ROLE_PERMISSIONS[UserRole]]>).map(([role, data]) => (
+              <div key={role} className="rounded-xl border border-slate-200 bg-[#F8FAFC] p-3">
+                <div className="flex items-center justify-between">
+                  <span className="font-black text-[#020617]">{roleLabels[role]}</span>
+                  <Badge variant="outline">{data.permissions.length}</Badge>
+                </div>
+                <p className="mt-2 text-xs font-bold leading-5 text-[#94A3B8]">
+                  يمكنه تعيين {data.canAssignRoles?.length || 0} أدوار.
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
       )}
     </div>
   );

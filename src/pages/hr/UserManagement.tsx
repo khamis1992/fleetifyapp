@@ -1,196 +1,86 @@
-import React, { useState, useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { motion, AnimatePresence } from 'framer-motion';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { 
-  Users, 
-  UserPlus, 
-  Shield, 
-  Search, 
-  Settings, 
-  Save, 
-  X, 
-  ChevronLeft,
-  UserCheck,
+import {
   AlertCircle,
   CheckCircle2,
   Clock,
   Filter,
-  RefreshCw,
-  Mail,
-  Building2,
   KeyRound,
-  Crown
+  Mail,
+  RefreshCw,
+  Save,
+  Search,
+  Shield,
+  Sparkles,
+  UserCheck,
+  UserPlus,
+  Users,
+  X,
 } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import UserAccountForm from '@/components/hr/UserAccountForm';
-import UserPermissionsDialog from '@/components/hr/permissions/UserPermissionsDialog';
 import PermissionsMatrix from '@/components/hr/permissions/PermissionsMatrix';
 import { useUpdateUserPermissions, useUpdateUserRoles } from '@/hooks/useUserPermissions';
 import { UserRole } from '@/types/permissions';
 import { AdminGuard } from '@/components/auth/RoleGuard';
 import { cn } from '@/lib/utils';
-import { HRMetricCard, HRPageHeader, HRPageShell, HRSectionCard, hrButtonClassName, hrFieldClassName } from '@/components/hr/HRDesignSystem';
+import {
+  HRMetricCard,
+  HRPageHeader,
+  HRPageShell,
+  HRSectionCard,
+  hrButtonClassName,
+  hrFieldClassName,
+} from '@/components/hr/HRDesignSystem';
 
-// Type definitions
+type PermissionOverrideValue = boolean | null;
+
 interface EmployeeWithAccess {
   id: string;
   user_id: string;
   first_name: string;
   last_name: string;
-  employee_number: string;
-  position: string;
-  has_system_access: boolean;
-  user_roles: string[];
+  employee_number: string | null;
+  position: string | null;
+  has_system_access: boolean | null;
+  user_roles: UserRole[];
+  permission_override_count: number;
   profiles?: {
-    first_name: string;
-    last_name: string;
-    email: string;
+    first_name: string | null;
+    last_name: string | null;
+    email: string | null;
   } | null;
 }
 
-// Animation variants
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: { staggerChildren: 0.08 }
-  }
+const roleLabels: Record<UserRole, string> = {
+  super_admin: 'مدير النظام',
+  company_admin: 'مدير الشركة',
+  manager: 'مدير',
+  accountant: 'محاسب',
+  fleet_manager: 'مدير الأسطول',
+  sales_agent: 'مندوب مبيعات',
+  employee: 'موظف',
 };
 
-const itemVariants = {
-  hidden: { opacity: 0, y: 20 },
-  visible: { opacity: 1, y: 0 }
-};
-
-// Stat Card Component
-interface StatCardProps {
-  title: string;
-  value: number;
-  icon: React.ElementType;
-  iconBg: string;
-  iconColor: string;
-  trend?: string;
-}
-
-const StatCard: React.FC<StatCardProps> = ({ title, value, icon: Icon, iconBg, iconColor, trend }) => (
-  <motion.div
-    variants={itemVariants}
-    whileHover={{ scale: 1.02, y: -2 }}
-    className="bg-white rounded-xl p-5 shadow-sm border border-neutral-100 cursor-default"
-  >
-    <div className="flex items-center justify-between">
-      <div className={cn('w-12 h-12 rounded-xl flex items-center justify-center', iconBg)}>
-        <Icon className={cn('w-6 h-6', iconColor)} />
-      </div>
-      {trend && (
-        <span className="text-xs font-medium text-emerald-600 bg-emerald-50 px-2 py-1 rounded-full">
-          {trend}
-        </span>
-      )}
-    </div>
-    <div className="mt-4">
-      <p className="text-3xl font-bold text-neutral-900">{value}</p>
-      <p className="text-sm text-neutral-500 mt-1">{title}</p>
-    </div>
-  </motion.div>
-);
-
-// User Card Component
-interface UserCardProps {
-  employee: EmployeeWithAccess;
-  isSelected: boolean;
-  onSelect: () => void;
-}
-
-const UserCard: React.FC<UserCardProps> = ({ employee, isSelected, onSelect }) => {
-  const getRoleBadgeColor = (role: string) => {
-    switch (role) {
-      case 'super_admin': return 'bg-purple-100 text-purple-700 border-purple-200';
-      case 'company_admin': return 'bg-rose-100 text-coral-700 border-rose-200';
-      case 'manager': return 'bg-blue-100 text-blue-700 border-blue-200';
-      case 'accountant': return 'bg-emerald-100 text-emerald-700 border-emerald-200';
-      case 'fleet_manager': return 'bg-cyan-100 text-cyan-700 border-cyan-200';
-      case 'sales_agent': return 'bg-amber-100 text-amber-700 border-amber-200';
-      default: return 'bg-neutral-100 text-neutral-700 border-neutral-200';
-    }
-  };
-
-  const getRoleLabel = (role: string) => {
-    const labels: Record<string, string> = {
-      'super_admin': 'مدير النظام',
-      'company_admin': 'مدير الشركة',
-      'manager': 'مدير',
-      'accountant': 'محاسب',
-      'fleet_manager': 'مدير الأسطول',
-      'sales_agent': 'موظف مبيعات',
-      'employee': 'موظف'
-    };
-    return labels[role] || role;
-  };
-
-  return (
-    <motion.div
-      variants={itemVariants}
-      whileHover={{ scale: 1.01 }}
-      whileTap={{ scale: 0.99 }}
-      onClick={onSelect}
-      className={cn(
-        'bg-white rounded-xl p-4 cursor-pointer transition-all border-2',
-        isSelected 
-          ? 'border-coral-400 shadow-lg shadow-rose-100' 
-          : 'border-transparent shadow-sm hover:border-neutral-200 hover:shadow-md'
-      )}
-    >
-      <div className="flex items-center gap-4">
-        {/* Avatar */}
-        <div className={cn(
-          'w-12 h-12 rounded-full flex items-center justify-center text-lg font-bold',
-          isSelected ? 'bg-rose-500 text-white' : 'bg-neutral-100 text-neutral-600'
-        )}>
-          {employee.first_name.charAt(0)}
-        </div>
-
-        {/* Info */}
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2">
-            <h4 className="font-semibold text-neutral-900 truncate">
-              {employee.first_name} {employee.last_name}
-            </h4>
-            {isSelected && (
-              <CheckCircle2 className="w-4 h-4 text-rose-500 flex-shrink-0" />
-            )}
-          </div>
-          <p className="text-sm text-neutral-500 truncate">{employee.position || 'غير محدد'}</p>
-        </div>
-
-        {/* Roles */}
-        <div className="flex flex-wrap gap-1 justify-end max-w-[150px]">
-          {employee.user_roles?.slice(0, 2).map((role, idx) => (
-            <span
-              key={idx}
-              className={cn(
-                'text-xs px-2 py-0.5 rounded-full border',
-                getRoleBadgeColor(role)
-              )}
-            >
-              {getRoleLabel(role)}
-            </span>
-          ))}
-          {employee.user_roles?.length > 2 && (
-            <span className="text-xs px-2 py-0.5 rounded-full bg-neutral-100 text-neutral-600">
-              +{employee.user_roles.length - 2}
-            </span>
-          )}
-        </div>
-      </div>
-    </motion.div>
-  );
+const roleTone: Record<UserRole, string> = {
+  super_admin: 'bg-[#F3E8FF] text-[#7E22CE] border-[#E9D5FF]',
+  company_admin: 'bg-[#FFF0F2] text-[#FB6B7A] border-[#FECDD3]',
+  manager: 'bg-[#EAF8FE] text-[#0284C7] border-[#BAE6FD]',
+  accountant: 'bg-[#E8FBF6] text-[#22C7A1] border-[#BBF7D0]',
+  fleet_manager: 'bg-[#ECFEFF] text-[#0891B2] border-[#A5F3FC]',
+  sales_agent: 'bg-[#FFF7ED] text-[#EA580C] border-[#FED7AA]',
+  employee: 'bg-[#F6F8FB] text-[#64748B] border-[#E2E8F0]',
 };
 
 export default function UserManagement() {
@@ -202,27 +92,24 @@ export default function UserManagement() {
 }
 
 function UserManagementContent() {
-  const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedEmployee, setSelectedEmployee] = useState<any>(null);
-  const [showAccountForm, setShowAccountForm] = useState(false);
-  const [showPermissionsDialog, setShowPermissionsDialog] = useState(false);
-  const [selectedEmployeeForPermissions, setSelectedEmployeeForPermissions] = useState<any>(null);
-  const [selectedUserForMatrix, setSelectedUserForMatrix] = useState<any>(null);
-  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
-  const [pendingPermissionChanges, setPendingPermissionChanges] = useState<{permissionId: string; granted: boolean}[]>([]);
-  const [pendingRoleChanges, setPendingRoleChanges] = useState<UserRole[]>([]);
-  const [activeView, setActiveView] = useState<'users' | 'permissions'>('users');
-  const [filterRole, setFilterRole] = useState<string>('all');
-
-  // Mutation hooks
   const updatePermissionsMutation = useUpdateUserPermissions();
   const updateRolesMutation = useUpdateUserRoles();
 
-  // Fetch employees without system access
-  const { data: employeesWithoutAccess, isLoading: loadingEmployees } = useQuery({
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterRole, setFilterRole] = useState<string>('all');
+  const [selectedUser, setSelectedUser] = useState<EmployeeWithAccess | null>(null);
+  const [employeeForAccount, setEmployeeForAccount] = useState<any>(null);
+  const [pendingPermissionChanges, setPendingPermissionChanges] = useState<
+    { permissionId: string; granted: PermissionOverrideValue }[]
+  >([]);
+  const [pendingRoleChanges, setPendingRoleChanges] = useState<UserRole[]>([]);
+
+  const {
+    data: employeesWithoutAccess = [],
+    isLoading: loadingWithoutAccess,
+  } = useQuery({
     queryKey: ['employees-without-access'],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -231,261 +118,224 @@ function UserManagementContent() {
         .eq('has_system_access', false)
         .eq('is_active', true)
         .order('first_name');
-      
+
       if (error) throw error;
-      return data;
-    }
+      return data || [];
+    },
   });
 
-  // Fetch employees with system access
-  const { data: employeesWithAccess, isLoading: loadingAccounts, error: accountsError, refetch } = useQuery<EmployeeWithAccess[]>({
+  const {
+    data: employeesWithAccess = [],
+    isLoading: loadingAccounts,
+    error: accountsError,
+    refetch,
+  } = useQuery<EmployeeWithAccess[]>({
     queryKey: ['employees-with-access'],
     queryFn: async () => {
-      try {
-        const { data: employeeData, error: employeeError } = await supabase
-          .from('employees')
-          .select(`
-            id,
-            user_id,
-            first_name,
-            last_name,
-            employee_number,
-            position,
-            has_system_access
-          `)
-          .eq('has_system_access', true)
-          .not('user_id', 'is', null)
-          .order('first_name');
-        
-        if (employeeError) throw employeeError;
+      const { data: employeeData, error: employeeError } = await supabase
+        .from('employees')
+        .select('id, user_id, first_name, last_name, employee_number, position, has_system_access')
+        .eq('has_system_access', true)
+        .not('user_id', 'is', null)
+        .order('first_name');
 
-        if (!employeeData || employeeData.length === 0) {
-          return [];
-        }
+      if (employeeError) throw employeeError;
+      if (!employeeData?.length) return [];
 
-        const employeeIds = employeeData.map(emp => emp.user_id).filter(Boolean);
-        
-        const { data: rolesData } = await supabase
-          .from('user_roles')
-          .select('user_id, role')
-          .in('user_id', employeeIds);
+      const userIds = employeeData.map((employee) => employee.user_id).filter(Boolean) as string[];
 
-        const rolesByUser = (rolesData || []).reduce((acc, roleRecord) => {
-          if (!acc[roleRecord.user_id]) {
-            acc[roleRecord.user_id] = [];
-          }
-          acc[roleRecord.user_id].push(roleRecord.role);
-          return acc;
-        }, {} as Record<string, string[]>);
+      const [{ data: rolesData }, { data: profilesData }, { data: overridesData }] = await Promise.all([
+        supabase.from('user_roles').select('user_id, role').in('user_id', userIds),
+        supabase.from('profiles').select('user_id, first_name, last_name, email').in('user_id', userIds),
+        supabase.from('user_permissions').select('user_id, permission_id, granted').in('user_id', userIds),
+      ]);
 
-        const { data: profilesData } = await supabase
-          .from('profiles')
-          .select('user_id, first_name, last_name, email')
-          .in('user_id', employeeIds);
+      const rolesByUser = (rolesData || []).reduce<Record<string, UserRole[]>>((acc, row) => {
+        acc[row.user_id] = acc[row.user_id] || [];
+        acc[row.user_id].push(row.role as UserRole);
+        return acc;
+      }, {});
 
-        const profilesByUser = (profilesData || []).reduce((acc, profile) => {
-          acc[profile.user_id] = {
-            first_name: profile.first_name,
-            last_name: profile.last_name,
-            email: profile.email
-          };
-          return acc;
-        }, {} as Record<string, { first_name: string; last_name: string; email: string }>);
+      const profilesByUser = (profilesData || []).reduce<
+        Record<string, { first_name: string | null; last_name: string | null; email: string | null }>
+      >((acc, profile) => {
+        acc[profile.user_id] = {
+          first_name: profile.first_name,
+          last_name: profile.last_name,
+          email: profile.email,
+        };
+        return acc;
+      }, {});
 
-        const enrichedData: EmployeeWithAccess[] = employeeData.map(employee => ({
-          id: employee.id,
-          user_id: employee.user_id,
-          first_name: employee.first_name,
-          last_name: employee.last_name,
-          employee_number: employee.employee_number,
-          position: employee.position,
-          has_system_access: employee.has_system_access,
-          user_roles: rolesByUser[employee.user_id] || [],
-          profiles: profilesByUser[employee.user_id] || null
-        }));
+      const overridesByUser = (overridesData || []).reduce<Record<string, number>>((acc, override) => {
+        acc[override.user_id] = (acc[override.user_id] || 0) + 1;
+        return acc;
+      }, {});
 
-        return enrichedData;
-      } catch (error) {
-        console.error('Error fetching employees with access:', error);
-        throw error;
-      }
+      return employeeData.map((employee) => ({
+        id: employee.id,
+        user_id: employee.user_id!,
+        first_name: employee.first_name,
+        last_name: employee.last_name,
+        employee_number: employee.employee_number,
+        position: employee.position,
+        has_system_access: employee.has_system_access,
+        user_roles: rolesByUser[employee.user_id!] || [],
+        permission_override_count: overridesByUser[employee.user_id!] || 0,
+        profiles: profilesByUser[employee.user_id!] || null,
+      }));
     },
     retry: 2,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 3 * 60 * 1000,
   });
 
-  // Fetch pending account requests
-  const { data: accountRequests, isLoading: loadingRequests } = useQuery({
+  const { data: accountRequests = [], isLoading: loadingRequests } = useQuery({
     queryKey: ['account-requests'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('account_creation_requests')
-        .select(`
-          *,
-          employees (
-            first_name,
-            last_name,
-            employee_number,
-            position
-          )
-        `)
-        .eq('status', 'pending')
-        .order('request_date', { ascending: false });
-      
+        .select('id, status')
+        .eq('status', 'pending');
+
       if (error) throw error;
-      return data;
-    }
+      return data || [];
+    },
   });
 
-  // Filtered users
+  const isLoading = loadingWithoutAccess || loadingAccounts || loadingRequests;
+  const hasUnsavedChanges = pendingPermissionChanges.length > 0 || rolesChanged(selectedUser?.user_roles || [], pendingRoleChanges);
+
   const filteredUsers = useMemo(() => {
-    let users = employeesWithAccess || [];
-    
-    if (searchTerm) {
-      const term = searchTerm.toLowerCase();
-      users = users.filter(emp =>
-        `${emp.first_name} ${emp.last_name}`.toLowerCase().includes(term) ||
-        emp.employee_number?.toLowerCase().includes(term) ||
-        emp.position?.toLowerCase().includes(term)
-      );
-    }
+    const term = searchTerm.trim().toLowerCase();
 
-    if (filterRole !== 'all') {
-      users = users.filter(emp => emp.user_roles?.includes(filterRole));
-    }
+    return employeesWithAccess.filter((employee) => {
+      const searchable = [
+        employee.first_name,
+        employee.last_name,
+        employee.employee_number,
+        employee.position,
+        employee.profiles?.email,
+      ]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase();
 
-    return users;
-  }, [employeesWithAccess, searchTerm, filterRole]);
+      const matchesSearch = !term || searchable.includes(term);
+      const matchesRole = filterRole === 'all' || employee.user_roles.includes(filterRole as UserRole);
 
-  // Handlers
-  const handleUserSelection = (userId: string) => {
-    const employee = employeesWithAccess?.find(emp => emp.user_id === userId);
-    
-    if (!employee) {
-      toast({
-        title: "خطأ",
-        description: "لم يتم العثور على بيانات المستخدم",
-        variant: "destructive",
-      });
+      return matchesSearch && matchesRole;
+    });
+  }, [employeesWithAccess, filterRole, searchTerm]);
+
+  const selectedUserForMatrix = selectedUser
+    ? {
+        user_id: selectedUser.user_id,
+        first_name: selectedUser.first_name,
+        last_name: selectedUser.last_name,
+        roles: selectedUser.user_roles,
+      }
+    : undefined;
+
+  const selectUser = (employee: EmployeeWithAccess) => {
+    if (hasUnsavedChanges && !window.confirm('لديك تغييرات غير محفوظة. هل تريد تجاهلها والمتابعة؟')) {
       return;
     }
 
-    const userObj = {
-      user_id: employee.user_id,
-      first_name: employee.first_name,
-      last_name: employee.last_name,
-      roles: Array.isArray(employee.user_roles) ? employee.user_roles : []
-    };
-
-    setSelectedUserForMatrix(userObj);
-    setHasUnsavedChanges(false);
+    setSelectedUser(employee);
+    setPendingRoleChanges(employee.user_roles);
     setPendingPermissionChanges([]);
-    setPendingRoleChanges(userObj.roles as UserRole[]);
-    setActiveView('permissions');
   };
 
-  const handlePermissionChange = (permission: string, granted: boolean) => {
-    setHasUnsavedChanges(true);
-    setPendingPermissionChanges(prev => {
-      const existing = prev.find(p => p.permissionId === permission);
+  const handlePermissionChange = (permissionId: string, granted: PermissionOverrideValue) => {
+    setPendingPermissionChanges((current) => {
+      const existing = current.find((permission) => permission.permissionId === permissionId);
       if (existing) {
-        return prev.map(p => p.permissionId === permission ? { ...p, granted } : p);
+        return current.map((permission) =>
+          permission.permissionId === permissionId ? { permissionId, granted } : permission,
+        );
       }
-      return [...prev, { permissionId: permission, granted }];
+
+      return [...current, { permissionId, granted }];
     });
   };
 
   const handleRoleChange = (role: UserRole, assigned: boolean) => {
-    setHasUnsavedChanges(true);
-    setPendingRoleChanges(prev => {
-      if (assigned) {
-        return prev.includes(role) ? prev : [...prev, role];
-      } else {
-        return prev.filter(r => r !== role);
-      }
+    setPendingRoleChanges((current) => {
+      if (assigned) return current.includes(role) ? current : [...current, role];
+      return current.filter((currentRole) => currentRole !== role);
     });
   };
 
+  const resetPendingChanges = () => {
+    setPendingPermissionChanges([]);
+    setPendingRoleChanges(selectedUser?.user_roles || []);
+  };
+
   const handleSaveChanges = async () => {
-    if (!selectedUserForMatrix) return;
+    if (!selectedUser) return;
 
     try {
-      await updatePermissionsMutation.mutateAsync({
-        userId: selectedUserForMatrix.user_id,
-        permissions: pendingPermissionChanges
-      });
+      if (pendingPermissionChanges.length > 0) {
+        await updatePermissionsMutation.mutateAsync({
+          userId: selectedUser.user_id,
+          permissions: pendingPermissionChanges,
+        });
+      }
 
-      await updateRolesMutation.mutateAsync({
-        userId: selectedUserForMatrix.user_id,
-        roles: pendingRoleChanges
-      });
+      if (rolesChanged(selectedUser.user_roles, pendingRoleChanges)) {
+        await updateRolesMutation.mutateAsync({
+          userId: selectedUser.user_id,
+          roles: pendingRoleChanges,
+        });
+      }
 
-      setHasUnsavedChanges(false);
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['employees-with-access'] }),
+        queryClient.invalidateQueries({ queryKey: ['user-permissions', selectedUser.user_id] }),
+        queryClient.invalidateQueries({ queryKey: ['user-permissions-check'] }),
+      ]);
+
+      const refreshed = await refetch();
+      const updatedUser = refreshed.data?.find((employee) => employee.user_id === selectedUser.user_id);
+      if (updatedUser) {
+        setSelectedUser(updatedUser);
+        setPendingRoleChanges(updatedUser.user_roles);
+      }
       setPendingPermissionChanges([]);
-      
-      toast({
-        title: "تم الحفظ بنجاح",
-        description: "تم تحديث الصلاحيات والأدوار",
-      });
 
-      queryClient.invalidateQueries({ queryKey: ['employees-with-access'] });
-      
+      toast({
+        title: 'تم حفظ الصلاحيات',
+        description: 'تم تحديث أدوار وصلاحيات المستخدم بنجاح.',
+      });
     } catch (error) {
-      console.error('Error saving changes:', error);
       toast({
-        title: "خطأ في الحفظ",
-        description: "حدث خطأ أثناء حفظ التغييرات",
-        variant: "destructive",
+        title: 'تعذر حفظ التغييرات',
+        description: error instanceof Error ? error.message : 'حدث خطأ غير متوقع أثناء الحفظ.',
+        variant: 'destructive',
       });
     }
   };
 
-  const handleCancelChanges = () => {
-    setHasUnsavedChanges(false);
-    setPendingPermissionChanges([]);
-    if (selectedUserForMatrix) {
-      const originalEmployee = employeesWithAccess?.find(emp => emp.user_id === selectedUserForMatrix.user_id);
-      if (originalEmployee) {
-        setPendingRoleChanges(originalEmployee.user_roles as UserRole[] || []);
-      }
-    }
-  };
-
-  const handleBackToUsers = () => {
-    if (hasUnsavedChanges) {
-      if (!confirm('لديك تغييرات غير محفوظة. هل تريد المتابعة؟')) {
-        return;
-      }
-    }
-    setActiveView('users');
-    setSelectedUserForMatrix(null);
-    setHasUnsavedChanges(false);
-    setPendingPermissionChanges([]);
-    setPendingRoleChanges([]);
-  };
-
-  // Loading state
-  if (loadingEmployees || loadingAccounts || loadingRequests) {
+  if (isLoading) {
     return (
-      <div className="min-h-screen bg-[#f0efed] flex items-center justify-center">
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-12 h-12 border-4 border-rose-500 border-t-transparent rounded-full animate-spin" />
-          <p className="text-sm text-neutral-500 font-medium">جاري تحميل البيانات...</p>
+      <div className="flex min-h-screen items-center justify-center bg-[#F6F8FB]" dir="rtl">
+        <div className="rounded-2xl border border-slate-200 bg-white px-8 py-6 text-center shadow-sm">
+          <div className="mx-auto mb-4 h-11 w-11 animate-spin rounded-full border-4 border-[#22C7A1] border-t-transparent" />
+          <p className="font-black text-[#020617]">جاري تحميل المستخدمين والصلاحيات...</p>
         </div>
       </div>
     );
   }
 
-  // Error state
   if (accountsError) {
     return (
-      <div className="min-h-screen bg-[#f0efed] flex items-center justify-center p-4">
-        <div className="bg-white rounded-xl p-8 shadow-lg max-w-md text-center">
-          <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-          <h3 className="text-lg font-bold text-neutral-900 mb-2">خطأ في تحميل البيانات</h3>
-          <p className="text-neutral-600 mb-4">{(accountsError as Error).message}</p>
-          <Button onClick={() => refetch()} className="bg-rose-500 hover:bg-coral-600">
-            <RefreshCw className="w-4 h-4 ml-2" />
+      <div className="flex min-h-screen items-center justify-center bg-[#F6F8FB] p-4" dir="rtl">
+        <div className="max-w-md rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm">
+          <AlertCircle className="mx-auto mb-4 h-12 w-12 text-[#FB6B7A]" />
+          <h3 className="mb-2 text-lg font-black text-[#020617]">تعذر تحميل المستخدمين</h3>
+          <p className="mb-4 text-sm font-bold text-[#64748B]">{(accountsError as Error).message}</p>
+          <Button onClick={() => refetch()} className={hrButtonClassName}>
+            <RefreshCw className="h-4 w-4" />
             إعادة المحاولة
           </Button>
         </div>
@@ -496,247 +346,324 @@ function UserManagementContent() {
   return (
     <HRPageShell>
       <HRPageHeader
-        title={activeView === 'users' ? 'إدارة المستخدمين' : 'تعديل الصلاحيات'}
-        description={activeView === 'users' ? 'إدارة حسابات المستخدمين، الأدوار، وصلاحيات الوصول للنظام.' : selectedUserForMatrix ? `${selectedUserForMatrix.first_name} ${selectedUserForMatrix.last_name}` : 'مصفوفة الصلاحيات'}
-        icon={activeView === 'users' ? Users : Shield}
-        badge="المستخدمون والصلاحيات"
+        title="إدارة المستخدمين والصلاحيات"
+        description="تحكم مرن في صلاحيات كل موظف: الدور يعطي الصلاحيات الأساسية، ويمكنك إضافة سماح خاص أو منع خاص لكل صلاحية."
+        icon={Shield}
+        badge="نظام الصلاحيات"
         action={
-          <div className="flex items-center gap-2">
-              {activeView === 'permissions' && (
-                <button
-                  onClick={handleBackToUsers}
-                  className="p-2 hover:bg-[#F6F8FB] rounded-xl transition-colors"
-                >
-                  <ChevronLeft className="w-5 h-5 text-[#020617]" />
-                </button>
-              )}
-            {activeView === 'permissions' && hasUnsavedChanges && (
-              <>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleCancelChanges}
-                  className="gap-1"
-                >
-                  <X className="w-4 h-4" />
-                  إلغاء
-                </Button>
-                <Button
-                  size="sm"
-                  onClick={handleSaveChanges}
-                  disabled={updatePermissionsMutation.isPending || updateRolesMutation.isPending}
-                  className={`gap-1 ${hrButtonClassName}`}
-                >
-                  <Save className="w-4 h-4" />
-                  حفظ
-                </Button>
-              </>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button variant="outline" className="h-11 rounded-xl gap-2" onClick={() => refetch()}>
+              <RefreshCw className="h-4 w-4" />
+              تحديث
+            </Button>
+            {employeesWithoutAccess.length > 0 && (
+              <Button className={cn(hrButtonClassName, 'gap-2')} onClick={() => setEmployeeForAccount(employeesWithoutAccess[0])}>
+                <UserPlus className="h-4 w-4" />
+                إنشاء حساب
+              </Button>
             )}
           </div>
         }
       />
 
-      <main className="space-y-6">
-        <AnimatePresence mode="wait">
-          {activeView === 'users' ? (
-            <motion.div
-              key="users-view"
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: 20 }}
-              className="space-y-6"
-            >
-              {/* Stats Cards */}
-              <motion.div 
-                variants={containerVariants}
-                initial="hidden"
-                animate="visible"
-                className="grid grid-cols-2 lg:grid-cols-4 gap-4"
-              >
-                <HRMetricCard title="بدون حساب" value={employeesWithoutAccess?.length || 0} icon={UserPlus} tone="danger" />
-                <HRMetricCard title="لديهم حساب" value={employeesWithAccess?.length || 0} icon={UserCheck} tone="success" />
-                <HRMetricCard title="طلبات معلقة" value={accountRequests?.length || 0} icon={Clock} tone="focus" />
-                <HRMetricCard title="إجمالي الموظفين" value={(employeesWithoutAccess?.length || 0) + (employeesWithAccess?.length || 0)} icon={Users} tone="info" />
-              </motion.div>
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <HRMetricCard title="مستخدمون نشطون" value={employeesWithAccess.length} icon={UserCheck} tone="success" />
+        <HRMetricCard title="بدون حساب نظام" value={employeesWithoutAccess.length} icon={UserPlus} tone="danger" />
+        <HRMetricCard title="طلبات معلقة" value={accountRequests.length} icon={Clock} tone="focus" />
+        <HRMetricCard
+          title="تخصيصات صلاحيات"
+          value={employeesWithAccess.reduce((total, employee) => total + employee.permission_override_count, 0)}
+          icon={KeyRound}
+          tone="info"
+        />
+      </div>
 
-              {/* Search & Filter */}
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm flex flex-col sm:flex-row gap-3"
-              >
-                <div className="relative flex-1">
-                  <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-neutral-400 w-5 h-5" />
-                  <Input
-                    placeholder="البحث بالاسم أو المنصب..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className={`${hrFieldClassName} pr-10`}
-                    dir="rtl"
-                  />
-                </div>
-                <Select value={filterRole} onValueChange={setFilterRole}>
-                  <SelectTrigger className={`w-full sm:w-[180px] ${hrFieldClassName}`}>
-                    <Filter className="w-4 h-4 ml-2 text-neutral-400" />
-                    <SelectValue placeholder="تصفية حسب الدور" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">جميع الأدوار</SelectItem>
-                    <SelectItem value="super_admin">مدير النظام</SelectItem>
-                    <SelectItem value="company_admin">مدير الشركة</SelectItem>
-                    <SelectItem value="manager">مدير</SelectItem>
-                    <SelectItem value="accountant">محاسب</SelectItem>
-                    <SelectItem value="fleet_manager">مدير الأسطول</SelectItem>
-                    <SelectItem value="sales_agent">موظف مبيعات</SelectItem>
-                    <SelectItem value="employee">موظف</SelectItem>
-                  </SelectContent>
-                </Select>
-              </motion.div>
-
-              {/* Users List */}
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-lg font-semibold text-neutral-900">
-                    المستخدمون ({filteredUsers.length})
-                  </h2>
-                  <p className="text-sm text-neutral-500">
-                    اضغط على مستخدم لتعديل صلاحياته
-                  </p>
-                </div>
-
-                {filteredUsers.length === 0 ? (
-                  <div className="bg-white rounded-xl p-12 text-center">
-                    <Users className="w-12 h-12 text-neutral-300 mx-auto mb-4" />
-                    <h3 className="text-lg font-medium text-neutral-900 mb-2">لا توجد نتائج</h3>
-                    <p className="text-neutral-500">جرب تغيير معايير البحث أو التصفية</p>
-                  </div>
-                ) : (
-                  <motion.div
-                    variants={containerVariants}
-                    initial="hidden"
-                    animate="visible"
-                    className="grid gap-3"
-                  >
-                    {filteredUsers.map((employee) => (
-                      <UserCard
-                        key={employee.id}
-                        employee={employee}
-                        isSelected={selectedUserForMatrix?.user_id === employee.user_id}
-                        onSelect={() => handleUserSelection(employee.user_id)}
-                      />
-                    ))}
-                  </motion.div>
-                )}
+      <div className="grid gap-5 xl:grid-cols-[420px_minmax(0,1fr)]">
+        <div className="space-y-5">
+          <HRSectionCard className="p-4">
+            <div className="mb-4 flex items-center justify-between gap-3">
+              <div>
+                <h2 className="text-lg font-black text-[#020617]">سجل المستخدمين</h2>
+                <p className="text-sm font-bold text-[#94A3B8]">اختر مستخدماً لتعديل صلاحياته مباشرة.</p>
               </div>
-            </motion.div>
-          ) : (
-            <motion.div
-              key="permissions-view"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              className="space-y-6"
-            >
-              {/* Selected User Info */}
-              {selectedUserForMatrix && (
-                <motion.div
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="bg-white rounded-xl p-6 shadow-sm"
-                >
-                  <div className="flex items-center gap-4">
-                    <div className="w-16 h-16 rounded-full bg-rose-100 flex items-center justify-center text-2xl font-bold text-coral-600">
-                      {selectedUserForMatrix.first_name.charAt(0)}
-                    </div>
-                    <div className="flex-1">
-                      <h2 className="text-xl font-bold text-neutral-900">
-                        {selectedUserForMatrix.first_name} {selectedUserForMatrix.last_name}
-                      </h2>
-                      <p className="text-neutral-500">تعديل الأدوار والصلاحيات</p>
-                    </div>
-                    {hasUnsavedChanges && (
-                      <div className="flex items-center gap-2 px-3 py-1.5 bg-amber-50 rounded-full">
-                        <div className="w-2 h-2 bg-amber-500 rounded-full animate-pulse" />
-                        <span className="text-sm font-medium text-amber-700">تغييرات غير محفوظة</span>
+              <Badge className="rounded-full bg-[#E8FBF6] text-[#22C7A1] hover:bg-[#E8FBF6]">
+                {filteredUsers.length} مستخدم
+              </Badge>
+            </div>
+
+            <div className="space-y-3">
+              <div className="relative">
+                <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#94A3B8]" />
+                <Input
+                  value={searchTerm}
+                  onChange={(event) => setSearchTerm(event.target.value)}
+                  placeholder="ابحث بالاسم، الرقم الوظيفي، البريد..."
+                  className={cn(hrFieldClassName, 'pr-10')}
+                />
+              </div>
+
+              <Select value={filterRole} onValueChange={setFilterRole}>
+                <SelectTrigger className={cn(hrFieldClassName, 'w-full')}>
+                  <Filter className="ml-2 h-4 w-4 text-[#94A3B8]" />
+                  <SelectValue placeholder="تصفية حسب الدور" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">جميع الأدوار</SelectItem>
+                  {(Object.keys(roleLabels) as UserRole[]).map((role) => (
+                    <SelectItem key={role} value={role}>
+                      {roleLabels[role]}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="mt-4 max-h-[640px] space-y-2 overflow-y-auto pr-1">
+              {filteredUsers.length === 0 ? (
+                <EmptyState icon={Users} title="لا توجد نتائج" description="غيّر البحث أو التصفية لعرض مستخدمين آخرين." />
+              ) : (
+                filteredUsers.map((employee) => (
+                  <UserAccessCard
+                    key={employee.id}
+                    employee={employee}
+                    active={selectedUser?.user_id === employee.user_id}
+                    onClick={() => selectUser(employee)}
+                  />
+                ))
+              )}
+            </div>
+          </HRSectionCard>
+
+          <HRSectionCard className="p-4">
+            <div className="mb-3 flex items-center justify-between">
+              <div>
+                <h2 className="text-lg font-black text-[#020617]">موظفون بدون حساب</h2>
+                <p className="text-sm font-bold text-[#94A3B8]">أنشئ حساب نظام للموظف ثم عيّن صلاحياته.</p>
+              </div>
+              <Badge variant="outline" className="rounded-full">
+                {employeesWithoutAccess.length}
+              </Badge>
+            </div>
+            <div className="max-h-[230px] space-y-2 overflow-y-auto pr-1">
+              {employeesWithoutAccess.length === 0 ? (
+                <EmptyState icon={CheckCircle2} title="كل الموظفين لديهم حسابات" description="لا توجد حسابات ناقصة حالياً." compact />
+              ) : (
+                employeesWithoutAccess.slice(0, 8).map((employee: any) => (
+                  <button
+                    key={employee.id}
+                    type="button"
+                    onClick={() => setEmployeeForAccount(employee)}
+                    className="flex w-full items-center justify-between rounded-xl border border-slate-200 bg-[#F8FAFC] p-3 text-right transition hover:border-[#22C7A1] hover:bg-[#F7FFFC]"
+                  >
+                    <div>
+                      <div className="font-black text-[#020617]">
+                        {employee.first_name} {employee.last_name}
                       </div>
+                      <div className="text-xs font-bold text-[#94A3B8]">{employee.position || 'بدون منصب'}</div>
+                    </div>
+                    <span className="rounded-lg bg-white px-3 py-1 text-xs font-black text-[#22C7A1]">إنشاء</span>
+                  </button>
+                ))
+              )}
+            </div>
+          </HRSectionCard>
+        </div>
+
+        <div className="space-y-5">
+          <HRSectionCard className="overflow-hidden">
+            {selectedUser ? (
+              <>
+                <div className="border-b border-slate-200 bg-white p-4">
+                  <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#102B4E] text-xl font-black text-white">
+                        {getInitials(selectedUser.first_name, selectedUser.last_name)}
+                      </div>
+                      <div>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <h2 className="text-2xl font-black text-[#020617]">
+                            {selectedUser.first_name} {selectedUser.last_name}
+                          </h2>
+                          {selectedUser.permission_override_count > 0 && (
+                            <Badge className="rounded-full bg-[#EAF8FE] text-[#0284C7] hover:bg-[#EAF8FE]">
+                              {selectedUser.permission_override_count} تخصيص
+                            </Badge>
+                          )}
+                        </div>
+                        <div className="mt-1 flex flex-wrap items-center gap-3 text-sm font-bold text-[#64748B]">
+                          <span>{selectedUser.position || 'بدون منصب'}</span>
+                          {selectedUser.profiles?.email && (
+                            <span className="inline-flex items-center gap-1">
+                              <Mail className="h-3.5 w-3.5" />
+                              {selectedUser.profiles.email}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-2">
+                      {hasUnsavedChanges && (
+                        <Badge className="rounded-full bg-[#FFF7ED] text-[#EA580C] hover:bg-[#FFF7ED]">
+                          تغييرات غير محفوظة
+                        </Badge>
+                      )}
+                      <Button variant="outline" className="h-11 rounded-xl gap-2" onClick={resetPendingChanges} disabled={!hasUnsavedChanges}>
+                        <X className="h-4 w-4" />
+                        إلغاء
+                      </Button>
+                      <Button
+                        className={cn(hrButtonClassName, 'gap-2')}
+                        onClick={handleSaveChanges}
+                        disabled={!hasUnsavedChanges || updatePermissionsMutation.isPending || updateRolesMutation.isPending}
+                      >
+                        <Save className="h-4 w-4" />
+                        حفظ الصلاحيات
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    {(pendingRoleChanges.length ? pendingRoleChanges : selectedUser.user_roles).map((role) => (
+                      <span key={role} className={cn('rounded-full border px-3 py-1 text-xs font-black', roleTone[role])}>
+                        {roleLabels[role]}
+                      </span>
+                    ))}
+                    {(pendingRoleChanges.length ? pendingRoleChanges : selectedUser.user_roles).length === 0 && (
+                      <span className="rounded-full bg-[#FFF0F2] px-3 py-1 text-xs font-black text-[#FB6B7A]">بدون دور</span>
                     )}
                   </div>
-                </motion.div>
-              )}
+                </div>
 
-              {/* Permissions Matrix */}
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="bg-white rounded-xl shadow-sm overflow-hidden"
-              >
-                <PermissionsMatrix 
-                  selectedUser={selectedUserForMatrix}
-                  onPermissionChange={handlePermissionChange}
-                  onRoleChange={handleRoleChange}
-                  showRoleComparison={true} 
-                  readOnly={!selectedUserForMatrix}
-                  pendingPermissions={pendingPermissionChanges}
-                  pendingRoles={pendingRoleChanges}
-                />
-              </motion.div>
+                <div className="bg-[#F8FAFC] p-4">
+                  <PermissionsMatrix
+                    selectedUser={selectedUserForMatrix}
+                    onPermissionChange={handlePermissionChange}
+                    onRoleChange={handleRoleChange}
+                    pendingPermissions={pendingPermissionChanges}
+                    pendingRoles={pendingRoleChanges}
+                    showRoleComparison={false}
+                  />
+                </div>
+              </>
+            ) : (
+              <div className="flex min-h-[620px] items-center justify-center p-8">
+                <div className="max-w-md text-center">
+                  <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-3xl bg-[#E8FBF6] text-[#22C7A1]">
+                    <Sparkles className="h-8 w-8" />
+                  </div>
+                  <h2 className="text-2xl font-black text-[#020617]">اختر مستخدماً لبدء التعديل</h2>
+                  <p className="mt-2 text-sm font-bold leading-6 text-[#64748B]">
+                    يمكنك تعيين أدوار عامة، ثم تخصيص كل صلاحية بشكل مستقل عبر السماح أو المنع أو الرجوع للوراثة من الدور.
+                  </p>
+                </div>
+              </div>
+            )}
+          </HRSectionCard>
+        </div>
+      </div>
 
-              {/* Unsaved Changes Warning */}
-              <AnimatePresence>
-                {hasUnsavedChanges && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: 20 }}
-                    className="fixed bottom-6 left-1/2 transform -translate-x-1/2 bg-neutral-900 text-white px-6 py-3 rounded-full shadow-lg flex items-center gap-4"
-                  >
-                    <span className="text-sm font-medium">لديك تغييرات غير محفوظة</span>
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={handleCancelChanges}
-                        className="px-3 py-1 text-sm bg-neutral-700 rounded-full hover:bg-neutral-600 transition-colors"
-                      >
-                        إلغاء
-                      </button>
-                      <button
-                        onClick={handleSaveChanges}
-                        disabled={updatePermissionsMutation.isPending || updateRolesMutation.isPending}
-                        className="px-3 py-1 text-sm bg-rose-500 rounded-full hover:bg-coral-600 transition-colors disabled:opacity-50"
-                      >
-                        حفظ التغييرات
-                      </button>
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </main>
-
-      {/* User Account Form Dialog */}
-      {showAccountForm && selectedEmployee && (
+      {employeeForAccount && (
         <UserAccountForm
-          employee={selectedEmployee}
-          open={showAccountForm}
-          onOpenChange={setShowAccountForm}
+          employee={employeeForAccount}
+          open={!!employeeForAccount}
+          onOpenChange={(open) => {
+            if (!open) setEmployeeForAccount(null);
+          }}
           onSuccess={() => {
             queryClient.invalidateQueries({ queryKey: ['employees-without-access'] });
             queryClient.invalidateQueries({ queryKey: ['employees-with-access'] });
-            setShowAccountForm(false);
-            setSelectedEmployee(null);
+            setEmployeeForAccount(null);
           }}
-        />
-      )}
-
-      {/* User Permissions Dialog */}
-      {showPermissionsDialog && selectedEmployeeForPermissions && (
-        <UserPermissionsDialog
-          employee={selectedEmployeeForPermissions}
-          open={showPermissionsDialog}
-          onOpenChange={setShowPermissionsDialog}
         />
       )}
     </HRPageShell>
   );
+}
+
+function UserAccessCard({
+  employee,
+  active,
+  onClick,
+}: {
+  employee: EmployeeWithAccess;
+  active: boolean;
+  onClick: () => void;
+}) {
+  const primaryRoles = employee.user_roles.slice(0, 2);
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        'w-full rounded-2xl border p-3 text-right transition',
+        active ? 'border-[#22C7A1] bg-[#F7FFFC] shadow-sm' : 'border-slate-200 bg-white hover:border-[#BDEFE4]',
+      )}
+    >
+      <div className="flex items-center gap-3">
+        <div className={cn('flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl text-sm font-black', active ? 'bg-[#22C7A1] text-white' : 'bg-[#F1F5F9] text-[#102B4E]')}>
+          {getInitials(employee.first_name, employee.last_name)}
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="truncate font-black text-[#020617]">
+            {employee.first_name} {employee.last_name}
+          </div>
+          <div className="truncate text-xs font-bold text-[#94A3B8]">
+            {employee.position || 'بدون منصب'} {employee.employee_number ? `• ${employee.employee_number}` : ''}
+          </div>
+        </div>
+        {active && <CheckCircle2 className="h-5 w-5 text-[#22C7A1]" />}
+      </div>
+
+      <div className="mt-3 flex flex-wrap gap-1.5">
+        {primaryRoles.map((role) => (
+          <span key={role} className={cn('rounded-full border px-2 py-1 text-[11px] font-black', roleTone[role])}>
+            {roleLabels[role]}
+          </span>
+        ))}
+        {employee.user_roles.length > 2 && (
+          <span className="rounded-full bg-[#F1F5F9] px-2 py-1 text-[11px] font-black text-[#64748B]">
+            +{employee.user_roles.length - 2}
+          </span>
+        )}
+        {employee.permission_override_count > 0 && (
+          <span className="rounded-full bg-[#EAF8FE] px-2 py-1 text-[11px] font-black text-[#0284C7]">
+            {employee.permission_override_count} تخصيص
+          </span>
+        )}
+      </div>
+    </button>
+  );
+}
+
+function EmptyState({
+  icon: Icon,
+  title,
+  description,
+  compact = false,
+}: {
+  icon: React.ElementType;
+  title: string;
+  description: string;
+  compact?: boolean;
+}) {
+  return (
+    <div className={cn('rounded-2xl border border-dashed border-slate-200 bg-[#F8FAFC] text-center', compact ? 'p-4' : 'p-8')}>
+      <Icon className="mx-auto mb-3 h-9 w-9 text-[#94A3B8]" />
+      <h3 className="font-black text-[#020617]">{title}</h3>
+      <p className="mt-1 text-sm font-bold text-[#94A3B8]">{description}</p>
+    </div>
+  );
+}
+
+function getInitials(firstName?: string | null, lastName?: string | null) {
+  return `${firstName?.charAt(0) || ''}${lastName?.charAt(0) || ''}` || 'م';
+}
+
+function rolesChanged(originalRoles: UserRole[], pendingRoles: UserRole[]) {
+  if (originalRoles.length !== pendingRoles.length) return true;
+  const original = [...originalRoles].sort().join('|');
+  const pending = [...pendingRoles].sort().join('|');
+  return original !== pending;
 }

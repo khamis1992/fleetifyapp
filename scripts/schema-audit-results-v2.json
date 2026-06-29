@@ -1,8 +1,17 @@
 {
   "summary": {
-    "files_scanned": 1293,
+    "files_scanned": 1316,
     "tables_in_schema": 339,
-    "total_violations": 0
+    "total_violations": 1
   },
-  "violations": []
+  "violations": [
+    {
+      "file": "components/finance/BankReconciliationPanel.tsx",
+      "line": 216,
+      "table": "payments",
+      "column": "reconciled_at",
+      "issue": "UPDATE_NONEXISTENT_COLUMN",
+      "suggestion": "Remove this column"
+    }
+  ]
 }

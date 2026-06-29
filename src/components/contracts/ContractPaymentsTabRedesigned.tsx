@@ -7,7 +7,7 @@
  */
 
 import { useState, useMemo } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
@@ -38,6 +38,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
@@ -59,7 +60,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useToast } from '@/components/ui/use-toast';
-import { calculateInvoiceTotalsAfterPaymentReversal } from '@/utils/invoiceHelpers';
+import { usePaymentOperations } from '@/hooks/business/usePaymentOperations';
 import { cn } from '@/lib/utils';
 
 // ===== Animation Variants =====
@@ -88,6 +89,7 @@ interface Payment {
   payment_date: string;
   payment_status: string;
   payment_method: string;
+  payment_number?: string | null;
   reference_number: string | null;
   notes: string | null;
   created_at: string;
@@ -406,9 +408,24 @@ const PaymentTableRow = ({
           <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#EEF5FB] text-[#173A63]">
             <MethodIcon className="h-5 w-5" />
           </div>
-          <div>
+          <div className="min-w-[150px] space-y-2">
             <p className="font-semibold text-neutral-900">{payment.invoice?.invoice_number || '-'}</p>
             <p className="text-xs text-neutral-500">{methodInfo.label}</p>
+            {payment.payment_status === 'completed' ? (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={onCancel}
+                className="h-8 px-3 rounded-lg border-red-200 text-red-600 hover:text-red-700 hover:bg-red-50"
+              >
+                <XCircle className="w-4 h-4 ml-1" />
+                إلغاء الدفعة
+              </Button>
+            ) : payment.payment_status === 'cancelled' ? (
+              <span className="inline-flex h-8 items-center rounded-lg bg-slate-100 px-3 text-sm text-slate-500">
+                ملغي
+              </span>
+            ) : null}
           </div>
         </div>
       </td>
@@ -458,23 +475,6 @@ const PaymentTableRow = ({
         ) : (
           <span className="text-neutral-400">-</span>
         )}
-      </td>
-
-      {/* Actions */}
-      <td className="py-4 px-4">
-        {payment.payment_status === 'completed' ? (
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={onCancel}
-            className="h-8 px-3 rounded-lg border-red-200 text-red-600 hover:text-red-700 hover:bg-red-50"
-          >
-            <XCircle className="w-4 h-4 ml-1" />
-            إلغاء
-          </Button>
-        ) : payment.payment_status === 'cancelled' ? (
-          <span className="text-sm text-slate-400">ملغي</span>
-        ) : null}
       </td>
     </tr>
   );
@@ -585,8 +585,10 @@ export const ContractPaymentsTabRedesigned = ({
 }: ContractPaymentsTabRedesignedProps) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { cancelPayment } = usePaymentOperations();
   const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null);
   const [isCancelDialogOpen, setIsCancelDialogOpen] = useState(false);
+  const [cancelReason, setCancelReason] = useState('');
   const [showAllPayments, setShowAllPayments] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -606,6 +608,7 @@ export const ContractPaymentsTabRedesigned = ({
           payment_date,
           payment_status,
           payment_method,
+          payment_number,
           reference_number,
           notes,
           created_at,
@@ -683,86 +686,42 @@ export const ContractPaymentsTabRedesigned = ({
     return filtered;
   }, [payments, searchQuery, statusFilter, methodFilter, sortOption]);
 
-  // Mutation to cancel payment
-  const cancelPaymentMutation = useMutation({
-    mutationFn: async (paymentId: string) => {
-      if (!selectedPayment) {
-        throw new Error('لم يتم تحديد الدفعة');
-      }
-
-      if (selectedPayment.invoice_id) {
-        const { data: invoice, error: invoiceError } = await supabase
-          .from('invoices')
-          .select('id, total_amount, paid_amount')
-          .eq('id', selectedPayment.invoice_id)
-          .eq('company_id', companyId)
-          .single();
-
-        if (invoiceError || !invoice) {
-          throw new Error('تعذر جلب بيانات الفاتورة لتحديثها');
-        }
-
-        const { paidAmount, balanceDue, paymentStatus } = calculateInvoiceTotalsAfterPaymentReversal({
-          totalAmount: Number(invoice.total_amount) || 0,
-          currentPaidAmount: Number(invoice.paid_amount) || 0,
-          reversedAmount: Number(selectedPayment.amount) || 0,
-        });
-
-        const { error: updateInvoiceError } = await supabase
-          .from('invoices')
-          .update({
-            paid_amount: paidAmount,
-            balance_due: balanceDue,
-            payment_status: paymentStatus,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('id', invoice.id)
-          .eq('company_id', companyId);
-
-        if (updateInvoiceError) {
-          throw new Error('فشل تحديث الفاتورة بعد إلغاء الدفعة');
-        }
-      }
-
-      const { error } = await supabase
-        .from('payments')
-        .update({
-          payment_status: 'cancelled',
-          notes: (selectedPayment?.notes ? selectedPayment.notes + ' | ' : '') +
-                 `تم الإلغاء في ${format(new Date(), 'dd/MM/yyyy HH:mm', { locale: ar })}`
-        })
-        .eq('id', paymentId)
-        .eq('company_id', companyId);
-
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      toast({
-        title: 'تم إلغاء الدفعة',
-        description: 'تم إلغاء الدفعة بنجاح وسيتم تحديث الفاتورة تلقائياً',
-      });
-      queryClient.invalidateQueries({ queryKey: ['contract-payments'] });
-      queryClient.invalidateQueries({ queryKey: ['contract-invoices'] });
-      setIsCancelDialogOpen(false);
-      setSelectedPayment(null);
-    },
-    onError: (error) => {
-      toast({
-        title: 'خطأ في إلغاء الدفعة',
-        description: error.message,
-        variant: 'destructive',
-      });
-    },
-  });
-
   const handleCancelClick = (payment: Payment) => {
     setSelectedPayment(payment);
+    setCancelReason('');
     setIsCancelDialogOpen(true);
   };
 
   const confirmCancel = () => {
     if (selectedPayment) {
-      cancelPaymentMutation.mutate(selectedPayment.id);
+      cancelPayment.mutate(
+        {
+          paymentId: selectedPayment.id,
+          reason: cancelReason.trim() || `إلغاء دفعة من صفحة العقد ${contractNumber || contractId}`,
+        },
+        {
+          onSuccess: () => {
+            toast({
+              title: 'تم إلغاء الدفعة',
+              description: 'تم عكس أثر الدفعة على الفاتورة والقيد المحاسبي بنجاح',
+            });
+            queryClient.invalidateQueries({ queryKey: ['contract-payments'] });
+            queryClient.invalidateQueries({ queryKey: ['contract-invoices'] });
+            queryClient.invalidateQueries({ queryKey: ['payments'] });
+            queryClient.invalidateQueries({ queryKey: ['invoices'] });
+            setIsCancelDialogOpen(false);
+            setSelectedPayment(null);
+            setCancelReason('');
+          },
+          onError: (error: unknown) => {
+            toast({
+              title: 'خطأ في إلغاء الدفعة',
+              description: error instanceof Error ? error.message : 'تعذر إلغاء الدفعة',
+              variant: 'destructive',
+            });
+          },
+        }
+      );
     }
   };
 
@@ -1328,7 +1287,6 @@ export const ContractPaymentsTabRedesigned = ({
                         <th className="py-3 px-4 text-right text-sm font-semibold text-neutral-700">المبلغ</th>
                         <th className="py-3 px-4 text-right text-sm font-semibold text-neutral-700">الحالة</th>
                         <th className="py-3 px-4 text-right text-sm font-semibold text-neutral-700">ملاحظات</th>
-                        <th className="py-3 px-4 text-right text-sm font-semibold text-neutral-700">الإجراءات</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -1361,26 +1319,40 @@ export const ContractPaymentsTabRedesigned = ({
               <p>هل أنت متأكد من إلغاء هذه الدفعة؟</p>
               {selectedPayment && (
                 <div className="bg-slate-50 rounded-lg p-3 mt-3 space-y-1 text-sm">
+                  <p><strong>رقم الدفعة:</strong> {selectedPayment.payment_number || selectedPayment.reference_number || '-'}</p>
                   <p><strong>الفاتورة:</strong> {selectedPayment.invoice?.invoice_number || 'غير مرتبطة'}</p>
                   <p><strong>المبلغ:</strong> {formatCurrency(selectedPayment.amount)}</p>
                   <p><strong>التاريخ:</strong> {selectedPayment.payment_date ? format(new Date(selectedPayment.payment_date), 'dd/MM/yyyy') : '-'}</p>
                 </div>
               )}
               <p className="text-amber-600 mt-3">
-                ⚠️ سيتم تحديث الفاتورة المرتبطة تلقائياً
+                سيتم عكس أثر الدفعة على الفاتورة والقيد المحاسبي، ولن يتم حذفها من سجل التدقيق.
               </p>
             </AlertDialogDescription>
           </AlertDialogHeader>
+          <div className="space-y-2 text-right">
+            <Label htmlFor="contract-payment-cancel-reason" className="text-sm font-semibold text-neutral-800">
+              سبب الإلغاء
+            </Label>
+            <Textarea
+              id="contract-payment-cancel-reason"
+              value={cancelReason}
+              onChange={(event) => setCancelReason(event.target.value)}
+              placeholder="مثال: دفعة مكررة أو تم إدخالها بالخطأ"
+              className="min-h-[92px] resize-none rounded-xl border-[#DDE5EF] text-right"
+              dir="rtl"
+            />
+          </div>
           <AlertDialogFooter className="gap-2">
-            <AlertDialogCancel disabled={cancelPaymentMutation.isPending} className="rounded-xl">
+            <AlertDialogCancel disabled={cancelPayment.isPending} className="rounded-xl">
               تراجع
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={confirmCancel}
-              disabled={cancelPaymentMutation.isPending}
+              disabled={cancelPayment.isPending}
               className="bg-red-600 hover:bg-red-700 rounded-xl"
             >
-              {cancelPaymentMutation.isPending ? (
+              {cancelPayment.isPending ? (
                 <>
                   <Loader2 className="w-4 h-4 ml-2 animate-spin" />
                   جاري الإلغاء...

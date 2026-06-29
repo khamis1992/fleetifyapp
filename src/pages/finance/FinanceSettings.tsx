@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
 import { HelpCircle, KeyRound, Link as LinkIcon, Shield, Sparkles, Users, Wand2 } from "lucide-react";
 import { AccountMappingSettings } from "@/components/finance/AccountMappingSettings";
+import { AccountingSystemWizard } from "@/components/finance/AccountingSystemWizard";
 import { AuditTrailViewer } from "@/components/finance/AuditTrailViewer";
 import { EssentialAccountMappingsManager } from "@/components/finance/EssentialAccountMappingsManager";
+import { FinancePermissionsMatrixPanel } from "@/components/finance/FinancePermissionsMatrixPanel";
 import { FinanceErrorBoundary } from "@/components/finance/FinanceErrorBoundary";
 import { ProtectedFinanceRoute } from "@/components/finance/ProtectedFinanceRoute";
 import { HelpIcon } from "@/components/help/HelpIcon";
@@ -59,29 +61,6 @@ const sections: Array<{
     bg: "#FFF0F2",
   },
 ];
-
-const PlaceholderPanel = ({
-  icon: Icon,
-  title,
-  description,
-  actionLabel,
-}: {
-  icon: React.ElementType;
-  title: string;
-  description: string;
-  actionLabel: string;
-}) => (
-  <div className="rounded-2xl border border-dashed border-slate-200 bg-[#F6F8FB] p-8 text-center">
-    <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-white text-[#7C83F6] shadow-sm">
-      <Icon className="h-7 w-7" />
-    </div>
-    <h3 className="mt-4 text-xl font-black text-[#020617]">{title}</h3>
-    <p className="mx-auto mt-2 max-w-xl text-sm leading-6 text-[#94A3B8]">{description}</p>
-    <Button className="mt-5 h-11 rounded-xl bg-[#22C7A1] px-5 font-black text-white hover:bg-[#1DAE8D]">
-      {actionLabel}
-    </Button>
-  </div>
-);
 
 const FinanceSettings = ({ initialTab = "mappings", onSectionChange }: FinanceSettingsProps) => {
   const [activeTab, setActiveTab] = useState<FinanceSettingsTab>(initialTab);
@@ -209,12 +188,7 @@ const FinanceSettings = ({ initialTab = "mappings", onSectionChange }: FinanceSe
             <TabsContent value="wizard" className="mt-0">
               <Card className="rounded-2xl border-slate-200 bg-white shadow-sm">
                 <CardContent className="p-5">
-                  <PlaceholderPanel
-                    icon={Wand2}
-                    title="معالج إعداد النظام المحاسبي"
-                    description="مسار موجه للشركات الجديدة لضبط الحسابات الأساسية والربط المحاسبي خطوة بخطوة قبل بدء العمليات اليومية."
-                    actionLabel="بدء المعالج"
-                  />
+                  <AccountingSystemWizard />
                 </CardContent>
               </Card>
             </TabsContent>
@@ -235,16 +209,33 @@ const FinanceSettings = ({ initialTab = "mappings", onSectionChange }: FinanceSe
             </TabsContent>
 
             <TabsContent value="permissions" className="mt-0">
-              <Card className="rounded-2xl border-slate-200 bg-white shadow-sm">
-                <CardContent className="p-5">
-                  <PlaceholderPanel
-                    icon={KeyRound}
-                    title="إدارة الصلاحيات المالية"
-                    description="قسم مخصص للتحكم في من يستطيع إنشاء القيود، تعديل الفواتير، اعتماد المدفوعات، أو تغيير إعدادات الربط."
-                    actionLabel="مراجعة الصلاحيات"
-                  />
-                </CardContent>
-              </Card>
+              <div className="space-y-4">
+                <Card className="rounded-2xl border-slate-200 bg-white shadow-sm">
+                  <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="flex items-start gap-3">
+                      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#FFF0F2] text-[#FB6B7A]">
+                        <KeyRound className="h-5 w-5" />
+                      </div>
+                      <div>
+                        <h3 className="font-black text-[#020617]">الصلاحيات المالية</h3>
+                        <p className="mt-1 text-sm leading-6 text-[#94A3B8]">
+                          هذه المصفوفة توضّح الصلاحيات المطلوبة لكل إجراء. تعديل صلاحيات موظف يتم من صفحة إدارة المستخدمين.
+                        </p>
+                      </div>
+                    </div>
+                    <Button
+                      type="button"
+                      onClick={() => window.open("/hr/users", "_self")}
+                      className="h-11 rounded-xl bg-[#22C7A1] px-5 font-black text-white hover:bg-[#1DAE8D]"
+                    >
+                      <Users className="ml-2 h-4 w-4" />
+                      إدارة صلاحيات الموظفين
+                    </Button>
+                  </CardContent>
+                </Card>
+
+                <FinancePermissionsMatrixPanel />
+              </div>
             </TabsContent>
           </Tabs>
         </div>

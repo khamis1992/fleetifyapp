@@ -34,6 +34,8 @@
     "generate:all-invoices": "tsx src/scripts/generate-all-contract-invoices.ts",
     "verify:invoices": "tsx src/scripts/verify-contract-invoices.ts",
     "create:missing-invoices": "tsx src/scripts/create-missing-invoices.ts",
+    "invoices:reconcile": "tsx scripts/reconcile-contract-invoices.ts",
+    "invoices:reconcile:apply": "tsx scripts/reconcile-contract-invoices.ts --apply",
     "test": "vitest",
     "test:ui": "vitest --ui",
     "test:coverage": "vitest --coverage",

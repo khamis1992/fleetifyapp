@@ -1,10 +1,12 @@
 import { useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   CheckCircle2,
   CreditCard,
   Download,
   FileCheck2,
+  FileSpreadsheet,
   Filter,
   HelpCircle,
   History,
@@ -22,8 +24,6 @@ import { Input } from '@/components/ui/input';
 import { QuickPaymentRecording } from '@/components/payments/QuickPaymentRecording';
 import { PaymentRegistrationTable } from '@/components/payments/PaymentRegistrationTable';
 import { PaymentStatsCards } from '@/components/payments/PaymentStatsCards';
-import { PageHelp } from '@/components/help';
-import { QuickPaymentPageHelpContent } from '@/components/help/content';
 import { cn } from '@/lib/utils';
 
 interface QuickPaymentProps {
@@ -44,6 +44,7 @@ const paymentChannels = [
 ];
 
 export default function QuickPayment({ className }: QuickPaymentProps) {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('quick-entry');
   const [searchTerm, setSearchTerm] = useState('');
   const [showFilters, setShowFilters] = useState(false);
@@ -89,11 +90,14 @@ export default function QuickPayment({ className }: QuickPaymentProps) {
               </div>
 
               <div className="flex flex-wrap items-center gap-2">
-                <PageHelp
-                  title="مساعدة صفحة الدفعات"
-                  content={<QuickPaymentPageHelpContent />}
-                  triggerText="مساعدة"
-                />
+                <Button
+                  variant="outline"
+                  className="h-10 gap-2 border-[#CAD5E2] bg-white text-[#173A63]"
+                  onClick={() => navigate('/finance/payments/import-excel')}
+                >
+                  <FileSpreadsheet className="h-4 w-4" />
+                  استيراد Excel
+                </Button>
                 <Button
                   variant="outline"
                   className="h-10 gap-2 border-[#CAD5E2] bg-white text-[#173A63]"

@@ -8,6 +8,7 @@ interface PerformanceMonitorProps {
 const PerformanceMonitor: React.FC<PerformanceMonitorProps> = ({ children }) => {
   // Only enable performance monitoring in development
   const isDevMode = import.meta.env.DEV;
+  const enableLongTaskLogs = import.meta.env.VITE_ENABLE_LONG_TASK_LOGS === 'true';
   
   // Monitor page load performance
   usePageLoadMonitor();
@@ -23,18 +24,15 @@ const PerformanceMonitor: React.FC<PerformanceMonitorProps> = ({ children }) => 
   }
 
   useEffect(() => {
-    // Only run in development mode
-    if (!isDevMode) return;
-    
-    // Log initial performance metrics
-    console.log('🚀 [PERFORMANCE] Performance monitoring initialized');
+    // Keep long-task logging opt-in to avoid noisy console output during normal development.
+    if (!isDevMode || !enableLongTaskLogs) return;
     
     // Add performance observer for long tasks (only in dev)
     if ('PerformanceObserver' in window) {
       try {
         const observer = new PerformanceObserver((list) => {
           list.getEntries().forEach((entry) => {
-            // Only log tasks longer than 100ms to reduce noise
+            // Only log tasks longer than 100ms when explicitly debugging performance.
             if (entry.duration > 100) {
               console.warn(`⚠️ [LONG_TASK] Task took ${entry.duration.toFixed(2)}ms`, {
                 name: entry.name,
@@ -56,7 +54,7 @@ const PerformanceMonitor: React.FC<PerformanceMonitorProps> = ({ children }) => 
         console.log('ℹ️ [PERFORMANCE] Long task monitoring not supported');
       }
     }
-  }, [isDevMode]);
+  }, [enableLongTaskLogs, isDevMode]);
 
   return <>{children}</>;
 };

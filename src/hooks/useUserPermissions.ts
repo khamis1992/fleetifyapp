@@ -53,31 +53,30 @@ export const useUpdateUserPermissions = () => {
       permissions 
     }: { 
       userId: string; 
-      permissions: { permissionId: string; granted: boolean }[] 
+      permissions: { permissionId: string; granted: boolean | null }[] 
     }) => {
       const currentUser = await supabase.auth.getUser();
       if (!currentUser.data.user) throw new Error('Not authenticated');
 
-      // Delete existing permissions for this user
-      await supabase
-        .from('user_permissions')
-        .delete()
-        .eq('user_id', userId);
+      for (const permission of permissions) {
+        await supabase
+          .from('user_permissions')
+          .delete()
+          .eq('user_id', userId)
+          .eq('permission_id', permission.permissionId);
 
-      // Insert new permissions (only granted ones)
-      const permissionsToInsert = permissions
-        .filter(p => p.granted)
-        .map(p => ({
-          user_id: userId,
-          permission_id: p.permissionId,
-          granted: true,
-          granted_by: currentUser.data.user.id,
-        }));
+        if (permission.granted === null) continue;
 
-      if (permissionsToInsert.length > 0) {
         const { error } = await supabase
           .from('user_permissions')
-          .insert(permissionsToInsert);
+          .insert({
+            user_id: userId,
+            permission_id: permission.permissionId,
+            granted: permission.granted,
+            granted_by: currentUser.data.user.id,
+            granted_at: permission.granted ? new Date().toISOString() : null,
+            revoked_at: permission.granted ? null : new Date().toISOString(),
+          });
         
         if (error) throw error;
       }
@@ -87,7 +86,9 @@ export const useUpdateUserPermissions = () => {
       queryClient.invalidateQueries({ queryKey: ['employees-with-access'] });
       
       // Log audit trail
-      const grantedPermissions = variables.permissions.filter(p => p.granted).map(p => p.permissionId);
+      const grantedPermissions = variables.permissions.filter(p => p.granted === true).map(p => p.permissionId);
+      const deniedPermissions = variables.permissions.filter(p => p.granted === false).map(p => p.permissionId);
+      const inheritedPermissions = variables.permissions.filter(p => p.granted === null).map(p => p.permissionId);
       await createAuditLog(
         'UPDATE',
         'user_permission',
@@ -96,12 +97,15 @@ export const useUpdateUserPermissions = () => {
         {
           new_values: {
             permissions: grantedPermissions,
+            denied_permissions: deniedPermissions,
+            inherited_permissions: inheritedPermissions,
             permission_count: grantedPermissions.length,
           },
           changes_summary: `Updated permissions for user ${variables.userId}`,
           metadata: {
             granted_count: grantedPermissions.length,
-            revoked_count: variables.permissions.filter(p => !p.granted).length,
+            denied_count: deniedPermissions.length,
+            inherited_count: inheritedPermissions.length,
           },
           severity: 'critical',
         }

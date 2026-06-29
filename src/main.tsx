@@ -27,6 +27,10 @@ const removeLoadingClass = () => {
 // Remove loading after short delay to ensure content is rendered
 setTimeout(removeLoadingClass, 500);
 
+const isBrowserExtensionAsyncResponseError = (message: string) =>
+  message.includes('A listener indicated an asynchronous response by returning true') &&
+  message.includes('message channel closed before a response was received');
+
 // CRITICAL FIX: Prevent page hanging on refresh
 // Add visibility change listener to detect tab switches
 document.addEventListener('visibilitychange', () => {
@@ -54,6 +58,11 @@ window.addEventListener('pagehide', () => {
 // IMPORTANT: Only enable in production to avoid conflicts with HMR in development
 if (!import.meta.env.DEV) {
   window.addEventListener('error', (event) => {
+    if (isBrowserExtensionAsyncResponseError(event.message || event.error?.message || '')) {
+      event.preventDefault();
+      return;
+    }
+
     const isChunkLoadError = 
       event.message.includes('Failed to fetch dynamically imported module') ||
       event.message.includes('Importing a module script failed') ||
@@ -83,6 +92,11 @@ if (!import.meta.env.DEV) {
   window.addEventListener('unhandledrejection', (event) => {
     const error = event.reason;
     const errorMessage = error?.message || '';
+
+    if (isBrowserExtensionAsyncResponseError(errorMessage)) {
+      event.preventDefault();
+      return;
+    }
     
     const isChunkLoadError = 
       errorMessage.includes('Failed to fetch dynamically imported module') ||
@@ -116,6 +130,11 @@ if (!import.meta.env.DEV) {
   // In development mode, just log chunk errors without reloading
   // HMR will handle module updates automatically
   window.addEventListener('error', (event) => {
+    if (isBrowserExtensionAsyncResponseError(event.message || event.error?.message || '')) {
+      event.preventDefault();
+      return;
+    }
+
     const isChunkLoadError = 
       event.message.includes('Failed to fetch dynamically imported module') ||
       event.message.includes('Importing a module script failed') ||
@@ -136,6 +155,11 @@ if (!import.meta.env.DEV) {
   window.addEventListener('unhandledrejection', (event) => {
     const error = event.reason;
     const errorMessage = error?.message || '';
+
+    if (isBrowserExtensionAsyncResponseError(errorMessage)) {
+      event.preventDefault();
+      return;
+    }
     
     const isChunkLoadError = 
       errorMessage.includes('Failed to fetch dynamically imported module') ||

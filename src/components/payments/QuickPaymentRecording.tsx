@@ -11,6 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 import { usePaymentOperations } from '@/hooks/business/usePaymentOperations';
+import { useFinanceAccessGuard } from '@/hooks/finance/useFinanceAccessGuard';
 import { useBanks } from '@/hooks/useTreasury';
 import { PaymentReceipt } from './PaymentReceipt';
 import { generateReceiptPDF, downloadPDF, generateReceiptHTML, downloadHTML, numberToArabicWords, generateReceiptNumber, formatReceiptDate } from '@/utils/receiptGenerator';
@@ -59,6 +60,19 @@ interface AccountingAccount {
   account_type: string;
 }
 
+interface AccountingPeriod {
+  id: string;
+  period_name: string;
+  start_date: string;
+  end_date: string;
+  status: string;
+}
+
+interface TemporaryPeriodReopening {
+  period: AccountingPeriod;
+  requestId: string;
+}
+
 interface PaymentSuccess {
   paymentId: string;
   receiptNumber: string;
@@ -78,9 +92,34 @@ interface QuickPaymentRecordingProps {
 
 const receivablePaymentStatuses = ['unpaid', 'partial', 'partial_paid', 'partially_paid', 'overdue', 'pending'];
 
+const getHistoricalPaymentDate = (invoice: Invoice, fallbackDate: string) => {
+  return invoice.due_date || invoice.invoice_date || fallbackDate;
+};
+
+const getLatestPaymentDate = (currentDate: string | undefined, nextDate: string) => {
+  if (!currentDate) return nextDate;
+  return new Date(nextDate).getTime() > new Date(currentDate).getTime() ? nextDate : currentDate;
+};
+
+const formatPaymentSuccessDate = (date: string) => {
+  return date === 'multiple' ? 'تواريخ متعددة حسب الفواتير' : formatReceiptDate(date);
+};
+
+const getUniqueDates = (dates: string[]) => Array.from(new Set(dates.filter(Boolean))).sort();
+
+const isDateInsidePeriod = (date: string, period: AccountingPeriod) => {
+  return date >= period.start_date && date <= period.end_date;
+};
+
+const isMissingRpcError = (error: any) => {
+  const message = `${error?.message || ''} ${error?.details || ''}`.toLowerCase();
+  return error?.code === 'PGRST202' || message.includes('function') || message.includes('not found');
+};
+
 export function QuickPaymentRecording({ onStepChange }: QuickPaymentRecordingProps) {
   const { toast } = useToast();
   const { companyId } = useUnifiedCompanyAccess();
+  const financeAccess = useFinanceAccessGuard();
   const { data: banks = [], isLoading: banksLoading } = useBanks();
   const receiptRef = useRef<HTMLDivElement>(null);
   
@@ -141,6 +180,7 @@ export function QuickPaymentRecording({ onStepChange }: QuickPaymentRecordingPro
   const [readyToPay, setReadyToPay] = useState(false);
   const [showAllInvoices, setShowAllInvoices] = useState(false);
   const [isGeneratingMissingInvoices, setIsGeneratingMissingInvoices] = useState(false);
+  const [historicalCashMode, setHistoricalCashMode] = useState(false);
   
   // Filter states
   const [dateRange, setDateRange] = useState({ start: '', end: '' });
@@ -665,6 +705,126 @@ export function QuickPaymentRecording({ onStepChange }: QuickPaymentRecordingPro
     return selectedInvoices.reduce((sum, inv) => sum + (inv.balance_due ?? inv.total_amount), 0);
   };
 
+  const openClosedPeriodsForHistoricalCash = async (
+    targetInvoices: Invoice[],
+    fallbackDate: string
+  ): Promise<TemporaryPeriodReopening[]> => {
+    if (!historicalCashMode || targetInvoices.length === 0 || !companyId) return [];
+
+    if (financeAccess.isLoading) {
+      throw new Error('جاري التحقق من صلاحيات فتح الفترات المالية. حاول مرة أخرى بعد لحظات.');
+    }
+
+    if (!financeAccess.can('finance.period.reopen')) {
+      throw new Error('ليس لديك صلاحية فتح فترة مالية مغلقة لتسجيل دفعات نقدية تاريخية.');
+    }
+
+    const paymentDates = getUniqueDates(targetInvoices.map((invoice) => getHistoricalPaymentDate(invoice, fallbackDate)));
+    if (paymentDates.length === 0) return [];
+
+    const minDate = paymentDates[0];
+    const maxDate = paymentDates[paymentDates.length - 1];
+
+    const { data: periods, error } = await supabase
+      .from('accounting_periods')
+      .select('id,period_name,start_date,end_date,status')
+      .eq('company_id', companyId)
+      .lte('start_date', maxDate)
+      .gte('end_date', minDate)
+      .in('status', ['closed', 'locked']);
+
+    if (error) throw error;
+
+    const closedPeriods = ((periods || []) as AccountingPeriod[]).filter((period) =>
+      paymentDates.some((date) => isDateInsidePeriod(date, period))
+    );
+
+    if (closedPeriods.length === 0) return [];
+
+    const reopened: TemporaryPeriodReopening[] = [];
+    try {
+      for (const period of closedPeriods) {
+        let { data: requestId, error: reopenError } = await (supabase as any).rpc(
+          'open_period_for_historical_cash_payments',
+          {
+            p_company_id: companyId,
+            p_accounting_period_id: period.id,
+            p_reason: `تسجيل دفعات إيجار نقدية تاريخية مستلمة سابقاً للفترة ${period.period_name}`,
+            p_hours: 2,
+          }
+        );
+
+        if (reopenError && isMissingRpcError(reopenError)) {
+          const { data: fallbackRequestId, error: requestError } = await (supabase as any).rpc(
+            'request_financial_period_reopening',
+            {
+              p_company_id: companyId,
+              p_accounting_period_id: period.id,
+              p_reason: `تسجيل دفعات إيجار نقدية تاريخية مستلمة سابقاً للفترة ${period.period_name}`,
+            }
+          );
+
+          if (requestError) throw requestError;
+
+          const { error: approveError } = await (supabase as any).rpc(
+            'approve_financial_period_reopening',
+            {
+              p_request_id: fallbackRequestId,
+              p_approved_by: null,
+              p_hours: 2,
+            }
+          );
+
+          if (approveError) throw approveError;
+          requestId = fallbackRequestId;
+          reopenError = null;
+        }
+
+        if (reopenError) throw reopenError;
+        reopened.push({ period, requestId });
+      }
+    } catch (reopenError) {
+      if (reopened.length > 0) {
+        await closeHistoricalCashPeriods(reopened);
+      }
+      throw reopenError;
+    }
+
+    toast({
+      title: 'تم فتح الفترات المطلوبة مؤقتاً',
+      description: `تم فتح ${reopened.length} فترة مالية مغلقة لتسجيل الدفعات التاريخية وسيتم إغلاقها بعد التسجيل.`,
+    });
+
+    return reopened;
+  };
+
+  const closeHistoricalCashPeriods = async (reopenedPeriods: TemporaryPeriodReopening[]) => {
+    for (const reopened of reopenedPeriods) {
+      try {
+        const { data, error } = await (supabase as any).rpc('close_reopened_financial_period', {
+          p_request_id: reopened.requestId,
+        });
+
+        if (error) throw error;
+
+        const result = data as { status?: string; requires_controller_review?: boolean } | null;
+        if (result?.status === 'pending_controller_review' || result?.requires_controller_review) {
+          toast({
+            title: 'تحتاج الفترة لمراجعة تدقيق',
+            description: `تم تسجيل الدفعات، لكن فترة ${reopened.period.period_name} تحتاج مراجعة أثر قبل إغلاقها النهائي.`,
+          });
+        }
+      } catch (closeError) {
+        console.error('Error closing historical cash period:', closeError);
+        toast({
+          title: 'تم التسجيل مع تنبيه إقفال',
+          description: `تعذر إغلاق فترة ${reopened.period.period_name} تلقائياً. راجع شاشة الإقفال المالي.`,
+          variant: 'destructive',
+        });
+      }
+    }
+  };
+
   const processPayment = async () => {
     if (!selectedCustomer || !paymentAmount || !companyId) {
       toast({
@@ -694,6 +854,15 @@ export function QuickPaymentRecording({ onStepChange }: QuickPaymentRecordingPro
       return;
     }
 
+    if (historicalCashMode && paymentMethod !== 'cash') {
+      toast({
+        title: 'وضع الدفعات التاريخية مخصص للنقد فقط',
+        description: 'غيّر طريقة الدفع إلى نقدي أو أوقف خيار الدفعات التاريخية.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     if (!selectedAccountId && cashAndBankAccounts.length > 0) {
       toast({
         title: 'اختر الحساب المحاسبي',
@@ -704,6 +873,7 @@ export function QuickPaymentRecording({ onStepChange }: QuickPaymentRecordingPro
     }
 
     setProcessing(true);
+    let reopenedHistoricalPeriods: TemporaryPeriodReopening[] = [];
     try {
       const paymentDate = new Date().toISOString().split('T')[0];
       const paymentNumber = `PAY-${Date.now()}`;
@@ -839,15 +1009,21 @@ export function QuickPaymentRecording({ onStepChange }: QuickPaymentRecordingPro
 
       console.log('Processing payment for invoices:', invoiceNumbers);
 
+      reopenedHistoricalPeriods = await openClosedPeriodsForHistoricalCash(selectedInvoices, paymentDate);
+
       // ✅ إنشاء دفعة منفصلة لكل فاتورة (الحل الصحيح)
       let remainingAmount = amount;
       let firstPaymentId: string | null = null;
       let paymentsCreated = 0;
+      const latestPaymentDateByContract = new Map<string, string>();
 
       for (let i = 0; i < selectedInvoices.length && remainingAmount > 0; i++) {
         const invoice = selectedInvoices[i];
         const invoiceBalance = invoice.balance_due ?? invoice.total_amount;
         const amountToApply = Math.min(remainingAmount, invoiceBalance);
+        const invoicePaymentDate = historicalCashMode
+          ? getHistoricalPaymentDate(invoice, paymentDate)
+          : paymentDate;
         
         if (amountToApply <= 0) continue;
 
@@ -857,13 +1033,15 @@ export function QuickPaymentRecording({ onStepChange }: QuickPaymentRecordingPro
           customer_id: selectedCustomer.id,
           invoice_id: invoice.id,
           amount: amountToApply,
-          payment_date: paymentDate,
+          payment_date: invoicePaymentDate,
           payment_method: paymentMethod as 'cash' | 'bank_transfer' | 'check' | 'credit_card',
           payment_number: `${paymentNumber}-${i + 1}`,
           type: 'receipt' as const, // ✅ إصلاح: الـ schema يتوقع 'type' وليس 'payment_type'
           currency: 'QAR',
-          notes: `دفعة لفاتورة ${invoice.invoice_number}`,
-          idempotencyKey: `${selectedCustomer.id}-${invoice.id}-${paymentDate}-${amountToApply}`,
+          notes: historicalCashMode
+            ? `دفعة نقدية تاريخية مستلمة سابقاً ولم تكن مسجلة في النظام - فاتورة ${invoice.invoice_number}`
+            : `دفعة لفاتورة ${invoice.invoice_number}`,
+          idempotencyKey: `${selectedCustomer.id}-${invoice.id}-${invoicePaymentDate}-${amountToApply}`,
         };
 
         if (selectedAccountId) {
@@ -896,6 +1074,12 @@ export function QuickPaymentRecording({ onStepChange }: QuickPaymentRecordingPro
         
         if (!firstPaymentId) firstPaymentId = payment.id;
         paymentsCreated++;
+        if (invoice.contract_id) {
+          latestPaymentDateByContract.set(
+            invoice.contract_id,
+            getLatestPaymentDate(latestPaymentDateByContract.get(invoice.contract_id), invoicePaymentDate)
+          );
+        }
 
         // ✅ لا نقوم بتحديث الفاتورة يدوياً - الـ trigger (update_invoice_payment_totals) يفعل ذلك تلقائياً
         // هذا يمنع التعارض بين التحديث اليدوي والـ trigger
@@ -914,7 +1098,7 @@ export function QuickPaymentRecording({ onStepChange }: QuickPaymentRecordingPro
         await supabase
           .from('contracts')
           .update({
-            last_payment_date: paymentDate,
+            last_payment_date: latestPaymentDateByContract.get(contractId) || paymentDate,
           })
           .eq('id', contractId);
       }
@@ -936,9 +1120,9 @@ export function QuickPaymentRecording({ onStepChange }: QuickPaymentRecordingPro
         customerName: `${selectedCustomer.first_name} ${selectedCustomer.last_name || ''}`.trim(),
         customerPhone: selectedCustomer.phone,
         paymentMethod: paymentMethod,
-        paymentDate: paymentDate,
+        paymentDate: historicalCashMode ? 'multiple' : paymentDate,
         description: selectedInvoices.length > 1 
-          ? `دفعة مجمعة لـ ${selectedInvoices.length} فاتورة - عقود: ${contractNumbers}`
+          ? `${historicalCashMode ? 'دفعات نقدية تاريخية' : 'دفعة مجمعة'} لـ ${selectedInvoices.length} فاتورة - عقود: ${contractNumbers}`
           : `دفعة إيجار - عقد رقم ${contractNumbers} - فاتورة ${invoiceNumbers}`,
         vehicleNumber: vehicleNumber,
       });
@@ -967,6 +1151,9 @@ export function QuickPaymentRecording({ onStepChange }: QuickPaymentRecordingPro
         variant: 'destructive',
       });
     } finally {
+      if (reopenedHistoricalPeriods.length > 0) {
+        await closeHistoricalCashPeriods(reopenedHistoricalPeriods);
+      }
       setProcessing(false);
     }
   };
@@ -1030,7 +1217,7 @@ export function QuickPaymentRecording({ onStepChange }: QuickPaymentRecordingPro
 - رقم الفاتورة: ${paymentSuccess.invoiceNumber}
 - المبلغ المدفوع: ${paymentSuccess.amount.toFixed(2)} ر.ق
 - المبلغ كتابة: ${numberToArabicWords(paymentSuccess.amount)}
-- تاريخ الدفع: ${formatReceiptDate(paymentSuccess.paymentDate)}
+- تاريخ الدفع: ${formatPaymentSuccessDate(paymentSuccess.paymentDate)}
 - طريقة الدفع: ${paymentMethodLabel}
 
 شكرا لتعاملكم معنا
@@ -1085,6 +1272,7 @@ export function QuickPaymentRecording({ onStepChange }: QuickPaymentRecordingPro
     setPaymentSuccess(null);
     setShowReceipt(false);
     setReadyToPay(false);
+    setHistoricalCashMode(false);
     setCustomerContracts([]);
     setSelectedContract(null);
   };
@@ -1109,6 +1297,7 @@ export function QuickPaymentRecording({ onStepChange }: QuickPaymentRecordingPro
     setPaymentSuccess(null);
     setShowReceipt(false);
     setReadyToPay(false);
+    setHistoricalCashMode(false);
     setProcessing(true);
 
     // تأخير قصير للسماح بتحديث قاعدة البيانات
@@ -1209,7 +1398,7 @@ export function QuickPaymentRecording({ onStepChange }: QuickPaymentRecordingPro
                   <span className="text-muted-foreground">العميل</span>
                 </div>
                 <div className="flex justify-between items-center text-sm">
-                  <span>{formatReceiptDate(paymentSuccess.paymentDate)}</span>
+                  <span>{formatPaymentSuccessDate(paymentSuccess.paymentDate)}</span>
                   <span className="text-muted-foreground">التاريخ</span>
                 </div>
               </div>
@@ -1277,7 +1466,7 @@ export function QuickPaymentRecording({ onStepChange }: QuickPaymentRecordingPro
                     <PaymentReceipt
                       ref={receiptRef}
                       receiptNumber={paymentSuccess.receiptNumber}
-                      date={formatReceiptDate(paymentSuccess.paymentDate)}
+                      date={formatPaymentSuccessDate(paymentSuccess.paymentDate)}
                       customerName={paymentSuccess.customerName}
                       amountInWords={numberToArabicWords(paymentSuccess.amount)}
                       amount={paymentSuccess.amount}
@@ -1708,8 +1897,15 @@ export function QuickPaymentRecording({ onStepChange }: QuickPaymentRecordingPro
               {/* Summary of selected invoices */}
               <div className="bg-slate-50 rounded-lg p-3 space-y-2 max-h-40 overflow-y-auto">
                 {selectedInvoices.map((invoice) => (
-                  <div key={invoice.id} className="flex justify-between items-center text-sm">
-                    <span>{invoice.invoice_number}</span>
+                  <div key={invoice.id} className="flex justify-between items-start gap-3 text-sm">
+                    <span>
+                      <span className="block">{invoice.invoice_number}</span>
+                      {historicalCashMode && (
+                        <span className="block text-xs text-amber-700">
+                          تاريخ الدفع: {formatReceiptDate(getHistoricalPaymentDate(invoice, new Date().toISOString().split('T')[0]))}
+                        </span>
+                      )}
+                    </span>
                     <span className="font-medium">{(invoice.balance_due ?? invoice.total_amount).toFixed(2)} ر.ق</span>
                   </div>
                 ))}
@@ -1730,6 +1926,30 @@ export function QuickPaymentRecording({ onStepChange }: QuickPaymentRecordingPro
                   placeholder="0.00"
                 />
               </div>
+
+              <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm">
+                <input
+                  type="checkbox"
+                  checked={historicalCashMode}
+                  onChange={(event) => {
+                    const enabled = event.target.checked;
+                    setHistoricalCashMode(enabled);
+                    if (enabled) {
+                      setPaymentMethod('cash');
+                    }
+                  }}
+                  className="mt-1 h-4 w-4 rounded border-amber-300 text-amber-600 focus:ring-amber-500"
+                />
+                <span className="space-y-1">
+                  <span className="block font-bold text-amber-900">تسجيل دفعات نقدية تاريخية</span>
+                  <span className="block leading-6 text-amber-800">
+                    استخدم هذا الخيار عند إدخال دفعات كاش تم استلامها سابقاً ولم تُسجل. سيتم إنشاء دفعة مستقلة لكل فاتورة بتاريخ استحقاقها، مع ملاحظة تدقيق واضحة.
+                  </span>
+                  <span className="block text-xs font-semibold text-amber-700">
+                    إذا كانت فترة مالية قديمة مغلقة، سيحاول النظام فتحها مؤقتاً بشكل مراقب ثم إغلاقها تلقائياً بعد تسجيل الدفعات.
+                  </span>
+                </span>
+              </label>
 
               <div className="space-y-2">
                 <Label htmlFor="method">طريقة الدفع</Label>

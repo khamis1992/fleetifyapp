@@ -488,7 +488,7 @@ const ContractCommandHeader = ({
                   <span className={cn('h-2 w-2 rounded-full', statusMeta.dot)} />
                   {statusMeta.label}
                 </button>
-                <span className="rounded-full border border-[#DDE5EF] bg-white px-3 py-1 text-xs font-bold text-[#64748B]">
+                <span className="contract-type-badge rounded-full border border-[#DDE5EF] bg-white px-3 py-1 text-xs font-bold text-black">
                   عقد تأجير مركبة
                 </span>
               </div>
@@ -507,7 +507,7 @@ const ContractCommandHeader = ({
                   className="group rounded-xl border border-[#E3EAF2] bg-white p-4 text-right transition-colors hover:border-[#173A63] hover:bg-[#EEF5FB]"
                 >
                   <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#EEF5FB] text-[#173A63] transition-colors group-hover:bg-white">
+                    <div className="contract-action-icon flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#EEF5FB] text-black transition-colors group-hover:bg-white">
                       <User className="h-5 w-5" />
                     </div>
                     <div className="min-w-0">
@@ -528,7 +528,7 @@ const ContractCommandHeader = ({
                   className="group rounded-xl border border-[#E3EAF2] bg-white p-4 text-right transition-colors hover:border-[#173A63] hover:bg-[#EEF5FB]"
                 >
                   <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-emerald-50 text-emerald-700 transition-colors group-hover:bg-white">
+                    <div className="contract-action-icon flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-emerald-50 text-black transition-colors group-hover:bg-white">
                       <Car className="h-5 w-5" />
                     </div>
                     <div className="min-w-0">
@@ -2178,20 +2178,71 @@ const ContractDetailsPageRedesigned = () => {
 
     setIsCancellingInvoice(true);
     try {
+      const { data: invoice, error: invoiceError } = await supabase
+        .from('invoices')
+        .select('id, company_id, status, payment_status, notes, invoice_number, invoice_date, due_date')
+        .eq('id', invoiceToCancel.id)
+        .eq('company_id', invoiceToCancel.company_id || companyId)
+        .maybeSingle();
+
+      if (invoiceError) throw invoiceError;
+      if (!invoice) {
+        throw new Error('لم يتم العثور على الفاتورة أو لا تملك صلاحية الوصول لها.');
+      }
+
+      if (invoice.status === 'cancelled' || invoice.payment_status === 'cancelled') {
+        toast({
+          title: 'الفاتورة ملغاة مسبقاً',
+          description: `الفاتورة ${invoice.invoice_number} ملغاة بالفعل.`,
+        });
+        return;
+      }
+
+      const { data: completedPayments, error: paymentsError } = await supabase
+        .from('payments')
+        .select('id, payment_status')
+        .eq('invoice_id', invoice.id)
+        .in('payment_status', ['completed', 'paid', 'confirmed', 'cleared'])
+        .limit(1);
+
+      if (paymentsError) throw paymentsError;
+      if (completedPayments && completedPayments.length > 0) {
+        throw new Error('لا يمكن إلغاء فاتورة لديها دفعات مكتملة. قم بإلغاء الدفعات المرتبطة أولاً.');
+      }
+
+      const previousNotes = invoice.notes ? `${invoice.notes}\n` : '';
+      const cancellationNote = `تم إلغاء الفاتورة من صفحة تفاصيل العقد بتاريخ ${new Date().toISOString()}`;
+      const contractStartDate = contract?.start_date;
+      const dateCorrections =
+        contractStartDate
+          ? {
+              ...(invoice.invoice_date && invoice.invoice_date < contractStartDate
+                ? { invoice_date: contractStartDate }
+                : {}),
+              ...(invoice.due_date && invoice.due_date < contractStartDate
+                ? { due_date: contractStartDate }
+                : {}),
+            }
+          : {};
+
       const { error } = await supabase
         .from('invoices')
         .update({
           status: 'cancelled',
           payment_status: 'cancelled',
-          updated_at: new Date().toISOString()
+          balance_due: 0,
+          notes: `${previousNotes}${cancellationNote}`,
+          updated_at: new Date().toISOString(),
+          ...dateCorrections,
         })
-        .eq('id', invoiceToCancel.id);
+        .eq('id', invoice.id)
+        .eq('company_id', invoice.company_id);
 
       if (error) throw error;
 
       toast({
         title: 'تم إلغاء الفاتورة',
-        description: `تم إلغاء الفاتورة ${invoiceToCancel.invoice_number} بنجاح`,
+        description: `تم إلغاء الفاتورة ${invoice.invoice_number} بنجاح`,
       });
 
       queryClient.invalidateQueries({ queryKey: ['contract-invoices'] });
@@ -2201,7 +2252,7 @@ const ContractDetailsPageRedesigned = () => {
       console.error('Error cancelling invoice:', error);
       toast({
         title: 'خطأ في إلغاء الفاتورة',
-        description: 'حدث خطأ أثناء إلغاء الفاتورة',
+        description: error instanceof Error ? error.message : 'حدث خطأ أثناء إلغاء الفاتورة',
         variant: 'destructive',
       });
     } finally {
@@ -2209,7 +2260,7 @@ const ContractDetailsPageRedesigned = () => {
       setIsCancelInvoiceDialogOpen(false);
       setInvoiceToCancel(null);
     }
-  }, [invoiceToCancel, queryClient, toast]);
+  }, [companyId, contract?.start_date, invoiceToCancel, queryClient, toast]);
 
   const handleRenew = useCallback(() => {
     setIsRenewalDialogOpen(true);
@@ -2693,6 +2744,14 @@ const ContractDetailsPageRedesigned = () => {
           </div>
         </div>
 
+        <section className="contract-alerts-zone">
+          <ContractAlerts
+            contract={contract}
+            trafficViolationsCount={trafficViolations.length}
+            formatCurrency={formatCurrency}
+          />
+        </section>
+
         <div className="contract-redesigned-layout">
           <section className="contract-hero-zone">
             <ContractCommandHeader
@@ -2713,14 +2772,6 @@ const ContractDetailsPageRedesigned = () => {
               onVehicleClick={handleVehicleClick}
             />
           </section>
-
-          <aside className="contract-side-rail">
-            <ContractAlerts
-              contract={contract}
-              trafficViolationsCount={trafficViolations.length}
-              formatCurrency={formatCurrency}
-            />
-          </aside>
 
           <section className="contract-decision-zone">
             <ContractCommandCenter
@@ -3117,10 +3168,13 @@ const ContractDetailsPageRedesigned = () => {
           grid-template-columns: minmax(360px, 420px) minmax(0, 1fr);
           grid-template-areas:
             "hero decision"
-            "side decision"
             "operations operations";
           gap: 16px;
           align-items: start;
+        }
+
+        .contract-alerts-zone {
+          margin-bottom: 16px;
         }
 
         .contract-hero-zone {
@@ -3175,6 +3229,11 @@ const ContractDetailsPageRedesigned = () => {
           color: white !important;
         }
 
+        .contract-profile-identity .contract-type-badge {
+          background: #ffffff !important;
+          color: #000000 !important;
+        }
+
         .contract-profile-identity h1 {
           white-space: normal !important;
           word-break: break-word;
@@ -3199,6 +3258,11 @@ const ContractDetailsPageRedesigned = () => {
         .contract-profile-identity > .grid button div,
         .contract-profile-identity > .grid button span {
           color: white !important;
+        }
+
+        .contract-profile-identity > .grid button .contract-action-icon,
+        .contract-profile-identity > .grid button .contract-action-icon svg {
+          color: #000000 !important;
         }
 
         .contract-profile-progress {
@@ -3268,7 +3332,7 @@ const ContractDetailsPageRedesigned = () => {
           background:
             linear-gradient(180deg, var(--contract-details-surface) 0%, var(--contract-details-inner) 100%) !important;
           display: grid;
-          grid-template-columns: minmax(220px, auto) minmax(0, 1fr);
+          grid-template-columns: minmax(220px, 1fr) auto;
           gap: 16px;
           align-items: center;
         }
@@ -3284,6 +3348,11 @@ const ContractDetailsPageRedesigned = () => {
           justify-content: flex-end;
           overflow-x: auto !important;
           background: transparent !important;
+          position: relative;
+          z-index: 2;
+          width: max-content;
+          max-width: 100%;
+          justify-self: end;
         }
 
         .contract-workbench-tab {
@@ -3293,6 +3362,7 @@ const ContractDetailsPageRedesigned = () => {
           border: 1px solid transparent !important;
           background: var(--contract-details-surface) !important;
           font-weight: 900;
+          pointer-events: auto;
         }
 
         .contract-workbench-content {
@@ -4177,7 +4247,6 @@ const ContractDetailsPageRedesigned = () => {
           .contract-redesigned-layout {
             grid-template-areas:
               "hero"
-              "side"
               "decision"
               "operations";
           }

@@ -7,11 +7,11 @@ import { type CSSProperties, useState, useMemo, Suspense, lazy } from "react";
 import { motion } from "framer-motion";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { PageSkeletonFallback } from "@/components/common/LazyPageWrapper";
-import { Loader2 } from "lucide-react";
 
 // Lazy load additional tabs
 const Deposits = lazy(() => import("./Deposits"));
 const MonthlyRentTracking = lazy(() => import("./MonthlyRentTracking"));
+const ExcelPaymentImport = lazy(() => import("../payments/ExcelPaymentImport"));
 import { useInvoices } from "@/hooks/finance/useInvoices";
 import { usePayments } from "@/hooks/useFinance";
 import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter";
@@ -52,6 +52,7 @@ import {
 import { 
   Receipt, 
   CreditCard,
+  FileSpreadsheet,
   Plus, 
   Search,
   Eye,
@@ -64,6 +65,7 @@ import {
   CalendarDays,
   XCircle,
   Landmark,
+  Loader2,
   Send,
   ArrowLeft,
   TrendingUp,
@@ -109,6 +111,7 @@ const billingTabs = [
   { id: "invoices", label: "الفواتير", helper: "إصدار ومتابعة", icon: Receipt, accent: billingColors.info },
   { id: "payments", label: "المدفوعات", helper: "تحصيل وإيصالات", icon: CreditCard, accent: billingColors.success },
   { id: "deposits", label: "الودائع", helper: "ضمانات العملاء", icon: Wallet, accent: billingColors.focus },
+  { id: "excel-import", label: "استيراد Excel", helper: "دفعات تاريخية", icon: FileSpreadsheet, accent: billingColors.info },
   { id: "rent", label: "الإيجارات", helper: "متابعة شهرية", icon: CalendarDays, accent: billingColors.alert },
 ];
 
@@ -900,6 +903,20 @@ const BillingCenter = () => {
           </motion.div>
         </TabsContent>
 
+        {/* Historical Excel Payments Import Tab */}
+        <TabsContent value="excel-import">
+          <motion.div
+            data-tour="billing-excel-import-tab"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.3 }}
+          >
+            <Suspense fallback={<PageSkeletonFallback />}>
+              <ExcelPaymentImport />
+            </Suspense>
+          </motion.div>
+        </TabsContent>
+
         {/* Monthly Rent Tracking Tab */}
         <TabsContent value="rent">
           <motion.div
@@ -991,17 +1008,17 @@ const BillingCenter = () => {
 
         .billing-tabs-shell {
           display: grid;
-          grid-template-columns: minmax(220px, 0.75fr) minmax(0, 1.25fr);
+          grid-template-columns: minmax(170px, 0.45fr) minmax(0, 1.55fr);
           align-items: center;
-          gap: 18px;
+          gap: 14px;
           padding: 16px;
         }
 
         .billing-tabs-list {
           display: grid !important;
-          grid-template-columns: repeat(4, minmax(0, 1fr));
+          grid-template-columns: repeat(5, minmax(0, 1fr));
           height: auto !important;
-          gap: 8px;
+          gap: 6px;
           border: 1px solid var(--billing-border);
           background: var(--billing-inner) !important;
           border-radius: 8px !important;
@@ -1009,11 +1026,11 @@ const BillingCenter = () => {
         }
 
         .billing-tab-trigger {
-          min-height: 64px;
+          min-height: 62px;
           justify-content: flex-start !important;
-          gap: 10px !important;
+          gap: 8px !important;
           border-radius: 8px !important;
-          padding: 10px 12px !important;
+          padding: 9px 10px !important;
           color: var(--billing-muted) !important;
           border: 1px solid transparent;
           background: transparent !important;
@@ -1026,8 +1043,8 @@ const BillingCenter = () => {
         }
 
         .billing-tab-icon {
-          width: 36px;
-          height: 36px;
+          width: 34px;
+          height: 34px;
           background: color-mix(in srgb, var(--tab-accent) 12%, white);
           color: var(--tab-accent);
         }
