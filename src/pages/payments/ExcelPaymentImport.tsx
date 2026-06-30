@@ -871,8 +871,6 @@ const createOrFindMonthlyInvoice = async ({
   const existingInvoice = await findExistingMonthlyInvoice(companyId, contract.id, invoiceDate);
   if (existingInvoice) return { invoice: existingInvoice, created: false };
 
-  return { invoice: null, created: false };
-
   const amount = monthlyRent || contract.monthly_amount || row.remainingAmount || row.paymentAmount || 0;
   if (amount <= 0) throw new Error(`لا يمكن إنشاء فاتورة للشهر ${row.month} بدون قيمة إيجار.`);
 
