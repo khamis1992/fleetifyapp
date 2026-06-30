@@ -62,6 +62,28 @@ interface ContractWithVehicle extends Record<string, any> {
   };
 }
 
+const normalizeSearchText = (value: unknown): string =>
+  String(value || '')
+    .toLowerCase()
+    .replace(/[إأآا]/g, 'ا')
+    .replace(/[ىي]/g, 'ي')
+    .replace(/ة/g, 'ه')
+    .replace(/[\u064B-\u065F\u0670]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+const buildCustomerSearchText = (customer: Record<string, any>): string =>
+  normalizeSearchText([
+    customer.first_name,
+    customer.last_name,
+    customer.first_name_ar,
+    customer.last_name_ar,
+    customer.company_name,
+    customer.company_name_ar,
+    customer.phone,
+    customer.national_id,
+  ].filter(Boolean).join(' '));
+
 export const useContractsData = (filters: any = {}) => {
   const { filter, getQueryKey, user, isBrowsingMode, browsedCompany, actualUserCompanyId } = useUnifiedCompanyAccess();
 
@@ -185,13 +207,19 @@ export const useContractsData = (filters: any = {}) => {
         
         const { data: matchingCustomers } = await supabase
           .from('customers')
-          .select('id')
+          .select('id, first_name, last_name, first_name_ar, last_name_ar, company_name, company_name_ar, phone, national_id')
           .eq('company_id', companyId)
           .or(customerSearchConditions.join(','))
           .abortSignal(signal!);
         
         if (matchingCustomers && matchingCustomers.length > 0) {
-          customerIds = matchingCustomers.map(c => c.id);
+          const normalizedWords = searchWords.map(normalizeSearchText).filter(Boolean);
+          customerIds = matchingCustomers
+            .filter((customer) => {
+              const customerText = buildCustomerSearchText(customer);
+              return normalizedWords.every((word) => customerText.includes(word));
+            })
+            .map(c => c.id);
         }
         console.log('🔍 [CONTRACTS_QUERY] Found matching customers:', customerIds.length, 'for search words:', searchWords);
       }
@@ -221,9 +249,9 @@ export const useContractsData = (filters: any = {}) => {
         // Apply search filter to count query
         if (searchTerm) {
           if (customerIds.length > 0) {
-            countQuery = countQuery.or(`contract_number.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%,customer_id.in.(${customerIds.join(',')})`);
+            countQuery = countQuery.or(`contract_number.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%,terms.ilike.%${searchTerm}%,license_plate.ilike.%${searchTerm}%,customer_id.in.(${customerIds.join(',')})`);
           } else {
-            countQuery = countQuery.or(`contract_number.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%`);
+            countQuery = countQuery.or(`contract_number.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%,terms.ilike.%${searchTerm}%,license_plate.ilike.%${searchTerm}%`);
           }
         }
 
@@ -290,9 +318,9 @@ export const useContractsData = (filters: any = {}) => {
       // Apply search filter at database level
       if (searchTerm) {
         if (customerIds.length > 0) {
-          query = query.or(`contract_number.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%,customer_id.in.(${customerIds.join(',')})`);
+          query = query.or(`contract_number.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%,terms.ilike.%${searchTerm}%,license_plate.ilike.%${searchTerm}%,customer_id.in.(${customerIds.join(',')})`);
         } else {
-          query = query.or(`contract_number.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%`);
+          query = query.or(`contract_number.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%,terms.ilike.%${searchTerm}%,license_plate.ilike.%${searchTerm}%`);
         }
       }
 
@@ -526,8 +554,9 @@ export const useContractsData = (filters: any = {}) => {
     }
     
     const result = enhancedContracts.filter((contract: any) => {
-      // Search filter
-      if (filters.search && filters.search.trim()) {
+      // Database search already includes contract fields and matching customer IDs.
+      // Keep local search opt-in only to avoid hiding customer-name matches.
+      if (filters.applyLocalSearch && filters.search && filters.search.trim()) {
         const searchTerm = filters.search.trim();
         
         // Split search into words for better matching (e.g., "عمارة الخروبي" -> ["عمارة", "الخروبي"])

@@ -423,9 +423,10 @@ class LawsuitService {
     const teens = ['عشرة', 'أحد عشر', 'اثنا عشر', 'ثلاثة عشر', 'أربعة عشر', 'خمسة عشر', 'ستة عشر', 'سبعة عشر', 'ثمانية عشر', 'تسعة عشر'];
     const hundreds = ['', 'مائة', 'مائتان', 'ثلاثمائة', 'أربعمائة', 'خمسمائة', 'ستمائة', 'سبعمائة', 'ثمانمائة', 'تسعمائة'];
     
-    if (amount === 0) return 'صفر ريال قطري';
+    const safeAmount = Number.isFinite(Number(amount)) ? Number(amount) : 0;
+    if (safeAmount === 0) return 'صفر ريال قطري';
     
-    const intAmount = Math.floor(amount);
+    const intAmount = Math.floor(Math.abs(safeAmount));
     let result = '';
     
     // الآلاف
@@ -437,8 +438,10 @@ class LawsuitService {
         result = 'ألف';
       } else if (thousands === 2) {
         result = 'ألفان';
-      } else if (thousands >= 3 && thousands <= 10) {
+      } else if (thousands >= 3 && thousands <= 9) {
         result = ones[thousands] + ' آلاف';
+      } else if (thousands === 10) {
+        result = 'عشرة آلاف';
       } else {
         result = this.convertHundreds(thousands) + ' ألف';
       }
@@ -449,7 +452,7 @@ class LawsuitService {
       result += this.convertHundreds(remainder);
     }
     
-    return result + ' ريال قطري';
+    return `${safeAmount < 0 ? 'سالب ' : ''}${result} ريال قطري`;
   }
 
   private convertHundreds(num: number): string {

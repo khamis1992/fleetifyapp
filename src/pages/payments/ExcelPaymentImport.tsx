@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import * as XLSX from 'xlsx';
 import {
   AlertTriangle,
@@ -118,6 +119,10 @@ type MatchedContract = {
     id: string;
     first_name: string | null;
     last_name: string | null;
+    first_name_ar?: string | null;
+    last_name_ar?: string | null;
+    company_name?: string | null;
+    company_name_ar?: string | null;
     phone: string | null;
     national_id: string | null;
   } | null;
@@ -137,6 +142,7 @@ type ImportResult = {
 };
 
 type ImportResultsByFile = Record<string, ImportResult>;
+type MatchedContractsByFile = Record<string, MatchedContract>;
 
 type BulkApprovalProgress = {
   current: number;
@@ -608,6 +614,21 @@ const digitsOnly = (value: string) => value.replace(/\D/g, '');
 
 const compactText = (value: string) => normalizeArabic(value).replace(/[^a-z0-9\u0600-\u06FF]/gi, '');
 
+const buildContractCustomerName = (contract: MatchedContract) => compactText([
+  contract.customers?.first_name,
+  contract.customers?.last_name,
+  contract.customers?.first_name_ar,
+  contract.customers?.last_name_ar,
+  contract.customers?.company_name,
+  contract.customers?.company_name_ar,
+].filter(Boolean).join(' '));
+
+const isCompatibleTextMatch = (source: string, target: string) =>
+  Boolean(source && target && (source.includes(target) || target.includes(source)));
+
+const contractMatchWarning = (file: ParsedExcelFile) =>
+  `لا يوجد عقد مطابق للملف "${file.customerName || file.fileName}". تأكد من تسجيل العميل والعقد أو صحح الاسم/اللوحة/الهاتف قبل الاعتماد.`;
+
 const parseMonthToDate = (month: string) => {
   const [first, second] = month.split(/[-/]/).map((part) => Number(part));
   const year = first > 1000 ? first : second;
@@ -730,6 +751,10 @@ const findBestContractMatch = async (companyId: string, file: ParsedExcelFile) =
         id,
         first_name,
         last_name,
+        first_name_ar,
+        last_name_ar,
+        company_name,
+        company_name_ar,
         phone,
         national_id
       ),
@@ -754,12 +779,18 @@ const findBestContractMatch = async (companyId: string, file: ParsedExcelFile) =
     const contractPlate = compactText(contract.vehicles?.plate_number || contract.license_plate || '');
     const phone = digitsOnly(contract.customers?.phone || '');
     const nationalId = digitsOnly(contract.customers?.national_id || '');
-    const name = compactText(`${contract.customers?.first_name || ''} ${contract.customers?.last_name || ''}`);
+    const name = buildContractCustomerName(contract);
+    const hasNameInFile = Boolean(fileName);
+    const nameMatches = isCompatibleTextMatch(fileName, name);
+
+    if (hasNameInFile && !nameMatches) {
+      return { contract, score: -1 };
+    }
 
     if (filePlate && contractPlate && (filePlate === contractPlate || contractPlate.includes(filePlate) || filePlate.includes(contractPlate))) score += 60;
     if (filePhone && phone && (filePhone === phone || phone.endsWith(filePhone) || filePhone.endsWith(phone))) score += 25;
     if (fileId && nationalId && fileId === nationalId) score += 35;
-    if (fileName && name && (name.includes(fileName) || fileName.includes(name))) score += 10;
+    if (nameMatches) score += 35;
 
     return { contract, score };
   }).sort((a, b) => b.score - a.score);
@@ -895,6 +926,7 @@ const buildApprovalSummary = (file: ParsedExcelFile | null) => {
 };
 
 export default function ExcelPaymentImport() {
+  const navigate = useNavigate();
   const { companyId, user } = useUnifiedCompanyAccess();
   const financeAccess = useFinanceAccessGuard();
   const { createPayment, isCreating } = usePaymentOperations({
@@ -908,6 +940,7 @@ export default function ExcelPaymentImport() {
   const [searchTerm, setSearchTerm] = useState('');
   const [approvalDialogOpen, setApprovalDialogOpen] = useState(false);
   const [matchedContract, setMatchedContract] = useState<MatchedContract | null>(null);
+  const [matchedContractsByFile, setMatchedContractsByFile] = useState<MatchedContractsByFile>({});
   const [isMatchingContract, setIsMatchingContract] = useState(false);
   const [isApproving, setIsApproving] = useState(false);
   const [isBulkApproving, setIsBulkApproving] = useState(false);
@@ -921,11 +954,49 @@ export default function ExcelPaymentImport() {
 
   const selectedFile = files.find((file) => file.id === selectedId) || files[0] || null;
   const importResult = selectedFile ? importResults[selectedFile.id] || null : null;
+  const openContractDetails = (contract: MatchedContract) => {
+    navigate(`/contracts/${encodeURIComponent(contract.contract_number)}`);
+  };
   const clearImportResultForFile = (fileId: string) => {
     setImportResults((current) => {
       const next = { ...current };
       delete next[fileId];
       return next;
+    });
+  };
+  const setFileContractMatchState = (file: ParsedExcelFile, hasMatch: boolean) => {
+    setFiles((currentFiles) => {
+      let changed = false;
+      const nextFiles = currentFiles.map((currentFile) => {
+        if (currentFile.id !== file.id) return currentFile;
+
+        const warning = contractMatchWarning(currentFile);
+        const warnings = hasMatch
+          ? currentFile.warnings.filter((item) => item !== warning)
+          : Array.from(new Set([...currentFile.warnings, warning]));
+
+        const updated = {
+          ...currentFile,
+          warnings,
+          status: currentFile.status === 'empty' || currentFile.status === 'error'
+            ? currentFile.status
+            : warnings.length > 0
+              ? 'review_required'
+              : 'ready',
+        };
+        
+        const warningsChanged =
+          updated.warnings.length !== currentFile.warnings.length ||
+          updated.warnings.some((item, index) => item !== currentFile.warnings[index]);
+        const statusChanged = updated.status !== currentFile.status;
+
+        if (!warningsChanged && !statusChanged) return currentFile;
+
+        changed = true;
+        return updated;
+      });
+
+      return changed ? nextFiles : currentFiles;
     });
   };
   const approvalSummary = useMemo(() => buildApprovalSummary(selectedFile), [selectedFile]);
@@ -951,10 +1022,34 @@ export default function ExcelPaymentImport() {
       setIsMatchingContract(true);
       try {
         const match = await findBestContractMatch(companyId, selectedFile);
-        if (isMounted) setMatchedContract(match);
+        if (isMounted) {
+          setMatchedContract(match);
+          setMatchedContractsByFile((current) => {
+            if (match) return { ...current, [selectedFile.id]: match };
+            const next = { ...current };
+            delete next[selectedFile.id];
+            return next;
+          });
+          setFileContractMatchState(selectedFile, Boolean(match));
+
+          if (!match && !selectedFile.warnings.includes(contractMatchWarning(selectedFile))) {
+            toast.error(contractMatchWarning(selectedFile));
+          }
+        }
       } catch (error) {
         console.error('Excel import contract matching failed:', error);
-        if (isMounted) setMatchedContract(null);
+        if (isMounted) {
+          setMatchedContract(null);
+          setMatchedContractsByFile((current) => {
+            const next = { ...current };
+            delete next[selectedFile.id];
+            return next;
+          });
+          setFileContractMatchState(selectedFile, false);
+          if (!selectedFile.warnings.includes(contractMatchWarning(selectedFile))) {
+            toast.error(contractMatchWarning(selectedFile));
+          }
+        }
       } finally {
         if (isMounted) setIsMatchingContract(false);
       }
@@ -1317,10 +1412,15 @@ export default function ExcelPaymentImport() {
       let lateFees = 0;
       let trafficViolations = 0;
       let skipped = 0;
+      let payableRows = 0;
+      let missingInvoiceRows = 0;
       const skippedReasons: string[] = [];
 
       for (let index = 0; index < file.rows.length; index += 1) {
         const row = file.rows[index];
+        const paymentAmount = row.paymentAmount || 0;
+        if (paymentAmount > 0) payableRows += 1;
+
         onProgress?.({
           current: index + 1,
           total: file.rows.length,
@@ -1335,13 +1435,16 @@ export default function ExcelPaymentImport() {
         });
 
         if (!invoice) {
+          if (paymentAmount > 0) {
+            missingInvoiceRows += 1;
+            skippedReasons.push(`لم يتم العثور على فاتورة شهر ${row.month} للعقد ${contract.contract_number}، لذلك لم يتم تسجيل دفعة هذا الشهر.`);
+          }
           skipped += 1;
           continue;
         }
 
         if (created) invoicesCreated += 1;
 
-        const paymentAmount = row.paymentAmount || 0;
         const invoiceBalance = Number(invoice.balance_due ?? invoice.total_amount ?? 0);
         const amountToApply = Math.min(paymentAmount, Math.max(invoiceBalance, 0));
 
@@ -1393,10 +1496,21 @@ export default function ExcelPaymentImport() {
               throw error;
             }
           }
+        } else if (paymentAmount > 0) {
+          const reason = `فاتورة شهر ${row.month} لا يوجد عليها رصيد مستحق، لذلك لم يتم تسجيل دفعة جديدة.`;
+          skippedReasons.push(reason);
+          skipped += 1;
         }
 
         if (await createLateFeeIfNeeded(invoice, row, contract, file)) lateFees += 1;
         trafficViolations += await createTrafficViolationsIfNeeded(row, contract, file);
+      }
+
+      if (payableRows > 0 && payments === 0 && missingInvoiceRows > 0) {
+        const detail = Array.from(new Set(skippedReasons)).slice(0, 3).join(' ');
+        throw new Error(
+          `لم يتم تسجيل أي دفعة من الملف لأن الفواتير الشهرية المرتبطة بالعقد غير موجودة. ${detail}`
+        );
       }
 
       await closeReopenedPeriods(reopenedPeriods);
@@ -1421,6 +1535,7 @@ export default function ExcelPaymentImport() {
     try {
       const result = await approveFile(selectedFile, matchedContract, setApprovalProgress);
       setImportResults((current) => ({ ...current, [selectedFile.id]: result }));
+      setMatchedContractsByFile((current) => ({ ...current, [selectedFile.id]: matchedContract }));
       setApprovalProgress({
         current: selectedFile.rows.length,
         total: selectedFile.rows.length,
@@ -1464,9 +1579,14 @@ export default function ExcelPaymentImport() {
 
         const contract = await findBestContractMatch(companyId, file);
         if (!contract) {
+          setFileContractMatchState(file, false);
+          toast.error(contractMatchWarning(file));
           skippedCount += 1;
           continue;
         }
+
+        setFileContractMatchState(file, true);
+        setMatchedContractsByFile((current) => ({ ...current, [file.id]: contract }));
 
         const result = await approveFile(file, contract);
         setImportResults((current) => ({ ...current, [file.id]: result }));
@@ -1629,11 +1749,16 @@ export default function ExcelPaymentImport() {
                   const meta = statusMeta[file.status];
                   const Icon = meta.icon;
                   const fileResult = importResults[file.id];
+                  const linkedContract = matchedContractsByFile[file.id];
                   return (
                     <button
                       key={file.id}
                       type="button"
                       onClick={() => {
+                        if (fileResult && linkedContract) {
+                          openContractDetails(linkedContract);
+                          return;
+                        }
                         setSelectedId(file.id);
                         setIsEditMode(false);
                         setEditBaselineRows(null);
@@ -1663,10 +1788,14 @@ export default function ExcelPaymentImport() {
                         <span className="text-xs font-bold text-[#94A3B8]">{file.confidence}%</span>
                       </div>
                       <p className="truncate text-sm font-bold">{file.customerName || file.fileName}</p>
-                      <p className="mt-1 truncate text-xs text-[#94A3B8]">{file.plateNumber || 'بدون لوحة'} · {file.rows.length} شهر</p>
+                      <p className="mt-1 truncate text-xs text-[#94A3B8]">
+                        {linkedContract?.contract_number ? `${linkedContract.contract_number} · ` : ''}
+                        {file.plateNumber || 'بدون لوحة'} · {file.rows.length} شهر
+                      </p>
                       {fileResult && (
                         <p className="mt-2 text-xs font-bold text-emerald-700">
                           {fileResult.payments} دفعة · {fileResult.trafficViolations} مخالفة
+                          {linkedContract ? ' · عرض العقد' : ''}
                         </p>
                       )}
                     </button>
@@ -1717,6 +1846,15 @@ export default function ExcelPaymentImport() {
                         onClick={() => {
                           if (isEditMode) {
                             handleEditToggle();
+                            return;
+                          }
+                          if (isMatchingContract) {
+                            toast.info('جاري مطابقة الملف مع العقود، يرجى الانتظار.');
+                            return;
+                          }
+                          if (!matchedContract) {
+                            setFileContractMatchState(selectedFile, false);
+                            toast.error(contractMatchWarning(selectedFile));
                             return;
                           }
                           setApprovalDialogOpen(true);
