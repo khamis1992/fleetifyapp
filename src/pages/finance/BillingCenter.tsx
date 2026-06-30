@@ -80,6 +80,7 @@ import { ar } from "date-fns/locale";
 import { usePaymentOperations } from "@/hooks/business/usePaymentOperations";
 import { useAuth } from "@/contexts/AuthContext";
 import { useFinanceAccessGuard } from "@/hooks/finance/useFinanceAccessGuard";
+import { FeatureTourButton, FeatureTourDialog, type FeatureTourContent } from "@/components/common/FeatureTourGuide";
 
 import { EmptyState } from "@/components/ui/EmptyState";
 
@@ -114,6 +115,122 @@ const billingTabs = [
   { id: "excel-import", label: "استيراد Excel", helper: "دفعات تاريخية", icon: FileSpreadsheet, accent: billingColors.info },
   { id: "rent", label: "الإيجارات", helper: "متابعة شهرية", icon: CalendarDays, accent: billingColors.alert },
 ];
+
+const billingFeatureTours = {
+  overview: {
+    title: "جولة مركز الفوترة والتحصيل",
+    description: "شرح سريع لطريقة إدارة الفواتير والمدفوعات من هذه الصفحة.",
+    steps: [
+      "ابدأ من المؤشرات العلوية لمعرفة إجمالي الفواتير، المدفوع، المستحق، ومدفوعات الشهر.",
+      "استخدم زر فاتورة جديدة لإصدار مطالبة مالية مرتبطة بعميل أو عقد.",
+      "استخدم زر تسجيل دفعة عند استلام مبلغ وربطه بالفاتورة أو العميل الصحيح.",
+      "تنقل بين التبويبات لمراجعة الفواتير، المدفوعات، الودائع، استيراد Excel، والإيجارات الشهرية.",
+      "استخدم البحث والفلترة والتصدير لمراجعة السجلات أو تجهيز ملف متابعة.",
+    ],
+  },
+  createInvoice: {
+    title: "جولة إنشاء فاتورة",
+    description: "شرح طريقة إصدار فاتورة جديدة من مركز الفوترة.",
+    steps: [
+      "اختر العميل أو العقد المرتبط بالفاتورة حتى تظهر في ملف العميل والعقد بشكل صحيح.",
+      "حدد تاريخ الفاتورة وتاريخ الاستحقاق وحساب الإيراد أو مركز التكلفة عند الحاجة.",
+      "أضف بنود الفاتورة مع الكمية والسعر والضريبة أو الخصم إن وجدت.",
+      "راجع الإجمالي قبل الحفظ لأن الفاتورة ستدخل في التقارير والتحصيل.",
+      "بعد الحفظ ستظهر الفاتورة في جدول الفواتير ويمكن دفعها أو معاينتها.",
+    ],
+  },
+  createPayment: {
+    title: "جولة تسجيل دفعة",
+    description: "شرح طريقة تسجيل دفعة وربطها بالفاتورة أو العميل.",
+    steps: [
+      "اختر العميل أو الفاتورة أو العقد الذي تخصه الدفعة.",
+      "أدخل مبلغ الدفعة وتاريخها وطريقة الدفع ورقم المرجع إن وجد.",
+      "اختر الحساب أو البنك ومركز التكلفة حسب سياسة الشركة المالية.",
+      "راجع المعاينة المحاسبية إن ظهرت للتأكد من أثر الدفعة على القيود والخزينة.",
+      "بعد الحفظ ستظهر الدفعة في جدول المدفوعات وتحدث رصيد الفاتورة المرتبطة.",
+    ],
+  },
+  filtersExport: {
+    title: "جولة البحث والتصدير",
+    description: "شرح استخدام البحث والفلاتر والتصدير في مركز الفوترة.",
+    steps: [
+      "استخدم البحث للوصول بسرعة إلى رقم فاتورة، رقم دفعة، أو اسم عميل.",
+      "فلتر الحالة يساعدك على التركيز على المدفوع، المعلق، الجزئي، أو المتأخر.",
+      "زر التصدير يصدر السجلات حسب العرض الحالي حتى تكون المراجعة مطابقة للفلاتر.",
+      "عند تحديد فواتير من الجدول يظهر شريط إجراءات جماعية لتصدير المحدد أو إلغاء التحديد.",
+    ],
+  },
+  invoiceActions: {
+    title: "جولة إجراءات الفاتورة",
+    description: "شرح أزرار المعاينة والتعديل والدفع والحذف داخل جدول الفواتير.",
+    steps: [
+      "زر العين يفتح المعاينة الرسمية للفاتورة قبل الطباعة أو المشاركة.",
+      "زر التعديل يفتح بيانات الفاتورة لتصحيح التاريخ أو البنود حسب الصلاحية.",
+      "زر الدفع يظهر للفواتير غير المدفوعة ويسجل تحصيلاً مرتبطاً بالفاتورة.",
+      "زر الحذف/الإلغاء يستخدم فقط عند الحاجة، وقد يمنع النظام الإلغاء إذا توجد دفعات مكتملة.",
+    ],
+  },
+  paymentActions: {
+    title: "جولة إجراءات الدفعة",
+    description: "شرح أزرار معاينة الدفعة وإرسال السند وإلغاء الدفعة.",
+    steps: [
+      "زر العين يعرض تفاصيل سند القبض ومعلومات العميل والفاتورة.",
+      "زر الإرسال عبر واتساب يجهز رسالة للعميل تحتوي ملخص سند الدفعة.",
+      "زر الإلغاء يظهر للدفعات المكتملة ويعيد تحديث الفاتورة المرتبطة بعد التأكيد.",
+      "راجع المبلغ والتاريخ والفاتورة قبل إلغاء أي دفعة لأن الأثر مالي ومحاسبي.",
+    ],
+  },
+  cancelPayment: {
+    title: "جولة إلغاء دفعة",
+    description: "شرح ما يحدث عند إلغاء دفعة مكتملة.",
+    steps: [
+      "راجع رقم الدفعة والمبلغ والتاريخ والفاتورة المرتبطة قبل التأكيد.",
+      "اكتب سبب الإلغاء إذا كان هناك مبرر تشغيلي أو محاسبي مهم.",
+      "عند التأكيد يتم تحديث الدفعة والفاتورة المرتبطة وإعادة احتساب الرصيد.",
+      "لا تستخدم الإلغاء لتصحيح بسيط إذا كان الأفضل إنشاء تسوية أو دفعة عكسية حسب سياسة الشركة.",
+    ],
+  },
+  deleteInvoice: {
+    title: "جولة حذف أو إلغاء فاتورة",
+    description: "شرح ضوابط حذف الفاتورة من مركز الفوترة.",
+    steps: [
+      "راجع رقم الفاتورة قبل التأكيد حتى لا تلغي مطالبة مالية صحيحة.",
+      "الفاتورة المرتبطة بدفعات مكتملة قد يمنع النظام حذفها لحماية الأثر المالي.",
+      "إذا كانت الفاتورة خاطئة ولكن عليها دفعات، عالج الدفعات أولاً أو استخدم إجراء تسوية مناسب.",
+      "بعد الحذف أو الإلغاء ستتحدث قائمة الفواتير والتقارير المرتبطة.",
+    ],
+  },
+  deposits: {
+    title: "جولة الودائع",
+    description: "شرح تبويب ودائع العملاء داخل مركز الفوترة.",
+    steps: [
+      "الوديعة هي ضمان مالي منفصل عن الإيراد العادي ولا تعامل كدفعة إيجار.",
+      "استخدم إضافة وديعة لتسجيل العميل والمبلغ وحالة الوديعة.",
+      "راجع الودائع النشطة والمرتجعة والجزئية من الفلاتر داخل التبويب.",
+      "عند إرجاع أو تعديل وديعة تأكد من أن الأثر المالي مطابق لسياسة الشركة.",
+    ],
+  },
+  excelImport: {
+    title: "جولة استيراد دفعات Excel",
+    description: "شرح استخدام تبويب استيراد الدفعات التاريخية.",
+    steps: [
+      "اختر ملف Excel يحتوي الدفعات الشهرية أو السجلات التاريخية.",
+      "راجع قراءة الأعمدة والعميل واللوحة والعقد قبل الاعتماد.",
+      "صحح الصفوف أو القيم غير الواضحة قبل إنشاء الفواتير أو الدفعات.",
+      "بعد الاعتماد يتم إنشاء أو ربط الدفعات والفواتير حسب البيانات المطابقة.",
+    ],
+  },
+  rent: {
+    title: "جولة الإيجارات الشهرية",
+    description: "شرح متابعة الاستحقاقات الشهرية من تبويب الإيجارات.",
+    steps: [
+      "يعرض التبويب متابعة الاستحقاقات الشهرية المرتبطة بالعقود.",
+      "استخدمه لمعرفة الأشهر المدفوعة والمتأخرة والمتبقية لكل عقد.",
+      "اربط المتابعة بالفواتير والمدفوعات حتى تبقى الأرصدة دقيقة.",
+      "راجع العقود الطويلة بانتظام لأن الفواتير الشهرية تتكرر طوال مدة العقد.",
+    ],
+  },
+} satisfies Record<string, FeatureTourContent>;
 
 interface BillingMetricProps {
   title: string;
@@ -179,6 +296,7 @@ const BillingCenter = () => {
   const [cancelReason, setCancelReason] = useState<string>("");
   
   const [selectedInvoiceIds, setSelectedInvoiceIds] = useState<string[]>([]);
+  const [activeFeatureTour, setActiveFeatureTour] = useState<FeatureTourContent | null>(null);
 
   const handleExportCSV = () => {
     const headers = ["رقم الفاتورة", "العميل", "المبلغ", "الحالة", "التاريخ"];
@@ -564,6 +682,11 @@ const BillingCenter = () => {
             </div>
 
             <div data-tour="billing-create-actions" className="flex flex-wrap gap-2">
+              <FeatureTourButton
+                tour={billingFeatureTours.overview}
+                onStart={setActiveFeatureTour}
+                className="h-10 gap-2 border-[#E5EAF1] bg-white text-[#020617] hover:bg-[#F6F8FB]"
+              />
               <Button onClick={() => setIsCreateInvoiceOpen(true)} className="gap-2 bg-[#020617] text-white hover:bg-[#020617]/90">
                 <Plus className="h-4 w-4" />
                 فاتورة جديدة
@@ -637,6 +760,11 @@ const BillingCenter = () => {
             </div>
 
             <div className="billing-filter-controls">
+              <FeatureTourButton
+                tour={billingFeatureTours.filtersExport}
+                onStart={setActiveFeatureTour}
+                className="h-10 gap-2 border-[#E5EAF1] bg-white text-[#020617] hover:bg-[#F6F8FB]"
+              />
               <ExportButton onExportCSV={handleExportCSV} onExportPDF={handleExportPDF} />
               <div className="relative min-w-[220px] flex-1">
                 <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2" style={{ color: billingColors.muted }} />
@@ -670,6 +798,17 @@ const BillingCenter = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
           >
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-neutral-100 px-4 py-3">
+              <div>
+                <p className="text-sm font-black text-[#020617]">إجراءات الفواتير</p>
+                <p className="text-xs text-[#64748B]">معاينة، تعديل، دفع، حذف، وتصدير الفواتير</p>
+              </div>
+              <FeatureTourButton
+                tour={billingFeatureTours.invoiceActions}
+                onStart={setActiveFeatureTour}
+                className="h-9 gap-2 border-[#E5EAF1] bg-white text-[#020617] hover:bg-[#F6F8FB]"
+              />
+            </div>
             {invoicesLoading ? (
               <div className="flex items-center justify-center py-20">
                 <Loader2 className="w-8 h-8 animate-spin text-rose-500" />
@@ -783,6 +922,17 @@ const BillingCenter = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
           >
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-neutral-100 px-4 py-3">
+              <div>
+                <p className="text-sm font-black text-[#020617]">إجراءات المدفوعات</p>
+                <p className="text-xs text-[#64748B]">معاينة سند القبض، إرساله، أو إلغاء الدفعة</p>
+              </div>
+              <FeatureTourButton
+                tour={billingFeatureTours.paymentActions}
+                onStart={setActiveFeatureTour}
+                className="h-9 gap-2 border-[#E5EAF1] bg-white text-[#020617] hover:bg-[#F6F8FB]"
+              />
+            </div>
             {/* Treasury Balance Indicator */}
             {treasuryData && (
               <div className="p-4 border-b border-neutral-100">
@@ -897,6 +1047,17 @@ const BillingCenter = () => {
             animate={{ opacity: 1 }}
             transition={{ duration: 0.3 }}
           >
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-3 rounded-[8px] border border-[#E5EAF1] bg-white p-4">
+              <div>
+                <p className="text-sm font-black text-[#020617]">تبويب الودائع</p>
+                <p className="text-xs text-[#64748B]">إضافة ومتابعة ضمانات العملاء</p>
+              </div>
+              <FeatureTourButton
+                tour={billingFeatureTours.deposits}
+                onStart={setActiveFeatureTour}
+                className="h-9 gap-2 border-[#E5EAF1] bg-white text-[#020617] hover:bg-[#F6F8FB]"
+              />
+            </div>
             <Suspense fallback={<PageSkeletonFallback />}>
               <Deposits />
             </Suspense>
@@ -911,6 +1072,17 @@ const BillingCenter = () => {
             animate={{ opacity: 1 }}
             transition={{ duration: 0.3 }}
           >
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-3 rounded-[8px] border border-[#E5EAF1] bg-white p-4">
+              <div>
+                <p className="text-sm font-black text-[#020617]">استيراد Excel</p>
+                <p className="text-xs text-[#64748B]">قراءة الدفعات التاريخية ومطابقتها مع العقود</p>
+              </div>
+              <FeatureTourButton
+                tour={billingFeatureTours.excelImport}
+                onStart={setActiveFeatureTour}
+                className="h-9 gap-2 border-[#E5EAF1] bg-white text-[#020617] hover:bg-[#F6F8FB]"
+              />
+            </div>
             <Suspense fallback={<PageSkeletonFallback />}>
               <ExcelPaymentImport />
             </Suspense>
@@ -925,6 +1097,17 @@ const BillingCenter = () => {
             animate={{ opacity: 1 }}
             transition={{ duration: 0.3 }}
           >
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-3 rounded-[8px] border border-[#E5EAF1] bg-white p-4">
+              <div>
+                <p className="text-sm font-black text-[#020617]">الإيجارات الشهرية</p>
+                <p className="text-xs text-[#64748B]">متابعة الاستحقاقات الشهرية وربطها بالفواتير</p>
+              </div>
+              <FeatureTourButton
+                tour={billingFeatureTours.rent}
+                onStart={setActiveFeatureTour}
+                className="h-9 gap-2 border-[#E5EAF1] bg-white text-[#020617] hover:bg-[#F6F8FB]"
+              />
+            </div>
             <Suspense fallback={<PageSkeletonFallback />}>
               <MonthlyRentTracking />
             </Suspense>
@@ -1181,7 +1364,10 @@ const BillingCenter = () => {
       <Dialog open={isCreateInvoiceOpen} onOpenChange={setIsCreateInvoiceOpen}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>إنشاء فاتورة جديدة</DialogTitle>
+            <div className="flex items-start justify-between gap-3">
+              <DialogTitle>إنشاء فاتورة جديدة</DialogTitle>
+              <FeatureTourButton tour={billingFeatureTours.createInvoice} onStart={setActiveFeatureTour} />
+            </div>
           </DialogHeader>
           <InvoiceFormWizard
             open={isCreateInvoiceOpen}
@@ -1200,6 +1386,7 @@ const BillingCenter = () => {
       {selectedInvoiceIds.length > 0 && (
         <div className="fixed bottom-20 lg:bottom-4 left-1/2 -translate-x-1/2 bg-slate-900 text-white px-4 py-3 rounded-xl shadow-lg flex items-center gap-3 z-30">
           <span className="text-sm font-medium">{selectedInvoiceIds.length} محدد</span>
+          <button onClick={() => setActiveFeatureTour(billingFeatureTours.filtersExport)} className="text-xs bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-lg">جولة</button>
           <button onClick={handleBulkExport} className="text-xs bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-lg">تصدير</button>
           <button onClick={() => setSelectedInvoiceIds([])} className="text-xs bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-lg">إلغاء التحديد</button>
         </div>
@@ -1267,10 +1454,13 @@ const BillingCenter = () => {
       <AlertDialog open={isCancelPaymentDialogOpen} onOpenChange={setIsCancelPaymentDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2 text-red-600">
-              <XCircle className="w-5 h-5" />
-              تأكيد إلغاء الدفعة
-            </AlertDialogTitle>
+            <div className="flex items-start justify-between gap-3">
+              <AlertDialogTitle className="flex items-center gap-2 text-red-600">
+                <XCircle className="w-5 h-5" />
+                تأكيد إلغاء الدفعة
+              </AlertDialogTitle>
+              <FeatureTourButton tour={billingFeatureTours.cancelPayment} onStart={setActiveFeatureTour} />
+            </div>
             <AlertDialogDescription className="text-right space-y-3">
               <p>هل أنت متأكد من إلغاء هذه الدفعة؟ سيتم تحديث الفاتورة المرتبطة تلقائياً.</p>
               {paymentToCancel && (
@@ -1316,7 +1506,10 @@ const BillingCenter = () => {
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>تأكيد الحذف</AlertDialogTitle>
+            <div className="flex items-start justify-between gap-3">
+              <AlertDialogTitle>تأكيد الحذف</AlertDialogTitle>
+              <FeatureTourButton tour={billingFeatureTours.deleteInvoice} onStart={setActiveFeatureTour} />
+            </div>
             <AlertDialogDescription>
               هل أنت متأكد من حذف الفاتورة رقم {invoiceToDelete?.invoice_number}؟
               لا يمكن التراجع عن هذا الإجراء.
@@ -1337,6 +1530,7 @@ const BillingCenter = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      <FeatureTourDialog tour={activeFeatureTour} onOpenChange={(open) => !open && setActiveFeatureTour(null)} />
     </div>
   );
 };

@@ -26,7 +26,8 @@ import {
   Mail,
   MapPin,
   Star,
-  History
+  History,
+  PlayCircle
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -96,6 +97,7 @@ export function MaintenanceSidePanel({
   onStatusChange,
 }: MaintenanceSidePanelProps) {
   const [activeTab, setActiveTab] = useState<TabType>('overview');
+  const [showGuide, setShowGuide] = useState(false);
   const { data: maintenance, isLoading } = useMaintenanceDetails(maintenanceId);
   const { formatCurrency } = useCurrencyFormatter();
 
@@ -158,12 +160,23 @@ export function MaintenanceSidePanel({
                         </p>
                       </div>
                     </div>
-                    <button
-                      onClick={onClose}
-                      className="p-2 hover:bg-neutral-100 rounded-lg transition-colors"
-                    >
-                      <X className="w-5 h-5 text-neutral-500" />
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => setShowGuide((value) => !value)}
+                        className="h-9 rounded-lg border-neutral-200 bg-white text-neutral-800"
+                      >
+                        <PlayCircle className="w-4 h-4 ml-2" />
+                        ابدأ الجولة التعريفية
+                      </Button>
+                      <button
+                        onClick={onClose}
+                        className="p-2 hover:bg-neutral-100 rounded-lg transition-colors"
+                      >
+                        <X className="w-5 h-5 text-neutral-500" />
+                      </button>
+                    </div>
                   </div>
 
                   {/* Status & Priority */}
@@ -186,6 +199,18 @@ export function MaintenanceSidePanel({
                       </span>
                     )}
                   </div>
+
+                  {showGuide && (
+                    <div className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-right">
+                      <h3 className="mb-3 text-sm font-bold text-emerald-900">كيف تقرأ تفاصيل الصيانة؟</h3>
+                      <ol className="space-y-2 text-sm leading-6 text-neutral-700">
+                        <li>1. ابدأ من النظرة العامة لمعرفة الحالة والتواريخ والتكلفة.</li>
+                        <li>2. افتح تبويب المركبة للتأكد من اللوحة وحالة التشغيل.</li>
+                        <li>3. راجع المورد والسجل والتكاليف قبل إكمال الصيانة.</li>
+                        <li>4. استخدم أزرار الأسفل للتعديل أو تغيير الحالة أو الحذف.</li>
+                      </ol>
+                    </div>
+                  )}
                 </div>
 
                 {/* Tabs */}

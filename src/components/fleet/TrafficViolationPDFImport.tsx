@@ -26,7 +26,8 @@ import {
   ArrowRight,
   Database,
   Edit3,
-  Clock
+  Clock,
+  FileSpreadsheet
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useDropzone } from 'react-dropzone';
@@ -42,6 +43,7 @@ import {
   MatchedViolation,
   ImportProcessingResult,
   PDFHeaderData,
+  ImportSource,
   MATCH_CONFIDENCE_LABELS,
   MATCH_CONFIDENCE_COLORS
 } from '@/types/violations';
@@ -57,6 +59,7 @@ export const TrafficViolationPDFImport: React.FC = () => {
   const [selectedViolations, setSelectedViolations] = useState<Set<string>>(new Set());
   const [previewFile, setPreviewFile] = useState<File | null>(null);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [activeImportSource, setActiveImportSource] = useState<ImportSource>('moi_pdf');
   
   // Enrichment state - لإكمال البيانات الناقصة
   const [enrichableViolations, setEnrichableViolations] = useState<EnrichableViolation[]>([]);
@@ -254,6 +257,107 @@ export const TrafficViolationPDFImport: React.FC = () => {
     }
   };
 
+  const isExcelFile = (file: File) => {
+    const name = file.name.toLowerCase();
+    return (
+      name.endsWith('.xlsx') ||
+      name.endsWith('.xls') ||
+      file.type === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
+      file.type === 'application/vnd.ms-excel'
+    );
+  };
+
+  const normalizeHeader = (value: unknown) =>
+    String(value ?? '')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+  const normalizePlate = (value: unknown) => {
+    const raw = String(value ?? '').trim();
+    return raw ? raw.padStart(Math.min(Math.max(raw.length, 6), 6), '0') : '';
+  };
+
+  const normalizeExcelDate = (value: unknown): string => {
+    if (!value) return '';
+    if (value instanceof Date && !Number.isNaN(value.getTime())) {
+      return format(value, 'yyyy-MM-dd');
+    }
+
+    if (typeof value === 'number') {
+      const epoch = new Date(Date.UTC(1899, 11, 30));
+      epoch.setUTCDate(epoch.getUTCDate() + value);
+      return format(epoch, 'yyyy-MM-dd');
+    }
+
+    const raw = String(value).trim();
+    if (!raw) return '';
+    const normalized = raw.replace(/\//g, '-');
+    const parsed = new Date(normalized);
+    if (!Number.isNaN(parsed.getTime())) {
+      return format(parsed, 'yyyy-MM-dd');
+    }
+    return raw;
+  };
+
+  const extractDataFromExcel = async (file: File): Promise<{
+    header?: PDFHeaderData;
+    violations: ExtractedViolation[];
+  }> => {
+    const XLSX = await import('xlsx');
+    const arrayBuffer = await file.arrayBuffer();
+    const workbook = XLSX.read(arrayBuffer, { type: 'array', cellDates: true });
+
+    const targetSheetName =
+      workbook.SheetNames.find((name) => name.trim() === 'جميع المخالفات') ||
+      workbook.SheetNames.find((name) => {
+        const rows = XLSX.utils.sheet_to_json<unknown[]>(workbook.Sheets[name], { header: 1, defval: '' });
+        const header = (rows[0] || []).map(normalizeHeader);
+        return header.includes('رقم المركبة') && header.includes('رقم المخالفة') && header.includes('التاريخ');
+      });
+
+    if (!targetSheetName) {
+      throw new Error('لم يتم العثور على صفحة "جميع المخالفات" أو صفحة تحتوي الأعمدة المطلوبة.');
+    }
+
+    const worksheet = workbook.Sheets[targetSheetName];
+    const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(worksheet, { defval: '', raw: false });
+    const violations: ExtractedViolation[] = [];
+    const seenNumbers = new Set<string>();
+
+    for (const row of rows) {
+      const plate = normalizePlate(row['رقم المركبة']);
+      const violationNumber = String(row['رقم المخالفة'] ?? '').trim();
+      const date = normalizeExcelDate(row['التاريخ']);
+      const amount = Number(String(row['قيمة الغرامة'] ?? '0').replace(/[^\d.-]/g, '')) || 0;
+      const points = String(row['النقاط'] ?? '').trim();
+
+      if (!plate || !violationNumber || !date || amount <= 0) continue;
+      if (seenNumbers.has(violationNumber)) continue;
+      seenNumbers.add(violationNumber);
+
+      violations.push({
+        violation_number: violationNumber,
+        reference_number: violationNumber,
+        date,
+        plate_number: plate,
+        violation_type: 'مخالفة مرورية',
+        violation_description: points ? `مخالفة مرورية - النقاط: ${points}` : 'مخالفة مرورية',
+        fine_amount: amount,
+        total_amount: amount,
+        issuing_authority: 'تقرير Excel',
+      });
+    }
+
+    return {
+      header: {
+        file_number: file.name,
+        total_violations: violations.length,
+        total_amount: violations.reduce((sum, violation) => sum + violation.fine_amount, 0),
+      },
+      violations,
+    };
+  };
+
   // Process uploaded files
   const processFiles = async () => {
     if (uploadedFiles.length === 0) {
@@ -269,11 +373,17 @@ export const TrafficViolationPDFImport: React.FC = () => {
     try {
       let allViolations: ExtractedViolation[] = [];
       let header: PDFHeaderData | undefined;
+      let detectedImportSource: ImportSource = 'moi_pdf';
 
       // Extract data from all files
       for (const file of uploadedFiles) {
         try {
-          const extracted = await extractDataFromPDF(file);
+          const extracted = isExcelFile(file)
+            ? await extractDataFromExcel(file)
+            : await extractDataFromPDF(file);
+          if (isExcelFile(file)) {
+            detectedImportSource = 'bulk_import';
+          }
           if (extracted.header) {
             header = extracted.header;
           }
@@ -292,8 +402,13 @@ export const TrafficViolationPDFImport: React.FC = () => {
         throw new Error('No violations found in the uploaded files');
       }
 
+      const uniqueViolations = Array.from(
+        new Map(allViolations.map((violation) => [violation.violation_number, violation])).values()
+      );
+      setActiveImportSource(detectedImportSource);
+
       // Process violations: match and check duplicates
-      const result = await processViolations(allViolations);
+      const result = await processViolations(uniqueViolations);
 
       // Add header data to result
       result.header = header;
@@ -306,8 +421,8 @@ export const TrafficViolationPDFImport: React.FC = () => {
       ));
 
       // البحث عن المخالفات الموجودة التي يمكن إكمال بياناتها
-      if (companyId && allViolations.length > 0) {
-        const enrichmentResult = await findEnrichableViolations(allViolations, companyId);
+      if (companyId && uniqueViolations.length > 0) {
+        const enrichmentResult = await findEnrichableViolations(uniqueViolations, companyId);
         if (enrichmentResult.enrichable_count > 0) {
           setEnrichableViolations(enrichmentResult.enrichable_violations);
           setSelectedEnrichments(new Set(enrichmentResult.enrichable_violations.map(v => v.existingViolation.id)));
@@ -319,8 +434,8 @@ export const TrafficViolationPDFImport: React.FC = () => {
       }
 
       toast({
-        title: t("dataExtractedSuccessfully"),
-        description: `Extracted ${result.total_extracted} violations, ${result.successful_matches} matched to vehicles`,
+        title: 'تم استخراج البيانات بنجاح',
+        description: `تم استخراج ${result.total_extracted} مخالفة، وتم ربط ${result.successful_matches} مخالفة بالمركبات`,
       });
 
     } catch (error: unknown) {
@@ -405,7 +520,7 @@ export const TrafficViolationPDFImport: React.FC = () => {
     const result = await saveViolations(
       violationsToSave,
       companyId,
-      'moi_pdf',
+      activeImportSource,
       processingResult.header?.file_number
     );
 
@@ -426,7 +541,8 @@ export const TrafficViolationPDFImport: React.FC = () => {
   const onDrop = useCallback((acceptedFiles: File[]) => {
     const supportedFiles = acceptedFiles.filter(file =>
       file.type === 'application/pdf' ||
-      file.type.startsWith('image/')
+      file.type.startsWith('image/') ||
+      isExcelFile(file)
     );
 
     if (supportedFiles.length !== acceptedFiles.length) {
@@ -444,7 +560,9 @@ export const TrafficViolationPDFImport: React.FC = () => {
     onDrop,
     accept: {
       'application/pdf': ['.pdf'],
-      'image/*': ['.jpg', '.jpeg', '.png', '.gif', '.webp']
+      'image/*': ['.jpg', '.jpeg', '.png', '.gif', '.webp'],
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'],
+      'application/vnd.ms-excel': ['.xls']
     },
     multiple: true
   });
@@ -490,10 +608,10 @@ export const TrafficViolationPDFImport: React.FC = () => {
             استيراد المخالفات المرورية
           </CardTitle>
           <CardDescription>
-            Upload and process PDF or image files for traffic violations and automatically extract data
+            ارفع ملف المخالفات بصيغة Excel أو PDF أو صورة، ثم راجع النتائج قبل الحفظ.
             <br />
             <span className="text-green-600 text-sm font-medium">
-              ✅ Fast regex-based extraction for MOI Qatar PDFs (500+ violations in &lt;5 seconds)
+              عند رفع Excel سيتم قراءة صفحة "جميع المخالفات" فقط لمنع تكرار البيانات.
             </span>
           </CardDescription>
         </CardHeader>
@@ -509,8 +627,8 @@ export const TrafficViolationPDFImport: React.FC = () => {
                 <Database className="h-4 w-4 ml-1" />
                 إكمال البيانات ({enrichableViolations.length})
               </TabsTrigger>
-              <TabsTrigger value="review" disabled={!processingResult}>{t("reviewSave")}</TabsTrigger>
-              <TabsTrigger value="stats" disabled={!processingResult}>{t("statistics")}</TabsTrigger>
+              <TabsTrigger value="review" disabled={!processingResult}>المراجعة والحفظ</TabsTrigger>
+              <TabsTrigger value="stats" disabled={!processingResult}>الإحصائيات</TabsTrigger>
             </TabsList>
 
             {/* Upload Tab */}
@@ -527,8 +645,11 @@ export const TrafficViolationPDFImport: React.FC = () => {
                   <p className="text-blue-600">{t("dragFilesHere")}</p>
                 ) : (
                   <div>
-                    <p className="text-lg font-medium mb-2">{t("dragFilesHereOr")}</p>
-                    <p className="text-sm text-slate-500">{t("supportsPdfAndImages")}</p>
+                    <p className="text-lg font-medium mb-2">اسحب ملف المخالفات هنا أو اضغط للاختيار</p>
+                    <p className="text-sm text-slate-500">يدعم Excel وPDF والصور</p>
+                    <p className="mt-1 text-sm font-medium text-emerald-600">
+                      يدعم أيضاً Excel: سيتم قراءة صفحة "جميع المخالفات" فقط.
+                    </p>
                   </div>
                 )}
               </div>
@@ -540,7 +661,11 @@ export const TrafficViolationPDFImport: React.FC = () => {
                   {uploadedFiles.map((file, index) => (
                     <div key={index} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
                       <div className="flex items-center gap-2">
-                        <FileText className="h-4 w-4 text-red-600" />
+                        {isExcelFile(file) ? (
+                          <FileSpreadsheet className="h-4 w-4 text-emerald-600" />
+                        ) : (
+                          <FileText className="h-4 w-4 text-red-600" />
+                        )}
                         <span className="text-sm font-medium">{file.name}</span>
                         <Badge variant="outline" className="text-xs">
                           {(file.size / 1024 / 1024).toFixed(2)} MB
@@ -556,6 +681,7 @@ export const TrafficViolationPDFImport: React.FC = () => {
                           }}
                           className="h-6 w-6 p-0"
                           title="Preview file"
+                          disabled={isExcelFile(file)}
                         >
                           <Eye className="h-4 w-4" />
                         </Button>
@@ -580,8 +706,7 @@ export const TrafficViolationPDFImport: React.FC = () => {
               <Alert>
                 <AlertTriangle className="h-4 w-4" />
                 <AlertDescription>
-                  Will extract data from files and automatically link to vehicles and contracts in the system.
-                  PDFs with MOI Qatar format are processed in seconds using regex extraction.
+                  سيتم استخراج بيانات المخالفات من الملف ثم ربطها تلقائياً بالمركبات والعقود والعملاء في النظام.
                 </AlertDescription>
               </Alert>
 
@@ -596,7 +721,7 @@ export const TrafficViolationPDFImport: React.FC = () => {
                   ) : (
                     <FileText className="h-4 w-4" />
                   )}
-                  {(isProcessing || isMatching) ? 'Processing...' : 'Start Processing'}
+                  {(isProcessing || isMatching) ? 'جاري المعالجة...' : 'بدء معالجة الملف'}
                 </Button>
               </div>
 

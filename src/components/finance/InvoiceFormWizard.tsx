@@ -17,6 +17,7 @@ import { toast } from "sonner";
 import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter";
 import { cn } from "@/lib/utils";
 import { useAutoSave } from "@/hooks/useAutoSave";
+import { FeatureTourButton, FeatureTourDialog, type FeatureTourContent } from "@/components/common/FeatureTourGuide";
 
 interface InvoiceItem {
   id: string;
@@ -44,6 +45,18 @@ const STEPS = [
   { id: 3, label: "المراجعة والحفظ", labelEn: "Review & Save" },
 ];
 
+const invoiceWizardTour = {
+  title: "جولة إنشاء فاتورة",
+  description: "شرح خطوات إنشاء فاتورة مبيعات أو مشتريات.",
+  steps: [
+    "في الخطوة الأولى اختر العميل أو العقد أو المورد وحدد تاريخ الفاتورة والاستحقاق.",
+    "في خطوة البنود أضف الوصف والكمية والسعر والحساب المالي ومركز التكلفة لكل بند.",
+    "استخدم زر إضافة بند عند وجود أكثر من خدمة أو مطالبة داخل الفاتورة.",
+    "راجع الإجماليات والضريبة والخصم في الخطوة الأخيرة قبل الحفظ.",
+    "بعد حفظ الفاتورة ستظهر في جدول الفواتير ويمكن معاينتها أو دفعها.",
+  ],
+} satisfies FeatureTourContent;
+
 export function InvoiceFormWizard({ open, onOpenChange, customerId, vendorId, type, contractId }: InvoiceFormWizardProps) {
   const { user } = useAuth();
   const { data: accounts } = useEntryAllowedAccounts();
@@ -56,6 +69,7 @@ export function InvoiceFormWizard({ open, onOpenChange, customerId, vendorId, ty
   const [step, setStep] = useState(1);
   const [showDraftPrompt, setShowDraftPrompt] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  const [activeTour, setActiveTour] = useState<FeatureTourContent | null>(null);
 
   const [invoiceData, setInvoiceData] = useState({
     invoice_number: '',
@@ -239,12 +253,15 @@ export function InvoiceFormWizard({ open, onOpenChange, customerId, vendorId, ty
             <span>
               {type === 'sales' ? 'إنشاء فاتورة مبيعات جديدة' : 'إنشاء فاتورة مشتريات جديدة'}
             </span>
-            {lastSaved && (
-              <span className="text-xs font-normal text-slate-500 flex items-center gap-1.5">
-                <Save className="w-3.5 h-3.5" />
-                تم الحفظ تلقائياً
-              </span>
-            )}
+            <span className="flex items-center gap-2">
+              <FeatureTourButton tour={invoiceWizardTour} onStart={setActiveTour} />
+              {lastSaved && (
+                <span className="text-xs font-normal text-slate-500 flex items-center gap-1.5">
+                  <Save className="w-3.5 h-3.5" />
+                  تم الحفظ تلقائياً
+                </span>
+              )}
+            </span>
           </DialogTitle>
           <DialogDescription>
             {type === 'sales' ? 'أدخل تفاصيل فاتورة المبيعات والأصناف' : 'أدخل تفاصيل فاتورة المشتريات والأصناف'}
@@ -610,6 +627,7 @@ export function InvoiceFormWizard({ open, onOpenChange, customerId, vendorId, ty
             </div>
           </div>
         </form>
+        <FeatureTourDialog tour={activeTour} onOpenChange={(open) => !open && setActiveTour(null)} />
       </DialogContent>
     </Dialog>
   );

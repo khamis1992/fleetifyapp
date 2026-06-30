@@ -467,8 +467,8 @@ const PaymentTableRow = ({
       {/* Notes */}
       <td className="py-4 px-4">
         {payment.notes ? (
-          <div className="max-w-[200px]">
-            <p className="text-sm text-neutral-600 truncate" title={payment.notes}>
+          <div className="max-w-[240px]">
+            <p className="line-clamp-2 text-sm leading-6 text-neutral-600" title={payment.notes}>
               {payment.notes}
             </p>
           </div>

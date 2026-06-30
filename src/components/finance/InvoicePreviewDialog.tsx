@@ -1,9 +1,21 @@
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { FileText, Printer, Receipt } from "lucide-react";
 import { PaymentReceipt } from "@/components/payments/PaymentReceipt";
 import { buildOfficialInvoiceReceiptProps } from "@/utils/officialInvoiceReceipt";
+import { FeatureTourButton, FeatureTourDialog, type FeatureTourContent } from "@/components/common/FeatureTourGuide";
+
+const invoicePreviewTour = {
+  title: "جولة معاينة الفاتورة",
+  description: "شرح نافذة معاينة الفاتورة أو سند القبض قبل الطباعة.",
+  steps: [
+    "راجع رقم الفاتورة واسم العميل والمبلغ قبل الطباعة أو المشاركة.",
+    "إذا كانت الفاتورة مدفوعة ستظهر كمعاينة سند قبض، وإذا كانت مستحقة ستظهر كفاتورة.",
+    "زر الطباعة يفتح نسخة رسمية جاهزة للطباعة.",
+    "استخدم المعاينة للتأكد من صحة البيانات قبل إرسالها للعميل.",
+  ],
+} satisfies FeatureTourContent;
 
 interface InvoicePreviewDialogProps {
   open: boolean;
@@ -14,6 +26,7 @@ interface InvoicePreviewDialogProps {
 
 export function InvoicePreviewDialog({ open, onOpenChange, invoice, customerName }: InvoicePreviewDialogProps) {
   const receiptRef = useRef<HTMLDivElement>(null);
+  const [activeTour, setActiveTour] = useState<FeatureTourContent | null>(null);
 
   if (!invoice) {
     return null;
@@ -101,6 +114,7 @@ export function InvoicePreviewDialog({ open, onOpenChange, invoice, customerName
         </DialogHeader>
 
         <div className="flex items-center gap-2 flex-wrap">
+          <FeatureTourButton tour={invoicePreviewTour} onStart={setActiveTour} />
           <Button onClick={handlePrint} className="gap-2">
             <Printer className="h-4 w-4" />
             طباعة
@@ -110,6 +124,7 @@ export function InvoicePreviewDialog({ open, onOpenChange, invoice, customerName
         <div ref={receiptRef} className="p-4 bg-slate-100 rounded-lg overflow-auto" style={{ maxHeight: "65vh" }}>
           <PaymentReceipt {...receiptProps} />
         </div>
+        <FeatureTourDialog tour={activeTour} onOpenChange={(open) => !open && setActiveTour(null)} />
       </DialogContent>
     </Dialog>
   );

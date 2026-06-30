@@ -33,9 +33,33 @@ import {
 } from '@/components/ui/table';
 import { formatCurrency } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
+import { FeatureTourButton, FeatureTourDialog, type FeatureTourContent } from '@/components/common/FeatureTourGuide';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 import { usePaymentOperations } from '@/hooks/business/usePaymentOperations';
 import { useFinanceAccessGuard } from '@/hooks/finance/useFinanceAccessGuard';
+
+const excelImportTour = {
+  title: 'جولة استيراد دفعات Excel',
+  description: 'شرح طريقة رفع ملفات الدفعات التاريخية ومراجعتها قبل الاعتماد.',
+  steps: [
+    'ابدأ برفع ملف أو مجلد Excel يحتوي بيانات العميل واللوحة والمدفوعات الشهرية.',
+    'راجع جودة القراءة: العميل، الهاتف، اللوحة، المدفوع، المتبقي، الصيانة، التأخير، والمخالفات.',
+    'استخدم زر تعديل لتصحيح القيم التي قرأها النظام بشكل غير دقيق قبل الاعتماد.',
+    'زر اعتماد الدفعات يفتح ملخصاً نهائياً لما سيتم ترحيله للنظام.',
+    'لا يتم إنشاء أي حركة مالية قبل تنفيذ الاعتماد النهائي من نافذة المراجعة.',
+  ],
+} satisfies FeatureTourContent;
+
+const excelApprovalTour = {
+  title: 'جولة اعتماد ملف Excel',
+  description: 'شرح نافذة اعتماد الدفعات التاريخية قبل ترحيلها للنظام.',
+  steps: [
+    'راجع عدد الدفعات والفواتير والمخالفات التي سيقوم النظام بإنشائها أو ربطها.',
+    'تأكد من مطابقة الملف مع عقد صحيح عبر اللوحة أو الهاتف أو الهوية.',
+    'إذا ظهرت موانع اعتماد، عالجها قبل تنفيذ الاعتماد النهائي.',
+    'بعد التنفيذ ستظهر النتائج في الفواتير والمدفوعات والمخالفات حسب البيانات المستوردة.',
+  ],
+} satisfies FeatureTourContent;
 import { toast } from 'sonner';
 
 type CellValue = string | number | Date | null | undefined;
@@ -48,6 +72,7 @@ type ParsedPaymentRow = {
   delayDays: number | null;
   delayValue: number | null;
   trafficAmount: number | null;
+  trafficAmounts: number[];
   rowNumber: number;
 };
 
@@ -108,6 +133,15 @@ type ImportResult = {
   lateFees: number;
   trafficViolations: number;
   skipped: number;
+  skippedReasons: string[];
+};
+
+type ImportResultsByFile = Record<string, ImportResult>;
+
+type BulkApprovalProgress = {
+  current: number;
+  total: number;
+  fileName: string;
 };
 
 type ApprovalProgress = {
@@ -161,15 +195,29 @@ const normalizeArabic = (value: CellValue) =>
     .trim()
     .toLowerCase();
 
-const parseNumber = (value: CellValue): number => {
-  if (typeof value === 'number' && Number.isFinite(value)) return value;
-  const text = String(value ?? '')
+const parseSingleAmount = (amount: string) => {
+  const text = amount
     .replace(/[٬,]/g, '')
     .replace(/[^\d.-]/g, '')
     .trim();
   if (!text) return 0;
   const parsed = Number(text);
   return Number.isFinite(parsed) ? parsed : 0;
+};
+
+const parseNumberParts = (value: CellValue): number[] => {
+  if (typeof value === 'number' && Number.isFinite(value)) return value > 0 ? [value] : [];
+  const text = String(value ?? '').trim();
+  if (!text) return [];
+
+  const parts = text.includes('+') ? text.split('+') : [text];
+  return parts
+    .map(parseSingleAmount)
+    .filter((amount) => amount > 0);
+};
+
+const parseNumber = (value: CellValue): number => {
+  return parseNumberParts(value).reduce((sum, amount) => sum + amount, 0);
 };
 
 const cellText = (value: CellValue) => String(value ?? '').trim();
@@ -274,12 +322,29 @@ const readNumberFromColumns = (row: CellValue[], columns: number[]) => {
   return null;
 };
 
+const readNumberPartsFromColumns = (row: CellValue[], columns: number[]) => {
+  for (const column of columns) {
+    const value = row[column];
+    if (value === null || value === undefined || !/\d/.test(cellText(value))) continue;
+    const parts = parseNumberParts(value);
+    if (parts.length) return parts;
+  }
+  return [];
+};
+
 const calculateLateFee = (days: number | null) => {
   if (!days || days <= 0) return 0;
   return Math.min(days * 120, 3000);
 };
 
 const formatOptionalCurrency = (value: number | null) => (value === null ? '-' : formatCurrency(value));
+
+const formatTrafficBreakdown = (row: ParsedPaymentRow) => {
+  const amounts = row.trafficAmounts || [];
+  if (amounts.length <= 1) return null;
+
+  return amounts.map((amount) => formatCurrency(amount)).join(' + ');
+};
 
 const editableRowFields: EditableRowField[] = [
   'paymentAmount',
@@ -471,7 +536,8 @@ const parseWorkbookFile = async (file: File): Promise<ParsedExcelFile> => {
       ? delayDaysFromFile
       : calculateAutomaticDelayDays(cellText(row[monthCol]), paymentAmount, remainingAmount);
     const delayValue = calculateLateFee(delayDays);
-    const trafficAmount = readNumberFromColumns(row, trafficCols) ?? 0;
+    const trafficAmounts = readNumberPartsFromColumns(row, trafficCols);
+    const trafficAmount = trafficAmounts.reduce((sum, amount) => sum + amount, 0);
 
     parsedRows.push({
       month: cellText(row[monthCol]),
@@ -481,6 +547,7 @@ const parseWorkbookFile = async (file: File): Promise<ParsedExcelFile> => {
       delayDays,
       delayValue,
       trafficAmount,
+      trafficAmounts,
       rowNumber: r + 1,
     });
   }
@@ -558,6 +625,77 @@ const errorMessage = (error: unknown) => {
     return supabaseError.message || supabaseError.details || supabaseError.hint || JSON.stringify(error);
   }
   return String(error || '');
+};
+
+const parseContractOverpaymentMessage = (message: string) => {
+  const match = message.match(
+    /total paid \(QAR\s*([\d,.]+)\).*?contract amount \(QAR\s*([\d,.]+)\).*?Current total paid:\s*QAR\s*([\d,.]+)/i
+  );
+  if (!match) return null;
+
+  const nextTotal = Number(match[1].replace(/,/g, ''));
+  const contractAmount = Number(match[2].replace(/,/g, ''));
+  const currentTotal = Number(match[3].replace(/,/g, ''));
+
+  if (![nextTotal, contractAmount, currentTotal].every(Number.isFinite)) return null;
+
+  const attemptedPayment = Math.max(nextTotal - currentTotal, 0);
+  const allowedTotal = contractAmount * 1.1;
+  const currentExcess = Math.max(currentTotal - contractAmount, 0);
+  const nextExcessOverAllowed = Math.max(nextTotal - allowedTotal, 0);
+
+  return {
+    nextTotal,
+    contractAmount,
+    currentTotal,
+    attemptedPayment,
+    allowedTotal,
+    currentExcess,
+    nextExcessOverAllowed,
+  };
+};
+
+const formatQar = (amount: number) => formatCurrency(amount, true);
+
+const explainPaymentSkip = (message: string, context?: { customerName?: string; month?: string; amount?: number }) => {
+  const overpayment = parseContractOverpaymentMessage(message);
+  const prefix = `${context?.customerName ? `${context.customerName} - ` : ''}${context?.month ? `شهر ${context.month}: ` : ''}`;
+
+  if (overpayment) {
+    return `${prefix}تم تخطي الدفعة لأن العقد متجاوز السقف المسموح. قيمة العقد ${formatQar(overpayment.contractAmount)}، والمدفوع الحالي ${formatQar(overpayment.currentTotal)}، والحد المسموح ${formatQar(overpayment.allowedTotal)}. الدفعة المستوردة ${formatQar(context?.amount || overpayment.attemptedPayment)} سترفع الإجمالي إلى ${formatQar(overpayment.nextTotal)}.`;
+  }
+
+  if (message.toLowerCase().includes('would overpay invoice')) {
+    return `${prefix}تم تخطي الدفعة لأن الفاتورة المرتبطة تبدو مدفوعة أو سيتجاوز الدفع رصيدها.`;
+  }
+
+  if (message.includes('مكررة') || message.toLowerCase().includes('duplicate')) {
+    return `${prefix}تم تخطي الدفعة لأنها مكررة أو سبق استيرادها.`;
+  }
+
+  return `${prefix}تم تخطي الدفعة للمراجعة: ${message}`;
+};
+
+const translateExcelImportError = (error: unknown) => {
+  const message = errorMessage(error);
+  const overpayment = parseContractOverpaymentMessage(message);
+
+  if (overpayment) {
+    return `لا يمكن تسجيل الدفعة لأن العقد تجاوز حد المدفوعات. قيمة العقد ${formatQar(overpayment.contractAmount)}، والمدفوع الحالي ${formatQar(overpayment.currentTotal)}، والحد المسموح ${formatQar(overpayment.allowedTotal)}. راجع مدفوعات العقد قبل إعادة الاعتماد.`;
+  }
+
+  return message;
+};
+
+const isDuplicateOrContractOverpaymentError = (message: string) => {
+  const normalized = message.toLowerCase();
+  return (
+    message.includes('مكررة') ||
+    normalized.includes('duplicate') ||
+    normalized.includes('payment would cause total paid') ||
+    normalized.includes('exceed contract amount') ||
+    normalized.includes('would overpay invoice')
+  );
 };
 
 const logSupabaseError = (scope: string, error: SupabaseQueryError | null) => {
@@ -772,13 +910,24 @@ export default function ExcelPaymentImport() {
   const [matchedContract, setMatchedContract] = useState<MatchedContract | null>(null);
   const [isMatchingContract, setIsMatchingContract] = useState(false);
   const [isApproving, setIsApproving] = useState(false);
-  const [importResult, setImportResult] = useState<ImportResult | null>(null);
+  const [isBulkApproving, setIsBulkApproving] = useState(false);
+  const [importResults, setImportResults] = useState<ImportResultsByFile>({});
   const [approvalProgress, setApprovalProgress] = useState<ApprovalProgress | null>(null);
+  const [bulkApprovalProgress, setBulkApprovalProgress] = useState<BulkApprovalProgress | null>(null);
   const [isEditMode, setIsEditMode] = useState(false);
   const [editBaselineRows, setEditBaselineRows] = useState<ParsedPaymentRow[] | null>(null);
   const [editReviewDialogOpen, setEditReviewDialogOpen] = useState(false);
+  const [activeTour, setActiveTour] = useState<FeatureTourContent | null>(null);
 
   const selectedFile = files.find((file) => file.id === selectedId) || files[0] || null;
+  const importResult = selectedFile ? importResults[selectedFile.id] || null : null;
+  const clearImportResultForFile = (fileId: string) => {
+    setImportResults((current) => {
+      const next = { ...current };
+      delete next[fileId];
+      return next;
+    });
+  };
   const approvalSummary = useMemo(() => buildApprovalSummary(selectedFile), [selectedFile]);
   const editChanges = useMemo(
     () => buildRowEditChanges(editBaselineRows, selectedFile?.rows || null),
@@ -797,7 +946,6 @@ export default function ExcelPaymentImport() {
 
     const runMatch = async () => {
       setMatchedContract(null);
-      setImportResult(null);
       if (!companyId || !selectedFile) return;
 
       setIsMatchingContract(true);
@@ -822,8 +970,10 @@ export default function ExcelPaymentImport() {
     files: files.length,
     ready: files.filter((file) => file.status === 'ready').length,
     review: files.filter((file) => file.status === 'review_required').length,
+    approved: files.filter((file) => Boolean(importResults[file.id])).length,
+    pendingApproval: files.filter((file) => file.status === 'ready' && !importResults[file.id]).length,
     payments: files.reduce((sum, file) => sum + file.totalPayments, 0),
-  }), [files]);
+  }), [files, importResults]);
 
   const filteredFiles = useMemo(() => {
     const needle = normalizeArabic(searchTerm);
@@ -872,8 +1022,9 @@ export default function ExcelPaymentImport() {
       setIsEditMode(false);
       setEditBaselineRows(null);
       setEditReviewDialogOpen(false);
-      setImportResult(null);
+      setImportResults({});
       setApprovalProgress(null);
+      setBulkApprovalProgress(null);
     } finally {
       setIsParsing(false);
     }
@@ -912,7 +1063,7 @@ export default function ExcelPaymentImport() {
   ) => {
     if (!selectedFile) return;
 
-    setImportResult(null);
+    clearImportResultForFile(selectedFile.id);
     setFiles((currentFiles) =>
       currentFiles.map((file) => {
         if (file.id !== selectedFile.id) return file;
@@ -938,6 +1089,10 @@ export default function ExcelPaymentImport() {
 
           if (field === 'delayDays') {
             updatedRow.delayValue = calculateLateFee(value);
+          }
+
+          if (field === 'trafficAmount') {
+            updatedRow.trafficAmounts = value > 0 ? [value] : [];
           }
 
           return updatedRow;
@@ -1039,7 +1194,7 @@ export default function ExcelPaymentImport() {
     }
   };
 
-  const createLateFeeIfNeeded = async (invoice: ImportInvoice, row: ParsedPaymentRow, contract: MatchedContract) => {
+  const createLateFeeIfNeeded = async (invoice: ImportInvoice, row: ParsedPaymentRow, contract: MatchedContract, file: ParsedExcelFile) => {
     if (!companyId || !row.delayValue || row.delayValue <= 0) return false;
 
     const { data: existing, error: existingError } = await supabase
@@ -1057,7 +1212,7 @@ export default function ExcelPaymentImport() {
       company_id: companyId,
       invoice_id: invoice.id,
       contract_id: contract.id,
-      original_amount: Number(invoice.total_amount) || contract.monthly_amount || selectedFile?.monthlyRent || 0,
+      original_amount: Number(invoice.total_amount) || contract.monthly_amount || file.monthlyRent || 0,
       fee_amount: row.delayValue,
       days_overdue: row.delayDays || 0,
       fee_type: 'historical_excel_import',
@@ -1070,10 +1225,10 @@ export default function ExcelPaymentImport() {
     return true;
   };
 
-  const hasHistoricalExcelPayment = async (invoice: ImportInvoice, row: ParsedPaymentRow, contract: MatchedContract) => {
+  const hasHistoricalExcelPayment = async (invoice: ImportInvoice, row: ParsedPaymentRow, contract: MatchedContract, file: ParsedExcelFile) => {
     if (!companyId) return false;
     const stableReference = buildHistoricalPaymentReference({
-      fileName: selectedFile?.fileName || '',
+      fileName: file.fileName,
       contractId: contract.id,
       invoiceId: invoice.id,
       month: row.month,
@@ -1093,91 +1248,90 @@ export default function ExcelPaymentImport() {
     return Boolean(data?.length);
   };
 
-  const createTrafficViolationIfNeeded = async (row: ParsedPaymentRow, contract: MatchedContract) => {
-    if (!companyId || !row.trafficAmount || row.trafficAmount <= 0) return false;
+  const createTrafficViolationsIfNeeded = async (row: ParsedPaymentRow, contract: MatchedContract, file: ParsedExcelFile) => {
+    const trafficAmounts = row.trafficAmounts?.length
+      ? row.trafficAmounts
+      : row.trafficAmount && row.trafficAmount > 0
+        ? [row.trafficAmount]
+        : [];
+
+    if (!companyId || trafficAmounts.length === 0) return 0;
 
     const monthDate = parseMonthToDate(row.month);
-    if (!monthDate) return false;
+    if (!monthDate) return 0;
 
-    const penaltyNumber = `HIST-${contract.id.slice(0, 8)}-${row.month.replace('/', '-')}`;
-    const { data: existing, error: existingError } = await supabase
-      .from('penalties')
-      .select('id')
-      .eq('company_id', companyId)
-      .eq('penalty_number', penaltyNumber)
-      .maybeSingle();
+    let createdCount = 0;
 
-    if (existingError) throw existingError;
-    if (existing) return false;
+    for (let index = 0; index < trafficAmounts.length; index += 1) {
+      const amount = trafficAmounts[index];
+      const sequence = String(index + 1).padStart(2, '0');
+      const penaltyNumber = `HIST-${contract.id.slice(0, 8)}-${row.month.replace('/', '-')}-${sequence}`;
+      const { data: existing, error: existingError } = await supabase
+        .from('penalties')
+        .select('id')
+        .eq('company_id', companyId)
+        .eq('penalty_number', penaltyNumber)
+        .maybeSingle();
 
-    const { data: sameDateAmount, error: sameDateAmountError } = await supabase
-      .from('penalties')
-      .select('id')
-      .eq('company_id', companyId)
-      .eq('contract_id', contract.id)
-      .eq('penalty_date', monthDate)
-      .eq('amount', row.trafficAmount)
-      .limit(1);
+      if (existingError) throw existingError;
+      if (existing) continue;
 
-    if (sameDateAmountError) throw sameDateAmountError;
-    if (sameDateAmount?.length) return false;
+      const { error } = await supabase.from('penalties').insert({
+        company_id: companyId,
+        penalty_number: penaltyNumber,
+        penalty_date: monthDate,
+        amount,
+        vehicle_id: contract.vehicle_id,
+        vehicle_plate: contract.vehicles?.plate_number || contract.license_plate || file.plateNumber || null,
+        customer_id: contract.customer_id,
+        contract_id: contract.id,
+        violation_type: 'مخالفة مرورية تاريخية من ملف Excel',
+        reason: 'استيراد تاريخي من ملف Excel',
+        status: 'pending',
+        payment_status: 'unpaid',
+        created_by: user?.id || null,
+        notes: `تم إنشاؤها من ملف ${file.fileName} للشهر ${row.month} - مخالفة ${index + 1} من ${trafficAmounts.length}`,
+      });
 
-    const { error } = await supabase.from('penalties').insert({
-      company_id: companyId,
-      penalty_number: penaltyNumber,
-      penalty_date: monthDate,
-      amount: row.trafficAmount,
-      vehicle_id: contract.vehicle_id,
-      vehicle_plate: contract.vehicles?.plate_number || contract.license_plate || selectedFile?.plateNumber || null,
-      customer_id: contract.customer_id,
-      contract_id: contract.id,
-      violation_type: 'مخالفة مرورية تاريخية من ملف Excel',
-      reason: 'استيراد تاريخي من ملف Excel',
-      status: 'pending',
-      payment_status: 'unpaid',
-      created_by: user?.id || null,
-      notes: `تم إنشاؤها من ملف ${selectedFile?.fileName || ''} للشهر ${row.month}`,
-    });
-
-    if (error) throw error;
-    return true;
-  };
-
-  const executeApproval = async () => {
-    if (!selectedFile || !matchedContract || !companyId) return;
-    if (approvalBlockers.length > 0) return;
-    if (importResult) {
-      toast.info('تم اعتماد هذا الملف بالفعل. ارفع الملف من جديد إذا كنت تريد معالجة نسخة أخرى.');
-      return;
+      if (error) throw error;
+      createdCount += 1;
     }
 
-    setIsApproving(true);
-    setImportResult(null);
-    setApprovalProgress({ current: 0, total: selectedFile.rows.length, label: 'تهيئة الاعتماد وفتح الفترات المالية عند الحاجة...' });
+    return createdCount;
+  };
+
+  const approveFile = async (
+    file: ParsedExcelFile,
+    contract: MatchedContract,
+    onProgress?: (progress: ApprovalProgress) => void,
+  ): Promise<ImportResult> => {
+    if (!companyId) throw new Error('لم يتم تحديد الشركة.');
+
     const reopenedPeriods: Array<{ period: AccountingPeriodRow; requestId: string }> = [];
 
     try {
-      reopenedPeriods.push(...await openClosedPeriodsForRows(selectedFile));
+      reopenedPeriods.push(...await openClosedPeriodsForRows(file));
 
       let payments = 0;
       let invoicesCreated = 0;
       let lateFees = 0;
       let trafficViolations = 0;
       let skipped = 0;
+      const skippedReasons: string[] = [];
 
-      for (let index = 0; index < selectedFile.rows.length; index += 1) {
-        const row = selectedFile.rows[index];
-        setApprovalProgress({
+      for (let index = 0; index < file.rows.length; index += 1) {
+        const row = file.rows[index];
+        onProgress?.({
           current: index + 1,
-          total: selectedFile.rows.length,
-          label: `معالجة شهر ${row.month}: مطابقة الفاتورة وتسجيل الدفعات...`,
+          total: file.rows.length,
+          label: `معالجة ${file.customerName || file.fileName} - شهر ${row.month}: مطابقة الفاتورة وتسجيل الدفعات...`,
         });
 
         const { invoice, created } = await createOrFindMonthlyInvoice({
           companyId,
-          contract: matchedContract,
+          contract,
           row,
-          monthlyRent: selectedFile.monthlyRent || matchedContract.monthly_amount,
+          monthlyRent: file.monthlyRent || contract.monthly_amount,
         });
 
         if (!invoice) {
@@ -1192,35 +1346,48 @@ export default function ExcelPaymentImport() {
         const amountToApply = Math.min(paymentAmount, Math.max(invoiceBalance, 0));
 
         if (amountToApply > 0) {
-          if (await hasHistoricalExcelPayment(invoice, row, matchedContract)) {
+          if (await hasHistoricalExcelPayment(invoice, row, contract, file)) {
             skipped += 1;
             continue;
           }
 
           const stableReference = buildHistoricalPaymentReference({
-            fileName: selectedFile.fileName,
-            contractId: matchedContract.id,
+            fileName: file.fileName,
+            contractId: contract.id,
             invoiceId: invoice.id,
             month: row.month,
           });
 
           try {
             await createPayment.mutateAsync({
-              customer_id: matchedContract.customer_id,
-              contract_id: matchedContract.id,
+              customer_id: contract.customer_id,
+              contract_id: contract.id,
               invoice_id: invoice.id,
               amount: amountToApply,
               payment_date: invoice.due_date || invoice.invoice_date || parseMonthToDate(row.month) || new Date().toISOString().slice(0, 10),
               payment_method: 'cash',
               type: 'receipt',
               currency: 'QAR',
-              notes: `دفعة كاش تاريخية مستوردة من Excel - ${selectedFile.fileName} - شهر ${row.month}`,
+              notes: `دفعة كاش تاريخية مستوردة من Excel - ${file.fileName} - شهر ${row.month}`,
               idempotencyKey: stableReference,
             });
             payments += 1;
           } catch (error: unknown) {
             const message = errorMessage(error);
-            if (message.includes('مكررة') || message.toLowerCase().includes('duplicate')) {
+            if (isDuplicateOrContractOverpaymentError(message)) {
+              const reason = explainPaymentSkip(message, {
+                customerName: file.customerName,
+                month: row.month,
+                amount: amountToApply,
+              });
+              console.warn('[ExcelPaymentImport] Skipped historical payment row:', {
+                fileName: file.fileName,
+                customerName: file.customerName,
+                month: row.month,
+                amount: amountToApply,
+                reason: message,
+              });
+              skippedReasons.push(reason);
               skipped += 1;
             } else {
               throw error;
@@ -1228,12 +1395,32 @@ export default function ExcelPaymentImport() {
           }
         }
 
-        if (await createLateFeeIfNeeded(invoice, row, matchedContract)) lateFees += 1;
-        if (await createTrafficViolationIfNeeded(row, matchedContract)) trafficViolations += 1;
+        if (await createLateFeeIfNeeded(invoice, row, contract, file)) lateFees += 1;
+        trafficViolations += await createTrafficViolationsIfNeeded(row, contract, file);
       }
 
       await closeReopenedPeriods(reopenedPeriods);
-      setImportResult({ payments, invoicesCreated, lateFees, trafficViolations, skipped });
+      return { payments, invoicesCreated, lateFees, trafficViolations, skipped, skippedReasons };
+    } catch (error) {
+      await closeReopenedPeriods(reopenedPeriods);
+      throw error;
+    }
+  };
+
+  const executeApproval = async () => {
+    if (!selectedFile || !matchedContract || !companyId) return;
+    if (approvalBlockers.length > 0) return;
+    if (importResult) {
+      toast.info('تم اعتماد هذا الملف بالفعل. ارفع الملف من جديد إذا كنت تريد معالجة نسخة أخرى.');
+      return;
+    }
+
+    setIsApproving(true);
+    setApprovalProgress({ current: 0, total: selectedFile.rows.length, label: 'تهيئة الاعتماد وفتح الفترات المالية عند الحاجة...' });
+
+    try {
+      const result = await approveFile(selectedFile, matchedContract, setApprovalProgress);
+      setImportResults((current) => ({ ...current, [selectedFile.id]: result }));
       setApprovalProgress({
         current: selectedFile.rows.length,
         total: selectedFile.rows.length,
@@ -1241,12 +1428,58 @@ export default function ExcelPaymentImport() {
       });
       toast.success('تم اعتماد ملف Excel وربطه بالنظام المالي');
     } catch (error: unknown) {
-      await closeReopenedPeriods(reopenedPeriods);
       console.error('Excel approval failed:', error);
       setApprovalProgress(null);
-      toast.error(errorMessage(error) || 'فشل اعتماد ملف Excel');
+      toast.error(translateExcelImportError(error) || 'فشل اعتماد ملف Excel');
     } finally {
       setIsApproving(false);
+    }
+  };
+
+  const executeBulkApproval = async () => {
+    if (!companyId || isBulkApproving) return;
+
+    const pendingFiles = files.filter((file) => file.status === 'ready' && !importResults[file.id]);
+    if (pendingFiles.length === 0) {
+      toast.info('لا توجد ملفات جاهزة غير معتمدة.');
+      return;
+    }
+
+    setIsBulkApproving(true);
+    setBulkApprovalProgress({ current: 0, total: pendingFiles.length, fileName: pendingFiles[0]?.fileName || '' });
+
+    let approvedCount = 0;
+    let skippedCount = 0;
+
+    try {
+      for (let index = 0; index < pendingFiles.length; index += 1) {
+        const file = pendingFiles[index];
+        setBulkApprovalProgress({ current: index + 1, total: pendingFiles.length, fileName: file.customerName || file.fileName });
+
+        const summary = buildApprovalSummary(file);
+        if (summary.blockers.length > 0) {
+          skippedCount += 1;
+          continue;
+        }
+
+        const contract = await findBestContractMatch(companyId, file);
+        if (!contract) {
+          skippedCount += 1;
+          continue;
+        }
+
+        const result = await approveFile(file, contract);
+        setImportResults((current) => ({ ...current, [file.id]: result }));
+        approvedCount += 1;
+      }
+
+      toast.success(`تم اعتماد ${approvedCount} ملف${skippedCount ? `، وتخطي ${skippedCount} ملف يحتاج مراجعة` : ''}.`);
+    } catch (error: unknown) {
+      console.error('Bulk Excel approval failed:', error);
+      toast.error(translateExcelImportError(error) || 'فشل الاعتماد الجماعي');
+    } finally {
+      setIsBulkApproving(false);
+      setBulkApprovalProgress(null);
     }
   };
 
@@ -1268,6 +1501,20 @@ export default function ExcelPaymentImport() {
             </div>
 
             <div className="flex flex-wrap gap-2">
+              <FeatureTourButton
+                tour={excelImportTour}
+                onStart={setActiveTour}
+                className="h-10 gap-2 rounded-xl border border-slate-200 bg-white text-[#020617] hover:bg-[#F6F8FB]"
+              />
+              <Button
+                type="button"
+                onClick={executeBulkApproval}
+                disabled={isParsing || isApproving || isBulkApproving || isCreating || totals.pendingApproval === 0}
+                className="gap-2 rounded-xl bg-[#020617] text-white hover:bg-[#1E293B]"
+              >
+                <ClipboardCheck className="h-4 w-4" />
+                {isBulkApproving ? 'جاري الاعتماد الجماعي...' : `اعتماد كل الجاهز (${totals.pendingApproval})`}
+              </Button>
               <Button asChild className="gap-2 rounded-xl bg-[#22C7A1] text-white hover:bg-[#1BAA8A]">
                 <label>
                   <UploadCloud className="h-4 w-4" />
@@ -1300,7 +1547,29 @@ export default function ExcelPaymentImport() {
           </div>
         </section>
 
-        <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        {bulkApprovalProgress && (
+          <section className="rounded-2xl border border-sky-200 bg-sky-50 p-4 shadow-sm">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p className="text-sm font-black text-[#020617]">اعتماد جماعي قيد التنفيذ</p>
+                <p className="mt-1 text-xs font-semibold text-[#64748B]">
+                  {bulkApprovalProgress.current} من {bulkApprovalProgress.total} - {bulkApprovalProgress.fileName}
+                </p>
+              </div>
+              <span className="rounded-full bg-white px-3 py-1 text-xs font-black text-[#0284C7]">
+                {Math.round((bulkApprovalProgress.current / bulkApprovalProgress.total) * 100)}%
+              </span>
+            </div>
+            <div className="mt-3 h-2 overflow-hidden rounded-full bg-white">
+              <div
+                className="h-full rounded-full bg-[#38BDF8] transition-all duration-300"
+                style={{ width: `${Math.round((bulkApprovalProgress.current / bulkApprovalProgress.total) * 100)}%` }}
+              />
+            </div>
+          </section>
+        )}
+
+        <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
           <Card className="rounded-2xl border-slate-200 shadow-sm">
             <CardContent className="p-4">
               <p className="text-sm font-semibold text-[#94A3B8]">الملفات المقروءة</p>
@@ -1317,6 +1586,12 @@ export default function ExcelPaymentImport() {
             <CardContent className="p-4">
               <p className="text-sm font-semibold text-[#94A3B8]">تحتاج مراجعة</p>
               <p className="mt-2 text-2xl font-bold">{totals.review}</p>
+            </CardContent>
+          </Card>
+          <Card className="rounded-2xl border-emerald-200 bg-emerald-50 shadow-sm">
+            <CardContent className="p-4">
+              <p className="text-sm font-semibold text-emerald-700">تم اعتمادها</p>
+              <p className="mt-2 text-2xl font-bold">{totals.approved}</p>
             </CardContent>
           </Card>
           <Card className="rounded-2xl border-slate-200 shadow-sm">
@@ -1353,6 +1628,7 @@ export default function ExcelPaymentImport() {
                 {filteredFiles.map((file) => {
                   const meta = statusMeta[file.status];
                   const Icon = meta.icon;
+                  const fileResult = importResults[file.id];
                   return (
                     <button
                       key={file.id}
@@ -1362,22 +1638,37 @@ export default function ExcelPaymentImport() {
                         setIsEditMode(false);
                         setEditBaselineRows(null);
                         setEditReviewDialogOpen(false);
-                        setImportResult(null);
                         setApprovalProgress(null);
                       }}
                       className={`w-full rounded-xl border p-3 text-right transition ${
-                        selectedFile?.id === file.id ? 'border-[#22C7A1] bg-[#ECFDF5]' : 'border-slate-200 bg-white hover:bg-[#F6F8FB]'
+                        fileResult
+                          ? 'border-emerald-200 bg-emerald-50 hover:bg-emerald-50'
+                          : selectedFile?.id === file.id
+                            ? 'border-[#22C7A1] bg-[#ECFDF5]'
+                            : 'border-slate-200 bg-white hover:bg-[#F6F8FB]'
                       }`}
                     >
                       <div className="mb-2 flex items-center justify-between gap-2">
-                        <Badge variant="outline" className={meta.className}>
-                          <Icon className="ml-1 h-3.5 w-3.5" />
-                          {meta.label}
-                        </Badge>
+                        {fileResult ? (
+                          <Badge variant="outline" className="border-emerald-200 bg-white text-emerald-700">
+                            <CheckCircle2 className="ml-1 h-3.5 w-3.5" />
+                            تم الاعتماد
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline" className={meta.className}>
+                            <Icon className="ml-1 h-3.5 w-3.5" />
+                            {meta.label}
+                          </Badge>
+                        )}
                         <span className="text-xs font-bold text-[#94A3B8]">{file.confidence}%</span>
                       </div>
                       <p className="truncate text-sm font-bold">{file.customerName || file.fileName}</p>
                       <p className="mt-1 truncate text-xs text-[#94A3B8]">{file.plateNumber || 'بدون لوحة'} · {file.rows.length} شهر</p>
+                      {fileResult && (
+                        <p className="mt-2 text-xs font-bold text-emerald-700">
+                          {fileResult.payments} دفعة · {fileResult.trafficViolations} مخالفة
+                        </p>
+                      )}
                     </button>
                   );
                 })}
@@ -1393,9 +1684,21 @@ export default function ExcelPaymentImport() {
                       <p className="mt-1 text-sm text-[#94A3B8]">{selectedFile.fileName}</p>
                     </div>
                     <div className="flex flex-wrap items-center gap-2">
-                      <Badge variant="outline" className={statusMeta[selectedFile.status].className}>
-                        {statusMeta[selectedFile.status].label}
-                      </Badge>
+                      <FeatureTourButton
+                        tour={excelImportTour}
+                        onStart={setActiveTour}
+                        className="h-10 gap-2 rounded-xl border border-slate-200 bg-white text-[#020617] hover:bg-[#F6F8FB]"
+                      />
+                      {importResult ? (
+                        <Badge variant="outline" className="border-emerald-200 bg-emerald-50 text-emerald-700">
+                          <CheckCircle2 className="ml-1 h-3.5 w-3.5" />
+                          تم الاعتماد
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline" className={statusMeta[selectedFile.status].className}>
+                          {statusMeta[selectedFile.status].label}
+                        </Badge>
+                      )}
                       <Button
                         type="button"
                         variant={isEditMode ? 'default' : 'outline'}
@@ -1560,7 +1863,14 @@ export default function ExcelPaymentImport() {
                                   className="h-9 w-24 rounded-lg border-slate-200 bg-white text-center font-semibold"
                                 />
                               ) : (
-                                <span className="font-semibold">{formatOptionalCurrency(row.trafficAmount)}</span>
+                                <div>
+                                  <div className="font-semibold">{formatOptionalCurrency(row.trafficAmount)}</div>
+                                  {formatTrafficBreakdown(row) && (
+                                    <div className="mt-1 text-xs text-[#94A3B8]">
+                                      {row.trafficAmounts.length} مخالفات: {formatTrafficBreakdown(row)}
+                                    </div>
+                                  )}
+                                </div>
                               )}
                             </TableCell>
                             <TableCell className="text-[#94A3B8]">{row.rowNumber}</TableCell>
@@ -1647,10 +1957,15 @@ export default function ExcelPaymentImport() {
       <Dialog open={approvalDialogOpen} onOpenChange={setApprovalDialogOpen}>
         <DialogContent dir="rtl" className="max-h-[88vh] max-w-2xl overflow-y-auto rounded-2xl">
           <DialogHeader className="text-right">
-            <DialogTitle className="text-2xl font-bold text-[#020617]">اعتماد دفعات الملف</DialogTitle>
-            <DialogDescription className="leading-6 text-[#64748B]">
-              هذا الملخص يوضح ما سيُرحّل للنظام بعد ربط الملف بالعقد والفواتير. لا يتم إنشاء أي حركة مالية قبل اكتمال المطابقة.
-            </DialogDescription>
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <DialogTitle className="text-2xl font-bold text-[#020617]">اعتماد دفعات الملف</DialogTitle>
+                <DialogDescription className="leading-6 text-[#64748B]">
+                  هذا الملخص يوضح ما سيُرحّل للنظام بعد ربط الملف بالعقد والفواتير. لا يتم إنشاء أي حركة مالية قبل اكتمال المطابقة.
+                </DialogDescription>
+              </div>
+              <FeatureTourButton tour={excelApprovalTour} onStart={setActiveTour} />
+            </div>
           </DialogHeader>
 
           <div className={importResult ? 'hidden' : 'grid gap-3 sm:grid-cols-2'}>
@@ -1776,8 +2091,21 @@ export default function ExcelPaymentImport() {
               </div>
 
               {importResult.skipped > 0 && (
-                <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm font-semibold leading-6 text-amber-800">
-                  تم تخطي بعض الأشهر لأنها مكررة أو لا توجد لها فاتورة جاهزة في النظام. يمكن مراجعتها من جدول الفواتير أو إنشاء الفواتير من العقد قبل إعادة الاستيراد.
+                <div className="space-y-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm font-semibold leading-6 text-amber-800">
+                  <p>
+                    تم تخطي بعض الأشهر لأنها مكررة أو لأن إضافتها سترفع إجمالي مدفوعات العقد فوق الحد المسموح. راجع مدفوعات العقد والفواتير قبل إعادة الاستيراد.
+                  </p>
+                  {importResult.skippedReasons.length > 0 && (
+                    <div className="rounded-lg bg-white/70 p-3">
+                      <p className="mb-2 font-black text-amber-900">سبب التخطي:</p>
+                      {importResult.skippedReasons.slice(0, 5).map((reason, index) => (
+                        <p key={`${reason}-${index}`}>- {reason}</p>
+                      ))}
+                      {importResult.skippedReasons.length > 5 && (
+                        <p className="mt-2 text-xs text-amber-700">تم عرض أول 5 أسباب فقط.</p>
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -1790,7 +2118,7 @@ export default function ExcelPaymentImport() {
               <p>- الفواتير التاريخية المنشأة: {importResult.invoicesCreated}</p>
               <p>- غرامات التأخير المنشأة: {importResult.lateFees}</p>
               <p>- المخالفات المرورية المنشأة: {importResult.trafficViolations}</p>
-              <p>- عناصر تم تخطيها لأنها مكررة: {importResult.skipped}</p>
+              <p>- عناصر تم تخطيها لأنها مكررة أو تتجاوز سقف العقد: {importResult.skipped}</p>
             </div>
           )}
 
@@ -1814,6 +2142,7 @@ export default function ExcelPaymentImport() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      <FeatureTourDialog tour={activeTour} onOpenChange={(open) => !open && setActiveTour(null)} />
     </div>
   );
 }

@@ -578,6 +578,485 @@ export const PREDEFINED_TOURS: Record<string, TourConfig> = {
       },
     ],
   },
+
+  'contract-add-invoice': {
+    id: 'contract-add-invoice',
+    name: 'إنشاء فاتورة من العقد',
+    steps: [
+      {
+        target: '[data-tour="contract-invoice-dialog"]',
+        title: 'نافذة إنشاء الفاتورة',
+        content: 'هذه النافذة تنشئ فاتورة مرتبطة مباشرة بالعقد الحالي. أي فاتورة تنشئها من هنا ستظهر في الملف المالي للعقد وتدخل في متابعة التحصيل.',
+        placement: 'bottom',
+      },
+      {
+        target: '[data-tour="contract-invoice-type"]',
+        title: 'نوع الفاتورة',
+        content: 'اختر نوع الفاتورة المناسب. غالبا فواتير العقد تكون مبيعات أو إيجار حسب طريقة إعداد الحسابات في الشركة.',
+        placement: 'bottom',
+      },
+      {
+        target: '[data-tour="contract-invoice-date"]',
+        title: 'تاريخ الفاتورة',
+        content: 'تاريخ الفاتورة هو تاريخ إصدار المطالبة المالية. استخدم تاريخ اليوم للفواتير الجديدة أو التاريخ الفعلي إذا كنت تدخل فاتورة بأثر سابق.',
+        placement: 'bottom',
+      },
+      {
+        target: '[data-tour="contract-invoice-due-date"]',
+        title: 'تاريخ الاستحقاق',
+        content: 'هذا التاريخ يحدد متى تصبح الفاتورة مستحقة للتحصيل. دقته مهمة للتنبيهات، التقارير، وحساب الفواتير المتأخرة.',
+        placement: 'bottom',
+      },
+      {
+        target: '[data-tour="contract-invoice-payment-schedule"]',
+        title: 'جدول الدفع',
+        content: 'إذا كانت الفاتورة تحتاج تقسيط أو جدولة، استخدم هذا القسم لإنشاء جدول دفع مرتبط بقيمة الفاتورة والعقد.',
+        placement: 'top',
+      },
+      {
+        target: '[data-tour="contract-invoice-items"]',
+        title: 'بنود الفاتورة',
+        content: 'أضف هنا تفاصيل ما يتم مطالبة العميل به: وصف البند، الكمية، وسعر الوحدة. النظام يحسب الإجمالي تلقائيا من البنود.',
+        placement: 'top',
+      },
+      {
+        target: '[data-tour="contract-invoice-add-item"]',
+        title: 'إضافة بند',
+        content: 'استخدم هذا الزر عندما تريد فصل الإيجار، الرسوم، أو أي خدمة إضافية في بند مستقل لتكون الفاتورة أوضح في المراجعة والطباعة.',
+        placement: 'left',
+      },
+      {
+        target: '[data-tour="contract-invoice-totals"]',
+        title: 'الإجماليات',
+        content: 'راجع المجموع الفرعي، الضريبة، الخصم، والإجمالي النهائي قبل الإنشاء. هذه القيم هي التي ستنعكس على رصيد الفاتورة.',
+        placement: 'top',
+      },
+      {
+        target: '[data-tour="contract-invoice-notes-terms"]',
+        title: 'الملاحظات وشروط الدفع',
+        content: 'اكتب أي ملاحظة تظهر مع الفاتورة أو شرط دفع مهم، مثل طريقة السداد أو فترة السماح أو سبب إصدار الفاتورة.',
+        placement: 'top',
+      },
+      {
+        target: '[data-tour="contract-invoice-submit"]',
+        title: 'إنشاء الفاتورة',
+        content: 'بعد المراجعة اضغط إنشاء الفاتورة. سيحفظ النظام الفاتورة وبنودها ويربطها بهذا العقد حتى تظهر في الفواتير والتحصيل.',
+        placement: 'top',
+      },
+    ],
+  },
+
+  'contract-pay-invoice': {
+    id: 'contract-pay-invoice',
+    name: 'تسجيل دفعة على فاتورة',
+    steps: [
+      {
+        target: '[data-tour="contract-pay-invoice-dialog"]',
+        title: 'نافذة تسجيل الدفعة',
+        content: 'هذه النافذة تستخدم عند استلام مبلغ من العميل وربطه بالفاتورة الحالية. الربط الصحيح يجعل رصيد الفاتورة والتقارير المالية أدق.',
+        placement: 'bottom',
+      },
+      {
+        target: '[data-tour="contract-pay-invoice-summary"]',
+        title: 'ملخص المبلغ المستحق',
+        content: 'راجع رصيد الفاتورة، أي غرامات تأخير، والمبلغ المتبقي بعد الدفع. هذه القراءة تساعدك تعرف هل الدفع كامل أم جزئي.',
+        placement: 'bottom',
+      },
+      {
+        target: '[data-tour="contract-pay-invoice-late-fee"]',
+        title: 'غرامات التأخير',
+        content: 'إذا كانت الفاتورة متأخرة تظهر الغرامة هنا. يمكن إعفاؤها حسب الصلاحيات وسياسات الشركة قبل تسجيل الدفع.',
+        placement: 'bottom',
+      },
+      {
+        target: '[data-tour="contract-pay-invoice-amount"]',
+        title: 'مبلغ الدفع',
+        content: 'أدخل المبلغ المستلم فعليا. إذا كان أقل من المستحق سيعتبر دفعا جزئيا، وإذا كان مساويا للمستحق سيغلق رصيد الفاتورة.',
+        placement: 'top',
+      },
+      {
+        target: '[data-tour="contract-pay-invoice-quick-amounts"]',
+        title: 'اختصارات المبلغ',
+        content: 'استخدم دفع كامل لتعبئة كامل المستحق بسرعة، أو دفع جزئي لتسجيل جزء من المبلغ مع إبقاء المتبقي للمتابعة.',
+        placement: 'top',
+      },
+      {
+        target: '[data-tour="contract-pay-invoice-method"]',
+        title: 'طريقة الدفع',
+        content: 'اختر طريقة الدفع الصحيحة: نقد، تحويل، شيك، بطاقة، أو إلكتروني. هذا يؤثر على المراجعة المالية وتتبع التحصيل.',
+        placement: 'top',
+      },
+      {
+        target: '[data-tour="contract-pay-invoice-date"]',
+        title: 'تاريخ الدفع',
+        content: 'حدد التاريخ الفعلي لاستلام الدفعة، وليس بالضرورة تاريخ إدخالها في النظام. هذا مهم للتقارير اليومية والشهرية.',
+        placement: 'top',
+      },
+      {
+        target: '[data-tour="contract-pay-invoice-reference"]',
+        title: 'رقم المرجع',
+        content: 'اكتب رقم التحويل أو الشيك أو مرجع العملية إذا توفر. المرجع يساعد في مطابقة البنك أو إثبات السداد لاحقا.',
+        placement: 'top',
+      },
+      {
+        target: '[data-tour="contract-pay-invoice-notes"]',
+        title: 'ملاحظات الدفع',
+        content: 'استخدم الملاحظات لتسجيل أي سياق مهم، مثل اسم المستلم، سبب الدفع الجزئي، أو اتفاق خاص مع العميل.',
+        placement: 'top',
+      },
+      {
+        target: '[data-tour="contract-pay-invoice-submit"]',
+        title: 'تأكيد الدفع',
+        content: 'بعد المراجعة اضغط تأكيد الدفع. سيقوم النظام بتسجيل الدفعة وتحديث رصيد الفاتورة وربط الحركة بالعقد.',
+        placement: 'top',
+      },
+    ],
+  },
+
+  'contract-cancel-invoice': {
+    id: 'contract-cancel-invoice',
+    name: 'إلغاء فاتورة عقد',
+    steps: [
+      {
+        target: '[data-tour="contract-cancel-invoice-dialog"]',
+        title: 'نافذة إلغاء الفاتورة',
+        content: 'هذه نافذة تأكيد لإلغاء فاتورة مرتبطة بالعقد. الإلغاء يؤثر على ظهور الفاتورة في التقارير وعلى رصيد العقد.',
+        placement: 'bottom',
+      },
+      {
+        target: '[data-tour="contract-cancel-invoice-warning"]',
+        title: 'مراجعة التحذير',
+        content: 'راجع رقم الفاتورة والتحذير قبل المتابعة. إذا كانت عليها دفعات مكتملة، يجب التأكد من أثر الإلغاء على الدفعات والقيود.',
+        placement: 'bottom',
+      },
+      {
+        target: '[data-tour="contract-cancel-invoice-actions"]',
+        title: 'اختيار الإجراء',
+        content: 'استخدم تراجع إذا لم تكن متأكدا. زر الإلغاء النهائي يغيّر حالة الفاتورة ويمنع ظهورها كفاتورة فعالة.',
+        placement: 'top',
+      },
+      {
+        target: '[data-tour="contract-cancel-invoice-submit"]',
+        title: 'تأكيد إلغاء الفاتورة',
+        content: 'اضغط هذا الزر فقط بعد التأكد من أن الفاتورة خاطئة أو مكررة أو لم تعد مطلوبة، لأن الإجراء لا يتم التعامل معه كحذف عادي.',
+        placement: 'top',
+      },
+    ],
+  },
+
+  'contract-terminate': {
+    id: 'contract-terminate',
+    name: 'إنهاء عقد',
+    steps: [
+      {
+        target: '[data-tour="contract-terminate-dialog"]',
+        title: 'نافذة إنهاء العقد',
+        content: 'هذه النافذة مخصصة لإنهاء العقد الحالي. الإنهاء يغير حالة العقد ويحرر المركبة من الارتباط النشط.',
+        placement: 'bottom',
+      },
+      {
+        target: '[data-tour="contract-terminate-warning"]',
+        title: 'أثر الإنهاء',
+        content: 'قبل الإنهاء تأكد من حالة التحصيل، المخالفات، والمستندات. إنهاء العقد لا يعني بالضرورة أن كل المستحقات تمت تسويتها.',
+        placement: 'bottom',
+      },
+      {
+        target: '[data-tour="contract-terminate-actions"]',
+        title: 'قرار نهائي',
+        content: 'استخدم إلغاء للرجوع دون تغيير. استخدم إنهاء العقد فقط عندما تكون متأكدا أن العقد يجب أن ينتقل إلى حالة ملغية.',
+        placement: 'top',
+      },
+      {
+        target: '[data-tour="contract-terminate-submit"]',
+        title: 'تأكيد إنهاء العقد',
+        content: 'هذا الزر ينفذ الإنهاء فعليا. بعده ستتغير حالة العقد وقد تصبح المركبة متاحة حسب منطق النظام.',
+        placement: 'top',
+      },
+    ],
+  },
+
+  'contract-renew': {
+    id: 'contract-renew',
+    name: 'تجديد عقد',
+    steps: [
+      {
+        target: '[data-tour="contract-renew-dialog"]',
+        title: 'نافذة تجديد العقد',
+        content: 'هذه النافذة تمدد العقد الحالي ببيانات جديدة، مع الحفاظ على ارتباطه بالعميل والمركبة وسجل العقد.',
+        placement: 'bottom',
+      },
+      {
+        target: '[data-tour="contract-renew-current-summary"]',
+        title: 'ملخص العقد الحالي',
+        content: 'راجع نوع العقد، مدته، وقيمته الحالية قبل إدخال بيانات التجديد. هذه القيم تساعدك تقارن بين العقد القديم والجديد.',
+        placement: 'bottom',
+      },
+      {
+        target: '[data-tour="contract-renew-end-date"]',
+        title: 'تاريخ الانتهاء الجديد',
+        content: 'حدد تاريخ نهاية العقد بعد التجديد. النظام يقترح مدة مشابهة للمدة الأصلية، لكن يمكنك تعديلها حسب الاتفاق الجديد.',
+        placement: 'bottom',
+      },
+      {
+        target: '[data-tour="contract-renew-amount"]',
+        title: 'قيمة العقد الجديدة',
+        content: 'أدخل قيمة التجديد المتفق عليها. تأكد من توافقها مع مدة التجديد وطريقة الفوترة قبل الحفظ.',
+        placement: 'bottom',
+      },
+      {
+        target: '[data-tour="contract-renew-terms"]',
+        title: 'ملاحظات التجديد',
+        content: 'اكتب أي شروط أو ملاحظات مرتبطة بالتجديد، مثل تغيير السعر أو فترة السماح أو اتفاق خاص مع العميل.',
+        placement: 'top',
+      },
+      {
+        target: '[data-tour="contract-renew-submit"]',
+        title: 'تنفيذ التجديد',
+        content: 'بعد مراجعة التاريخ والقيمة والملاحظات، اضغط تجديد العقد لحفظ التجديد وتحديث حالة العقد.',
+        placement: 'top',
+      },
+    ],
+  },
+
+  'contract-reactivate': {
+    id: 'contract-reactivate',
+    name: 'إعادة تفعيل عقد',
+    steps: [
+      {
+        target: '[data-tour="contract-reactivate-dialog"]',
+        title: 'نافذة إعادة التفعيل',
+        content: 'هذه النافذة تعيد العقد إلى الحالة النشطة بعد أن كان ملغيا. استخدمها عندما يكون الإلغاء غير صحيح أو تم الاتفاق على استمرار العقد.',
+        placement: 'bottom',
+      },
+      {
+        target: '[data-tour="contract-reactivate-warning"]',
+        title: 'مراجعة الأثر',
+        content: 'قبل إعادة التفعيل تأكد من أن المركبة والعميل جاهزان للارتباط النشط، وأنه لا يوجد عقد آخر متعارض أو إجراء مالي يمنع التفعيل.',
+        placement: 'bottom',
+      },
+      {
+        target: '[data-tour="contract-reactivate-actions"]',
+        title: 'اختيار القرار',
+        content: 'استخدم إلغاء للرجوع بدون تغيير. استخدم إعادة التفعيل فقط إذا كنت تريد أن يعود العقد للعمل كعقد نشط.',
+        placement: 'top',
+      },
+      {
+        target: '[data-tour="contract-reactivate-submit"]',
+        title: 'تأكيد إعادة التفعيل',
+        content: 'هذا الزر ينفذ إعادة التفعيل ويغير حالة العقد إلى نشط. بعد التنفيذ راجع الملف المالي والمركبة للتأكد من أن كل شيء متسق.',
+        placement: 'top',
+      },
+    ],
+  },
+
+  'contract-delete-permanent': {
+    id: 'contract-delete-permanent',
+    name: 'الحذف النهائي لعقد',
+    steps: [
+      {
+        target: '[data-tour="contract-delete-dialog"]',
+        title: 'نافذة الحذف النهائي',
+        content: 'هذا إجراء عالي الخطورة يحذف العقد نهائيا مع بيانات مرتبطة مثل الفواتير والدفعات حسب ما تعرضه النافذة.',
+        placement: 'bottom',
+      },
+      {
+        target: '[data-tour="contract-delete-warning"]',
+        title: 'قراءة البيانات المتأثرة',
+        content: 'راجع عدد الفواتير والدفعات والمخالفات قبل الحذف. المخالفات قد يتم فك ارتباطها بدلا من حذفها، لذلك يجب قراءة التحذير كاملا.',
+        placement: 'bottom',
+      },
+      {
+        target: '[data-tour="contract-delete-actions"]',
+        title: 'قرار لا رجعة فيه',
+        content: 'استخدم إلغاء إذا كان الهدف مجرد إيقاف العقد أو إخفائه. الحذف النهائي مناسب فقط للعقود الخاطئة أو التجريبية التي لا يجب أن تبقى في السجل.',
+        placement: 'top',
+      },
+      {
+        target: '[data-tour="contract-delete-submit"]',
+        title: 'تأكيد الحذف النهائي',
+        content: 'هذا الزر يحذف العقد نهائيا. لا تستخدمه لمعالجة عقد منتهي أو متعثر؛ استخدم الإنهاء أو الإجراء القانوني بدلا من ذلك عند الحاجة.',
+        placement: 'top',
+      },
+    ],
+  },
+
+  'contract-remove-legal': {
+    id: 'contract-remove-legal',
+    name: 'إزالة الإجراء القانوني',
+    steps: [
+      {
+        target: '[data-tour="contract-remove-legal-dialog"]',
+        title: 'نافذة إزالة الإجراء القانوني',
+        content: 'هذه النافذة تخرج العقد من حالة الإجراء القانوني وتعيده للحالة النشطة، مع إزالة سجل العميل المتعثر إن وجد.',
+        placement: 'bottom',
+      },
+      {
+        target: '[data-tour="contract-remove-legal-warning"]',
+        title: 'متى تستخدم هذا الإجراء؟',
+        content: 'استخدمه عندما يتم حل التعثر أو عند تحويل العقد للشؤون القانونية بالخطأ. قبل التنفيذ تأكد من تحديث الدفعات والملاحظات القانونية.',
+        placement: 'bottom',
+      },
+      {
+        target: '[data-tour="contract-remove-legal-actions"]',
+        title: 'مراجعة القرار',
+        content: 'إذا كانت القضية ما زالت مفتوحة استخدم إلغاء. إذا انتهت المتابعة القانونية أو تمت التسوية، يمكنك تأكيد إزالة الإجراء.',
+        placement: 'top',
+      },
+      {
+        target: '[data-tour="contract-remove-legal-submit"]',
+        title: 'تأكيد إزالة الإجراء',
+        content: 'هذا الزر يعيد العقد للحالة النشطة. بعد التنفيذ راجع المستندات وسجل النشاط للتأكد من توثيق سبب الإزالة.',
+        placement: 'top',
+      },
+    ],
+  },
+
+  'contract-convert-legal': {
+    id: 'contract-convert-legal',
+    name: 'تحويل عقد للشؤون القانونية',
+    steps: [
+      {
+        target: '[data-tour="contract-convert-legal-dialog"]',
+        title: 'نافذة التحويل القانوني',
+        content: 'هذه النافذة تنشئ قضية قانونية مرتبطة بالعقد وتغير حالة العقد ليصبح تحت الإجراء القانوني.',
+        placement: 'bottom',
+      },
+      {
+        target: '[data-tour="contract-convert-legal-contract-summary"]',
+        title: 'ملخص العقد',
+        content: 'راجع رقم العقد، الحالة، وتواريخ البداية والنهاية للتأكد أنك تحول العقد الصحيح قبل إنشاء القضية.',
+        placement: 'bottom',
+      },
+      {
+        target: '[data-tour="contract-convert-legal-parties"]',
+        title: 'العميل والمركبة',
+        content: 'تأكد من العميل والمركبة المرتبطين بالعقد. عند التحويل قد تصبح المركبة متاحة، لذلك هذا التحقق مهم تشغيليا.',
+        placement: 'bottom',
+      },
+      {
+        target: '[data-tour="contract-convert-legal-claim"]',
+        title: 'تفاصيل المطالبة المالية',
+        content: 'هذا القسم يجمع الرصيد المتبقي والغرامات والمخالفات غير المدفوعة لتكوين قيمة المطالبة القانونية.',
+        placement: 'top',
+      },
+      {
+        target: '[data-tour="contract-convert-legal-case-type"]',
+        title: 'نوع القضية',
+        content: 'اختر سبب التحويل بدقة: تحصيل مستحقات، خرق عقد، أضرار مركبة، أو غير ذلك. هذا يساعد فريق الشؤون القانونية في التصنيف.',
+        placement: 'top',
+      },
+      {
+        target: '[data-tour="contract-convert-legal-priority"]',
+        title: 'الأولوية',
+        content: 'حدد مستوى الأولوية حسب حجم المطالبة وخطورة الحالة. الأولوية العالية أو العاجلة يجب أن تكون للحالات التي تحتاج متابعة فورية.',
+        placement: 'top',
+      },
+      {
+        target: '[data-tour="contract-convert-legal-notes"]',
+        title: 'ملاحظات قانونية',
+        content: 'اكتب أي تفاصيل مهمة: محاولات تواصل، اتفاقات سابقة، سبب التصعيد، أو مستندات يجب على الفريق القانوني مراجعتها.',
+        placement: 'top',
+      },
+      {
+        target: '[data-tour="contract-convert-legal-effects"]',
+        title: 'ما الذي سيحدث؟',
+        content: 'راجع الآثار قبل المتابعة: إنشاء قضية، تغيير حالة العقد، تحرير المركبة، وتسجيل العملية في سجل العقد.',
+        placement: 'top',
+      },
+      {
+        target: '[data-tour="contract-convert-legal-submit"]',
+        title: 'بدء التحويل',
+        content: 'هذا الزر يفتح تأكيدًا نهائيًا قبل التنفيذ. لا يكتمل التحويل إلا بعد الموافقة في نافذة التأكيد التالية.',
+        placement: 'top',
+      },
+      {
+        target: '[data-tour="contract-convert-legal-confirm-dialog"]',
+        title: 'التأكيد النهائي',
+        content: 'هذه آخر مراجعة قبل إنشاء القضية فعليا. اقرأ قيمة القضية والتغييرات التي ستحدث على العقد والمركبة.',
+        placement: 'bottom',
+      },
+      {
+        target: '[data-tour="contract-convert-legal-confirm-submit"]',
+        title: 'تأكيد التحويل',
+        content: 'اضغط هنا فقط إذا كانت البيانات صحيحة وتم اتخاذ قرار التصعيد. بعد الضغط سيتم إنشاء القضية وتحديث حالة العقد.',
+        placement: 'top',
+      },
+    ],
+  },
+
+  'contract-document-upload': {
+    id: 'contract-document-upload',
+    name: 'إضافة مستند للعقد',
+    steps: [
+      {
+        target: '[data-tour="contract-document-upload-dialog"]',
+        title: 'نافذة إضافة مستند',
+        content: 'هذه النافذة تستخدم لرفع مستند مرتبط بالعقد، مثل العقد الموقع، الهوية، الرخصة، الإيصال، أو تقرير حالة المركبة.',
+        placement: 'bottom',
+      },
+      {
+        target: '[data-tour="contract-document-upload-type"]',
+        title: 'نوع المستند',
+        content: 'اختر نوع المستند بدقة حتى يظهر في التصنيف الصحيح ويكون من السهل العثور عليه لاحقا داخل ملف العقد.',
+        placement: 'bottom',
+      },
+      {
+        target: '[data-tour="contract-document-upload-name"]',
+        title: 'اسم المستند',
+        content: 'اكتب اسما واضحا للمستند. إذا اخترت ملفا أولا، قد يقترح النظام اسما من اسم الملف ويمكنك تعديله.',
+        placement: 'bottom',
+      },
+      {
+        target: '[data-tour="contract-document-upload-file"]',
+        title: 'رفع الملف',
+        content: 'اسحب الملف هنا أو انقر لاختياره. يدعم النظام ملفات PDF والصور والمستندات والملفات المضغوطة حتى الحد المسموح.',
+        placement: 'top',
+      },
+      {
+        target: '[data-tour="contract-document-upload-notes"]',
+        title: 'ملاحظات المستند',
+        content: 'اكتب أي تفاصيل تساعد في المراجعة، مثل سبب الرفع أو تاريخ الاستلام أو ملاحظات خاصة بالمستند.',
+        placement: 'top',
+      },
+      {
+        target: '[data-tour="contract-document-upload-required"]',
+        title: 'مستند مطلوب',
+        content: 'فعّل هذا الخيار إذا كان المستند جزءا أساسيا من ملف العقد ويجب عدم إغلاق الملف بدونه.',
+        placement: 'top',
+      },
+      {
+        target: '[data-tour="contract-document-upload-submit"]',
+        title: 'حفظ المستند',
+        content: 'بعد اختيار النوع والملف ومراجعة الاسم، اضغط حفظ المستند لرفعه وربطه بالعقد الحالي.',
+        placement: 'top',
+      },
+    ],
+  },
+
+  'contract-document-delete': {
+    id: 'contract-document-delete',
+    name: 'حذف مستند من العقد',
+    steps: [
+      {
+        target: '[data-tour="contract-document-delete-dialog"]',
+        title: 'نافذة حذف المستند',
+        content: 'هذه نافذة تأكيد لحذف مستند من ملف العقد. الحذف قد يزيل ملفا مهما من سجل العقد.',
+        placement: 'bottom',
+      },
+      {
+        target: '[data-tour="contract-document-delete-warning"]',
+        title: 'تحذير الحذف',
+        content: 'راجع التحذير قبل المتابعة. إذا كان المستند مطلوبا أو قانونيا، الأفضل تحميل نسخة أو التأكد من وجود بديل قبل الحذف.',
+        placement: 'bottom',
+      },
+      {
+        target: '[data-tour="contract-document-delete-actions"]',
+        title: 'قرار الحذف',
+        content: 'استخدم إلغاء للرجوع دون تغيير. استخدم حذف فقط عندما تكون متأكدا أن المستند خاطئ أو مكرر أو غير مطلوب.',
+        placement: 'top',
+      },
+    ],
+  },
 };
 
 // دالة للحصول على جولة بالمعرف

@@ -28,17 +28,25 @@ export const extractWithVehicleOCR = async (file: File, signal?: AbortSignal): P
   }
 
   // إرسال الطلب إلى Edge Function مع timeout أقصر (30s بدلاً من 60s)
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 30000); // 30s timeout for faster fallback
+  let timeoutId: ReturnType<typeof setTimeout>;
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    timeoutId = setTimeout(() => reject(new Error('OCR_TIMEOUT')), 30000);
+  });
 
-  if (signal) {
-    signal.addEventListener('abort', () => controller.abort());
-  }
+  const abortPromise = new Promise<never>((_, reject) => {
+    if (signal) {
+      signal.addEventListener('abort', () => reject(new Error('Aborted')), { once: true });
+    }
+  });
 
   try {
-    const response = await supabase.functions.invoke('vehicle-ocr', {
-      body: { imageBase64: base64 },
-    });
+    const response = await Promise.race([
+      supabase.functions.invoke('vehicle-ocr', {
+        body: { imageBase64: base64 },
+      }),
+      timeoutPromise,
+      abortPromise,
+    ]);
 
     if (response.error) {
       throw new Error(response.error.message || 'OCR failed');
@@ -49,7 +57,7 @@ export const extractWithVehicleOCR = async (file: File, signal?: AbortSignal): P
     clearTimeout(timeoutId);
 
     // Check if it was a timeout or function not found
-    if (error.name === 'AbortError' || error.message?.includes('timeout') || error.message?.includes('Aborted')) {
+    if (error.name === 'AbortError' || error.message === 'OCR_TIMEOUT' || error.message?.includes('timeout') || error.message?.includes('Aborted')) {
       console.warn('⏰ Google Cloud Vision timeout (30s), falling back to Tesseract');
       throw new Error('TIMEOUT_FALLBACK_TO_TESSERACT');
     }
@@ -58,6 +66,6 @@ export const extractWithVehicleOCR = async (file: File, signal?: AbortSignal): P
     console.warn('⚠️ Google Cloud Vision unavailable, falling back to Tesseract:', error.message);
     throw new Error('FALLBACK_TO_TESSERACT');
   } finally {
-    clearTimeout(timeoutId);
+    clearTimeout(timeoutId!);
   }
 };

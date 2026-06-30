@@ -18,6 +18,19 @@ import { PaymentReceipt } from '@/components/payments/PaymentReceipt';
 import { generateReceiptHTML, downloadHTML, numberToArabicWords, generateReceiptNumber, formatReceiptDate } from '@/utils/receiptGenerator';
 import { useQueryClient } from '@tanstack/react-query';
 import { usePaymentOperations } from '@/hooks/business/usePaymentOperations';
+import { FeatureTourButton, FeatureTourDialog, type FeatureTourContent } from '@/components/common/FeatureTourGuide';
+
+const quickPaymentTour = {
+  title: 'جولة الدفعة السريعة',
+  description: 'شرح تسجيل دفعة إيجار شهرية من متابعة الإيجارات.',
+  steps: [
+    'تفتح النافذة على العميل المحدد من جدول الإيجارات الشهرية.',
+    'اختر الفواتير أو الأشهر التي تريد دفعها وتحقق من المبلغ المستحق.',
+    'حدد طريقة الدفع والتاريخ وأي مرجع بنكي أو ملاحظة مهمة.',
+    'بعد التسجيل يمكنك معاينة سند القبض أو إرساله عبر واتساب أو تحميله.',
+    'إغلاق النافذة بعد نجاح الدفع يحدث بيانات متابعة الإيجارات.',
+  ],
+} satisfies FeatureTourContent;
 
 interface Invoice {
   id: string;
@@ -89,6 +102,7 @@ export function QuickPaymentDialog({
   const [showReceipt, setShowReceipt] = useState(false);
   const [readyToPay, setReadyToPay] = useState(false);
   const [showAllInvoices, setShowAllInvoices] = useState(false);
+  const [activeTour, setActiveTour] = useState<FeatureTourContent | null>(null);
 
   // Load invoices when dialog opens
   useEffect(() => {
@@ -540,10 +554,13 @@ export function QuickPaymentDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto" dir="rtl">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <CheckCircle className="w-5 h-5 text-green-600" />
-            تسجيل دفعة - {customerName}
-          </DialogTitle>
+          <div className="flex items-start justify-between gap-3">
+            <DialogTitle className="flex items-center gap-2">
+              <CheckCircle className="w-5 h-5 text-green-600" />
+              تسجيل دفعة - {customerName}
+            </DialogTitle>
+            <FeatureTourButton tour={quickPaymentTour} onStart={setActiveTour} />
+          </div>
         </DialogHeader>
 
         {/* Payment Success Screen */}
@@ -787,6 +804,7 @@ export function QuickPaymentDialog({
             )}
           </div>
         )}
+        <FeatureTourDialog tour={activeTour} onOpenChange={(open) => !open && setActiveTour(null)} />
       </DialogContent>
     </Dialog>
   );

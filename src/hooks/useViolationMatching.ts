@@ -4,6 +4,7 @@
 // ============================================================================
 
 import { useState, useCallback } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import {
   ExtractedViolation,
@@ -290,6 +291,7 @@ export interface ViolationSaveOptions {
 export function useViolationSave() {
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const queryClient = useQueryClient();
 
   const saveViolations = useCallback(async (
     violations: MatchedViolation[],
@@ -373,8 +375,12 @@ export function useViolationSave() {
     }
 
     setIsSaving(false);
+    queryClient.invalidateQueries({ queryKey: ['traffic-violations'] });
+    queryClient.invalidateQueries({ queryKey: ['traffic-violations-count'] });
+    queryClient.invalidateQueries({ queryKey: ['traffic-violations-stats'] });
+    queryClient.invalidateQueries({ queryKey: ['traffic-violations-dashboard-stats'] });
     return { success, failed, savedViolations };
-  }, []);
+  }, [queryClient]);
 
   return {
     saveViolations,

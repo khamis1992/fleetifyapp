@@ -17,6 +17,7 @@ import {
   Hash,
   Loader2,
   MessageSquare,
+  PlayCircle,
   Receipt,
   Trash2,
   Wallet,
@@ -36,6 +37,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast-mock";
 import { cn } from "@/lib/utils";
 import { systemColorPattern } from "@/lib/design-system/systemColorPattern";
+import { useTourGuide } from "@/components/tour-guide";
 
 const paymentSchema = z.object({
   amount: z.number().min(0.001, "المبلغ يجب أن يكون أكبر من صفر"),
@@ -115,6 +117,7 @@ export function PayInvoiceDialog({ open, onOpenChange, invoice, onPaymentCreated
   const { formatCurrency } = useCurrencyFormatter();
   const { user } = useAuth();
   const { toast } = useToast();
+  const { startTour } = useTourGuide();
   const queryClient = useQueryClient();
   const [deletingFeeId, setDeletingFeeId] = useState<string | null>(null);
   const [lateFeeWaived, setLateFeeWaived] = useState(false);
@@ -365,7 +368,7 @@ export function PayInvoiceDialog({ open, onOpenChange, invoice, onPaymentCreated
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="payment-card-dialog max-h-[84dvh] max-w-2xl overflow-hidden rounded-lg border-0 p-0" dir="rtl" style={paymentCardStyle}>
+      <DialogContent className="payment-card-dialog max-h-[84dvh] max-w-2xl overflow-hidden rounded-lg border-0 p-0" dir="rtl" style={paymentCardStyle} data-tour="contract-pay-invoice-dialog">
         <DialogHeader className="payment-card-header">
           <div className="flex min-w-0 items-start gap-3">
             <span className="payment-card-header-icon">
@@ -379,12 +382,22 @@ export function PayInvoiceDialog({ open, onOpenChange, invoice, onPaymentCreated
           <Badge className="payment-card-badge">
             {invoice.payment_status === "paid" ? "مدفوعة" : invoice.payment_status === "partial" ? "جزئية" : "غير مدفوعة"}
           </Badge>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => startTour("contract-pay-invoice")}
+            className="h-9 shrink-0 gap-2 border-emerald-200 bg-emerald-50 font-bold text-emerald-700 hover:bg-emerald-100"
+            data-tour="contract-pay-invoice-tour-start"
+          >
+            <PlayCircle className="h-4 w-4" />
+            ابدأ الجولة التعريفية
+          </Button>
         </DialogHeader>
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="payment-card-form">
             <div className="payment-card-scroll">
-              <section className="payment-card-summary">
+              <section className="payment-card-summary" data-tour="contract-pay-invoice-summary">
                 <div className="payment-card-total">
                   <span>المبلغ المستحق</span>
                   <strong>{formatCurrency(totalAmountDue)}</strong>
@@ -409,7 +422,7 @@ export function PayInvoiceDialog({ open, onOpenChange, invoice, onPaymentCreated
               </section>
 
               {daysOverdue > 0 && !lateFeeWaived && (
-                <section className="payment-card-alert">
+                <section className="payment-card-alert" data-tour="contract-pay-invoice-late-fee">
                   <div className="flex items-center gap-2">
                     <Clock className="h-4 w-4" />
                     <span>غرامة تأخير ({daysOverdue} يوم)</span>
@@ -443,12 +456,12 @@ export function PayInvoiceDialog({ open, onOpenChange, invoice, onPaymentCreated
                 </section>
               )}
 
-              <section className="payment-card-section">
+              <section className="payment-card-section" data-tour="contract-pay-invoice-form">
                 <FormField
                   control={form.control}
                   name="amount"
                   render={({ field }) => (
-                    <FormItem>
+                    <FormItem data-tour="contract-pay-invoice-amount">
                       <FormLabel>مبلغ الدفع</FormLabel>
                       <div className="payment-card-amount">
                         <FormControl>
@@ -464,7 +477,7 @@ export function PayInvoiceDialog({ open, onOpenChange, invoice, onPaymentCreated
                         <span>ر.ق</span>
                       </div>
                       <FormMessage />
-                      <div className="payment-card-quick-actions">
+                      <div className="payment-card-quick-actions" data-tour="contract-pay-invoice-quick-amounts">
                         <Button type="button" variant={isAmountFull ? "default" : "outline"} onClick={() => form.setValue("amount", totalAmountDue)}>
                           <Check className="h-4 w-4" />
                           دفع كامل
@@ -493,7 +506,7 @@ export function PayInvoiceDialog({ open, onOpenChange, invoice, onPaymentCreated
                   control={form.control}
                   name="payment_method"
                   render={({ field }) => (
-                    <FormItem>
+                    <FormItem data-tour="contract-pay-invoice-method">
                       <FormLabel>طريقة الدفع</FormLabel>
                       <div className="payment-card-methods">
                         {paymentMethods.map((method) => {
@@ -522,7 +535,7 @@ export function PayInvoiceDialog({ open, onOpenChange, invoice, onPaymentCreated
                     control={form.control}
                     name="payment_date"
                     render={({ field }) => (
-                      <FormItem>
+                      <FormItem data-tour="contract-pay-invoice-date">
                         <FormLabel>
                           <Calendar className="h-4 w-4" />
                           التاريخ
@@ -539,7 +552,7 @@ export function PayInvoiceDialog({ open, onOpenChange, invoice, onPaymentCreated
                     control={form.control}
                     name="reference_number"
                     render={({ field }) => (
-                      <FormItem>
+                      <FormItem data-tour="contract-pay-invoice-reference">
                         <FormLabel>
                           <Hash className="h-4 w-4" />
                           رقم المرجع
@@ -557,7 +570,7 @@ export function PayInvoiceDialog({ open, onOpenChange, invoice, onPaymentCreated
                   control={form.control}
                   name="notes"
                   render={({ field }) => (
-                    <FormItem>
+                    <FormItem data-tour="contract-pay-invoice-notes">
                       <FormLabel>
                         <MessageSquare className="h-4 w-4" />
                         ملاحظات
@@ -572,7 +585,7 @@ export function PayInvoiceDialog({ open, onOpenChange, invoice, onPaymentCreated
               </section>
             </div>
 
-            <div className="payment-card-footer">
+            <div className="payment-card-footer" data-tour="contract-pay-invoice-footer">
               <div className="flex min-w-0 items-center gap-3">
                 <span className="payment-card-footer-icon">
                   <Wallet className="h-4 w-4" />
@@ -592,6 +605,7 @@ export function PayInvoiceDialog({ open, onOpenChange, invoice, onPaymentCreated
                   type="submit"
                   disabled={createPayment.isPending || isAmountOverpay || watchedAmount <= 0}
                   className="bg-[#22C7A1] text-white hover:bg-[#1cae8d]"
+                  data-tour="contract-pay-invoice-submit"
                 >
                   {createPayment.isPending ? (
                     <>

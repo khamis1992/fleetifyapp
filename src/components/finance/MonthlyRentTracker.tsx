@@ -47,6 +47,19 @@ import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 import { cn } from '@/lib/utils';
 import { useNavigate } from 'react-router-dom';
 import { QuickPaymentDialog } from './QuickPaymentDialog';
+import { FeatureTourButton, FeatureTourDialog, type FeatureTourContent } from '@/components/common/FeatureTourGuide';
+
+const monthlyRentTour = {
+  title: 'جولة متابعة الإيجارات الشهرية',
+  description: 'شرح طريقة متابعة دفعات الإيجار حسب الشهر والحالة.',
+  steps: [
+    'اختر السنة والشهر وطريقة احتساب التاريخ لمراجعة دفعات الفترة المطلوبة.',
+    'استخدم البحث للوصول إلى عميل أو مركبة أو عقد محدد.',
+    'الفلاتر تعرض المدفوع وغير المدفوع والدفعات الجزئية.',
+    'زر تحديث يعيد تحميل البيانات، وزر تصدير ينشئ ملف CSV للمتابعة.',
+    'زر تسجيل دفعة في الجدول يفتح نافذة دفع سريعة للعميل المحدد.',
+  ],
+} satisfies FeatureTourContent;
 
 // ===== Stat Card Component =====
 interface StatCardProps {
@@ -126,6 +139,7 @@ export const MonthlyRentTracker: React.FC = () => {
   // Payment dialog state
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<MonthlyRentStatus | null>(null);
+  const [activeTour, setActiveTour] = useState<FeatureTourContent | null>(null);
 
   const { data: rentStatuses, isLoading, refetch } = useMonthlyRentTracking(selectedYear, selectedMonth, dateFilter);
   
@@ -317,6 +331,11 @@ export const MonthlyRentTracker: React.FC = () => {
 
           {/* Action Buttons */}
           <div className="flex gap-2 mr-auto">
+            <FeatureTourButton
+              tour={monthlyRentTour}
+              onStart={setActiveTour}
+              className="h-11 gap-2 rounded-xl border-slate-200 bg-white hover:bg-slate-50"
+            />
             <Button
               onClick={() => refetch()}
               variant="outline"
@@ -564,6 +583,7 @@ export const MonthlyRentTracker: React.FC = () => {
           onSuccess={handlePaymentSuccess}
         />
       )}
+      <FeatureTourDialog tour={activeTour} onOpenChange={(open) => !open && setActiveTour(null)} />
     </div>
   );
 };

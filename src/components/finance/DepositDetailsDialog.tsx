@@ -13,6 +13,19 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { formatCurrency } from '@/lib/utils';
 import { ArrowLeft, RefreshCw } from 'lucide-react';
 import { ReturnDepositDialog } from './ReturnDepositDialog';
+import { FeatureTourButton, FeatureTourDialog, type FeatureTourContent } from '@/components/common/FeatureTourGuide';
+
+const depositDetailsTour = {
+  title: 'جولة تفاصيل الوديعة',
+  description: 'شرح قراءة تفاصيل الوديعة واستردادها عند الحاجة.',
+  steps: [
+    'راجع رقم الوديعة والحالة والعميل ونوع الوديعة أولاً.',
+    'قسم المعلومات المالية يوضح المبلغ الإجمالي والمسترد والمتبقي.',
+    'راجع تواريخ الاستلام والاستحقاق قبل اتخاذ قرار الاسترداد.',
+    'زر استرداد الوديعة يظهر فقط عندما تكون الوديعة نشطة ويوجد مبلغ متبق.',
+    'قبل الاسترداد تأكد من عدم وجود التزامات أو مخالفات يجب خصمها من الضمان.',
+  ],
+} satisfies FeatureTourContent;
 
 interface DepositDetailsDialogProps {
   open: boolean;
@@ -26,6 +39,7 @@ export function DepositDetailsDialog({
   deposit 
 }: DepositDetailsDialogProps) {
   const [showReturnDialog, setShowReturnDialog] = useState(false);
+  const [activeTour, setActiveTour] = useState<FeatureTourContent | null>(null);
 
   if (!deposit) return null;
 
@@ -48,13 +62,18 @@ export function DepositDetailsDialog({
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto" dir="rtl">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <ArrowLeft className="h-5 w-5" />
-              تفاصيل الوديعة
-            </DialogTitle>
-            <DialogDescription>
-              عرض تفاصيل الوديعة رقم {deposit.deposit_number}
-            </DialogDescription>
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <DialogTitle className="flex items-center gap-2">
+                  <ArrowLeft className="h-5 w-5" />
+                  تفاصيل الوديعة
+                </DialogTitle>
+                <DialogDescription>
+                  عرض تفاصيل الوديعة رقم {deposit.deposit_number}
+                </DialogDescription>
+              </div>
+              <FeatureTourButton tour={depositDetailsTour} onStart={setActiveTour} />
+            </div>
           </DialogHeader>
 
           <div className="space-y-6">
@@ -190,6 +209,7 @@ export function DepositDetailsDialog({
         deposit={deposit}
         maxAmount={remainingAmount}
       />
+      <FeatureTourDialog tour={activeTour} onOpenChange={(open) => !open && setActiveTour(null)} />
     </>
   );
 }

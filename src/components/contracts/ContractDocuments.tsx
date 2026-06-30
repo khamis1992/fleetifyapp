@@ -5,7 +5,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Download, Trash2, FileText, Upload, Eye, Car, CheckCircle, AlertCircle, AlertTriangle, FileImage, RefreshCw, Pencil } from 'lucide-react';
+import { Plus, Download, Trash2, FileText, Upload, Eye, Car, CheckCircle, AlertCircle, AlertTriangle, FileImage, RefreshCw, Pencil, PlayCircle } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useContractDocuments, useCreateContractDocument, useDeleteContractDocument, useDownloadContractDocument } from '@/hooks/useContractDocuments';
 import { DocumentUploadDialog, DocumentUploadData } from './DocumentUploadDialog';
@@ -23,6 +23,7 @@ import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 import { motion, AnimatePresence } from 'framer-motion';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { useTourGuide } from '@/components/tour-guide';
 
 interface ContractDocumentsProps {
   contractId: string;
@@ -64,6 +65,7 @@ const fadeInUp = {
 };
 
 export function ContractDocuments({ contractId, customerId, vehicleId }: ContractDocumentsProps) {
+  const { startTour } = useTourGuide();
   const [isDialogOpen, setIsDialogOpen] = React.useState(false);
   const [selectedReportId, setSelectedReportId] = React.useState<string | null>(null);
   const [isReportViewerOpen, setIsReportViewerOpen] = React.useState(false);
@@ -889,14 +891,24 @@ export function ContractDocuments({ contractId, customerId, vehicleId }: Contrac
 
       {/* مربع حوار تأكيد الحذف */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent>
+        <AlertDialogContent data-tour="contract-document-delete-dialog">
           <AlertDialogHeader>
             <AlertDialogTitle>تأكيد الحذف</AlertDialogTitle>
-            <AlertDialogDescription>
+            <AlertDialogDescription data-tour="contract-document-delete-warning">
               هل أنت متأكد من حذف هذا المستند؟ لا يمكن التراجع عن هذا الإجراء.
             </AlertDialogDescription>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => startTour('contract-document-delete')}
+              className="mt-2 h-9 w-fit gap-2 rounded-lg border-emerald-200 bg-emerald-50 font-bold text-emerald-700 hover:bg-emerald-100"
+              data-tour="contract-document-delete-tour-start"
+            >
+              <PlayCircle className="h-4 w-4" />
+              ابدأ الجولة التعريفية
+            </Button>
           </AlertDialogHeader>
-          <AlertDialogFooter>
+          <AlertDialogFooter data-tour="contract-document-delete-actions">
             <AlertDialogCancel>إلغاء</AlertDialogCancel>
             <AlertDialogAction onClick={confirmDelete}>حذف</AlertDialogAction>
           </AlertDialogFooter>

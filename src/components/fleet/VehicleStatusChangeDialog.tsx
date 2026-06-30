@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -29,11 +29,23 @@ import { Textarea } from "@/components/ui/textarea";
 import { useUpdateVehicle } from "@/hooks/useVehicles";
 import { useToast } from "@/components/ui/use-toast"; // Corrected import path
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { FeatureTourButton, FeatureTourDialog, type FeatureTourContent } from "@/components/common/FeatureTourGuide";
 
 const formSchema = z.object({
   status: z.string().min(1, "الحالة مطلوبة"),
   notes: z.string().optional(),
 });
+
+const statusTour = {
+  title: "جولة تغيير حالة المركبة",
+  description: "شرح تأثير حالة المركبة قبل حفظ التغيير.",
+  steps: [
+    "اختر الحالة الجديدة بناءً على وضع المركبة الفعلي: متاحة، مؤجرة، صيانة، خارج الخدمة، أو حالة خاصة.",
+    "استخدم الملاحظات لتوثيق سبب التغيير، خاصة عند الحوادث أو الحجز أو نقل المركبة للصيانة.",
+    "بعد الحفظ ستتحدث حالة المركبة في ملفها وفي تقارير الأسطول.",
+    "لا تستخدم تغيير الحالة بديلاً عن تسجيل صيانة أو مخالفة إذا كان الحدث يحتاج سجلاً مالياً أو تشغيلياً.",
+  ],
+} satisfies FeatureTourContent;
 
 interface VehicleStatusChangeDialogProps {
   open: boolean;
@@ -54,6 +66,7 @@ export function VehicleStatusChangeDialog({
 }: VehicleStatusChangeDialogProps) {
   const updateVehicle = useUpdateVehicle();
   const { toast } = useToast();
+  const [activeTour, setActiveTour] = useState<FeatureTourContent | null>(null);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -102,10 +115,15 @@ export function VehicleStatusChangeDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px]" dir="rtl">
         <DialogHeader>
-          <DialogTitle className="text-right">تغيير حالة المركبة</DialogTitle>
-          <DialogDescription className="text-right">
-            قم باختيار الحالة الجديدة للمركبة.
-          </DialogDescription>
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <DialogTitle className="text-right">تغيير حالة المركبة</DialogTitle>
+              <DialogDescription className="text-right">
+                قم باختيار الحالة الجديدة للمركبة.
+              </DialogDescription>
+            </div>
+            <FeatureTourButton tour={statusTour} onStart={setActiveTour} />
+          </div>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -171,6 +189,7 @@ export function VehicleStatusChangeDialog({
           </form>
         </Form>
       </DialogContent>
+      <FeatureTourDialog tour={activeTour} onOpenChange={(open) => !open && setActiveTour(null)} />
     </Dialog>
   );
 }

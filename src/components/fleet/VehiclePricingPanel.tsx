@@ -9,6 +9,7 @@ import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter";
 import { Plus, Edit, Calendar } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useForm } from "react-hook-form";
+import { FeatureTourButton, FeatureTourDialog, type FeatureTourContent } from "@/components/common/FeatureTourGuide";
 
 interface VehiclePricingPanelProps {
   vehicleId: string;
@@ -23,8 +24,20 @@ interface PricingFormData {
   effective_to?: string;
 }
 
+const pricingTour = {
+  title: "جولة إضافة تسعير للمركبة",
+  description: "شرح طريقة إدخال أسعار الإيجار وفترة سريانها.",
+  steps: [
+    "أدخل التعرفة اليومية والأسبوعية والشهرية والسنوية حسب سياسة تسعير المركبة.",
+    "حدد تاريخ ساري من ليعرف النظام متى يبدأ استخدام هذا السعر في العقود الجديدة.",
+    "استخدم تاريخ ساري إلى فقط إذا كان السعر مؤقتاً أو ضمن عرض محدد.",
+    "بعد الحفظ يظهر السعر النشط في تبويب التسعير ويمكن الرجوع له عند إنشاء العقود.",
+  ],
+} satisfies FeatureTourContent;
+
 export function VehiclePricingPanel({ vehicleId }: VehiclePricingPanelProps) {
   const [showForm, setShowForm] = useState(false);
+  const [activeTour, setActiveTour] = useState<FeatureTourContent | null>(null);
   const { formatCurrency, currency } = useCurrencyFormatter();
   const { data: pricing, isLoading } = useVehiclePricing(vehicleId);
   const createPricing = useCreateVehiclePricing();
@@ -82,10 +95,15 @@ export function VehiclePricingPanel({ vehicleId }: VehiclePricingPanelProps) {
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>إضافة تسعير جديد</DialogTitle>
-                <DialogDescription>
-                  تحديد أسعار إيجار جديدة لهذه المركبة
-                </DialogDescription>
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <DialogTitle>إضافة تسعير جديد</DialogTitle>
+                    <DialogDescription>
+                      تحديد أسعار إيجار جديدة لهذه المركبة
+                    </DialogDescription>
+                  </div>
+                  <FeatureTourButton tour={pricingTour} onStart={setActiveTour} />
+                </div>
               </DialogHeader>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
@@ -151,6 +169,7 @@ export function VehiclePricingPanel({ vehicleId }: VehiclePricingPanelProps) {
                   </Button>
                 </div>
               </form>
+              <FeatureTourDialog tour={activeTour} onOpenChange={(open) => !open && setActiveTour(null)} />
             </DialogContent>
           </Dialog>
         </div>

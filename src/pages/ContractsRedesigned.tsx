@@ -19,9 +19,11 @@ import {
   AlertTriangle,
   FileText,
   Car,
+  Calendar,
   Eye,
   Edit,
   TrendingUp,
+  Wallet,
   Upload,
   Download,
   XOctagon,
@@ -175,6 +177,21 @@ const TAB_CONFIG = [
   { id: "alerts", label: "التنبيهات", icon: Bell, color: "red" },
   { id: "settings", label: "الإعدادات", icon: Settings, color: "blue" },
 ];
+
+const getContractTabLabel = (tabId: string) => {
+  const labels: Record<string, string> = {
+    all: "كل العقود",
+    active: "نشطة",
+    draft: "مسودات",
+    incomplete: "غير مكتملة",
+    cancelled: "ملغاة",
+    legal_action: "قانونية",
+    pending_completion: "بانتظار الإكمال",
+    alerts: "تحتاج متابعة",
+    settings: "الإعدادات",
+  };
+  return labels[tabId] || tabId;
+};
 
 // Status Badge Component
 const StatusBadge = ({ status, legalStatus, onClick }: { 
@@ -630,6 +647,318 @@ const DraftCard = ({
   </motion.div>
 );
 
+const OperationsMetric = ({
+  label,
+  value,
+  caption,
+  icon: Icon,
+  tone = "neutral",
+}: {
+  label: string;
+  value: number | string;
+  caption?: string;
+  icon: React.ElementType;
+  tone?: "success" | "info" | "focus" | "alert" | "neutral";
+}) => {
+  const toneClass = {
+    success: "bg-[#E8FBF6] text-[#22C7A1]",
+    info: "bg-[#EAF8FE] text-[#38BDF8]",
+    focus: "bg-[#ECEEFE] text-[#7C83F6]",
+    alert: "bg-[#FFF0F2] text-[#FB6B7A]",
+    neutral: "bg-[#F6F8FB] text-[#64748B]",
+  }[tone];
+
+  return (
+    <motion.div
+      variants={itemVariants}
+      className="rounded-[8px] border border-[#DDE5EF] bg-white p-4 shadow-[0_18px_42px_-34px_rgba(15,23,42,.58)]"
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-xs font-bold text-[#94A3B8]">{label}</p>
+          <div className="mt-2 text-2xl font-black text-[#020617]">{value}</div>
+          {caption && <p className="mt-1 text-xs font-bold text-[#64748B]">{caption}</p>}
+        </div>
+        <div className={cn("flex h-10 w-10 shrink-0 items-center justify-center rounded-[8px]", toneClass)}>
+          <Icon className="h-5 w-5" />
+        </div>
+      </div>
+    </motion.div>
+  );
+};
+
+const getContractCustomerName = (contract: Contract) => formatCustomerName(contract.customers) || "عميل غير محدد";
+
+const getContractVehicleInfo = (contract: Contract) => {
+  const vehicle = contract.vehicle;
+  if (!vehicle) return "مركبة غير محددة";
+  const make = vehicle.make_ar || vehicle.make || "";
+  const model = vehicle.model_ar || vehicle.model || "";
+  const year = vehicle.year || "";
+  return `${make} ${model} ${year}`.trim() || "مركبة غير محددة";
+};
+
+const getContractPlate = (contract: Contract) => contract.vehicle?.plate_number || "-";
+
+const getContractDaysLeft = (date?: string) => {
+  if (!date) return null;
+  const days = Math.ceil((new Date(date).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+  return Number.isFinite(days) ? days : null;
+};
+
+const ModernStatusBadge = ({
+  status,
+  legalStatus,
+  onClick,
+}: {
+  status: string;
+  legalStatus?: string | null;
+  onClick?: (event: React.MouseEvent) => void;
+}) => {
+  const statusMap: Record<string, { label: string; className: string; icon: React.ElementType }> = {
+    active: { label: "نشط", className: "bg-[#E8FBF6] text-[#22C7A1] border-[#BFEFE4]", icon: CheckCircle },
+    draft: { label: "مسودة", className: "bg-[#ECEEFE] text-[#7C83F6] border-[#D8D9FF]", icon: FileEdit },
+    under_review: { label: "قيد المراجعة", className: "bg-[#EAF8FE] text-[#38BDF8] border-[#BEE9FB]", icon: Clock },
+    cancelled: { label: "ملغي", className: "bg-[#FFF0F2] text-[#FB6B7A] border-[#FFD5DC]", icon: XCircle },
+    expired: { label: "منتهي", className: "bg-[#FFF0F2] text-[#FB6B7A] border-[#FFD5DC]", icon: XOctagon },
+    expiring_soon: { label: "قارب الانتهاء", className: "bg-[#FFF7ED] text-[#EA580C] border-[#FED7AA]", icon: AlertTriangle },
+    under_legal_procedure: { label: "إجراء قانوني", className: "bg-[#ECEEFE] text-[#7C83F6] border-[#D8D9FF]", icon: Scale },
+    pending_completion: { label: "بانتظار الإكمال", className: "bg-[#EAF8FE] text-[#38BDF8] border-[#BEE9FB]", icon: Clock },
+  };
+  const config = statusMap[status] || statusMap.active;
+  const Icon = config.icon;
+
+  return (
+    <div className="flex flex-wrap items-center gap-1.5">
+      <button
+        type="button"
+        onClick={onClick}
+        className={cn("inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-black", config.className)}
+      >
+        <Icon className="h-3.5 w-3.5" />
+        {config.label}
+      </button>
+      {(legalStatus || status === "under_legal_procedure") && (
+        <span className="inline-flex items-center gap-1.5 rounded-full border border-[#D8D9FF] bg-[#ECEEFE] px-2.5 py-1 text-xs font-black text-[#7C83F6]">
+          <Scale className="h-3.5 w-3.5" />
+          قانوني
+        </span>
+      )}
+    </div>
+  );
+};
+
+const CompactDatum = ({
+  label,
+  value,
+  icon: Icon,
+  strong = false,
+}: {
+  label: string;
+  value: string | number;
+  icon: React.ElementType;
+  strong?: boolean;
+}) => (
+  <div className="rounded-[8px] bg-[#F8FAFC] px-3 py-2">
+    <div className="mb-1 flex items-center gap-1 text-xs font-bold text-[#94A3B8]">
+      <Icon className="h-3.5 w-3.5" />
+      {label}
+    </div>
+    <div className={cn("truncate text-sm font-black", strong ? "text-[#020617]" : "text-[#64748B]")}>{value}</div>
+  </div>
+);
+
+const ContractOperationsRow = ({
+  contract,
+  onView,
+  onEdit,
+  onRenew,
+  onCancel,
+  onDelete,
+  onManageStatus,
+  onConvertToLegal,
+  onRemoveLegal,
+  onReactivate,
+  isReactivating,
+}: {
+  contract: Contract;
+  onView: (c: Contract) => void;
+  onEdit: (c: Contract) => void;
+  onRenew: (c: Contract) => void;
+  onCancel: (c: Contract) => void;
+  onDelete: (c: Contract) => void;
+  onManageStatus: (c: Contract) => void;
+  onConvertToLegal: (c: Contract) => void;
+  onRemoveLegal: (c: Contract) => void;
+  onReactivate: (c: Contract) => void;
+  isReactivating: boolean;
+}) => {
+  const { formatCurrency } = useCurrencyFormatter();
+  const isActive = contract.status === "active";
+  const isCancelled = contract.status === "cancelled";
+  const hasLegalStatus = Boolean(contract.legal_status || contract.status === "under_legal_procedure");
+  const daysLeft = getContractDaysLeft(contract.end_date);
+  const progress = contract.contract_amount
+    ? Math.min(100, Math.max(0, ((contract.total_paid || 0) / contract.contract_amount) * 100))
+    : 0;
+
+  return (
+    <motion.div
+      variants={itemVariants}
+      onClick={() => onView(contract)}
+      className={cn(
+        "group rounded-[8px] border bg-white p-4 transition-all duration-200 hover:border-[#B7C4D6] hover:shadow-[0_18px_45px_-34px_rgba(15,23,42,.7)]",
+        isActive && "border-[#BFEFE4]",
+        isCancelled && "border-[#FFD5DC]",
+        hasLegalStatus && "border-[#D8D9FF]"
+      )}
+    >
+      <div className="grid gap-4 xl:grid-cols-[minmax(260px,1.15fr)_minmax(220px,.78fr)_minmax(260px,.9fr)_auto] xl:items-center">
+        <div className="min-w-0">
+          <div className="flex items-start gap-3">
+            <div className={cn(
+              "mt-1 flex h-11 w-11 shrink-0 items-center justify-center rounded-[8px]",
+              isActive ? "bg-[#E8FBF6] text-[#22C7A1]" :
+              isCancelled ? "bg-[#FFF0F2] text-[#FB6B7A]" :
+              hasLegalStatus ? "bg-[#ECEEFE] text-[#7C83F6]" : "bg-[#F6F8FB] text-[#64748B]"
+            )}>
+              <FileText className="h-5 w-5" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="mb-2 flex flex-wrap items-center gap-2">
+                <h3 className="truncate text-lg font-black text-[#020617]">{getContractCustomerName(contract)}</h3>
+                <ModernStatusBadge
+                  status={contract.status}
+                  legalStatus={contract.legal_status}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onManageStatus(contract);
+                  }}
+                />
+              </div>
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm font-bold text-[#64748B]">
+                <span className="inline-flex items-center gap-1">
+                  <FileText className="h-3.5 w-3.5" />
+                  {contract.contract_number}
+                </span>
+                <span className="inline-flex items-center gap-1">
+                  <Car className="h-3.5 w-3.5" />
+                  {getContractVehicleInfo(contract)}
+                </span>
+                <span className="inline-flex items-center gap-1">
+                  <FileSignature className="h-3.5 w-3.5" />
+                  {getContractPlate(contract)}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-2">
+          <CompactDatum label="البداية" value={formatDateInGregorian(contract.start_date)} icon={Calendar} />
+          <CompactDatum label="النهاية" value={formatDateInGregorian(contract.end_date)} icon={Clock} />
+          <div className="col-span-2 rounded-[8px] bg-[#F8FAFC] px-3 py-2">
+            <div className="mb-1 flex items-center justify-between text-xs font-bold text-[#94A3B8]">
+              <span>المدة المتبقية</span>
+              <span>{daysLeft === null ? "-" : daysLeft > 0 ? `${daysLeft} يوم` : "منتهي"}</span>
+            </div>
+            <div className="h-1.5 overflow-hidden rounded-full bg-[#E2E8F0]">
+              <div
+                className={cn("h-full rounded-full", daysLeft !== null && daysLeft < 30 ? "bg-[#FB6B7A]" : "bg-[#22C7A1]")}
+                style={{ width: `${daysLeft === null ? 0 : Math.max(8, Math.min(100, daysLeft / 4))}%` }}
+              />
+            </div>
+          </div>
+        </div>
+
+        <div className="grid gap-2 sm:grid-cols-3 xl:grid-cols-1">
+          <CompactDatum label="الإيجار الشهري" value={formatCurrency(contract.monthly_amount || 0)} icon={Wallet} strong />
+          <CompactDatum label="قيمة العقد" value={formatCurrency(contract.contract_amount || 0)} icon={TrendingUp} strong />
+          <div className="rounded-[8px] bg-[#F8FAFC] px-3 py-2">
+            <div className="mb-1 flex items-center justify-between text-xs font-bold text-[#94A3B8]">
+              <span>التحصيل</span>
+              <span>{Math.round(progress)}%</span>
+            </div>
+            <div className="h-1.5 overflow-hidden rounded-full bg-[#E2E8F0]">
+              <div className="h-full rounded-full bg-[#38BDF8]" style={{ width: `${progress}%` }} />
+            </div>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2 xl:justify-end" onClick={(event) => event.stopPropagation()}>
+          <Button
+            variant="outline"
+            size="default"
+            onClick={() => onView(contract)}
+            className="h-10 rounded-[8px] border-[#DDE5EF] px-4 font-black text-[#102B4E]"
+          >
+            <Eye className="ml-1.5 h-4 w-4" />
+            عرض
+          </Button>
+
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="default" className="h-10 rounded-[8px] border-[#DDE5EF] px-3">
+                <MoreVertical className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-52" dir="rtl">
+              <DropdownMenuItem onClick={() => onEdit(contract)}>
+                <Edit className="ml-2 h-4 w-4" />
+                تعديل العقد
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => onManageStatus(contract)}>
+                <Settings className="ml-2 h-4 w-4" />
+                إدارة الحالة
+              </DropdownMenuItem>
+              {isActive && (
+                <>
+                  <DropdownMenuItem onClick={() => onRenew(contract)}>
+                    <RefreshCw className="ml-2 h-4 w-4" />
+                    تجديد العقد
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => onCancel(contract)} className="text-[#FB6B7A] focus:text-[#FB6B7A]">
+                    <XCircle className="ml-2 h-4 w-4" />
+                    إلغاء العقد
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => onConvertToLegal(contract)} className="text-[#7C83F6] focus:text-[#7C83F6]">
+                    <Scale className="ml-2 h-4 w-4" />
+                    تحويل للشؤون القانونية
+                  </DropdownMenuItem>
+                </>
+              )}
+              {isCancelled && (
+                <>
+                  <DropdownMenuItem onClick={() => onReactivate(contract)} disabled={isReactivating}>
+                    <Play className="ml-2 h-4 w-4" />
+                    {isReactivating ? "جاري التنشيط..." : "تنشيط العقد"}
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => onConvertToLegal(contract)} className="text-[#7C83F6] focus:text-[#7C83F6]">
+                    <Scale className="ml-2 h-4 w-4" />
+                    تحويل للشؤون القانونية
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => onDelete(contract)} className="text-[#FB6B7A] focus:text-[#FB6B7A]">
+                    <Trash2 className="ml-2 h-4 w-4" />
+                    حذف نهائي
+                  </DropdownMenuItem>
+                </>
+              )}
+              {hasLegalStatus && (
+                <DropdownMenuItem onClick={() => onRemoveLegal(contract)} className="text-[#22C7A1] focus:text-[#22C7A1]">
+                  <CheckCircle className="ml-2 h-4 w-4" />
+                  إزالة الإجراء القانوني
+                </DropdownMenuItem>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </div>
+    </motion.div>
+  );
+};
+
 function ContractsRedesigned() {
   // State management
   const [showContractWizard, setShowContractWizard] = useState(false);
@@ -1014,6 +1343,78 @@ function ContractsRedesigned() {
         dir="rtl"
         style={contractsSystemStyle}
       >
+        <header className="contracts-command-header sticky top-0 z-40 border-b border-[#DDE5EF] bg-white/95 backdrop-blur">
+          <div className="mx-auto max-w-[1600px] px-4 sm:px-6 lg:px-8">
+            <div className="flex flex-col gap-4 py-4 lg:flex-row lg:items-center lg:justify-between">
+              <div className="flex items-center gap-4">
+                <div className="flex h-12 w-12 items-center justify-center rounded-[8px] bg-[#102B4E] text-white shadow-[0_18px_32px_-24px_rgba(16,43,78,.8)]">
+                  <FileSignature className="h-6 w-6" />
+                </div>
+                <div>
+                  <div className="mb-1 flex flex-wrap items-center gap-2">
+                    <span className="rounded-full bg-[#E8FBF6] px-3 py-1 text-xs font-black text-[#22C7A1]">مركز العقود</span>
+                    <span className="rounded-full bg-[#EAF8FE] px-3 py-1 text-xs font-black text-[#38BDF8]">تشغيل ومتابعة</span>
+                  </div>
+                  <h1 className="text-2xl font-black text-[#020617]">إدارة العقود</h1>
+                  <p className="text-sm font-bold text-[#64748B]">تابع العقود النشطة، التحصيل، المسودات، والحالات القانونية من شاشة واحدة.</p>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2">
+                <Button
+                  onClick={() => setShowContractWizard(true)}
+                  className="h-11 rounded-[8px] bg-[#22C7A1] px-4 font-black text-white hover:bg-[#1DAE8D]"
+                >
+                  <Plus className="ml-2 h-4 w-4" />
+                  عقد جديد
+                </Button>
+
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="default" className="h-11 rounded-[8px] border-[#DDE5EF] px-3">
+                      <MoreVertical className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-56" dir="rtl">
+                    {user?.roles?.includes('super_admin') && (
+                      <DropdownMenuItem onClick={() => setShowCSVUpload(true)}>
+                        <Upload className="ml-2 h-4 w-4" />
+                        استيراد CSV
+                      </DropdownMenuItem>
+                    )}
+                    <DropdownMenuItem onClick={() => setShowContractPDFImport(true)}>
+                      <FileText className="ml-2 h-4 w-4" />
+                      استيراد PDF
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setShowRemindersDialog(true)}>
+                      <MessageSquare className="ml-2 h-4 w-4" />
+                      إرسال تنبيهات
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => navigate('/contracts/signed-agreements')}>
+                      <FileSignature className="ml-2 h-4 w-4" />
+                      العقود الموقعة
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={() => setShowExportDialog(true)}>
+                      <Download className="ml-2 h-4 w-4" />
+                      تصدير البيانات
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+
+                <Button
+                  onClick={handleRefresh}
+                  variant="outline"
+                  size="default"
+                  className="h-11 rounded-[8px] border-[#DDE5EF]"
+                  disabled={isRefreshing}
+                >
+                  <RefreshCw className={cn("h-4 w-4", isRefreshing && "animate-spin")} />
+                </Button>
+              </div>
+            </div>
+          </div>
+        </header>
         {/* Header Section */}
         <header className="sticky top-0 z-40 bg-white border-b border-slate-200">
           <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8">
@@ -1096,7 +1497,57 @@ function ContractsRedesigned() {
         </header>
 
         {/* Main Content */}
-        <main className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+        <main className="contracts-workspace max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+          <section className="rounded-[8px] border border-[#DDE5EF] bg-white p-4 shadow-[0_18px_42px_-34px_rgba(15,23,42,.58)]">
+            <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+              <div>
+                <p className="text-xs font-black text-[#22C7A1]">لوحة تشغيل العقود</p>
+                <h2 className="mt-1 text-xl font-black text-[#020617]">ما الذي يحتاج انتباهك الآن؟</h2>
+                <p className="mt-1 text-sm font-bold text-[#64748B]">ابدأ من الحالة، ثم افتح العقد أو نفّذ إجراء سريع بدون مغادرة السجل.</p>
+              </div>
+              <div className="flex flex-wrap gap-2 text-xs font-black">
+                <span className="rounded-full bg-[#E8FBF6] px-3 py-1 text-[#22C7A1]">{tabCounts.active} نشط</span>
+                <span className="rounded-full bg-[#FFF0F2] px-3 py-1 text-[#FB6B7A]">{tabCounts.cancelled} ملغى</span>
+                <span className="rounded-full bg-[#ECEEFE] px-3 py-1 text-[#7C83F6]">{tabCounts.legal_action} قانوني</span>
+              </div>
+            </div>
+
+            <motion.div
+              variants={containerVariants}
+              initial="hidden"
+              animate="visible"
+              className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4"
+            >
+              <OperationsMetric
+                label="إجمالي العقود"
+                value={safeContracts.length}
+                caption={`${sortedContracts.length} ضمن الفلتر الحالي`}
+                icon={FileText}
+                tone="neutral"
+              />
+              <OperationsMetric
+                label="العقود النشطة"
+                value={tabCounts.active}
+                caption="جاهزة للتشغيل والتحصيل"
+                icon={CheckCircle}
+                tone="success"
+              />
+              <OperationsMetric
+                label="الإيراد المتوقع"
+                value={formatCurrency(safeStatistics.totalRevenue || 0)}
+                caption="من العقود المسجلة"
+                icon={TrendingUp}
+                tone="info"
+              />
+              <OperationsMetric
+                label="ملفات قانونية"
+                value={tabCounts.legal_action}
+                caption="تحتاج متابعة منفصلة"
+                icon={Scale}
+                tone="focus"
+              />
+            </motion.div>
+          </section>
           {/* Statistics Cards */}
           <motion.div
             variants={containerVariants}
@@ -1198,6 +1649,44 @@ function ContractsRedesigned() {
             )}
           </AnimatePresence>
 
+          <section className="contracts-filter-panel rounded-[8px] border border-[#DDE5EF] bg-white p-4 shadow-[0_18px_42px_-34px_rgba(15,23,42,.58)]">
+            <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_240px]">
+              <div className="relative">
+                <Search className="absolute right-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#94A3B8]" />
+                <Input
+                  placeholder="ابحث برقم العقد، اسم العميل، رقم الجوال، الرقم الشخصي، أو رقم المركبة..."
+                  value={searchTerm}
+                  onChange={(event) => {
+                    setSearchTerm(event.target.value);
+                    setPage(1);
+                  }}
+                  className="h-12 rounded-[8px] border-[#DDE5EF] bg-[#F8FAFC] pr-12 text-base font-bold text-[#020617] focus:border-[#22C7A1]"
+                />
+                {searchTerm && (
+                  <button
+                    type="button"
+                    onClick={() => setSearchTerm("")}
+                    className="absolute left-3 top-1/2 rounded-[8px] p-1.5 text-[#94A3B8] transition hover:bg-[#EEF2F7]"
+                    aria-label="مسح البحث"
+                  >
+                    <XCircle className="h-5 w-5" />
+                  </button>
+                )}
+              </div>
+
+              <select
+                value={sortBy}
+                onChange={(event) => setSortBy(event.target.value as any)}
+                className="h-12 rounded-[8px] border border-[#DDE5EF] bg-white px-4 text-sm font-black text-[#020617] outline-none transition focus:border-[#22C7A1] focus:ring-2 focus:ring-[#22C7A1]/20"
+              >
+                <option value="default">الترتيب الافتراضي</option>
+                <option value="customer_name">حسب اسم العميل</option>
+                <option value="contract_date">الأحدث حسب تاريخ العقد</option>
+                <option value="end_date">الأقرب انتهاءً</option>
+              </select>
+            </div>
+          </section>
+
           {/* Search & Filters Bar */}
           <div className="bg-white rounded-xl border border-slate-200/60 shadow-sm p-4">
             <div className="flex flex-col lg:flex-row gap-4">
@@ -1273,7 +1762,7 @@ function ContractsRedesigned() {
                           isActive && tab.color === 'blue' && "text-blue-500",
                           isActive && tab.color === 'slate' && "text-slate-500",
                         )} />
-                        <span>{tab.label}</span>
+                        <span>{getContractTabLabel(tab.id)}</span>
                         {count > 0 && tab.id !== 'settings' && (
                           <Badge 
                             variant={isActive ? "default" : "secondary"}
@@ -1331,7 +1820,7 @@ function ContractsRedesigned() {
                   className="space-y-4"
                 >
                   {sortedContracts.map((contract) => (
-                    <ContractListItem
+                    <ContractOperationsRow
                       key={contract.id}
                       contract={contract}
                       onView={handleViewDetails}
@@ -1560,6 +2049,18 @@ function ContractsRedesigned() {
           .contracts-system {
             --contracts-radius: 8px;
             color: var(--contracts-text);
+          }
+
+          .contracts-system > header:not(.contracts-command-header) {
+            display: none !important;
+          }
+
+          .contracts-workspace > .grid.grid-cols-2.sm\\:grid-cols-2.lg\\:grid-cols-4 {
+            display: none !important;
+          }
+
+          .contracts-workspace > .bg-white.rounded-xl.border.border-slate-200\\/60.shadow-sm.p-4 {
+            display: none !important;
           }
 
           .contracts-system header,

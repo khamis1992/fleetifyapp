@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import {
@@ -23,6 +23,7 @@ import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { toast } from 'sonner';
+import { FeatureTourButton, FeatureTourDialog, type FeatureTourContent } from '@/components/common/FeatureTourGuide';
 
 interface VehicleComprehensiveReportDialogProps {
   open: boolean;
@@ -30,12 +31,25 @@ interface VehicleComprehensiveReportDialogProps {
   vehicleId: string;
 }
 
+const reportTour = {
+  title: 'جولة تقرير المركبة',
+  description: 'شرح محتوى التقرير والأزرار الموجودة داخله قبل الطباعة أو إنشاء إجراء قانوني.',
+  steps: [
+    'يعرض التقرير ملخص المركبة ورقم اللوحة ومبالغ المخالفات غير المسددة.',
+    'قسم سجل العقود يساعدك على معرفة العميل المرتبط بالمركبة خلال فترة الاستخدام.',
+    'زر المطرقة داخل كل عقد ينشئ طلب تحويل مخالفات بصيغة رسمية للطباعة والمتابعة القانونية.',
+    'زر طباعة التقرير يفتح تقرير HTML مستقل يشمل بيانات المركبة والعقود والمخالفات.',
+    'راجع المبالغ والعقود قبل الطباعة لأن التقرير يستخدم البيانات الحالية من النظام.',
+  ],
+} satisfies FeatureTourContent;
+
 export const VehicleComprehensiveReportDialog: React.FC<VehicleComprehensiveReportDialogProps> = ({
   open,
   onOpenChange,
   vehicleId,
 }) => {
   const { formatCurrency } = useCurrencyFormatter();
+  const [activeTour, setActiveTour] = useState<FeatureTourContent | null>(null);
 
   // جلب بيانات المركبة
   const { data: vehicle, isLoading: loadingVehicle } = useQuery({
@@ -701,13 +715,18 @@ export const VehicleComprehensiveReportDialog: React.FC<VehicleComprehensiveRepo
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <FileText className="w-5 h-5 text-primary" />
-            تقرير شامل للمركبة
-          </DialogTitle>
-          <DialogDescription>
-            يتضمن التقرير بيانات المركبة، المخالفات المرورية، والعقود المرتبطة
-          </DialogDescription>
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <DialogTitle className="flex items-center gap-2">
+                <FileText className="w-5 h-5 text-primary" />
+                تقرير شامل للمركبة
+              </DialogTitle>
+              <DialogDescription>
+                يتضمن التقرير بيانات المركبة، المخالفات المرورية، والعقود المرتبطة
+              </DialogDescription>
+            </div>
+            <FeatureTourButton tour={reportTour} onStart={setActiveTour} />
+          </div>
         </DialogHeader>
 
         {isLoading ? (
@@ -797,6 +816,7 @@ export const VehicleComprehensiveReportDialog: React.FC<VehicleComprehensiveRepo
           </div>
         )}
       </DialogContent>
+      <FeatureTourDialog tour={activeTour} onOpenChange={(open) => !open && setActiveTour(null)} />
     </Dialog>
   );
 };

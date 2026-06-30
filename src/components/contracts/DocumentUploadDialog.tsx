@@ -21,10 +21,12 @@ import {
   X,
   FileImage,
   File,
-  Loader2
+  Loader2,
+  PlayCircle
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { useTourGuide } from '@/components/tour-guide';
 
 import { useFleetifyTranslation } from "@/hooks/useTranslation";
 export interface DocumentUploadData {
@@ -88,6 +90,7 @@ export function DocumentUploadDialog({
 }: DocumentUploadDialogProps) {
 
   const { t } = useFleetifyTranslation("ui");
+  const { startTour } = useTourGuide();
   const [documentType, setDocumentType] = useState<string>('general');
   const [documentName, setDocumentName] = useState<string>('');
   const [selectedFile, setSelectedFile] = useState<FileWithPreview | null>(null);
@@ -245,7 +248,7 @@ export function DocumentUploadDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="max-w-lg" data-tour="contract-document-upload-dialog">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-xl">
             <div className="w-10 h-10 bg-gradient-to-br from-teal-400 to-teal-600 rounded-xl flex items-center justify-center">
@@ -256,11 +259,21 @@ export function DocumentUploadDialog({
           <DialogDescription>
             قم برفع مستندات العقد كالصور، ملفات PDF، والمستندات الرقمية الأخرى
           </DialogDescription>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => startTour('contract-document-upload')}
+            className="mt-2 h-9 w-fit gap-2 rounded-lg border-emerald-200 bg-emerald-50 font-bold text-emerald-700 hover:bg-emerald-100"
+            data-tour="contract-document-upload-tour-start"
+          >
+            <PlayCircle className="h-4 w-4" />
+            ابدأ الجولة التعريفية
+          </Button>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-5">
           {/* Document Type Selection */}
-          <div className="space-y-2">
+          <div className="space-y-2" data-tour="contract-document-upload-type">
             <Label htmlFor="document_type" className="text-base font-medium">نوع المستند</Label>
             <Select value={documentType} onValueChange={setDocumentType}>
               <SelectTrigger id="document_type" className="w-full h-11">
@@ -277,7 +290,7 @@ export function DocumentUploadDialog({
           </div>
 
           {/* Document Name */}
-          <div className="space-y-2">
+          <div className="space-y-2" data-tour="contract-document-upload-name">
             <Label htmlFor="document_name" className="text-base font-medium">اسم المستند</Label>
             <Input
               id="document_name"
@@ -290,7 +303,7 @@ export function DocumentUploadDialog({
           </div>
 
           {/* File Upload Area */}
-          <div className="space-y-2">
+          <div className="space-y-2" data-tour="contract-document-upload-file">
             <Label className="text-base font-medium">رفع الملف</Label>
             {!selectedFile ? (
               <div
@@ -384,7 +397,7 @@ export function DocumentUploadDialog({
           </div>
 
           {/* Notes */}
-          <div className="space-y-2">
+          <div className="space-y-2" data-tour="contract-document-upload-notes">
             <Label htmlFor="notes" className="text-base font-medium">ملاحظات (اختياري)</Label>
             <Textarea
               id="notes"
@@ -397,7 +410,7 @@ export function DocumentUploadDialog({
           </div>
 
           {/* Required Checkbox */}
-          <div className="flex items-center gap-3 p-3 rounded-lg border border-slate-200 bg-slate-50">
+          <div className="flex items-center gap-3 p-3 rounded-lg border border-slate-200 bg-slate-50" data-tour="contract-document-upload-required">
             <Checkbox
               id="is_required"
               checked={isRequired}
@@ -420,7 +433,7 @@ export function DocumentUploadDialog({
           )}
 
           {/* Footer Actions */}
-          <DialogFooter className="gap-2 sm:gap-0">
+          <DialogFooter className="gap-2 sm:gap-0" data-tour="contract-document-upload-actions">
             <Button
               type="button"
               variant="outline"
@@ -434,6 +447,7 @@ export function DocumentUploadDialog({
               type="submit"
               disabled={isSubmitting || !selectedFile}
               className="flex-1 sm:flex-none bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700"
+              data-tour="contract-document-upload-submit"
             >
               {isSubmitting ? (
                 <>

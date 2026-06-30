@@ -36,6 +36,7 @@ interface MaintenanceAlert {
 interface MaintenanceAlertsPanelProps {
   onMaintenanceClick?: (maintenanceId: string) => void;
   onVehicleClick?: (vehicleId: string) => void;
+  onViewAllClick?: () => void;
   maxItems?: number;
   compact?: boolean;
 }
@@ -43,6 +44,7 @@ interface MaintenanceAlertsPanelProps {
 export function MaintenanceAlertsPanel({
   onMaintenanceClick,
   onVehicleClick,
+  onViewAllClick,
   maxItems = 5,
   compact = false
 }: MaintenanceAlertsPanelProps) {
@@ -349,7 +351,11 @@ export function MaintenanceAlertsPanel({
       {/* Footer */}
       {!compact && alertCounts.total >= maxItems && (
         <div className="mt-4 pt-3 border-t border-neutral-100 text-center">
-          <button className="text-sm text-coral-600 hover:text-coral-700 font-medium">
+          <button
+            type="button"
+            onClick={onViewAllClick}
+            className="text-sm text-coral-600 hover:text-coral-700 font-medium"
+          >
             عرض كل التنبيهات ({alertCounts.total})
           </button>
         </div>

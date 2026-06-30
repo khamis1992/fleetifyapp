@@ -6,6 +6,14 @@ import { generateRefNumber, formatDateAr } from './shared';
 import { generateOfficialLetter } from './official-letter';
 import type { ExplanatoryMemoData } from './types';
 
+function toEnglishDigits(value: string | number | undefined | null): string {
+  if (value === undefined || value === null) return '';
+
+  return String(value)
+    .replace(/[٠-٩]/g, (digit) => String('٠١٢٣٤٥٦٧٨٩'.indexOf(digit)))
+    .replace(/[۰-۹]/g, (digit) => String('۰۱۲۳۴۵۶۷۸۹'.indexOf(digit)));
+}
+
 /**
  * توليد مذكرة شارحة للدعوى
  * النص مطابق للمذكرة المستخدمة في صفحة العملاء المتأخرين
@@ -13,6 +21,7 @@ import type { ExplanatoryMemoData } from './types';
 export function generateExplanatoryMemoHtml(data: ExplanatoryMemoData): string {
   const refNumber = generateRefNumber();
   const currentDate = formatDateAr();
+  const contractStartDate = toEnglishDigits(data.contractStartDate);
 
   // حساب المبالغ
   const overdueRent = data.overdueRent || 0;
@@ -27,7 +36,7 @@ export function generateExplanatoryMemoHtml(data: ExplanatoryMemoData): string {
   const hasViolations = data.hasViolations || violationsCount > 0;
 
   // توليد نص الوقائع المفصل
-  let factsText = `أبرمت الشركة عقد إيجار مركبة رقم (${data.contractNumber})${data.contractStartDate ? ` بتاريخ ${data.contractStartDate}` : ''} مع المدعى عليه، التزم بموجبه بدفع الإيجار الشهري${monthlyRent > 0 ? ` البالغ (${monthlyRent.toLocaleString('ar-QA')}) ريال قطري` : ''} والمحافظة على المركبة${data.vehiclePlate ? ` رقم (${data.vehiclePlate})` : ''}${data.vehicleInfo ? ` ${data.vehicleInfo}` : ''} وسداد جميع الالتزامات المترتبة على استخدامها.\r\n\r\nإلا أن المدعى عليه أخلَّ بهذه الالتزامات إخلالاً واضحًا، إذ تأخر في سداد الإيجارات المستحقة${monthsUnpaid > 0 ? ` لمدة (${monthsUnpaid}) شهر` : ''}${daysOverdue > 0 ? `، بإجمالي (${daysOverdue}) يوم تأخير` : ''}${hasViolations ? `، وسُجلت على المركبة (${violationsCount}) مخالفة مرورية بقيمة إجمالية (${violationsAmount.toLocaleString('ar-QA')}) ريال قطري ناتجة عن استخدامه الشخصي` : ''}، ورفض تسليم المركبة وسداد المستحقات دون مبرر مشروع.`;
+  let factsText = `أبرمت الشركة عقد إيجار مركبة رقم (${data.contractNumber})${data.contractStartDate ? ` بتاريخ ${contractStartDate}` : ''} مع المدعى عليه، التزم بموجبه بدفع الإيجار الشهري${monthlyRent > 0 ? ` البالغ (${monthlyRent.toLocaleString('ar-QA')}) ريال قطري` : ''} والمحافظة على المركبة${data.vehiclePlate ? ` رقم (${data.vehiclePlate})` : ''}${data.vehicleInfo ? ` ${data.vehicleInfo}` : ''} وسداد جميع الالتزامات المترتبة على استخدامها.\r\n\r\nإلا أن المدعى عليه أخلَّ بهذه الالتزامات إخلالاً واضحًا، إذ تأخر في سداد الإيجارات المستحقة${monthsUnpaid > 0 ? ` لمدة (${monthsUnpaid}) شهر` : ''}${daysOverdue > 0 ? `، بإجمالي (${daysOverdue}) يوم تأخير` : ''}${hasViolations ? `، وسُجلت على المركبة (${violationsCount}) مخالفة مرورية بقيمة إجمالية (${violationsAmount.toLocaleString('ar-QA')}) ريال قطري ناتجة عن استخدامه الشخصي` : ''}، ورفض تسليم المركبة وسداد المستحقات دون مبرر مشروع.`;
 
   if (hasViolations) {
     factsText += `\r\n\r\nونظرًا لأن المخالفات المرورية تصدر باسم مالك المركبة (الشركة) بحكم النظام، فإن الشركة لا تطلب من عدالتكم الموقرة إلزام المدعى عليه بسداد قيمتها نقدًا، وإنما تلتمس تحويل هذه المخالفات رسميًا على رقمه الشخصي باعتباره السائق والمستخدم الفعلي للمركبة وقت وقوعها، وذلك استنادًا إلى سجلات المخالفات الصادرة من الإدارة العامة للمرور.`;

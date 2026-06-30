@@ -27,6 +27,19 @@ import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter";
 import { useCompanyCurrency } from "@/hooks/useCompanyCurrency";
 import { systemColorPattern } from "@/lib/design-system/systemColorPattern";
 import { useFinanceAccessGuard } from "@/hooks/finance/useFinanceAccessGuard";
+import { FeatureTourButton, FeatureTourDialog, type FeatureTourContent } from "@/components/common/FeatureTourGuide";
+
+const invoiceEditTour = {
+  title: "جولة تعديل الفاتورة",
+  description: "شرح طريقة تعديل بيانات الفاتورة بدون إرباك التحصيل.",
+  steps: [
+    "راجع رقم الفاتورة وحالتها قبل التعديل، خاصة إذا كانت مدفوعة جزئياً أو مرتبطة بعقد.",
+    "عدّل بيانات التاريخ والاستحقاق والعميل أو العقد فقط عند وجود سبب واضح.",
+    "راجع البنود والحسابات ومراكز التكلفة لأن أي تغيير يؤثر على الإجمالي والتقارير.",
+    "استخدم إضافة بند أو حذف بند لتصحيح محتوى الفاتورة، ثم راجع الإجمالي بعد التعديل.",
+    "احفظ التغييرات بعد التأكد من أن الفاتورة لا تتعارض مع الدفعات المسجلة.",
+  ],
+} satisfies FeatureTourContent;
 
 interface InvoiceItem {
   id: string;
@@ -84,6 +97,7 @@ export function InvoiceEditDialog({ open, onOpenChange, invoice, onSave }: Invoi
   const { formatCurrency } = useCurrencyFormatter();
   const { currency: companyCurrency } = useCompanyCurrency();
   const financeAccess = useFinanceAccessGuard();
+  const [activeTour, setActiveTour] = useState<FeatureTourContent | null>(null);
 
   const [invoiceData, setInvoiceData] = useState({
     invoice_number: "",
@@ -300,6 +314,11 @@ export function InvoiceEditDialog({ open, onOpenChange, invoice, onSave }: Invoi
             </div>
           </div>
           <div className="invoice-edit-status">
+            <FeatureTourButton
+              tour={invoiceEditTour}
+              onStart={setActiveTour}
+              className="h-9 gap-2 border-[#E5EAF1] bg-white text-[#020617] hover:bg-[#F6F8FB]"
+            />
             <span>الحالة</span>
             <strong>{invoice.payment_status || "غير محدد"}</strong>
           </div>
@@ -913,6 +932,7 @@ export function InvoiceEditDialog({ open, onOpenChange, invoice, onSave }: Invoi
             }
           }
         `}</style>
+        <FeatureTourDialog tour={activeTour} onOpenChange={(open) => !open && setActiveTour(null)} />
       </DialogContent>
     </Dialog>
   );

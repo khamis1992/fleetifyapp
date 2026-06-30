@@ -15,7 +15,7 @@ import { useCostCenters } from "@/hooks/useCostCenters"
 import { useAuth } from "@/contexts/AuthContext"
 import { 
   Car, Wrench, Zap, FileText, Calendar, DollarSign, 
-  CreditCard, Building, Phone, Building2, Check
+  CreditCard, Building, Phone, Building2, Check, PlayCircle
 } from "lucide-react"
 import "./MaintenanceForm.css"
 
@@ -34,6 +34,7 @@ export function MaintenanceForm({ maintenance, vehicleId, open, onOpenChange }: 
   const updateMaintenance = useUpdateVehicleMaintenance()
   const scheduleMaintenanceStatus = useScheduleMaintenanceStatus()
   const [moveToMaintenance, setMoveToMaintenance] = useState(true)
+  const [showGuide, setShowGuide] = useState(false)
   
   const form = useForm({
     defaultValues: {
@@ -183,8 +184,30 @@ export function MaintenanceForm({ maintenance, vehicleId, open, onOpenChange }: 
                 </p>
               </div>
             </div>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setShowGuide((value) => !value)}
+              className="bg-white/95 text-slate-900 hover:bg-white gap-2"
+            >
+              <PlayCircle className="w-4 h-4" />
+              ابدأ الجولة التعريفية
+            </Button>
           </div>
         </div>
+
+        {showGuide && (
+          <div className="mx-6 mt-4 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-right">
+            <h3 className="mb-3 text-sm font-bold text-emerald-900">كيف تستخدم نموذج الصيانة؟</h3>
+            <ol className="space-y-2 text-sm leading-6 text-slate-700">
+              <li>1. اختر المركبة ونوع الصيانة والأولوية حتى يتم توجيه الطلب بشكل صحيح.</li>
+              <li>2. اكتب وصفًا واضحًا للعمل المطلوب وحدد التاريخ والتكلفة المتوقعة.</li>
+              <li>3. أضف بيانات الدفع والمورد ومركز التكلفة إذا كانت متوفرة.</li>
+              <li>4. استخدم خيار نقل المركبة للصيانة عندما يجب إيقافها عن التشغيل.</li>
+              <li>5. اضغط جدولة الصيانة لحفظ الطلب وتحديث بيانات الأسطول.</li>
+            </ol>
+          </div>
+        )}
 
         {/* Form Content */}
         <Form {...form}>

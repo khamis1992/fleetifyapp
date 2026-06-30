@@ -27,6 +27,14 @@ export interface ExtractedVehicleData {
   insuranceExpiry?: string;
 }
 
+export interface MatchCandidate {
+  number: string;
+  normalizedNumber: string;
+  confidence: number;
+  source: 'server' | 'labeled_text' | 'barcode' | 'spaced_digits' | 'general_number' | 'manual';
+  reason: string;
+}
+
 export interface BatchProgress {
   total: number;
   processed: number;
@@ -47,6 +55,9 @@ export interface UploadedFile {
   status: 'pending' | 'scanning' | 'matched' | 'not_found' | 'uploaded' | 'error' | 'skipped';
   extractedNumber?: string;
   normalizedNumber?: string;
+  matchConfidence?: number;
+  matchReason?: string;
+  matchCandidates?: MatchCandidate[];
   extractedData?: ExtractedVehicleData;
   extractedText?: string;
   matchedVehicle?: {

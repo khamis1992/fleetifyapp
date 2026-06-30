@@ -274,6 +274,8 @@ export function useCreateTrafficViolation() {
     },
     onSuccess: async (data) => {
       queryClient.invalidateQueries({ queryKey: ['traffic-violations'] });
+      queryClient.invalidateQueries({ queryKey: ['traffic-violations-count'] });
+      queryClient.invalidateQueries({ queryKey: ['traffic-violations-stats'] });
       
       // Create journal entry for traffic violation
       try {
@@ -323,6 +325,8 @@ export function useUpdateTrafficViolation() {
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['traffic-violations'] });
+      queryClient.invalidateQueries({ queryKey: ['traffic-violations-count'] });
+      queryClient.invalidateQueries({ queryKey: ['traffic-violations-stats'] });
       queryClient.invalidateQueries({ queryKey: ['traffic-violation', data.id] });
       toast.success('تم تحديث المخالفة بنجاح');
     },
@@ -353,6 +357,8 @@ export function useDeleteTrafficViolation() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['traffic-violations'] });
+      queryClient.invalidateQueries({ queryKey: ['traffic-violations-count'] });
+      queryClient.invalidateQueries({ queryKey: ['traffic-violations-stats'] });
       toast.success('تم حذف المخالفة بنجاح');
     },
     onError: (error) => {
@@ -363,6 +369,54 @@ export function useDeleteTrafficViolation() {
 }
 
 // Hook لتأكيد المخالفة (تغيير الحالة إلى مؤكدة)
+export function useDeleteAllTrafficViolations() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async () => {
+      const { data: user } = await supabase.auth.getUser();
+      if (!user.user) throw new Error('المستخدم غير مسجل الدخول');
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('company_id')
+        .eq('user_id', user.user.id)
+        .single();
+
+      if (!profile?.company_id) throw new Error('لم يتم العثور على بيانات الشركة');
+
+      const { count, error } = await supabase
+        .from('penalties')
+        .delete({ count: 'exact' })
+        .eq('company_id', profile.company_id);
+
+      if (error) {
+        console.error('Error deleting all traffic violations:', error);
+        throw error;
+      }
+
+      return count || 0;
+    },
+    onSuccess: (deletedCount) => {
+      queryClient.invalidateQueries({
+        predicate: (query) =>
+          Array.isArray(query.queryKey) &&
+          typeof query.queryKey[0] === 'string' &&
+          query.queryKey[0].includes('traffic-violations'),
+      });
+      queryClient.invalidateQueries({ queryKey: ['traffic-violations-count'] });
+      queryClient.invalidateQueries({ queryKey: ['traffic-violations-stats'] });
+      queryClient.invalidateQueries({ queryKey: ['traffic-violations-dashboard-stats'] });
+      queryClient.invalidateQueries({ queryKey: ['traffic-violations-all-for-report'] });
+      toast.success(`تم حذف ${deletedCount.toLocaleString('en-US')} مخالفة مرورية بنجاح`);
+    },
+    onError: (error) => {
+      console.error('Error deleting all traffic violations:', error);
+      toast.error('حدث خطأ أثناء حذف جميع المخالفات المرورية');
+    },
+  });
+}
+
 export function useConfirmTrafficViolation() {
   const queryClient = useQueryClient();
 
@@ -384,6 +438,8 @@ export function useConfirmTrafficViolation() {
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['traffic-violations'] });
+      queryClient.invalidateQueries({ queryKey: ['traffic-violations-count'] });
+      queryClient.invalidateQueries({ queryKey: ['traffic-violations-stats'] });
       queryClient.invalidateQueries({ queryKey: ['traffic-violation', data.id] });
       toast.success('تم تأكيد المخالفة بنجاح - سيتم إنشاء قيد محاسبي تلقائياً');
     },
@@ -416,6 +472,8 @@ export function useUpdatePaymentStatus() {
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['traffic-violations'] });
+      queryClient.invalidateQueries({ queryKey: ['traffic-violations-count'] });
+      queryClient.invalidateQueries({ queryKey: ['traffic-violations-stats'] });
       queryClient.invalidateQueries({ queryKey: ['traffic-violation', data.id] });
       toast.success('تم تحديث حالة الدفع بنجاح');
     },
@@ -446,13 +504,17 @@ export function useTrafficViolationsStats() {
       // Fetch ALL violations for accurate stats (without limit)
       const { data: violations, error } = await supabase
         .from('penalties')
-        .select('status, payment_status, amount, penalty_date')
+        .select('status, payment_status, amount, penalty_date, customer_id, contract_id')
         .eq('company_id', profile.company_id);
 
       if (error) {
         console.error('Error fetching violations stats:', error);
         throw error;
       }
+
+      const paidCount = violations.filter(v => v.payment_status === 'paid').length;
+      const unpaidCount = violations.filter(v => v.payment_status === 'unpaid').length;
+      const partiallyPaidCount = violations.filter(v => v.payment_status === 'partially_paid').length;
 
       const stats = {
         total: violations.length,
@@ -461,11 +523,13 @@ export function useTrafficViolationsStats() {
         cancelled: violations.filter(v => v.status === 'cancelled').length,
         totalAmount: violations.reduce((sum, v) => sum + (v.amount || 0), 0),
         paidAmount: violations.filter(v => v.payment_status === 'paid').reduce((sum, v) => sum + (v.amount || 0), 0),
-        unpaidAmount: violations.filter(v => v.payment_status === 'unpaid').reduce((sum, v) => sum + (v.amount || 0), 0),
+        unpaidAmount: violations.filter(v => v.payment_status !== 'paid').reduce((sum, v) => sum + (v.amount || 0), 0),
         partiallyPaidAmount: violations.filter(v => v.payment_status === 'partially_paid').reduce((sum, v) => sum + (v.amount || 0), 0),
-        paidCount: violations.filter(v => v.payment_status === 'paid').length,
-        unpaidCount: violations.filter(v => v.payment_status === 'unpaid').length,
-        partiallyPaidCount: violations.filter(v => v.payment_status === 'partially_paid').length,
+        paidCount,
+        unpaidCount,
+        partiallyPaidCount,
+        unlinkedCount: violations.filter(v => !v.customer_id || !v.contract_id).length,
+        collectionRate: violations.length ? Math.round((paidCount / violations.length) * 100) : 0,
         violations: violations // Return raw data for dashboard calculations
       };
 

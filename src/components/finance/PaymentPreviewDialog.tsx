@@ -7,6 +7,18 @@ import { generateReceiptPDF, downloadPDF } from "@/utils/receiptGenerator";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
 import { toast } from "sonner";
+import { FeatureTourButton, FeatureTourDialog, type FeatureTourContent } from "@/components/common/FeatureTourGuide";
+
+const paymentPreviewTour = {
+  title: "جولة معاينة سند الدفعة",
+  description: "شرح مراجعة سند القبض وطباعته أو تحميله.",
+  steps: [
+    "راجع رقم السند واسم العميل والمبلغ وطريقة الدفع قبل الإرسال أو الطباعة.",
+    "زر الطباعة يفتح نسخة جاهزة للطابعة مباشرة.",
+    "زر تحميل PDF يحفظ نسخة رسمية يمكن أرشفتها أو مشاركتها.",
+    "إذا وجدت خطأ في السند فارجع إلى سجل الدفعة أو إجراءات التصحيح قبل المشاركة.",
+  ],
+} satisfies FeatureTourContent;
 
 interface PaymentData {
   id?: string;
@@ -139,6 +151,7 @@ export const PaymentPreviewDialog: React.FC<PaymentPreviewDialogProps> = ({
 }) => {
   const receiptRef = useRef<HTMLDivElement>(null);
   const [isDownloading, setIsDownloading] = useState(false);
+  const [activeTour, setActiveTour] = useState<FeatureTourContent | null>(null);
 
   // تحويل بيانات الدفعة إلى صيغة PaymentReceipt
   const receiptData = useMemo(() => {
@@ -257,6 +270,7 @@ export const PaymentPreviewDialog: React.FC<PaymentPreviewDialogProps> = ({
 
         {/* Action Buttons */}
         <div className="flex items-center justify-end gap-2 mb-4">
+          <FeatureTourButton tour={paymentPreviewTour} onStart={setActiveTour} />
           <Button
             variant="outline"
             size="sm"
@@ -295,6 +309,7 @@ export const PaymentPreviewDialog: React.FC<PaymentPreviewDialogProps> = ({
             documentTitle={{ ar: 'سند قبض', en: 'PAYMENT VOUCHER' }}
           />
         </div>
+        <FeatureTourDialog tour={activeTour} onOpenChange={(open) => !open && setActiveTour(null)} />
       </DialogContent>
     </Dialog>
   );

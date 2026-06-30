@@ -53,6 +53,7 @@ import Tesseract from 'tesseract.js';
 
 import type {
   ExtractedVehicleData,
+  MatchCandidate,
   UploadedFile,
   ProcessingState,
   ProcessingStatus,
@@ -79,11 +80,86 @@ enum ProcessingError {
   NETWORK_ERROR = 'network_error',
 }
 
+const AUTO_MATCH_MIN_CONFIDENCE = 80;
+const DATA_UPDATE_MIN_CONFIDENCE = 90;
+
 // ==================== Helper Functions ====================
 const normalizeVehicleNumber = (number: string): string => {
   const digitsOnly = number.replace(/\D/g, '');
   const normalized = digitsOnly.replace(/^0+/, '');
   return normalized || '0';
+};
+
+const addMatchCandidate = (
+  candidates: Map<string, MatchCandidate>,
+  number: string | undefined,
+  confidence: number,
+  source: MatchCandidate['source'],
+  reason: string
+): void => {
+  if (!number) return;
+
+  const digits = number.replace(/\D/g, '');
+  if (digits.length < 3 || digits.length > 8) return;
+
+  const normalizedNumber = normalizeVehicleNumber(digits);
+  const existing = candidates.get(normalizedNumber);
+  if (!existing || confidence > existing.confidence) {
+    candidates.set(normalizedNumber, {
+      number: digits,
+      normalizedNumber,
+      confidence,
+      source,
+      reason,
+    });
+  }
+};
+
+const buildMatchCandidates = (
+  text: string,
+  serverData: ExtractedVehicleData,
+  localData: ExtractedVehicleData,
+  extractedNumbers: string[]
+): MatchCandidate[] => {
+  const candidates = new Map<string, MatchCandidate>();
+  const cleanText = text.replace(/[â€â€Ž]/g, '').replace(/\s+/g, ' ').trim();
+
+  addMatchCandidate(candidates, serverData.plateNumber, 96, 'server', 'تم استخراج رقم اللوحة من OCR الخادم');
+  addMatchCandidate(candidates, localData.plateNumber, 90, 'labeled_text', 'تم العثور على رقم بجانب تسمية اللوحة');
+
+  const labeledPatterns = [
+    /vehicle\s*n[o0]\.?\s*[:\.]?\s*(\d{3,8})/gi,
+    /veh(?:icle)?\s*n[o0]\.?\s*(\d{3,8})/gi,
+    /vehicle[^0-9]*(\d{4,8})/gi,
+    /رقم\s*اللوح[ةه]\s*[:\.]?\s*(\d{3,8})/g,
+    /اللوح[ةه]\s*[:\.]?\s*(\d{3,8})/g,
+  ];
+  for (const pattern of labeledPatterns) {
+    let match;
+    while ((match = pattern.exec(cleanText)) !== null) {
+      addMatchCandidate(candidates, match[1], 88, 'labeled_text', 'رقم مرتبط بتسمية اللوحة في النص');
+    }
+  }
+
+  const barcodePatterns = [/\*\s*([\d\s]{5,20})\s*\*/g, /\*\s*(\d[\d\s]*\d)\s*\*/g];
+  for (const pattern of barcodePatterns) {
+    let match;
+    while ((match = pattern.exec(cleanText)) !== null) {
+      addMatchCandidate(candidates, match[1].replace(/\s/g, ''), 84, 'barcode', 'رقم مستخرج من نمط باركود الاستمارة');
+    }
+  }
+
+  const spacedDigitsPattern = /(\d\s+\d\s+\d\s+\d(?:\s+\d)*)/g;
+  let spacedMatch;
+  while ((spacedMatch = spacedDigitsPattern.exec(cleanText)) !== null) {
+    addMatchCandidate(candidates, spacedMatch[1].replace(/\s/g, ''), 72, 'spaced_digits', 'رقم متباعد قد يكون لوحة');
+  }
+
+  for (const number of extractedNumbers) {
+    addMatchCandidate(candidates, number, 55, 'general_number', 'رقم عام مستخرج من النص ويحتاج تأكيد');
+  }
+
+  return Array.from(candidates.values()).sort((a, b) => b.confidence - a.confidence);
 };
 
 const extractVehicleNumbers = (text: string): string[] => {
@@ -493,23 +569,24 @@ const VehicleDocumentDistributionDialog: React.FC<VehicleDocumentDistributionDia
   }, [open]);
 
   // مطابقة المركبة
-  const findMatchingVehicle = useCallback((extractedNumbers: string[]) => {
-    for (const num of extractedNumbers) {
-      const normalized = normalizeVehicleNumber(num);
+  const findMatchingVehicle = useCallback((candidates: MatchCandidate[]) => {
+    for (const candidate of candidates) {
+      const num = candidate.number;
+      const normalized = candidate.normalizedNumber;
 
       if (vehicleMap.has(num)) {
-        return { vehicle: vehicleMap.get(num)!, extractedNumber: num, normalizedNumber: normalized };
+        return { vehicle: vehicleMap.get(num)!, candidate };
       }
 
       if (vehicleMap.has(normalized)) {
-        return { vehicle: vehicleMap.get(normalized)!, extractedNumber: num, normalizedNumber: normalized };
+        return { vehicle: vehicleMap.get(normalized)!, candidate };
       }
 
       for (const vehicle of vehicles) {
         if (vehicle.plate_number) {
           const vehicleNormalized = normalizeVehicleNumber(vehicle.plate_number);
           if (vehicleNormalized === normalized) {
-            return { vehicle, extractedNumber: num, normalizedNumber: normalized };
+            return { vehicle, candidate };
           }
         }
       }
@@ -628,16 +705,19 @@ const VehicleDocumentDistributionDialog: React.FC<VehicleDocumentDistributionDia
         };
       }
 
-      const match = findMatchingVehicle(
-        extractedData.plateNumber ? [extractedData.plateNumber, ...extractedNumbers] : extractedNumbers
-      );
+      const candidates = buildMatchCandidates(fullText, serverExtractedData, localExtractedData, extractedNumbers);
+      const bestCandidate = candidates[0];
+      const match = findMatchingVehicle(candidates);
 
-      if (match) {
+      if (match && match.candidate.confidence >= AUTO_MATCH_MIN_CONFIDENCE) {
         return {
           ...uploadedFile,
           status: 'matched',
-          extractedNumber: match.extractedNumber,
-          normalizedNumber: match.normalizedNumber,
+          extractedNumber: match.candidate.number,
+          normalizedNumber: match.candidate.normalizedNumber,
+          matchConfidence: match.candidate.confidence,
+          matchReason: match.candidate.reason,
+          matchCandidates: candidates,
           extractedData,
           extractedText: fullText.substring(0, 500),
           matchedVehicle: match.vehicle,
@@ -646,11 +726,18 @@ const VehicleDocumentDistributionDialog: React.FC<VehicleDocumentDistributionDia
         return {
           ...uploadedFile,
           status: 'not_found',
-          extractedNumber: extractedData.plateNumber || extractedNumbers[0],
-          normalizedNumber: extractedData.normalizedPlateNumber || normalizeVehicleNumber(extractedNumbers[0]),
+          extractedNumber: bestCandidate?.number || extractedData.plateNumber || extractedNumbers[0],
+          normalizedNumber: bestCandidate?.normalizedNumber || extractedData.normalizedPlateNumber || (extractedNumbers[0] ? normalizeVehicleNumber(extractedNumbers[0]) : undefined),
+          matchConfidence: bestCandidate?.confidence,
+          matchReason: match
+            ? `مطابقة محتملة بثقة ${match.candidate.confidence}%: ${match.candidate.reason}`
+            : bestCandidate?.reason,
+          matchCandidates: candidates,
           extractedData,
           extractedText: fullText.substring(0, 500),
-          error: `لم يتم العثور على مركبة بالرقم: ${extractedData.plateNumber || extractedNumbers[0]}`,
+          error: match
+            ? `تم العثور على مركبة محتملة للرقم ${match.candidate.number} لكن الثقة ${match.candidate.confidence}% وتحتاج مراجعة يدوية.`
+            : `لم يتم العثور على مركبة بالرقم: ${bestCandidate?.number || extractedData.plateNumber || extractedNumbers[0]}`,
         };
       }
     } catch (error: any) {
@@ -667,13 +754,23 @@ const VehicleDocumentDistributionDialog: React.FC<VehicleDocumentDistributionDia
     try {
       const updateData: Record<string, unknown> = {};
 
-      if (data.vin) updateData.vin = data.vin;
-      if (data.engineNumber) updateData.engine_number = data.engineNumber;
-      if (data.make) updateData.make = data.make;
-      if (data.model) updateData.model = data.model;
-      if (data.year) updateData.year = data.year;
-      if (data.color) updateData.color = data.color;
-      if (data.seatingCapacity) updateData.seating_capacity = data.seatingCapacity;
+      const { data: currentVehicle, error: currentVehicleError } = await supabase
+        .from('vehicles')
+        .select('vin, engine_number, make, model, year, color, seating_capacity')
+        .eq('id', vehicleId)
+        .maybeSingle();
+
+      if (currentVehicleError) throw currentVehicleError;
+
+      const isBlank = (value: unknown) => value === null || value === undefined || value === '';
+
+      if (data.vin && isBlank(currentVehicle?.vin)) updateData.vin = data.vin;
+      if (data.engineNumber && isBlank(currentVehicle?.engine_number)) updateData.engine_number = data.engineNumber;
+      if (data.make && isBlank(currentVehicle?.make)) updateData.make = data.make;
+      if (data.model && isBlank(currentVehicle?.model)) updateData.model = data.model;
+      if (data.year && isBlank(currentVehicle?.year)) updateData.year = data.year;
+      if (data.color && isBlank(currentVehicle?.color)) updateData.color = data.color;
+      if (data.seatingCapacity && isBlank(currentVehicle?.seating_capacity)) updateData.seating_capacity = data.seatingCapacity;
       if (data.registrationDate) updateData.registration_date = data.registrationDate;
       if (data.registrationExpiry) updateData.registration_expiry = data.registrationExpiry;
       if (data.insuranceExpiry) updateData.insurance_expiry = data.insuranceExpiry;
@@ -727,6 +824,15 @@ const VehicleDocumentDistributionDialog: React.FC<VehicleDocumentDistributionDia
 
         // 3. Insert to database with unique document name
         const uniqueDocumentName = `استمارة المركبة - ${file.matchedVehicle!.plate_number} - ${timestamp}`;
+        const { error: deactivateError } = await supabase
+          .from('vehicle_documents')
+          .update({ is_active: false })
+          .eq('vehicle_id', file.matchedVehicle!.id)
+          .eq('document_type', 'registration')
+          .eq('is_active', true);
+
+        if (deactivateError) throw deactivateError;
+
         const { error: dbError } = await supabase
           .from('vehicle_documents')
           .insert({
@@ -740,7 +846,7 @@ const VehicleDocumentDistributionDialog: React.FC<VehicleDocumentDistributionDia
         if (dbError) throw dbError;
 
         let dataUpdated = false;
-        if (file.extractedData) {
+        if (file.extractedData && (file.matchConfidence || 0) >= DATA_UPDATE_MIN_CONFIDENCE) {
           dataUpdated = await updateVehicleData(file.matchedVehicle!.id, file.extractedData);
           if (dataUpdated) dataUpdatedCount++;
         }
@@ -961,7 +1067,14 @@ const VehicleDocumentDistributionDialog: React.FC<VehicleDocumentDistributionDia
     if (!manualPlateNumber.trim()) return;
 
     const normalized = normalizeVehicleNumber(manualPlateNumber);
-    const match = findMatchingVehicle([manualPlateNumber, normalized]);
+    const manualCandidate: MatchCandidate = {
+      number: manualPlateNumber.replace(/\D/g, ''),
+      normalizedNumber: normalized,
+      confidence: 100,
+      source: 'manual',
+      reason: 'تم إدخال رقم اللوحة يدوياً',
+    };
+    const match = findMatchingVehicle([manualCandidate]);
 
     setFiles(prev => prev.map(f => {
       if (f.id !== fileId) return f;
@@ -972,6 +1085,9 @@ const VehicleDocumentDistributionDialog: React.FC<VehicleDocumentDistributionDia
           status: 'matched' as const,
           extractedNumber: manualPlateNumber,
           normalizedNumber: normalized,
+          matchConfidence: manualCandidate.confidence,
+          matchReason: manualCandidate.reason,
+          matchCandidates: [manualCandidate],
           matchedVehicle: match.vehicle,
           error: undefined,
         };
@@ -1082,17 +1198,17 @@ const VehicleDocumentDistributionDialog: React.FC<VehicleDocumentDistributionDia
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-[950px] max-h-[90vh] p-0 gap-0 overflow-hidden">
+      <DialogContent className="max-h-[92vh] gap-0 overflow-hidden p-0 sm:max-w-[1120px]">
         {/* Header مبسط وأنيق */}
-        <div className="bg-gradient-to-l from-teal-600 to-teal-700 px-6 py-4 text-white">
-          <div className="flex items-center justify-between">
+        <div className="border-b border-slate-200 bg-white px-6 py-5 text-slate-950">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center">
-                <ScanSearch className="w-5 h-5" />
+              <div className="flex h-12 w-12 items-center justify-center rounded-[8px] bg-[#0F766E] text-white shadow-sm">
+                <ScanSearch className="h-6 w-6" />
               </div>
               <div>
-                <h2 className="text-lg font-semibold">توزيع استمارات المركبات</h2>
-                <p className="text-teal-100 text-sm">رفع ومطابقة تلقائية باستخدام OCR</p>
+                <h2 className="text-xl font-black text-slate-950">توزيع استمارات المركبات</h2>
+                <p className="mt-1 text-sm text-slate-500">ارفع صور الاستمارات، امسح رقم اللوحة، ثم وزعها على المركبات المطابقة.</p>
               </div>
             </div>
             {files.length > 0 && (
@@ -1110,17 +1226,44 @@ const VehicleDocumentDistributionDialog: React.FC<VehicleDocumentDistributionDia
               </div>
             )}
           </div>
+          <div className="mt-5 grid gap-2 sm:grid-cols-3">
+            {[
+              { label: 'رفع الصور', active: files.length > 0, icon: Upload },
+              { label: 'المسح والمطابقة', active: stats.matched > 0 || processingStatus !== 'idle', icon: ScanSearch },
+              { label: 'رفع للمركبات', active: stats.uploaded > 0, icon: FileCheck },
+            ].map((step, index) => {
+              const StepIcon = step.icon;
+              return (
+                <div
+                  key={step.label}
+                  className={cn(
+                    "flex items-center gap-3 rounded-[8px] border px-3 py-2",
+                    step.active ? "border-teal-200 bg-teal-50" : "border-slate-200 bg-slate-50"
+                  )}
+                >
+                  <span className={cn(
+                    "flex h-7 w-7 items-center justify-center rounded-[8px] text-xs font-black",
+                    step.active ? "bg-teal-600 text-white" : "bg-white text-slate-500"
+                  )}>
+                    {index + 1}
+                  </span>
+                  <StepIcon className={cn("h-4 w-4", step.active ? "text-teal-700" : "text-slate-400")} />
+                  <span className={cn("text-sm font-bold", step.active ? "text-teal-900" : "text-slate-500")}>{step.label}</span>
+                </div>
+              );
+            })}
+          </div>
         </div>
 
-        <div className="p-6 space-y-5 overflow-y-auto max-h-[calc(90vh-180px)]">
+        <div className="max-h-[calc(92vh-210px)] space-y-5 overflow-y-auto bg-[#F8FAFC] p-5">
           {/* منطقة السحب والإفلات - تصميم محسن */}
           <div
             {...getRootProps()}
             className={cn(
-              "relative border-2 border-dashed rounded-2xl p-6 text-center cursor-pointer transition-all duration-300",
+              "relative overflow-hidden rounded-[8px] border-2 border-dashed p-8 text-center cursor-pointer transition-all duration-300",
               isDragActive
                 ? "border-teal-500 bg-teal-50 scale-[1.01] shadow-lg shadow-teal-500/20"
-                : "border-slate-200 bg-gradient-to-b from-slate-50 to-white hover:border-teal-400 hover:shadow-md"
+                : "border-slate-300 bg-white hover:border-teal-500 hover:shadow-md"
             )}
           >
             <input {...getInputProps()} />
@@ -1130,8 +1273,8 @@ const VehicleDocumentDistributionDialog: React.FC<VehicleDocumentDistributionDia
               className="flex flex-col items-center"
             >
               <div className={cn(
-                "w-16 h-16 rounded-2xl flex items-center justify-center mb-4 transition-colors",
-                isDragActive ? "bg-teal-500 text-white" : "bg-slate-100 text-slate-400"
+                "mb-4 flex h-16 w-16 items-center justify-center rounded-[8px] transition-colors",
+                isDragActive ? "bg-teal-600 text-white" : "bg-teal-50 text-teal-700"
               )}>
                 <Upload className="w-8 h-8" />
               </div>
@@ -1141,7 +1284,7 @@ const VehicleDocumentDistributionDialog: React.FC<VehicleDocumentDistributionDia
                 <>
                   <p className="text-base font-medium text-slate-700">اسحب وأفلت صور الاستمارات</p>
                   <p className="text-sm text-slate-400 mt-1">أو اضغط لاختيار الملفات</p>
-                  <div className="flex items-center gap-2 mt-3 text-xs text-slate-400">
+                  <div className="mt-5 grid w-full max-w-md grid-cols-3 gap-2 text-xs text-slate-500">
                     <Badge variant="outline" className="bg-white">PNG</Badge>
                     <Badge variant="outline" className="bg-white">JPG</Badge>
                     <Badge variant="outline" className="bg-white">WebP</Badge>
@@ -1159,7 +1302,7 @@ const VehicleDocumentDistributionDialog: React.FC<VehicleDocumentDistributionDia
                 <motion.div 
                   initial={{ opacity: 0, y: -10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="bg-slate-50 rounded-xl p-4 space-y-3"
+                  className="space-y-3 rounded-[8px] border border-slate-200 bg-white p-4 shadow-sm"
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
@@ -1179,7 +1322,7 @@ const VehicleDocumentDistributionDialog: React.FC<VehicleDocumentDistributionDia
                         </div>
                       )}
                       <div>
-                        <p className="font-medium text-slate-800">
+                          <p className="font-bold text-slate-900">
                           {processingStatus === 'processing' && 'جاري المعالجة...'}
                           {processingStatus === 'paused' && 'متوقف مؤقتاً'}
                           {processingStatus === 'completed' && 'اكتملت المعالجة'}
@@ -1189,14 +1332,14 @@ const VehicleDocumentDistributionDialog: React.FC<VehicleDocumentDistributionDia
                         )}
                       </div>
                     </div>
-                    <div className="text-2xl font-bold text-teal-600">{overallProgress}%</div>
+                    <div className="text-3xl font-black text-teal-700">{overallProgress}%</div>
                   </div>
                   <Progress value={overallProgress} className="h-2" />
                 </motion.div>
               )}
 
               {/* أزرار التحكم - تصميم محسن */}
-              <div className="flex items-center justify-between gap-3 flex-wrap">
+              <div className="flex flex-wrap items-center justify-between gap-3 rounded-[8px] border border-slate-200 bg-white p-3 shadow-sm">
                 <div className="flex items-center gap-2 flex-wrap">
                   {hasResumeState && (
                     <Button
@@ -1290,11 +1433,11 @@ const VehicleDocumentDistributionDialog: React.FC<VehicleDocumentDistributionDia
 
           {/* تبويبات تصفية الملفات */}
           {files.length > 0 && (
-            <div className="flex items-center gap-2 border-b border-slate-200 pb-2">
+            <div className="flex flex-wrap items-center gap-2 rounded-[8px] border border-slate-200 bg-white p-2 shadow-sm">
               <button
                 onClick={() => setActiveTab('all')}
                 className={cn(
-                  "px-4 py-2 text-sm font-medium rounded-lg transition-colors",
+                  "rounded-[8px] px-4 py-2 text-sm font-bold transition-colors",
                   activeTab === 'all' 
                     ? "bg-slate-100 text-slate-800" 
                     : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
@@ -1305,7 +1448,7 @@ const VehicleDocumentDistributionDialog: React.FC<VehicleDocumentDistributionDia
               <button
                 onClick={() => setActiveTab('matched')}
                 className={cn(
-                  "px-4 py-2 text-sm font-medium rounded-lg transition-colors flex items-center gap-2",
+                  "flex items-center gap-2 rounded-[8px] px-4 py-2 text-sm font-bold transition-colors",
                   activeTab === 'matched' 
                     ? "bg-green-100 text-green-800" 
                     : "text-slate-500 hover:text-green-700 hover:bg-green-50"
@@ -1317,7 +1460,7 @@ const VehicleDocumentDistributionDialog: React.FC<VehicleDocumentDistributionDia
               <button
                 onClick={() => setActiveTab('failed')}
                 className={cn(
-                  "px-4 py-2 text-sm font-medium rounded-lg transition-colors flex items-center gap-2",
+                  "flex items-center gap-2 rounded-[8px] px-4 py-2 text-sm font-bold transition-colors",
                   activeTab === 'failed' 
                     ? "bg-red-100 text-red-800" 
                     : "text-slate-500 hover:text-red-700 hover:bg-red-50"
@@ -1331,8 +1474,8 @@ const VehicleDocumentDistributionDialog: React.FC<VehicleDocumentDistributionDia
 
           {/* قائمة الملفات - تصميم محسن */}
           {files.length > 0 && (
-            <ScrollArea className="h-[280px] rounded-xl border border-slate-200 bg-slate-50/50">
-              <div className="p-3 space-y-2">
+            <ScrollArea className="h-[340px] rounded-[8px] border border-slate-200 bg-white shadow-sm">
+              <div className="space-y-2 p-3">
                 <AnimatePresence mode="popLayout">
                   {filteredFiles.slice(0, visibleFileCount).map((file, index) => (
                     <motion.div
@@ -1343,7 +1486,7 @@ const VehicleDocumentDistributionDialog: React.FC<VehicleDocumentDistributionDia
                       exit={{ opacity: 0, scale: 0.95 }}
                       transition={{ duration: 0.2 }}
                       className={cn(
-                        "flex items-start gap-3 p-3 rounded-xl border bg-white transition-all hover:shadow-sm",
+                        "flex items-start gap-3 rounded-[8px] border bg-white p-3 transition-all hover:shadow-sm",
                         file.status === 'matched' && "border-green-200",
                         file.status === 'uploaded' && "border-emerald-200",
                         file.status === 'not_found' && "border-amber-200",
@@ -1354,15 +1497,28 @@ const VehicleDocumentDistributionDialog: React.FC<VehicleDocumentDistributionDia
                       )}
                     >
                       {/* معاينة الصورة */}
-                      <div className="w-14 h-14 rounded-lg overflow-hidden bg-slate-100 flex-shrink-0 border border-slate-200">
+                      <div className="h-16 w-16 flex-shrink-0 overflow-hidden rounded-[8px] border border-slate-200 bg-slate-100">
                         <img src={file.preview} alt="" className="w-full h-full object-cover" />
                       </div>
 
                       {/* معلومات الملف */}
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <p className="text-sm font-medium text-slate-800 truncate">{file.file.name}</p>
+                        <div className="mb-1 flex items-center gap-2">
+                          <p className="truncate text-sm font-bold text-slate-900">{file.file.name}</p>
                           {getStatusBadge(file)}
+                          {typeof file.matchConfidence === 'number' && (
+                            <Badge
+                              variant="outline"
+                              className={cn(
+                                "text-[10px]",
+                                file.matchConfidence >= AUTO_MATCH_MIN_CONFIDENCE
+                                  ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                                  : "border-amber-200 bg-amber-50 text-amber-700"
+                              )}
+                            >
+                              ثقة {file.matchConfidence}%
+                            </Badge>
+                          )}
                         </div>
                         
                         {file.matchedVehicle && (
@@ -1386,6 +1542,10 @@ const VehicleDocumentDistributionDialog: React.FC<VehicleDocumentDistributionDia
 
                         {file.error && !file.matchedVehicle && (
                           <p className="text-xs text-red-500">{file.error}</p>
+                        )}
+
+                        {file.matchReason && (
+                          <p className="mt-1 text-xs text-slate-500">{file.matchReason}</p>
                         )}
 
                         {/* إدخال يدوي مبسط */}
@@ -1446,9 +1606,9 @@ const VehicleDocumentDistributionDialog: React.FC<VehicleDocumentDistributionDia
 
           {/* رسالة عدم وجود ملفات */}
           {files.length === 0 && (
-            <div className="text-center py-12">
-              <div className="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-4">
-                <FileImage className="w-8 h-8 text-slate-300" />
+            <div className="rounded-[8px] border border-slate-200 bg-white py-12 text-center shadow-sm">
+              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-[8px] bg-slate-100">
+                <FileImage className="h-8 w-8 text-slate-300" />
               </div>
               <p className="text-slate-500">لم يتم رفع أي ملفات بعد</p>
               <p className="text-slate-400 text-sm mt-1">اسحب الصور أو اضغط للاختيار</p>
@@ -1457,12 +1617,12 @@ const VehicleDocumentDistributionDialog: React.FC<VehicleDocumentDistributionDia
         </div>
 
         {/* Footer */}
-        <div className="border-t border-slate-200 px-6 py-3 bg-slate-50 flex items-center justify-between">
+        <div className="flex items-center justify-between border-t border-slate-200 bg-white px-6 py-3">
           <div className="text-xs text-slate-400 flex items-center gap-2">
             <Database className="w-3.5 h-3.5" />
             <span>OCR: Google Vision + Tesseract</span>
           </div>
-          <Button variant="outline" onClick={handleClose} className="rounded-xl">
+          <Button variant="outline" onClick={handleClose} className="rounded-[8px]">
             إغلاق
           </Button>
         </div>

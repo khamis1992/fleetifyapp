@@ -1,10 +1,23 @@
-import React from "react";
+import React, { useState } from "react";
 import { ShieldCheck, Sparkles } from "lucide-react";
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { DepositForm } from "./DepositForm";
 import { systemColorPattern } from "@/lib/design-system/systemColorPattern";
+import { FeatureTourButton, FeatureTourDialog, type FeatureTourContent } from "@/components/common/FeatureTourGuide";
+
+const depositDialogTour = {
+  title: "جولة إضافة أو تعديل وديعة",
+  description: "شرح طريقة تسجيل ضمان العميل وربطه بالسجل الصحيح.",
+  steps: [
+    "ابحث عن العميل المرتبط بالوديعة قبل إدخال المبلغ.",
+    "حدد نوع الوديعة والمبلغ وتاريخ الاستلام أو الاستحقاق.",
+    "اختر الحالة المناسبة: نشطة، معلقة، مستردة، أو مستردة جزئياً.",
+    "اكتب الملاحظات عند وجود شرط خاص لإرجاع الوديعة أو خصم جزء منها.",
+    "بعد الحفظ ستظهر الوديعة في تبويب الودائع ويمكن عرض تفاصيلها لاحقاً.",
+  ],
+} satisfies FeatureTourContent;
 
 interface DepositDialogProps {
   open: boolean;
@@ -13,6 +26,8 @@ interface DepositDialogProps {
 }
 
 export function DepositDialog({ open, onOpenChange, deposit }: DepositDialogProps) {
+  const [activeTour, setActiveTour] = useState<FeatureTourContent | null>(null);
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
@@ -44,10 +59,13 @@ export function DepositDialog({ open, onOpenChange, deposit }: DepositDialogProp
             </div>
           </div>
 
-          <Badge className="deposit-dialog-badge">
-            <Sparkles className="h-3.5 w-3.5" />
-            بحث سريع
-          </Badge>
+          <div className="flex flex-wrap items-center justify-end gap-2">
+            <FeatureTourButton tour={depositDialogTour} onStart={setActiveTour} />
+            <Badge className="deposit-dialog-badge">
+              <Sparkles className="h-3.5 w-3.5" />
+              بحث سريع
+            </Badge>
+          </div>
         </DialogHeader>
 
         <div className="deposit-dialog-body">
@@ -111,6 +129,7 @@ export function DepositDialog({ open, onOpenChange, deposit }: DepositDialogProp
             }
           }
         `}</style>
+        <FeatureTourDialog tour={activeTour} onOpenChange={(open) => !open && setActiveTour(null)} />
       </DialogContent>
     </Dialog>
   );

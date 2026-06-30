@@ -40,6 +40,8 @@ import {
   X,
   Filter,
   AlertTriangle,
+  HelpCircle,
+  PlayCircle,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -61,6 +63,8 @@ import {
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
@@ -98,6 +102,230 @@ const fleetTheme = {
   focus: systemColorPattern.colors.focus,
   success: systemColorPattern.colors.success,
 };
+
+type FleetTourContent = {
+  title: string;
+  description: string;
+  steps: string[];
+};
+
+type FleetFeatureAction = {
+  title: string;
+  description: string;
+  confirmLabel: string;
+  tour: FleetTourContent;
+  onConfirm: () => void | Promise<void>;
+  confirmVariant?: 'default' | 'danger';
+};
+
+const fleetTours = {
+  addVehicle: {
+    title: 'جولة إضافة مركبة',
+    description: 'شرح طريقة إضافة مركبة جديدة وربط بياناتها التشغيلية والمستندية.',
+    steps: [
+      'ابدأ بإدخال رقم اللوحة والماركة والموديل والسنة.',
+      'أضف رقم الهيكل واللون والعداد حتى تكون بيانات المركبة قابلة للتتبع.',
+      'راجع الحالة التشغيلية والقيمة اليومية قبل الحفظ.',
+      'بعد الحفظ ستظهر المركبة في قائمة الأسطول ويمكن فتح ملفها الكامل.',
+    ],
+  },
+  filters: {
+    title: 'جولة فلاتر الأسطول',
+    description: 'شرح البحث والفرز وفلاتر الحالة وكيف تساعدك في الوصول للمركبات بسرعة.',
+    steps: [
+      'استخدم البحث للعثور على مركبة باللوحة أو الموديل أو رقم الهيكل.',
+      'استخدم ترتيب النتائج حسب الأحدث أو الأقدم أو الاسم أو المسافة.',
+      'فلتر الحالة يعرض المركبات المتاحة أو المؤجرة أو في الصيانة وغيرها.',
+      'تصفير الفلاتر يعيد الصفحة إلى العرض الكامل.',
+    ],
+  },
+  export: {
+    title: 'جولة تصدير الأسطول',
+    description: 'شرح الفرق بين تصدير Excel والتقرير الرسمي القابل للطباعة.',
+    steps: [
+      'تصدير Excel مناسب للمراجعة والتحليل في الجداول.',
+      'تقرير HTML مناسب للطباعة أو الحفظ كملف رسمي.',
+      'التصدير يعتمد على البحث والفلاتر الحالية في الصفحة.',
+      'راجع عدد المركبات الظاهر قبل تنفيذ التصدير.',
+    ],
+  },
+  groups: {
+    title: 'جولة مجموعات المركبات',
+    description: 'شرح استخدام مجموعات المركبات لتنظيم الأسطول حسب التشغيل أو الفرع أو النوع.',
+    steps: [
+      'افتح المجموعات لإنشاء أو تعديل مجموعات المركبات.',
+      'استخدم المجموعات لتسهيل المتابعة والتقارير.',
+      'بعد تعديل المجموعات يمكن استخدامها في تنظيم المركبات والعمليات.',
+    ],
+  },
+  sync: {
+    title: 'جولة مزامنة الحالات',
+    description: 'شرح وظيفة مزامنة حالات المركبات مع العقود والصيانة والبيانات المرتبطة.',
+    steps: [
+      'المزامنة تراجع البيانات المرتبطة بالمركبات.',
+      'تحدث الحالة عند وجود اختلاف بين حالة المركبة والعمليات المسجلة.',
+      'استخدمها عند ملاحظة حالة مركبة غير متطابقة مع الواقع التشغيلي.',
+    ],
+  },
+  documents: {
+    title: 'جولة توزيع المستندات',
+    description: 'شرح توزيع مستندات المركبات وربطها بالمركبات المناسبة.',
+    steps: [
+      'افتح نافذة توزيع المستندات لمراجعة الملفات المتاحة.',
+      'اربط كل مستند بالمركبة الصحيحة ونوع المستند المناسب.',
+      'يساعد ذلك في تقارير النواقص والتنبيهات قبل انتهاء المستندات.',
+    ],
+  },
+  csv: {
+    title: 'جولة رفع CSV',
+    description: 'شرح استيراد المركبات أو تحديثها باستخدام ملف CSV.',
+    steps: [
+      'استخدم CSV عند وجود عدد كبير من المركبات أو تحديثات جماعية.',
+      'راجع الأعمدة المطلوبة قبل الرفع لتقليل أخطاء الاستيراد.',
+      'بعد الرفع يتم تحديث قائمة المركبات وإعادة تحميل البيانات.',
+    ],
+  },
+  metrics: {
+    title: 'جولة مؤشرات الأسطول',
+    description: 'شرح بطاقات الأرقام أعلى صفحة الأسطول وكيف تستخدم كاختصارات للفلاتر.',
+    steps: [
+      'إجمالي المركبات يعطيك حجم الأسطول الحالي.',
+      'جاهزية الأسطول تعرض نسبة المركبات المتاحة للتشغيل.',
+      'قيد التشغيل يركز على المركبات المؤجرة أو المستخدمة.',
+      'تحتاج متابعة تعرض حالات الصيانة والتوقف والحوادث.',
+    ],
+  },
+  vehicleCard: {
+    title: 'جولة بطاقة المركبة',
+    description: 'شرح أزرار بطاقة المركبة والإجراءات السريعة المرتبطة بها.',
+    steps: [
+      'الضغط على البطاقة يفتح ملف المركبة الكامل.',
+      'زر الحالة يفتح تغيير حالة المركبة مع سبب التغيير.',
+      'زر عقد ينقلك لإنشاء عقد مرتبط بالمركبة.',
+      'زر صيانة ينقلك لجدولة صيانة للمركبة.',
+      'قائمة الثلاث نقاط تحتوي النسخ والتعديل والحذف.',
+    ],
+  },
+  selection: {
+    title: 'جولة التحديد الجماعي',
+    description: 'شرح تحديد مركبات الصفحة والتعامل معها كدفعة واحدة.',
+    steps: [
+      'استخدم تحديد الصفحة لاختيار كل المركبات الظاهرة حاليًا.',
+      'يمكن إلغاء التحديد للعودة للوضع العادي.',
+      'أي إجراء جماعي يجب أن يعتمد على المركبات المحددة فقط.',
+    ],
+  },
+  pagination: {
+    title: 'جولة التنقل بين الصفحات',
+    description: 'شرح التنقل بين صفحات المركبات مع الحفاظ على البحث والفلاتر.',
+    steps: [
+      'السابق واللاحق ينقلان بين صفحات النتائج.',
+      'أرقام الصفحات تفتح صفحة محددة مباشرة.',
+      'آخر صفحة تظهر عندما يكون عدد الصفحات كبيرًا.',
+      'الفلاتر والبحث تبقى كما هي أثناء تغيير الصفحة.',
+    ],
+  },
+} satisfies Record<string, FleetTourContent>;
+
+function FeatureTourButton({
+  tour,
+  onStart,
+}: {
+  tour: FleetTourContent;
+  onStart: (tour: FleetTourContent) => void;
+}) {
+  return (
+    <Button
+      type="button"
+      variant="outline"
+      onClick={() => onStart(tour)}
+      className="h-9 gap-2 rounded-[8px] border bg-white"
+      style={{ borderColor: fleetTheme.border, color: fleetTheme.text }}
+    >
+      <PlayCircle className="h-4 w-4" style={{ color: fleetTheme.success }} />
+      ابدأ الجولة التعريفية
+    </Button>
+  );
+}
+
+function FeatureTourDialog({
+  tour,
+  onOpenChange,
+}: {
+  tour: FleetTourContent | null;
+  onOpenChange: (open: boolean) => void;
+}) {
+  return (
+    <Dialog open={!!tour} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-xl rounded-[8px]" dir="rtl">
+        <DialogHeader className="text-right">
+          <DialogTitle className="flex items-center gap-2 text-xl">
+            <HelpCircle className="h-5 w-5" style={{ color: fleetTheme.success }} />
+            {tour?.title}
+          </DialogTitle>
+          <DialogDescription>{tour?.description}</DialogDescription>
+        </DialogHeader>
+        <div className="space-y-3">
+          {tour?.steps.map((step, index) => (
+            <div key={step} className="flex gap-3 rounded-[8px] border bg-white p-3" style={{ borderColor: fleetTheme.border }}>
+              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-[8px] text-sm font-bold text-white" style={{ backgroundColor: fleetTheme.success }}>
+                {index + 1}
+              </span>
+              <p className="text-sm leading-6" style={{ color: fleetTheme.text }}>{step}</p>
+            </div>
+          ))}
+        </div>
+        <DialogFooter>
+          <Button onClick={() => onOpenChange(false)} className="rounded-[8px] text-white" style={{ backgroundColor: fleetTheme.success }}>
+            فهمت
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function FleetFeatureActionDialog({
+  action,
+  onClose,
+  onStartTour,
+}: {
+  action: FleetFeatureAction | null;
+  onClose: () => void;
+  onStartTour: (tour: FleetTourContent) => void;
+}) {
+  return (
+    <Dialog open={!!action} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="max-w-lg rounded-[8px]" dir="rtl">
+        <DialogHeader className="text-right">
+          <DialogTitle>{action?.title}</DialogTitle>
+          <DialogDescription>{action?.description}</DialogDescription>
+        </DialogHeader>
+        <DialogFooter className="gap-2 sm:justify-between">
+          {action && <FeatureTourButton tour={action.tour} onStart={onStartTour} />}
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={onClose} className="rounded-[8px]">
+              إلغاء
+            </Button>
+            <Button
+              onClick={async () => {
+                await action?.onConfirm();
+                onClose();
+              }}
+              className={cn(
+                'rounded-[8px] text-white',
+                action?.confirmVariant === 'danger' && 'bg-red-600 hover:bg-red-700'
+              )}
+              style={action?.confirmVariant === 'danger' ? undefined : { backgroundColor: fleetTheme.success }}
+            >
+              {action?.confirmLabel}
+            </Button>
+          </div>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
 // ===== Helper Functions for Missing Data Detection =====
 
 const getMissingVehicleFields = (vehicle: Vehicle): string[] => {
@@ -648,6 +876,7 @@ interface VehicleCardProps {
   onEdit: () => void;
   onDelete: () => void;
   onCopy: () => void;
+  onCopyVin: () => void;
   onStatusChange: () => void;
   onQuickAction: (action: 'rent' | 'maintenance' | 'contract') => void;
 }
@@ -659,6 +888,7 @@ const VehicleCard: React.FC<VehicleCardProps> = ({
   onEdit,
   onDelete,
   onCopy,
+  onCopyVin,
   onStatusChange,
   onQuickAction,
 }) => {
@@ -674,6 +904,8 @@ const VehicleCard: React.FC<VehicleCardProps> = ({
 
   const handleCopyVin = (e: React.MouseEvent) => {
     e.stopPropagation();
+    onCopyVin();
+    return;
     if (vehicle.vin) {
       navigator.clipboard.writeText(vehicle.vin);
       toast.success('تم نسخ رقم الهيكل');
@@ -685,11 +917,11 @@ const VehicleCard: React.FC<VehicleCardProps> = ({
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.015, duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
-      className="group relative cursor-pointer overflow-hidden rounded-[8px] border bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+      className="group relative cursor-pointer overflow-hidden rounded-[8px] border bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-xl"
       style={{ borderColor: fleetTheme.border }}
       onClick={onView}
     >
-      <div className="h-1 w-full" style={{ backgroundColor: accent }} />
+      <div className="absolute inset-y-0 right-0 w-1.5" style={{ backgroundColor: accent }} />
 
       <div className="p-3">
         <div className="mb-3 flex items-center justify-between gap-2">
@@ -798,6 +1030,25 @@ const VehicleCard: React.FC<VehicleCardProps> = ({
               </button>
             )}
           </div>
+
+          <div className="grid grid-cols-2 gap-2 pt-1">
+            <button
+              onClick={(e) => { e.stopPropagation(); onQuickAction('contract'); }}
+              className="inline-flex h-9 items-center justify-center gap-2 rounded-[8px] text-xs font-bold text-white transition hover:opacity-90"
+              style={{ backgroundColor: fleetTheme.focus }}
+            >
+              <FileText className="h-3.5 w-3.5" />
+              عقد
+            </button>
+            <button
+              onClick={(e) => { e.stopPropagation(); onQuickAction('maintenance'); }}
+              className="inline-flex h-9 items-center justify-center gap-2 rounded-[8px] border text-xs font-bold transition hover:bg-slate-50"
+              style={{ borderColor: fleetTheme.border, color: fleetTheme.alert }}
+            >
+              <Wrench className="h-3.5 w-3.5" />
+              صيانة
+            </button>
+          </div>
         </div>
       </div>
     </motion.div>
@@ -818,18 +1069,18 @@ const StatusChip: React.FC<StatusChipProps> = ({ label, count, status, active, o
   return (
     <button
       onClick={onClick}
-      className="flex items-center gap-2 rounded-[8px] border px-3 py-2 text-sm font-semibold transition-all hover:-translate-y-0.5"
+      className="flex items-center gap-2 rounded-[8px] border px-3 py-2 text-sm font-bold transition-all hover:-translate-y-0.5 hover:shadow-sm"
       style={{
-        backgroundColor: active ? `${accent}14` : fleetTheme.surface,
-        borderColor: active ? `${accent}55` : fleetTheme.border,
+        backgroundColor: active ? `${accent}16` : '#FFFFFF',
+        borderColor: active ? `${accent}88` : fleetTheme.border,
         color: active ? accent : fleetTheme.text,
       }}
     >
-      <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: accent }} />
+      <span className="h-2 w-2 rounded-full" style={{ backgroundColor: accent }} />
       {label}
       <span
-        className="rounded-full px-1.5 py-0.5 text-xs"
-        style={{ backgroundColor: active ? `${accent}20` : fleetTheme.inner, color: active ? accent : fleetTheme.muted }}
+        className="rounded-full px-2 py-0.5 text-xs font-black"
+        style={{ backgroundColor: active ? `${accent}22` : fleetTheme.inner, color: active ? accent : fleetTheme.muted }}
       >
         {count}
       </span>
@@ -860,6 +1111,8 @@ const FleetPageRedesigned: React.FC = () => {
   const [showStatusDialog, setShowStatusDialog] = useState(false);
   const [vehicleForStatus, setVehicleForStatus] = useState<Vehicle | null>(null);
   const [showDocumentDistribution, setShowDocumentDistribution] = useState(false);
+  const [featureAction, setFeatureAction] = useState<FleetFeatureAction | null>(null);
+  const [activeTour, setActiveTour] = useState<FleetTourContent | null>(null);
 
   // Hooks
   const { isSyncing, handleSync } = useSyncVehicleStatus();
@@ -943,6 +1196,144 @@ const FleetPageRedesigned: React.FC = () => {
     setSearchQuery('');
     setCurrentPage(1);
     setSelectedVehicles(new Set());
+  };
+
+  const openFeatureAction = (action: FleetFeatureAction) => {
+    setFeatureAction(action);
+  };
+
+  const openAddVehicleAction = () => {
+    openFeatureAction({
+      title: 'إضافة مركبة جديدة',
+      description: 'سيتم فتح نموذج إضافة مركبة جديدة داخل الصفحة لإدخال بيانات المركبة الأساسية والتشغيلية.',
+      confirmLabel: 'فتح نموذج الإضافة',
+      tour: fleetTours.addVehicle,
+      onConfirm: () => {
+        setEditingVehicle(null);
+        setShowVehicleForm(true);
+      },
+    });
+  };
+
+  const openFiltersAction = () => {
+    openFeatureAction({
+      title: showFilters ? 'إخفاء الفلاتر المتقدمة' : 'فتح الفلاتر المتقدمة',
+      description: showFilters
+        ? 'سيتم إخفاء لوحة الفلاتر المتقدمة مع بقاء الفلاتر الحالية فعالة.'
+        : 'سيتم فتح لوحة الفلاتر المتقدمة لمراجعة عدد النتائج والفلاتر النشطة والتحديد الحالي.',
+      confirmLabel: showFilters ? 'إخفاء الفلاتر' : 'فتح الفلاتر',
+      tour: fleetTours.filters,
+      onConfirm: () => setShowFilters((value) => !value),
+    });
+  };
+
+  const openExportAction = (format: 'excel' | 'html') => {
+    openFeatureAction({
+      title: format === 'html' ? 'تصدير تقرير HTML' : 'تصدير ملف Excel',
+      description: format === 'html'
+        ? 'سيتم إنشاء تقرير منسق قابل للطباعة حسب البحث والفلاتر الحالية.'
+        : 'سيتم إنشاء ملف Excel حسب البحث والفلاتر الحالية.',
+      confirmLabel: format === 'html' ? 'إنشاء التقرير' : 'تصدير Excel',
+      tour: fleetTours.export,
+      onConfirm: () => handleExport(format),
+    });
+  };
+
+  const openStatusFilterAction = (status: string, label?: string) => {
+    openFeatureAction({
+      title: label ? `عرض مركبات ${label}` : 'تطبيق فلتر الحالة',
+      description: filters.status === status
+        ? 'سيتم مسح فلتر الحالة الحالي والعودة إلى عرض كل المركبات.'
+        : 'سيتم تطبيق فلتر الحالة على قائمة المركبات الحالية.',
+      confirmLabel: filters.status === status ? 'مسح الفلتر' : 'تطبيق الفلتر',
+      tour: fleetTours.metrics,
+      onConfirm: () => handleStatCardClick(status),
+    });
+  };
+
+  const openPaginationAction = (page: number) => {
+    openFeatureAction({
+      title: 'تغيير صفحة المركبات',
+      description: `سيتم الانتقال إلى صفحة ${page} مع الإبقاء على البحث والفلاتر الحالية.`,
+      confirmLabel: 'تغيير الصفحة',
+      tour: fleetTours.pagination,
+      onConfirm: () => setCurrentPage(page),
+    });
+  };
+
+  const openSelectAllAction = () => {
+    openFeatureAction({
+      title: allSelected ? 'إلغاء تحديد الصفحة' : 'تحديد مركبات الصفحة',
+      description: allSelected
+        ? 'سيتم إلغاء تحديد كل المركبات الظاهرة في الصفحة الحالية.'
+        : 'سيتم تحديد كل المركبات الظاهرة في الصفحة الحالية لإجراء جماعي لاحق.',
+      confirmLabel: allSelected ? 'إلغاء التحديد' : 'تحديد الصفحة',
+      tour: fleetTours.selection,
+      onConfirm: handleSelectAll,
+    });
+  };
+
+  const openVehicleSelectionAction = (vehicle: Vehicle) => {
+    openFeatureAction({
+      title: selectedVehicles.has(vehicle.id) ? 'إلغاء تحديد المركبة' : 'تحديد المركبة',
+      description: `سيتم ${selectedVehicles.has(vehicle.id) ? 'إلغاء تحديد' : 'تحديد'} المركبة ${vehicle.plate_number || ''}.`,
+      confirmLabel: selectedVehicles.has(vehicle.id) ? 'إلغاء التحديد' : 'تحديد',
+      tour: fleetTours.selection,
+      onConfirm: () => handleSelectVehicle(vehicle.id),
+    });
+  };
+
+  const openVehicleAction = (vehicle: Vehicle, action: 'view' | 'status' | 'contract' | 'maintenance' | 'copy' | 'edit' | 'delete') => {
+    const actionConfig = {
+      view: {
+        title: 'فتح ملف المركبة',
+        description: 'سيتم فتح صفحة تفاصيل المركبة لمراجعة العقود والمستندات والحالة التشغيلية.',
+        confirmLabel: 'فتح التفاصيل',
+        onConfirm: () => handleViewVehicle(vehicle.id),
+      },
+      status: {
+        title: 'تغيير حالة المركبة',
+        description: 'سيتم فتح نافذة تغيير الحالة لإدخال الحالة الجديدة وسبب التغيير.',
+        confirmLabel: 'فتح تغيير الحالة',
+        onConfirm: () => handleStatusChange(vehicle),
+      },
+      contract: {
+        title: 'إنشاء عقد للمركبة',
+        description: 'سيتم فتح صفحة العقود مع ربط المركبة المحددة لإنشاء عقد جديد.',
+        confirmLabel: 'فتح العقود',
+        onConfirm: () => handleQuickAction('contract', vehicle),
+      },
+      maintenance: {
+        title: 'جدولة صيانة للمركبة',
+        description: 'سيتم فتح صفحة الصيانة مع تحديد المركبة تلقائيًا.',
+        confirmLabel: 'فتح الصيانة',
+        onConfirm: () => handleQuickAction('maintenance', vehicle),
+      },
+      copy: {
+        title: 'نسخ بيانات المركبة',
+        description: 'سيتم فتح نموذج مركبة جديد مملوء بنسخة من بيانات هذه المركبة.',
+        confirmLabel: 'نسخ المركبة',
+        onConfirm: () => handleCopyVehicle(vehicle),
+      },
+      edit: {
+        title: 'تعديل المركبة',
+        description: 'سيتم فتح نموذج تعديل بيانات المركبة الحالية.',
+        confirmLabel: 'فتح التعديل',
+        onConfirm: () => handleEditVehicle(vehicle),
+      },
+      delete: {
+        title: 'حذف المركبة',
+        description: 'سيتم فتح نافذة تأكيد الحذف النهائي لهذه المركبة.',
+        confirmLabel: 'متابعة الحذف',
+        onConfirm: () => setVehicleToDelete(vehicle),
+        confirmVariant: 'danger' as const,
+      },
+    }[action];
+
+    openFeatureAction({
+      ...actionConfig,
+      tour: fleetTours.vehicleCard,
+    });
   };
 
   const handleSyncVehicleStatus = async () => {
@@ -1067,21 +1458,32 @@ const FleetPageRedesigned: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: fleetTheme.inner, color: fleetTheme.text }}>
-      <main className="mx-auto max-w-[1600px] space-y-5 px-4 py-6 sm:px-6 lg:px-8">
-        <section className="rounded-[8px] border bg-white p-4 shadow-sm sm:p-5" style={{ borderColor: fleetTheme.border }}>
-          <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+    <div className="min-h-screen bg-[#F6F8FB]" style={{ color: fleetTheme.text }}>
+      <main className="mx-auto max-w-[1700px] space-y-5 px-4 py-6 sm:px-6 lg:px-8">
+        <section className="overflow-hidden rounded-[8px] border bg-white shadow-sm" style={{ borderColor: fleetTheme.border }}>
+          <div className="flex flex-col gap-4 p-5 xl:flex-row xl:items-center xl:justify-between">
             <div className="space-y-1">
               <p className="text-xs font-semibold" style={{ color: fleetTheme.muted }}>إدارة الأسطول</p>
-              <h1 className="text-2xl font-bold sm:text-3xl" style={{ color: fleetTheme.text }}>المركبات</h1>
-              <p className="text-sm" style={{ color: fleetTheme.muted }}>
+              <h1 className="text-3xl font-black sm:text-4xl" style={{ color: fleetTheme.text }}>المركبات</h1>
+              <p className="max-w-3xl text-sm leading-6" style={{ color: fleetTheme.muted }}>
                 متابعة المركبات والحالات والمستندات من مساحة تشغيل واحدة ({vehiclesData?.count || 0} مركبة)
               </p>
+              <div className="mt-4 grid gap-2 sm:grid-cols-3">
+                <span className="rounded-[8px] border px-3 py-2 text-xs font-bold" style={{ borderColor: fleetTheme.border, color: fleetTheme.text }}>
+                  {fleetStatus?.available || 0} متاحة الآن
+                </span>
+                <span className="rounded-[8px] border px-3 py-2 text-xs font-bold" style={{ borderColor: fleetTheme.border, color: fleetTheme.text }}>
+                  {fleetStatus?.rented || 0} مؤجرة
+                </span>
+                <span className="rounded-[8px] border px-3 py-2 text-xs font-bold" style={{ borderColor: fleetTheme.border, color: fleetTheme.text }}>
+                  {unavailableVehicles} تحتاج متابعة
+                </span>
+              </div>
             </div>
 
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2 xl:max-w-xl xl:justify-end">
               <Button
-                onClick={() => setShowVehicleForm(true)}
+                onClick={openAddVehicleAction}
                 className="h-10 gap-2 rounded-[8px] text-white"
                 style={{ backgroundColor: fleetTheme.success }}
               >
@@ -1091,7 +1493,7 @@ const FleetPageRedesigned: React.FC = () => {
 
               <Button
                 variant="outline"
-                onClick={() => setShowFilters(!showFilters)}
+                onClick={openFiltersAction}
                 className="h-10 gap-2 rounded-[8px] border bg-white"
                 style={{ borderColor: showFilters ? `${fleetTheme.focus}66` : fleetTheme.border, color: fleetTheme.text }}
               >
@@ -1113,14 +1515,14 @@ const FleetPageRedesigned: React.FC = () => {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={() => handleExport()} className="gap-2">
+                  <DropdownMenuItem onClick={() => openExportAction('excel')} className="gap-2">
                     <FileText className="h-4 w-4" style={{ color: fleetTheme.success }} />
                     <div className="flex flex-col">
                       <span className="font-medium">{t("excelXlsx")}</span>
                       <span className="text-xs" style={{ color: fleetTheme.muted }}>ملف جدول بيانات</span>
                     </div>
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => handleExport('html')} className="gap-2">
+                  <DropdownMenuItem onClick={() => openExportAction('html')} className="gap-2">
                     <FileText className="h-4 w-4" style={{ color: fleetTheme.focus }} />
                     <div className="flex flex-col">
                       <span className="font-medium">تقرير HTML</span>
@@ -1130,23 +1532,69 @@ const FleetPageRedesigned: React.FC = () => {
                 </DropdownMenuContent>
               </DropdownMenu>
 
-              <Button variant="outline" onClick={() => setShowGroupManagement(true)} className="h-10 gap-2 rounded-[8px] border bg-white" style={{ borderColor: fleetTheme.border, color: fleetTheme.text }}>
+              <Button
+                variant="outline"
+                onClick={() => openFeatureAction({
+                  title: 'إدارة مجموعات المركبات',
+                  description: 'سيتم فتح نافذة إدارة المجموعات لتنظيم مركبات الأسطول حسب التشغيل أو الفرع أو التصنيف.',
+                  confirmLabel: 'فتح المجموعات',
+                  tour: fleetTours.groups,
+                  onConfirm: () => setShowGroupManagement(true),
+                })}
+                className="h-10 gap-2 rounded-[8px] border bg-white"
+                style={{ borderColor: fleetTheme.border, color: fleetTheme.text }}
+              >
                 <Layers3 className="h-4 w-4" style={{ color: fleetTheme.focus }} />
                 المجموعات
               </Button>
 
-              <Button variant="outline" onClick={handleSyncVehicleStatus} disabled={isSyncing} className="h-10 gap-2 rounded-[8px] border bg-white" style={{ borderColor: fleetTheme.border, color: fleetTheme.text }}>
+              <Button
+                variant="outline"
+                onClick={() => openFeatureAction({
+                  title: 'مزامنة حالات المركبات',
+                  description: 'سيتم مراجعة حالات المركبات وتحديثها بناءً على العقود والصيانة والبيانات التشغيلية المرتبطة.',
+                  confirmLabel: 'بدء المزامنة',
+                  tour: fleetTours.sync,
+                  onConfirm: handleSyncVehicleStatus,
+                })}
+                disabled={isSyncing}
+                className="h-10 gap-2 rounded-[8px] border bg-white"
+                style={{ borderColor: fleetTheme.border, color: fleetTheme.text }}
+              >
                 <RotateCcw className={cn("h-4 w-4", isSyncing && "animate-spin")} style={{ color: fleetTheme.success }} />
                 {isSyncing ? 'مزامنة...' : 'مزامنة'}
               </Button>
 
-              <Button variant="outline" onClick={() => setShowDocumentDistribution(true)} className="h-10 gap-2 rounded-[8px] border bg-white" style={{ borderColor: fleetTheme.border, color: fleetTheme.text }}>
+              <Button
+                variant="outline"
+                onClick={() => openFeatureAction({
+                  title: 'توزيع مستندات المركبات',
+                  description: 'سيتم فتح نافذة توزيع المستندات لربط الملفات بالمركبات وأنواع المستندات الصحيحة.',
+                  confirmLabel: 'فتح توزيع المستندات',
+                  tour: fleetTours.documents,
+                  onConfirm: () => setShowDocumentDistribution(true),
+                })}
+                className="h-10 gap-2 rounded-[8px] border bg-white"
+                style={{ borderColor: fleetTheme.border, color: fleetTheme.text }}
+              >
                 <FileText className="h-4 w-4" style={{ color: fleetTheme.alert }} />
                 توزيع المستندات
               </Button>
 
               {user?.roles?.includes('super_admin') && (
-                <Button variant="outline" onClick={() => setShowCSVUpload(true)} className="h-10 w-10 rounded-[8px] border bg-white p-0" style={{ borderColor: fleetTheme.border, color: fleetTheme.text }} title="رفع CSV">
+                <Button
+                  variant="outline"
+                  onClick={() => openFeatureAction({
+                    title: 'رفع ملف CSV',
+                    description: 'سيتم فتح نافذة استيراد CSV لإضافة أو تحديث بيانات المركبات بشكل جماعي.',
+                    confirmLabel: 'فتح الاستيراد',
+                    tour: fleetTours.csv,
+                    onConfirm: () => setShowCSVUpload(true),
+                  })}
+                  className="h-10 w-10 rounded-[8px] border bg-white p-0"
+                  style={{ borderColor: fleetTheme.border, color: fleetTheme.text }}
+                  title="رفع CSV"
+                >
                   <Upload className="h-4 w-4" />
                 </Button>
               )}
@@ -1154,7 +1602,7 @@ const FleetPageRedesigned: React.FC = () => {
           </div>
         </section>
 
-        <section className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <section className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
           {fleetMetrics.map((metric) => {
             const Icon = metric.icon;
             const isActive = metric.status && filters.status === metric.status;
@@ -1162,24 +1610,33 @@ const FleetPageRedesigned: React.FC = () => {
               <button
                 key={metric.label}
                 type="button"
-                onClick={() => metric.status && handleStatCardClick(metric.status)}
-                className="rounded-[8px] border bg-white p-5 text-right shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
-                style={{ borderColor: isActive ? `${metric.color}66` : fleetTheme.border }}
+                onClick={() => metric.status && openStatusFilterAction(metric.status, metric.label)}
+                className="group overflow-hidden rounded-[8px] border bg-white p-4 text-right shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg"
+                style={{ borderColor: isActive ? `${metric.color}88` : fleetTheme.border }}
               >
-                <div className="mb-4 flex items-center justify-between">
-                  <div className="flex h-11 w-11 items-center justify-center rounded-[8px]" style={{ backgroundColor: `${metric.color}14` }}>
+                <div className="mb-4 flex items-start justify-between">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-[8px] transition group-hover:scale-105" style={{ backgroundColor: `${metric.color}14` }}>
                     <Icon className="h-5 w-5" style={{ color: metric.color }} />
                   </div>
-                  <span className="text-xs font-semibold" style={{ color: fleetTheme.muted }}>{metric.label}</span>
+                  <span className="max-w-[120px] text-xs font-bold leading-5" style={{ color: fleetTheme.muted }}>{metric.label}</span>
                 </div>
-                <p className="text-3xl font-bold" style={{ color: metric.color }}>{metric.value}</p>
-                <p className="mt-1 text-sm" style={{ color: fleetTheme.muted }}>{metric.helper}</p>
+                <p className="text-3xl font-black" style={{ color: metric.color }}>{metric.value}</p>
+                <p className="mt-1 min-h-5 text-xs leading-5" style={{ color: fleetTheme.muted }}>{metric.helper}</p>
+                <div className="mt-4 h-1.5 overflow-hidden rounded-full" style={{ backgroundColor: fleetTheme.inner }}>
+                  <div
+                    className="h-full rounded-full"
+                    style={{
+                      width: typeof metric.value === 'number' && totalVehicles ? `${Math.min(100, Math.round((metric.value / totalVehicles) * 100))}%` : metric.status === 'available' ? `${readinessRate}%` : '68%',
+                      backgroundColor: metric.color,
+                    }}
+                  />
+                </div>
               </button>
             );
           })}
         </section>
 
-        <section className="rounded-[8px] border bg-white p-4 shadow-sm" style={{ borderColor: fleetTheme.border }}>
+        <section className="sticky top-3 z-20 rounded-[8px] border bg-white/95 p-4 shadow-sm backdrop-blur" style={{ borderColor: fleetTheme.border }}>
           <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_180px_190px_auto]">
             <div className="relative">
               <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2" style={{ color: fleetTheme.muted }} />
@@ -1190,12 +1647,18 @@ const FleetPageRedesigned: React.FC = () => {
                   setSearchQuery(e.target.value);
                   setCurrentPage(1);
                 }}
-                className="h-11 rounded-[8px] border bg-white pr-10 text-sm"
+                className="h-12 rounded-[8px] border bg-white pr-10 text-sm shadow-inner"
                 style={{ borderColor: fleetTheme.border, color: fleetTheme.text }}
               />
               {searchQuery && (
                 <button
-                  onClick={() => setSearchQuery('')}
+                  onClick={() => openFeatureAction({
+                    title: 'مسح البحث',
+                    description: 'سيتم مسح عبارة البحث الحالية مع الإبقاء على الفلاتر الأخرى كما هي.',
+                    confirmLabel: 'مسح البحث',
+                    tour: fleetTours.filters,
+                    onConfirm: () => setSearchQuery(''),
+                  })}
                   className="absolute left-2 top-1/2 -translate-y-1/2 rounded-[8px] p-1 transition hover:bg-slate-100"
                 >
                   <X className="h-3.5 w-3.5" style={{ color: fleetTheme.muted }} />
@@ -1204,7 +1667,7 @@ const FleetPageRedesigned: React.FC = () => {
             </div>
 
             <Select value={sortBy} onValueChange={setSortBy}>
-              <SelectTrigger className="h-11 rounded-[8px] border bg-white" style={{ borderColor: fleetTheme.border }}>
+              <SelectTrigger className="h-12 rounded-[8px] border bg-white" style={{ borderColor: fleetTheme.border }}>
                 <SlidersHorizontal className="ml-2 h-4 w-4" />
                 <SelectValue />
               </SelectTrigger>
@@ -1220,7 +1683,7 @@ const FleetPageRedesigned: React.FC = () => {
               value={filters.status || "all"}
               onValueChange={(v) => handleFilterChange('status', v === 'all' ? undefined : v as any)}
             >
-              <SelectTrigger className="h-11 rounded-[8px] border bg-white" style={{ borderColor: fleetTheme.border }}>
+              <SelectTrigger className="h-12 rounded-[8px] border bg-white" style={{ borderColor: fleetTheme.border }}>
                 <SelectValue placeholder="الحالة" />
               </SelectTrigger>
               <SelectContent>
@@ -1239,11 +1702,22 @@ const FleetPageRedesigned: React.FC = () => {
             </Select>
 
             <div className="flex items-center gap-2">
-              <Button variant="outline" onClick={handleSelectAll} className="h-11 flex-1 rounded-[8px] border bg-white" style={{ borderColor: fleetTheme.border, color: fleetTheme.text }}>
+              <Button variant="outline" onClick={openSelectAllAction} className="h-12 flex-1 rounded-[8px] border bg-white" style={{ borderColor: fleetTheme.border, color: fleetTheme.text }}>
                 {allSelected ? 'إلغاء التحديد' : 'تحديد الصفحة'}
               </Button>
               {(activeFiltersCount > 0 || searchQuery) && (
-                <Button variant="outline" onClick={handleResetFilters} className="h-11 w-11 rounded-[8px] border bg-white p-0" style={{ borderColor: fleetTheme.border, color: fleetTheme.text }}>
+                <Button
+                  variant="outline"
+                  onClick={() => openFeatureAction({
+                    title: 'تصفير فلاتر الأسطول',
+                    description: 'سيتم مسح البحث والفلاتر والتحديد الحالي والعودة لأول صفحة.',
+                    confirmLabel: 'تصفير',
+                    tour: fleetTours.filters,
+                    onConfirm: handleResetFilters,
+                  })}
+                  className="h-12 w-12 rounded-[8px] border bg-white p-0"
+                  style={{ borderColor: fleetTheme.border, color: fleetTheme.text }}
+                >
                   <RotateCcw className="h-4 w-4" />
                 </Button>
               )}
@@ -1259,12 +1733,12 @@ const FleetPageRedesigned: React.FC = () => {
                 status={item.status}
                 count={item.count}
                 active={filters.status === item.status}
-                onClick={() => handleStatCardClick(item.status)}
+                onClick={() => openStatusFilterAction(item.status, item.label)}
               />
             ))}
             {filters.status && (
               <button
-                onClick={() => handleStatCardClick(filters.status!)}
+                onClick={() => filters.status && openStatusFilterAction(filters.status)}
                 className="flex items-center gap-1 rounded-[8px] border px-3 py-2 text-sm font-semibold transition hover:bg-slate-50"
                 style={{ borderColor: fleetTheme.border, color: fleetTheme.muted }}
               >
@@ -1314,31 +1788,53 @@ const FleetPageRedesigned: React.FC = () => {
               <motion.div
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="flex flex-col gap-3 rounded-[8px] border bg-white p-3 shadow-sm sm:flex-row sm:items-center sm:justify-between"
+                className="sticky top-24 z-10 flex flex-col gap-3 rounded-[8px] border bg-white p-3 shadow-lg sm:flex-row sm:items-center sm:justify-between"
                 style={{ borderColor: `${fleetTheme.success}55` }}
               >
                 <p className="text-sm" style={{ color: fleetTheme.text }}>
                   <span className="font-bold" style={{ color: fleetTheme.success }}>{selectedVehicles.size}</span> مركبة محددة
                 </p>
                 <div className="flex items-center gap-2">
-                  <Button variant="outline" className="h-10 rounded-[8px] border bg-white" style={{ borderColor: fleetTheme.border, color: fleetTheme.text }}>
+                  <Button
+                    variant="outline"
+                    onClick={() => openFeatureAction({
+                      title: 'تصدير المركبات المحددة',
+                      description: `سيتم تصدير ${selectedVehicles.size} مركبة محددة من الصفحة الحالية.`,
+                      confirmLabel: 'تصدير المحدد',
+                      tour: fleetTours.selection,
+                      onConfirm: () => toast.info('سيتم تفعيل تصدير المركبات المحددة في المرحلة التالية'),
+                    })}
+                    className="h-10 rounded-[8px] border bg-white"
+                    style={{ borderColor: fleetTheme.border, color: fleetTheme.text }}
+                  >
                     تصدير
                   </Button>
-                  <Button variant="outline" className="h-10 rounded-[8px] border bg-white" style={{ borderColor: fleetTheme.border, color: fleetTheme.text }} onClick={() => setSelectedVehicles(new Set())}>
+                  <Button
+                    variant="outline"
+                    className="h-10 rounded-[8px] border bg-white"
+                    style={{ borderColor: fleetTheme.border, color: fleetTheme.text }}
+                    onClick={() => openFeatureAction({
+                      title: 'إلغاء التحديد',
+                      description: 'سيتم إلغاء تحديد كل المركبات المحددة حاليًا.',
+                      confirmLabel: 'إلغاء التحديد',
+                      tour: fleetTours.selection,
+                      onConfirm: () => setSelectedVehicles(new Set()),
+                    })}
+                  >
                     إلغاء التحديد
                   </Button>
                 </div>
               </motion.div>
             )}
 
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
               {vehiclesData.data.map((vehicle, index) => (
                 <div key={vehicle.id} className="relative">
                   <input
                     type="checkbox"
                     checked={selectedVehicles.has(vehicle.id)}
-                    onChange={() => handleSelectVehicle(vehicle.id)}
-                    className="absolute left-4 top-4 z-10 h-4 w-4 cursor-pointer rounded border-slate-300 bg-white"
+                    onChange={() => openVehicleSelectionAction(vehicle)}
+                    className="absolute left-4 top-4 z-10 h-5 w-5 cursor-pointer rounded border-slate-300 bg-white shadow"
                     style={{ accentColor: fleetTheme.success }}
                     onClick={(e) => e.stopPropagation()}
                   />
@@ -1346,12 +1842,31 @@ const FleetPageRedesigned: React.FC = () => {
                   <VehicleCard
                     vehicle={vehicle}
                     index={index}
-                    onView={() => handleViewVehicle(vehicle.id)}
-                    onEdit={() => handleEditVehicle(vehicle)}
-                    onDelete={() => setVehicleToDelete(vehicle)}
-                    onCopy={() => handleCopyVehicle(vehicle)}
-                    onStatusChange={() => handleStatusChange(vehicle)}
-                    onQuickAction={(action) => handleQuickAction(action, vehicle)}
+                    onView={() => openVehicleAction(vehicle, 'view')}
+                    onEdit={() => openVehicleAction(vehicle, 'edit')}
+                    onDelete={() => openVehicleAction(vehicle, 'delete')}
+                    onCopy={() => openVehicleAction(vehicle, 'copy')}
+                    onCopyVin={() => openFeatureAction({
+                      title: 'نسخ رقم الهيكل',
+                      description: 'سيتم نسخ رقم الهيكل VIN إلى الحافظة لاستخدامه في البحث أو المستندات.',
+                      confirmLabel: 'نسخ الرقم',
+                      tour: fleetTours.vehicleCard,
+                      onConfirm: () => {
+                        const vin = vehicle.vin || vehicle.vin_number;
+                        if (vin) {
+                          navigator.clipboard.writeText(vin);
+                          toast.success('تم نسخ رقم الهيكل');
+                        }
+                      },
+                    })}
+                    onStatusChange={() => openVehicleAction(vehicle, 'status')}
+                    onQuickAction={(action) => {
+                      if (action === 'maintenance') {
+                        openVehicleAction(vehicle, 'maintenance');
+                      } else {
+                        openVehicleAction(vehicle, 'contract');
+                      }
+                    }}
                   />
                 </div>
               ))}
@@ -1365,7 +1880,7 @@ const FleetPageRedesigned: React.FC = () => {
                 </p>
 
                 <div className="flex items-center gap-1">
-                  <Button variant="outline" onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} className="h-10 rounded-[8px] border bg-white" style={{ borderColor: fleetTheme.border }}>
+                  <Button variant="outline" onClick={() => openPaginationAction(Math.max(1, currentPage - 1))} disabled={currentPage === 1} className="h-10 rounded-[8px] border bg-white" style={{ borderColor: fleetTheme.border }}>
                     <ChevronRight className="h-4 w-4" />
                   </Button>
 
@@ -1373,7 +1888,7 @@ const FleetPageRedesigned: React.FC = () => {
                     <Button
                       key={page}
                       variant={currentPage === page ? "default" : "ghost"}
-                      onClick={() => setCurrentPage(page)}
+                      onClick={() => openPaginationAction(page)}
                       className="h-10 min-w-10 rounded-[8px]"
                       style={currentPage === page ? { backgroundColor: fleetTheme.success, color: '#fff' } : { color: fleetTheme.text }}
                     >
@@ -1386,7 +1901,7 @@ const FleetPageRedesigned: React.FC = () => {
                       <span className="px-2" style={{ color: fleetTheme.muted }}>...</span>
                       <Button
                         variant={currentPage === totalPages ? "default" : "ghost"}
-                        onClick={() => setCurrentPage(totalPages)}
+                        onClick={() => openPaginationAction(totalPages)}
                         className="h-10 min-w-10 rounded-[8px]"
                         style={currentPage === totalPages ? { backgroundColor: fleetTheme.success, color: '#fff' } : { color: fleetTheme.text }}
                       >
@@ -1395,7 +1910,7 @@ const FleetPageRedesigned: React.FC = () => {
                     </>
                   )}
 
-                  <Button variant="outline" onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} className="h-10 rounded-[8px] border bg-white" style={{ borderColor: fleetTheme.border }}>
+                  <Button variant="outline" onClick={() => openPaginationAction(Math.min(totalPages, currentPage + 1))} disabled={currentPage === totalPages} className="h-10 rounded-[8px] border bg-white" style={{ borderColor: fleetTheme.border }}>
                     <ChevronLeft className="h-4 w-4" />
                   </Button>
                 </div>
@@ -1411,21 +1926,31 @@ const FleetPageRedesigned: React.FC = () => {
                 ? 'لم يتم العثور على مركبات تطابق البحث'
                 : 'ابدأ بإضافة أول مركبة للأسطول'}
             </p>
-            <Button onClick={() => setShowVehicleForm(true)} className="h-10 rounded-[8px] text-white" style={{ backgroundColor: fleetTheme.success }}>
+            <Button onClick={openAddVehicleAction} className="h-10 rounded-[8px] text-white" style={{ backgroundColor: fleetTheme.success }}>
               <Plus className="ml-2 h-4 w-4" />
               إضافة مركبة
             </Button>
           </div>
         )}
       </main>
+      <FleetFeatureActionDialog
+        action={featureAction}
+        onClose={() => setFeatureAction(null)}
+        onStartTour={setActiveTour}
+      />
+      <FeatureTourDialog tour={activeTour} onOpenChange={(open) => !open && setActiveTour(null)} />
+
       {/* Dialogs */}
       <Dialog open={showVehicleForm} onOpenChange={handleVehicleFormClose}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
+          <DialogHeader className="gap-3">
             <DialogTitle>
               {editingVehicle ? 'تعديل المركبة' : 'إضافة مركبة جديدة'}
             </DialogTitle>
           </DialogHeader>
+          <div className="mb-4">
+            <FeatureTourButton tour={fleetTours.addVehicle} onStart={setActiveTour} />
+          </div>
           <VehicleForm
             vehicle={editingVehicle || undefined}
             open={showVehicleForm}
@@ -1436,9 +1961,12 @@ const FleetPageRedesigned: React.FC = () => {
 
       <Dialog open={showGroupManagement} onOpenChange={setShowGroupManagement}>
         <DialogContent className="max-w-4xl">
-          <DialogHeader>
+          <DialogHeader className="gap-3">
             <DialogTitle>إدارة مجموعات المركبات</DialogTitle>
           </DialogHeader>
+          <div className="mb-4">
+            <FeatureTourButton tour={fleetTours.groups} onStart={setActiveTour} />
+          </div>
           {user?.profile?.company_id && (
             <VehicleGroupManagement companyId={user.profile.company_id} />
           )}
@@ -1472,6 +2000,20 @@ const FleetPageRedesigned: React.FC = () => {
               )}
             </AlertDialogDescription>
           </AlertDialogHeader>
+          <div className="mb-4">
+            <FeatureTourButton
+              tour={{
+                title: 'جولة حذف المركبة',
+                description: 'شرح ما يحدث عند حذف مركبة من الأسطول.',
+                steps: [
+                  'راجع رقم اللوحة وبيانات المركبة قبل التأكيد.',
+                  'الحذف النهائي يزيل المركبة من سجلات الأسطول.',
+                  'لا تستخدم الحذف لمعالجة حالة تشغيلية، استخدم تغيير الحالة بدلًا من ذلك.',
+                ],
+              }}
+              onStart={setActiveTour}
+            />
+          </div>
           <AlertDialogFooter>
             <AlertDialogCancel>إلغاء</AlertDialogCancel>
             <AlertDialogAction

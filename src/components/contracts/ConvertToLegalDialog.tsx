@@ -51,12 +51,14 @@ import {
   Gavel,
   XCircle,
   MessageSquare,
+  PlayCircle,
 } from 'lucide-react';
 import { useConvertToLegal, useExistingLegalCase, useCalculateCaseValue, ContractForLegal, useCloseLegalCase } from '@/hooks/useConvertToLegal';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import { useNavigate } from 'react-router-dom';
+import { useTourGuide } from '@/components/tour-guide';
 
 interface ConvertToLegalDialogProps {
   open: boolean;
@@ -73,6 +75,7 @@ export const ConvertToLegalDialog: React.FC<ConvertToLegalDialogProps> = ({
 }) => {
   const navigate = useNavigate();
   const { formatCurrency } = useCurrencyFormatter();
+  const { startTour } = useTourGuide();
   const [notes, setNotes] = useState('');
   const [priority, setPriority] = useState<'low' | 'medium' | 'high' | 'urgent'>('high');
   const [caseType, setCaseType] = useState<'payment_collection' | 'contract_breach' | 'vehicle_damage' | 'other'>('payment_collection');
@@ -178,7 +181,7 @@ export const ConvertToLegalDialog: React.FC<ConvertToLegalDialogProps> = ({
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto" data-tour="contract-convert-legal-dialog">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-xl">
               <Scale className="h-6 w-6 text-red-600" />
@@ -187,6 +190,16 @@ export const ConvertToLegalDialog: React.FC<ConvertToLegalDialogProps> = ({
             <DialogDescription>
               سيتم إنشاء قضية قانونية جديدة وتحديث حالة العقد والمركبة
             </DialogDescription>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => startTour('contract-convert-legal')}
+              className="mt-2 h-9 w-fit gap-2 rounded-lg border-emerald-200 bg-emerald-50 font-bold text-emerald-700 hover:bg-emerald-100"
+              data-tour="contract-convert-legal-tour-start"
+            >
+              <PlayCircle className="h-4 w-4" />
+              ابدأ الجولة التعريفية
+            </Button>
           </DialogHeader>
 
           {isLoading ? (
@@ -253,7 +266,7 @@ export const ConvertToLegalDialog: React.FC<ConvertToLegalDialogProps> = ({
               )}
 
               {/* معلومات العقد */}
-              <Card className="bg-muted/50">
+              <Card className="bg-muted/50" data-tour="contract-convert-legal-contract-summary">
                 <CardHeader className="pb-3">
                   <CardTitle className="text-base flex items-center gap-2">
                     <FileText className="h-4 w-4" />
@@ -281,7 +294,7 @@ export const ConvertToLegalDialog: React.FC<ConvertToLegalDialogProps> = ({
               </Card>
 
               {/* معلومات العميل والمركبة */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-4" data-tour="contract-convert-legal-parties">
                 <Card>
                   <CardContent className="p-4">
                     <div className="flex items-center gap-3">
@@ -318,7 +331,7 @@ export const ConvertToLegalDialog: React.FC<ConvertToLegalDialogProps> = ({
               </div>
 
               {/* تفاصيل المطالبة المالية */}
-              <Card className="border-red-200 bg-red-50/50">
+              <Card className="border-red-200 bg-red-50/50" data-tour="contract-convert-legal-claim">
                 <CardHeader className="pb-3">
                   <CardTitle className="text-base flex items-center gap-2 text-red-700">
                     <DollarSign className="h-4 w-4" />
@@ -349,8 +362,8 @@ export const ConvertToLegalDialog: React.FC<ConvertToLegalDialogProps> = ({
               </Card>
 
               {/* خيارات القضية */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
+              <div className="grid grid-cols-2 gap-4" data-tour="contract-convert-legal-options">
+                <div className="space-y-2" data-tour="contract-convert-legal-case-type">
                   <Label>نوع القضية</Label>
                   <Select value={caseType} onValueChange={(v: any) => setCaseType(v)}>
                     <SelectTrigger>
@@ -365,7 +378,7 @@ export const ConvertToLegalDialog: React.FC<ConvertToLegalDialogProps> = ({
                   </Select>
                 </div>
 
-                <div className="space-y-2">
+                <div className="space-y-2" data-tour="contract-convert-legal-priority">
                   <Label>الأولوية</Label>
                   <Select value={priority} onValueChange={(v: any) => setPriority(v)}>
                     <SelectTrigger>
@@ -382,7 +395,7 @@ export const ConvertToLegalDialog: React.FC<ConvertToLegalDialogProps> = ({
               </div>
 
               {/* ملاحظات */}
-              <div className="space-y-2">
+              <div className="space-y-2" data-tour="contract-convert-legal-notes">
                 <Label htmlFor="notes">ملاحظات إضافية</Label>
                 <Textarea
                   id="notes"
@@ -394,7 +407,7 @@ export const ConvertToLegalDialog: React.FC<ConvertToLegalDialogProps> = ({
               </div>
 
               {/* ما سيحدث */}
-              <Alert className="border-blue-200 bg-blue-50">
+              <Alert className="border-blue-200 bg-blue-50" data-tour="contract-convert-legal-effects">
                 <CheckCircle className="h-4 w-4 text-blue-600" />
                 <AlertDescription className="text-blue-800">
                   <strong>عند التأكيد:</strong>
@@ -410,7 +423,7 @@ export const ConvertToLegalDialog: React.FC<ConvertToLegalDialogProps> = ({
             </div>
           )}
 
-          <DialogFooter className="gap-2">
+          <DialogFooter className="gap-2" data-tour="contract-convert-legal-actions">
             <Button variant="outline" onClick={() => onOpenChange(false)}>
               إلغاء
             </Button>
@@ -418,6 +431,7 @@ export const ConvertToLegalDialog: React.FC<ConvertToLegalDialogProps> = ({
               onClick={handleConfirm}
               disabled={isLoading || hasExistingActiveCase || convertMutation.isPending}
               className="bg-red-600 hover:bg-red-700"
+              data-tour="contract-convert-legal-submit"
             >
               {convertMutation.isPending ? (
                 <>
@@ -437,13 +451,13 @@ export const ConvertToLegalDialog: React.FC<ConvertToLegalDialogProps> = ({
 
       {/* Dialog التأكيد النهائي */}
       <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
-        <AlertDialogContent>
+        <AlertDialogContent data-tour="contract-convert-legal-confirm-dialog">
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2">
               <AlertTriangle className="h-5 w-5 text-amber-500" />
               تأكيد التحويل للشؤون القانونية
             </AlertDialogTitle>
-            <AlertDialogDescription className="text-right">
+            <AlertDialogDescription className="text-right" data-tour="contract-convert-legal-confirm-warning">
               أنت على وشك تحويل العقد رقم <strong>{contract.contract_number}</strong> إلى الشؤون القانونية.
               <br /><br />
               هذا الإجراء سيؤدي إلى:
@@ -456,12 +470,13 @@ export const ConvertToLegalDialog: React.FC<ConvertToLegalDialogProps> = ({
               <strong>هل أنت متأكد من المتابعة؟</strong>
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter className="gap-2">
+          <AlertDialogFooter className="gap-2" data-tour="contract-convert-legal-confirm-actions">
             <AlertDialogCancel>تراجع</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleConvert}
               className="bg-red-600 hover:bg-red-700"
               disabled={convertMutation.isPending}
+              data-tour="contract-convert-legal-confirm-submit"
             >
               {convertMutation.isPending ? 'جاري التحويل...' : 'تأكيد التحويل'}
             </AlertDialogAction>

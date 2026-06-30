@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -23,6 +23,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useReturnDeposit } from '@/hooks/useDeposits';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { formatCurrency } from '@/lib/utils';
+import { FeatureTourButton, FeatureTourDialog, type FeatureTourContent } from '@/components/common/FeatureTourGuide';
 
 const returnSchema = z.object({
   returnAmount: z.number().min(0.001, 'المبلغ مطلوب ويجب أن يكون أكبر من صفر'),
@@ -30,6 +31,17 @@ const returnSchema = z.object({
 });
 
 type ReturnFormData = z.infer<typeof returnSchema>;
+
+const returnDepositTour = {
+  title: 'جولة استرداد الوديعة',
+  description: 'شرح طريقة رد مبلغ الوديعة للعميل جزئياً أو بالكامل.',
+  steps: [
+    'راجع المبلغ الإجمالي والمبلغ المسترد سابقاً والمتبقي قبل إدخال قيمة الاسترداد.',
+    'أدخل مبلغ الاسترداد بحيث لا يتجاوز المتبقي المتاح.',
+    'اكتب ملاحظات توضح سبب الاسترداد أو أي خصومات تمت قبل الرد.',
+    'بعد التأكيد يتم تحديث حالة الوديعة والمبلغ المسترد في سجل العميل.',
+  ],
+} satisfies FeatureTourContent;
 
 interface ReturnDepositDialogProps {
   open: boolean;
@@ -45,6 +57,7 @@ export function ReturnDepositDialog({
   maxAmount 
 }: ReturnDepositDialogProps) {
   const returnDeposit = useReturnDeposit();
+  const [activeTour, setActiveTour] = useState<FeatureTourContent | null>(null);
 
   const form = useForm<ReturnFormData>({
     resolver: zodResolver(returnSchema.refine(
@@ -80,10 +93,15 @@ export function ReturnDepositDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md" dir="rtl">
         <DialogHeader>
-          <DialogTitle>استرداد الوديعة</DialogTitle>
-          <DialogDescription>
-            استرداد وديعة العميل رقم {deposit?.deposit_number}
-          </DialogDescription>
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <DialogTitle>استرداد الوديعة</DialogTitle>
+              <DialogDescription>
+                استرداد وديعة العميل رقم {deposit?.deposit_number}
+              </DialogDescription>
+            </div>
+            <FeatureTourButton tour={returnDepositTour} onStart={setActiveTour} />
+          </div>
         </DialogHeader>
 
         <Form {...form}>
@@ -156,6 +174,7 @@ export function ReturnDepositDialog({
             </div>
           </form>
         </Form>
+        <FeatureTourDialog tour={activeTour} onOpenChange={(open) => !open && setActiveTour(null)} />
       </DialogContent>
     </Dialog>
   );

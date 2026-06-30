@@ -13,6 +13,7 @@ import { format } from "date-fns";
 import { useVehicleInsurance, useCreateVehicleInsurance } from "@/hooks/useVehicleInsurance";
 import { useVehicleRegistration, useCreateVehicleRegistration } from "@/hooks/useVehicleDocuments";
 import { Skeleton } from "@/components/ui/skeleton";
+import { FeatureTourButton, FeatureTourDialog, type FeatureTourContent } from "@/components/common/FeatureTourGuide";
 
 interface VehicleInsurancePanelProps {
   vehicleId: string;
@@ -42,9 +43,32 @@ interface RegistrationFormData {
   document_url?: string;
 }
 
+const insuranceTour = {
+  title: "جولة إضافة تأمين",
+  description: "شرح تسجيل بوليصة التأمين وربطها بالمركبة.",
+  steps: [
+    "أدخل شركة التأمين ورقم البوليصة حتى يمكن الرجوع لها عند المطالبات أو التجديد.",
+    "حدد نوع التغطية وتاريخ البداية والنهاية لمتابعة صلاحية التأمين.",
+    "أضف قيمة القسط والتغطية ونسبة التحمل إذا كانت متوفرة لدعم التقارير المالية.",
+    "استخدم بيانات التواصل والملاحظات لأي تفاصيل مهمة عن شركة التأمين أو الوثيقة.",
+  ],
+} satisfies FeatureTourContent;
+
+const registrationTour = {
+  title: "جولة إضافة استمارة المركبة",
+  description: "شرح تسجيل بيانات الاستمارة وتاريخ انتهائها.",
+  steps: [
+    "أدخل اسم الوثيقة ورقمها كما يظهر في الاستمارة الرسمية.",
+    "حدد تاريخ الإصدار وتاريخ الانتهاء حتى تظهر التنبيهات قبل انتهاء الاستمارة.",
+    "أدخل جهة الإصدار مثل إدارة المرور لتسهيل الرجوع للمصدر.",
+    "بعد الحفظ ستظهر الاستمارة في تبويب التأمين والاستمارة وتدخل في متابعة جاهزية المركبة.",
+  ],
+} satisfies FeatureTourContent;
+
 export function VehicleInsurancePanel({ vehicleId }: VehicleInsurancePanelProps) {
   const [showInsuranceForm, setShowInsuranceForm] = useState(false);
   const [showRegistrationForm, setShowRegistrationForm] = useState(false);
+  const [activeTour, setActiveTour] = useState<FeatureTourContent | null>(null);
   
   const { data: insurance, isLoading: insuranceLoading } = useVehicleInsurance(vehicleId);
   const { data: registration, isLoading: registrationLoading } = useVehicleRegistration(vehicleId);
@@ -176,16 +200,19 @@ export function VehicleInsurancePanel({ vehicleId }: VehicleInsurancePanelProps)
                 </DialogTrigger>
                 <DialogContent className="max-w-xl bg-[#f8f7f5] border-0 shadow-2xl max-h-[85vh] overflow-y-auto">
                   <DialogHeader className="pb-3 border-b border-neutral-200 sticky top-0 bg-[#f8f7f5] z-10">
-                    <div className="flex items-center gap-2">
-                      <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-rose-500 to-orange-500 flex items-center justify-center">
-                        <Shield className="h-5 w-5 text-white" />
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-center gap-2">
+                        <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-rose-500 to-orange-500 flex items-center justify-center">
+                          <Shield className="h-5 w-5 text-white" />
+                        </div>
+                        <div>
+                          <DialogTitle className="text-lg font-bold text-neutral-900">إضافة بوليصة تأمين</DialogTitle>
+                          <DialogDescription className="text-neutral-500 text-xs">
+                            تسجيل بيانات التأمين
+                          </DialogDescription>
+                        </div>
                       </div>
-                      <div>
-                        <DialogTitle className="text-lg font-bold text-neutral-900">إضافة بوليصة تأمين</DialogTitle>
-                        <DialogDescription className="text-neutral-500 text-xs">
-                          تسجيل بيانات التأمين
-                        </DialogDescription>
-                      </div>
+                      <FeatureTourButton tour={insuranceTour} onStart={setActiveTour} />
                     </div>
                   </DialogHeader>
                   <form onSubmit={insuranceForm.handleSubmit(onInsuranceSubmit)} className="space-y-3 pt-3">
@@ -344,6 +371,7 @@ export function VehicleInsurancePanel({ vehicleId }: VehicleInsurancePanelProps)
                       </Button>
                     </div>
                   </form>
+                  <FeatureTourDialog tour={activeTour} onOpenChange={(open) => !open && setActiveTour(null)} />
                 </DialogContent>
               </Dialog>
             </div>
@@ -470,16 +498,19 @@ export function VehicleInsurancePanel({ vehicleId }: VehicleInsurancePanelProps)
                 </DialogTrigger>
                 <DialogContent className="max-w-md bg-[#f8f7f5] border-0 shadow-2xl">
                   <DialogHeader className="pb-3 border-b border-neutral-200">
-                    <div className="flex items-center gap-2">
-                      <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-500 flex items-center justify-center">
-                        <FileText className="h-5 w-5 text-white" />
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-center gap-2">
+                        <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-500 flex items-center justify-center">
+                          <FileText className="h-5 w-5 text-white" />
+                        </div>
+                        <div>
+                          <DialogTitle className="text-lg font-bold text-neutral-900">إضافة استمارة</DialogTitle>
+                          <DialogDescription className="text-neutral-500 text-xs">
+                            تسجيل بيانات استمارة المركبة
+                          </DialogDescription>
+                        </div>
                       </div>
-                      <div>
-                        <DialogTitle className="text-lg font-bold text-neutral-900">إضافة استمارة</DialogTitle>
-                        <DialogDescription className="text-neutral-500 text-xs">
-                          تسجيل بيانات استمارة المركبة
-                        </DialogDescription>
-                      </div>
+                      <FeatureTourButton tour={registrationTour} onStart={setActiveTour} />
                     </div>
                   </DialogHeader>
                   <form onSubmit={registrationForm.handleSubmit(onRegistrationSubmit)} className="space-y-3 pt-3">
@@ -565,6 +596,7 @@ export function VehicleInsurancePanel({ vehicleId }: VehicleInsurancePanelProps)
                       </Button>
                     </div>
                   </form>
+                  <FeatureTourDialog tour={activeTour} onOpenChange={(open) => !open && setActiveTour(null)} />
                 </DialogContent>
               </Dialog>
             </div>

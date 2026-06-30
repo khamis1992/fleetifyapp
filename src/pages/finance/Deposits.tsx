@@ -25,6 +25,19 @@ import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { formatCurrency } from '@/lib/utils';
 import { DepositDialog } from '@/components/finance/DepositDialog';
 import { DepositDetailsDialog } from '@/components/finance/DepositDetailsDialog';
+import { FeatureTourButton, FeatureTourDialog, type FeatureTourContent } from '@/components/common/FeatureTourGuide';
+
+const depositsTour = {
+  title: 'جولة إدارة الودائع',
+  description: 'شرح طريقة إضافة ومتابعة ودائع العملاء.',
+  steps: [
+    'زر إضافة وديعة جديدة يستخدم لتسجيل ضمان مالي منفصل عن إيرادات الإيجار.',
+    'استخدم البحث للوصول إلى وديعة حسب اسم العميل أو رقم الوديعة.',
+    'فلتر الحالة يساعدك على متابعة الودائع النشطة أو المستردة أو الجزئية أو المعلقة.',
+    'من قائمة الإجراءات يمكنك عرض تفاصيل الوديعة أو تعديل بياناتها.',
+    'راجع حالة الوديعة قبل أي استرداد أو تعديل لأنها تؤثر على أرصدة العملاء.',
+  ],
+} satisfies FeatureTourContent;
 
 const Deposits = () => {
   const [showDepositDialog, setShowDepositDialog] = useState(false);
@@ -32,6 +45,7 @@ const Deposits = () => {
   const [selectedDeposit, setSelectedDeposit] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [activeTour, setActiveTour] = useState<FeatureTourContent | null>(null);
 
   const { data: deposits, isLoading } = useDeposits();
 
@@ -86,10 +100,13 @@ const Deposits = () => {
           <h1 className="text-2xl font-bold text-slate-900">إدارة الودائع</h1>
           <p className="text-sm text-slate-500 mt-1">إدارة ودائع العملاء وضمانات التأجير</p>
         </div>
-        <Button onClick={handleAddDeposit} className="bg-slate-900 hover:bg-slate-800">
-          <Plus className="h-4 w-4 ml-2" />
-          إضافة وديعة جديدة
-        </Button>
+        <div className="flex flex-wrap justify-end gap-2">
+          <FeatureTourButton tour={depositsTour} onStart={setActiveTour} />
+          <Button onClick={handleAddDeposit} className="bg-slate-900 hover:bg-slate-800">
+            <Plus className="h-4 w-4 ml-2" />
+            إضافة وديعة جديدة
+          </Button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -260,6 +277,7 @@ const Deposits = () => {
         onOpenChange={() => setSelectedDeposit(null)}
         deposit={selectedDeposit}
       />
+      <FeatureTourDialog tour={activeTour} onOpenChange={(open) => !open && setActiveTour(null)} />
     </div>
   );
 };

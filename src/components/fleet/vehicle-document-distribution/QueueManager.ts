@@ -110,11 +110,18 @@ export class ProcessingQueueManager {
       console.log(`📦 Processing chunk ${this.currentChunkIndex + 1} with ${chunk.length} files...`);
 
       // معالجة الملفات في الـ chunk بشكل متزامن
-      const chunkPromises = chunk.map((file) =>
-        this.processSingleFile(file, processFileFn, fileIndex++)
-      );
+      const results: PromiseSettledResult<UploadedFile>[] = [];
+      for (let i = 0; i < chunk.length && this.status === 'processing'; i += MAX_CONCURRENT) {
+        const batch = chunk.slice(i, i + MAX_CONCURRENT);
+        const batchPromises = batch.map((file) =>
+          this.processSingleFile(file, processFileFn, fileIndex++)
+        );
+        results.push(...await Promise.allSettled(batchPromises));
 
-      const results = await Promise.allSettled(chunkPromises);
+        if (i + MAX_CONCURRENT < chunk.length && this.status === 'processing') {
+          await this.delay(DELAY_BETWEEN_FILES);
+        }
+      }
 
       // تحديث الإحصائيات
       let completedInChunk = 0;
@@ -146,7 +153,7 @@ export class ProcessingQueueManager {
 
       // انتظار قصير بين الـ chunks (لتجنب overload)
       if (this.queue.length > 0 && this.status === 'processing') {
-        await this.delay(500);
+        await this.delay(DELAY_BETWEEN_CHUNKS);
       }
     }
 

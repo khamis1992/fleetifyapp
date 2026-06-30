@@ -37,6 +37,14 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
   Plus,
   Search,
   RefreshCw,
@@ -62,6 +70,8 @@ import {
   AlertCircle,
   Layers,
   Calendar as CalendarIcon,
+  HelpCircle,
+  PlayCircle,
 } from "lucide-react";
 import { useVehicleMaintenance } from "@/hooks/useVehicles";
 import { useMaintenanceVehicles } from "@/hooks/useMaintenanceVehicles";
@@ -115,6 +125,199 @@ const maintenanceTypeConfig = {
   preventive: { label: 'صيانة وقائية', icon: ShieldCheck, accent: maintenanceTheme.success },
   maintenance: { label: 'صيانة', icon: Wrench, accent: maintenanceTheme.muted },
 };
+
+type MaintenanceTourContent = {
+  title: string;
+  description: string;
+  steps: string[];
+};
+
+type MaintenanceFeatureAction = {
+  title: string;
+  description: string;
+  confirmLabel: string;
+  tour: MaintenanceTourContent;
+  onConfirm: () => void;
+};
+
+const maintenanceTours = {
+  create: {
+    title: 'جولة جدولة الصيانة',
+    description: 'شرح سريع لطريقة إنشاء طلب صيانة وربطه بالمركبة والتكلفة ومركز التكلفة.',
+    steps: [
+      'اختر المركبة التي تحتاج صيانة، أو افتح النموذج من صفحة المركبة ليتم تحديدها تلقائيًا.',
+      'حدد نوع الصيانة والأولوية والوصف حتى يعرف الفريق المطلوب تنفيذه.',
+      'أضف التاريخ المتوقع والتكلفة وطريقة الدفع ورقم فاتورة المورد عند توفرها.',
+      'فعّل نقل المركبة إلى الصيانة إذا كانت ستخرج من التشغيل حتى نهاية العمل.',
+      'اضغط جدولة الصيانة لحفظ الطلب وتحديث سجلات الأسطول.',
+    ],
+  },
+  details: {
+    title: 'جولة تفاصيل الصيانة',
+    description: 'توضح لوحة التفاصيل حالة الطلب والمركبة والمورد والسجل والتكاليف.',
+    steps: [
+      'تبويب النظرة العامة يعرض التاريخ والحالة والتكلفة والوصف.',
+      'تبويب المركبة يعرض اللوحة ومعلومات المركبة وسجل الصيانة المرتبط بها.',
+      'تبويب المورد يوضح بيانات مزود الخدمة إذا كانت مسجلة.',
+      'تبويب التكاليف يقارن التكلفة المقدرة بالتكلفة الفعلية.',
+      'من أسفل اللوحة يمكنك تعديل الطلب أو بدءه أو إكماله أو حذفه حسب الحالة.',
+    ],
+  },
+  status: {
+    title: 'جولة تغيير حالة الصيانة',
+    description: 'شرح تأثير بدء أو إكمال طلب الصيانة قبل تنفيذ الإجراء.',
+    steps: [
+      'بدء الصيانة ينقل الطلب إلى قيد المعالجة ويجعل المركبة تحت المتابعة.',
+      'إكمال الصيانة يغلق الطلب ويحدث الحالة التشغيلية المرتبطة بالمركبة.',
+      'راجع رقم الطلب والمركبة قبل التأكيد لأن الإجراء يؤثر على تقارير التشغيل.',
+    ],
+  },
+  delete: {
+    title: 'جولة حذف طلب الصيانة',
+    description: 'يوضح ما يحدث عند حذف طلب الصيانة وما يجب مراجعته قبل التأكيد.',
+    steps: [
+      'الحذف يزيل سجل الصيانة من القائمة.',
+      'إذا كانت المركبة في حالة صيانة بسبب هذا الطلب فقد تعود إلى متاحة.',
+      'راجع رقم الطلب والمركبة قبل الحذف، ولا تستخدم الحذف بدل إكمال الصيانة.',
+    ],
+  },
+  export: {
+    title: 'جولة تصدير الصيانة',
+    description: 'شرح طريقة تصدير سجلات الصيانة الحالية.',
+    steps: [
+      'التصدير يجب أن يعتمد على الفلاتر الحالية في الصفحة.',
+      'استخدم البحث والحالة والنوع والأولوية لتحديد البيانات المطلوبة.',
+      'بعدها اضغط تصدير الآن لإنشاء الملف عند تفعيل خدمة التصدير النهائية.',
+    ],
+  },
+  navigation: {
+    title: 'جولة التنقل في الصيانة',
+    description: 'شرح طريقة الانتقال بين اللوحة والقائمة والمركبات المرتبطة بالصيانة.',
+    steps: [
+      'استخدم لوحة الصيانة لمتابعة المؤشرات والتنبيهات والملخصات السريعة.',
+      'استخدم القائمة عندما تريد البحث والتصفية ومراجعة كل طلبات الصيانة.',
+      'أزرار عرض الكل تنقلك إلى القائمة مع الفلتر المناسب بدل البحث اليدوي.',
+      'عرض المركبة يفتح ملف المركبة لمراجعة العقود والحالة التشغيلية والسجل.',
+    ],
+  },
+  filters: {
+    title: 'جولة البحث والفلاتر',
+    description: 'شرح طريقة تضييق نتائج الصيانة وإعادة ضبطها.',
+    steps: [
+      'ابحث برقم طلب الصيانة أو رقم لوحة المركبة أو نوع الصيانة.',
+      'فلتر الحالة يفرق بين المعلقة وقيد المعالجة والمكتملة والملغاة.',
+      'فلتر النوع والأولوية يساعدان في متابعة الطوارئ والصيانة الوقائية.',
+      'زر تصفير يعيد القائمة إلى كل السجلات بدون فلاتر نشطة.',
+    ],
+  },
+  metrics: {
+    title: 'جولة بطاقات مؤشرات الصيانة',
+    description: 'شرح الأرقام المختصرة أعلى صفحة الصيانة وكيفية استخدامها.',
+    steps: [
+      'بطاقة الطلبات النشطة تعرض الطلبات المفتوحة وما هو قيد المعالجة.',
+      'بطاقة المركبات في الصيانة تساعدك في معرفة المركبات غير الجاهزة للتشغيل.',
+      'بطاقة المكتملة هذا الشهر تتابع الإنتاجية الشهرية لفريق الصيانة.',
+      'بطاقة تكلفة الشهر تعرض إجمالي تكلفة الصيانة للشهر الحالي.',
+    ],
+  },
+} satisfies Record<string, MaintenanceTourContent>;
+
+function FeatureTourButton({
+  tour,
+  onStart,
+}: {
+  tour: MaintenanceTourContent;
+  onStart: (tour: MaintenanceTourContent) => void;
+}) {
+  return (
+    <Button
+      type="button"
+      variant="outline"
+      onClick={() => onStart(tour)}
+      className="h-9 gap-2 rounded-[8px] border bg-white"
+      style={{ borderColor: maintenanceTheme.border, color: maintenanceTheme.text }}
+    >
+      <PlayCircle className="h-4 w-4" style={{ color: maintenanceTheme.success }} />
+      ابدأ الجولة التعريفية
+    </Button>
+  );
+}
+
+function FeatureTourDialog({
+  tour,
+  onOpenChange,
+}: {
+  tour: MaintenanceTourContent | null;
+  onOpenChange: (open: boolean) => void;
+}) {
+  return (
+    <Dialog open={!!tour} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-xl rounded-[8px]" dir="rtl">
+        <DialogHeader className="text-right">
+          <DialogTitle className="flex items-center gap-2 text-xl">
+            <HelpCircle className="h-5 w-5" style={{ color: maintenanceTheme.success }} />
+            {tour?.title}
+          </DialogTitle>
+          <DialogDescription>{tour?.description}</DialogDescription>
+        </DialogHeader>
+        <div className="space-y-3">
+          {tour?.steps.map((step, index) => (
+            <div key={step} className="flex gap-3 rounded-[8px] border bg-white p-3" style={{ borderColor: maintenanceTheme.border }}>
+              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-[8px] text-sm font-bold text-white" style={{ backgroundColor: maintenanceTheme.success }}>
+                {index + 1}
+              </span>
+              <p className="text-sm leading-6" style={{ color: maintenanceTheme.text }}>{step}</p>
+            </div>
+          ))}
+        </div>
+        <DialogFooter>
+          <Button onClick={() => onOpenChange(false)} className="rounded-[8px] text-white" style={{ backgroundColor: maintenanceTheme.success }}>
+            فهمت
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function FeatureActionDialog({
+  action,
+  onClose,
+  onStartTour,
+}: {
+  action: MaintenanceFeatureAction | null;
+  onClose: () => void;
+  onStartTour: (tour: MaintenanceTourContent) => void;
+}) {
+  return (
+    <Dialog open={!!action} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="max-w-lg rounded-[8px]" dir="rtl">
+        <DialogHeader className="text-right">
+          <DialogTitle>{action?.title}</DialogTitle>
+          <DialogDescription>{action?.description}</DialogDescription>
+        </DialogHeader>
+        <DialogFooter className="gap-2 sm:justify-between">
+          {action && <FeatureTourButton tour={action.tour} onStart={onStartTour} />}
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={onClose} className="rounded-[8px]">
+              إلغاء
+            </Button>
+            <Button
+              onClick={() => {
+                action?.onConfirm();
+                onClose();
+              }}
+              className="rounded-[8px] text-white"
+              style={{ backgroundColor: maintenanceTheme.success }}
+            >
+              {action?.confirmLabel}
+            </Button>
+          </div>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
 // ===== Enhanced Stat Card =====
 interface EnhancedStatCardProps {
   title: string;
@@ -333,9 +536,10 @@ const MaintenanceRecordCard: React.FC<MaintenanceRecordCardProps> = ({
 interface VehicleInMaintenanceCardProps {
   vehicle: any;
   index: number;
+  onViewVehicle: () => void;
 }
 
-const VehicleInMaintenanceCard: React.FC<VehicleInMaintenanceCardProps> = ({ vehicle, index }) => {
+const VehicleInMaintenanceCard: React.FC<VehicleInMaintenanceCardProps> = ({ vehicle, index, onViewVehicle }) => {
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
@@ -369,7 +573,7 @@ const VehicleInMaintenanceCard: React.FC<VehicleInMaintenanceCardProps> = ({ veh
           <Button
             variant="outline"
             size="sm"
-            onClick={() => window.open(`/fleet/vehicles/${vehicle.id}`, '_blank')}
+            onClick={onViewVehicle}
             className="shrink-0 rounded-[8px] border bg-white"
             style={{ borderColor: maintenanceTheme.border, color: maintenanceTheme.text }}
           >
@@ -387,7 +591,12 @@ export default function MaintenanceRedesigned() {
   const [showMaintenanceForm, setShowMaintenanceForm] = useState(false);
   const [selectedVehicleId, setSelectedVehicleId] = useState<string | undefined>(undefined);
   const [selectedMaintenance, setSelectedMaintenance] = useState<any>(null);
+  const [editingMaintenance, setEditingMaintenance] = useState<any>(null);
   const [recordToDelete, setRecordToDelete] = useState<any>(null);
+  const [statusAction, setStatusAction] = useState<{ record: any; type: 'start' | 'complete' } | null>(null);
+  const [exportDialogOpen, setExportDialogOpen] = useState(false);
+  const [activeTour, setActiveTour] = useState<MaintenanceTourContent | null>(null);
+  const [featureAction, setFeatureAction] = useState<MaintenanceFeatureAction | null>(null);
   const [sidePanelOpen, setSidePanelOpen] = useState(false);
   const [viewMode, setViewMode] = useState<'dashboard' | 'list'>('dashboard');
   const [searchQuery, setSearchQuery] = useState("");
@@ -458,12 +667,20 @@ export default function MaintenanceRedesigned() {
   // Handlers
   const handleCreateNew = () => {
     setSelectedVehicleId(undefined);
+    setEditingMaintenance(null);
     setShowMaintenanceForm(true);
   };
 
   const handleViewDetails = (record: any) => {
     setSelectedMaintenance(record);
     setSidePanelOpen(true);
+  };
+
+  const handleEditMaintenance = (maintenance: any) => {
+    setEditingMaintenance(maintenance);
+    setSelectedVehicleId(maintenance?.vehicle_id);
+    setSidePanelOpen(false);
+    setShowMaintenanceForm(true);
   };
 
   const handleCompleteMaintenance = async (record: any) => {
@@ -493,7 +710,10 @@ export default function MaintenanceRedesigned() {
     if (!recordToDelete) return;
 
     try {
-      await deleteMaintenance.mutateAsync(recordToDelete.id);
+      await deleteMaintenance.mutateAsync({
+        maintenanceId: recordToDelete.id,
+        vehicleId: recordToDelete.vehicle_id || recordToDelete.vehicles?.id,
+      });
       toast.success('تم حذف السجل بنجاح');
       setRecordToDelete(null);
       refetch();
@@ -507,12 +727,38 @@ export default function MaintenanceRedesigned() {
     // Implement export logic
   };
 
+  const handleConfirmStatusAction = async () => {
+    if (!statusAction) return;
+
+    if (statusAction.type === 'start') {
+      await handleStartProgress(statusAction.record);
+    } else {
+      await handleCompleteMaintenance(statusAction.record);
+    }
+
+    setStatusAction(null);
+  };
+
   const handleResetFilters = () => {
     setSearchQuery("");
     setStatusFilter("all");
     setTypeFilter("all");
     setPriorityFilter("all");
     setCurrentPage(1);
+  };
+
+  const openFeatureAction = (action: MaintenanceFeatureAction) => {
+    setFeatureAction(action);
+  };
+
+  const openPaginationAction = (page: number) => {
+    openFeatureAction({
+      title: 'تغيير صفحة النتائج',
+      description: `سيتم عرض صفحة ${page} من سجلات الصيانة المطابقة للبحث والفلاتر الحالية.`,
+      confirmLabel: 'تغيير الصفحة',
+      tour: maintenanceTours.navigation,
+      onConfirm: () => setCurrentPage(page),
+    });
   };
 
   const activeFiltersCount = [statusFilter, typeFilter, priorityFilter].filter(value => value !== 'all').length + (searchQuery ? 1 : 0);
@@ -523,7 +769,13 @@ export default function MaintenanceRedesigned() {
       subtitle: `${stats?.inProgressCount || 0} قيد المعالجة`,
       icon: Clock,
       color: maintenanceTheme.water,
-      onClick: () => { setViewMode('list'); setStatusFilter('pending'); },
+      onClick: () => openFeatureAction({
+        title: 'عرض الطلبات النشطة',
+        description: 'سيتم فتح قائمة الصيانة مع فلتر الطلبات المعلقة لمراجعتها بسرعة.',
+        confirmLabel: 'عرض الطلبات',
+        tour: maintenanceTours.metrics,
+        onConfirm: () => { setViewMode('list'); setStatusFilter('pending'); },
+      }),
     },
     {
       title: 'مركبات في الصيانة',
@@ -531,7 +783,13 @@ export default function MaintenanceRedesigned() {
       subtitle: 'مركبات غير جاهزة للتشغيل',
       icon: Wrench,
       color: maintenanceTheme.alert,
-      onClick: () => { setViewMode('list'); setStatusFilter('in_progress'); },
+      onClick: () => openFeatureAction({
+        title: 'عرض المركبات قيد الصيانة',
+        description: 'سيتم فتح قائمة الصيانة مع فلتر الطلبات قيد المعالجة.',
+        confirmLabel: 'عرض القائمة',
+        tour: maintenanceTours.metrics,
+        onConfirm: () => { setViewMode('list'); setStatusFilter('in_progress'); },
+      }),
     },
     {
       title: 'مكتملة هذا الشهر',
@@ -539,7 +797,13 @@ export default function MaintenanceRedesigned() {
       subtitle: 'طلبات مغلقة',
       icon: CheckCircle,
       color: maintenanceTheme.success,
-      onClick: () => { setViewMode('list'); setStatusFilter('completed'); },
+      onClick: () => openFeatureAction({
+        title: 'عرض الصيانات المكتملة',
+        description: 'سيتم فتح قائمة الصيانة مع فلتر الطلبات المكتملة.',
+        confirmLabel: 'عرض المكتملة',
+        tour: maintenanceTours.metrics,
+        onConfirm: () => { setViewMode('list'); setStatusFilter('completed'); },
+      }),
     },
     {
       title: 'تكلفة الشهر',
@@ -583,7 +847,13 @@ export default function MaintenanceRedesigned() {
             <div className="flex flex-wrap items-center gap-2">
               <div className="flex items-center rounded-[8px] border p-1" style={{ borderColor: maintenanceTheme.border, backgroundColor: maintenanceTheme.inner }}>
                 <button
-                  onClick={() => setViewMode('dashboard')}
+                  onClick={() => openFeatureAction({
+                    title: 'فتح لوحة الصيانة',
+                    description: 'سيتم الانتقال إلى لوحة تعرض المؤشرات والتنبيهات وملخصات الصيانة.',
+                    confirmLabel: 'فتح اللوحة',
+                    tour: maintenanceTours.navigation,
+                    onConfirm: () => setViewMode('dashboard'),
+                  })}
                   className="flex h-9 items-center gap-2 rounded-[8px] px-3 text-sm font-semibold transition"
                   style={viewMode === 'dashboard' ? { backgroundColor: maintenanceTheme.surface, color: maintenanceTheme.success } : { color: maintenanceTheme.muted }}
                 >
@@ -591,7 +861,13 @@ export default function MaintenanceRedesigned() {
                   لوحة
                 </button>
                 <button
-                  onClick={() => setViewMode('list')}
+                  onClick={() => openFeatureAction({
+                    title: 'فتح قائمة الصيانة',
+                    description: 'سيتم الانتقال إلى القائمة التفصيلية للبحث والتصفية ومتابعة الطلبات.',
+                    confirmLabel: 'فتح القائمة',
+                    tour: maintenanceTours.navigation,
+                    onConfirm: () => setViewMode('list'),
+                  })}
                   className="flex h-9 items-center gap-2 rounded-[8px] px-3 text-sm font-semibold transition"
                   style={viewMode === 'list' ? { backgroundColor: maintenanceTheme.surface, color: maintenanceTheme.success } : { color: maintenanceTheme.muted }}
                 >
@@ -600,7 +876,7 @@ export default function MaintenanceRedesigned() {
                 </button>
               </div>
 
-              <Button variant="outline" onClick={handleExport} className="h-10 gap-2 rounded-[8px] border bg-white" style={{ borderColor: maintenanceTheme.border, color: maintenanceTheme.text }}>
+              <Button variant="outline" onClick={() => setExportDialogOpen(true)} className="h-10 gap-2 rounded-[8px] border bg-white" style={{ borderColor: maintenanceTheme.border, color: maintenanceTheme.text }}>
                 <Download className="h-4 w-4" style={{ color: maintenanceTheme.water }} />
                 تصدير
               </Button>
@@ -637,7 +913,18 @@ export default function MaintenanceRedesigned() {
                     <h2 className="text-lg font-bold" style={{ color: maintenanceTheme.text }}>ملخص الصيانات</h2>
                     <p className="mt-1 text-sm" style={{ color: maintenanceTheme.muted }}>توزيع أنواع الصيانة الحالية</p>
                   </div>
-                  <Button variant="outline" onClick={() => setViewMode('list')} className="h-10 rounded-[8px] border bg-white" style={{ borderColor: maintenanceTheme.border, color: maintenanceTheme.text }}>
+                  <Button
+                    variant="outline"
+                    onClick={() => openFeatureAction({
+                      title: 'عرض كل الصيانات',
+                      description: 'سيتم فتح قائمة الصيانة الكاملة مع الإبقاء على الفلاتر الحالية.',
+                      confirmLabel: 'عرض الكل',
+                      tour: maintenanceTours.navigation,
+                      onConfirm: () => setViewMode('list'),
+                    })}
+                    className="h-10 rounded-[8px] border bg-white"
+                    style={{ borderColor: maintenanceTheme.border, color: maintenanceTheme.text }}
+                  >
                     عرض الكل
                   </Button>
                 </div>
@@ -662,7 +949,13 @@ export default function MaintenanceRedesigned() {
                       count={stats?.overdueCount || 0}
                       icon={AlertCircle}
                       color={maintenanceTheme.alert}
-                      onClick={() => { setViewMode('list'); setPriorityFilter('urgent'); }}
+                      onClick={() => openFeatureAction({
+                        title: 'عرض الصيانات المتأخرة',
+                        description: 'سيتم فتح القائمة مع فلتر الأولوية العاجلة لمراجعة الطلبات التي تحتاج تدخلًا.',
+                        confirmLabel: 'عرض المتأخرة',
+                        tour: maintenanceTours.metrics,
+                        onConfirm: () => { setViewMode('list'); setPriorityFilter('urgent'); },
+                      })}
                     />
                   )}
                   {(stats?.urgentCount || 0) > 0 && (
@@ -671,7 +964,13 @@ export default function MaintenanceRedesigned() {
                       count={stats?.urgentCount || 0}
                       icon={AlertTriangle}
                       color={maintenanceTheme.alert}
-                      onClick={() => { setViewMode('list'); setPriorityFilter('urgent'); }}
+                      onClick={() => openFeatureAction({
+                        title: 'عرض الصيانات العاجلة',
+                        description: 'سيتم فتح القائمة مع فلتر الأولوية العاجلة.',
+                        confirmLabel: 'عرض العاجلة',
+                        tour: maintenanceTours.metrics,
+                        onConfirm: () => { setViewMode('list'); setPriorityFilter('urgent'); },
+                      })}
                     />
                   )}
                   {(stats?.overdueCount || 0) === 0 && (stats?.urgentCount || 0) === 0 && (
@@ -701,7 +1000,18 @@ export default function MaintenanceRedesigned() {
                     <Badge className="rounded-[8px] border" style={{ backgroundColor: `${maintenanceTheme.alert}14`, borderColor: `${maintenanceTheme.alert}44`, color: maintenanceTheme.alert }}>
                       {maintenanceVehicles?.length || 0} مركبة
                     </Badge>
-                    <Button variant="ghost" onClick={() => navigate('/fleet')} className="h-10 rounded-[8px]" style={{ color: maintenanceTheme.alert }}>
+                    <Button
+                      variant="ghost"
+                      onClick={() => openFeatureAction({
+                        title: 'فتح صفحة الأسطول',
+                        description: 'سيتم فتح صفحة الأسطول لمراجعة كل المركبات وحالاتها التشغيلية.',
+                        confirmLabel: 'فتح الأسطول',
+                        tour: maintenanceTours.navigation,
+                        onConfirm: () => navigate('/fleet'),
+                      })}
+                      className="h-10 rounded-[8px]"
+                      style={{ color: maintenanceTheme.alert }}
+                    >
                       عرض الكل
                     </Button>
                   </div>
@@ -709,7 +1019,18 @@ export default function MaintenanceRedesigned() {
 
                 <div className="grid grid-cols-1 gap-3 p-5 lg:grid-cols-2 xl:grid-cols-3">
                   {maintenanceVehicles?.slice(0, 6).map((vehicle: any, index: number) => (
-                    <VehicleInMaintenanceCard key={vehicle.id} vehicle={vehicle} index={index} />
+                    <VehicleInMaintenanceCard
+                      key={vehicle.id}
+                      vehicle={vehicle}
+                      index={index}
+                      onViewVehicle={() => openFeatureAction({
+                        title: 'فتح ملف المركبة',
+                        description: 'سيتم فتح ملف المركبة في تبويب جديد لمراجعة التفاصيل والعقود والحالة.',
+                        confirmLabel: 'فتح المركبة',
+                        tour: maintenanceTours.navigation,
+                        onConfirm: () => window.open(`/fleet/vehicles/${vehicle.id}`, '_blank'),
+                      })}
+                    />
                   ))}
                 </div>
               </section>
@@ -721,7 +1042,18 @@ export default function MaintenanceRedesigned() {
                   <h2 className="text-lg font-bold" style={{ color: maintenanceTheme.text }}>النشاط الأخير</h2>
                   <p className="mt-1 text-sm" style={{ color: maintenanceTheme.muted }}>آخر طلبات الصيانة</p>
                 </div>
-                <Button variant="ghost" onClick={() => setViewMode('list')} className="h-10 rounded-[8px]" style={{ color: maintenanceTheme.water }}>
+                <Button
+                  variant="ghost"
+                  onClick={() => openFeatureAction({
+                    title: 'عرض النشاط الكامل',
+                    description: 'سيتم فتح قائمة الصيانة لعرض كل السجلات بدل آخر النشاط فقط.',
+                    confirmLabel: 'عرض الكل',
+                    tour: maintenanceTours.navigation,
+                    onConfirm: () => setViewMode('list'),
+                  })}
+                  className="h-10 rounded-[8px]"
+                  style={{ color: maintenanceTheme.water }}
+                >
                   عرض الكل
                 </Button>
               </div>
@@ -733,8 +1065,8 @@ export default function MaintenanceRedesigned() {
                     record={record}
                     index={index}
                     onView={() => handleViewDetails(record)}
-                    onComplete={() => handleCompleteMaintenance(record)}
-                    onStartProgress={() => handleStartProgress(record)}
+                    onComplete={() => setStatusAction({ record, type: 'complete' })}
+                    onStartProgress={() => setStatusAction({ record, type: 'start' })}
                     onDelete={() => setRecordToDelete(record)}
                   />
                 ))}
@@ -763,7 +1095,16 @@ export default function MaintenanceRedesigned() {
                     style={{ borderColor: maintenanceTheme.border }}
                   />
                   {searchQuery && (
-                    <button onClick={() => setSearchQuery('')} className="absolute left-2 top-1/2 -translate-y-1/2 rounded-[8px] p-1.5 transition hover:bg-slate-100">
+                    <button
+                      onClick={() => openFeatureAction({
+                        title: 'مسح البحث',
+                        description: 'سيتم مسح نص البحث الحالي مع الإبقاء على الفلاتر الأخرى كما هي.',
+                        confirmLabel: 'مسح البحث',
+                        tour: maintenanceTours.filters,
+                        onConfirm: () => setSearchQuery(''),
+                      })}
+                      className="absolute left-2 top-1/2 -translate-y-1/2 rounded-[8px] p-1.5 transition hover:bg-slate-100"
+                    >
                       <X className="h-3.5 w-3.5" style={{ color: maintenanceTheme.muted }} />
                     </button>
                   )}
@@ -810,7 +1151,18 @@ export default function MaintenanceRedesigned() {
                   </Select>
 
                   {activeFiltersCount > 0 && (
-                    <Button variant="outline" onClick={handleResetFilters} className="h-11 rounded-[8px] border bg-white" style={{ borderColor: maintenanceTheme.border, color: maintenanceTheme.text }}>
+                    <Button
+                      variant="outline"
+                      onClick={() => openFeatureAction({
+                        title: 'تصفير البحث والفلاتر',
+                        description: 'سيتم مسح البحث وكل فلاتر الحالة والنوع والأولوية والعودة لأول صفحة.',
+                        confirmLabel: 'تصفير',
+                        tour: maintenanceTours.filters,
+                        onConfirm: handleResetFilters,
+                      })}
+                      className="h-11 rounded-[8px] border bg-white"
+                      style={{ borderColor: maintenanceTheme.border, color: maintenanceTheme.text }}
+                    >
                       <RefreshCw className="ml-1 h-4 w-4" />
                       تصفير
                     </Button>
@@ -837,8 +1189,8 @@ export default function MaintenanceRedesigned() {
                   record={record}
                   index={index}
                   onView={() => handleViewDetails(record)}
-                  onComplete={() => handleCompleteMaintenance(record)}
-                  onStartProgress={() => handleStartProgress(record)}
+                  onComplete={() => setStatusAction({ record, type: 'complete' })}
+                  onStartProgress={() => setStatusAction({ record, type: 'start' })}
                   onDelete={() => setRecordToDelete(record)}
                 />
               ))}
@@ -868,7 +1220,13 @@ export default function MaintenanceRedesigned() {
                 </p>
 
                 <div className="flex items-center gap-2">
-                  <Button variant="outline" onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} className="h-10 rounded-[8px] border bg-white" style={{ borderColor: maintenanceTheme.border }}>
+                  <Button
+                    variant="outline"
+                    onClick={() => openPaginationAction(Math.max(1, currentPage - 1))}
+                    disabled={currentPage === 1}
+                    className="h-10 rounded-[8px] border bg-white"
+                    style={{ borderColor: maintenanceTheme.border }}
+                  >
                     <ChevronRight className="h-4 w-4" />
                   </Button>
 
@@ -876,7 +1234,7 @@ export default function MaintenanceRedesigned() {
                     <Button
                       key={page}
                       variant={currentPage === page ? "default" : "ghost"}
-                      onClick={() => setCurrentPage(page)}
+                      onClick={() => openPaginationAction(page)}
                       className="h-10 min-w-10 rounded-[8px]"
                       style={currentPage === page ? { backgroundColor: maintenanceTheme.success, color: '#fff' } : { color: maintenanceTheme.text }}
                     >
@@ -886,7 +1244,13 @@ export default function MaintenanceRedesigned() {
 
                   {totalPages > 5 && <span className="px-2" style={{ color: maintenanceTheme.muted }}>...</span>}
 
-                  <Button variant="outline" onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} className="h-10 rounded-[8px] border bg-white" style={{ borderColor: maintenanceTheme.border }}>
+                  <Button
+                    variant="outline"
+                    onClick={() => openPaginationAction(Math.min(totalPages, currentPage + 1))}
+                    disabled={currentPage === totalPages}
+                    className="h-10 rounded-[8px] border bg-white"
+                    style={{ borderColor: maintenanceTheme.border }}
+                  >
                     <ChevronLeft className="h-4 w-4" />
                   </Button>
                 </div>
@@ -898,16 +1262,118 @@ export default function MaintenanceRedesigned() {
       {/* Side Panels */}
       <MaintenanceSidePanel
         isOpen={sidePanelOpen}
+        maintenanceId={selectedMaintenance?.id}
         onClose={() => setSidePanelOpen(false)}
-        selectedMaintenance={selectedMaintenance}
-        onMaintenanceUpdate={() => {
-          setSidePanelOpen(false);
-          setSelectedMaintenance(null);
-          refetch();
+        onEdit={handleEditMaintenance}
+        onDelete={(maintenanceId, vehicleId) => {
+          setRecordToDelete({
+            id: maintenanceId,
+            vehicle_id: vehicleId,
+            maintenance_number: selectedMaintenance?.maintenance_number,
+          });
+        }}
+        onStatusChange={(maintenanceId, vehicleId, currentStatus) => {
+          setStatusAction({
+            record: {
+              id: maintenanceId,
+              vehicle_id: vehicleId,
+              maintenance_number: selectedMaintenance?.maintenance_number,
+            },
+            type: currentStatus === 'pending' ? 'start' : 'complete',
+          });
         }}
       />
 
-      <MaintenanceAlertsPanel />
+      <MaintenanceAlertsPanel
+        onMaintenanceClick={(maintenanceId) => {
+          setSelectedMaintenance({ id: maintenanceId });
+          setSidePanelOpen(true);
+        }}
+        onVehicleClick={(vehicleId) => openFeatureAction({
+          title: 'فتح المركبة من التنبيه',
+          description: 'سيتم فتح ملف المركبة المرتبطة بالتنبيه في تبويب جديد.',
+          confirmLabel: 'فتح المركبة',
+          tour: maintenanceTours.navigation,
+          onConfirm: () => window.open(`/fleet/vehicles/${vehicleId}`, '_blank'),
+        })}
+        onViewAllClick={() => openFeatureAction({
+          title: 'عرض كل تنبيهات الصيانة',
+          description: 'سيتم فتح قائمة الصيانة مع فلتر الأولوية العاجلة لمراجعة التنبيهات النشطة.',
+          confirmLabel: 'عرض التنبيهات',
+          tour: maintenanceTours.metrics,
+          onConfirm: () => { setViewMode('list'); setPriorityFilter('urgent'); },
+        })}
+      />
+
+      <Dialog open={exportDialogOpen} onOpenChange={setExportDialogOpen}>
+        <DialogContent className="max-w-lg rounded-[8px]" dir="rtl">
+          <DialogHeader className="text-right">
+            <DialogTitle>تصدير سجلات الصيانة</DialogTitle>
+            <DialogDescription>
+              راجع الفلاتر الحالية قبل إنشاء ملف التصدير حتى تكون البيانات مطابقة لما يظهر في القائمة.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="rounded-[8px] border p-4 text-sm leading-7" style={{ borderColor: maintenanceTheme.border, backgroundColor: maintenanceTheme.inner, color: maintenanceTheme.text }}>
+            سيتم تصدير {filteredRecords.length} سجل حسب البحث والفلاتر الحالية.
+          </div>
+          <DialogFooter className="gap-2 sm:justify-between">
+            <FeatureTourButton tour={maintenanceTours.export} onStart={setActiveTour} />
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => setExportDialogOpen(false)} className="rounded-[8px]">
+                إلغاء
+              </Button>
+              <Button
+                onClick={async () => {
+                  await handleExport();
+                  setExportDialogOpen(false);
+                }}
+                className="rounded-[8px] text-white"
+                style={{ backgroundColor: maintenanceTheme.success }}
+              >
+                تصدير الآن
+              </Button>
+            </div>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <FeatureActionDialog
+        action={featureAction}
+        onClose={() => setFeatureAction(null)}
+        onStartTour={setActiveTour}
+      />
+
+      <AlertDialog open={!!statusAction} onOpenChange={(open) => !open && setStatusAction(null)}>
+        <AlertDialogContent className="rounded-[8px]" dir="rtl">
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {statusAction?.type === 'start' ? 'بدء الصيانة' : 'إكمال الصيانة'}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {statusAction?.type === 'start'
+                ? 'سيتم نقل طلب الصيانة إلى قيد المعالجة وتحديث متابعة المركبة.'
+                : 'سيتم إغلاق طلب الصيانة وتحديث حالة السجل في التقارير.'}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="rounded-[8px] border p-3 text-sm" style={{ borderColor: maintenanceTheme.border, backgroundColor: maintenanceTheme.inner }}>
+            رقم الطلب: <strong>{statusAction?.record?.maintenance_number || statusAction?.record?.id}</strong>
+          </div>
+          <AlertDialogFooter className="gap-2 sm:justify-between">
+            <FeatureTourButton tour={maintenanceTours.status} onStart={setActiveTour} />
+            <div className="flex gap-2">
+              <AlertDialogCancel className="rounded-[8px]">إلغاء</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleConfirmStatusAction}
+                className="rounded-[8px] text-white"
+                style={{ backgroundColor: maintenanceTheme.success }}
+                disabled={updateMaintenance.isPending || completeMaintenanceStatus.isPending}
+              >
+                {statusAction?.type === 'start' ? 'تأكيد البدء' : 'تأكيد الإكمال'}
+              </AlertDialogAction>
+            </div>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={!!recordToDelete} onOpenChange={(open) => !open && setRecordToDelete(null)}>
@@ -918,7 +1384,9 @@ export default function MaintenanceRedesigned() {
               سيتم حذف طلب الصيانة <strong>{recordToDelete?.maintenance_number}</strong>. هذا الإجراء لا يمكن التراجع عنه.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
+          <AlertDialogFooter className="gap-2 sm:justify-between">
+            <FeatureTourButton tour={maintenanceTours.delete} onStart={setActiveTour} />
+            <div className="flex gap-2">
             <AlertDialogCancel className="rounded-xl">إلغاء</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDelete}
@@ -927,9 +1395,12 @@ export default function MaintenanceRedesigned() {
             >
               {deleteMaintenance.isPending ? 'جاري الحذف...' : 'حذف'}
             </AlertDialogAction>
+            </div>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <FeatureTourDialog tour={activeTour} onOpenChange={(open) => !open && setActiveTour(null)} />
 
       {/* Maintenance Form Modal */}
       <Suspense fallback={
@@ -938,12 +1409,14 @@ export default function MaintenanceRedesigned() {
         </div>
       }>
         <MaintenanceForm
+          maintenance={editingMaintenance}
           vehicleId={selectedVehicleId}
           open={showMaintenanceForm}
           onOpenChange={(open) => {
             setShowMaintenanceForm(open);
             if (!open) {
               setSelectedVehicleId(undefined);
+              setEditingMaintenance(null);
             }
           }}
         />

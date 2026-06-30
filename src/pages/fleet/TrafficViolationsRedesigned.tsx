@@ -25,7 +25,13 @@ import {
   Link2,
   CheckCircle2,
   XCircle,
-  AlertTriangle
+  AlertTriangle,
+  MapPin,
+  ReceiptText,
+  Send,
+  Filter,
+  MoreHorizontal,
+  ShieldAlert
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -33,7 +39,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Progress } from '@/components/ui/progress';
-import { useTrafficViolations, TrafficViolation, useDeleteTrafficViolation, useUpdatePaymentStatus } from '@/hooks/useTrafficViolations';
+import { useTrafficViolations, TrafficViolation, useDeleteTrafficViolation, useDeleteAllTrafficViolations, useUpdatePaymentStatus, useTrafficViolationsStats } from '@/hooks/useTrafficViolations';
 import { useRelinkViolations } from '@/hooks/useRelinkViolations';
 import { TrafficViolationsSmartDashboard } from '@/components/fleet/TrafficViolationsSmartDashboard';
 import { TrafficViolationsAlertsPanel } from '@/components/fleet/TrafficViolationsAlertsPanel';
@@ -80,6 +86,8 @@ export default function TrafficViolationsRedesigned() {
   const [isReportDialogOpen, setIsReportDialogOpen] = useState(false);
   const [isRelinkDialogOpen, setIsRelinkDialogOpen] = useState(false);
   const [isReminderDialogOpen, setIsReminderDialogOpen] = useState(false);
+  const [isDeleteAllDialogOpen, setIsDeleteAllDialogOpen] = useState(false);
+  const [deleteAllConfirmText, setDeleteAllConfirmText] = useState('');
   const [selectedViolationsForReminder, setSelectedViolationsForReminder] = useState<TrafficViolation[]>([]);
   
   // Data Fetching - Reduced limit for better performance (was 10000!)
@@ -103,6 +111,7 @@ export default function TrafficViolationsRedesigned() {
     offset: (currentPage - 1) * itemsPerPage,
     enabled: !isServerFilteringActive
   });
+  const { data: allViolationStats } = useTrafficViolationsStats();
   const { data: vehicles = [] } = useVehicles({ limit: 500 });
 
   // When search/filters are active, fetch matching violations server-side
@@ -303,6 +312,7 @@ export default function TrafficViolationsRedesigned() {
 
   const totalPages = Math.ceil(totalCount / itemsPerPage);
   const deleteViolationMutation = useDeleteTrafficViolation();
+  const deleteAllViolationsMutation = useDeleteAllTrafficViolations();
   const updatePaymentStatusMutation = useUpdatePaymentStatus();
   const { formatCurrency } = useCurrencyFormatter();
   const { relinkViolations, isProcessing: isRelinking, progress: relinkProgress, result: relinkResult, resetResult: resetRelinkResult } = useRelinkViolations();
@@ -371,6 +381,43 @@ export default function TrafficViolationsRedesigned() {
     });
   }, [sourceViolations, searchTerm, filterStatus, filterPaymentStatus, filterCar, filterCustomer, getCarName, getCustomerName]);
 
+  const violationInsights = useMemo(() => {
+    const unpaid = sourceViolations.filter(v => v.payment_status === 'unpaid');
+    const partial = sourceViolations.filter(v => v.payment_status === 'partially_paid');
+    const paid = sourceViolations.filter(v => v.payment_status === 'paid');
+    const unlinked = sourceViolations.filter(v => !v.customer_id || !v.contract_id);
+    const unpaidAmount = [...unpaid, ...partial].reduce((sum, v) => sum + Number(v.amount || 0), 0);
+    const totalAmount = sourceViolations.reduce((sum, v) => sum + Number(v.amount || 0), 0);
+
+    const currentViewInsights = {
+      total: sourceViolations.length,
+      shown: filteredViolations.length,
+      unpaid: unpaid.length,
+      partial: partial.length,
+      paid: paid.length,
+      unlinked: unlinked.length,
+      unpaidAmount,
+      totalAmount,
+      collectionRate: sourceViolations.length ? Math.round((paid.length / sourceViolations.length) * 100) : 0,
+    };
+
+    if (!isServerFilteringActive && allViolationStats) {
+      return {
+        total: allViolationStats.total,
+        shown: filteredViolations.length,
+        unpaid: allViolationStats.unpaidCount,
+        partial: allViolationStats.partiallyPaidCount,
+        paid: allViolationStats.paidCount,
+        unlinked: allViolationStats.unlinkedCount,
+        unpaidAmount: allViolationStats.unpaidAmount,
+        totalAmount: allViolationStats.totalAmount,
+        collectionRate: allViolationStats.collectionRate,
+      };
+    }
+
+    return currentViewInsights;
+  }, [allViolationStats, filteredViolations.length, isServerFilteringActive, sourceViolations]);
+
   // Handlers
   const handleOpenModal = useCallback((violation: TrafficViolation | null = null) => {
     setModalData(violation);
@@ -387,6 +434,25 @@ export default function TrafficViolationsRedesigned() {
       }
     }
   }, [deleteViolationMutation]);
+
+  const handleDeleteAllViolations = useCallback(async () => {
+    if (deleteAllConfirmText.trim() !== 'حذف') return;
+
+    try {
+      await deleteAllViolationsMutation.mutateAsync();
+      setIsDeleteAllDialogOpen(false);
+      setDeleteAllConfirmText('');
+      setCurrentPage(1);
+      setFilterStatus('all');
+      setFilterPaymentStatus('all');
+      setFilterCar('all');
+      setFilterCustomer('all');
+      setSearchTerm('');
+      await refetch();
+    } catch (error) {
+      console.error('Failed to delete all traffic violations:', error);
+    }
+  }, [deleteAllConfirmText, deleteAllViolationsMutation, refetch]);
 
   const handleMarkAsPaid = useCallback(async (violation: TrafficViolation) => {
     try {
@@ -532,6 +598,60 @@ export default function TrafficViolationsRedesigned() {
         violations={selectedViolationsForReminder}
         onSuccess={() => refetch()}
       />
+
+      <Dialog
+        open={isDeleteAllDialogOpen}
+        onOpenChange={(open) => {
+          setIsDeleteAllDialogOpen(open);
+          if (!open) setDeleteAllConfirmText('');
+        }}
+      >
+        <DialogContent className="max-w-lg rounded-[8px] border-[#FFD5DC]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-[#FB6B7A]">
+              <AlertTriangle className="h-5 w-5" />
+              حذف جميع المخالفات المرورية
+            </DialogTitle>
+            <DialogDescription className="text-right leading-7">
+              سيتم حذف كل المخالفات المرورية المسجلة للشركة الحالية وعددها{' '}
+              <span className="font-black text-[#020617]">{totalCount.toLocaleString('en-US')}</span>{' '}
+              مخالفة. هذا الإجراء نهائي ولا يمكن التراجع عنه.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-3 rounded-[8px] border border-[#FFD5DC] bg-[#FFF7F8] p-4">
+            <p className="text-sm font-bold text-[#102B4E]">
+              للتأكيد اكتب كلمة <span className="font-black text-[#FB6B7A]">حذف</span> في الحقل التالي.
+            </p>
+            <input
+              value={deleteAllConfirmText}
+              onChange={(event) => setDeleteAllConfirmText(event.target.value)}
+              className="h-11 w-full rounded-[8px] border border-[#FFD5DC] bg-white px-3 text-sm font-black text-[#020617] outline-none focus:border-[#FB6B7A]"
+              placeholder="اكتب حذف"
+              autoComplete="off"
+            />
+          </div>
+
+          <DialogFooter className="gap-2">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setIsDeleteAllDialogOpen(false);
+                setDeleteAllConfirmText('');
+              }}
+            >
+              إلغاء
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDeleteAllViolations}
+              disabled={deleteAllConfirmText.trim() !== 'حذف' || deleteAllViolationsMutation.isPending}
+            >
+              {deleteAllViolationsMutation.isPending ? 'جاري الحذف...' : 'حذف جميع المخالفات'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Relink Violations Dialog */}
       <Dialog open={isRelinkDialogOpen} onOpenChange={(open) => {
@@ -714,8 +834,79 @@ export default function TrafficViolationsRedesigned() {
         </DialogContent>
       </Dialog>
 
+      <header className="traffic-command-bar sticky top-0 z-30 border-b border-[#DDE5EF] bg-white/95 px-4 py-4 shadow-[0_16px_42px_-34px_rgba(15,23,42,.72)] backdrop-blur print:hidden">
+        <div className="mx-auto flex max-w-[1600px] flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex min-w-0 items-center gap-4">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[8px] bg-[#102B4E] text-white">
+              <ShieldAlert className="h-6 w-6" />
+            </div>
+            <div className="min-w-0">
+              <div className="mb-1 flex flex-wrap items-center gap-2 text-xs font-black">
+                <span className="rounded-full bg-[#EAF8FE] px-3 py-1 text-[#38BDF8]">مركز المخالفات</span>
+                <span className="rounded-full bg-[#E8FBF6] px-3 py-1 text-[#22C7A1]">{violationInsights.collectionRate}% محصل</span>
+                {violationInsights.unlinked > 0 && (
+                  <span className="rounded-full bg-[#FFF0F2] px-3 py-1 text-[#FB6B7A]">{violationInsights.unlinked} تحتاج ربط</span>
+                )}
+              </div>
+              <h1 className="truncate text-2xl font-black text-[#020617]">إدارة المخالفات المرورية</h1>
+              <p className="text-sm font-bold text-[#64748B]">متابعة المخالفات، ربطها بالعقود والعملاء، وتحصيل المدفوعات من شاشة تشغيل واحدة.</p>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <Button variant="outline" onClick={() => refetch()} className="h-11 rounded-[8px] border-[#DDE5EF] font-black">
+              <RefreshCw className="ml-2 h-4 w-4" />
+              تحديث
+            </Button>
+            <Button variant="outline" onClick={handleOpenReminderDialog} className="h-11 rounded-[8px] border-[#DDE5EF] font-black text-[#38BDF8]">
+              <Send className="ml-2 h-4 w-4" />
+              تذكير
+            </Button>
+            <Button variant="outline" onClick={handleOpenReportDialog} className="h-11 rounded-[8px] border-[#DDE5EF] font-black">
+              <Printer className="ml-2 h-4 w-4" />
+              تقرير
+            </Button>
+            <Button variant="outline" onClick={() => setIsRelinkDialogOpen(true)} className="h-11 rounded-[8px] border-[#DDE5EF] font-black text-[#FB6B7A]">
+              <Link2 className="ml-2 h-4 w-4" />
+              ربط المخالفات
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => setIsDeleteAllDialogOpen(true)}
+              disabled={totalCount === 0 || deleteAllViolationsMutation.isPending}
+              className="h-11 rounded-[8px] border-[#FFD5DC] bg-[#FFF0F2] font-black text-[#FB6B7A] hover:bg-[#FFE3E8] hover:text-[#E84F61]"
+            >
+              <Trash2 className="ml-2 h-4 w-4" />
+              حذف جميع المخالفات
+            </Button>
+            <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+              <DialogTrigger asChild>
+                <Button onClick={() => handleOpenModal(null)} className="h-11 rounded-[8px] bg-[#22C7A1] px-4 font-black text-white hover:bg-[#1DAE8D]">
+                  <Plus className="ml-2 h-5 w-5" />
+                  تسجيل مخالفة
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="traffic-violations-dialog max-h-[90vh] max-w-2xl overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>{modalData ? 'تعديل المخالفة' : 'تسجيل مخالفة جديدة'}</DialogTitle>
+                </DialogHeader>
+                <Suspense fallback={<LoadingSpinner size="sm" />}>
+                  <TrafficViolationForm 
+                    violation={modalData} 
+                    onSuccess={() => {
+                      setIsModalOpen(false);
+                      refetch();
+                    }} 
+                  />
+                </Suspense>
+              </DialogContent>
+            </Dialog>
+          </div>
+        </div>
+      </header>
+
       {/* --- Top Navbar --- */}
-      <header className="bg-white border-b border-slate-200 sticky top-0 z-30 px-6 py-4 shadow-sm flex flex-col md:flex-row justify-between items-center gap-4 print:hidden">
+      <header className="hidden bg-white border-b border-slate-200 sticky top-0 z-30 px-6 py-4 shadow-sm flex-col md:flex-row justify-between items-center gap-4 print:hidden">
         <div className="flex items-center gap-3 w-full md:w-auto">
           <div className="bg-teal-500 p-2.5 rounded-xl shadow-sm">
             <FileWarning className="w-6 h-6 text-white" />
@@ -792,7 +983,293 @@ export default function TrafficViolationsRedesigned() {
         <p className="text-slate-500 text-sm">تاريخ التقرير: {new Date().toLocaleDateString('en-US')}</p>
       </div>
 
-      <main className="max-w-7xl mx-auto p-6 space-y-6 print:p-0 print:max-w-none">
+      <main className="mx-auto max-w-[1600px] space-y-5 p-4 sm:p-6 print:max-w-none print:p-0">
+        <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-5 print:hidden">
+          {[
+            {
+              label: 'إجمالي السجل',
+              value: violationInsights.total.toLocaleString('en-US'),
+              caption: isServerFilteringActive
+                ? `${violationInsights.shown.toLocaleString('en-US')} ضمن الفلتر`
+                : `إجمالي قيمة المخالفات: ${formatCurrency(violationInsights.totalAmount)}`,
+              icon: ReceiptText,
+              tone: 'neutral'
+            },
+            { label: 'غير مسددة', value: violationInsights.unpaid.toLocaleString('en-US'), caption: formatCurrency(violationInsights.unpaidAmount), icon: AlertTriangle, tone: 'alert' },
+            { label: 'سداد جزئي', value: violationInsights.partial.toLocaleString('en-US'), caption: 'تحتاج متابعة تحصيل', icon: CreditCard, tone: 'info' },
+            { label: 'مسددة', value: violationInsights.paid.toLocaleString('en-US'), caption: `${violationInsights.collectionRate}% من السجل`, icon: CheckCircle, tone: 'success' },
+            { label: 'غير مرتبطة', value: violationInsights.unlinked.toLocaleString('en-US'), caption: 'عميل أو عقد ناقص', icon: Link2, tone: 'focus' },
+          ].map((metric) => {
+            const Icon = metric.icon;
+            const toneClass =
+              metric.tone === 'alert' ? 'bg-[#FFF0F2] text-[#FB6B7A]' :
+              metric.tone === 'success' ? 'bg-[#E8FBF6] text-[#22C7A1]' :
+              metric.tone === 'info' ? 'bg-[#EAF8FE] text-[#38BDF8]' :
+              metric.tone === 'focus' ? 'bg-[#ECEEFE] text-[#7C83F6]' :
+              'bg-[#F6F8FB] text-[#64748B]';
+            return (
+              <div key={metric.label} className="rounded-[8px] border border-[#DDE5EF] bg-white p-4 shadow-[0_18px_42px_-34px_rgba(15,23,42,.58)]">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-xs font-black text-[#94A3B8]">{metric.label}</p>
+                    <p className="mt-2 text-2xl font-black text-[#020617]">{metric.value}</p>
+                    <p className="mt-1 text-xs font-bold text-[#64748B]">{metric.caption}</p>
+                  </div>
+                  <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-[8px] ${toneClass}`}>
+                    <Icon className="h-5 w-5" />
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </section>
+
+        <Tabs defaultValue="list" className="space-y-5">
+          <div className="flex rounded-[8px] border border-[#DDE5EF] bg-white p-3 shadow-[0_18px_42px_-34px_rgba(15,23,42,.58)] print:hidden">
+            <TabsList className="h-auto justify-start gap-1 bg-[#F6F8FB] p-1">
+              <TabsTrigger value="list" className="gap-2 rounded-[8px] px-4 py-2.5 font-black data-[state=active]:bg-[#22C7A1] data-[state=active]:text-white">
+                <List className="h-4 w-4" />
+                سجل المخالفات
+              </TabsTrigger>
+              <TabsTrigger value="import" className="gap-2 rounded-[8px] px-4 py-2.5 font-black data-[state=active]:bg-[#22C7A1] data-[state=active]:text-white">
+                <Upload className="h-4 w-4" />
+                استيراد ملف
+              </TabsTrigger>
+            </TabsList>
+
+          </div>
+
+          <TabsContent value="list" className="mt-0 space-y-5">
+            <section className="rounded-[8px] border border-[#DDE5EF] bg-white p-4 shadow-[0_18px_42px_-34px_rgba(15,23,42,.58)] print:hidden">
+              <div className="mb-3 flex items-center gap-2">
+                <Filter className="h-5 w-5 text-[#38BDF8]" />
+                <h2 className="text-base font-black text-[#020617]">البحث والتصفية</h2>
+              </div>
+              <div className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_220px_220px_360px]">
+                <div className="relative">
+                  <Search className="absolute right-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#94A3B8]" />
+                  <input
+                    type="text"
+                    placeholder="ابحث برقم المخالفة، اللوحة، العميل، العقد، الموقع..."
+                    className="h-12 w-full rounded-[8px] border border-[#DDE5EF] bg-[#F8FAFC] pr-12 text-sm font-bold outline-none transition focus:border-[#22C7A1]"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                  />
+                </div>
+
+                <div className="relative">
+                  <Car className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#94A3B8]" />
+                  <select value={filterCar} onChange={(e) => setFilterCar(e.target.value)} className="h-12 w-full appearance-none rounded-[8px] border border-[#DDE5EF] bg-white pr-9 pl-8 text-sm font-bold outline-none">
+                    <option value="all">كل المركبات</option>
+                    {vehicles.map(v => (
+                      <option key={v.id} value={v.id}>{v.make} {v.model} - {v.plate_number}</option>
+                    ))}
+                  </select>
+                  <ChevronDown className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#94A3B8]" />
+                </div>
+
+                <div className="relative">
+                  <User className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#94A3B8]" />
+                  <select value={filterCustomer} onChange={(e) => setFilterCustomer(e.target.value)} className="h-12 w-full appearance-none rounded-[8px] border border-[#DDE5EF] bg-white pr-9 pl-8 text-sm font-bold outline-none">
+                    <option value="all">كل العملاء</option>
+                    {customers.map(c => (
+                      <option key={c.id} value={c.id}>{c.company_name || `${c.first_name || ''} ${c.last_name || ''}`.trim()}</option>
+                    ))}
+                  </select>
+                  <ChevronDown className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#94A3B8]" />
+                </div>
+
+                <div className="grid grid-cols-4 gap-1 rounded-[8px] bg-[#F6F8FB] p-1">
+                  {[
+                    { value: 'all', label: 'الكل' },
+                    { value: 'paid', label: 'مسدد' },
+                    { value: 'unpaid', label: 'غير مسدد' },
+                    { value: 'partially_paid', label: 'جزئي' },
+                  ].map(status => (
+                    <button
+                      key={status.value}
+                      onClick={() => setFilterPaymentStatus(status.value)}
+                      className={`h-10 rounded-[8px] text-xs font-black transition ${filterPaymentStatus === status.value ? 'bg-white text-[#020617] shadow-sm' : 'text-[#64748B]'}`}
+                    >
+                      {status.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </section>
+
+            <section className="overflow-hidden rounded-[8px] border border-[#DDE5EF] bg-white shadow-[0_18px_42px_-34px_rgba(15,23,42,.58)]">
+              <div className="flex flex-col gap-2 border-b border-[#DDE5EF] bg-[#F8FAFC] p-4 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <h2 className="text-lg font-black text-[#020617]">سجل المخالفات</h2>
+                  <p className="text-sm font-bold text-[#64748B]">
+                    عرض {filteredViolations.length.toLocaleString('en-US')} من {(isServerFilteringActive ? sourceViolations.length : totalCount).toLocaleString('en-US')} مخالفة
+                    {!isServerFilteringActive && ` - الصفحة ${currentPage} من ${totalPages || 1}`}
+                  </p>
+                </div>
+                <p className="text-sm font-black text-[#102B4E]">{formatCurrency(violationInsights.totalAmount)}</p>
+              </div>
+
+              {filteredViolations.length === 0 ? (
+                <div className="flex min-h-[280px] flex-col items-center justify-center gap-3 p-8 text-center">
+                  <div className="flex h-16 w-16 items-center justify-center rounded-[8px] bg-[#F6F8FB] text-[#94A3B8]">
+                    <FileWarning className="h-8 w-8" />
+                  </div>
+                  <h3 className="text-xl font-black text-[#020617]">لا توجد مخالفات مطابقة</h3>
+                  <p className="text-sm font-bold text-[#64748B]">غيّر الفلاتر أو سجّل مخالفة جديدة للمتابعة.</p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full min-w-[1120px] text-right">
+                    <thead className="sticky top-0 z-10 border-b border-[#DDE5EF] bg-[#F8FAFC] text-xs font-black text-[#64748B]">
+                      <tr>
+                        <th className="px-4 py-3">المخالفة</th>
+                        <th className="px-4 py-3">التاريخ والموقع</th>
+                        <th className="px-4 py-3">المركبة</th>
+                        <th className="px-4 py-3">العميل</th>
+                        <th className="px-4 py-3">العقد</th>
+                        <th className="px-4 py-3">المبلغ</th>
+                        <th className="px-4 py-3">الحالة</th>
+                        <th className="px-4 py-3 text-center print:hidden">الإجراءات</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-[#DDE5EF] text-sm">
+                      {filteredViolations.map((violation) => {
+                        const paymentTone =
+                          violation.payment_status === 'paid' ? 'bg-[#E8FBF6] text-[#22C7A1] border-[#BFEFE4]' :
+                          violation.payment_status === 'partially_paid' ? 'bg-[#EAF8FE] text-[#38BDF8] border-[#BEE9FB]' :
+                          'bg-[#FFF0F2] text-[#FB6B7A] border-[#FFD5DC]';
+                        const paymentLabel =
+                          violation.payment_status === 'paid' ? 'مسددة' :
+                          violation.payment_status === 'partially_paid' ? 'سداد جزئي' :
+                          'غير مسددة';
+
+                        return (
+                          <tr key={`table-${violation.id}`} onClick={() => handleOpenSidePanel(violation)} className="cursor-pointer bg-white transition hover:bg-[#F8FAFC]">
+                            <td className="px-4 py-3 align-top">
+                              <div className="font-mono text-sm font-black text-[#020617]">#{violation.penalty_number || '-'}</div>
+                              <div className="mt-1 max-w-[220px] truncate text-xs font-bold text-[#64748B]">{violation.violation_type || violation.reason || 'مخالفة مرورية'}</div>
+                            </td>
+                            <td className="px-4 py-3 align-top">
+                              <div className="flex items-center gap-1 font-bold text-[#020617]">
+                                <Calendar className="h-3.5 w-3.5 text-[#94A3B8]" />
+                                {violation.penalty_date ? format(new Date(violation.penalty_date), 'dd/MM/yyyy') : '-'}
+                              </div>
+                              <div className="mt-1 flex max-w-[210px] items-center gap-1 truncate text-xs font-bold text-[#64748B]">
+                                <MapPin className="h-3.5 w-3.5 shrink-0 text-[#94A3B8]" />
+                                {violation.location || '-'}
+                              </div>
+                            </td>
+                            <td className="px-4 py-3 align-top">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  violation.vehicle_id && handleNavigateToVehicle(violation.vehicle_id);
+                                }}
+                                className="inline-flex max-w-[230px] items-center gap-2 truncate rounded-[8px] px-2 py-1 text-right font-black text-[#102B4E] hover:bg-[#E8FBF6] hover:text-[#22C7A1]"
+                              >
+                                <Car className="h-4 w-4 shrink-0" />
+                                <span className="truncate">{getCarName(violation)}</span>
+                              </button>
+                            </td>
+                            <td className="px-4 py-3 align-top">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  violation.customer_id && handleNavigateToCustomer(violation.customer_id);
+                                }}
+                                className="inline-flex max-w-[220px] items-center gap-2 truncate rounded-[8px] px-2 py-1 text-right font-black text-[#102B4E] hover:bg-[#EAF8FE] hover:text-[#38BDF8]"
+                              >
+                                <User className="h-4 w-4 shrink-0" />
+                                <span className="truncate">{getCustomerName(violation)}</span>
+                              </button>
+                              {violation.customers?.phone && <div className="mt-1 pr-2 text-xs font-bold text-[#94A3B8]">{violation.customers.phone}</div>}
+                            </td>
+                            <td className="px-4 py-3 align-top">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  violation.contract_id && handleNavigateToContract(violation.contract_id);
+                                }}
+                                className="max-w-[160px] truncate rounded-[8px] px-2 py-1 text-xs font-black text-[#102B4E] hover:bg-[#F6F8FB]"
+                              >
+                                {violation.contracts?.contract_number || (violation.contract_id ? 'عرض العقد' : 'غير مرتبط')}
+                              </button>
+                            </td>
+                            <td className="px-4 py-3 align-top">
+                              <div className="whitespace-nowrap text-base font-black text-[#020617]">{formatCurrency(violation.amount || 0)}</div>
+                            </td>
+                            <td className="px-4 py-3 align-top">
+                              <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-black ${paymentTone}`}>
+                                {violation.payment_status === 'paid' ? <CheckCircle className="h-3.5 w-3.5" /> : <AlertCircle className="h-3.5 w-3.5" />}
+                                {paymentLabel}
+                              </span>
+                              {violation.status === 'pending' && (
+                                <div className="mt-1">
+                                  <span className="rounded-full bg-[#EAF8FE] px-2 py-0.5 text-[11px] font-black text-[#38BDF8]">قيد المراجعة</span>
+                                </div>
+                              )}
+                            </td>
+                            <td className="px-4 py-3 text-center align-top print:hidden" onClick={(e) => e.stopPropagation()}>
+                              <div className="flex items-center justify-center gap-1.5">
+                                <Button variant="outline" size="sm" onClick={() => handleOpenSidePanel(violation)} className="h-9 rounded-[8px] border-[#DDE5EF] px-3"><Eye className="h-4 w-4" /></Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => {
+                                    setSelectedViolation(violation);
+                                    setIsPaymentsDialogOpen(true);
+                                  }}
+                                  className="h-9 rounded-[8px] border-[#DDE5EF] px-3 text-[#22C7A1]"
+                                >
+                                  <CreditCard className="h-4 w-4" />
+                                </Button>
+                                {violation.status === 'pending' && (
+                                  <Button variant="outline" size="sm" onClick={() => handleOpenModal(violation)} className="h-9 rounded-[8px] border-[#DDE5EF] px-3 text-[#38BDF8]"><Edit className="h-4 w-4" /></Button>
+                                )}
+                                <Button variant="outline" size="sm" onClick={() => handleDelete(violation.id)} className="h-9 rounded-[8px] border-[#DDE5EF] px-3 text-[#FB6B7A]"><Trash2 className="h-4 w-4" /></Button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+
+              {!isServerFilteringActive && totalPages > 1 && (
+                <div className="flex flex-col gap-3 border-t border-[#DDE5EF] bg-[#F8FAFC] p-4 sm:flex-row sm:items-center sm:justify-between print:hidden">
+                  <div className="text-sm font-bold text-[#64748B]">
+                    {Math.min((currentPage - 1) * itemsPerPage + 1, totalCount)} - {Math.min(currentPage * itemsPerPage, totalCount)} من {totalCount.toLocaleString('en-US')}
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Button variant="outline" size="sm" onClick={() => setCurrentPage(1)} disabled={currentPage === 1} className="rounded-[8px]">الأولى</Button>
+                    <Button variant="outline" size="sm" onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} className="rounded-[8px]">السابق</Button>
+                    <span className="rounded-[8px] bg-white px-3 py-2 text-sm font-black text-[#020617]">{currentPage} / {totalPages}</span>
+                    <Button variant="outline" size="sm" onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} className="rounded-[8px]">التالي</Button>
+                    <Button variant="outline" size="sm" onClick={() => setCurrentPage(totalPages)} disabled={currentPage === totalPages} className="rounded-[8px]">الأخيرة</Button>
+                  </div>
+                </div>
+              )}
+            </section>
+          </TabsContent>
+
+          <TabsContent value="import" className="mt-0">
+            <section className="overflow-hidden rounded-[8px] border border-[#DDE5EF] bg-white shadow-[0_18px_42px_-34px_rgba(15,23,42,.58)]">
+              <div className="border-b border-[#DDE5EF] bg-[#F8FAFC] p-4">
+                <h2 className="text-lg font-black text-[#020617]">استيراد ملف المخالفات</h2>
+                <p className="text-sm font-bold text-[#64748B]">ارفع ملف Excel أو PDF أو صورة، ثم راجع النتائج والربط قبل الحفظ.</p>
+              </div>
+              <Suspense fallback={<LoadingSpinner size="lg" />}>
+                <TrafficViolationPDFImport />
+              </Suspense>
+            </section>
+          </TabsContent>
+        </Tabs>
+      </main>
+
+      <main className="hidden max-w-7xl mx-auto p-6 space-y-6 print:p-0 print:max-w-none">
         
         {/* --- Smart Dashboard --- */}
         <TrafficViolationsSmartDashboard violations={filteredViolations} />
@@ -814,7 +1291,7 @@ export default function TrafficViolationsRedesigned() {
                 </TabsTrigger>
                 <TabsTrigger value="import" className="flex items-center gap-2 px-4 py-2 rounded-lg data-[state=active]:bg-teal-500 data-[state=active]:text-white data-[state=active]:shadow-md transition-all">
                   <Upload className="w-4 h-4" />
-                  استيراد PDF
+                  استيراد ملف
                 </TabsTrigger>
               </TabsList>
             </div>
@@ -1048,7 +1525,7 @@ export default function TrafficViolationsRedesigned() {
               {/* Results Count */}
               {filteredViolations.length > 0 && (
                 <div className="px-6 py-4 bg-neutral-50 border-t border-neutral-100 text-sm text-neutral-500 print:hidden">
-                  عرض {filteredViolations.length.toLocaleString('en-US')} من {sourceViolations.length.toLocaleString('en-US')} مخالفة
+                  عرض {filteredViolations.length.toLocaleString('en-US')} من {(isServerFilteringActive ? sourceViolations.length : totalCount).toLocaleString('en-US')} مخالفة
                   {!isServerFilteringActive && (
                     <> (الصفحة {currentPage} من {totalPages} - الإجمالي: {totalCount.toLocaleString('en-US')} مخالفة)</>
                   )}

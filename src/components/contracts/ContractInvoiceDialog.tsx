@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { FileText, Plus, DollarSign, Calendar } from 'lucide-react';
+import { FileText, PlayCircle, Plus, DollarSign, Calendar } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -14,6 +14,7 @@ import { toast } from 'sonner';
 import { PaymentScheduleSection } from '@/components/finance/PaymentScheduleSection';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 import { formatMonthlyPaymentDescription } from '@/utils/invoiceDescriptionFormatter';
+import { useTourGuide } from '@/components/tour-guide';
 
 interface ContractInvoiceDialogProps {
   open: boolean;
@@ -29,6 +30,7 @@ export const ContractInvoiceDialog: React.FC<ContractInvoiceDialogProps> = ({
   onSuccess
 }) => {
   const { user } = useAuth();
+  const { startTour } = useTourGuide();
   const queryClient = useQueryClient();
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [paymentScheduleCreated, setPaymentScheduleCreated] = React.useState(false);
@@ -268,8 +270,20 @@ export const ContractInvoiceDialog: React.FC<ContractInvoiceDialogProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto" data-tour="contract-invoice-dialog">
         <DialogHeader>
+          <div className="mb-3 flex justify-end">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => startTour('contract-add-invoice')}
+              className="h-9 gap-2 rounded-lg border-emerald-200 bg-emerald-50 font-bold text-emerald-700 hover:bg-emerald-100"
+              data-tour="contract-invoice-tour-start"
+            >
+              <PlayCircle className="h-4 w-4" />
+              ابدأ الجولة التعريفية
+            </Button>
+          </div>
           <DialogTitle className="flex items-center gap-2">
             <FileText className="h-5 w-5" />
             إنشاء فاتورة من العقد رقم {contract.contract_number}
@@ -281,12 +295,12 @@ export const ContractInvoiceDialog: React.FC<ContractInvoiceDialogProps> = ({
 
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Invoice Header */}
-          <Card>
+          <Card data-tour="contract-invoice-header">
             <CardHeader>
               <CardTitle className="text-lg">معلومات الفاتورة</CardTitle>
             </CardHeader>
             <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="space-y-2">
+              <div className="space-y-2" data-tour="contract-invoice-type">
                 <Label>نوع الفاتورة</Label>
                 <Select
                   value={invoiceData.invoice_type}
@@ -303,7 +317,7 @@ export const ContractInvoiceDialog: React.FC<ContractInvoiceDialogProps> = ({
                 </Select>
               </div>
 
-              <div className="space-y-2">
+              <div className="space-y-2" data-tour="contract-invoice-date">
                 <Label>تاريخ الفاتورة</Label>
                 <Input
                   type="date"
@@ -312,7 +326,7 @@ export const ContractInvoiceDialog: React.FC<ContractInvoiceDialogProps> = ({
                 />
               </div>
 
-              <div className="space-y-2">
+              <div className="space-y-2" data-tour="contract-invoice-due-date">
                 <Label>تاريخ الاستحقاق</Label>
                 <Input
                   type="date"
@@ -325,25 +339,27 @@ export const ContractInvoiceDialog: React.FC<ContractInvoiceDialogProps> = ({
 
           {/* Payment Schedule Section - Only show for sales invoices */}
           {invoiceData.invoice_type === 'sales' && contract?.id && (
-            <PaymentScheduleSection
-              contractId={contract.id}
-              totalAmount={invoiceData.total_amount}
-              currency={currency}
-              onScheduleCreated={() => {
-                setPaymentScheduleCreated(true);
-                toast.success('تم إنشاء جدول الدفع بنجاح');
-                // Invalidate payment schedules queries
-                queryClient.invalidateQueries({ queryKey: ['contract-payment-schedules', contract.id] });
-              }}
-            />
+            <div data-tour="contract-invoice-payment-schedule">
+              <PaymentScheduleSection
+                contractId={contract.id}
+                totalAmount={invoiceData.total_amount}
+                currency={currency}
+                onScheduleCreated={() => {
+                  setPaymentScheduleCreated(true);
+                  toast.success('تم إنشاء جدول الدفع بنجاح');
+                  // Invalidate payment schedules queries
+                  queryClient.invalidateQueries({ queryKey: ['contract-payment-schedules', contract.id] });
+                }}
+              />
+            </div>
           )}
 
           {/* Invoice Items */}
-          <Card>
+          <Card data-tour="contract-invoice-items">
             <CardHeader>
               <div className="flex items-center justify-between">
                 <CardTitle className="text-lg">بنود الفاتورة</CardTitle>
-                <Button type="button" variant="outline" size="sm" onClick={addItem}>
+                <Button type="button" variant="outline" size="sm" onClick={addItem} data-tour="contract-invoice-add-item">
                   <Plus className="h-4 w-4 mr-2" />
                   إضافة بند
                 </Button>
@@ -368,7 +384,7 @@ export const ContractInvoiceDialog: React.FC<ContractInvoiceDialogProps> = ({
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-                    <div className="lg:col-span-2 space-y-2">
+                    <div className="lg:col-span-2 space-y-2" data-tour="contract-invoice-item-description">
                       <Label>وصف البند</Label>
                       <Textarea
                         value={item.item_description}
@@ -377,7 +393,7 @@ export const ContractInvoiceDialog: React.FC<ContractInvoiceDialogProps> = ({
                       />
                     </div>
 
-                    <div className="space-y-2">
+                    <div className="space-y-2" data-tour="contract-invoice-item-quantity">
                       <Label>الكمية</Label>
                       <Input
                         type="number"
@@ -387,7 +403,7 @@ export const ContractInvoiceDialog: React.FC<ContractInvoiceDialogProps> = ({
                       />
                     </div>
 
-                    <div className="space-y-2">
+                    <div className="space-y-2" data-tour="contract-invoice-item-price">
                       <Label>سعر الوحدة ({currency})</Label>
                       <Input
                         type="number"
@@ -439,7 +455,7 @@ export const ContractInvoiceDialog: React.FC<ContractInvoiceDialogProps> = ({
           </Card>
 
           {/* Totals */}
-          <Card>
+          <Card data-tour="contract-invoice-totals">
             <CardHeader>
               <CardTitle className="text-lg">الإجماليات</CardTitle>
             </CardHeader>
@@ -496,7 +512,7 @@ export const ContractInvoiceDialog: React.FC<ContractInvoiceDialogProps> = ({
           </Card>
 
           {/* Notes and Terms */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6" data-tour="contract-invoice-notes-terms">
             <Card>
               <CardHeader>
                 <CardTitle>ملاحظات</CardTitle>
@@ -527,11 +543,11 @@ export const ContractInvoiceDialog: React.FC<ContractInvoiceDialogProps> = ({
           </div>
 
           {/* Actions */}
-          <div className="flex justify-end gap-3">
+          <div className="flex justify-end gap-3" data-tour="contract-invoice-actions">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               إلغاء
             </Button>
-            <Button type="submit" disabled={isSubmitting}>
+            <Button type="submit" disabled={isSubmitting} data-tour="contract-invoice-submit">
               {isSubmitting ? 'جاري الإنشاء...' : 'إنشاء الفاتورة'}
             </Button>
           </div>

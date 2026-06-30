@@ -5,11 +5,12 @@
  * @component VehicleDetailsPage
  */
 
-import { useState, useMemo, useCallback } from 'react';
+import { type CSSProperties, useState, useMemo, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
+import { motion } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
-import { useCurrentCompanyId, useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
+import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 import {
   ArrowRight,
@@ -26,7 +27,6 @@ import {
   AlertTriangle,
   Plus,
   Car,
-  Upload,
   ChevronLeft,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -45,6 +45,7 @@ import { TrafficViolationForm } from './TrafficViolationForm';
 import { VehicleComprehensiveReportDialog } from './VehicleComprehensiveReportDialog';
 import { VehicleStatusChangeDialog } from './VehicleStatusChangeDialog';
 import { ImagePreviewDialog } from '@/components/common/ImagePreviewDialog';
+import { FeatureTourButton, FeatureTourDialog, type FeatureTourContent } from '@/components/common/FeatureTourGuide';
 import { cn } from '@/lib/utils';
 import { systemColorPattern } from '@/lib/design-system/systemColorPattern';
 import { format, differenceInDays } from 'date-fns';
@@ -64,6 +65,50 @@ const vehicleTheme = {
   success: systemColorPattern.colors.success,
 };
 
+const vehicleDetailsTours = {
+  page: {
+    title: 'جولة صفحة تفاصيل المركبة',
+    description: 'شرح سريع لطريقة قراءة ملف المركبة واتخاذ القرار التشغيلي من نفس الصفحة.',
+    steps: [
+      'ابدأ من بطاقة المركبة الجانبية: الصورة، اللوحة، الحالة، والعداد تعطيك ملخصاً سريعاً.',
+      'استخدم أزرار عقد، الحالة، صيانة، ومخالفة لتنفيذ الإجراءات اليومية المرتبطة بهذه المركبة.',
+      'راجع ملخص التشغيل لمعرفة العقد الحالي والصيانة المفتوحة والمخالفات غير المدفوعة وانتهاء الاستمارة.',
+      'لوحة القرار التشغيلي تعرض نسبة الجاهزية وتساعدك على تحديد هل المركبة جاهزة للتأجير أو تحتاج متابعة.',
+      'استخدم التبويبات للوصول للتسعير، العقود، الصيانة، المخالفات، التأمين، والوثائق بدون مغادرة الصفحة.',
+    ],
+  },
+  contract: {
+    title: 'جولة إنشاء عقد للمركبة',
+    description: 'شرح ما يحدث عند إنشاء عقد جديد من صفحة المركبة.',
+    steps: [
+      'زر إنشاء عقد ينقلك إلى صفحة العقود مع تمرير معرف المركبة الحالية.',
+      'في صفحة العقد اختر العميل وتحقق من أن المركبة محددة بشكل صحيح قبل المتابعة.',
+      'حدد تواريخ العقد والقيمة الشهرية وشروط الدفع حتى يتم حساب الفواتير بشكل صحيح.',
+      'بعد حفظ العقد ستظهر العلاقة داخل تبويب العقود في ملف المركبة.',
+    ],
+  },
+  maintenance: {
+    title: 'جولة تسجيل صيانة من ملف المركبة',
+    description: 'شرح طريقة تسجيل صيانة مرتبطة بهذه المركبة.',
+    steps: [
+      'زر تسجيل صيانة يفتح نموذج الصيانة مع ربط المركبة الحالية تلقائياً.',
+      'حدد نوع الصيانة والأولوية والوصف والتاريخ المتوقع.',
+      'أدخل التكلفة والمورد ومركز التكلفة إذا كانت متوفرة لدعم التقارير المالية.',
+      'بعد الحفظ تظهر الصيانة في سجل المركبة وتؤثر على جاهزيتها التشغيلية.',
+    ],
+  },
+  violations: {
+    title: 'جولة إدارة مخالفات المركبة',
+    description: 'شرح تسجيل المخالفات أو فتح صفحة جميع المخالفات لهذه المركبة.',
+    steps: [
+      'زر تسجيل مخالفة يفتح نموذج مخالفة مرتبط بالمركبة الحالية.',
+      'تاريخ المخالفة مهم لأنه يساعد النظام على معرفة العقد والعميل وقت حدوث المخالفة.',
+      'زر عرض جميع المخالفات ينقلك لصفحة المخالفات مع فلترة المركبة الحالية.',
+      'راجع حالة الدفع والمسؤول عن المخالفة قبل المطالبة المالية أو الإجراء القانوني.',
+    ],
+  },
+} satisfies Record<string, FeatureTourContent>;
+
 /**
  * مكون صفحة تفاصيل المركبة الرئيسية
  */
@@ -82,6 +127,7 @@ const VehicleDetailsPage = () => {
   const [showReportDialog, setShowReportDialog] = useState(false);
   const [showStatusDialog, setShowStatusDialog] = useState(false);
   const [showImagePreview, setShowImagePreview] = useState(false);
+  const [activeFeatureTour, setActiveFeatureTour] = useState<FeatureTourContent | null>(null);
   const queryClient = useQueryClient();
 
   // جلب بيانات المركبة من قاعدة البيانات
@@ -352,6 +398,42 @@ const VehicleDetailsPage = () => {
     ? vehicleTheme.alert
     : vehicleTheme.water;
 
+  const vehicleDetailsSystemStyle = {
+    '--vehicle-details-text': vehicleTheme.text,
+    '--vehicle-details-surface': vehicleTheme.surface,
+    '--vehicle-details-inner': vehicleTheme.inner,
+    '--vehicle-details-muted': vehicleTheme.muted,
+    '--vehicle-details-border': vehicleTheme.border,
+    '--vehicle-details-info': vehicleTheme.water,
+    '--vehicle-details-alert': vehicleTheme.alert,
+    '--vehicle-details-focus': vehicleTheme.focus,
+    '--vehicle-details-success': vehicleTheme.success,
+  } as CSSProperties;
+
+  const primaryContract = contracts.find((contract) => contract.status === 'active') || contracts[0];
+  const pendingViolations = violations.filter((violation) => {
+    const status = violation.payment_status || violation.status;
+    return status !== 'paid' && status !== 'settled';
+  });
+  const openMaintenance = maintenanceRecords.filter((record) => record.status !== 'completed');
+  const totalPendingViolations = pendingViolations.reduce((sum, violation) => sum + Number(violation.total_amount || violation.fine_amount || 0), 0);
+  const registrationDaysRemaining = vehicle.registration_expiry
+    ? differenceInDays(new Date(vehicle.registration_expiry), new Date())
+    : null;
+  const readinessScore = Math.max(
+    35,
+    100
+      - (vehicle.status === 'available' ? 0 : 18)
+      - (openMaintenance.length > 0 ? 14 : 0)
+      - (pendingViolations.length > 0 ? 12 : 0)
+      - (registrationDaysRemaining !== null && registrationDaysRemaining < 30 ? 16 : 0)
+  );
+  const readinessState = readinessScore >= 85
+    ? { label: 'جاهزية عالية', helper: 'المركبة جاهزة للتشغيل بدون عوائق مهمة', color: vehicleTheme.success }
+    : readinessScore >= 65
+    ? { label: 'تحتاج متابعة', helper: 'يوجد عناصر تشغيلية تحتاج مراجعة قبل القرار', color: vehicleTheme.alert }
+    : { label: 'مخاطر تشغيلية', helper: 'يفضل إغلاق الملاحظات قبل التأجير أو التمديد', color: '#E11D48' };
+
   const metricCards = [
     {
       label: 'حالة التشغيل',
@@ -396,235 +478,244 @@ const VehicleDetailsPage = () => {
   ];
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: vehicleTheme.inner, color: vehicleTheme.text }}>
-      <main className="mx-auto max-w-[1440px] px-4 py-6 sm:px-6 lg:px-8">
-        <div className="mb-5 flex flex-col gap-4 rounded-[8px] border bg-white px-4 py-4 shadow-sm sm:flex-row sm:items-center sm:justify-between" style={{ borderColor: vehicleTheme.border }}>
-          <div className="flex items-center gap-3">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={handleBack}
-              className="h-10 w-10 rounded-[8px] border"
-              style={{ borderColor: vehicleTheme.border, color: vehicleTheme.text }}
-            >
+    <div className="vehicle-details-system min-h-screen" style={vehicleDetailsSystemStyle}>
+      <header className="sticky top-0 z-40 border-b bg-white/95 backdrop-blur" style={{ borderColor: vehicleTheme.border }}>
+        <div className="flex min-h-[68px] w-full items-center justify-between gap-3 px-4 sm:px-6 lg:px-8">
+          <div className="flex min-w-0 items-center gap-3">
+            <Button variant="ghost" size="icon" onClick={handleBack} className="h-10 w-10 rounded-[8px] border bg-white" style={{ borderColor: vehicleTheme.border }}>
               <ArrowRight className="h-5 w-5" />
             </Button>
-            <div>
+            <div className="min-w-0">
               <p className="text-xs font-semibold" style={{ color: vehicleTheme.muted }}>ملف المركبة</p>
-              <h1 className="text-xl font-bold sm:text-2xl" style={{ color: vehicleTheme.text }}>{vehicleName}</h1>
+              <h1 className="truncate text-lg font-bold sm:text-2xl" style={{ color: vehicleTheme.text }}>{vehicleName}</h1>
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2">
-            <Button
-              variant="outline"
-              className="h-10 gap-2 rounded-[8px] border bg-white"
-              style={{ borderColor: vehicleTheme.border, color: vehicleTheme.text }}
-              onClick={() => setShowReportDialog(true)}
-            >
+          <div className="flex shrink-0 items-center gap-2">
+            <FeatureTourButton
+              tour={vehicleDetailsTours.page}
+              onStart={setActiveFeatureTour}
+              className="hidden h-10 gap-2 rounded-[8px] border bg-white lg:inline-flex"
+            />
+            <Button variant="outline" className="hidden h-10 gap-2 rounded-[8px] border bg-white sm:inline-flex" style={{ borderColor: vehicleTheme.border }} onClick={() => setShowReportDialog(true)}>
               <FileText className="h-4 w-4" style={{ color: vehicleTheme.focus }} />
-              تقرير مركبة
+              تقرير
             </Button>
-            <Button
-              variant="outline"
-              className="h-10 gap-2 rounded-[8px] border bg-white"
-              style={{ borderColor: vehicleTheme.border, color: vehicleTheme.text }}
-              onClick={() => setShowStatusDialog(true)}
-              disabled={!vehicle || loadingVehicle}
-            >
-              <CheckCircle className="h-4 w-4" style={{ color: statusAccent }} />
-              تغيير الحالة
-            </Button>
-            <Button
-              type="button"
-              onClick={handleEdit}
-              disabled={!vehicle || loadingVehicle}
-              className="h-10 gap-2 rounded-[8px] text-white disabled:cursor-not-allowed disabled:opacity-50"
-              style={{ backgroundColor: vehicleTheme.success }}
-            >
+            <Button type="button" onClick={handleEdit} disabled={!vehicle || loadingVehicle} className="h-10 gap-2 rounded-[8px] text-white" style={{ backgroundColor: vehicleTheme.success }}>
               <Edit3 className="h-4 w-4" />
               تعديل
             </Button>
           </div>
         </div>
+      </header>
 
-        <section className="mb-5 grid gap-5 lg:grid-cols-[minmax(0,1.05fr)_minmax(360px,0.95fr)]">
-          <Card className="overflow-hidden rounded-[8px] border bg-white shadow-sm" style={{ borderColor: vehicleTheme.border }}>
-            <CardContent className="p-0">
-              <div
-                className="group relative aspect-[16/10] cursor-pointer overflow-hidden bg-white"
-                onClick={() => vehicleImage && setShowImagePreview(true)}
-              >
-                {vehicleImage ? (
-                  <img src={vehicleImage} alt={vehicleName} className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.02]" />
-                ) : (
-                  <div className="flex h-full w-full items-center justify-center" style={{ backgroundColor: vehicleTheme.inner }}>
-                    <Car className="h-20 w-20" style={{ color: vehicleTheme.muted }} />
-                  </div>
-                )}
-                <div className="absolute inset-x-0 bottom-0 flex items-center justify-between bg-gradient-to-t from-black/65 to-transparent p-4 text-white">
-                  <div>
-                    <p className="text-xs opacity-80">رقم اللوحة</p>
-                    <p className="font-mono text-2xl font-bold tracking-normal">{vehicle.plate_number}</p>
-                  </div>
-                  {vehicleImage && <span className="text-xs opacity-80">انقر للمعاينة</span>}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+      <main className="w-full px-4 py-6 sm:px-6 lg:px-8">
+        <div className="vehicle-command-grid grid gap-5 xl:grid-cols-[360px_minmax(0,1fr)]">
+          <motion.aside
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.25 }}
+            className="space-y-4 xl:sticky xl:top-[88px] xl:self-start"
+          >
+            <Card className="overflow-hidden rounded-[8px] border bg-white shadow-sm" style={{ borderColor: vehicleTheme.border }}>
+              <CardContent className="p-0">
+                <button
+                  type="button"
+                  className="group relative block aspect-[4/3] w-full overflow-hidden bg-slate-50 text-right"
+                  onClick={() => vehicleImage && setShowImagePreview(true)}
+                >
+                  {vehicleImage ? (
+                    <img src={vehicleImage} alt={vehicleName} className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.03]" />
+                  ) : (
+                    <span className="flex h-full w-full items-center justify-center" style={{ backgroundColor: vehicleTheme.inner }}>
+                      <Car className="h-20 w-20" style={{ color: vehicleTheme.muted }} />
+                    </span>
+                  )}
+                  <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/75 to-transparent p-4 text-white">
+                    <span className="block text-xs opacity-80">رقم اللوحة</span>
+                    <span className="block font-mono text-2xl font-bold tracking-normal">{vehicle.plate_number}</span>
+                  </span>
+                </button>
 
-          <Card className="rounded-[8px] border bg-white shadow-sm" style={{ borderColor: vehicleTheme.border }}>
-            <CardContent className="flex h-full flex-col justify-between gap-5 p-5">
-              <div className="space-y-4">
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                  <div>
-                    <Badge
-                      className="mb-3 rounded-[8px] border px-3 py-1 text-xs font-semibold"
-                      style={{ backgroundColor: `${statusAccent}16`, borderColor: `${statusAccent}44`, color: statusAccent }}
-                    >
+                <div className="space-y-4 p-5">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <h2 className="text-2xl font-bold leading-tight" style={{ color: vehicleTheme.text }}>{vehicleName}</h2>
+                      <p className="mt-1 truncate text-sm" style={{ color: vehicleTheme.muted }}>{vehicle.vin || 'لا يوجد رقم هيكل مسجل'}</p>
+                    </div>
+                    <Badge className="shrink-0 rounded-[8px] border px-3 py-1 text-xs font-semibold" style={{ backgroundColor: `${statusAccent}16`, borderColor: `${statusAccent}44`, color: statusAccent }}>
                       {getStatusText(vehicle.status)}
                     </Badge>
-                    <h2 className="text-3xl font-bold leading-tight" style={{ color: vehicleTheme.text }}>{vehicleName}</h2>
-                    {vehicle.vin && (
-                      <p className="mt-2 text-sm" style={{ color: vehicleTheme.muted }}>
-                        رقم الهيكل: <span className="font-mono font-semibold" style={{ color: vehicleTheme.text }}>{vehicle.vin}</span>
-                      </p>
-                    )}
                   </div>
-                  <div className="rounded-[8px] px-3 py-2 text-right" style={{ backgroundColor: vehicleTheme.inner }}>
-                    <p className="text-xs" style={{ color: vehicleTheme.muted }}>العداد الحالي</p>
-                    <p className="font-mono text-xl font-bold" style={{ color: vehicleTheme.water }}>
-                      {vehicle.current_mileage?.toLocaleString('en-US') || 0} كم
-                    </p>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <VehicleChip label="العداد" value={`${vehicle.current_mileage?.toLocaleString('en-US') || 0} كم`} color={vehicleTheme.water} />
+                    <VehicleChip label="العقود النشطة" value={vehicleStats?.activeContracts || 0} color={vehicleTheme.focus} />
+                    {vehicle.color && <VehicleChip label="اللون" value={vehicle.color} color={vehicleTheme.success} />}
+                    {vehicle.location && <VehicleChip label="الموقع" value={vehicle.location} color={vehicleTheme.alert} />}
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <FeatureTourButton
+                      tour={vehicleDetailsTours.page}
+                      onStart={setActiveFeatureTour}
+                      className="col-span-2 h-10 gap-2 rounded-[8px] border bg-white lg:hidden"
+                    />
+                    <Button onClick={handleNewContract} className="h-10 gap-2 rounded-[8px] text-white" style={{ backgroundColor: vehicleTheme.success }}>
+                      <Plus className="h-4 w-4" />
+                      عقد
+                    </Button>
+                    <Button onClick={() => setShowStatusDialog(true)} variant="outline" className="h-10 gap-2 rounded-[8px] border bg-white" style={{ borderColor: vehicleTheme.border }}>
+                      <CheckCircle className="h-4 w-4" style={{ color: statusAccent }} />
+                      الحالة
+                    </Button>
+                    <Button onClick={() => setShowMaintenanceForm(true)} variant="outline" className="h-10 gap-2 rounded-[8px] border bg-white" style={{ borderColor: vehicleTheme.border }}>
+                      <Wrench className="h-4 w-4" style={{ color: vehicleTheme.focus }} />
+                      صيانة
+                    </Button>
+                    <Button onClick={handleNewViolation} variant="outline" className="h-10 gap-2 rounded-[8px] border bg-white" style={{ borderColor: vehicleTheme.border }}>
+                      <AlertTriangle className="h-4 w-4" style={{ color: vehicleTheme.alert }} />
+                      مخالفة
+                    </Button>
                   </div>
                 </div>
+              </CardContent>
+            </Card>
 
-                <div className="grid grid-cols-2 gap-3">
-                  {vehicle.color && <VehicleChip label="اللون" value={vehicle.color} color={vehicleTheme.water} />}
-                  {vehicle.transmission_type && (
-                    <VehicleChip
-                      label="ناقل الحركة"
-                      value={vehicle.transmission_type === 'automatic' ? 'أوتوماتيك' : 'يدوي'}
-                      color={vehicleTheme.focus}
-                    />
-                  )}
-                  {vehicle.fuel_type && (
-                    <VehicleChip
-                      label="الوقود"
-                      value={vehicle.fuel_type === 'gasoline' ? 'بنزين' : vehicle.fuel_type === 'diesel' ? 'ديزل' : vehicle.fuel_type === 'hybrid' ? 'هجين' : 'كهربائي'}
-                      color={vehicleTheme.success}
-                    />
-                  )}
-                  {vehicle.location && <VehicleChip label="الموقع" value={vehicle.location} color={vehicleTheme.alert} />}
+            <Card className="rounded-[8px] border bg-white shadow-sm" style={{ borderColor: vehicleTheme.border }}>
+              <CardContent className="space-y-3 p-5">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-bold" style={{ color: vehicleTheme.text }}>ملخص التشغيل</span>
+                  <span className="text-xs font-semibold" style={{ color: readinessState.color }}>{readinessState.label}</span>
                 </div>
-              </div>
+                <div className="h-2 overflow-hidden rounded-full" style={{ backgroundColor: vehicleTheme.inner }}>
+                  <div className="h-full rounded-full" style={{ width: `${readinessScore}%`, backgroundColor: readinessState.color }} />
+                </div>
+                <div className="grid gap-2 text-sm">
+                  <InfoRow label="العقد الحالي" value={primaryContract ? getCustomerName(primaryContract.customer) : 'لا يوجد عقد نشط'} />
+                  <InfoRow label="الصيانة المفتوحة" value={`${openMaintenance.length} طلب`} />
+                  <InfoRow label="مخالفات غير مدفوعة" value={formatCurrency(totalPendingViolations)} />
+                  <InfoRow label="انتهاء الاستمارة" value={registrationDaysRemaining === null ? 'غير محدد' : registrationDaysRemaining < 0 ? 'منتهية' : `بعد ${registrationDaysRemaining} يوم`} />
+                </div>
+              </CardContent>
+            </Card>
+          </motion.aside>
 
-              <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-                <Button onClick={handleNewContract} className="h-11 gap-2 rounded-[8px] text-white" style={{ backgroundColor: vehicleTheme.success }}>
-                  <Plus className="h-4 w-4" />
-                  عقد جديد
-                </Button>
-                <Button onClick={() => setShowMaintenanceForm(true)} variant="outline" className="h-11 gap-2 rounded-[8px] border bg-white" style={{ borderColor: vehicleTheme.border, color: vehicleTheme.text }}>
-                  <Wrench className="h-4 w-4" style={{ color: vehicleTheme.focus }} />
-                  صيانة
-                </Button>
-                <Button onClick={handleNewViolation} variant="outline" className="h-11 gap-2 rounded-[8px] border bg-white" style={{ borderColor: vehicleTheme.border, color: vehicleTheme.text }}>
-                  <AlertTriangle className="h-4 w-4" style={{ color: vehicleTheme.alert }} />
-                  مخالفة
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </section>
-
-        <div className="mb-5 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
-          {metricCards.map((metric) => {
-            const Icon = metric.icon;
-            return (
-              <Card key={metric.label} className="rounded-[8px] border bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md" style={{ borderColor: vehicleTheme.border }}>
-                <CardContent className="p-5">
-                  <div className="mb-4 flex items-center justify-between">
-                    <div className="flex h-11 w-11 items-center justify-center rounded-[8px]" style={{ backgroundColor: `${metric.color}14` }}>
-                      <Icon className="h-5 w-5" style={{ color: metric.color }} />
-                    </div>
-                    <span className="text-xs font-semibold" style={{ color: vehicleTheme.muted }}>{metric.label}</span>
+          <section className="min-w-0 space-y-5">
+            <Card className="rounded-[8px] border bg-white shadow-sm" style={{ borderColor: vehicleTheme.border }}>
+              <CardContent className="grid gap-5 p-5 lg:grid-cols-[minmax(0,1fr)_280px]">
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold" style={{ color: vehicleTheme.muted }}>لوحة القرار التشغيلي</p>
+                  <h2 className="mt-2 text-2xl font-bold sm:text-3xl" style={{ color: vehicleTheme.text }}>{readinessState.label}</h2>
+                  <p className="mt-2 max-w-2xl text-sm leading-7" style={{ color: vehicleTheme.muted }}>{readinessState.helper}</p>
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    <Button onClick={() => setShowReportDialog(true)} variant="outline" className="h-10 gap-2 rounded-[8px] border bg-white" style={{ borderColor: vehicleTheme.border }}>
+                      <FileText className="h-4 w-4" style={{ color: vehicleTheme.focus }} />
+                      تقرير شامل
+                    </Button>
+                    <FeatureTourButton
+                      tour={vehicleDetailsTours.contract}
+                      onStart={setActiveFeatureTour}
+                      className="h-10 gap-2 rounded-[8px] border bg-white"
+                    />
+                    <Button onClick={handleNewContract} className="h-10 gap-2 rounded-[8px] text-white" style={{ backgroundColor: vehicleTheme.success }}>
+                      <Plus className="h-4 w-4" />
+                      إنشاء عقد
+                    </Button>
                   </div>
-                  <p className="truncate text-2xl font-bold" style={{ color: metric.color }}>{metric.value}</p>
-                  <p className="mt-1 text-sm" style={{ color: vehicleTheme.muted }}>{metric.helper}</p>
-                </CardContent>
-              </Card>
-            );
-          })}
+                </div>
+                <div className="rounded-[8px] border p-4" style={{ borderColor: vehicleTheme.border, backgroundColor: vehicleTheme.inner }}>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-semibold" style={{ color: vehicleTheme.muted }}>نسبة الجاهزية</span>
+                    <span className="font-mono text-3xl font-bold" style={{ color: readinessState.color }}>{readinessScore}%</span>
+                  </div>
+                  <div className="mt-4 space-y-2 text-sm">
+                    <InfoRow label="حالة التشغيل" value={getStatusText(vehicle.status)} />
+                    <InfoRow label="الإيرادات المحصلة" value={formatCurrency(vehicleStats?.totalRevenue || 0)} />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
+              {metricCards.map((metric) => {
+                const Icon = metric.icon;
+                return (
+                  <Card key={metric.label} className="rounded-[8px] border bg-white shadow-sm" style={{ borderColor: vehicleTheme.border }}>
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-[8px]" style={{ backgroundColor: `${metric.color}14` }}>
+                          <Icon className="h-5 w-5" style={{ color: metric.color }} />
+                        </div>
+                        <span className="text-xs font-semibold" style={{ color: vehicleTheme.muted }}>{metric.label}</span>
+                      </div>
+                      <p className="mt-4 truncate text-2xl font-bold" style={{ color: metric.color }}>{metric.value}</p>
+                      <p className="mt-1 truncate text-sm" style={{ color: vehicleTheme.muted }}>{metric.helper}</p>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+
+            <Card className="rounded-[8px] border bg-white shadow-sm" style={{ borderColor: vehicleTheme.border }}>
+              <Tabs value={activeTab} onValueChange={setActiveTab} className="grid min-h-[640px] lg:grid-cols-[230px_minmax(0,1fr)]">
+                <div className="border-b p-3 lg:border-b-0 lg:border-l" style={{ borderColor: vehicleTheme.border }}>
+                  <TabsList className="flex h-auto w-full justify-start gap-2 overflow-x-auto rounded-none bg-transparent p-0 lg:flex-col lg:overflow-visible">
+                    {tabs.map((tab) => {
+                      const Icon = tab.icon;
+                      const active = activeTab === tab.value;
+                      return (
+                        <TabsTrigger
+                          key={tab.value}
+                          value={tab.value}
+                          className="vehicle-tab-trigger h-11 w-auto shrink-0 justify-start gap-2 rounded-[8px] border px-3 text-sm font-semibold shadow-none transition data-[state=active]:shadow-none lg:w-full"
+                          style={{
+                            backgroundColor: active ? vehicleTheme.text : vehicleTheme.surface,
+                            borderColor: active ? vehicleTheme.text : vehicleTheme.border,
+                            color: active ? '#FFFFFF' : vehicleTheme.text,
+                          }}
+                        >
+                          <Icon className="h-4 w-4" />
+                          <span>{tab.label}</span>
+                        </TabsTrigger>
+                      );
+                    })}
+                  </TabsList>
+                </div>
+
+                <div className="min-w-0 p-4 sm:p-5">
+                  <TabsContent value="overview" className="mt-0">
+                    <OverviewTab vehicle={vehicle} formatCurrency={formatCurrency} />
+                  </TabsContent>
+                  <TabsContent value="technical" className="mt-0">
+                    <TechnicalTab vehicle={vehicle} />
+                  </TabsContent>
+                  <TabsContent value="financial" className="mt-0">
+                    <FinancialTab vehicle={vehicle} formatCurrency={formatCurrency} />
+                  </TabsContent>
+                  <TabsContent value="pricing" className="mt-0">
+                    <VehiclePricingPanel vehicleId={vehicle.id} />
+                  </TabsContent>
+                  <TabsContent value="insurance" className="mt-0">
+                    <VehicleInsurancePanel vehicleId={vehicle.id} />
+                  </TabsContent>
+                  <TabsContent value="contracts" className="mt-0">
+                    <ContractsTab contracts={contracts} getCustomerName={getCustomerName} formatCurrency={formatCurrency} vehicleId={vehicleId} onNewContract={handleNewContract} />
+                  </TabsContent>
+                  <TabsContent value="maintenance" className="mt-0">
+                    <MaintenanceTab maintenanceRecords={maintenanceRecords} formatCurrency={formatCurrency} vehicleId={vehicleId} onNewMaintenance={() => setShowMaintenanceForm(true)} />
+                  </TabsContent>
+                  <TabsContent value="violations" className="mt-0">
+                    <ViolationsTab violations={violations} formatCurrency={formatCurrency} onNewViolation={handleNewViolation} vehicleId={vehicleId} />
+                  </TabsContent>
+                  <TabsContent value="documents" className="mt-0">
+                    <VehicleDocumentsPanel vehicleId={vehicle.id} onDocumentAdd={() => {}} />
+                  </TabsContent>
+                </div>
+              </Tabs>
+            </Card>
+          </section>
         </div>
-
-        <Card className="rounded-[8px] border bg-white shadow-sm" style={{ borderColor: vehicleTheme.border }}>
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <div className="border-b px-3 py-3" style={{ borderColor: vehicleTheme.border }}>
-              <TabsList className="flex h-auto w-full justify-start gap-2 overflow-x-auto rounded-none bg-transparent p-0">
-                {tabs.map((tab) => {
-                  const Icon = tab.icon;
-                  const active = activeTab === tab.value;
-                  return (
-                    <TabsTrigger
-                      key={tab.value}
-                      value={tab.value}
-                      className="h-10 shrink-0 gap-2 rounded-[8px] border px-3 text-sm font-semibold shadow-none transition data-[state=active]:shadow-none"
-                      style={{
-                        backgroundColor: active ? `${vehicleTheme.success}14` : vehicleTheme.surface,
-                        borderColor: active ? `${vehicleTheme.success}55` : vehicleTheme.border,
-                        color: active ? vehicleTheme.success : vehicleTheme.text,
-                      }}
-                    >
-                      <Icon className="h-4 w-4" />
-                      {tab.label}
-                    </TabsTrigger>
-                  );
-                })}
-              </TabsList>
-            </div>
-
-            <div className="p-4 sm:p-6">
-              <TabsContent value="overview" className="mt-0">
-                <OverviewTab vehicle={vehicle} formatCurrency={formatCurrency} />
-              </TabsContent>
-              <TabsContent value="technical" className="mt-0">
-                <TechnicalTab vehicle={vehicle} />
-              </TabsContent>
-              <TabsContent value="financial" className="mt-0">
-                <FinancialTab vehicle={vehicle} formatCurrency={formatCurrency} />
-              </TabsContent>
-              <TabsContent value="pricing" className="mt-0">
-                <VehiclePricingPanel vehicleId={vehicle.id} />
-              </TabsContent>
-              <TabsContent value="insurance" className="mt-0">
-                <VehicleInsurancePanel vehicleId={vehicle.id} />
-              </TabsContent>
-              <TabsContent value="contracts" className="mt-0">
-                <ContractsTab
-                  contracts={contracts}
-                  getCustomerName={getCustomerName}
-                  formatCurrency={formatCurrency}
-                  vehicleId={vehicleId}
-                  onNewContract={handleNewContract}
-                />
-              </TabsContent>
-              <TabsContent value="maintenance" className="mt-0">
-                <MaintenanceTab maintenanceRecords={maintenanceRecords} formatCurrency={formatCurrency} vehicleId={vehicleId} onNewMaintenance={() => setShowMaintenanceForm(true)} />
-              </TabsContent>
-              <TabsContent value="violations" className="mt-0">
-                <ViolationsTab
-                  violations={violations}
-                  formatCurrency={formatCurrency}
-                  onNewViolation={handleNewViolation}
-                  vehicleId={vehicleId}
-                />
-              </TabsContent>
-              <TabsContent value="documents" className="mt-0">
-                <VehicleDocumentsPanel vehicleId={vehicle.id} onDocumentAdd={() => {}} />
-              </TabsContent>
-            </div>
-          </Tabs>
-        </Card>
       </main>
       {/* Vehicle Form Dialog */}
       <VehicleForm 
@@ -691,6 +782,7 @@ const VehicleDetailsPage = () => {
         imageUrl={vehicleImage}
         alt={vehicleName}
       />
+      <FeatureTourDialog tour={activeFeatureTour} onOpenChange={(open) => !open && setActiveFeatureTour(null)} />
     </div>
   );
 };
@@ -915,6 +1007,7 @@ interface ContractsTabProps {
 
 const ContractsTab = ({ contracts, getCustomerName, formatCurrency, vehicleId, onNewContract }: ContractsTabProps) => {
   const navigate = useNavigate();
+  const [activeTour, setActiveTour] = useState<FeatureTourContent | null>(null);
 
   const handleClick = () => {
     if (onNewContract) {
@@ -928,12 +1021,15 @@ const ContractsTab = ({ contracts, getCustomerName, formatCurrency, vehicleId, o
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between gap-3 mb-6">
         <h3 className="text-lg font-semibold text-slate-900">العقود المرتبطة بالمركبة</h3>
-        <Button className="gap-2 bg-[#00A896] hover:bg-[#007D6D]" onClick={handleClick}>
-          <Plus className="w-4 h-4" />
-          عقد جديد
-        </Button>
+        <div className="flex flex-wrap justify-end gap-2">
+          <FeatureTourButton tour={vehicleDetailsTours.contract} onStart={setActiveTour} />
+          <Button className="gap-2 bg-[#00A896] hover:bg-[#007D6D]" onClick={handleClick}>
+            <Plus className="w-4 h-4" />
+            عقد جديد
+          </Button>
+        </div>
       </div>
 
       {contracts.length === 0 ? (
@@ -1001,6 +1097,7 @@ const ContractsTab = ({ contracts, getCustomerName, formatCurrency, vehicleId, o
           })}
         </div>
       )}
+      <FeatureTourDialog tour={activeTour} onOpenChange={(open) => !open && setActiveTour(null)} />
     </div>
   );
 };
@@ -1015,6 +1112,7 @@ interface MaintenanceTabProps {
 
 const MaintenanceTab = ({ maintenanceRecords, formatCurrency, vehicleId, onNewMaintenance }: MaintenanceTabProps) => {
   const navigate = useNavigate();
+  const [activeTour, setActiveTour] = useState<FeatureTourContent | null>(null);
   
   const handleNewMaintenance = () => {
     if (onNewMaintenance) {
@@ -1028,15 +1126,18 @@ const MaintenanceTab = ({ maintenanceRecords, formatCurrency, vehicleId, onNewMa
   
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-3">
         <h3 className="text-lg font-semibold">سجل الصيانة</h3>
-        <Button 
-          onClick={handleNewMaintenance}
-          className="gap-2 bg-[#00A896] hover:bg-[#007D6D]"
-        >
-          <Plus className="w-4 h-4" />
-          تسجيل صيانة
-        </Button>
+        <div className="flex flex-wrap justify-end gap-2">
+          <FeatureTourButton tour={vehicleDetailsTours.maintenance} onStart={setActiveTour} />
+          <Button 
+            onClick={handleNewMaintenance}
+            className="gap-2 bg-[#00A896] hover:bg-[#007D6D]"
+          >
+            <Plus className="w-4 h-4" />
+            تسجيل صيانة
+          </Button>
+        </div>
       </div>
 
       {maintenanceRecords.length === 0 ? (
@@ -1086,6 +1187,7 @@ const MaintenanceTab = ({ maintenanceRecords, formatCurrency, vehicleId, onNewMa
           ))}
         </div>
       )}
+      <FeatureTourDialog tour={activeTour} onOpenChange={(open) => !open && setActiveTour(null)} />
     </div>
   );
 };
@@ -1100,6 +1202,7 @@ interface ViolationsTabProps {
 
 const ViolationsTab = ({ violations, formatCurrency, onNewViolation, vehicleId }: ViolationsTabProps) => {
   const navigate = useNavigate();
+  const [activeTour, setActiveTour] = useState<FeatureTourContent | null>(null);
 
   const handleNewViolation = () => {
     if (onNewViolation) {
@@ -1113,9 +1216,10 @@ const ViolationsTab = ({ violations, formatCurrency, onNewViolation, vehicleId }
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-3">
         <h3 className="text-lg font-semibold">المخالفات المرورية</h3>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap justify-end gap-2">
+          <FeatureTourButton tour={vehicleDetailsTours.violations} onStart={setActiveTour} />
           <Button 
             onClick={handleNewViolation}
             className="gap-2 bg-[#00A896] hover:bg-[#007D6D]"
@@ -1192,11 +1296,13 @@ const ViolationsTab = ({ violations, formatCurrency, onNewViolation, vehicleId }
           ))}
         </div>
       )}
+      <FeatureTourDialog tour={activeTour} onOpenChange={(open) => !open && setActiveTour(null)} />
     </div>
   );
 };
 
 export default VehicleDetailsPage;
+
 
 
 

@@ -27,6 +27,19 @@ import { enhancedPaymentSchema, PaymentJournalPreview } from "@/schemas/payment.
 import { usePaymentValidation } from "@/hooks/finance/usePaymentValidation";
 import { toast } from 'sonner';
 import { systemColorPattern } from "@/lib/design-system/systemColorPattern";
+import { FeatureTourButton, FeatureTourDialog, type FeatureTourContent } from "@/components/common/FeatureTourGuide";
+
+const unifiedPaymentTour = {
+  title: 'جولة تسجيل دفعة',
+  description: 'شرح طريقة تسجيل إيصال قبض أو صرف وربطه بالسجل المالي الصحيح.',
+  steps: [
+    'حدد نوع الحركة والسياق: دفعة عميل، دفعة مورد، أو دفع فاتورة.',
+    'أدخل المبلغ والتاريخ وطريقة الدفع ورقم المرجع حتى يسهل تتبع الحركة لاحقاً.',
+    'اربط الدفعة بالعميل أو المورد أو الفاتورة أو العقد عند توفر الرابط الصحيح.',
+    'اختر الحساب أو البنك ومركز التكلفة حسب سياسة الشركة المالية.',
+    'راجع المعاينة المحاسبية قبل الحفظ حتى تتأكد من أثر الدفعة على الخزينة والقيود.',
+  ],
+} satisfies FeatureTourContent;
 
 interface UnifiedPaymentFormProps {
   open: boolean;
@@ -78,6 +91,7 @@ export const UnifiedPaymentForm: React.FC<UnifiedPaymentFormProps> = ({
   const [showJournalPreviewDialog, setShowJournalPreviewDialog] = useState(false);
   const [journalPreview, setJournalPreview] = useState<PaymentJournalPreview | null>(null);
   const [isPreviewLoading, setIsPreviewLoading] = useState(false);
+  const [activeTour, setActiveTour] = useState<FeatureTourContent | null>(null);
   const [accountSearchOpen, setAccountSearchOpen] = useState(false);
   const [accountSearchQuery, setAccountSearchQuery] = useState('');
   // Double-submit protection: Track if form is currently being submitted
@@ -387,6 +401,11 @@ export const UnifiedPaymentForm: React.FC<UnifiedPaymentFormProps> = ({
             </div>
           </div>
           <div className="voucher-dialog-status">
+            <FeatureTourButton
+              tour={unifiedPaymentTour}
+              onStart={setActiveTour}
+              className="h-9 gap-2 border-[#E5EAF1] bg-white text-[#020617] hover:bg-[#F6F8FB]"
+            />
             <span>{paymentSubtype === 'receipt' ? 'قبض' : 'صرف'}</span>
             <strong>{watchedValues.currency || companyCurrency || 'QAR'}</strong>
           </div>
@@ -1472,6 +1491,7 @@ export const UnifiedPaymentForm: React.FC<UnifiedPaymentFormProps> = ({
           </DialogContent>
         </Dialog>
       )}
+      <FeatureTourDialog tour={activeTour} onOpenChange={(open) => !open && setActiveTour(null)} />
     </Dialog>
   );
 };

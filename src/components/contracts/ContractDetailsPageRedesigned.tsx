@@ -50,6 +50,7 @@ import {
   Target,
   ShieldCheck,
   MoreVertical,
+  PlayCircle,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -119,6 +120,7 @@ import { useVehicleInspections, type VehicleInspection } from '@/hooks/useVehicl
 import { useCustomerCRMActivity, type CustomerActivity } from '@/hooks/useCustomerCRMActivity';
 import { systemColorPattern } from '@/lib/design-system/systemColorPattern';
 import type { PaymentSchedule } from '@/types/payment-schedules';
+import { useTourGuide } from '@/components/tour-guide';
 
 const contractDetailsTheme = systemColorPattern.colors;
 const contractDetailsSystemStyle = {
@@ -804,6 +806,40 @@ const ContractTopbarActions = ({
   );
 };
 
+const inactiveInvoiceStatuses = new Set(['cancelled', 'void', 'deleted']);
+const paidInvoiceStatuses = new Set(['paid', 'completed', 'cleared']);
+const inactiveScheduleStatuses = new Set(['cancelled', 'void', 'deleted']);
+const paidScheduleStatuses = new Set(['paid', 'completed', 'cleared']);
+
+const getInvoiceBalance = (invoice: Invoice) => {
+  const total = Number(invoice.total_amount || 0);
+  const paid = Number(invoice.paid_amount || 0);
+  const storedBalance = Number(invoice.balance_due ?? total - paid);
+  return Math.max(0, storedBalance);
+};
+
+const isActiveFinancialInvoice = (invoice: Invoice) => {
+  const status = String(invoice.status || '').toLowerCase();
+  const paymentStatus = String(invoice.payment_status || '').toLowerCase();
+  return !inactiveInvoiceStatuses.has(status) && !inactiveInvoiceStatuses.has(paymentStatus);
+};
+
+const isPaidFinancialInvoice = (invoice: Invoice) => {
+  const status = String(invoice.status || '').toLowerCase();
+  const paymentStatus = String(invoice.payment_status || '').toLowerCase();
+  return paidInvoiceStatuses.has(status) || paidInvoiceStatuses.has(paymentStatus) || getInvoiceBalance(invoice) <= 1;
+};
+
+const isActiveScheduleItem = (payment: { status: string }) => {
+  const status = String(payment.status || '').toLowerCase();
+  return !inactiveScheduleStatuses.has(status);
+};
+
+const isPaidScheduleItem = (payment: { status: string }) => {
+  const status = String(payment.status || '').toLowerCase();
+  return paidScheduleStatuses.has(status);
+};
+
 const ContractCommandCenter = ({
   contract,
   contractStats,
@@ -840,14 +876,19 @@ const ContractCommandCenter = ({
   children: ReactNode;
 }) => {
   const daysRemaining = Number(contractStats?.daysRemaining ?? 0);
-  const overdueInvoices = invoices.filter((invoice) => invoice.status === 'overdue' || invoice.payment_status !== 'paid');
-  const totalOutstanding = invoices.reduce((sum, invoice) => sum + Number(invoice.balance_due || 0), 0);
-  const invoicesTotal = invoices.reduce((sum, invoice) => sum + Number(invoice.total_amount || 0), 0);
-  const schedulesTotal = paymentSchedules.reduce((sum, payment) => sum + Number(payment.amount || 0), 0);
-  const unpaidSchedules = paymentSchedules.filter((payment) => payment.status !== 'paid');
-  const scheduleMismatch = invoices.length > 0 && paymentSchedules.length > 0 && Math.abs(invoicesTotal - schedulesTotal) > 1;
+  const activeInvoices = invoices.filter(isActiveFinancialInvoice);
+  const collectibleInvoices = activeInvoices.filter((invoice) => !isPaidFinancialInvoice(invoice) && getInvoiceBalance(invoice) > 1);
+  const activeSchedules = paymentSchedules.filter(isActiveScheduleItem);
+  const unpaidSchedules = activeSchedules.filter((payment) => !isPaidScheduleItem(payment));
+  const totalOutstanding = collectibleInvoices.reduce((sum, invoice) => sum + getInvoiceBalance(invoice), 0);
+  const invoicesTotal = activeInvoices.reduce((sum, invoice) => sum + Number(invoice.total_amount || 0), 0);
+  const schedulesTotal = activeSchedules.reduce((sum, payment) => sum + Number(payment.amount || 0), 0);
+  const unpaidSchedulesTotal = unpaidSchedules.reduce((sum, payment) => sum + Number(payment.amount || 0), 0);
+  const scheduleDifference = invoicesTotal - schedulesTotal;
+  const scheduleMismatch = activeInvoices.length > 0 && activeSchedules.length > 0 && Math.abs(scheduleDifference) > 1;
+  const scheduleReviewNeeded = unpaidSchedules.length > collectibleInvoices.length && unpaidSchedulesTotal > totalOutstanding + 1;
   const nextSchedule = [...paymentSchedules]
-    .filter((payment) => payment.status !== 'paid')
+    .filter((payment) => isActiveScheduleItem(payment) && !isPaidScheduleItem(payment))
     .sort((a, b) => new Date(a.due_date || '2999-12-31').getTime() - new Date(b.due_date || '2999-12-31').getTime())[0];
 
   const nextAction =
@@ -901,8 +942,8 @@ const ContractCommandCenter = ({
     },
     {
       label: 'فواتير تحتاج متابعة',
-      value: String(overdueInvoices.length),
-      state: overdueInvoices.length ? 'danger' : 'ok',
+      value: String(collectibleInvoices.length),
+      state: collectibleInvoices.length ? 'danger' : 'ok',
       icon: Receipt,
       action: onOpenFinancial,
     },
@@ -943,25 +984,25 @@ const ContractCommandCenter = ({
     {
       title: scheduleMismatch ? 'تعارض بين الفواتير وجدول الدفعات' : 'تطابق مالي مقبول',
       note: scheduleMismatch
-        ? `إجمالي الفواتير ${formatCurrency(invoicesTotal)} وجدول الدفعات ${formatCurrency(schedulesTotal)}.`
-        : 'لا يوجد فرق واضح بين إجمالي الفواتير وجدول الدفعات.',
+        ? `إجمالي الفواتير الفعالة ${formatCurrency(invoicesTotal)} وجدول الدفعات ${formatCurrency(schedulesTotal)}. الفرق ${formatCurrency(Math.abs(scheduleDifference))}.`
+        : 'لا يوجد فرق واضح بين الفواتير الفعالة وجدول الدفعات.',
       state: scheduleMismatch ? 'danger' : 'ok',
       action: onOpenFinancial,
     },
     {
-      title: overdueInvoices.length > 0 ? 'تحصيل مطلوب' : 'لا توجد فواتير مفتوحة',
-      note: overdueInvoices.length > 0
-        ? `${overdueInvoices.length} فاتورة تحتاج متابعة أو تسجيل دفعة.`
-        : 'الفواتير الحالية لا تحتاج إجراء تحصيل عاجل.',
-      state: overdueInvoices.length > 0 ? 'warning' : 'ok',
+      title: collectibleInvoices.length > 0 ? 'تحصيل مطلوب' : 'لا توجد فواتير مفتوحة',
+      note: collectibleInvoices.length > 0
+        ? `${collectibleInvoices.length} فاتورة فعالة لديها رصيد مستحق بقيمة ${formatCurrency(totalOutstanding)}.`
+        : 'لا توجد فواتير فعالة لديها رصيد مستحق.',
+      state: collectibleInvoices.length > 0 ? 'warning' : 'ok',
       action: onOpenFinancial,
     },
     {
-      title: unpaidSchedules.length > invoices.length ? 'جدول الدفعات يحتاج مراجعة' : 'جدول الدفعات تحت السيطرة',
-      note: unpaidSchedules.length > invoices.length
-        ? 'عدد الدفعات غير المسددة أكبر من عدد الفواتير، راجع الجدول.'
-        : `${unpaidSchedules.length} دفعة غير مكتملة في الجدول.`,
-      state: unpaidSchedules.length > invoices.length ? 'warning' : 'ok',
+      title: scheduleReviewNeeded ? 'جدول الدفعات يحتاج مراجعة' : 'جدول الدفعات تحت السيطرة',
+      note: scheduleReviewNeeded
+        ? `الدفعات غير المكتملة في الجدول ${formatCurrency(unpaidSchedulesTotal)} أكبر من الرصيد المستحق ${formatCurrency(totalOutstanding)}.`
+        : `${unpaidSchedules.length} دفعة غير مكتملة في الجدول، بإجمالي ${formatCurrency(unpaidSchedulesTotal)}.`,
+      state: scheduleReviewNeeded ? 'warning' : 'ok',
       action: onOpenFinancial,
     },
   ];
@@ -1173,11 +1214,14 @@ const ContractOperationsWorkspace = ({
   onOpenDocuments: () => void;
 }) => {
   const daysRemaining = Number(contractStats?.daysRemaining ?? 0);
-  const totalOutstanding = invoices.reduce((sum, invoice) => sum + Number(invoice.balance_due || 0), 0);
-  const invoicesTotal = invoices.reduce((sum, invoice) => sum + Number(invoice.total_amount || 0), 0);
-  const schedulesTotal = paymentSchedules.reduce((sum, payment) => sum + Number(payment.amount || 0), 0);
-  const openInvoices = invoices.filter((invoice) => invoice.payment_status !== 'paid' && invoice.status !== 'cancelled');
-  const scheduleMismatch = invoices.length > 0 && paymentSchedules.length > 0 && Math.abs(invoicesTotal - schedulesTotal) > 1;
+  const activeInvoices = invoices.filter(isActiveFinancialInvoice);
+  const collectibleInvoices = activeInvoices.filter((invoice) => !isPaidFinancialInvoice(invoice) && getInvoiceBalance(invoice) > 1);
+  const activeSchedules = paymentSchedules.filter(isActiveScheduleItem);
+  const totalOutstanding = collectibleInvoices.reduce((sum, invoice) => sum + getInvoiceBalance(invoice), 0);
+  const invoicesTotal = activeInvoices.reduce((sum, invoice) => sum + Number(invoice.total_amount || 0), 0);
+  const schedulesTotal = activeSchedules.reduce((sum, payment) => sum + Number(payment.amount || 0), 0);
+  const scheduleDifference = invoicesTotal - schedulesTotal;
+  const scheduleMismatch = activeInvoices.length > 0 && activeSchedules.length > 0 && Math.abs(scheduleDifference) > 1;
   const lastCrmActivity = crmActivities[0];
   const lastContactDays = lastCrmActivity ? differenceInDays(new Date(), new Date(lastCrmActivity.created_at)) : null;
   const outstandingRatio = invoicesTotal > 0 ? Math.min(1, totalOutstanding / invoicesTotal) : 0;
@@ -1201,14 +1245,14 @@ const ContractOperationsWorkspace = ({
   const smartTasks = [
     totalOutstanding > 0 && {
       title: 'تحصيل المستحقات المفتوحة',
-      note: `${openInvoices.length} فاتورة تحتاج متابعة قبل الإغلاق المالي.`,
+      note: `${collectibleInvoices.length} فاتورة فعالة لديها رصيد مستحق بقيمة ${formatCurrency(totalOutstanding)}.`,
       priority: totalOutstanding > 5000 ? 'عالية' : 'متوسطة',
       icon: Wallet,
       action: onOpenFinancial,
     },
     scheduleMismatch && {
       title: 'مطابقة جدول الدفعات مع الفواتير',
-      note: 'يوجد فرق بين إجمالي الفواتير وجدول الدفعات.',
+      note: `يوجد فرق ${formatCurrency(Math.abs(scheduleDifference))} بين الفواتير الفعالة وجدول الدفعات.`,
       priority: 'عالية',
       icon: ClipboardList,
       action: onOpenFinancial,
@@ -1844,6 +1888,7 @@ const ContractDetailsPageRedesigned = () => {
   const { contractNumber } = useParams<{ contractNumber: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { startTour } = useTourGuide();
   const queryClient = useQueryClient();
   const { companyId, isInitializing } = useUnifiedCompanyAccess();
   const { formatCurrency } = useCurrencyFormatter();
@@ -2895,19 +2940,30 @@ const ContractDetailsPageRedesigned = () => {
 
       {/* Terminate Dialog */}
       <AlertDialog open={isTerminateDialogOpen} onOpenChange={setIsTerminateDialogOpen}>
-        <AlertDialogContent className="rounded-2xl">
+        <AlertDialogContent className="rounded-2xl" data-tour="contract-terminate-dialog">
           <AlertDialogHeader>
             <AlertDialogTitle>إنهاء العقد</AlertDialogTitle>
-            <AlertDialogDescription>
+            <AlertDialogDescription data-tour="contract-terminate-warning">
               هل أنت متأكد من إنهاء العقد #{contract.contract_number}؟ سيتم تحديث حالة العقد إلى "ملغي" وتحرير المركبة.
             </AlertDialogDescription>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => startTour('contract-terminate')}
+              className="mt-2 h-9 w-fit gap-2 rounded-lg border-emerald-200 bg-emerald-50 font-bold text-emerald-700 hover:bg-emerald-100"
+              data-tour="contract-terminate-tour-start"
+            >
+              <PlayCircle className="h-4 w-4" />
+              ابدأ الجولة التعريفية
+            </Button>
           </AlertDialogHeader>
-          <AlertDialogFooter>
+          <AlertDialogFooter data-tour="contract-terminate-actions">
             <AlertDialogCancel className="rounded-xl">إلغاء</AlertDialogCancel>
             <AlertDialogAction
               onClick={executeTerminateContract}
               disabled={isTerminating}
               className="bg-rose-600 hover:bg-rose-700 rounded-xl"
+              data-tour="contract-terminate-submit"
             >
               {isTerminating ? (
                 <>
@@ -2924,19 +2980,30 @@ const ContractDetailsPageRedesigned = () => {
 
       {/* Reactivate Dialog */}
       <AlertDialog open={isReactivateDialogOpen} onOpenChange={setIsReactivateDialogOpen}>
-        <AlertDialogContent className="rounded-2xl">
+        <AlertDialogContent className="rounded-2xl" data-tour="contract-reactivate-dialog">
           <AlertDialogHeader>
             <AlertDialogTitle className="text-emerald-600">إعادة تفعيل العقد</AlertDialogTitle>
-            <AlertDialogDescription>
+            <AlertDialogDescription data-tour="contract-reactivate-warning">
               هل أنت متأكد من إعادة تفعيل العقد #{contract.contract_number}؟ سيتم تحديث حالة العقد إلى "نشط".
             </AlertDialogDescription>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => startTour('contract-reactivate')}
+              className="mt-2 h-9 w-fit gap-2 rounded-lg border-emerald-200 bg-emerald-50 font-bold text-emerald-700 hover:bg-emerald-100"
+              data-tour="contract-reactivate-tour-start"
+            >
+              <PlayCircle className="h-4 w-4" />
+              ابدأ الجولة التعريفية
+            </Button>
           </AlertDialogHeader>
-          <AlertDialogFooter>
+          <AlertDialogFooter data-tour="contract-reactivate-actions">
             <AlertDialogCancel className="rounded-xl">إلغاء</AlertDialogCancel>
             <AlertDialogAction
               onClick={executeReactivateContract}
               disabled={isReactivating}
               className="bg-emerald-600 hover:bg-emerald-700 rounded-xl"
+              data-tour="contract-reactivate-submit"
             >
               {isReactivating ? (
                 <>
@@ -2953,11 +3020,11 @@ const ContractDetailsPageRedesigned = () => {
 
       {/* Delete Permanent Dialog */}
       <AlertDialog open={isDeletePermanentDialogOpen} onOpenChange={setIsDeletePermanentDialogOpen}>
-        <AlertDialogContent className="rounded-2xl">
+        <AlertDialogContent className="rounded-2xl" data-tour="contract-delete-dialog">
           <AlertDialogHeader>
             <AlertDialogTitle className="text-rose-600">الحذف النهائي</AlertDialogTitle>
             <AlertDialogDescription asChild>
-              <div className="space-y-4 text-sm text-muted-foreground">
+              <div className="space-y-4 text-sm text-muted-foreground" data-tour="contract-delete-warning">
                 <p>هل أنت متأكد من حذف العقد #{contract.contract_number} نهائياً؟</p>
                 {relatedDataCounts && (
                   <Alert variant="destructive">
@@ -2971,8 +3038,18 @@ const ContractDetailsPageRedesigned = () => {
                 )}
               </div>
             </AlertDialogDescription>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => startTour('contract-delete-permanent')}
+              className="mt-2 h-9 w-fit gap-2 rounded-lg border-emerald-200 bg-emerald-50 font-bold text-emerald-700 hover:bg-emerald-100"
+              data-tour="contract-delete-tour-start"
+            >
+              <PlayCircle className="h-4 w-4" />
+              ابدأ الجولة التعريفية
+            </Button>
           </AlertDialogHeader>
-          <AlertDialogFooter>
+          <AlertDialogFooter data-tour="contract-delete-actions">
             <AlertDialogCancel className="rounded-xl" disabled={isDeleting}>
               إلغاء
             </AlertDialogCancel>
@@ -2980,6 +3057,7 @@ const ContractDetailsPageRedesigned = () => {
               onClick={executeDeletePermanent}
               disabled={isDeleting}
               className="bg-rose-600 hover:bg-rose-700 rounded-xl"
+              data-tour="contract-delete-submit"
             >
               {isDeleting ? (
                 <>
@@ -2996,11 +3074,11 @@ const ContractDetailsPageRedesigned = () => {
 
       {/* Remove Legal Procedure Dialog */}
       <AlertDialog open={isRemoveLegalDialogOpen} onOpenChange={setIsRemoveLegalDialogOpen}>
-        <AlertDialogContent className="rounded-2xl">
+        <AlertDialogContent className="rounded-2xl" data-tour="contract-remove-legal-dialog">
           <AlertDialogHeader>
             <AlertDialogTitle className="text-emerald-600">إزالة الإجراء القانوني</AlertDialogTitle>
             <AlertDialogDescription asChild>
-              <div className="space-y-4 text-sm text-muted-foreground">
+              <div className="space-y-4 text-sm text-muted-foreground" data-tour="contract-remove-legal-warning">
                 <p>هل أنت متأكد من إزالة الإجراء القانوني للعقد #{contract.contract_number}؟</p>
                 <Alert className="border-emerald-200 bg-emerald-50">
                   <CheckCircle className="h-4 w-4 text-emerald-600" />
@@ -3010,13 +3088,24 @@ const ContractDetailsPageRedesigned = () => {
                 </Alert>
               </div>
             </AlertDialogDescription>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => startTour('contract-remove-legal')}
+              className="mt-2 h-9 w-fit gap-2 rounded-lg border-emerald-200 bg-emerald-50 font-bold text-emerald-700 hover:bg-emerald-100"
+              data-tour="contract-remove-legal-tour-start"
+            >
+              <PlayCircle className="h-4 w-4" />
+              ابدأ الجولة التعريفية
+            </Button>
           </AlertDialogHeader>
-          <AlertDialogFooter>
+          <AlertDialogFooter data-tour="contract-remove-legal-actions">
             <AlertDialogCancel className="rounded-xl">إلغاء</AlertDialogCancel>
             <AlertDialogAction
               onClick={executeRemoveLegalProcedure}
               disabled={isRemovingLegal}
               className="bg-emerald-600 hover:bg-emerald-700 rounded-xl"
+              data-tour="contract-remove-legal-submit"
             >
               {isRemovingLegal ? (
                 <>
@@ -3033,11 +3122,11 @@ const ContractDetailsPageRedesigned = () => {
 
       {/* Cancel Invoice Dialog */}
       <AlertDialog open={isCancelInvoiceDialogOpen} onOpenChange={setIsCancelInvoiceDialogOpen}>
-        <AlertDialogContent className="rounded-2xl">
+        <AlertDialogContent className="rounded-2xl" data-tour="contract-cancel-invoice-dialog">
           <AlertDialogHeader>
             <AlertDialogTitle className="text-red-600">إلغاء الفاتورة</AlertDialogTitle>
             <AlertDialogDescription asChild>
-              <div className="space-y-4 text-sm text-muted-foreground">
+              <div className="space-y-4 text-sm text-muted-foreground" data-tour="contract-cancel-invoice-warning">
                 <p>هل أنت متأكد من إلغاء الفاتورة <strong>{invoiceToCancel?.invoice_number}</strong>؟</p>
                 <Alert className="border-red-200 bg-red-50">
                   <AlertTriangle className="h-4 w-4 text-red-600" />
@@ -3047,8 +3136,18 @@ const ContractDetailsPageRedesigned = () => {
                 </Alert>
               </div>
             </AlertDialogDescription>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => startTour('contract-cancel-invoice')}
+              className="mt-2 h-9 w-fit gap-2 rounded-lg border-emerald-200 bg-emerald-50 font-bold text-emerald-700 hover:bg-emerald-100"
+              data-tour="contract-cancel-invoice-tour-start"
+            >
+              <PlayCircle className="h-4 w-4" />
+              ابدأ الجولة التعريفية
+            </Button>
           </AlertDialogHeader>
-          <AlertDialogFooter>
+          <AlertDialogFooter data-tour="contract-cancel-invoice-actions">
             <AlertDialogCancel className="rounded-xl">تراجع</AlertDialogCancel>
             <AlertDialogAction
               onClick={(e) => {
@@ -3057,6 +3156,7 @@ const ContractDetailsPageRedesigned = () => {
               }}
               disabled={isCancellingInvoice}
               className="bg-red-600 hover:bg-red-700 rounded-xl"
+              data-tour="contract-cancel-invoice-submit"
             >
               {isCancellingInvoice ? (
                 <>

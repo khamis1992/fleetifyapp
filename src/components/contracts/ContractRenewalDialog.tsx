@@ -5,10 +5,11 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Card, CardContent } from '@/components/ui/card';
-import { RefreshCw, Calendar, DollarSign, Info } from 'lucide-react';
+import { RefreshCw, Calendar, DollarSign, Info, PlayCircle } from 'lucide-react';
 import { useRenewContract } from '@/hooks/useContractRenewal';
 import { useToast } from '@/hooks/use-toast';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
+import { useTourGuide } from '@/components/tour-guide';
 
 interface ContractRenewalDialogProps {
   open: boolean;
@@ -30,6 +31,7 @@ export const ContractRenewalDialog: React.FC<ContractRenewalDialogProps> = ({
   const renewContract = useRenewContract();
   const { toast } = useToast();
   const { formatCurrency, currency } = useCurrencyFormatter();
+  const { startTour } = useTourGuide();
 
   // Reset form when contract changes or dialog opens
   React.useEffect(() => {
@@ -108,7 +110,7 @@ export const ContractRenewalDialog: React.FC<ContractRenewalDialogProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto" data-tour="contract-renew-dialog">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-xl">
             <RefreshCw className="h-5 w-5 text-primary" />
@@ -117,10 +119,20 @@ export const ContractRenewalDialog: React.FC<ContractRenewalDialogProps> = ({
           <DialogDescription>
             تجديد العقد رقم {contract.contract_number}
           </DialogDescription>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => startTour('contract-renew')}
+            className="mt-2 h-9 w-fit gap-2 rounded-lg border-emerald-200 bg-emerald-50 font-bold text-emerald-700 hover:bg-emerald-100"
+            data-tour="contract-renew-tour-start"
+          >
+            <PlayCircle className="h-4 w-4" />
+            ابدأ الجولة التعريفية
+          </Button>
         </DialogHeader>
 
         {/* Quick Contract Info */}
-        <Card className="bg-muted/50">
+        <Card className="bg-muted/50" data-tour="contract-renew-current-summary">
           <CardContent className="pt-4 pb-4">
             <div className="flex items-center gap-4 text-sm">
               <div className="flex items-center gap-1">
@@ -140,7 +152,7 @@ export const ContractRenewalDialog: React.FC<ContractRenewalDialogProps> = ({
         </Card>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
+          <div className="space-y-2" data-tour="contract-renew-end-date">
             <Label htmlFor="new_end_date" className="text-right">
               تاريخ انتهاء العقد الجديد *
             </Label>
@@ -157,7 +169,7 @@ export const ContractRenewalDialog: React.FC<ContractRenewalDialogProps> = ({
             </p>
           </div>
           
-          <div className="space-y-2">
+          <div className="space-y-2" data-tour="contract-renew-amount">
             <Label htmlFor="new_amount" className="text-right">
               قيمة العقد الجديد ({currency})
             </Label>
@@ -172,7 +184,7 @@ export const ContractRenewalDialog: React.FC<ContractRenewalDialogProps> = ({
             />
           </div>
           
-          <div className="space-y-2">
+          <div className="space-y-2" data-tour="contract-renew-terms">
             <Label htmlFor="renewal_terms" className="text-right">
               ملاحظات التجديد (اختياري)
             </Label>
@@ -187,7 +199,7 @@ export const ContractRenewalDialog: React.FC<ContractRenewalDialogProps> = ({
           </div>
 
           {/* Actions */}
-          <div className="flex justify-end gap-3 pt-4">
+          <div className="flex justify-end gap-3 pt-4" data-tour="contract-renew-actions">
             <Button 
               type="button" 
               variant="outline" 
@@ -200,6 +212,7 @@ export const ContractRenewalDialog: React.FC<ContractRenewalDialogProps> = ({
               type="submit" 
               disabled={renewContract.isPending}
               className="min-w-[120px]"
+              data-tour="contract-renew-submit"
             >
               {renewContract.isPending ? (
                 <>

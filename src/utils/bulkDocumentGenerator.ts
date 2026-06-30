@@ -17,6 +17,7 @@ import {
 } from './official-letter-generator';
 import { generateLegalComplaintHTML, type LegalDocumentData } from './legal-document-generator';
 import { lawsuitService } from '@/services/LawsuitService';
+import { formatDateForDocument } from '@/utils/dateFormatter';
 import { 
   extractLawsuitData, 
   createLawsuitExcelFile,
@@ -480,7 +481,7 @@ async function generateCustomerDocuments(
     contractInfo: {
       contract_number: contract.contract_number || customer.contract_number,
       start_date: contract.start_date 
-        ? new Date(contract.start_date).toLocaleDateString('ar-QA')
+        ? formatDateForDocument(contract.start_date)
         : '',
       monthly_rent: Number(contract.monthly_amount) || 0,
     },

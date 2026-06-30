@@ -15,6 +15,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ImagePreviewDialog } from '@/components/common/ImagePreviewDialog';
 import { cn } from "@/lib/utils";
+import { FeatureTourButton, FeatureTourDialog, type FeatureTourContent } from "@/components/common/FeatureTourGuide";
 
 interface VehicleDocumentsPanelProps {
   vehicleId: string;
@@ -56,6 +57,18 @@ const documentTypes = [
   { value: 'maintenance_contract', label: 'عقد الصيانة', label_ar: 'عقد الصيانة' },
   { value: 'other', label: 'أخرى', label_ar: 'أخرى' },
 ];
+
+const documentsTour = {
+  title: "جولة وثائق المركبة",
+  description: "شرح طريقة رفع الوثائق وإدارتها داخل ملف المركبة.",
+  steps: [
+    "اضغط رفع وثيقة لاختيار ملف من جهازك وربطه مباشرة بهذه المركبة.",
+    "استخدم نوع الوثيقة مثل الترخيص أو التأمين أو الفحص الدوري لتسهيل البحث والتنبيهات.",
+    "أضف تاريخ الانتهاء للوثائق المهمة حتى تظهر التنبيهات قبل انتهاء صلاحيتها.",
+    "بعد الرفع يمكنك معاينة الوثيقة أو تنزيلها أو حذفها من بطاقة الوثيقة.",
+    "احذف الوثيقة فقط إذا كانت مكررة أو خاطئة، لأن الحذف يزيل السجل والملف المرتبط به.",
+  ],
+} satisfies FeatureTourContent;
 
 // Hook لجلب وثائق المركبة
 function useVehicleDocumentFiles(vehicleId: string) {
@@ -211,6 +224,7 @@ export function VehicleDocumentsPanel({ vehicleId, documents = [], onDocumentAdd
   const [isUploading, setIsUploading] = useState(false);
   const [isDragActive, setIsDragActive] = useState(false);
   const [previewDocument, setPreviewDocument] = useState<VehicleDocumentFile | null>(null);
+  const [activeTour, setActiveTour] = useState<FeatureTourContent | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const { data: documentFiles = [], isLoading } = useVehicleDocumentFiles(vehicleId);
@@ -374,25 +388,28 @@ export function VehicleDocumentsPanel({ vehicleId, documents = [], onDocumentAdd
             <p className="text-sm text-teal-600">{allDocuments.length} وثيقة</p>
           </div>
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          className="gap-2 border-teal-200 text-teal-600 hover:bg-teal-50 hover:border-teal-300"
-          onClick={() => fileInputRef.current?.click()}
-          disabled={isUploading}
-        >
-          {isUploading ? (
-            <>
-              <RefreshCw className="w-4 h-4 animate-spin" />
-              جاري الرفع...
-            </>
-          ) : (
-            <>
-              <Upload className="w-4 h-4" />
-              رفع وثيقة
-            </>
-          )}
-        </Button>
+        <div className="flex flex-wrap justify-end gap-2">
+          <FeatureTourButton tour={documentsTour} onStart={setActiveTour} />
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-2 border-teal-200 text-teal-600 hover:bg-teal-50 hover:border-teal-300"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={isUploading}
+          >
+            {isUploading ? (
+              <>
+                <RefreshCw className="w-4 h-4 animate-spin" />
+                جاري الرفع...
+              </>
+            ) : (
+              <>
+                <Upload className="w-4 h-4" />
+                رفع وثيقة
+              </>
+            )}
+          </Button>
+        </div>
         <input
           ref={fileInputRef}
           type="file"
@@ -591,10 +608,15 @@ export function VehicleDocumentsPanel({ vehicleId, documents = [], onDocumentAdd
       <Dialog open={showForm} onOpenChange={setShowForm}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>إضافة وثيقة جديدة</DialogTitle>
-            <DialogDescription>
-              تسجيل وثيقة أو مستند خاص بالمركبة
-            </DialogDescription>
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <DialogTitle>إضافة وثيقة جديدة</DialogTitle>
+                <DialogDescription>
+                  تسجيل وثيقة أو مستند خاص بالمركبة
+                </DialogDescription>
+              </div>
+              <FeatureTourButton tour={documentsTour} onStart={setActiveTour} />
+            </div>
           </DialogHeader>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <div>
@@ -670,6 +692,7 @@ export function VehicleDocumentsPanel({ vehicleId, documents = [], onDocumentAdd
           </form>
         </DialogContent>
       </Dialog>
+      <FeatureTourDialog tour={activeTour} onOpenChange={(open) => !open && setActiveTour(null)} />
 
       {/* Image Preview Dialog */}
       <ImagePreviewDialog

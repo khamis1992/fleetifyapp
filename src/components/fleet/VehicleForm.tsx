@@ -26,6 +26,19 @@ import { useToast } from "@/hooks/use-toast"
 import { useFixedAssetByCode } from "@/hooks/useFixedAssetByCode"
 import { ImageUploadField } from "@/components/settings/ImageUploadField"
 import { useFleetifyTranslation } from "@/hooks/useTranslation";
+import { FeatureTourButton, FeatureTourDialog, type FeatureTourContent } from "@/components/common/FeatureTourGuide"
+
+const vehicleFormTour = {
+  title: "جولة تعديل بيانات المركبة",
+  description: "شرح طريقة تحديث ملف المركبة بدون التأثير على العقود والمخالفات المرتبطة.",
+  steps: [
+    "ابدأ من تبويب الأساسية لتحديث اللوحة، الشركة، الطراز، السنة، اللون، ورقم الهيكل.",
+    "استخدم تبويب التقنية لتوثيق بيانات المحرك، الوقود، ناقل الحركة، والفئة التشغيلية.",
+    "تبويب المالية يربط المركبة بالحسابات والأصل الثابت ومراكز التكلفة عند الحاجة.",
+    "تبويب التشغيلية يحتوي الحالة والعداد والموقع ومعلومات انتهاء التسجيل والتأمين.",
+    "إذا كان تغيير اللوحة رسمياً من المرور، استخدم زر تغيير رقم اللوحة الرسمي حتى تحفظ اللوحة القديمة ولا تتأثر المخالفات السابقة.",
+  ],
+} satisfies FeatureTourContent;
 
 interface VehicleFormProps {
   vehicle?: Vehicle
@@ -49,6 +62,7 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
   const [plateChangeDialogOpen, setPlateChangeDialogOpen] = useState(false)
   const [newPlateNumber, setNewPlateNumber] = useState("")
   const [plateChangeNotes, setPlateChangeNotes] = useState("")
+  const [activeTour, setActiveTour] = useState<FeatureTourContent | null>(null)
   
   // Log when component receives props
   useEffect(() => {
@@ -547,17 +561,22 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto" dir="rtl">
         <DialogHeader className="text-right">
-          <DialogTitle className="text-right flex items-center gap-3">
-            <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-teal-50 to-teal-100 border border-teal-200 shadow-lg shadow-teal-500/20 flex items-center justify-center">
-              <svg className="h-5 w-5 text-teal-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
-              </svg>
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <DialogTitle className="text-right flex items-center gap-3">
+                <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-teal-50 to-teal-100 border border-teal-200 shadow-lg shadow-teal-500/20 flex items-center justify-center">
+                  <svg className="h-5 w-5 text-teal-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+                  </svg>
+                </div>
+                {vehicle ? "تعديل المركبة" : "إضافة مركبة جديدة"}
+              </DialogTitle>
+              <DialogDescription className="text-right text-slate-500">
+                {vehicle ? "تحديث معلومات المركبة" : "إضافة مركبة جديدة إلى الأسطول"}
+              </DialogDescription>
             </div>
-            {vehicle ? "تعديل المركبة" : "إضافة مركبة جديدة"}
-          </DialogTitle>
-          <DialogDescription className="text-right text-slate-500">
-            {vehicle ? "تحديث معلومات المركبة" : "إضافة مركبة جديدة إلى الأسطول"}
-          </DialogDescription>
+            <FeatureTourButton tour={vehicleFormTour} onStart={setActiveTour} />
+          </div>
         </DialogHeader>
 
         <Form {...form}>
@@ -1780,6 +1799,7 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
         </Form>
       </DialogContent>
     </Dialog>
+    <FeatureTourDialog tour={activeTour} onOpenChange={(open) => !open && setActiveTour(null)} />
 
       {/* Dialog: Official plate change (traffic authority) */}
       <Dialog open={plateChangeDialogOpen} onOpenChange={setPlateChangeDialogOpen}>

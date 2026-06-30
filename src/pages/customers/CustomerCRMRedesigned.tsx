@@ -44,6 +44,8 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { CallDialog } from '@/components/customers/CallDialog';
 import { ScheduledFollowupsPanel } from '@/components/crm/ScheduledFollowupsPanel';
 import { CRMActivityPanel } from '@/components/customers/CRMActivityPanel';
@@ -461,6 +463,8 @@ export default function CustomerCRMRedesigned() {
   // Side Panel State
   const [sidePanelOpen, setSidePanelOpen] = useState(false);
   const [selectedCustomerForPanel, setSelectedCustomerForPanel] = useState<string | null>(null);
+  const [lateReportDialogOpen, setLateReportDialogOpen] = useState(false);
+  const [selectedLateReportCustomerIds, setSelectedLateReportCustomerIds] = useState<string[]>([]);
 
   // Use optimized CRM hook
   const { data: crmCustomers = [], isLoading, refetch } = useCRMCustomersOptimized(companyId);
@@ -538,6 +542,18 @@ export default function CustomerCRMRedesigned() {
       }
     }
   }, [searchParams, autoCallHandled, companyId, customers, setSearchParams, toast]);
+
+  // Open the customer side panel when the CRM page is opened with ?customer=...
+  useEffect(() => {
+    const customerId = searchParams.get('customer');
+    if (!customerId || !companyId) return;
+
+    const existsInList = customers.some(c => c.id === customerId);
+    if (existsInList || customers.length > 0) {
+      setSelectedCustomerForPanel(customerId);
+      setSidePanelOpen(true);
+    }
+  }, [searchParams, companyId, customers]);
 
   // Keyboard shortcut for search
   useEffect(() => {
@@ -653,6 +669,13 @@ export default function CustomerCRMRedesigned() {
     return result;
   }, [customers, searchTerm, activeFilter, crmCustomers, getCustomerContract]);
 
+  const lateReportCustomers = useMemo(() => {
+    return Array.from(new Map(customers.filter(customer => {
+      const crmCustomer = crmCustomers.find(cc => cc.customer_id === customer.id);
+      return crmCustomer && getPaymentStatusOptimized(crmCustomer) === 'late';
+    }).map(customer => [customer.id, customer])).values());
+  }, [customers, crmCustomers]);
+
   // Pagination
   const paginatedCustomers = useMemo(() => {
     const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
@@ -743,26 +766,55 @@ export default function CustomerCRMRedesigned() {
   };
 
   // Print late payments report
-  const handlePrintLateReport = useCallback(async () => {
+  const handlePrintLateReport = useCallback(async (reportCustomerIds?: string[]) => {
     if (!companyId) return;
 
-    const lateCustomers = customers.filter(c => {
+    const selectedCustomerIdFromUrl = searchParams.get('customer');
+    const selectedIds = Array.isArray(reportCustomerIds) ? reportCustomerIds : undefined;
+    const todayIso = format(new Date(), 'yyyy-MM-dd');
+
+    const lateCustomers = Array.from(new Map(lateReportCustomers.filter(c => {
+      if (selectedIds && selectedIds.length > 0 && !selectedIds.includes(c.id)) return false;
+      if (!selectedIds && selectedCustomerIdFromUrl && c.id !== selectedCustomerIdFromUrl) return false;
+
       const crmCustomer = crmCustomers.find(cc => cc.customer_id === c.id);
       return crmCustomer && getPaymentStatusOptimized(crmCustomer) === 'late';
-    });
+    }).map(customer => [customer.id, customer])).values());
+
+    if ((selectedCustomerIdFromUrl || selectedIds) && lateCustomers.length === 0) {
+      toast({
+        title: 'لا توجد متأخرات',
+        description: 'لا يوجد عميل محدد يظهر كعميل متأخر حسب الفواتير الحالية.',
+      });
+      return;
+    }
+
+    if (lateCustomers.length === 0) {
+      toast({
+        title: 'لا توجد بيانات',
+        description: 'لا يوجد عملاء متأخرون لإصدار التقرير.',
+      });
+      return;
+    }
 
     // Get customer IDs for fetching related data
     const customerIds = lateCustomers.map(c => c.id);
 
-    // Fetch unpaid invoices for these customers
+    // Fetch only genuinely overdue invoices for these customers
     const { data: overdueInvoices } = await supabase
       .from('invoices')
-      .select('id, customer_id, invoice_date, due_date, payment_status, balance_due')
+      .select('id, customer_id, invoice_date, due_date, payment_status, balance_due, total_amount, paid_amount')
       .in('customer_id', customerIds)
       .eq('company_id', companyId)
-      .neq('payment_status', 'paid');
+      .neq('payment_status', 'paid')
+      .lt('due_date', todayIso);
 
-    // Fetch traffic violations for these customers via contracts
+    const collectibleOverdueInvoices = (overdueInvoices || []).filter(inv => {
+      const balance = Number(inv.balance_due ?? ((inv.total_amount || 0) - (inv.paid_amount || 0)));
+      return balance > 0;
+    });
+
+    // Fetch contracts for matching penalties that are linked by contract only
     const { data: customerContracts } = await supabase
       .from('contracts')
       .select('id, customer_id')
@@ -771,23 +823,52 @@ export default function CustomerCRMRedesigned() {
 
     const contractIds = customerContracts?.map(c => c.id) || [];
 
-    const { data: trafficViolations } = await supabase
-      .from('traffic_violations')
-      .select('contract_id, fine_amount, status')
-      .in('contract_id', contractIds)
-      .neq('status', 'paid');
+    const [penaltiesByCustomerResult, penaltiesByContractResult] = await Promise.all([
+      supabase
+        .from('penalties')
+        .select('id, customer_id, contract_id, amount, payment_status, status')
+        .in('customer_id', customerIds)
+        .eq('company_id', companyId)
+        .neq('payment_status', 'paid')
+        .neq('status', 'cancelled'),
+      contractIds.length > 0
+        ? supabase
+            .from('penalties')
+            .select('id, customer_id, contract_id, amount, payment_status, status')
+            .in('contract_id', contractIds)
+            .eq('company_id', companyId)
+            .neq('payment_status', 'paid')
+            .neq('status', 'cancelled')
+        : Promise.resolve({ data: [], error: null }),
+    ]);
+
+    if (penaltiesByCustomerResult.error || penaltiesByContractResult.error) {
+      console.error('Error fetching customer penalties:', penaltiesByCustomerResult.error || penaltiesByContractResult.error);
+      toast({
+        title: 'تعذر جلب المخالفات',
+        description: 'حدث خطأ أثناء قراءة مخالفات العملاء من النظام.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    const penaltyMap = new Map<string, any>();
+    [...(penaltiesByCustomerResult.data || []), ...(penaltiesByContractResult.data || [])].forEach(penalty => {
+      penaltyMap.set(penalty.id, penalty);
+    });
+    const penalties = Array.from(penaltyMap.values());
 
     // Group violations by customer
     const violationsByCustomer = new Map<string, { count: number; totalAmount: number }>();
-    trafficViolations?.forEach(violation => {
-      const contract = customerContracts?.find(c => c.id === violation.contract_id);
-      if (!contract) return;
+    penalties.forEach(penalty => {
+      const contract = customerContracts?.find(c => c.id === penalty.contract_id);
+      const customerId = penalty.customer_id || contract?.customer_id;
+      if (!customerId) return;
 
-      const customerId = contract.customer_id;
       const current = violationsByCustomer.get(customerId) || { count: 0, totalAmount: 0 };
       violationsByCustomer.set(customerId, {
         count: current.count + 1,
-        totalAmount: current.totalAmount + (violation.fine_amount || 0),
+        totalAmount: current.totalAmount + Number(penalty.amount || 0),
       });
     });
 
@@ -803,28 +884,64 @@ export default function CustomerCRMRedesigned() {
       const violations = violationsByCustomer.get(customer.id) || { count: 0, totalAmount: 0 };
 
       // Get overdue invoices for this customer and format as month names with year
-      const customerInvoices = overdueInvoices?.filter(inv => inv.customer_id === customer.id) || [];
-      const invoiceMonths = customerInvoices.map(inv => {
+      const customerInvoices = collectibleOverdueInvoices.filter(inv => inv.customer_id === customer.id);
+      const invoiceRows = customerInvoices.map(inv => {
         const invoiceDate = new Date(inv.invoice_date || inv.due_date);
+        const dueDate = inv.due_date ? format(new Date(inv.due_date), 'dd/MM/yyyy') : '-';
         const monthIndex = invoiceDate.getMonth();
         const year = invoiceDate.getFullYear();
-        return `فاتورة شهر ${arabicMonths[monthIndex]} ${year}`;
+        const balance = Number(inv.balance_due ?? ((inv.total_amount || 0) - (inv.paid_amount || 0)));
+        return {
+          label: `فاتورة شهر ${arabicMonths[monthIndex]} ${year}`,
+          dueDate,
+          amount: balance,
+        };
       });
-      const dueInvoicesText = invoiceMonths.length > 0 ? invoiceMonths.join(' و') : 'لا توجد';
+      const overdueAmount = customerInvoices.reduce((sum, inv) => {
+        return sum + Number(inv.balance_due ?? ((inv.total_amount || 0) - (inv.paid_amount || 0)));
+      }, 0);
 
       return {
         nameAr: `${customer.first_name || ''} ${customer.last_name || ''}`.trim() || `${customer.first_name_ar || ''} ${customer.last_name_ar || ''}`.trim() || 'غير معرف',
         phone: customer.phone || '-',
-        dueInvoices: dueInvoicesText,
+        invoiceRows,
+        overdueAmount,
         violationsCount: violations.count,
         violationsAmount: violations.totalAmount,
         lastContactDays: lastContact === null ? 'لم يتم' : `${lastContact} يوم`,
       };
     });
 
-    const totalOutstanding = reportData.length;
+    const totalDelinquentCustomers = reportData.length;
+    const totalOverdueAmount = reportData.reduce((sum, c) => sum + c.overdueAmount, 0);
     const totalViolationsAmount = reportData.reduce((sum, c) => sum + c.violationsAmount, 0);
     const today = format(new Date(), 'dd/MM/yyyy');
+    const reportTitle = selectedCustomerIdFromUrl ? 'تقرير العميل المتأخر' : 'تقرير العملاء المتأخرين';
+    const escapeHtml = (value: string) =>
+      value
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    const formatReportAmount = (value: number) =>
+      value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const renderInvoiceRows = (rows: Array<{ label: string; dueDate: string; amount: number }>) => {
+      if (rows.length === 0) return '<span class="muted">لا توجد</span>';
+
+      return `
+        <div class="invoice-list">
+          ${rows.map((row, index) => `
+            <div class="invoice-row">
+              <span class="invoice-index">${index + 1}</span>
+              <span class="invoice-label">${escapeHtml(row.label)}</span>
+              <span class="invoice-date">${escapeHtml(row.dueDate)}</span>
+              <span class="invoice-amount">${formatReportAmount(row.amount)} ر.ق</span>
+            </div>
+          `).join('')}
+        </div>
+      `;
+    };
 
     const printWindow = window.open('', '_blank');
     if (!printWindow) {
@@ -837,7 +954,7 @@ export default function CustomerCRMRedesigned() {
       <html dir="rtl" lang="ar">
       <head>
         <meta charset="UTF-8">
-        <title>تقرير العملاء المتأخرين - ${today}</title>
+        <title>${reportTitle} - ${today}</title>
         <style>
           @page { size: A4 landscape; margin: 12mm; }
           * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -849,15 +966,22 @@ export default function CustomerCRMRedesigned() {
           .summary-item { text-align: center; }
           .summary-value { font-size: 28px; font-weight: bold; color: #dc2626; }
           .summary-label { font-size: 12px; color: #991b1b; margin-top: 4px; }
-          table { width: 100%; border-collapse: collapse; margin-top: 16px; font-size: 11px; }
+          table { width: 100%; table-layout: fixed; border-collapse: collapse; margin-top: 16px; font-size: 11px; }
           th { background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%); color: white; padding: 10px 6px; text-align: right; font-weight: bold; border: 1px solid #1e3a8a; }
-          td { padding: 8px 6px; border: 1px solid #e5e7eb; text-align: right; }
+          td { padding: 8px 6px; border: 1px solid #e5e7eb; text-align: right; vertical-align: top; }
           tr:nth-child(even) { background: #f9fafb; }
           tr:hover { background: #fef2f2; }
           .amount { font-weight: bold; color: #dc2626; }
           .phone-cell { direction: ltr; text-align: left; font-family: monospace; }
-          .invoices-cell { font-size: 10px; color: #374151; max-width: 200px; }
+          .invoices-cell { color: #374151; padding: 6px; }
+          .invoice-list { display: grid; gap: 4px; }
+          .invoice-row { display: grid; grid-template-columns: 22px minmax(150px, 1fr) 70px 92px; align-items: center; gap: 6px; border: 1px solid #e5e7eb; border-radius: 5px; background: #fff; padding: 5px 6px; page-break-inside: avoid; }
+          .invoice-index { display: inline-flex; align-items: center; justify-content: center; height: 18px; min-width: 18px; border-radius: 999px; background: #eef2ff; color: #1e40af; font-weight: bold; }
+          .invoice-label { font-weight: bold; color: #1f2937; white-space: normal; line-height: 1.5; }
+          .invoice-date { direction: ltr; text-align: center; color: #64748b; font-family: monospace; }
+          .invoice-amount { direction: ltr; text-align: left; color: #dc2626; font-weight: bold; white-space: nowrap; }
           .violations-cell { text-align: center; }
+          .muted { color: #94a3b8; }
           .contact-needed { background: #fef3c7 !important; }
           @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
         </style>
@@ -865,13 +989,17 @@ export default function CustomerCRMRedesigned() {
       <body>
         <div class="container">
           <div class="header">
-            <div class="title">تقرير العملاء المتأخرين</div>
+            <div class="title">${reportTitle}</div>
             <div style="font-size: 14px; color: #64748b;">تاريخ التقرير: ${today}</div>
           </div>
           <div class="summary">
             <div class="summary-item">
-              <div class="summary-value">${totalOutstanding}</div>
+              <div class="summary-value">${totalDelinquentCustomers}</div>
               <div class="summary-label">عدد العملاء المتأخرين</div>
+            </div>
+            <div class="summary-item">
+              <div class="summary-value">${totalOverdueAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+              <div class="summary-label">إجمالي المتأخرات (ر.ق)</div>
             </div>
             <div class="summary-item">
               <div class="summary-value">${totalViolationsAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
@@ -879,12 +1007,22 @@ export default function CustomerCRMRedesigned() {
             </div>
           </div>
           <table>
+            <colgroup>
+              <col style="width: 4%;">
+              <col style="width: 13%;">
+              <col style="width: 11%;">
+              <col style="width: 42%;">
+              <col style="width: 10%;">
+              <col style="width: 12%;">
+              <col style="width: 8%;">
+            </colgroup>
             <thead>
               <tr>
                 <th>#</th>
                 <th>اسم العميل</th>
                 <th>الهاتف</th>
                 <th>الفواتير المستحقة</th>
+                <th>مبلغ المتأخرات</th>
                 <th>المخالفات المرورية</th>
                 <th>آخر تواصل</th>
               </tr>
@@ -893,9 +1031,10 @@ export default function CustomerCRMRedesigned() {
               ${reportData.map((c, i) => `
                 <tr class="${c.lastContactDays === 'لم يتم' ? 'contact-needed' : ''}">
                   <td style="text-align: center;">${i + 1}</td>
-                  <td>${c.nameAr}</td>
-                  <td class="phone-cell">${c.phone}</td>
-                  <td class="invoices-cell">${c.dueInvoices}</td>
+                  <td>${escapeHtml(c.nameAr)}</td>
+                  <td class="phone-cell">${escapeHtml(c.phone)}</td>
+                  <td class="invoices-cell">${renderInvoiceRows(c.invoiceRows)}</td>
+                  <td class="amount">${formatReportAmount(c.overdueAmount)} ر.ق</td>
                   <td class="violations-cell">${c.violationsCount > 0 ? `${c.violationsCount} مخالفة (${c.violationsAmount.toLocaleString('en-US')} ر.ق)` : 'لا توجد'}</td>
                   <td>${c.lastContactDays}</td>
                 </tr>
@@ -909,38 +1048,273 @@ export default function CustomerCRMRedesigned() {
     `);
 
     printWindow.document.close();
-  }, [customers, crmCustomers, companyId, toast]);
+  }, [crmCustomers, companyId, lateReportCustomers, searchParams, toast]);
 
-  // Export to CSV
-  const handleExportCSV = useCallback(() => {
-    const data = filteredData.map(customer => {
+  const handleOpenLateReportDialog = useCallback(() => {
+    if (lateReportCustomers.length === 0) {
+      toast({
+        title: 'لا توجد بيانات',
+        description: 'لا يوجد عملاء متأخرون لإصدار التقرير.',
+      });
+      return;
+    }
+
+    const customerIdFromUrl = searchParams.get('customer');
+    const defaultSelection = customerIdFromUrl && lateReportCustomers.some(c => c.id === customerIdFromUrl)
+      ? [customerIdFromUrl]
+      : lateReportCustomers.map(c => c.id);
+
+    setSelectedLateReportCustomerIds(defaultSelection);
+    setLateReportDialogOpen(true);
+  }, [lateReportCustomers, searchParams, toast]);
+
+  const toggleLateReportCustomer = useCallback((customerId: string) => {
+    setSelectedLateReportCustomerIds(current =>
+      current.includes(customerId)
+        ? current.filter(id => id !== customerId)
+        : [...current, customerId]
+    );
+  }, []);
+
+  const toggleAllLateReportCustomers = useCallback(() => {
+    setSelectedLateReportCustomerIds(current =>
+      current.length === lateReportCustomers.length ? [] : lateReportCustomers.map(c => c.id)
+    );
+  }, [lateReportCustomers]);
+
+  // Export professional Excel report
+  const handleExportExcel = useCallback(async () => {
+    if (filteredData.length === 0) {
+      toast({ title: 'لا توجد بيانات', description: 'لا توجد نتائج لتصديرها في التقرير.' });
+      return;
+    }
+
+    const ExcelJS = await import('exceljs');
+    const workbook = new ExcelJS.Workbook();
+    workbook.creator = 'Fleetify';
+    workbook.created = new Date();
+    workbook.modified = new Date();
+    workbook.subject = 'Customer CRM Report';
+    workbook.title = 'تقرير علاقات العملاء';
+
+    const worksheet = workbook.addWorksheet('تقرير العملاء', {
+      views: [{ rightToLeft: true, state: 'frozen', ySplit: 6 }],
+      pageSetup: {
+        paperSize: 9,
+        orientation: 'landscape',
+        fitToPage: true,
+        fitToWidth: 1,
+        fitToHeight: 0,
+        horizontalCentered: true,
+      },
+    });
+
+    worksheet.properties.defaultRowHeight = 22;
+    worksheet.pageSetup.margins = {
+      left: 0.25,
+      right: 0.25,
+      top: 0.45,
+      bottom: 0.45,
+      header: 0.2,
+      footer: 0.2,
+    };
+
+    const reportRows = filteredData.map(customer => {
       const crmCustomer = crmCustomers.find(cc => cc.customer_id === customer.id);
       const contract = getCustomerContract(customer.id);
       const lastContact = crmCustomer ? getLastContactDaysOptimized(crmCustomer) : null;
       const paymentStatus = crmCustomer ? getPaymentStatusOptimized(crmCustomer) : 'none';
 
       return {
-        'كود العميل': customer.customer_code,
-        'اسم العميل': `${customer.first_name || ''} ${customer.last_name || ''}`.trim() || `${customer.first_name_ar || ''} ${customer.last_name_ar || ''}`.trim(),
-        'الهاتف': customer.phone,
-        'رقم العقد': contract?.contract_number || '-',
-        'حالة الدفع': paymentStatus === 'paid' ? 'مسدد' : paymentStatus === 'late' ? 'متأخر' : paymentStatus === 'due' ? 'مستحق' : 'لا فواتير',
-        'آخر تواصل': lastContact === null ? 'لم يتم' : `${lastContact} يوم`,
+        code: customer.customer_code || '-',
+        name: `${customer.first_name || ''} ${customer.last_name || ''}`.trim() || `${customer.first_name_ar || ''} ${customer.last_name_ar || ''}`.trim() || 'عميل غير معرف',
+        phone: customer.phone || '-',
+        contractNumber: contract?.contract_number || '-',
+        paymentStatus,
+        paymentStatusLabel: paymentStatus === 'paid' ? 'مسدد' : paymentStatus === 'late' ? 'متأخر' : paymentStatus === 'due' ? 'مستحق' : 'لا فواتير',
+        totalInvoices: Number(crmCustomer?.total_invoices || 0),
+        overdueInvoices: Number(crmCustomer?.overdue_invoices || 0),
+        outstandingAmount: Number(crmCustomer?.outstanding_amount || 0),
+        overdueAmount: Number(crmCustomer?.overdue_amount || 0),
+        lastContactLabel: lastContact === null ? 'لم يتم' : `${lastContact} يوم`,
+        lastContactDays: lastContact,
+        createdAt: customer.created_at ? format(new Date(customer.created_at), 'dd/MM/yyyy') : '-',
       };
     });
 
-    const csv = [
-      Object.keys(data[0] || {}).join(','),
-      ...data.map(row => Object.values(row).join(',')),
-    ].join('\n');
+    const statusCounts = reportRows.reduce((acc, row) => {
+      acc[row.paymentStatus] = (acc[row.paymentStatus] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+    const totalOutstanding = reportRows.reduce((sum, row) => sum + row.outstandingAmount, 0);
+    const totalOverdue = reportRows.reduce((sum, row) => sum + row.overdueAmount, 0);
 
-    const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
+    worksheet.mergeCells('A1:K1');
+    worksheet.getCell('A1').value = 'تقرير علاقات العملاء';
+    worksheet.getCell('A1').font = { name: 'Arial', size: 18, bold: true, color: { argb: 'FFFFFFFF' } };
+    worksheet.getCell('A1').alignment = { horizontal: 'center', vertical: 'middle' };
+    worksheet.getCell('A1').fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF173A63' } };
+    worksheet.getRow(1).height = 34;
+
+    worksheet.mergeCells('A2:K2');
+    worksheet.getCell('A2').value = `تاريخ الإصدار: ${format(new Date(), 'dd/MM/yyyy HH:mm')} | عدد العملاء في التقرير: ${reportRows.length.toLocaleString('en-US')}`;
+    worksheet.getCell('A2').font = { name: 'Arial', size: 11, bold: true, color: { argb: 'FF536173' } };
+    worksheet.getCell('A2').alignment = { horizontal: 'center', vertical: 'middle' };
+    worksheet.getRow(2).height = 24;
+
+    const summary = [
+      ['إجمالي العملاء', reportRows.length, 'متأخر بالدفع', statusCounts.late || 0],
+      ['إجمالي المستحقات', totalOutstanding, 'إجمالي المتأخرات', totalOverdue],
+      ['مسدد', statusCounts.paid || 0, 'يحتاج متابعة', (statusCounts.late || 0) + (statusCounts.due || 0)],
+    ];
+
+    summary.forEach((row, index) => {
+      const excelRow = worksheet.getRow(index + 3);
+      excelRow.values = row;
+      excelRow.height = 24;
+      [1, 3].forEach(col => {
+        excelRow.getCell(col).font = { name: 'Arial', bold: true, color: { argb: 'FF173A63' } };
+        excelRow.getCell(col).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFEEF5FB' } };
+      });
+      [2, 4].forEach(col => {
+        excelRow.getCell(col).font = { name: 'Arial', bold: true, color: { argb: index === 1 && col === 4 ? 'FFDC2626' : 'FF142033' } };
+        if (index === 1) excelRow.getCell(col).numFmt = '#,##0.00 "ر.ق"';
+      });
+    });
+
+    const headerRow = worksheet.getRow(6);
+    headerRow.values = [
+      '#',
+      'كود العميل',
+      'اسم العميل',
+      'الهاتف',
+      'رقم العقد',
+      'حالة الدفع',
+      'عدد الفواتير',
+      'فواتير متأخرة',
+      'إجمالي المستحق',
+      'المبلغ المتأخر',
+      'آخر تواصل',
+      'تاريخ الإضافة',
+    ];
+    headerRow.height = 28;
+    headerRow.eachCell(cell => {
+      cell.font = { name: 'Arial', bold: true, color: { argb: 'FFFFFFFF' } };
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF173A63' } };
+      cell.alignment = { horizontal: 'center', vertical: 'middle' };
+      cell.border = {
+        top: { style: 'thin', color: { argb: 'FFDDE5EF' } },
+        left: { style: 'thin', color: { argb: 'FFDDE5EF' } },
+        bottom: { style: 'thin', color: { argb: 'FFDDE5EF' } },
+        right: { style: 'thin', color: { argb: 'FFDDE5EF' } },
+      };
+    });
+
+    worksheet.columns = [
+      { key: 'index', width: 7 },
+      { key: 'code', width: 15 },
+      { key: 'name', width: 28 },
+      { key: 'phone', width: 17 },
+      { key: 'contractNumber', width: 18 },
+      { key: 'paymentStatusLabel', width: 14 },
+      { key: 'totalInvoices', width: 14 },
+      { key: 'overdueInvoices', width: 14 },
+      { key: 'outstandingAmount', width: 18 },
+      { key: 'overdueAmount', width: 18 },
+      { key: 'lastContactLabel', width: 16 },
+      { key: 'createdAt', width: 16 },
+    ];
+
+    reportRows.forEach((row, index) => {
+      const excelRow = worksheet.addRow({
+        index: index + 1,
+        code: row.code,
+        name: row.name,
+        phone: row.phone,
+        contractNumber: row.contractNumber,
+        paymentStatusLabel: row.paymentStatusLabel,
+        totalInvoices: row.totalInvoices,
+        overdueInvoices: row.overdueInvoices,
+        outstandingAmount: row.outstandingAmount,
+        overdueAmount: row.overdueAmount,
+        lastContactLabel: row.lastContactLabel,
+        createdAt: row.createdAt,
+      });
+
+      excelRow.height = 24;
+      excelRow.eachCell(cell => {
+        cell.font = { name: 'Arial', size: 11, color: { argb: 'FF142033' } };
+        cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+        cell.border = {
+          top: { style: 'thin', color: { argb: 'FFE7EDF4' } },
+          left: { style: 'thin', color: { argb: 'FFE7EDF4' } },
+          bottom: { style: 'thin', color: { argb: 'FFE7EDF4' } },
+          right: { style: 'thin', color: { argb: 'FFE7EDF4' } },
+        };
+        if (index % 2 === 1) {
+          cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF8FAFC' } };
+        }
+      });
+
+      const statusCell = excelRow.getCell('paymentStatusLabel');
+      const statusColor =
+        row.paymentStatus === 'late' ? 'FFFFE4E6' :
+        row.paymentStatus === 'due' ? 'FFFFF7ED' :
+        row.paymentStatus === 'paid' ? 'FFECFDF5' :
+        'FFF8FAFC';
+      const statusTextColor =
+        row.paymentStatus === 'late' ? 'FFBE123C' :
+        row.paymentStatus === 'due' ? 'FFC2410C' :
+        row.paymentStatus === 'paid' ? 'FF047857' :
+        'FF64748B';
+      statusCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: statusColor } };
+      statusCell.font = { name: 'Arial', size: 11, bold: true, color: { argb: statusTextColor } };
+
+      excelRow.getCell('outstandingAmount').numFmt = '#,##0.00 "ر.ق"';
+      excelRow.getCell('overdueAmount').numFmt = '#,##0.00 "ر.ق"';
+      excelRow.getCell('phone').alignment = { horizontal: 'center', vertical: 'middle' };
+    });
+
+    worksheet.autoFilter = {
+      from: { row: 6, column: 1 },
+      to: { row: 6, column: 12 },
+    };
+
+    const finalRow = worksheet.addRow([]);
+    finalRow.height = 8;
+    const totalsRow = worksheet.addRow({
+      name: 'الإجمالي',
+      totalInvoices: reportRows.reduce((sum, row) => sum + row.totalInvoices, 0),
+      overdueInvoices: reportRows.reduce((sum, row) => sum + row.overdueInvoices, 0),
+      outstandingAmount: totalOutstanding,
+      overdueAmount: totalOverdue,
+    });
+    totalsRow.height = 26;
+    totalsRow.eachCell(cell => {
+      cell.font = { name: 'Arial', bold: true, color: { argb: 'FFFFFFFF' } };
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF173A63' } };
+      cell.alignment = { horizontal: 'center', vertical: 'middle' };
+      cell.border = {
+        top: { style: 'thin', color: { argb: 'FF173A63' } },
+        left: { style: 'thin', color: { argb: 'FF173A63' } },
+        bottom: { style: 'thin', color: { argb: 'FF173A63' } },
+        right: { style: 'thin', color: { argb: 'FF173A63' } },
+      };
+    });
+    totalsRow.getCell('outstandingAmount').numFmt = '#,##0.00 "ر.ق"';
+    totalsRow.getCell('overdueAmount').numFmt = '#,##0.00 "ر.ق"';
+
+    const buffer = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([buffer], {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
-    link.download = `crm-customers-${format(new Date(), 'yyyy-MM-dd')}.csv`;
+    link.download = `crm-customers-report-${format(new Date(), 'yyyy-MM-dd')}.xlsx`;
     link.click();
+    URL.revokeObjectURL(link.href);
 
-    toast({ title: '✅ تم التصدير', description: 'تم تصدير البيانات بنجاح' });
+    toast({ title: '✅ تم إنشاء تقرير Excel', description: 'تم تصدير تقرير العملاء بتنسيق احترافي.' });
   }, [filteredData, crmCustomers, getCustomerContract, toast]);
 
   // --- Render ---
@@ -1025,16 +1399,16 @@ export default function CustomerCRMRedesigned() {
                 {/* Export */}
                 <Button
                   variant="outline"
-                  onClick={handleExportCSV}
+                  onClick={handleExportExcel}
                   className="rounded-lg gap-2 border-[#DDE5EF] text-[#536173] hover:bg-[#F8FAFC]"
                 >
                   <Download size={18} />
-                  <span className="hidden sm:inline">تصدير</span>
+                  <span className="hidden sm:inline">تقرير Excel</span>
                 </Button>
 
                 {/* Print Report */}
                 <Button
-                  onClick={handlePrintLateReport}
+                  onClick={handleOpenLateReportDialog}
                   className="rounded-lg bg-[#173A63] hover:bg-[#142033] gap-2"
                 >
                   <Printer size={18} />
@@ -1252,6 +1626,95 @@ export default function CustomerCRMRedesigned() {
             )}
           </div>
         </div>
+
+        <Dialog open={lateReportDialogOpen} onOpenChange={setLateReportDialogOpen}>
+          <DialogContent className="max-w-2xl" dir="rtl">
+            <DialogHeader>
+              <DialogTitle className="text-xl font-black text-[#142033]">اختيار العملاء لتقرير المتأخرين</DialogTitle>
+            </DialogHeader>
+
+            <div className="space-y-4">
+              <div className="flex flex-col gap-3 rounded-xl border border-[#DDE5EF] bg-[#F8FAFC] p-4 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-sm font-bold text-[#142033]">
+                    المحدد: {selectedLateReportCustomerIds.length.toLocaleString('en-US')} من {lateReportCustomers.length.toLocaleString('en-US')}
+                  </p>
+                  <p className="mt-1 text-xs font-semibold text-[#6A7688]">يمكن اختيار عميل واحد أو عدة عملاء قبل طباعة التقرير.</p>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={toggleAllLateReportCustomers}
+                  className="rounded-lg border-[#DDE5EF] font-bold"
+                >
+                  {selectedLateReportCustomerIds.length === lateReportCustomers.length ? 'إلغاء تحديد الكل' : 'تحديد الكل'}
+                </Button>
+              </div>
+
+              <div className="max-h-[360px] space-y-2 overflow-y-auto rounded-xl border border-[#DDE5EF] bg-white p-2">
+                {lateReportCustomers.map(customer => {
+                  const crmCustomer = crmCustomers.find(cc => cc.customer_id === customer.id);
+                  const name = `${customer.first_name || ''} ${customer.last_name || ''}`.trim()
+                    || `${customer.first_name_ar || ''} ${customer.last_name_ar || ''}`.trim()
+                    || customer.customer_code
+                    || 'عميل غير معرف';
+                  const overdueAmount = Number(crmCustomer?.overdue_amount || 0);
+                  const isSelected = selectedLateReportCustomerIds.includes(customer.id);
+
+                  return (
+                    <button
+                      key={customer.id}
+                      type="button"
+                      onClick={() => toggleLateReportCustomer(customer.id)}
+                      className={cn(
+                        'flex w-full items-center gap-3 rounded-lg border p-3 text-right transition',
+                        isSelected ? 'border-[#173A63] bg-[#EEF5FB]' : 'border-[#E7EDF4] bg-white hover:bg-[#F8FAFC]'
+                      )}
+                    >
+                      <Checkbox
+                        checked={isSelected}
+                        onClick={(event) => event.stopPropagation()}
+                        onCheckedChange={() => toggleLateReportCustomer(customer.id)}
+                      />
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-black text-[#142033]">{name}</p>
+                        <div className="mt-1 flex flex-wrap items-center gap-2 text-xs font-bold text-[#6A7688]">
+                          <span dir="ltr">{customer.phone || '-'}</span>
+                          <span>•</span>
+                          <span>{crmCustomer?.overdue_invoices || 0} فاتورة متأخرة</span>
+                          <span>•</span>
+                          <span className="text-rose-600">{overdueAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ر.ق</span>
+                        </div>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div className="flex justify-end gap-2 border-t border-[#E7EDF4] pt-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setLateReportDialogOpen(false)}
+                  className="rounded-lg"
+                >
+                  إلغاء
+                </Button>
+                <Button
+                  type="button"
+                  disabled={selectedLateReportCustomerIds.length === 0}
+                  onClick={() => {
+                    setLateReportDialogOpen(false);
+                    void handlePrintLateReport(selectedLateReportCustomerIds);
+                  }}
+                  className="rounded-lg bg-[#173A63] hover:bg-[#142033]"
+                >
+                  طباعة التقرير
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
 
         {/* Add Interaction Dialog */}
         <AnimatePresence>

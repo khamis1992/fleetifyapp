@@ -40,6 +40,14 @@ export interface LegalDocumentData {
   };
 }
 
+function toEnglishDigits(value: string | number | undefined | null): string {
+  if (value === undefined || value === null) return '';
+
+  return String(value)
+    .replace(/[٠-٩]/g, (digit) => String('٠١٢٣٤٥٦٧٨٩'.indexOf(digit)))
+    .replace(/[۰-۹]/g, (digit) => String('۰۱۲۳۴۵۶۷۸۹'.indexOf(digit)));
+}
+
 /**
  * تحويل الأيام إلى صيغة مناسبة (أشهر إذا كانت أكثر من 60 يوم)
  */
@@ -88,6 +96,7 @@ export function generateLegalComplaint(data: LegalDocumentData): string {
   const overdueRent = customer.overdue_amount || 0;
   const damagesAmount = damages || (customer.total_debt * 0.3); // Default 30% for damages if not specified
   const totalClaim = latePenalty + overdueRent + damagesAmount;
+  const contractStartDate = toEnglishDigits(contractInfo.start_date);
   
   const document = `
 مذكرة شارحة مقدمة إلى عدالة المحكمة المدنية
@@ -119,7 +128,7 @@ ${customer.email ? `البريد الإلكتروني: ${customer.email}` : ''}
 
 أولاً: الوقائع
 
-أبرمت الشركة عقد إيجار مركبة رقم (${contractInfo.contract_number}) بتاريخ ${contractInfo.start_date} مع المدعى عليه، التزم بموجبه بدفع الإيجار الشهري البالغ (${contractInfo.monthly_rent.toLocaleString('en-US')}) ريال قطري والمحافظة على المركبة رقم (${vehicleInfo.plate})${vehicleInfo.make ? ` من نوع ${vehicleInfo.make}` : ''}${vehicleInfo.model ? ` ${vehicleInfo.model}` : ''}${vehicleInfo.year ? ` موديل ${vehicleInfo.year}` : ''} وسداد جميع الالتزامات المترتبة على استخدامها.
+أبرمت الشركة عقد إيجار مركبة رقم (${contractInfo.contract_number}) بتاريخ ${contractStartDate} مع المدعى عليه، التزم بموجبه بدفع الإيجار الشهري البالغ (${contractInfo.monthly_rent.toLocaleString('en-US')}) ريال قطري والمحافظة على المركبة رقم (${vehicleInfo.plate})${vehicleInfo.make ? ` من نوع ${vehicleInfo.make}` : ''}${vehicleInfo.model ? ` ${vehicleInfo.model}` : ''}${vehicleInfo.year ? ` موديل ${vehicleInfo.year}` : ''} وسداد جميع الالتزامات المترتبة على استخدامها.
 
 إلا أن المدعى عليه أخلَّ بهذه الالتزامات إخلالًا واضحًا، إذ تأخر في سداد الإيجارات لمدة (${formatDaysToReadable(customer.days_overdue)})، ${customer.violations_count > 0 ? `وسُجلت على المركبة (${customer.violations_count}) مخالفة مرورية بقيمة إجمالية (${customer.violations_amount.toLocaleString('en-US')}) ريال قطري ناتجة عن استخدامه الشخصي،` : ''} ورفض تسليم المركبة وسداد المستحقات دون مبرر مشروع.
 
@@ -237,6 +246,8 @@ export function generateLegalComplaintHTML(data: LegalDocumentData): string {
   const securityDeposit = contractInfo.security_deposit || 0;
   const contractDuration = contractInfo.duration_years || 3;
   const lateFeePerDay = 120; // غرامة التأخير اليومية
+  const contractStartDate = toEnglishDigits(contractInfo.start_date);
+  const contractEndDate = toEnglishDigits(contractInfo.end_date);
 
   // Company info constants
   const COMPANY_INFO = {
@@ -719,8 +730,8 @@ export function generateLegalComplaintHTML(data: LegalDocumentData): string {
       <div class="section-title">أولاً: الوقائع</div>
       <div class="section-content">
         <p>
-          أبرمت الشركة عقد إيجار مركبة رقم <strong>(${contractInfo.contract_number})</strong> بتاريخ <strong>${contractInfo.start_date}</strong> مع المدعى عليه
-          ${contractInfo.end_date ? ` ولمدة <strong>(${contractDuration})</strong> سنوات تنتهي بتاريخ <strong>${contractInfo.end_date}</strong>` : ''}، 
+          أبرمت الشركة عقد إيجار مركبة رقم <strong>(${contractInfo.contract_number})</strong> بتاريخ <strong>${contractStartDate}</strong> مع المدعى عليه
+          ${contractInfo.end_date ? ` ولمدة <strong>(${contractDuration})</strong> سنوات تنتهي بتاريخ <strong>${contractEndDate}</strong>` : ''}،
           التزم بموجبه بدفع الإيجار الشهري البالغ <strong>(${contractInfo.monthly_rent.toLocaleString('en-US')})</strong> ريال قطري 
           ${contractInfo.total_amount ? `بإجمالي مبلغ تعاقدي قدره <strong>(${contractInfo.total_amount.toLocaleString('en-US')})</strong> ريال قطري` : ''}
           ${contractInfo.installments_count ? ` على <strong>(${contractInfo.installments_count})</strong> قسط` : ''}

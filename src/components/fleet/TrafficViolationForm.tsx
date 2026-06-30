@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -13,6 +13,7 @@ import { useVehicles } from '@/hooks/useVehicles';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { toast } from 'sonner';
+import { FeatureTourButton, FeatureTourDialog, type FeatureTourContent } from '@/components/common/FeatureTourGuide';
 
 const violationSchema = z.object({
   penalty_number: z.string().optional(), // اجعله اختيارياً
@@ -31,6 +32,18 @@ const violationSchema = z.object({
 
 type ViolationFormData = z.infer<typeof violationSchema>;
 
+const violationTour = {
+  title: 'جولة تسجيل مخالفة مرورية',
+  description: 'شرح طريقة إدخال المخالفة وربطها بالمركبة والعقد والعميل.',
+  steps: [
+    'ابدأ بتاريخ المخالفة لأنه يستخدم مع المركبة للبحث عن العقد النشط وقت حدوث المخالفة.',
+    'اختر نوع المخالفة وأدخل المبلغ والموقع حتى تظهر بشكل صحيح في التقارير المالية والتشغيلية.',
+    'عند فتح النموذج من صفحة المركبة يتم تحديد اللوحة تلقائياً، ويمكن للنظام ربط العميل والعقد عند توفر البيانات.',
+    'راجع العميل والعقد قبل الحفظ، خاصة إذا كانت المخالفة ستتم مطالبة العميل بها.',
+    'بعد الحفظ تظهر المخالفة في تبويب المخالفات وفي تقرير المركبة.',
+  ],
+} satisfies FeatureTourContent;
+
 interface TrafficViolationFormProps {
   onSuccess: () => void;
   vehicleId?: string;
@@ -41,6 +54,7 @@ export function TrafficViolationForm({ onSuccess, vehicleId, violation }: Traffi
   const createViolationMutation = useCreateTrafficViolation();
   const updateViolationMutation = useUpdateTrafficViolation();
   const isEditMode = !!violation;
+  const [activeTour, setActiveTour] = useState<FeatureTourContent | null>(null);
   
   // Lazy load vehicles only when form opens
   const { data: vehicles = [] } = useVehicles({ limit: 50 });
@@ -246,12 +260,17 @@ export function TrafficViolationForm({ onSuccess, vehicleId, violation }: Traffi
   return (
     <Card>
       <CardHeader>
-        <CardTitle>{isEditMode ? 'تعديل المخالفة المرورية' : 'بيانات المخالفة المرورية'}</CardTitle>
-        <CardDescription>
-          {isEditMode 
-            ? 'تعديل بيانات المخالفة المرورية' 
-            : 'يرجى ملء جميع البيانات المطلوبة لتسجيل المخالفة المرورية'}
-        </CardDescription>
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <CardTitle>{isEditMode ? 'تعديل المخالفة المرورية' : 'بيانات المخالفة المرورية'}</CardTitle>
+            <CardDescription>
+              {isEditMode 
+                ? 'تعديل بيانات المخالفة المرورية' 
+                : 'يرجى ملء جميع البيانات المطلوبة لتسجيل المخالفة المرورية'}
+            </CardDescription>
+          </div>
+          <FeatureTourButton tour={violationTour} onStart={setActiveTour} />
+        </div>
       </CardHeader>
       <CardContent>
         <Form {...form}>
@@ -479,6 +498,7 @@ export function TrafficViolationForm({ onSuccess, vehicleId, violation }: Traffi
           </form>
         </Form>
       </CardContent>
+      <FeatureTourDialog tour={activeTour} onOpenChange={(open) => !open && setActiveTour(null)} />
     </Card>
   );
 }
