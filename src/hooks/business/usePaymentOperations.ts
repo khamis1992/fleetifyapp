@@ -603,7 +603,7 @@ export const usePaymentOperations = (options: PaymentOperationsOptions = {}) => 
       // Fetch payment first (needed to reverse invoice totals safely)
       const { data: existingPayment, error: fetchPaymentError } = await supabase
         .from('payments')
-        .select('id, invoice_id, amount, payment_status, created_by')
+        .select('id, invoice_id, amount, payment_status, created_by, notes, processing_notes')
         .eq('id', paymentId)
         .eq('company_id', companyId)
         .single();
@@ -628,40 +628,70 @@ export const usePaymentOperations = (options: PaymentOperationsOptions = {}) => 
         throw new Error(segregationDecision.reason || 'تم منع العملية بسبب قاعدة فصل المهام');
       }
 
-      // If linked to invoice, reverse invoice paid totals
+      const cancellationStamp = new Date().toISOString();
+      const cancellationNote = reason
+        ? `تم إلغاء الدفعة بتاريخ ${cancellationStamp}. السبب: ${reason}`
+        : `تم إلغاء الدفعة بتاريخ ${cancellationStamp}.`;
+
+      // Update payment status. The payments table does not currently expose
+      // cancelled_at/cancelled_by columns, so keep the audit note in existing fields.
+      const { data: cancelledPayment, error } = await supabase
+        .from('payments')
+        .update({
+          payment_status: 'cancelled',
+          updated_at: cancellationStamp,
+          processing_notes: [
+            existingPayment.processing_notes,
+            cancellationNote,
+          ].filter(Boolean).join('\n'),
+        })
+        .eq('id', paymentId)
+        .eq('company_id', companyId)
+        .select()
+        .single();
+
+      if (error) {
+        console.error('❌ [usePaymentOperations] Cancellation error:', error);
+        throw error;
+      }
+
+      // If linked to invoice, recalculate invoice totals from active payments.
+      // This is safer than subtracting once because previous failed attempts may
+      // have already adjusted the invoice while leaving the payment completed.
       if (existingPayment.invoice_id) {
-        console.log('📄 [usePaymentOperations] Updating invoice:', existingPayment.invoice_id);
-        
+        console.log('📄 [usePaymentOperations] Recalculating invoice after cancellation:', existingPayment.invoice_id);
+
         const { data: invoice, error: invoiceError } = await supabase
           .from('invoices')
-          .select('id, total_amount, paid_amount, balance_due')
+          .select('id, total_amount')
           .eq('id', existingPayment.invoice_id)
           .eq('company_id', companyId)
           .single();
 
         if (invoiceError || !invoice) {
-          console.error('❌ [usePaymentOperations] Fetch invoice before cancel failed:', invoiceError);
-          throw new Error('تعذر جلب بيانات الفاتورة لتحديثها');
+          console.error('❌ [usePaymentOperations] Fetch invoice after cancel failed:', invoiceError);
+          throw new Error('تم إلغاء الدفعة، لكن تعذر جلب بيانات الفاتورة لتحديثها');
         }
 
-        console.log('📊 [usePaymentOperations] Invoice before reversal:', {
-          total_amount: invoice.total_amount,
-          paid_amount: invoice.paid_amount,
-          balance_due: invoice.balance_due,
-          reversed_amount: existingPayment.amount,
-        });
+        const { data: activePayments, error: activePaymentsError } = await supabase
+          .from('payments')
+          .select('amount')
+          .eq('invoice_id', existingPayment.invoice_id)
+          .eq('company_id', companyId)
+          .eq('payment_status', 'completed');
 
-        const { paidAmount, balanceDue, paymentStatus } = calculateInvoiceTotalsAfterPaymentReversal({
-          totalAmount: Number(invoice.total_amount) || 0,
-          currentPaidAmount: Number(invoice.paid_amount) || 0,
-          reversedAmount: Number(existingPayment.amount) || 0,
-        });
+        if (activePaymentsError) {
+          console.error('❌ [usePaymentOperations] Fetch active invoice payments failed:', activePaymentsError);
+          throw new Error('تم إلغاء الدفعة، لكن تعذر إعادة حساب مدفوعات الفاتورة');
+        }
 
-        console.log('📊 [usePaymentOperations] Invoice after reversal:', {
-          paidAmount,
-          balanceDue,
-          paymentStatus,
-        });
+        const paidAmount = (activePayments || []).reduce(
+          (sum, payment) => sum + (Number(payment.amount) || 0),
+          0
+        );
+        const totalAmount = Number(invoice.total_amount) || 0;
+        const balanceDue = Math.max(totalAmount - paidAmount, 0);
+        const paymentStatus = paidAmount <= 0 ? 'unpaid' : balanceDue <= 0 ? 'paid' : 'partial';
 
         const { error: updateInvoiceError } = await supabase
           .from('invoices')
@@ -676,31 +706,16 @@ export const usePaymentOperations = (options: PaymentOperationsOptions = {}) => 
 
         if (updateInvoiceError) {
           console.error('❌ [usePaymentOperations] Update invoice after cancel failed:', updateInvoiceError);
-          throw new Error('فشل تحديث الفاتورة بعد إلغاء الدفعة');
+          throw new Error('تم إلغاء الدفعة، لكن فشل تحديث الفاتورة بعد الإلغاء');
         }
 
-        console.log('✅ [usePaymentOperations] Invoice updated successfully');
+        console.log('✅ [usePaymentOperations] Invoice recalculated successfully', {
+          paidAmount,
+          balanceDue,
+          paymentStatus,
+        });
       } else {
         console.log('ℹ️ [usePaymentOperations] Payment has no invoice_id, skipping invoice update');
-      }
-
-      // Update payment status
-      const { data: cancelledPayment, error } = await supabase
-        .from('payments')
-        .update({
-          payment_status: 'cancelled',
-          cancelled_at: new Date().toISOString(),
-          cancelled_by: user?.id,
-          cancellation_reason: reason,
-        })
-        .eq('id', paymentId)
-        .eq('company_id', companyId)
-        .select()
-        .single();
-
-      if (error) {
-        console.error('❌ [usePaymentOperations] Cancellation error:', error);
-        throw error;
       }
 
       // Reverse journal entry if exists

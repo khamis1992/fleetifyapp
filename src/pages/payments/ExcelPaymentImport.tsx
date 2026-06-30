@@ -662,7 +662,10 @@ const parseMonthToDate = (month: string) => {
   return `${year}-${String(monthNumber).padStart(2, '0')}-01`;
 };
 
-const sameInvoiceMonth = (invoiceDate: string, monthDate: string) => invoiceDate?.slice(0, 7) === monthDate.slice(0, 7);
+const sameInvoiceMonth = (invoiceDate: string | null | undefined, monthDate: string) => invoiceDate?.slice(0, 7) === monthDate.slice(0, 7);
+
+const invoiceMatchesMonth = (invoice: ImportInvoice, monthDate: string) =>
+  sameInvoiceMonth(invoice.invoice_date, monthDate) || sameInvoiceMonth(invoice.due_date, monthDate);
 
 const errorMessage = (error: unknown) => {
   if (error instanceof Error) return error.message;
@@ -848,10 +851,10 @@ const findExistingMonthlyInvoice = async (companyId: string, contractId: string,
       throw fallback.error;
     }
 
-    return ((fallback.data || []) as ImportInvoice[]).find((invoice) => sameInvoiceMonth(invoice.invoice_date, invoiceDate)) || null;
+    return ((fallback.data || []) as ImportInvoice[]).find((invoice) => invoiceMatchesMonth(invoice, invoiceDate)) || null;
   }
 
-  return ((data || []) as ImportInvoice[]).find((invoice) => sameInvoiceMonth(invoice.invoice_date, invoiceDate)) || null;
+  return ((data || []) as ImportInvoice[]).find((invoice) => invoiceMatchesMonth(invoice, invoiceDate)) || null;
 };
 
 const createOrFindMonthlyInvoice = async ({
@@ -901,7 +904,11 @@ const createOrFindMonthlyInvoice = async ({
 
   if (insertError) {
     logSupabaseError('createOrFindMonthlyInvoice insert failed', insertError);
-    if (insertError.code === '23505') {
+    const duplicateInvoice = await findExistingMonthlyInvoice(companyId, contract.id, invoiceDate);
+    if (duplicateInvoice) return { invoice: duplicateInvoice, created: false };
+
+    const message = errorMessage(insertError);
+    if (insertError.code === '23505' || message.includes('مكررة') || message.toLowerCase().includes('duplicate')) {
       const { data: duplicate, error: duplicateError } = await supabase
         .from('invoices')
         .select('*')
