@@ -664,8 +664,41 @@ const parseMonthToDate = (month: string) => {
 
 const sameInvoiceMonth = (invoiceDate: string | null | undefined, monthDate: string) => invoiceDate?.slice(0, 7) === monthDate.slice(0, 7);
 
-const invoiceMatchesMonth = (invoice: ImportInvoice, monthDate: string) =>
-  sameInvoiceMonth(invoice.invoice_date, monthDate) || sameInvoiceMonth(invoice.due_date, monthDate);
+const findInvoiceForMonth = (invoices: ImportInvoice[], monthDate: string) =>
+  invoices.find((invoice) => sameInvoiceMonth(invoice.invoice_date, monthDate)) ||
+  invoices.find((invoice) => sameInvoiceMonth(invoice.due_date, monthDate)) ||
+  null;
+
+const alignInvoiceDueDateToExcelMonth = async ({
+  companyId,
+  invoice,
+  monthDate,
+}: {
+  companyId: string;
+  invoice: ImportInvoice;
+  monthDate: string;
+}) => {
+  if (!sameInvoiceMonth(invoice.invoice_date, monthDate)) return invoice;
+  if (sameInvoiceMonth(invoice.due_date, monthDate)) return invoice;
+
+  const { data, error } = await supabase
+    .from('invoices')
+    .update({
+      due_date: monthDate,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', invoice.id)
+    .eq('company_id', companyId)
+    .select('id, invoice_number, invoice_date, due_date, total_amount, paid_amount, balance_due, payment_status')
+    .single();
+
+  if (error) {
+    logSupabaseError('alignInvoiceDueDateToExcelMonth update failed', error);
+    throw error;
+  }
+
+  return (data || { ...invoice, due_date: monthDate }) as ImportInvoice;
+};
 
 const errorMessage = (error: unknown) => {
   if (error instanceof Error) return error.message;
@@ -851,10 +884,10 @@ const findExistingMonthlyInvoice = async (companyId: string, contractId: string,
       throw fallback.error;
     }
 
-    return ((fallback.data || []) as ImportInvoice[]).find((invoice) => invoiceMatchesMonth(invoice, invoiceDate)) || null;
+    return findInvoiceForMonth((fallback.data || []) as ImportInvoice[], invoiceDate);
   }
 
-  return ((data || []) as ImportInvoice[]).find((invoice) => invoiceMatchesMonth(invoice, invoiceDate)) || null;
+  return findInvoiceForMonth((data || []) as ImportInvoice[], invoiceDate);
 };
 
 const createOrFindMonthlyInvoice = async ({
@@ -1476,11 +1509,16 @@ export default function ExcelPaymentImport() {
 
         if (created) invoicesCreated += 1;
 
-        const invoiceBalance = Number(invoice.balance_due ?? invoice.total_amount ?? 0);
+        const monthDate = parseMonthToDate(row.month);
+        const invoiceForPayment = monthDate
+          ? await alignInvoiceDueDateToExcelMonth({ companyId, invoice, monthDate })
+          : invoice;
+
+        const invoiceBalance = Number(invoiceForPayment.balance_due ?? invoiceForPayment.total_amount ?? 0);
         const amountToApply = Math.min(paymentAmount, Math.max(invoiceBalance, 0));
 
         if (amountToApply > 0) {
-          if (await hasHistoricalExcelPayment(invoice, row, contract, file)) {
+          if (await hasHistoricalExcelPayment(invoiceForPayment, row, contract, file)) {
             skipped += 1;
             continue;
           }
@@ -1488,7 +1526,7 @@ export default function ExcelPaymentImport() {
           const stableReference = buildHistoricalPaymentReference({
             fileName: file.fileName,
             contractId: contract.id,
-            invoiceId: invoice.id,
+            invoiceId: invoiceForPayment.id,
             month: row.month,
           });
 
@@ -1496,9 +1534,9 @@ export default function ExcelPaymentImport() {
             const insertedPayment = await createPayment.mutateAsync({
               customer_id: contract.customer_id,
               contract_id: contract.id,
-              invoice_id: invoice.id,
+              invoice_id: invoiceForPayment.id,
               amount: amountToApply,
-              payment_date: invoice.due_date || invoice.invoice_date || parseMonthToDate(row.month) || new Date().toISOString().slice(0, 10),
+              payment_date: parseMonthToDate(row.month) || invoiceForPayment.invoice_date || invoiceForPayment.due_date || new Date().toISOString().slice(0, 10),
               payment_method: 'cash',
               type: 'receipt',
               currency: 'QAR',
@@ -1511,13 +1549,13 @@ export default function ExcelPaymentImport() {
               customerName: getContractCustomerDisplayName(contract),
               contractNumber: contract.contract_number,
               contractPath: `/contracts/${encodeURIComponent(contract.contract_number)}`,
-              invoiceId: invoice.id,
-              invoiceNumber: invoice.invoice_number || '-',
+              invoiceId: invoiceForPayment.id,
+              invoiceNumber: invoiceForPayment.invoice_number || '-',
               paymentId: String(insertedPayment?.id || ''),
               paymentNumber: String(insertedPayment?.payment_number || '-'),
-              paymentDate: String(insertedPayment?.payment_date || invoice.due_date || invoice.invoice_date || parseMonthToDate(row.month) || ''),
+              paymentDate: String(insertedPayment?.payment_date || parseMonthToDate(row.month) || invoiceForPayment.invoice_date || invoiceForPayment.due_date || ''),
               referenceNumber: String(insertedPayment?.reference_number || stableReference),
-              destination: `payments.customer_id=${contract.customer_id} / payments.contract_id=${contract.id} / payments.invoice_id=${invoice.id}`,
+              destination: `payments.customer_id=${contract.customer_id} / payments.contract_id=${contract.id} / payments.invoice_id=${invoiceForPayment.id}`,
             });
             payments += 1;
           } catch (error: unknown) {
@@ -1547,7 +1585,7 @@ export default function ExcelPaymentImport() {
           skipped += 1;
         }
 
-        if (await createLateFeeIfNeeded(invoice, row, contract, file)) lateFees += 1;
+        if (await createLateFeeIfNeeded(invoiceForPayment, row, contract, file)) lateFees += 1;
         trafficViolations += await createTrafficViolationsIfNeeded(row, contract, file);
       }
 
