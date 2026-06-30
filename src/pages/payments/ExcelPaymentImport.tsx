@@ -139,10 +139,26 @@ type ImportResult = {
   trafficViolations: number;
   skipped: number;
   skippedReasons: string[];
+  paymentReport: PaymentReportRow[];
 };
 
 type ImportResultsByFile = Record<string, ImportResult>;
 type MatchedContractsByFile = Record<string, MatchedContract>;
+
+type PaymentReportRow = {
+  month: string;
+  amount: number;
+  customerName: string;
+  contractNumber: string;
+  contractPath: string;
+  invoiceId: string;
+  invoiceNumber: string;
+  paymentId: string;
+  paymentNumber: string;
+  paymentDate: string;
+  referenceNumber: string;
+  destination: string;
+};
 
 type BulkApprovalProgress = {
   current: number;
@@ -622,6 +638,15 @@ const buildContractCustomerName = (contract: MatchedContract) => compactText([
   contract.customers?.company_name,
   contract.customers?.company_name_ar,
 ].filter(Boolean).join(' '));
+
+const getContractCustomerDisplayName = (contract: MatchedContract) => [
+  contract.customers?.first_name_ar,
+  contract.customers?.last_name_ar,
+  contract.customers?.first_name,
+  contract.customers?.last_name,
+  contract.customers?.company_name_ar,
+  contract.customers?.company_name,
+].filter(Boolean).join(' ').trim() || '-';
 
 const isCompatibleTextMatch = (source: string, target: string) =>
   Boolean(source && target && (source.includes(target) || target.includes(source)));
@@ -1415,6 +1440,7 @@ export default function ExcelPaymentImport() {
       let payableRows = 0;
       let missingInvoiceRows = 0;
       const skippedReasons: string[] = [];
+      const paymentReport: PaymentReportRow[] = [];
 
       for (let index = 0; index < file.rows.length; index += 1) {
         const row = file.rows[index];
@@ -1462,7 +1488,7 @@ export default function ExcelPaymentImport() {
           });
 
           try {
-            await createPayment.mutateAsync({
+            const insertedPayment = await createPayment.mutateAsync({
               customer_id: contract.customer_id,
               contract_id: contract.id,
               invoice_id: invoice.id,
@@ -1473,6 +1499,20 @@ export default function ExcelPaymentImport() {
               currency: 'QAR',
               notes: `دفعة كاش تاريخية مستوردة من Excel - ${file.fileName} - شهر ${row.month}`,
               idempotencyKey: stableReference,
+            });
+            paymentReport.push({
+              month: row.month,
+              amount: amountToApply,
+              customerName: getContractCustomerDisplayName(contract),
+              contractNumber: contract.contract_number,
+              contractPath: `/contracts/${encodeURIComponent(contract.contract_number)}`,
+              invoiceId: invoice.id,
+              invoiceNumber: invoice.invoice_number || '-',
+              paymentId: String(insertedPayment?.id || ''),
+              paymentNumber: String(insertedPayment?.payment_number || '-'),
+              paymentDate: String(insertedPayment?.payment_date || invoice.due_date || invoice.invoice_date || parseMonthToDate(row.month) || ''),
+              referenceNumber: String(insertedPayment?.reference_number || stableReference),
+              destination: `payments.customer_id=${contract.customer_id} / payments.contract_id=${contract.id} / payments.invoice_id=${invoice.id}`,
             });
             payments += 1;
           } catch (error: unknown) {
@@ -1514,7 +1554,7 @@ export default function ExcelPaymentImport() {
       }
 
       await closeReopenedPeriods(reopenedPeriods);
-      return { payments, invoicesCreated, lateFees, trafficViolations, skipped, skippedReasons };
+      return { payments, invoicesCreated, lateFees, trafficViolations, skipped, skippedReasons, paymentReport };
     } catch (error) {
       await closeReopenedPeriods(reopenedPeriods);
       throw error;
@@ -2227,6 +2267,77 @@ export default function ExcelPaymentImport() {
                   <p className="mt-1 text-2xl font-black text-[#020617]">{importResult.skipped}</p>
                 </div>
               </div>
+
+              {importResult.paymentReport.length > 0 && (
+                <div className="rounded-xl border border-slate-200 bg-white p-4">
+                  <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <p className="text-base font-black text-[#020617]">تقرير تسجيل الدفعات</p>
+                      <p className="mt-1 text-xs font-semibold text-[#64748B]">
+                        يوضح التقرير الدفعات التي تم إنشاؤها فعليًا ومكان ربطها داخل النظام.
+                      </p>
+                    </div>
+                    {importResult.paymentReport[0]?.contractPath && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="h-9 rounded-xl border-slate-200 text-xs font-bold"
+                        onClick={() => navigate(importResult.paymentReport[0].contractPath)}
+                      >
+                        فتح تفاصيل العقد
+                      </Button>
+                    )}
+                  </div>
+
+                  <div className="max-h-80 overflow-auto rounded-xl border border-slate-100">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="bg-slate-50">
+                          <TableHead className="text-right">الشهر</TableHead>
+                          <TableHead className="text-right">المبلغ</TableHead>
+                          <TableHead className="text-right">العميل</TableHead>
+                          <TableHead className="text-right">العقد</TableHead>
+                          <TableHead className="text-right">الفاتورة</TableHead>
+                          <TableHead className="text-right">رقم الدفعة</TableHead>
+                          <TableHead className="text-right">تاريخ التسجيل</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {importResult.paymentReport.map((reportRow) => (
+                          <TableRow key={`${reportRow.paymentId}-${reportRow.month}`}>
+                            <TableCell className="font-bold">{reportRow.month}</TableCell>
+                            <TableCell className="font-bold">{formatCurrency(reportRow.amount)}</TableCell>
+                            <TableCell>{reportRow.customerName}</TableCell>
+                            <TableCell>
+                              <button
+                                type="button"
+                                className="font-bold text-[#0F766E] underline-offset-4 hover:underline"
+                                onClick={() => navigate(reportRow.contractPath)}
+                              >
+                                {reportRow.contractNumber}
+                              </button>
+                            </TableCell>
+                            <TableCell>{reportRow.invoiceNumber}</TableCell>
+                            <TableCell className="font-mono text-xs">{reportRow.paymentNumber}</TableCell>
+                            <TableCell className="font-mono text-xs">{reportRow.paymentDate || '-'}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+
+                  <div className="mt-3 rounded-lg bg-slate-50 p-3 text-xs font-semibold leading-6 text-[#475569]">
+                    {importResult.paymentReport.slice(0, 3).map((reportRow) => (
+                      <p key={`${reportRow.referenceNumber}-${reportRow.month}`}>
+                        شهر {reportRow.month}: تم تسجيل الدفعة في جدول payments وربطها بالعميل "{reportRow.customerName}"، العقد "{reportRow.contractNumber}"، والفاتورة "{reportRow.invoiceNumber}".
+                      </p>
+                    ))}
+                    {importResult.paymentReport.length > 3 && (
+                      <p className="mt-1 text-[#64748B]">تم عرض أول 3 أسطر في الملخص، والتفاصيل كاملة في الجدول أعلاه.</p>
+                    )}
+                  </div>
+                </div>
+              )}
 
               {importResult.skipped > 0 && (
                 <div className="space-y-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm font-semibold leading-6 text-amber-800">
