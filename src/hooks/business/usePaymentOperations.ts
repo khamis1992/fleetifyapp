@@ -94,10 +94,35 @@ export const usePaymentOperations = (options: PaymentOperationsOptions = {}) => 
           .select('*')
           .eq('reference_number', data.idempotencyKey)
           .eq('company_id', companyId)
+          .neq('payment_status', 'cancelled')
           .maybeSingle();
 
         if (existingPayment) {
           console.log('♻️ [usePaymentOperations] Idempotency key found, returning existing payment:', existingPayment.payment_number);
+          const needsRelink =
+            (validatedData.contract_id && existingPayment.contract_id !== validatedData.contract_id) ||
+            (validatedData.customer_id && existingPayment.customer_id !== validatedData.customer_id) ||
+            (validatedData.invoice_id && existingPayment.invoice_id !== validatedData.invoice_id);
+
+          if (needsRelink) {
+            const { data: relinkedPayment, error: relinkError } = await supabase
+              .from('payments')
+              .update({
+                contract_id: validatedData.contract_id ?? existingPayment.contract_id,
+                customer_id: validatedData.customer_id ?? existingPayment.customer_id,
+                invoice_id: validatedData.invoice_id ?? existingPayment.invoice_id,
+                updated_at: new Date().toISOString(),
+              })
+              .eq('id', existingPayment.id)
+              .eq('company_id', companyId)
+              .select()
+              .single();
+
+            if (!relinkError && relinkedPayment) {
+              return relinkedPayment;
+            }
+          }
+
           return existingPayment; // Return existing payment instead of creating duplicate
         }
         if (idempotencyError) {
@@ -105,37 +130,64 @@ export const usePaymentOperations = (options: PaymentOperationsOptions = {}) => 
         }
       }
 
-      // 2. Pre-insert duplicate detection (within 1 hour window)
-      // Build query dynamically to ensure all filters are applied
+      // 2. Pre-insert duplicate detection (full history, excluding cancelled)
+      // Exclude cancelled payments — they are effectively deleted and should not block re-imports.
       let duplicateCheckQuery = supabase
         .from('payments')
         .select('*')
         .eq('company_id', companyId)
         .eq('amount', validatedData.amount)
         .eq('payment_date', validatedData.payment_date)
-        .gte('created_at', new Date(Date.now() - 60 * 60 * 1000).toISOString());
+        .neq('payment_status', 'cancelled');
 
       // Add customer filter if present
       if (validatedData.customer_id) {
         duplicateCheckQuery = duplicateCheckQuery.eq('customer_id', validatedData.customer_id);
       }
 
-      // Add contract filter if present (stricter check for contract payments)
-      if (validatedData.contract_id) {
+      // Add invoice filter if present (critical for batch payments)
+      // This is essential to allow multiple payments for different invoices with same amount
+      if (validatedData.invoice_id) {
+        duplicateCheckQuery = duplicateCheckQuery.eq('invoice_id', validatedData.invoice_id);
+      } else if (validatedData.contract_id) {
         duplicateCheckQuery = duplicateCheckQuery.eq('contract_id', validatedData.contract_id);
       } else {
         duplicateCheckQuery = duplicateCheckQuery.is('contract_id', null);
       }
 
-      // Add invoice filter if present (critical for batch payments)
-      // This is essential to allow multiple payments for different invoices with same amount
-      if (validatedData.invoice_id) {
-        duplicateCheckQuery = duplicateCheckQuery.eq('invoice_id', validatedData.invoice_id);
-      }
-
       const { data: potentialDuplicates, error: duplicateCheckError } = await duplicateCheckQuery;
 
       if (!duplicateCheckError && potentialDuplicates && potentialDuplicates.length > 0) {
+        if (data.idempotencyKey) {
+          const duplicate = potentialDuplicates[0];
+          const needsRelink =
+            (validatedData.contract_id && duplicate.contract_id !== validatedData.contract_id) ||
+            (validatedData.customer_id && duplicate.customer_id !== validatedData.customer_id) ||
+            (validatedData.invoice_id && duplicate.invoice_id !== validatedData.invoice_id);
+
+          if (needsRelink) {
+            const { data: relinkedPayment, error: relinkError } = await supabase
+              .from('payments')
+              .update({
+                contract_id: validatedData.contract_id ?? duplicate.contract_id,
+                customer_id: validatedData.customer_id ?? duplicate.customer_id,
+                invoice_id: validatedData.invoice_id ?? duplicate.invoice_id,
+                reference_number: data.idempotencyKey ?? validatedData.reference_number ?? duplicate.reference_number,
+                updated_at: new Date().toISOString(),
+              })
+              .eq('id', duplicate.id)
+              .eq('company_id', companyId)
+              .select()
+              .single();
+
+            if (!relinkError && relinkedPayment) {
+              return relinkedPayment;
+            }
+          }
+
+          return duplicate;
+        }
+
         const duplicateInfo = potentialDuplicates.map((p: any) =>
           `رقم الدفعة: ${p.payment_number} (${new Date(p.created_at).toLocaleTimeString('ar-SA')})`
         ).join('، ');
@@ -150,8 +202,9 @@ export const usePaymentOperations = (options: PaymentOperationsOptions = {}) => 
       // ========== END DUPLICATE PREVENTION ==========
 
       // Generate payment number if not provided
-      const paymentNumber = validatedData.payment_number && validatedData.payment_number.length > 0
-        ? validatedData.payment_number
+      const hasManualPaymentNumber = Boolean(validatedData.payment_number && validatedData.payment_number.length > 0);
+      let paymentNumber = hasManualPaymentNumber
+        ? validatedData.payment_number!
         : await generatePaymentNumber(validatedData.type);
 
       // Determine transaction_type for database (must be 'payment' or 'receipt')
@@ -339,12 +392,124 @@ export const usePaymentOperations = (options: PaymentOperationsOptions = {}) => 
         }
       }
 
-      // Insert payment with timeout protection
-      const { data: insertedPayment, error } = await supabase
-        .from('payments')
-        .insert(paymentData)
-        .select()
-        .single();
+      // Insert payment with retry protection for automatically generated numbers.
+      let insertedPayment: any = null;
+      let error: any = null;
+      const maxInsertAttempts = hasManualPaymentNumber ? 1 : 5;
+      const findExistingTransactionPayment = async () => {
+        // Match the database constraint unique_payment_per_invoice_date_amount
+        // which covers (invoice_id, payment_date, amount) — NOT transaction_type.
+        let existingPaymentQuery = supabase
+          .from('payments')
+          .select('*')
+          .eq('company_id', companyId)
+          .eq('amount', paymentData.amount)
+          .eq('payment_date', paymentData.payment_date)
+          .neq('payment_status', 'cancelled')
+          .limit(1);
+
+        if (paymentData.invoice_id) {
+          existingPaymentQuery = existingPaymentQuery.eq('invoice_id', paymentData.invoice_id);
+        }
+        if (paymentData.contract_id) {
+          existingPaymentQuery = existingPaymentQuery.eq('contract_id', paymentData.contract_id);
+        }
+        if (paymentData.customer_id) {
+          existingPaymentQuery = existingPaymentQuery.eq('customer_id', paymentData.customer_id);
+        }
+
+        const { data: existingMatches, error: existingMatchError } = await existingPaymentQuery;
+        if (existingMatchError) {
+          console.warn('⚠️ [usePaymentOperations] Existing transaction lookup failed:', existingMatchError.message);
+          return null;
+        }
+
+        return existingMatches?.[0] || null;
+      };
+
+      for (let attempt = 0; attempt < maxInsertAttempts; attempt += 1) {
+        if (attempt > 0) {
+          paymentNumber = await generatePaymentNumber(validatedData.type, attempt);
+          paymentData.payment_number = paymentNumber;
+          console.warn('⚠️ [usePaymentOperations] Retrying payment insert with regenerated number:', paymentNumber);
+        }
+
+        const insertResult = await supabase
+          .from('payments')
+          .insert(paymentData)
+          .select()
+          .single();
+
+        insertedPayment = insertResult.data;
+        error = insertResult.error;
+
+        if (!error) {
+          break;
+        }
+
+        if (error.code === '23505') {
+          // First try: find an active (non-cancelled) duplicate
+          const existingTransactionPayment = await findExistingTransactionPayment();
+          if (existingTransactionPayment) {
+            console.log('♻️ [usePaymentOperations] Duplicate transaction found, returning existing payment:', existingTransactionPayment.payment_number);
+            insertedPayment = existingTransactionPayment;
+            error = null;
+            break;
+          }
+
+          // Second try: find a CANCELLED duplicate and reactivate it
+          // The database constraint unique_payment_per_invoice_date_amount blocks
+          // inserts even when the existing row is cancelled. Reactivate instead.
+          let cancelledQuery = supabase
+            .from('payments')
+            .select('*')
+            .eq('company_id', companyId)
+            .eq('amount', paymentData.amount)
+            .eq('payment_date', paymentData.payment_date)
+            .eq('payment_status', 'cancelled')
+            .limit(1);
+
+          if (paymentData.invoice_id) {
+            cancelledQuery = cancelledQuery.eq('invoice_id', paymentData.invoice_id);
+          }
+          if (paymentData.contract_id) {
+            cancelledQuery = cancelledQuery.eq('contract_id', paymentData.contract_id);
+          }
+
+          const { data: cancelledMatches } = await cancelledQuery;
+          const cancelledPayment = cancelledMatches?.[0];
+
+          if (cancelledPayment) {
+            console.log('♻️ [usePaymentOperations] Reactivating cancelled duplicate payment:', cancelledPayment.payment_number);
+            const { data: reactivatedPayment, error: reactivateError } = await supabase
+              .from('payments')
+              .update({
+                ...paymentData,
+                payment_status: 'completed',
+                updated_at: new Date().toISOString(),
+                processing_notes: [
+                  cancelledPayment.processing_notes,
+                  'تمت إعادة تفعيل الدفعة الملغاة أثناء اعتماد ملف Excel بدلاً من إنشاء سجل مكرر.',
+                ].filter(Boolean).join('\n'),
+              })
+              .eq('id', cancelledPayment.id)
+              .eq('company_id', companyId)
+              .select()
+              .single();
+
+            if (!reactivateError) {
+              insertedPayment = reactivatedPayment;
+              error = null;
+              break;
+            }
+            console.warn('⚠️ [usePaymentOperations] Reactivating cancelled payment failed, will retry:', reactivateError?.message);
+          }
+        }
+
+        if (error.code !== '23505' || hasManualPaymentNumber) {
+          break;
+        }
+      }
 
       if (error) {
         console.error('❌ [usePaymentOperations] Database error:', error);
@@ -358,6 +523,14 @@ export const usePaymentOperations = (options: PaymentOperationsOptions = {}) => 
         
         // Provide more descriptive error messages
         if (error.code === '23505') {
+          const duplicateMessage = String(error.message || '').toLowerCase();
+          if (
+            duplicateMessage.includes('unique_transaction') ||
+            duplicateMessage.includes('idx_payments_unique_transaction') ||
+            duplicateMessage.includes('invoice_payments')
+          ) {
+            throw new Error('تم تسجيل هذه الدفعة سابقاً لنفس العقد/الفاتورة/التاريخ/المبلغ');
+          }
           throw new Error('رقم الدفعة موجود مسبقاً');
         } else if (error.code === '23503') {
           throw new Error('خطأ في ربط البيانات - تحقق من العميل أو المورد أو العقد');
@@ -421,6 +594,8 @@ export const usePaymentOperations = (options: PaymentOperationsOptions = {}) => 
     onSuccess: (payment) => {
       // Invalidate related queries
       queryClient.invalidateQueries({ queryKey: ['payments'] });
+      queryClient.invalidateQueries({ queryKey: ['contract-payments'] });
+      queryClient.invalidateQueries({ queryKey: ['contract-invoices'] });
       queryClient.invalidateQueries({ queryKey: ['financial-overview'] });
       queryClient.invalidateQueries({ queryKey: ['banks'] });
       queryClient.invalidateQueries({ queryKey: ['bank-transactions'] });
@@ -632,6 +807,51 @@ export const usePaymentOperations = (options: PaymentOperationsOptions = {}) => 
       const cancellationNote = reason
         ? `تم إلغاء الدفعة بتاريخ ${cancellationStamp}. السبب: ${reason}`
         : `تم إلغاء الدفعة بتاريخ ${cancellationStamp}.`;
+
+      if (existingPayment.invoice_id) {
+        const { data: linkedInvoice, error: linkedInvoiceError } = await supabase
+          .from('invoices')
+          .select(`
+            id,
+            invoice_date,
+            due_date,
+            contracts:contract_id (
+              start_date
+            )
+          `)
+          .eq('id', existingPayment.invoice_id)
+          .eq('company_id', companyId)
+          .single();
+
+        if (linkedInvoiceError) {
+          console.error('❌ [usePaymentOperations] Fetch linked invoice before cancel failed:', linkedInvoiceError);
+          throw new Error('تعذر جلب الفاتورة المرتبطة قبل إلغاء الدفعة');
+        }
+
+        const contractStartDate = linkedInvoice?.contracts?.start_date;
+        const invoiceDate = linkedInvoice?.invoice_date;
+        const dueDate = linkedInvoice?.due_date;
+
+        if (contractStartDate && (
+          (invoiceDate && invoiceDate < contractStartDate) ||
+          (dueDate && dueDate < contractStartDate)
+        )) {
+          const { error: repairInvoiceDateError } = await supabase
+            .from('invoices')
+            .update({
+              invoice_date: invoiceDate && invoiceDate < contractStartDate ? contractStartDate : invoiceDate,
+              due_date: dueDate && dueDate < contractStartDate ? contractStartDate : dueDate,
+              updated_at: new Date().toISOString(),
+            })
+            .eq('id', existingPayment.invoice_id)
+            .eq('company_id', companyId);
+
+          if (repairInvoiceDateError) {
+            console.error('❌ [usePaymentOperations] Repair invoice dates before cancel failed:', repairInvoiceDateError);
+            throw new Error('تعذر تصحيح تاريخ الفاتورة القديمة قبل إلغاء الدفعة');
+          }
+        }
+      }
 
       // Update payment status. The payments table does not currently expose
       // cancelled_at/cancelled_by columns, so keep the audit note in existing fields.
@@ -868,26 +1088,73 @@ export const usePaymentOperations = (options: PaymentOperationsOptions = {}) => 
     console.log('💰 Validating account balance for payment:', data.amount);
   };
 
-  const generatePaymentNumber = async (type: 'receipt' | 'payment' | 'invoice_payment'): Promise<string> => {
+  const generatePaymentNumber = async (
+    type: 'receipt' | 'payment' | 'invoice_payment',
+    sequenceOffset = 0
+  ): Promise<string> => {
     const prefix = type === 'receipt' ? 'REC' : type === 'payment' ? 'PAY' : 'INV';
     const year = new Date().getFullYear().toString().slice(-2);
     const transactionType = type === 'payment' ? 'payment' : 'receipt';
     
-    // Get count of existing payments to generate next number
-    const { count, error } = await supabase
-      .from('payments')
-      .select('*', { count: 'exact', head: true })
-      .eq('company_id', companyId)
-      .eq('transaction_type', transactionType);
+    // Use the highest existing numeric suffix instead of count+1. Count-based
+    // generation collides after imports, cancellations, or concurrent inserts.
+    const existingNumbers: { payment_number: string | null }[] = [];
+    const pageSize = 1000;
+    let from = 0;
 
-    if (error) {
-      console.error('Error generating payment number:', error);
-      // Fallback to timestamp-based number
-      return `${prefix}-${year}-${Date.now().toString().slice(-6)}`;
+    while (true) {
+      const { data, error } = await supabase
+        .from('payments')
+        .select('payment_number')
+        .eq('company_id', companyId)
+        .eq('transaction_type', transactionType)
+        .ilike('payment_number', `${prefix}-${year}-%`)
+        .range(from, from + pageSize - 1);
+
+      if (error) {
+        console.error('Error generating payment number:', error);
+        // Fallback to timestamp-based number
+        return `${prefix}-${year}-${Date.now().toString().slice(-6)}${sequenceOffset ? sequenceOffset.toString().padStart(2, '0') : ''}`;
+      }
+
+      existingNumbers.push(...(data || []));
+      if (!data || data.length < pageSize) {
+        break;
+      }
+      from += pageSize;
     }
 
-    const nextNumber = (count || 0) + 1;
-    return `${prefix}-${year}-${nextNumber.toString().padStart(3, '0')}`;
+    const pattern = new RegExp(`^${prefix}-${year}-(\\d+)$`);
+    const maxExistingNumber = (existingNumbers || []).reduce((max, row) => {
+      const match = String(row.payment_number || '').match(pattern);
+      if (!match) return max;
+      return Math.max(max, Number(match[1]) || 0);
+    }, 0);
+
+    let nextNumber = maxExistingNumber + 1 + sequenceOffset;
+
+    for (let attempt = 0; attempt < 25; attempt += 1) {
+      const candidate = `${prefix}-${year}-${nextNumber.toString().padStart(3, '0')}`;
+      const { data: existingPaymentNumber, error: existingPaymentNumberError } = await supabase
+        .from('payments')
+        .select('id')
+        .eq('company_id', companyId)
+        .eq('payment_number', candidate)
+        .limit(1);
+
+      if (existingPaymentNumberError) {
+        console.warn('⚠️ [usePaymentOperations] Payment number availability check failed:', existingPaymentNumberError.message);
+        return candidate;
+      }
+
+      if (!existingPaymentNumber?.length) {
+        return candidate;
+      }
+
+      nextNumber += 1;
+    }
+
+    return `${prefix}-${year}-${Date.now().toString().slice(-6)}`;
   };
 
   const createJournalEntry = async (payment: Payment): Promise<string> => {

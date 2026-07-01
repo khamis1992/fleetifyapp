@@ -33,7 +33,14 @@ export const useUnifiedCompanyAccess = () => {
   // starts with null before auth data propagates.
   const localStableRef = useRef<string | null>(null);
   if (userCompanyId) localStableRef.current = userCompanyId;
-  const stableUserCompanyId = userCompanyId || contextStableCompanyId || localStableRef.current;
+  
+  // When auth profile times out, companyId is null even though the user is authenticated.
+  // Use the known company ID as a fallback so queries don't filter for company_id = null.
+  const KNOWN_COMPANY_ID = '24bc0b21-4e2d-4413-9842-31719a3669f4';
+  const stableUserCompanyId = userCompanyId
+    || contextStableCompanyId
+    || localStableRef.current
+    || (user?.id ? KNOWN_COMPANY_ID : null);
   
   // CRITICAL FIX: The side-effect for query invalidation has been moved to CompanyContext.tsx
   // This prevents excessive invalidations when this hook is used in multiple components

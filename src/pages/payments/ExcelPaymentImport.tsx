@@ -242,7 +242,12 @@ const parseNumber = (value: CellValue): number => {
   return parseNumberParts(value).reduce((sum, amount) => sum + amount, 0);
 };
 
-const cellText = (value: CellValue) => String(value ?? '').trim();
+const cellText = (value: CellValue) => {
+  if (value instanceof Date) {
+    return `${value.getMonth() + 1}-${value.getFullYear()}`;
+  }
+  return String(value ?? '').trim();
+};
 
 const parseOptionalNumber = (value: CellValue): number | null => {
   const text = cellText(value);
@@ -251,6 +256,7 @@ const parseOptionalNumber = (value: CellValue): number | null => {
 };
 
 const looksLikeMonth = (value: CellValue) => {
+  if (value instanceof Date) return true;
   const text = cellText(value);
   return /^\d{1,2}[-/]\d{4}$/.test(text) || /^\d{4}[-/]\d{1,2}$/.test(text);
 };
@@ -698,6 +704,35 @@ const alignInvoiceDueDateToExcelMonth = async ({
   }
 
   return (data || { ...invoice, due_date: monthDate }) as ImportInvoice;
+};
+
+const calculateInvoiceBalanceFromActivePayments = async (companyId: string, invoice: ImportInvoice) => {
+  const { data: activePayments, error: activePaymentsError } = await supabase
+    .from('payments')
+    .select('amount')
+    .eq('company_id', companyId)
+    .eq('invoice_id', invoice.id)
+    .eq('payment_status', 'completed');
+
+  if (activePaymentsError) {
+    logSupabaseError('calculateInvoiceBalanceFromActivePayments payments query failed', activePaymentsError);
+    throw activePaymentsError;
+  }
+
+  const totalAmount = Number(invoice.total_amount) || 0;
+  const paidAmount = (activePayments || []).reduce(
+    (sum, payment) => sum + (Number(payment.amount) || 0),
+    0
+  );
+  const balanceDue = Math.max(0, totalAmount - paidAmount);
+  const paymentStatus = paidAmount <= 0 ? 'unpaid' : balanceDue <= 0.01 ? 'paid' : 'partial';
+
+  return {
+    ...invoice,
+    paid_amount: paidAmount,
+    balance_due: balanceDue,
+    payment_status: paymentStatus,
+  } as ImportInvoice;
 };
 
 const errorMessage = (error: unknown) => {
@@ -1383,7 +1418,13 @@ export default function ExcelPaymentImport() {
     return true;
   };
 
-  const hasHistoricalExcelPayment = async (invoice: ImportInvoice, row: ParsedPaymentRow, contract: MatchedContract, file: ParsedExcelFile) => {
+  const hasHistoricalExcelPayment = async (
+    invoice: ImportInvoice,
+    row: ParsedPaymentRow,
+    contract: MatchedContract,
+    file: ParsedExcelFile,
+    amountToApply: number
+  ) => {
     if (!companyId) return false;
     const stableReference = buildHistoricalPaymentReference({
       fileName: file.fileName,
@@ -1391,10 +1432,30 @@ export default function ExcelPaymentImport() {
       invoiceId: invoice.id,
       month: row.month,
     });
+    const paymentDate = parseMonthToDate(row.month) || invoice.invoice_date || invoice.due_date || null;
+
+    let query = supabase
+      .from('payments')
+      .select('id,payment_number,payment_date,reference_number,amount')
+      .eq('company_id', companyId)
+      .eq('invoice_id', invoice.id)
+      .eq('contract_id', contract.id)
+      .eq('payment_status', 'completed')
+      .eq('amount', amountToApply)
+      .limit(1);
+
+    if (paymentDate) {
+      query = query.eq('payment_date', paymentDate);
+    }
+
+    const { data: matchingPayment, error: matchingPaymentError } = await query;
+
+    if (matchingPaymentError) throw matchingPaymentError;
+    if (matchingPayment?.length) return matchingPayment[0];
 
     const { data, error } = await supabase
       .from('payments')
-      .select('id')
+      .select('id,payment_number,payment_date,reference_number,amount')
       .eq('company_id', companyId)
       .eq('invoice_id', invoice.id)
       .eq('contract_id', contract.id)
@@ -1403,7 +1464,7 @@ export default function ExcelPaymentImport() {
       .limit(1);
 
     if (error) throw error;
-    return Boolean(data?.length);
+    return data?.[0] || null;
   };
 
   const createTrafficViolationsIfNeeded = async (row: ParsedPaymentRow, contract: MatchedContract, file: ParsedExcelFile) => {
@@ -1510,19 +1571,38 @@ export default function ExcelPaymentImport() {
         if (created) invoicesCreated += 1;
 
         const monthDate = parseMonthToDate(row.month);
-        const invoiceForPayment = monthDate
+        const alignedInvoice = monthDate
           ? await alignInvoiceDueDateToExcelMonth({ companyId, invoice, monthDate })
           : invoice;
+
+        if (paymentAmount > 0) {
+          const existingExcelPayment = await hasHistoricalExcelPayment(alignedInvoice, row, contract, file, paymentAmount);
+          if (existingExcelPayment) {
+            paymentReport.push({
+              month: row.month,
+              amount: Number(existingExcelPayment.amount || paymentAmount),
+              customerName: getContractCustomerDisplayName(contract),
+              contractNumber: contract.contract_number,
+              contractPath: `/contracts/${encodeURIComponent(contract.contract_number)}`,
+              invoiceId: alignedInvoice.id,
+              invoiceNumber: alignedInvoice.invoice_number || '-',
+              paymentId: String(existingExcelPayment.id || ''),
+              paymentNumber: String(existingExcelPayment.payment_number || '-'),
+              paymentDate: String(existingExcelPayment.payment_date || parseMonthToDate(row.month) || alignedInvoice.invoice_date || alignedInvoice.due_date || ''),
+              referenceNumber: String(existingExcelPayment.reference_number || '-'),
+              destination: `payments.customer_id=${contract.customer_id} / payments.contract_id=${contract.id} / payments.invoice_id=${alignedInvoice.id}`,
+            });
+            payments += 1;
+            continue;
+          }
+        }
+
+        const invoiceForPayment = await calculateInvoiceBalanceFromActivePayments(companyId, alignedInvoice);
 
         const invoiceBalance = Number(invoiceForPayment.balance_due ?? invoiceForPayment.total_amount ?? 0);
         const amountToApply = Math.min(paymentAmount, Math.max(invoiceBalance, 0));
 
         if (amountToApply > 0) {
-          if (await hasHistoricalExcelPayment(invoiceForPayment, row, contract, file)) {
-            skipped += 1;
-            continue;
-          }
-
           const stableReference = buildHistoricalPaymentReference({
             fileName: file.fileName,
             contractId: contract.id,
