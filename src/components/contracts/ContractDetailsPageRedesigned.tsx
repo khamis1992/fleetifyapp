@@ -2225,7 +2225,7 @@ const ContractDetailsPageRedesigned = () => {
     try {
       const { data: invoice, error: invoiceError } = await supabase
         .from('invoices')
-        .select('id, company_id, status, payment_status, notes, invoice_number, invoice_date, due_date')
+        .select('id, company_id, status, payment_status, notes, invoice_number, invoice_date, due_date, paid_amount, balance_due, total_amount, journal_entry_id')
         .eq('id', invoiceToCancel.id)
         .eq('company_id', invoiceToCancel.company_id || companyId)
         .maybeSingle();
@@ -2243,47 +2243,71 @@ const ContractDetailsPageRedesigned = () => {
         return;
       }
 
-      const { data: completedPayments, error: paymentsError } = await supabase
+      const { data: invoicePayments, error: paymentsError } = await supabase
         .from('payments')
-        .select('id, payment_status')
+        .select('id, payment_number, amount, payment_status, transaction_type')
         .eq('invoice_id', invoice.id)
-        .in('payment_status', ['completed', 'paid', 'confirmed', 'cleared'])
-        .limit(1);
+        .eq('company_id', invoice.company_id);
 
       if (paymentsError) throw paymentsError;
-      if (completedPayments && completedPayments.length > 0) {
-        throw new Error('لا يمكن إلغاء فاتورة لديها دفعات مكتملة. قم بإلغاء الدفعات المرتبطة أولاً.');
+
+      const ignoredPaymentStatuses = new Set(['cancelled', 'canceled', 'failed', 'voided', 'reversed', 'refunded']);
+      const activePayments = (invoicePayments || []).filter((payment) => {
+        const status = String(payment.payment_status || '').toLowerCase();
+        const transactionType = String(payment.transaction_type || 'receipt').toLowerCase();
+        return transactionType === 'receipt' && !ignoredPaymentStatuses.has(status);
+      });
+
+      if (activePayments.length > 0) {
+        const paymentSummary = activePayments
+          .slice(0, 3)
+          .map((payment) => `${payment.payment_number || 'دفعة'} (${formatCurrency(Number(payment.amount || 0))})`)
+          .join('، ');
+        throw new Error(`لا يمكن إلغاء الفاتورة لأن عليها دفعات غير ملغاة: ${paymentSummary}. ألغِ الدفعات المرتبطة أولاً ثم أعد المحاولة.`);
       }
 
       const previousNotes = invoice.notes ? `${invoice.notes}\n` : '';
       const cancellationNote = `تم إلغاء الفاتورة من صفحة تفاصيل العقد بتاريخ ${new Date().toISOString()}`;
-      const contractStartDate = contract?.start_date;
-      const dateCorrections =
-        contractStartDate
-          ? {
-              ...(invoice.invoice_date && invoice.invoice_date < contractStartDate
-                ? { invoice_date: contractStartDate }
-                : {}),
-              ...(invoice.due_date && invoice.due_date < contractStartDate
-                ? { due_date: contractStartDate }
-                : {}),
-            }
-          : {};
 
-      const { error } = await supabase
-        .from('invoices')
-        .update({
-          status: 'cancelled',
-          payment_status: 'cancelled',
-          balance_due: 0,
-          notes: `${previousNotes}${cancellationNote}`,
-          updated_at: new Date().toISOString(),
-          ...dateCorrections,
-        })
-        .eq('id', invoice.id)
-        .eq('company_id', invoice.company_id);
+      if (invoice.journal_entry_id) {
+        const { error } = await (supabase as any).rpc('cancel_invoice_with_reversal', {
+          p_invoice_id: invoice.id,
+          p_company_id: invoice.company_id,
+          p_reason: cancellationNote,
+        });
 
-      if (error) throw error;
+        if (error) {
+          throw error;
+        }
+      } else {
+        const contractStartDate = contract?.start_date;
+        const dateCorrections =
+          contractStartDate
+            ? {
+                ...(invoice.invoice_date && invoice.invoice_date < contractStartDate
+                  ? { invoice_date: contractStartDate }
+                  : {}),
+                ...(invoice.due_date && invoice.due_date < contractStartDate
+                  ? { due_date: contractStartDate }
+                  : {}),
+              }
+            : {};
+
+        const { error } = await supabase
+          .from('invoices')
+          .update({
+            status: 'cancelled',
+            payment_status: 'cancelled',
+            balance_due: 0,
+            notes: `${previousNotes}${cancellationNote}`,
+            updated_at: new Date().toISOString(),
+            ...dateCorrections,
+          })
+          .eq('id', invoice.id)
+          .eq('company_id', invoice.company_id);
+
+        if (error) throw error;
+      }
 
       toast({
         title: 'تم إلغاء الفاتورة',
@@ -2295,9 +2319,23 @@ const ContractDetailsPageRedesigned = () => {
       queryClient.invalidateQueries({ queryKey: ['payment-schedules'] });
     } catch (error) {
       console.error('Error cancelling invoice:', error);
+      const rawMessage =
+        error instanceof Error
+          ? error.message
+          : typeof error === 'object' && error !== null && 'message' in error
+            ? String((error as { message?: unknown }).message || '')
+            : '';
+      const cancellationErrorMessage =
+        rawMessage.includes('Could not find the function public.cancel_invoice_with_reversal')
+          || rawMessage.includes('cancel_invoice_with_reversal')
+          || rawMessage.includes('schema cache')
+          ? 'إلغاء الفاتورة المرتبطة بقيد يومية يحتاج تطبيق تحديث قاعدة البيانات الجديد أولاً حتى يتم عكس القيد ثم إلغاء الفاتورة.'
+          : rawMessage.includes('Invoices with payments or journal entries cannot be deleted')
+            ? 'لا يمكن إلغاء الفاتورة بتعديل مباشر لأنها مرتبطة بدفعة أو قيد يومية. ألغِ الدفعات أولاً، ثم استخدم مسار عكس القيد لإلغاء الفاتورة.'
+            : rawMessage || 'حدث خطأ أثناء إلغاء الفاتورة';
       toast({
         title: 'خطأ في إلغاء الفاتورة',
-        description: error instanceof Error ? error.message : 'حدث خطأ أثناء إلغاء الفاتورة',
+        description: cancellationErrorMessage,
         variant: 'destructive',
       });
     } finally {
@@ -2305,7 +2343,7 @@ const ContractDetailsPageRedesigned = () => {
       setIsCancelInvoiceDialogOpen(false);
       setInvoiceToCancel(null);
     }
-  }, [companyId, contract?.start_date, invoiceToCancel, queryClient, toast]);
+  }, [companyId, contract?.start_date, formatCurrency, invoiceToCancel, queryClient, toast]);
 
   const handleRenew = useCallback(() => {
     setIsRenewalDialogOpen(true);

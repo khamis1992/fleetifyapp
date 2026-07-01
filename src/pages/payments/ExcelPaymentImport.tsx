@@ -939,11 +939,26 @@ const createOrFindMonthlyInvoice = async ({
   const invoiceDate = parseMonthToDate(row.month);
   if (!invoiceDate) throw new Error(`صيغة الشهر غير صحيحة: ${row.month}`);
 
+  const contractStartDate = contract.start_date;
+  const contractEndDate = contract.end_date;
+  const invoiceMonth = invoiceDate.slice(0, 7);
+  const startsAfterInvoiceMonth = contractStartDate && contractStartDate.slice(0, 7) > invoiceMonth;
+  const endsBeforeInvoiceMonth = contractEndDate && contractEndDate.slice(0, 7) < invoiceMonth;
+
+  if (startsAfterInvoiceMonth || endsBeforeInvoiceMonth) {
+    return { invoice: null, created: false };
+  }
+
   const existingInvoice = await findExistingMonthlyInvoice(companyId, contract.id, invoiceDate);
   if (existingInvoice) return { invoice: existingInvoice, created: false };
 
   const amount = monthlyRent || contract.monthly_amount || row.remainingAmount || row.paymentAmount || 0;
   if (amount <= 0) throw new Error(`لا يمكن إنشاء فاتورة للشهر ${row.month} بدون قيمة إيجار.`);
+
+  const effectiveInvoiceDate =
+    contractStartDate && contractStartDate.slice(0, 7) === invoiceMonth && contractStartDate > invoiceDate
+      ? contractStartDate
+      : invoiceDate;
 
   const invoiceNumber = `HIST-${contract.contract_number}-${invoiceDate.slice(0, 7).replace('-', '')}`;
   const insertPayload = {
@@ -951,14 +966,14 @@ const createOrFindMonthlyInvoice = async ({
     customer_id: contract.customer_id,
     contract_id: contract.id,
     invoice_number: invoiceNumber,
-    invoice_date: invoiceDate,
-    due_date: invoiceDate,
-    invoice_type: 'rental',
+    invoice_date: effectiveInvoiceDate,
+    due_date: effectiveInvoiceDate,
+    invoice_type: 'sales',
     subtotal: amount,
     total_amount: amount,
     paid_amount: 0,
     balance_due: amount,
-    status: 'pending',
+    status: 'draft',
     payment_status: 'unpaid',
     currency: 'QAR',
     notes: `فاتورة إيجار تاريخية مستخرجة من ملف Excel للشهر ${row.month}`,
@@ -1599,8 +1614,17 @@ export default function ExcelPaymentImport() {
 
         const invoiceForPayment = await calculateInvoiceBalanceFromActivePayments(companyId, alignedInvoice);
 
-        const invoiceBalance = Number(invoiceForPayment.balance_due ?? invoiceForPayment.total_amount ?? 0);
-        const amountToApply = Math.min(paymentAmount, Math.max(invoiceBalance, 0));
+        const invoiceBalance = Math.max(Number(invoiceForPayment.balance_due ?? invoiceForPayment.total_amount ?? 0), 0);
+        if (paymentAmount > invoiceBalance + 0.01) {
+          const paidAmount = Number(invoiceForPayment.paid_amount || 0);
+          skippedReasons.push(
+            `فاتورة شهر ${row.month} لديها دفعات سابقة بقيمة ${formatCurrency(paidAmount)} ورصيدها المتبقي ${formatCurrency(invoiceBalance)} أقل من مبلغ الملف ${formatCurrency(paymentAmount)}. لم يتم تسجيل دفعة بمبلغ مختلف عن ملف Excel؛ راجع الدفعات السابقة أو صحح الفاتورة.`
+          );
+          skipped += 1;
+          continue;
+        }
+
+        const amountToApply = paymentAmount;
 
         if (amountToApply > 0) {
           const stableReference = buildHistoricalPaymentReference({
