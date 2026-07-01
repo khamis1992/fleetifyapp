@@ -76,23 +76,34 @@ const SyncPaymentsToLedger: React.FC = () => {
       if (entryError) throw entryError;
 
       // Create lines
-      const lines = [];
-      
+      const lines: Array<{
+        journal_entry_id: string;
+        account_id: string;
+        debit_amount: number;
+        credit_amount: number;
+        line_number: number;
+        line_description: string;
+      }> = [];
+
+      let lineNum = 1;
+
       // Revenue recognition
       lines.push({
         journal_entry_id: journalEntry.id,
         account_id: arAccount!.id,
-        debit: payment.rent_amount,
-        credit: 0,
-        description: `إيراد إيجار - ${payment.customer_name}`
+        debit_amount: payment.rent_amount,
+        credit_amount: 0,
+        line_number: lineNum++,
+        line_description: `إيراد إيجار - ${payment.customer_name}`
       });
-      
+
       lines.push({
         journal_entry_id: journalEntry.id,
         account_id: rentalRevenueAccount!.id,
-        debit: 0,
-        credit: payment.rent_amount,
-        description: `إيراد إيجار - ${payment.customer_name}`
+        debit_amount: 0,
+        credit_amount: payment.rent_amount,
+        line_number: lineNum++,
+        line_description: `إيراد إيجار - ${payment.customer_name}`
       });
 
       // Fine (if any)
@@ -100,17 +111,19 @@ const SyncPaymentsToLedger: React.FC = () => {
         lines.push({
           journal_entry_id: journalEntry.id,
           account_id: arAccount!.id,
-          debit: payment.fine,
-          credit: 0,
-          description: `غرامة تأخير - ${payment.customer_name}`
+          debit_amount: payment.fine,
+          credit_amount: 0,
+          line_number: lineNum++,
+          line_description: `غرامة تأخير - ${payment.customer_name}`
         });
-        
+
         lines.push({
           journal_entry_id: journalEntry.id,
           account_id: fineRevenueAccount!.id,
-          debit: 0,
-          credit: payment.fine,
-          description: `غرامة تأخير - ${payment.customer_name}`
+          debit_amount: 0,
+          credit_amount: payment.fine,
+          line_number: lineNum++,
+          line_description: `غرامة تأخير - ${payment.customer_name}`
         });
       }
 
@@ -118,17 +131,19 @@ const SyncPaymentsToLedger: React.FC = () => {
       lines.push({
         journal_entry_id: journalEntry.id,
         account_id: cashAccount!.id,
-        debit: payment.total_paid,
-        credit: 0,
-        description: `استلام دفعة - ${payment.customer_name}`
+        debit_amount: payment.total_paid,
+        credit_amount: 0,
+        line_number: lineNum++,
+        line_description: `استلام دفعة - ${payment.customer_name}`
       });
-      
+
       lines.push({
         journal_entry_id: journalEntry.id,
         account_id: arAccount!.id,
-        debit: 0,
-        credit: payment.total_paid,
-        description: `استلام دفعة - ${payment.customer_name}`
+        debit_amount: 0,
+        credit_amount: payment.total_paid,
+        line_number: lineNum++,
+        line_description: `استلام دفعة - ${payment.customer_name}`
       });
 
       const { error: linesError } = await supabase

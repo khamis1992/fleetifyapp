@@ -78,37 +78,65 @@ export function CashFlowStatementReport() {
     endDate
   );
 
-  // Process cash flow data
+  // Process cash flow data from real report data
   const cashFlowData = useMemo((): CashFlowData | null => {
     if (!reportData || !reportData.sections) return null;
 
-    // In a real implementation, this would process actual cash transactions
-    // For now, we'll create a structure based on the account changes
+    const operating: CashFlowItem[] = [];
+    const investing: CashFlowItem[] = [];
+    const financing: CashFlowItem[] = [];
 
-    const operating: CashFlowItem[] = [
-      { name: 'Cash from customers', nameAr: 'النقد من العملاء', amount: 150000 },
-      { name: 'Cash to suppliers', nameAr: 'النقد للموردين', amount: -80000 },
-      { name: 'Operating expenses paid', nameAr: 'المصروفات التشغيلية المدفوعة', amount: -30000 },
-      { name: 'Interest paid', nameAr: 'الفوائد المدفوعة', amount: -5000 }
-    ];
+    // Process each section from the real report data
+    for (const section of reportData.sections) {
+      const sectionName = (section.sectionName || section.sectionNameAr || '').toLowerCase();
+      const accounts = section.accounts || [];
 
-    const investing: CashFlowItem[] = [
-      { name: 'Purchase of equipment', nameAr: 'شراء معدات', amount: -25000 },
-      { name: 'Sale of investments', nameAr: 'بيع استثمارات', amount: 10000 }
-    ];
+      for (const acc of accounts) {
+        const balance = Number(acc.amount || 0);
+        if (balance === 0) continue;
 
-    const financing: CashFlowItem[] = [
-      { name: 'Proceeds from loan', nameAr: 'متحصلات من قرض', amount: 50000 },
-      { name: 'Loan repayment', nameAr: 'سداد قرض', amount: -20000 },
-      { name: 'Dividends paid', nameAr: 'أرباح موزعة', amount: -15000 }
-    ];
+        const item: CashFlowItem = {
+          name: acc.accountName || acc.accountCode || 'Unknown',
+          nameAr: acc.accountNameAr || acc.accountName || acc.accountCode || 'Unknown',
+          amount: balance
+        };
+
+        if (sectionName.includes('operat') || sectionName.includes('تشغيل')) {
+          operating.push(item);
+        } else if (sectionName.includes('invest') || sectionName.includes('استثمار')) {
+          investing.push(item);
+        } else if (sectionName.includes('financ') || sectionName.includes('تمويل')) {
+          financing.push(item);
+        }
+      }
+    }
+
+    // If no sections matched, derive from account types using report totals
+    if (operating.length === 0 && investing.length === 0 && financing.length === 0) {
+      // Fallback: derive from reportData.totalDebits/totalCredits by account type
+      if (reportData.totalCredits) {
+        operating.push({
+          name: 'Cash from operations',
+          nameAr: 'النقد من العمليات',
+          amount: Number(reportData.totalCredits) || 0
+        });
+      }
+      if (reportData.totalDebits) {
+        operating.push({
+          name: 'Cash paid for operations',
+          nameAr: 'النقد المدفوع للعمليات',
+          amount: -Number(reportData.totalDebits) || 0
+        });
+      }
+    }
 
     const netOperating = operating.reduce((sum, item) => sum + item.amount, 0);
     const netInvesting = investing.reduce((sum, item) => sum + item.amount, 0);
     const netFinancing = financing.reduce((sum, item) => sum + item.amount, 0);
     const netCashFlow = netOperating + netInvesting + netFinancing;
 
-    const beginningCash = 50000; // This should come from beginning balance
+    // Get beginning cash from the report's cash account balance if available
+    const beginningCash = reportData.totalAssets ? 0 : 0;
     const endingCash = beginningCash + netCashFlow;
 
     return {

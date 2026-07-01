@@ -34,7 +34,6 @@ export const useEnhancedCustomerFinancialSummary = (customerId?: string) => {
   return useQuery({
     queryKey: getQueryKey(['enhanced-customer-financial-summary', customerId]),
     queryFn: async () => {
-      Sentry.addBreadcrumb({ category: "enhancedfinancialreports", message: "Fetching data", level: "info" });
       if (!companyId || !customerId) return null;
 
       // Get customer basic info
@@ -46,34 +45,64 @@ export const useEnhancedCustomerFinancialSummary = (customerId?: string) => {
 
       if (customerError) throw customerError;
 
-      const customerName = customer.customer_type === 'individual' 
+      const customerName = customer.customer_type === 'individual'
         ? `${customer.first_name || ''} ${customer.last_name || ''}`.trim()
         : customer.company_name || '';
 
-      // Mock enhanced data for now
-      const mockData = {
+      // Get customer's invoices for balance calculation
+      const { data: invoices } = await supabase
+        .from('invoices')
+        .select('id, total_amount, paid_amount, balance_due, payment_status, due_date, invoice_date')
+        .eq('company_id', companyId)
+        .eq('customer_id', customerId)
+        .order('invoice_date', { ascending: false });
+
+      // Get customer's payments
+      const { data: payments } = await supabase
+        .from('payments')
+        .select('id, amount, payment_date, payment_status')
+        .eq('company_id', companyId)
+        .eq('customer_id', customerId)
+        .eq('payment_status', 'completed')
+        .order('payment_date', { ascending: false });
+
+      const totalOutstanding = (invoices || []).reduce((sum, inv) => sum + Number(inv.balance_due || 0), 0);
+      const now = new Date();
+      const overdueAmount = (invoices || [])
+        .filter(inv => inv.due_date && new Date(inv.due_date) < now && Number(inv.balance_due || 0) > 0)
+        .reduce((sum, inv) => sum + Number(inv.balance_due || 0), 0);
+      const currentAmount = totalOutstanding - overdueAmount;
+
+      const totalPayments = (payments || []).length;
+      const lastPayment = payments?.[0];
+      const lastPaymentAmount = lastPayment ? Number(lastPayment.amount) : 0;
+
+      return {
         customer_id: customerId,
         customer_name: customerName,
         customer_type: customer.customer_type === 'corporate' ? 'company' : customer.customer_type,
         total_balance: {
-          remaining_balance: 5000,
-          overdue_amount: 1000,
-          current_amount: 2000,
-          aging_30_days: 800,
-          aging_60_days: 200,
+          remaining_balance: totalOutstanding,
+          overdue_amount: overdueAmount,
+          current_amount: currentAmount,
+          aging_30_days: 0,
+          aging_60_days: 0,
           aging_90_days: 0,
           aging_over_90_days: 0,
         },
         contracts_balances: [],
-        recent_obligations: [],
+        recent_obligations: (invoices || []).slice(0, 5).map(inv => ({
+          id: inv.id,
+          amount: Number(inv.total_amount || 0),
+          due_date: inv.due_date,
+          status: inv.payment_status,
+        })),
         payment_history_summary: {
-          total_payments: 10,
-          last_payment_amount: 500,
-          average_days_to_pay: 15,
+          total_payments: totalPayments,
+          last_payment_amount: lastPaymentAmount,
+          average_days_to_pay: 0,
         },
       };
-
-      return mockData;
     },
     enabled: !!companyId && !!customerId,
   });
@@ -85,29 +114,59 @@ export const useCustomerFinancialSummary = (customerId?: string) => {
   return useQuery({
     queryKey: getQueryKey(['customer-financial-summary', customerId]),
     queryFn: async () => {
-      Sentry.addBreadcrumb({ category: "enhancedfinancialreports", message: "Fetching data", level: "info" });
       if (!companyId || !customerId) return null;
 
-      // Mock data for now
+      const { data: customer, error } = await supabase
+        .from('customers')
+        .select('id, first_name, last_name, company_name, customer_type')
+        .eq('id', customerId)
+        .single();
+
+      if (error) throw error;
+
+      const customerName = customer.customer_type === 'individual'
+        ? `${customer.first_name || ''} ${customer.last_name || ''}`.trim()
+        : customer.company_name || '';
+
+      const { data: invoices } = await supabase
+        .from('invoices')
+        .select('id, total_amount, paid_amount, balance_due, payment_status, due_date')
+        .eq('company_id', companyId)
+        .eq('customer_id', customerId);
+
+      const { data: payments } = await supabase
+        .from('payments')
+        .select('id, amount, payment_date')
+        .eq('company_id', companyId)
+        .eq('customer_id', customerId)
+        .eq('payment_status', 'completed')
+        .order('payment_date', { ascending: false });
+
+      const totalOutstanding = (invoices || []).reduce((sum, inv) => sum + Number(inv.balance_due || 0), 0);
+      const now = new Date();
+      const overdueAmount = (invoices || [])
+        .filter(inv => inv.due_date && new Date(inv.due_date) < now && Number(inv.balance_due || 0) > 0)
+        .reduce((sum, inv) => sum + Number(inv.balance_due || 0), 0);
+
       return {
         customer_id: customerId,
-        customer_name: 'Mock Customer',
-        customer_type: 'individual' as const,
+        customer_name: customerName,
+        customer_type: (customer.customer_type || 'individual') as 'individual',
         total_balance: {
-          remaining_balance: 5000,
-          overdue_amount: 1000,
-          current_amount: 2000,
-          aging_30_days: 800,
-          aging_60_days: 200,
+          remaining_balance: totalOutstanding,
+          overdue_amount: overdueAmount,
+          current_amount: totalOutstanding - overdueAmount,
+          aging_30_days: 0,
+          aging_60_days: 0,
           aging_90_days: 0,
           aging_over_90_days: 0,
         },
         contracts_balances: [],
         recent_obligations: [],
         payment_history_summary: {
-          total_payments: 10,
-          last_payment_amount: 500,
-          average_days_to_pay: 15,
+          total_payments: (payments || []).length,
+          last_payment_amount: payments?.[0] ? Number(payments[0].amount) : 0,
+          average_days_to_pay: 0,
         },
       };
     },
@@ -121,42 +180,50 @@ export const useCustomersWithAging = () => {
   return useQuery({
     queryKey: getQueryKey(['customers-with-aging']),
     queryFn: async () => {
-      Sentry.addBreadcrumb({ category: "enhancedfinancialreports", message: "Fetching data", level: "info" });
       if (!companyId) return [];
 
-      // Mock data for now
-      return [
-        {
-          id: '1',
-          customer_id: '1',
-          company_id: companyId,
-          analysis_date: new Date().toISOString().split('T')[0],
-          current_amount: 2000,
-          days_30: 800,
-          days_60: 200,
-          days_90: 0,
-          over_90_days: 0,
-          total_outstanding: 3000,
-          overdue_percentage: 33.33,
-          payment_trend: 'stable',
-          risk_level: 'medium' as const,
-          credit_limit: 10000,
-          available_credit: 7000,
-          last_payment_date: '2024-01-15',
-          average_days_to_pay: 15,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-          customers: {
-            id: '1',
-            first_name: 'أحمد',
-            last_name: 'محمد',
-            company_name: null,
-            customer_type: 'individual' as const,
-            phone: '+965-12345678',
-            email: 'ahmed@example.com'
-          }
-        }
-      ];
+      // Fetch real customer aging analysis from the database
+      const { data: agingData, error } = await supabase
+        .from('customer_aging_analysis')
+        .select(`
+          id,
+          customer_id,
+          company_id,
+          analysis_date,
+          current_amount,
+          days_30,
+          days_60,
+          days_90,
+          over_90_days,
+          total_outstanding,
+          overdue_percentage,
+          payment_trend,
+          risk_level,
+          credit_limit,
+          available_credit,
+          last_payment_date,
+          average_days_to_pay,
+          created_at,
+          updated_at,
+          customers (
+            id,
+            first_name,
+            last_name,
+            company_name,
+            customer_type,
+            phone,
+            email
+          )
+        `)
+        .eq('company_id', companyId)
+        .order('total_outstanding', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching customer aging:', error);
+        return [];
+      }
+
+      return agingData || [];
     },
     enabled: !!companyId,
   });
@@ -175,49 +242,64 @@ export const useFinancialObligationsWithDetails = (filters?: {
   return useQuery({
     queryKey: getQueryKey(['financial-obligations-with-details', JSON.stringify(filters)]),
     queryFn: async () => {
-      Sentry.addBreadcrumb({ category: "enhancedfinancialreports", message: "Fetching data", level: "info" });
       if (!companyId) return [];
 
-      // Mock data for now
-      return [
-        {
-          id: '1',
-          company_id: companyId,
-          contract_id: '1',
-          customer_id: '1',
-          obligation_type: 'installment' as const,
-          amount: 2000,
-          original_amount: 2000,
-          due_date: '2024-02-01',
-          status: 'overdue' as const,
-          paid_amount: 0,
-          remaining_amount: 2000,
-          days_overdue: 15,
-          obligation_number: 'OBL-001',
-          description: 'قسط شهري',
-          reference_number: 'REF-001',
-          invoice_id: null,
-          journal_entry_id: null,
-          payment_method: null,
-          notes: '',
-          created_by: null,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-          customers: {
-            id: '1',
-            first_name: 'أحمد',
-            last_name: 'محمد',
-            company_name: null,
-            customer_type: 'individual' as const
-          },
-          contracts: {
-            id: '1',
-            contract_number: 'CNT-001',
-            contract_amount: 50000,
-            status: 'active'
-          }
-        }
-      ];
+      // Fetch real payment installments / obligations
+      let query = supabase
+        .from('payment_installments')
+        .select(`
+          id,
+          company_id,
+          contract_id,
+          customer_id,
+          installment_amount,
+          original_amount,
+          due_date,
+          payment_status,
+          paid_amount,
+          remaining_amount,
+          days_overdue,
+          installment_number,
+          notes,
+          created_at,
+          updated_at,
+          customers (
+            id,
+            first_name,
+            last_name,
+            company_name,
+            customer_type
+          ),
+          contracts (
+            id,
+            contract_number,
+            contract_amount,
+            status
+          )
+        `)
+        .eq('company_id', companyId);
+
+      if (filters?.customerId) {
+        query = query.eq('customer_id', filters.customerId);
+      }
+      if (filters?.contractId) {
+        query = query.eq('contract_id', filters.contractId);
+      }
+      if (filters?.status) {
+        query = query.eq('payment_status', filters.status);
+      }
+      if (filters?.overdue) {
+        query = query.gt('days_overdue', 0);
+      }
+
+      const { data, error } = await query.order('due_date', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching financial obligations:', error);
+        return [];
+      }
+
+      return data || [];
     },
     enabled: !!companyId,
   });
@@ -532,33 +614,64 @@ export const useDetailedCustomerEnhancedData = (customerId?: string) => {
   return useQuery({
     queryKey: getQueryKey(['detailed-customer-enhanced-data', customerId]),
     queryFn: async () => {
-      Sentry.addBreadcrumb({ category: "enhancedfinancialreports", message: "Fetching data", level: "info" });
       if (!companyId || !customerId) return null;
 
-      // Return mock data for now
+      const { data: customer, error } = await supabase
+        .from('customers')
+        .select('id, first_name, last_name, company_name, customer_type')
+        .eq('id', customerId)
+        .single();
+
+      if (error) throw error;
+
+      const customerName = customer.customer_type === 'individual'
+        ? `${customer.first_name || ''} ${customer.last_name || ''}`.trim()
+        : customer.company_name || '';
+
+      const { data: invoices } = await supabase
+        .from('invoices')
+        .select('id, total_amount, paid_amount, balance_due, payment_status, due_date')
+        .eq('company_id', companyId)
+        .eq('customer_id', customerId);
+
+      const { data: payments } = await supabase
+        .from('payments')
+        .select('id, amount, payment_date')
+        .eq('company_id', companyId)
+        .eq('customer_id', customerId)
+        .eq('payment_status', 'completed')
+        .order('payment_date', { ascending: false });
+
+      const totalBalance = (invoices || []).reduce((sum, inv) => sum + Number(inv.balance_due || 0), 0);
+      const now = new Date();
+      const overdueAmount = (invoices || [])
+        .filter(inv => inv.due_date && new Date(inv.due_date) < now && Number(inv.balance_due || 0) > 0)
+        .reduce((sum, inv) => sum + Number(inv.balance_due || 0), 0);
+      const currentAmount = totalBalance - overdueAmount;
+
       return {
         customer_id: customerId,
-        customer_name: 'Mock Customer',
-        customer_type: 'individual' as const,
-        total_balance: 5000,
-        overdue_amount: 1000,
-        current_amount: 2000,
+        customer_name: customerName,
+        customer_type: (customer.customer_type || 'individual') as string,
+        total_balance: totalBalance,
+        overdue_amount: overdueAmount,
+        current_amount: currentAmount,
         aging_analysis: {
-          current: 2000,
-          days_30: 800,
-          days_60: 200,
+          current: currentAmount,
+          days_30: 0,
+          days_60: 0,
           days_90: 0,
           over_90: 0
         },
         payment_history: {
-          total_payments: 10,
-          last_payment_amount: 500,
-          average_days_to_pay: 15
+          total_payments: (payments || []).length,
+          last_payment_amount: payments?.[0] ? Number(payments[0].amount) : 0,
+          average_days_to_pay: 0
         },
         credit_status: {
-          credit_limit: 10000,
-          available_credit: 7000,
-          risk_level: 'medium'
+          credit_limit: 0,
+          available_credit: 0,
+          risk_level: overdueAmount > 0 ? 'medium' : 'low'
         }
       };
     },
