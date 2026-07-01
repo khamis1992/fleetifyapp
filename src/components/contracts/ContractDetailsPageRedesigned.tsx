@@ -1894,7 +1894,7 @@ const ContractDetailsPageRedesigned = () => {
   const { formatCurrency } = useCurrencyFormatter();
 
   // State
-  const [activeTab, setActiveTab] = useState('contract');
+  const [activeTab, setActiveTab] = useState('financial');
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
   const [isPayDialogOpen, setIsPayDialogOpen] = useState(false);
   const [isPreviewDialogOpen, setIsPreviewDialogOpen] = useState(false);
@@ -2685,11 +2685,11 @@ const ContractDetailsPageRedesigned = () => {
   }
 
   const tabs = [
-    { value: 'contract', label: 'العقد', icon: FileCheck },
     { value: 'financial', label: 'المالي', icon: Receipt },
     { value: 'vehicle', label: 'المركبة', icon: Car },
     { value: 'violations', label: 'المخالفات', icon: AlertCircle },
     { value: 'documents', label: 'المستندات', icon: Folder },
+    { value: 'contract', label: 'العقد', icon: FileCheck },
   ];
 
   const contractWorkbenchContent = (

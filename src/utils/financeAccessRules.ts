@@ -9,6 +9,7 @@ export type FinanceActionId =
   | "finance.payment.edit_date"
   | "finance.payment.edit_bank"
   | "finance.payment.cancel"
+  | "finance.payment.cancel_own"
   | "finance.payment.reconcile"
   | "finance.journal.create_draft"
   | "finance.journal.submit_for_review"
@@ -176,6 +177,15 @@ export const FINANCE_PERMISSION_MATRIX: FinancePermissionDefinition[] = [
     description: "إلغاء دفعة مكتملة بقيد عكسي وسجل موافقة.",
     level: "approve",
     fallbackPermissions: ["finance.payments.write"],
+    risk: "critical",
+  },
+  {
+    id: "finance.payment.cancel_own",
+    entity: "payment",
+    label: "تجاوز فصل المهام لإلغاء دفعة",
+    description: "يسمح للمدير بإلغاء دفعة أنشأها نفس المستخدم عند تصحيح أخطاء مالية موثقة.",
+    level: "admin",
+    fallbackPermissions: [],
     risk: "critical",
   },
   {
@@ -376,6 +386,7 @@ export const SEGREGATION_OF_DUTIES_RULES: SegregationOfDutiesRule[] = [
     action: "finance.payment.cancel",
     label: "مسجل الدفعة لا يلغيها",
     description: "إلغاء الدفعات المكتملة يحتاج مراجعة منفصلة عن منفذ التحصيل.",
+    bypassPermission: "finance.payment.cancel_own",
   },
   {
     id: "invoice_creator_cannot_cancel",

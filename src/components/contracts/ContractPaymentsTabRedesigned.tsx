@@ -546,8 +546,8 @@ const PaymentFilters = ({
           <SelectValue placeholder="الترتيب" />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="date-desc">الأحدث أولاً</SelectItem>
-          <SelectItem value="date-asc">الأقدم أولاً</SelectItem>
+          <SelectItem value="date-asc">الاستحقاق: الأقدم أولاً</SelectItem>
+          <SelectItem value="date-desc">الاستحقاق: الأحدث أولاً</SelectItem>
           <SelectItem value="amount-desc">الأعلى سعراً</SelectItem>
           <SelectItem value="amount-asc">الأقل سعراً</SelectItem>
         </SelectContent>
@@ -593,7 +593,7 @@ export const ContractPaymentsTabRedesigned = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [methodFilter, setMethodFilter] = useState('all');
-  const [sortOption, setSortOption] = useState('date-desc');
+  const [sortOption, setSortOption] = useState('date-asc');
   const [viewMode, setViewMode] = useState<'grid' | 'table'>('table');
 
   // Fetch payments with caching for better performance
@@ -619,7 +619,11 @@ export const ContractPaymentsTabRedesigned = ({
         .eq('company_id', companyId);
 
       if (showAllPayments) {
-        query = query.eq('contract_id', contractId);
+        if (invoiceIds.length) {
+          query = query.or(`contract_id.eq.${contractId},invoice_id.in.(${invoiceIds.join(',')})`);
+        } else {
+          query = query.eq('contract_id', contractId);
+        }
       } else {
         if (!invoiceIds.length) return [];
         query = query.in('invoice_id', invoiceIds);
@@ -651,8 +655,11 @@ export const ContractPaymentsTabRedesigned = ({
       );
     }
 
-    // Apply status filter
-    if (statusFilter !== 'all') {
+    // Apply status filter. The default "all" view keeps cancelled payments out of
+    // the timeline so historical reversals do not break the contract sequence.
+    if (statusFilter === 'all') {
+      filtered = filtered.filter(p => p.payment_status !== 'cancelled');
+    } else {
       filtered = filtered.filter(p => p.payment_status === statusFilter);
     }
 
@@ -661,19 +668,19 @@ export const ContractPaymentsTabRedesigned = ({
       filtered = filtered.filter(p => p.payment_method === methodFilter);
     }
 
+    const getDueSortTime = (payment: Payment) => {
+      const sourceDate = payment.invoice?.due_date || payment.payment_date;
+      const time = new Date(sourceDate).getTime();
+      return Number.isFinite(time) ? time : Number.MAX_SAFE_INTEGER;
+    };
+
     // Apply sorting
     filtered.sort((a, b) => {
       switch (sortOption) {
         case 'date-desc':
-          // ترتيب حسب تاريخ الاستحقاق (الأحدث أولاً)، وإذا لم يوجد نستخدم تاريخ الدفع
-          const dueDateB = b.invoice?.due_date ? new Date(b.invoice.due_date).getTime() : new Date(b.payment_date).getTime();
-          const dueDateA = a.invoice?.due_date ? new Date(a.invoice.due_date).getTime() : new Date(a.payment_date).getTime();
-          return dueDateB - dueDateA;
+          return getDueSortTime(b) - getDueSortTime(a);
         case 'date-asc':
-          // ترتيب حسب تاريخ الاستحقاق (الأقدم أولاً)، وإذا لم يوجد نستخدم تاريخ الدفع
-          const dueDateA2 = a.invoice?.due_date ? new Date(a.invoice.due_date).getTime() : new Date(a.payment_date).getTime();
-          const dueDateB2 = b.invoice?.due_date ? new Date(b.invoice.due_date).getTime() : new Date(b.payment_date).getTime();
-          return dueDateA2 - dueDateB2;
+          return getDueSortTime(a) - getDueSortTime(b);
         case 'amount-desc':
           return (b.amount || 0) - (a.amount || 0);
         case 'amount-asc':
@@ -1315,19 +1322,21 @@ export const ContractPaymentsTabRedesigned = ({
               <AlertTriangle className="w-5 h-5" />
               تأكيد إلغاء الدفعة
             </AlertDialogTitle>
-            <AlertDialogDescription className="text-right space-y-2">
-              <p>هل أنت متأكد من إلغاء هذه الدفعة؟</p>
-              {selectedPayment && (
-                <div className="bg-slate-50 rounded-lg p-3 mt-3 space-y-1 text-sm">
-                  <p><strong>رقم الدفعة:</strong> {selectedPayment.payment_number || selectedPayment.reference_number || '-'}</p>
-                  <p><strong>الفاتورة:</strong> {selectedPayment.invoice?.invoice_number || 'غير مرتبطة'}</p>
-                  <p><strong>المبلغ:</strong> {formatCurrency(selectedPayment.amount)}</p>
-                  <p><strong>التاريخ:</strong> {selectedPayment.payment_date ? format(new Date(selectedPayment.payment_date), 'dd/MM/yyyy') : '-'}</p>
-                </div>
-              )}
-              <p className="text-amber-600 mt-3">
-                سيتم عكس أثر الدفعة على الفاتورة والقيد المحاسبي، ولن يتم حذفها من سجل التدقيق.
-              </p>
+            <AlertDialogDescription asChild>
+              <div className="space-y-2 text-right text-sm text-muted-foreground">
+                <p>هل أنت متأكد من إلغاء هذه الدفعة؟</p>
+                {selectedPayment && (
+                  <div className="mt-3 space-y-1 rounded-lg bg-slate-50 p-3 text-sm">
+                    <p><strong>رقم الدفعة:</strong> {selectedPayment.payment_number || selectedPayment.reference_number || '-'}</p>
+                    <p><strong>الفاتورة:</strong> {selectedPayment.invoice?.invoice_number || 'غير مرتبطة'}</p>
+                    <p><strong>المبلغ:</strong> {formatCurrency(selectedPayment.amount)}</p>
+                    <p><strong>التاريخ:</strong> {selectedPayment.payment_date ? format(new Date(selectedPayment.payment_date), 'dd/MM/yyyy') : '-'}</p>
+                  </div>
+                )}
+                <p className="mt-3 text-amber-600">
+                  سيتم عكس أثر الدفعة على الفاتورة والقيد المحاسبي، ولن يتم حذفها من سجل التدقيق.
+                </p>
+              </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="space-y-2 text-right">
