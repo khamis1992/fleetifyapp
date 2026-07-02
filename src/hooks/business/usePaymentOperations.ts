@@ -85,6 +85,17 @@ export const usePaymentOperations = (options: PaymentOperationsOptions = {}) => 
 
       await assertFinancialPeriodOpen(companyId, validatedData.payment_date);
 
+      const ensurePaymentJournalOrThrow = async (payment: any) => {
+        if (autoCreateJournalEntry && payment?.payment_status === 'completed') {
+          const journalEntryId = await createJournalEntry(payment);
+          return journalEntryId && !payment.journal_entry_id
+            ? { ...payment, journal_entry_id: journalEntryId }
+            : payment;
+        }
+
+        return payment;
+      };
+
       // ========== DUPLICATE PREVENTION LAYER ==========
       // 1. Check for existing idempotency key (retry detection)
       // Note: payments table doesn't have idempotency_key column — use reference_number as fallback
@@ -119,11 +130,11 @@ export const usePaymentOperations = (options: PaymentOperationsOptions = {}) => 
               .single();
 
             if (!relinkError && relinkedPayment) {
-              return relinkedPayment;
+              return await ensurePaymentJournalOrThrow(relinkedPayment);
             }
           }
 
-          return existingPayment; // Return existing payment instead of creating duplicate
+          return await ensurePaymentJournalOrThrow(existingPayment); // Return existing payment instead of creating duplicate
         }
         if (idempotencyError) {
           console.warn('⚠️ [usePaymentOperations] Idempotency check query failed (non-fatal):', idempotencyError.message);
@@ -181,11 +192,11 @@ export const usePaymentOperations = (options: PaymentOperationsOptions = {}) => 
               .single();
 
             if (!relinkError && relinkedPayment) {
-              return relinkedPayment;
+              return await ensurePaymentJournalOrThrow(relinkedPayment);
             }
           }
 
-          return duplicate;
+          return await ensurePaymentJournalOrThrow(duplicate);
         }
 
         const duplicateInfo = potentialDuplicates.map((p: any) =>
@@ -452,7 +463,7 @@ export const usePaymentOperations = (options: PaymentOperationsOptions = {}) => 
           const existingTransactionPayment = await findExistingTransactionPayment();
           if (existingTransactionPayment) {
             console.log('♻️ [usePaymentOperations] Duplicate transaction found, returning existing payment:', existingTransactionPayment.payment_number);
-            insertedPayment = existingTransactionPayment;
+            insertedPayment = await ensurePaymentJournalOrThrow(existingTransactionPayment);
             error = null;
             break;
           }
@@ -552,12 +563,42 @@ export const usePaymentOperations = (options: PaymentOperationsOptions = {}) => 
 
       console.log('✅ [usePaymentOperations] Payment created successfully:', insertedPayment);
 
-      // Post-creation operations (don't block on these)
-      try {
-        if (autoCreateJournalEntry && insertedPayment.payment_status === 'completed') {
-          await createJournalEntry(insertedPayment);
+      if (autoCreateJournalEntry && insertedPayment.payment_status === 'completed') {
+        try {
+          const journalEntryId = await createJournalEntry(insertedPayment);
+          if (journalEntryId && !insertedPayment.journal_entry_id) {
+            insertedPayment = { ...insertedPayment, journal_entry_id: journalEntryId };
+          }
+        } catch (journalError) {
+          console.error('Payment journal entry creation failed:', journalError);
+
+          try {
+            await supabase
+              .from('payments')
+              .update({
+                payment_status: 'cancelled',
+                processing_status: 'journal_failed',
+                processing_notes: [
+                  insertedPayment.processing_notes,
+                  `Payment cancelled automatically because journal creation failed: ${
+                    journalError instanceof Error ? journalError.message : String(journalError)
+                  }`,
+                ].filter(Boolean).join('\n'),
+                updated_at: new Date().toISOString(),
+              })
+              .eq('id', insertedPayment.id)
+              .eq('company_id', companyId);
+          } catch (cleanupError) {
+            console.error('Failed to cancel payment after journal creation failure:', cleanupError);
+          }
+
+          const journalMessage = journalError instanceof Error ? journalError.message : String(journalError);
+          throw new Error(`Payment was not completed because the accounting journal entry failed: ${journalMessage}`);
         }
-        
+      }
+
+      // Secondary post-creation operations (do not block the accounting-safe payment)
+      try {
         // إنشاء حركة بنكية تلقائياً
         if (autoUpdateBankBalance && insertedPayment.payment_status === 'completed' && insertedPayment.bank_id) {
           const bankResult = await createBankTransactionFromPayment({
@@ -586,7 +627,7 @@ export const usePaymentOperations = (options: PaymentOperationsOptions = {}) => 
         }
       } catch (postError) {
         console.warn('⚠️ Post-creation operations failed:', postError);
-        // Don't throw - payment was created successfully
+        // Do not throw here; the payment already has its accounting journal.
       }
 
       return insertedPayment;
@@ -1163,6 +1204,42 @@ export const usePaymentOperations = (options: PaymentOperationsOptions = {}) => 
 
       if (!companyId || !payment.amount) {
         throw new Error('Missing company or payment amount for journal entry');
+      }
+
+      const { data: ensuredJournal, error: ensureJournalError } = await (supabase as any).rpc(
+        'ensure_payment_journal_entry',
+        {
+          p_payment_id: payment.id,
+          p_company_id: companyId,
+          p_actor_id: user?.id || null,
+        }
+      );
+
+      if (!ensureJournalError) {
+        const ensuredJournalId = ensuredJournal?.journal_entry_id || ensuredJournal?.journalEntryId || null;
+        if (ensuredJournalId) {
+          console.log('Payment journal entry ensured successfully:', ensuredJournal);
+          return ensuredJournalId;
+        }
+
+        if (String(ensuredJournal?.status || '').startsWith('skipped_')) {
+          console.warn('Payment journal entry skipped by database policy:', ensuredJournal);
+          return '';
+        }
+      }
+
+      const ensureMessage = String(ensureJournalError?.message || '');
+      const canFallbackToClientJournal =
+        ensureJournalError?.code === 'PGRST202'
+        || ensureMessage.includes('Could not find the function')
+        || ensureMessage.includes('ensure_payment_journal_entry');
+
+      if (!canFallbackToClientJournal && ensureJournalError) {
+        throw ensureJournalError;
+      }
+
+      if (canFallbackToClientJournal) {
+        console.warn('ensure_payment_journal_entry RPC is unavailable; falling back to client journal creation.');
       }
 
       let cashAccount: { id: string } | null = null;
