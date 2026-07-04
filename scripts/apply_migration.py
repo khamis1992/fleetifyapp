@@ -1,18 +1,20 @@
 #!/usr/bin/env python3
 """Apply the migration SQL to the remote Supabase database and then link payments."""
-import json, requests, uuid, time
+import json
+from typing import Any
+import requests
 from dotenv import dotenv_values
 
-vals = dotenv_values('.env')
-BASE_URL = vals.get('VITE_SUPABASE_URL', '').strip()
-SRK = vals.get('VITE_SUPABASE_SERVICE_ROLE_KEY', '').strip()
-HEADERS = {
+vals: dict[str, str | None] = dict(dotenv_values('.env'))
+BASE_URL: str = (vals.get('VITE_SUPABASE_URL') or '').strip()
+SRK: str = (vals.get('VITE_SUPABASE_SERVICE_ROLE_KEY') or '').strip()
+HEADERS: dict[str, str] = {
     'apikey': SRK,
     'Authorization': f'Bearer {SRK}',
     'Content-Type': 'application/json',
     'Prefer': 'return=representation'
 }
-CID = '24bc0b21-4e2d-4413-9842-31719a3669f4'
+CID: str = '24bc0b21-4e2d-4413-9842-31719a3669f4'
 
 # Step 1: Apply the migration SQL by creating the functions
 # We can't run raw SQL via REST API, but we can try the /pg/exec endpoint
@@ -21,7 +23,7 @@ CID = '24bc0b21-4e2d-4413-9842-31719a3669f4'
 print("=== Step 1: Create link_payment_journal_entry_bypass RPC ===")
 
 # Try the Supabase pg_exec endpoint
-sql = """
+sql: str = """
 CREATE OR REPLACE FUNCTION public.link_payment_journal_entry_bypass(
     p_payment_id uuid,
     p_journal_entry_id uuid
@@ -47,9 +49,13 @@ $$;
 
 # Try /rest/v1/rpc with a query parameter approach
 # Actually, let's try the Supabase SQL endpoint
-r = requests.post(
+rpc_payload: dict[str, Any] = {
+    'p_payment_id': '00000000-0000-0000-0000-000000000000',
+    'p_journal_entry_id': '00000000-0000-0000-0000-000000000000'
+}
+r: requests.Response = requests.post(
     f'{BASE_URL}/rest/v1/rpc/link_payment_journal_entry_bypass',
-    data=json.dumps({'p_payment_id': '00000000-0000-0000-0000-000000000000', 'p_journal_entry_id': '00000000-0000-0000-0000-000000000000'}).encode('utf-8'),
+    json=rpc_payload,
     headers=HEADERS)
 print(f"  Test RPC call: {r.status_code} {r.text[:200]}")
 
@@ -58,8 +64,8 @@ if r.status_code == 404:
     print("  Writing SQL to apply via psql or dashboard...")
     
     # Write the SQL to a file for manual application
-    with open('supabase/migrations/20260701000006_link_payment_journal_bypass.sql') as src:
-        sql_content = src.read()
+    with open('supabase/migrations/20260701000006_link_payment_journal_bypass.sql', 'r') as src:
+        sql_content: str = src.read()
     with open('scripts/apply_migration.sql', 'w') as f:
         f.write(sql_content)
     
@@ -70,9 +76,10 @@ else:
 
 # Step 2: Also check if update_account_balances_from_entries exists
 print("\n=== Step 2: Check update_account_balances_from_entries RPC ===")
-r2 = requests.post(
+rpc_payload2: dict[str, Any] = {}
+r2: requests.Response = requests.post(
     f'{BASE_URL}/rest/v1/rpc/update_account_balances_from_entries',
-    data=json.dumps({}).encode('utf-8'),
+    json=rpc_payload2,
     headers=HEADERS)
 print(f"  RPC call: {r2.status_code} {r2.text[:200]}")
 

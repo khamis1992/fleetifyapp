@@ -19,8 +19,8 @@ export const usePayrollJournalIntegration = () => {
         .from('chart_of_accounts')
         .select('id, account_code')
         .eq('company_id', payroll.company_id)
-        .in('account_code', ['1010', '2200', '5300', '5400']); 
-      // Cash, Salaries Payable, Salaries Expense, Benefits Expense
+        .in('account_code', ['1010', '2100', '2200', '2300', '5300', '5400']);
+      // Cash, Payables, Salaries Payable, Salaries Expense, Benefits Expense
 
       if (!accounts || accounts.length < 2) {
         console.error('Required accounts not found for payroll');
@@ -50,6 +50,9 @@ export const usePayrollJournalIntegration = () => {
       const allowances = payroll.allowances || 0;
       const deductions = payroll.deductions || 0;
       const netSalary = basicSalary + allowances - deductions;
+      const deductionAccountId = accountMap['2300'] || accountMap['2100'] || accountMap['2200'];
+      const totalDebit = basicSalary + allowances;
+      const totalCredit = netSalary + deductions;
 
       const description = `رواتب - ${payroll.employee_name || 'موظف'} - ${payroll.period || ''}`;
 
@@ -63,7 +66,9 @@ export const usePayrollJournalIntegration = () => {
           description,
           reference_type: 'payroll',
           reference_id: payroll.id,
-          status: 'posted',
+          status: 'draft',
+          total_debit: totalDebit,
+          total_credit: totalCredit,
         })
         .select()
         .single();
@@ -122,6 +127,16 @@ export const usePayrollJournalIntegration = () => {
         });
       }
 
+      if (deductions > 0) {
+        lines.push({
+          account_id: deductionAccountId,
+          line_description: `Payroll deductions - ${payroll.employee_name || 'Employee'}`,
+          debit_amount: 0,
+          credit_amount: deductions,
+          line_number: lineNumber++,
+        });
+      }
+
       // Insert lines
       const linesWithEntry = lines.map((line) => ({
         ...line,
@@ -136,6 +151,20 @@ export const usePayrollJournalIntegration = () => {
         console.error('Failed to create journal entry lines for payroll:', linesError);
         // Rollback journal entry
         await supabase.from('journal_entries').delete().eq('id', entry.id);
+        return;
+      }
+
+      const { error: postError } = await supabase
+        .from('journal_entries')
+        .update({
+          status: 'posted',
+          posted_at: new Date().toISOString(),
+        })
+        .eq('id', entry.id)
+        .eq('company_id', payroll.company_id);
+
+      if (postError) {
+        console.error('Failed to post journal entry for payroll:', postError);
         return;
       }
 
@@ -206,7 +235,9 @@ export const usePayrollJournalIntegration = () => {
           description: `دفع راتب - ${payroll.employee_name || 'موظف'}`,
           reference_type: 'payroll_payment',
           reference_id: payrollId,
-          status: 'posted',
+          status: 'draft',
+          total_debit: netSalary,
+          total_credit: netSalary,
         })
         .select()
         .single();
@@ -246,6 +277,20 @@ export const usePayrollJournalIntegration = () => {
         return;
       }
 
+      const { error: postError } = await supabase
+        .from('journal_entries')
+        .update({
+          status: 'posted',
+          posted_at: new Date().toISOString(),
+        })
+        .eq('id', entry.id)
+        .eq('company_id', companyId);
+
+      if (postError) {
+        console.error('Failed to post payroll payment entry:', postError);
+        return;
+      }
+
       console.log('✅ Payment entry created for payroll');
     } catch (error) {
       console.error('Error creating payment entry for payroll:', error);
@@ -264,7 +309,8 @@ export const usePayrollJournalIntegration = () => {
         .from('journal_entries')
         .select('id')
         .eq('company_id', companyId)
-        .or(`reference_id.eq.${payrollId},reference_type.eq.payroll,reference_type.eq.payroll_payment`);
+        .eq('reference_id', payrollId)
+        .in('reference_type', ['payroll', 'payroll_payment']);
 
       if (!entries || entries.length === 0) {
         console.log('No journal entries found for payroll');

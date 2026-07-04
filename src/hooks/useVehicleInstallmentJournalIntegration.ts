@@ -41,13 +41,12 @@ export const useVehicleInstallmentJournalIntegration = () => {
       const companyId = installment.company_id;
       const totalPayment = paymentData.principalAmount + paymentData.interestAmount;
 
-      // Get required accounts - Revenue or Vehicle Purchase Expense, and Cash/Bank
-      // Try to find Revenue account first (4111 or any revenue account)
-      const { data: revenueAccounts } = await supabase
+      // Get required accounts - installment liability/payable, optional expense fallback, and Cash/Bank
+      const { data: liabilityAccounts } = await supabase
         .from('chart_of_accounts')
         .select('id, account_code, account_name')
         .eq('company_id', companyId)
-        .eq('account_type', 'revenue')
+        .eq('account_type', 'liabilities')
         .eq('is_header', false)
         .eq('is_active', true)
         .order('account_code', { ascending: true })
@@ -75,9 +74,9 @@ export const useVehicleInstallmentJournalIntegration = () => {
         .eq('is_active', true)
         .limit(1);
 
-      // Determine debit account - prefer expense, fallback to revenue
-      const debitAccountId = expenseAccounts?.[0]?.id || revenueAccounts?.[0]?.id;
-      const debitAccountName = expenseAccounts?.[0]?.account_name || revenueAccounts?.[0]?.account_name || 'الإيرادات';
+      // Paying an installment reduces the liability; expense is kept only as a fallback.
+      const debitAccountId = liabilityAccounts?.[0]?.id || expenseAccounts?.[0]?.id;
+      const debitAccountName = liabilityAccounts?.[0]?.account_name || expenseAccounts?.[0]?.account_name || 'Vehicle installment payable';
       const cashAccountId = cashAccounts?.[0]?.id;
 
       if (!debitAccountId || !cashAccountId) {
@@ -112,7 +111,9 @@ export const useVehicleInstallmentJournalIntegration = () => {
           description,
           reference_type: 'vehicle_installment',
           reference_id: paymentData.scheduleId,
-          status: 'posted',
+          status: 'draft',
+          total_debit: totalPayment,
+          total_credit: totalPayment,
         })
         .select()
         .single();
@@ -183,6 +184,20 @@ export const useVehicleInstallmentJournalIntegration = () => {
         console.error('Failed to create journal entry lines:', linesError);
         // Rollback journal entry
         await supabase.from('journal_entries').delete().eq('id', entry.id);
+        return;
+      }
+
+      const { error: postError } = await supabase
+        .from('journal_entries')
+        .update({
+          status: 'posted',
+          posted_at: new Date().toISOString(),
+        })
+        .eq('id', entry.id)
+        .eq('company_id', companyId);
+
+      if (postError) {
+        console.error('Failed to post vehicle installment journal entry:', postError);
         return;
       }
 
@@ -273,7 +288,9 @@ export const useVehicleInstallmentJournalIntegration = () => {
           description: `شراء مركبة - ${vehicleId}`,
           reference_type: 'vehicle_purchase',
           reference_id: vehicleId,
-          status: 'posted',
+          status: 'draft',
+          total_debit: purchasePrice,
+          total_credit: downPayment + loanAmount,
         })
         .select()
         .single();
@@ -318,6 +335,20 @@ export const useVehicleInstallmentJournalIntegration = () => {
       if (linesError) {
         console.error('Failed to create vehicle purchase lines:', linesError);
         await supabase.from('journal_entries').delete().eq('id', entry.id);
+        return;
+      }
+
+      const { error: postError } = await supabase
+        .from('journal_entries')
+        .update({
+          status: 'posted',
+          posted_at: new Date().toISOString(),
+        })
+        .eq('id', entry.id)
+        .eq('company_id', companyId);
+
+      if (postError) {
+        console.error('Failed to post vehicle purchase journal entry:', postError);
         return;
       }
 

@@ -201,6 +201,23 @@ type ImportInvoice = {
   payment_status: string;
 };
 
+type ImportPayment = {
+  id: string;
+  payment_number: string | null;
+  payment_date: string | null;
+  reference_number: string | null;
+  amount: number | null;
+  invoice_id: string | null;
+  contract_id: string | null;
+  payment_status: string | null;
+};
+
+type ApprovalCache = {
+  invoicesByMonth: Map<string, ImportInvoice>;
+  paymentsByInvoiceId: Map<string, ImportPayment[]>;
+  paymentsByReference: Map<string, ImportPayment>;
+};
+
 type SupabaseQueryError = {
   code?: string;
   message?: string;
@@ -699,6 +716,66 @@ const findInvoiceForMonth = (invoices: ImportInvoice[], monthDate: string) =>
   invoices.find((invoice) => sameInvoiceMonth(invoice.due_date, monthDate)) ||
   null;
 
+const cacheInvoice = (cache: ApprovalCache, invoice: ImportInvoice) => {
+  if (invoice.invoice_date) cache.invoicesByMonth.set(invoice.invoice_date.slice(0, 7), invoice);
+  if (invoice.due_date) cache.invoicesByMonth.set(invoice.due_date.slice(0, 7), invoice);
+};
+
+const cachePayment = (cache: ApprovalCache, payment: ImportPayment) => {
+  if (payment.invoice_id) {
+    const payments = cache.paymentsByInvoiceId.get(payment.invoice_id) || [];
+    if (!payments.some((existing) => existing.id === payment.id)) {
+      payments.push(payment);
+      cache.paymentsByInvoiceId.set(payment.invoice_id, payments);
+    }
+  }
+
+  if (payment.reference_number) {
+    cache.paymentsByReference.set(payment.reference_number, payment);
+  }
+};
+
+const findCachedHistoricalPayment = (
+  cache: ApprovalCache,
+  invoice: ImportInvoice,
+  row: ParsedPaymentRow,
+  contract: MatchedContract,
+  file: ParsedExcelFile,
+  amountToApply: number
+) => {
+  const stableReference = buildHistoricalPaymentReference({
+    fileName: file.fileName,
+    contractId: contract.id,
+    invoiceId: invoice.id,
+    month: row.month,
+  });
+  const paymentDate = parseMonthToDate(row.month) || invoice.invoice_date || invoice.due_date || null;
+  const payments = cache.paymentsByInvoiceId.get(invoice.id) || [];
+
+  return payments.find((payment) =>
+    payment.contract_id === contract.id &&
+    payment.payment_status === 'completed' &&
+    Number(payment.amount || 0) === amountToApply &&
+    (!paymentDate || payment.payment_date === paymentDate)
+  ) || cache.paymentsByReference.get(stableReference) || null;
+};
+
+const calculateInvoiceBalanceFromCachedPayments = (cache: ApprovalCache, invoice: ImportInvoice) => {
+  const totalAmount = Number(invoice.total_amount) || 0;
+  const paidAmount = (cache.paymentsByInvoiceId.get(invoice.id) || [])
+    .filter((payment) => payment.payment_status === 'completed')
+    .reduce((sum, payment) => sum + (Number(payment.amount) || 0), 0);
+  const balanceDue = Math.max(0, totalAmount - paidAmount);
+  const paymentStatus = paidAmount <= 0 ? 'unpaid' : balanceDue <= 0.01 ? 'paid' : 'partial';
+
+  return {
+    ...invoice,
+    paid_amount: paidAmount,
+    balance_due: balanceDue,
+    payment_status: paymentStatus,
+  } as ImportInvoice;
+};
+
 const alignInvoiceDueDateToExcelMonth = async ({
   companyId,
   invoice,
@@ -797,6 +874,40 @@ const parseContractOverpaymentMessage = (message: string) => {
 };
 
 const formatQar = (amount: number) => formatCurrency(amount, true);
+
+const explainPaymentSkipWithContext = (
+  message: string,
+  context?: {
+    customerName?: string;
+    month?: string;
+    amount?: number;
+    contractNumber?: string;
+    invoiceNumber?: string;
+  }
+) => {
+  const overpayment = parseContractOverpaymentMessage(message);
+  const contextParts = [
+    context?.customerName,
+    context?.contractNumber ? `العقد ${context.contractNumber}` : null,
+    context?.invoiceNumber ? `الفاتورة ${context.invoiceNumber}` : null,
+    context?.month ? `شهر ${context.month}` : null,
+  ].filter(Boolean);
+  const prefix = contextParts.length ? `${contextParts.join(' - ')}: ` : '';
+
+  if (overpayment) {
+    return `${prefix}تم تخطي الدفعة لأن إجمالي مدفوعات هذا العقد سيتجاوز الحد المسموح. قيمة العقد ${formatQar(overpayment.contractAmount)}، والمدفوع الحالي ${formatQar(overpayment.currentTotal)}، والحد المسموح ${formatQar(overpayment.allowedTotal)}. الدفعة المستوردة ${formatQar(context?.amount || overpayment.attemptedPayment)} سترفع الإجمالي إلى ${formatQar(overpayment.nextTotal)}.`;
+  }
+
+  if (message.toLowerCase().includes('would overpay invoice')) {
+    return `${prefix}تم تخطي الدفعة لأن الفاتورة المرتبطة مدفوعة أو لأن الدفعة ستتجاوز رصيدها.`;
+  }
+
+  if (message.includes('مكررة') || message.includes('Ù…ÙƒØ±Ø±Ø©') || message.toLowerCase().includes('duplicate')) {
+    return `${prefix}تم تخطي الدفعة لأنها مكررة أو سبق استيرادها.`;
+  }
+
+  return `${prefix}تم تخطي الدفعة للمراجعة: ${message}`;
+};
 
 const explainPaymentSkip = (message: string, context?: { customerName?: string; month?: string; amount?: number }) => {
   const overpayment = parseContractOverpaymentMessage(message);
@@ -1572,6 +1683,46 @@ export default function ExcelPaymentImport() {
     return createdCount;
   };
 
+  const loadApprovalCache = async (contract: MatchedContract): Promise<ApprovalCache> => {
+    if (!companyId) {
+      return {
+        invoicesByMonth: new Map(),
+        paymentsByInvoiceId: new Map(),
+        paymentsByReference: new Map(),
+      };
+    }
+
+    const [invoicesResult, paymentsResult] = await Promise.all([
+      supabase
+        .from('invoices')
+        .select('id, invoice_number, invoice_date, due_date, total_amount, paid_amount, balance_due, payment_status')
+        .eq('company_id', companyId)
+        .eq('contract_id', contract.id)
+        .limit(500),
+      supabase
+        .from('payments')
+        .select('id,payment_number,payment_date,reference_number,amount,invoice_id,contract_id,payment_status')
+        .eq('company_id', companyId)
+        .eq('contract_id', contract.id)
+        .eq('payment_status', 'completed')
+        .limit(2000),
+    ]);
+
+    if (invoicesResult.error) throw invoicesResult.error;
+    if (paymentsResult.error) throw paymentsResult.error;
+
+    const cache: ApprovalCache = {
+      invoicesByMonth: new Map(),
+      paymentsByInvoiceId: new Map(),
+      paymentsByReference: new Map(),
+    };
+
+    ((invoicesResult.data || []) as ImportInvoice[]).forEach((invoice) => cacheInvoice(cache, invoice));
+    ((paymentsResult.data || []) as ImportPayment[]).forEach((payment) => cachePayment(cache, payment));
+
+    return cache;
+  };
+
   const approveFile = async (
     file: ParsedExcelFile,
     contract: MatchedContract,
@@ -1593,6 +1744,7 @@ export default function ExcelPaymentImport() {
       let missingInvoiceRows = 0;
       const skippedReasons: string[] = [];
       const paymentReport: PaymentReportRow[] = [];
+      const approvalCache = await loadApprovalCache(contract);
 
       for (let index = 0; index < file.rows.length; index += 1) {
         const row = file.rows[index];
@@ -1605,12 +1757,21 @@ export default function ExcelPaymentImport() {
           label: `معالجة ${file.customerName || file.fileName} - شهر ${row.month}: مطابقة الفاتورة وتسجيل الدفعات...`,
         });
 
-        const { invoice, created } = await createOrFindMonthlyInvoice({
-          companyId,
-          contract,
-          row,
-          monthlyRent: file.monthlyRent || contract.monthly_amount,
-        });
+        const monthDate = parseMonthToDate(row.month);
+        let invoice = monthDate ? approvalCache.invoicesByMonth.get(monthDate.slice(0, 7)) || null : null;
+        let created = false;
+
+        if (!invoice) {
+          const invoiceResult = await createOrFindMonthlyInvoice({
+            companyId,
+            contract,
+            row,
+            monthlyRent: file.monthlyRent || contract.monthly_amount,
+          });
+          invoice = invoiceResult.invoice;
+          created = invoiceResult.created;
+          if (invoice) cacheInvoice(approvalCache, invoice);
+        }
 
         if (!invoice) {
           if (paymentAmount > 0) {
@@ -1623,13 +1784,13 @@ export default function ExcelPaymentImport() {
 
         if (created) invoicesCreated += 1;
 
-        const monthDate = parseMonthToDate(row.month);
         const alignedInvoice = monthDate
           ? await alignInvoiceDueDateToExcelMonth({ companyId, invoice, monthDate })
           : invoice;
+        cacheInvoice(approvalCache, alignedInvoice);
 
         if (paymentAmount > 0) {
-          const existingExcelPayment = await hasHistoricalExcelPayment(alignedInvoice, row, contract, file, paymentAmount);
+          const existingExcelPayment = findCachedHistoricalPayment(approvalCache, alignedInvoice, row, contract, file, paymentAmount);
           if (existingExcelPayment) {
             paymentReport.push({
               month: row.month,
@@ -1650,7 +1811,7 @@ export default function ExcelPaymentImport() {
           }
         }
 
-        const invoiceForPayment = await calculateInvoiceBalanceFromActivePayments(companyId, alignedInvoice);
+        const invoiceForPayment = calculateInvoiceBalanceFromCachedPayments(approvalCache, alignedInvoice);
 
         const invoiceBalance = Math.max(Number(invoiceForPayment.balance_due ?? invoiceForPayment.total_amount ?? 0), 0);
         if (paymentAmount > invoiceBalance + 0.01) {
@@ -1685,6 +1846,18 @@ export default function ExcelPaymentImport() {
               notes: `دفعة كاش تاريخية مستوردة من Excel - ${file.fileName} - شهر ${row.month}`,
               idempotencyKey: stableReference,
             });
+            if (insertedPayment?.id) {
+              cachePayment(approvalCache, {
+                id: String(insertedPayment.id),
+                payment_number: String(insertedPayment.payment_number || ''),
+                payment_date: String(insertedPayment.payment_date || parseMonthToDate(row.month) || invoiceForPayment.invoice_date || invoiceForPayment.due_date || ''),
+                reference_number: String(insertedPayment.reference_number || stableReference),
+                amount: Number(insertedPayment.amount || amountToApply),
+                invoice_id: invoiceForPayment.id,
+                contract_id: contract.id,
+                payment_status: String(insertedPayment.payment_status || 'completed'),
+              });
+            }
             paymentReport.push({
               month: row.month,
               amount: amountToApply,
@@ -1703,10 +1876,12 @@ export default function ExcelPaymentImport() {
           } catch (error: unknown) {
             const message = errorMessage(error);
             if (isDuplicateOrContractOverpaymentError(message)) {
-              const reason = explainPaymentSkip(message, {
+              const reason = explainPaymentSkipWithContext(message, {
                 customerName: file.customerName,
                 month: row.month,
                 amount: amountToApply,
+                contractNumber: contract.contract_number,
+                invoiceNumber: invoiceForPayment.invoice_number || '-',
               });
               console.warn('[ExcelPaymentImport] Skipped historical payment row:', {
                 fileName: file.fileName,

@@ -64,7 +64,9 @@ export const useMaintenanceJournalIntegration = () => {
           description,
           reference_type: 'maintenance',
           reference_id: maintenance.id,
-          status: 'posted',
+          status: 'draft',
+          total_debit: maintenance.cost,
+          total_credit: maintenance.cost,
         })
         .select()
         .single();
@@ -163,6 +165,20 @@ export const useMaintenanceJournalIntegration = () => {
         console.error('Failed to create journal entry lines for maintenance:', linesError);
         // Rollback journal entry
         await supabase.from('journal_entries').delete().eq('id', entry.id);
+        return;
+      }
+
+      const { error: postError } = await supabase
+        .from('journal_entries')
+        .update({
+          status: 'posted',
+          posted_at: new Date().toISOString(),
+        })
+        .eq('id', entry.id)
+        .eq('company_id', maintenance.company_id);
+
+      if (postError) {
+        console.error('Failed to post maintenance journal entry:', postError);
         return;
       }
 

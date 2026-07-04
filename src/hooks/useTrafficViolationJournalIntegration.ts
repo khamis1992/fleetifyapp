@@ -123,7 +123,9 @@ export const useTrafficViolationJournalIntegration = () => {
           description,
           reference_type: 'traffic_violation',
           reference_id: violationId,
-          status: 'posted',
+          status: 'draft',
+          total_debit: amount,
+          total_credit: amount,
         })
         .select()
         .single();
@@ -138,6 +140,17 @@ export const useTrafficViolationJournalIntegration = () => {
         await supabase.from('journal_entries').delete().eq('id', entry.id);
         throw linesError;
       }
+
+      const { error: postError } = await supabase
+        .from('journal_entries')
+        .update({
+          status: 'posted',
+          posted_at: new Date().toISOString(),
+        })
+        .eq('id', entry.id)
+        .eq('company_id', companyId);
+
+      if (postError) throw postError;
 
       return entry.id;
     } catch (error) {

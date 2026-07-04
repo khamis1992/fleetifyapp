@@ -196,7 +196,7 @@ export const createJournalEntryForRentalPayment = async (
         description: `قيد إيراد تأجير - ${paymentData.customer_name} - ${paymentData.month}`,
         total_debit,
         total_credit,
-        status: 'posted', // Auto-post rental payment entries
+        status: 'draft',
         reference_type: 'rental_payment',
         reference_id: paymentData.payment_id
       })
@@ -228,6 +228,20 @@ export const createJournalEntryForRentalPayment = async (
     }
 
     console.log('✅ Journal entry lines created successfully');
+
+    const { error: postError } = await supabase
+      .from('journal_entries')
+      .update({
+        status: 'posted',
+        posted_at: new Date().toISOString(),
+      })
+      .eq('id', journalEntry.id)
+      .eq('company_id', companyId);
+
+    if (postError) {
+      console.error('Error posting rental payment journal entry:', postError);
+      throw postError;
+    }
 
     return { success: true, entry_id: journalEntry.id };
   } catch (error: unknown) {

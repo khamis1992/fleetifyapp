@@ -302,6 +302,64 @@ export const usePaymentOperations = (options: PaymentOperationsOptions = {}) => 
       if (validatedData.account_id && validatedData.account_id !== '' && validatedData.account_id !== 'undefined') {
         paymentData.account_id = validatedData.account_id;
       }
+
+      const enrichPaymentErrorMessage = async (message: string) => {
+        const details: string[] = [];
+
+        if (paymentData.contract_id) {
+          const { data: contract } = await supabase
+            .from('contracts')
+            .select(`
+              contract_number,
+              customers:customer_id (
+                first_name,
+                last_name,
+                first_name_ar,
+                last_name_ar,
+                company_name,
+                company_name_ar
+              )
+            `)
+            .eq('company_id', companyId)
+            .eq('id', paymentData.contract_id)
+            .maybeSingle();
+
+          if (contract?.contract_number) {
+            details.push(`العقد ${contract.contract_number}`);
+          }
+
+          const customer = Array.isArray(contract?.customers)
+            ? contract?.customers[0]
+            : contract?.customers;
+          const customerName = [
+            customer?.first_name_ar,
+            customer?.last_name_ar,
+            customer?.first_name,
+            customer?.last_name,
+            customer?.company_name_ar,
+            customer?.company_name,
+          ].filter(Boolean).join(' ').trim();
+
+          if (customerName) {
+            details.push(`العميل ${customerName}`);
+          }
+        }
+
+        if (paymentData.invoice_id) {
+          const { data: invoice } = await supabase
+            .from('invoices')
+            .select('invoice_number')
+            .eq('company_id', companyId)
+            .eq('id', paymentData.invoice_id)
+            .maybeSingle();
+
+          if (invoice?.invoice_number) {
+            details.push(`الفاتورة ${invoice.invoice_number}`);
+          }
+        }
+
+        return details.length ? `${details.join(' - ')}: ${message}` : message;
+      };
       
       // Clean up: Remove any undefined values and invalid UUIDs from paymentData to prevent PostgreSQL errors
       // Pattern matches UUIDs that are all zeros (invalid UUIDs)
@@ -554,11 +612,11 @@ export const usePaymentOperations = (options: PaymentOperationsOptions = {}) => 
         } else if (error.code === '23514') {
           // Check constraint violation - use the detailed message from database
           const errorMsg = error.message || error.hint || 'تم رفض الدفعة بسبب عدم استيفاء شروط التحقق';
-          throw new Error(errorMsg);
+          throw new Error(await enrichPaymentErrorMessage(errorMsg));
         }
         // Use hint if available (contains detailed validation message)
         const errorMessage = error.hint || error.message || 'فشل حفظ الدفعة في قاعدة البيانات';
-        throw new Error(errorMessage);
+        throw new Error(await enrichPaymentErrorMessage(errorMessage));
       }
 
       console.log('✅ [usePaymentOperations] Payment created successfully:', insertedPayment);
