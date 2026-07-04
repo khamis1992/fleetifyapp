@@ -1,8 +1,10 @@
 import json
 from collections import defaultdict
 TMP = r'C:\Users\khamis\AppData\Local\Temp'
-jel = json.load(open(f'{TMP}\\jel.json'))
-je = json.load(open(f'{TMP}\\je.json'))
+with open(f'{TMP}\\jel.json') as f:
+    jel = json.load(f)
+with open(f'{TMP}\\je.json') as f:
+    je = json.load(f)
 
 je_sums = defaultdict(lambda: {'d':0,'c':0,'n':0})
 for l in jel:

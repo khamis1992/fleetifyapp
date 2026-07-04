@@ -58,8 +58,10 @@ if r.status_code == 404:
     print("  Writing SQL to apply via psql or dashboard...")
     
     # Write the SQL to a file for manual application
+    with open('supabase/migrations/20260701000006_link_payment_journal_bypass.sql') as src:
+        sql_content = src.read()
     with open('scripts/apply_migration.sql', 'w') as f:
-        f.write(open('supabase/migrations/20260701000006_link_payment_journal_bypass.sql').read())
+        f.write(sql_content)
     
     print("  SQL written to scripts/apply_migration.sql")
     print("  Please apply this via Supabase SQL Editor or psql.")

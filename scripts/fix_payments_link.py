@@ -7,7 +7,7 @@ from collections import defaultdict
 
 vals = dotenv_values('.env')
 BASE_URL = vals.get('VITE_SUPABASE_URL', '').strip()
-API_KEY=vals.g...EY', '').strip()
+API_KEY = vals.get('VITE_SUPABASE_ANON_KEY', '').strip()
 HEADERS = {
     'apikey': API_KEY,
     'Authorization': f'Bearer {API_KEY}',
@@ -41,8 +41,8 @@ all_accounts = rest_get_all('chart_of_accounts', 'id,account_code,account_name,a
     f'company_id=eq.{CID}&is_header=eq.false&limit=500')
 asset_accounts = [a for a in all_accounts if a['account_type'] == 'assets']
 
-cash_account = next((a['id'] for a in asset_accounts if '1010' in a.get('account_code', '') or 'نقد' in a.get('account_name', '').lower() or 'بنك' in a.get('account_name', '').lower()), None)
-ar_account = next((a['id'] for a in asset_accounts if '1200' in a.get('account_code', '') or 'ذمم' in a.get('account_name', '').lower()), None)
+cash_account = next((a['id'] for a in asset_accounts if '1010' in a.get('account_code', '') or 'Ù†Ù‚Ø¯' in a.get('account_name', '').lower() or 'Ø¨Ù†Ùƒ' in a.get('account_name', '').lower()), None)
+ar_account = next((a['id'] for a in asset_accounts if '1200' in a.get('account_code', '') or 'Ø°Ù…Ù…' in a.get('account_name', '').lower()), None)
 if not cash_account and asset_accounts:
     cash_account = asset_accounts[0]['id']
 if not ar_account and asset_accounts:

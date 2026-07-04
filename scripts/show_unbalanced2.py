@@ -1,7 +1,9 @@
 import json
 TMP = 'C:/Users/khamis/AppData/Local/Temp'
-jes = json.load(open(f'{TMP}/unbalanced_jes.json'))
-jels = json.load(open(f'{TMP}/unbalanced_jel.json'))
+with open(f'{TMP}/unbalanced_jes.json') as f:
+    jes = json.load(f)
+with open(f'{TMP}/unbalanced_jel.json') as f:
+    jels = json.load(f)
 print('=== UNBALANCED JEs ===')
 for je in jes:
     print(f"{je['entry_number']}: id={je['id']}")

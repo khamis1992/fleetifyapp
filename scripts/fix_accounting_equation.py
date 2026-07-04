@@ -32,7 +32,8 @@ def rpc_call(name, payload=None):
 
 # Step 1: Check current account balances
 print("=== STEP 1: Current account balances ===")
-coa = json.load(open(f'{TMP}/coa.json'))
+with open(f'{TMP}/coa.json') as f:
+    coa = json.load(f)
 type_balances = {}
 for a in coa:
     at = a.get('account_type', '?')

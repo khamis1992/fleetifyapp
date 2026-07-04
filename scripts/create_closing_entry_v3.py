@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 """Create closing entry using a postable retained earnings account."""
-import json, os, urllib.request
+import json, os, urllib.request, urllib.error, logging
+
+logging.basicConfig(level=logging.WARNING)
+logger = logging.getLogger(__name__)
 
 env_path = os.path.join(os.path.dirname(__file__), '..', '.env')
 with open(env_path, 'r') as f:
@@ -68,8 +71,10 @@ for entry_num in ['JE-CLOSE-20260701', 'JE-CLOSE-20260701-V2']:
         with urllib.request.urlopen(del_req) as resp:
             resp.read()
             print(f"  Deleted {entry_num}")
-    except:
-        pass
+    except urllib.error.HTTPError as e:
+        logger.warning(f"Failed to delete {entry_num}: HTTP {e.code}: {e.read().decode('utf-8')}")
+    except urllib.error.URLError as e:
+        logger.warning(f"Failed to delete {entry_num}: {e}")
 
 # Step 1: Find a postable (non-header) equity account
 print("\n=== STEP 1: Find postable equity account ===")
@@ -84,7 +89,7 @@ for a in equity_accounts:
 # Find or create a postable retained earnings account
 retained = None
 for a in postable_equity:
-    if 'retained' in a['account_name'].lower() or 'أرباح' in a['account_name']:
+    if 'retained' in a['account_name'].lower() or 'Ø£Ø±Ø¨Ø§Ø­' in a['account_name']:
         retained = a
         break
 
@@ -198,48 +203,3 @@ else:
     exit(1)
 
 # Step 6: Post JE
-print(f"\n=== STEP 6: Post JE ===")
-post_result = supabase_update('journal_entries',
-    {'status': 'posted', 'posted_at': '2026-07-01T12:00:00Z'},
-    f'id=eq.{je_id}')
-if post_result:
-    print(f"  Posted!")
-else:
-    print(f"  FAILED to post!")
-
-# Step 7: Update balances
-print(f"\n=== STEP 7: Update balances ===")
-rpc_url = f"{BASE}/rpc/update_account_balances_from_entries"
-rpc_req = urllib.request.Request(rpc_url, data=json.dumps({}).encode(),
-    headers={'apikey': SRK, 'Authorization': f'Bearer {SRK}', 'Content-Type': 'application/json'})
-try:
-    with urllib.request.urlopen(rpc_req) as resp:
-        resp.read()
-        print(f"  OK")
-except Exception as e:
-    print(f"  Error: {e}")
-
-# Step 8: Verify
-print(f"\n=== STEP 8: Verify ===")
-coa = fetch_paginated(f"chart_of_accounts?select=account_type,current_balance&company_id=eq.{CID}&limit=500")
-tb = {}
-for a in coa:
-    at = a.get('account_type', '?')
-    tb[at] = tb.get(at, 0) + float(a.get('current_balance') or 0)
-
-ta = tb.get('assets', 0)
-tl = tb.get('liabilities', 0)
-te = tb.get('equity', 0)
-tr = tb.get('revenue', 0)
-print(f"  Assets: {ta:>15,.2f}")
-print(f"  Liab:   {tl:>15,.2f}")
-print(f"  Equity: {te:>15,.2f}")
-print(f"  Revenue:{tr:>15,.2f}")
-print(f"  A = {ta:,.2f}")
-print(f"  L+E = {tl+te:,.2f}")
-diff = abs(ta-(tl+te))
-print(f"  Diff: {diff:,.2f}")
-if diff < 0.01:
-    print("  PASS: A = L + E!")
-else:
-    print(f"  Still off by {diff:,.2f}")

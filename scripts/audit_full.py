@@ -4,11 +4,13 @@ import json
 from collections import defaultdict
 
 TMP = 'C:/Users/khamis/AppData/Local/Temp'
-je = json.load(open(f'{TMP}/je_all.json'))
-jel = json.load(open(f'{TMP}/jel_all.json'))
+with open(f'{TMP}/je_all.json') as f:
+    je = json.load(f)
+with open(f'{TMP}/jel_all.json') as f:
+    jel = json.load(f)
 
 print('='*80)
-print('FLEETIFY CFO AUDIT — FULL DATA (4,519 JEs, 9,024 JELs)')
+print('FLEETIFY CFO AUDIT \u00e2\u20ac\u201d FULL DATA (4,519 JEs, 9,024 JELs)')
 print('='*80)
 
 # Domain 1: Double-Entry Integrity

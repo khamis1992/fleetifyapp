@@ -1,6 +1,7 @@
 import json
 TMP = r'C:\Users\khamis\AppData\Local\Temp'
-coa = json.load(open(f'{TMP}\\coa.json'))
+with open(f'{TMP}\\coa.json') as f:
+    coa = json.load(f)
 invalid = [a for a in coa if a.get('account_type') not in ('assets','liabilities','equity','revenue','expense')]
 print(f'Invalid account types ({len(invalid)}):')
 types = set(a.get('account_type') for a in invalid)
@@ -25,7 +26,8 @@ for a in ast_pos[:5]:
 
 # Check the 11 duplicate payments
 print()
-pay = json.load(open(f'{TMP}\\pay.json'))
+with open(f'{TMP}\\pay.json') as f:
+    pay = json.load(f)
 from collections import defaultdict
 pg = defaultdict(list)
 for p in pay: pg[(p.get('amount'),p.get('payment_date'))].append(p)
@@ -43,7 +45,8 @@ for p in pay_no[:5]:
 
 # Check the 66 unlinked invoices
 print()
-inv = json.load(open(f'{TMP}\\inv.json'))
+with open(f'{TMP}\\inv.json') as f:
+    inv = json.load(f)
 inv_no = [i for i in inv if not i.get('journal_entry_id')]
 print(f'Invoices without journal_entry_id ({len(inv_no)}):')
 for i in inv_no[:5]:

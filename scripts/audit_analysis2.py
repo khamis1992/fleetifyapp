@@ -3,11 +3,16 @@ import json
 from collections import defaultdict
 
 TMP = r'C:\Users\khamis\AppData\Local\Temp'
-je = json.load(open(f'{TMP}\\je.json'))
-jel = json.load(open(f'{TMP}\\jel.json'))
-coa = json.load(open(f'{TMP}\\coa.json'))
-pay = json.load(open(f'{TMP}\\pay.json'))
-inv = json.load(open(f'{TMP}\\inv.json'))
+with open(f'{TMP}\\je.json', encoding='utf-8') as f:
+    je = json.load(f)
+with open(f'{TMP}\\jel.json', encoding='utf-8') as f:
+    jel = json.load(f)
+with open(f'{TMP}\\coa.json', encoding='utf-8') as f:
+    coa = json.load(f)
+with open(f'{TMP}\\pay.json', encoding='utf-8') as f:
+    pay = json.load(f)
+with open(f'{TMP}\\inv.json', encoding='utf-8') as f:
+    inv = json.load(f)
 
 print('='*80)
 print('FLEETIFY CFO-LEVEL FINANCIAL SYSTEM AUDIT REPORT')
@@ -140,7 +145,7 @@ print('='*60)
 deferred = [a for a in coa if 'deferred' in (a.get('account_name','') or '').lower() or 'unearned' in (a.get('account_name','') or '').lower()]
 print(f'6a. Deferred revenue accounts: {len(deferred)}')
 if not deferred:
-    print('  WARNING: No deferred revenue accounts — prepayments may be recognized immediately')
+    print('  WARNING: No deferred revenue accounts \u00e2\u20ac\u201d prepayments may be recognized immediately')
 
 # DOMAIN 8: Internal Controls
 print()

@@ -1,7 +1,8 @@
 import json
 from collections import defaultdict
 TMP = r'C:\Users\khamis\AppData\Local\Temp'
-pay = json.load(open(f'{TMP}\\pay.json'))
+with open(f'{TMP}\\pay.json') as f:
+    pay = json.load(f)
 
 pg = defaultdict(list)
 for p in pay:
@@ -22,7 +23,8 @@ for p in pay_no[:5]:
     print(f'  {p.get("payment_number","?")}: amount={p.get("amount")} status={p.get("payment_status")} date={p.get("payment_date")}')
 
 print()
-inv = json.load(open(f'{TMP}\\inv.json'))
+with open(f'{TMP}\\inv.json') as f:
+    inv = json.load(f)
 inv_no = [i for i in inv if not i.get('journal_entry_id')]
 print(f'Invoices without journal_entry_id ({len(inv_no)}):')
 for i in inv_no[:5]:
@@ -30,7 +32,8 @@ for i in inv_no[:5]:
 
 # Check the 6 unbalanced JEL
 print()
-jel = json.load(open(f'{TMP}\\jel.json'))
+with open(f'{TMP}\\jel.json') as f:
+    jel = json.load(f)
 je_sums = defaultdict(lambda: {'d':0,'c':0,'n':0})
 for l in jel:
     jid = l.get('journal_entry_id')
