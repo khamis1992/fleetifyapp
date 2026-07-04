@@ -1,0 +1,12 @@
+======================================================================
+FIX UNLINKED INVOICES: Smart contract matching
+======================================================================
+  8936 invoices, 365 contracts
+  Unlinked invoices: 1989
+  Contract-month pairs taken: 6947
+  Linked: 5
+  No customer: 11
+  No contract for customer: 0
+  Conflict (all contracts have invoice for this month): 1973
+  Total remaining: 1984
+======================================================================

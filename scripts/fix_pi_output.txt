@@ -1,0 +1,54 @@
+======================================================================
+FLEETIFY FIX 4+5: UNLINKED PAYMENTS AND INVOICES
+======================================================================
+
+Fetching data...
+  1923 payments, 6950 invoices, 365 contracts
+
+======================================================================
+FIX 4: UNLINKED PAYMENTS
+======================================================================
+  Found 1267 unlinked payments
+
+  Phase 1: Linking via contract_id...
+  Linked 0 payments via contract_id
+  Still unlinked: 1267
+
+  Phase 2: Creating placeholder invoices for 1267 payments...
+    Processed 100/1267...
+    Processed 200/1267...
+    Processed 300/1267...
+    Processed 400/1267...
+    Processed 500/1267...
+    Processed 600/1267...
+    Processed 700/1267...
+    Processed 800/1267...
+    Processed 900/1267...
+    Processed 1000/1267...
+    Processed 1100/1267...
+    Processed 1200/1267...
+  Created 0 placeholder invoices
+  Failed: 1267
+
+======================================================================
+FIX 5: UNLINKED INVOICES
+======================================================================
+  Found 10 unlinked invoices
+  SKIP PUR-0003 - no customer or no matching contract
+  SKIP PUR-0006 - no customer or no matching contract
+  SKIP PUR-0001 - no customer or no matching contract
+  SKIP PUR-0008 - no customer or no matching contract
+  SKIP PUR-0007 - no customer or no matching contract
+  SKIP 5555 - no customer or no matching contract
+  SKIP INV-2025-245 - no customer or no matching contract
+  SKIP PUR-0005 - no customer or no matching contract
+  SKIP PUR-0004 - no customer or no matching contract
+  SKIP PUR-0002 - no customer or no matching contract
+  Linked 0 invoices to contracts
+
+======================================================================
+SUMMARY
+======================================================================
+  Fix 4 - Unlinked payments: 0 linked via contract, 0 via new invoice
+  Fix 5 - Unlinked invoices: 0 linked to contracts
+======================================================================

@@ -1,0 +1,13 @@
+======================================================================
+REVERSE ALL PYINV-LINKED PAYMENTS (cancelled approach)
+======================================================================
+PYINV* invoice IDs: 1986
+Payments linked to PYINV* invoices: 137
+  FAIL step1: PAY-IMP-1767526937-71 - {"code":"P0001","details":null,"hint":null,"message":"Payment would cause total paid (QAR 264284.00)
+  FAIL step1: PAY-IMP-1767526937-66 - {"code":"P0001","details":null,"hint":null,"message":"Payment would cause total paid (QAR 200472.00)
+  FAIL step1: PAY-MIG-1767434836487-2-0 - {"code":"P0001","details":null,"hint":null,"message":"Payment would cause total paid (QAR 16000.00) 
+  Processed 100/137... reversed=70 failed=30
+
+Reversed: 106
+Failed: 31
+Done!

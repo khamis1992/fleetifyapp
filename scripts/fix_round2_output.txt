@@ -1,0 +1,35 @@
+======================================================================
+FLEETIFY FIX ROUND 2
+======================================================================
+
+Fetching data...
+  10143 entries, 20318 lines, 1923 payments, 7790 invoices
+
+======================================================================
+FIX 3b: POST REMAINING DRAFT ENTRIES
+======================================================================
+  Found 841 draft entries
+  Posted 841 balanced drafts
+
+======================================================================
+FIX 4b: LINK REMAINING UNLINKED PAYMENTS
+======================================================================
+  Found 1145 unlinked payments
+  Linked 0 payments to existing invoices
+  No match (no contract_id): 1145
+
+  Creating invoices for 1145 payments without contract...
+  FAILED: PAY-0455 - {"code":"23502","details":"Failing row contains (3a8b3eff-c58c-4346-bd92-c49cb6339e9e, null, PYINV2-PAY-0455, 2024-05-01, 2024-05-01, e73e470d-5d4a-4c11-a950-0fa361f77f17, null, sales, 1600.00, 0.00, 
+  FAILED: PAY-0690 - {"code":"23502","details":"Failing row contains (af294229-a6eb-4ee9-9d13-af3711694bb7, null, PYINV2-PAY-0690, 2024-10-01, 2024-10-01, e73e470d-5d4a-4c11-a950-0fa361f77f17, null, sales, 500.00, 0.00, 0
+  FAILED: PAY-0738 - {"code":"23502","details":"Failing row contains (ed44b663-a123-42b3-9afe-c0b271a0cb01, null, PYINV2-PAY-0738, 2024-01-01, 2024-01-01, e73e470d-5d4a-4c11-a950-0fa361f77f17, null, sales, 1500.00, 0.00, 
+  Created 0 invoices
+  Failed: 712
+
+======================================================================
+ROUND 2 SUMMARY
+======================================================================
+  Draft entries posted: 841
+  Payments linked to existing invoices: 0
+  New invoices created for payments: 0
+  Payment failures: 712
+======================================================================

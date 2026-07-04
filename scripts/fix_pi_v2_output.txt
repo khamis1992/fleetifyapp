@@ -1,0 +1,42 @@
+======================================================================
+FLEETIFY FIX 4+5 v2: UNLINKED PAYMENTS AND INVOICES
+======================================================================
+
+Fetching data...
+  1923 payments, 6951 invoices, 365 contracts
+
+======================================================================
+FIX 4: UNLINKED PAYMENTS
+======================================================================
+  Found 1267 unlinked payments
+
+  Phase 1: Linking via contract_id...
+  Linked 0 payments via contract_id
+  Still unlinked: 1267
+
+  Phase 2: Creating placeholder invoices for 1267 payments...
+  FAILED: PAY-IMP-1767526937-53 - {"code":"23505","details":null,"hint":null,"message":"فاتورة مكررة: توجد فاتورة (INV-C-ALF-0069-2025-09) لنفس العقد في شهر 2025-09"}
+  FAILED: PAY-MIG-1767434836487-43-1 - {"code":"23505","details":null,"hint":null,"message":"فاتورة مكررة: توجد فاتورة (INV-C-ALF-0066-2024-05) لنفس العقد في شهر 2024-05"}
+  FAILED: PAY-IMP-1767526937-70 - {"code":"23505","details":null,"hint":null,"message":"فاتورة مكررة: توجد فاتورة (INV-Ret-2018212-202507-014) لنفس العقد في شهر 2025-07"}
+    Processed 200/1267...
+    Processed 400/1267...
+    Processed 600/1267...
+    Processed 800/1267...
+    Processed 1000/1267...
+    Processed 1200/1267...
+  Created 839 placeholder invoices
+  Failed: 428
+
+======================================================================
+FIX 5: UNLINKED INVOICES
+======================================================================
+  Found 845 unlinked invoices
+  Linked 2 invoices to contracts
+  Skipped (no customer/contract match): 843
+
+======================================================================
+SUMMARY
+======================================================================
+  Fix 4 - Unlinked payments: 0 linked via contract, 839 via new invoice, 428 failed
+  Fix 5 - Unlinked invoices: 2 linked to contracts, 843 skipped
+======================================================================

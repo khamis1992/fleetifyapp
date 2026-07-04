@@ -1,0 +1,18 @@
+======================================================================
+REVERSE PAYMENT LINKING
+======================================================================
+Total payments with invoice_id: 1921
+PYINV3 invoice IDs: 1145
+Payments linked to PYINV3 invoices (to reverse): 1143
+  Processed 400/1143...
+  Processed 600/1143...
+  Processed 800/1143...
+  Processed 1000/1143...
+
+Reversed: 947
+Failed: 196
+
+Deleting PYINV3 placeholder invoices...
+  Deleted 0 PYINV3 invoices (of 100 attempted)
+
+Done!

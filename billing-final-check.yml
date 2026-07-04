@@ -1,0 +1,683 @@
+- generic [ref=f7e2]:
+  - generic [ref=f7e3]:
+    - generic [ref=f7e4]:
+      - generic:
+        - complementary "القائمة الجانبية":
+          - complementary [ref=f7e5]:
+            - generic [ref=f7e7]:
+              - generic [ref=f7e8]:
+                - generic [ref=f7e10]: F
+                - generic [ref=f7e12]:
+                  - generic [ref=f7e13]: Fleetify
+                  - generic [ref=f7e14]: Fleet operations
+              - button "تصغير القائمة" [ref=f7e15] [cursor=pointer]:
+                - img [ref=f7e16]
+            - button "بحث سريع" [ref=f7e20] [cursor=pointer]:
+              - img [ref=f7e21]
+              - generic [ref=f7e24]: بحث سريع...
+              - generic [ref=f7e25]: ⌘K
+            - generic [ref=f7e26]:
+              - generic [ref=f7e27]:
+                - generic [ref=f7e28]: المؤخر
+                - button "مسح الصفحات الأخيرة" [ref=f7e30] [cursor=pointer]:
+                  - img [ref=f7e31]
+              - link "الفوترة والتحصيل" [ref=f7e35] [cursor=pointer]:
+                - /url: /finance/billing
+                - img [ref=f7e36]
+                - text: الفوترة والتحصيل
+            - button "ابدأ جولة تعريفية" [ref=f7e40] [cursor=pointer]:
+              - generic [ref=f7e41]:
+                - img [ref=f7e43]
+                - generic [ref=f7e46]:
+                  - generic [ref=f7e47]: ابدأ جولة تعريفية
+                  - generic [ref=f7e48]: تعرّف على أهم الأدوات في أقل من دقيقة
+              - generic [ref=f7e54]: بدء الجولة
+            - navigation [ref=f7e55]:
+              - list [ref=f7e57]:
+                - listitem [ref=f7e58]:
+                  - link "الرئيسية" [ref=f7e59] [cursor=pointer]:
+                    - /url: /dashboard
+                    - img [ref=f7e61]
+                    - generic [ref=f7e66]: الرئيسية
+              - generic [ref=f7e67]:
+                - generic [ref=f7e68]:
+                  - generic [ref=f7e69]: "01"
+                  - generic [ref=f7e70]: العمليات الأساسية
+                - list [ref=f7e72]:
+                  - listitem [ref=f7e73]:
+                    - generic [ref=f7e74]:
+                      - button "إدارة الأسطول" [expanded] [ref=f7e75] [cursor=pointer]:
+                        - img [ref=f7e77]
+                        - generic [ref=f7e81]: إدارة الأسطول
+                        - img [ref=f7e82]
+                      - list [ref=f7e84]:
+                        - listitem [ref=f7e85]:
+                          - link "المركبات" [ref=f7e86] [cursor=pointer]:
+                            - /url: /fleet
+                            - img [ref=f7e88]
+                            - generic [ref=f7e92]: المركبات
+                        - listitem [ref=f7e93]:
+                          - link "الصيانة" [ref=f7e94] [cursor=pointer]:
+                            - /url: /fleet/maintenance
+                            - img [ref=f7e96]
+                            - generic [ref=f7e98]: الصيانة
+                        - listitem [ref=f7e99]:
+                          - link "الحجوزات" [ref=f7e100] [cursor=pointer]:
+                            - /url: /fleet/reservations
+                            - img [ref=f7e102]
+                            - generic [ref=f7e104]: الحجوزات
+                        - listitem [ref=f7e105]:
+                          - link "المخالفات المرورية" [ref=f7e106] [cursor=pointer]:
+                            - /url: /fleet/traffic-violations
+                            - img [ref=f7e108]
+                            - generic [ref=f7e110]: المخالفات المرورية
+                        - listitem [ref=f7e111]:
+                          - link "تقارير الأسطول" [ref=f7e112] [cursor=pointer]:
+                            - /url: /fleet/reports
+                            - img [ref=f7e114]
+                            - generic [ref=f7e116]: تقارير الأسطول
+                  - listitem [ref=f7e117]:
+                    - button "العروض والعقود" [ref=f7e119] [cursor=pointer]:
+                      - img [ref=f7e121]
+                      - generic [ref=f7e124]: العروض والعقود
+                      - img [ref=f7e125]
+                  - listitem [ref=f7e127]:
+                    - generic [ref=f7e128]:
+                      - button "إدارة العملاء" [expanded] [ref=f7e129] [cursor=pointer]:
+                        - img [ref=f7e131]
+                        - generic [ref=f7e136]: إدارة العملاء
+                        - img [ref=f7e137]
+                      - list [ref=f7e139]:
+                        - listitem [ref=f7e140]:
+                          - link "قائمة العملاء" [ref=f7e141] [cursor=pointer]:
+                            - /url: /customers
+                            - img [ref=f7e143]
+                            - generic [ref=f7e144]: قائمة العملاء
+                        - listitem [ref=f7e145]:
+                          - link "إدارة العلاقات (CRM)" [ref=f7e146] [cursor=pointer]:
+                            - /url: /customers/crm
+                            - img [ref=f7e148]
+                            - generic [ref=f7e150]: إدارة العلاقات (CRM)
+              - generic [ref=f7e151]:
+                - generic [ref=f7e152]:
+                  - generic [ref=f7e153]: "02"
+                  - generic [ref=f7e154]: المالية والإدارة
+                - list [ref=f7e156]:
+                  - listitem [ref=f7e157]:
+                    - button "المالية" [ref=f7e159] [cursor=pointer]:
+                      - img [ref=f7e162]
+                      - generic [ref=f7e165]: المالية
+                      - img [ref=f7e166]
+                  - listitem [ref=f7e168]:
+                    - button "الموارد البشرية" [ref=f7e170] [cursor=pointer]:
+                      - img [ref=f7e172]
+                      - generic [ref=f7e176]: الموارد البشرية
+                      - img [ref=f7e177]
+              - generic [ref=f7e179]:
+                - generic [ref=f7e180]:
+                  - generic [ref=f7e181]: "03"
+                  - generic [ref=f7e182]: الامتثال والمتابعة
+                - list [ref=f7e184]:
+                  - listitem [ref=f7e185]:
+                    - button "الشؤون القانونية" [ref=f7e187] [cursor=pointer]:
+                      - img [ref=f7e189]
+                      - generic [ref=f7e191]: الشؤون القانونية
+                      - img [ref=f7e192]
+                  - listitem [ref=f7e194]:
+                    - link "إدارة المهام" [ref=f7e195] [cursor=pointer]:
+                      - /url: /tasks
+                      - img [ref=f7e197]
+                      - generic [ref=f7e200]: إدارة المهام
+                  - listitem [ref=f7e201]:
+                    - link "أذونات الصرف" [ref=f7e202] [cursor=pointer]:
+                      - /url: /fleet/dispatch-permits
+                      - img [ref=f7e204]
+                      - generic [ref=f7e209]: أذونات الصرف
+              - generic [ref=f7e210]:
+                - generic [ref=f7e211]:
+                  - generic [ref=f7e212]: "04"
+                  - generic [ref=f7e213]: الأدوات والنظام
+                - list [ref=f7e215]:
+                  - listitem [ref=f7e216]:
+                    - link "التقارير" [ref=f7e217] [cursor=pointer]:
+                      - /url: /reports
+                      - img [ref=f7e219]
+                      - generic [ref=f7e221]: التقارير
+                  - listitem [ref=f7e222]:
+                    - link "الإعدادات" [ref=f7e223] [cursor=pointer]:
+                      - /url: /settings
+                      - img [ref=f7e225]
+                      - generic [ref=f7e228]: الإعدادات
+            - generic [ref=f7e229]:
+              - button [ref=f7e230] [cursor=pointer]:
+                - img [ref=f7e231]
+              - generic [ref=f7e233]: النظام
+            - generic [ref=f7e235]:
+              - button "الملف الشخصي" [ref=f7e237] [cursor=pointer]: KH
+              - generic [ref=f7e238]:
+                - button "KHAMIS AL-JABOR khamis-1992@hotmail.com" [ref=f7e239] [cursor=pointer]:
+                  - paragraph [ref=f7e240]: KHAMIS AL-JABOR
+                  - paragraph [ref=f7e241]: khamis-1992@hotmail.com
+                - button "تسجيل الخروج" [ref=f7e242] [cursor=pointer]:
+                  - img [ref=f7e243]
+      - main "المحتوى الرئيسي" [ref=f7e246]:
+        - generic [ref=f7e247]:
+          - navigation "التنقل الرئيسي" [ref=f7e248]:
+            - navigation "Breadcrumb" [ref=f7e249]:
+              - link "لوحة التحكم" [ref=f7e250] [cursor=pointer]:
+                - /url: /dashboard
+                - img [ref=f7e251]
+                - generic [ref=f7e254]: لوحة التحكم
+              - img [ref=f7e255]
+              - link "المالية" [ref=f7e257] [cursor=pointer]:
+                - /url: /finance
+              - img [ref=f7e258]
+              - generic [ref=f7e260]: المالية
+          - generic [ref=f7e263]:
+            - generic [ref=f7e264]:
+              - generic [ref=f7e265]:
+                - generic [ref=f7e266]:
+                  - img [ref=f7e268]
+                  - generic [ref=f7e271]:
+                    - generic [ref=f7e272]:
+                      - generic [ref=f7e273]: مركز الفوترة والتحصيل
+                      - generic [ref=f7e274]: فواتير، مدفوعات، ودائع، إيجارات
+                    - heading "الفوترة والتحصيل" [level=1] [ref=f7e275]
+                    - paragraph [ref=f7e276]: مساحة واحدة لمراقبة الفواتير المستحقة، تحصيل الدفعات، ومتابعة التدفقات المرتبطة بالعقود.
+                - generic [ref=f7e277]:
+                  - button "ابدأ الجولة التعريفية" [ref=f7e278] [cursor=pointer]:
+                    - img [ref=f7e279]
+                    - text: ابدأ الجولة التعريفية
+                  - button "فاتورة جديدة" [ref=f7e282] [cursor=pointer]:
+                    - img [ref=f7e283]
+                    - text: فاتورة جديدة
+                  - button "تسجيل دفعة" [ref=f7e284] [cursor=pointer]:
+                    - img [ref=f7e285]
+                    - text: تسجيل دفعة
+                  - button "المالية" [ref=f7e287] [cursor=pointer]:
+                    - img [ref=f7e288]
+                    - text: المالية
+              - generic [ref=f7e290]:
+                - generic [ref=f7e291]:
+                  - generic [ref=f7e292]:
+                    - img [ref=f7e294]
+                    - generic [ref=f7e297]: 100 فاتورة
+                  - paragraph [ref=f7e298]: إجمالي الفواتير
+                  - paragraph [ref=f7e299]: QAR 178,879.43
+                - generic [ref=f7e300]:
+                  - generic [ref=f7e301]:
+                    - img [ref=f7e303]
+                    - generic [ref=f7e306]: +0%
+                  - paragraph [ref=f7e307]: المدفوع
+                  - paragraph [ref=f7e308]: QAR 0.00
+                - generic [ref=f7e309]:
+                  - generic [ref=f7e310]:
+                    - img [ref=f7e312]
+                    - generic [ref=f7e315]: قيد التحصيل
+                  - paragraph [ref=f7e316]: المستحق
+                  - paragraph [ref=f7e317]: QAR 0.00
+                - generic [ref=f7e318]:
+                  - generic [ref=f7e319]:
+                    - img [ref=f7e321]
+                    - generic [ref=f7e324]: 0 دفعة
+                  - paragraph [ref=f7e325]: مدفوعات هذا الشهر
+                  - paragraph [ref=f7e326]: QAR 0.00
+            - generic [ref=f7e327]:
+              - generic [ref=f7e328]:
+                - generic [ref=f7e329]:
+                  - paragraph [ref=f7e330]: Billing Workspace
+                  - heading "الفواتير" [level=2] [ref=f7e331]
+                  - paragraph [ref=f7e332]: إصدار ومتابعة
+                - tablist [ref=f7e333]:
+                  - tab "الفواتير إصدار ومتابعة" [selected] [ref=f7e334] [cursor=pointer]:
+                    - img [ref=f7e336]
+                    - generic [ref=f7e339]:
+                      - generic [ref=f7e340]: الفواتير
+                      - generic [ref=f7e341]: إصدار ومتابعة
+                  - tab "المدفوعات تحصيل وإيصالات" [ref=f7e342] [cursor=pointer]:
+                    - img [ref=f7e344]
+                    - generic [ref=f7e346]:
+                      - generic [ref=f7e347]: المدفوعات
+                      - generic [ref=f7e348]: تحصيل وإيصالات
+                  - tab "الودائع ضمانات العملاء" [ref=f7e349] [cursor=pointer]:
+                    - img [ref=f7e351]
+                    - generic [ref=f7e354]:
+                      - generic [ref=f7e355]: الودائع
+                      - generic [ref=f7e356]: ضمانات العملاء
+                  - tab "استيراد Excel دفعات تاريخية" [ref=f7e357] [cursor=pointer]:
+                    - img [ref=f7e359]
+                    - generic [ref=f7e362]:
+                      - generic [ref=f7e363]: استيراد Excel
+                      - generic [ref=f7e364]: دفعات تاريخية
+                  - tab "الإيجارات متابعة شهرية" [ref=f7e365] [cursor=pointer]:
+                    - img [ref=f7e367]
+                    - generic [ref=f7e369]:
+                      - generic [ref=f7e370]: الإيجارات
+                      - generic [ref=f7e371]: متابعة شهرية
+              - generic [ref=f7e372]:
+                - generic [ref=f7e373]:
+                  - img [ref=f7e375]
+                  - generic [ref=f7e378]:
+                    - paragraph [ref=f7e379]: تصفية العرض
+                    - paragraph [ref=f7e380]: بحث سريع وحالة السجل الحالي
+                - generic [ref=f7e381]:
+                  - button "ابدأ الجولة التعريفية" [ref=f7e382] [cursor=pointer]:
+                    - img [ref=f7e383]
+                    - text: ابدأ الجولة التعريفية
+                  - button "تصدير" [ref=f7e386] [cursor=pointer]:
+                    - img [ref=f7e387]
+                    - text: تصدير
+                  - generic [ref=f7e390]:
+                    - img [ref=f7e391]
+                    - textbox "بحث..." [ref=f7e394]
+                  - combobox [ref=f7e395] [cursor=pointer]:
+                    - generic: جميع الحالات
+                    - img [ref=f7e396]
+              - tabpanel "الفواتير إصدار ومتابعة" [ref=f7e398]:
+                - generic [ref=f7e399]:
+                  - generic [ref=f7e400]:
+                    - generic [ref=f7e401]:
+                      - paragraph [ref=f7e402]: إجراءات الفواتير
+                      - paragraph [ref=f7e403]: معاينة، تعديل، دفع، حذف، وتصدير الفواتير
+                    - button "ابدأ الجولة التعريفية" [ref=f7e404] [cursor=pointer]:
+                      - img [ref=f7e405]
+                      - text: ابدأ الجولة التعريفية
+                  - table "جدول الفواتير" [ref=f7e410]:
+                    - rowgroup [ref=f7e411]:
+                      - row "تحديد كل الفواتير رقم الفاتورة العميل التاريخ المبلغ الحالة الإجراءات" [ref=f7e412]:
+                        - columnheader "تحديد كل الفواتير" [ref=f7e413]:
+                          - checkbox "تحديد كل الفواتير" [ref=f7e414] [cursor=pointer]
+                        - columnheader "رقم الفاتورة" [ref=f7e415]
+                        - columnheader "العميل" [ref=f7e416]
+                        - columnheader "التاريخ" [ref=f7e417]
+                        - columnheader "المبلغ" [ref=f7e418]
+                        - columnheader "الحالة" [ref=f7e419]
+                        - columnheader "الإجراءات" [ref=f7e420]
+                    - rowgroup [ref=f7e421]:
+                      - 'row "تحديد الفاتورة PYINV3-PAY-MIG-1767434836487-32-1 PYINV3-PAY-MIG-1767434836487-32-1 أحمد بن ذهو 01 ديسمبر 2099 QAR 712.50 الحالة: غير مدفوعة معاينة الفاتورة تعديل الفاتورة دفع الفاتورة حذف الفاتورة" [ref=f7e422]':
+                        - cell "تحديد الفاتورة PYINV3-PAY-MIG-1767434836487-32-1" [ref=f7e423]:
+                          - checkbox "تحديد الفاتورة PYINV3-PAY-MIG-1767434836487-32-1" [ref=f7e424] [cursor=pointer]
+                        - cell "PYINV3-PAY-MIG-1767434836487-32-1" [ref=f7e425]
+                        - cell "أحمد بن ذهو" [ref=f7e426]
+                        - cell "01 ديسمبر 2099" [ref=f7e427]
+                        - cell "QAR 712.50" [ref=f7e428]
+                        - 'cell "الحالة: غير مدفوعة" [ref=f7e429]':
+                          - 'generic "الحالة: غير مدفوعة" [ref=f7e430]': غير مدفوعة
+                        - cell "معاينة الفاتورة تعديل الفاتورة دفع الفاتورة حذف الفاتورة" [ref=f7e431]:
+                          - generic [ref=f7e432]:
+                            - button "معاينة الفاتورة" [ref=f7e433] [cursor=pointer]:
+                              - img [ref=f7e434]
+                            - button "تعديل الفاتورة" [ref=f7e437] [cursor=pointer]:
+                              - img [ref=f7e438]
+                            - button "دفع الفاتورة" [ref=f7e441] [cursor=pointer]:
+                              - img [ref=f7e442]
+                            - button "حذف الفاتورة" [ref=f7e444] [cursor=pointer]:
+                              - img [ref=f7e445]
+                      - 'row "تحديد الفاتورة PYINV-PAY-1758229515515-1645 PYINV-PAY-1758229515515-1645 رافائيل دينو 01 ديسمبر 2099 QAR 1,250.00 الحالة: غير مدفوعة معاينة الفاتورة تعديل الفاتورة دفع الفاتورة حذف الفاتورة" [ref=f7e448]':
+                        - cell "تحديد الفاتورة PYINV-PAY-1758229515515-1645" [ref=f7e449]:
+                          - checkbox "تحديد الفاتورة PYINV-PAY-1758229515515-1645" [ref=f7e450] [cursor=pointer]
+                        - cell "PYINV-PAY-1758229515515-1645" [ref=f7e451]
+                        - cell "رافائيل دينو" [ref=f7e452]
+                        - cell "01 ديسمبر 2099" [ref=f7e453]
+                        - cell "QAR 1,250.00" [ref=f7e454]
+                        - 'cell "الحالة: غير مدفوعة" [ref=f7e455]':
+                          - 'generic "الحالة: غير مدفوعة" [ref=f7e456]': غير مدفوعة
+                        - cell "معاينة الفاتورة تعديل الفاتورة دفع الفاتورة حذف الفاتورة" [ref=f7e457]:
+                          - generic [ref=f7e458]:
+                            - button "معاينة الفاتورة" [ref=f7e459] [cursor=pointer]:
+                              - img [ref=f7e460]
+                            - button "تعديل الفاتورة" [ref=f7e463] [cursor=pointer]:
+                              - img [ref=f7e464]
+                            - button "دفع الفاتورة" [ref=f7e467] [cursor=pointer]:
+                              - img [ref=f7e468]
+                            - button "حذف الفاتورة" [ref=f7e470] [cursor=pointer]:
+                              - img [ref=f7e471]
+                      - 'row "تحديد الفاتورة PYINV-PAY-1758229515514-1532 PYINV-PAY-1758229515514-1532 رافائيل دينو 01 نوفمبر 2099 QAR 1,750.00 الحالة: غير مدفوعة معاينة الفاتورة تعديل الفاتورة دفع الفاتورة حذف الفاتورة" [ref=f7e474]':
+                        - cell "تحديد الفاتورة PYINV-PAY-1758229515514-1532" [ref=f7e475]:
+                          - checkbox "تحديد الفاتورة PYINV-PAY-1758229515514-1532" [ref=f7e476] [cursor=pointer]
+                        - cell "PYINV-PAY-1758229515514-1532" [ref=f7e477]
+                        - cell "رافائيل دينو" [ref=f7e478]
+                        - cell "01 نوفمبر 2099" [ref=f7e479]
+                        - cell "QAR 1,750.00" [ref=f7e480]
+                        - 'cell "الحالة: غير مدفوعة" [ref=f7e481]':
+                          - 'generic "الحالة: غير مدفوعة" [ref=f7e482]': غير مدفوعة
+                        - cell "معاينة الفاتورة تعديل الفاتورة دفع الفاتورة حذف الفاتورة" [ref=f7e483]:
+                          - generic [ref=f7e484]:
+                            - button "معاينة الفاتورة" [ref=f7e485] [cursor=pointer]:
+                              - img [ref=f7e486]
+                            - button "تعديل الفاتورة" [ref=f7e489] [cursor=pointer]:
+                              - img [ref=f7e490]
+                            - button "دفع الفاتورة" [ref=f7e493] [cursor=pointer]:
+                              - img [ref=f7e494]
+                            - button "حذف الفاتورة" [ref=f7e496] [cursor=pointer]:
+                              - img [ref=f7e497]
+                      - 'row "تحديد الفاتورة PYINV3-PAY-MIG-1767434836487-22-2 PYINV3-PAY-MIG-1767434836487-22-2 أحمد بن ذهو 01 نوفمبر 2099 QAR 2,500.00 الحالة: غير مدفوعة معاينة الفاتورة تعديل الفاتورة دفع الفاتورة حذف الفاتورة" [ref=f7e500]':
+                        - cell "تحديد الفاتورة PYINV3-PAY-MIG-1767434836487-22-2" [ref=f7e501]:
+                          - checkbox "تحديد الفاتورة PYINV3-PAY-MIG-1767434836487-22-2" [ref=f7e502] [cursor=pointer]
+                        - cell "PYINV3-PAY-MIG-1767434836487-22-2" [ref=f7e503]
+                        - cell "أحمد بن ذهو" [ref=f7e504]
+                        - cell "01 نوفمبر 2099" [ref=f7e505]
+                        - cell "QAR 2,500.00" [ref=f7e506]
+                        - 'cell "الحالة: غير مدفوعة" [ref=f7e507]':
+                          - 'generic "الحالة: غير مدفوعة" [ref=f7e508]': غير مدفوعة
+                        - cell "معاينة الفاتورة تعديل الفاتورة دفع الفاتورة حذف الفاتورة" [ref=f7e509]:
+                          - generic [ref=f7e510]:
+                            - button "معاينة الفاتورة" [ref=f7e511] [cursor=pointer]:
+                              - img [ref=f7e512]
+                            - button "تعديل الفاتورة" [ref=f7e515] [cursor=pointer]:
+                              - img [ref=f7e516]
+                            - button "دفع الفاتورة" [ref=f7e519] [cursor=pointer]:
+                              - img [ref=f7e520]
+                            - button "حذف الفاتورة" [ref=f7e522] [cursor=pointer]:
+                              - img [ref=f7e523]
+                      - 'row "تحديد الفاتورة PYINV-PAY-1758229515514-1507 PYINV-PAY-1758229515514-1507 رافائيل دينو 01 أكتوبر 2099 QAR 1,750.00 الحالة: غير مدفوعة معاينة الفاتورة تعديل الفاتورة دفع الفاتورة حذف الفاتورة" [ref=f7e526]':
+                        - cell "تحديد الفاتورة PYINV-PAY-1758229515514-1507" [ref=f7e527]:
+                          - checkbox "تحديد الفاتورة PYINV-PAY-1758229515514-1507" [ref=f7e528] [cursor=pointer]
+                        - cell "PYINV-PAY-1758229515514-1507" [ref=f7e529]
+                        - cell "رافائيل دينو" [ref=f7e530]
+                        - cell "01 أكتوبر 2099" [ref=f7e531]
+                        - cell "QAR 1,750.00" [ref=f7e532]
+                        - 'cell "الحالة: غير مدفوعة" [ref=f7e533]':
+                          - 'generic "الحالة: غير مدفوعة" [ref=f7e534]': غير مدفوعة
+                        - cell "معاينة الفاتورة تعديل الفاتورة دفع الفاتورة حذف الفاتورة" [ref=f7e535]:
+                          - generic [ref=f7e536]:
+                            - button "معاينة الفاتورة" [ref=f7e537] [cursor=pointer]:
+                              - img [ref=f7e538]
+                            - button "تعديل الفاتورة" [ref=f7e541] [cursor=pointer]:
+                              - img [ref=f7e542]
+                            - button "دفع الفاتورة" [ref=f7e545] [cursor=pointer]:
+                              - img [ref=f7e546]
+                            - button "حذف الفاتورة" [ref=f7e548] [cursor=pointer]:
+                              - img [ref=f7e549]
+                      - 'row "تحديد الفاتورة PYINV3-PAY-MIG-1767434836487-4-10 PYINV3-PAY-MIG-1767434836487-4-10 سيد ابراهيم السيد 01 أكتوبر 2099 QAR 760.00 الحالة: غير مدفوعة معاينة الفاتورة تعديل الفاتورة دفع الفاتورة حذف الفاتورة" [ref=f7e552]':
+                        - cell "تحديد الفاتورة PYINV3-PAY-MIG-1767434836487-4-10" [ref=f7e553]:
+                          - checkbox "تحديد الفاتورة PYINV3-PAY-MIG-1767434836487-4-10" [ref=f7e554] [cursor=pointer]
+                        - cell "PYINV3-PAY-MIG-1767434836487-4-10" [ref=f7e555]
+                        - cell "سيد ابراهيم السيد" [ref=f7e556]
+                        - cell "01 أكتوبر 2099" [ref=f7e557]
+                        - cell "QAR 760.00" [ref=f7e558]
+                        - 'cell "الحالة: غير مدفوعة" [ref=f7e559]':
+                          - 'generic "الحالة: غير مدفوعة" [ref=f7e560]': غير مدفوعة
+                        - cell "معاينة الفاتورة تعديل الفاتورة دفع الفاتورة حذف الفاتورة" [ref=f7e561]:
+                          - generic [ref=f7e562]:
+                            - button "معاينة الفاتورة" [ref=f7e563] [cursor=pointer]:
+                              - img [ref=f7e564]
+                            - button "تعديل الفاتورة" [ref=f7e567] [cursor=pointer]:
+                              - img [ref=f7e568]
+                            - button "دفع الفاتورة" [ref=f7e571] [cursor=pointer]:
+                              - img [ref=f7e572]
+                            - button "حذف الفاتورة" [ref=f7e574] [cursor=pointer]:
+                              - img [ref=f7e575]
+                      - 'row "تحديد الفاتورة PYINV3-PAY-MIG-1767434836487-22-1 PYINV3-PAY-MIG-1767434836487-22-1 أحمد بن ذهو 01 أكتوبر 2099 QAR 2,500.00 الحالة: غير مدفوعة معاينة الفاتورة تعديل الفاتورة دفع الفاتورة حذف الفاتورة" [ref=f7e578]':
+                        - cell "تحديد الفاتورة PYINV3-PAY-MIG-1767434836487-22-1" [ref=f7e579]:
+                          - checkbox "تحديد الفاتورة PYINV3-PAY-MIG-1767434836487-22-1" [ref=f7e580] [cursor=pointer]
+                        - cell "PYINV3-PAY-MIG-1767434836487-22-1" [ref=f7e581]
+                        - cell "أحمد بن ذهو" [ref=f7e582]
+                        - cell "01 أكتوبر 2099" [ref=f7e583]
+                        - cell "QAR 2,500.00" [ref=f7e584]
+                        - 'cell "الحالة: غير مدفوعة" [ref=f7e585]':
+                          - 'generic "الحالة: غير مدفوعة" [ref=f7e586]': غير مدفوعة
+                        - cell "معاينة الفاتورة تعديل الفاتورة دفع الفاتورة حذف الفاتورة" [ref=f7e587]:
+                          - generic [ref=f7e588]:
+                            - button "معاينة الفاتورة" [ref=f7e589] [cursor=pointer]:
+                              - img [ref=f7e590]
+                            - button "تعديل الفاتورة" [ref=f7e593] [cursor=pointer]:
+                              - img [ref=f7e594]
+                            - button "دفع الفاتورة" [ref=f7e597] [cursor=pointer]:
+                              - img [ref=f7e598]
+                            - button "حذف الفاتورة" [ref=f7e600] [cursor=pointer]:
+                              - img [ref=f7e601]
+                      - 'row "تحديد الفاتورة PYINV3-PAY-MIG-1767434836487-52-1 PYINV3-PAY-MIG-1767434836487-52-1 محمد أمين سالم 01 سبتمبر 2099 QAR 1,137.53 الحالة: غير مدفوعة معاينة الفاتورة تعديل الفاتورة دفع الفاتورة حذف الفاتورة" [ref=f7e604]':
+                        - cell "تحديد الفاتورة PYINV3-PAY-MIG-1767434836487-52-1" [ref=f7e605]:
+                          - checkbox "تحديد الفاتورة PYINV3-PAY-MIG-1767434836487-52-1" [ref=f7e606] [cursor=pointer]
+                        - cell "PYINV3-PAY-MIG-1767434836487-52-1" [ref=f7e607]
+                        - cell "محمد أمين سالم" [ref=f7e608]
+                        - cell "01 سبتمبر 2099" [ref=f7e609]
+                        - cell "QAR 1,137.53" [ref=f7e610]
+                        - 'cell "الحالة: غير مدفوعة" [ref=f7e611]':
+                          - 'generic "الحالة: غير مدفوعة" [ref=f7e612]': غير مدفوعة
+                        - cell "معاينة الفاتورة تعديل الفاتورة دفع الفاتورة حذف الفاتورة" [ref=f7e613]:
+                          - generic [ref=f7e614]:
+                            - button "معاينة الفاتورة" [ref=f7e615] [cursor=pointer]:
+                              - img [ref=f7e616]
+                            - button "تعديل الفاتورة" [ref=f7e619] [cursor=pointer]:
+                              - img [ref=f7e620]
+                            - button "دفع الفاتورة" [ref=f7e623] [cursor=pointer]:
+                              - img [ref=f7e624]
+                            - button "حذف الفاتورة" [ref=f7e626] [cursor=pointer]:
+                              - img [ref=f7e627]
+                      - 'row "تحديد الفاتورة PYINV3-PAY-MIG-1767434836487-46-0 PYINV3-PAY-MIG-1767434836487-46-0 محمد أمين سالم 01 سبتمبر 2099 QAR 1,000.00 الحالة: غير مدفوعة معاينة الفاتورة تعديل الفاتورة دفع الفاتورة حذف الفاتورة" [ref=f7e630]':
+                        - cell "تحديد الفاتورة PYINV3-PAY-MIG-1767434836487-46-0" [ref=f7e631]:
+                          - checkbox "تحديد الفاتورة PYINV3-PAY-MIG-1767434836487-46-0" [ref=f7e632] [cursor=pointer]
+                        - cell "PYINV3-PAY-MIG-1767434836487-46-0" [ref=f7e633]
+                        - cell "محمد أمين سالم" [ref=f7e634]
+                        - cell "01 سبتمبر 2099" [ref=f7e635]
+                        - cell "QAR 1,000.00" [ref=f7e636]
+                        - 'cell "الحالة: غير مدفوعة" [ref=f7e637]':
+                          - 'generic "الحالة: غير مدفوعة" [ref=f7e638]': غير مدفوعة
+                        - cell "معاينة الفاتورة تعديل الفاتورة دفع الفاتورة حذف الفاتورة" [ref=f7e639]:
+                          - generic [ref=f7e640]:
+                            - button "معاينة الفاتورة" [ref=f7e641] [cursor=pointer]:
+                              - img [ref=f7e642]
+                            - button "تعديل الفاتورة" [ref=f7e645] [cursor=pointer]:
+                              - img [ref=f7e646]
+                            - button "دفع الفاتورة" [ref=f7e649] [cursor=pointer]:
+                              - img [ref=f7e650]
+                            - button "حذف الفاتورة" [ref=f7e652] [cursor=pointer]:
+                              - img [ref=f7e653]
+                      - 'row "تحديد الفاتورة PYINV-PAY-1758229515505-1078 PYINV-PAY-1758229515505-1078 رافائيل دينو 01 سبتمبر 2099 QAR 500.00 الحالة: غير مدفوعة معاينة الفاتورة تعديل الفاتورة دفع الفاتورة حذف الفاتورة" [ref=f7e656]':
+                        - cell "تحديد الفاتورة PYINV-PAY-1758229515505-1078" [ref=f7e657]:
+                          - checkbox "تحديد الفاتورة PYINV-PAY-1758229515505-1078" [ref=f7e658] [cursor=pointer]
+                        - cell "PYINV-PAY-1758229515505-1078" [ref=f7e659]
+                        - cell "رافائيل دينو" [ref=f7e660]
+                        - cell "01 سبتمبر 2099" [ref=f7e661]
+                        - cell "QAR 500.00" [ref=f7e662]
+                        - 'cell "الحالة: غير مدفوعة" [ref=f7e663]':
+                          - 'generic "الحالة: غير مدفوعة" [ref=f7e664]': غير مدفوعة
+                        - cell "معاينة الفاتورة تعديل الفاتورة دفع الفاتورة حذف الفاتورة" [ref=f7e665]:
+                          - generic [ref=f7e666]:
+                            - button "معاينة الفاتورة" [ref=f7e667] [cursor=pointer]:
+                              - img [ref=f7e668]
+                            - button "تعديل الفاتورة" [ref=f7e671] [cursor=pointer]:
+                              - img [ref=f7e672]
+                            - button "دفع الفاتورة" [ref=f7e675] [cursor=pointer]:
+                              - img [ref=f7e676]
+                            - button "حذف الفاتورة" [ref=f7e678] [cursor=pointer]:
+                              - img [ref=f7e679]
+                      - 'row "تحديد الفاتورة PYINV3-PAY-MIG-1767434836487-4-7 PYINV3-PAY-MIG-1767434836487-4-7 سيد ابراهيم السيد 01 سبتمبر 2099 QAR 760.00 الحالة: غير مدفوعة معاينة الفاتورة تعديل الفاتورة دفع الفاتورة حذف الفاتورة" [ref=f7e682]':
+                        - cell "تحديد الفاتورة PYINV3-PAY-MIG-1767434836487-4-7" [ref=f7e683]:
+                          - checkbox "تحديد الفاتورة PYINV3-PAY-MIG-1767434836487-4-7" [ref=f7e684] [cursor=pointer]
+                        - cell "PYINV3-PAY-MIG-1767434836487-4-7" [ref=f7e685]
+                        - cell "سيد ابراهيم السيد" [ref=f7e686]
+                        - cell "01 سبتمبر 2099" [ref=f7e687]
+                        - cell "QAR 760.00" [ref=f7e688]
+                        - 'cell "الحالة: غير مدفوعة" [ref=f7e689]':
+                          - 'generic "الحالة: غير مدفوعة" [ref=f7e690]': غير مدفوعة
+                        - cell "معاينة الفاتورة تعديل الفاتورة دفع الفاتورة حذف الفاتورة" [ref=f7e691]:
+                          - generic [ref=f7e692]:
+                            - button "معاينة الفاتورة" [ref=f7e693] [cursor=pointer]:
+                              - img [ref=f7e694]
+                            - button "تعديل الفاتورة" [ref=f7e697] [cursor=pointer]:
+                              - img [ref=f7e698]
+                            - button "دفع الفاتورة" [ref=f7e701] [cursor=pointer]:
+                              - img [ref=f7e702]
+                            - button "حذف الفاتورة" [ref=f7e704] [cursor=pointer]:
+                              - img [ref=f7e705]
+                      - 'row "تحديد الفاتورة PYINV3-PAY-MIG-1767434836487-6-2 PYINV3-PAY-MIG-1767434836487-6-2 أحمد بن ذهو 01 سبتمبر 2099 QAR 875.00 الحالة: غير مدفوعة معاينة الفاتورة تعديل الفاتورة دفع الفاتورة حذف الفاتورة" [ref=f7e708]':
+                        - cell "تحديد الفاتورة PYINV3-PAY-MIG-1767434836487-6-2" [ref=f7e709]:
+                          - checkbox "تحديد الفاتورة PYINV3-PAY-MIG-1767434836487-6-2" [ref=f7e710] [cursor=pointer]
+                        - cell "PYINV3-PAY-MIG-1767434836487-6-2" [ref=f7e711]
+                        - cell "أحمد بن ذهو" [ref=f7e712]
+                        - cell "01 سبتمبر 2099" [ref=f7e713]
+                        - cell "QAR 875.00" [ref=f7e714]
+                        - 'cell "الحالة: غير مدفوعة" [ref=f7e715]':
+                          - 'generic "الحالة: غير مدفوعة" [ref=f7e716]': غير مدفوعة
+                        - cell "معاينة الفاتورة تعديل الفاتورة دفع الفاتورة حذف الفاتورة" [ref=f7e717]:
+                          - generic [ref=f7e718]:
+                            - button "معاينة الفاتورة" [ref=f7e719] [cursor=pointer]:
+                              - img [ref=f7e720]
+                            - button "تعديل الفاتورة" [ref=f7e723] [cursor=pointer]:
+                              - img [ref=f7e724]
+                            - button "دفع الفاتورة" [ref=f7e727] [cursor=pointer]:
+                              - img [ref=f7e728]
+                            - button "حذف الفاتورة" [ref=f7e730] [cursor=pointer]:
+                              - img [ref=f7e731]
+                      - 'row "تحديد الفاتورة PYINV3-PAY-MIG-1767434836487-24-9 PYINV3-PAY-MIG-1767434836487-24-9 محمد أمين سالم 01 سبتمبر 2099 QAR 889.30 الحالة: غير مدفوعة معاينة الفاتورة تعديل الفاتورة دفع الفاتورة حذف الفاتورة" [ref=f7e734]':
+                        - cell "تحديد الفاتورة PYINV3-PAY-MIG-1767434836487-24-9" [ref=f7e735]:
+                          - checkbox "تحديد الفاتورة PYINV3-PAY-MIG-1767434836487-24-9" [ref=f7e736] [cursor=pointer]
+                        - cell "PYINV3-PAY-MIG-1767434836487-24-9" [ref=f7e737]
+                        - cell "محمد أمين سالم" [ref=f7e738]
+                        - cell "01 سبتمبر 2099" [ref=f7e739]
+                        - cell "QAR 889.30" [ref=f7e740]
+                        - 'cell "الحالة: غير مدفوعة" [ref=f7e741]':
+                          - 'generic "الحالة: غير مدفوعة" [ref=f7e742]': غير مدفوعة
+                        - cell "معاينة الفاتورة تعديل الفاتورة دفع الفاتورة حذف الفاتورة" [ref=f7e743]:
+                          - generic [ref=f7e744]:
+                            - button "معاينة الفاتورة" [ref=f7e745] [cursor=pointer]:
+                              - img [ref=f7e746]
+                            - button "تعديل الفاتورة" [ref=f7e749] [cursor=pointer]:
+                              - img [ref=f7e750]
+                            - button "دفع الفاتورة" [ref=f7e753] [cursor=pointer]:
+                              - img [ref=f7e754]
+                            - button "حذف الفاتورة" [ref=f7e756] [cursor=pointer]:
+                              - img [ref=f7e757]
+                      - 'row "تحديد الفاتورة PYINV3-PAY-MIG-1767434836487-72-5 PYINV3-PAY-MIG-1767434836487-72-5 سعيد شنوف 01 أغسطس 2099 QAR 345.00 الحالة: غير مدفوعة معاينة الفاتورة تعديل الفاتورة دفع الفاتورة حذف الفاتورة" [ref=f7e760]':
+                        - cell "تحديد الفاتورة PYINV3-PAY-MIG-1767434836487-72-5" [ref=f7e761]:
+                          - checkbox "تحديد الفاتورة PYINV3-PAY-MIG-1767434836487-72-5" [ref=f7e762] [cursor=pointer]
+                        - cell "PYINV3-PAY-MIG-1767434836487-72-5" [ref=f7e763]
+                        - cell "سعيد شنوف" [ref=f7e764]
+                        - cell "01 أغسطس 2099" [ref=f7e765]
+                        - cell "QAR 345.00" [ref=f7e766]
+                        - 'cell "الحالة: غير مدفوعة" [ref=f7e767]':
+                          - 'generic "الحالة: غير مدفوعة" [ref=f7e768]': غير مدفوعة
+                        - cell "معاينة الفاتورة تعديل الفاتورة دفع الفاتورة حذف الفاتورة" [ref=f7e769]:
+                          - generic [ref=f7e770]:
+                            - button "معاينة الفاتورة" [ref=f7e771] [cursor=pointer]:
+                              - img [ref=f7e772]
+                            - button "تعديل الفاتورة" [ref=f7e775] [cursor=pointer]:
+                              - img [ref=f7e776]
+                            - button "دفع الفاتورة" [ref=f7e779] [cursor=pointer]:
+                              - img [ref=f7e780]
+                            - button "حذف الفاتورة" [ref=f7e782] [cursor=pointer]:
+                              - img [ref=f7e783]
+                      - 'row "تحديد الفاتورة PYINV-PAY-1758229515502-848 PYINV-PAY-1758229515502-848 رافائيل دينو 01 أغسطس 2099 QAR 1,750.00 الحالة: غير مدفوعة معاينة الفاتورة تعديل الفاتورة دفع الفاتورة حذف الفاتورة" [ref=f7e786]':
+                        - cell "تحديد الفاتورة PYINV-PAY-1758229515502-848" [ref=f7e787]:
+                          - checkbox "تحديد الفاتورة PYINV-PAY-1758229515502-848" [ref=f7e788] [cursor=pointer]
+                        - cell "PYINV-PAY-1758229515502-848" [ref=f7e789]
+                        - cell "رافائيل دينو" [ref=f7e790]
+                        - cell "01 أغسطس 2099" [ref=f7e791]
+                        - cell "QAR 1,750.00" [ref=f7e792]
+                        - 'cell "الحالة: غير مدفوعة" [ref=f7e793]':
+                          - 'generic "الحالة: غير مدفوعة" [ref=f7e794]': غير مدفوعة
+                        - cell "معاينة الفاتورة تعديل الفاتورة دفع الفاتورة حذف الفاتورة" [ref=f7e795]:
+                          - generic [ref=f7e796]:
+                            - button "معاينة الفاتورة" [ref=f7e797] [cursor=pointer]:
+                              - img [ref=f7e798]
+                            - button "تعديل الفاتورة" [ref=f7e801] [cursor=pointer]:
+                              - img [ref=f7e802]
+                            - button "دفع الفاتورة" [ref=f7e805] [cursor=pointer]:
+                              - img [ref=f7e806]
+                            - button "حذف الفاتورة" [ref=f7e808] [cursor=pointer]:
+                              - img [ref=f7e809]
+                      - 'row "تحديد الفاتورة PYINV3-PAY-MIG-1767434836487-4-6 PYINV3-PAY-MIG-1767434836487-4-6 سيد ابراهيم السيد 01 أغسطس 2099 QAR 760.00 الحالة: غير مدفوعة معاينة الفاتورة تعديل الفاتورة دفع الفاتورة حذف الفاتورة" [ref=f7e812]':
+                        - cell "تحديد الفاتورة PYINV3-PAY-MIG-1767434836487-4-6" [ref=f7e813]:
+                          - checkbox "تحديد الفاتورة PYINV3-PAY-MIG-1767434836487-4-6" [ref=f7e814] [cursor=pointer]
+                        - cell "PYINV3-PAY-MIG-1767434836487-4-6" [ref=f7e815]
+                        - cell "سيد ابراهيم السيد" [ref=f7e816]
+                        - cell "01 أغسطس 2099" [ref=f7e817]
+                        - cell "QAR 760.00" [ref=f7e818]
+                        - 'cell "الحالة: غير مدفوعة" [ref=f7e819]':
+                          - 'generic "الحالة: غير مدفوعة" [ref=f7e820]': غير مدفوعة
+                        - cell "معاينة الفاتورة تعديل الفاتورة دفع الفاتورة حذف الفاتورة" [ref=f7e821]:
+                          - generic [ref=f7e822]:
+                            - button "معاينة الفاتورة" [ref=f7e823] [cursor=pointer]:
+                              - img [ref=f7e824]
+                            - button "تعديل الفاتورة" [ref=f7e827] [cursor=pointer]:
+                              - img [ref=f7e828]
+                            - button "دفع الفاتورة" [ref=f7e831] [cursor=pointer]:
+                              - img [ref=f7e832]
+                            - button "حذف الفاتورة" [ref=f7e834] [cursor=pointer]:
+                              - img [ref=f7e835]
+                      - 'row "تحديد الفاتورة PYINV3-PAY-MIG-1767434836487-6-0 PYINV3-PAY-MIG-1767434836487-6-0 أحمد بن ذهو 01 أغسطس 2099 QAR 875.00 الحالة: غير مدفوعة معاينة الفاتورة تعديل الفاتورة دفع الفاتورة حذف الفاتورة" [ref=f7e838]':
+                        - cell "تحديد الفاتورة PYINV3-PAY-MIG-1767434836487-6-0" [ref=f7e839]:
+                          - checkbox "تحديد الفاتورة PYINV3-PAY-MIG-1767434836487-6-0" [ref=f7e840] [cursor=pointer]
+                        - cell "PYINV3-PAY-MIG-1767434836487-6-0" [ref=f7e841]
+                        - cell "أحمد بن ذهو" [ref=f7e842]
+                        - cell "01 أغسطس 2099" [ref=f7e843]
+                        - cell "QAR 875.00" [ref=f7e844]
+                        - 'cell "الحالة: غير مدفوعة" [ref=f7e845]':
+                          - 'generic "الحالة: غير مدفوعة" [ref=f7e846]': غير مدفوعة
+                        - cell "معاينة الفاتورة تعديل الفاتورة دفع الفاتورة حذف الفاتورة" [ref=f7e847]:
+                          - generic [ref=f7e848]:
+                            - button "معاينة الفاتورة" [ref=f7e849] [cursor=pointer]:
+                              - img [ref=f7e850]
+                            - button "تعديل الفاتورة" [ref=f7e853] [cursor=pointer]:
+                              - img [ref=f7e854]
+                            - button "دفع الفاتورة" [ref=f7e857] [cursor=pointer]:
+                              - img [ref=f7e858]
+                            - button "حذف الفاتورة" [ref=f7e860] [cursor=pointer]:
+                              - img [ref=f7e861]
+                      - 'row "تحديد الفاتورة PYINV3-PAY-MIG-1767434836487-24-6 PYINV3-PAY-MIG-1767434836487-24-6 محمد أمين سالم 01 أغسطس 2099 QAR 889.30 الحالة: غير مدفوعة معاينة الفاتورة تعديل الفاتورة دفع الفاتورة حذف الفاتورة" [ref=f7e864]':
+                        - cell "تحديد الفاتورة PYINV3-PAY-MIG-1767434836487-24-6" [ref=f7e865]:
+                          - checkbox "تحديد الفاتورة PYINV3-PAY-MIG-1767434836487-24-6" [ref=f7e866] [cursor=pointer]
+                        - cell "PYINV3-PAY-MIG-1767434836487-24-6" [ref=f7e867]
+                        - cell "محمد أمين سالم" [ref=f7e868]
+                        - cell "01 أغسطس 2099" [ref=f7e869]
+                        - cell "QAR 889.30" [ref=f7e870]
+                        - 'cell "الحالة: غير مدفوعة" [ref=f7e871]':
+                          - 'generic "الحالة: غير مدفوعة" [ref=f7e872]': غير مدفوعة
+                        - cell "معاينة الفاتورة تعديل الفاتورة دفع الفاتورة حذف الفاتورة" [ref=f7e873]:
+                          - generic [ref=f7e874]:
+                            - button "معاينة الفاتورة" [ref=f7e875] [cursor=pointer]:
+                              - img [ref=f7e876]
+                            - button "تعديل الفاتورة" [ref=f7e879] [cursor=pointer]:
+                              - img [ref=f7e880]
+                            - button "دفع الفاتورة" [ref=f7e883] [cursor=pointer]:
+                              - img [ref=f7e884]
+                            - button "حذف الفاتورة" [ref=f7e886] [cursor=pointer]:
+                              - img [ref=f7e887]
+                      - 'row "تحديد الفاتورة PYINV3-PAY-MIG-1767434836487-24-7 PYINV3-PAY-MIG-1767434836487-24-7 محمد أمين سالم 01 أغسطس 2099 QAR 889.30 الحالة: غير مدفوعة معاينة الفاتورة تعديل الفاتورة دفع الفاتورة حذف الفاتورة" [ref=f7e890]':
+                        - cell "تحديد الفاتورة PYINV3-PAY-MIG-1767434836487-24-7" [ref=f7e891]:
+                          - checkbox "تحديد الفاتورة PYINV3-PAY-MIG-1767434836487-24-7" [ref=f7e892] [cursor=pointer]
+                        - cell "PYINV3-PAY-MIG-1767434836487-24-7" [ref=f7e893]
+                        - cell "محمد أمين سالم" [ref=f7e894]
+                        - cell "01 أغسطس 2099" [ref=f7e895]
+                        - cell "QAR 889.30" [ref=f7e896]
+                        - 'cell "الحالة: غير مدفوعة" [ref=f7e897]':
+                          - 'generic "الحالة: غير مدفوعة" [ref=f7e898]': غير مدفوعة
+                        - cell "معاينة الفاتورة تعديل الفاتورة دفع الفاتورة حذف الفاتورة" [ref=f7e899]:
+                          - generic [ref=f7e900]:
+                            - button "معاينة الفاتورة" [ref=f7e901] [cursor=pointer]:
+                              - img [ref=f7e902]
+                            - button "تعديل الفاتورة" [ref=f7e905] [cursor=pointer]:
+                              - img [ref=f7e906]
+                            - button "دفع الفاتورة" [ref=f7e909] [cursor=pointer]:
+                              - img [ref=f7e910]
+                            - button "حذف الفاتورة" [ref=f7e912] [cursor=pointer]:
+                              - img [ref=f7e913]
+                      - 'row "تحديد الفاتورة PYINV3-PAY-MIG-1767434836487-24-8 PYINV3-PAY-MIG-1767434836487-24-8 محمد أمين سالم 01 أغسطس 2099 QAR 889.30 الحالة: غير مدفوعة معاينة الفاتورة تعديل الفاتورة دفع الفاتورة حذف الفاتورة" [ref=f7e916]':
+                        - cell "تحديد الفاتورة PYINV3-PAY-MIG-1767434836487-24-8" [ref=f7e917]:
+                          - checkbox "تحديد الفاتورة PYINV3-PAY-MIG-1767434836487-24-8" [ref=f7e918] [cursor=pointer]
+                        - cell "PYINV3-PAY-MIG-1767434836487-24-8" [ref=f7e919]
+                        - cell "محمد أمين سالم" [ref=f7e920]
+                        - cell "01 أغسطس 2099" [ref=f7e921]
+                        - cell "QAR 889.30" [ref=f7e922]
+                        - 'cell "الحالة: غير مدفوعة" [ref=f7e923]':
+                          - 'generic "الحالة: غير مدفوعة" [ref=f7e924]': غير مدفوعة
+                        - cell "معاينة الفاتورة تعديل الفاتورة دفع الفاتورة حذف الفاتورة" [ref=f7e925]:
+                          - generic [ref=f7e926]:
+                            - button "معاينة الفاتورة" [ref=f7e927] [cursor=pointer]:
+                              - img [ref=f7e928]
+                            - button "تعديل الفاتورة" [ref=f7e931] [cursor=pointer]:
+                              - img [ref=f7e932]
+                            - button "دفع الفاتورة" [ref=f7e935] [cursor=pointer]:
+                              - img [ref=f7e936]
+                            - button "حذف الفاتورة" [ref=f7e938] [cursor=pointer]:
+                              - img [ref=f7e939]
+    - region "Notifications (F8)":
+      - list
+    - region "Notifications alt+T"
+  - generic [ref=f7e942]:
+    - img [ref=f7e944]
+    - button "Open Tanstack query devtools" [ref=f7e992] [cursor=pointer]:
+      - img [ref=f7e993]

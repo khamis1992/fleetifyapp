@@ -1,0 +1,115 @@
+======================================================================
+FIX UNLINKED INVOICES: Create placeholder contracts
+======================================================================
+Unlinked invoices: 1989
+  With customer_id: 1978
+  Without customer_id: 11
+
+  Linked to existing contracts: 0
+  Need new contracts: 85 customers
+  FAILED to create contract for customer 1c0318cc: {"code":"23503","details":"Key (contract_id)=(5cf30f8a-c7a7-42a3-9f89-759f6a7cfc6b) is not present in table \"contracts\".","hint":null,"message":"insert or update on table \"contract_tag_assignments\
+  FAILED to create contract for customer e73e470d: {"code":"23503","details":"Key (contract_id)=(b145dfba-eb25-43fd-a0ab-b95cf3eba2bd) is not present in table \"contracts\".","hint":null,"message":"insert or update on table \"contract_tag_assignments\
+  FAILED to create contract for customer 84e4638c: {"code":"23503","details":"Key (contract_id)=(9ea32d7e-14a4-4579-871b-bd8d20464281) is not present in table \"contracts\".","hint":null,"message":"insert or update on table \"contract_tag_assignments\
+  FAILED to create contract for customer 24fd54e9: {"code":"23503","details":"Key (contract_id)=(3f5ea0ee-6814-4264-b892-417e3365655a) is not present in table \"contracts\".","hint":null,"message":"insert or update on table \"contract_tag_assignments\
+  FAILED to create contract for customer f69b69c3: {"code":"23503","details":"Key (contract_id)=(d53fe99b-35ab-460f-be9a-d2301608fe79) is not present in table \"contracts\".","hint":null,"message":"insert or update on table \"contract_tag_assignments\
+  FAILED to create contract for customer 24e372cc: {"code":"23503","details":"Key (contract_id)=(916448f6-8100-4778-982b-58e900d0a970) is not present in table \"contracts\".","hint":null,"message":"insert or update on table \"contract_tag_assignments\
+  FAILED to create contract for customer f3a24bcf: {"code":"23503","details":"Key (contract_id)=(85b1ff9f-dc5b-4028-aa09-0f7f5d94d615) is not present in table \"contracts\".","hint":null,"message":"insert or update on table \"contract_tag_assignments\
+  FAILED to create contract for customer b67e2978: {"code":"23503","details":"Key (contract_id)=(a86bc8b5-6347-4067-af23-d1a40cdd1e0d) is not present in table \"contracts\".","hint":null,"message":"insert or update on table \"contract_tag_assignments\
+  FAILED to create contract for customer aa534e45: {"code":"23503","details":"Key (contract_id)=(9011fd78-f7ce-48d9-a6df-81d1adf87b44) is not present in table \"contracts\".","hint":null,"message":"insert or update on table \"contract_tag_assignments\
+  FAILED to create contract for customer 88128b42: {"code":"23503","details":"Key (contract_id)=(29a8d52c-08bb-451c-a2da-ace9d658b3ea) is not present in table \"contracts\".","hint":null,"message":"insert or update on table \"contract_tag_assignments\
+  FAILED to create contract for customer 2c3a083c: {"code":"23503","details":"Key (contract_id)=(e02a32ee-a521-4ae1-8020-7110657ca4d7) is not present in table \"contracts\".","hint":null,"message":"insert or update on table \"contract_tag_assignments\
+  FAILED to create contract for customer 59ea73a6: {"code":"23503","details":"Key (contract_id)=(fd9a5947-35cc-46e2-b243-fdd51c852b8b) is not present in table \"contracts\".","hint":null,"message":"insert or update on table \"contract_tag_assignments\
+  FAILED to create contract for customer bccf9589: {"code":"23503","details":"Key (contract_id)=(27268fe9-ec01-4338-8f3b-b8403339e406) is not present in table \"contracts\".","hint":null,"message":"insert or update on table \"contract_tag_assignments\
+  FAILED to create contract for customer dbf5781f: {"code":"23503","details":"Key (contract_id)=(ae2036e9-8873-457d-900c-e4aacd8fae47) is not present in table \"contracts\".","hint":null,"message":"insert or update on table \"contract_tag_assignments\
+  FAILED to create contract for customer 7669db33: {"code":"23503","details":"Key (contract_id)=(cee5c2bd-aba1-4388-854e-62c12d12c1d6) is not present in table \"contracts\".","hint":null,"message":"insert or update on table \"contract_tag_assignments\
+  FAILED to create contract for customer dffed221: {"code":"23503","details":"Key (contract_id)=(7196449d-12c5-4b34-83c0-97ada3e7022b) is not present in table \"contracts\".","hint":null,"message":"insert or update on table \"contract_tag_assignments\
+  FAILED to create contract for customer 4f88ac8c: {"code":"23503","details":"Key (contract_id)=(5c7919a8-c880-45b7-8385-17a86ec42c6b) is not present in table \"contracts\".","hint":null,"message":"insert or update on table \"contract_tag_assignments\
+  FAILED to create contract for customer 5ba94ef3: {"code":"23503","details":"Key (contract_id)=(fc4b072a-ac15-4c7d-a7b1-b0d680c3c30c) is not present in table \"contracts\".","hint":null,"message":"insert or update on table \"contract_tag_assignments\
+  FAILED to create contract for customer 2911e46f: {"code":"23503","details":"Key (contract_id)=(5eead121-9e69-4377-a203-a6617d754918) is not present in table \"contracts\".","hint":null,"message":"insert or update on table \"contract_tag_assignments\
+  FAILED to create contract for customer a9623607: {"code":"23503","details":"Key (contract_id)=(71edef6d-1ffd-461c-8978-73c114520d3b) is not present in table \"contracts\".","hint":null,"message":"insert or update on table \"contract_tag_assignments\
+  FAILED to create contract for customer 1e0a06b1: {"code":"23503","details":"Key (contract_id)=(4638d762-01bc-430d-86db-a316ed08119a) is not present in table \"contracts\".","hint":null,"message":"insert or update on table \"contract_tag_assignments\
+  FAILED to create contract for customer be39b641: {"code":"23503","details":"Key (contract_id)=(825a626f-56ea-476f-a07f-cee10b4716d0) is not present in table \"contracts\".","hint":null,"message":"insert or update on table \"contract_tag_assignments\
+  FAILED to create contract for customer e97c22f1: {"code":"23503","details":"Key (contract_id)=(d6e9a672-106d-45e4-bd7f-65d7b75f8859) is not present in table \"contracts\".","hint":null,"message":"insert or update on table \"contract_tag_assignments\
+  FAILED to create contract for customer 55566f61: {"code":"23503","details":"Key (contract_id)=(dc142a7b-3f9d-42bd-967f-f62a5179580a) is not present in table \"contracts\".","hint":null,"message":"insert or update on table \"contract_tag_assignments\
+  FAILED to create contract for customer ff1ffc4c: {"code":"23503","details":"Key (contract_id)=(07e6d3cc-79af-4746-ba35-d0fcfaafbe2b) is not present in table \"contracts\".","hint":null,"message":"insert or update on table \"contract_tag_assignments\
+  FAILED to create contract for customer 48f09e30: {"code":"23503","details":"Key (contract_id)=(377d18a2-f607-42bb-860a-fdd193947632) is not present in table \"contracts\".","hint":null,"message":"insert or update on table \"contract_tag_assignments\
+  FAILED to create contract for customer bacc7a09: {"code":"23503","details":"Key (contract_id)=(c74a21bb-61a5-4c92-a719-1d82b2373357) is not present in table \"contracts\".","hint":null,"message":"insert or update on table \"contract_tag_assignments\
+  FAILED to create contract for customer 7fb87318: {"code":"23503","details":"Key (contract_id)=(504e0e17-0eb2-45ef-b26d-00cd2fa4713e) is not present in table \"contracts\".","hint":null,"message":"insert or update on table \"contract_tag_assignments\
+  FAILED to create contract for customer 5506bd87: {"code":"23503","details":"Key (contract_id)=(72eb29d8-8f5f-4977-b900-1e4e278051c7) is not present in table \"contracts\".","hint":null,"message":"insert or update on table \"contract_tag_assignments\
+  FAILED to create contract for customer 6ae41289: {"code":"23503","details":"Key (contract_id)=(3c749866-9a60-4229-9c6d-b23520fbd499) is not present in table \"contracts\".","hint":null,"message":"insert or update on table \"contract_tag_assignments\
+  FAILED to create contract for customer c5c04915: {"code":"23503","details":"Key (contract_id)=(ff0f7abc-ae68-473f-b543-a11cbbe27d5e) is not present in table \"contracts\".","hint":null,"message":"insert or update on table \"contract_tag_assignments\
+  FAILED to create contract for customer 56cc1339: {"code":"23503","details":"Key (contract_id)=(ba1d188d-a82c-4670-b56a-1b535d544575) is not present in table \"contracts\".","hint":null,"message":"insert or update on table \"contract_tag_assignments\
+  FAILED to create contract for customer ea3207e4: {"code":"23503","details":"Key (contract_id)=(b900de62-22be-4c27-9757-dee59e49c6b7) is not present in table \"contracts\".","hint":null,"message":"insert or update on table \"contract_tag_assignments\
+  FAILED to create contract for customer 7399b7cd: {"code":"23503","details":"Key (contract_id)=(322612d9-9ddd-41a0-b97a-933a443c9821) is not present in table \"contracts\".","hint":null,"message":"insert or update on table \"contract_tag_assignments\
+  FAILED to create contract for customer 430220d7: {"code":"23503","details":"Key (contract_id)=(fa89fc61-6e1b-4aad-934a-52c92b34af7b) is not present in table \"contracts\".","hint":null,"message":"insert or update on table \"contract_tag_assignments\
+  FAILED to create contract for customer 2a898340: {"code":"23503","details":"Key (contract_id)=(96f2e48d-10e9-43bf-9075-a1e64226134c) is not present in table \"contracts\".","hint":null,"message":"insert or update on table \"contract_tag_assignments\
+  FAILED to create contract for customer 0f70409b: {"code":"23503","details":"Key (contract_id)=(2106dcfd-a03f-4a69-939d-d3128d07b000) is not present in table \"contracts\".","hint":null,"message":"insert or update on table \"contract_tag_assignments\
+  FAILED to create contract for customer 815e9ac4: {"code":"23503","details":"Key (contract_id)=(55b45f22-bbb0-4c61-afa8-51c1ededdc4d) is not present in table \"contracts\".","hint":null,"message":"insert or update on table \"contract_tag_assignments\
+  FAILED to create contract for customer c9f01b28: {"code":"23503","details":"Key (contract_id)=(934bfe82-80a3-4e88-a39a-266ad305dc24) is not present in table \"contracts\".","hint":null,"message":"insert or update on table \"contract_tag_assignments\
+  FAILED to create contract for customer b6a8eac1: {"code":"23503","details":"Key (contract_id)=(75fe6b56-3b22-4564-8dab-7d2cd4e27f51) is not present in table \"contracts\".","hint":null,"message":"insert or update on table \"contract_tag_assignments\
+  FAILED to create contract for customer f38bb661: {"code":"23503","details":"Key (contract_id)=(48c246bd-5410-44e2-8841-0dd346f69e25) is not present in table \"contracts\".","hint":null,"message":"insert or update on table \"contract_tag_assignments\
+  FAILED to create contract for customer c311ce2b: {"code":"23503","details":"Key (contract_id)=(f1a95218-50d3-4cf1-abe2-084635e3a307) is not present in table \"contracts\".","hint":null,"message":"insert or update on table \"contract_tag_assignments\
+  FAILED to create contract for customer fd0213e8: {"code":"23503","details":"Key (contract_id)=(ac970bc4-81a0-4382-ab7f-053d72917883) is not present in table \"contracts\".","hint":null,"message":"insert or update on table \"contract_tag_assignments\
+  FAILED to create contract for customer d66989e9: {"code":"23503","details":"Key (contract_id)=(dbd165db-06cc-43a1-bbb7-7d07718001f5) is not present in table \"contracts\".","hint":null,"message":"insert or update on table \"contract_tag_assignments\
+  FAILED to create contract for customer b47e2bfd: {"code":"23503","details":"Key (contract_id)=(8fef3eb8-2e55-4f19-b2b5-2e83ce00b7c4) is not present in table \"contracts\".","hint":null,"message":"insert or update on table \"contract_tag_assignments\
+  FAILED to create contract for customer 2130ee85: {"code":"23503","details":"Key (contract_id)=(9a15b0ca-d6e6-4bbc-9662-d94f7ca6647d) is not present in table \"contracts\".","hint":null,"message":"insert or update on table \"contract_tag_assignments\
+  FAILED to create contract for customer c2503465: {"code":"23503","details":"Key (contract_id)=(92b8ee96-dd5a-499e-ba8d-337abfac2df0) is not present in table \"contracts\".","hint":null,"message":"insert or update on table \"contract_tag_assignments\
+  FAILED to create contract for customer 3c7f29a6: {"code":"23503","details":"Key (contract_id)=(8e2b5a9f-c114-42be-9654-84e4212319fd) is not present in table \"contracts\".","hint":null,"message":"insert or update on table \"contract_tag_assignments\
+  FAILED to create contract for customer 026837b5: {"code":"23503","details":"Key (contract_id)=(46ae3960-ff82-458a-9dfc-b0839d8a1bd6) is not present in table \"contracts\".","hint":null,"message":"insert or update on table \"contract_tag_assignments\
+  FAILED to create contract for customer ed43e6a1: {"code":"23503","details":"Key (contract_id)=(9bca1329-044e-4fa6-a031-bad9960a464f) is not present in table \"contracts\".","hint":null,"message":"insert or update on table \"contract_tag_assignments\
+  FAILED to create contract for customer 6ff846da: {"code":"23503","details":"Key (contract_id)=(5414b1ff-6d96-48dd-a6f6-a81a31f47b79) is not present in table \"contracts\".","hint":null,"message":"insert or update on table \"contract_tag_assignments\
+  FAILED to create contract for customer dc6cfbab: {"code":"23503","details":"Key (contract_id)=(3511dd9e-4f0e-4ec3-8c87-837a552edb57) is not present in table \"contracts\".","hint":null,"message":"insert or update on table \"contract_tag_assignments\
+  FAILED to create contract for customer d2b47721: {"code":"23503","details":"Key (contract_id)=(eb43434a-d086-4d14-a0e3-f61a80161921) is not present in table \"contracts\".","hint":null,"message":"insert or update on table \"contract_tag_assignments\
+  FAILED to create contract for customer e93c1330: {"code":"23503","details":"Key (contract_id)=(a604bdaa-a7d3-49d1-937d-99786900578c) is not present in table \"contracts\".","hint":null,"message":"insert or update on table \"contract_tag_assignments\
+  FAILED to create contract for customer 14abf10e: {"code":"23503","details":"Key (contract_id)=(ba0cb99f-515d-4d88-903e-dc968909251d) is not present in table \"contracts\".","hint":null,"message":"insert or update on table \"contract_tag_assignments\
+  FAILED to create contract for customer b3a547cd: {"code":"23503","details":"Key (contract_id)=(95540397-9cc2-42fc-a36f-7fc110cf79cb) is not present in table \"contracts\".","hint":null,"message":"insert or update on table \"contract_tag_assignments\
+  FAILED to create contract for customer 1f273304: {"code":"23503","details":"Key (contract_id)=(36824c1a-8790-4f06-be0c-bef67603c1d0) is not present in table \"contracts\".","hint":null,"message":"insert or update on table \"contract_tag_assignments\
+  FAILED to create contract for customer 831a1b5b: {"code":"23503","details":"Key (contract_id)=(46cade58-1af3-4a98-9f9a-d52a2370afe0) is not present in table \"contracts\".","hint":null,"message":"insert or update on table \"contract_tag_assignments\
+  FAILED to create contract for customer 27359728: {"code":"23503","details":"Key (contract_id)=(c4a1e2c0-2ab0-416a-b3e4-384935ddc505) is not present in table \"contracts\".","hint":null,"message":"insert or update on table \"contract_tag_assignments\
+  FAILED to create contract for customer 3b180987: {"code":"23503","details":"Key (contract_id)=(0cee4716-92db-424b-9256-566e230dc78d) is not present in table \"contracts\".","hint":null,"message":"insert or update on table \"contract_tag_assignments\
+  FAILED to create contract for customer 8fb941d4: {"code":"23503","details":"Key (contract_id)=(a007ac1d-e3d8-434b-a308-dca86b39d34b) is not present in table \"contracts\".","hint":null,"message":"insert or update on table \"contract_tag_assignments\
+  FAILED to create contract for customer 508f6e9f: {"code":"23503","details":"Key (contract_id)=(3de38630-3d34-413a-88cd-f10032b396e7) is not present in table \"contracts\".","hint":null,"message":"insert or update on table \"contract_tag_assignments\
+  FAILED to create contract for customer d5f01bab: {"code":"23503","details":"Key (contract_id)=(484850c6-af3e-49f2-9e90-3871ee73b52f) is not present in table \"contracts\".","hint":null,"message":"insert or update on table \"contract_tag_assignments\
+  FAILED to create contract for customer c022d2b1: {"code":"23503","details":"Key (contract_id)=(ad4e9290-239b-4396-9e54-0e09e244aa2b) is not present in table \"contracts\".","hint":null,"message":"insert or update on table \"contract_tag_assignments\
+  FAILED to create contract for customer c535b4a9: {"code":"23503","details":"Key (contract_id)=(ffdf834e-e21e-4d1d-96ff-2addf277c38a) is not present in table \"contracts\".","hint":null,"message":"insert or update on table \"contract_tag_assignments\
+  FAILED to create contract for customer b5a20602: {"code":"23503","details":"Key (contract_id)=(62c71867-1253-44a2-b93b-5f2f5a18ca43) is not present in table \"contracts\".","hint":null,"message":"insert or update on table \"contract_tag_assignments\
+  FAILED to create contract for customer 6b8e3932: {"code":"23503","details":"Key (contract_id)=(e952d7ca-8f20-42fe-9728-aa25c473afa8) is not present in table \"contracts\".","hint":null,"message":"insert or update on table \"contract_tag_assignments\
+  FAILED to create contract for customer 3be1cf24: {"code":"23503","details":"Key (contract_id)=(ca25ea8d-a55a-4e6b-9cf6-ef0dff71f484) is not present in table \"contracts\".","hint":null,"message":"insert or update on table \"contract_tag_assignments\
+  FAILED to create contract for customer eb3619d4: {"code":"23503","details":"Key (contract_id)=(07b35f93-c0cb-45a6-b35b-388141fde395) is not present in table \"contracts\".","hint":null,"message":"insert or update on table \"contract_tag_assignments\
+  FAILED to create contract for customer 0428f7e0: {"code":"23503","details":"Key (contract_id)=(efef6a44-0484-4fa5-9a8d-160cc7eed2bb) is not present in table \"contracts\".","hint":null,"message":"insert or update on table \"contract_tag_assignments\
+  FAILED to create contract for customer bd4001ab: {"code":"23503","details":"Key (contract_id)=(c9e16da3-cdb3-4033-9adb-afac3616bff4) is not present in table \"contracts\".","hint":null,"message":"insert or update on table \"contract_tag_assignments\
+  FAILED to create contract for customer e81d6f3f: {"code":"23503","details":"Key (contract_id)=(ecbb5b8d-d1b4-4ff5-9bc5-ab6d26529ae2) is not present in table \"contracts\".","hint":null,"message":"insert or update on table \"contract_tag_assignments\
+  FAILED to create contract for customer 693cb17f: {"code":"23503","details":"Key (contract_id)=(8f28f953-8333-4a60-9ee1-3322732f9cdc) is not present in table \"contracts\".","hint":null,"message":"insert or update on table \"contract_tag_assignments\
+  FAILED to create contract for customer 5b52a765: {"code":"23503","details":"Key (contract_id)=(0bf7acb0-1d01-4306-86bf-967139b2856e) is not present in table \"contracts\".","hint":null,"message":"insert or update on table \"contract_tag_assignments\
+  FAILED to create contract for customer c5a89a0f: {"code":"23503","details":"Key (contract_id)=(f0f15b30-1463-4ff9-9443-33e302eb9cbf) is not present in table \"contracts\".","hint":null,"message":"insert or update on table \"contract_tag_assignments\
+  FAILED to create contract for customer 274d83f7: {"code":"23503","details":"Key (contract_id)=(334a1a9a-7296-442d-824d-6a4b7f48cb8f) is not present in table \"contracts\".","hint":null,"message":"insert or update on table \"contract_tag_assignments\
+  FAILED to create contract for customer 286b0804: {"code":"23503","details":"Key (contract_id)=(a5a0989f-58e6-4b0d-a572-2b377267f446) is not present in table \"contracts\".","hint":null,"message":"insert or update on table \"contract_tag_assignments\
+  FAILED to create contract for customer d5f20c8e: {"code":"23503","details":"Key (contract_id)=(d281a031-631a-4a7f-8510-7f0f2629dd60) is not present in table \"contracts\".","hint":null,"message":"insert or update on table \"contract_tag_assignments\
+  FAILED to create contract for customer 06c51041: {"code":"23503","details":"Key (contract_id)=(6f180683-5d2e-4df3-970a-2dbb1bfe7b35) is not present in table \"contracts\".","hint":null,"message":"insert or update on table \"contract_tag_assignments\
+  FAILED to create contract for customer 01ed42e7: {"code":"23503","details":"Key (contract_id)=(bba082bc-6a7e-4628-825a-c5c319ffac8a) is not present in table \"contracts\".","hint":null,"message":"insert or update on table \"contract_tag_assignments\
+  FAILED to create contract for customer 28ecbfab: {"code":"23503","details":"Key (contract_id)=(fa415143-463e-4fe3-b8e0-b8a7ea825487) is not present in table \"contracts\".","hint":null,"message":"insert or update on table \"contract_tag_assignments\
+  FAILED to create contract for customer 7b424074: {"code":"23503","details":"Key (contract_id)=(160bebb0-0502-4b6a-9571-472d9f5bcc8b) is not present in table \"contracts\".","hint":null,"message":"insert or update on table \"contract_tag_assignments\
+  FAILED to create contract for customer c7a329d1: {"code":"23503","details":"Key (contract_id)=(bfc5d407-70b4-4bae-a7b1-e0be734ccd12) is not present in table \"contracts\".","hint":null,"message":"insert or update on table \"contract_tag_assignments\
+  FAILED to create contract for customer f36e1ef7: {"code":"23503","details":"Key (contract_id)=(f5655fd7-7924-48d7-844d-fb03f6a93081) is not present in table \"contracts\".","hint":null,"message":"insert or update on table \"contract_tag_assignments\
+  FAILED to create contract for customer 0e9b876e: {"code":"23503","details":"Key (contract_id)=(27040bf9-9f97-4a13-80c9-9092dec276cb) is not present in table \"contracts\".","hint":null,"message":"insert or update on table \"contract_tag_assignments\
+  Created placeholder contracts: 0
+
+  Invoices without customer_id (cannot link): 11
+    PUR-0003 | amount=799.0 | status=overdue
+    PYINV-TEST4 | amount=1600.0 | status=paid
+    PUR-0006 | amount=2480.0 | status=overdue
+    PUR-0001 | amount=2882.0 | status=overdue
+    PUR-0008 | amount=2009.0 | status=overdue
+    PUR-0007 | amount=2395.0 | status=overdue
+    5555 | amount=344.28 | status=overdue
+    INV-2025-245 | amount=660.06 | status=overdue
+    PUR-0005 | amount=1197.0 | status=overdue
+    PUR-0004 | amount=1511.0 | status=overdue
+
+======================================================================
+SUMMARY
+======================================================================
+  Invoices linked to existing contracts: 0
+  Placeholder contracts created: 0
+  Invoices without customer (cannot link): 11
+======================================================================

@@ -1,0 +1,7 @@
+======================================================================
+BULK DELETE PYINV* INVOICES + JOURNAL ENTRIES
+======================================================================
+Found 839 PYINV* invoices
+  Processed 100/839... inv=100 je=100 fail=0
+  Processed 200/839... inv=200 je=200 fail=0
+  Processed 300/839... inv=300 je=300 fail=0

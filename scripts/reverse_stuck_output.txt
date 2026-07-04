@@ -1,0 +1,15 @@
+======================================================================
+REVERSE STUCK PAYMENTS - ALTERNATIVE APPROACHES
+======================================================================
+PYINV invoice IDs: 1985
+Payments still linked to PYINV* invoices: 318
+  STUCK: PAY-IMP-1767526937-71 - {"code":"P0001","details":null,"hint":null,"message":"Completed payments are immutable. Cancel and r
+  STUCK: PAY-IMP-1767526937-66 - {"code":"P0001","details":null,"hint":null,"message":"Completed payments are immutable. Cancel and r
+  STUCK: PAY-MIG-1767434836487-2-0 - {"code":"P0001","details":null,"hint":null,"message":"Completed payments are immutable. Cancel and r
+  STUCK: PAY-IMP-1767526937-70 - {"code":"P0001","details":null,"hint":null,"message":"Completed payments are immutable. Cancel and r
+  STUCK: PAY-IMP-1767526937-69 - {"code":"P0001","details":null,"hint":null,"message":"Completed payments are immutable. Cancel and r
+  Processed 200/318... reversed=180 stuck=20
+
+Reversed: 287
+Still stuck: 31
+Done!
