@@ -29,6 +29,7 @@ import { useRecentActivities } from '@/hooks/useRecentActivities';
 import { useTreasurySummary } from '@/hooks/useTreasury';
 import { useInvoices } from '@/hooks/finance/useInvoices';
 import { useVehicleInstallmentSummary } from '@/hooks/useVehicleInstallments';
+import { useMonthlyObligationSummary } from '@/hooks/useMonthlyObligations';
 import { cn } from '@/lib/utils';
 import {
   AreaChart,
@@ -50,6 +51,7 @@ const FinanceHub: React.FC = () => {
   const { data: treasurySummary } = useTreasurySummary();
   const { data: invoices } = useInvoices({ status: 'pending' });
   const { data: installmentSummary } = useVehicleInstallmentSummary();
+  const { data: obligationSummary } = useMonthlyObligationSummary();
 
   const invoicesData = Array.isArray(invoices) ? invoices : (invoices as any)?.data || [];
   const pendingInvoicesCount = invoicesData.length || 0;
@@ -90,6 +92,13 @@ const FinanceHub: React.FC = () => {
       color: 'violet' as const,
       path: '/finance/treasury',
     },
+    {
+      title: 'التزامات هذا الشهر',
+      value: obligationSummary?.dueThisMonthAmount || 0,
+      icon: Clock,
+      color: 'sky' as const,
+      path: '/finance/obligations',
+    },
   ];
 
   const alerts = [
@@ -113,6 +122,13 @@ const FinanceHub: React.FC = () => {
       title: 'فواتير معلقة',
       description: `${pendingInvoicesCount} فواتير بالمعلقة`,
       severity: 'info' as const,
+    },
+    {
+      id: '4',
+      icon: Clock,
+      title: 'التزامات شهرية',
+      description: `${formatCurrency(obligationSummary?.overdueAmount || 0)} متأخر من الالتزامات`,
+      severity: (obligationSummary?.overdueAmount || 0) > 0 ? 'warning' as const : 'info' as const,
     },
   ];
 
@@ -161,7 +177,7 @@ const FinanceHub: React.FC = () => {
         </div>
 
         {/* KPI Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4">
           {kpiCards.map((kpi, index) => {
             const Icon = kpi.icon;
             return (

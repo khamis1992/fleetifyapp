@@ -123,12 +123,16 @@ posted_no_lines = fetch(
     f"&company_id=eq.{CID}&status=eq.posted&total_debit=gt.0"
     f"&entry_number=in.(JE-PAY-REC-26-1022,JE-PAY-REC-26-1023,JE-PAY-REC-26-1024,JE-PAY-REC-26-1025)")
 
-# Filter to only those truly without lines
-all_jels_set = set()
-jels_page = fetch("journal_entry_lines?select=journal_entry_id&limit=10000")
-all_jels_set = set(l['journal_entry_id'] for l in jels_page)
+def journal_entry_has_lines(entry_id):
+    lines = fetch(
+        "journal_entry_lines?select=id"
+        f"&journal_entry_id=eq.{entry_id}&limit=1"
+    )
+    return bool(lines)
 
-truly_no_lines = [je for je in posted_no_lines if je['id'] not in all_jels_set]
+# Filter to only those truly without lines. Do not sample the global
+# journal_entry_lines table; it can exceed PostgREST page limits.
+truly_no_lines = [je for je in posted_no_lines if not journal_entry_has_lines(je['id'])]
 print(f"  Found {len(truly_no_lines)} posted JEs truly without lines")
 
 for je in truly_no_lines:

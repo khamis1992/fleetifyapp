@@ -849,6 +849,42 @@ export const usePaymentOperations = (options: PaymentOperationsOptions = {}) => 
         ? `تم إلغاء الدفعة بتاريخ ${cancellationStamp}. السبب: ${reason}`
         : `تم إلغاء الدفعة بتاريخ ${cancellationStamp}.`;
 
+      const { data: atomicCancelResult, error: atomicCancelError } = await (supabase as any)
+        .rpc('cancel_payment_with_reversal', {
+          p_payment_id: paymentId,
+          p_company_id: companyId,
+          p_reason: reason || cancellationNote,
+          p_actor_id: user?.id || null,
+        });
+
+      if (!atomicCancelError) {
+        console.log('[usePaymentOperations] Payment cancelled atomically:', atomicCancelResult);
+        return {
+          ...existingPayment,
+          id: paymentId,
+          payment_status: 'cancelled',
+          atomic_cancel_result: atomicCancelResult,
+        } as any;
+      }
+
+      const atomicCancelMessage = [
+        atomicCancelError.code,
+        atomicCancelError.message,
+        atomicCancelError.details,
+        atomicCancelError.hint,
+      ].filter(Boolean).join(' ');
+
+      const atomicCancelUnavailable =
+        atomicCancelError.code === 'PGRST202'
+        || atomicCancelMessage.includes('Could not find the function');
+
+      if (!atomicCancelUnavailable) {
+        console.error('[usePaymentOperations] Atomic cancellation failed:', atomicCancelError);
+        throw atomicCancelError;
+      }
+
+      console.warn('[usePaymentOperations] Atomic cancellation RPC is unavailable; using guarded client-side cancellation path.');
+
       if (existingPayment.invoice_id) {
         const { data: linkedInvoice, error: linkedInvoiceError } = await supabase
           .from('invoices')
@@ -894,6 +930,14 @@ export const usePaymentOperations = (options: PaymentOperationsOptions = {}) => 
         }
       }
 
+      let reversalEntryId: string | null = null;
+      try {
+        reversalEntryId = await reverseJournalEntry(paymentId);
+      } catch (journalError) {
+        console.error('[usePaymentOperations] Journal reversal before cancellation failed:', journalError);
+        throw new Error('تعذر إنشاء قيد عكسي محاسبي، لذلك لم يتم إلغاء الدفعة.');
+      }
+
       // Update payment status. The payments table does not currently expose
       // cancelled_at/cancelled_by columns, so keep the audit note in existing fields.
       const { data: cancelledPayment, error } = await supabase
@@ -904,6 +948,7 @@ export const usePaymentOperations = (options: PaymentOperationsOptions = {}) => 
           processing_notes: [
             existingPayment.processing_notes,
             cancellationNote,
+            reversalEntryId ? `Accounting reversal entry: ${reversalEntryId}` : null,
           ].filter(Boolean).join('\n'),
         })
         .eq('id', paymentId)
@@ -979,9 +1024,6 @@ export const usePaymentOperations = (options: PaymentOperationsOptions = {}) => 
         console.log('ℹ️ [usePaymentOperations] Payment has no invoice_id, skipping invoice update');
       }
 
-      // Reverse journal entry if exists
-      await reverseJournalEntry(paymentId);
-      
       // عكس حركة البنك إذا وجدت
       if (autoUpdateBankBalance) {
         const reversalResult = await reverseBankTransactionForPayment(paymentId, user?.id);

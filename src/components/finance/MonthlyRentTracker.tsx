@@ -134,7 +134,7 @@ export const MonthlyRentTracker: React.FC = () => {
   const [filterStatus, setFilterStatus] = useState<'all' | 'paid' | 'unpaid' | 'partial'>('all');
   
   // Date filter state: 'payment_date' = تاريخ الدفع الفعلي, 'created_at' = تاريخ التسجيل (المدخول الفعلي)
-  const [dateFilter, setDateFilter] = useState<DateFilterType>('created_at');
+  const [dateFilter, setDateFilter] = useState<DateFilterType>('payment_date');
   
   // Payment dialog state
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);

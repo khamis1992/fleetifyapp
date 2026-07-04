@@ -290,6 +290,30 @@ const findPhoneValue = (rows: CellValue[][]) =>
     },
   });
 
+const findIdNumberValue = (rows: CellValue[][]) => {
+  const fromAdjacentCell = findAdjacentValue(rows, /\bid\b|هويه|بطاقه|هوية|بطاقة/, {
+    firstOnly: true,
+    filter: (text) => {
+      const digits = text.replace(/\D/g, '');
+      return digits.length >= 6 && digits.length <= 15;
+    },
+  });
+
+  if (fromAdjacentCell) return fromAdjacentCell;
+
+  for (let r = 0; r < Math.min(rows.length, 15); r += 1) {
+    for (const value of rows[r] || []) {
+      const text = cellText(value);
+      if (!/\bid\b|هويه|بطاقه|هوية|بطاقة/i.test(normalizeArabic(text))) continue;
+
+      const match = text.replace(/[,\s]/g, '').match(/\d{6,15}/);
+      if (match) return match[0];
+    }
+  }
+
+  return '';
+};
+
 const findMonthlyRentValue = (rows: CellValue[][]) =>
   findAdjacentValue(rows, /قسط/, {
     firstOnly: true,
@@ -517,7 +541,7 @@ const parseWorkbookFile = async (file: File): Promise<ParsedExcelFile> => {
       id: `${file.name}-${file.size}`,
       fileName: file.name,
       customerName: findCustomerName(rows),
-      idNumber: findAdjacentValue(rows, /\bid\b|هويه|بطاقه/),
+      idNumber: findIdNumberValue(rows),
       phone: findPhoneValue(rows),
       plateNumber: extractPlateNumber(rows),
       contractDate: findAdjacentValue(rows, /عقد/),
@@ -581,7 +605,7 @@ const parseWorkbookFile = async (file: File): Promise<ParsedExcelFile> => {
   }
 
   const customerName = findCustomerName(rows);
-  const idNumber = findAdjacentValue(rows, /\bid\b|هويه|بطاقه/);
+  const idNumber = findIdNumberValue(rows);
   const phone = findPhoneValue(rows);
   const plateNumber = extractPlateNumber(rows);
 
@@ -861,7 +885,7 @@ const findBestContractMatch = async (companyId: string, file: ParsedExcelFile) =
     `)
     .eq('company_id', companyId)
     .order('created_at', { ascending: false })
-    .limit(500);
+    .limit(2000);
 
   if (error) throw error;
 
@@ -878,20 +902,34 @@ const findBestContractMatch = async (companyId: string, file: ParsedExcelFile) =
     const name = buildContractCustomerName(contract);
     const hasNameInFile = Boolean(fileName);
     const nameMatches = isCompatibleTextMatch(fileName, name);
+    const plateMatches = Boolean(filePlate && contractPlate && (
+      filePlate === contractPlate ||
+      contractPlate.includes(filePlate) ||
+      filePlate.includes(contractPlate)
+    ));
+    const phoneMatches = Boolean(filePhone && phone && (
+      filePhone === phone ||
+      phone.endsWith(filePhone) ||
+      filePhone.endsWith(phone)
+    ));
+    const idMatches = Boolean(fileId && nationalId && fileId === nationalId);
+    const hasIdentifierMatch = idMatches || phoneMatches || plateMatches;
 
-    if (hasNameInFile && !nameMatches) {
+    if (hasNameInFile && !nameMatches && !hasIdentifierMatch) {
       return { contract, score: -1 };
     }
 
-    if (filePlate && contractPlate && (filePlate === contractPlate || contractPlate.includes(filePlate) || filePlate.includes(contractPlate))) score += 60;
-    if (filePhone && phone && (filePhone === phone || phone.endsWith(filePhone) || filePhone.endsWith(phone))) score += 25;
-    if (fileId && nationalId && fileId === nationalId) score += 35;
-    if (nameMatches) score += 35;
+    if (idMatches) score += 100;
+    if (phoneMatches) score += 55;
+    if (plateMatches) score += 45;
+    if (idMatches && plateMatches) score += 40;
+    if (nameMatches) score += 20;
+    if (contract.status === 'active') score += 5;
 
     return { contract, score };
   }).sort((a, b) => b.score - a.score);
 
-  return scored[0]?.score >= 35 ? scored[0].contract : null;
+  return scored[0]?.score >= 45 ? scored[0].contract : null;
 };
 
 const findExistingMonthlyInvoice = async (companyId: string, contractId: string, invoiceDate: string) => {
@@ -1752,6 +1790,8 @@ export default function ExcelPaymentImport() {
 
     let approvedCount = 0;
     let skippedCount = 0;
+    let failedCount = 0;
+    const failedReasons: string[] = [];
 
     try {
       for (let index = 0; index < pendingFiles.length; index += 1) {
@@ -1775,12 +1815,36 @@ export default function ExcelPaymentImport() {
         setFileContractMatchState(file, true);
         setMatchedContractsByFile((current) => ({ ...current, [file.id]: contract }));
 
-        const result = await approveFile(file, contract);
-        setImportResults((current) => ({ ...current, [file.id]: result }));
-        approvedCount += 1;
+        try {
+          const result = await approveFile(file, contract);
+          setImportResults((current) => ({ ...current, [file.id]: result }));
+          approvedCount += 1;
+        } catch (error: unknown) {
+          const message = translateExcelImportError(error) || errorMessage(error) || 'فشل اعتماد الملف';
+          console.error('Bulk Excel approval skipped failed file:', {
+            fileName: file.fileName,
+            customerName: file.customerName,
+            error,
+          });
+          failedCount += 1;
+          failedReasons.push(`${file.customerName || file.fileName}: ${message}`);
+          toast.error(`تعذر اعتماد ${file.customerName || file.fileName}: ${message}`);
+        }
       }
 
-      toast.success(`تم اعتماد ${approvedCount} ملف${skippedCount ? `، وتخطي ${skippedCount} ملف يحتاج مراجعة` : ''}.`);
+      if (approvedCount > 0) {
+        toast.success(
+          `تم اعتماد ${approvedCount} ملف${skippedCount ? `، وتخطي ${skippedCount} ملف يحتاج مراجعة` : ''}${failedCount ? `، وفشل ${failedCount} ملف` : ''}.`
+        );
+      } else if (failedCount > 0 || skippedCount > 0) {
+        toast.warning(
+          `لم يتم اعتماد ملفات جديدة${skippedCount ? `، تخطي ${skippedCount} ملف يحتاج مراجعة` : ''}${failedCount ? `، وفشل ${failedCount} ملف` : ''}.`
+        );
+      }
+
+      if (failedReasons.length > 0) {
+        console.warn('[ExcelPaymentImport] Bulk approval failed files:', failedReasons);
+      }
     } catch (error: unknown) {
       console.error('Bulk Excel approval failed:', error);
       toast.error(translateExcelImportError(error) || 'فشل الاعتماد الجماعي');

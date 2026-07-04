@@ -2,6 +2,20 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from "sonner";
 
+const getCurrentCompanyId = async () => {
+  const { data: user } = await supabase.auth.getUser();
+  if (!user.user) throw new Error('المستخدم غير مسجل الدخول');
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('company_id')
+    .eq('user_id', user.user.id)
+    .single();
+
+  if (!profile?.company_id) throw new Error('لم يتم العثور على بيانات الشركة');
+  return profile.company_id;
+};
+
 // Bank interfaces
 export interface Bank {
   id: string;
@@ -72,22 +86,12 @@ export const useBanks = () => {
   return useQuery({
     queryKey: ['banks'],
     queryFn: async () => {
-      // Get company_id from current user
-      const { data: user } = await supabase.auth.getUser();
-      if (!user.user) throw new Error('المستخدم غير مسجل الدخول');
-      
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('company_id')
-        .eq('user_id', user.user.id)
-        .single();
-      
-      if (!profile) throw new Error('لم يتم العثور على بيانات المستخدم');
+      const companyId = await getCurrentCompanyId();
 
       const { data, error } = await supabase
         .from('banks')
         .select('*')
-        .eq('company_id', profile.company_id)
+        .eq('company_id', companyId)
         .eq('is_active', true)
         .order('bank_name');
 
@@ -129,9 +133,12 @@ export const useBankTransactions = (bankId?: string) => {
   return useQuery({
     queryKey: ['bank-transactions', bankId],
     queryFn: async () => {
+      const companyId = await getCurrentCompanyId();
+
       let query = supabase
         .from('bank_transactions')
         .select('*')
+        .eq('company_id', companyId)
         .order('transaction_date', { ascending: false });
 
       if (bankId) {
@@ -169,7 +176,8 @@ export const useCreateBankTransaction = () => {
           current_balance: transactionData.balance_after,
           updated_at: new Date().toISOString()
         })
-        .eq('id', transactionData.bank_id);
+        .eq('id', transactionData.bank_id)
+        .eq('company_id', transactionData.company_id);
 
       if (bankUpdateError) throw bankUpdateError;
 
@@ -193,10 +201,13 @@ export const useDeleteBankTransaction = () => {
 
   return useMutation({
     mutationFn: async (transactionId: string) => {
+      const companyId = await getCurrentCompanyId();
+
       const { error } = await supabase
         .from('bank_transactions')
         .delete()
-        .eq('id', transactionId);
+        .eq('id', transactionId)
+        .eq('company_id', companyId);
 
       if (error) throw error;
     },
@@ -246,9 +257,12 @@ export const useTreasurySummary = () => {
   return useQuery({
     queryKey: ['treasury-summary'],
     queryFn: async () => {
+      const companyId = await getCurrentCompanyId();
+
       const { data: banks, error: banksError } = await supabase
         .from('banks')
         .select('current_balance, currency')
+        .eq('company_id', companyId)
         .eq('is_active', true);
 
       if (banksError) throw banksError;
@@ -256,6 +270,7 @@ export const useTreasurySummary = () => {
       const { data: transactions, error: transactionsError } = await supabase
         .from('bank_transactions')
         .select('amount, transaction_type, transaction_date')
+        .eq('company_id', companyId)
         .gte('transaction_date', new Date(new Date().setDate(new Date().getDate() - 30)).toISOString());
 
       if (transactionsError) throw transactionsError;

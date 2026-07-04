@@ -22,6 +22,24 @@ export interface MonthlyRentStatus {
 // نوع الفلترة: حسب تاريخ الدفع الفعلي أو تاريخ التسجيل
 export type DateFilterType = 'payment_date' | 'created_at';
 
+const isHistoricalImportedPayment = (payment: {
+  reference_number?: string | null;
+  notes?: string | null;
+}, dateFilter: DateFilterType) => {
+  const reference = String(payment.reference_number || '').toLowerCase();
+  const notes = String(payment.notes || '').toLowerCase();
+  const isPaymentByClientImport =
+    reference.startsWith('pbcfull-') ||
+    notes.includes('payment by client_full.xlsx') ||
+    notes.includes('imported from payment by client_full.xlsx');
+  const isMonthlyExcelHistoricalImport =
+    reference.startsWith('xls:') ||
+    notes.includes('مستوردة من excel') ||
+    notes.includes('مستورد من excel');
+
+  return isPaymentByClientImport || (dateFilter === 'created_at' && isMonthlyExcelHistoricalImport);
+};
+
 export const useMonthlyRentTracking = (year: number, month: number, dateFilter: DateFilterType = 'payment_date') => {
   return useQuery({
     queryKey: ['monthly-rent-tracking', year, month, dateFilter],
@@ -84,7 +102,7 @@ export const useMonthlyRentTracking = (year: number, month: number, dateFilter: 
       
       const { data: payments, error: paymentsError } = await supabase
         .from('payments')
-        .select('customer_id, amount, payment_date, payment_status, created_at')
+        .select('customer_id, contract_id, invoice_id, amount, payment_date, payment_status, created_at, reference_number, notes')
         .eq('company_id', profile.company_id)
         .gte(dateColumn, startDate.toISOString())
         .lte(dateColumn, endDate.toISOString())
@@ -105,13 +123,18 @@ export const useMonthlyRentTracking = (year: number, month: number, dateFilter: 
           ? `${customer.first_name || ''} ${customer.last_name || ''}`.trim()
           : customer.company_name || 'Unknown';
 
-        // Calculate payments for this customer in the target month
-        const customerPayments = payments?.filter(p => p.customer_id === contract.customer_id) || [];
-        const totalPaid = customerPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
+        // Calculate payments for this contract in the target month.
+        // Historical imports can be created today while their real payment date
+        // belongs to old months; do not let them inflate current rent tracking.
+        const contractPayments = payments?.filter(p =>
+          p.contract_id === contract.id &&
+          !isHistoricalImportedPayment(p, dateFilter)
+        ) || [];
+        const totalPaid = contractPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
         
         // Get last payment date
-        const lastPaymentDate = customerPayments.length > 0
-          ? customerPayments.sort((a, b) => 
+        const lastPaymentDate = contractPayments.length > 0
+          ? [...contractPayments].sort((a, b) =>
               new Date(b.payment_date).getTime() - new Date(a.payment_date).getTime()
             )[0].payment_date
           : null;
