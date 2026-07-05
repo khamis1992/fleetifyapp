@@ -1,80 +1,77 @@
-# Plan: قم بتدقيق شامل وكامل للنظام المالي في مشروع Fleetify وتكامله مع بقية وحدات النظام. هذا تدقيق جديد من الصفر - لا تعتمد على تقارير سابقة.
+# Plan: توسيع تدقيق النظام المالي والتكامل في Fleetify ERP — تقرير فقط، لا تغيير في الكود
 
-المطلوب: تقرير كامل عن تكامل النظام المالي مع بقية الوحدات (الإيجارات، المركبات، الرواتب، الصيانة، المخالفات، القضايا القانونية، المدفوعات). لا تقم بتعديل أي كود - فقط تدقيق وتقرير.
+## المهمة
+أكمل التدقيق المالي الموجود في `docs/financial-system-integration-audit-report.md` بإضافة الأقسام التالية. النتيجة النهائية يجب أن تكون تقريرًا واحدًا كاملاً في ملف `docs/financial-system-integration-audit-report-comprehensive.md`.
 
-اتبع المنهجية التالية بدقة:
+## الأقسام المطلوب إضافتها
 
-## المرحلة 1: رسم خريطة النظام المالي
-1. اقرأ ملف types.ts في `src/integrations/supabase/types.ts` وحدد جميع الجداول المالية (journal_entries, journal_entry_lines, chart_of_accounts, invoices, payments, vendors, purchase_orders, banks, bank_transactions, bank_reconciliation_batches, cost_centers, fixed_assets, budgets, accounting_periods, account_mappings, customer_deposits, annual_financial_close_runs, إلخ)
-2. ابحث في `src/pages/finance/` و `src/components/finance/` عن جميع المسارات والمكونات المالية
-3. ابحث عن جميع hooks التكاملية التي تربط وحدات أخرى بالنظام المالي - ابحث في `src/hooks/` عن أي ملف ينشئ journal entries أو يتعامل مع جداول مالية
+### 1. فحص Edge Functions الـ 48
+- افحص جميع الـ Edge Functions في `src/functions/` أو `supabase/functions/`
+- لكل function: هل تتحقق من auth (JWT)؟ هل تتحقق من company_id؟
+- هل تستخدم service role key بدون تحقق مناسب؟
+- قائمة بجميع الـ functions مع حالة auth/company validation
+- راجع الملفات الموجودة في `src/server/` أيضاً
 
-## المرحلة 2: بناء مصفوفة قيود قاعدة البيانات (TRIGGER MATRIX)
-1. اقرأ جميع ملفات الترحيل (migrations) في `supabase/migrations/` المتعلقة بالنظام المالي - خاصة الملفات من 20260627*
-2. لكل trigger، وثق: اسمه، الجدول المستهدف، العملية (INSERT/UPDATE/DELETE)، التوقيت (BEFORE/AFTER)، الشرط، والاستثناء
-3. حدد آلية التجاوز (bypass mechanism) - ابحث عن `financial_controls_bypass` و `set_config`
+### 2. تحليل RLS Policies
+- افحص ملفات الـ migrations في `src/migrations/` أو `supabase/migrations/`
+- ابحث عن RLS policies للجداول المالية: `journal_entries`, `journal_entry_lines`, `chart_of_accounts`, `payments`, `invoices`
+- هل الـ policies تفرض company isolation؟
+- هل هناك أي policies مفقودة أو ضعيفة؟
 
-## المرحلة 3: تدقيق تكامل الوحدات (INTEGRATION HOOK AUDIT)
-لكل hook تكاملي، حلل:
-1. مسار الملف ورقم السطر
-2. الوحدة المصدر (إيجارات، مركبات، رواتب، صيانة، مخالفات، قضايا قانونية)
-3. تسلسل العمليات: هل ينشئ header أولاً ثم lines؟ ما هي حالة (status) الـ header عند الإنشاء؟
-4. هل يمرر total_debit و total_credit؟
-5. هل يتحقق من توازن القيد (debits = credits)؟
-6. هل يستخدم نمط الحذف (delete) أم نمط العكس (reversal)؟
-7. تقاطع مع مصفوفة triggers: أي trigger سيمنع أي عملية؟
-8. الحسابات المستخدمة: هل هي صحيحة محاسبياً؟ (مدين/دائن للحسابات الصحيحة)
-9. العملة: هل يستخدم عملة ثابتة أم ديناميكية؟
+### 3. فحص قاعدة البيانات الحية عبر Supabase API
+- اقرأ ملف `.env` لاستخراج رابط Supabase والمفاتيح
+- استخدم `curl` مع service role key لفحص:
+  - عدد القيود المحاسبية
+  - القيود غير المتوازنة (debit ≠ credit)
+  - القيود بدون بنود
+  - المدفوعات بدون journal_entry_id
+  - الفواتير بدون journal_entry_id
+  - معادلة A = L + E (إن أمكن)
+- **هام:** استخدم pagination (HTTP Range headers) لجلب كل البيانات، لا تعتمد على default limit 1000
 
-## المرحلة 4: تدقيق البيانات المالية والتقارير
-1. افحص جميع مكونات التقارير المالية في `src/components/finance/` و `src/pages/finance/`
-2. تحقق من وجود mock data أو hardcoded values
-3. تحقق من صحة المعادلات المحاسبية (Balance Sheet, Income Statement, Cash Flow)
-4. تحقق من ربط التقارير بـ General Ledger
+### 4. تحليل الأمان (Security Audit)
+- فحص `validateEnv.ts` — هل هناك مفاتيح احتياطية/fallback؟
+- فحص `.env` و `.env.example` — هل هناك مفاتيح مسربة؟
+- فحص `src/components/finance/ProtectedFinanceRoute.tsx` — هل الحماية كافية؟
+- فحص صلاحيات الـ API endpoints
+- البحث عن أي hardcoded credentials أو fallback keys
 
-## المرحلة 5: تدقيق الضوابط الداخلية
-1. افحص آليات الموافقة (approval workflows)
-2. افحص مسار التدقيق (audit trail)
-3. افحص صلاحيات الوصول (access controls)
-4. افحص الفصل بين المهام (Segregation of Duties)
+### 5. تدقيق i18n
+- افحص ملفات الترجمة في `src/translations/` أو `src/locales/`
+- هل جميع النصوص في الصفحات المالية (`src/pages/finance/`) تستخدم `t()` أو `useTranslation`؟
+- هل هناك hardcoded English/Arabic labels؟
+- قياس نسبة التغطية اللغوية
 
-## المرحلة 6: تدقيق شامل للمشكلات
-1. ابحث عن `Math.abs()` في الملفات المالية - هل يخفي إشارات محاسبية؟
-2. ابحث عن استخدام `JSON.stringify` أو `JSON.parse` غير آمن
-3. ابحث عن أخطاء محاسبية شائعة (مدين/دائن معكوس، حسابات خاطئة)
-4. ابحث عن أخطاء في التعامل مع متعدد العملات
-5. ابحث عن دوال تصدير (export) وهمية
+### 6. تحليل الأداء
+- هل هناك استعلامات N+1 في الـ hooks المالية؟
+- هل هناك `useQuery` بدون `staleTime` مناسب؟
+- هل هناك مكونات ثقيلة بدون `React.memo` أو `useMemo`؟
+- هل هناك استعلامات متكررة أو غير محسّنة؟
 
-## مخرجات المرحلة النهائية
-قدم تقريراً كاملاً بالصيغة التالية:
+### 7. التحقق من نتائج التقرير السابق
+- اقرأ التقرير الموجود في `docs/financial-system-integration-audit-report.md`
+- تحقق من كل finding بشكل مستقل:
+  - H1: هل `AccountingService.ts:168` لا يزال TODO؟
+  - H2: هل توجد صفحات قوائم مالية رسمية؟
+  - H3: هل يوجد deferred_revenue table؟
+  - M1: هل يوجد AP Aging report؟
+  - M2: هل PaymentService.ts يتحقق من الموافقات؟
+  - M3: هل useFinancialOverview.ts يستخدم payments مباشرة؟
+  - L1-L4: تحقق من وجودها
 
-# تقرير تدقيق تكامل النظام المالي - Fleetify
+## قواعد صارمة
+1. **لا تغيير في الكود** — تقرير فقط
+2. كل finding يجب أن يكون له مرجع `file:line` محدد
+3. استخدم `read_file` و `search_files` للتحقق المباشر — لا تعتمد على تقارير ذاتية
+4. إذا كان هناك تعارض مع التقرير السابق، وثّق التعارض
+5. استخدم pagination في استعلامات Supabase (HTTP Range headers)
+6. النتيجة النهائية: ملف واحد شامل في `docs/financial-system-integration-audit-report-comprehensive.md`
 
-## ملخص تنفيذي
-- تقييم المخاطر العام
-- إجمالي النتائج حسب الخطورة
-- التوصية النهائية
-
-## النتائج حسب المجال
-لكل مجال: الحالة، النتائج مع مراجع file:line، الخطورة، التوصية
-
-## مصفوفة التكامل
-جدول يوضح كل hook تكاملي، الوحدة المرتبطة، حالة التكامل، المشكلات، الخطورة
-
-## أولويات المعالجة
-مرتبة حسب الخطورة
-
-## ملحق: الاستعلامات المستخدمة
-
-هام جداً:
-- كل نتيجة يجب أن تكون مدعومة بمرجع file:line محدد
-- لا تعتمد على تقارير سابقة أو ذاكرة - اقرأ الملفات الفعلية
-- إذا وجدت تعارضاً مع تقارير سابقة، وثق التعارض
-- لا تقم بتعديل أي كود
-- استخدم اللغة العربية في التقرير النهائي
+## مسار المشروع
+C:\Users\khamis\Documents\fleetifyapp
 
 ## Reasoning
-The task is a comprehensive financial system audit requiring analysis of database schema, triggers, integration hooks, reports, internal controls, and code issues. I decomposed it into 7 subtasks: mapping the financial system (Phase 1), building the trigger matrix (Phase 2), auditing integration hooks (Phase 3), auditing financial reports (Phase 4), auditing internal controls (Phase 5), auditing comprehensive issues (Phase 6), and an assembly subtask to compile the final report. Subtasks 1 and 2 are independent and can run in parallel (group 0). Subtasks 3, 4, 5, 6 depend on the map from subtask 1; subtask 3 also depends on the trigger matrix from subtask 2, so they all run in group 1. The assembly subtask depends on all others and runs last (group 2). This maximizes parallelism while respecting dependencies.
+The task requires expanding an existing audit report with 7 independent sections, plus a final assembly. Each section can be investigated in parallel because they involve reading different files or running independent Supabase queries. The last subtask (assembly) depends on all others to produce the final comprehensive report. Maximum 8 subtasks allows one per section plus assembly.
 
 ## Risk Level
 medium
@@ -85,29 +82,27 @@ medium
 ## Milestones
 
 ### Parallel group 1
-- Subtasks: build-trigger-matrix, map-financial-system
+- Subtasks: edge-functions-audit, i18n-audit, live-database-audit, performance-audit, rls-policies-audit, security-audit, verify-previous-findings
 - Acceptance criteria:
-  - A trigger matrix is documented with all required fields and bypass mechanisms identified.
-  - A complete list of financial tables, routes, components, and integration hooks with exact file paths is documented.
+  - All Edge Functions are listed with their auth/company validation status. Missing or weak validations are documented with file:line references.
+  - All finance pages checked for i18n usage. Hardcoded strings listed with file:line. Language coverage percentage calculated.
+  - All required queries executed with pagination. Results include counts and examples of anomalies. No default limit of 1000 used.
+  - All financial hooks and components reviewed. Performance issues documented with file:line and suggested fixes.
+  - All RLS policies for financial tables are listed with their SQL definitions. Missing or weak policies are identified with file:line references.
+  - All security checks completed. Any hardcoded credentials, fallback keys, or weak protections are documented with file:line references.
+  - Each previous finding is independently verified. Discrepancies or confirmations documented with current file:line references.
 
 ### Parallel group 2
-- Subtasks: audit-comprehensive-issues, audit-financial-reports, audit-integration-hooks, audit-internal-controls
-- Acceptance criteria:
-  - All instances of the specified code patterns are found and documented with file:line references.
-  - All report components are audited; findings include file:line references for mock data, hardcoded values, or equation errors.
-  - Each integration hook is analyzed against all 9 criteria with specific file:line evidence.
-  - Internal control weaknesses are identified with specific file:line evidence.
-
-### Parallel group 3
 - Subtasks: assembly
 - Acceptance criteria:
-  - Final deliverable file audit_report.md is written and contains all findings from prior subtasks, formatted in Arabic as specified.
+  - Final deliverable file is written and contains all findings from prior subtasks, structured as required.
 
 ## DAG
-- `build-trigger-matrix` group=0 deps=none: Read all migration files in supabase/migrations/ related to finance (especially 20260627*). For each trigger, document: name, target table, operation (INSERT/UPDATE/DELETE), timing (BEFORE/AFTER), condition, exception, and bypass mechanism (search for financial_controls_bypass and set_config).
-- `map-financial-system` group=0 deps=none: Read types.ts to list all financial tables. Explore src/pages/finance/ and src/components/finance/ to identify all financial routes and components. Search src/hooks/ for any hook that creates journal entries or interacts with financial tables. Produce a structured inventory with file paths.
-- `audit-comprehensive-issues` group=1 deps=map-financial-system: Search all financial-related files for: Math.abs() usage that may hide accounting signs, unsafe JSON.stringify/parse, common accounting errors (reversed debits/credits, wrong accounts), multi-currency handling issues, and fake export functions. Document findings with file:line.
-- `audit-financial-reports` group=1 deps=map-financial-system: Examine all financial report components in src/components/finance/ and src/pages/finance/. Check for mock data, hardcoded values, correctness of accounting equations (Balance Sheet, Income Statement, Cash Flow), and linkage to General Ledger. Document findings with file:line.
-- `audit-integration-hooks` group=1 deps=map-financial-system, build-trigger-matrix: For each integration hook identified in map-financial-system, analyze: source module, operation sequence (header first? status?), total_debit/credit passing, balance check, delete vs reversal pattern, intersection with trigger matrix, account correctness (debit/credit), and currency handling. Provide file:line references.
-- `audit-internal-controls` group=1 deps=map-financial-system: Examine approval workflows, audit trail mechanisms, access controls, and segregation of duties in the financial module. Search relevant components, hooks, and pages. Document findings with file:line.
-- `assembly` group=2 deps=map-financial-system, build-trigger-matrix, audit-integration-hooks, audit-financial-reports, audit-internal-controls, audit-comprehensive-issues: Collect all findings from the six analysis subtasks. Produce the final audit report in Arabic following the specified format: Executive Summary, Findings by Domain, Integration Matrix, Treatment Priorities, and Appendix with queries used. Ensure every finding has a file:line reference. Write the report to audit_report.md.
+- `edge-functions-audit` group=0 deps=none: Scan all Edge Functions in src/functions/ or supabase/functions/ and src/server/ for JWT auth verification and company_id validation. List each function with its auth/company validation status. Report findings in a structured section.
+- `i18n-audit` group=0 deps=none: Examine translation files in src/translations/ or src/locales/ and all finance pages in src/pages/finance/. Check if all UI strings use t() or useTranslation. Identify hardcoded English/Arabic labels. Measure language coverage (percentage of keys translated). Report findings.
+- `live-database-audit` group=0 deps=none: Read .env to get Supabase URL and service role key. Use curl with HTTP Range headers (pagination) to query: count of journal_entries, unbalanced entries (debit != credit), entries without lines, payments without journal_entry_id, invoices without journal_entry_id, and check A=L+E if possible. Report all findings with actual numbers.
+- `performance-audit` group=0 deps=none: Examine financial hooks (e.g., useFinancialOverview, usePayments, etc.) for N+1 queries, missing staleTime in useQuery, heavy components without React.memo or useMemo, and repeated/unoptimized queries. Report findings with file:line references.
+- `rls-policies-audit` group=0 deps=none: Examine migration files in src/migrations/ or supabase/migrations/ for RLS policies on tables: journal_entries, journal_entry_lines, chart_of_accounts, payments, invoices. Check if policies enforce company isolation. Report any missing or weak policies.
+- `security-audit` group=0 deps=none: Examine validateEnv.ts for fallback keys, .env and .env.example for leaked keys, src/components/finance/ProtectedFinanceRoute.tsx for protection adequacy, and search for hardcoded credentials or fallback keys across the codebase. Report all findings with file:line references.
+- `verify-previous-findings` group=0 deps=none: Read docs/financial-system-integration-audit-report.md. For each finding (H1, H2, H3, M1, M2, M3, L1-L4), independently verify using file reads and searches. Check if AccountingService.ts:168 still has TODO, if official financial report pages exist, if deferred_revenue table exists, if AP Aging report exists, if PaymentService.ts checks approvals, if useFinancialOverview uses payments directly, and existence of L1-L4. Report any discrepancies.
+- `assembly` group=1 deps=edge-functions-audit, rls-policies-audit, live-database-audit, security-audit, i18n-audit, performance-audit, verify-previous-findings: Collect all findings from the 7 prior subtasks and produce the final comprehensive audit report in docs/financial-system-integration-audit-report-comprehensive.md. The report must include all sections in the specified order, with file:line references, and note any conflicts with the previous report.

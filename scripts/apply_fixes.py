@@ -15,9 +15,9 @@ from dotenv import dotenv_values
 from collections import defaultdict
 
 # Load environment variables
-vals: Dict[str, str] = dotenv_values('.env')
-BASE_URL: str = vals.get('VITE_SUPABASE_URL', '').strip()
-SRK: str = vals.get('VITE_SUPABASE_SERVICE_ROLE_KEY', '').strip()
+vals: Dict[str, Optional[str]] = dotenv_values('.env')
+BASE_URL: str = (vals.get('VITE_SUPABASE_URL') or '').strip()
+SRK: str = (vals.get('VITE_SUPABASE_SERVICE_ROLE_KEY') or '').strip()
 
 # Headers for Supabase API
 H: Dict[str, str] = {
@@ -79,15 +79,18 @@ invoices: List[Dict[str, Any]] = get_all('invoices', 'id,invoice_number,total_am
 contracts: List[Dict[str, Any]] = get_all('contracts', 'id,customer_id')
 print(f"  {len(entries)} entries, {len(lines)} lines, {len(payments)} payments, {len(invoices)} invoices, {len(contracts)} contracts")
 
+# Filter lines with a valid journal_entry_id (ignore orphan lines)
+valid_lines: List[Dict[str, Any]] = [l for l in lines if l.get('journal_entry_id') is not None]
+
 # Build lookup sets
-linked_ids: Set[str] = {l['journal_entry_id'] for l in lines if l.get('journal_entry_id') is not None}
+linked_ids: Set[str] = {l['journal_entry_id'] for l in valid_lines}
 inv_ids: Set[str] = {i['id'] for i in invoices}
 con_ids: Set[str] = {c['id'] for c in contracts}
 
 # Build entry totals (debit, credit, line count)
 et: DefaultDict[str, Dict[str, float]] = defaultdict(lambda: {'d': 0.0, 'c': 0.0, 'n': 0.0})
-for l in lines:
-    eid: str = l['journal_entry_id']
+for l in valid_lines:
+    eid: str = l['journal_entry_id']  # guaranteed not None after filtering
     et[eid]['d'] += float(l.get('debit_amount') or 0)
     et[eid]['c'] += float(l.get('credit_amount') or 0)
     et[eid]['n'] += 1.0
@@ -192,5 +195,99 @@ for e in drafts:
             ok, err = patch('journal_entries', f'id=eq.{eid}', {'status': 'posted'})
             if ok:
                 posted_count += 1
+                print(f"  POSTED: {e.get('entry_number', '?')}")
             else:
                 print(f"  FAILED to post: {e.get('entry_number', '?')} - {err}")
+        else:
+            print(f"  SKIP (unbalanced): {e.get('entry_number', '?')}")
+
+print(f"\n  Draft fix summary: {posted_count} posted, {deleted_count} deleted")
+
+# ============================================================
+# FIX 4: Unlinked payments
+# ============================================================
+print("\n" + "=" * 70)
+print("FIX 4: UNLINKED PAYMENTS")
+print("=" * 70)
+unlinked_payments: List[Dict[str, Any]] = [p for p in payments if p.get('invoice_id') is None]
+print(f"  Found {len(unlinked_payments)} unlinked payments")
+
+# Separate into those with contract and those with only customer
+with_contract: List[Dict[str, Any]] = [p for p in unlinked_payments if p.get('contract_id') is not None]
+customer_only: List[Dict[str, Any]] = [p for p in unlinked_payments if p.get('contract_id') is None and p.get('customer_id') is not None]
+print(f"    With contract: {len(with_contract)}")
+print(f"    Customer only: {len(customer_only)}")
+
+# For payments with contract, try to find an invoice for that contract
+fixed4: int = 0
+for p in with_contract:
+    cid: str = p['contract_id']
+    # Find an invoice for this contract that is not fully paid
+    contract_invoices: List[Dict[str, Any]] = [i for i in invoices if i.get('contract_id') == cid and i.get('status') != 'paid']
+    if contract_invoices:
+        # Link to the first unpaid invoice
+        inv: Dict[str, Any] = contract_invoices[0]
+        ok, _ = patch('payments', f'id=eq.{p["id"]}', {'invoice_id': inv['id']})
+        if ok:
+            fixed4 += 1
+            print(f"  Linked payment {p.get('payment_number', '?')} to invoice {inv.get('invoice_number', '?')}")
+        else:
+            print(f"  FAILED to link payment {p.get('payment_number', '?')}")
+    else:
+        print(f"  No unpaid invoice for contract {cid}, payment {p.get('payment_number', '?')} skipped")
+
+# For customer-only payments, try to find an invoice for that customer
+for p in customer_only:
+    cust_id: str = p['customer_id']
+    # Find an invoice for this customer that is not fully paid
+    cust_invoices: List[Dict[str, Any]] = [i for i in invoices if i.get('customer_id') == cust_id and i.get('status') != 'paid']
+    if cust_invoices:
+        inv = cust_invoices[0]
+        ok, _ = patch('payments', f'id=eq.{p["id"]}', {'invoice_id': inv['id']})
+        if ok:
+            fixed4 += 1
+            print(f"  Linked payment {p.get('payment_number', '?')} to invoice {inv.get('invoice_number', '?')}")
+        else:
+            print(f"  FAILED to link payment {p.get('payment_number', '?')}")
+    else:
+        print(f"  No unpaid invoice for customer {cust_id}, payment {p.get('payment_number', '?')} skipped")
+
+print(f"\n  Payments linked: {fixed4}")
+
+# ============================================================
+# FIX 5: Unlinked invoices (PUR-type, no customer)
+# ============================================================
+print("\n" + "=" * 70)
+print("FIX 5: UNLINKED INVOICES")
+print("=" * 70)
+unlinked_invoices: List[Dict[str, Any]] = [i for i in invoices if i.get('customer_id') is None and i.get('type') == 'PUR']
+print(f"  Found {len(unlinked_invoices)} unlinked PUR invoices")
+
+# For each, try to find a contract and assign customer from contract
+fixed5: int = 0
+for inv in unlinked_invoices:
+    cid: Optional[str] = inv.get('contract_id')
+    if cid:
+        contract: Optional[Dict[str, Any]] = next((c for c in contracts if c['id'] == cid), None)
+        if contract and contract.get('customer_id'):
+            ok, _ = patch('invoices', f'id=eq.{inv["id"]}', {'customer_id': contract['customer_id']})
+            if ok:
+                fixed5 += 1
+                print(f"  Assigned customer {contract['customer_id']} to invoice {inv.get('invoice_number', '?')}")
+            else:
+                print(f"  FAILED to assign customer to invoice {inv.get('invoice_number', '?')}")
+        else:
+            print(f"  Contract {cid} not found or has no customer for invoice {inv.get('invoice_number', '?')}")
+    else:
+        print(f"  No contract for invoice {inv.get('invoice_number', '?')}")
+
+print(f"\n  Invoices fixed: {fixed5}")
+
+print("\n" + "=" * 70)
+print("REMEDIATION COMPLETE")
+print("=" * 70)
+print(f"  Fix 1 (empty entries): {fixed1} deleted")
+print(f"  Fix 2 (zero-amount entries): {fixed2} deleted")
+print(f"  Fix 3 (draft entries): {posted_count} posted, {deleted_count} deleted")
+print(f"  Fix 4 (unlinked payments): {fixed4} linked")
+print(f"  Fix 5 (unlinked invoices): {fixed5} fixed")
