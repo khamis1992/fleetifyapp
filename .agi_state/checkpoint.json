@@ -1,13 +1,32 @@
 {
   "stage": "plan_approved",
-  "task": "\u0631\u0627\u062c\u0639 \u0627\u0644\u0646\u0638\u0627\u0645 \u0627\u0644\u0645\u0627\u0644\u064a \u0648\u062a\u0643\u0627\u0645\u0644\u0647 \u0645\u0639 \u0628\u0642\u064a\u0629 \u0627\u0644\u0648\u062d\u062f\u0627\u062a \u0648\u0642\u062f\u0645 \u0644\u064a \u062a\u0642\u0631\u064a\u0631 \u0643\u0627\u0645\u0644 \u0628\u062f\u0648\u0646 \u062a\u063a\u064a\u0631 \u0627\u0644\u0643\u0648\u062f \u0641\u0642\u0637 \u062a\u0642\u0631\u064a\u0631 \u0639\u0646 \u062a\u0643\u0627\u0645\u0644 \u0627\u0644\u0646\u0638\u0627\u0645",
+  "task": "\u0642\u0645 \u0628\u0639\u0645\u0644 \u0641\u062d\u0635 (Audit) \u062c\u062f\u064a\u062f \u0648\u062d\u062f\u064a\u062b \u0648\u0634\u0627\u0645\u0644 \u0644\u0644\u0646\u0638\u0627\u0645 \u0627\u0644\u0645\u0627\u0644\u064a \u0641\u064a \u062a\u0637\u0628\u064a\u0642 Fleetify\u060c \u062a\u0623\u0643\u062f \u0623\u0646 \u062a\u0642\u0631\u0623 \u0627\u0644\u0623\u0643\u0648\u0627\u062f \u0627\u0644\u0641\u0639\u0644\u064a\u0629 \u0627\u0644\u0622\u0646 \u0648\u0644\u0627 \u062a\u0639\u062a\u0645\u062f \u0639\u0644\u0649 \u0645\u0644\u0641\u0627\u062a \u0642\u062f\u064a\u0645\u0629. \u0642\u0645 \u0628\u0641\u062d\u0635 Edge Functions \u0627\u0644\u0640 48\u060c \u062a\u062d\u0644\u064a\u0644 RLS policies\u060c \u0648\u0641\u062d\u0635 \u0642\u0627\u0639\u062f\u0629 \u0627\u0644\u0628\u064a\u0627\u0646\u0627\u062a \u0627\u0644\u062d\u064a\u0629 \u0639\u0628\u0631 Supabase API \u0625\u0630\u0627 \u0644\u0632\u0645 \u0627\u0644\u0623\u0645\u0631. \u0623\u0636\u0641 \u0623\u0642\u0633\u0627\u0645\u0627\u064b \u062c\u062f\u064a\u062f\u0629 \u0645\u062b\u0644 \u062a\u062d\u0644\u064a\u0644 \u0627\u0644\u0623\u062f\u0627\u0621\u060c \u062a\u062d\u0644\u064a\u0644 \u0627\u0644\u0623\u0645\u0627\u0646\u060c \u0648\u062a\u062f\u0642\u064a\u0642 i18n. \u062a\u062d\u0642\u0642 \u0645\u0646 \u0627\u0644\u0646\u062a\u0627\u0626\u062c - \u064a\u062c\u0628 \u062a\u0634\u063a\u064a\u0644 AGI \u0644\u0644\u062a\u062d\u0642\u0642 \u0645\u0646 \u0643\u0644 finding \u0641\u064a \u0627\u0644\u062a\u0642\u0631\u064a\u0631 \u0628\u0634\u0643\u0644 \u0645\u0633\u062a\u0642\u0644. \u0644\u0627 \u062a\u0642\u0645 \u0628\u062a\u063a\u064a\u064a\u0631 \u0623\u064a \u0643\u0648\u062f\u060c \u0641\u0642\u0637 \u0642\u062f\u0645 \u062a\u0642\u0631\u064a\u0631\u0627\u064b \u0645\u0641\u0635\u0644\u0627\u064b \u0648\u062d\u062f\u064a\u062b\u0627\u064b \u0628\u0627\u0633\u0645 docs/financial-system-audit-v5-final.md",
   "status": "running",
-  "timestamp": "2026-07-05T15:42:43.498183",
+  "timestamp": "2026-07-05T16:10:56.057815",
   "plan": {
-    "task": "\u0631\u0627\u062c\u0639 \u0627\u0644\u0646\u0638\u0627\u0645 \u0627\u0644\u0645\u0627\u0644\u064a \u0648\u062a\u0643\u0627\u0645\u0644\u0647 \u0645\u0639 \u0628\u0642\u064a\u0629 \u0627\u0644\u0648\u062d\u062f\u0627\u062a \u0648\u0642\u062f\u0645 \u0644\u064a \u062a\u0642\u0631\u064a\u0631 \u0643\u0627\u0645\u0644 \u0628\u062f\u0648\u0646 \u062a\u063a\u064a\u0631 \u0627\u0644\u0643\u0648\u062f \u0641\u0642\u0637 \u062a\u0642\u0631\u064a\u0631 \u0639\u0646 \u062a\u0643\u0627\u0645\u0644 \u0627\u0644\u0646\u0638\u0627\u0645",
+    "task": "\u0642\u0645 \u0628\u0639\u0645\u0644 \u0641\u062d\u0635 (Audit) \u062c\u062f\u064a\u062f \u0648\u062d\u062f\u064a\u062b \u0648\u0634\u0627\u0645\u0644 \u0644\u0644\u0646\u0638\u0627\u0645 \u0627\u0644\u0645\u0627\u0644\u064a \u0641\u064a \u062a\u0637\u0628\u064a\u0642 Fleetify\u060c \u062a\u0623\u0643\u062f \u0623\u0646 \u062a\u0642\u0631\u0623 \u0627\u0644\u0623\u0643\u0648\u0627\u062f \u0627\u0644\u0641\u0639\u0644\u064a\u0629 \u0627\u0644\u0622\u0646 \u0648\u0644\u0627 \u062a\u0639\u062a\u0645\u062f \u0639\u0644\u0649 \u0645\u0644\u0641\u0627\u062a \u0642\u062f\u064a\u0645\u0629. \u0642\u0645 \u0628\u0641\u062d\u0635 Edge Functions \u0627\u0644\u0640 48\u060c \u062a\u062d\u0644\u064a\u0644 RLS policies\u060c \u0648\u0641\u062d\u0635 \u0642\u0627\u0639\u062f\u0629 \u0627\u0644\u0628\u064a\u0627\u0646\u0627\u062a \u0627\u0644\u062d\u064a\u0629 \u0639\u0628\u0631 Supabase API \u0625\u0630\u0627 \u0644\u0632\u0645 \u0627\u0644\u0623\u0645\u0631. \u0623\u0636\u0641 \u0623\u0642\u0633\u0627\u0645\u0627\u064b \u062c\u062f\u064a\u062f\u0629 \u0645\u062b\u0644 \u062a\u062d\u0644\u064a\u0644 \u0627\u0644\u0623\u062f\u0627\u0621\u060c \u062a\u062d\u0644\u064a\u0644 \u0627\u0644\u0623\u0645\u0627\u0646\u060c \u0648\u062a\u062f\u0642\u064a\u0642 i18n. \u062a\u062d\u0642\u0642 \u0645\u0646 \u0627\u0644\u0646\u062a\u0627\u0626\u062c - \u064a\u062c\u0628 \u062a\u0634\u063a\u064a\u0644 AGI \u0644\u0644\u062a\u062d\u0642\u0642 \u0645\u0646 \u0643\u0644 finding \u0641\u064a \u0627\u0644\u062a\u0642\u0631\u064a\u0631 \u0628\u0634\u0643\u0644 \u0645\u0633\u062a\u0642\u0644. \u0644\u0627 \u062a\u0642\u0645 \u0628\u062a\u063a\u064a\u064a\u0631 \u0623\u064a \u0643\u0648\u062f\u060c \u0641\u0642\u0637 \u0642\u062f\u0645 \u062a\u0642\u0631\u064a\u0631\u0627\u064b \u0645\u0641\u0635\u0644\u0627\u064b \u0648\u062d\u062f\u064a\u062b\u0627\u064b \u0628\u0627\u0633\u0645 docs/financial-system-audit-v5-final.md",
     "subtasks": [
       {
-        "goal": "Review core financial system files to understand structure and key components.",
+        "goal": "Query the live Supabase database to verify schema consistency, data integrity, and financial data accuracy.",
+        "agent": "backend-engineer",
+        "toolsets": [
+          "terminal",
+          "file"
+        ],
+        "dependencies": [],
+        "parallel_group": 0,
+        "id": "audit-database-live",
+        "files": [
+          "scripts/audit-supabase-queries-v2.py"
+        ],
+        "success_criteria": "A JSON file is created with findings from the live database audit, including discrepancies and recommendations.",
+        "milestone": "milestone-1",
+        "milestone_index": 0,
+        "model_hint": "analytical",
+        "max_iterations": 1
+      },
+      {
+        "goal": "Analyze all 48 Edge Functions for financial logic, security, and performance. Document findings in a structured format.",
         "agent": "code-reviewer",
         "toolsets": [
           "terminal",
@@ -15,21 +34,19 @@
         ],
         "dependencies": [],
         "parallel_group": 0,
-        "id": "analyze-financial-core",
+        "id": "audit-edge-functions",
         "files": [
-          "task_delegation.py",
-          "analyze_company_jes.py",
-          "analyze_je_structure.py",
-          "create_closing_entry.py"
+          "src/edge-functions/**/*.ts",
+          "src/edge-functions/**/*.js"
         ],
-        "success_criteria": "Documented summary of financial system's core components, data models, and key functions.",
+        "success_criteria": "A JSON file is created with findings for each Edge Function, including potential issues and recommendations.",
         "milestone": "milestone-1",
         "milestone_index": 0,
         "model_hint": "analytical",
         "max_iterations": 1
       },
       {
-        "goal": "Review dependencies and external interactions of the financial system.",
+        "goal": "Analyze the internationalization (i18n) support for financial features, including currency handling and localization.",
         "agent": "code-reviewer",
         "toolsets": [
           "terminal",
@@ -37,173 +54,200 @@
         ],
         "dependencies": [],
         "parallel_group": 0,
-        "id": "audit-dependencies",
+        "id": "audit-i18n",
         "files": [
-          "apply_migration_psql.py",
-          "apply_migration_psycopg.py",
-          "audit-supabase-queries.py",
-          "audit-supabase-queries-v2.py"
+          "src/i18n/**/*.ts",
+          "src/locales/**/*.json"
         ],
-        "success_criteria": "Documented dependencies, external services, and database interactions.",
+        "success_criteria": "A JSON file is created with i18n findings and recommendations for improvement.",
         "milestone": "milestone-1",
         "milestone_index": 0,
         "model_hint": "analytical",
         "max_iterations": 1
       },
       {
-        "goal": "Identify and document integration points between financial system and other modules.",
-        "agent": "doc-writer",
+        "goal": "Analyze the performance of financial operations, including query execution times and API response times.",
+        "agent": "code-reviewer",
         "toolsets": [
           "terminal",
           "file"
         ],
         "dependencies": [],
         "parallel_group": 0,
-        "id": "review-integration-points",
+        "id": "audit-performance",
         "files": [
-          "apply_fixes.py",
-          "apply_migration.py",
-          "apply_migration_v2.py",
-          "bulk_delete_pyinv.py"
+          "src/integrations/supabase/**/*.ts",
+          "src/api/**/*.ts"
         ],
-        "success_criteria": "List of integration points, APIs, or shared functions between financial and other systems.",
+        "success_criteria": "A JSON file is created with performance metrics and recommendations for optimization.",
+        "milestone": "milestone-1",
+        "milestone_index": 0,
+        "model_hint": "analytical",
+        "max_iterations": 1
+      },
+      {
+        "goal": "Review all Row-Level Security (RLS) policies in the Supabase configuration for correctness and security.",
+        "agent": "devops-engineer",
+        "toolsets": [
+          "terminal",
+          "file"
+        ],
+        "dependencies": [],
+        "parallel_group": 0,
+        "id": "audit-rls-policies",
+        "files": [
+          "supabase/config.toml",
+          "supabase/sql/**/*.sql"
+        ],
+        "success_criteria": "A JSON file is created with findings for each RLS policy, including potential misconfigurations and recommendations.",
         "milestone": "milestone-1",
         "milestone_index": 0,
         "model_hint": "speed",
         "max_iterations": 1
       },
       {
-        "goal": "Review audit-related files to understand financial data validation and reporting.",
-        "agent": "code-reviewer",
+        "goal": "Review the security of financial operations, including authentication, authorization, and data encryption.",
+        "agent": "security-auditor",
         "toolsets": [
           "terminal",
           "file"
         ],
         "dependencies": [],
         "parallel_group": 1,
-        "id": "analyze-audit-files",
+        "id": "audit-security",
         "files": [
-          "audit_analysis.py",
-          "audit_analysis2.py",
-          "audit_contract_invoices.py",
-          "audit_detail.py",
-          "audit_detail2.py",
-          "audit_detail3.py",
-          "audit_full.py"
+          "src/auth/**/*.ts",
+          "src/integrations/supabase/**/*.ts"
         ],
-        "success_criteria": "Summary of audit processes, validation rules, and reporting mechanisms.",
+        "success_criteria": "A JSON file is created with security findings and recommendations for hardening.",
+        "milestone": "milestone-1",
+        "milestone_index": 0,
+        "model_hint": "analytical",
+        "max_iterations": 1
+      },
+      {
+        "goal": "Use AGI to independently verify each finding from the prior subtasks. Cross-check results for accuracy.",
+        "agent": "code-reviewer",
+        "toolsets": [
+          "terminal",
+          "file"
+        ],
+        "dependencies": [
+          "audit-edge-functions",
+          "audit-rls-policies",
+          "audit-database-live",
+          "audit-performance",
+          "audit-security",
+          "audit-i18n"
+        ],
+        "parallel_group": 1,
+        "id": "verify-findings",
+        "files": [
+          "docs/financial-system-audit-v5-final.md"
+        ],
+        "success_criteria": "A verified JSON file is created with confirmed findings and any corrections to prior results.",
         "milestone": "milestone-2",
         "milestone_index": 1,
         "model_hint": "analytical",
         "max_iterations": 1
       },
       {
-        "goal": "Map data flow between financial system and other modules, including data transformations.",
-        "agent": "devops-engineer",
+        "goal": "Compile all findings into a final report named docs/financial-system-audit-v5-final.md. Ensure the report is comprehensive and well-structured.",
+        "agent": "code-reviewer",
         "toolsets": [
           "terminal",
           "file"
         ],
         "dependencies": [
-          "analyze-financial-core",
-          "review-integration-points"
-        ],
-        "parallel_group": 1,
-        "id": "review-data-flow",
-        "files": [
-          "task_delegation.py",
-          "apply_fixes.py",
-          "apply_migration.py",
-          "apply_migration_v2.py"
-        ],
-        "success_criteria": "Diagram or description of data flow and transformations between systems.",
-        "milestone": "milestone-2",
-        "milestone_index": 1,
-        "model_hint": "speed",
-        "max_iterations": 1
-      },
-      {
-        "goal": "Evaluate how well the financial system integrates with other modules, identifying potential gaps or inefficiencies.",
-        "agent": "devops-engineer",
-        "toolsets": [
-          "terminal",
-          "file"
-        ],
-        "dependencies": [
-          "analyze-financial-core",
-          "review-integration-points",
-          "audit-dependencies"
+          "audit-edge-functions",
+          "audit-rls-policies",
+          "audit-database-live",
+          "audit-performance",
+          "audit-security",
+          "audit-i18n",
+          "verify-findings"
         ],
         "parallel_group": 2,
-        "id": "assess-system-cohesion",
-        "files": [
-          "task_delegation.py",
-          "apply_fixes.py",
-          "apply_migration.py",
-          "apply_migration_v2.py",
-          "bulk_delete_pyinv.py"
-        ],
-        "success_criteria": "Assessment of integration quality, including strengths and weaknesses.",
-        "milestone": "milestone-3",
-        "milestone_index": 2,
-        "model_hint": "speed",
-        "max_iterations": 1
-      },
-      {
-        "goal": "Consolidate all findings into a structured report outline.",
-        "agent": "builder",
-        "toolsets": [
-          "hermes-cli"
-        ],
-        "dependencies": [
-          "analyze-financial-core",
-          "review-integration-points",
-          "audit-dependencies",
-          "analyze-audit-files",
-          "review-data-flow",
-          "assess-system-cohesion"
-        ],
-        "parallel_group": 3,
-        "id": "compile-findings",
-        "files": [],
-        "success_criteria": "Structured report outline with sections for each analyzed component.",
-        "milestone": "milestone-4",
-        "milestone_index": 3,
-        "model_hint": "balanced",
-        "max_iterations": 3
-      },
-      {
-        "goal": "Write the final report summarizing the financial system's integration with other modules.",
-        "agent": "builder",
-        "toolsets": [
-          "hermes-cli"
-        ],
-        "dependencies": [
-          "analyze-financial-core",
-          "review-integration-points",
-          "audit-dependencies",
-          "analyze-audit-files",
-          "review-data-flow",
-          "assess-system-cohesion",
-          "compile-findings"
-        ],
-        "parallel_group": 4,
         "id": "assembly",
         "files": [
-          "financial_system_integration_report.md"
+          "docs/financial-system-audit-v5-final.md"
         ],
-        "success_criteria": "Final deliverable file is written and contains all findings from prior subtasks.",
-        "milestone": "milestone-5",
-        "milestone_index": 4,
-        "model_hint": "balanced",
-        "max_iterations": 3
+        "success_criteria": "Final deliverable file is written and contains all findings from prior subtasks, verified and structured clearly.",
+        "milestone": "milestone-3",
+        "milestone_index": 2,
+        "model_hint": "analytical",
+        "max_iterations": 1
       }
     ],
-    "risk_level": "low",
-    "parallel_group_count": 5,
+    "risk_level": "medium",
+    "parallel_group_count": 3,
     "routing_decisions": [
       {
-        "subtask_id": "analyze-financial-core",
+        "subtask_id": "audit-database-live",
+        "task_type": "database",
+        "agent": "backend-engineer",
+        "model_hint": "analytical",
+        "complexity": "medium",
+        "is_risky": false,
+        "confidence": 0.71,
+        "profile": {
+          "name": "backend-engineer",
+          "task_type": "database",
+          "model_tier": "balanced",
+          "timeout": 120.0,
+          "max_retries": 1,
+          "priority": "P1",
+          "requires_review": false,
+          "estimated_tokens": 4000,
+          "parallel_safe": true,
+          "toolsets": [
+            "terminal",
+            "file"
+          ],
+          "model": "glm-5.2:cloud",
+          "provider": "custom:ollama",
+          "base_url": "https://ollama.com/v1"
+        },
+        "parallel_safe": true,
+        "toolsets": [
+          "terminal",
+          "file"
+        ]
+      },
+      {
+        "subtask_id": "audit-edge-functions",
+        "task_type": "review",
+        "agent": "code-reviewer",
+        "model_hint": "analytical",
+        "complexity": "low",
+        "is_risky": false,
+        "confidence": 0.58,
+        "profile": {
+          "name": "code-reviewer",
+          "task_type": "review",
+          "model_tier": "balanced",
+          "timeout": 120.0,
+          "max_retries": 1,
+          "priority": "P1",
+          "requires_review": false,
+          "estimated_tokens": 4000,
+          "parallel_safe": true,
+          "toolsets": [
+            "terminal",
+            "file"
+          ],
+          "model": "glm-5.2:cloud",
+          "provider": "custom:ollama",
+          "base_url": "https://ollama.com/v1"
+        },
+        "parallel_safe": true,
+        "toolsets": [
+          "terminal",
+          "file"
+        ]
+      },
+      {
+        "subtask_id": "audit-i18n",
         "task_type": "review",
         "agent": "code-reviewer",
         "model_hint": "analytical",
@@ -235,7 +279,7 @@
         ]
       },
       {
-        "subtask_id": "audit-dependencies",
+        "subtask_id": "audit-performance",
         "task_type": "review",
         "agent": "code-reviewer",
         "model_hint": "analytical",
@@ -267,16 +311,16 @@
         ]
       },
       {
-        "subtask_id": "review-integration-points",
-        "task_type": "docs",
-        "agent": "doc-writer",
+        "subtask_id": "audit-rls-policies",
+        "task_type": "config",
+        "agent": "devops-engineer",
         "model_hint": "speed",
         "complexity": "medium",
         "is_risky": false,
-        "confidence": 0.6,
+        "confidence": 0.67,
         "profile": {
-          "name": "doc-writer",
-          "task_type": "docs",
+          "name": "devops-engineer",
+          "task_type": "devops",
           "model_tier": "balanced",
           "timeout": 120.0,
           "max_retries": 1,
@@ -299,7 +343,39 @@
         ]
       },
       {
-        "subtask_id": "analyze-audit-files",
+        "subtask_id": "audit-security",
+        "task_type": "security",
+        "agent": "security-auditor",
+        "model_hint": "analytical",
+        "complexity": "medium",
+        "is_risky": false,
+        "confidence": 0.64,
+        "profile": {
+          "name": "security-auditor",
+          "task_type": "security",
+          "model_tier": "balanced",
+          "timeout": 120.0,
+          "max_retries": 1,
+          "priority": "P1",
+          "requires_review": false,
+          "estimated_tokens": 4000,
+          "parallel_safe": true,
+          "toolsets": [
+            "terminal",
+            "file"
+          ],
+          "model": "glm-5.2:cloud",
+          "provider": "custom:ollama",
+          "base_url": "https://ollama.com/v1"
+        },
+        "parallel_safe": true,
+        "toolsets": [
+          "terminal",
+          "file"
+        ]
+      },
+      {
+        "subtask_id": "verify-findings",
         "task_type": "review",
         "agent": "code-reviewer",
         "model_hint": "analytical",
@@ -331,127 +407,35 @@
         ]
       },
       {
-        "subtask_id": "review-data-flow",
-        "task_type": "config",
-        "agent": "devops-engineer",
-        "model_hint": "speed",
-        "complexity": "low",
-        "is_risky": false,
-        "confidence": 0.58,
-        "profile": {
-          "name": "devops-engineer",
-          "task_type": "devops",
-          "model_tier": "balanced",
-          "timeout": 120.0,
-          "max_retries": 1,
-          "priority": "P1",
-          "requires_review": false,
-          "estimated_tokens": 4000,
-          "parallel_safe": true,
-          "toolsets": [
-            "terminal",
-            "file"
-          ],
-          "model": "glm-5.2:cloud",
-          "provider": "custom:ollama",
-          "base_url": "https://ollama.com/v1"
-        },
-        "parallel_safe": true,
-        "toolsets": [
-          "terminal",
-          "file"
-        ]
-      },
-      {
-        "subtask_id": "assess-system-cohesion",
-        "task_type": "config",
-        "agent": "devops-engineer",
-        "model_hint": "speed",
-        "complexity": "medium",
-        "is_risky": false,
-        "confidence": 0.58,
-        "profile": {
-          "name": "devops-engineer",
-          "task_type": "devops",
-          "model_tier": "balanced",
-          "timeout": 120.0,
-          "max_retries": 1,
-          "priority": "P1",
-          "requires_review": false,
-          "estimated_tokens": 4000,
-          "parallel_safe": true,
-          "toolsets": [
-            "terminal",
-            "file"
-          ],
-          "model": "glm-5.2:cloud",
-          "provider": "custom:ollama",
-          "base_url": "https://ollama.com/v1"
-        },
-        "parallel_safe": true,
-        "toolsets": [
-          "terminal",
-          "file"
-        ]
-      },
-      {
-        "subtask_id": "compile-findings",
-        "task_type": "implementation",
-        "agent": "builder",
-        "model_hint": "balanced",
-        "complexity": "medium",
-        "is_risky": false,
-        "confidence": 0.5,
-        "profile": {
-          "name": "builder",
-          "task_type": "implementation",
-          "model_tier": "balanced",
-          "timeout": 600,
-          "max_retries": 3,
-          "priority": "P1",
-          "requires_review": false,
-          "estimated_tokens": 4000,
-          "parallel_safe": true,
-          "toolsets": [
-            "hermes-cli"
-          ],
-          "model": "glm-5.2:cloud",
-          "provider": "custom:ollama",
-          "base_url": "http://localhost:11434/v1"
-        },
-        "parallel_safe": true,
-        "toolsets": [
-          "hermes-cli"
-        ]
-      },
-      {
         "subtask_id": "assembly",
-        "task_type": "implementation",
-        "agent": "builder",
-        "model_hint": "balanced",
+        "task_type": "review",
+        "agent": "code-reviewer",
+        "model_hint": "analytical",
         "complexity": "medium",
         "is_risky": false,
-        "confidence": 0.57,
+        "confidence": 0.58,
         "profile": {
-          "name": "builder",
-          "task_type": "implementation",
+          "name": "code-reviewer",
+          "task_type": "review",
           "model_tier": "balanced",
-          "timeout": 600,
-          "max_retries": 3,
+          "timeout": 120.0,
+          "max_retries": 1,
           "priority": "P1",
           "requires_review": false,
           "estimated_tokens": 4000,
           "parallel_safe": true,
           "toolsets": [
-            "hermes-cli"
+            "terminal",
+            "file"
           ],
           "model": "glm-5.2:cloud",
           "provider": "custom:ollama",
-          "base_url": "http://localhost:11434/v1"
+          "base_url": "https://ollama.com/v1"
         },
         "parallel_safe": true,
         "toolsets": [
-          "hermes-cli"
+          "terminal",
+          "file"
         ]
       }
     ],
@@ -460,14 +444,20 @@
         "id": "milestone-1",
         "name": "Parallel group 1",
         "subtask_ids": [
-          "analyze-financial-core",
-          "audit-dependencies",
-          "review-integration-points"
+          "audit-database-live",
+          "audit-edge-functions",
+          "audit-i18n",
+          "audit-performance",
+          "audit-rls-policies",
+          "audit-security"
         ],
         "acceptance_criteria": [
-          "Documented summary of financial system's core components, data models, and key functions.",
-          "Documented dependencies, external services, and database interactions.",
-          "List of integration points, APIs, or shared functions between financial and other systems."
+          "A JSON file is created with findings from the live database audit, including discrepancies and recommendations.",
+          "A JSON file is created with findings for each Edge Function, including potential issues and recommendations.",
+          "A JSON file is created with i18n findings and recommendations for improvement.",
+          "A JSON file is created with performance metrics and recommendations for optimization.",
+          "A JSON file is created with findings for each RLS policy, including potential misconfigurations and recommendations.",
+          "A JSON file is created with security findings and recommendations for hardening."
         ],
         "assumptions": [
           "Dependencies from earlier milestones remain stable."
@@ -477,12 +467,10 @@
         "id": "milestone-2",
         "name": "Parallel group 2",
         "subtask_ids": [
-          "analyze-audit-files",
-          "review-data-flow"
+          "verify-findings"
         ],
         "acceptance_criteria": [
-          "Summary of audit processes, validation rules, and reporting mechanisms.",
-          "Diagram or description of data flow and transformations between systems."
+          "A verified JSON file is created with confirmed findings and any corrections to prior results."
         ],
         "assumptions": [
           "Dependencies from earlier milestones remain stable."
@@ -492,52 +480,31 @@
         "id": "milestone-3",
         "name": "Parallel group 3",
         "subtask_ids": [
-          "assess-system-cohesion"
-        ],
-        "acceptance_criteria": [
-          "Assessment of integration quality, including strengths and weaknesses."
-        ],
-        "assumptions": [
-          "Dependencies from earlier milestones remain stable."
-        ]
-      },
-      {
-        "id": "milestone-4",
-        "name": "Parallel group 4",
-        "subtask_ids": [
-          "compile-findings"
-        ],
-        "acceptance_criteria": [
-          "Structured report outline with sections for each analyzed component."
-        ],
-        "assumptions": [
-          "Dependencies from earlier milestones remain stable."
-        ]
-      },
-      {
-        "id": "milestone-5",
-        "name": "Parallel group 5",
-        "subtask_ids": [
           "assembly"
         ],
         "acceptance_criteria": [
-          "Final deliverable file is written and contains all findings from prior subtasks."
+          "Final deliverable file is written and contains all findings from prior subtasks, verified and structured clearly."
         ],
         "assumptions": [
           "Dependencies from earlier milestones remain stable."
         ]
       }
     ],
-    "clarifying_questions": [],
+    "clarifying_questions": [
+      "What API style (REST, GraphQL, gRPC) and versioning strategy?",
+      "What error response format and status code conventions?",
+      "What is the deployment pipeline (staging, canary, production)?",
+      "Are there any approval gates or change management processes?"
+    ],
     "completion_criteria": [
-      "Subtask complete: Review core financial system files to understand structure and key components.",
-      "Subtask complete: Review dependencies and external interactions of the financial system.",
-      "Subtask complete: Identify and document integration points between financial system and other modules.",
-      "Subtask complete: Review audit-related files to understand financial data validation and reporting.",
-      "Subtask complete: Map data flow between financial system and other modules, including data transformations.",
-      "Subtask complete: Evaluate how well the financial system integrates with other modules, identifying potential gaps or ",
-      "Subtask complete: Consolidate all findings into a structured report outline.",
-      "Subtask complete: Write the final report summarizing the financial system's integration with other modules.",
+      "Subtask complete: Query the live Supabase database to verify schema consistency, data integrity, and financial data ac",
+      "Subtask complete: Analyze all 48 Edge Functions for financial logic, security, and performance. Document findings in a",
+      "Subtask complete: Analyze the internationalization (i18n) support for financial features, including currency handling ",
+      "Subtask complete: Analyze the performance of financial operations, including query execution times and API response ti",
+      "Subtask complete: Review all Row-Level Security (RLS) policies in the Supabase configuration for correctness and secur",
+      "Subtask complete: Review the security of financial operations, including authentication, authorization, and data encry",
+      "Subtask complete: Use AGI to independently verify each finding from the prior subtasks. Cross-check results for accura",
+      "Subtask complete: Compile all findings into a final report named docs/financial-system-audit-v5-final.md. Ensure the r",
       "All quality gates pass (syntax, lint, type, test)",
       "No regressions in existing test suite"
     ],

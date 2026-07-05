@@ -121,7 +121,7 @@ def call_llm(llm_client: Any, task_description: str, max_retries: Optional[int] 
                     )
                     raise
 
-        # All  attempts exhausted (only reached if all attempts returned None, not exception)
+        # All attempts exhausted (only reached if all attempts returned None, not exception)
         if last_exception is not None:
             logger.exception(
                 f"All {max_retries} attempts to call LLM failed. "
@@ -168,5 +168,6 @@ def delegate_task(
             return TASK_DELEGATION_FAILURE
         return result
     except Exception as e:
-        logger.exception(f"Task delegation failed for '{task_description}'. Returning TASK_DELEGATION_FAILURE.")
+        logger.error(f"Task delegation failed for '{task_description}'. Returning TASK_DELEGATION_FAILURE.")
+        logger.exception(f"Exception details: {type(e).__name__}: {e}")
         return TASK_DELEGATION_FAILURE

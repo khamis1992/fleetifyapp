@@ -932,13 +932,45 @@ const explainPaymentSkip = (message: string, context?: { customerName?: string; 
 
 const translateExcelImportError = (error: unknown) => {
   const message = errorMessage(error);
+  const normalized = message.toLowerCase();
   const overpayment = parseContractOverpaymentMessage(message);
 
   if (overpayment) {
     return `لا يمكن تسجيل الدفعة لأن العقد تجاوز حد المدفوعات. قيمة العقد ${formatQar(overpayment.contractAmount)}، والمدفوع الحالي ${formatQar(overpayment.currentTotal)}، والحد المسموح ${formatQar(overpayment.allowedTotal)}. راجع مدفوعات العقد قبل إعادة الاعتماد.`;
   }
 
+  const invoiceBeforeContractMatch = message.match(
+    /invoice date\s*\(([^)]+)\)\s*cannot be before contract start date\s*\(([^)]+)\)/i
+  );
+  if (invoiceBeforeContractMatch) {
+    return `تاريخ الفاتورة (${invoiceBeforeContractMatch[1]}) قبل تاريخ بداية العقد (${invoiceBeforeContractMatch[2]}). راجع تاريخ بداية العقد أو شهر الفاتورة قبل إعادة الاعتماد.`;
+  }
+
+  if (
+    normalized.includes('duplicate key value violates unique constraint') ||
+    normalized.includes('unique_invoice_per_contract_month')
+  ) {
+    return 'توجد فاتورة لنفس العقد ونفس الشهر مسبقاً. راجع الفاتورة الحالية أو عالج التكرار ثم أعد المحاولة.';
+  }
+
+  if (normalized.includes('would overpay invoice')) {
+    return 'لا يمكن تسجيل الدفعة لأن الفاتورة المرتبطة مدفوعة أو لأن الدفعة ستتجاوز الرصيد المستحق.';
+  }
+
+  if (normalized.includes('violates foreign key constraint')) {
+    return 'تعذر الربط بسجل مرتبط في النظام. راجع العقد والعميل والفاتورة ثم أعد المحاولة.';
+  }
+
+  if (normalized.includes('permission denied') || normalized.includes('row-level security')) {
+    return 'لا توجد صلاحية كافية لتنفيذ العملية على هذه البيانات.';
+  }
+
   return message;
+};
+
+const localizeImportOutcomeMessage = (message?: string) => {
+  if (!message) return '';
+  return translateExcelImportError(message) || message;
 };
 
 const isDuplicateOrContractOverpaymentError = (message: string) => {
@@ -2360,7 +2392,7 @@ export default function ExcelPaymentImport() {
                       <span className="text-[11px] font-bold text-[#94A3B8]">{new Date(outcome.updatedAt).toLocaleTimeString('ar-QA')}</span>
                     </div>
                     <p className="truncate text-sm font-black text-[#020617]">{outcome.customerName || outcome.fileName}</p>
-                    <p className="mt-1 line-clamp-2 text-xs font-semibold leading-5 text-[#475569]">{outcome.message}</p>
+                    <p className="mt-1 line-clamp-2 text-xs font-semibold leading-5 text-[#475569]">{localizeImportOutcomeMessage(outcome.message)}</p>
                   </button>
                 ))}
             </div>
@@ -2497,7 +2529,7 @@ export default function ExcelPaymentImport() {
                         <p className={`mt-2 line-clamp-2 text-xs font-semibold ${
                           outcome.status === 'failed' ? 'text-red-700' : outcome.status === 'review_required' ? 'text-amber-700' : 'text-[#64748B]'
                         }`}>
-                          {outcome.message}
+                          {localizeImportOutcomeMessage(outcome.message)}
                         </p>
                       )}
                     </button>
@@ -2605,7 +2637,7 @@ export default function ExcelPaymentImport() {
                       <div>
                         <p className="font-black text-[#020617]">تحليل هذا العميل</p>
                         <p className="mt-1 text-sm font-semibold text-[#475569]">
-                          {selectedOutcome?.message || 'تم تحليل الملف، ويمكن استكمال المطابقة والاعتماد.'}
+                          {localizeImportOutcomeMessage(selectedOutcome?.message) || 'تم تحليل الملف، ويمكن استكمال المطابقة والاعتماد.'}
                         </p>
                       </div>
                       <Badge variant="outline" className="w-fit bg-white">
