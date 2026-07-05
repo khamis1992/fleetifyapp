@@ -1,13 +1,55 @@
 {
   "stage": "plan_approved",
-  "task": "READ-ONLY AUDIT MODE: Do not modify source code, do not run self-healing, and only create the requested report artifact if a deliverable file is required.\n\n\u0631\u0627\u062c\u0639 \u0627\u0644\u0646\u0638\u0627\u0645 \u0627\u0644\u0645\u0627\u0644\u064a \u0648\u062a\u0643\u0627\u0645\u0644\u0647 \u0645\u0639 \u0628\u0642\u064a\u0629 \u0627\u0644\u0648\u062d\u062f\u0627\u062a \u0648\u0642\u062f\u0645 \u0644\u064a \u062a\u0642\u0631\u064a\u0631 \u0643\u0627\u0645\u0644 \u0628\u062f\u0648\u0646 \u062a\u063a\u064a\u0631 \u0627\u0644\u0643\u0648\u062f \u0641\u0642\u0637 \u062a\u0642\u0631\u064a\u0631 \u0639\u0646 \u062a\u0643\u0627\u0645\u0644 \u0627\u0644\u0646\u0638\u0627\u0645 \u0627\u0644\u0645\u0627\u0644\u064a\n\n\u0642\u0645 \u0628\u062a\u062d\u0644\u064a\u0644 \u0634\u0627\u0645\u0644 \u0644\u0644\u0646\u0638\u0627\u0645 \u0627\u0644\u0645\u0627\u0644\u064a \u0641\u064a \u0647\u0630\u0627 \u0627\u0644\u0645\u0634\u0631\u0648\u0639 \u0648\u062a\u0643\u0627\u0645\u0644\u0647 \u0645\u0639 \u062c\u0645\u064a\u0639 \u0627\u0644\u0648\u062d\u062f\u0627\u062a \u0627\u0644\u0623\u062e\u0631\u0649. \u0627\u0641\u062d\u0635:\n1. \u062c\u0645\u064a\u0639 \u0645\u0644\u0641\u0627\u062a \u0642\u0627\u0639\u062f\u0629 \u0627\u0644\u0628\u064a\u0627\u0646\u0627\u062a (migrations, schema)\n2. \u062c\u0645\u064a\u0639 \u0645\u0644\u0641\u0627\u062a \u0627\u0644\u0646\u0638\u0627\u0645 \u0627\u0644\u0645\u0627\u0644\u064a (finance-related code)\n3. \u062a\u0643\u0627\u0645\u0644 \u0627\u0644\u0646\u0638\u0627\u0645 \u0627\u0644\u0645\u0627\u0644\u064a \u0645\u0639 \u0627\u0644\u0648\u062d\u062f\u0627\u062a \u0627\u0644\u0623\u062e\u0631\u0649 (\u0627\u0644\u0645\u0628\u064a\u0639\u0627",
+  "task": "READ-ONLY AUDIT MODE: Do not modify source code, do not run self-healing, and only create the requested report artifact if a deliverable file is required.\n\n\u0631\u0627\u062c\u0639 \u0627\u0644\u0646\u0638\u0627\u0645 \u0627\u0644\u0645\u0627\u0644\u064a \u0648\u062a\u0643\u0627\u0645\u0644\u0647 \u0645\u0639 \u0628\u0642\u064a\u0629 \u0627\u0644\u0648\u062d\u062f\u0627\u062a \u0641\u064a \u0645\u0634\u0631\u0648\u0639 Fleetify \u0648\u0642\u062f\u0645 \u062a\u0642\u0631\u064a\u0631\u0627\u064b \u0643\u0627\u0645\u0644\u0627\u064b \u0628\u0627\u0644\u0644\u063a\u0629 \u0627\u0644\u0639\u0631\u0628\u064a\u0629. \u0644\u0627 \u062a\u0642\u0645 \u0628\u062a\u063a\u064a\u064a\u0631 \u0623\u064a \u0643\u0648\u062f.\n\n\u0627\u0644\u0645\u0634\u0631\u0648\u0639: Fleetify - \u0646\u0638\u0627\u0645 \u0625\u062f\u0627\u0631\u0629 \u0623\u0633\u0637\u0648\u0644 (ERP)\n\u0627\u0644\u0645\u0633\u0627\u0631: C:\\Users\\khamis\\Documents\\fleetifyapp\n\n\u0642\u0645 \u0628\u062a\u062d\u0644\u064a\u0644 \u0634\u0627\u0645\u0644 \u0644\u0644\u0646\u0638\u0627\u0645 \u0627\u0644\u0645\u0627\u0644\u064a \u0648\u062a\u0643\u0627\u0645\u0644\u0647 \u0645\u0639 \u062c\u0645\u064a\u0639 \u0627\u0644\u0648\u062d\u062f\u0627\u062a \u0627\u0644\u0623\u062e\u0631\u0649. \u0627\u0641\u062d\u0635 \u0628\u0627\u0644\u062a\u0641\u0635\u064a\u0644:\n\n1. **\u0645\u0644\u0641\u0627\u062a \u0627\u0644\u0646\u0638\u0627\u0645 \u0627\u0644\u0645\u0627\u0644\u064a**: \u0627\u0628\u062d\u062b \u0639\u0646 \u062c\u0645\u064a\u0639 \u0627\u0644\u0645\u0644\u0641\u0627\u062a \u0627\u0644\u0645\u062a\u0639\u0644\u0642\u0629",
   "status": "running",
-  "timestamp": "2026-07-05T21:01:43.096749",
+  "timestamp": "2026-07-05T21:07:53.893812",
   "plan": {
-    "task": "READ-ONLY AUDIT MODE: Do not modify source code, do not run self-healing, and only create the requested report artifact if a deliverable file is required.\n\n\u0631\u0627\u062c\u0639 \u0627\u0644\u0646\u0638\u0627\u0645 \u0627\u0644\u0645\u0627\u0644\u064a \u0648\u062a\u0643\u0627\u0645\u0644\u0647 \u0645\u0639 \u0628\u0642\u064a\u0629 \u0627\u0644\u0648\u062d\u062f\u0627\u062a \u0648\u0642\u062f\u0645 \u0644\u064a \u062a\u0642\u0631\u064a\u0631 \u0643\u0627\u0645\u0644 \u0628\u062f\u0648\u0646 \u062a\u063a\u064a\u0631 \u0627\u0644\u0643\u0648\u062f \u0641\u0642\u0637 \u062a\u0642\u0631\u064a\u0631 \u0639\u0646 \u062a\u0643\u0627\u0645\u0644 \u0627\u0644\u0646\u0638\u0627\u0645 \u0627\u0644\u0645\u0627\u0644\u064a\n\n\u0642\u0645 \u0628\u062a\u062d\u0644\u064a\u0644 \u0634\u0627\u0645\u0644 \u0644\u0644\u0646\u0638\u0627\u0645 \u0627\u0644\u0645\u0627\u0644\u064a \u0641\u064a \u0647\u0630\u0627 \u0627\u0644\u0645\u0634\u0631\u0648\u0639 \u0648\u062a\u0643\u0627\u0645\u0644\u0647 \u0645\u0639 \u062c\u0645\u064a\u0639 \u0627\u0644\u0648\u062d\u062f\u0627\u062a \u0627\u0644\u0623\u062e\u0631\u0649. \u0627\u0641\u062d\u0635:\n1. \u062c\u0645\u064a\u0639 \u0645\u0644\u0641\u0627\u062a \u0642\u0627\u0639\u062f\u0629 \u0627\u0644\u0628\u064a\u0627\u0646\u0627\u062a (migrations, schema)\n2. \u062c\u0645\u064a\u0639 \u0645\u0644\u0641\u0627\u062a \u0627\u0644\u0646\u0638\u0627\u0645 \u0627\u0644\u0645\u0627\u0644\u064a (finance-related code)\n3. \u062a\u0643\u0627\u0645\u0644 \u0627\u0644\u0646\u0638\u0627\u0645 \u0627\u0644\u0645\u0627\u0644\u064a \u0645\u0639 \u0627\u0644\u0648\u062d\u062f\u0627\u062a \u0627\u0644\u0623\u062e\u0631\u0649 (\u0627\u0644\u0645\u0628\u064a\u0639\u0627\u062a\u060c \u0627\u0644\u0645\u0634\u062a\u0631\u064a\u0627\u062a\u060c \u0627\u0644\u0645\u062e\u0632\u0648\u0646\u060c \u0627\u0644\u0645\u0648\u0627\u0631\u062f \u0627\u0644\u0628\u0634\u0631\u064a\u0629\u060c \u0627\u0644\u0639\u0645\u0644\u0627\u0621\u060c \u0627\u0644\u0645\u0648\u0631\u062f\u064a\u0646\u060c \u0625\u0644\u062e)\n4. \u062a\u062f\u0641\u0642\u0627\u062a \u0627\u0644\u0628\u064a\u0627\u0646\u0627\u062a \u0628\u064a\u0646 \u0627\u0644\u0646\u0638\u0627\u0645 \u0627\u0644\u0645\u0627\u0644\u064a \u0648\u0627\u0644\u0648\u062d\u062f\u0627\u062a \u0627\u0644\u0623\u062e\u0631\u0649\n5. \u0623\u064a \u0645\u0634\u0627\u0643\u0644 \u0623\u0648 \u062b\u063a\u0631\u0627\u062a \u0641\u064a \u0627\u0644\u062a\u0643\u0627\u0645\u0644\n6. \u0646\u0642\u0627\u0637 \u0627\u0644\u0642\u0648\u0629 \u0648\u0627\u0644\u0636\u0639\u0641 \u0641\u064a \u0627\u0644\u062a\u0635\u0645\u064a\u0645 \u0627\u0644\u062d\u0627\u0644\u064a\n\n\u0642\u062f\u0645 \u062a\u0642\u0631\u064a\u0631\u0627\u064b \u0645\u0641\u0635\u0644\u0627\u064b \u0628\u0627\u0644\u0644\u063a\u0629 \u0627\u0644\u0639\u0631\u0628\u064a\u0629 \u0645\u0639 \u0627\u0644\u0625\u0634\u0627\u0631\u0629 \u0625\u0644\u0649 \u0645\u0633\u0627\u0631\u0627\u062a \u0627\u0644\u0645\u0644\u0641\u0627\u062a \u0648\u0623\u0631\u0642\u0627\u0645 \u0627\u0644\u0623\u0633\u0637\u0631 \u0639\u0646\u062f \u0627\u0644\u0627\u0642\u062a\u0636\u0627\u0621. \u0644\u0627 \u062a\u0642\u0645 \u0628\u062a\u063a\u064a\u064a\u0631 \u0623\u064a \u0643\u0648\u062f.",
+    "task": "READ-ONLY AUDIT MODE: Do not modify source code, do not run self-healing, and only create the requested report artifact if a deliverable file is required.\n\n\u0631\u0627\u062c\u0639 \u0627\u0644\u0646\u0638\u0627\u0645 \u0627\u0644\u0645\u0627\u0644\u064a \u0648\u062a\u0643\u0627\u0645\u0644\u0647 \u0645\u0639 \u0628\u0642\u064a\u0629 \u0627\u0644\u0648\u062d\u062f\u0627\u062a \u0641\u064a \u0645\u0634\u0631\u0648\u0639 Fleetify \u0648\u0642\u062f\u0645 \u062a\u0642\u0631\u064a\u0631\u0627\u064b \u0643\u0627\u0645\u0644\u0627\u064b \u0628\u0627\u0644\u0644\u063a\u0629 \u0627\u0644\u0639\u0631\u0628\u064a\u0629. \u0644\u0627 \u062a\u0642\u0645 \u0628\u062a\u063a\u064a\u064a\u0631 \u0623\u064a \u0643\u0648\u062f.\n\n\u0627\u0644\u0645\u0634\u0631\u0648\u0639: Fleetify - \u0646\u0638\u0627\u0645 \u0625\u062f\u0627\u0631\u0629 \u0623\u0633\u0637\u0648\u0644 (ERP)\n\u0627\u0644\u0645\u0633\u0627\u0631: C:\\Users\\khamis\\Documents\\fleetifyapp\n\n\u0642\u0645 \u0628\u062a\u062d\u0644\u064a\u0644 \u0634\u0627\u0645\u0644 \u0644\u0644\u0646\u0638\u0627\u0645 \u0627\u0644\u0645\u0627\u0644\u064a \u0648\u062a\u0643\u0627\u0645\u0644\u0647 \u0645\u0639 \u062c\u0645\u064a\u0639 \u0627\u0644\u0648\u062d\u062f\u0627\u062a \u0627\u0644\u0623\u062e\u0631\u0649. \u0627\u0641\u062d\u0635 \u0628\u0627\u0644\u062a\u0641\u0635\u064a\u0644:\n\n1. **\u0645\u0644\u0641\u0627\u062a \u0627\u0644\u0646\u0638\u0627\u0645 \u0627\u0644\u0645\u0627\u0644\u064a**: \u0627\u0628\u062d\u062b \u0639\u0646 \u062c\u0645\u064a\u0639 \u0627\u0644\u0645\u0644\u0641\u0627\u062a \u0627\u0644\u0645\u062a\u0639\u0644\u0642\u0629 \u0628\u0627\u0644\u0646\u0638\u0627\u0645 \u0627\u0644\u0645\u0627\u0644\u064a - \u062c\u062f\u0627\u0648\u0644 \u0642\u0627\u0639\u062f\u0629 \u0627\u0644\u0628\u064a\u0627\u0646\u0627\u062a (migrations, schema)\u060c \u0645\u0643\u0648\u0646\u0627\u062a \u0627\u0644\u0648\u0627\u062c\u0647\u0629 (Finance-related components, pages, hooks)\u060c \u062e\u062f\u0645\u0627\u062a API\u060c \u0623\u0646\u0648\u0627\u0639 TypeScript\u060c \u0648\u0623\u064a \u0633\u0643\u0631\u064a\u0628\u062a\u0627\u062a Python/SQL.\n\n2. **\u0647\u064a\u0643\u0644 \u0642\u0627\u0639\u062f\u0629 \u0627\u0644\u0628\u064a\u0627\u0646\u0627\u062a \u0627\u0644\u0645\u0627\u0644\u064a\u0629**: \u062d\u0644\u0644 \u062c\u0645\u064a\u0639 \u0627\u0644\u062c\u062f\u0627\u0648\u0644 \u0627\u0644\u0645\u0627\u0644\u064a\u0629 (chart_of_accounts, journal_entries, journal_entry_lines, payments, invoices, credit_notes, tax_rates, financial_reports, budgets, fixed_assets, etc.) - \u0627\u0644\u0623\u0639\u0645\u062f\u0629\u060c \u0623\u0646\u0648\u0627\u0639 \u0627\u0644\u0628\u064a\u0627\u0646\u0627\u062a\u060c \u0627\u0644\u0639\u0644\u0627\u0642\u0627\u062a (foreign keys)\u060c \u0627\u0644\u0641\u0647\u0627\u0631\u0633 (indexes)\u060c \u0627\u0644\u0642\u064a\u0648\u062f (constraints).\n\n3. **\u0627\u0644\u062a\u0643\u0627\u0645\u0644 \u0645\u0639 \u0648\u062d\u062f\u0627\u062a \u0627\u0644\u0645\u0628\u064a\u0639\u0627\u062a (Sales)**: \u0643\u064a\u0641 \u062a\u0631\u062a\u0628\u0637 \u0627\u0644\u0641\u0648\u0627\u062a\u064a\u0631 \u0648\u0627\u0644\u0645\u0628\u064a\u0639\u0627\u062a \u0628\u0627\u0644\u0646\u0638\u0627\u0645 \u0627\u0644\u0645\u0627\u0644\u064a\u061f \u0647\u0644 \u064a\u062a\u0645 \u062a\u0631\u062d\u064a\u0644 \u0642\u064a\u0648\u062f \u0627\u0644\u064a\u0648\u0645\u064a\u0629 \u062a\u0644\u0642\u0627\u0626\u064a\u0627\u064b\u061f \u0647\u0644 \u0647\u0646\u0627\u0643 \u062a\u0643\u0627\u0645\u0644 \u0645\u0639 \u0646\u0642\u0627\u0637 \u0627\u0644\u0628\u064a\u0639 (POS)\u061f\n\n4. **\u0627\u0644\u062a\u0643\u0627\u0645\u0644 \u0645\u0639 \u0648\u062d\u062f\u0627\u062a \u0627\u0644\u0645\u0634\u062a\u0631\u064a\u0627\u062a (Purchases)**: \u0643\u064a\u0641 \u062a\u0631\u062a\u0628\u0637 \u0623\u0648\u0627\u0645\u0631 \u0627\u0644\u0634\u0631\u0627\u0621 \u0648\u0627\u0644\u0641\u0648\u0627\u062a\u064a\u0631 \u0628\u0627\u0644\u0645\u062d\u0627\u0633\u0628\u0629\u061f \u0647\u0644 \u064a\u062a\u0645 \u062a\u0633\u062c\u064a\u0644 \u0627\u0644\u0627\u0644\u062a\u0632\u0627\u0645\u0627\u062a \u0648\u0627\u0644\u0645\u0635\u0631\u0648\u0641\u0627\u062a \u062a\u0644\u0642\u0627\u0626\u064a\u0627\u064b\u061f\n\n5. **\u0627\u0644\u062a\u0643\u0627\u0645\u0644 \u0645\u0639 \u0627\u0644\u0645\u062e\u0632\u0648\u0646 (Inventory)**: \u0643\u064a\u0641 \u064a\u0624\u062b\u0631 \u0627\u0644\u0645\u062e\u0632\u0648\u0646 \u0639\u0644\u0649 \u0627\u0644\u062a\u0643\u0644\u0641\u0629 \u0648\u0627\u0644\u0645\u062d\u0627\u0633\u0628\u0629\u061f \u0647\u0644 \u0647\u0646\u0627\u0643 \u062a\u0642\u064a\u064a\u0645 \u0644\u0644\u0645\u062e\u0632\u0648\u0646 (FIFO, weighted average)\u061f\n\n6. **\u0627\u0644\u062a\u0643\u0627\u0645\u0644 \u0645\u0639 \u0627\u0644\u0645\u0648\u0627\u0631\u062f \u0627\u0644\u0628\u0634\u0631\u064a\u0629 (HR/Payroll)**: \u0643\u064a\u0641 \u062a\u0631\u062a\u0628\u0637 \u0627\u0644\u0631\u0648\u0627\u062a\u0628 \u0648\u0627\u0644\u0623\u062c\u0648\u0631 \u0628\u0627\u0644\u0646\u0638\u0627\u0645 \u0627\u0644\u0645\u0627\u0644\u064a\u061f \u0647\u0644 \u064a\u062a\u0645 \u062a\u0631\u062d\u064a\u0644 \u0642\u064a\u0648\u062f \u0627\u0644\u0631\u0648\u0627\u062a\u0628 \u062a\u0644\u0642\u0627\u0626\u064a\u0627\u064b\u061f\n\n7. **\u0627\u0644\u062a\u0643\u0627\u0645\u0644 \u0645\u0639 \u0627\u0644\u0639\u0645\u0644\u0627\u0621 \u0648\u0627\u0644\u0645\u0648\u0631\u062f\u064a\u0646**: \u0643\u064a\u0641 \u062a\u0631\u062a\u0628\u0637 \u0623\u0631\u0635\u062f\u0629 \u0627\u0644\u0639\u0645\u0644\u0627\u0621 \u0648\u0627\u0644\u0645\u0648\u0631\u062f\u064a\u0646 \u0628\u062f\u0641\u062a\u0631 \u0627\u0644\u0623\u0633\u062a\u0627\u0630 \u0627\u0644\u0639\u0627\u0645\u061f\n\n8. **\u0627\u0644\u062a\u0643\u0627\u0645\u0644 \u0645\u0639 \u0627\u0644\u0623\u0633\u0637\u0648\u0644 (Fleet)**: \u0643\u064a\u0641 \u062a\u0631\u062a\u0628\u0637 \u062a\u0643\u0627\u0644\u064a\u0641 \u0627\u0644\u0645\u0631\u0643\u0628\u0627\u062a (\u0627\u0644\u0648\u0642\u0648\u062f\u060c \u0627\u0644\u0635\u064a\u0627\u0646\u0629\u060c \u0627\u0644\u062a\u0623\u0645\u064a\u0646\u060c \u0627\u0644\u0627\u0633\u062a\u0647\u0644\u0627\u0643) \u0628\u0627\u0644\u0646\u0638\u0627\u0645 \u0627\u0644\u0645\u0627\u0644\u064a\u061f\n\n9. **\u0627\u0644\u062a\u0643\u0627\u0645\u0644 \u0645\u0639 \u0627\u0644\u0645\u062f\u0641\u0648\u0639\u0627\u062a (Payments)**: \u0643\u064a\u0641 \u062a\u062a\u0645 \u0645\u0639\u0627\u0644\u062c\u0629 \u0627\u0644\u0645\u062f\u0641\u0648\u0639\u0627\u062a \u0648\u0627\u0644\u062a\u062d\u0635\u064a\u0644\u0627\u062a\u061f \u0647\u0644 \u0647\u0646\u0627\u0643 \u062a\u0633\u0648\u064a\u0629 \u0628\u0646\u0643\u064a\u0629\u061f\n\n10. **\u0627\u0644\u062a\u0642\u0627\u0631\u064a\u0631 \u0627\u0644\u0645\u0627\u0644\u064a\u0629**: \u0645\u0627 \u0647\u064a \u0627\u0644\u062a\u0642\u0627\u0631\u064a\u0631 \u0627\u0644\u0645\u0627\u0644\u064a\u0629 \u0627\u0644\u0645\u062a\u0627\u062d\u0629 (\u0627\u0644\u0645\u064a\u0632\u0627\u0646\u064a\u0629\u060c \u0642\u0627\u0626\u0645\u0629 \u0627\u0644\u062f\u062e\u0644\u060c \u0627\u0644\u062a\u062f\u0641\u0642\u0627\u062a \u0627\u0644\u0646\u0642\u062f\u064a\u0629\u060c \u062f\u0641\u062a\u0631 \u0627\u0644\u0623\u0633\u062a\u0627\u0630\u060c \u0645\u064a\u0632\u0627\u0646 \u0627\u0644\u0645\u0631\u0627\u062c\u0639\u0629)\u061f \u0647\u0644 \u062a\u0633\u062a\u062e\u062f\u0645 \u0628\u064a\u0627\u0646\u0627\u062a \u062d\u064a\u0629 \u0623\u0645 mock data\u061f\n\n11. **\u0646\u0642\u0627\u0637 \u0627\u0644\u0642\u0648\u0629**: \u0645\u0627 \u0647\u064a \u0646\u0642\u0627\u0637 \u0627\u0644\u0642\u0648\u0629 \u0641\u064a \u0627\u0644\u062a\u0635\u0645\u064a\u0645 \u0627\u0644\u062d\u0627\u0644\u064a \u0644\u0644\u0646\u0638\u0627\u0645 \u0627\u0644\u0645\u0627\u0644\u064a\u061f\n\n12. **\u0646\u0642\u0627\u0637 \u0627\u0644\u0636\u0639\u0641 \u0648\u0627\u0644\u062b\u063a\u0631\u0627\u062a**: \u0645\u0627 \u0647\u064a \u0627\u0644\u0645\u0634\u0627\u0643\u0644 \u0648\u0627\u0644\u062b\u063a\u0631\u0627\u062a \u0641\u064a \u0627\u0644\u062a\u0643\u0627\u0645\u0644\u061f (\u0645\u062b\u0644: missing foreign keys, inconsistent naming, lack of validation, tight coupling, missing audit trails, hardcoded values, mock data, dead code, broken references)\n\n13. **\u062a\u0648\u0635\u064a\u0627\u062a**: \u062a\u0648\u0635\u064a\u0627\u062a \u0645\u062d\u062f\u062f\u0629 \u0644\u0644\u062a\u062d\u0633\u064a\u0646 \u0645\u0639 \u0627\u0644\u0625\u0634\u0627\u0631\u0629 \u0625\u0644\u0649 \u0645\u0633\u0627\u0631\u0627\u062a \u0627\u0644\u0645\u0644\u0641\u0627\u062a \u0648\u0623\u0631\u0642\u0627\u0645 \u0627\u0644\u0623\u0633\u0637\u0631.\n\n\u0642\u062f\u0645 \u0627\u0644\u062a\u0642\u0631\u064a\u0631 \u0627\u0644\u0646\u0647\u0627\u0626\u064a \u0643\u0645\u0644\u0641 Markdown \u0641\u064a docs/financial-system-integration-audit-2026-07-05.md \u0645\u0639 \u0627\u0644\u0625\u0634\u0627\u0631\u0629 \u0627\u0644\u062f\u0642\u064a\u0642\u0629 \u0625\u0644\u0649 \u0645\u0633\u0627\u0631\u0627\u062a \u0627\u0644\u0645\u0644\u0641\u0627\u062a \u0648\u0623\u0631\u0642\u0627\u0645 \u0627\u0644\u0623\u0633\u0637\u0631.",
     "subtasks": [
       {
-        "goal": "Search the entire project for files related to the financial system: database migrations, schema definitions, finance-related scripts (e.g., analyze_je_structure, apply_fixes, apply_migration), and any TypeScript files that reference finance tables or functions. Produce a list of file paths with brief descriptions.",
+        "goal": "Analyze financial API and service layer: examine TypeScript files in src/integrations/supabase, src/services, src/hooks for financial data access patterns. Identify all .from() calls on financial tables, filters (.eq, .neq, .in, etc.), selects, inserts, updates, upserts. Document file paths and line numbers.",
+        "agent": "code-reviewer",
+        "toolsets": [
+          "terminal",
+          "file"
+        ],
+        "dependencies": [],
+        "parallel_group": 0,
+        "id": "analyze-financial-api",
+        "files": [
+          "src/integrations/supabase/**/*.ts",
+          "src/services/**/*.ts",
+          "src/hooks/**/*.ts"
+        ],
+        "success_criteria": "A documented list of API calls to financial tables with file paths and line numbers is produced and available for the assembly subtask.",
+        "milestone": "milestone-1",
+        "milestone_index": 0,
+        "model_hint": "analytical",
+        "max_iterations": 1
+      },
+      {
+        "goal": "Analyze financial reports: find files related to report generation (balance sheet, income statement, cash flow, general ledger, trial balance). Check if reports use live data or mock data. Identify any Python scripts for report generation (e.g., analyze_company_jes.py, audit_analysis.py, etc.). Document file paths and line numbers.",
+        "agent": "code-reviewer",
+        "toolsets": [
+          "terminal",
+          "file"
+        ],
+        "dependencies": [],
+        "parallel_group": 0,
+        "id": "analyze-financial-reports",
+        "files": [
+          "scripts/*.py",
+          "src/**/*report*",
+          "src/**/*financial*"
+        ],
+        "success_criteria": "Documented list of financial reports, their data sources, and any issues (mock data, dead code) is produced and available for the assembly subtask.",
+        "milestone": "milestone-1",
+        "milestone_index": 0,
+        "model_hint": "analytical",
+        "max_iterations": 1
+      },
+      {
+        "goal": "Analyze financial database schema: extract all financial tables (chart_of_accounts, journal_entries, journal_entry_lines, payments, invoices, credit_notes, tax_rates, financial_reports, budgets, fixed_assets, etc.) from migration files, types.ts, and any SQL files. Document columns, data types, foreign keys, indexes, constraints, and relationships.",
         "agent": "backend-engineer",
         "toolsets": [
           "terminal",
@@ -15,155 +57,153 @@
         ],
         "dependencies": [],
         "parallel_group": 0,
-        "id": "discover-finance-files",
+        "id": "analyze-financial-schema",
         "files": [
-          "src/",
-          "scripts/",
-          "migrations/"
+          "src/integrations/supabase/types.ts",
+          "supabase/migrations/*.sql",
+          "src/**/*.ts"
         ],
-        "success_criteria": "A file 'finance-files-list.txt' is created containing paths and descriptions of all finance-related files.",
+        "success_criteria": "A structured list of all financial tables with columns, types, and relationships is produced (e.g., as a JSON object) and available for the assembly subtask.",
         "milestone": "milestone-1",
         "milestone_index": 0,
         "model_hint": "analytical",
         "max_iterations": 1
       },
       {
-        "goal": "Analyze the database schema from 'src/integrations/supabase/types.ts' and any SQL migration files. Identify all finance-related tables (e.g., chart_of_accounts, journal_entries, journal_entry_lines, payments, etc.), their columns, data types, and foreign key relationships. Document the schema in a structured format.",
-        "agent": "backend-engineer",
-        "toolsets": [
-          "terminal",
-          "file"
-        ],
-        "dependencies": [
-          "discover-finance-files"
-        ],
-        "parallel_group": 1,
-        "id": "analyze-db-schema",
-        "files": [
-          "src/integrations/supabase/types.ts",
-          "migrations/*.sql"
-        ],
-        "success_criteria": "A file 'finance-schema-analysis.md' is created with a complete description of finance tables, columns, and relationships.",
-        "milestone": "milestone-2",
-        "milestone_index": 1,
-        "model_hint": "analytical",
-        "max_iterations": 1
-      },
-      {
-        "goal": "Analyze the finance-related Python scripts (e.g., analyze_je_structure.py, apply_fixes.py, apply_migration.py, apply_migration_psql.py, apply_migration_psycopg.py, apply_migration_v2.py, audit_analysis.py, etc.) to understand the business logic, data flows, and any validation or transformation rules. Summarize the purpose and key operations of each script.",
+        "goal": "Analyze integration with Inventory: find files related to stock, inventory valuation, cost of goods sold. Check if inventory costing methods (FIFO, weighted average) are implemented and how inventory movements affect financial accounts. Document file paths and line numbers.",
         "agent": "code-reviewer",
         "toolsets": [
           "terminal",
           "file"
         ],
-        "dependencies": [
-          "discover-finance-files"
-        ],
-        "parallel_group": 1,
-        "id": "analyze-finance-code",
+        "dependencies": [],
+        "parallel_group": 0,
+        "id": "analyze-inventory-integration",
         "files": [
-          "scripts/analyze_je_structure.py",
-          "scripts/apply_fixes.py",
-          "scripts/apply_migration.py",
-          "scripts/apply_migration_psql.py",
-          "scripts/apply_migration_psycopg.py",
-          "scripts/apply_migration_v2.py",
-          "scripts/audit_analysis.py",
-          "scripts/audit_analysis2.py",
-          "scripts/audit_detail.py",
-          "scripts/audit_detail2.py",
-          "scripts/audit_detail3.py",
-          "scripts/audit_full.py",
-          "scripts/audit_contract_invoices.py",
-          "scripts/audit-supabase-queries-v2.py"
+          "src/**/*inventory*",
+          "src/**/*stock*",
+          "src/**/*cost*"
         ],
-        "success_criteria": "A file 'finance-code-analysis.md' is created with a summary of each script's purpose, logic, and data flows.",
-        "milestone": "milestone-2",
-        "milestone_index": 1,
+        "success_criteria": "Documented findings on inventory-finance integration with file references are produced and available for the assembly subtask.",
+        "milestone": "milestone-1",
+        "milestone_index": 0,
         "model_hint": "analytical",
         "max_iterations": 1
       },
       {
-        "goal": "Examine all TypeScript source files (excluding test files) to find how the financial system integrates with other modules: sales, purchases, inventory, HR, customers, suppliers, etc. Look for imports, function calls, and data references that connect finance tables or functions to other parts of the application. Document each integration point, the direction of data flow, and any potential coupling issues.",
-        "agent": "qa",
+        "goal": "Analyze integration with HR/Payroll, Customers/Suppliers, Fleet, Payments: find files related to payroll, employees, customers, suppliers, vehicles, fuel, maintenance, insurance, depreciation, payment processing, bank reconciliation. Trace how these modules connect to financial records. Document file paths and line numbers.",
+        "agent": "code-reviewer",
+        "toolsets": [
+          "terminal",
+          "file"
+        ],
+        "dependencies": [],
+        "parallel_group": 0,
+        "id": "analyze-other-integrations",
+        "files": [
+          "src/**/*payroll*",
+          "src/**/*employee*",
+          "src/**/*customer*",
+          "src/**/*supplier*",
+          "src/**/*fleet*",
+          "src/**/*vehicle*",
+          "src/**/*fuel*",
+          "src/**/*maintenance*",
+          "src/**/*insurance*",
+          "src/**/*depreciation*",
+          "src/**/*payment*",
+          "src/**/*reconciliation*"
+        ],
+        "success_criteria": "Documented findings on HR, customers, suppliers, fleet, payments integration with file references are produced and available for the assembly subtask.",
+        "milestone": "milestone-1",
+        "milestone_index": 0,
+        "model_hint": "analytical",
+        "max_iterations": 1
+      },
+      {
+        "goal": "Analyze integration with Purchases: find files related to purchase orders, vendor invoices, procurement. Trace how purchases affect accounts payable and expense recognition. Document file paths and line numbers.",
+        "agent": "code-reviewer",
+        "toolsets": [
+          "terminal",
+          "file"
+        ],
+        "dependencies": [],
+        "parallel_group": 0,
+        "id": "analyze-purchases-integration",
+        "files": [
+          "src/**/*purchase*",
+          "src/**/*vendor*",
+          "src/**/*procurement*"
+        ],
+        "success_criteria": "Documented findings on purchases-finance integration with file references are produced and available for the assembly subtask.",
+        "milestone": "milestone-1",
+        "milestone_index": 0,
+        "model_hint": "analytical",
+        "max_iterations": 1
+      },
+      {
+        "goal": "Analyze integration with Sales: find files related to invoices, sales orders, POS. Trace how sales transactions affect financial records (journal entries, accounts receivable). Identify any automatic posting or manual processes. Document file paths and line numbers.",
+        "agent": "code-reviewer",
+        "toolsets": [
+          "terminal",
+          "file"
+        ],
+        "dependencies": [],
+        "parallel_group": 0,
+        "id": "analyze-sales-integration",
+        "files": [
+          "src/**/*sales*",
+          "src/**/*invoice*",
+          "src/**/*pos*",
+          "src/**/*order*"
+        ],
+        "success_criteria": "Documented findings on sales-finance integration with file references are produced and available for the assembly subtask.",
+        "milestone": "milestone-1",
+        "milestone_index": 0,
+        "model_hint": "analytical",
+        "max_iterations": 1
+      },
+      {
+        "goal": "Collect all findings from subtasks 1-7, synthesize into a comprehensive report in Arabic. Write the final report to docs/financial-system-integration-audit-2026-07-05.md. Include sections: financial schema, API layer, integration with each module (Sales, Purchases, Inventory, HR, Customers/Suppliers, Fleet, Payments), financial reports, strengths, weaknesses, and recommendations with file paths and line numbers.",
+        "agent": "builder",
         "toolsets": [
           "hermes-cli"
         ],
         "dependencies": [
-          "analyze-db-schema",
-          "analyze-finance-code"
+          "analyze-financial-schema",
+          "analyze-financial-api",
+          "analyze-sales-integration",
+          "analyze-purchases-integration",
+          "analyze-inventory-integration",
+          "analyze-other-integrations",
+          "analyze-financial-reports"
         ],
-        "parallel_group": 2,
-        "id": "analyze-integration",
-        "files": [
-          "src/**/*.ts",
-          "src/**/*.tsx"
-        ],
-        "success_criteria": "A file 'finance-integration-analysis.md' is created listing all integration points between finance and other modules, with file paths and line numbers.",
-        "milestone": "milestone-3",
-        "milestone_index": 2,
-        "model_hint": "balanced",
-        "max_iterations": 1
-      },
-      {
-        "goal": "Based on the schema, code, and integration analyses, compile a list of issues, gaps, and strengths in the current financial system design. Issues may include missing foreign keys, inconsistent column naming, lack of validation, tight coupling, or missing audit trails. Strengths may include well-structured migrations, clear separation of concerns, or comprehensive audit scripts. Provide specific file references and line numbers where applicable.",
-        "agent": "backend-engineer",
-        "toolsets": [
-          "terminal",
-          "file"
-        ],
-        "dependencies": [
-          "analyze-integration"
-        ],
-        "parallel_group": 3,
-        "id": "identify-issues-strengths",
-        "files": [],
-        "success_criteria": "A file 'finance-issues-strengths.md' is created with a bullet list of issues, gaps, and strengths, each with supporting evidence.",
-        "milestone": "milestone-4",
-        "milestone_index": 3,
-        "model_hint": "analytical",
-        "max_iterations": 1
-      },
-      {
-        "goal": "Collect all findings from the previous subtasks (finance-files-list.txt, finance-schema-analysis.md, finance-code-analysis.md, finance-integration-analysis.md, finance-issues-strengths.md) and produce a comprehensive final report in Arabic. The report should cover: 1) overview of the financial system, 2) database schema, 3) business logic, 4) integration with other modules, 5) issues and gaps, 6) strengths, and 7) recommendations. Write the report to 'scripts/finance-integration-report.md'.",
-        "agent": "backend-engineer",
-        "toolsets": [
-          "terminal",
-          "file"
-        ],
-        "dependencies": [
-          "discover-finance-files",
-          "analyze-db-schema",
-          "analyze-finance-code",
-          "analyze-integration",
-          "identify-issues-strengths"
-        ],
-        "parallel_group": 4,
+        "parallel_group": 1,
         "id": "assembly",
         "files": [
-          "scripts/finance-integration-report.md"
+          "docs/financial-system-integration-audit-2026-07-05.md"
         ],
-        "success_criteria": "Final deliverable file 'scripts/finance-integration-report.md' is written in Arabic and contains all findings from prior subtasks.",
-        "milestone": "milestone-5",
-        "milestone_index": 4,
-        "model_hint": "analytical",
-        "max_iterations": 1
+        "success_criteria": "Final report file docs/financial-system-integration-audit-2026-07-05.md is written and contains all findings from prior subtasks.",
+        "milestone": "milestone-2",
+        "milestone_index": 1,
+        "model_hint": "balanced",
+        "max_iterations": 3
       }
     ],
     "risk_level": "low",
-    "parallel_group_count": 5,
+    "parallel_group_count": 2,
     "routing_decisions": [
       {
-        "subtask_id": "discover-finance-files",
-        "task_type": "database",
-        "agent": "backend-engineer",
+        "subtask_id": "analyze-financial-api",
+        "task_type": "review",
+        "agent": "code-reviewer",
         "model_hint": "analytical",
-        "complexity": "high",
-        "is_risky": true,
-        "confidence": 0.79,
+        "complexity": "medium",
+        "is_risky": false,
+        "confidence": 0.58,
         "profile": {
-          "name": "backend-engineer",
-          "task_type": "database",
+          "name": "code-reviewer",
+          "task_type": "review",
           "model_tier": "balanced",
           "timeout": 120.0,
           "max_retries": 1,
@@ -186,7 +226,39 @@
         ]
       },
       {
-        "subtask_id": "analyze-db-schema",
+        "subtask_id": "analyze-financial-reports",
+        "task_type": "review",
+        "agent": "code-reviewer",
+        "model_hint": "analytical",
+        "complexity": "medium",
+        "is_risky": false,
+        "confidence": 0.75,
+        "profile": {
+          "name": "code-reviewer",
+          "task_type": "review",
+          "model_tier": "balanced",
+          "timeout": 120.0,
+          "max_retries": 1,
+          "priority": "P1",
+          "requires_review": false,
+          "estimated_tokens": 4000,
+          "parallel_safe": true,
+          "toolsets": [
+            "terminal",
+            "file"
+          ],
+          "model": "glm-5.2:cloud",
+          "provider": "custom:ollama",
+          "base_url": "https://ollama.com/v1"
+        },
+        "parallel_safe": true,
+        "toolsets": [
+          "terminal",
+          "file"
+        ]
+      },
+      {
+        "subtask_id": "analyze-financial-schema",
         "task_type": "database",
         "agent": "backend-engineer",
         "model_hint": "analytical",
@@ -218,12 +290,12 @@
         ]
       },
       {
-        "subtask_id": "analyze-finance-code",
+        "subtask_id": "analyze-inventory-integration",
         "task_type": "review",
         "agent": "code-reviewer",
         "model_hint": "analytical",
-        "complexity": "high",
-        "is_risky": true,
+        "complexity": "medium",
+        "is_risky": false,
         "confidence": 0.67,
         "profile": {
           "name": "code-reviewer",
@@ -250,46 +322,80 @@
         ]
       },
       {
-        "subtask_id": "analyze-integration",
-        "task_type": "test",
-        "agent": "qa",
-        "model_hint": "balanced",
-        "complexity": "low",
+        "subtask_id": "analyze-other-integrations",
+        "task_type": "review",
+        "agent": "code-reviewer",
+        "model_hint": "analytical",
+        "complexity": "medium",
         "is_risky": false,
         "confidence": 0.58,
         "profile": {
-          "name": "qa",
-          "task_type": "test",
+          "name": "code-reviewer",
+          "task_type": "review",
           "model_tier": "balanced",
-          "timeout": "600K1072",
+          "timeout": 120.0,
           "max_retries": 1,
           "priority": "P1",
           "requires_review": false,
           "estimated_tokens": 4000,
           "parallel_safe": true,
           "toolsets": [
-            "hermes-cli"
+            "terminal",
+            "file"
           ],
           "model": "glm-5.2:cloud",
           "provider": "custom:ollama",
-          "base_url": "https://api.deepseek.com/v1"
+          "base_url": "https://ollama.com/v1"
         },
         "parallel_safe": true,
         "toolsets": [
-          "hermes-cli"
+          "terminal",
+          "file"
         ]
       },
       {
-        "subtask_id": "identify-issues-strengths",
-        "task_type": "database",
-        "agent": "backend-engineer",
+        "subtask_id": "analyze-purchases-integration",
+        "task_type": "review",
+        "agent": "code-reviewer",
         "model_hint": "analytical",
-        "complexity": "high",
-        "is_risky": true,
-        "confidence": 0.64,
+        "complexity": "medium",
+        "is_risky": false,
+        "confidence": 0.58,
         "profile": {
-          "name": "backend-engineer",
-          "task_type": "database",
+          "name": "code-reviewer",
+          "task_type": "review",
+          "model_tier": "balanced",
+          "timeout": 120.0,
+          "max_retries": 1,
+          "priority": "P1",
+          "requires_review": false,
+          "estimated_tokens": 4000,
+          "parallel_safe": true,
+          "toolsets": [
+            "terminal",
+            "file"
+          ],
+          "model": "glm-5.2:cloud",
+          "provider": "custom:ollama",
+          "base_url": "https://ollama.com/v1"
+        },
+        "parallel_safe": true,
+        "toolsets": [
+          "terminal",
+          "file"
+        ]
+      },
+      {
+        "subtask_id": "analyze-sales-integration",
+        "task_type": "review",
+        "agent": "code-reviewer",
+        "model_hint": "analytical",
+        "complexity": "medium",
+        "is_risky": false,
+        "confidence": 0.58,
+        "profile": {
+          "name": "code-reviewer",
+          "task_type": "review",
           "model_tier": "balanced",
           "timeout": 120.0,
           "max_retries": 1,
@@ -313,34 +419,32 @@
       },
       {
         "subtask_id": "assembly",
-        "task_type": "database",
-        "agent": "backend-engineer",
-        "model_hint": "analytical",
+        "task_type": "implementation",
+        "agent": "builder",
+        "model_hint": "balanced",
         "complexity": "medium",
         "is_risky": false,
-        "confidence": 0.64,
+        "confidence": 0.57,
         "profile": {
-          "name": "backend-engineer",
-          "task_type": "database",
+          "name": "builder",
+          "task_type": "implementation",
           "model_tier": "balanced",
-          "timeout": 120.0,
-          "max_retries": 1,
+          "timeout": 600,
+          "max_retries": 3,
           "priority": "P1",
           "requires_review": false,
           "estimated_tokens": 4000,
           "parallel_safe": true,
           "toolsets": [
-            "terminal",
-            "file"
+            "hermes-cli"
           ],
           "model": "glm-5.2:cloud",
           "provider": "custom:ollama",
-          "base_url": "https://ollama.com/v1"
+          "base_url": "http://localhost:11434/v1"
         },
         "parallel_safe": true,
         "toolsets": [
-          "terminal",
-          "file"
+          "hermes-cli"
         ]
       }
     ],
@@ -349,10 +453,22 @@
         "id": "milestone-1",
         "name": "Parallel group 1",
         "subtask_ids": [
-          "discover-finance-files"
+          "analyze-financial-api",
+          "analyze-financial-reports",
+          "analyze-financial-schema",
+          "analyze-inventory-integration",
+          "analyze-other-integrations",
+          "analyze-purchases-integration",
+          "analyze-sales-integration"
         ],
         "acceptance_criteria": [
-          "A file 'finance-files-list.txt' is created containing paths and descriptions of all finance-related files."
+          "A documented list of API calls to financial tables with file paths and line numbers is produced and available for the assembly subtask.",
+          "Documented list of financial reports, their data sources, and any issues (mock data, dead code) is produced and available for the assembly subtask.",
+          "A structured list of all financial tables with columns, types, and relationships is produced (e.g., as a JSON object) and available for the assembly subtask.",
+          "Documented findings on inventory-finance integration with file references are produced and available for the assembly subtask.",
+          "Documented findings on HR, customers, suppliers, fleet, payments integration with file references are produced and available for the assembly subtask.",
+          "Documented findings on purchases-finance integration with file references are produced and available for the assembly subtask.",
+          "Documented findings on sales-finance integration with file references are produced and available for the assembly subtask."
         ],
         "assumptions": [
           "Dependencies from earlier milestones remain stable."
@@ -362,51 +478,10 @@
         "id": "milestone-2",
         "name": "Parallel group 2",
         "subtask_ids": [
-          "analyze-db-schema",
-          "analyze-finance-code"
-        ],
-        "acceptance_criteria": [
-          "A file 'finance-schema-analysis.md' is created with a complete description of finance tables, columns, and relationships.",
-          "A file 'finance-code-analysis.md' is created with a summary of each script's purpose, logic, and data flows."
-        ],
-        "assumptions": [
-          "Dependencies from earlier milestones remain stable."
-        ]
-      },
-      {
-        "id": "milestone-3",
-        "name": "Parallel group 3",
-        "subtask_ids": [
-          "analyze-integration"
-        ],
-        "acceptance_criteria": [
-          "A file 'finance-integration-analysis.md' is created listing all integration points between finance and other modules, with file paths and line numbers."
-        ],
-        "assumptions": [
-          "Dependencies from earlier milestones remain stable."
-        ]
-      },
-      {
-        "id": "milestone-4",
-        "name": "Parallel group 4",
-        "subtask_ids": [
-          "identify-issues-strengths"
-        ],
-        "acceptance_criteria": [
-          "A file 'finance-issues-strengths.md' is created with a bullet list of issues, gaps, and strengths, each with supporting evidence."
-        ],
-        "assumptions": [
-          "Dependencies from earlier milestones remain stable."
-        ]
-      },
-      {
-        "id": "milestone-5",
-        "name": "Parallel group 5",
-        "subtask_ids": [
           "assembly"
         ],
         "acceptance_criteria": [
-          "Final deliverable file 'scripts/finance-integration-report.md' is written in Arabic and contains all findings from prior subtasks."
+          "Final report file docs/financial-system-integration-audit-2026-07-05.md is written and contains all findings from prior subtasks."
         ],
         "assumptions": [
           "Dependencies from earlier milestones remain stable."
@@ -414,19 +489,21 @@
       }
     ],
     "clarifying_questions": [
-      "What database and ORM are in use? Any existing migration strategy?",
-      "Is there an existing design system or component library to follow?",
-      "What are the target breakpoints for responsive design?",
-      "What is the rollback strategy if the refactor introduces regressions?",
-      "Are there any backward compatibility requirements?"
+      "What authentication method should be used (JWT, OAuth, session-based)?",
+      "What user roles or permission levels are needed?",
+      "What API style (REST, GraphQL, gRPC) and versioning strategy?",
+      "What error response format and status code conventions?",
+      "What database and ORM are in use? Any existing migration strategy?"
     ],
     "completion_criteria": [
-      "Subtask complete: Search the entire project for files related to the financial system: database migrations, schema def",
-      "Subtask complete: Analyze the database schema from 'src/integrations/supabase/types.ts' and any SQL migration files. I",
-      "Subtask complete: Analyze the finance-related Python scripts (e.g., analyze_je_structure.py, apply_fixes.py, apply_mig",
-      "Subtask complete: Examine all TypeScript source files (excluding test files) to find how the financial system integrat",
-      "Subtask complete: Based on the schema, code, and integration analyses, compile a list of issues, gaps, and strengths i",
-      "Subtask complete: Collect all findings from the previous subtasks (finance-files-list.txt, finance-schema-analysis.md,",
+      "Subtask complete: Analyze financial API and service layer: examine TypeScript files in src/integrations/supabase, src/",
+      "Subtask complete: Analyze financial reports: find files related to report generation (balance sheet, income statement,",
+      "Subtask complete: Analyze financial database schema: extract all financial tables (chart_of_accounts, journal_entries,",
+      "Subtask complete: Analyze integration with Inventory: find files related to stock, inventory valuation, cost of goods ",
+      "Subtask complete: Analyze integration with HR/Payroll, Customers/Suppliers, Fleet, Payments: find files related to pay",
+      "Subtask complete: Analyze integration with Purchases: find files related to purchase orders, vendor invoices, procurem",
+      "Subtask complete: Analyze integration with Sales: find files related to invoices, sales orders, POS. Trace how sales t",
+      "Subtask complete: Collect all findings from subtasks 1-7, synthesize into a comprehensive report in Arabic. Write the ",
       "All quality gates pass (syntax, lint, type, test)",
       "No regressions in existing test suite"
     ],
