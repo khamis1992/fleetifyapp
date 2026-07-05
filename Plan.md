@@ -1,42 +1,30 @@
 # Plan: READ-ONLY AUDIT MODE: Do not modify source code, do not run self-healing, and only create the requested report artifact if a deliverable file is required.
 
-راجع النظام المالي وتكامله مع بقية الوحدات في مشروع Fleetify وقدم تقريراً كاملاً باللغة العربية. لا تقم بتغيير أي كود.
+READ-ONLY FINANCIAL SYSTEM INTEGRATION AUDIT
 
-المشروع: Fleetify - نظام إدارة أسطول (ERP)
-المسار: C:\Users\khamis\Documents\fleetifyapp
+قم بمراجعة شاملة للنظام المالي في مشروع Fleetify الموجود في C:\Users\khamis\Documents\fleetify\fleetify-erp وتكامله مع بقية الوحدات.
 
-قم بتحليل شامل للنظام المالي وتكامله مع جميع الوحدات الأخرى. افحص بالتفصيل:
+المطلوب:
+1. اقرأ جميع ملفات الميغراشن (SQL migration files) المتعلقة بالنظام المالي
+2. اقرأ ملفات الخدمات (services) والهوك (hooks) والكمبوننت (components) المالية
+3. حلل تكامل النظام المالي مع: المخزون، المبيعات، المشتريات، الموارد البشرية
+4. حدد نقاط الضعف في التكامل (triggers, foreign keys, data flow)
+5. اكتب تقريراً كاملاً باللغة العربية في ملف C:\Users\khamis\Documents\fleetify\docs\financial-integration-audit-2026-07-05.md
 
-1. **ملفات النظام المالي**: ابحث عن جميع الملفات المتعلقة بالنظام المالي - جداول قاعدة البيانات (migrations, schema)، مكونات الواجهة (Finance-related components, pages, hooks)، خدمات API، أنواع TypeScript، وأي سكريبتات Python/SQL.
+التقرير يجب أن يشمل:
+- ملخص تنفيذي
+- منهجية المراجعة
+- تحليل قاعدة البيانات والعلاقات
+- تحليل تدفق البيانات بين الوحدات
+- نقاط القوة
+- نقاط الضعف والمخاطر (حرج، عالي، متوسط، منخفض)
+- توصيات للتحسين
+- قائمة بجميع الملفات التي تمت مراجعتها
 
-2. **هيكل قاعدة البيانات المالية**: حلل جميع الجداول المالية (chart_of_accounts, journal_entries, journal_entry_lines, payments, invoices, credit_notes, tax_rates, financial_reports, budgets, fixed_assets, etc.) - الأعمدة، أنواع البيانات، العلاقات (foreign keys)، الفهارس (indexes)، القيود (constraints).
-
-3. **التكامل مع وحدات المبيعات (Sales)**: كيف ترتبط الفواتير والمبيعات بالنظام المالي؟ هل يتم ترحيل قيود اليومية تلقائياً؟ هل هناك تكامل مع نقاط البيع (POS)؟
-
-4. **التكامل مع وحدات المشتريات (Purchases)**: كيف ترتبط أوامر الشراء والفواتير بالمحاسبة؟ هل يتم تسجيل الالتزامات والمصروفات تلقائياً؟
-
-5. **التكامل مع المخزون (Inventory)**: كيف يؤثر المخزون على التكلفة والمحاسبة؟ هل هناك تقييم للمخزون (FIFO, weighted average)؟
-
-6. **التكامل مع الموارد البشرية (HR/Payroll)**: كيف ترتبط الرواتب والأجور بالنظام المالي؟ هل يتم ترحيل قيود الرواتب تلقائياً؟
-
-7. **التكامل مع العملاء والموردين**: كيف ترتبط أرصدة العملاء والموردين بدفتر الأستاذ العام؟
-
-8. **التكامل مع الأسطول (Fleet)**: كيف ترتبط تكاليف المركبات (الوقود، الصيانة، التأمين، الاستهلاك) بالنظام المالي؟
-
-9. **التكامل مع المدفوعات (Payments)**: كيف تتم معالجة المدفوعات والتحصيلات؟ هل هناك تسوية بنكية؟
-
-10. **التقارير المالية**: ما هي التقارير المالية المتاحة (الميزانية، قائمة الدخل، التدفقات النقدية، دفتر الأستاذ، ميزان المراجعة)؟ هل تستخدم بيانات حية أم mock data؟
-
-11. **نقاط القوة**: ما هي نقاط القوة في التصميم الحالي للنظام المالي؟
-
-12. **نقاط الضعف والثغرات**: ما هي المشاكل والثغرات في التكامل؟ (مثل: missing foreign keys, inconsistent naming, lack of validation, tight coupling, missing audit trails, hardcoded values, mock data, dead code, broken references)
-
-13. **توصيات**: توصيات محددة للتحسين مع الإشارة إلى مسارات الملفات وأرقام الأسطر.
-
-قدم التقرير النهائي كملف Markdown في docs/financial-system-integration-audit-2026-07-05.md مع الإشارة الدقيقة إلى مسارات الملفات وأرقام الأسطر.
+هام جداً: لا تقم بتعديل أي كود. فقط تقرير وتحليل.
 
 ## Reasoning
-The task is a comprehensive read-only audit of the financial system and its integration with other modules in the Fleetify project. To manage complexity and ensure thorough coverage, I decomposed the work into 7 parallel analysis subtasks (each focusing on a specific area: schema, API, sales, purchases, inventory, other integrations, reports) and 1 assembly subtask that collects all findings and writes the final report in Arabic. This structure allows independent execution of each analysis subtask, with the assembly subtask depending on all of them. The analysis subtasks read source files but do not modify them; only the assembly subtask creates the deliverable file.
+The task is a read-only audit of the financial system integration. We decompose into: (1) discover all financial-related files, (2-4) analyze migrations, services, hooks/components separately, (5) analyze cross-module integration, (6) identify weaknesses, (7) assembly writes the final report. Dependencies flow from discovery to analysis to integration to weaknesses to report. Parallel groups allow independent file analysis after discovery.
 
 ## Risk Level
 low
@@ -47,27 +35,37 @@ low
 ## Milestones
 
 ### Parallel group 1
-- Subtasks: analyze-financial-api, analyze-financial-reports, analyze-financial-schema, analyze-inventory-integration, analyze-other-integrations, analyze-purchases-integration, analyze-sales-integration
+- Subtasks: discover-financial-files
 - Acceptance criteria:
-  - A documented list of API calls to financial tables with file paths and line numbers is produced and available for the assembly subtask.
-  - Documented list of financial reports, their data sources, and any issues (mock data, dead code) is produced and available for the assembly subtask.
-  - A structured list of all financial tables with columns, types, and relationships is produced (e.g., as a JSON object) and available for the assembly subtask.
-  - Documented findings on inventory-finance integration with file references are produced and available for the assembly subtask.
-  - Documented findings on HR, customers, suppliers, fleet, payments integration with file references are produced and available for the assembly subtask.
-  - Documented findings on purchases-finance integration with file references are produced and available for the assembly subtask.
-  - Documented findings on sales-finance integration with file references are produced and available for the assembly subtask.
+  - A file list is produced (e.g., financial_files.json) containing all discovered financial-related files with their relative paths and categories.
 
 ### Parallel group 2
+- Subtasks: analyze-hooks-components, analyze-migrations, analyze-services
+- Acceptance criteria:
+  - A summary (hooks_components_analysis.md) describing each hook/component, its data dependencies, and cross-module interactions.
+  - A structured summary (e.g., migration_analysis.md) containing table definitions, foreign keys, triggers, and cross-module references found in migrations.
+  - A summary (services_analysis.md) describing each service's purpose, key functions, data flow, and integration points with other modules.
+
+### Parallel group 3
+- Subtasks: analyze-cross-module-integration
+- Acceptance criteria:
+  - A document (cross_module_integration.md) with a diagram or table showing how financial data flows to/from each other module, including specific tables, keys, and code references.
+
+### Parallel group 4
+- Subtasks: identify-weaknesses
+- Acceptance criteria:
+  - A list of weaknesses with severity ratings, descriptions, and suggested improvements (without modifying code).
+
+### Parallel group 5
 - Subtasks: assembly
 - Acceptance criteria:
-  - Final report file docs/financial-system-integration-audit-2026-07-05.md is written and contains all findings from prior subtasks.
+  - Final deliverable file is written and contains all findings from prior subtasks, formatted as specified.
 
 ## DAG
-- `analyze-financial-api` group=0 deps=none: Analyze financial API and service layer: examine TypeScript files in src/integrations/supabase, src/services, src/hooks for financial data access patterns. Identify all .from() calls on financial tables, filters (.eq, .neq, .in, etc.), selects, inserts, updates, upserts. Document file paths and line numbers.
-- `analyze-financial-reports` group=0 deps=none: Analyze financial reports: find files related to report generation (balance sheet, income statement, cash flow, general ledger, trial balance). Check if reports use live data or mock data. Identify any Python scripts for report generation (e.g., analyze_company_jes.py, audit_analysis.py, etc.). Document file paths and line numbers.
-- `analyze-financial-schema` group=0 deps=none: Analyze financial database schema: extract all financial tables (chart_of_accounts, journal_entries, journal_entry_lines, payments, invoices, credit_notes, tax_rates, financial_reports, budgets, fixed_assets, etc.) from migration files, types.ts, and any SQL files. Document columns, data types, foreign keys, indexes, constraints, and relationships.
-- `analyze-inventory-integration` group=0 deps=none: Analyze integration with Inventory: find files related to stock, inventory valuation, cost of goods sold. Check if inventory costing methods (FIFO, weighted average) are implemented and how inventory movements affect financial accounts. Document file paths and line numbers.
-- `analyze-other-integrations` group=0 deps=none: Analyze integration with HR/Payroll, Customers/Suppliers, Fleet, Payments: find files related to payroll, employees, customers, suppliers, vehicles, fuel, maintenance, insurance, depreciation, payment processing, bank reconciliation. Trace how these modules connect to financial records. Document file paths and line numbers.
-- `analyze-purchases-integration` group=0 deps=none: Analyze integration with Purchases: find files related to purchase orders, vendor invoices, procurement. Trace how purchases affect accounts payable and expense recognition. Document file paths and line numbers.
-- `analyze-sales-integration` group=0 deps=none: Analyze integration with Sales: find files related to invoices, sales orders, POS. Trace how sales transactions affect financial records (journal entries, accounts receivable). Identify any automatic posting or manual processes. Document file paths and line numbers.
-- `assembly` group=1 deps=analyze-financial-schema, analyze-financial-api, analyze-sales-integration, analyze-purchases-integration, analyze-inventory-integration, analyze-other-integrations, analyze-financial-reports: Collect all findings from subtasks 1-7, synthesize into a comprehensive report in Arabic. Write the final report to docs/financial-system-integration-audit-2026-07-05.md. Include sections: financial schema, API layer, integration with each module (Sales, Purchases, Inventory, HR, Customers/Suppliers, Fleet, Payments), financial reports, strengths, weaknesses, and recommendations with file paths and line numbers.
+- `discover-financial-files` group=0 deps=none: Scan the project directory C:\Users\khamis\Documents\fleetify\fleetify-erp to find all files related to the financial system: SQL migration files (in migrations/ or similar), service files (services/), hooks (hooks/), and components (components/). Use grep or find to locate files containing keywords like 'financial', 'account', 'journal', 'ledger', 'payment', 'invoice', 'chart_of_accounts', etc. Output a list of file paths with their categories (migration, service, hook, component).
+- `analyze-hooks-components` group=1 deps=discover-financial-files: Read all hooks and components related to the financial system (e.g., useFinancialData.ts, FinancialDashboard.tsx, InvoiceForm.tsx). Identify how the frontend interacts with the financial backend, what data is fetched, and how it is displayed. Note any integration with other module components (e.g., linking invoices to inventory items).
+- `analyze-migrations` group=1 deps=discover-financial-files: Read all SQL migration files identified in the previous subtask. Extract table schemas, foreign key constraints, triggers, and any financial-specific logic. Document the database structure for financial tables (e.g., chart_of_accounts, journal_entries, payments, invoices). Note any relationships to inventory, sales, purchases, or HR tables.
+- `analyze-services` group=1 deps=discover-financial-files: Read all service files related to the financial system (e.g., financialService.ts, paymentService.ts, invoiceService.ts). Identify data flow: which functions call which tables, how data is transformed, and how the financial module interacts with other modules (inventory, sales, purchases, HR). Note any direct database queries, API calls, or event-driven integrations.
+- `analyze-cross-module-integration` group=2 deps=analyze-migrations, analyze-services, analyze-hooks-components: Using the outputs from migration, service, and hooks/components analysis, map the data flow between the financial module and inventory, sales, purchases, and HR modules. Identify foreign key relationships, shared tables, event triggers, and any direct code references. Document the integration points and data dependencies.
+- `identify-weaknesses` group=3 deps=analyze-cross-module-integration: Based on the cross-module integration analysis, identify weaknesses and risks in the financial system integration. Categorize by severity (critical, high, medium, low). Look for missing foreign keys, inconsistent data types, lack of triggers for cascading updates/deletes, potential data integrity issues, and any gaps in data flow. Also note any security or performance concerns.
+- `assembly` group=4 deps=discover-financial-files, analyze-migrations, analyze-services, analyze-hooks-components, analyze-cross-module-integration, identify-weaknesses: Collect all findings from prior subtasks (discover-financial-files, analyze-migrations, analyze-services, analyze-hooks-components, analyze-cross-module-integration, identify-weaknesses) and write the final comprehensive audit report in Arabic to C:\Users\khamis\Documents\fleetify\docs\financial-integration-audit-2026-07-05.md. The report must include: executive summary, methodology, database analysis, data flow analysis, strengths, weaknesses (with severity), recommendations, and a list of all reviewed files. Ensure the report is well-formatted in Markdown.
