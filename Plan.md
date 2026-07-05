@@ -2,21 +2,42 @@
 
 راجع النظام المالي وتكامله مع بقية الوحدات وقدم لي تقرير كامل بدون تغير الكود فقط تقرير عن تكامل النظام
 
-This is a comprehensive financial system integration audit for the Fleetify project. The audit must:
-1. Find the Fleetify project codebase (likely under C:\Users\khamis\Documents\ or similar)
-2. Review ALL financial modules and their integration with other system modules
-3. Check database migrations, triggers, hooks, API routes, and frontend components
-4. Verify double-entry integrity, chart of accounts, GL reconciliation, trial balance, AP/AR, revenue recognition, financial statements, internal controls, cash flow, and period-end close
-5. Cross-reference every finding against actual source files with file:line references
-6. Produce a comprehensive Arabic report saved to docs/ in the hermes-agent repo
-7. NO CODE CHANGES - read-only audit mode
-8. Use the financial-system-audit-verification methodology: read all migrations, build trigger matrix, trace hook operations, cross-reference each operation against each trigger
+This is a comprehensive financial system integration audit. The user wants a full report on how the financial system integrates with other modules in the project. DO NOT modify any code - this is read-only audit/report only.
+
+Based on memory context, the project is likely Fleetify (a law firm management system in Qatar). The project root should be determined from the current context. If the project is Fleetify, it's likely at a path like C:\Users\khamis\Documents\fleetify\ or similar.
+
+First, determine the correct project path by checking common locations. Then perform a thorough audit covering:
+1. Database schema and migration analysis (all financial tables, triggers, functions)
+2. Integration points with other modules (HR, CRM, Inventory, Projects, etc.)
+3. API layer analysis (REST endpoints, RPCs)
+4. Frontend components and their integration
+5. Data flow analysis
+6. Security and access control
+7. Issues and recommendations
+
+Use the CFO financial system audit methodology covering 12 domains:
+- Double-Entry Integrity
+- Chart of Accounts
+- GL Reconciliation
+- Trial Balance
+- AP/AR Aging
+- Revenue Recognition (ASC 606/IFRS 15)
+- Financial Statements
+- Internal Controls
+- SOX/COSO Compliance
+- Financial Reporting
+- Cash Flow Management
+- Period-End Close
+
+The report should be in Arabic (as the user requested in Arabic) and saved to docs/financial-system-integration-audit-<date>.md
+
+IMPORTANT: Read actual migration files, source code, and configuration - do NOT rely on subagent self-reports. Verify every finding with file:line references.
 
 ## Reasoning
-The audit requires cataloging database schema, API routes, and frontend components in parallel, then analyzing double-entry integrity, financial modules, and trigger cross-references sequentially. The final assembly compiles all findings into an Arabic report. This decomposition respects dependencies and keeps subtasks independently verifiable.
+The task is a read-only audit of the financial system integration. I decomposed it into 5 parallel analysis subtasks (schema, integration points, API, frontend, dataflow/security) that can run independently, followed by an assembly subtask that compiles all findings into a final Arabic report. Each subtask is assigned to a 'builder' agent since it involves analysis and file reading. The plan respects the maximum of 8 subtasks and ensures the final deliverable is written.
 
 ## Risk Level
-medium
+low
 
 ## Assumptions
 - Dependencies from earlier milestones remain stable.
@@ -24,33 +45,23 @@ medium
 ## Milestones
 
 ### Parallel group 1
-- Subtasks: catalog-api-routes, catalog-db-schema, catalog-frontend-components
+- Subtasks: api-layer, dataflow-security, frontend-components, integration-points, schema-analysis
 - Acceptance criteria:
-  - A structured list of all financial API operations (create, read, update, delete) with file paths and line numbers is produced.
-  - A JSON or markdown file listing all financial tables, columns, triggers, functions, and RLS policies with exact file paths and line numbers is created.
-  - A structured list of all frontend components that handle financial data, with file paths and line numbers, is produced.
+  - A list of all financial API endpoints (REST and RPC) with their HTTP method, path, parameters, and file:line references.
+  - A description of the data flow for key financial operations (e.g., payment creation, journal entry posting) and a list of security controls (RLS policies, authentication checks) with file:line references.
+  - A list of all financial frontend components with file paths and a short description of their role in the financial system.
+  - A list of files and line numbers where financial tables are referenced from other modules, with the module name and context. File:line references.
+  - A list of all financial tables with their columns, data types, and any triggers/functions found in migrations and types.ts. File:line references for each finding.
 
 ### Parallel group 2
-- Subtasks: analyze-double-entry, analyze-financial-modules
-- Acceptance criteria:
-  - A report section detailing double-entry integrity, including any missing constraints, unbalanced entries, or incorrect mappings, with file:line references.
-  - A report section covering each financial module, identifying gaps, missing features, or integration issues, with file:line references.
-
-### Parallel group 3
-- Subtasks: cross-reference-triggers
-- Acceptance criteria:
-  - A trigger-operation matrix and gap analysis with file:line references, highlighting any missing or misconfigured triggers.
-
-### Parallel group 4
 - Subtasks: assembly
 - Acceptance criteria:
-  - Final deliverable file docs/financial-integration-audit-report.md is written and contains all findings from prior subtasks, in Arabic, with file:line references.
+  - Final deliverable file is written at docs/financial-system-integration-audit-<current-date>.md and contains all findings from prior subtasks with file:line references, organized by the 12 audit domains, in Arabic.
 
 ## DAG
-- `catalog-api-routes` group=0 deps=none: Identify all API endpoints, hooks, and service functions that handle financial operations (invoices, payments, journal entries, accounts, etc.). Scan src/integrations/supabase/ and any other backend code. Produce a list of operations with file:line references.
-- `catalog-db-schema` group=0 deps=none: Extract all financial-related database tables, columns, migrations, triggers, functions, and RLS policies from the codebase. Parse supabase/migrations/*.sql, src/integrations/supabase/types.ts, and any other SQL files. Produce a structured list with file:line references.
-- `catalog-frontend-components` group=0 deps=none: Identify all frontend components that display or interact with financial data (dashboards, forms, reports, drilldowns). Scan src/components/ and any other UI code. Produce a list of components with file:line references.
-- `analyze-double-entry` group=1 deps=catalog-db-schema: Analyze double-entry integrity: verify journal entry lines structure, debit/credit balancing constraints, account mappings, and any database-level checks. Use the catalog from catalog-db-schema. Document findings with file:line references.
-- `analyze-financial-modules` group=1 deps=catalog-db-schema, catalog-api-routes, catalog-frontend-components: Analyze chart of accounts, GL reconciliation, trial balance, AP/AR, revenue recognition, financial statements, internal controls, cash flow, and period-end close. Cross-reference with cataloged API routes and frontend components. Document findings with file:line references.
-- `cross-reference-triggers` group=2 deps=catalog-db-schema, catalog-api-routes, analyze-double-entry: Build a trigger-operation matrix: map every database trigger/function to the API operations that invoke them. Cross-reference each financial operation against each trigger to identify missing triggers, redundant triggers, or incorrect logic. Use catalogs and double-entry analysis.
-- `assembly` group=3 deps=catalog-db-schema, catalog-api-routes, catalog-frontend-components, analyze-double-entry, analyze-financial-modules, cross-reference-triggers: Compile all findings from previous subtasks into a comprehensive Arabic report. Structure the report with sections for each audit area, include file:line references, and save to docs/financial-integration-audit-report.md. No code changes.
+- `api-layer` group=0 deps=none: Analyze API layer: find all Supabase RPCs, REST endpoints, and API route definitions related to finance. Look in supabase/functions/, any API route files, and the audit scripts. List each endpoint with method, parameters, and purpose.
+- `dataflow-security` group=0 deps=none: Analyze data flow and security: examine how financial data flows through the system (from frontend to database and back), access controls (Row Level Security policies, authentication checks), and any security measures specific to financial data. Look at RLS policies in migrations, middleware, and audit scripts.
+- `frontend-components` group=0 deps=none: Analyze frontend components related to finance: find all React components in src/components/ and src/pages/ that deal with financial data (payments, invoices, journal entries, chart of accounts, etc.). List each component with its file path and a brief description of its financial functionality.
+- `integration-points` group=0 deps=none: Analyze integration points with other modules: scan all .ts, .tsx, .py files in src/ and scripts/ for references to financial tables (payments, journal_entry_lines, chart_of_accounts, invoices, etc.) from non-financial modules (HR, CRM, Inventory, Projects, etc.). Identify cross-module data flows.
+- `schema-analysis` group=0 deps=none: Analyze database schema and migrations: find all migration files (supabase/migrations/), extract financial tables (payments, journal_entry_lines, chart_of_accounts, etc.), triggers, functions, and column definitions from types.ts and migration SQL files. List all financial tables with columns and constraints.
+- `assembly` group=1 deps=schema-analysis, integration-points, api-layer, frontend-components, dataflow-security: Compile all findings from the five analysis subtasks into a comprehensive financial system integration audit report in Arabic. The report should follow the CFO audit methodology covering 12 domains. Save the report to docs/financial-system-integration-audit-<current-date>.md. Include file:line references for every finding.
