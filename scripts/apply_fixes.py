@@ -191,15 +191,110 @@ for e in drafts:
             print(f"  FAILED to delete: {e.get('entry_number', '?')} - {err}")
     else:
         t: Optional[Dict[str, float]] = et.get(eid)
-        if t and abs(t['d'] - t['c']) < 0.01:
+        if t and abs(t['d'] - t['c']) < 0.001:
             # Balanced draft - post it
-            ok, _ = patch('journal_entries', f'id=eq.{eid}', {'status': 'posted'})
+            ok, err = patch('journal_entries', f'id=eq.{eid}', {'status': 'posted'})
             if ok:
                 posted_count += 1
                 print(f"  POSTED: {e.get('entry_number', '?')}")
             else:
-                print(f"  FAILED to post: {e.get('entry_number', '?')}")
+                print(f"  FAILED to post: {e.get('entry_number', '?')} - {err}")
         else:
+            # Unbalanced draft - skip (or could delete, but we skip)
             print(f"  SKIP unbalanced draft: {e.get('entry_number', '?')}")
 
-print(f"\n  Fix 3 summary: {posted_count} posted, {deleted_count} deleted")
+# ============================================================
+# FIX 4: Unlinked payments
+# ============================================================
+print("\n" + "=" * 70)
+print("FIX 4: UNLINKED PAYMENTS")
+print("=" * 70)
+# Payments with no invoice_id
+unlinked_payments: List[Dict[str, Any]] = [p for p in payments if not p.get('invoice_id')]
+print(f"  Found {len(unlinked_payments)} unlinked payments")
+linked_pay: int = 0
+for p in unlinked_payments:
+    pid: str = p['id']
+    # If payment has a contract_id, try to find an invoice for that contract
+    if p.get('contract_id'):
+        # Find an invoice for the same contract and customer (if customer_id present)
+        matching_invoices: List[Dict[str, Any]] = [
+            i for i in invoices
+            if i.get('contract_id') == p['contract_id']
+            and (not p.get('customer_id') or i.get('customer_id') == p['customer_id'])
+            and i.get('status') != 'paid'
+        ]
+        if matching_invoices:
+            # Link to the first matching invoice
+            inv: Dict[str, Any] = matching_invoices[0]
+            ok, err = patch('payments', f'id=eq.{pid}', {'invoice_id': inv['id']})
+            if ok:
+                linked_pay += 1
+                print(f"  Linked payment {p.get('payment_number', '?')} to invoice {inv.get('invoice_number', '?')}")
+            else:
+                print(f"  FAILED to link payment {p.get('payment_number', '?')}: {err}")
+        else:
+            print(f"  No matching invoice for payment {p.get('payment_number', '?')} (contract {p['contract_id']})")
+    elif p.get('customer_id'):
+        # Payment has only customer_id, try to find an invoice for that customer
+        matching_invoices = [
+            i for i in invoices
+            if i.get('customer_id') == p['customer_id']
+            and i.get('status') != 'paid'
+        ]
+        if matching_invoices:
+            inv = matching_invoices[0]
+            ok, err = patch('payments', f'id=eq.{pid}', {'invoice_id': inv['id']})
+            if ok:
+                linked_pay += 1
+                print(f"  Linked payment {p.get('payment_number', '?')} to invoice {inv.get('invoice_number', '?')} (by customer)")
+            else:
+                print(f"  FAILED to link payment {p.get('payment_number', '?')}: {err}")
+        else:
+            print(f"  No matching invoice for payment {p.get('payment_number', '?')} (customer {p['customer_id']})")
+    else:
+        print(f"  Payment {p.get('payment_number', '?')} has no contract or customer, cannot link")
+
+# ============================================================
+# FIX 5: Unlinked invoices (PUR-type, no customer)
+# ============================================================
+print("\n" + "=" * 70)
+print("FIX 5: UNLINKED INVOICES")
+print("=" * 70)
+# Invoices with no customer_id and type PUR (or any type, but description says PUR-type)
+unlinked_invoices: List[Dict[str, Any]] = [
+    i for i in invoices
+    if not i.get('customer_id') and i.get('status') != 'paid'
+]
+print(f"  Found {len(unlinked_invoices)} unlinked invoices")
+fixed5: int = 0
+for inv in unlinked_invoices:
+    iid: str = inv['id']
+    # If invoice has a contract_id, try to get customer from contract
+    if inv.get('contract_id'):
+        contract: Optional[Dict[str, Any]] = next((c for c in contracts if c['id'] == inv['contract_id']), None)
+        if contract and contract.get('customer_id'):
+            ok, err = patch('invoices', f'id=eq.{iid}', {'customer_id': contract['customer_id']})
+            if ok:
+                fixed5 += 1
+                print(f"  Linked invoice {inv.get('invoice_number', '?')} to customer {contract['customer_id']}")
+            else:
+                print(f"  FAILED to link invoice {inv.get('invoice_number', '?')}: {err}")
+        else:
+            print(f"  No customer found for contract {inv.get('contract_id')} on invoice {inv.get('invoice_number', '?')}")
+    else:
+        print(f"  Invoice {inv.get('invoice_number', '?')} has no contract_id, cannot link")
+
+# ============================================================
+# Summary
+# ============================================================
+print("\n" + "=" * 70)
+print("SUMMARY")
+print("=" * 70)
+print(f"  Empty entries deleted: {fixed1}")
+print(f"  Zero-amount entries deleted: {fixed2}")
+print(f"  Draft entries posted: {posted_count}")
+print(f"  Empty drafts deleted: {deleted_count}")
+print(f"  Payments linked: {linked_pay}")
+print(f"  Invoices linked: {fixed5}")
+print("\nDone.")

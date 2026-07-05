@@ -168,5 +168,6 @@ def delegate_task(
             return TASK_DELEGATION_FAILURE
         return result
     except Exception as e:
-        logger.exception(f"Task delegation failed for '{task_description}'. Returning TASK_DELEGATION_FAILURE.")
+        logger.error(f"Task delegation failed for '{task_description}'. Returning TASK_DELEGATION_FAILURE.")
+        logger.exception(f"Exception details: {type(e).__name__}: {e}")
         return TASK_DELEGATION_FAILURE
