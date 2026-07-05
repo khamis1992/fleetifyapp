@@ -77,6 +77,16 @@ interface UpdateContractData extends CreateContractData {
   status?: 'draft' | 'active' | 'expired' | 'suspended' | 'cancelled' | 'renewed';
 }
 
+interface ContractPaymentCancellationResult {
+  cancelledCount: number;
+  invoiceIds: string[];
+}
+
+const normalizeDateOnly = (value?: string | Date | null): string | null => {
+  if (!value) return null;
+  return typeof value === 'string' ? value.split('T')[0] : value.toISOString().split('T')[0];
+};
+
 export const useContractOperations = (options: ContractOperationsOptions = {}) => {
   const { companyId, user } = useUnifiedCompanyAccess();
   const queryClient = useQueryClient();
@@ -219,6 +229,8 @@ export const useContractOperations = (options: ContractOperationsOptions = {}) =
       // Invalidate related queries
       queryClient.invalidateQueries({ queryKey: ['contracts'] });
       queryClient.invalidateQueries({ queryKey: ['vehicles'] });
+      queryClient.invalidateQueries({ queryKey: ['payments'] });
+      queryClient.invalidateQueries({ queryKey: ['invoices'] });
 
       toast.success('تم إنشاء العقد بنجاح');
     },
@@ -228,6 +240,119 @@ export const useContractOperations = (options: ContractOperationsOptions = {}) =
       toast.error(errorMessage);
     }
   });
+
+  const recalculateInvoicePaymentTotals = async (invoiceIds: string[]) => {
+    const uniqueInvoiceIds = [...new Set(invoiceIds.filter(Boolean))];
+
+    for (const invoiceId of uniqueInvoiceIds) {
+      const { data: invoice, error: invoiceError } = await supabase
+        .from('invoices')
+        .select('id, total_amount')
+        .eq('id', invoiceId)
+        .eq('company_id', companyId)
+        .single();
+
+      if (invoiceError || !invoice) {
+        console.error('[useContractOperations] Failed to fetch invoice after cancelling early contract payments:', invoiceError);
+        throw new Error('تعذر تحديث الفاتورة بعد إلغاء الدفعات السابقة لتاريخ العقد الجديد');
+      }
+
+      const { data: activePayments, error: activePaymentsError } = await supabase
+        .from('payments')
+        .select('amount')
+        .eq('invoice_id', invoiceId)
+        .eq('company_id', companyId)
+        .eq('payment_status', 'completed');
+
+      if (activePaymentsError) {
+        console.error('[useContractOperations] Failed to fetch active invoice payments:', activePaymentsError);
+        throw new Error('تعذر إعادة حساب مدفوعات الفاتورة بعد إلغاء الدفعات القديمة');
+      }
+
+      const paidAmount = (activePayments || []).reduce(
+        (sum, payment) => sum + (Number(payment.amount) || 0),
+        0
+      );
+      const totalAmount = Number(invoice.total_amount) || 0;
+      const balanceDue = Math.max(totalAmount - paidAmount, 0);
+      const paymentStatus = paidAmount <= 0 ? 'unpaid' : balanceDue <= 0 ? 'paid' : 'partial';
+
+      const { error: updateInvoiceError } = await supabase
+        .from('invoices')
+        .update({
+          paid_amount: paidAmount,
+          balance_due: balanceDue,
+          payment_status: paymentStatus,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', invoiceId)
+        .eq('company_id', companyId);
+
+      if (updateInvoiceError) {
+        console.error('[useContractOperations] Failed to update invoice totals after cancelling early payments:', updateInvoiceError);
+        throw new Error('تم إلغاء الدفعات القديمة، لكن تعذر تحديث مبالغ الفاتورة المرتبطة');
+      }
+    }
+  };
+
+  const cancelPaymentsBeforeContractStart = async (
+    contract: Pick<Contract, 'id' | 'contract_number' | 'company_id'>,
+    newStartDate: string
+  ): Promise<ContractPaymentCancellationResult> => {
+    const { data: paymentsToCancel, error: paymentsError } = await supabase
+      .from('payments')
+      .select('id, payment_number, payment_date, invoice_id')
+      .eq('company_id', contract.company_id)
+      .eq('contract_id', contract.id)
+      .lt('payment_date', newStartDate)
+      .neq('payment_status', 'cancelled');
+
+    if (paymentsError) {
+      console.error('[useContractOperations] Failed to fetch payments before new contract start date:', paymentsError);
+      throw new Error('تعذر جلب الدفعات السابقة لتاريخ بداية العقد الجديد');
+    }
+
+    if (!paymentsToCancel || paymentsToCancel.length === 0) {
+      return { cancelledCount: 0, invoiceIds: [] };
+    }
+
+    const invoiceIds: string[] = [];
+
+    for (const payment of paymentsToCancel) {
+      const reason = [
+        `Contract ${contract.contract_number} start date changed to ${newStartDate}.`,
+        `Payment ${payment.payment_number} dated ${payment.payment_date} is before the new start date.`,
+      ].join(' ');
+
+      const { error: cancelError } = await (supabase as any)
+        .rpc('cancel_payment_with_reversal', {
+          p_payment_id: payment.id,
+          p_company_id: contract.company_id,
+          p_reason: reason,
+          p_actor_id: user?.id || null,
+        });
+
+      if (cancelError) {
+        console.error('[useContractOperations] Failed to cancel early contract payment:', {
+          paymentId: payment.id,
+          paymentNumber: payment.payment_number,
+          cancelError,
+        });
+        throw new Error(`تعذر إلغاء الدفعة ${payment.payment_number} السابقة لتاريخ بداية العقد الجديد`);
+      }
+
+      if (payment.invoice_id) {
+        invoiceIds.push(payment.invoice_id);
+      }
+    }
+
+    await recalculateInvoicePaymentTotals(invoiceIds);
+
+    return {
+      cancelledCount: paymentsToCancel.length,
+      invoiceIds,
+    };
+  };
 
   // Update contract operation
   const updateContract = useMutation({
@@ -293,6 +418,30 @@ export const useContractOperations = (options: ContractOperationsOptions = {}) =
       console.log('✅ [useContractOperations] Contract updated successfully:', updatedContract);
 
       // التحقق مما إذا تغيرت القيمة الشهرية أو المدة - إعادة إنشاء الفواتير
+      let earlyPaymentCancellation: ContractPaymentCancellationResult = {
+        cancelledCount: 0,
+        invoiceIds: [],
+      };
+      const oldStartDate = normalizeDateOnly(existingContract.start_date);
+      const newStartDate = normalizeDateOnly(updatedContract.start_date);
+
+      if (oldStartDate && newStartDate && newStartDate > oldStartDate) {
+        earlyPaymentCancellation = await cancelPaymentsBeforeContractStart(
+          {
+            id: updatedContract.id,
+            contract_number: updatedContract.contract_number,
+            company_id: updatedContract.company_id,
+          },
+          newStartDate
+        );
+
+        if (earlyPaymentCancellation.cancelledCount > 0) {
+          console.log(
+            `✅ [useContractOperations] Cancelled ${earlyPaymentCancellation.cancelledCount} payments before new start date ${newStartDate}`
+          );
+        }
+      }
+
       const amountChanged = data.monthly_amount !== undefined && 
         Number(data.monthly_amount) !== Number(existingContract.monthly_amount);
       const datesChanged = (data.start_date && data.start_date !== existingContract.start_date) ||
@@ -357,12 +506,22 @@ export const useContractOperations = (options: ContractOperationsOptions = {}) =
         }
       }
 
-      return updatedContract;
+      return {
+        ...updatedContract,
+        cancelledEarlyPaymentsCount: earlyPaymentCancellation.cancelledCount,
+      };
     },
     onSuccess: (contract) => {
       queryClient.invalidateQueries({ queryKey: ['contracts'] });
       queryClient.invalidateQueries({ queryKey: ['contract', contract.id] });
       queryClient.invalidateQueries({ queryKey: ['vehicles'] });
+      queryClient.invalidateQueries({ queryKey: ['payments'] });
+      queryClient.invalidateQueries({ queryKey: ['invoices'] });
+
+      if ((contract as any).cancelledEarlyPaymentsCount > 0) {
+        toast.success(`تم تحديث العقد وإلغاء ${(contract as any).cancelledEarlyPaymentsCount} دفعات قبل تاريخ البداية الجديد`);
+        return;
+      }
 
       toast.success('تم تحديث العقد بنجاح');
     },
