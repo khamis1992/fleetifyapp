@@ -1,13 +1,13 @@
 {
   "stage": "plan_approved",
-  "task": "\u0642\u0645 \u0628\u0645\u0631\u0627\u062c\u0639\u0629 \u0634\u0627\u0645\u0644\u0629 \u0644\u0644\u0646\u0638\u0627\u0645 \u0627\u0644\u0645\u0627\u0644\u064a \u0641\u064a \u0645\u0634\u0631\u0648\u0639 Fleetify (C:\\Users\\khamis\\Documents\\fleetifyapp) \u0648\u062a\u0643\u0627\u0645\u0644\u0647 \u0645\u0639 \u0628\u0642\u064a\u0629 \u0627\u0644\u0648\u062d\u062f\u0627\u062a. \u0642\u062f\u0645 \u062a\u0642\u0631\u064a\u0631\u0627\u064b \u0643\u0627\u0645\u0644\u0627\u064b \u0628\u062f\u0648\u0646 \u062a\u063a\u064a\u064a\u0631 \u0623\u064a \u0643\u0648\u062f.\n\n\u0627\u0644\u0645\u0637\u0644\u0648\u0628:\n1. \u0641\u062d\u0635 \u062c\u0645\u064a\u0639 \u0645\u0644\u0641\u0627\u062a \u0627\u0644\u0646\u0638\u0627\u0645 \u0627\u0644\u0645\u0627\u0644\u064a: \u0627\u0644\u0635\u0641\u062d\u0627\u062a (pages/finance/\u060c pages/Finance.tsx\u060c pages/FinancialTracking.tsx\u060c pages/SyncPaymentsToLedger.tsx)\u060c \u0627\u0644\u0645\u0643\u0648\u0646\u0627\u062a (components/finance/)\u060c \u0627\u0644\u0647\u0648\u0643\u0633 (hooks/finance/\u060c hooks/useFinance.ts\u060c hooks/useGeneralLedger.ts\u060c hooks/useChartOfAccounts.ts\u060c hooks/useEnhancedFinancialReports.ts\u060c hooks/useFinancialAnalysis.t",
+  "task": "Perform a comprehensive READ-ONLY audit of the Fleetify ERP financial system and its integration with ALL other modules. Produce a detailed Arabic-language integration audit report. DO NOT modify any code \u2014 this is a review/audit task only.\n\nProject path: C:\\Users\\khamis\\Documents\\fleetifyapp\n\n## Context from previous audits (verify these findings against current code \u2014 do NOT blindly trust them)\n\nPrevious audit (V4-final, July 4-5 2026) found these critical issues:\n1. ALL 6 integration hooks cr",
   "status": "running",
-  "timestamp": "2026-07-05T10:53:34.338717",
+  "timestamp": "2026-07-05T11:44:18.475164",
   "plan": {
-    "task": "\u0642\u0645 \u0628\u0645\u0631\u0627\u062c\u0639\u0629 \u0634\u0627\u0645\u0644\u0629 \u0644\u0644\u0646\u0638\u0627\u0645 \u0627\u0644\u0645\u0627\u0644\u064a \u0641\u064a \u0645\u0634\u0631\u0648\u0639 Fleetify (C:\\Users\\khamis\\Documents\\fleetifyapp) \u0648\u062a\u0643\u0627\u0645\u0644\u0647 \u0645\u0639 \u0628\u0642\u064a\u0629 \u0627\u0644\u0648\u062d\u062f\u0627\u062a. \u0642\u062f\u0645 \u062a\u0642\u0631\u064a\u0631\u0627\u064b \u0643\u0627\u0645\u0644\u0627\u064b \u0628\u062f\u0648\u0646 \u062a\u063a\u064a\u064a\u0631 \u0623\u064a \u0643\u0648\u062f.\n\n\u0627\u0644\u0645\u0637\u0644\u0648\u0628:\n1. \u0641\u062d\u0635 \u062c\u0645\u064a\u0639 \u0645\u0644\u0641\u0627\u062a \u0627\u0644\u0646\u0638\u0627\u0645 \u0627\u0644\u0645\u0627\u0644\u064a: \u0627\u0644\u0635\u0641\u062d\u0627\u062a (pages/finance/\u060c pages/Finance.tsx\u060c pages/FinancialTracking.tsx\u060c pages/SyncPaymentsToLedger.tsx)\u060c \u0627\u0644\u0645\u0643\u0648\u0646\u0627\u062a (components/finance/)\u060c \u0627\u0644\u0647\u0648\u0643\u0633 (hooks/finance/\u060c hooks/useFinance.ts\u060c hooks/useGeneralLedger.ts\u060c hooks/useChartOfAccounts.ts\u060c hooks/useEnhancedFinancialReports.ts\u060c hooks/useFinancialAnalysis.ts\u060c hooks/useFinancialOverview.ts\u060c hooks/useFinancialAudit.ts\u060c hooks/useTreasury.ts\u060c hooks/useMonthlyObligations.ts\u060c hooks/useMonthlyRentTracking.ts\u060c hooks/useCostCenterReports.ts\u060c hooks/useCostCenters.ts\u060c hooks/useCustomerFinancialSummary.ts\u060c hooks/useFleetFinancialAnalytics.ts\u060c hooks/useAdvancedFinancialAnalytics.ts\u060c hooks/useAdvancedFinancialRatios.ts\u060c hooks/useFinancialReportsExport.ts\u060c hooks/useFinancialSystemAnalysis.ts\u060c hooks/useFinancialAIAnalysis.ts\u060c hooks/useFinancialFixes.ts\u060c hooks/usePayrollFinancialAnalysis.ts\u060c hooks/usePendingJournalEntries.ts\u060c hooks/useJournalEntryPermissions.ts\u060c hooks/useInvoiceJournalLinking.ts\u060c hooks/useInvoiceMatching.ts\u060c hooks/useReportingAccounts.ts\u060c hooks/useEntryAllowedAccounts.ts\u060c hooks/useAccountMappings.ts\u060c hooks/useEssentialAccountMappings.ts\u060c hooks/useEnhancedAccountDeletion.ts\u060c hooks/useEnhancedAccountSuggestions.ts\u060c hooks/useEnhancedChartOfAccountsCSVUpload.ts\u060c hooks/useCopySelectedAccounts.ts\u060c hooks/useAccountingWizard.ts\u060c hooks/useAccountConflictCheck.ts\u060c hooks/useDeposits.ts\u060c hooks/useDelinquencyStats.ts\u060c hooks/useLateFines.ts\u060c hooks/usePaymentSchedules.ts\u060c hooks/useCustomerAccounts.ts\u060c hooks/useCustomerAccountStatement.ts\u060c hooks/useCustomerAccountTypes.ts\u060c hooks/useEnhancedCustomerAccounts.ts\u060c hooks/useEnhancedCustomerFinancials.ts\u060c hooks/useVendorAccounts.ts\u060c hooks/useCreateCustomerWithAccount.ts\u060c hooks/useSimpleAccountDeletion.ts\u060c hooks/useUnifiedAccountSelector.ts)\u060c \u0627\u0644\u062e\u062f\u0645\u0627\u062a (services/AccountingService.ts\u060c services/financialControls.ts\u060c services/PaymentService.ts\u060c services/PaymentLinkingService.ts\u060c services/PaymentStateMachine.ts\u060c services/InvoiceService.ts\u060c services/UnifiedInvoiceService.ts\u060c services/reportDataService.ts)\n\n2. \u0641\u062d\u0635 \u062c\u0645\u064a\u0639 \u0646\u0642\u0627\u0637 \u0627\u0644\u062a\u0643\u0627\u0645\u0644 \u0645\u0639 \u0627\u0644\u0648\u062d\u062f\u0627\u062a \u0627\u0644\u0623\u062e\u0631\u0649:\n   - \u0627\u0644\u062a\u0643\u0627\u0645\u0644 \u0645\u0639 \u0627\u0644\u0639\u0642\u0648\u062f (Contracts): hooks/useContracts.ts\u060c hooks/useContractsData.tsx\u060c pages/contracts/\n   - \u0627\u0644\u062a\u0643\u0627\u0645\u0644 \u0645\u0639 \u0627\u0644\u0625\u064a\u062c\u0627\u0631\u0627\u062a (Rental Payments): hooks/useRentalPaymentJournalIntegration.ts\u060c hooks/useRentalPayments.ts\n   - \u0627\u0644\u062a\u0643\u0627\u0645\u0644 \u0645\u0639 \u0627\u0644\u0635\u064a\u0627\u0646\u0629 (Maintenance): hooks/useMaintenanceJournalIntegration.ts\u060c hooks/useMaintenanceDetails.ts\n   - \u0627\u0644\u062a\u0643\u0627\u0645\u0644 \u0645\u0639 \u0627\u0644\u0631\u0648\u0627\u062a\u0628 (Payroll): hooks/usePayrollJournalIntegration.ts\u060c hooks/usePayroll.ts\n   - \u0627\u0644\u062a\u0643\u0627\u0645\u0644 \u0645\u0639 \u0645\u062e\u0627\u0644\u0641\u0627\u062a \u0627\u0644\u0645\u0631\u0648\u0631 (Traffic Violations): hooks/useTrafficViolationJournalIntegration.ts\u060c hooks/useTrafficViolationPayments.ts\n   - \u0627\u0644\u062a\u0643\u0627\u0645\u0644 \u0645\u0639 \u0623\u0642\u0633\u0627\u0637 \u0627\u0644\u0645\u0631\u0643\u0628\u0627\u062a (Vehicle Installments): hooks/useVehicleInstallmentJournalIntegration.ts\u060c hooks/useVehicleInstallments.ts\n   - \u0627\u0644\u062a\u0643\u0627\u0645\u0644 \u0645\u0639 \u0627\u0644\u0641\u0648\u0627\u062a\u064a\u0631 (Invoices): hooks/useInvoiceJournalLinking.ts\u060c hooks/useInvoiceMatching.ts\u060c services/InvoiceService.ts\n   - \u0627\u0644\u062a\u0643\u0627\u0645\u0644 \u0645\u0639 \u0627\u0644\u0645\u062f\u0641\u0648\u0639\u0627\u062a (Payments): hooks/usePayments.unified.ts\u060c services/PaymentService.ts\u060c services/PaymentLinkingService.ts\n   - \u0627\u0644\u062a\u0643\u0627\u0645\u0644 \u0645\u0639 \u0627\u0644\u062a\u062d\u0635\u064a\u0644\u0627\u062a (Collections): hooks/useMonthlyCollections.ts\n   - \u0627\u0644\u062a\u0643\u0627\u0645\u0644 \u0645\u0639 \u0627\u0644\u0639\u0645\u0644\u0627\u0621 (Customers): hooks/useCustomerAccounts.ts\u060c hooks/useEnhancedCustomerFinancials.ts\n   - \u0627\u0644\u062a\u0643\u0627\u0645\u0644 \u0645\u0639 \u0627\u0644\u0645\u062e\u0632\u0648\u0646 (Inventory): hooks/useInventoryReports.ts\n   - \u0627\u0644\u062a\u0643\u0627\u0645\u0644 \u0645\u0639 \u0627\u0644\u0645\u0648\u0627\u0631\u062f \u0627\u0644\u0628\u0634\u0631\u064a\u0629 (HR): hooks/useHRReports.ts\n   - \u0627\u0644\u062a\u0643\u0627\u0645\u0644 \u0645\u0639 \u0627\u0644\u062a\u0642\u0627\u0631\u064a\u0631 (Reports): hooks/useUnifiedReports.ts\u060c hooks/useModuleReportData.ts\n   - \u0627\u0644\u062a\u0643\u0627\u0645\u0644 \u0645\u0639 \u0627\u0644\u0641\u0631\u064a\u0642 (Team): hooks/useEmployeeDetailedReport.tsx\n   - \u0627\u0644\u062a\u0643\u0627\u0645\u0644 \u0645\u0639 \u0627\u0644\u062a\u062d\u0644\u064a\u0644 \u0627\u0644\u0645\u0627\u0644\u064a (Financial Analysis): hooks/useFinancialAnalysis.ts\u060c hooks/useAdvancedFinancialAnalytics.ts\n   - \u0627\u0644\u062a\u0643\u0627\u0645\u0644 \u0645\u0639 \u0627\u0644\u062a\u062f\u0642\u064a\u0642 (Audit): hooks/useFinancialAudit.ts\u060c hooks/useAuditLog.ts\u060c hooks/useAuditTrail.ts\n   - \u0627\u0644\u062a\u0643\u0627\u0645\u0644 \u0645\u0639 \u0627\u0644\u0645\u0648\u0627\u0641\u0642\u0627\u062a (Approvals): hooks/useApprovalWorkflows.ts\n   - \u0627\u0644\u062a\u0643\u0627\u0645\u0644 \u0645\u0639 \u0627\u0644\u0646\u0638\u0627\u0645 \u0627\u0644\u0642\u0627\u0646\u0648\u0646\u064a (Legal): hooks/useLegalCollectionReport.ts\u060c hooks/usePaymentLegalIntegration.ts\n   - \u0627\u0644\u062a\u0643\u0627\u0645\u0644 \u0645\u0639 \u0627\u0644\u0645\u0648\u0631\u062f\u064a\u0646 (Vendors): hooks/useVendorAccounts.ts\n\n3. \u0641\u062d\u0635 \u0642\u0627\u0639\u062f\u0629 \u0627\u0644\u0628\u064a\u0627\u0646\u0627\u062a: \u0645\u0644\u0641\u0627\u062a SQL \u0641\u064a supabase/ \u0648\u0627\u0644\u0645\u062c\u0644\u062f\u0627\u062a \u0627\u0644\u0645\u062a\u0639\u0644\u0642\u0629 \u0628\u0627\u0644\u0645igrations\n\n4. \u0641\u062d\u0635 \u0627\u0644\u062a\u0648\u062c\u064a\u0647 (Routing): \u0643\u064a\u0641 \u064a\u062a\u0645 \u0631\u0628\u0637 \u0627\u0644\u0635\u0641\u062d\u0627\u062a \u0627\u0644\u0645\u0627\u0644\u064a\u0629 \u0641\u064a \u0646\u0638\u0627\u0645 \u0627\u0644\u062a\u0648\u062c\u064a\u0647\n\n5. \u0641\u062d\u0635 \u0627\u0644\u0623\u0645\u0627\u0646 \u0648\u0627\u0644\u0635\u0644\u0627\u062d\u064a\u0627\u062a: hooks/useJournalEntryPermissions.ts\u060c hooks/usePermissionCheck.ts\u060c hooks/usePermissions.ts\u060c hooks/useRolePermissions.ts\u060c hooks/useUserPermissions.ts\u060c hooks/useFeatureAccess.ts\n\n\u0627\u0644\u0645\u062e\u0631\u062c\u0627\u062a \u0627\u0644\u0645\u0637\u0644\u0648\u0628\u0629:\n- \u062a\u0642\u0631\u064a\u0631 \u0643\u0627\u0645\u0644 \u0628\u0627\u0644\u0644\u063a\u0629 \u0627\u0644\u0639\u0631\u0628\u064a\u0629 \u0639\u0646 \u0627\u0644\u0646\u0638\u0627\u0645 \u0627\u0644\u0645\u0627\u0644\u064a \u0648\u062a\u0643\u0627\u0645\u0644\u0647\n- \u062a\u062d\u062f\u064a\u062f \u0646\u0642\u0627\u0637 \u0627\u0644\u0642\u0648\u0629 \u0648\u0627\u0644\u0636\u0639\u0641\n- \u062a\u062d\u062f\u064a\u062f \u0627\u0644\u062b\u063a\u0631\u0627\u062a \u0641\u064a \u0627\u0644\u062a\u0643\u0627\u0645\u0644\n- \u062a\u0648\u0635\u064a\u0627\u062a \u0644\u0644\u062a\u062d\u0633\u064a\u0646\n- \u0627\u0644\u0625\u0634\u0627\u0631\u0629 \u0625\u0644\u0649 \u0645\u0644\u0641\u0627\u062a \u0645\u062d\u062f\u062f\u0629 \u0645\u0639 \u0623\u0631\u0642\u0627\u0645 \u0627\u0644\u0623\u0633\u0637\u0631 \u0644\u0643\u0644 finding",
+    "task": "Perform a comprehensive READ-ONLY audit of the Fleetify ERP financial system and its integration with ALL other modules. Produce a detailed Arabic-language integration audit report. DO NOT modify any code \u2014 this is a review/audit task only.\n\nProject path: C:\\Users\\khamis\\Documents\\fleetifyapp\n\n## Context from previous audits (verify these findings against current code \u2014 do NOT blindly trust them)\n\nPrevious audit (V4-final, July 4-5 2026) found these critical issues:\n1. ALL 6 integration hooks create JE header as `status: 'posted'` BEFORE inserting lines \u2192 migration 20260627011000 trigger blocks line INSERT \u2192 silent runtime failure\n2. Vehicle installment hook debits revenue/expense instead of payable\n3. Payroll hook unbalanced when deductions > 0\n4. useReverseJournalEntry only updates status, no reversal entry created\n5. Hardcoded account IDs in useConvertToLegalCase.ts\n6. Export function is a fake stub\n7. approved_by/posted_by columns written but don't exist in types.ts\n8. Math.abs() in 27 places hides accounting signs\n9. Cash flow uses estimated ratios (0.8/0.1/0.1) not real calculations\n10. canActorApproveFinancialStep() exists but is never called (unwired)\n11. Two separate audit tables (audit_logs vs audit_trail)\n12. 25 finance components hardcode KWD instead of useCompanyCurrency()\n13. No period lock check in integration hooks\n14. 4 of 6 hooks don't pass total_debit/total_credit (balance check loophole)\n\n## What to audit (13 domains from CFO skill + Domain 13: Cross-Module Integration)\n\n### Phase 1: Map ALL integration points\n- Find EVERY module that creates journal entries: search for `journal_entries` + `insert` across all .ts/.tsx files\n- Find EVERY hook with `JournalIntegration` in filename\n- Find EVERY file that references `journal_entry_id`\n- Find ANY file that inserts into `journal_entries` but is NOT a *JournalIntegration* pattern (like useConvertToLegalCase.ts)\n- Classify each as Full/Partial/None integration\n\n### Phase 2: Verify each integration hook's insert order\n- Read each hook file sequentially\n- Confirm: does it create header as 'draft' then insert lines then update to 'posted'? OR does it create as 'posted' first?\n- Check if total_debit/total_credit are passed to the header insert\n- Check if balance verification is performed\n\n### Phase 3: Check for dual-path JE creation\n- Search migration files for CREATE TRIGGER on journal_entries or journal_entry_lines\n- Search frontend code for journal_entries insert\n- If both exist for same reference_type, flag as dual-path risk\n\n### Phase 4: Verify DB trigger matrix\n- Read ALL migration files in supabase/migrations/ matching financial patterns\n- Extract every trigger: table, operation, timing, condition, exception text\n- Build a trigger matrix\n- Cross-reference each integration hook operation against each trigger\n\n### Phase 5: Check SoD completeness\n- Search for checkSegregationOfDuties, evaluateSegregationOfDuties, canActorApproveFinancialStep\n- List every financial operation and whether it calls SoD checks\n- Flag operations that modify financial data without SoD\n\n### Phase 6: Check for unwired approval functions\n- Search for canActorApproveFinancialStep, resolveFinancialApprovalWorkflow\n- Count call sites (excluding test files)\n- Flag any with 0 runtime call sites\n\n### Phase 7: Check for duplicate code across hooks\n- Read all JournalIntegration hook files\n- Compare JE creation logic across hooks\n- Flag near-identical patterns that should be extracted to shared utility\n\n### Phase 8: Check for hardcoded values in financial reports\n- Search for mock, mockData, hardcoded, placeholder, dummy, fake in financial hooks\n- Search for currentRatio, quickRatio, debtToEquity \u2014 verify they're calculated not hardcoded\n- Search for estimated ratios (0.8, 0.1, 0.1 pattern)\n\n### Phase 9: Check aging field population\n- Search for aging_30, aging_60, aging_90, days_1_30 in types and hooks\n- Verify they're assigned real calculated values, not 0\n\n### Phase 10: Check currency hardcoding\n- Search for KWD, \u062f.\u0643, QAR, \u0631.\u0642 in finance components\n- Check if useCompanyCurrency() is used consistently\n- Count files that hardcode currency vs use dynamic hook\n\n### Phase 11: Verify cash flow statement\n- Find CashFlowStatementReport, ledgerCashFlowReportRules, useAdvancedFinancialAnalytics\n- Verify classification logic (operating/investing/financing)\n- Check if ratios are estimated or calculated\n\n### Phase 12: Check period-end close infrastructure\n- Search for annual_financial_close, retained_earnings, closing entries\n- Verify infrastructure exists vs execution status\n- Check period lock enforcement in hooks\n\n### Phase 13: Verify payment-to-GL linkage\n- Check usePaymentOperations.ts pattern (draft\u2192lines\u2192post)\n- Verify this is the CORRECT pattern vs other hooks\n- Check payment cancellation atomicity\n\n### Phase 14: Check export functionality\n- Search for export functions in useGeneralLedger and other financial hooks\n- Verify if they're real implementations or stubs\n\n### Phase 15: Check audit trail consistency\n- Search for audit_logs vs audit_trail table references\n- Verify write path and read path use same table\n\n## Output requirements\n\n1. Write the final report to: `C:\\Users\\khamis\\Documents\\fleetifyapp\\docs\\financial-integration-audit-v5.md`\n2. The report MUST be in Arabic (\u0627\u0644\u0639\u0631\u0628\u064a\u0629) with technical terms in English where appropriate\n3. Every finding MUST have file:line references verified by direct file reads\n4. Include an integration map diagram (ASCII art) showing all modules and their connection status\n5. Include a trigger matrix table\n6. Include a per-module summary table\n7. Classify findings by severity (Critical/High/Medium/Low)\n8. Include remediation priority list\n9. Include \"What's Working Well\" section\n10. DO NOT modify any source code files \u2014 only create the report markdown file\n\n## Key files to read (verified from previous audit)\n- src/hooks/finance/useRentalPaymentJournalIntegration.ts\n- src/hooks/finance/useVehicleInstallmentJournalIntegration.ts\n- src/hooks/finance/usePayrollJournalIntegration.ts\n- src/hooks/finance/useMaintenanceJournalIntegration.ts\n- src/hooks/finance/useTrafficViolationJournalIntegration.ts\n- src/hooks/finance/useConvertToLegalCase.ts (6th hook \u2014 not *JournalIntegration* pattern)\n- src/hooks/finance/usePaymentOperations.ts (reference correct pattern)\n- src/hooks/finance/useGeneralLedger.ts (reverse, delete, export)\n- src/hooks/finance/useEnhancedFinancialReports.ts\n- src/hooks/finance/useAdvancedFinancialAnalytics.ts\n- src/components/finance/CashFlowStatementReport.tsx\n- src/lib/finance/ledgerCashFlowReportRules.ts\n- src/hooks/finance/financialApprovalWorkflowRules.ts\n- src/hooks/finance/useAuditTrail.ts\n- src/hooks/finance/useCompanyCurrency.ts\n- src/integrations/supabase/types.ts\n- supabase/migrations/20260627001000_financial_controls.sql\n- supabase/migrations/20260627011000_prevent_posted_journal_line_mutation.sql\n- supabase/migrations/20260627019000_annual_financial_close.sql\n- All migration files with 'financial' or 'journal' in filename\n\n## CRITICAL RULES\n- Read EVERY file yourself \u2014 do NOT trust subagent summaries without verification\n- Every claim must have file:line reference\n- Distinguish \"infrastructure exists\" from \"execution verified\" for DB-level features\n- Count ALL hooks, not just *JournalIntegration* patterns\n- Search broadly for any file inserting into journal_entries",
     "subtasks": [
       {
-        "goal": "Read and analyze all core financial system files: pages (pages/finance/, pages/Finance.tsx, pages/FinancialTracking.tsx, pages/SyncPaymentsToLedger.tsx), components (components/finance/), hooks (hooks/finance/, hooks/useFinance.ts, hooks/useGeneralLedger.ts, hooks/useChartOfAccounts.ts, hooks/useEnhancedFinancialReports.ts, hooks/useFinancialAnalysis.ts, hooks/useFinancialOverview.ts, hooks/useFinancialAudit.ts, hooks/useTreasury.ts, hooks/useMonthlyObligations.ts, hooks/useMonthlyRentTracking.ts, hooks/useCostCenterReports.ts, hooks/useCostCenters.ts, hooks/useCustomerFinancialSummary.ts, hooks/useFleetFinancialAnalytics.ts, hooks/useAdvancedFinancialAnalytics.ts, hooks/useAdvancedFinancialRatios.ts, hooks/useFinancialReportsExport.ts, hooks/useFinancialSystemAnalysis.ts, hooks/useFinancialAIAnalysis.ts, hooks/useFinancialFixes.ts, hooks/usePayrollFinancialAnalysis.ts, hooks/usePendingJournalEntries.ts, hooks/useJournalEntryPermissions.ts, hooks/useInvoiceJournalLinking.ts, hooks/useInvoiceMatching.ts, hooks/useReportingAccounts.ts, hooks/useEntryAllowedAccounts.ts, hooks/useAccountMappings.ts, hooks/useEssentialAccountMappings.ts, hooks/useEnhancedAccountDeletion.ts, hooks/useEnhancedAccountSuggestions.ts, hooks/useEnhancedChartOfAccountsCSVUpload.ts, hooks/useCopySelectedAccounts.ts, hooks/useAccountingWizard.ts, hooks/useAccountConflictCheck.ts, hooks/useDeposits.ts, hooks/useDelinquencyStats.ts, hooks/useLateFines.ts, hooks/usePaymentSchedules.ts, hooks/useCustomerAccounts.ts, hooks/useCustomerAccountStatement.ts, hooks/useCustomerAccountTypes.ts, hooks/useEnhancedCustomerAccounts.ts, hooks/useEnhancedCustomerFinancials.ts, hooks/useVendorAccounts.ts, hooks/useCreateCustomerWithAccount.ts, hooks/useSimpleAccountDeletion.ts, hooks/useUnifiedAccountSelector.ts), and services (services/AccountingService.ts, services/financialControls.ts, services/PaymentService.ts, services/PaymentLinkingService.ts, services/PaymentStateMachine.ts, services/InvoiceService.ts, services/UnifiedInvoiceService.ts, services/reportDataService.ts). Produce a structured list of findings (strengths, weaknesses, gaps, recommendations) with file paths and line numbers.",
+        "goal": "Phase 9, 10, 12: Search for aging_30, aging_60, aging_90, days_1_30 in types.ts and hooks \u2014 verify real calculated values vs 0. Search for KWD, \u062f.\u0643, QAR, \u0631.\u0642 in finance components \u2014 count files hardcoding currency vs using useCompanyCurrency(). Read useCompanyCurrency.ts. Search for annual_financial_close, retained_earnings, closing entries. Read 20260627019000_annual_financial_close.sql. Check period lock enforcement in integration hooks. Produce structured findings with file:line references.",
         "agent": "code-reviewer",
         "toolsets": [
           "terminal",
@@ -15,99 +15,87 @@
         ],
         "dependencies": [],
         "parallel_group": 0,
-        "id": "review-core-financial-files",
+        "id": "audit-aging-currency-period",
         "files": [
-          "pages/finance/",
-          "pages/Finance.tsx",
-          "pages/FinancialTracking.tsx",
-          "pages/SyncPaymentsToLedger.tsx",
-          "components/finance/",
-          "hooks/finance/",
-          "hooks/useFinance.ts",
-          "hooks/useGeneralLedger.ts",
-          "hooks/useChartOfAccounts.ts",
-          "hooks/useEnhancedFinancialReports.ts",
-          "hooks/useFinancialAnalysis.ts",
-          "hooks/useFinancialOverview.ts",
-          "hooks/useFinancialAudit.ts",
-          "hooks/useTreasury.ts",
-          "hooks/useMonthlyObligations.ts",
-          "hooks/useMonthlyRentTracking.ts",
-          "hooks/useCostCenterReports.ts",
-          "hooks/useCostCenters.ts",
-          "hooks/useCustomerFinancialSummary.ts",
-          "hooks/useFleetFinancialAnalytics.ts",
-          "hooks/useAdvancedFinancialAnalytics.ts",
-          "hooks/useAdvancedFinancialRatios.ts",
-          "hooks/useFinancialReportsExport.ts",
-          "hooks/useFinancialSystemAnalysis.ts",
-          "hooks/useFinancialAIAnalysis.ts",
-          "hooks/useFinancialFixes.ts",
-          "hooks/usePayrollFinancialAnalysis.ts",
-          "hooks/usePendingJournalEntries.ts",
-          "hooks/useJournalEntryPermissions.ts",
-          "hooks/useInvoiceJournalLinking.ts",
-          "hooks/useInvoiceMatching.ts",
-          "hooks/useReportingAccounts.ts",
-          "hooks/useEntryAllowedAccounts.ts",
-          "hooks/useAccountMappings.ts",
-          "hooks/useEssentialAccountMappings.ts",
-          "hooks/useEnhancedAccountDeletion.ts",
-          "hooks/useEnhancedAccountSuggestions.ts",
-          "hooks/useEnhancedChartOfAccountsCSVUpload.ts",
-          "hooks/useCopySelectedAccounts.ts",
-          "hooks/useAccountingWizard.ts",
-          "hooks/useAccountConflictCheck.ts",
-          "hooks/useDeposits.ts",
-          "hooks/useDelinquencyStats.ts",
-          "hooks/useLateFines.ts",
-          "hooks/usePaymentSchedules.ts",
-          "hooks/useCustomerAccounts.ts",
-          "hooks/useCustomerAccountStatement.ts",
-          "hooks/useCustomerAccountTypes.ts",
-          "hooks/useEnhancedCustomerAccounts.ts",
-          "hooks/useEnhancedCustomerFinancials.ts",
-          "hooks/useVendorAccounts.ts",
-          "hooks/useCreateCustomerWithAccount.ts",
-          "hooks/useSimpleAccountDeletion.ts",
-          "hooks/useUnifiedAccountSelector.ts",
-          "services/AccountingService.ts",
-          "services/financialControls.ts",
-          "services/PaymentService.ts",
-          "services/PaymentLinkingService.ts",
-          "services/PaymentStateMachine.ts",
-          "services/InvoiceService.ts",
-          "services/UnifiedInvoiceService.ts",
-          "services/reportDataService.ts"
+          "src/integrations/supabase/types.ts",
+          "src/hooks/finance/useCompanyCurrency.ts",
+          "supabase/migrations/20260627019000_annual_financial_close.sql"
         ],
-        "success_criteria": "A structured findings document (JSON or markdown) is produced listing strengths, weaknesses, gaps, and recommendations for each file, with specific line numbers where issues are found.",
+        "success_criteria": "Structured findings produced covering: (1) aging field population analysis, (2) currency hardcoding count with file list, (3) period-end close infrastructure status, (4) period lock enforcement in hooks, all with file:line refs",
         "milestone": "milestone-1",
         "milestone_index": 0,
         "model_hint": "analytical",
         "max_iterations": 1
       },
       {
-        "goal": "Read and analyze all SQL migration files in supabase/ and related directories (e.g., migrations/). Identify the database schema for financial tables (journal_entries, journal_entry_lines, chart_of_accounts, etc.), relationships, constraints, indexes, and any inconsistencies. Produce a structured list of findings about schema design, missing indexes, foreign key issues, and potential data integrity problems.",
-        "agent": "backend-engineer",
+        "goal": "Phase 3, 4: Search ALL migration files in supabase/migrations/ for CREATE TRIGGER on journal_entries or journal_entry_lines. Read all migration files matching financial/journal patterns. Extract every trigger: table, operation, timing, condition, exception text. Build a trigger matrix. Cross-reference each integration hook operation against triggers. Search frontend code for journal_entries insert and flag dual-path risks where both trigger and frontend insert exist for same reference_type. Produce structured findings with file:line references.",
+        "agent": "builder",
+        "toolsets": [
+          "hermes-cli"
+        ],
+        "dependencies": [],
+        "parallel_group": 1,
+        "id": "audit-db-triggers",
+        "files": [
+          "supabase/migrations/20260627001000_financial_controls.sql",
+          "supabase/migrations/20260627011000_prevent_posted_journal_line_mutation.sql",
+          "supabase/migrations/20260627019000_annual_financial_close.sql"
+        ],
+        "success_criteria": "Structured findings produced covering: (1) complete trigger matrix table with all triggers extracted from migrations, (2) dual-path risk analysis, (3) cross-reference of hook operations against triggers with file:line refs",
+        "milestone": "milestone-1",
+        "milestone_index": 0,
+        "model_hint": "balanced",
+        "max_iterations": 3
+      },
+      {
+        "goal": "Phase 8, 11: Search for mock, mockData, hardcoded, placeholder, dummy, fake in financial hooks. Search for currentRatio, quickRatio, debtToEquity and verify calculated vs hardcoded. Search for estimated ratios (0.8, 0.1, 0.1 pattern). Read CashFlowStatementReport.tsx, ledgerCashFlowReportRules.ts, useAdvancedFinancialAnalytics.ts, useEnhancedFinancialReports.ts. Verify cash flow classification logic (operating/investing/financing). Check if ratios are estimated or calculated. Produce structured findings with file:line references.",
+        "agent": "code-reviewer",
         "toolsets": [
           "terminal",
           "file"
         ],
         "dependencies": [],
         "parallel_group": 0,
-        "id": "review-database-schema",
+        "id": "audit-financial-reports",
         "files": [
-          "supabase/",
-          "migrations/"
+          "src/components/finance/CashFlowStatementReport.tsx",
+          "src/lib/finance/ledgerCashFlowReportRules.ts",
+          "src/hooks/finance/useAdvancedFinancialAnalytics.ts",
+          "src/hooks/finance/useEnhancedFinancialReports.ts"
         ],
-        "success_criteria": "A structured findings document (JSON or markdown) is produced listing schema strengths, weaknesses, gaps, and recommendations, with specific file paths and line numbers where issues are found.",
+        "success_criteria": "Structured findings produced covering: (1) all hardcoded/mock/placeholder instances in financial code with file:line, (2) cash flow classification verification, (3) ratio calculation vs estimation analysis with file:line refs",
         "milestone": "milestone-1",
         "milestone_index": 0,
         "model_hint": "analytical",
         "max_iterations": 1
       },
       {
-        "goal": "Read and analyze all integration hooks and services that connect the financial system with other modules: Contracts (hooks/useContracts.ts, hooks/useContractsData.tsx, pages/contracts/), Rental Payments (hooks/useRentalPaymentJournalIntegration.ts, hooks/useRentalPayments.ts), Maintenance (hooks/useMaintenanceJournalIntegration.ts, hooks/useMaintenanceDetails.ts), Payroll (hooks/usePayrollJournalIntegration.ts, hooks/usePayroll.ts), Traffic Violations (hooks/useTrafficViolationJournalIntegration.ts, hooks/useTrafficViolationPayments.ts), Vehicle Installments (hooks/useVehicleInstallmentJournalIntegration.ts, hooks/useVehicleInstallments.ts), Invoices (hooks/useInvoiceJournalLinking.ts, hooks/useInvoiceMatching.ts, services/InvoiceService.ts), Payments (hooks/usePayments.unified.ts, services/PaymentService.ts, services/PaymentLinkingService.ts), Collections (hooks/useMonthlyCollections.ts), Customers (hooks/useCustomerAccounts.ts, hooks/useEnhancedCustomerFinancials.ts), Inventory (hooks/useInventoryReports.ts), HR (hooks/useHRReports.ts), Reports (hooks/useUnifiedReports.ts, hooks/useModuleReportData.ts), Team (hooks/useEmployeeDetailedReport.tsx), Financial Analysis (hooks/useFinancialAnalysis.ts, hooks/useAdvancedFinancialAnalytics.ts), Audit (hooks/useFinancialAudit.ts, hooks/useAuditLog.ts, hooks/useAuditTrail.ts), Approvals (hooks/useApprovalWorkflows.ts), Legal (hooks/useLegalCollectionReport.ts, hooks/usePaymentLegalIntegration.ts), Vendors (hooks/useVendorAccounts.ts). Produce a structured list of findings about integration quality, data consistency, and potential gaps.",
+        "goal": "Phase 1, 2, 7: Map ALL integration points that create journal entries. Search for `journal_entries` + `insert` across all .ts/.tsx files. Find every hook with `JournalIntegration` in filename and every file referencing `journal_entry_id`. Read each of the 6 hook files (useRentalPaymentJournalIntegration, useVehicleInstallmentJournalIntegration, usePayrollJournalIntegration, useMaintenanceJournalIntegration, useTrafficViolationJournalIntegration, useConvertToLegalCase) and usePaymentOperations.ts. Verify insert order (draft\u2192lines\u2192post vs posted-first), check total_debit/total_credit passing, balance verification. Compare JE creation logic across hooks for duplicate patterns. Classify each as Full/Partial/None integration. Produce structured findings with file:line references.",
+        "agent": "code-reviewer",
+        "toolsets": [
+          "terminal",
+          "file"
+        ],
+        "dependencies": [],
+        "parallel_group": 0,
+        "id": "audit-integration-hooks",
+        "files": [
+          "src/hooks/finance/useRentalPaymentJournalIntegration.ts",
+          "src/hooks/finance/useVehicleInstallmentJournalIntegration.ts",
+          "src/hooks/finance/usePayrollJournalIntegration.ts",
+          "src/hooks/finance/useMaintenanceJournalIntegration.ts",
+          "src/hooks/finance/useTrafficViolationJournalIntegration.ts",
+          "src/hooks/finance/useConvertToLegalCase.ts",
+          "src/hooks/finance/usePaymentOperations.ts"
+        ],
+        "success_criteria": "Structured findings produced covering: (1) complete list of all files inserting into journal_entries with classification, (2) insert order verification for each hook with file:line refs, (3) total_debit/total_credit presence check, (4) duplicate code pattern analysis across hooks",
+        "milestone": "milestone-1",
+        "milestone_index": 0,
+        "model_hint": "analytical",
+        "max_iterations": 1
+      },
+      {
+        "goal": "Phase 13, 14, 15: Read usePaymentOperations.ts and verify draft\u2192lines\u2192post pattern. Check payment cancellation atomicity. Search for export functions in useGeneralLedger.ts and other financial hooks \u2014 verify real implementations vs stubs. Read useGeneralLedger.ts (reverse, delete, export functions). Search for audit_logs vs audit_trail table references across all files. Read useAuditTrail.ts. Verify write path and read path use same table. Check useReverseJournalEntry for actual reversal entry creation vs status-only update. Produce structured findings with file:line references.",
         "agent": "code-reviewer",
         "toolsets": [
           "terminal",
@@ -115,135 +103,199 @@
         ],
         "dependencies": [],
         "parallel_group": 1,
-        "id": "review-integration-points",
+        "id": "audit-payment-export-trail",
         "files": [
-          "hooks/useContracts.ts",
-          "hooks/useContractsData.tsx",
-          "pages/contracts/",
-          "hooks/useRentalPaymentJournalIntegration.ts",
-          "hooks/useRentalPayments.ts",
-          "hooks/useMaintenanceJournalIntegration.ts",
-          "hooks/useMaintenanceDetails.ts",
-          "hooks/usePayrollJournalIntegration.ts",
-          "hooks/usePayroll.ts",
-          "hooks/useTrafficViolationJournalIntegration.ts",
-          "hooks/useTrafficViolationPayments.ts",
-          "hooks/useVehicleInstallmentJournalIntegration.ts",
-          "hooks/useVehicleInstallments.ts",
-          "hooks/useInvoiceJournalLinking.ts",
-          "hooks/useInvoiceMatching.ts",
-          "services/InvoiceService.ts",
-          "hooks/usePayments.unified.ts",
-          "services/PaymentService.ts",
-          "services/PaymentLinkingService.ts",
-          "hooks/useMonthlyCollections.ts",
-          "hooks/useCustomerAccounts.ts",
-          "hooks/useEnhancedCustomerFinancials.ts",
-          "hooks/useInventoryReports.ts",
-          "hooks/useHRReports.ts",
-          "hooks/useUnifiedReports.ts",
-          "hooks/useModuleReportData.ts",
-          "hooks/useEmployeeDetailedReport.tsx",
-          "hooks/useFinancialAnalysis.ts",
-          "hooks/useAdvancedFinancialAnalytics.ts",
-          "hooks/useFinancialAudit.ts",
-          "hooks/useAuditLog.ts",
-          "hooks/useAuditTrail.ts",
-          "hooks/useApprovalWorkflows.ts",
-          "hooks/useLegalCollectionReport.ts",
-          "hooks/usePaymentLegalIntegration.ts",
-          "hooks/useVendorAccounts.ts"
+          "src/hooks/finance/usePaymentOperations.ts",
+          "src/hooks/finance/useGeneralLedger.ts",
+          "src/hooks/finance/useAuditTrail.ts"
         ],
-        "success_criteria": "A structured findings document (JSON or markdown) is produced listing integration strengths, weaknesses, gaps, and recommendations for each integration point, with specific line numbers where issues are found.",
+        "success_criteria": "Structured findings produced covering: (1) payment-to-GL linkage verification with pattern comparison, (2) export function real-vs-stub analysis, (3) audit trail table consistency analysis, (4) reverse JE implementation check, all with file:line refs",
         "milestone": "milestone-1",
         "milestone_index": 0,
         "model_hint": "analytical",
         "max_iterations": 1
       },
       {
-        "goal": "Read and analyze the routing configuration for financial pages. Look for files like App.tsx, routes/ or similar that define how financial pages are accessed. Identify any missing routes, incorrect paths, or security issues in route definitions. Produce a structured list of findings.",
-        "agent": "devops-engineer",
+        "goal": "Phase 5, 6: Search for checkSegregationOfDuties, evaluateSegregationOfDuties, canActorApproveFinancialStep, resolveFinancialApprovalWorkflow across all .ts/.tsx files (excluding tests). List every financial operation and whether it calls SoD checks. Count call sites for canActorApproveFinancialStep and resolveFinancialApprovalWorkflow (excluding test files). Flag any with 0 runtime call sites. Read financialApprovalWorkflowRules.ts. Produce structured findings with file:line references.",
+        "agent": "code-reviewer",
         "toolsets": [
           "terminal",
           "file"
         ],
         "dependencies": [],
         "parallel_group": 0,
-        "id": "review-routing",
+        "id": "audit-sod-approvals",
         "files": [
-          "App.tsx",
-          "routes/",
-          "src/App.tsx",
-          "src/routes/"
+          "src/hooks/finance/financialApprovalWorkflowRules.ts"
         ],
-        "success_criteria": "A structured findings document (JSON or markdown) is produced listing routing strengths, weaknesses, gaps, and recommendations, with specific file paths and line numbers where issues are found.",
-        "milestone": "milestone-1",
-        "milestone_index": 0,
-        "model_hint": "speed",
-        "max_iterations": 1
-      },
-      {
-        "goal": "Read and analyze all security and permission hooks: hooks/useJournalEntryPermissions.ts, hooks/usePermissionCheck.ts, hooks/usePermissions.ts, hooks/useRolePermissions.ts, hooks/useUserPermissions.ts, hooks/useFeatureAccess.ts. Also check any Row Level Security (RLS) policies in the database schema. Identify gaps in access control, missing permission checks, and potential security vulnerabilities. Produce a structured list of findings.",
-        "agent": "code-reviewer",
-        "toolsets": [
-          "terminal",
-          "file"
-        ],
-        "dependencies": [],
-        "parallel_group": 1,
-        "id": "review-security-permissions",
-        "files": [
-          "hooks/useJournalEntryPermissions.ts",
-          "hooks/usePermissionCheck.ts",
-          "hooks/usePermissions.ts",
-          "hooks/useRolePermissions.ts",
-          "hooks/useUserPermissions.ts",
-          "hooks/useFeatureAccess.ts",
-          "supabase/migrations/",
-          "supabase/seed.sql"
-        ],
-        "success_criteria": "A structured findings document (JSON or markdown) is produced listing security strengths, weaknesses, gaps, and recommendations, with specific file paths and line numbers where issues are found.",
+        "success_criteria": "Structured findings produced covering: (1) list of all financial operations with SoD check status, (2) call site counts for approval functions, (3) list of unwired functions with 0 call sites, all with file:line refs",
         "milestone": "milestone-1",
         "milestone_index": 0,
         "model_hint": "analytical",
         "max_iterations": 1
       },
       {
-        "goal": "Collect all findings from the five prior subtasks (review-core-financial-files, review-integration-points, review-database-schema, review-routing, review-security-permissions). Combine them into a single comprehensive report in Arabic. The report should include: an executive summary, detailed findings per area (with file paths and line numbers), strengths, weaknesses, integration gaps, and recommendations. Write the final report to a file named 'financial-system-audit-report.md' in the project root.",
-        "agent": "code-reviewer",
+        "goal": "Collect all findings from the 6 audit subtasks and write the final comprehensive Arabic-language integration audit report to docs/financial-integration-audit-v5.md. The report must include: (1) Arabic text with English technical terms, (2) ASCII art integration map diagram showing all modules and connection status, (3) trigger matrix table, (4) per-module summary table, (5) findings classified by severity (Critical/High/Medium/Low), (6) remediation priority list, (7) 'What's Working Well' section, (8) all findings with verified file:line references. DO NOT modify any source code \u2014 only create the report markdown file.",
+        "agent": "builder",
         "toolsets": [
-          "terminal",
-          "file"
+          "hermes-cli"
         ],
         "dependencies": [
-          "review-core-financial-files",
-          "review-integration-points",
-          "review-database-schema",
-          "review-routing",
-          "review-security-permissions"
+          "audit-integration-hooks",
+          "audit-db-triggers",
+          "audit-sod-approvals",
+          "audit-financial-reports",
+          "audit-aging-currency-period",
+          "audit-payment-export-trail"
         ],
         "parallel_group": 1,
         "id": "assembly",
         "files": [
-          "financial-system-audit-report.md"
+          "docs/financial-integration-audit-v5.md"
         ],
-        "success_criteria": "Final deliverable file 'financial-system-audit-report.md' is written and contains all findings from prior subtasks in Arabic, with clear structure and actionable recommendations.",
+        "success_criteria": "Final deliverable file is written and contains all findings from prior subtasks",
         "milestone": "milestone-2",
         "milestone_index": 1,
-        "model_hint": "analytical",
-        "max_iterations": 1
+        "model_hint": "balanced",
+        "max_iterations": 3
       }
     ],
     "risk_level": "low",
     "parallel_group_count": 2,
     "routing_decisions": [
       {
-        "subtask_id": "review-core-financial-files",
+        "subtask_id": "audit-aging-currency-period",
         "task_type": "review",
         "agent": "code-reviewer",
         "model_hint": "analytical",
         "complexity": "medium",
         "is_risky": false,
+        "confidence": 0.67,
+        "profile": {
+          "name": "code-reviewer",
+          "task_type": "review",
+          "model_tier": "balanced",
+          "timeout": 120.0,
+          "max_retries": 1,
+          "priority": "P1",
+          "requires_review": false,
+          "estimated_tokens": 4000,
+          "parallel_safe": true,
+          "toolsets": [
+            "terminal",
+            "file"
+          ],
+          "model": "glm-5.2:cloud",
+          "provider": "custom:ollama",
+          "base_url": "https://ollama.com/v1"
+        },
+        "parallel_safe": true,
+        "toolsets": [
+          "terminal",
+          "file"
+        ]
+      },
+      {
+        "subtask_id": "audit-db-triggers",
+        "task_type": "implementation",
+        "agent": "builder",
+        "model_hint": "balanced",
+        "complexity": "high",
+        "is_risky": true,
+        "confidence": 0.64,
+        "profile": {
+          "name": "builder",
+          "task_type": "implementation",
+          "model_tier": "balanced",
+          "timeout": 600,
+          "max_retries": 3,
+          "priority": "P1",
+          "requires_review": false,
+          "estimated_tokens": 4000,
+          "parallel_safe": true,
+          "toolsets": [
+            "hermes-cli"
+          ],
+          "model": "glm-5.2:cloud",
+          "provider": "custom:ollama",
+          "base_url": "http://localhost:11434/v1"
+        },
+        "parallel_safe": true,
+        "toolsets": [
+          "hermes-cli"
+        ]
+      },
+      {
+        "subtask_id": "audit-financial-reports",
+        "task_type": "review",
+        "agent": "code-reviewer",
+        "model_hint": "analytical",
+        "complexity": "medium",
+        "is_risky": false,
+        "confidence": 0.67,
+        "profile": {
+          "name": "code-reviewer",
+          "task_type": "review",
+          "model_tier": "balanced",
+          "timeout": 120.0,
+          "max_retries": 1,
+          "priority": "P1",
+          "requires_review": false,
+          "estimated_tokens": 4000,
+          "parallel_safe": true,
+          "toolsets": [
+            "terminal",
+            "file"
+          ],
+          "model": "glm-5.2:cloud",
+          "provider": "custom:ollama",
+          "base_url": "https://ollama.com/v1"
+        },
+        "parallel_safe": true,
+        "toolsets": [
+          "terminal",
+          "file"
+        ]
+      },
+      {
+        "subtask_id": "audit-integration-hooks",
+        "task_type": "review",
+        "agent": "code-reviewer",
+        "model_hint": "analytical",
+        "complexity": "medium",
+        "is_risky": false,
+        "confidence": 0.67,
+        "profile": {
+          "name": "code-reviewer",
+          "task_type": "review",
+          "model_tier": "balanced",
+          "timeout": 120.0,
+          "max_retries": 1,
+          "priority": "P1",
+          "requires_review": false,
+          "estimated_tokens": 4000,
+          "parallel_safe": true,
+          "toolsets": [
+            "terminal",
+            "file"
+          ],
+          "model": "glm-5.2:cloud",
+          "provider": "custom:ollama",
+          "base_url": "https://ollama.com/v1"
+        },
+        "parallel_safe": true,
+        "toolsets": [
+          "terminal",
+          "file"
+        ]
+      },
+      {
+        "subtask_id": "audit-payment-export-trail",
+        "task_type": "review",
+        "agent": "code-reviewer",
+        "model_hint": "analytical",
+        "complexity": "medium",
+        "is_risky": true,
         "confidence": 0.75,
         "profile": {
           "name": "code-reviewer",
@@ -270,109 +322,13 @@
         ]
       },
       {
-        "subtask_id": "review-database-schema",
-        "task_type": "database",
-        "agent": "backend-engineer",
-        "model_hint": "analytical",
-        "complexity": "high",
-        "is_risky": true,
-        "confidence": 0.86,
-        "profile": {
-          "name": "backend-engineer",
-          "task_type": "database",
-          "model_tier": "balanced",
-          "timeout": 120.0,
-          "max_retries": 1,
-          "priority": "P1",
-          "requires_review": false,
-          "estimated_tokens": 4000,
-          "parallel_safe": true,
-          "toolsets": [
-            "terminal",
-            "file"
-          ],
-          "model": "glm-5.2:cloud",
-          "provider": "custom:ollama",
-          "base_url": "https://ollama.com/v1"
-        },
-        "parallel_safe": true,
-        "toolsets": [
-          "terminal",
-          "file"
-        ]
-      },
-      {
-        "subtask_id": "review-integration-points",
+        "subtask_id": "audit-sod-approvals",
         "task_type": "review",
         "agent": "code-reviewer",
         "model_hint": "analytical",
         "complexity": "medium",
         "is_risky": false,
-        "confidence": 0.67,
-        "profile": {
-          "name": "code-reviewer",
-          "task_type": "review",
-          "model_tier": "balanced",
-          "timeout": 120.0,
-          "max_retries": 1,
-          "priority": "P1",
-          "requires_review": false,
-          "estimated_tokens": 4000,
-          "parallel_safe": true,
-          "toolsets": [
-            "terminal",
-            "file"
-          ],
-          "model": "glm-5.2:cloud",
-          "provider": "custom:ollama",
-          "base_url": "https://ollama.com/v1"
-        },
-        "parallel_safe": true,
-        "toolsets": [
-          "terminal",
-          "file"
-        ]
-      },
-      {
-        "subtask_id": "review-routing",
-        "task_type": "config",
-        "agent": "devops-engineer",
-        "model_hint": "speed",
-        "complexity": "medium",
-        "is_risky": false,
-        "confidence": 0.67,
-        "profile": {
-          "name": "devops-engineer",
-          "task_type": "devops",
-          "model_tier": "balanced",
-          "timeout": 120.0,
-          "max_retries": 1,
-          "priority": "P1",
-          "requires_review": false,
-          "estimated_tokens": 4000,
-          "parallel_safe": true,
-          "toolsets": [
-            "terminal",
-            "file"
-          ],
-          "model": "glm-5.2:cloud",
-          "provider": "custom:ollama",
-          "base_url": "https://ollama.com/v1"
-        },
-        "parallel_safe": true,
-        "toolsets": [
-          "terminal",
-          "file"
-        ]
-      },
-      {
-        "subtask_id": "review-security-permissions",
-        "task_type": "review",
-        "agent": "code-reviewer",
-        "model_hint": "analytical",
-        "complexity": "medium",
-        "is_risky": false,
-        "confidence": 0.67,
+        "confidence": 0.58,
         "profile": {
           "name": "code-reviewer",
           "task_type": "review",
@@ -399,34 +355,32 @@
       },
       {
         "subtask_id": "assembly",
-        "task_type": "review",
-        "agent": "code-reviewer",
-        "model_hint": "analytical",
+        "task_type": "implementation",
+        "agent": "builder",
+        "model_hint": "balanced",
         "complexity": "medium",
         "is_risky": false,
-        "confidence": 0.67,
+        "confidence": 0.64,
         "profile": {
-          "name": "code-reviewer",
-          "task_type": "review",
+          "name": "builder",
+          "task_type": "implementation",
           "model_tier": "balanced",
-          "timeout": 120.0,
-          "max_retries": 1,
+          "timeout": 600,
+          "max_retries": 3,
           "priority": "P1",
           "requires_review": false,
           "estimated_tokens": 4000,
           "parallel_safe": true,
           "toolsets": [
-            "terminal",
-            "file"
+            "hermes-cli"
           ],
           "model": "glm-5.2:cloud",
           "provider": "custom:ollama",
-          "base_url": "https://ollama.com/v1"
+          "base_url": "http://localhost:11434/v1"
         },
         "parallel_safe": true,
         "toolsets": [
-          "terminal",
-          "file"
+          "hermes-cli"
         ]
       }
     ],
@@ -435,18 +389,20 @@
         "id": "milestone-1",
         "name": "Parallel group 1",
         "subtask_ids": [
-          "review-core-financial-files",
-          "review-database-schema",
-          "review-integration-points",
-          "review-routing",
-          "review-security-permissions"
+          "audit-aging-currency-period",
+          "audit-db-triggers",
+          "audit-financial-reports",
+          "audit-integration-hooks",
+          "audit-payment-export-trail",
+          "audit-sod-approvals"
         ],
         "acceptance_criteria": [
-          "A structured findings document (JSON or markdown) is produced listing strengths, weaknesses, gaps, and recommendations for each file, with specific line numbers where issues are found.",
-          "A structured findings document (JSON or markdown) is produced listing schema strengths, weaknesses, gaps, and recommendations, with specific file paths and line numbers where issues are found.",
-          "A structured findings document (JSON or markdown) is produced listing integration strengths, weaknesses, gaps, and recommendations for each integration point, with specific line numbers where issues are found.",
-          "A structured findings document (JSON or markdown) is produced listing routing strengths, weaknesses, gaps, and recommendations, with specific file paths and line numbers where issues are found.",
-          "A structured findings document (JSON or markdown) is produced listing security strengths, weaknesses, gaps, and recommendations, with specific file paths and line numbers where issues are found."
+          "Structured findings produced covering: (1) aging field population analysis, (2) currency hardcoding count with file list, (3) period-end close infrastructure status, (4) period lock enforcement in hooks, all with file:line refs",
+          "Structured findings produced covering: (1) complete trigger matrix table with all triggers extracted from migrations, (2) dual-path risk analysis, (3) cross-reference of hook operations against triggers with file:line refs",
+          "Structured findings produced covering: (1) all hardcoded/mock/placeholder instances in financial code with file:line, (2) cash flow classification verification, (3) ratio calculation vs estimation analysis with file:line refs",
+          "Structured findings produced covering: (1) complete list of all files inserting into journal_entries with classification, (2) insert order verification for each hook with file:line refs, (3) total_debit/total_credit presence check, (4) duplicate code pattern analysis across hooks",
+          "Structured findings produced covering: (1) payment-to-GL linkage verification with pattern comparison, (2) export function real-vs-stub analysis, (3) audit trail table consistency analysis, (4) reverse JE implementation check, all with file:line refs",
+          "Structured findings produced covering: (1) list of all financial operations with SoD check status, (2) call site counts for approval functions, (3) list of unwired functions with 0 call sites, all with file:line refs"
         ],
         "assumptions": [
           "Dependencies from earlier milestones remain stable."
@@ -459,7 +415,7 @@
           "assembly"
         ],
         "acceptance_criteria": [
-          "Final deliverable file 'financial-system-audit-report.md' is written and contains all findings from prior subtasks in Arabic, with clear structure and actionable recommendations."
+          "Final deliverable file is written and contains all findings from prior subtasks"
         ],
         "assumptions": [
           "Dependencies from earlier milestones remain stable."
@@ -469,17 +425,18 @@
     "clarifying_questions": [
       "What authentication method should be used (JWT, OAuth, session-based)?",
       "What user roles or permission levels are needed?",
+      "What database and ORM are in use? Any existing migration strategy?",
       "What is the deployment pipeline (staging, canary, production)?",
-      "Are there any approval gates or change management processes?",
-      "Is there an existing design system or component library to follow?"
+      "Are there any approval gates or change management processes?"
     ],
     "completion_criteria": [
-      "Subtask complete: Read and analyze all core financial system files: pages (pages/finance/, pages/Finance.tsx, pages/Fi",
-      "Subtask complete: Read and analyze all SQL migration files in supabase/ and related directories (e.g., migrations/). I",
-      "Subtask complete: Read and analyze all integration hooks and services that connect the financial system with other mod",
-      "Subtask complete: Read and analyze the routing configuration for financial pages. Look for files like App.tsx, routes/",
-      "Subtask complete: Read and analyze all security and permission hooks: hooks/useJournalEntryPermissions.ts, hooks/usePe",
-      "Subtask complete: Collect all findings from the five prior subtasks (review-core-financial-files, review-integration-p",
+      "Subtask complete: Phase 9, 10, 12: Search for aging_30, aging_60, aging_90, days_1_30 in types.ts and hooks \u2014 verify r",
+      "Subtask complete: Phase 3, 4: Search ALL migration files in supabase/migrations/ for CREATE TRIGGER on journal_entries",
+      "Subtask complete: Phase 8, 11: Search for mock, mockData, hardcoded, placeholder, dummy, fake in financial hooks. Sear",
+      "Subtask complete: Phase 1, 2, 7: Map ALL integration points that create journal entries. Search for `journal_entries` ",
+      "Subtask complete: Phase 13, 14, 15: Read usePaymentOperations.ts and verify draft\u2192lines\u2192post pattern. Check payment ca",
+      "Subtask complete: Phase 5, 6: Search for checkSegregationOfDuties, evaluateSegregationOfDuties, canActorApproveFinanci",
+      "Subtask complete: Collect all findings from the 6 audit subtasks and write the final comprehensive Arabic-language int",
       "All quality gates pass (syntax, lint, type, test)",
       "No regressions in existing test suite"
     ],
