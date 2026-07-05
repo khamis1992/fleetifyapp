@@ -1,187 +1,176 @@
 {
   "stage": "plan_approved",
-  "task": "Produce a COMPREHENSIVE INTEGRATION REPORT (Arabic language, NO code changes) about the Fleetify financial system and how it integrates with all other system modules. This is a READ-ONLY audit \u2014 do NOT modify any source files.\n\nProject path: C:\\Users\\khamis\\Documents\\fleetifyapp\n\n## What to analyze\n\nThe financial system consists of:\n- 19+ database tables (chart_of_accounts, journal_entries, journal_entry_lines, invoices, payments, vendors, purchase_orders, banks, bank_transactions, bank_reconcil",
+  "task": "\u0631\u0627\u062c\u0639 \u0627\u0644\u0646\u0638\u0627\u0645 \u0627\u0644\u0645\u0627\u0644\u064a \u0641\u064a Fleetify ERP \u0648\u062a\u0643\u0627\u0645\u0644\u0647 \u0645\u0639 \u0628\u0642\u064a\u0629 \u0627\u0644\u0648\u062d\u062f\u0627\u062a \u0648\u0642\u062f\u0645 \u062a\u0642\u0631\u064a\u0631\u0627\u064b \u0634\u0627\u0645\u0644\u0627\u064b. \u0644\u0627 \u062a\u063a\u064a\u0631 \u0623\u064a \u0643\u0648\u062f \u2014 \u0641\u0642\u0637 \u062a\u062d\u0644\u064a\u0644 \u0648\u062a\u0642\u0631\u064a\u0631.\n\n\u0627\u0644\u0645\u0634\u0631\u0648\u0639: C:\\Users\\khamis\\Documents\\fleetifyapp\nReact + TypeScript + Vite + Supabase ERP \u0644\u062a\u0623\u062c\u064a\u0631 \u0627\u0644\u0633\u064a\u0627\u0631\u0627\u062a \u0641\u064a \u0642\u0637\u0631.\n\n\u0627\u062a\u0628\u0639 \u0627\u0644\u0645\u0646\u0647\u062c\u064a\u0629 \u0627\u0644\u062a\u0627\u0644\u064a\u0629 \u0628\u062f\u0642\u0629 (12 \u0645\u0631\u062d\u0644\u0629):\n\n## \u0627\u0644\u0645\u0631\u062d\u0644\u0629 1: \u0627\u0643\u062a\u0634\u0627\u0641 \u0627\u0644\u0633\u0637\u062d \u0627\u0644\u0645\u0627\u0644\u064a\n- \u0627\u0628\u062d\u062b \u0639\u0646 \u0643\u0644 \u0635\u0641\u062d\u0627\u062a \u0627\u0644\u0645\u0627\u0644\u064a\u0629 (src/pages/finance/)\n- \u0627\u0628\u062d\u062b \u0639\u0646 \u0643\u0644 hooks \u0627\u0644\u0645\u0627\u0644\u064a\u0629 (src/hooks/ *finance*, *journal*, *payment*, *ledger*)\n- \u0627\u0628\u062d\u062b \u0639\u0646 \u0643\u0644 \u0645\u0643\u0648\u0646\u0627\u062a \u0627\u0644\u0645\u0627\u0644\u064a\u0629 (src/components/finance/)\n- \u0627\u0628\u062d\u062b \u0639\u0646 \u0643\u0644 ",
   "status": "running",
-  "timestamp": "2026-07-05T19:02:45.122360",
+  "timestamp": "2026-07-05T19:31:03.919713",
   "plan": {
-    "task": "Produce a COMPREHENSIVE INTEGRATION REPORT (Arabic language, NO code changes) about the Fleetify financial system and how it integrates with all other system modules. This is a READ-ONLY audit \u2014 do NOT modify any source files.\n\nProject path: C:\\Users\\khamis\\Documents\\fleetifyapp\n\n## What to analyze\n\nThe financial system consists of:\n- 19+ database tables (chart_of_accounts, journal_entries, journal_entry_lines, invoices, payments, vendors, purchase_orders, banks, bank_transactions, bank_reconciliation, cost_centers, fixed_assets, budgets, accounting_periods, customer_deposits, annual_financial_close, etc.)\n- 44 page routes under /finance/*\n- 96 financial components\n- 6 integration hooks connecting other modules to accounting\n- 20+ financial control migrations with DB triggers\n\n## Report must cover (every claim with file:line reference)\n\n1. **Executive Summary** \u2014 overall integration health, critical findings first\n2. **Integration Map** \u2014 which modules connect to the financial system and HOW:\n   - Contracts/Rentals \u2192 journal entries (useRentalPaymentJournalIntegration)\n   - Vehicle Assets \u2192 journal entries (useVehicleInstallmentJournalIntegration)\n   - Payroll/HR \u2192 journal entries (usePayrollJournalIntegration)\n   - Fleet Maintenance \u2192 journal entries (useMaintenanceJournalIntegration)\n   - Fleet Violations \u2192 journal entries (useTrafficViolationJournalIntegration)\n   - Legal Cases \u2192 journal entries (useConvertToLegalCase)\n   - Payments \u2192 journal entries (usePaymentOperations \u2014 the CORRECT pattern)\n   - Invoices \u2192 journal entries\n   - Bank reconciliation \u2192 journal entries\n   - Customer deposits \u2192 journal entries\n   - Budgets \u2192 chart of accounts\n   - Fixed assets \u2192 depreciation entries\n   - Purchase orders \u2192 vendor payments\n3. **Integration Hook Analysis** \u2014 for EACH of the 6 hooks:\n   - Exact operation sequence (which table, what status, what order)\n   - Does it pass total_debit/total_credit?\n   - Balance check present?\n   - Accounting logic correctness (debit/credit account selection)\n   - Reversal pattern (delete vs reversal entry)\n   - Cross-reference against the 7 DB triggers (T1\u2013T7)\n4. **DB Trigger Impact on Integration** \u2014 the critical posted-line mutation problem:\n   - All 6 hooks create JE header as 'posted' FIRST, then insert lines SECOND\n   - T6 trigger (prevent_posted_journal_line_mutation) blocks line INSERT\n   - T3 trigger blocks rollback DELETE\n   - Result: orphaned posted headers with no lines\n   - Only usePaymentOperations uses correct pattern (draft\u2192lines\u2192post)\n5. **Data Flow Between Modules** \u2014 trace how data moves:\n   - Contract payment \u2192 invoice \u2192 journal entry \u2192 GL\n   - Payroll run \u2192 journal entry \u2192 GL\n   - Maintenance work order \u2192 journal entry \u2192 GL\n   - Vehicle installment \u2192 journal entry \u2192 GL\n   - Legal case conversion \u2192 AR journal entry \u2192 GL\n   - Bank transaction \u2192 reconciliation \u2192 journal entry\n6. **Currency Integration** \u2014 does the financial system handle multi-currency correctly across modules?\n7. **Approval Workflow Integration** \u2014 is the multi-stage approval wired into the financial flow?\n8. **Period Close Integration** \u2014 do all modules respect accounting period locks?\n9. **Audit Trail Integration** \u2014 is every financial transaction tracked across modules?\n10. **Report Export Integration** \u2014 can financial data be exported for external systems?\n11. **Risk Assessment** \u2014 Critical/High/Medium per integration point\n12. **Recommendations** (no code changes \u2014 just recommendations)\n\n## CRITICAL METHODOLOGY RULES\n- READ every source file yourself \u2014 do NOT trust subagent summaries\n- Every finding MUST have file:line reference\n- Read ALL migration files in supabase/migrations/ that are financial-related\n- Build the trigger matrix (T1\u2013T7) from migration files\n- Read each integration hook and trace its exact operation sequence\n- Cross-reference each hook operation against each trigger\n- Verify bypass mechanism (financial_controls_bypass_enabled)\n- Check types.ts for actual column presence\n- Distinguish \"code infrastructure exists\" from \"runtime state verified\"\n- The report should be in ARABIC (the user reads Arabic)\n- Save the final report to: C:\\Users\\khamis\\Documents\\fleetifyapp\\docs\\financial-integration-report.md\n\n## Previous audit context (v4 findings \u2014 verify these still hold)\nPrevious audits found these critical issues:\n- All 6 hooks broken at runtime (posted-first pattern vs T6 trigger)\n- Vehicle installment debits revenue instead of payable\n- Payroll entries unbalanced when deductions > 0\n- useReverseJournalEntry only updates status (no reversal entry)\n- Hardcoded account IDs in useConvertToLegalCase\n- Export function is a fake stub\n- approved_by/approved_at columns written but don't exist in types.ts\n- Math.abs() in 27 places hiding accounting signs\n- Approval verification logic exists but is NOT wired in\n- Two separate audit tables (audit_logs vs audit_trail)\n- 25 finance components hardcode KWD instead of using useCompanyCurrency()\n\nVERIFY each of these findings against the current codebase \u2014 they may have been fixed since the last audit. Report the current state accurately.",
+    "task": "\u0631\u0627\u062c\u0639 \u0627\u0644\u0646\u0638\u0627\u0645 \u0627\u0644\u0645\u0627\u0644\u064a \u0641\u064a Fleetify ERP \u0648\u062a\u0643\u0627\u0645\u0644\u0647 \u0645\u0639 \u0628\u0642\u064a\u0629 \u0627\u0644\u0648\u062d\u062f\u0627\u062a \u0648\u0642\u062f\u0645 \u062a\u0642\u0631\u064a\u0631\u0627\u064b \u0634\u0627\u0645\u0644\u0627\u064b. \u0644\u0627 \u062a\u063a\u064a\u0631 \u0623\u064a \u0643\u0648\u062f \u2014 \u0641\u0642\u0637 \u062a\u062d\u0644\u064a\u0644 \u0648\u062a\u0642\u0631\u064a\u0631.\n\n\u0627\u0644\u0645\u0634\u0631\u0648\u0639: C:\\Users\\khamis\\Documents\\fleetifyapp\nReact + TypeScript + Vite + Supabase ERP \u0644\u062a\u0623\u062c\u064a\u0631 \u0627\u0644\u0633\u064a\u0627\u0631\u0627\u062a \u0641\u064a \u0642\u0637\u0631.\n\n\u0627\u062a\u0628\u0639 \u0627\u0644\u0645\u0646\u0647\u062c\u064a\u0629 \u0627\u0644\u062a\u0627\u0644\u064a\u0629 \u0628\u062f\u0642\u0629 (12 \u0645\u0631\u062d\u0644\u0629):\n\n## \u0627\u0644\u0645\u0631\u062d\u0644\u0629 1: \u0627\u0643\u062a\u0634\u0627\u0641 \u0627\u0644\u0633\u0637\u062d \u0627\u0644\u0645\u0627\u0644\u064a\n- \u0627\u0628\u062d\u062b \u0639\u0646 \u0643\u0644 \u0635\u0641\u062d\u0627\u062a \u0627\u0644\u0645\u0627\u0644\u064a\u0629 (src/pages/finance/)\n- \u0627\u0628\u062d\u062b \u0639\u0646 \u0643\u0644 hooks \u0627\u0644\u0645\u0627\u0644\u064a\u0629 (src/hooks/ *finance*, *journal*, *payment*, *ledger*)\n- \u0627\u0628\u062d\u062b \u0639\u0646 \u0643\u0644 \u0645\u0643\u0648\u0646\u0627\u062a \u0627\u0644\u0645\u0627\u0644\u064a\u0629 (src/components/finance/)\n- \u0627\u0628\u062d\u062b \u0639\u0646 \u0643\u0644 hooks \u0627\u0644\u062a\u0643\u0627\u0645\u0644 (*JournalIntegration*)\n- \u0627\u0642\u0631\u0623 src/integrations/supabase/types.ts \u0644\u0627\u0633\u062a\u062e\u0631\u0627\u062c \u0643\u0644 \u0627\u0644\u062c\u062f\u0627\u0648\u0644 \u0627\u0644\u0645\u0627\u0644\u064a\u0629\n\n## \u0627\u0644\u0645\u0631\u062d\u0644\u0629 2: \u0642\u0631\u0627\u0621\u0629 \u0643\u0644 \u0645\u0644\u0641\u0627\u062a migrations \u0627\u0644\u0645\u0627\u0644\u064a\u0629\n- \u0627\u0642\u0631\u0623 \u0643\u0644 \u0645\u0644\u0641 \u0641\u064a supabase/migrations/ \u0645\u062a\u0639\u0644\u0642 \u0628\u0627\u0644\u0645\u0627\u0644\u064a\u0629\n- \u0644\u0643\u0644 \u0645\u0644\u0641: \u0627\u0633\u062a\u062e\u0631\u062c \u0643\u0644 CREATE TRIGGER (\u0627\u0644\u062c\u062f\u0648\u0644\u060c \u0627\u0644\u0639\u0645\u0644\u064a\u0629\u060c \u0627\u0644\u062a\u0648\u0642\u064a\u062a\u060c \u0627\u0644\u0634\u0631\u0637\u060c \u0627\u0644\u0627\u0633\u062a\u062b\u0646\u0627\u0621)\n- \u0627\u0633\u062a\u062e\u0631\u062c \u0643\u0644 CREATE OR REPLACE FUNCTION\n- \u0627\u0633\u062a\u062e\u0631\u062c \u0643\u0644 RPC\n- \u0644\u0627\u062d\u0638 \u0623\u064a set_config('app.*') \u2014 \u0647\u0630\u0647 \u0622\u0644\u064a\u0627\u062a \u062a\u062c\u0627\u0648\u0632\n\n## \u0627\u0644\u0645\u0631\u062d\u0644\u0629 3: \u0628\u0646\u0627\u0621 \u0645\u0635\u0641\u0648\u0641\u0629 triggers\n\u0623\u0646\u0634\u0626 \u062c\u062f\u0648\u0644\u0627\u064b \u0643\u0627\u0645\u0644\u0627\u064b:\n| # | Trigger Name | Table | Operation | Timing | Condition | Exception | Source File:Line |\n\n## \u0627\u0644\u0645\u0631\u062d\u0644\u0629 4: \u0642\u0631\u0627\u0621\u0629 \u0643\u0644 hooks \u0627\u0644\u062a\u0643\u0627\u0645\u0644\n\u0644\u0643\u0644 hook \u064a\u0637\u0627\u0628\u0642 *JournalIntegration* \u0648\u0623\u064a hook \u064a\u0646\u0634\u0626 \u0642\u064a\u0648\u062f\u0627\u064b \u0645\u062d\u0627\u0633\u0628\u064a\u0629:\n- \u062a\u062a\u0628\u0639 \u062a\u0633\u0644\u0633\u0644 \u0627\u0644\u0639\u0645\u0644\u064a\u0627\u062a \u062e\u0637\u0648\u0629 \u0628\u062e\u0637\u0648\u0629\n- \u062a\u062d\u0642\u0642: \u0647\u0644 \u064a\u0645\u0631\u0631 total_debit \u0648 total_credit\u061f\n- \u062a\u062d\u0642\u0642: \u0647\u0644 \u064a\u0648\u062c\u062f \u0641\u062d\u0635 \u062a\u0648\u0627\u0632\u0646 (Math.abs(total_debit - total_credit) > 0.01)\u061f\n- \u062a\u062d\u0642\u0642: \u0645\u0627 \u0627\u0644\u062d\u0633\u0627\u0628\u0627\u062a \u0627\u0644\u0645\u0633\u062a\u062e\u062f\u0645\u0629 (\u0645\u062f\u064a\u0646/\u062f\u0627\u0626\u0646)\u061f\n- \u062a\u062d\u0642\u0642: \u0647\u0644 \u0627\u0644\u0645\u0646\u0637\u0642 \u0627\u0644\u0645\u062d\u0627\u0633\u0628\u064a \u0635\u062d\u064a\u062d\u061f\n- \u062a\u062d\u0642\u0642: \u0645\u0627 \u062d\u0627\u0644\u0629 \u0627\u0644\u0642\u064a\u062f \u0639\u0646\u062f \u0627\u0644\u0625\u0646\u0634\u0627\u0621 (draft \u0623\u0645 posted)\u061f\n- \u062a\u062d\u0642\u0642: \u0647\u0644 \u064a\u062a\u0645 \u0625\u062f\u0631\u0627\u062c \u0627\u0644\u0628\u0646\u0648\u062f \u0642\u0628\u0644 \u0623\u0645 \u0628\u0639\u062f \u062a\u0631\u062d\u064a\u0644 \u0627\u0644\u0642\u064a\u062f\u061f\n\n## \u0627\u0644\u0645\u0631\u062d\u0644\u0629 5: \u062a\u0642\u0627\u0637\u0639 \u0643\u0644 \u0639\u0645\u0644\u064a\u0629 hook \u0645\u0639 \u0645\u0635\u0641\u0648\u0641\u0629 triggers\n\u0644\u0643\u0644 \u062e\u0637\u0648\u0629 \u0641\u064a \u0643\u0644 hook \u0627\u0633\u0623\u0644:\n- \"\u0647\u0644 \u0633\u062a\u062b\u064a\u0631 \u0647\u0630\u0647 \u0627\u0644\u0639\u0645\u0644\u064a\u0629 \u0647\u0630\u0627 trigger\u061f\"\n- \"\u0645\u0627\u0630\u0627 \u0633\u064a\u0641\u0639\u0644 trigger\u061f \u064a\u0645\u0631\u0631\u061f \u064a\u0645\u0646\u0639\u061f \u064a\u0631\u0641\u0639 \u0627\u0633\u062a\u062b\u0646\u0627\u0621\u061f\"\n- \"\u0625\u0630\u0627 \u0645\u0646\u0639\u060c \u0645\u0627\u0630\u0627 \u0633\u064a\u062d\u062f\u062b \u0628\u0639\u062f \u0630\u0644\u0643\u061f \u0647\u0644 \u064a\u0648\u062c\u062f \u0645\u0639\u0627\u0644\u062c\u0629 \u062e\u0637\u0623\u061f\"\n\n\u0627\u0644\u0633\u0624\u0627\u0644 \u0627\u0644\u0645\u0641\u062a\u0627\u062d\u064a: \u0647\u0644 \u0627\u0644\u0640 hook \u064a\u0646\u0634\u0626 \u0627\u0644\u0642\u064a\u062f \u0643\u0640 posted \u0642\u0628\u0644 \u0625\u062f\u0631\u0627\u062c \u0627\u0644\u0628\u0646\u0648\u062f\u061f \u0625\u0630\u0627 \u0646\u0639\u0645\u060c \u0641\u0625\u0646 trigger \u0645\u0646\u0639 \u062a\u0639\u062f\u064a\u0644 \u0628\u0646\u0648\u062f \u0627\u0644\u0642\u064a\u062f \u0627\u0644\u0645\u0631\u062d\u0644 \u0633\u064a\u0645\u0646\u0639 \u0625\u062f\u0631\u0627\u062c \u0627\u0644\u0628\u0646\u0648\u062f.\n\n## \u0627\u0644\u0645\u0631\u062d\u0644\u0629 6: \u062a\u062d\u0642\u0642 \u0645\u0646 \u0622\u0644\u064a\u0629 \u0627\u0644\u062a\u062c\u0627\u0648\u0632\n- \u0627\u0642\u0631\u0623 \u062f\u0627\u0644\u0629 financial_controls_bypass_enabled()\n- \u0627\u0628\u062d\u062b \u0639\u0646 \u0643\u0644 \u0627\u0633\u062a\u062f\u0639\u0627\u0621\u0627\u062a set_config('app.financial_controls_bypass', ...)\n- \u062d\u062f\u062f: \u0647\u0644 \u064a\u0645\u0643\u0646 \u0644\u0644\u0640 hooks \u0641\u064a \u0627\u0644\u0648\u0627\u062c\u0647\u0629 \u062a\u0641\u0639\u064a\u0644 \u0627\u0644\u062a\u062c\u0627\u0648\u0632\u061f\n\n## \u0627\u0644\u0645\u0631\u062d\u0644\u0629 7: \u062a\u062d\u0642\u0642 \u0645\u0646 \u0627\u0644\u062a\u0642\u0627\u0631\u064a\u0631 \u0627\u0644\u0645\u0627\u0644\u064a\u0629\n\u0644\u0643\u0644 \u062a\u0642\u0631\u064a\u0631 (\u0645\u064a\u0632\u0627\u0646 \u0627\u0644\u0645\u0631\u0627\u062c\u0639\u0629\u060c \u0642\u0627\u0626\u0645\u0629 \u0627\u0644\u062f\u062e\u0644\u060c \u0627\u0644\u0645\u0631\u0643\u0632 \u0627\u0644\u0645\u0627\u0644\u064a\u060c \u0627\u0644\u062a\u062f\u0641\u0642\u0627\u062a \u0627\u0644\u0646\u0642\u062f\u064a\u0629):\n- \u0647\u0644 \u064a\u062c\u0644\u0628 \u0628\u064a\u0627\u0646\u0627\u062a \u062d\u0642\u064a\u0642\u064a\u0629 \u0645\u0646 Supabase \u0623\u0645 \u0628\u064a\u0627\u0646\u0627\u062a \u0648\u0647\u0645\u064a\u0629\u061f\n- \u0647\u0644 \u064a\u0633\u062a\u062e\u062f\u0645 Math.abs()\u061f \u0623\u064a\u0646 \u0648\u0644\u0645\u0627\u0630\u0627\u061f\n- \u0647\u0644 \u0627\u0644\u0645\u0646\u0637\u0642 \u0627\u0644\u0645\u062d\u0627\u0633\u0628\u064a \u0635\u062d\u064a\u062d\u061f\n- \u0647\u0644 \u0646\u0648\u0639 \u0627\u0644\u062a\u0642\u0631\u064a\u0631 \u0645\u062f\u0639\u0648\u0645 \u0641\u0639\u0644\u0627\u064b \u0641\u064a \u0627\u0644\u0640 hook\u061f\n\n## \u0627\u0644\u0645\u0631\u062d\u0644\u0629 8: \u0641\u062d\u0635 \u0627\u0644\u0628\u064a\u0627\u0646\u0627\u062a \u0627\u0644\u0648\u0647\u0645\u064a\u0629/\u0627\u0644\u0645\u062b\u0628\u062a\u0629\n\u0627\u0628\u062d\u062b \u0639\u0646:\n- \u0645\u0639\u0631\u0641\u0627\u062a \u062d\u0633\u0627\u0628\u0627\u062a \u0645\u062b\u0628\u062a\u0629 \u064a\u062f\u0648\u064a\u0627\u064b\n- \u062a\u0639\u0644\u064a\u0642\u0627\u062a // TODO \u0641\u064a hooks \u0627\u0644\u0645\u0627\u0644\u064a\u0629\n- \u062a\u0639\u0644\u064a\u0642\u0627\u062a // For now \u0623\u0648 // mock\n- \u062f\u0648\u0627\u0644 \u062a\u0635\u062f\u064a\u0631 \u062a\u0631\u062c\u0639 \u0631\u0633\u0627\u0626\u0644 \u0646\u062c\u0627\u062d \u0643\u0627\u0630\u0628\u0629\n- \u062d\u0633\u0627\u0628\u0627\u062a \u062a\u0642\u062f\u064a\u0631\u064a\u0629 (* 0.8, * 0.1)\n\n## \u0627\u0644\u0645\u0631\u062d\u0644\u0629 9: \u0641\u062d\u0635 \u0639\u0631\u0636 \u0627\u0644\u0639\u0645\u0644\u0629\n- \u0627\u0628\u062d\u062b \u0639\u0646 KWD \u0623\u0648 \u062f.\u0643 \u0641\u064a \u0627\u0644\u0645\u0643\u0648\u0646\u0627\u062a \u0627\u0644\u0645\u0627\u0644\u064a\u0629\n- \u062a\u062d\u0642\u0642: \u0647\u0644 \u064a\u0633\u062a\u062e\u062f\u0645 \u0627\u0644\u0646\u0638\u0627\u0645 useCompanyCurrency() \u0623\u0645 \u064a\u062b\u0628\u062a \u0627\u0644\u0639\u0645\u0644\u0629\u061f\n\n## \u0627\u0644\u0645\u0631\u062d\u0644\u0629 10: \u062a\u062d\u0642\u0642 \u0645\u0646 \u062a\u0631\u062a\u064a\u0628 \u0627\u0644\u0625\u062f\u0631\u0627\u062c \u0645\u0642\u0627\u0628\u0644 \u0645\u0635\u0641\u0648\u0641\u0629 triggers\n\u0644\u0643\u0644 \u0645\u0648\u0642\u0639 \u0625\u0646\u0634\u0627\u0621 \u0642\u064a\u062f:\n- \u0645\u0627 \u0627\u0644\u062d\u0627\u0644\u0629 \u0639\u0646\u062f INSERT\u061f\n- \u0645\u062a\u0649 \u062a\u064f\u062f\u0631\u062c \u0627\u0644\u0628\u0646\u0648\u062f\u061f\n- \u0647\u0644 \u0647\u0646\u0627\u0643 \u062e\u0637\u0648\u0629 \u062a\u0631\u062d\u064a\u0644\u061f\n\u0635\u0646\u0641 \u0643\u0644 \u0645\u0648\u0642\u0639: \u2705 \u0635\u062d\u064a\u062d (draft \u2192 \u0628\u0646\u0648\u062f \u2192 posted) \u0623\u0648 \u274c \u0645\u0643\u0633\u0648\u0631 (posted \u2192 \u0628\u0646\u0648\u062f)\n\n## \u0627\u0644\u0645\u0631\u062d\u0644\u0629 11: \u062a\u062d\u0642\u0642 \u0645\u0646 \u0627\u062a\u0633\u0627\u0642 \u0623\u0631\u0642\u0627\u0645 \u0627\u0644\u0642\u064a\u0648\u062f\n- \u0627\u062c\u0645\u0639 \u0643\u0644 \u0623\u0646\u0645\u0627\u0637 \u0625\u0646\u0634\u0627\u0621 entry_number\n- \u0635\u0646\u0641\u0647\u0627 (\u062a\u0633\u0644\u0633\u0644\u064a\u060c \u0628\u0627\u062f\u0626\u0629\u060c \u062a\u0627\u0631\u064a\u062e\u064a\u060c RPC)\n- \u062d\u062f\u062f \u0639\u062f\u0645 \u0627\u0644\u0627\u062a\u0633\u0627\u0642\n\n## \u0627\u0644\u0645\u0631\u062d\u0644\u0629 12: \u0627\u0643\u062a\u0628 \u0627\u0644\u062a\u0642\u0631\u064a\u0631\n\u0643\u0644 \u0646\u062a\u064a\u062c\u0629 \u064a\u062c\u0628 \u0623\u0646 \u062a\u062a\u0636\u0645\u0646:\n- \u0645\u0631\u062c\u0639 file:line\n- \u0627\u0633\u0645 \u0627\u0644\u0640 trigger/\u0627\u0644\u062f\u0627\u0644\u0629 \u0648\u0631\u0642\u0645 \u0627\u0644\u0633\u0637\u0631 \u0645\u0646 \u0645\u0644\u0641 migration\n- \u0628\u064a\u0627\u0646 \u0648\u0627\u0636\u062d \u0639\u0646 \u0645\u0639\u0646\u0649 \u0627\u0644\u0646\u062a\u064a\u062c\u0629 \u0648\u062a\u0623\u062b\u064a\u0631\u0647\u0627\n\n\u0647\u064a\u0643\u0644 \u0627\u0644\u062a\u0642\u0631\u064a\u0631:\n1. \u0645\u0644\u062e\u0635 \u062a\u0646\u0641\u064a\u0630\u064a\n2. \u0645\u0635\u0641\u0648\u0641\u0629 triggers \u0643\u0627\u0645\u0644\u0629\n3. \u062a\u0633\u0644\u0633\u0644 \u0639\u0645\u0644\u064a\u0627\u062a hooks (\u0645\u062a\u062d\u0642\u0642 \u0645\u0646\u0647 \u0645\u0642\u0627\u0628\u0644 triggers)\n4. \u0627\u0644\u0645\u0646\u0637\u0642 \u0627\u0644\u0645\u062d\u0627\u0633\u0628\u064a \u0644\u0643\u0644 hook\n5. \u062a\u062d\u0644\u064a\u0644 \u0627\u0644\u062a\u0642\u0627\u0631\u064a\u0631 \u0627\u0644\u0645\u0627\u0644\u064a\u0629\n6. \u0627\u0644\u0636\u0648\u0627\u0628\u0637 \u0648\u0627\u0644\u0627\u0645\u062a\u062b\u0627\u0644\n7. \u0627\u0644\u0628\u064a\u0627\u0646\u0627\u062a \u0627\u0644\u0648\u0647\u0645\u064a\u0629/\u0627\u0644\u0645\u062b\u0628\u062a\u0629\n8. \u0639\u0631\u0636 \u0627\u0644\u0639\u0645\u0644\u0629\n9. \u062e\u0631\u064a\u0637\u0629 \u0627\u0644\u062a\u0643\u0627\u0645\u0644 (\u0631\u0633\u0645 \u0628\u064a\u0627\u0646\u064a \u0646\u0635\u064a)\n10. \u062a\u0642\u064a\u064a\u0645 \u0627\u0644\u0645\u062e\u0627\u0637\u0631 (\u062d\u0631\u062c/\u0639\u0627\u0644\u064a/\u0645\u062a\u0648\u0633\u0637 \u0645\u0639 \u0627\u0644\u0623\u062f\u0644\u0629)\n11. \u062a\u0648\u0635\u064a\u0627\u062a (\u0628\u062f\u0648\u0646 \u062a\u063a\u064a\u064a\u0631 \u0643\u0648\u062f)\n12. \u0628\u064a\u0627\u0646 \u0627\u0644\u0645\u0646\u0647\u062c\u064a\u0629\n\n\u0627\u062d\u0641\u0638 \u0627\u0644\u062a\u0642\u0631\u064a\u0631 \u0627\u0644\u0646\u0647\u0627\u0626\u064a \u0641\u064a: docs/financial-system-integration-audit-$(date +%Y%m%d).md\n\n\u062a\u0646\u0628\u064a\u0647\u0627\u062a \u0645\u0647\u0645\u0629:\n- \u0644\u0627 \u062a\u062b\u0642 \u0641\u064a \u062a\u0642\u0627\u0631\u064a\u0631 subagents \u0627\u0644\u0630\u0627\u062a\u064a\u0629 \u2014 \u062a\u062d\u0642\u0642 \u0645\u0646 \u0643\u0644 \u0646\u062a\u064a\u062c\u0629 \u0628\u0646\u0641\u0633\u0643\n- \u0643\u0644 \u0646\u062a\u064a\u062c\u0629 \u064a\u062c\u0628 \u0623\u0646 \u064a\u0643\u0648\u0646 \u0644\u0647\u0627 \u0645\u0631\u062c\u0639 file:line\n- \u0627\u0642\u0631\u0623 \u0645\u0644\u0641\u0627\u062a migrations \u0645\u0628\u0627\u0634\u0631\u0629 \u2014 \u0644\u0627 \u062a\u062e\u0645\u0646 \u0645\u062d\u062a\u0648\u0627\u0647\u0627\n- \u0627\u0628\u0646\u064a \u0645\u0635\u0641\u0648\u0641\u0629 triggers \u0642\u0628\u0644 \u062a\u062d\u0644\u064a\u0644 hooks \u0627\u0644\u062a\u0637\u0628\u064a\u0642\n- \u0627\u0628\u062d\u062b \u0639\u0646 hooks \u0627\u0644\u062a\u064a \u062a\u0646\u0634\u0626 \u0642\u064a\u0648\u062f\u0627\u064b \u0645\u062d\u0627\u0633\u0628\u064a\u0629 \u062d\u062a\u0649 \u0644\u0648 \u0644\u0645 \u062a\u0637\u0627\u0628\u0642 *JournalIntegration* (\u0645\u062b\u0644 useConvertToLegalCase)\n- \u062a\u062d\u0642\u0642 \u0645\u0646 \u0627\u0644\u062f\u0648\u0627\u0644 \u0627\u0644\u0645\u0648\u062c\u0648\u062f\u0629 \u0644\u0643\u0646 \u063a\u064a\u0631 \u0645\u0648\u0635\u0648\u0644\u0629 (\u0645\u062b\u0644 canActorApproveFinancialStep)\n- \u0645\u064a\u0632 \u0628\u064a\u0646 \u0627\u0644\u0628\u0646\u064a\u0629 \u0627\u0644\u062a\u062d\u062a\u064a\u0629 \u0644\u0644\u0643\u0648\u062f \u0648\u062d\u0627\u0644\u0629 \u0627\u0644\u062a\u0634\u063a\u064a\u0644 \u2014 migrations \u062a\u062b\u0628\u062a \u0648\u062c\u0648\u062f \u0627\u0644\u0628\u0646\u064a\u0629 \u0648\u0644\u064a\u0633 \u062a\u0646\u0641\u064a\u0630\u0647\u0627",
     "subtasks": [
       {
-        "goal": "Analyze cross-cutting integration concerns: (1) Currency integration \u2014 does the financial system handle multi-currency correctly across modules? Check useCompanyCurrency usage, hardcoded currency codes. (2) Approval workflow \u2014 is multi-stage approval wired into financial flow? Check approval verification logic. (3) Period close \u2014 do all modules respect accounting period locks? Check accounting_periods usage. (4) Audit trail \u2014 is every financial transaction tracked? Check audit_logs vs audit_trail tables. (5) Report export \u2014 can financial data be exported? Check export functions for stubs. Record file:line references for all findings.",
-        "agent": "code-reviewer",
-        "toolsets": [
-          "terminal",
-          "file"
-        ],
-        "dependencies": [],
-        "parallel_group": 0,
-        "id": "cross-cutting-concerns",
-        "files": [
-          "src/hooks/useCompanyCurrency.ts",
-          "src/components/finance/",
-          "src/pages/finance/",
-          "src/lib/",
-          "supabase/migrations/"
-        ],
-        "success_criteria": "All 5 cross-cutting concerns are analyzed with file:line references. Output written to a temp findings file.",
-        "milestone": "milestone-1",
-        "milestone_index": 0,
-        "model_hint": "analytical",
-        "max_iterations": 1
-      },
-      {
-        "goal": "Trace data flows between modules and the financial system. For each path: (1) Contract payment \u2192 invoice \u2192 journal entry \u2192 GL, (2) Payroll run \u2192 journal entry \u2192 GL, (3) Maintenance work order \u2192 journal entry \u2192 GL, (4) Vehicle installment \u2192 journal entry \u2192 GL, (5) Legal case conversion \u2192 AR journal entry \u2192 GL, (6) Bank transaction \u2192 reconciliation \u2192 journal entry. Read the relevant page routes under /finance/*, components, and API/service files. Document how data moves with file:line references.",
+        "goal": "Scan src/pages/finance/, src/hooks/ (finance, journal, payment, ledger), src/components/finance/, and src/integrations/supabase/types.ts. List all financial tables, pages, hooks, components. Output a JSON file with the list.",
         "agent": "frontend-engineer",
         "toolsets": [
           "terminal",
           "file"
         ],
         "dependencies": [],
-        "parallel_group": 1,
-        "id": "data-flow-tracing",
+        "parallel_group": 0,
+        "id": "discover-financial-surface",
         "files": [
           "src/pages/finance/",
+          "src/hooks/",
           "src/components/finance/",
-          "src/services/",
-          "src/api/"
+          "src/integrations/supabase/types.ts"
         ],
-        "success_criteria": "All 6 data flow paths are traced with intermediate steps, tables touched, and file:line references. Output written to a temp findings file.",
+        "success_criteria": "A JSON file (e.g., financial-surface.json) exists containing arrays of tables, pages, hooks, components with file paths.",
         "milestone": "milestone-1",
         "milestone_index": 0,
         "model_hint": "balanced",
         "max_iterations": 1
       },
       {
-        "goal": "Read ALL 6 financial integration hooks in the codebase. For each hook (useRentalPaymentJournalIntegration, useVehicleInstallmentJournalIntegration, usePayrollJournalIntegration, useMaintenanceJournalIntegration, useTrafficViolationJournalIntegration, useConvertToLegalCase), trace the exact operation sequence: which table is written first, what status is set, whether total_debit/total_credit are passed, whether a balance check exists, debit/credit account selection logic, and reversal pattern (delete vs reversal entry). Also read usePaymentOperations as the 'correct pattern' reference. Record exact file:line references for every claim.",
-        "agent": "code-reviewer",
+        "goal": "Read all migration files in supabase/migrations/ related to finance. Extract every CREATE TRIGGER, CREATE OR REPLACE FUNCTION, RPC, and set_config('app.*') calls. Build a trigger matrix table (CSV or JSON) with columns: Trigger Name, Table, Operation, Timing, Condition, Exception, Source File:Line. Also note bypass functions.",
+        "agent": "builder",
         "toolsets": [
-          "terminal",
-          "file"
+          "hermes-cli"
         ],
         "dependencies": [],
         "parallel_group": 0,
-        "id": "hooks-analysis",
+        "id": "read-migrations-and-build-trigger-matrix",
         "files": [
-          "src/hooks/useRentalPaymentJournalIntegration.ts",
-          "src/hooks/useVehicleInstallmentJournalIntegration.ts",
-          "src/hooks/usePayrollJournalIntegration.ts",
-          "src/hooks/useMaintenanceJournalIntegration.ts",
-          "src/hooks/useTrafficViolationJournalIntegration.ts",
-          "src/hooks/useConvertToLegalCase.ts",
-          "src/hooks/usePaymentOperations.ts",
-          "src/hooks/useReverseJournalEntry.ts"
+          "supabase/migrations/"
         ],
-        "success_criteria": "A structured analysis of all 6 hooks plus usePaymentOperations is produced with: operation sequence, posted-first vs draft-first pattern, balance check presence, debit/credit logic, reversal pattern, and file:line references for every claim. Output is written to a temp findings file.",
+        "success_criteria": "A JSON file (e.g., trigger-matrix.json) containing the trigger matrix and a list of bypass-related functions with file:line references.",
         "milestone": "milestone-1",
         "milestone_index": 0,
-        "model_hint": "analytical",
-        "max_iterations": 1
+        "model_hint": "balanced",
+        "max_iterations": 3
       },
       {
-        "goal": "Read ALL financial-related migration files in supabase/migrations/. Build the complete trigger matrix (T1-T7 or however many exist): trigger name, table, event (INSERT/UPDATE/DELETE), condition, action. Specifically identify: T6 prevent_posted_journal_line_mutation trigger, T3 rollback block trigger, and the financial_controls_bypass_enabled mechanism. Also check types.ts for actual column presence (approved_by, approved_at, etc.). Record exact file:line references.",
-        "agent": "backend-engineer",
-        "toolsets": [
-          "terminal",
-          "file"
-        ],
-        "dependencies": [],
-        "parallel_group": 1,
-        "id": "triggers-migrations",
-        "files": [
-          "supabase/migrations/",
-          "src/types.ts"
-        ],
-        "success_criteria": "A complete trigger matrix is built from migration files with: trigger name, table, event, condition, action, and file:line references. The bypass mechanism is documented. types.ts column presence is verified. Output written to a temp findings file.",
-        "milestone": "milestone-1",
-        "milestone_index": 0,
-        "model_hint": "analytical",
-        "max_iterations": 1
-      },
-      {
-        "goal": "Verify each of the 12 previous v4 audit findings against the current codebase: (1) All 6 hooks broken at runtime (posted-first vs T6), (2) Vehicle installment debits revenue instead of payable, (3) Payroll entries unbalanced when deductions > 0, (4) useReverseJournalEntry only updates status, (5) Hardcoded account IDs in useConvertToLegalCase, (6) Export function is fake stub, (7) approved_by/approved_at columns don't exist in types.ts, (8) Math.abs() in 27 places hiding accounting signs, (9) Approval verification not wired in, (10) Two audit tables (audit_logs vs audit_trail), (11) 25 finance components hardcode KWD, (12) Orphaned posted headers. For each: state CONFIRMED, FIXED, or PARTIALLY FIXED with file:line evidence.",
-        "agent": "code-reviewer",
-        "toolsets": [
-          "terminal",
-          "file"
-        ],
-        "dependencies": [],
-        "parallel_group": 2,
-        "id": "verify-v4-findings",
-        "files": [
-          "src/hooks/",
-          "src/components/finance/",
-          "src/types.ts",
-          "src/lib/",
-          "src/utils/"
-        ],
-        "success_criteria": "All 12 v4 findings are verified with CONFIRMED/FIXED/PARTIALLY FIXED status and file:line evidence. Output written to a temp findings file.",
-        "milestone": "milestone-1",
-        "milestone_index": 0,
-        "model_hint": "analytical",
-        "max_iterations": 1
-      },
-      {
-        "goal": "Collect findings from all 5 research subtasks. Write the comprehensive integration report in ARABIC to C:\\Users\\khamis\\Documents\\fleetifyapp\\docs\\financial-integration-report.md. The report must cover all 12 required sections: Executive Summary, Integration Map, Integration Hook Analysis, DB Trigger Impact, Data Flow Between Modules, Currency Integration, Approval Workflow Integration, Period Close Integration, Audit Trail Integration, Report Export Integration, Risk Assessment, and Recommendations. Every claim must have file:line references. Include the trigger matrix (T1-T7) and the hook-vs-trigger cross-reference table. Report should be in Arabic with technical terms in English where appropriate.",
+        "goal": "Read all hooks that create accounting entries (JournalIntegration, useConvertToLegalCase, and any other hook that inserts into journal_entries or journal_entry_lines). For each hook, trace the sequence: check if total_debit/total_credit are passed, if balance check exists (Math.abs(total_debit - total_credit) > 0.01), which accounts are used (debit/credit), whether the entry is created as draft or posted, and whether lines are inserted before or after posting. Output a detailed analysis per hook.",
         "agent": "builder",
         "toolsets": [
           "hermes-cli"
         ],
         "dependencies": [
-          "hooks-analysis",
-          "triggers-migrations",
-          "data-flow-tracing",
-          "verify-v4-findings",
-          "cross-cutting-concerns"
+          "discover-financial-surface"
         ],
         "parallel_group": 1,
-        "id": "assembly",
+        "id": "analyze-integration-hooks",
         "files": [
-          "docs/financial-integration-report.md"
+          "src/hooks/",
+          "src/components/"
         ],
-        "success_criteria": "Final deliverable file is written and contains all findings from prior subtasks. Report is in Arabic, covers all 12 sections, includes trigger matrix, hook analysis, v4 findings verification, and file:line references throughout.",
+        "success_criteria": "A JSON file (e.g., hook-analysis.json) with one object per hook containing the sequence, balance check, accounts, status, and insertion order.",
         "milestone": "milestone-2",
         "milestone_index": 1,
         "model_hint": "balanced",
         "max_iterations": 3
-      }
-    ],
-    "risk_level": "low",
-    "parallel_group_count": 2,
-    "routing_decisions": [
+      },
       {
-        "subtask_id": "cross-cutting-concerns",
-        "task_type": "review",
-        "agent": "code-reviewer",
-        "model_hint": "analytical",
-        "complexity": "medium",
-        "is_risky": false,
-        "confidence": 0.75,
-        "profile": {
-          "name": "code-reviewer",
-          "task_type": "review",
-          "model_tier": "balanced",
-          "timeout": 120.0,
-          "max_retries": 1,
-          "priority": "P1",
-          "requires_review": false,
-          "estimated_tokens": 4000,
-          "parallel_safe": true,
-          "toolsets": [
-            "terminal",
-            "file"
-          ],
-          "model": "glm-5.2:cloud",
-          "provider": "custom:ollama",
-          "base_url": "https://ollama.com/v1"
-        },
-        "parallel_safe": true,
+        "goal": "Read the bypass function (financial_controls_bypass_enabled) and find all set_config('app.financial_controls_bypass', ...) calls. Determine if hooks can enable bypass. Then check financial reports (trial balance, income statement, balance sheet, cash flow) in src/pages/finance/ and src/hooks/ for: whether they fetch real data from Supabase or use mock data, use of Math.abs(), correctness of accounting logic, and whether the report type is actually supported. Output findings.",
+        "agent": "devops-engineer",
         "toolsets": [
           "terminal",
           "file"
-        ]
+        ],
+        "dependencies": [
+          "discover-financial-surface",
+          "read-migrations-and-build-trigger-matrix"
+        ],
+        "parallel_group": 2,
+        "id": "check-bypass-and-reports",
+        "files": [
+          "supabase/migrations/",
+          "src/pages/finance/",
+          "src/hooks/"
+        ],
+        "success_criteria": "A JSON file (e.g., bypass-reports-findings.json) with bypass analysis and report analysis including file:line references.",
+        "milestone": "milestone-2",
+        "milestone_index": 1,
+        "model_hint": "speed",
+        "max_iterations": 1
       },
       {
-        "subtask_id": "data-flow-tracing",
+        "goal": "Search for hardcoded account IDs, TODO comments in financial hooks, '// For now' or '// mock' comments, functions returning false success messages, estimated accounts (* 0.8, * 0.1). Check currency display: search for KWD or \u062f.\u0643 in financial components, verify if useCompanyCurrency() is used or currency is hardcoded. Collect all entry_number generation patterns (sequential, prefix, date-based, RPC) and identify inconsistencies. Output findings.",
+        "agent": "code-reviewer",
+        "toolsets": [
+          "terminal",
+          "file"
+        ],
+        "dependencies": [
+          "discover-financial-surface",
+          "read-migrations-and-build-trigger-matrix",
+          "analyze-integration-hooks"
+        ],
+        "parallel_group": 3,
+        "id": "check-mock-data-currency-entry-consistency",
+        "files": [
+          "src/pages/finance/",
+          "src/hooks/",
+          "src/components/finance/",
+          "supabase/migrations/"
+        ],
+        "success_criteria": "A JSON file (e.g., mock-currency-entry-findings.json) with lists of hardcoded values, mock comments, currency issues, and entry number patterns with file:line references.",
+        "milestone": "milestone-3",
+        "milestone_index": 2,
+        "model_hint": "analytical",
+        "max_iterations": 1
+      },
+      {
+        "goal": "For each step in each hook (from subtask 3), determine which triggers (from subtask 2) would fire. For each trigger, describe what it does (pass, block, raise exception). Identify potential conflicts, especially if a hook creates an entry as 'posted' before inserting lines (trigger may block line insertion). Output findings with file:line references.",
+        "agent": "builder",
+        "toolsets": [
+          "hermes-cli"
+        ],
+        "dependencies": [
+          "read-migrations-and-build-trigger-matrix",
+          "analyze-integration-hooks"
+        ],
+        "parallel_group": 4,
+        "id": "cross-reference-hooks-with-triggers",
+        "files": [
+          "src/hooks/",
+          "supabase/migrations/"
+        ],
+        "success_criteria": "A JSON file (e.g., cross-reference-findings.json) listing each hook step, the trigger that would fire, and the conflict analysis.",
+        "milestone": "milestone-3",
+        "milestone_index": 2,
+        "model_hint": "balanced",
+        "max_iterations": 3
+      },
+      {
+        "goal": "Collect all findings from previous subtasks (financial-surface.json, trigger-matrix.json, hook-analysis.json, cross-reference-findings.json, bypass-reports-findings.json, mock-currency-entry-findings.json). Write the final report in docs/financial-system-integration-audit-$(date +%Y%m%d).md following the required structure: Executive Summary, Trigger Matrix, Hook Sequence Analysis, Accounting Logic, Financial Reports Analysis, Controls & Compliance, Mock Data, Currency Display, Integration Map, Risk Assessment, Recommendations, Methodology. Ensure every finding includes file:line references. Verify that no subtask result is taken at face value without cross-checking (e.g., ensure trigger matrix matches actual migration files).",
+        "agent": "code-reviewer",
+        "toolsets": [
+          "terminal",
+          "file"
+        ],
+        "dependencies": [
+          "discover-financial-surface",
+          "read-migrations-and-build-trigger-matrix",
+          "analyze-integration-hooks",
+          "cross-reference-hooks-with-triggers",
+          "check-bypass-and-reports",
+          "check-mock-data-currency-entry-consistency"
+        ],
+        "parallel_group": 3,
+        "id": "assembly",
+        "files": [
+          "docs/financial-system-integration-audit-*.md"
+        ],
+        "success_criteria": "Final deliverable file is written and contains all findings from prior subtasks, with proper structure and file:line references.",
+        "milestone": "milestone-4",
+        "milestone_index": 3,
+        "model_hint": "analytical",
+        "max_iterations": 1
+      }
+    ],
+    "risk_level": "high",
+    "parallel_group_count": 4,
+    "routing_decisions": [
+      {
+        "subtask_id": "discover-financial-surface",
         "task_type": "frontend",
         "agent": "frontend-engineer",
         "model_hint": "balanced",
@@ -213,103 +202,37 @@
         ]
       },
       {
-        "subtask_id": "hooks-analysis",
-        "task_type": "review",
-        "agent": "code-reviewer",
-        "model_hint": "analytical",
-        "complexity": "medium",
-        "is_risky": true,
-        "confidence": 0.58,
-        "profile": {
-          "name": "code-reviewer",
-          "task_type": "review",
-          "model_tier": "balanced",
-          "timeout": 120.0,
-          "max_retries": 1,
-          "priority": "P1",
-          "requires_review": false,
-          "estimated_tokens": 4000,
-          "parallel_safe": true,
-          "toolsets": [
-            "terminal",
-            "file"
-          ],
-          "model": "glm-5.2:cloud",
-          "provider": "custom:ollama",
-          "base_url": "https://ollama.com/v1"
-        },
-        "parallel_safe": true,
-        "toolsets": [
-          "terminal",
-          "file"
-        ]
-      },
-      {
-        "subtask_id": "triggers-migrations",
-        "task_type": "database",
-        "agent": "backend-engineer",
-        "model_hint": "analytical",
+        "subtask_id": "read-migrations-and-build-trigger-matrix",
+        "task_type": "implementation",
+        "agent": "builder",
+        "model_hint": "balanced",
         "complexity": "high",
         "is_risky": true,
         "confidence": 0.64,
         "profile": {
-          "name": "backend-engineer",
-          "task_type": "database",
+          "name": "builder",
+          "task_type": "implementation",
           "model_tier": "balanced",
-          "timeout": 120.0,
-          "max_retries": 1,
+          "timeout": 600,
+          "max_retries": 3,
           "priority": "P1",
           "requires_review": false,
           "estimated_tokens": 4000,
           "parallel_safe": true,
           "toolsets": [
-            "terminal",
-            "file"
+            "hermes-cli"
           ],
           "model": "glm-5.2:cloud",
           "provider": "custom:ollama",
-          "base_url": "https://ollama.com/v1"
+          "base_url": "http://localhost:11434/v1"
         },
         "parallel_safe": true,
         "toolsets": [
-          "terminal",
-          "file"
+          "hermes-cli"
         ]
       },
       {
-        "subtask_id": "verify-v4-findings",
-        "task_type": "review",
-        "agent": "code-reviewer",
-        "model_hint": "analytical",
-        "complexity": "medium",
-        "is_risky": false,
-        "confidence": 0.67,
-        "profile": {
-          "name": "code-reviewer",
-          "task_type": "review",
-          "model_tier": "balanced",
-          "timeout": 120.0,
-          "max_retries": 1,
-          "priority": "P1",
-          "requires_review": false,
-          "estimated_tokens": 4000,
-          "parallel_safe": true,
-          "toolsets": [
-            "terminal",
-            "file"
-          ],
-          "model": "glm-5.2:cloud",
-          "provider": "custom:ollama",
-          "base_url": "https://ollama.com/v1"
-        },
-        "parallel_safe": true,
-        "toolsets": [
-          "terminal",
-          "file"
-        ]
-      },
-      {
-        "subtask_id": "assembly",
+        "subtask_id": "analyze-integration-hooks",
         "task_type": "implementation",
         "agent": "builder",
         "model_hint": "balanced",
@@ -337,6 +260,132 @@
         "toolsets": [
           "hermes-cli"
         ]
+      },
+      {
+        "subtask_id": "check-bypass-and-reports",
+        "task_type": "config",
+        "agent": "devops-engineer",
+        "model_hint": "speed",
+        "complexity": "medium",
+        "is_risky": false,
+        "confidence": 0.67,
+        "profile": {
+          "name": "devops-engineer",
+          "task_type": "devops",
+          "model_tier": "balanced",
+          "timeout": 120.0,
+          "max_retries": 1,
+          "priority": "P1",
+          "requires_review": false,
+          "estimated_tokens": 4000,
+          "parallel_safe": true,
+          "toolsets": [
+            "terminal",
+            "file"
+          ],
+          "model": "glm-5.2:cloud",
+          "provider": "custom:ollama",
+          "base_url": "https://ollama.com/v1"
+        },
+        "parallel_safe": true,
+        "toolsets": [
+          "terminal",
+          "file"
+        ]
+      },
+      {
+        "subtask_id": "check-mock-data-currency-entry-consistency",
+        "task_type": "review",
+        "agent": "code-reviewer",
+        "model_hint": "analytical",
+        "complexity": "low",
+        "is_risky": false,
+        "confidence": 0.67,
+        "profile": {
+          "name": "code-reviewer",
+          "task_type": "review",
+          "model_tier": "balanced",
+          "timeout": 120.0,
+          "max_retries": 1,
+          "priority": "P1",
+          "requires_review": false,
+          "estimated_tokens": 4000,
+          "parallel_safe": true,
+          "toolsets": [
+            "terminal",
+            "file"
+          ],
+          "model": "glm-5.2:cloud",
+          "provider": "custom:ollama",
+          "base_url": "https://ollama.com/v1"
+        },
+        "parallel_safe": true,
+        "toolsets": [
+          "terminal",
+          "file"
+        ]
+      },
+      {
+        "subtask_id": "cross-reference-hooks-with-triggers",
+        "task_type": "implementation",
+        "agent": "builder",
+        "model_hint": "balanced",
+        "complexity": "medium",
+        "is_risky": false,
+        "confidence": 0.57,
+        "profile": {
+          "name": "builder",
+          "task_type": "implementation",
+          "model_tier": "balanced",
+          "timeout": 600,
+          "max_retries": 3,
+          "priority": "P1",
+          "requires_review": false,
+          "estimated_tokens": 4000,
+          "parallel_safe": true,
+          "toolsets": [
+            "hermes-cli"
+          ],
+          "model": "glm-5.2:cloud",
+          "provider": "custom:ollama",
+          "base_url": "http://localhost:11434/v1"
+        },
+        "parallel_safe": true,
+        "toolsets": [
+          "hermes-cli"
+        ]
+      },
+      {
+        "subtask_id": "assembly",
+        "task_type": "review",
+        "agent": "code-reviewer",
+        "model_hint": "analytical",
+        "complexity": "high",
+        "is_risky": true,
+        "confidence": 0.75,
+        "profile": {
+          "name": "code-reviewer",
+          "task_type": "review",
+          "model_tier": "balanced",
+          "timeout": 120.0,
+          "max_retries": 1,
+          "priority": "P1",
+          "requires_review": false,
+          "estimated_tokens": 4000,
+          "parallel_safe": true,
+          "toolsets": [
+            "terminal",
+            "file"
+          ],
+          "model": "glm-5.2:cloud",
+          "provider": "custom:ollama",
+          "base_url": "https://ollama.com/v1"
+        },
+        "parallel_safe": true,
+        "toolsets": [
+          "terminal",
+          "file"
+        ]
       }
     ],
     "milestones": [
@@ -344,18 +393,12 @@
         "id": "milestone-1",
         "name": "Parallel group 1",
         "subtask_ids": [
-          "cross-cutting-concerns",
-          "data-flow-tracing",
-          "hooks-analysis",
-          "triggers-migrations",
-          "verify-v4-findings"
+          "discover-financial-surface",
+          "read-migrations-and-build-trigger-matrix"
         ],
         "acceptance_criteria": [
-          "All 5 cross-cutting concerns are analyzed with file:line references. Output written to a temp findings file.",
-          "All 6 data flow paths are traced with intermediate steps, tables touched, and file:line references. Output written to a temp findings file.",
-          "A structured analysis of all 6 hooks plus usePaymentOperations is produced with: operation sequence, posted-first vs draft-first pattern, balance check presence, debit/credit logic, reversal pattern, and file:line references for every claim. Output is written to a temp findings file.",
-          "A complete trigger matrix is built from migration files with: trigger name, table, event, condition, action, and file:line references. The bypass mechanism is documented. types.ts column presence is verified. Output written to a temp findings file.",
-          "All 12 v4 findings are verified with CONFIRMED/FIXED/PARTIALLY FIXED status and file:line evidence. Output written to a temp findings file."
+          "A JSON file (e.g., financial-surface.json) exists containing arrays of tables, pages, hooks, components with file paths.",
+          "A JSON file (e.g., trigger-matrix.json) containing the trigger matrix and a list of bypass-related functions with file:line references."
         ],
         "assumptions": [
           "Dependencies from earlier milestones remain stable."
@@ -365,10 +408,40 @@
         "id": "milestone-2",
         "name": "Parallel group 2",
         "subtask_ids": [
+          "analyze-integration-hooks",
+          "check-bypass-and-reports"
+        ],
+        "acceptance_criteria": [
+          "A JSON file (e.g., hook-analysis.json) with one object per hook containing the sequence, balance check, accounts, status, and insertion order.",
+          "A JSON file (e.g., bypass-reports-findings.json) with bypass analysis and report analysis including file:line references."
+        ],
+        "assumptions": [
+          "Dependencies from earlier milestones remain stable."
+        ]
+      },
+      {
+        "id": "milestone-3",
+        "name": "Parallel group 3",
+        "subtask_ids": [
+          "check-mock-data-currency-entry-consistency",
+          "cross-reference-hooks-with-triggers"
+        ],
+        "acceptance_criteria": [
+          "A JSON file (e.g., mock-currency-entry-findings.json) with lists of hardcoded values, mock comments, currency issues, and entry number patterns with file:line references.",
+          "A JSON file (e.g., cross-reference-findings.json) listing each hook step, the trigger that would fire, and the conflict analysis."
+        ],
+        "assumptions": [
+          "Dependencies from earlier milestones remain stable."
+        ]
+      },
+      {
+        "id": "milestone-4",
+        "name": "Parallel group 4",
+        "subtask_ids": [
           "assembly"
         ],
         "acceptance_criteria": [
-          "Final deliverable file is written and contains all findings from prior subtasks. Report is in Arabic, covers all 12 sections, includes trigger matrix, hook analysis, v4 findings verification, and file:line references throughout."
+          "Final deliverable file is written and contains all findings from prior subtasks, with proper structure and file:line references."
         ],
         "assumptions": [
           "Dependencies from earlier milestones remain stable."
@@ -383,12 +456,13 @@
       "Are there any approval gates or change management processes?"
     ],
     "completion_criteria": [
-      "Subtask complete: Analyze cross-cutting integration concerns: (1) Currency integration \u2014 does the financial system han",
-      "Subtask complete: Trace data flows between modules and the financial system. For each path: (1) Contract payment \u2192 inv",
-      "Subtask complete: Read ALL 6 financial integration hooks in the codebase. For each hook (useRentalPaymentJournalIntegr",
-      "Subtask complete: Read ALL financial-related migration files in supabase/migrations/. Build the complete trigger matri",
-      "Subtask complete: Verify each of the 12 previous v4 audit findings against the current codebase: (1) All 6 hooks broke",
-      "Subtask complete: Collect findings from all 5 research subtasks. Write the comprehensive integration report in ARABIC ",
+      "Subtask complete: Scan src/pages/finance/, src/hooks/ (finance, journal, payment, ledger), src/components/finance/, an",
+      "Subtask complete: Read all migration files in supabase/migrations/ related to finance. Extract every CREATE TRIGGER, C",
+      "Subtask complete: Read all hooks that create accounting entries (JournalIntegration, useConvertToLegalCase, and any ot",
+      "Subtask complete: Read the bypass function (financial_controls_bypass_enabled) and find all set_config('app.financial_",
+      "Subtask complete: Search for hardcoded account IDs, TODO comments in financial hooks, '// For now' or '// mock' commen",
+      "Subtask complete: For each step in each hook (from subtask 3), determine which triggers (from subtask 2) would fire. F",
+      "Subtask complete: Collect all findings from previous subtasks (financial-surface.json, trigger-matrix.json, hook-analy",
       "All quality gates pass (syntax, lint, type, test)",
       "No regressions in existing test suite"
     ],
