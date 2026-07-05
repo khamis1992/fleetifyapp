@@ -1,122 +1,126 @@
-# Plan: ## المهمة: تدقيق شامل للنظام المالي في Fleetify ERP
+# Plan: قم بمراجعة شاملة للنظام المالي في مشروع Fleetify ERP وتكامله مع بقية الوحدات. هذا تدقيق READ-ONLY — لا تقم بتغيير أي كود. قدم تقريراً كاملاً باللغة العربية.
 
-**المشروع:** C:\Users\khamis\Documents\fleetifyapp
-**النوع:** تدقيق فقط — لا تغيير في الكود
-**اللغة:** التقرير النهائي بالعربية
+المشروع: C:\Users\khamis\Documents\fleetifyapp
 
-## المنهجية المطلوبة (مهم جداً — اتبعها بدقة)
+## المنهجية (من financial-system-audit-verification skill)
 
-### القاعدة الذهبية: لا تثق بتقارير الـ subagents
-كل subagent سيقرأ ملفات ويقدم تقريراً. **يجب التحقق من كل ادعاء بقراءة الملف بنفسك.** كل finding يجب أن يكون له `file:line` reference.
+### المرحلة 1: قراءة كل ملفات الـ migrations المالية
+- اقرأ كل ملف في `supabase/migrations/` له علاقة بالنظام المالي (financial, journal, payment, control, trigger, rpc, invoice)
+- استخرج كل trigger: أي جدول، أي عملية، أي شرط، أي استثناء
+- استخرج كل RPC: ما المعاملات، هل SECURITY DEFINER؟
+- استخرج كل دالة bypass: كيف تُفعّل؟
 
-### المرحلة 1: اكتشف السطح المالي
-- ابحث عن كل الصفحات المالية: `src/pages/*finance*`, `src/pages/*accounting*`, `src/pages/*invoice*`, `src/pages/*payment*`
-- ابحث عن كل hooks المالية: `src/hooks/*finance*`, `src/hooks/*journal*`, `src/hooks/*payment*`, `src/hooks/*ledger*`
-- ابحث عن كل مكونات التقارير المالية: `src/components/finance/`
-- ابحث عن كل ملفات الـ migration المالية: `supabase/migrations/` التي تحتوي على financial, journal, payment, invoice, control, trigger, rpc
-- ابحث عن كل hooks التكامل: `*JournalIntegration*`
+### المرحلة 2: بناء مصفوفة التريغرات
+أنشئ جدولاً كاملاً: T1, T2, T3... إلخ مع:
+- اسم التريغر
+- الجدول المستهدف
+- العملية (INSERT/UPDATE/DELETE)
+- التوقيت (BEFORE/AFTER)
+- الشرط
+- الاستثناء المرفوع
+- الملف والسطر
 
-### المرحلة 2: اقرأ كل ملف migration مالي
-**هذه أهم خطوة.** لا تتخط أي ملف migration. لكل ملف:
-1. اقرأ الملف كاملاً
-2. استخرج كل `CREATE OR REPLACE FUNCTION` — ماذا تفعل؟
-3. استخرج كل `CREATE TRIGGER` — أي جدول، أي عملية، أي توقيت، أي شرط؟
-4. استخرج كل دالة trigger — ما الـ exception الذي ترفعه؟
-5. استخرج كل RPC — ما الـ parameters، هل هو SECURITY DEFINER؟
-6. لاحظ أي `set_config('app.*')` — هذه آليات bypass
+### المرحلة 3: قراءة كل hooks التكامل
+اقرأ كل ملف يطابق `*JournalIntegration*` في `src/hooks/`:
+- useRentalPaymentJournalIntegration.ts
+- useTrafficViolationJournalIntegration.ts
+- useMaintenanceJournalIntegration.ts
+- useVehicleInstallmentJournalIntegration.ts
+- usePayrollJournalIntegration.ts
+- useConvertToLegalCase.ts (إن وجد)
+- usePaymentOperations.ts (للمقارنة - هذا الـ hook الصحيح)
 
-### المرحلة 3: ابنِ مصفوفة تريغرات كاملة
-جدول بالأعمدة: #, اسم التريغر, الجدول, العملية, التوقيت, الشرط, الـ exception, مصدر الملف:سطر
+لكل hook، تتبع تسلسل العمليات:
+1. أي جدول أولاً؟ بأي status؟
+2. أي جدول ثانياً؟
+3. هل يمرر total_debit و total_credit؟
+4. هل يتحقق من التوازن؟
+5. ما هي الحسابات المدينة والدائنة؟
+6. ماذا يحدث عند الخطأ (rollback)؟
 
-### المرحلة 4: اقرأ كل hook تكامل
-لكل hook من نوع `*JournalIntegration*`:
-1. تتبع تسلسل العمليات بالضبط:
-   - الخطوة 1: أي جدول؟ أي status؟ (مثلاً: INSERT journal_entries status: 'posted')
-   - الخطوة 2: أي جدول تالياً؟ (مثلاً: INSERT journal_entry_lines)
-   - الخطوة 3: معالجة الأخطاء؟ (مثلاً: `.delete()` عند rollback)
-2. تحقق: هل يمرر `total_debit` و `total_credit`؟
-3. تحقق: هل لديه فحص توازن (`Math.abs(total_debit - total_credit) > 0.01`)?
-4. تحقق: ما الحسابات التي يستخدمها؟ (حساب مدين، حساب دائن)
-5. تحقق: هل المنطق المحاسبي صحيح؟ (مثلاً: قسط مركبة يجب أن يكون مدين: موردين، ليس إيراد)
-
-### المرحلة 5: تقاطع كل عملية hook مع مصفوفة التريغرات
-لكل خطوة في كل hook، اسأل:
+### المرحلة 4: تقاطع كل عملية hook مع مصفوفة التريغرات
+لكل خطوة في كل hook:
 - "هل هذه العملية ستطلق هذا التريغر؟"
-- "ماذا سيفعل التريغر؟ يمرر؟ يمنع؟ يرفع exception؟"
-- "إذا منع، ماذا يحدث بعدها؟ هل هناك معالجة أخطاء؟"
+- "ماذا سيفعل التريغر؟ يمرر؟ يمنع؟ يرفع استثناء؟"
+- "إذا منع، ماذا سيحدث بعد ذلك؟"
 
-**السؤال الرئيسي:** هل ينشئ الـ hook القيد كـ `posted` قبل إدخال البنود؟ إذا نعم، تريغر `prevent_posted_journal_line_mutation` سيمنع إدخال البنود.
+السؤال المفتاحي: هل الـ hook ينشئ journal_entries بحالة posted قبل إدخال journal_entry_lines؟
+إذا نعم → تريغر 20260627011000 سيمنع إدخال البنود.
 
-### المرحلة 6: تحقق من آلية الـ bypass
-1. اقرأ دالة الـ bypass (عادة `financial_controls_bypass_enabled()`)
-2. ابحث عن كل استدعاءات `set_config('app.financial_controls_bypass', ...)`
-3. حدد: هل تستطيع client-side hooks تفعيل الـ bypass؟ (عادة لا — فقط SECURITY DEFINER RPCs)
+### المرحلة 5: التحقق من آلية الـ bypass
+- اقرأ دالة `financial_controls_bypass_enabled()`
+- ابحث عن كل استدعاءات `set_config('app.financial_controls_bypass', ...)`
+- هل تستطيع hooks الـ client-side تفعيل الـ bypass؟
 
-### المرحلة 7: تحقق من التقارير المالية
-لكل نوع تقرير (Trial Balance, Income Statement, Balance Sheet, Cash Flow):
-1. هل يجلب بيانات حقيقية من DB أم يستخدم mock data؟
-2. هل يستخدم `Math.abs()`؟ إذا نعم، أين ولماذا؟
-3. هل المنطق المحاسبي صحيح؟
-4. هل نوع التقرير موجود فعلاً في الـ hook؟
+### المرحلة 6: فحص التقارير المالية
+- useEnhancedFinancialReports.ts — ما أنواع التقارير المدعومة؟
+- CashFlowStatementReport.tsx — هل هو موجود؟ كيف يحسب التدفقات النقدية؟
+- useFinancialIntegrityReport.ts — ماذا يفحص؟
+- هل هناك mock data أو حسابات تقديرية (* 0.8, * 0.1)؟
+- هل Math.abs() يُستخدم في أماكن تخفي أخطاء محاسبية؟
 
-### المرحلة 8: ابحث عن البيانات الوهمية/المثبتة
-ابحث عن:
-- Account IDs مثبتة يدوياً (مثل `'1203'`, `'5401'`)
-- تعليقات `// TODO` في hooks المالية
-- تعليقات `// For now` أو `// mock`
-- دوال تصدير ترجع رسالة نجاح كاذبة
-- حسابات تقديرية (`* 0.8`, `* 0.1`)
+### المرحلة 7: فحص المدفوعات والتحكم
+- usePaymentOperations.ts — ما الأعمدة التي يكتبها في payments؟
+- هل أعمدة approved_by, approved_at, cancelled_at, cancelled_by موجودة في types.ts؟
+- اقرأ RPCs: ensure_payment_journal_entry, cancel_payment_with_reversal
+- كم عدد المدفوعات غير المرتبطة (unlinked payments)؟
 
-### المرحلة 9: تحقق من عرض العملة
-ابحث عن `KWD` أو `د.ك` في ملفات `src/components/finance/`
-تحقق: هل يستخدم النظام `useCompanyCurrency()` أم يثبت KWD يدوياً؟
+### المرحلة 8: فحص الضوابط والامتثال
+- هل `canActorApproveFinancialStep()` موصولة فعلياً أم موجودة فقط في tests؟
+- هل هناك جدولي تدقيق منفصلين (audit_logs ≠ audit_trail)؟
+- هل منطق الإقفال الشهري والسنوي موجود؟
+- هل فحص الفترة المقفلة مطبق في hooks التكامل؟
 
-### المرحلة 10: اكتب التقرير النهائي
+### المرحلة 9: كشف البيانات الوهمية والثوابت
+- ابحث عن معرفات حسابات ثابتة (مثل '1203', '5401')
+- ابحث عن mock data في الـ hooks المالية
+- ابحث عن دوال تصدير وهمية (تطبع "تم التصدير" بدون ملف فعلي)
+- ابحث عن استخدام KWD/د.ك بدل QAR/ر.ق
 
-**كل finding يجب أن يكون له:**
-- مرجع `file:line` يثبت أنه تم التحقق منه مقابل الكود الحالي
-- اسم التريغر/الدالة بالضبط ورقم السطر من ملف الـ migration
-- بيان واضح لماذا هذا finding مهم وما تأثيره
+### المرحلة 10: كتابة التقرير النهائي
+اكتب التقرير إلى: `C:\Users\khamis\Documents\fleetifyapp\docs\financial-system-integration-audit-ar.md`
 
-**هيكل التقرير:**
-1. الملخص التنفيذي (مع أهم finding أولاً)
-2. مصفوفة التريغرات الكاملة
-3. تسلسل عمليات كل hook (متحقق منها مقابل التريغرات)
-4. المنطق المحاسبي لكل hook
+هيكل التقرير:
+1. ملخص تنفيذي (أهم نتيجة حرجة أولاً)
+2. مصفوفة التريغرات الكاملة (T1–T7+)
+3. تحليل كل hook تكامل (تسلسل العمليات + التقاطع مع التريغرات)
+4. المنطق المحاسبي لكل hook (مدين/دائن، صحة الحسابات)
 5. تحليل التقارير المالية
-6. الضوابط الداخلية والامتثال
-7. البيانات الوهمية/المثبتة
-8. عرض العملة
+6. الضوابط والامتثال
+7. البيانات الوهمية والثوابت
+8. عرض العملة (KWD vs QAR)
 9. خريطة التكامل (رسم بياني نصي)
-10. تقييم المخاطر (حرج/عالٍ/متوسط مع دليل)
+10. تقييم المخاطر (حرج/عالي/متوسط مع الأدلة)
 11. التوصيات (بدون تغيير كود)
-12. بيان المنهجية (ماذا تم، ماذا أخطأت التقارير السابقة)
+12. بيان المنهجية (ماذا تم فعله، مقارنة بالتقارير السابقة)
 
-**اكتب التقرير إلى:** `C:\Users\khamis\Documents\fleetifyapp\docs\financial-system-audit-v5-final.md`
+## قواعد صارمة
 
-## ملاحظات مهمة من التقارير السابقة (تصحيح الأخطاء)
+1. **كل نتيجة يجب أن توثق بـ file:line** — لا تقبل أي ادعاء بدون دليل من الملف الفعلي
+2. **لا تثق بتقارير الـ subagents** — اقرأ الملفات بنفسك
+3. **لا تتخط أي ملف migration** — اقرأ كل ملف له علاقة ولو بسيطة
+4. **لا تدّعي أن A=L+E متوازن من فحص الكود فقط** — هذا يحتاج استعلام مباشر من قاعدة البيانات
+5. **استخدم grep -rl للعد الدقيق** للملفات التي تستخدم KWD
+6. **ابحث عن التقارير في كل المكونات** وليس فقط في useEnhancedFinancialReports
+7. **ابحث عن دوال التحقق من الصلاحيات في utility files** وليس فقط في الـ hook الرئيسي
 
-هذه أخطاء وقعت في تقارير سابقة — تجنبها:
+## سياق من التقارير السابقة (للتحقق منه)
 
-1. **لا تقل "جدول deposits غير موجود"** — النظام يستخدم `customer_deposits` (موجود في `useDeposits.ts:48`)
-2. **لا تقل "payroll ليس لديه journal_entry_id"** — الحقل موجود في `types.ts:13712`
-3. **لا تقل "RPCs قد لا تكون منشورة"** — الـ RPCs موجودة في `20260702000001` و `20260702153000`
-4. **لا تقل "posted entries يمكن حذفها"** — تريغر T3 في `20260627001000:142` يمنع حذف posted entries
-5. **لا تقل "cash_flow غير مدعوم"** — مدعوم عبر `CashFlowStatementReport.tsx` + `ledgerCashFlowReportRules.ts`
-6. **لا تقل "الموافقات لا تتحقق من المعتمد"** — `canActorApproveFinancialStep()` موجود في `financialApprovalWorkflowRules.ts:110-139` لكنه غير موصول
-7. **لا تستخدم `search_files` مع limit لحساب العملة** — استخدم `grep -rl`
-8. **لا تذكر A=L+E كحقيقة** — يحتاج استعلام DB مباشر، لا يمكن تأكيده من الكود فقط
-9. **لا تقل أن hooks تفشل بسبب missing total_debit/total_credit فقط** — المشكلة الأكبر هي T6 trigger
-10. **لا تقل أن payroll يسجل Cash AND Salaries Payable معاً** — اقرأ if/else بعناية
+التقرير v4 السابق وجد أن:
+- migration 20260627011000 أنشأ تريغر يمنع INSERT/UPDATE/DELETE على journal_entry_lines إذا كان القيد الأب posted
+- كل hooks التكامل الستة تنشئ القيد كـ posted قبل إدخال البنود → فشل صامت
+- usePaymentOperations.ts هو الوحيد الذي يتبع draft → lines → posted
+- قيد أقساط المركبات مدين خطأ (إيراد بدل موردين)
+- قيد الرواتب غير متزن عند وجود استقطاعات
+- canActorApproveFinancialStep موجودة لكن غير موصولة
+- 25+ مكون مالي يستخدم KWD بدل QAR
+- التصدير وهمي
+- أعمدة مفقودة في payments
 
-## المخرجات
-- تقرير واحد شامل في `docs/financial-system-audit-v5-final.md`
-- كل finding بمرجع `file:line`
-- مصفوفة تريغرات كاملة
-- تسلسل عمليات كل hook مقابل كل تريغر
+تحقق من كل هذه النتائج ضد الكود الحالي. صحح أي خطأ. أضف أي اكتشاف جديد.
 
 ## Reasoning
-Decomposed the financial system audit into 8 subtasks following the methodology phases. Subtask 1 discovers all relevant files. Subtasks 2,4,6,7 analyze migrations, hooks, bypass, and reports in parallel after discovery. Subtask 3 builds trigger matrix from migration analysis. Subtask 5 cross-checks hooks with triggers. Subtask 8 assembles all findings into the final report. Each subtask produces an intermediate file for verification, and the assembly depends on all prior subtasks.
+Decomposed the 10-phase audit into 6 independent analysis subtasks plus an assembly subtask. Subtask 1 (triggers/RPCs) is foundational; subtask 2 (hooks) depends on it. Subtasks 3–6 (reports, payments, controls, dummy data) can run in parallel with each other and with subtask 2. Each subtask produces a structured JSON file, and the assembly subtask collects them into the final Arabic report. This maximizes parallelism while keeping each subtask independently executable and verifiable.
 
 ## Risk Level
 high
@@ -127,39 +131,29 @@ high
 ## Milestones
 
 ### Parallel group 1
-- Subtasks: discover-financial-surface
+- Subtasks: extract-triggers-rpcs
 - Acceptance criteria:
-  - File docs/audit/discovery.txt exists and contains paths to all financial pages, hooks, components, migrations, and integration hooks.
+  - docs/audit-triggers.json exists and contains: (a) trigger matrix with at least T1–T7 entries, each with file:line, table, operation, timing, condition, exception; (b) list of all financial RPCs with parameters and SECURITY DEFINER flag; (c) bypass function source and location.
 
 ### Parallel group 2
-- Subtasks: analyze-bypass-mechanism, analyze-financial-reports, analyze-integration-hooks, analyze-migration-files
+- Subtasks: analyze-integration-hooks, detect-dummy-data, examine-controls-compliance, examine-financial-reports, examine-payments-controls
 - Acceptance criteria:
-  - docs/audit/bypass_analysis.md describes the bypass function, all set_config calls, and whether client-side can enable it.
-  - docs/audit/reports_analysis.md contains findings for each report type: data source, Math.abs usage, hardcoded values, currency, mock data.
-  - docs/audit/hooks_analysis.json contains for each hook: step-by-step operations, balance check, accounts used, error handling.
-  - docs/audit/migrations_analysis.json contains entries for each migration file with extracted functions, triggers, RPCs, and bypass calls.
+  - docs/audit-hooks.json exists and contains for each hook: (a) step-by-step operation sequence with table/status; (b) debit/credit accounts used; (c) whether total_debit==total_credit is checked; (d) which triggers fire at each step and whether they would block; (e) error/rollback behavior.
+  - docs/audit-dummy.json exists and contains: (a) list of hardcoded account IDs with file:line; (b) mock data instances; (c) fake export functions; (d) count of files using KWD/د.ك with examples.
+  - docs/audit-compliance.json exists and contains: (a) all locations of canActorApproveFinancialStep with call context; (b) differences between audit_logs and audit_trail; (c) presence/absence of closing logic; (d) any period-closed enforcement in hooks.
+  - docs/audit-reports.json exists and contains: (a) list of all report types; (b) cash flow calculation method with file:line; (c) any mock data or hardcoded multipliers; (d) all Math.abs() usages in financial calculations with context.
+  - docs/audit-payments.json exists and contains: (a) column mapping from usePaymentOperations to payments table; (b) presence/absence of approval/cancellation columns in types.ts; (c) RPC behavior summary; (d) unlinked payment count from fix scripts.
 
 ### Parallel group 3
-- Subtasks: build-trigger-matrix
-- Acceptance criteria:
-  - docs/audit/trigger_matrix.md contains a markdown table with all triggers from migration files, with correct file:line references.
-
-### Parallel group 4
-- Subtasks: cross-check-hooks-triggers
-- Acceptance criteria:
-  - docs/audit/cross_check.md contains for each hook step: trigger name, action, outcome, and whether error handling exists.
-
-### Parallel group 5
 - Subtasks: assembly
 - Acceptance criteria:
-  - Final deliverable file docs/financial-system-audit-v5-final.md is written and contains all findings from prior subtasks with file:line references, trigger matrix, hook sequences, cross-check, bypass, reports analysis, and all required sections.
+  - Final deliverable file docs/financial-system-integration-audit-ar.md is written and contains all findings from prior subtasks, with every claim backed by file:line references, and all required sections present.
 
 ## DAG
-- `discover-financial-surface` group=0 deps=none: Search for all financial-related files: pages (src/pages/*finance*, *accounting*, *invoice*, *payment*), hooks (src/hooks/*finance*, *journal*, *payment*, *ledger*), components (src/components/finance/), migrations (supabase/migrations/ with financial keywords), and integration hooks (*JournalIntegration*). Use grep and find commands. Save list to docs/audit/discovery.txt.
-- `analyze-bypass-mechanism` group=1 deps=discover-financial-surface: Read the bypass function (likely financial_controls_bypass_enabled) and find all set_config('app.financial_controls_bypass', ...) calls in migration files. Determine if client-side hooks can enable bypass. Save analysis to docs/audit/bypass_analysis.md.
-- `analyze-financial-reports` group=1 deps=discover-financial-surface: Read all financial report components (TrialBalance, IncomeStatement, BalanceSheet, CashFlow) from src/components/finance/ and related hooks. Check if they use real DB data or mock, use of Math.abs, hardcoded account IDs, TODO comments, currency handling (KWD). Also check for hardcoded KWD in src/components/finance/. Save analysis to docs/audit/reports_analysis.md.
-- `analyze-integration-hooks` group=1 deps=discover-financial-surface: Read all *JournalIntegration* hook files (from discovery). For each, trace the exact sequence of operations: which tables, statuses, balance checks, account IDs, error handling. Save analysis to docs/audit/hooks_analysis.json.
-- `analyze-migration-files` group=1 deps=discover-financial-surface: Read every migration file in supabase/migrations/ that contains financial keywords (financial, journal, payment, invoice, control, trigger, rpc). For each, extract all CREATE OR REPLACE FUNCTION, CREATE TRIGGER, trigger functions, RPCs, and set_config calls. Save structured analysis to docs/audit/migrations_analysis.json.
-- `build-trigger-matrix` group=2 deps=analyze-migration-files: From migrations_analysis.json, build a complete trigger matrix table with columns: #, trigger name, table, operation, timing, condition, exception, source file:line. Save to docs/audit/trigger_matrix.md.
-- `cross-check-hooks-triggers` group=3 deps=build-trigger-matrix, analyze-integration-hooks: For each step in each hook (from hooks_analysis.json), determine which triggers from trigger_matrix.md would fire. Analyze if the trigger would pass, block, or raise exception. Document the interaction. Save to docs/audit/cross_check.md.
-- `assembly` group=4 deps=discover-financial-surface, analyze-migration-files, build-trigger-matrix, analyze-integration-hooks, cross-check-hooks-triggers, analyze-bypass-mechanism, analyze-financial-reports: Collect all findings from prior subtasks (discovery, migrations_analysis, trigger_matrix, hooks_analysis, cross_check, bypass_analysis, reports_analysis). Write the final comprehensive audit report in Arabic to docs/financial-system-audit-v5-final.md following the required structure (executive summary, trigger matrix, hook sequences, cross-check, bypass, reports, internal controls, hardcoded data, currency, integration map, risk assessment, recommendations, methodology statement). Verify each finding against actual code by reading the referenced files. Ensure no false claims from previous reports.
+- `extract-triggers-rpcs` group=0 deps=none: Read all financial-related migration files in supabase/migrations/, extract every trigger (table, operation, timing, condition, exception) with file:line, every RPC (parameters, SECURITY DEFINER), and the bypass function financial_controls_bypass_enabled(). Build a complete trigger matrix (T1, T2, ...) and output as docs/audit-triggers.json.
+- `analyze-integration-hooks` group=1 deps=extract-triggers-rpcs: Read all *JournalIntegration* hooks (useRentalPaymentJournalIntegration, useTrafficViolationJournalIntegration, useMaintenanceJournalIntegration, useVehicleInstallmentJournalIntegration, usePayrollJournalIntegration, useConvertToLegalCase) and usePaymentOperations. For each, trace the operation sequence (which table first, status, debit/credit accounts, balance check, error handling). Cross-reference each step with the trigger matrix from subtask 1 to determine which triggers fire and whether they block the operation. Output as docs/audit-hooks.json.
+- `detect-dummy-data` group=1 deps=none: Search all source files for hardcoded account IDs (e.g., '1203', '5401'), mock data in financial hooks, fake export functions (e.g., console.log('تم التصدير') without actual file), and any usage of KWD/د.ك instead of QAR/ر.ق. Count files and occurrences. Output as docs/audit-dummy.json.
+- `examine-controls-compliance` group=1 deps=none: Search the entire codebase for canActorApproveFinancialStep usage (is it wired or only in tests?), audit_logs vs audit_trail tables, monthly/yearly closing logic, and period-closed checks in integration hooks. Output as docs/audit-compliance.json.
+- `examine-financial-reports` group=1 deps=none: Read useEnhancedFinancialReports.ts, CashFlowStatementReport.tsx, useFinancialIntegrityReport.ts, and any other report components. Identify supported report types, how cash flows are calculated, any mock data or hardcoded multipliers (e.g., *0.8), and any Math.abs() usage that could mask accounting errors. Output as docs/audit-reports.json.
+- `examine-payments-controls` group=1 deps=none: Read usePaymentOperations.ts to identify which columns it writes to payments. Check types.ts for approved_by, approved_at, cancelled_at, cancelled_by columns. Read RPC definitions for ensure_payment_journal_entry and cancel_payment_with_reversal. Count unlinked payments from the fix scripts (fix_payments_invoices_v2.py, fix_payments_link2.py). Output as docs/audit-payments.json.
+- `assembly` group=2 deps=extract-triggers-rpcs, analyze-integration-hooks, examine-financial-reports, examine-payments-controls, examine-controls-compliance, detect-dummy-data: Collect all intermediate JSON files (audit-triggers.json, audit-hooks.json, audit-reports.json, audit-payments.json, audit-compliance.json, audit-dummy.json) and compile the final comprehensive audit report in Arabic at docs/financial-system-integration-audit-ar.md. Follow the required structure: executive summary, trigger matrix, hook analysis, accounting logic, reports analysis, controls & compliance, dummy data & constants, currency, integration map, risk assessment, recommendations, methodology statement. Verify all findings are backed by file:line references from the intermediate files.

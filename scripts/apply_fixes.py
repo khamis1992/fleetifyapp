@@ -191,24 +191,15 @@ for e in drafts:
             print(f"  FAILED to delete: {e.get('entry_number', '?')} - {err}")
     else:
         t: Optional[Dict[str, float]] = et.get(eid)
-        if t and abs(t['d']) < 0.001 and abs(t['c']) < 0.001:
+        if t and abs(t['d'] - t['c']) < 0.01:
             # Balanced draft - post it
-            ok, err = patch('journal_entries', f'id=eq.{eid}', {'status': 'posted'})
+            ok, _ = patch('journal_entries', f'id=eq.{eid}', {'status': 'posted'})
             if ok:
                 posted_count += 1
                 print(f"  POSTED: {e.get('entry_number', '?')}")
             else:
-                print(f"  FAILED to post: {e.get('entry_number', '?')} - {err}")
+                print(f"  FAILED to post: {e.get('entry_number', '?')}")
         else:
-            # Unbalanced draft - skip or handle
             print(f"  SKIP unbalanced draft: {e.get('entry_number', '?')}")
 
-print(f"\n  Posted {posted_count} drafts, deleted {deleted_count} empty drafts")
-
-# ============================================================
-# FIX 4: Unlinked payments
-# ============================================================
-print("\n" + "=" * 70)
-print("FIX 4: UNLINKED PAYMENTS")
-print("=" * 70)
-# ... (rest of the code would continue)
+print(f"\n  Fix 3 summary: {posted_count} posted, {deleted_count} deleted")

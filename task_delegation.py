@@ -6,27 +6,47 @@ from typing import Any, Optional
 
 logger = logging.getLogger(__name__)
 
-# Default values for retry configuration (can be overridden via environment variables)
-DEFAULT_MAX_RETRIES = 3
-DEFAULT_RETRY_DELAY = 1.0
+# Environment variable names for configuration
+ENV_LLM_MAX_RETRIES = "LLM_MAX_RETRIES"
+ENV_LLM_RETRY_DELAY = "LLM_RETRY_DELAY"
 
 
-def _parse_env_int(name: str, default: int) -> int:
-    """Parse an integer environment variable, logging an error and returning default on failure."""
+class LLMError(Exception):
+    """Custom exception for LLM-related failures."""
+    pass
+
+
+class _TaskDelegationFailure:
+    """Sentinel to indicate task delegation failure."""
+    def __repr__(self):
+        return "TASK_DELEGATION_FAILURE"
+
+
+TASK_DELEGATION_FAILURE = _TaskDelegationFailure()
+
+
+def _parse_env_int(name: str) -> int:
+    """Parse an integer environment variable, raising ValueError if missing or invalid."""
+    value = os.getenv(name)
+    if value is None:
+        raise ValueError(f"Environment variable {name} is not set.")
     try:
-        return int(os.getenv(name, str(default)))
+        return int(value)
     except ValueError:
-        logger.exception(f"Invalid {name} environment variable, using default {default}.")
-        return default
+        logger.error(f"Invalid {name} environment variable: {value}. Must be an integer.")
+        raise ValueError(f"Invalid {name} environment variable: {value}. Must be an integer.")
 
 
-def _parse_env_float(name: str, default: float) -> float:
-    """Parse a float environment variable, logging an error and returning default on failure."""
+def _parse_env_float(name: str) -> float:
+    """Parse a float environment variable, raising ValueError if missing or invalid."""
+    value = os.getenv(name)
+    if value is None:
+        raise ValueError(f"Environment variable {name} is not set.")
     try:
-        return float(os.getenv(name, str(default)))
+        return float(value)
     except ValueError:
-        logger.exception(f"Invalid {name} environment variable, using default {default}.")
-        return default
+        logger.error(f"Invalid {name} environment variable: {value}. Must be a float.")
+        raise ValueError(f"Invalid {name} environment variable: {value}. Must be a float.")
 
 
 def call_llm(llm_client: Any, task_description: str, max_retries: Optional[int] = None, retry_delay: Optional[float] = None) -> Any:
@@ -36,32 +56,34 @@ def call_llm(llm_client: Any, task_description: str, max_retries: Optional[int] 
     Args:
         llm_client: The LLM client used to make API calls.
         task_description: The prompt/task to send to the LLM.
-        max_retries: Maximum number of retry attempts on failure. Defaults to environment variable LLM_MAX_RETRIES or 3.
-        retry_delay: Base delay (in seconds) between retry attempts (multiplied by attempt number). Defaults to environment variable LLM_RETRY_DELAY or 1.0.
+        max_retries: Maximum number of retry attempts on failure. Defaults to environment variable LLM_MAX_RETRIES (required).
+        retry_delay: Base delay (in seconds) between retry attempts (multiplied by attempt number). Defaults to environment variable LLM_RETRY_DELAY (required).
     
     Returns:
-        The result from the LLM API, or None if all retries fail or if the client is invalid.
-        This ensures failures are never silently masked by returning an empty value, but also prevents pipeline crashes.
+        The result from the LLM API.
+    
+    Raises:
+        LLMError: If all retries fail or any other error occurs.
     """
     try:
         if max_retries is None:
-            max_retries = _parse_env_int("LLM_MAX_RETRIES", DEFAULT_MAX_RETRIES)
+            max_retries = _parse_env_int(ENV_LLM_MAX_RETRIES)
         if retry_delay is None:
-            retry_delay = _parse_env_float("LLM_RETRY_DELAY", DEFAULT_RETRY_DELAY)
+            retry_delay = _parse_env_float(ENV_LLM_RETRY_DELAY)
 
         last_exception = None
 
         if llm_client is None:
-            logger.error("LLM client is None; cannot call LLM. Returning None.")
-            return None
+            logger.error("LLM client is None; cannot call LLM.")
+            raise ValueError("LLM client is None; cannot call LLM.")
 
         if not hasattr(llm_client, 'complete') or not callable(getattr(llm_client, 'complete', None)):
-            logger.error("LLM client does not have a callable 'complete' method. Returning None.")
-            return None
+            logger.error("LLM client does not have a callable 'complete' method.")
+            raise AttributeError("LLM client does not have a callable 'complete' method.")
 
         if max_retries < 1:
-            logger.error(f"Invalid max_retries value: {max_retries}; must be at least 1. Returning None.")
-            return None
+            logger.error(f"Invalid max_retries value: {max_retries}; must be at least 1.")
+            raise ValueError(f"Invalid max_retries value: {max_retries}; must be at least 1.")
 
         for attempt in range(1, max_retries + 1):
             try:
@@ -71,18 +93,16 @@ def call_llm(llm_client: Any, task_description: str, max_retries: Optional[int] 
                     logger.warning(
                         f"LLM API returned None on attempt {attempt}/{max_retries} for '{task_description}'."
                     )
-                    last_exception = RuntimeError(
+                    raise RuntimeError(
                         f"LLM API returned None on attempt {attempt}/{max_retries} for '{task_description}'."
                     )
-                    if attempt < max_retries:
-                        time.sleep(retry_delay * attempt)
-                        continue
-                    else:
-                        logger.error(
-                            f"LLM API returned None after {max_retries} attempts for '{task_description}'. "
-                            f"Last exception: {last_exception}. Returning None."
-                        )
-                        return None
+                if isinstance(result, str) and result.strip() == "":
+                    logger.warning(
+                        f"LLM API returned empty string on attempt {attempt}/{max_retries} for '{task_description}'. Treating as failure."
+                    )
+                    raise RuntimeError(
+                        f"LLM API returned empty string on attempt {attempt}/{max_retries} for '{task_description}'."
+                    )
                 logger.info("LLM API call succeeded.")
                 return result
             except Exception as e:
@@ -91,20 +111,30 @@ def call_llm(llm_client: Any, task_description: str, max_retries: Optional[int] 
                     f"LLM API call failed on attempt {attempt}/{max_retries}: {type(e).__name__}: {e}"
                 )
                 if attempt < max_retries:
-                    logger.warning(f"Retrying LLM API call (attempt {attempt}/{max_retries}) after delay.")
+                    logger.warning(f"Retrying LLM API call (attempt {attempt}/{max_retries}) after delay. Exception: {e}")
                     time.sleep(retry_delay * attempt)
                     continue
-                # Last attempt failed; return None to avoid pipeline crash.
-                logger.exception(
-                    f"All {max_retries} attempts to call LLM failed. "
-                    f"Last error: {type(e).__name__}: {e}. Returning None."
-                )
-                return None
+                else:
+                    logger.exception(
+                        f"All {max_retries} attempts to call LLM failed. "
+                        f"Last error: {type(last_exception).__name__}: {last_exception}. Re-raising."
+                    )
+                    raise
+
+        # All attempts exhausted (only reached if all attempts returned None, not exception)
+        if last_exception is not None:
+            logger.exception(
+                f"All {max_retries} attempts to call LLM failed. "
+                f"Last error: {type(last_exception).__name__}: {last_exception}. Re-raising."
+            )
+            raise last_exception
+        # Fallback: should not happen, but raise an error to avoid silent None return
+        raise RuntimeError("All attempts completed without a result or exception.")
     except Exception as e:
         logger.exception(
-            f"Unexpected error in call_llm: {type(e).__name__}: {e}. Returning None to avoid pipeline crash."
+            f"call_llm failed with an unexpected error: {type(e).__name__}: {e}. Raising LLMError."
         )
-        return None
+        raise LLMError(f"call_llm failed: {e}") from e
 
 
 def delegate_task(
@@ -117,29 +147,26 @@ def delegate_task(
     Delegate a task to an LLM API with retry logic and graceful fallback.
     
     Wraps the LLM API call in try/except to prevent API failures from crashing
-    the pipeline. On failure, logs the exception and returns None, allowing the
-    pipeline to continue with a fallback value.
+    the pipeline. On failure, logs the exception and returns TASK_DELEGATION_FAILURE, allowing the
+    pipeline to continue with a fallback value. All exceptions are caught, logged, and
+    TASK_DELEGATION_FAILURE is returned.
     
     Args:
         task_description: The description of the task to delegate.
         llm_client: The LLM client used to make API calls.
-        max_retries: Maximum number of retry attempts on failure. Defaults to environment variable LLM_MAX_RETRIES or 3.
-        retry_delay: Delay (in seconds) between retry attempts. Defaults to environment variable LLM_RETRY_DELAY or 1.0.
+        max_retries: Maximum number of retry attempts on failure. Defaults to environment variable LLM_MAX_RETRIES (required).
+        retry_delay: Delay (in seconds) between retry attempts. Defaults to environment variable LLM_RETRY_DELAY (required).
     
     Returns:
-        The result from the LLM API, or None if all retries fail.
+        The result from the LLM API, or TASK_DELEGATION_FAILURE if all retries fail.
     """
     logger.info(f"Delegating task to LLM: {task_description}")
     try:
         result = call_llm(llm_client, task_description, max_retries=max_retries, retry_delay=retry_delay)
         if result is None:
-            logger.error(f"Task delegation returned None for '{task_description}'. Returning None.")
-            return None
-        logger.info("Task delegation succeeded.")
+            logger.error(f"Task delegation returned None for '{task_description}'. Returning TASK_DELEGATION_FAILURE.")
+            return TASK_DELEGATION_FAILURE
         return result
     except Exception as e:
-        logger.exception(
-            f"Task delegation FAILED for '{task_description}': {type(e).__name__}: {e}. "
-            "Returning None to avoid pipeline crash."
-        )
-        return None
+        logger.exception(f"Task delegation failed for '{task_description}'. Returning TASK_DELEGATION_FAILURE.")
+        return TASK_DELEGATION_FAILURE
