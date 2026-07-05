@@ -1,30 +1,33 @@
 # Plan: READ-ONLY AUDIT MODE: Do not modify source code, do not run self-healing, and only create the requested report artifact if a deliverable file is required.
 
-READ-ONLY FINANCIAL SYSTEM INTEGRATION AUDIT
+راجع النظام المالي وتكامله مع بقية الوحدات وقدم لي تقرير كامل بدون تغير الكود فقط تقرير عن تكامل النظام
 
-قم بمراجعة شاملة للنظام المالي في مشروع Fleetify الموجود في C:\Users\khamis\Documents\fleetify\fleetify-erp وتكامله مع بقية الوحدات.
+This is a comprehensive financial system integration audit for the Fleetify project. The user wants a full report in Arabic about how the financial system integrates with other modules, without any code changes.
 
-المطلوب:
-1. اقرأ جميع ملفات الميغراشن (SQL migration files) المتعلقة بالنظام المالي
-2. اقرأ ملفات الخدمات (services) والهوك (hooks) والكمبوننت (components) المالية
-3. حلل تكامل النظام المالي مع: المخزون، المبيعات، المشتريات، الموارد البشرية
-4. حدد نقاط الضعف في التكامل (triggers, foreign keys, data flow)
-5. اكتب تقريراً كاملاً باللغة العربية في ملف C:\Users\khamis\Documents\fleetify\docs\financial-integration-audit-2026-07-05.md
+Key context from previous audits:
+- The project is at C:\Users\khamis\Documents\fleetify\
+- Previous audit completed on 2026-07-05 found: 3 critical (dual-path issues, incorrect status insertion order causing runtime failures), 4 high, 5 medium, 2 low priority issues
+- The financial system audit methodology requires: read all migration files, build a trigger matrix, trace hook operations, cross-reference each operation against each trigger
+- The 12-domain audit framework covers: Double-Entry Integrity, Chart of Accounts, GL Reconciliation, Trial Balance, AP/AR Aging, Revenue Recognition (ASC 606/IFRS 15), Financial Statements, Internal Controls, SOX/COSO Compliance, Financial Reporting, Cash Flow Management, and Period-End Close
+- Previous findings include: migration 20260627011000 trigger blocks ALL line ops when parent is 'posted', vehicle installment wrong debit (revenue not payable), payroll unbalanced when deductions>0, Math.abs() in 27 places, approval verification exists but unwired, cash flow supported via separate component, 25 finance components hardcode KWD, export is stub
+- The accounting equation was verified as balanced (0.00 difference) with 4,519 journal entries and 9,024 lines balanced
+- Issues like overpayment/immutability triggers and foreign-key violations have been resolved
 
-التقرير يجب أن يشمل:
-- ملخص تنفيذي
-- منهجية المراجعة
-- تحليل قاعدة البيانات والعلاقات
-- تحليل تدفق البيانات بين الوحدات
-- نقاط القوة
-- نقاط الضعف والمخاطر (حرج، عالي، متوسط، منخفض)
-- توصيات للتحسين
-- قائمة بجميع الملفات التي تمت مراجعتها
+Please:
+1. Read the project structure and understand the financial system modules
+2. Read all relevant migration files, especially financial ones
+3. Read the financial system code (hooks, components, services, types)
+4. Read integration points with other modules (HR, inventory, sales, etc.)
+5. Build a comprehensive trigger matrix
+6. Trace every financial operation through the system
+7. Verify the accounting equation (A = L + E)
+8. Check all 12 audit domains
+9. Produce a complete report in Arabic saved to docs/financial-system-integration-audit-2026-07-05-v2.md
 
-هام جداً: لا تقم بتعديل أي كود. فقط تقرير وتحليل.
+CRITICAL: Do NOT modify any code. This is a read-only audit/report task.
 
 ## Reasoning
-The task is a read-only audit of the financial system integration. We decompose into: (1) discover all financial-related files, (2-4) analyze migrations, services, hooks/components separately, (5) analyze cross-module integration, (6) identify weaknesses, (7) assembly writes the final report. Dependencies flow from discovery to analysis to integration to weaknesses to report. Parallel groups allow independent file analysis after discovery.
+The task is a comprehensive read-only audit of the financial system integration. We decompose into 8 subtasks: 4 parallel reading subtasks (project structure, migrations, financial code, integration points), then 2 analysis subtasks (trigger matrix, accounting equation verification), then 1 domain check subtask, and finally an assembly subtask to write the report in Arabic. All subtasks are read-only and do not modify code.
 
 ## Risk Level
 low
@@ -35,37 +38,35 @@ low
 ## Milestones
 
 ### Parallel group 1
-- Subtasks: discover-financial-files
+- Subtasks: read-financial-code, read-integration-points, read-migration-files, read-project-structure
 - Acceptance criteria:
-  - A file list is produced (e.g., financial_files.json) containing all discovered financial-related files with their relative paths and categories.
+  - All financial code files are read and key functions, hooks, and service calls are documented.
+  - All integration points between finance and other modules are identified and documented.
+  - All migration files are read and key financial triggers, tables, and constraints are documented.
+  - A list of all financial module directories and key files is produced.
 
 ### Parallel group 2
-- Subtasks: analyze-hooks-components, analyze-migrations, analyze-services
+- Subtasks: build-trigger-matrix, verify-accounting-equation
 - Acceptance criteria:
-  - A summary (hooks_components_analysis.md) describing each hook/component, its data dependencies, and cross-module interactions.
-  - A structured summary (e.g., migration_analysis.md) containing table definitions, foreign keys, triggers, and cross-module references found in migrations.
-  - A summary (services_analysis.md) describing each service's purpose, key functions, data flow, and integration points with other modules.
+  - A trigger matrix is built showing each operation, the triggers/hooks involved, and the resulting actions. Any missing or inconsistent operations are flagged.
+  - The accounting equation is verified as balanced (difference < 0.01) or any discrepancies are documented.
 
 ### Parallel group 3
-- Subtasks: analyze-cross-module-integration
+- Subtasks: check-12-domains
 - Acceptance criteria:
-  - A document (cross_module_integration.md) with a diagram or table showing how financial data flows to/from each other module, including specific tables, keys, and code references.
+  - All 12 domains are assessed with specific findings, risks, and recommendations documented.
 
 ### Parallel group 4
-- Subtasks: identify-weaknesses
-- Acceptance criteria:
-  - A list of weaknesses with severity ratings, descriptions, and suggested improvements (without modifying code).
-
-### Parallel group 5
 - Subtasks: assembly
 - Acceptance criteria:
-  - Final deliverable file is written and contains all findings from prior subtasks, formatted as specified.
+  - Final deliverable file is written and contains all findings from prior subtasks in Arabic.
 
 ## DAG
-- `discover-financial-files` group=0 deps=none: Scan the project directory C:\Users\khamis\Documents\fleetify\fleetify-erp to find all files related to the financial system: SQL migration files (in migrations/ or similar), service files (services/), hooks (hooks/), and components (components/). Use grep or find to locate files containing keywords like 'financial', 'account', 'journal', 'ledger', 'payment', 'invoice', 'chart_of_accounts', etc. Output a list of file paths with their categories (migration, service, hook, component).
-- `analyze-hooks-components` group=1 deps=discover-financial-files: Read all hooks and components related to the financial system (e.g., useFinancialData.ts, FinancialDashboard.tsx, InvoiceForm.tsx). Identify how the frontend interacts with the financial backend, what data is fetched, and how it is displayed. Note any integration with other module components (e.g., linking invoices to inventory items).
-- `analyze-migrations` group=1 deps=discover-financial-files: Read all SQL migration files identified in the previous subtask. Extract table schemas, foreign key constraints, triggers, and any financial-specific logic. Document the database structure for financial tables (e.g., chart_of_accounts, journal_entries, payments, invoices). Note any relationships to inventory, sales, purchases, or HR tables.
-- `analyze-services` group=1 deps=discover-financial-files: Read all service files related to the financial system (e.g., financialService.ts, paymentService.ts, invoiceService.ts). Identify data flow: which functions call which tables, how data is transformed, and how the financial module interacts with other modules (inventory, sales, purchases, HR). Note any direct database queries, API calls, or event-driven integrations.
-- `analyze-cross-module-integration` group=2 deps=analyze-migrations, analyze-services, analyze-hooks-components: Using the outputs from migration, service, and hooks/components analysis, map the data flow between the financial module and inventory, sales, purchases, and HR modules. Identify foreign key relationships, shared tables, event triggers, and any direct code references. Document the integration points and data dependencies.
-- `identify-weaknesses` group=3 deps=analyze-cross-module-integration: Based on the cross-module integration analysis, identify weaknesses and risks in the financial system integration. Categorize by severity (critical, high, medium, low). Look for missing foreign keys, inconsistent data types, lack of triggers for cascading updates/deletes, potential data integrity issues, and any gaps in data flow. Also note any security or performance concerns.
-- `assembly` group=4 deps=discover-financial-files, analyze-migrations, analyze-services, analyze-hooks-components, analyze-cross-module-integration, identify-weaknesses: Collect all findings from prior subtasks (discover-financial-files, analyze-migrations, analyze-services, analyze-hooks-components, analyze-cross-module-integration, identify-weaknesses) and write the final comprehensive audit report in Arabic to C:\Users\khamis\Documents\fleetify\docs\financial-integration-audit-2026-07-05.md. The report must include: executive summary, methodology, database analysis, data flow analysis, strengths, weaknesses (with severity), recommendations, and a list of all reviewed files. Ensure the report is well-formatted in Markdown.
+- `read-financial-code` group=0 deps=none: Read the financial system code: hooks (useJournalEntry, useChartOfAccounts, etc.), components (finance/), services (supabase queries), and types (types.ts). Extract all financial operations, validations, and integration points.
+- `read-integration-points` group=0 deps=none: Read code that integrates finance with other modules: HR (payroll, employee), inventory (purchases, stock), sales (invoices, revenue), and any other modules. Focus on hooks and components that call financial services.
+- `read-migration-files` group=0 deps=none: Read all migration files, especially financial ones (e.g., migrations/*.py). Extract trigger definitions, table schemas, and any financial logic embedded in migrations.
+- `read-project-structure` group=0 deps=none: Read the project structure to identify all financial system modules (e.g., finance components, hooks, services, types) and list relevant files. Use 'ls' and 'find' commands to map the directory tree.
+- `build-trigger-matrix` group=1 deps=read-migration-files, read-financial-code: Build a trigger matrix from migration files and financial code. Trace each financial operation (insert, update, delete on journal entries, lines, accounts, etc.) through triggers and hooks. Document the flow and any gaps.
+- `verify-accounting-equation` group=1 deps=read-migration-files, read-financial-code: Verify the accounting equation (Assets = Liabilities + Equity) using existing data. Run the show_unbalanced scripts or use previous audit results to confirm balance. If scripts exist, execute them; otherwise, read the previous audit report.
+- `check-12-domains` group=2 deps=build-trigger-matrix, verify-accounting-equation: Assess all 12 audit domains: Double-Entry Integrity, Chart of Accounts, GL Reconciliation, Trial Balance, AP/AR Aging, Revenue Recognition (ASC 606/IFRS 15), Financial Statements, Internal Controls, SOX/COSO Compliance, Financial Reporting, Cash Flow Management, and Period-End Close. Use findings from previous subtasks and the previous audit report.
+- `assembly` group=3 deps=read-project-structure, read-migration-files, read-financial-code, read-integration-points, build-trigger-matrix, verify-accounting-equation, check-12-domains: Write the final comprehensive audit report in Arabic to docs/financial-system-integration-audit-2026-07-05-v2.md. Include: executive summary, methodology, trigger matrix, accounting equation verification, 12-domain assessment, integration points analysis, and recommendations. Do not modify any source code.

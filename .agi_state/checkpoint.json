@@ -1,13 +1,59 @@
 {
   "stage": "plan_approved",
-  "task": "READ-ONLY AUDIT MODE: Do not modify source code, do not run self-healing, and only create the requested report artifact if a deliverable file is required.\n\nREAD-ONLY FINANCIAL SYSTEM INTEGRATION AUDIT\n\n\u0642\u0645 \u0628\u0645\u0631\u0627\u062c\u0639\u0629 \u0634\u0627\u0645\u0644\u0629 \u0644\u0644\u0646\u0638\u0627\u0645 \u0627\u0644\u0645\u0627\u0644\u064a \u0641\u064a \u0645\u0634\u0631\u0648\u0639 Fleetify \u0627\u0644\u0645\u0648\u062c\u0648\u062f \u0641\u064a C:\\Users\\khamis\\Documents\\fleetify\\fleetify-erp \u0648\u062a\u0643\u0627\u0645\u0644\u0647 \u0645\u0639 \u0628\u0642\u064a\u0629 \u0627\u0644\u0648\u062d\u062f\u0627\u062a.\n\n\u0627\u0644\u0645\u0637\u0644\u0648\u0628:\n1. \u0627\u0642\u0631\u0623 \u062c\u0645\u064a\u0639 \u0645\u0644\u0641\u0627\u062a \u0627\u0644\u0645\u064a\u063a\u0631\u0627\u0634\u0646 (SQL migration files) \u0627\u0644\u0645\u062a\u0639\u0644\u0642\u0629 \u0628\u0627\u0644\u0646\u0638\u0627\u0645 \u0627\u0644\u0645\u0627\u0644\u064a\n2. \u0627\u0642\u0631\u0623 \u0645\u0644\u0641\u0627\u062a \u0627\u0644\u062e\u062f\u0645\u0627\u062a (services) \u0648\u0627\u0644\u0647\u0648\u0643 (hooks) \u0648\u0627\u0644\u0643\u0645\u0628\u0648\u0646\u0646\u062a (components) \u0627\u0644\u0645\u0627\u0644\u064a\u0629\n",
+  "task": "READ-ONLY AUDIT MODE: Do not modify source code, do not run self-healing, and only create the requested report artifact if a deliverable file is required.\n\n\u0631\u0627\u062c\u0639 \u0627\u0644\u0646\u0638\u0627\u0645 \u0627\u0644\u0645\u0627\u0644\u064a \u0648\u062a\u0643\u0627\u0645\u0644\u0647 \u0645\u0639 \u0628\u0642\u064a\u0629 \u0627\u0644\u0648\u062d\u062f\u0627\u062a \u0648\u0642\u062f\u0645 \u0644\u064a \u062a\u0642\u0631\u064a\u0631 \u0643\u0627\u0645\u0644 \u0628\u062f\u0648\u0646 \u062a\u063a\u064a\u0631 \u0627\u0644\u0643\u0648\u062f \u0641\u0642\u0637 \u062a\u0642\u0631\u064a\u0631 \u0639\u0646 \u062a\u0643\u0627\u0645\u0644 \u0627\u0644\u0646\u0638\u0627\u0645\n\nThis is a comprehensive financial system integration audit for the Fleetify project. The user wants a full report in Arabic about how the financial system integrates with other modules, without any code changes.\n\nKey context from previous ",
   "status": "running",
-  "timestamp": "2026-07-05T21:18:24.023915",
+  "timestamp": "2026-07-05T21:43:33.588727",
   "plan": {
-    "task": "READ-ONLY AUDIT MODE: Do not modify source code, do not run self-healing, and only create the requested report artifact if a deliverable file is required.\n\nREAD-ONLY FINANCIAL SYSTEM INTEGRATION AUDIT\n\n\u0642\u0645 \u0628\u0645\u0631\u0627\u062c\u0639\u0629 \u0634\u0627\u0645\u0644\u0629 \u0644\u0644\u0646\u0638\u0627\u0645 \u0627\u0644\u0645\u0627\u0644\u064a \u0641\u064a \u0645\u0634\u0631\u0648\u0639 Fleetify \u0627\u0644\u0645\u0648\u062c\u0648\u062f \u0641\u064a C:\\Users\\khamis\\Documents\\fleetify\\fleetify-erp \u0648\u062a\u0643\u0627\u0645\u0644\u0647 \u0645\u0639 \u0628\u0642\u064a\u0629 \u0627\u0644\u0648\u062d\u062f\u0627\u062a.\n\n\u0627\u0644\u0645\u0637\u0644\u0648\u0628:\n1. \u0627\u0642\u0631\u0623 \u062c\u0645\u064a\u0639 \u0645\u0644\u0641\u0627\u062a \u0627\u0644\u0645\u064a\u063a\u0631\u0627\u0634\u0646 (SQL migration files) \u0627\u0644\u0645\u062a\u0639\u0644\u0642\u0629 \u0628\u0627\u0644\u0646\u0638\u0627\u0645 \u0627\u0644\u0645\u0627\u0644\u064a\n2. \u0627\u0642\u0631\u0623 \u0645\u0644\u0641\u0627\u062a \u0627\u0644\u062e\u062f\u0645\u0627\u062a (services) \u0648\u0627\u0644\u0647\u0648\u0643 (hooks) \u0648\u0627\u0644\u0643\u0645\u0628\u0648\u0646\u0646\u062a (components) \u0627\u0644\u0645\u0627\u0644\u064a\u0629\n3. \u062d\u0644\u0644 \u062a\u0643\u0627\u0645\u0644 \u0627\u0644\u0646\u0638\u0627\u0645 \u0627\u0644\u0645\u0627\u0644\u064a \u0645\u0639: \u0627\u0644\u0645\u062e\u0632\u0648\u0646\u060c \u0627\u0644\u0645\u0628\u064a\u0639\u0627\u062a\u060c \u0627\u0644\u0645\u0634\u062a\u0631\u064a\u0627\u062a\u060c \u0627\u0644\u0645\u0648\u0627\u0631\u062f \u0627\u0644\u0628\u0634\u0631\u064a\u0629\n4. \u062d\u062f\u062f \u0646\u0642\u0627\u0637 \u0627\u0644\u0636\u0639\u0641 \u0641\u064a \u0627\u0644\u062a\u0643\u0627\u0645\u0644 (triggers, foreign keys, data flow)\n5. \u0627\u0643\u062a\u0628 \u062a\u0642\u0631\u064a\u0631\u0627\u064b \u0643\u0627\u0645\u0644\u0627\u064b \u0628\u0627\u0644\u0644\u063a\u0629 \u0627\u0644\u0639\u0631\u0628\u064a\u0629 \u0641\u064a \u0645\u0644\u0641 C:\\Users\\khamis\\Documents\\fleetify\\docs\\financial-integration-audit-2026-07-05.md\n\n\u0627\u0644\u062a\u0642\u0631\u064a\u0631 \u064a\u062c\u0628 \u0623\u0646 \u064a\u0634\u0645\u0644:\n- \u0645\u0644\u062e\u0635 \u062a\u0646\u0641\u064a\u0630\u064a\n- \u0645\u0646\u0647\u062c\u064a\u0629 \u0627\u0644\u0645\u0631\u0627\u062c\u0639\u0629\n- \u062a\u062d\u0644\u064a\u0644 \u0642\u0627\u0639\u062f\u0629 \u0627\u0644\u0628\u064a\u0627\u0646\u0627\u062a \u0648\u0627\u0644\u0639\u0644\u0627\u0642\u0627\u062a\n- \u062a\u062d\u0644\u064a\u0644 \u062a\u062f\u0641\u0642 \u0627\u0644\u0628\u064a\u0627\u0646\u0627\u062a \u0628\u064a\u0646 \u0627\u0644\u0648\u062d\u062f\u0627\u062a\n- \u0646\u0642\u0627\u0637 \u0627\u0644\u0642\u0648\u0629\n- \u0646\u0642\u0627\u0637 \u0627\u0644\u0636\u0639\u0641 \u0648\u0627\u0644\u0645\u062e\u0627\u0637\u0631 (\u062d\u0631\u062c\u060c \u0639\u0627\u0644\u064a\u060c \u0645\u062a\u0648\u0633\u0637\u060c \u0645\u0646\u062e\u0641\u0636)\n- \u062a\u0648\u0635\u064a\u0627\u062a \u0644\u0644\u062a\u062d\u0633\u064a\u0646\n- \u0642\u0627\u0626\u0645\u0629 \u0628\u062c\u0645\u064a\u0639 \u0627\u0644\u0645\u0644\u0641\u0627\u062a \u0627\u0644\u062a\u064a \u062a\u0645\u062a \u0645\u0631\u0627\u062c\u0639\u062a\u0647\u0627\n\n\u0647\u0627\u0645 \u062c\u062f\u0627\u064b: \u0644\u0627 \u062a\u0642\u0645 \u0628\u062a\u0639\u062f\u064a\u0644 \u0623\u064a \u0643\u0648\u062f. \u0641\u0642\u0637 \u062a\u0642\u0631\u064a\u0631 \u0648\u062a\u062d\u0644\u064a\u0644.",
+    "task": "READ-ONLY AUDIT MODE: Do not modify source code, do not run self-healing, and only create the requested report artifact if a deliverable file is required.\n\n\u0631\u0627\u062c\u0639 \u0627\u0644\u0646\u0638\u0627\u0645 \u0627\u0644\u0645\u0627\u0644\u064a \u0648\u062a\u0643\u0627\u0645\u0644\u0647 \u0645\u0639 \u0628\u0642\u064a\u0629 \u0627\u0644\u0648\u062d\u062f\u0627\u062a \u0648\u0642\u062f\u0645 \u0644\u064a \u062a\u0642\u0631\u064a\u0631 \u0643\u0627\u0645\u0644 \u0628\u062f\u0648\u0646 \u062a\u063a\u064a\u0631 \u0627\u0644\u0643\u0648\u062f \u0641\u0642\u0637 \u062a\u0642\u0631\u064a\u0631 \u0639\u0646 \u062a\u0643\u0627\u0645\u0644 \u0627\u0644\u0646\u0638\u0627\u0645\n\nThis is a comprehensive financial system integration audit for the Fleetify project. The user wants a full report in Arabic about how the financial system integrates with other modules, without any code changes.\n\nKey context from previous audits:\n- The project is at C:\\Users\\khamis\\Documents\\fleetify\\\n- Previous audit completed on 2026-07-05 found: 3 critical (dual-path issues, incorrect status insertion order causing runtime failures), 4 high, 5 medium, 2 low priority issues\n- The financial system audit methodology requires: read all migration files, build a trigger matrix, trace hook operations, cross-reference each operation against each trigger\n- The 12-domain audit framework covers: Double-Entry Integrity, Chart of Accounts, GL Reconciliation, Trial Balance, AP/AR Aging, Revenue Recognition (ASC 606/IFRS 15), Financial Statements, Internal Controls, SOX/COSO Compliance, Financial Reporting, Cash Flow Management, and Period-End Close\n- Previous findings include: migration 20260627011000 trigger blocks ALL line ops when parent is 'posted', vehicle installment wrong debit (revenue not payable), payroll unbalanced when deductions>0, Math.abs() in 27 places, approval verification exists but unwired, cash flow supported via separate component, 25 finance components hardcode KWD, export is stub\n- The accounting equation was verified as balanced (0.00 difference) with 4,519 journal entries and 9,024 lines balanced\n- Issues like overpayment/immutability triggers and foreign-key violations have been resolved\n\nPlease:\n1. Read the project structure and understand the financial system modules\n2. Read all relevant migration files, especially financial ones\n3. Read the financial system code (hooks, components, services, types)\n4. Read integration points with other modules (HR, inventory, sales, etc.)\n5. Build a comprehensive trigger matrix\n6. Trace every financial operation through the system\n7. Verify the accounting equation (A = L + E)\n8. Check all 12 audit domains\n9. Produce a complete report in Arabic saved to docs/financial-system-integration-audit-2026-07-05-v2.md\n\nCRITICAL: Do NOT modify any code. This is a read-only audit/report task.",
     "subtasks": [
       {
-        "goal": "Scan the project directory C:\\Users\\khamis\\Documents\\fleetify\\fleetify-erp to find all files related to the financial system: SQL migration files (in migrations/ or similar), service files (services/), hooks (hooks/), and components (components/). Use grep or find to locate files containing keywords like 'financial', 'account', 'journal', 'ledger', 'payment', 'invoice', 'chart_of_accounts', etc. Output a list of file paths with their categories (migration, service, hook, component).",
+        "goal": "Read the financial system code: hooks (useJournalEntry, useChartOfAccounts, etc.), components (finance/), services (supabase queries), and types (types.ts). Extract all financial operations, validations, and integration points.",
+        "agent": "refactorer",
+        "toolsets": [
+          "terminal",
+          "file"
+        ],
+        "dependencies": [],
+        "parallel_group": 0,
+        "id": "read-financial-code",
+        "files": [
+          "C:/Users/khamis/Documents/fleetify/src/integrations/supabase/types.ts",
+          "C:/Users/khamis/Documents/fleetify/src/hooks/",
+          "C:/Users/khamis/Documents/fleetify/src/components/finance/",
+          "C:/Users/khamis/Documents/fleetify/src/services/"
+        ],
+        "success_criteria": "All financial code files are read and key functions, hooks, and service calls are documented.",
+        "milestone": "milestone-1",
+        "milestone_index": 0,
+        "model_hint": "analytical",
+        "max_iterations": 1
+      },
+      {
+        "goal": "Read code that integrates finance with other modules: HR (payroll, employee), inventory (purchases, stock), sales (invoices, revenue), and any other modules. Focus on hooks and components that call financial services.",
+        "agent": "devops-engineer",
+        "toolsets": [
+          "terminal",
+          "file"
+        ],
+        "dependencies": [],
+        "parallel_group": 0,
+        "id": "read-integration-points",
+        "files": [
+          "C:/Users/khamis/Documents/fleetify/src/hooks/usePayroll*",
+          "C:/Users/khamis/Documents/fleetify/src/hooks/useInventory*",
+          "C:/Users/khamis/Documents/fleetify/src/hooks/useSales*",
+          "C:/Users/khamis/Documents/fleetify/src/components/hr/",
+          "C:/Users/khamis/Documents/fleetify/src/components/inventory/",
+          "C:/Users/khamis/Documents/fleetify/src/components/sales/"
+        ],
+        "success_criteria": "All integration points between finance and other modules are identified and documented.",
+        "milestone": "milestone-1",
+        "milestone_index": 0,
+        "model_hint": "speed",
+        "max_iterations": 1
+      },
+      {
+        "goal": "Read all migration files, especially financial ones (e.g., migrations/*.py). Extract trigger definitions, table schemas, and any financial logic embedded in migrations.",
         "agent": "backend-engineer",
         "toolsets": [
           "terminal",
@@ -15,152 +61,138 @@
         ],
         "dependencies": [],
         "parallel_group": 0,
-        "id": "discover-financial-files",
-        "files": [],
-        "success_criteria": "A file list is produced (e.g., financial_files.json) containing all discovered financial-related files with their relative paths and categories.",
+        "id": "read-migration-files",
+        "files": [
+          "C:/Users/khamis/Documents/fleetify/migrations/"
+        ],
+        "success_criteria": "All migration files are read and key financial triggers, tables, and constraints are documented.",
         "milestone": "milestone-1",
         "milestone_index": 0,
         "model_hint": "analytical",
         "max_iterations": 1
       },
       {
-        "goal": "Read all hooks and components related to the financial system (e.g., useFinancialData.ts, FinancialDashboard.tsx, InvoiceForm.tsx). Identify how the frontend interacts with the financial backend, what data is fetched, and how it is displayed. Note any integration with other module components (e.g., linking invoices to inventory items).",
+        "goal": "Read the project structure to identify all financial system modules (e.g., finance components, hooks, services, types) and list relevant files. Use 'ls' and 'find' commands to map the directory tree.",
         "agent": "devops-engineer",
         "toolsets": [
           "terminal",
           "file"
         ],
-        "dependencies": [
-          "discover-financial-files"
+        "dependencies": [],
+        "parallel_group": 0,
+        "id": "read-project-structure",
+        "files": [
+          "C:/Users/khamis/Documents/fleetify/"
         ],
-        "parallel_group": 1,
-        "id": "analyze-hooks-components",
-        "files": [],
-        "success_criteria": "A summary (hooks_components_analysis.md) describing each hook/component, its data dependencies, and cross-module interactions.",
-        "milestone": "milestone-2",
-        "milestone_index": 1,
+        "success_criteria": "A list of all financial module directories and key files is produced.",
+        "milestone": "milestone-1",
+        "milestone_index": 0,
         "model_hint": "speed",
         "max_iterations": 1
       },
       {
-        "goal": "Read all SQL migration files identified in the previous subtask. Extract table schemas, foreign key constraints, triggers, and any financial-specific logic. Document the database structure for financial tables (e.g., chart_of_accounts, journal_entries, payments, invoices). Note any relationships to inventory, sales, purchases, or HR tables.",
-        "agent": "backend-engineer",
+        "goal": "Build a trigger matrix from migration files and financial code. Trace each financial operation (insert, update, delete on journal entries, lines, accounts, etc.) through triggers and hooks. Document the flow and any gaps.",
+        "agent": "builder",
+        "toolsets": [
+          "hermes-cli"
+        ],
+        "dependencies": [
+          "read-migration-files",
+          "read-financial-code"
+        ],
+        "parallel_group": 1,
+        "id": "build-trigger-matrix",
+        "files": [],
+        "success_criteria": "A trigger matrix is built showing each operation, the triggers/hooks involved, and the resulting actions. Any missing or inconsistent operations are flagged.",
+        "milestone": "milestone-2",
+        "milestone_index": 1,
+        "model_hint": "balanced",
+        "max_iterations": 3
+      },
+      {
+        "goal": "Verify the accounting equation (Assets = Liabilities + Equity) using existing data. Run the show_unbalanced scripts or use previous audit results to confirm balance. If scripts exist, execute them; otherwise, read the previous audit report.",
+        "agent": "code-reviewer",
         "toolsets": [
           "terminal",
           "file"
         ],
         "dependencies": [
-          "discover-financial-files"
+          "read-migration-files",
+          "read-financial-code"
         ],
         "parallel_group": 1,
-        "id": "analyze-migrations",
-        "files": [],
-        "success_criteria": "A structured summary (e.g., migration_analysis.md) containing table definitions, foreign keys, triggers, and cross-module references found in migrations.",
+        "id": "verify-accounting-equation",
+        "files": [
+          "C:/Users/khamis/Documents/fleetify/scripts/show_unbalanced.py",
+          "C:/Users/khamis/Documents/fleetify/scripts/show_unbalanced2.py"
+        ],
+        "success_criteria": "The accounting equation is verified as balanced (difference < 0.01) or any discrepancies are documented.",
         "milestone": "milestone-2",
         "milestone_index": 1,
         "model_hint": "analytical",
         "max_iterations": 1
       },
       {
-        "goal": "Read all service files related to the financial system (e.g., financialService.ts, paymentService.ts, invoiceService.ts). Identify data flow: which functions call which tables, how data is transformed, and how the financial module interacts with other modules (inventory, sales, purchases, HR). Note any direct database queries, API calls, or event-driven integrations.",
-        "agent": "backend-engineer",
+        "goal": "Assess all 12 audit domains: Double-Entry Integrity, Chart of Accounts, GL Reconciliation, Trial Balance, AP/AR Aging, Revenue Recognition (ASC 606/IFRS 15), Financial Statements, Internal Controls, SOX/COSO Compliance, Financial Reporting, Cash Flow Management, and Period-End Close. Use findings from previous subtasks and the previous audit report.",
+        "agent": "code-reviewer",
         "toolsets": [
           "terminal",
           "file"
         ],
         "dependencies": [
-          "discover-financial-files"
-        ],
-        "parallel_group": 1,
-        "id": "analyze-services",
-        "files": [],
-        "success_criteria": "A summary (services_analysis.md) describing each service's purpose, key functions, data flow, and integration points with other modules.",
-        "milestone": "milestone-2",
-        "milestone_index": 1,
-        "model_hint": "analytical",
-        "max_iterations": 1
-      },
-      {
-        "goal": "Using the outputs from migration, service, and hooks/components analysis, map the data flow between the financial module and inventory, sales, purchases, and HR modules. Identify foreign key relationships, shared tables, event triggers, and any direct code references. Document the integration points and data dependencies.",
-        "agent": "backend-engineer",
-        "toolsets": [
-          "terminal",
-          "file"
-        ],
-        "dependencies": [
-          "analyze-migrations",
-          "analyze-services",
-          "analyze-hooks-components"
+          "build-trigger-matrix",
+          "verify-accounting-equation"
         ],
         "parallel_group": 2,
-        "id": "analyze-cross-module-integration",
+        "id": "check-12-domains",
         "files": [],
-        "success_criteria": "A document (cross_module_integration.md) with a diagram or table showing how financial data flows to/from each other module, including specific tables, keys, and code references.",
+        "success_criteria": "All 12 domains are assessed with specific findings, risks, and recommendations documented.",
         "milestone": "milestone-3",
         "milestone_index": 2,
         "model_hint": "analytical",
         "max_iterations": 1
       },
       {
-        "goal": "Based on the cross-module integration analysis, identify weaknesses and risks in the financial system integration. Categorize by severity (critical, high, medium, low). Look for missing foreign keys, inconsistent data types, lack of triggers for cascading updates/deletes, potential data integrity issues, and any gaps in data flow. Also note any security or performance concerns.",
-        "agent": "devops-engineer",
+        "goal": "Write the final comprehensive audit report in Arabic to docs/financial-system-integration-audit-2026-07-05-v2.md. Include: executive summary, methodology, trigger matrix, accounting equation verification, 12-domain assessment, integration points analysis, and recommendations. Do not modify any source code.",
+        "agent": "builder",
         "toolsets": [
-          "terminal",
-          "file"
+          "hermes-cli"
         ],
         "dependencies": [
-          "analyze-cross-module-integration"
+          "read-project-structure",
+          "read-migration-files",
+          "read-financial-code",
+          "read-integration-points",
+          "build-trigger-matrix",
+          "verify-accounting-equation",
+          "check-12-domains"
         ],
         "parallel_group": 3,
-        "id": "identify-weaknesses",
-        "files": [],
-        "success_criteria": "A list of weaknesses with severity ratings, descriptions, and suggested improvements (without modifying code).",
-        "milestone": "milestone-4",
-        "milestone_index": 3,
-        "model_hint": "speed",
-        "max_iterations": 1
-      },
-      {
-        "goal": "Collect all findings from prior subtasks (discover-financial-files, analyze-migrations, analyze-services, analyze-hooks-components, analyze-cross-module-integration, identify-weaknesses) and write the final comprehensive audit report in Arabic to C:\\Users\\khamis\\Documents\\fleetify\\docs\\financial-integration-audit-2026-07-05.md. The report must include: executive summary, methodology, database analysis, data flow analysis, strengths, weaknesses (with severity), recommendations, and a list of all reviewed files. Ensure the report is well-formatted in Markdown.",
-        "agent": "code-reviewer",
-        "toolsets": [
-          "terminal",
-          "file"
-        ],
-        "dependencies": [
-          "discover-financial-files",
-          "analyze-migrations",
-          "analyze-services",
-          "analyze-hooks-components",
-          "analyze-cross-module-integration",
-          "identify-weaknesses"
-        ],
-        "parallel_group": 4,
         "id": "assembly",
         "files": [
-          "C:\\Users\\khamis\\Documents\\fleetify\\docs\\financial-integration-audit-2026-07-05.md"
+          "C:/Users/khamis/Documents/fleetify/docs/financial-system-integration-audit-2026-07-05-v2.md"
         ],
-        "success_criteria": "Final deliverable file is written and contains all findings from prior subtasks, formatted as specified.",
-        "milestone": "milestone-5",
-        "milestone_index": 4,
-        "model_hint": "analytical",
-        "max_iterations": 1
+        "success_criteria": "Final deliverable file is written and contains all findings from prior subtasks in Arabic.",
+        "milestone": "milestone-4",
+        "milestone_index": 3,
+        "model_hint": "balanced",
+        "max_iterations": 3
       }
     ],
     "risk_level": "low",
-    "parallel_group_count": 5,
+    "parallel_group_count": 4,
     "routing_decisions": [
       {
-        "subtask_id": "discover-financial-files",
-        "task_type": "database",
-        "agent": "backend-engineer",
+        "subtask_id": "read-financial-code",
+        "task_type": "refactor",
+        "agent": "refactorer",
         "model_hint": "analytical",
-        "complexity": "high",
-        "is_risky": true,
-        "confidence": 0.64,
+        "complexity": "medium",
+        "is_risky": false,
+        "confidence": 0.58,
         "profile": {
-          "name": "backend-engineer",
-          "task_type": "database",
+          "name": "refactorer",
+          "task_type": "refactor",
           "model_tier": "balanced",
           "timeout": 120.0,
           "max_retries": 1,
@@ -174,7 +206,7 @@
           ],
           "model": "glm-5.2:cloud",
           "provider": "custom:ollama",
-          "base_url": "https://ollama.com/v1"
+          "base_url": "http://127.0.0.1:11434/v1"
         },
         "parallel_safe": true,
         "toolsets": [
@@ -183,7 +215,7 @@
         ]
       },
       {
-        "subtask_id": "analyze-hooks-components",
+        "subtask_id": "read-integration-points",
         "task_type": "config",
         "agent": "devops-engineer",
         "model_hint": "speed",
@@ -215,13 +247,13 @@
         ]
       },
       {
-        "subtask_id": "analyze-migrations",
+        "subtask_id": "read-migration-files",
         "task_type": "database",
         "agent": "backend-engineer",
         "model_hint": "analytical",
         "complexity": "high",
         "is_risky": true,
-        "confidence": 0.86,
+        "confidence": 0.71,
         "profile": {
           "name": "backend-engineer",
           "task_type": "database",
@@ -247,76 +279,12 @@
         ]
       },
       {
-        "subtask_id": "analyze-services",
-        "task_type": "database",
-        "agent": "backend-engineer",
-        "model_hint": "analytical",
-        "complexity": "medium",
-        "is_risky": false,
-        "confidence": 0.64,
-        "profile": {
-          "name": "backend-engineer",
-          "task_type": "database",
-          "model_tier": "balanced",
-          "timeout": 120.0,
-          "max_retries": 1,
-          "priority": "P1",
-          "requires_review": false,
-          "estimated_tokens": 4000,
-          "parallel_safe": true,
-          "toolsets": [
-            "terminal",
-            "file"
-          ],
-          "model": "glm-5.2:cloud",
-          "provider": "custom:ollama",
-          "base_url": "https://ollama.com/v1"
-        },
-        "parallel_safe": true,
-        "toolsets": [
-          "terminal",
-          "file"
-        ]
-      },
-      {
-        "subtask_id": "analyze-cross-module-integration",
-        "task_type": "database",
-        "agent": "backend-engineer",
-        "model_hint": "analytical",
-        "complexity": "high",
-        "is_risky": true,
-        "confidence": 0.64,
-        "profile": {
-          "name": "backend-engineer",
-          "task_type": "database",
-          "model_tier": "balanced",
-          "timeout": 120.0,
-          "max_retries": 1,
-          "priority": "P1",
-          "requires_review": false,
-          "estimated_tokens": 4000,
-          "parallel_safe": true,
-          "toolsets": [
-            "terminal",
-            "file"
-          ],
-          "model": "glm-5.2:cloud",
-          "provider": "custom:ollama",
-          "base_url": "https://ollama.com/v1"
-        },
-        "parallel_safe": true,
-        "toolsets": [
-          "terminal",
-          "file"
-        ]
-      },
-      {
-        "subtask_id": "identify-weaknesses",
+        "subtask_id": "read-project-structure",
         "task_type": "config",
         "agent": "devops-engineer",
         "model_hint": "speed",
         "complexity": "medium",
-        "is_risky": true,
+        "is_risky": false,
         "confidence": 0.58,
         "profile": {
           "name": "devops-engineer",
@@ -343,13 +311,43 @@
         ]
       },
       {
-        "subtask_id": "assembly",
+        "subtask_id": "build-trigger-matrix",
+        "task_type": "implementation",
+        "agent": "builder",
+        "model_hint": "balanced",
+        "complexity": "high",
+        "is_risky": true,
+        "confidence": 0.57,
+        "profile": {
+          "name": "builder",
+          "task_type": "implementation",
+          "model_tier": "balanced",
+          "timeout": 600,
+          "max_retries": 3,
+          "priority": "P1",
+          "requires_review": false,
+          "estimated_tokens": 4000,
+          "parallel_safe": true,
+          "toolsets": [
+            "hermes-cli"
+          ],
+          "model": "glm-5.2:cloud",
+          "provider": "custom:ollama",
+          "base_url": "http://localhost:11434/v1"
+        },
+        "parallel_safe": true,
+        "toolsets": [
+          "hermes-cli"
+        ]
+      },
+      {
+        "subtask_id": "verify-accounting-equation",
         "task_type": "review",
         "agent": "code-reviewer",
         "model_hint": "analytical",
-        "complexity": "high",
-        "is_risky": true,
-        "confidence": 0.75,
+        "complexity": "medium",
+        "is_risky": false,
+        "confidence": 0.67,
         "profile": {
           "name": "code-reviewer",
           "task_type": "review",
@@ -373,6 +371,68 @@
           "terminal",
           "file"
         ]
+      },
+      {
+        "subtask_id": "check-12-domains",
+        "task_type": "review",
+        "agent": "code-reviewer",
+        "model_hint": "analytical",
+        "complexity": "medium",
+        "is_risky": false,
+        "confidence": 0.58,
+        "profile": {
+          "name": "code-reviewer",
+          "task_type": "review",
+          "model_tier": "balanced",
+          "timeout": 120.0,
+          "max_retries": 1,
+          "priority": "P1",
+          "requires_review": false,
+          "estimated_tokens": 4000,
+          "parallel_safe": true,
+          "toolsets": [
+            "terminal",
+            "file"
+          ],
+          "model": "glm-5.2:cloud",
+          "provider": "custom:ollama",
+          "base_url": "https://ollama.com/v1"
+        },
+        "parallel_safe": true,
+        "toolsets": [
+          "terminal",
+          "file"
+        ]
+      },
+      {
+        "subtask_id": "assembly",
+        "task_type": "implementation",
+        "agent": "builder",
+        "model_hint": "balanced",
+        "complexity": "medium",
+        "is_risky": false,
+        "confidence": 0.57,
+        "profile": {
+          "name": "builder",
+          "task_type": "implementation",
+          "model_tier": "balanced",
+          "timeout": 600,
+          "max_retries": 3,
+          "priority": "P1",
+          "requires_review": false,
+          "estimated_tokens": 4000,
+          "parallel_safe": true,
+          "toolsets": [
+            "hermes-cli"
+          ],
+          "model": "glm-5.2:cloud",
+          "provider": "custom:ollama",
+          "base_url": "http://localhost:11434/v1"
+        },
+        "parallel_safe": true,
+        "toolsets": [
+          "hermes-cli"
+        ]
       }
     ],
     "milestones": [
@@ -380,10 +440,16 @@
         "id": "milestone-1",
         "name": "Parallel group 1",
         "subtask_ids": [
-          "discover-financial-files"
+          "read-financial-code",
+          "read-integration-points",
+          "read-migration-files",
+          "read-project-structure"
         ],
         "acceptance_criteria": [
-          "A file list is produced (e.g., financial_files.json) containing all discovered financial-related files with their relative paths and categories."
+          "All financial code files are read and key functions, hooks, and service calls are documented.",
+          "All integration points between finance and other modules are identified and documented.",
+          "All migration files are read and key financial triggers, tables, and constraints are documented.",
+          "A list of all financial module directories and key files is produced."
         ],
         "assumptions": [
           "Dependencies from earlier milestones remain stable."
@@ -393,14 +459,12 @@
         "id": "milestone-2",
         "name": "Parallel group 2",
         "subtask_ids": [
-          "analyze-hooks-components",
-          "analyze-migrations",
-          "analyze-services"
+          "build-trigger-matrix",
+          "verify-accounting-equation"
         ],
         "acceptance_criteria": [
-          "A summary (hooks_components_analysis.md) describing each hook/component, its data dependencies, and cross-module interactions.",
-          "A structured summary (e.g., migration_analysis.md) containing table definitions, foreign keys, triggers, and cross-module references found in migrations.",
-          "A summary (services_analysis.md) describing each service's purpose, key functions, data flow, and integration points with other modules."
+          "A trigger matrix is built showing each operation, the triggers/hooks involved, and the resulting actions. Any missing or inconsistent operations are flagged.",
+          "The accounting equation is verified as balanced (difference < 0.01) or any discrepancies are documented."
         ],
         "assumptions": [
           "Dependencies from earlier milestones remain stable."
@@ -410,10 +474,10 @@
         "id": "milestone-3",
         "name": "Parallel group 3",
         "subtask_ids": [
-          "analyze-cross-module-integration"
+          "check-12-domains"
         ],
         "acceptance_criteria": [
-          "A document (cross_module_integration.md) with a diagram or table showing how financial data flows to/from each other module, including specific tables, keys, and code references."
+          "All 12 domains are assessed with specific findings, risks, and recommendations documented."
         ],
         "assumptions": [
           "Dependencies from earlier milestones remain stable."
@@ -423,23 +487,10 @@
         "id": "milestone-4",
         "name": "Parallel group 4",
         "subtask_ids": [
-          "identify-weaknesses"
-        ],
-        "acceptance_criteria": [
-          "A list of weaknesses with severity ratings, descriptions, and suggested improvements (without modifying code)."
-        ],
-        "assumptions": [
-          "Dependencies from earlier milestones remain stable."
-        ]
-      },
-      {
-        "id": "milestone-5",
-        "name": "Parallel group 5",
-        "subtask_ids": [
           "assembly"
         ],
         "acceptance_criteria": [
-          "Final deliverable file is written and contains all findings from prior subtasks, formatted as specified."
+          "Final deliverable file is written and contains all findings from prior subtasks in Arabic."
         ],
         "assumptions": [
           "Dependencies from earlier milestones remain stable."
@@ -454,13 +505,14 @@
       "Are there any approval gates or change management processes?"
     ],
     "completion_criteria": [
-      "Subtask complete: Scan the project directory C:\\Users\\khamis\\Documents\\fleetify\\fleetify-erp to find all files related",
-      "Subtask complete: Read all hooks and components related to the financial system (e.g., useFinancialData.ts, FinancialD",
-      "Subtask complete: Read all SQL migration files identified in the previous subtask. Extract table schemas, foreign key ",
-      "Subtask complete: Read all service files related to the financial system (e.g., financialService.ts, paymentService.ts",
-      "Subtask complete: Using the outputs from migration, service, and hooks/components analysis, map the data flow between ",
-      "Subtask complete: Based on the cross-module integration analysis, identify weaknesses and risks in the financial syste",
-      "Subtask complete: Collect all findings from prior subtasks (discover-financial-files, analyze-migrations, analyze-serv",
+      "Subtask complete: Read the financial system code: hooks (useJournalEntry, useChartOfAccounts, etc.), components (finan",
+      "Subtask complete: Read code that integrates finance with other modules: HR (payroll, employee), inventory (purchases, ",
+      "Subtask complete: Read all migration files, especially financial ones (e.g., migrations/*.py). Extract trigger definit",
+      "Subtask complete: Read the project structure to identify all financial system modules (e.g., finance components, hooks",
+      "Subtask complete: Build a trigger matrix from migration files and financial code. Trace each financial operation (inse",
+      "Subtask complete: Verify the accounting equation (Assets = Liabilities + Equity) using existing data. Run the show_unb",
+      "Subtask complete: Assess all 12 audit domains: Double-Entry Integrity, Chart of Accounts, GL Reconciliation, Trial Bal",
+      "Subtask complete: Write the final comprehensive audit report in Arabic to docs/financial-system-integration-audit-2026",
       "All quality gates pass (syntax, lint, type, test)",
       "No regressions in existing test suite"
     ],
