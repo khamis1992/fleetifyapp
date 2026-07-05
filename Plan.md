@@ -1,63 +1,96 @@
-# Plan: Comprehensive financial system integration audit for the Fleetify ERP (car rental management for Qatar). Project root: C:\Users\khamis\Documents\fleetifyapp\
+# Plan: Perform a COMPLETELY FRESH, comprehensive READ-ONLY audit of the Fleetify ERP financial system and its integration with all other modules. DO NOT reference or rely on any previous audit reports. Start from scratch. NO code changes — analysis only.
 
-DO NOT modify any code. This is a READ-ONLY audit that produces a detailed report.
+## Project
+Path: C:\Users\khamis\Documents\fleetifyapp
+Stack: React 18 + TypeScript + Vite, Supabase backend, car rental ERP (Qatar)
 
-Audit scope:
-1. Map the ENTIRE financial system — all financial-related pages, components, hooks, API routes, Supabase queries, and type definitions. Include: invoices, payments, journal entries, chart of accounts, general ledger, financial reports, expense management, revenue tracking, customer billing, vendor payments, payroll, tax/VAT, currency handling, financial dashboards.
+## Audit Scope
 
-2. Integration points — trace how the financial system connects to EVERY other module:
-   - Fleet/vehicle management (depreciation, maintenance costs, fuel, insurance)
-   - Customer management (billing, credit limits, statements)
-   - Driver management (salaries, advances, settlements)
-   - Bookings/reservations (revenue recognition, billing cycles)
-   - Contracts (payment schedules, penalties)
-   - Inventory/parts (stock valuation, cost of goods)
-   - Reports & analytics (financial KPIs, P&L, balance sheet, cash flow)
-   - Admin/settings (currency, tax rates, fiscal year)
+### Phase 1: Database Schema Discovery
+- Read `src/integrations/supabase/types.ts` — extract EVERY financial-related table with ALL columns
+- Read ALL migration files under `supabase/migrations/` that relate to finance, journal, payment, invoice, controls, triggers, RPCs
+- Build a complete trigger matrix: every trigger, what table, what operation, what condition, what exception
+- Document all RPCs/functions related to finance
 
-3. Data flow analysis — for each integration point, document:
-   - What data flows between modules (fields, direction)
-   - How it flows (direct query, hook, shared state, API call)
-   - Is the integration complete or are there gaps/broken links?
-   - Are there orphaned financial records (payments without invoices, journal entries without source documents)?
-   - Foreign key integrity issues
+### Phase 2: Financial Pages & Routes
+- Find ALL financial pages and components (search src/pages/finance/, src/components/finance/)
+- Map every route to its component
+- Check which pages are wired vs orphaned
 
-4. Known issues from memory: 43 payments unlinked (blocked by prevent_overpayment_trigger), A=L+E off by 2,142,986 QAR (Revenue not closed to Equity), empty=0, zero=0, drafts=2, invoices=0, migration 20260701000006 created with trigger-bypass RPC but unapplied. Column traps: payments(status→payment_status), journal_entry_lines(entry_id→journal_entry_id, account_code→account_id, company_id→none).
+### Phase 3: Integration Hooks — Deep Analysis
+For EVERY hook that creates journal entries from other modules, read the FULL file and trace the EXACT operation sequence:
+- useRentalPaymentJournalIntegration.ts
+- useTrafficViolationJournalIntegration.ts
+- useMaintenanceJournalIntegration.ts
+- useVehicleInstallmentJournalIntegration.ts
+- usePayrollJournalIntegration.ts
+- usePaymentOperations.ts
+- useConvertToLegalCase.ts (if it creates JEs)
+- Any other hook that writes to journal_entries or journal_entry_lines
 
-5. Architecture assessment:
-   - Is the chart of accounts properly structured?
-   - Are journal entries following double-entry bookkeeping correctly?
-   - Is the trial balance generation correct?
-   - Are financial reports (P&L, Balance Sheet, Cash Flow) correctly pulling data?
-   - Is VAT/tax handling compliant with Qatar regulations?
-   - Is currency handling consistent (QAR)?
-   - Are there any calculated fields that could have precision issues?
+For EACH hook document:
+1. Exact sequence: which table, which operation, in what order, with what status
+2. Does it create header as 'draft' or 'posted'?
+3. Does it pass total_debit and total_credit?
+4. What accounts does it debit/credit? Are they correct?
+5. Does it have a reverse-link field to the source module?
+6. Does it check for locked accounting periods?
+7. Does it handle errors properly?
+8. Does it attempt DELETE on rollback?
 
-6. Gaps and risks:
-   - Missing integrations (modules that should feed financial data but don't)
-   - Broken integrations (data flowing but incorrect/incomplete)
-   - Redundant data entry points
-   - Security concerns in financial data access
-   - Performance concerns in financial queries
-   - Compliance gaps
+### Phase 4: Financial Reports
+- Read useEnhancedFinancialReports.ts — what report types does it support?
+- Read CashFlowStatementReport.tsx — is cash flow real or estimated?
+- Read useGeneralLedger.ts — reversal logic, export logic, delete logic
+- Read useFinancialIntegrityReport.ts — what does it actually check?
+- Search for Math.abs() in ALL financial hooks — where and why?
+- Search for mock/mockData/hardcoded/placeholder/TODO in financial hooks
 
-Deliver a comprehensive markdown report saved to C:\Users\khamis\Documents\fleetifyapp\FINANCIAL_SYSTEM_AUDIT_REPORT.md with:
-- Executive summary
-- Complete financial system map
-- Integration matrix (module × financial area)
-- Data flow diagrams (ASCII)
-- Issue register (categorized by severity: critical/high/medium/low)
-- Compliance assessment
-- Risk assessment
-- Recommendations (prioritized, no code changes — just recommendations)
+### Phase 5: Controls & Compliance
+- Read approval workflow hooks and rules — is approver verification wired in?
+- Read audit trail hooks — one table or two?
+- Read monthly close / period-end logic
+- Read bank reconciliation logic
+- Check for segregation of duties
 
-The report should be in Arabic (the user's language) with technical terms in English where appropriate.
+### Phase 6: Cross-Module Integration Map
+- Search for ALL `.from('journal_entries')`, `.from('payments')`, `.from('invoices')` across the ENTIRE codebase
+- Map which modules touch which financial tables
+- Identify missing reverse-link fields
+
+### Phase 7: Currency & Display
+- Search for KWD/د.ك in financial components
+- Check if useCompanyCurrency() is used vs hardcoded currency
+
+## Deliverable
+Write a comprehensive audit report to `C:\Users\khamis\Documents\fleetifyapp\docs\financial-system-audit-v5.md` in English with:
+
+1. Executive Summary
+2. Complete Financial Table Inventory (from types.ts)
+3. Complete Trigger Matrix (from migrations)
+4. Per-Hook Operation Sequence Analysis (with trigger cross-reference)
+5. Financial Reports Accuracy Assessment
+6. Controls & Compliance Assessment
+7. Cross-Module Integration Map
+8. Currency & Display Issues
+9. Mock/Stale Data Inventory
+10. Risk Assessment (Critical/High/Medium with file:line evidence)
+11. Recommendations (no code changes)
+12. Methodology Statement
+
+## CRITICAL RULES
+- EVERY finding MUST have a file:line reference from direct file reading
+- NO claims based on memory or previous reports
+- Read files directly — do not trust subagent summaries
+- Cross-reference every hook operation against every trigger
+- If something cannot be verified from code alone, state that explicitly
+- Report in English
 
 ## Reasoning
-This is a read-only audit producing a single comprehensive report. I decomposed it into 5 parallel analysis tasks covering different audit dimensions (system mapping, query audit, integration tracing, known issue verification, architecture assessment), followed by 1 report compilation task that depends on all analysis tasks. This maximizes parallelism while keeping the final report coherent.
+The audit is decomposed into 7 independent analysis subtasks (schema, pages, hooks, reports, controls, cross-module, currency) that can run in parallel, plus a final assembly subtask that collects all findings and writes the report. This maximizes parallelism while keeping each subtask focused and verifiable.
 
 ## Risk Level
-low
+medium
 
 ## Assumptions
 - Dependencies from earlier milestones remain stable.
@@ -65,23 +98,27 @@ low
 ## Milestones
 
 ### Parallel group 1
-- Subtasks: architecture-assessment, financial-system-mapping, integration-tracing, known-issues-verification, supabase-query-audit
+- Subtasks: controls-compliance, cross-module-integration, currency-display, financial-pages, financial-reports, integration-hooks, schema-migrations
 - Acceptance criteria:
-  - Structured assessment of all 7 architecture areas with specific findings, code references, and compliance notes.
-  - A complete catalog of all financial-related files with their purposes, covering all listed financial areas. No financial file is missed.
-  - Integration matrix covering all 8 modules with documented data flows, gaps, orphaned records, and FK integrity issues.
-  - Each of the 5 known issues verified with code evidence, confirming or refuting with specific file references.
-  - Complete inventory of financial table schemas, all queries against them, and all column name mismatches/traps identified.
+  - Approval workflow rules documented; audit trail table(s) identified; monthly close logic traced; bank reconciliation logic documented; segregation of duties assessment completed with evidence.
+  - Complete cross-module integration map with file:line references; list of modules touching each financial table; missing reverse-link fields identified.
+  - All hardcoded currency references documented; useCompanyCurrency() usage verified; findings with file:line.
+  - Complete list of financial pages/components with file paths, route mapping, and wiring status (wired/orphaned).
+  - Report types listed; cash flow method documented; reversal/export/delete logic traced; integrity checks enumerated; all Math.abs() usages in financial hooks documented with file:line; all mock/placeholder occurrences in financial hooks documented.
+  - Per-hook operation sequence documented with file:line references; all 8 checklist items answered for each hook.
+  - All financial tables and columns extracted from types.ts and migrations; trigger matrix documented with table, operation, condition, exception; all finance-related RPCs/functions listed with parameters and return types.
 
 ### Parallel group 2
-- Subtasks: compile-audit-report
+- Subtasks: assembly
 - Acceptance criteria:
-  - FINANCIAL_SYSTEM_AUDIT_REPORT.md exists, is in Arabic with English technical terms, contains all 8 required sections, includes ASCII data flow diagrams, issue register with severity categories, and prioritized recommendations. No code files were modified.
+  - Final deliverable file is written and contains all findings from prior subtasks, with cross-references and complete sections.
 
 ## DAG
-- `architecture-assessment` group=0 deps=none: Assess the financial architecture: (1) Is the chart of accounts properly structured? (2) Are journal entries following double-entry bookkeeping correctly? (3) Is trial balance generation correct? (4) Are financial reports (P&L, Balance Sheet, Cash Flow) correctly pulling data? (5) Is VAT/tax handling compliant with Qatar regulations? (6) Is currency handling consistent (QAR)? (7) Are there calculated fields with precision issues? Review CoA structure, JE line balancing logic, report generation code, VAT calculation code, and currency conversion code. Produce a structured assessment summary.
-- `financial-system-mapping` group=0 deps=none: Map the ENTIRE financial system structure. Scan src/pages, src/components, src/hooks, src/routes, src/integrations for all financial-related files. Catalog every file related to: invoices, payments, journal entries, chart of accounts, general ledger, financial reports, expense management, revenue tracking, customer billing, vendor payments, payroll, tax/VAT, currency handling, financial dashboards. For each file, note its purpose, what financial entity it manages, and key functions/exports. Produce a structured summary of the financial system map.
-- `integration-tracing` group=0 deps=none: Trace integration points between the financial system and EVERY other module. For each module (fleet/vehicles, customers, drivers, bookings, contracts, inventory/parts, reports/analytics, admin/settings), identify: what financial data flows between them, how it flows (direct query, hook, shared state, API), whether the integration is complete or has gaps, orphaned records (payments without invoices, journal entries without source documents), and foreign key integrity issues. Produce a structured integration matrix and data flow summary.
-- `known-issues-verification` group=0 deps=none: Verify the known issues from project memory: (1) 43 payments unlinked blocked by prevent_overpayment_trigger, (2) A=L+E off by 2,142,986 QAR (Revenue not closed to Equity), (3) empty=0, zero=0, drafts=2, invoices=0, (4) migration 20260701000006 created with trigger-bypass RPC but unapplied, (5) column traps in payments, journal_entry_lines, chart_of_accounts. Search for the migration files, trigger definitions, closing entry scripts, and any related code. Confirm or refute each issue with evidence from the codebase. Produce a structured verification summary.
-- `supabase-query-audit` group=0 deps=none: Audit all Supabase queries and type definitions related to financial tables. Parse src/integrations/supabase/types.ts for financial table schemas (payments, invoices, journal_entries, journal_entry_lines, chart_of_accounts, expenses, etc.). Scan all source files for .from() calls targeting financial tables. Document: table schemas, column names, which files query which tables, what filters/selects are used. Check for the known column traps: payments(status→payment_status, recorded_by→created_by, reconciled→reconciliation_status), journal_entry_lines(entry_id→journal_entry_id, account_code→account_id, company_id→none), chart_of_accounts(level→account_level, parent_code→parent_account_code). Produce a structured findings summary.
-- `compile-audit-report` group=1 deps=financial-system-mapping, supabase-query-audit, integration-tracing, known-issues-verification, architecture-assessment: Compile all analysis findings into the final comprehensive markdown report at C:\Users\khamis\Documents\fleetifyapp\FINANCIAL_SYSTEM_AUDIT_REPORT.md. The report MUST be in Arabic with technical terms in English where appropriate. Include: Executive summary, Complete financial system map, Integration matrix (module × financial area), ASCII data flow diagrams, Issue register (categorized by severity: critical/high/medium/low), Compliance assessment, Risk assessment, Prioritized recommendations (no code changes). Synthesize findings from all 5 analysis tasks into a coherent, well-structured document.
+- `controls-compliance` group=0 deps=none: Read approval workflow hooks and rules, audit trail hooks, monthly close/period-end logic, bank reconciliation logic. Check for segregation of duties. Document findings with file:line references.
+- `cross-module-integration` group=0 deps=none: Search the entire src/ directory for all occurrences of .from('journal_entries'), .from('payments'), .from('invoices'). Map which modules touch which financial tables. Identify missing reverse-link fields. Document with file:line references.
+- `currency-display` group=0 deps=none: Search for KWD/د.ك in financial components. Check if useCompanyCurrency() is used vs hardcoded currency. Document all occurrences with file:line.
+- `financial-pages` group=0 deps=none: Find all financial pages and components under src/pages/finance/ and src/components/finance/. Map every route to its component, check which pages are wired vs orphaned. Document findings with file paths.
+- `financial-reports` group=0 deps=none: Read useEnhancedFinancialReports.ts, CashFlowStatementReport.tsx, useGeneralLedger.ts, useFinancialIntegrityReport.ts. Document report types, cash flow estimation method, reversal/export/delete logic, integrity checks. Search for Math.abs() in all financial hooks and document usage. Search for mock/mockData/hardcoded/placeholder/TODO in financial hooks.
+- `integration-hooks` group=0 deps=none: For each integration hook (useRentalPaymentJournalIntegration, useTrafficViolationJournalIntegration, useMaintenanceJournalIntegration, useVehicleInstallmentJournalIntegration, usePayrollJournalIntegration, usePaymentOperations, useConvertToLegalCase, and any other hook writing to journal_entries or journal_entry_lines), read the FULL file and trace the exact operation sequence. Document: sequence, draft/posted status, total_debit/credit, accounts used, reverse-link field, locked period check, error handling, DELETE on rollback.
+- `schema-migrations` group=0 deps=none: Read types.ts and all migration files under supabase/migrations/ related to finance, journal, payment, invoice, controls, triggers, RPCs. Extract every financial table with all columns, build a complete trigger matrix (table, operation, condition, exception), and document all RPCs/functions.
+- `assembly` group=1 deps=schema-migrations, financial-pages, integration-hooks, financial-reports, controls-compliance, cross-module-integration, currency-display: Collect all findings from subtasks 1-7, cross-reference hook operations against triggers, compile the comprehensive audit report with all required sections (Executive Summary, Table Inventory, Trigger Matrix, Per-Hook Analysis, Reports Assessment, Controls Assessment, Cross-Module Map, Currency Issues, Mock/Stale Data Inventory, Risk Assessment, Recommendations, Methodology). Write final report to docs/financial-system-audit-v5.md.

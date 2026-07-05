@@ -268,19 +268,37 @@ ${additionalNotes ? `\nملاحظات إضافية:\n${additionalNotes}` : ''}
         const provisionAmount = delinquentCustomer.total_debt * provisionRate;
         const today = new Date().toISOString().split('T')[0];
         const journalNumber = `JV-LEGAL-${Date.now().toString().slice(-8)}`;
+        const { data: legalAccounts, error: legalAccountsError } = await supabase
+          .from('chart_of_accounts')
+          .select('id, account_code')
+          .eq('company_id', profile.company_id)
+          .in('account_code', ['1200', '1203', '1204', '5401'])
+          .eq('is_header', false)
+          .eq('is_active', true);
+
+        if (legalAccountsError) throw legalAccountsError;
+
+        const accountByCode = new Map((legalAccounts || []).map((account) => [account.account_code, account.id]));
+        const legalReceivableAccountId = accountByCode.get('1203');
+        const customerReceivableAccountId = accountByCode.get('1200');
+        const badDebtExpenseAccountId = accountByCode.get('5401');
+        const doubtfulDebtAllowanceAccountId = accountByCode.get('1204');
+
+        if (!legalReceivableAccountId || !customerReceivableAccountId || !badDebtExpenseAccountId || !doubtfulDebtAllowanceAccountId) {
+          throw new Error('Legal case journal accounts are not configured. Required account codes: 1200, 1203, 1204, 5401.');
+        }
 
         // 1. إنشاء قيد نقل الذمم للتحصيل القانوني
         const { data: transferEntry, error: transferError } = await supabase
           .from('journal_entries')
           .insert({
             company_id: profile.company_id,
-            journal_number: journalNumber,
+            entry_number: journalNumber,
             entry_date: today,
             description: `نقل ذمم للتحصيل القانوني - ${delinquentCustomer.customer_name} - عقد ${delinquentCustomer.contract_number}`,
             total_debit: delinquentCustomer.total_debt,
             total_credit: delinquentCustomer.total_debt,
-            status: 'posted',
-            source: 'legal',
+            status: 'draft',
             reference_type: 'legal_case',
             reference_id: legalCase.id,
             created_by: user.id,
@@ -288,12 +306,14 @@ ${additionalNotes ? `\nملاحظات إضافية:\n${additionalNotes}` : ''}
           .select('id')
           .single();
 
+        if (transferError) throw transferError;
+
         if (!transferError && transferEntry) {
           // سطور القيد: من ذمم التحصيل القانوني إلى ذمم العملاء
-          await supabase.from('journal_entry_lines').insert([
+          const { error: transferLinesError } = await supabase.from('journal_entry_lines').insert([
             {
               journal_entry_id: transferEntry.id,
-              account_id: '1203', // TODO: look up UUID from chart_of_accounts by account_code
+              account_id: legalReceivableAccountId,
               line_description: `نقل ذمم ${delinquentCustomer.customer_name} للتحصيل القانوني`,
               debit_amount: delinquentCustomer.total_debt,
               credit_amount: 0,
@@ -301,13 +321,27 @@ ${additionalNotes ? `\nملاحظات إضافية:\n${additionalNotes}` : ''}
             },
             {
               journal_entry_id: transferEntry.id,
-              account_id: '1200', // TODO: look up UUID from chart_of_accounts by account_code
+              account_id: customerReceivableAccountId,
               line_description: `نقل ذمم ${delinquentCustomer.customer_name} للتحصيل القانوني`,
               debit_amount: 0,
               credit_amount: delinquentCustomer.total_debt,
               line_number: 2,
             },
           ]);
+
+          if (transferLinesError) throw transferLinesError;
+
+          const { error: transferPostError } = await supabase
+            .from('journal_entries')
+            .update({
+              status: 'posted',
+              posted_at: new Date().toISOString(),
+              posted_by: user.id,
+            })
+            .eq('id', transferEntry.id)
+            .eq('company_id', profile.company_id);
+
+          if (transferPostError) throw transferPostError;
         }
 
         // 2. إنشاء قيد المخصص
@@ -316,13 +350,12 @@ ${additionalNotes ? `\nملاحظات إضافية:\n${additionalNotes}` : ''}
           .from('journal_entries')
           .insert({
             company_id: profile.company_id,
-            journal_number: provisionJournalNumber,
+            entry_number: provisionJournalNumber,
             entry_date: today,
             description: `مخصص ديون مشكوك فيها (${Math.round(provisionRate * 100)}%) - ${delinquentCustomer.customer_name}`,
             total_debit: provisionAmount,
             total_credit: provisionAmount,
-            status: 'posted',
-            source: 'legal',
+            status: 'draft',
             reference_type: 'legal_case',
             reference_id: legalCase.id,
             created_by: user.id,
@@ -330,11 +363,13 @@ ${additionalNotes ? `\nملاحظات إضافية:\n${additionalNotes}` : ''}
           .select('id')
           .single();
 
+        if (provisionError) throw provisionError;
+
         if (!provisionError && provisionEntry) {
-          await supabase.from('journal_entry_lines').insert([
+          const { error: provisionLinesError } = await supabase.from('journal_entry_lines').insert([
             {
               journal_entry_id: provisionEntry.id,
-              account_id: '5401', // TODO: look up UUID from chart_of_accounts by account_code
+              account_id: badDebtExpenseAccountId,
               line_description: `مخصص ديون ${delinquentCustomer.customer_name} (${Math.round(provisionRate * 100)}%)`,
               debit_amount: provisionAmount,
               credit_amount: 0,
@@ -342,13 +377,27 @@ ${additionalNotes ? `\nملاحظات إضافية:\n${additionalNotes}` : ''}
             },
             {
               journal_entry_id: provisionEntry.id,
-              account_id: '1204', // TODO: look up UUID from chart_of_accounts by account_code
+              account_id: doubtfulDebtAllowanceAccountId,
               line_description: `مخصص ديون ${delinquentCustomer.customer_name} (${Math.round(provisionRate * 100)}%)`,
               debit_amount: 0,
               credit_amount: provisionAmount,
               line_number: 2,
             },
           ]);
+
+          if (provisionLinesError) throw provisionLinesError;
+
+          const { error: provisionPostError } = await supabase
+            .from('journal_entries')
+            .update({
+              status: 'posted',
+              posted_at: new Date().toISOString(),
+              posted_by: user.id,
+            })
+            .eq('id', provisionEntry.id)
+            .eq('company_id', profile.company_id);
+
+          if (provisionPostError) throw provisionPostError;
         }
 
         console.log('✅ تم إنشاء القيود المحاسبية بنجاح');

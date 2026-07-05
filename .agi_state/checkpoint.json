@@ -1,13 +1,13 @@
 {
   "stage": "plan_approved",
-  "task": "Comprehensive financial system integration audit for the Fleetify ERP (car rental management for Qatar). Project root: C:\\Users\\khamis\\Documents\\fleetifyapp\\\n\nDO NOT modify any code. This is a READ-ONLY audit that produces a detailed report.\n\nAudit scope:\n1. Map the ENTIRE financial system \u2014 all financial-related pages, components, hooks, API routes, Supabase queries, and type definitions. Include: invoices, payments, journal entries, chart of accounts, general ledger, financial reports, expense",
+  "task": "Perform a COMPLETELY FRESH, comprehensive READ-ONLY audit of the Fleetify ERP financial system and its integration with all other modules. DO NOT reference or rely on any previous audit reports. Start from scratch. NO code changes \u2014 analysis only.\n\n## Project\nPath: C:\\Users\\khamis\\Documents\\fleetifyapp\nStack: React 18 + TypeScript + Vite, Supabase backend, car rental ERP (Qatar)\n\n## Audit Scope\n\n### Phase 1: Database Schema Discovery\n- Read `src/integrations/supabase/types.ts` \u2014 extract EVERY fi",
   "status": "running",
-  "timestamp": "2026-07-04T23:36:19.390732",
+  "timestamp": "2026-07-05T03:15:56.254126",
   "plan": {
-    "task": "Comprehensive financial system integration audit for the Fleetify ERP (car rental management for Qatar). Project root: C:\\Users\\khamis\\Documents\\fleetifyapp\\\n\nDO NOT modify any code. This is a READ-ONLY audit that produces a detailed report.\n\nAudit scope:\n1. Map the ENTIRE financial system \u2014 all financial-related pages, components, hooks, API routes, Supabase queries, and type definitions. Include: invoices, payments, journal entries, chart of accounts, general ledger, financial reports, expense management, revenue tracking, customer billing, vendor payments, payroll, tax/VAT, currency handling, financial dashboards.\n\n2. Integration points \u2014 trace how the financial system connects to EVERY other module:\n   - Fleet/vehicle management (depreciation, maintenance costs, fuel, insurance)\n   - Customer management (billing, credit limits, statements)\n   - Driver management (salaries, advances, settlements)\n   - Bookings/reservations (revenue recognition, billing cycles)\n   - Contracts (payment schedules, penalties)\n   - Inventory/parts (stock valuation, cost of goods)\n   - Reports & analytics (financial KPIs, P&L, balance sheet, cash flow)\n   - Admin/settings (currency, tax rates, fiscal year)\n\n3. Data flow analysis \u2014 for each integration point, document:\n   - What data flows between modules (fields, direction)\n   - How it flows (direct query, hook, shared state, API call)\n   - Is the integration complete or are there gaps/broken links?\n   - Are there orphaned financial records (payments without invoices, journal entries without source documents)?\n   - Foreign key integrity issues\n\n4. Known issues from memory: 43 payments unlinked (blocked by prevent_overpayment_trigger), A=L+E off by 2,142,986 QAR (Revenue not closed to Equity), empty=0, zero=0, drafts=2, invoices=0, migration 20260701000006 created with trigger-bypass RPC but unapplied. Column traps: payments(status\u2192payment_status), journal_entry_lines(entry_id\u2192journal_entry_id, account_code\u2192account_id, company_id\u2192none).\n\n5. Architecture assessment:\n   - Is the chart of accounts properly structured?\n   - Are journal entries following double-entry bookkeeping correctly?\n   - Is the trial balance generation correct?\n   - Are financial reports (P&L, Balance Sheet, Cash Flow) correctly pulling data?\n   - Is VAT/tax handling compliant with Qatar regulations?\n   - Is currency handling consistent (QAR)?\n   - Are there any calculated fields that could have precision issues?\n\n6. Gaps and risks:\n   - Missing integrations (modules that should feed financial data but don't)\n   - Broken integrations (data flowing but incorrect/incomplete)\n   - Redundant data entry points\n   - Security concerns in financial data access\n   - Performance concerns in financial queries\n   - Compliance gaps\n\nDeliver a comprehensive markdown report saved to C:\\Users\\khamis\\Documents\\fleetifyapp\\FINANCIAL_SYSTEM_AUDIT_REPORT.md with:\n- Executive summary\n- Complete financial system map\n- Integration matrix (module \u00d7 financial area)\n- Data flow diagrams (ASCII)\n- Issue register (categorized by severity: critical/high/medium/low)\n- Compliance assessment\n- Risk assessment\n- Recommendations (prioritized, no code changes \u2014 just recommendations)\n\nThe report should be in Arabic (the user's language) with technical terms in English where appropriate.",
+    "task": "Perform a COMPLETELY FRESH, comprehensive READ-ONLY audit of the Fleetify ERP financial system and its integration with all other modules. DO NOT reference or rely on any previous audit reports. Start from scratch. NO code changes \u2014 analysis only.\n\n## Project\nPath: C:\\Users\\khamis\\Documents\\fleetifyapp\nStack: React 18 + TypeScript + Vite, Supabase backend, car rental ERP (Qatar)\n\n## Audit Scope\n\n### Phase 1: Database Schema Discovery\n- Read `src/integrations/supabase/types.ts` \u2014 extract EVERY financial-related table with ALL columns\n- Read ALL migration files under `supabase/migrations/` that relate to finance, journal, payment, invoice, controls, triggers, RPCs\n- Build a complete trigger matrix: every trigger, what table, what operation, what condition, what exception\n- Document all RPCs/functions related to finance\n\n### Phase 2: Financial Pages & Routes\n- Find ALL financial pages and components (search src/pages/finance/, src/components/finance/)\n- Map every route to its component\n- Check which pages are wired vs orphaned\n\n### Phase 3: Integration Hooks \u2014 Deep Analysis\nFor EVERY hook that creates journal entries from other modules, read the FULL file and trace the EXACT operation sequence:\n- useRentalPaymentJournalIntegration.ts\n- useTrafficViolationJournalIntegration.ts\n- useMaintenanceJournalIntegration.ts\n- useVehicleInstallmentJournalIntegration.ts\n- usePayrollJournalIntegration.ts\n- usePaymentOperations.ts\n- useConvertToLegalCase.ts (if it creates JEs)\n- Any other hook that writes to journal_entries or journal_entry_lines\n\nFor EACH hook document:\n1. Exact sequence: which table, which operation, in what order, with what status\n2. Does it create header as 'draft' or 'posted'?\n3. Does it pass total_debit and total_credit?\n4. What accounts does it debit/credit? Are they correct?\n5. Does it have a reverse-link field to the source module?\n6. Does it check for locked accounting periods?\n7. Does it handle errors properly?\n8. Does it attempt DELETE on rollback?\n\n### Phase 4: Financial Reports\n- Read useEnhancedFinancialReports.ts \u2014 what report types does it support?\n- Read CashFlowStatementReport.tsx \u2014 is cash flow real or estimated?\n- Read useGeneralLedger.ts \u2014 reversal logic, export logic, delete logic\n- Read useFinancialIntegrityReport.ts \u2014 what does it actually check?\n- Search for Math.abs() in ALL financial hooks \u2014 where and why?\n- Search for mock/mockData/hardcoded/placeholder/TODO in financial hooks\n\n### Phase 5: Controls & Compliance\n- Read approval workflow hooks and rules \u2014 is approver verification wired in?\n- Read audit trail hooks \u2014 one table or two?\n- Read monthly close / period-end logic\n- Read bank reconciliation logic\n- Check for segregation of duties\n\n### Phase 6: Cross-Module Integration Map\n- Search for ALL `.from('journal_entries')`, `.from('payments')`, `.from('invoices')` across the ENTIRE codebase\n- Map which modules touch which financial tables\n- Identify missing reverse-link fields\n\n### Phase 7: Currency & Display\n- Search for KWD/\u062f.\u0643 in financial components\n- Check if useCompanyCurrency() is used vs hardcoded currency\n\n## Deliverable\nWrite a comprehensive audit report to `C:\\Users\\khamis\\Documents\\fleetifyapp\\docs\\financial-system-audit-v5.md` in English with:\n\n1. Executive Summary\n2. Complete Financial Table Inventory (from types.ts)\n3. Complete Trigger Matrix (from migrations)\n4. Per-Hook Operation Sequence Analysis (with trigger cross-reference)\n5. Financial Reports Accuracy Assessment\n6. Controls & Compliance Assessment\n7. Cross-Module Integration Map\n8. Currency & Display Issues\n9. Mock/Stale Data Inventory\n10. Risk Assessment (Critical/High/Medium with file:line evidence)\n11. Recommendations (no code changes)\n12. Methodology Statement\n\n## CRITICAL RULES\n- EVERY finding MUST have a file:line reference from direct file reading\n- NO claims based on memory or previous reports\n- Read files directly \u2014 do not trust subagent summaries\n- Cross-reference every hook operation against every trigger\n- If something cannot be verified from code alone, state that explicitly\n- Report in English",
     "subtasks": [
       {
-        "goal": "Assess the financial architecture: (1) Is the chart of accounts properly structured? (2) Are journal entries following double-entry bookkeeping correctly? (3) Is trial balance generation correct? (4) Are financial reports (P&L, Balance Sheet, Cash Flow) correctly pulling data? (5) Is VAT/tax handling compliant with Qatar regulations? (6) Is currency handling consistent (QAR)? (7) Are there calculated fields with precision issues? Review CoA structure, JE line balancing logic, report generation code, VAT calculation code, and currency conversion code. Produce a structured assessment summary.",
+        "goal": "Read approval workflow hooks and rules, audit trail hooks, monthly close/period-end logic, bank reconciliation logic. Check for segregation of duties. Document findings with file:line references.",
         "agent": "code-reviewer",
         "toolsets": [
           "terminal",
@@ -15,21 +15,61 @@
         ],
         "dependencies": [],
         "parallel_group": 0,
-        "id": "architecture-assessment",
+        "id": "controls-compliance",
         "files": [
-          "src/**/*",
-          "scripts/analyze_company_jes.py",
-          "scripts/analyze_je_structure.py",
-          "scripts/audit_*.py"
+          "src/hooks/useApprovalWorkflow.ts",
+          "src/hooks/useAuditTrail.ts",
+          "src/hooks/useMonthlyClose.ts",
+          "src/hooks/useBankReconciliation.ts"
         ],
-        "success_criteria": "Structured assessment of all 7 architecture areas with specific findings, code references, and compliance notes.",
+        "success_criteria": "Approval workflow rules documented; audit trail table(s) identified; monthly close logic traced; bank reconciliation logic documented; segregation of duties assessment completed with evidence.",
         "milestone": "milestone-1",
         "milestone_index": 0,
         "model_hint": "analytical",
         "max_iterations": 1
       },
       {
-        "goal": "Map the ENTIRE financial system structure. Scan src/pages, src/components, src/hooks, src/routes, src/integrations for all financial-related files. Catalog every file related to: invoices, payments, journal entries, chart of accounts, general ledger, financial reports, expense management, revenue tracking, customer billing, vendor payments, payroll, tax/VAT, currency handling, financial dashboards. For each file, note its purpose, what financial entity it manages, and key functions/exports. Produce a structured summary of the financial system map.",
+        "goal": "Search the entire src/ directory for all occurrences of .from('journal_entries'), .from('payments'), .from('invoices'). Map which modules touch which financial tables. Identify missing reverse-link fields. Document with file:line references.",
+        "agent": "doc-writer",
+        "toolsets": [
+          "terminal",
+          "file"
+        ],
+        "dependencies": [],
+        "parallel_group": 0,
+        "id": "cross-module-integration",
+        "files": [
+          "src/**/*.ts",
+          "src/**/*.tsx"
+        ],
+        "success_criteria": "Complete cross-module integration map with file:line references; list of modules touching each financial table; missing reverse-link fields identified.",
+        "milestone": "milestone-1",
+        "milestone_index": 0,
+        "model_hint": "speed",
+        "max_iterations": 1
+      },
+      {
+        "goal": "Search for KWD/\u062f.\u0643 in financial components. Check if useCompanyCurrency() is used vs hardcoded currency. Document all occurrences with file:line.",
+        "agent": "code-reviewer",
+        "toolsets": [
+          "terminal",
+          "file"
+        ],
+        "dependencies": [],
+        "parallel_group": 1,
+        "id": "currency-display",
+        "files": [
+          "src/**/*.tsx",
+          "src/**/*.ts"
+        ],
+        "success_criteria": "All hardcoded currency references documented; useCompanyCurrency() usage verified; findings with file:line.",
+        "milestone": "milestone-1",
+        "milestone_index": 0,
+        "model_hint": "analytical",
+        "max_iterations": 1
+      },
+      {
+        "goal": "Find all financial pages and components under src/pages/finance/ and src/components/finance/. Map every route to its component, check which pages are wired vs orphaned. Document findings with file paths.",
         "agent": "frontend-engineer",
         "toolsets": [
           "terminal",
@@ -37,117 +77,186 @@
         ],
         "dependencies": [],
         "parallel_group": 0,
-        "id": "financial-system-mapping",
+        "id": "financial-pages",
         "files": [
-          "src/pages/**/*",
-          "src/components/**/*",
-          "src/hooks/**/*",
-          "src/routes/**/*",
-          "src/integrations/**/*"
+          "src/pages/finance/**/*.tsx",
+          "src/components/finance/**/*.tsx",
+          "src/App.tsx",
+          "src/routes.tsx"
         ],
-        "success_criteria": "A complete catalog of all financial-related files with their purposes, covering all listed financial areas. No financial file is missed.",
+        "success_criteria": "Complete list of financial pages/components with file paths, route mapping, and wiring status (wired/orphaned).",
         "milestone": "milestone-1",
         "milestone_index": 0,
         "model_hint": "balanced",
         "max_iterations": 1
       },
       {
-        "goal": "Trace integration points between the financial system and EVERY other module. For each module (fleet/vehicles, customers, drivers, bookings, contracts, inventory/parts, reports/analytics, admin/settings), identify: what financial data flows between them, how it flows (direct query, hook, shared state, API), whether the integration is complete or has gaps, orphaned records (payments without invoices, journal entries without source documents), and foreign key integrity issues. Produce a structured integration matrix and data flow summary.",
-        "agent": "devops-engineer",
+        "goal": "Read useEnhancedFinancialReports.ts, CashFlowStatementReport.tsx, useGeneralLedger.ts, useFinancialIntegrityReport.ts. Document report types, cash flow estimation method, reversal/export/delete logic, integrity checks. Search for Math.abs() in all financial hooks and document usage. Search for mock/mockData/hardcoded/placeholder/TODO in financial hooks.",
+        "agent": "code-reviewer",
         "toolsets": [
           "terminal",
           "file"
         ],
         "dependencies": [],
-        "parallel_group": 1,
-        "id": "integration-tracing",
+        "parallel_group": 0,
+        "id": "financial-reports",
         "files": [
-          "src/**/*"
+          "src/hooks/useEnhancedFinancialReports.ts",
+          "src/components/finance/CashFlowStatementReport.tsx",
+          "src/hooks/useGeneralLedger.ts",
+          "src/hooks/useFinancialIntegrityReport.ts"
         ],
-        "success_criteria": "Integration matrix covering all 8 modules with documented data flows, gaps, orphaned records, and FK integrity issues.",
+        "success_criteria": "Report types listed; cash flow method documented; reversal/export/delete logic traced; integrity checks enumerated; all Math.abs() usages in financial hooks documented with file:line; all mock/placeholder occurrences in financial hooks documented.",
         "milestone": "milestone-1",
         "milestone_index": 0,
-        "model_hint": "speed",
+        "model_hint": "analytical",
         "max_iterations": 1
       },
       {
-        "goal": "Verify the known issues from project memory: (1) 43 payments unlinked blocked by prevent_overpayment_trigger, (2) A=L+E off by 2,142,986 QAR (Revenue not closed to Equity), (3) empty=0, zero=0, drafts=2, invoices=0, (4) migration 20260701000006 created with trigger-bypass RPC but unapplied, (5) column traps in payments, journal_entry_lines, chart_of_accounts. Search for the migration files, trigger definitions, closing entry scripts, and any related code. Confirm or refute each issue with evidence from the codebase. Produce a structured verification summary.",
-        "agent": "builder",
+        "goal": "For each integration hook (useRentalPaymentJournalIntegration, useTrafficViolationJournalIntegration, useMaintenanceJournalIntegration, useVehicleInstallmentJournalIntegration, usePayrollJournalIntegration, usePaymentOperations, useConvertToLegalCase, and any other hook writing to journal_entries or journal_entry_lines), read the FULL file and trace the exact operation sequence. Document: sequence, draft/posted status, total_debit/credit, accounts used, reverse-link field, locked period check, error handling, DELETE on rollback.",
+        "agent": "code-reviewer",
         "toolsets": [
-          "hermes-cli"
+          "terminal",
+          "file"
         ],
         "dependencies": [],
-        "parallel_group": 2,
-        "id": "known-issues-verification",
+        "parallel_group": 0,
+        "id": "integration-hooks",
         "files": [
-          "supabase/migrations/**/*",
-          "scripts/create_closing_entry.py",
-          "scripts/create_closing_entry_v2.py",
-          "scripts/apply_fixes.py",
-          "scripts/apply_migration*.py",
-          "src/**/*"
+          "src/hooks/useRentalPaymentJournalIntegration.ts",
+          "src/hooks/useTrafficViolationJournalIntegration.ts",
+          "src/hooks/useMaintenanceJournalIntegration.ts",
+          "src/hooks/useVehicleInstallmentJournalIntegration.ts",
+          "src/hooks/usePayrollJournalIntegration.ts",
+          "src/hooks/usePaymentOperations.ts",
+          "src/hooks/useConvertToLegalCase.ts"
         ],
-        "success_criteria": "Each of the 5 known issues verified with code evidence, confirming or refuting with specific file references.",
+        "success_criteria": "Per-hook operation sequence documented with file:line references; all 8 checklist items answered for each hook.",
         "milestone": "milestone-1",
         "milestone_index": 0,
-        "model_hint": "balanced",
-        "max_iterations": 3
+        "model_hint": "analytical",
+        "max_iterations": 1
       },
       {
-        "goal": "Audit all Supabase queries and type definitions related to financial tables. Parse src/integrations/supabase/types.ts for financial table schemas (payments, invoices, journal_entries, journal_entry_lines, chart_of_accounts, expenses, etc.). Scan all source files for .from() calls targeting financial tables. Document: table schemas, column names, which files query which tables, what filters/selects are used. Check for the known column traps: payments(status\u2192payment_status, recorded_by\u2192created_by, reconciled\u2192reconciliation_status), journal_entry_lines(entry_id\u2192journal_entry_id, account_code\u2192account_id, company_id\u2192none), chart_of_accounts(level\u2192account_level, parent_code\u2192parent_account_code). Produce a structured findings summary.",
+        "goal": "Read types.ts and all migration files under supabase/migrations/ related to finance, journal, payment, invoice, controls, triggers, RPCs. Extract every financial table with all columns, build a complete trigger matrix (table, operation, condition, exception), and document all RPCs/functions.",
         "agent": "backend-engineer",
         "toolsets": [
           "terminal",
           "file"
         ],
         "dependencies": [],
-        "parallel_group": 3,
-        "id": "supabase-query-audit",
+        "parallel_group": 0,
+        "id": "schema-migrations",
         "files": [
           "src/integrations/supabase/types.ts",
-          "src/**/*"
+          "supabase/migrations/*.sql"
         ],
-        "success_criteria": "Complete inventory of financial table schemas, all queries against them, and all column name mismatches/traps identified.",
+        "success_criteria": "All financial tables and columns extracted from types.ts and migrations; trigger matrix documented with table, operation, condition, exception; all finance-related RPCs/functions listed with parameters and return types.",
         "milestone": "milestone-1",
         "milestone_index": 0,
         "model_hint": "analytical",
         "max_iterations": 1
       },
       {
-        "goal": "Compile all analysis findings into the final comprehensive markdown report at C:\\Users\\khamis\\Documents\\fleetifyapp\\FINANCIAL_SYSTEM_AUDIT_REPORT.md. The report MUST be in Arabic with technical terms in English where appropriate. Include: Executive summary, Complete financial system map, Integration matrix (module \u00d7 financial area), ASCII data flow diagrams, Issue register (categorized by severity: critical/high/medium/low), Compliance assessment, Risk assessment, Prioritized recommendations (no code changes). Synthesize findings from all 5 analysis tasks into a coherent, well-structured document.",
-        "agent": "code-reviewer",
+        "goal": "Collect all findings from subtasks 1-7, cross-reference hook operations against triggers, compile the comprehensive audit report with all required sections (Executive Summary, Table Inventory, Trigger Matrix, Per-Hook Analysis, Reports Assessment, Controls Assessment, Cross-Module Map, Currency Issues, Mock/Stale Data Inventory, Risk Assessment, Recommendations, Methodology). Write final report to docs/financial-system-audit-v5.md.",
+        "agent": "builder",
         "toolsets": [
-          "terminal",
-          "file"
+          "hermes-cli"
         ],
         "dependencies": [
-          "financial-system-mapping",
-          "supabase-query-audit",
-          "integration-tracing",
-          "known-issues-verification",
-          "architecture-assessment"
+          "schema-migrations",
+          "financial-pages",
+          "integration-hooks",
+          "financial-reports",
+          "controls-compliance",
+          "cross-module-integration",
+          "currency-display"
         ],
         "parallel_group": 1,
-        "id": "compile-audit-report",
+        "id": "assembly",
         "files": [
-          "FINANCIAL_SYSTEM_AUDIT_REPORT.md"
+          "docs/financial-system-audit-v5.md"
         ],
-        "success_criteria": "FINANCIAL_SYSTEM_AUDIT_REPORT.md exists, is in Arabic with English technical terms, contains all 8 required sections, includes ASCII data flow diagrams, issue register with severity categories, and prioritized recommendations. No code files were modified.",
+        "success_criteria": "Final deliverable file is written and contains all findings from prior subtasks, with cross-references and complete sections.",
         "milestone": "milestone-2",
         "milestone_index": 1,
-        "model_hint": "analytical",
-        "max_iterations": 1
+        "model_hint": "balanced",
+        "max_iterations": 3
       }
     ],
-    "risk_level": "low",
+    "risk_level": "medium",
     "parallel_group_count": 2,
     "routing_decisions": [
       {
-        "subtask_id": "architecture-assessment",
+        "subtask_id": "controls-compliance",
         "task_type": "review",
         "agent": "code-reviewer",
         "model_hint": "analytical",
-        "complexity": "high",
+        "complexity": "medium",
+        "is_risky": false,
+        "confidence": 0.67,
+        "profile": {
+          "name": "code-reviewer",
+          "task_type": "review",
+          "model_tier": "balanced",
+          "timeout": 120.0,
+          "max_retries": 1,
+          "priority": "P1",
+          "requires_review": false,
+          "estimated_tokens": 4000,
+          "parallel_safe": true,
+          "toolsets": [
+            "terminal",
+            "file"
+          ],
+          "model": "glm-5.2:cloud",
+          "provider": "custom:ollama",
+          "base_url": "https://ollama.com/v1"
+        },
+        "parallel_safe": true,
+        "toolsets": [
+          "terminal",
+          "file"
+        ]
+      },
+      {
+        "subtask_id": "cross-module-integration",
+        "task_type": "docs",
+        "agent": "doc-writer",
+        "model_hint": "speed",
+        "complexity": "medium",
+        "is_risky": false,
+        "confidence": 0.6,
+        "profile": {
+          "name": "doc-writer",
+          "task_type": "docs",
+          "model_tier": "balanced",
+          "timeout": 120.0,
+          "max_retries": 1,
+          "priority": "P1",
+          "requires_review": false,
+          "estimated_tokens": 4000,
+          "parallel_safe": true,
+          "toolsets": [
+            "terminal",
+            "file"
+          ],
+          "model": "glm-5.2:cloud",
+          "provider": "custom:ollama",
+          "base_url": "https://ollama.com/v1"
+        },
+        "parallel_safe": true,
+        "toolsets": [
+          "terminal",
+          "file"
+        ]
+      },
+      {
+        "subtask_id": "currency-display",
+        "task_type": "review",
+        "agent": "code-reviewer",
+        "model_hint": "analytical",
+        "complexity": "medium",
         "is_risky": false,
         "confidence": 0.58,
         "profile": {
@@ -175,7 +284,7 @@
         ]
       },
       {
-        "subtask_id": "financial-system-mapping",
+        "subtask_id": "financial-pages",
         "task_type": "frontend",
         "agent": "frontend-engineer",
         "model_hint": "balanced",
@@ -207,16 +316,16 @@
         ]
       },
       {
-        "subtask_id": "integration-tracing",
-        "task_type": "config",
-        "agent": "devops-engineer",
-        "model_hint": "speed",
+        "subtask_id": "financial-reports",
+        "task_type": "review",
+        "agent": "code-reviewer",
+        "model_hint": "analytical",
         "complexity": "medium",
-        "is_risky": false,
-        "confidence": 0.67,
+        "is_risky": true,
+        "confidence": 0.58,
         "profile": {
-          "name": "devops-engineer",
-          "task_type": "devops",
+          "name": "code-reviewer",
+          "task_type": "review",
           "model_tier": "balanced",
           "timeout": 120.0,
           "max_retries": 1,
@@ -239,43 +348,45 @@
         ]
       },
       {
-        "subtask_id": "known-issues-verification",
-        "task_type": "implementation",
-        "agent": "builder",
-        "model_hint": "balanced",
-        "complexity": "high",
+        "subtask_id": "integration-hooks",
+        "task_type": "review",
+        "agent": "code-reviewer",
+        "model_hint": "analytical",
+        "complexity": "medium",
         "is_risky": true,
-        "confidence": 0.57,
+        "confidence": 0.58,
         "profile": {
-          "name": "builder",
-          "task_type": "implementation",
+          "name": "code-reviewer",
+          "task_type": "review",
           "model_tier": "balanced",
-          "timeout": 600,
-          "max_retries": 3,
+          "timeout": 120.0,
+          "max_retries": 1,
           "priority": "P1",
           "requires_review": false,
           "estimated_tokens": 4000,
           "parallel_safe": true,
           "toolsets": [
-            "hermes-cli"
+            "terminal",
+            "file"
           ],
           "model": "glm-5.2:cloud",
           "provider": "custom:ollama",
-          "base_url": "http://localhost:11434/v1"
+          "base_url": "https://ollama.com/v1"
         },
         "parallel_safe": true,
         "toolsets": [
-          "hermes-cli"
+          "terminal",
+          "file"
         ]
       },
       {
-        "subtask_id": "supabase-query-audit",
+        "subtask_id": "schema-migrations",
         "task_type": "database",
         "agent": "backend-engineer",
         "model_hint": "analytical",
-        "complexity": "medium",
-        "is_risky": false,
-        "confidence": 0.71,
+        "complexity": "high",
+        "is_risky": true,
+        "confidence": 0.64,
         "profile": {
           "name": "backend-engineer",
           "task_type": "database",
@@ -301,35 +412,33 @@
         ]
       },
       {
-        "subtask_id": "compile-audit-report",
-        "task_type": "review",
-        "agent": "code-reviewer",
-        "model_hint": "analytical",
+        "subtask_id": "assembly",
+        "task_type": "implementation",
+        "agent": "builder",
+        "model_hint": "balanced",
         "complexity": "medium",
         "is_risky": false,
-        "confidence": 0.58,
+        "confidence": 0.57,
         "profile": {
-          "name": "code-reviewer",
-          "task_type": "review",
+          "name": "builder",
+          "task_type": "implementation",
           "model_tier": "balanced",
-          "timeout": 120.0,
-          "max_retries": 1,
+          "timeout": 600,
+          "max_retries": 3,
           "priority": "P1",
           "requires_review": false,
           "estimated_tokens": 4000,
           "parallel_safe": true,
           "toolsets": [
-            "terminal",
-            "file"
+            "hermes-cli"
           ],
           "model": "glm-5.2:cloud",
           "provider": "custom:ollama",
-          "base_url": "https://ollama.com/v1"
+          "base_url": "http://localhost:11434/v1"
         },
         "parallel_safe": true,
         "toolsets": [
-          "terminal",
-          "file"
+          "hermes-cli"
         ]
       }
     ],
@@ -338,18 +447,22 @@
         "id": "milestone-1",
         "name": "Parallel group 1",
         "subtask_ids": [
-          "architecture-assessment",
-          "financial-system-mapping",
-          "integration-tracing",
-          "known-issues-verification",
-          "supabase-query-audit"
+          "controls-compliance",
+          "cross-module-integration",
+          "currency-display",
+          "financial-pages",
+          "financial-reports",
+          "integration-hooks",
+          "schema-migrations"
         ],
         "acceptance_criteria": [
-          "Structured assessment of all 7 architecture areas with specific findings, code references, and compliance notes.",
-          "A complete catalog of all financial-related files with their purposes, covering all listed financial areas. No financial file is missed.",
-          "Integration matrix covering all 8 modules with documented data flows, gaps, orphaned records, and FK integrity issues.",
-          "Each of the 5 known issues verified with code evidence, confirming or refuting with specific file references.",
-          "Complete inventory of financial table schemas, all queries against them, and all column name mismatches/traps identified."
+          "Approval workflow rules documented; audit trail table(s) identified; monthly close logic traced; bank reconciliation logic documented; segregation of duties assessment completed with evidence.",
+          "Complete cross-module integration map with file:line references; list of modules touching each financial table; missing reverse-link fields identified.",
+          "All hardcoded currency references documented; useCompanyCurrency() usage verified; findings with file:line.",
+          "Complete list of financial pages/components with file paths, route mapping, and wiring status (wired/orphaned).",
+          "Report types listed; cash flow method documented; reversal/export/delete logic traced; integrity checks enumerated; all Math.abs() usages in financial hooks documented with file:line; all mock/placeholder occurrences in financial hooks documented.",
+          "Per-hook operation sequence documented with file:line references; all 8 checklist items answered for each hook.",
+          "All financial tables and columns extracted from types.ts and migrations; trigger matrix documented with table, operation, condition, exception; all finance-related RPCs/functions listed with parameters and return types."
         ],
         "assumptions": [
           "Dependencies from earlier milestones remain stable."
@@ -359,10 +472,10 @@
         "id": "milestone-2",
         "name": "Parallel group 2",
         "subtask_ids": [
-          "compile-audit-report"
+          "assembly"
         ],
         "acceptance_criteria": [
-          "FINANCIAL_SYSTEM_AUDIT_REPORT.md exists, is in Arabic with English technical terms, contains all 8 required sections, includes ASCII data flow diagrams, issue register with severity categories, and prioritized recommendations. No code files were modified."
+          "Final deliverable file is written and contains all findings from prior subtasks, with cross-references and complete sections."
         ],
         "assumptions": [
           "Dependencies from earlier milestones remain stable."
@@ -372,17 +485,19 @@
     "clarifying_questions": [
       "What authentication method should be used (JWT, OAuth, session-based)?",
       "What user roles or permission levels are needed?",
-      "What API style (REST, GraphQL, gRPC) and versioning strategy?",
-      "What error response format and status code conventions?",
-      "What database and ORM are in use? Any existing migration strategy?"
+      "What database and ORM are in use? Any existing migration strategy?",
+      "What is the deployment pipeline (staging, canary, production)?",
+      "Are there any approval gates or change management processes?"
     ],
     "completion_criteria": [
-      "Subtask complete: Assess the financial architecture: (1) Is the chart of accounts properly structured? (2) Are journal",
-      "Subtask complete: Map the ENTIRE financial system structure. Scan src/pages, src/components, src/hooks, src/routes, sr",
-      "Subtask complete: Trace integration points between the financial system and EVERY other module. For each module (fleet",
-      "Subtask complete: Verify the known issues from project memory: (1) 43 payments unlinked blocked by prevent_overpayment",
-      "Subtask complete: Audit all Supabase queries and type definitions related to financial tables. Parse src/integrations/",
-      "Subtask complete: Compile all analysis findings into the final comprehensive markdown report at C:\\Users\\khamis\\Docume",
+      "Subtask complete: Read approval workflow hooks and rules, audit trail hooks, monthly close/period-end logic, bank reco",
+      "Subtask complete: Search the entire src/ directory for all occurrences of .from('journal_entries'), .from('payments'),",
+      "Subtask complete: Search for KWD/\u062f.\u0643 in financial components. Check if useCompanyCurrency() is used vs hardcoded curre",
+      "Subtask complete: Find all financial pages and components under src/pages/finance/ and src/components/finance/. Map ev",
+      "Subtask complete: Read useEnhancedFinancialReports.ts, CashFlowStatementReport.tsx, useGeneralLedger.ts, useFinancialI",
+      "Subtask complete: For each integration hook (useRentalPaymentJournalIntegration, useTrafficViolationJournalIntegration",
+      "Subtask complete: Read types.ts and all migration files under supabase/migrations/ related to finance, journal, paymen",
+      "Subtask complete: Collect all findings from subtasks 1-7, cross-reference hook operations against triggers, compile th",
       "All quality gates pass (syntax, lint, type, test)",
       "No regressions in existing test suite"
     ],

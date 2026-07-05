@@ -827,8 +827,10 @@ export const usePaymentOperations = (options: PaymentOperationsOptions = {}) => 
         .from('payments')
         .update({
           payment_status: 'completed',
-          approved_at: new Date().toISOString(),
-          approved_by: user?.id,
+          processing_notes: [
+            payment.processing_notes,
+            `Payment approved by ${user?.id || 'system'} at ${new Date().toISOString()}`,
+          ].filter(Boolean).join('\n'),
         })
         .eq('id', paymentId)
         .eq('company_id', companyId)

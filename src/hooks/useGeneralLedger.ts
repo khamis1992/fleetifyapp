@@ -834,17 +834,91 @@ export const useReverseJournalEntry = () => {
   
   return useMutation({
     mutationFn: async ({ entryId, reason }: { entryId: string; reason: string }) => {
-      // For now, just update the status to reversed
-      // In full implementation, would create a reversal entry
+      const { data: originalEntry, error: originalEntryError } = await supabase
+        .from("journal_entries")
+        .select("id,company_id,entry_number,entry_date,status,total_debit,total_credit,reversal_entry_id,description,reference_type,reference_id")
+        .eq("id", entryId)
+        .eq("status", "posted")
+        .single()
+
+      if (originalEntryError || !originalEntry) throw originalEntryError || new Error("Posted journal entry not found")
+      if (originalEntry.reversal_entry_id) return originalEntry
+
+      const { data: originalLines, error: linesError } = await supabase
+        .from("journal_entry_lines")
+        .select("account_id,line_description,debit_amount,credit_amount,line_number,cost_center_id,asset_id,employee_id")
+        .eq("journal_entry_id", entryId)
+        .order("line_number", { ascending: true })
+
+      if (linesError) throw linesError
+      if (!originalLines?.length) throw new Error("Original journal entry has no lines to reverse")
+
+      const reversalEntryNumber = `REV-${originalEntry.entry_number}-${Date.now().toString().slice(-6)}`
+      const reversalDate = new Date().toISOString().split("T")[0]
+
+      const { data: reversalEntry, error: reversalEntryError } = await supabase
+        .from("journal_entries")
+        .insert({
+          company_id: originalEntry.company_id,
+          entry_number: reversalEntryNumber,
+          entry_date: reversalDate,
+          status: "draft",
+          description: `Reversal of ${originalEntry.entry_number}${reason ? ` - ${reason}` : ""}`,
+          reference_type: "journal_reversal",
+          reference_id: originalEntry.id,
+          total_debit: originalEntry.total_credit,
+          total_credit: originalEntry.total_debit,
+          created_by: user?.id,
+        })
+        .select("id")
+        .single()
+
+      if (reversalEntryError || !reversalEntry) throw reversalEntryError || new Error("Failed to create reversal journal entry")
+
+      const reversalLines = originalLines.map((line, index) => ({
+        journal_entry_id: reversalEntry.id,
+        account_id: line.account_id,
+        line_number: index + 1,
+        line_description: `Reversal - ${line.line_description || originalEntry.entry_number}`,
+        debit_amount: Number(line.credit_amount) || 0,
+        credit_amount: Number(line.debit_amount) || 0,
+        cost_center_id: line.cost_center_id || null,
+        asset_id: line.asset_id || null,
+        employee_id: line.employee_id || null,
+      }))
+
+      const { error: reversalLinesError } = await supabase
+        .from("journal_entry_lines")
+        .insert(reversalLines)
+
+      if (reversalLinesError) {
+        await supabase.from("journal_entries").delete().eq("id", reversalEntry.id)
+        throw reversalLinesError
+      }
+
+      const { error: postReversalError } = await supabase
+        .from("journal_entries")
+        .update({
+          status: "posted",
+          posted_by: user?.id,
+          posted_at: new Date().toISOString(),
+        })
+        .eq("id", reversalEntry.id)
+        .eq("company_id", originalEntry.company_id)
+
+      if (postReversalError) throw postReversalError
+
       const { data, error } = await supabase
         .from("journal_entries")
         .update({
-          status: 'reversed',
+          status: "reversed",
+          reversal_entry_id: reversalEntry.id,
           reversed_by: user?.id,
-          reversed_at: new Date().toISOString()
+          reversed_at: new Date().toISOString(),
+          workflow_notes: reason || null,
         })
         .eq("id", entryId)
-        .eq("status", "posted")
+        .eq("company_id", originalEntry.company_id)
         .select()
         .single()
       
@@ -925,9 +999,100 @@ export const useExportLedgerData = () => {
       format: 'excel' | 'pdf' | 'csv'
       filters?: LedgerFilters 
     }) => {
-      // For now, return a success message
-      // In full implementation, would generate and download the file
-      return `Export request for ${format} format has been queued for processing.`
+      if (!user?.profile?.company_id) {
+        throw new Error("Company is not selected")
+      }
+
+      if (format === "pdf") {
+        throw new Error("PDF export is not implemented yet. Please use Excel or CSV.")
+      }
+
+      let query = supabase
+        .from("journal_entries")
+        .select(`
+          entry_number,
+          entry_date,
+          description,
+          status,
+          reference_type,
+          total_debit,
+          total_credit,
+          journal_entry_lines(
+            line_number,
+            line_description,
+            debit_amount,
+            credit_amount,
+            chart_of_accounts!fk_journal_entry_lines_account(
+              account_code,
+              account_name,
+              account_name_ar
+            )
+          )
+        `)
+        .eq("company_id", user.profile.company_id)
+        .order("entry_date", { ascending: false })
+
+      if (filters?.dateFrom) query = query.gte("entry_date", filters.dateFrom)
+      if (filters?.dateTo) query = query.lte("entry_date", filters.dateTo)
+      if (filters?.referenceType) query = query.eq("reference_type", filters.referenceType)
+      if (filters?.status) query = query.eq("status", filters.status)
+
+      const { data, error } = await query
+      if (error) throw error
+
+      const rows = (data || []).flatMap((entry: any) => {
+        const lines = entry.journal_entry_lines?.length ? entry.journal_entry_lines : [null]
+        return lines.map((line: any) => ({
+          entry_number: entry.entry_number,
+          entry_date: entry.entry_date,
+          status: entry.status,
+          reference_type: entry.reference_type || "",
+          description: entry.description || "",
+          line_number: line?.line_number || "",
+          account_code: line?.chart_of_accounts?.account_code || "",
+          account_name: line?.chart_of_accounts?.account_name_ar || line?.chart_of_accounts?.account_name || "",
+          line_description: line?.line_description || "",
+          debit_amount: Number(line?.debit_amount || 0),
+          credit_amount: Number(line?.credit_amount || 0),
+          total_debit: Number(entry.total_debit || 0),
+          total_credit: Number(entry.total_credit || 0),
+        }))
+      })
+
+      const headers = [
+        "entry_number",
+        "entry_date",
+        "status",
+        "reference_type",
+        "description",
+        "line_number",
+        "account_code",
+        "account_name",
+        "line_description",
+        "debit_amount",
+        "credit_amount",
+        "total_debit",
+        "total_credit",
+      ]
+      const escapeCell = (value: unknown) => `"${String(value ?? "").replace(/"/g, '""')}"`
+      const csv = [
+        headers.join(","),
+        ...rows.map((row) => headers.map((header) => escapeCell(row[header as keyof typeof row])).join(",")),
+      ].join("\n")
+
+      const extension = format === "excel" ? "csv" : "csv"
+      const fileName = `general-ledger-${new Date().toISOString().slice(0, 10)}.${extension}`
+      const blob = new Blob([`\uFEFF${csv}`], { type: "text/csv;charset=utf-8" })
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement("a")
+      link.href = url
+      link.download = fileName
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      URL.revokeObjectURL(url)
+
+      return `Exported ${rows.length} ledger rows to ${fileName}.`
     },
     onSuccess: () => {
       toast.success("تم تصدير البيانات بنجاح")
