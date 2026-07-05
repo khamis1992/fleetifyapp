@@ -1,45 +1,166 @@
 {
   "stage": "plan_approved",
-  "task": "READ-ONLY AUDIT MODE: Do not modify source code, do not run self-healing, and only create the requested report artifact if a deliverable file is required.\n\n\u0627\u0642\u0631\u0623 \u0644\u064a \u0645\u062d\u062a\u0648\u0649 \u0627\u0644\u0645\u0644\u0641 \u0627\u0644\u062a\u0627\u0644\u064a \u0641\u0642\u0637 \u0648\u0623\u0639\u0631\u0636\u0647: C:\\Users\\khamis\\Documents\\fleetify\\supabase\\migrations\\ANALYSIS_financial_system.md\n\u0644\u0627 \u062a\u063a\u064a\u0631 \u0623\u064a \u0634\u064a\u0621\u060c \u0641\u0642\u0637 \u0627\u0642\u0631\u0623 \u0627\u0644\u0645\u0644\u0641 \u0648\u0623\u0631\u062c\u0639 \u0645\u062d\u062a\u0648\u0627\u0647.",
+  "task": "READ-ONLY AUDIT MODE: Do not modify source code, do not run self-healing, and only create the requested report artifact if a deliverable file is required.\n\n\u0631\u0627\u062c\u0639 \u0627\u0644\u0646\u0638\u0627\u0645 \u0627\u0644\u0645\u0627\u0644\u064a \u0648\u062a\u0643\u0627\u0645\u0644\u0647 \u0645\u0639 \u0628\u0642\u064a\u0629 \u0627\u0644\u0648\u062d\u062f\u0627\u062a \u0648\u0642\u062f\u0645 \u0644\u064a \u062a\u0642\u0631\u064a\u0631 \u0643\u0627\u0645\u0644 \u0628\u062f\u0648\u0646 \u062a\u063a\u064a\u0631 \u0627\u0644\u0643\u0648\u062f \u0641\u0642\u0637 \u062a\u0642\u0631\u064a\u0631 \u0639\u0646 \u062a\u0643\u0627\u0645\u0644 \u0627\u0644\u0646\u0638\u0627\u0645\n\n\u0642\u0645 \u0628\u0645\u0631\u0627\u062c\u0639\u0629 \u0634\u0627\u0645\u0644\u0629 \u0644\u0644\u0646\u0638\u0627\u0645 \u0627\u0644\u0645\u0627\u0644\u064a \u0641\u064a \u0645\u0634\u0631\u0648\u0639 Fleetify (\u0623\u0648 Nutrio) \u0648\u062a\u0643\u0627\u0645\u0644\u0647 \u0645\u0639 \u062c\u0645\u064a\u0639 \u0627\u0644\u0648\u062d\u062f\u0627\u062a \u0627\u0644\u0623\u062e\u0631\u0649. \u0642\u062f\u0645 \u062a\u0642\u0631\u064a\u0631\u0627\u064b \u0643\u0627\u0645\u0644\u0627\u064b \u0628\u0627\u0644\u0644\u063a\u0629 \u0627\u0644\u0639\u0631\u0628\u064a\u0629 \u064a\u063a\u0637\u064a:\n\n1. **\u0647\u064a\u0643\u0644 \u0627\u0644\u0646\u0638\u0627\u0645 \u0627\u0644\u0645\u0627\u0644\u064a**: \u0627\u0644\u062c\u062f\u0627\u0648\u0644\u060c \u0627\u0644\u0639\u0644\u0627\u0642\u0627\u062a\u060c \u0627\u0644\u0645\u0641\u0627\u062a\u064a\u062d \u0627\u0644\u062e\u0627\u0631\u062c\u064a\u0629\n2. **\u062a\u0643\u0627\u0645\u0644 \u0627\u0644\u0646\u0638\u0627\u0645 \u0627\u0644\u0645\u0627\u0644\u064a \u0645\u0639 \u0627\u0644\u0648\u062d\u062f\u0627\u062a \u0627\u0644\u0623\u062e\u0631",
   "status": "running",
-  "timestamp": "2026-07-05T21:47:22.869749",
+  "timestamp": "2026-07-05T21:50:27.696568",
   "plan": {
-    "task": "READ-ONLY AUDIT MODE: Do not modify source code, do not run self-healing, and only create the requested report artifact if a deliverable file is required.\n\n\u0627\u0642\u0631\u0623 \u0644\u064a \u0645\u062d\u062a\u0648\u0649 \u0627\u0644\u0645\u0644\u0641 \u0627\u0644\u062a\u0627\u0644\u064a \u0641\u0642\u0637 \u0648\u0623\u0639\u0631\u0636\u0647: C:\\Users\\khamis\\Documents\\fleetify\\supabase\\migrations\\ANALYSIS_financial_system.md\n\u0644\u0627 \u062a\u063a\u064a\u0631 \u0623\u064a \u0634\u064a\u0621\u060c \u0641\u0642\u0637 \u0627\u0642\u0631\u0623 \u0627\u0644\u0645\u0644\u0641 \u0648\u0623\u0631\u062c\u0639 \u0645\u062d\u062a\u0648\u0627\u0647.",
+    "task": "READ-ONLY AUDIT MODE: Do not modify source code, do not run self-healing, and only create the requested report artifact if a deliverable file is required.\n\n\u0631\u0627\u062c\u0639 \u0627\u0644\u0646\u0638\u0627\u0645 \u0627\u0644\u0645\u0627\u0644\u064a \u0648\u062a\u0643\u0627\u0645\u0644\u0647 \u0645\u0639 \u0628\u0642\u064a\u0629 \u0627\u0644\u0648\u062d\u062f\u0627\u062a \u0648\u0642\u062f\u0645 \u0644\u064a \u062a\u0642\u0631\u064a\u0631 \u0643\u0627\u0645\u0644 \u0628\u062f\u0648\u0646 \u062a\u063a\u064a\u0631 \u0627\u0644\u0643\u0648\u062f \u0641\u0642\u0637 \u062a\u0642\u0631\u064a\u0631 \u0639\u0646 \u062a\u0643\u0627\u0645\u0644 \u0627\u0644\u0646\u0638\u0627\u0645\n\n\u0642\u0645 \u0628\u0645\u0631\u0627\u062c\u0639\u0629 \u0634\u0627\u0645\u0644\u0629 \u0644\u0644\u0646\u0638\u0627\u0645 \u0627\u0644\u0645\u0627\u0644\u064a \u0641\u064a \u0645\u0634\u0631\u0648\u0639 Fleetify (\u0623\u0648 Nutrio) \u0648\u062a\u0643\u0627\u0645\u0644\u0647 \u0645\u0639 \u062c\u0645\u064a\u0639 \u0627\u0644\u0648\u062d\u062f\u0627\u062a \u0627\u0644\u0623\u062e\u0631\u0649. \u0642\u062f\u0645 \u062a\u0642\u0631\u064a\u0631\u0627\u064b \u0643\u0627\u0645\u0644\u0627\u064b \u0628\u0627\u0644\u0644\u063a\u0629 \u0627\u0644\u0639\u0631\u0628\u064a\u0629 \u064a\u063a\u0637\u064a:\n\n1. **\u0647\u064a\u0643\u0644 \u0627\u0644\u0646\u0638\u0627\u0645 \u0627\u0644\u0645\u0627\u0644\u064a**: \u0627\u0644\u062c\u062f\u0627\u0648\u0644\u060c \u0627\u0644\u0639\u0644\u0627\u0642\u0627\u062a\u060c \u0627\u0644\u0645\u0641\u0627\u062a\u064a\u062d \u0627\u0644\u062e\u0627\u0631\u062c\u064a\u0629\n2. **\u062a\u0643\u0627\u0645\u0644 \u0627\u0644\u0646\u0638\u0627\u0645 \u0627\u0644\u0645\u0627\u0644\u064a \u0645\u0639 \u0627\u0644\u0648\u062d\u062f\u0627\u062a \u0627\u0644\u0623\u062e\u0631\u0649**: \n   - \u0627\u0644\u0645\u0628\u064a\u0639\u0627\u062a/\u0627\u0644\u0641\u0648\u0627\u062a\u064a\u0631\n   - \u0627\u0644\u0645\u0634\u062a\u0631\u064a\u0627\u062a\n   - \u0627\u0644\u0645\u062e\u0632\u0648\u0646\n   - \u0627\u0644\u0645\u0648\u0627\u0631\u062f \u0627\u0644\u0628\u0634\u0631\u064a\u0629/\u0627\u0644\u0631\u0648\u0627\u062a\u0628\n   - \u0627\u0644\u0639\u0645\u0644\u0627\u0621\n   - \u0627\u0644\u0645\u0648\u0631\u062f\u064a\u0646\n3. **\u0633\u064a\u0631 \u0627\u0644\u0639\u0645\u0644 \u0627\u0644\u0645\u0627\u0644\u064a**: \u0645\u0646 \u0625\u0646\u0634\u0627\u0621 \u0627\u0644\u0645\u0639\u0627\u0645\u0644\u0629 \u0625\u0644\u0649 \u0627\u0644\u062a\u0631\u062d\u064a\u0644 \u0625\u0644\u0649 \u062f\u0641\u062a\u0631 \u0627\u0644\u0623\u0633\u062a\u0627\u0630\n4. **\u0627\u0644\u0642\u064a\u0648\u062f \u0648\u0627\u0644\u0645\u0634\u0627\u0643\u0644**: \u0623\u064a \u0645\u0634\u0627\u0643\u0644 \u0641\u064a \u0627\u0644\u062a\u0643\u0627\u0645\u0644\u060c \u0627\u0646\u0642\u0637\u0627\u0639 \u0641\u064a \u0633\u064a\u0631 \u0627\u0644\u0639\u0645\u0644\u060c \u062a\u0646\u0627\u0642\u0636\u0627\u062a\n5. **\u062a\u0642\u064a\u064a\u0645 \u0639\u0627\u0645**: \u0646\u0642\u0627\u0637 \u0627\u0644\u0642\u0648\u0629 \u0648\u0627\u0644\u0636\u0639\u0641 \u0641\u064a \u0627\u0644\u062a\u0643\u0627\u0645\u0644 \u0627\u0644\u0645\u0627\u0644\u064a\n\n\u0647\u0627\u0645: \u0644\u0627 \u062a\u0642\u0645 \u0628\u062a\u063a\u064a\u064a\u0631 \u0623\u064a \u0643\u0648\u062f. \u0647\u0630\u0627 \u062a\u0642\u0631\u064a\u0631 \u0641\u0642\u0637. \u0627\u0633\u062a\u062e\u062f\u0645 read_only=true.\n\n\u0627\u0628\u062d\u062b \u0639\u0646 \u0627\u0644\u0645\u0634\u0631\u0648\u0639 \u0641\u064a C:\\Users\\khamis\\Documents\\fleetify \u0623\u0648 C:\\Users\\khamis\\Documents\\nutrio\\",
     "subtasks": [
       {
-        "goal": "Read the content of the file at C:\\Users\\khamis\\Documents\\fleetify\\supabase\\migrations\\ANALYSIS_financial_system.md and store it for later use.",
-        "agent": "doc-writer",
+        "goal": "Examine source files under src/features/customers/ and src/features/suppliers/ to find how customer and supplier master data links to financial accounts (e.g., default receivable/payable accounts). Look for foreign keys or account code references.",
+        "agent": "devops-engineer",
         "toolsets": [
           "terminal",
           "file"
         ],
         "dependencies": [],
         "parallel_group": 0,
-        "id": "read-file",
+        "id": "analyze-customers-suppliers-integration",
         "files": [
-          "C:\\Users\\khamis\\Documents\\fleetify\\supabase\\migrations\\ANALYSIS_financial_system.md"
+          "src/features/customers/**/*.ts",
+          "src/features/suppliers/**/*.ts"
         ],
-        "success_criteria": "File content is successfully read and stored in memory without errors.",
+        "success_criteria": "A description of how customer and supplier records are linked to financial accounts, including any issues.",
         "milestone": "milestone-1",
         "milestone_index": 0,
         "model_hint": "speed",
         "max_iterations": 1
       },
       {
-        "goal": "Write the stored file content to a report file (e.g., read-file-output.txt) as the final deliverable. No modifications to the original file.",
+        "goal": "Read types.ts and migration files to identify all financial tables (e.g., payments, journal_entry_lines, chart_of_accounts, etc.), their columns, foreign keys, and relationships. List each table with its columns and note any known corrections from the audit script.",
+        "agent": "backend-engineer",
+        "toolsets": [
+          "terminal",
+          "file"
+        ],
+        "dependencies": [],
+        "parallel_group": 0,
+        "id": "analyze-financial-schema",
+        "files": [
+          "src/integrations/supabase/types.ts",
+          "supabase/migrations/*.sql"
+        ],
+        "success_criteria": "A structured list of financial tables with columns, foreign keys, and relationships is produced. All tables mentioned in the audit script are covered.",
+        "milestone": "milestone-1",
+        "milestone_index": 0,
+        "model_hint": "analytical",
+        "max_iterations": 1
+      },
+      {
+        "goal": "Examine source files under src/features/hr/ or src/features/payroll/ to find how payroll/salary expenses are recorded in the financial system. Look for journal entries or direct writes to financial tables.",
+        "agent": "builder",
+        "toolsets": [
+          "hermes-cli"
+        ],
+        "dependencies": [],
+        "parallel_group": 0,
+        "id": "analyze-hr-payroll-integration",
+        "files": [
+          "src/features/hr/**/*.ts",
+          "src/features/payroll/**/*.ts"
+        ],
+        "success_criteria": "A description of how HR/payroll transactions are linked to financial records, including tables used and any issues.",
+        "milestone": "milestone-1",
+        "milestone_index": 0,
+        "model_hint": "balanced",
+        "max_iterations": 3
+      },
+      {
+        "goal": "Examine source files under src/features/inventory/ to find how inventory movements (stock adjustments, transfers) affect financial accounts (COGS, inventory valuation). Look for journal entry creation or direct table writes.",
+        "agent": "builder",
+        "toolsets": [
+          "hermes-cli"
+        ],
+        "dependencies": [],
+        "parallel_group": 0,
+        "id": "analyze-inventory-integration",
+        "files": [
+          "src/features/inventory/**/*.ts"
+        ],
+        "success_criteria": "A description of how inventory transactions are linked to financial records, including tables used and any issues.",
+        "milestone": "milestone-1",
+        "milestone_index": 0,
+        "model_hint": "balanced",
+        "max_iterations": 3
+      },
+      {
+        "goal": "Examine source files under src/features/purchases/ to find how purchase transactions create financial entries (accounts payable, inventory). Look for references to financial tables and note the flow.",
+        "agent": "builder",
+        "toolsets": [
+          "hermes-cli"
+        ],
+        "dependencies": [],
+        "parallel_group": 0,
+        "id": "analyze-purchases-integration",
+        "files": [
+          "src/features/purchases/**/*.ts"
+        ],
+        "success_criteria": "A description of how purchase transactions are linked to financial records, including tables used and any issues.",
+        "milestone": "milestone-1",
+        "milestone_index": 0,
+        "model_hint": "balanced",
+        "max_iterations": 3
+      },
+      {
+        "goal": "Examine all source files under src/features/sales/ (or similar) to find how sales/invoice transactions create financial entries (e.g., accounts receivable, revenue). Look for calls to financial tables (payments, journal_entry_lines) and note the flow.",
+        "agent": "builder",
+        "toolsets": [
+          "hermes-cli"
+        ],
+        "dependencies": [],
+        "parallel_group": 0,
+        "id": "analyze-sales-integration",
+        "files": [
+          "src/features/sales/**/*.ts",
+          "src/features/invoices/**/*.ts"
+        ],
+        "success_criteria": "A description of how sales transactions are linked to financial records, including which tables are used and any issues found.",
+        "milestone": "milestone-1",
+        "milestone_index": 0,
+        "model_hint": "balanced",
+        "max_iterations": 3
+      },
+      {
+        "goal": "Examine source files under src/features/finance/ or src/features/accounting/ to understand the workflow from transaction creation (e.g., invoice, payment) to journal entry creation and posting to the general ledger. Look for functions that create journal entries, post to ledger, and any validation logic.",
+        "agent": "builder",
+        "toolsets": [
+          "hermes-cli"
+        ],
+        "dependencies": [],
+        "parallel_group": 0,
+        "id": "analyze-workflow-ledger-posting",
+        "files": [
+          "src/features/finance/**/*.ts",
+          "src/features/accounting/**/*.ts",
+          "src/features/journal/**/*.ts"
+        ],
+        "success_criteria": "A description of the end-to-end financial workflow, including key functions, tables involved, and any gaps or inconsistencies.",
+        "milestone": "milestone-1",
+        "milestone_index": 0,
+        "model_hint": "balanced",
+        "max_iterations": 3
+      },
+      {
+        "goal": "Collect all findings from the previous 7 subtasks and compile a comprehensive report in Arabic covering: 1) financial system structure, 2) integration with each module, 3) workflow, 4) issues/constraints, 5) overall assessment. Write the report to a file named financial-integration-audit-report.md in the project root.",
         "agent": "builder",
         "toolsets": [
           "hermes-cli"
         ],
         "dependencies": [
-          "read-file"
+          "analyze-financial-schema",
+          "analyze-sales-integration",
+          "analyze-purchases-integration",
+          "analyze-inventory-integration",
+          "analyze-hr-payroll-integration",
+          "analyze-customers-suppliers-integration",
+          "analyze-workflow-ledger-posting"
         ],
         "parallel_group": 1,
         "id": "assembly",
         "files": [
-          "read-file-output.txt"
+          "financial-integration-audit-report.md"
         ],
-        "success_criteria": "Final deliverable file is written and contains the exact content of the source file.",
+        "success_criteria": "Final deliverable file is written and contains all findings from prior subtasks in Arabic, covering all required sections.",
         "milestone": "milestone-2",
         "milestone_index": 1,
         "model_hint": "balanced",
@@ -50,16 +171,16 @@
     "parallel_group_count": 2,
     "routing_decisions": [
       {
-        "subtask_id": "read-file",
-        "task_type": "docs",
-        "agent": "doc-writer",
+        "subtask_id": "analyze-customers-suppliers-integration",
+        "task_type": "config",
+        "agent": "devops-engineer",
         "model_hint": "speed",
-        "complexity": "high",
-        "is_risky": true,
-        "confidence": 0.6,
+        "complexity": "medium",
+        "is_risky": false,
+        "confidence": 0.58,
         "profile": {
-          "name": "doc-writer",
-          "task_type": "docs",
+          "name": "devops-engineer",
+          "task_type": "devops",
           "model_tier": "balanced",
           "timeout": 120.0,
           "max_retries": 1,
@@ -79,6 +200,188 @@
         "toolsets": [
           "terminal",
           "file"
+        ]
+      },
+      {
+        "subtask_id": "analyze-financial-schema",
+        "task_type": "database",
+        "agent": "backend-engineer",
+        "model_hint": "analytical",
+        "complexity": "high",
+        "is_risky": true,
+        "confidence": 0.64,
+        "profile": {
+          "name": "backend-engineer",
+          "task_type": "database",
+          "model_tier": "balanced",
+          "timeout": 120.0,
+          "max_retries": 1,
+          "priority": "P1",
+          "requires_review": false,
+          "estimated_tokens": 4000,
+          "parallel_safe": true,
+          "toolsets": [
+            "terminal",
+            "file"
+          ],
+          "model": "glm-5.2:cloud",
+          "provider": "custom:ollama",
+          "base_url": "https://ollama.com/v1"
+        },
+        "parallel_safe": true,
+        "toolsets": [
+          "terminal",
+          "file"
+        ]
+      },
+      {
+        "subtask_id": "analyze-hr-payroll-integration",
+        "task_type": "implementation",
+        "agent": "builder",
+        "model_hint": "balanced",
+        "complexity": "medium",
+        "is_risky": false,
+        "confidence": 0.57,
+        "profile": {
+          "name": "builder",
+          "task_type": "implementation",
+          "model_tier": "balanced",
+          "timeout": 600,
+          "max_retries": 3,
+          "priority": "P1",
+          "requires_review": false,
+          "estimated_tokens": 4000,
+          "parallel_safe": true,
+          "toolsets": [
+            "hermes-cli"
+          ],
+          "model": "glm-5.2:cloud",
+          "provider": "custom:ollama",
+          "base_url": "http://localhost:11434/v1"
+        },
+        "parallel_safe": true,
+        "toolsets": [
+          "hermes-cli"
+        ]
+      },
+      {
+        "subtask_id": "analyze-inventory-integration",
+        "task_type": "implementation",
+        "agent": "builder",
+        "model_hint": "balanced",
+        "complexity": "medium",
+        "is_risky": false,
+        "confidence": 0.57,
+        "profile": {
+          "name": "builder",
+          "task_type": "implementation",
+          "model_tier": "balanced",
+          "timeout": 600,
+          "max_retries": 3,
+          "priority": "P1",
+          "requires_review": false,
+          "estimated_tokens": 4000,
+          "parallel_safe": true,
+          "toolsets": [
+            "hermes-cli"
+          ],
+          "model": "glm-5.2:cloud",
+          "provider": "custom:ollama",
+          "base_url": "http://localhost:11434/v1"
+        },
+        "parallel_safe": true,
+        "toolsets": [
+          "hermes-cli"
+        ]
+      },
+      {
+        "subtask_id": "analyze-purchases-integration",
+        "task_type": "implementation",
+        "agent": "builder",
+        "model_hint": "balanced",
+        "complexity": "medium",
+        "is_risky": false,
+        "confidence": 0.57,
+        "profile": {
+          "name": "builder",
+          "task_type": "implementation",
+          "model_tier": "balanced",
+          "timeout": 600,
+          "max_retries": 3,
+          "priority": "P1",
+          "requires_review": false,
+          "estimated_tokens": 4000,
+          "parallel_safe": true,
+          "toolsets": [
+            "hermes-cli"
+          ],
+          "model": "glm-5.2:cloud",
+          "provider": "custom:ollama",
+          "base_url": "http://localhost:11434/v1"
+        },
+        "parallel_safe": true,
+        "toolsets": [
+          "hermes-cli"
+        ]
+      },
+      {
+        "subtask_id": "analyze-sales-integration",
+        "task_type": "implementation",
+        "agent": "builder",
+        "model_hint": "balanced",
+        "complexity": "medium",
+        "is_risky": false,
+        "confidence": 0.57,
+        "profile": {
+          "name": "builder",
+          "task_type": "implementation",
+          "model_tier": "balanced",
+          "timeout": 600,
+          "max_retries": 3,
+          "priority": "P1",
+          "requires_review": false,
+          "estimated_tokens": 4000,
+          "parallel_safe": true,
+          "toolsets": [
+            "hermes-cli"
+          ],
+          "model": "glm-5.2:cloud",
+          "provider": "custom:ollama",
+          "base_url": "http://localhost:11434/v1"
+        },
+        "parallel_safe": true,
+        "toolsets": [
+          "hermes-cli"
+        ]
+      },
+      {
+        "subtask_id": "analyze-workflow-ledger-posting",
+        "task_type": "implementation",
+        "agent": "builder",
+        "model_hint": "balanced",
+        "complexity": "medium",
+        "is_risky": false,
+        "confidence": 0.57,
+        "profile": {
+          "name": "builder",
+          "task_type": "implementation",
+          "model_tier": "balanced",
+          "timeout": 600,
+          "max_retries": 3,
+          "priority": "P1",
+          "requires_review": false,
+          "estimated_tokens": 4000,
+          "parallel_safe": true,
+          "toolsets": [
+            "hermes-cli"
+          ],
+          "model": "glm-5.2:cloud",
+          "provider": "custom:ollama",
+          "base_url": "http://localhost:11434/v1"
+        },
+        "parallel_safe": true,
+        "toolsets": [
+          "hermes-cli"
         ]
       },
       {
@@ -117,10 +420,22 @@
         "id": "milestone-1",
         "name": "Parallel group 1",
         "subtask_ids": [
-          "read-file"
+          "analyze-customers-suppliers-integration",
+          "analyze-financial-schema",
+          "analyze-hr-payroll-integration",
+          "analyze-inventory-integration",
+          "analyze-purchases-integration",
+          "analyze-sales-integration",
+          "analyze-workflow-ledger-posting"
         ],
         "acceptance_criteria": [
-          "File content is successfully read and stored in memory without errors."
+          "A description of how customer and supplier records are linked to financial accounts, including any issues.",
+          "A structured list of financial tables with columns, foreign keys, and relationships is produced. All tables mentioned in the audit script are covered.",
+          "A description of how HR/payroll transactions are linked to financial records, including tables used and any issues.",
+          "A description of how inventory transactions are linked to financial records, including tables used and any issues.",
+          "A description of how purchase transactions are linked to financial records, including tables used and any issues.",
+          "A description of how sales transactions are linked to financial records, including which tables are used and any issues found.",
+          "A description of the end-to-end financial workflow, including key functions, tables involved, and any gaps or inconsistencies."
         ],
         "assumptions": [
           "Dependencies from earlier milestones remain stable."
@@ -133,7 +448,7 @@
           "assembly"
         ],
         "acceptance_criteria": [
-          "Final deliverable file is written and contains the exact content of the source file."
+          "Final deliverable file is written and contains all findings from prior subtasks in Arabic, covering all required sections."
         ],
         "assumptions": [
           "Dependencies from earlier milestones remain stable."
@@ -143,13 +458,18 @@
     "clarifying_questions": [
       "What authentication method should be used (JWT, OAuth, session-based)?",
       "What user roles or permission levels are needed?",
-      "What database and ORM are in use? Any existing migration strategy?",
-      "What is the deployment pipeline (staging, canary, production)?",
-      "Are there any approval gates or change management processes?"
+      "Is there an existing design system or component library to follow?",
+      "What are the target breakpoints for responsive design?"
     ],
     "completion_criteria": [
-      "Subtask complete: Read the content of the file at C:\\Users\\khamis\\Documents\\fleetify\\supabase\\migrations\\ANALYSIS_fina",
-      "Subtask complete: Write the stored file content to a report file (e.g., read-file-output.txt) as the final deliverable",
+      "Subtask complete: Examine source files under src/features/customers/ and src/features/suppliers/ to find how customer ",
+      "Subtask complete: Read types.ts and migration files to identify all financial tables (e.g., payments, journal_entry_li",
+      "Subtask complete: Examine source files under src/features/hr/ or src/features/payroll/ to find how payroll/salary expe",
+      "Subtask complete: Examine source files under src/features/inventory/ to find how inventory movements (stock adjustment",
+      "Subtask complete: Examine source files under src/features/purchases/ to find how purchase transactions create financia",
+      "Subtask complete: Examine all source files under src/features/sales/ (or similar) to find how sales/invoice transactio",
+      "Subtask complete: Examine source files under src/features/finance/ or src/features/accounting/ to understand the workf",
+      "Subtask complete: Collect all findings from the previous 7 subtasks and compile a comprehensive report in Arabic cover",
       "All quality gates pass (syntax, lint, type, test)",
       "No regressions in existing test suite"
     ],
