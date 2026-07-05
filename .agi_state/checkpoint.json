@@ -1,13 +1,32 @@
 {
   "stage": "plan_approved",
-  "task": "\u0642\u0645 \u0628\u0639\u0645\u0644 \u0641\u062d\u0635 (Audit) \u062c\u062f\u064a\u062f \u0648\u062d\u062f\u064a\u062b \u0648\u0634\u0627\u0645\u0644 \u0644\u0644\u0646\u0638\u0627\u0645 \u0627\u0644\u0645\u0627\u0644\u064a \u0641\u064a \u062a\u0637\u0628\u064a\u0642 Fleetify\u060c \u062a\u0623\u0643\u062f \u0623\u0646 \u062a\u0642\u0631\u0623 \u0627\u0644\u0623\u0643\u0648\u0627\u062f \u0627\u0644\u0641\u0639\u0644\u064a\u0629 \u0627\u0644\u0622\u0646 \u0648\u0644\u0627 \u062a\u0639\u062a\u0645\u062f \u0639\u0644\u0649 \u0645\u0644\u0641\u0627\u062a \u0642\u062f\u064a\u0645\u0629. \u0642\u0645 \u0628\u0641\u062d\u0635 Edge Functions \u0627\u0644\u0640 48\u060c \u062a\u062d\u0644\u064a\u0644 RLS policies\u060c \u0648\u0641\u062d\u0635 \u0642\u0627\u0639\u062f\u0629 \u0627\u0644\u0628\u064a\u0627\u0646\u0627\u062a \u0627\u0644\u062d\u064a\u0629 \u0639\u0628\u0631 Supabase API \u0625\u0630\u0627 \u0644\u0632\u0645 \u0627\u0644\u0623\u0645\u0631. \u0623\u0636\u0641 \u0623\u0642\u0633\u0627\u0645\u0627\u064b \u062c\u062f\u064a\u062f\u0629 \u0645\u062b\u0644 \u062a\u062d\u0644\u064a\u0644 \u0627\u0644\u0623\u062f\u0627\u0621\u060c \u062a\u062d\u0644\u064a\u0644 \u0627\u0644\u0623\u0645\u0627\u0646\u060c \u0648\u062a\u062f\u0642\u064a\u0642 i18n. \u062a\u062d\u0642\u0642 \u0645\u0646 \u0627\u0644\u0646\u062a\u0627\u0626\u062c - \u064a\u062c\u0628 \u062a\u0634\u063a\u064a\u0644 AGI \u0644\u0644\u062a\u062d\u0642\u0642 \u0645\u0646 \u0643\u0644 finding \u0641\u064a \u0627\u0644\u062a\u0642\u0631\u064a\u0631 \u0628\u0634\u0643\u0644 \u0645\u0633\u062a\u0642\u0644. \u0644\u0627 \u062a\u0642\u0645 \u0628\u062a\u063a\u064a\u064a\u0631 \u0623\u064a \u0643\u0648\u062f\u060c \u0641\u0642\u0637 \u0642\u062f\u0645 \u062a\u0642\u0631\u064a\u0631\u0627\u064b \u0645\u0641\u0635\u0644\u0627\u064b \u0648\u062d\u062f\u064a\u062b\u0627\u064b \u0628\u0627\u0633\u0645 docs/financial-system-audit-v5-final.md",
+  "task": "\u0631\u0627\u062c\u0639 \u0627\u0644\u0646\u0638\u0627\u0645 \u0627\u0644\u0645\u0627\u0644\u064a \u0648\u062a\u0643\u0627\u0645\u0644\u0647 \u0645\u0639 \u0628\u0642\u064a\u0629 \u0627\u0644\u0648\u062d\u062f\u0627\u062a \u0648\u0642\u062f\u0645 \u0644\u064a \u062a\u0642\u0631\u064a\u0631 \u0643\u0627\u0645\u0644 \u0628\u062f\u0648\u0646 \u062a\u063a\u064a\u0631 \u0627\u0644\u0643\u0648\u062f \u0641\u0642\u0637 \u062a\u0642\u0631\u064a\u0631 \u0639\u0646 \u062a\u0643\u0627\u0645\u0644 \u0627\u0644\u0646\u0638\u0627\u0645. \n\n\u0627\u0644\u0645\u0634\u0631\u0648\u0639: Fleetify ERP (\u0646\u0638\u0627\u0645 \u062a\u0623\u062c\u064a\u0631 \u0633\u064a\u0627\u0631\u0627\u062a) \u0641\u064a C:/Users/khamis/Documents/fleetifyapp\n\n\u0627\u0644\u0645\u0637\u0644\u0648\u0628:\n1. \u062a\u062f\u0642\u064a\u0642 \u0634\u0627\u0645\u0644 \u0644\u0644\u0646\u0638\u0627\u0645 \u0627\u0644\u0645\u0627\u0644\u064a \u0648\u062a\u0643\u0627\u0645\u0644\u0647 \u0645\u0639 \u062c\u0645\u064a\u0639 \u0627\u0644\u0648\u062d\u062f\u0627\u062a \u0627\u0644\u0623\u062e\u0631\u0649 (\u0627\u0644\u0639\u0642\u0648\u062f\u060c \u0627\u0644\u0623\u0633\u0637\u0648\u0644\u060c \u0627\u0644\u0645\u0648\u0627\u0631\u062f \u0627\u0644\u0628\u0634\u0631\u064a\u0629\u060c \u0627\u0644\u0645\u062e\u0632\u0648\u0646\u060c \u0627\u0644\u0642\u0627\u0646\u0648\u0646\u064a\u0629\u060c \u0627\u0644\u0645\u0645\u062a\u0644\u0643\u0627\u062a\u060c \u0627\u0644\u0645\u062f\u0641\u0648\u0639\u0627\u062a)\n2. \u0627\u0633\u062a\u062e\u062f\u0627\u0645 \u0645\u0646\u0647\u062c\u064a\u0629 financial-system-audit-verification:\n   - \u0642\u0631\u0627\u0621\u0629 \u062c\u0645\u064a\u0639 \u0645\u0644\u0641\u0627\u062a migrations \u0641\u064a supabase/migrations/\n   - \u0628\u0646\u0627\u0621 \u0645\u0635\u0641\u0648\u0641\u0629 triggers \u0643\u0627\u0645\u0644\u0629\n   - \u062a\u062a\u0628\u0639 \u062a\u0633\u0644\u0633\u0644 \u0639\u0645\u0644\u064a",
   "status": "running",
-  "timestamp": "2026-07-05T16:10:56.057815",
+  "timestamp": "2026-07-05T16:52:54.079959",
   "plan": {
-    "task": "\u0642\u0645 \u0628\u0639\u0645\u0644 \u0641\u062d\u0635 (Audit) \u062c\u062f\u064a\u062f \u0648\u062d\u062f\u064a\u062b \u0648\u0634\u0627\u0645\u0644 \u0644\u0644\u0646\u0638\u0627\u0645 \u0627\u0644\u0645\u0627\u0644\u064a \u0641\u064a \u062a\u0637\u0628\u064a\u0642 Fleetify\u060c \u062a\u0623\u0643\u062f \u0623\u0646 \u062a\u0642\u0631\u0623 \u0627\u0644\u0623\u0643\u0648\u0627\u062f \u0627\u0644\u0641\u0639\u0644\u064a\u0629 \u0627\u0644\u0622\u0646 \u0648\u0644\u0627 \u062a\u0639\u062a\u0645\u062f \u0639\u0644\u0649 \u0645\u0644\u0641\u0627\u062a \u0642\u062f\u064a\u0645\u0629. \u0642\u0645 \u0628\u0641\u062d\u0635 Edge Functions \u0627\u0644\u0640 48\u060c \u062a\u062d\u0644\u064a\u0644 RLS policies\u060c \u0648\u0641\u062d\u0635 \u0642\u0627\u0639\u062f\u0629 \u0627\u0644\u0628\u064a\u0627\u0646\u0627\u062a \u0627\u0644\u062d\u064a\u0629 \u0639\u0628\u0631 Supabase API \u0625\u0630\u0627 \u0644\u0632\u0645 \u0627\u0644\u0623\u0645\u0631. \u0623\u0636\u0641 \u0623\u0642\u0633\u0627\u0645\u0627\u064b \u062c\u062f\u064a\u062f\u0629 \u0645\u062b\u0644 \u062a\u062d\u0644\u064a\u0644 \u0627\u0644\u0623\u062f\u0627\u0621\u060c \u062a\u062d\u0644\u064a\u0644 \u0627\u0644\u0623\u0645\u0627\u0646\u060c \u0648\u062a\u062f\u0642\u064a\u0642 i18n. \u062a\u062d\u0642\u0642 \u0645\u0646 \u0627\u0644\u0646\u062a\u0627\u0626\u062c - \u064a\u062c\u0628 \u062a\u0634\u063a\u064a\u0644 AGI \u0644\u0644\u062a\u062d\u0642\u0642 \u0645\u0646 \u0643\u0644 finding \u0641\u064a \u0627\u0644\u062a\u0642\u0631\u064a\u0631 \u0628\u0634\u0643\u0644 \u0645\u0633\u062a\u0642\u0644. \u0644\u0627 \u062a\u0642\u0645 \u0628\u062a\u063a\u064a\u064a\u0631 \u0623\u064a \u0643\u0648\u062f\u060c \u0641\u0642\u0637 \u0642\u062f\u0645 \u062a\u0642\u0631\u064a\u0631\u0627\u064b \u0645\u0641\u0635\u0644\u0627\u064b \u0648\u062d\u062f\u064a\u062b\u0627\u064b \u0628\u0627\u0633\u0645 docs/financial-system-audit-v5-final.md",
+    "task": "\u0631\u0627\u062c\u0639 \u0627\u0644\u0646\u0638\u0627\u0645 \u0627\u0644\u0645\u0627\u0644\u064a \u0648\u062a\u0643\u0627\u0645\u0644\u0647 \u0645\u0639 \u0628\u0642\u064a\u0629 \u0627\u0644\u0648\u062d\u062f\u0627\u062a \u0648\u0642\u062f\u0645 \u0644\u064a \u062a\u0642\u0631\u064a\u0631 \u0643\u0627\u0645\u0644 \u0628\u062f\u0648\u0646 \u062a\u063a\u064a\u0631 \u0627\u0644\u0643\u0648\u062f \u0641\u0642\u0637 \u062a\u0642\u0631\u064a\u0631 \u0639\u0646 \u062a\u0643\u0627\u0645\u0644 \u0627\u0644\u0646\u0638\u0627\u0645. \n\n\u0627\u0644\u0645\u0634\u0631\u0648\u0639: Fleetify ERP (\u0646\u0638\u0627\u0645 \u062a\u0623\u062c\u064a\u0631 \u0633\u064a\u0627\u0631\u0627\u062a) \u0641\u064a C:/Users/khamis/Documents/fleetifyapp\n\n\u0627\u0644\u0645\u0637\u0644\u0648\u0628:\n1. \u062a\u062f\u0642\u064a\u0642 \u0634\u0627\u0645\u0644 \u0644\u0644\u0646\u0638\u0627\u0645 \u0627\u0644\u0645\u0627\u0644\u064a \u0648\u062a\u0643\u0627\u0645\u0644\u0647 \u0645\u0639 \u062c\u0645\u064a\u0639 \u0627\u0644\u0648\u062d\u062f\u0627\u062a \u0627\u0644\u0623\u062e\u0631\u0649 (\u0627\u0644\u0639\u0642\u0648\u062f\u060c \u0627\u0644\u0623\u0633\u0637\u0648\u0644\u060c \u0627\u0644\u0645\u0648\u0627\u0631\u062f \u0627\u0644\u0628\u0634\u0631\u064a\u0629\u060c \u0627\u0644\u0645\u062e\u0632\u0648\u0646\u060c \u0627\u0644\u0642\u0627\u0646\u0648\u0646\u064a\u0629\u060c \u0627\u0644\u0645\u0645\u062a\u0644\u0643\u0627\u062a\u060c \u0627\u0644\u0645\u062f\u0641\u0648\u0639\u0627\u062a)\n2. \u0627\u0633\u062a\u062e\u062f\u0627\u0645 \u0645\u0646\u0647\u062c\u064a\u0629 financial-system-audit-verification:\n   - \u0642\u0631\u0627\u0621\u0629 \u062c\u0645\u064a\u0639 \u0645\u0644\u0641\u0627\u062a migrations \u0641\u064a supabase/migrations/\n   - \u0628\u0646\u0627\u0621 \u0645\u0635\u0641\u0648\u0641\u0629 triggers \u0643\u0627\u0645\u0644\u0629\n   - \u062a\u062a\u0628\u0639 \u062a\u0633\u0644\u0633\u0644 \u0639\u0645\u0644\u064a\u0627\u062a \u0643\u0644 hook \u0645\u0627\u0644\u064a\n   - \u062a\u0642\u0627\u0637\u0639 \u0643\u0644 \u0639\u0645\u0644\u064a\u0629 \u0645\u0639 \u0643\u0644 trigger\n   - \u0627\u0644\u062a\u062d\u0642\u0642 \u0645\u0646 \u0635\u062d\u0629 \u0627\u0644\u0645\u0646\u0637\u0642 \u0627\u0644\u0645\u062d\u0627\u0633\u0628\u064a\n3. \u062a\u063a\u0637\u064a\u0629 \u062c\u0645\u064a\u0639 \u0646\u0637\u0627\u0642\u0627\u062a CFO financial system audit \u0627\u0644\u0640 13\n4. \u0643\u0644 \u0646\u062a\u064a\u062c\u0629 \u064a\u062c\u0628 \u0623\u0646 \u062a\u0643\u0648\u0646 \u0645\u0648\u062b\u0642\u0629 \u0628\u0640 file:line\n5. \u0644\u0627 \u062a\u063a\u064a\u0631 \u0623\u064a \u0643\u0648\u062f - \u062a\u0642\u0631\u064a\u0631 \u0641\u0642\u0637\n6. \u0627\u0644\u062a\u0642\u0631\u064a\u0631 \u0627\u0644\u0646\u0647\u0627\u0626\u064a \u064a\u062d\u0641\u0638 \u0641\u064a docs/financial-system-integration-audit-report.md\n\n\u0627\u0633\u062a\u062e\u062f\u0645 \u0627\u0644\u0645\u0646\u0647\u062c\u064a\u0629 \u0627\u0644\u0643\u0627\u0645\u0644\u0629: \u0627\u0642\u0631\u0623 \u0643\u0644 migration\u060c \u0627\u0628\u0646\u0650 \u0645\u0635\u0641\u0648\u0641\u0629 triggers\u060c \u062a\u062a\u0628\u0639 hooks\u060c \u062a\u062d\u0642\u0642 \u0645\u0646 \u0627\u0644\u062a\u0642\u0627\u0631\u064a\u0631 \u0627\u0644\u0645\u0627\u0644\u064a\u0629\u060c \u0627\u0641\u062d\u0635 \u0627\u0644\u0639\u0645\u0644\u0627\u062a\u060c \u0627\u0643\u0634\u0641 \u0627\u0644\u0628\u064a\u0627\u0646\u0627\u062a \u0627\u0644\u0648\u0647\u0645\u064a\u0629\u060c \u0648\u062a\u062d\u0642\u0642 \u0645\u0646 \u0622\u0644\u064a\u0627\u062a \u0627\u0644\u0645\u0648\u0627\u0641\u0642\u0627\u062a \u0648\u0627\u0644\u0636\u0648\u0627\u0628\u0637.",
     "subtasks": [
       {
-        "goal": "Query the live Supabase database to verify schema consistency, data integrity, and financial data accuracy.",
+        "goal": "Scan all application source files (src/**/*.ts, src/**/*.tsx) to identify every financial hook: functions that create, update, or delete records in financial tables (journal_entries, journal_entry_lines, payments, invoices, chart_of_accounts, etc.). For each hook, trace its sequence of operations and document file:line references.",
+        "agent": "builder",
+        "toolsets": [
+          "hermes-cli"
+        ],
+        "dependencies": [],
+        "parallel_group": 0,
+        "id": "inventory-financial-hooks",
+        "files": [
+          "src/**/*.ts",
+          "src/**/*.tsx"
+        ],
+        "success_criteria": "Complete inventory of financial hooks with file:line, table affected, operation type, and sequence of steps. No source file with financial logic is missed.",
+        "milestone": "milestone-1",
+        "milestone_index": 0,
+        "model_hint": "balanced",
+        "max_iterations": 3
+      },
+      {
+        "goal": "Parse all SQL migration files in supabase/migrations/ to extract table schemas, triggers, functions, and build a comprehensive triggers matrix. Document every trigger, its event, table, and logic.",
         "agent": "backend-engineer",
         "toolsets": [
           "terminal",
@@ -15,181 +34,204 @@
         ],
         "dependencies": [],
         "parallel_group": 0,
-        "id": "audit-database-live",
+        "id": "parse-migrations-triggers",
         "files": [
-          "scripts/audit-supabase-queries-v2.py"
+          "supabase/migrations/*.sql"
         ],
-        "success_criteria": "A JSON file is created with findings from the live database audit, including discrepancies and recommendations.",
+        "success_criteria": "Triggers matrix JSON or structured list is produced with all triggers, their tables, events, and logic summaries. No migration file is skipped.",
         "milestone": "milestone-1",
         "milestone_index": 0,
         "model_hint": "analytical",
         "max_iterations": 1
       },
       {
-        "goal": "Analyze all 48 Edge Functions for financial logic, security, and performance. Document findings in a structured format.",
-        "agent": "code-reviewer",
-        "toolsets": [
-          "terminal",
-          "file"
-        ],
-        "dependencies": [],
-        "parallel_group": 0,
-        "id": "audit-edge-functions",
-        "files": [
-          "src/edge-functions/**/*.ts",
-          "src/edge-functions/**/*.js"
-        ],
-        "success_criteria": "A JSON file is created with findings for each Edge Function, including potential issues and recommendations.",
-        "milestone": "milestone-1",
-        "milestone_index": 0,
-        "model_hint": "analytical",
-        "max_iterations": 1
-      },
-      {
-        "goal": "Analyze the internationalization (i18n) support for financial features, including currency handling and localization.",
-        "agent": "code-reviewer",
-        "toolsets": [
-          "terminal",
-          "file"
-        ],
-        "dependencies": [],
-        "parallel_group": 0,
-        "id": "audit-i18n",
-        "files": [
-          "src/i18n/**/*.ts",
-          "src/locales/**/*.json"
-        ],
-        "success_criteria": "A JSON file is created with i18n findings and recommendations for improvement.",
-        "milestone": "milestone-1",
-        "milestone_index": 0,
-        "model_hint": "analytical",
-        "max_iterations": 1
-      },
-      {
-        "goal": "Analyze the performance of financial operations, including query execution times and API response times.",
-        "agent": "code-reviewer",
-        "toolsets": [
-          "terminal",
-          "file"
-        ],
-        "dependencies": [],
-        "parallel_group": 0,
-        "id": "audit-performance",
-        "files": [
-          "src/integrations/supabase/**/*.ts",
-          "src/api/**/*.ts"
-        ],
-        "success_criteria": "A JSON file is created with performance metrics and recommendations for optimization.",
-        "milestone": "milestone-1",
-        "milestone_index": 0,
-        "model_hint": "analytical",
-        "max_iterations": 1
-      },
-      {
-        "goal": "Review all Row-Level Security (RLS) policies in the Supabase configuration for correctness and security.",
-        "agent": "devops-engineer",
-        "toolsets": [
-          "terminal",
-          "file"
-        ],
-        "dependencies": [],
-        "parallel_group": 0,
-        "id": "audit-rls-policies",
-        "files": [
-          "supabase/config.toml",
-          "supabase/sql/**/*.sql"
-        ],
-        "success_criteria": "A JSON file is created with findings for each RLS policy, including potential misconfigurations and recommendations.",
-        "milestone": "milestone-1",
-        "milestone_index": 0,
-        "model_hint": "speed",
-        "max_iterations": 1
-      },
-      {
-        "goal": "Review the security of financial operations, including authentication, authorization, and data encryption.",
-        "agent": "security-auditor",
-        "toolsets": [
-          "terminal",
-          "file"
-        ],
-        "dependencies": [],
-        "parallel_group": 1,
-        "id": "audit-security",
-        "files": [
-          "src/auth/**/*.ts",
-          "src/integrations/supabase/**/*.ts"
-        ],
-        "success_criteria": "A JSON file is created with security findings and recommendations for hardening.",
-        "milestone": "milestone-1",
-        "milestone_index": 0,
-        "model_hint": "analytical",
-        "max_iterations": 1
-      },
-      {
-        "goal": "Use AGI to independently verify each finding from the prior subtasks. Cross-check results for accuracy.",
+        "goal": "Audit internal controls, approval mechanisms, financial reporting, and audit trail. Verify segregation of duties, approval workflows, financial statement generation, and completeness of audit logs.",
         "agent": "code-reviewer",
         "toolsets": [
           "terminal",
           "file"
         ],
         "dependencies": [
-          "audit-edge-functions",
-          "audit-rls-policies",
-          "audit-database-live",
-          "audit-performance",
-          "audit-security",
-          "audit-i18n"
+          "parse-migrations-triggers",
+          "inventory-financial-hooks"
         ],
         "parallel_group": 1,
-        "id": "verify-findings",
+        "id": "audit-controls-reporting",
         "files": [
-          "docs/financial-system-audit-v5-final.md"
+          "src/**/*.ts",
+          "src/**/*.tsx",
+          "supabase/migrations/*.sql"
         ],
-        "success_criteria": "A verified JSON file is created with confirmed findings and any corrections to prior results.",
+        "success_criteria": "Findings documented with file:line for controls, approvals, reporting, and audit trail. All 13 CFO domains are addressed across all subtasks.",
         "milestone": "milestone-2",
         "milestone_index": 1,
         "model_hint": "analytical",
         "max_iterations": 1
       },
       {
-        "goal": "Compile all findings into a final report named docs/financial-system-audit-v5-final.md. Ensure the report is comprehensive and well-structured.",
+        "goal": "Audit the expense cycle integration: purchases, accounts payable, inventory, and fixed assets. Verify expense recognition, asset capitalization, depreciation triggers, and inventory valuation.",
         "agent": "code-reviewer",
         "toolsets": [
           "terminal",
           "file"
         ],
         "dependencies": [
-          "audit-edge-functions",
-          "audit-rls-policies",
-          "audit-database-live",
-          "audit-performance",
-          "audit-security",
-          "audit-i18n",
-          "verify-findings"
+          "parse-migrations-triggers",
+          "inventory-financial-hooks"
+        ],
+        "parallel_group": 2,
+        "id": "audit-expense-cycle",
+        "files": [
+          "src/**/*.ts",
+          "src/**/*.tsx",
+          "supabase/migrations/*.sql"
+        ],
+        "success_criteria": "Findings documented with file:line for expense-related hooks, triggers, and logic. All expense types (direct, inventory, asset) are covered.",
+        "milestone": "milestone-2",
+        "milestone_index": 1,
+        "model_hint": "analytical",
+        "max_iterations": 1
+      },
+      {
+        "goal": "Audit HR/payroll integration and cash management: payroll journal entries, employee advances, bank reconciliation, and cash flow triggers. Verify payroll accounting, cash controls, and reconciliation logic.",
+        "agent": "code-reviewer",
+        "toolsets": [
+          "terminal",
+          "file"
+        ],
+        "dependencies": [
+          "parse-migrations-triggers",
+          "inventory-financial-hooks"
+        ],
+        "parallel_group": 3,
+        "id": "audit-hr-cash",
+        "files": [
+          "src/**/*.ts",
+          "src/**/*.tsx",
+          "supabase/migrations/*.sql"
+        ],
+        "success_criteria": "Findings documented with file:line for HR/payroll and cash management hooks, triggers, and logic. Payroll cycles and bank reconciliation steps are verified.",
+        "milestone": "milestone-2",
+        "milestone_index": 1,
+        "model_hint": "analytical",
+        "max_iterations": 1
+      },
+      {
+        "goal": "Audit the revenue cycle integration: contracts \u2192 invoices \u2192 journal entries \u2192 payments. Cover revenue recognition, accounts receivable, contract billing, and payment allocation. Verify accounting logic, currency handling, and dummy data detection.",
+        "agent": "code-reviewer",
+        "toolsets": [
+          "terminal",
+          "file"
+        ],
+        "dependencies": [
+          "parse-migrations-triggers",
+          "inventory-financial-hooks"
+        ],
+        "parallel_group": 4,
+        "id": "audit-revenue-cycle",
+        "files": [
+          "src/**/*.ts",
+          "src/**/*.tsx",
+          "supabase/migrations/*.sql"
+        ],
+        "success_criteria": "Findings documented with file:line for revenue-related hooks, triggers, and logic. All revenue recognition scenarios (rental, lease, one-time) are covered.",
+        "milestone": "milestone-2",
+        "milestone_index": 1,
+        "model_hint": "analytical",
+        "max_iterations": 1
+      },
+      {
+        "goal": "Cross-reference the triggers matrix with the hooks inventory to detect integration gaps: missing triggers, conflicting operations, double-entry violations, and data integrity risks. Every hook operation is checked against relevant triggers.",
+        "agent": "code-reviewer",
+        "toolsets": [
+          "terminal",
+          "file"
+        ],
+        "dependencies": [
+          "parse-migrations-triggers",
+          "inventory-financial-hooks"
+        ],
+        "parallel_group": 5,
+        "id": "cross-reference-triggers-hooks",
+        "files": [
+          "supabase/migrations/*.sql",
+          "src/**/*.ts",
+          "src/**/*.tsx"
+        ],
+        "success_criteria": "List of all integration gaps with file:line references, categorized by severity. Each gap is explained with the hook and trigger involved.",
+        "milestone": "milestone-2",
+        "milestone_index": 1,
+        "model_hint": "analytical",
+        "max_iterations": 1
+      },
+      {
+        "goal": "Collect all findings from prior subtasks, synthesize into a comprehensive financial system integration audit report, and write the final markdown file at docs/financial-system-integration-audit-report.md. Ensure every finding is documented with file:line, categorized by domain, and includes an executive summary.",
+        "agent": "builder",
+        "toolsets": [
+          "hermes-cli"
+        ],
+        "dependencies": [
+          "parse-migrations-triggers",
+          "inventory-financial-hooks",
+          "cross-reference-triggers-hooks",
+          "audit-revenue-cycle",
+          "audit-expense-cycle",
+          "audit-hr-cash",
+          "audit-controls-reporting"
         ],
         "parallel_group": 2,
         "id": "assembly",
         "files": [
-          "docs/financial-system-audit-v5-final.md"
+          "docs/financial-system-integration-audit-report.md"
         ],
-        "success_criteria": "Final deliverable file is written and contains all findings from prior subtasks, verified and structured clearly.",
+        "success_criteria": "Final deliverable file is written and contains all findings from prior subtasks",
         "milestone": "milestone-3",
         "milestone_index": 2,
-        "model_hint": "analytical",
-        "max_iterations": 1
+        "model_hint": "balanced",
+        "max_iterations": 3
       }
     ],
     "risk_level": "medium",
     "parallel_group_count": 3,
     "routing_decisions": [
       {
-        "subtask_id": "audit-database-live",
+        "subtask_id": "inventory-financial-hooks",
+        "task_type": "implementation",
+        "agent": "builder",
+        "model_hint": "balanced",
+        "complexity": "medium",
+        "is_risky": true,
+        "confidence": 0.57,
+        "profile": {
+          "name": "builder",
+          "task_type": "implementation",
+          "model_tier": "balanced",
+          "timeout": 600,
+          "max_retries": 3,
+          "priority": "P1",
+          "requires_review": false,
+          "estimated_tokens": 4000,
+          "parallel_safe": true,
+          "toolsets": [
+            "hermes-cli"
+          ],
+          "model": "glm-5.2:cloud",
+          "provider": "custom:ollama",
+          "base_url": "http://localhost:11434/v1"
+        },
+        "parallel_safe": true,
+        "toolsets": [
+          "hermes-cli"
+        ]
+      },
+      {
+        "subtask_id": "parse-migrations-triggers",
         "task_type": "database",
         "agent": "backend-engineer",
         "model_hint": "analytical",
-        "complexity": "medium",
-        "is_risky": false,
-        "confidence": 0.71,
+        "complexity": "high",
+        "is_risky": true,
+        "confidence": 0.79,
         "profile": {
           "name": "backend-engineer",
           "task_type": "database",
@@ -215,173 +257,141 @@
         ]
       },
       {
-        "subtask_id": "audit-edge-functions",
-        "task_type": "review",
-        "agent": "code-reviewer",
-        "model_hint": "analytical",
-        "complexity": "low",
-        "is_risky": false,
-        "confidence": 0.58,
-        "profile": {
-          "name": "code-reviewer",
-          "task_type": "review",
-          "model_tier": "balanced",
-          "timeout": 120.0,
-          "max_retries": 1,
-          "priority": "P1",
-          "requires_review": false,
-          "estimated_tokens": 4000,
-          "parallel_safe": true,
-          "toolsets": [
-            "terminal",
-            "file"
-          ],
-          "model": "glm-5.2:cloud",
-          "provider": "custom:ollama",
-          "base_url": "https://ollama.com/v1"
-        },
-        "parallel_safe": true,
-        "toolsets": [
-          "terminal",
-          "file"
-        ]
-      },
-      {
-        "subtask_id": "audit-i18n",
-        "task_type": "review",
-        "agent": "code-reviewer",
-        "model_hint": "analytical",
-        "complexity": "medium",
-        "is_risky": false,
-        "confidence": 0.58,
-        "profile": {
-          "name": "code-reviewer",
-          "task_type": "review",
-          "model_tier": "balanced",
-          "timeout": 120.0,
-          "max_retries": 1,
-          "priority": "P1",
-          "requires_review": false,
-          "estimated_tokens": 4000,
-          "parallel_safe": true,
-          "toolsets": [
-            "terminal",
-            "file"
-          ],
-          "model": "glm-5.2:cloud",
-          "provider": "custom:ollama",
-          "base_url": "https://ollama.com/v1"
-        },
-        "parallel_safe": true,
-        "toolsets": [
-          "terminal",
-          "file"
-        ]
-      },
-      {
-        "subtask_id": "audit-performance",
-        "task_type": "review",
-        "agent": "code-reviewer",
-        "model_hint": "analytical",
-        "complexity": "medium",
-        "is_risky": false,
-        "confidence": 0.58,
-        "profile": {
-          "name": "code-reviewer",
-          "task_type": "review",
-          "model_tier": "balanced",
-          "timeout": 120.0,
-          "max_retries": 1,
-          "priority": "P1",
-          "requires_review": false,
-          "estimated_tokens": 4000,
-          "parallel_safe": true,
-          "toolsets": [
-            "terminal",
-            "file"
-          ],
-          "model": "glm-5.2:cloud",
-          "provider": "custom:ollama",
-          "base_url": "https://ollama.com/v1"
-        },
-        "parallel_safe": true,
-        "toolsets": [
-          "terminal",
-          "file"
-        ]
-      },
-      {
-        "subtask_id": "audit-rls-policies",
-        "task_type": "config",
-        "agent": "devops-engineer",
-        "model_hint": "speed",
-        "complexity": "medium",
-        "is_risky": false,
-        "confidence": 0.67,
-        "profile": {
-          "name": "devops-engineer",
-          "task_type": "devops",
-          "model_tier": "balanced",
-          "timeout": 120.0,
-          "max_retries": 1,
-          "priority": "P1",
-          "requires_review": false,
-          "estimated_tokens": 4000,
-          "parallel_safe": true,
-          "toolsets": [
-            "terminal",
-            "file"
-          ],
-          "model": "glm-5.2:cloud",
-          "provider": "custom:ollama",
-          "base_url": "https://ollama.com/v1"
-        },
-        "parallel_safe": true,
-        "toolsets": [
-          "terminal",
-          "file"
-        ]
-      },
-      {
-        "subtask_id": "audit-security",
-        "task_type": "security",
-        "agent": "security-auditor",
-        "model_hint": "analytical",
-        "complexity": "medium",
-        "is_risky": false,
-        "confidence": 0.64,
-        "profile": {
-          "name": "security-auditor",
-          "task_type": "security",
-          "model_tier": "balanced",
-          "timeout": 120.0,
-          "max_retries": 1,
-          "priority": "P1",
-          "requires_review": false,
-          "estimated_tokens": 4000,
-          "parallel_safe": true,
-          "toolsets": [
-            "terminal",
-            "file"
-          ],
-          "model": "glm-5.2:cloud",
-          "provider": "custom:ollama",
-          "base_url": "https://ollama.com/v1"
-        },
-        "parallel_safe": true,
-        "toolsets": [
-          "terminal",
-          "file"
-        ]
-      },
-      {
-        "subtask_id": "verify-findings",
+        "subtask_id": "audit-controls-reporting",
         "task_type": "review",
         "agent": "code-reviewer",
         "model_hint": "analytical",
         "complexity": "medium",
         "is_risky": false,
         "confidence": 0.67,
+        "profile": {
+          "name": "code-reviewer",
+          "task_type": "review",
+          "model_tier": "balanced",
+          "timeout": 120.0,
+          "max_retries": 1,
+          "priority": "P1",
+          "requires_review": false,
+          "estimated_tokens": 4000,
+          "parallel_safe": true,
+          "toolsets": [
+            "terminal",
+            "file"
+          ],
+          "model": "glm-5.2:cloud",
+          "provider": "custom:ollama",
+          "base_url": "https://ollama.com/v1"
+        },
+        "parallel_safe": true,
+        "toolsets": [
+          "terminal",
+          "file"
+        ]
+      },
+      {
+        "subtask_id": "audit-expense-cycle",
+        "task_type": "review",
+        "agent": "code-reviewer",
+        "model_hint": "analytical",
+        "complexity": "medium",
+        "is_risky": false,
+        "confidence": 0.67,
+        "profile": {
+          "name": "code-reviewer",
+          "task_type": "review",
+          "model_tier": "balanced",
+          "timeout": 120.0,
+          "max_retries": 1,
+          "priority": "P1",
+          "requires_review": false,
+          "estimated_tokens": 4000,
+          "parallel_safe": true,
+          "toolsets": [
+            "terminal",
+            "file"
+          ],
+          "model": "glm-5.2:cloud",
+          "provider": "custom:ollama",
+          "base_url": "https://ollama.com/v1"
+        },
+        "parallel_safe": true,
+        "toolsets": [
+          "terminal",
+          "file"
+        ]
+      },
+      {
+        "subtask_id": "audit-hr-cash",
+        "task_type": "review",
+        "agent": "code-reviewer",
+        "model_hint": "analytical",
+        "complexity": "medium",
+        "is_risky": false,
+        "confidence": 0.67,
+        "profile": {
+          "name": "code-reviewer",
+          "task_type": "review",
+          "model_tier": "balanced",
+          "timeout": 120.0,
+          "max_retries": 1,
+          "priority": "P1",
+          "requires_review": false,
+          "estimated_tokens": 4000,
+          "parallel_safe": true,
+          "toolsets": [
+            "terminal",
+            "file"
+          ],
+          "model": "glm-5.2:cloud",
+          "provider": "custom:ollama",
+          "base_url": "https://ollama.com/v1"
+        },
+        "parallel_safe": true,
+        "toolsets": [
+          "terminal",
+          "file"
+        ]
+      },
+      {
+        "subtask_id": "audit-revenue-cycle",
+        "task_type": "review",
+        "agent": "code-reviewer",
+        "model_hint": "analytical",
+        "complexity": "medium",
+        "is_risky": false,
+        "confidence": 0.67,
+        "profile": {
+          "name": "code-reviewer",
+          "task_type": "review",
+          "model_tier": "balanced",
+          "timeout": 120.0,
+          "max_retries": 1,
+          "priority": "P1",
+          "requires_review": false,
+          "estimated_tokens": 4000,
+          "parallel_safe": true,
+          "toolsets": [
+            "terminal",
+            "file"
+          ],
+          "model": "glm-5.2:cloud",
+          "provider": "custom:ollama",
+          "base_url": "https://ollama.com/v1"
+        },
+        "parallel_safe": true,
+        "toolsets": [
+          "terminal",
+          "file"
+        ]
+      },
+      {
+        "subtask_id": "cross-reference-triggers-hooks",
+        "task_type": "review",
+        "agent": "code-reviewer",
+        "model_hint": "analytical",
+        "complexity": "medium",
+        "is_risky": false,
+        "confidence": 0.58,
         "profile": {
           "name": "code-reviewer",
           "task_type": "review",
@@ -408,34 +418,32 @@
       },
       {
         "subtask_id": "assembly",
-        "task_type": "review",
-        "agent": "code-reviewer",
-        "model_hint": "analytical",
+        "task_type": "implementation",
+        "agent": "builder",
+        "model_hint": "balanced",
         "complexity": "medium",
         "is_risky": false,
-        "confidence": 0.58,
+        "confidence": 0.57,
         "profile": {
-          "name": "code-reviewer",
-          "task_type": "review",
+          "name": "builder",
+          "task_type": "implementation",
           "model_tier": "balanced",
-          "timeout": 120.0,
-          "max_retries": 1,
+          "timeout": 600,
+          "max_retries": 3,
           "priority": "P1",
           "requires_review": false,
           "estimated_tokens": 4000,
           "parallel_safe": true,
           "toolsets": [
-            "terminal",
-            "file"
+            "hermes-cli"
           ],
           "model": "glm-5.2:cloud",
           "provider": "custom:ollama",
-          "base_url": "https://ollama.com/v1"
+          "base_url": "http://localhost:11434/v1"
         },
         "parallel_safe": true,
         "toolsets": [
-          "terminal",
-          "file"
+          "hermes-cli"
         ]
       }
     ],
@@ -444,20 +452,12 @@
         "id": "milestone-1",
         "name": "Parallel group 1",
         "subtask_ids": [
-          "audit-database-live",
-          "audit-edge-functions",
-          "audit-i18n",
-          "audit-performance",
-          "audit-rls-policies",
-          "audit-security"
+          "inventory-financial-hooks",
+          "parse-migrations-triggers"
         ],
         "acceptance_criteria": [
-          "A JSON file is created with findings from the live database audit, including discrepancies and recommendations.",
-          "A JSON file is created with findings for each Edge Function, including potential issues and recommendations.",
-          "A JSON file is created with i18n findings and recommendations for improvement.",
-          "A JSON file is created with performance metrics and recommendations for optimization.",
-          "A JSON file is created with findings for each RLS policy, including potential misconfigurations and recommendations.",
-          "A JSON file is created with security findings and recommendations for hardening."
+          "Complete inventory of financial hooks with file:line, table affected, operation type, and sequence of steps. No source file with financial logic is missed.",
+          "Triggers matrix JSON or structured list is produced with all triggers, their tables, events, and logic summaries. No migration file is skipped."
         ],
         "assumptions": [
           "Dependencies from earlier milestones remain stable."
@@ -467,10 +467,18 @@
         "id": "milestone-2",
         "name": "Parallel group 2",
         "subtask_ids": [
-          "verify-findings"
+          "audit-controls-reporting",
+          "audit-expense-cycle",
+          "audit-hr-cash",
+          "audit-revenue-cycle",
+          "cross-reference-triggers-hooks"
         ],
         "acceptance_criteria": [
-          "A verified JSON file is created with confirmed findings and any corrections to prior results."
+          "Findings documented with file:line for controls, approvals, reporting, and audit trail. All 13 CFO domains are addressed across all subtasks.",
+          "Findings documented with file:line for expense-related hooks, triggers, and logic. All expense types (direct, inventory, asset) are covered.",
+          "Findings documented with file:line for HR/payroll and cash management hooks, triggers, and logic. Payroll cycles and bank reconciliation steps are verified.",
+          "Findings documented with file:line for revenue-related hooks, triggers, and logic. All revenue recognition scenarios (rental, lease, one-time) are covered.",
+          "List of all integration gaps with file:line references, categorized by severity. Each gap is explained with the hook and trigger involved."
         ],
         "assumptions": [
           "Dependencies from earlier milestones remain stable."
@@ -483,7 +491,7 @@
           "assembly"
         ],
         "acceptance_criteria": [
-          "Final deliverable file is written and contains all findings from prior subtasks, verified and structured clearly."
+          "Final deliverable file is written and contains all findings from prior subtasks"
         ],
         "assumptions": [
           "Dependencies from earlier milestones remain stable."
@@ -491,20 +499,21 @@
       }
     ],
     "clarifying_questions": [
-      "What API style (REST, GraphQL, gRPC) and versioning strategy?",
-      "What error response format and status code conventions?",
+      "What authentication method should be used (JWT, OAuth, session-based)?",
+      "What user roles or permission levels are needed?",
+      "What database and ORM are in use? Any existing migration strategy?",
       "What is the deployment pipeline (staging, canary, production)?",
       "Are there any approval gates or change management processes?"
     ],
     "completion_criteria": [
-      "Subtask complete: Query the live Supabase database to verify schema consistency, data integrity, and financial data ac",
-      "Subtask complete: Analyze all 48 Edge Functions for financial logic, security, and performance. Document findings in a",
-      "Subtask complete: Analyze the internationalization (i18n) support for financial features, including currency handling ",
-      "Subtask complete: Analyze the performance of financial operations, including query execution times and API response ti",
-      "Subtask complete: Review all Row-Level Security (RLS) policies in the Supabase configuration for correctness and secur",
-      "Subtask complete: Review the security of financial operations, including authentication, authorization, and data encry",
-      "Subtask complete: Use AGI to independently verify each finding from the prior subtasks. Cross-check results for accura",
-      "Subtask complete: Compile all findings into a final report named docs/financial-system-audit-v5-final.md. Ensure the r",
+      "Subtask complete: Scan all application source files (src/**/*.ts, src/**/*.tsx) to identify every financial hook: func",
+      "Subtask complete: Parse all SQL migration files in supabase/migrations/ to extract table schemas, triggers, functions,",
+      "Subtask complete: Audit internal controls, approval mechanisms, financial reporting, and audit trail. Verify segregati",
+      "Subtask complete: Audit the expense cycle integration: purchases, accounts payable, inventory, and fixed assets. Verif",
+      "Subtask complete: Audit HR/payroll integration and cash management: payroll journal entries, employee advances, bank r",
+      "Subtask complete: Audit the revenue cycle integration: contracts \u2192 invoices \u2192 journal entries \u2192 payments. Cover revenu",
+      "Subtask complete: Cross-reference the triggers matrix with the hooks inventory to detect integration gaps: missing tri",
+      "Subtask complete: Collect all findings from prior subtasks, synthesize into a comprehensive financial system integrati",
       "All quality gates pass (syntax, lint, type, test)",
       "No regressions in existing test suite"
     ],
