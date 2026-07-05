@@ -172,12 +172,7 @@ def delegate_task(
             logger.error("No LLM client provided. Cannot delegate task.")
             raise ValueError("No LLM client provided. Cannot delegate task.")
         # Call the LLM with retry logic
-        result = call_llm(llm_client, task_description, max_retries, retry_delay)
-        logger.info("Task delegation succeeded.")
-        return result
+        return call_llm(llm_client, task_description, max_retries, retry_delay)
     except Exception as e:
-        logger.exception(
-            f"Task delegation failed for '{task_description}': {type(e).__name__}: {e}. "
-            "Returning TASK_DELEGATION_FAILURE."
-        )
+        logger.exception(f"Task delegation failed: {e}")
         return TASK_DELEGATION_FAILURE

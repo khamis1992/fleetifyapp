@@ -10,9 +10,9 @@ Fleetify Financial Remediation - Apply All Fixes
 import requests
 import time
 import sys
-from typing import Any, Dict, List, Tuple, Optional, Set, DefaultDict, cast
-from dotenv import dotenv_values
+from typing import Any, Dict, List, Tuple, Optional, Set
 from collections import defaultdict
+from dotenv import dotenv_values
 
 # Load environment variables
 vals: Dict[str, Optional[str]] = dotenv_values('.env')
@@ -43,7 +43,7 @@ def get_all(table: str, select: str = '*', filters: str = '') -> List[Dict[str, 
         if r.status_code != 200:
             print(f'  ERR {table}: {r.status_code} {r.text[:200]}')
             break
-        batch: List[Dict[str, Any]] = cast(List[Dict[str, Any]], r.json())
+        batch: List[Dict[str, Any]] = r.json()
         rows.extend(batch)
         if len(batch) < PS:
             break
@@ -88,7 +88,7 @@ inv_ids: Set[str] = {str(i['id']) for i in invoices}
 con_ids: Set[str] = {str(c['id']) for c in contracts}
 
 # Build entry totals (debit, credit, line count)
-et: DefaultDict[str, Dict[str, float]] = defaultdict(lambda: {'d': 0.0, 'c': 0.0, 'n': 0.0})
+et: Dict[str, Dict[str, float]] = defaultdict(lambda: {'d': 0.0, 'c': 0.0, 'n': 0.0})
 for l in valid_lines:
     eid: str = str(l['journal_entry_id'])  # guaranteed not None after filtering
     et[eid]['d'] += float(l.get('debit_amount') or 0)
@@ -116,8 +116,6 @@ for e in empty:
     st: str = str(e.get('status', ''))
     # If posted, change to draft first
     if st == 'posted':
-        ok: bool
-        _: str
         ok, _ = patch('journal_entries', f'id=eq.{eid}', {'status': 'draft'})
         if not ok:
             print(f"  SKIP (cannot unpost): {e.get('entry_number', '?')}")
@@ -141,7 +139,7 @@ for e in empty:
 print("\n" + "=" * 70)
 print("FIX 2: ZERO-AMOUNT ENTRIES")
 print("=" * 70)
-zero_ids: List[str] = [eid for eid, t in et.items() if t['d'] == 0 and t['c'] == 0 and t['n'] > 0]
+zero_ids: List[str] = [eid for eid, t in et.items() if t['d'] == 0.0 and t['c'] == 0.0 and t['n'] > 0.0]
 print(f"  Found {len(zero_ids)} zero-amount entries")
 fixed2: int = 0
 for eid in zero_ids:
@@ -190,120 +188,3 @@ for e in drafts:
             print(f"  DELETED empty draft: {e.get('entry_number', '?')}")
         else:
             print(f"  FAILED to delete: {e.get('entry_number', '?')} - {err}")
-    else:
-        t: Optional[Dict[str, float]] = et.get(eid)
-        if t is None:
-            print(f"  SKIP (no totals): {e.get('entry_number', '?')}")
-            continue
-        # Check if balanced
-        if abs(t['d'] - t['c']) < 0.01 and t['d'] > 0:
-            # Balanced draft - post it
-            ok, err = patch('journal_entries', f'id=eq.{eid}', {'status': 'posted'})
-            if ok:
-                posted_count += 1
-                print(f"  POSTED: {e.get('entry_number', '?')} (D={t['d']:.2f} C={t['c']:.2f})")
-            else:
-                print(f"  FAILED to post: {e.get('entry_number', '?')} - {err}")
-        else:
-            print(f"  SKIP (unbalanced): {e.get('entry_number', '?')} (D={t['d']:.2f} C={t['c']:.2f})")
-
-print(f"\n  Drafts posted: {posted_count}, deleted: {deleted_count}")
-
-# ============================================================
-# FIX 4: Unlinked payments
-# ============================================================
-print("\n" + "=" * 70)
-print("FIX 4: UNLINKED PAYMENTS")
-print("=" * 70)
-unlinked_payments: List[Dict[str, Any]] = [p for p in payments if p.get('invoice_id') is None]
-print(f"  Found {len(unlinked_payments)} unlinked payments")
-
-# Build contract -> customer lookup
-con_cust: Dict[str, str] = {str(c['id']): str(c.get('customer_id', '')) for c in contracts if c.get('customer_id')}
-
-# Build customer -> invoices lookup
-cust_inv: DefaultDict[str, List[Dict[str, Any]]] = defaultdict(list)
-for i in invoices:
-    cid: Optional[Any] = i.get('customer_id')
-    if cid is not None:
-        cust_inv[str(cid)].append(i)
-
-linked_pay_count: int = 0
-for p in unlinked_payments:
-    pid: str = str(p['id'])
-    con_id: Optional[Any] = p.get('contract_id')
-    cust_id: Optional[Any] = p.get('customer_id')
-    
-    # Try to find matching invoice by contract
-    if con_id is not None:
-        con_id_str: str = str(con_id)
-        # Find invoices for this contract
-        matching_inv: List[Dict[str, Any]] = [i for i in invoices if i.get('contract_id') is not None and str(i['contract_id']) == con_id_str]
-        if matching_inv:
-            # Link to first matching invoice
-            inv_to_link: Dict[str, Any] = matching_inv[0]
-            ok, err = patch('payments', f'id=eq.{pid}', {'invoice_id': inv_to_link['id']})
-            if ok:
-                linked_pay_count += 1
-                print(f"  LINKED payment {p.get('payment_number', '?')} to invoice {inv_to_link.get('invoice_number', '?')} (by contract)")
-            else:
-                print(f"  FAILED to link payment {p.get('payment_number', '?')} - {err}")
-            continue
-    
-    # Try to find matching invoice by customer
-    if cust_id is not None:
-        cust_id_str: str = str(cust_id)
-        matching_inv = cust_inv.get(cust_id_str, [])
-        if matching_inv:
-            inv_to_link = matching_inv[0]
-            ok, err = patch('payments', f'id=eq.{pid}', {'invoice_id': inv_to_link['id']})
-            if ok:
-                linked_pay_count += 1
-                print(f"  LINKED payment {p.get('payment_number', '?')} to invoice {inv_to_link.get('invoice_number', '?')} (by customer)")
-            else:
-                print(f"  FAILED to link payment {p.get('payment_number', '?')} - {err}")
-            continue
-    
-    print(f"  SKIP (no match): payment {p.get('payment_number', '?')}")
-
-print(f"\n  Payments linked: {linked_pay_count}")
-
-# ============================================================
-# FIX 5: Unlinked invoices (PUR-type, no customer)
-# ============================================================
-print("\n" + "=" * 70)
-print("FIX 5: UNLINKED INVOICES (no customer)")
-print("=" * 70)
-unlinked_inv: List[Dict[str, Any]] = [i for i in invoices if i.get('customer_id') is None]
-print(f"  Found {len(unlinked_inv)} unlinked invoices")
-fixed5: int = 0
-for i in unlinked_inv:
-    inv_id: str = str(i['id'])
-    inv_num: str = str(i.get('invoice_number', '?'))
-    # Check if has journal entry
-    je_id: Optional[Any] = i.get('journal_entry_id')
-    if je_id is not None:
-        # Unlink journal entry first
-        patch('journal_entries', f'id=eq.{je_id}', {'status': 'draft'})
-        delete('journal_entry_lines', f'journal_entry_id=eq.{je_id}')
-        delete('journal_entries', f'id=eq.{je_id}')
-    # Delete invoice
-    ok, err = delete('invoices', f'id=eq.{inv_id}')
-    if ok:
-        fixed5 += 1
-        print(f"  DELETED: {inv_num}")
-    else:
-        print(f"  FAILED: {inv_num} - {err}")
-
-# ============================================================
-# SUMMARY
-# ============================================================
-print("\n" + "=" * 70)
-print("REMEDIATION COMPLETE")
-print("=" * 70)
-print(f"  Fix 1 - Empty entries deleted: {fixed1}")
-print(f"  Fix 2 - Zero-amount entries deleted: {fixed2}")
-print(f"  Fix 3 - Drafts posted: {posted_count}, deleted: {deleted_count}")
-print(f"  Fix 4 - Payments linked: {linked_pay_count}")
-print(f"  Fix 5 - Unlinked invoices deleted: {fixed5}")
-print("=" * 70)
