@@ -4,11 +4,18 @@ import logging
 import traceback
 from typing import Any, Optional
 
-logger = logging.getLogger(__name__)
+try:
+    import openai
+    OPENAI_AVAILABLE = True
+except ImportError:
+    openai = None
+    OPENAI_AVAILABLE = False
+    logging.getLogger(__name__).warning("OpenAI module not available. LLM client must be provided.")
 
-# Environment variable names for configuration
 ENV_LLM_MAX_RETRIES = "LLM_MAX_RETRIES"
 ENV_LLM_RETRY_DELAY = "LLM_RETRY_DELAY"
+
+logger = logging.getLogger(__name__)
 
 
 class LLMError(Exception):
@@ -57,13 +64,13 @@ def call_llm(llm_client: Any, task_description: str, max_retries: Optional[int] 
         llm_client: The LLM client used to make API calls.
         task_description: The prompt/task to send to the LLM.
         max_retries: Maximum number of retry attempts on failure. Defaults to environment variable LLM_MAX_RETRIES (required).
-        retry_delay: Base delay (in seconds) between retry attempts (multiplied by attempt number). Defaults to environment variable LLM_RETRY_DELAY (required).
+        retry_delay: Base delay (in seconds) between retry attempts. Defaults to environment variable LLM_RETRY_DELAY (required).
     
     Returns:
         The result from the LLM API.
     
     Raises:
-        LLMError: If all retries fail or any other error occurs.
+        LLMError: If all retries fail or an unexpected error occurs.
     """
     try:
         if max_retries is None:
@@ -108,10 +115,9 @@ def call_llm(llm_client: Any, task_description: str, max_retries: Optional[int] 
             except Exception as e:
                 last_exception = e
                 logger.exception(
-                    f"LLM API call failed on attempt {attempt}/{max_retries}: {type(e).__name__}: {e}"
+                    f"LLM API call failed on attempt {attempt}/{max_retries}: {type(e).__name__}: {e}. Retrying..."
                 )
                 if attempt < max_retries:
-                    logger.warning(f"Retrying LLM API call (attempt {attempt}/{max_retries}) after delay. Exception: {e}")
                     time.sleep(retry_delay * attempt)
                     continue
                 else:
@@ -121,14 +127,14 @@ def call_llm(llm_client: Any, task_description: str, max_retries: Optional[int] 
                     )
                     raise
 
-        # All attempts exhausted (only reached if all attempts returned None, not exception)
+        # If we exit the loop without returning or raising, something went wrong
         if last_exception is not None:
             logger.exception(
                 f"All {max_retries} attempts to call LLM failed. "
                 f"Last error: {type(last_exception).__name__}: {last_exception}. Re-raising."
             )
             raise last_exception
-        # Fallback: should not happen, but raise an error to avoid silent None return
+        # Fallback: should never reach here
         raise RuntimeError("All attempts completed without a result or exception.")
     except Exception as e:
         logger.exception(
@@ -162,12 +168,17 @@ def delegate_task(
     """
     logger.info(f"Delegating task to LLM: {task_description}")
     try:
-        result = call_llm(llm_client, task_description, max_retries=max_retries, retry_delay=retry_delay)
-        if result is None:
-            logger.error(f"Task delegation returned None for '{task_description}'. Returning TASK_DELEGATION_FAILURE.")
-            return TASK_DELEGATION_FAILURE
+        # If no client provided, try to use the default OpenAI client if available
+        if llm_client is None:
+            if OPENAI_AVAILABLE and openai is not None:
+                logger.info("No LLM client provided; using default OpenAI client.")
+                llm_client = openai
+            else:
+                logger.error("No LLM client provided and OpenAI is not available.")
+                return TASK_DELEGATION_FAILURE
+
+        result = call_llm(llm_client, task_description, max_retries, retry_delay)
         return result
     except Exception as e:
-        logger.error(f"Task delegation failed for '{task_description}'. Returning TASK_DELEGATION_FAILURE.")
-        logger.exception(f"Exception details: {type(e).__name__}: {e}")
+        logger.exception(f"Task delegation failed: {e}")
         return TASK_DELEGATION_FAILURE

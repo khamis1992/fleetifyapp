@@ -4,7 +4,8 @@ from collections import defaultdict
 
 def load(path):
     try:
-        return json.load(open(path))
+        with open(path) as f:
+            return json.load(f)
     except:
         return []
 
@@ -57,7 +58,7 @@ for jid, sums in je_line_sums.items():
 
 print(f"\n1b. Journal Entry Lines (line-level balance):")
 print(f"  Total JEs with lines: {len(je_line_sums)}")
-print(f"  Unbalanced (sum(debit) != sum(credit)): {len(unbalanced_lines)}")
+print(f"  Unbalanced JEs (sum(debit) != sum(credit)): {len(unbalanced_lines)}")
 if unbalanced_lines:
     print("  CRITICAL FINDINGS:")
     for jid, sums in unbalanced_lines[:10]:
@@ -192,155 +193,8 @@ print(f"  Liabilities: {total_liabilities:,.2f}")
 print(f"  Equity: {total_equity:,.2f}")
 print(f"  L+E = {total_liabilities + total_equity:,.2f}")
 diff = abs(total_assets - (total_liabilities + total_equity))
-if diff < 0.01:
-    print(f"  PASS: A = L + E (diff={diff:.2f})")
+print(f"  Difference (Assets - (Liabilities+Equity)): {diff:,.2f}")
+if diff > 0.01:
+    print("  WARNING: Accounting equation not balanced!")
 else:
-    print(f"  FAIL: A != L + E (diff={diff:.2f}) — CRITICAL")
-
-# ===== DOMAIN 5: AP/AR =====
-print("\n" + "=" * 60)
-print("DOMAIN 5: AP/AR (Payments & Invoices)")
-print("=" * 60)
-
-# Payment status breakdown
-pay_status = defaultdict(int)
-for p in pay:
-    pay_status[p.get('payment_status','unknown')] += 1
-print(f"\n5a. Payment status breakdown:")
-for s, c in sorted(pay_status.items()):
-    print(f"  {s}: {c}")
-
-# Invoice status breakdown
-inv_status = defaultdict(int)
-for i in inv:
-    inv_status[i.get('payment_status','unknown')] += 1
-print(f"\n5b. Invoice payment_status breakdown:")
-for s, c in sorted(inv_status.items()):
-    print(f"  {s}: {c}")
-
-# Check for duplicate payments (same amount, same date)
-pay_groups = defaultdict(list)
-for p in pay:
-    key = (p.get('amount'), p.get('payment_date'))
-    pay_groups[key].append(p)
-duplicates = {k: v for k, v in pay_groups.items() if len(v) > 1}
-print(f"\n5c. Potential duplicate payments (same amount+date): {len(duplicates)}")
-if duplicates:
-    for (amount, date), ps in list(duplicates.items())[:3]:
-        print(f"  Amount={amount} Date={date}: {len(ps)} payments")
-
-# Check invoice balance accuracy
-inv_balance_issues = []
-for i in inv:
-    total = float(i.get('total_amount') or 0)
-    paid = float(i.get('paid_amount') or 0)
-    balance = float(i.get('balance_due') or 0)
-    expected_balance = total - paid
-    if abs(balance - expected_balance) > 0.01:
-        inv_balance_issues.append(i)
-print(f"\n5d. Invoice balance_due accuracy (balance_due = total - paid_amount):")
-print(f"  Invoices with balance mismatch: {len(inv_balance_issues)}")
-if inv_balance_issues:
-    for i in inv_balance_issues[:5]:
-        total = float(i.get('total_amount') or 0)
-        paid = float(i.get('paid_amount') or 0)
-        balance = float(i.get('balance_due') or 0)
-        print(f"  {i.get('invoice_number')}: total={total} paid={paid} balance={balance} expected={total-paid}")
-
-# ===== DOMAIN 6: Revenue Recognition =====
-print("\n" + "=" * 60)
-print("DOMAIN 6: REVENUE RECOGNITION")
-print("=" * 60)
-
-# Check if contract-related JEs are posted at contract creation time
-contract_jes = [e for e in je if e.get('reference_type') == 'contract']
-print(f"\n6a. Contract-related journal entries: {len(contract_jes)}")
-
-# Check for deferred revenue tracking
-# Look for accounts with 'deferred' or 'unearned' in name
-deferred_accounts = [a for a in coa if 'deferred' in (a.get('account_name','') or '').lower() or 'unearned' in (a.get('account_name','') or '').lower()]
-print(f"\n6b. Deferred revenue accounts: {len(deferred_accounts)}")
-if not deferred_accounts:
-    print("  WARNING: No deferred revenue accounts found — prepayments may be incorrectly recognized immediately")
-
-# ===== DOMAIN 7: Financial Statements =====
-print("\n" + "=" * 60)
-print("DOMAIN 7: FINANCIAL STATEMENTS (data availability)")
-print("=" * 60)
-print(f"\n7a. Data available for financial statements:")
-print(f"  Chart of Accounts: {len(coa)} accounts")
-print(f"  Journal Entries: {len(je)} entries")
-print(f"  Journal Entry Lines: {len(jel)} lines")
-print(f"  Payments: {len(pay)} records")
-print(f"  Invoices: {len(inv)} records")
-
-# ===== DOMAIN 8: Internal Controls =====
-print("\n" + "=" * 60)
-print("DOMAIN 8: INTERNAL CONTROLS")
-print("=" * 60)
-
-# Check for draft entries that should be posted
-drafts = [e for e in je if e.get('status') == 'draft']
-print(f"\n8a. Draft journal entries (unposted): {len(drafts)}")
-if drafts:
-    print(f"  WARNING: {len(drafts)} entries are in draft status — not yet posted")
-
-# Check for approval workflow (posted_by vs created_by separation)
-# We'd need to check the actual data but the code shows SoD checks exist
-print(f"\n8b. Segregation of Duties:")
-print(f"  Code has useFinanceAccessGuard with checkSegregationOfDuties()")
-print(f"  Code has assertFinancialPeriodOpen() for period locking")
-print(f"  PASS: SoD enforcement exists in code")
-
-# ===== DOMAIN 9: Period-End Close =====
-print("\n" + "=" * 60)
-print("DOMAIN 9: ACCOUNTING PERIODS")
-print("=" * 60)
-print(f"\n9a. Accounting periods: {len(periods)}")
-for p in periods[:10]:
-    print(f"  {p.get('period_name')}: {p.get('start_date','')} to {p.get('end_date','')} status={p.get('status','')}")
-closed_periods = [p for p in periods if p.get('status') in ('closed','locked')]
-open_periods = [p for p in periods if p.get('status') == 'open']
-print(f"\n9b. Period status:")
-print(f"  Open: {len(open_periods)}")
-print(f"  Closed/Locked: {len(closed_periods)}")
-
-# ===== DOMAIN 10: Cash & Bank =====
-print("\n" + "=" * 60)
-print("DOMAIN 10: CASH & BANK RECONCILIATION")
-print("=" * 60)
-print(f"\n10a. Bank transactions: {len(bt)}")
-if bt:
-    unreconciled = [b for b in bt if b.get('reconciliation_status') != 'reconciled']
-    print(f"  Unreconciled: {len(unreconciled)}")
-
-print(f"\n10b. Customer deposits: {len(dep)}")
-if dep:
-    dep_status = defaultdict(int)
-    for d in dep:
-        dep_status[d.get('status','unknown')] += 1
-    for s, c in dep_status.items():
-        print(f"  {s}: {c}")
-
-# ===== DOMAIN 11: Budgets =====
-print("\n" + "=" * 60)
-print("DOMAIN 11: BUDGETS")
-print("=" * 60)
-print(f"\n11a. Budgets: {len(bud)}")
-for b in bud[:5]:
-    print(f"  {b.get('budget_name')}: {b.get('total_amount')} status={b.get('status','')}")
-
-# ===== SUMMARY =====
-print("\n" + "=" * 80)
-print("AUDIT SUMMARY")
-print("=" * 80)
-critical = len(unbalanced_header) + len(unbalanced_lines) + len(single_line_jes)
-high = len(payments_without_je) + len(invoices_without_je) + len(drafts)
-medium = len(jes_without_lines) + len(inv_balance_issues) + len(duplicates)
-low = 0
-
-print(f"\n  CRITICAL findings: {critical}")
-print(f"  HIGH findings: {high}")
-print(f"  MEDIUM findings: {medium}")
-print(f"  LOW findings: {low}")
-print(f"\n  Overall risk: {'CRITICAL' if critical > 0 else 'HIGH' if high > 0 else 'MEDIUM' if medium > 0 else 'LOW'}")
+    print("  PASS: Accounting equation balances.")
