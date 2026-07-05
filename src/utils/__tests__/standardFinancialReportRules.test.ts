@@ -53,6 +53,22 @@ describe("standardFinancialReportRules", () => {
     expect(report.isBalanced).toBe(true);
   });
 
+  it("normalizes plural account types used by legacy chart of accounts records", () => {
+    const incomeStatement = buildIncomeStatementReport([
+      { accountCode: "4000", accountType: "income", debit: 0, credit: 500 },
+      { accountCode: "5000", accountType: "expenses", debit: 125, credit: 0 },
+    ]);
+    const balanceSheet = buildBalanceSheetReport([
+      { accountCode: "1000", accountType: "assets", debit: 800, credit: 0 },
+      { accountCode: "2000", accountType: "liabilities", debit: 0, credit: 300 },
+      { accountCode: "3000", accountType: "equity", debit: 0, credit: 500 },
+    ]);
+
+    expect(incomeStatement.revenue).toBe(500);
+    expect(incomeStatement.expenses).toBe(125);
+    expect(balanceSheet.isBalanced).toBe(true);
+  });
+
   it("flags a balance sheet where assets do not equal liabilities plus equity", () => {
     const report = buildBalanceSheetReport([
       { accountCode: "1000", accountType: "asset", debit: 1500, credit: 0 },

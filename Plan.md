@@ -1,80 +1,47 @@
-# Plan: توسيع تدقيق النظام المالي والتكامل في Fleetify ERP — تقرير فقط، لا تغيير في الكود
+# Plan: قم بمراجعة شاملة للنظام المالي في مشروع Fleetify (C:\Users\khamis\Documents\fleetifyapp) وتكامله مع بقية الوحدات. قدم تقريراً كاملاً بدون تغيير أي كود.
 
-## المهمة
-أكمل التدقيق المالي الموجود في `docs/financial-system-integration-audit-report.md` بإضافة الأقسام التالية. النتيجة النهائية يجب أن تكون تقريرًا واحدًا كاملاً في ملف `docs/financial-system-integration-audit-report-comprehensive.md`.
+المطلوب:
+1. فحص جميع ملفات النظام المالي: الصفحات (pages/finance/، pages/Finance.tsx، pages/FinancialTracking.tsx، pages/SyncPaymentsToLedger.tsx)، المكونات (components/finance/)، الهوكس (hooks/finance/، hooks/useFinance.ts، hooks/useGeneralLedger.ts، hooks/useChartOfAccounts.ts، hooks/useEnhancedFinancialReports.ts، hooks/useFinancialAnalysis.ts، hooks/useFinancialOverview.ts، hooks/useFinancialAudit.ts، hooks/useTreasury.ts، hooks/useMonthlyObligations.ts، hooks/useMonthlyRentTracking.ts، hooks/useCostCenterReports.ts، hooks/useCostCenters.ts، hooks/useCustomerFinancialSummary.ts، hooks/useFleetFinancialAnalytics.ts، hooks/useAdvancedFinancialAnalytics.ts، hooks/useAdvancedFinancialRatios.ts، hooks/useFinancialReportsExport.ts، hooks/useFinancialSystemAnalysis.ts، hooks/useFinancialAIAnalysis.ts، hooks/useFinancialFixes.ts، hooks/usePayrollFinancialAnalysis.ts، hooks/usePendingJournalEntries.ts، hooks/useJournalEntryPermissions.ts، hooks/useInvoiceJournalLinking.ts، hooks/useInvoiceMatching.ts، hooks/useReportingAccounts.ts، hooks/useEntryAllowedAccounts.ts، hooks/useAccountMappings.ts، hooks/useEssentialAccountMappings.ts، hooks/useEnhancedAccountDeletion.ts، hooks/useEnhancedAccountSuggestions.ts، hooks/useEnhancedChartOfAccountsCSVUpload.ts، hooks/useCopySelectedAccounts.ts، hooks/useAccountingWizard.ts، hooks/useAccountConflictCheck.ts، hooks/useDeposits.ts، hooks/useDelinquencyStats.ts، hooks/useLateFines.ts، hooks/usePaymentSchedules.ts، hooks/useCustomerAccounts.ts، hooks/useCustomerAccountStatement.ts، hooks/useCustomerAccountTypes.ts، hooks/useEnhancedCustomerAccounts.ts، hooks/useEnhancedCustomerFinancials.ts، hooks/useVendorAccounts.ts، hooks/useCreateCustomerWithAccount.ts، hooks/useSimpleAccountDeletion.ts، hooks/useUnifiedAccountSelector.ts)، الخدمات (services/AccountingService.ts، services/financialControls.ts، services/PaymentService.ts، services/PaymentLinkingService.ts، services/PaymentStateMachine.ts، services/InvoiceService.ts، services/UnifiedInvoiceService.ts، services/reportDataService.ts)
 
-## الأقسام المطلوب إضافتها
+2. فحص جميع نقاط التكامل مع الوحدات الأخرى:
+   - التكامل مع العقود (Contracts): hooks/useContracts.ts، hooks/useContractsData.tsx، pages/contracts/
+   - التكامل مع الإيجارات (Rental Payments): hooks/useRentalPaymentJournalIntegration.ts، hooks/useRentalPayments.ts
+   - التكامل مع الصيانة (Maintenance): hooks/useMaintenanceJournalIntegration.ts، hooks/useMaintenanceDetails.ts
+   - التكامل مع الرواتب (Payroll): hooks/usePayrollJournalIntegration.ts، hooks/usePayroll.ts
+   - التكامل مع مخالفات المرور (Traffic Violations): hooks/useTrafficViolationJournalIntegration.ts، hooks/useTrafficViolationPayments.ts
+   - التكامل مع أقساط المركبات (Vehicle Installments): hooks/useVehicleInstallmentJournalIntegration.ts، hooks/useVehicleInstallments.ts
+   - التكامل مع الفواتير (Invoices): hooks/useInvoiceJournalLinking.ts، hooks/useInvoiceMatching.ts، services/InvoiceService.ts
+   - التكامل مع المدفوعات (Payments): hooks/usePayments.unified.ts، services/PaymentService.ts، services/PaymentLinkingService.ts
+   - التكامل مع التحصيلات (Collections): hooks/useMonthlyCollections.ts
+   - التكامل مع العملاء (Customers): hooks/useCustomerAccounts.ts، hooks/useEnhancedCustomerFinancials.ts
+   - التكامل مع المخزون (Inventory): hooks/useInventoryReports.ts
+   - التكامل مع الموارد البشرية (HR): hooks/useHRReports.ts
+   - التكامل مع التقارير (Reports): hooks/useUnifiedReports.ts، hooks/useModuleReportData.ts
+   - التكامل مع الفريق (Team): hooks/useEmployeeDetailedReport.tsx
+   - التكامل مع التحليل المالي (Financial Analysis): hooks/useFinancialAnalysis.ts، hooks/useAdvancedFinancialAnalytics.ts
+   - التكامل مع التدقيق (Audit): hooks/useFinancialAudit.ts، hooks/useAuditLog.ts، hooks/useAuditTrail.ts
+   - التكامل مع الموافقات (Approvals): hooks/useApprovalWorkflows.ts
+   - التكامل مع النظام القانوني (Legal): hooks/useLegalCollectionReport.ts، hooks/usePaymentLegalIntegration.ts
+   - التكامل مع الموردين (Vendors): hooks/useVendorAccounts.ts
 
-### 1. فحص Edge Functions الـ 48
-- افحص جميع الـ Edge Functions في `src/functions/` أو `supabase/functions/`
-- لكل function: هل تتحقق من auth (JWT)؟ هل تتحقق من company_id؟
-- هل تستخدم service role key بدون تحقق مناسب؟
-- قائمة بجميع الـ functions مع حالة auth/company validation
-- راجع الملفات الموجودة في `src/server/` أيضاً
+3. فحص قاعدة البيانات: ملفات SQL في supabase/ والمجلدات المتعلقة بالمigrations
 
-### 2. تحليل RLS Policies
-- افحص ملفات الـ migrations في `src/migrations/` أو `supabase/migrations/`
-- ابحث عن RLS policies للجداول المالية: `journal_entries`, `journal_entry_lines`, `chart_of_accounts`, `payments`, `invoices`
-- هل الـ policies تفرض company isolation؟
-- هل هناك أي policies مفقودة أو ضعيفة؟
+4. فحص التوجيه (Routing): كيف يتم ربط الصفحات المالية في نظام التوجيه
 
-### 3. فحص قاعدة البيانات الحية عبر Supabase API
-- اقرأ ملف `.env` لاستخراج رابط Supabase والمفاتيح
-- استخدم `curl` مع service role key لفحص:
-  - عدد القيود المحاسبية
-  - القيود غير المتوازنة (debit ≠ credit)
-  - القيود بدون بنود
-  - المدفوعات بدون journal_entry_id
-  - الفواتير بدون journal_entry_id
-  - معادلة A = L + E (إن أمكن)
-- **هام:** استخدم pagination (HTTP Range headers) لجلب كل البيانات، لا تعتمد على default limit 1000
+5. فحص الأمان والصلاحيات: hooks/useJournalEntryPermissions.ts، hooks/usePermissionCheck.ts، hooks/usePermissions.ts، hooks/useRolePermissions.ts، hooks/useUserPermissions.ts، hooks/useFeatureAccess.ts
 
-### 4. تحليل الأمان (Security Audit)
-- فحص `validateEnv.ts` — هل هناك مفاتيح احتياطية/fallback؟
-- فحص `.env` و `.env.example` — هل هناك مفاتيح مسربة؟
-- فحص `src/components/finance/ProtectedFinanceRoute.tsx` — هل الحماية كافية؟
-- فحص صلاحيات الـ API endpoints
-- البحث عن أي hardcoded credentials أو fallback keys
-
-### 5. تدقيق i18n
-- افحص ملفات الترجمة في `src/translations/` أو `src/locales/`
-- هل جميع النصوص في الصفحات المالية (`src/pages/finance/`) تستخدم `t()` أو `useTranslation`؟
-- هل هناك hardcoded English/Arabic labels؟
-- قياس نسبة التغطية اللغوية
-
-### 6. تحليل الأداء
-- هل هناك استعلامات N+1 في الـ hooks المالية؟
-- هل هناك `useQuery` بدون `staleTime` مناسب؟
-- هل هناك مكونات ثقيلة بدون `React.memo` أو `useMemo`؟
-- هل هناك استعلامات متكررة أو غير محسّنة؟
-
-### 7. التحقق من نتائج التقرير السابق
-- اقرأ التقرير الموجود في `docs/financial-system-integration-audit-report.md`
-- تحقق من كل finding بشكل مستقل:
-  - H1: هل `AccountingService.ts:168` لا يزال TODO؟
-  - H2: هل توجد صفحات قوائم مالية رسمية؟
-  - H3: هل يوجد deferred_revenue table؟
-  - M1: هل يوجد AP Aging report؟
-  - M2: هل PaymentService.ts يتحقق من الموافقات؟
-  - M3: هل useFinancialOverview.ts يستخدم payments مباشرة؟
-  - L1-L4: تحقق من وجودها
-
-## قواعد صارمة
-1. **لا تغيير في الكود** — تقرير فقط
-2. كل finding يجب أن يكون له مرجع `file:line` محدد
-3. استخدم `read_file` و `search_files` للتحقق المباشر — لا تعتمد على تقارير ذاتية
-4. إذا كان هناك تعارض مع التقرير السابق، وثّق التعارض
-5. استخدم pagination في استعلامات Supabase (HTTP Range headers)
-6. النتيجة النهائية: ملف واحد شامل في `docs/financial-system-integration-audit-report-comprehensive.md`
-
-## مسار المشروع
-C:\Users\khamis\Documents\fleetifyapp
+المخرجات المطلوبة:
+- تقرير كامل باللغة العربية عن النظام المالي وتكامله
+- تحديد نقاط القوة والضعف
+- تحديد الثغرات في التكامل
+- توصيات للتحسين
+- الإشارة إلى ملفات محددة مع أرقام الأسطر لكل finding
 
 ## Reasoning
-The task requires expanding an existing audit report with 7 independent sections, plus a final assembly. Each section can be investigated in parallel because they involve reading different files or running independent Supabase queries. The last subtask (assembly) depends on all others to produce the final comprehensive report. Maximum 8 subtasks allows one per section plus assembly.
+The task is a comprehensive audit of the financial system and its integrations. I decomposed it into 5 independent subtasks covering: (1) core financial files (pages, components, hooks, services), (2) integration points with other modules, (3) database schema and migrations, (4) routing for financial pages, and (5) security/permissions hooks. Each subtask reads specific files and produces structured findings. The final subtask (assembly) collects all findings and writes the final Arabic report. All subtasks are independent and can run in parallel, except assembly which depends on all.
 
 ## Risk Level
-medium
+low
 
 ## Assumptions
 - Dependencies from earlier milestones remain stable.
@@ -82,27 +49,23 @@ medium
 ## Milestones
 
 ### Parallel group 1
-- Subtasks: edge-functions-audit, i18n-audit, live-database-audit, performance-audit, rls-policies-audit, security-audit, verify-previous-findings
+- Subtasks: review-core-financial-files, review-database-schema, review-integration-points, review-routing, review-security-permissions
 - Acceptance criteria:
-  - All Edge Functions are listed with their auth/company validation status. Missing or weak validations are documented with file:line references.
-  - All finance pages checked for i18n usage. Hardcoded strings listed with file:line. Language coverage percentage calculated.
-  - All required queries executed with pagination. Results include counts and examples of anomalies. No default limit of 1000 used.
-  - All financial hooks and components reviewed. Performance issues documented with file:line and suggested fixes.
-  - All RLS policies for financial tables are listed with their SQL definitions. Missing or weak policies are identified with file:line references.
-  - All security checks completed. Any hardcoded credentials, fallback keys, or weak protections are documented with file:line references.
-  - Each previous finding is independently verified. Discrepancies or confirmations documented with current file:line references.
+  - A structured findings document (JSON or markdown) is produced listing strengths, weaknesses, gaps, and recommendations for each file, with specific line numbers where issues are found.
+  - A structured findings document (JSON or markdown) is produced listing schema strengths, weaknesses, gaps, and recommendations, with specific file paths and line numbers where issues are found.
+  - A structured findings document (JSON or markdown) is produced listing integration strengths, weaknesses, gaps, and recommendations for each integration point, with specific line numbers where issues are found.
+  - A structured findings document (JSON or markdown) is produced listing routing strengths, weaknesses, gaps, and recommendations, with specific file paths and line numbers where issues are found.
+  - A structured findings document (JSON or markdown) is produced listing security strengths, weaknesses, gaps, and recommendations, with specific file paths and line numbers where issues are found.
 
 ### Parallel group 2
 - Subtasks: assembly
 - Acceptance criteria:
-  - Final deliverable file is written and contains all findings from prior subtasks, structured as required.
+  - Final deliverable file 'financial-system-audit-report.md' is written and contains all findings from prior subtasks in Arabic, with clear structure and actionable recommendations.
 
 ## DAG
-- `edge-functions-audit` group=0 deps=none: Scan all Edge Functions in src/functions/ or supabase/functions/ and src/server/ for JWT auth verification and company_id validation. List each function with its auth/company validation status. Report findings in a structured section.
-- `i18n-audit` group=0 deps=none: Examine translation files in src/translations/ or src/locales/ and all finance pages in src/pages/finance/. Check if all UI strings use t() or useTranslation. Identify hardcoded English/Arabic labels. Measure language coverage (percentage of keys translated). Report findings.
-- `live-database-audit` group=0 deps=none: Read .env to get Supabase URL and service role key. Use curl with HTTP Range headers (pagination) to query: count of journal_entries, unbalanced entries (debit != credit), entries without lines, payments without journal_entry_id, invoices without journal_entry_id, and check A=L+E if possible. Report all findings with actual numbers.
-- `performance-audit` group=0 deps=none: Examine financial hooks (e.g., useFinancialOverview, usePayments, etc.) for N+1 queries, missing staleTime in useQuery, heavy components without React.memo or useMemo, and repeated/unoptimized queries. Report findings with file:line references.
-- `rls-policies-audit` group=0 deps=none: Examine migration files in src/migrations/ or supabase/migrations/ for RLS policies on tables: journal_entries, journal_entry_lines, chart_of_accounts, payments, invoices. Check if policies enforce company isolation. Report any missing or weak policies.
-- `security-audit` group=0 deps=none: Examine validateEnv.ts for fallback keys, .env and .env.example for leaked keys, src/components/finance/ProtectedFinanceRoute.tsx for protection adequacy, and search for hardcoded credentials or fallback keys across the codebase. Report all findings with file:line references.
-- `verify-previous-findings` group=0 deps=none: Read docs/financial-system-integration-audit-report.md. For each finding (H1, H2, H3, M1, M2, M3, L1-L4), independently verify using file reads and searches. Check if AccountingService.ts:168 still has TODO, if official financial report pages exist, if deferred_revenue table exists, if AP Aging report exists, if PaymentService.ts checks approvals, if useFinancialOverview uses payments directly, and existence of L1-L4. Report any discrepancies.
-- `assembly` group=1 deps=edge-functions-audit, rls-policies-audit, live-database-audit, security-audit, i18n-audit, performance-audit, verify-previous-findings: Collect all findings from the 7 prior subtasks and produce the final comprehensive audit report in docs/financial-system-integration-audit-report-comprehensive.md. The report must include all sections in the specified order, with file:line references, and note any conflicts with the previous report.
+- `review-core-financial-files` group=0 deps=none: Read and analyze all core financial system files: pages (pages/finance/, pages/Finance.tsx, pages/FinancialTracking.tsx, pages/SyncPaymentsToLedger.tsx), components (components/finance/), hooks (hooks/finance/, hooks/useFinance.ts, hooks/useGeneralLedger.ts, hooks/useChartOfAccounts.ts, hooks/useEnhancedFinancialReports.ts, hooks/useFinancialAnalysis.ts, hooks/useFinancialOverview.ts, hooks/useFinancialAudit.ts, hooks/useTreasury.ts, hooks/useMonthlyObligations.ts, hooks/useMonthlyRentTracking.ts, hooks/useCostCenterReports.ts, hooks/useCostCenters.ts, hooks/useCustomerFinancialSummary.ts, hooks/useFleetFinancialAnalytics.ts, hooks/useAdvancedFinancialAnalytics.ts, hooks/useAdvancedFinancialRatios.ts, hooks/useFinancialReportsExport.ts, hooks/useFinancialSystemAnalysis.ts, hooks/useFinancialAIAnalysis.ts, hooks/useFinancialFixes.ts, hooks/usePayrollFinancialAnalysis.ts, hooks/usePendingJournalEntries.ts, hooks/useJournalEntryPermissions.ts, hooks/useInvoiceJournalLinking.ts, hooks/useInvoiceMatching.ts, hooks/useReportingAccounts.ts, hooks/useEntryAllowedAccounts.ts, hooks/useAccountMappings.ts, hooks/useEssentialAccountMappings.ts, hooks/useEnhancedAccountDeletion.ts, hooks/useEnhancedAccountSuggestions.ts, hooks/useEnhancedChartOfAccountsCSVUpload.ts, hooks/useCopySelectedAccounts.ts, hooks/useAccountingWizard.ts, hooks/useAccountConflictCheck.ts, hooks/useDeposits.ts, hooks/useDelinquencyStats.ts, hooks/useLateFines.ts, hooks/usePaymentSchedules.ts, hooks/useCustomerAccounts.ts, hooks/useCustomerAccountStatement.ts, hooks/useCustomerAccountTypes.ts, hooks/useEnhancedCustomerAccounts.ts, hooks/useEnhancedCustomerFinancials.ts, hooks/useVendorAccounts.ts, hooks/useCreateCustomerWithAccount.ts, hooks/useSimpleAccountDeletion.ts, hooks/useUnifiedAccountSelector.ts), and services (services/AccountingService.ts, services/financialControls.ts, services/PaymentService.ts, services/PaymentLinkingService.ts, services/PaymentStateMachine.ts, services/InvoiceService.ts, services/UnifiedInvoiceService.ts, services/reportDataService.ts). Produce a structured list of findings (strengths, weaknesses, gaps, recommendations) with file paths and line numbers.
+- `review-database-schema` group=0 deps=none: Read and analyze all SQL migration files in supabase/ and related directories (e.g., migrations/). Identify the database schema for financial tables (journal_entries, journal_entry_lines, chart_of_accounts, etc.), relationships, constraints, indexes, and any inconsistencies. Produce a structured list of findings about schema design, missing indexes, foreign key issues, and potential data integrity problems.
+- `review-integration-points` group=0 deps=none: Read and analyze all integration hooks and services that connect the financial system with other modules: Contracts (hooks/useContracts.ts, hooks/useContractsData.tsx, pages/contracts/), Rental Payments (hooks/useRentalPaymentJournalIntegration.ts, hooks/useRentalPayments.ts), Maintenance (hooks/useMaintenanceJournalIntegration.ts, hooks/useMaintenanceDetails.ts), Payroll (hooks/usePayrollJournalIntegration.ts, hooks/usePayroll.ts), Traffic Violations (hooks/useTrafficViolationJournalIntegration.ts, hooks/useTrafficViolationPayments.ts), Vehicle Installments (hooks/useVehicleInstallmentJournalIntegration.ts, hooks/useVehicleInstallments.ts), Invoices (hooks/useInvoiceJournalLinking.ts, hooks/useInvoiceMatching.ts, services/InvoiceService.ts), Payments (hooks/usePayments.unified.ts, services/PaymentService.ts, services/PaymentLinkingService.ts), Collections (hooks/useMonthlyCollections.ts), Customers (hooks/useCustomerAccounts.ts, hooks/useEnhancedCustomerFinancials.ts), Inventory (hooks/useInventoryReports.ts), HR (hooks/useHRReports.ts), Reports (hooks/useUnifiedReports.ts, hooks/useModuleReportData.ts), Team (hooks/useEmployeeDetailedReport.tsx), Financial Analysis (hooks/useFinancialAnalysis.ts, hooks/useAdvancedFinancialAnalytics.ts), Audit (hooks/useFinancialAudit.ts, hooks/useAuditLog.ts, hooks/useAuditTrail.ts), Approvals (hooks/useApprovalWorkflows.ts), Legal (hooks/useLegalCollectionReport.ts, hooks/usePaymentLegalIntegration.ts), Vendors (hooks/useVendorAccounts.ts). Produce a structured list of findings about integration quality, data consistency, and potential gaps.
+- `review-routing` group=0 deps=none: Read and analyze the routing configuration for financial pages. Look for files like App.tsx, routes/ or similar that define how financial pages are accessed. Identify any missing routes, incorrect paths, or security issues in route definitions. Produce a structured list of findings.
+- `review-security-permissions` group=0 deps=none: Read and analyze all security and permission hooks: hooks/useJournalEntryPermissions.ts, hooks/usePermissionCheck.ts, hooks/usePermissions.ts, hooks/useRolePermissions.ts, hooks/useUserPermissions.ts, hooks/useFeatureAccess.ts. Also check any Row Level Security (RLS) policies in the database schema. Identify gaps in access control, missing permission checks, and potential security vulnerabilities. Produce a structured list of findings.
+- `assembly` group=1 deps=review-core-financial-files, review-integration-points, review-database-schema, review-routing, review-security-permissions: Collect all findings from the five prior subtasks (review-core-financial-files, review-integration-points, review-database-schema, review-routing, review-security-permissions). Combine them into a single comprehensive report in Arabic. The report should include: an executive summary, detailed findings per area (with file paths and line numbers), strengths, weaknesses, integration gaps, and recommendations. Write the final report to a file named 'financial-system-audit-report.md' in the project root.

@@ -147,7 +147,7 @@ export const QuickPaymentModal: React.FC<QuickPaymentModalProps> = ({ isOpen,
             exit={{ y: '100%' }}
             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
             className="relative bg-white rounded-t-3xl w-full max-w-lg shadow-2xl"
-            style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+            style={{ paddingBottom: 'var(--safe-area-bottom, env(safe-area-inset-bottom))' }}
             dir="rtl"
           >
             {/* Handle */}

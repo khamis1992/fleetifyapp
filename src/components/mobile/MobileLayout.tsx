@@ -33,7 +33,7 @@ export const MobileLayout: React.FC<MobileLayoutProps> = ({ children,
       className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-teal-50/30"
       style={{
         paddingTop: 'env(safe-area-inset-top)',
-        paddingBottom: 'calc(60px + env(safe-area-inset-bottom))',
+        paddingBottom: 'calc(60px + var(--safe-area-bottom, env(safe-area-inset-bottom)))',
         paddingLeft: 'env(safe-area-inset-left)',
         paddingRight: 'env(safe-area-inset-right)',
       }}
@@ -49,7 +49,7 @@ export const MobileLayout: React.FC<MobileLayoutProps> = ({ children,
         <nav
           className="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-xl border-t border-slate-200/50 shadow-lg"
           style={{
-            paddingBottom: 'env(safe-area-inset-bottom)',
+            paddingBottom: 'var(--safe-area-bottom, env(safe-area-inset-bottom))',
           }}
         >
           <div className="flex items-center justify-around h-16 px-2">

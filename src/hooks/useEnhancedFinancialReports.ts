@@ -3,6 +3,44 @@ import * as Sentry from "@sentry/react";
 import { supabase } from '@/integrations/supabase/client';
 import { useUnifiedCompanyAccess } from './useUnifiedCompanyAccess';
 
+const normalizeAccountType = (value?: string | null) => {
+  const normalized = String(value || '').trim().toLowerCase();
+  if (normalized === 'assets') return 'asset';
+  if (normalized === 'liabilities') return 'liability';
+  if (normalized === 'expenses') return 'expense';
+  if (normalized === 'income') return 'revenue';
+  return normalized;
+};
+
+const isAccountType = (value: string | null | undefined, ...types: string[]) =>
+  types.includes(normalizeAccountType(value));
+
+const calculateBalanceByType = (accountType: string | null | undefined, debit: number, credit: number) => {
+  const normalizedType = normalizeAccountType(accountType);
+  if (['asset', 'expense'].includes(normalizedType)) {
+    return debit - credit;
+  }
+  return credit - debit;
+};
+
+const getCashFlowCategory = (
+  accountType: string | null | undefined,
+  accountCode: string | null | undefined
+): 'operating' | 'investing' | 'financing' => {
+  const normalizedType = normalizeAccountType(accountType);
+  const code = String(accountCode || '');
+
+  if (normalizedType === 'asset' && /^(15|16|17|18)/.test(code)) {
+    return 'investing';
+  }
+
+  if (['liability', 'equity'].includes(normalizedType)) {
+    return 'financing';
+  }
+
+  return 'operating';
+};
+
 // Enhanced financial reports data structure
 export interface FinancialReportData {
   title: string;
@@ -393,13 +431,11 @@ export const useEnhancedFinancialReports = (
         current.debit += debit;
         current.credit += credit;
         
-        // Calculate balance based on account type
-        const accountType = line.chart_of_accounts?.account_type;
-        if (['assets', 'expenses'].includes(accountType)) {
-          current.balance = current.debit - current.credit;
-        } else {
-          current.balance = current.credit - current.debit;
-        }
+        current.balance = calculateBalanceByType(
+          line.chart_of_accounts?.account_type,
+          current.debit,
+          current.credit
+        );
       });
 
       console.log('📊 [BALANCE_SHEET] Account balances calculated:', {
@@ -448,7 +484,7 @@ export const useEnhancedFinancialReports = (
 
       if (reportType === 'income_statement') {
         const revenueAccounts = accounts?.filter(acc => 
-          acc.account_type === 'revenue' && !acc.is_header
+          isAccountType(acc.account_type, 'revenue') && !acc.is_header
         ).map(acc => {
           const balance = accountBalances.get(acc.id);
           return {
@@ -462,7 +498,7 @@ export const useEnhancedFinancialReports = (
         }) || [];
 
         const expenseAccounts = accounts?.filter(acc => 
-          acc.account_type === 'expenses' && !acc.is_header
+          isAccountType(acc.account_type, 'expense') && !acc.is_header
         ).map(acc => {
           const balance = accountBalances.get(acc.id);
           return {
@@ -509,7 +545,7 @@ export const useEnhancedFinancialReports = (
         });
 
         const assetAccounts = accounts?.filter(acc => 
-          acc.account_type === 'assets' && !acc.is_header
+          isAccountType(acc.account_type, 'asset') && !acc.is_header
         ).map(acc => {
           const balance = accountBalances.get(acc.id);
           console.log(`  💰 Asset: ${acc.account_name} (${acc.account_code})`, {
@@ -529,7 +565,7 @@ export const useEnhancedFinancialReports = (
         }) || [];
 
         const liabilityAccounts = accounts?.filter(acc => 
-          acc.account_type === 'liabilities' && !acc.is_header
+          isAccountType(acc.account_type, 'liability') && !acc.is_header
         ).map(acc => {
           const balance = accountBalances.get(acc.id);
           return {
@@ -543,7 +579,7 @@ export const useEnhancedFinancialReports = (
         }) || [];
 
         const equityAccounts = accounts?.filter(acc => 
-          acc.account_type === 'equity' && !acc.is_header
+          isAccountType(acc.account_type, 'equity') && !acc.is_header
         ).map(acc => {
           const balance = accountBalances.get(acc.id);
           return {
@@ -597,6 +633,95 @@ export const useEnhancedFinancialReports = (
           totalEquity,
           totalDebits: 0,
           totalCredits: 0
+        };
+      }
+
+      if (reportType === 'cash_flow') {
+        const cashFlowGroups = new Map<string, {
+          accountCode: string;
+          accountName: string;
+          accountNameAr: string;
+          accountType: string;
+          category: 'operating' | 'investing' | 'financing';
+          amount: number;
+        }>();
+
+        journalLines?.forEach((line: any) => {
+          const account = line.chart_of_accounts;
+          if (!account?.account_code) return;
+
+          const accountType = normalizeAccountType(account.account_type);
+          const category = getCashFlowCategory(accountType, account.account_code);
+          const debit = Number(line.debit_amount || 0);
+          const credit = Number(line.credit_amount || 0);
+          const amount = calculateBalanceByType(accountType, debit, credit);
+          const key = `${category}:${account.account_code}`;
+
+          const current = cashFlowGroups.get(key) || {
+            accountCode: account.account_code,
+            accountName: account.account_name,
+            accountNameAr: account.account_name,
+            accountType,
+            category,
+            amount: 0,
+          };
+
+          current.amount += amount;
+          cashFlowGroups.set(key, current);
+        });
+
+        const makeCashFlowSection = (
+          category: 'operating' | 'investing' | 'financing',
+          title: string,
+          titleAr: string
+        ) => {
+          const accountsInSection = Array.from(cashFlowGroups.values())
+            .filter(item => item.category === category && Math.abs(item.amount) > 0.01)
+            .map(item => ({
+              accountCode: item.accountCode,
+              accountName: item.accountName,
+              accountNameAr: item.accountNameAr,
+              accountLevel: 0,
+              isHeader: false,
+              amount: Number(item.amount.toFixed(2)),
+              balance: Number(item.amount.toFixed(2)),
+            }));
+
+          const subtotal = accountsInSection.reduce((sum, account) => sum + account.amount, 0);
+
+          return {
+            title,
+            titleAr,
+            sectionName: title,
+            sectionNameAr: titleAr,
+            accounts: accountsInSection,
+            subtotal,
+            totalAmount: subtotal,
+          };
+        };
+
+        const sections = [
+          makeCashFlowSection('operating', 'Operating Activities', 'الأنشطة التشغيلية'),
+          makeCashFlowSection('investing', 'Investing Activities', 'الأنشطة الاستثمارية'),
+          makeCashFlowSection('financing', 'Financing Activities', 'الأنشطة التمويلية'),
+        ];
+
+        const totalCredits = sections.reduce(
+          (sum, section) => sum + Math.max(section.subtotal, 0),
+          0
+        );
+        const totalDebits = sections.reduce(
+          (sum, section) => sum + Math.abs(Math.min(section.subtotal, 0)),
+          0
+        );
+
+        return {
+          title: 'Cash Flow Statement',
+          titleAr: 'قائمة التدفقات النقدية',
+          sections,
+          totalDebits,
+          totalCredits,
+          netIncome: totalCredits - totalDebits,
         };
       }
 

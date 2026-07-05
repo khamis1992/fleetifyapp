@@ -76,4 +76,17 @@ describe("ledgerCashFlowReportRules", () => {
     expect(report.investingCashFlow).toBe(0);
     expect(report.financingCashFlow).toBe(0);
   });
+
+  it("normalizes plural account types before classifying cash flow", () => {
+    const report = buildCashFlowReport(
+      [
+        { id: "1", accountCode: "1600", accountType: "assets", amount: -200 },
+        { id: "2", accountCode: "2100", accountType: "liabilities", amount: 350 },
+      ],
+      0,
+    );
+
+    expect(report.investingCashFlow).toBe(-200);
+    expect(report.financingCashFlow).toBe(350);
+  });
 });

@@ -48,6 +48,23 @@ export interface ContractStatusUpdateResult {
   error?: string;
 }
 
+const normalizeAccountType = (value?: string | null) => {
+  const normalized = String(value || '').trim().toLowerCase();
+  if (normalized === 'assets') return 'asset';
+  if (normalized === 'liabilities') return 'liability';
+  if (normalized === 'expenses') return 'expense';
+  if (normalized === 'income') return 'revenue';
+  return normalized;
+};
+
+const calculateBalanceByType = (accountType: string | null | undefined, debit: number, credit: number) => {
+  const normalizedType = normalizeAccountType(accountType);
+  if (['asset', 'expense'].includes(normalizedType)) {
+    return debit - credit;
+  }
+  return credit - debit;
+};
+
 class AccountingService {
   /**
    * تحديث أرصدة الحسابات بعد دفعة
@@ -151,26 +168,26 @@ class AccountingService {
           // الحصول على الرصيد الحالي
           const currentBalanceResult = await this.getAccountBalance(account.id);
 
-          // حساب التغير في الرصيد
-          const accountLines = journalEntryLines
-            ?.filter(line => line.account_id === account.id) || [];
+          // Recalculate the full posted ledger balance, then persist it for screens
+          // that read chart_of_accounts.current_balance directly.
+          const newBalance = currentBalanceResult.balance || 0;
 
-          const debitChange = accountLines.reduce((sum, line) => sum + (line.debit_amount || 0), 0);
-          const creditChange = accountLines.reduce((sum, line) => sum + (line.credit_amount || 0), 0);
+          const { error: balanceUpdateError } = await supabase
+            .from('chart_of_accounts')
+            .update({
+              current_balance: newBalance,
+              updated_at: new Date().toISOString(),
+            })
+            .eq('id', account.id)
+            .eq('company_id', companyId);
 
-          const change = creditChange - debitChange;
-          const newBalance = (currentBalanceResult.balance || 0) + change;
+          if (balanceUpdateError) {
+            throw balanceUpdateError;
+          }
 
-          // تحديث الرصيد في جدول chart_of_accounts
-          // ملاحظة: إذا لم يوجد عمود current_balance، سنتخطاه
-          // سنفترض وجود العمود أو نحتاج لإضافته
-          
-          // TODO: تنفيذ التحديث الفعلي بعد التحقق من بنية الجدول
-          logger.debug('Account balance would be updated', {
+          logger.debug('Account balance updated', {
             accountId: account.id,
             accountCode: account.account_code,
-            currentBalance: currentBalanceResult.balance,
-            change,
             newBalance
           });
 
@@ -179,10 +196,10 @@ class AccountingService {
             accountCode: account.account_code,
             accountName: account.account_name,
             accountLevel: account.account_level,
-            accountType: account.account_type,
+            accountType: normalizeAccountType(account.account_type) as AccountBalance['accountType'],
             currentBalance: newBalance,
-            debitTotal: currentBalanceResult.debitTotal + debitChange,
-            creditTotal: currentBalanceResult.creditTotal + creditChange,
+            debitTotal: currentBalanceResult.debitTotal,
+            creditTotal: currentBalanceResult.creditTotal,
             lastTransactionDate: payment.payment_date
           });
 
@@ -231,15 +248,26 @@ class AccountingService {
     creditTotal: number;
   }> {
     try {
+      const { data: account } = await supabase
+        .from('chart_of_accounts')
+        .select('account_type')
+        .eq('id', accountId)
+        .maybeSingle();
+
       // حساب الرصيد من journal_entry_lines
       const { data: lines } = await supabase
         .from('journal_entry_lines')
-        .select('debit_amount, credit_amount')
-        .eq('account_id', accountId);
+        .select(`
+          debit_amount,
+          credit_amount,
+          journal_entries!inner(status)
+        `)
+        .eq('account_id', accountId)
+        .eq('journal_entries.status', 'posted');
 
       const debitTotal = lines?.reduce((sum, line) => sum + (line.debit_amount || 0), 0) || 0;
       const creditTotal = lines?.reduce((sum, line) => sum + (line.credit_amount || 0), 0) || 0;
-      const balance = creditTotal - debitTotal;
+      const balance = calculateBalanceByType(account?.account_type, debitTotal, creditTotal);
 
       return {
         balance,
@@ -287,12 +315,25 @@ class AccountingService {
 
           const balanceResult = await this.getAccountBalance(accountId);
 
+          const { error: balanceUpdateError } = await supabase
+            .from('chart_of_accounts')
+            .update({
+              current_balance: balanceResult.balance,
+              updated_at: new Date().toISOString(),
+            })
+            .eq('id', account.id)
+            .eq('company_id', companyId);
+
+          if (balanceUpdateError) {
+            throw balanceUpdateError;
+          }
+
           updatedAccounts.push({
             accountId: account.id,
             accountCode: account.account_code,
             accountName: account.account_name,
             accountLevel: account.account_level,
-            accountType: account.account_type,
+            accountType: normalizeAccountType(account.account_type) as AccountBalance['accountType'],
             currentBalance: balanceResult.balance,
             debitTotal: balanceResult.debitTotal,
             creditTotal: balanceResult.creditTotal,

@@ -336,7 +336,7 @@ export const MobileOptimizationProvider: React.FC<MobileOptimizationProviderProp
       }
       
       .safe-bottom {
-        padding-bottom: env(safe-area-inset-bottom);
+        padding-bottom: var(--safe-area-bottom, env(safe-area-inset-bottom));
       }
       
       /* Prevent zoom on inputs */

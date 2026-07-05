@@ -145,7 +145,7 @@ export const CallLogModal: React.FC<CallLogModalProps> = ({
             exit={{ y: '100%' }}
             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
             className="relative bg-white rounded-t-3xl w-full max-w-lg shadow-2xl"
-            style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+            style={{ paddingBottom: 'var(--safe-area-bottom, env(safe-area-inset-bottom))' }}
             dir="rtl"
           >
             <div className="w-12 h-1 bg-slate-300 rounded-full mx-auto mt-3 mb-4" />

@@ -1,55 +1,13 @@
 {
   "stage": "plan_approved",
-  "task": "\u062a\u0648\u0633\u064a\u0639 \u062a\u062f\u0642\u064a\u0642 \u0627\u0644\u0646\u0638\u0627\u0645 \u0627\u0644\u0645\u0627\u0644\u064a \u0648\u0627\u0644\u062a\u0643\u0627\u0645\u0644 \u0641\u064a Fleetify ERP \u2014 \u062a\u0642\u0631\u064a\u0631 \u0641\u0642\u0637\u060c \u0644\u0627 \u062a\u063a\u064a\u064a\u0631 \u0641\u064a \u0627\u0644\u0643\u0648\u062f\n\n## \u0627\u0644\u0645\u0647\u0645\u0629\n\u0623\u0643\u0645\u0644 \u0627\u0644\u062a\u062f\u0642\u064a\u0642 \u0627\u0644\u0645\u0627\u0644\u064a \u0627\u0644\u0645\u0648\u062c\u0648\u062f \u0641\u064a `docs/financial-system-integration-audit-report.md` \u0628\u0625\u0636\u0627\u0641\u0629 \u0627\u0644\u0623\u0642\u0633\u0627\u0645 \u0627\u0644\u062a\u0627\u0644\u064a\u0629. \u0627\u0644\u0646\u062a\u064a\u062c\u0629 \u0627\u0644\u0646\u0647\u0627\u0626\u064a\u0629 \u064a\u062c\u0628 \u0623\u0646 \u062a\u0643\u0648\u0646 \u062a\u0642\u0631\u064a\u0631\u064b\u0627 \u0648\u0627\u062d\u062f\u064b\u0627 \u0643\u0627\u0645\u0644\u0627\u064b \u0641\u064a \u0645\u0644\u0641 `docs/financial-system-integration-audit-report-comprehensive.md`.\n\n## \u0627\u0644\u0623\u0642\u0633\u0627\u0645 \u0627\u0644\u0645\u0637\u0644\u0648\u0628 \u0625\u0636\u0627\u0641\u062a\u0647\u0627\n\n### 1. \u0641\u062d\u0635 Edge Functions \u0627\u0644\u0640 48\n- \u0627\u0641\u062d\u0635 \u062c\u0645\u064a\u0639 \u0627\u0644\u0640 Edge Functions \u0641\u064a `src/functions/` \u0623\u0648 `supabase/functions/`\n- \u0644\u0643\u0644 function: \u0647\u0644 \u062a\u062a\u062d\u0642\u0642 \u0645\u0646 auth (JWT",
+  "task": "\u0642\u0645 \u0628\u0645\u0631\u0627\u062c\u0639\u0629 \u0634\u0627\u0645\u0644\u0629 \u0644\u0644\u0646\u0638\u0627\u0645 \u0627\u0644\u0645\u0627\u0644\u064a \u0641\u064a \u0645\u0634\u0631\u0648\u0639 Fleetify (C:\\Users\\khamis\\Documents\\fleetifyapp) \u0648\u062a\u0643\u0627\u0645\u0644\u0647 \u0645\u0639 \u0628\u0642\u064a\u0629 \u0627\u0644\u0648\u062d\u062f\u0627\u062a. \u0642\u062f\u0645 \u062a\u0642\u0631\u064a\u0631\u0627\u064b \u0643\u0627\u0645\u0644\u0627\u064b \u0628\u062f\u0648\u0646 \u062a\u063a\u064a\u064a\u0631 \u0623\u064a \u0643\u0648\u062f.\n\n\u0627\u0644\u0645\u0637\u0644\u0648\u0628:\n1. \u0641\u062d\u0635 \u062c\u0645\u064a\u0639 \u0645\u0644\u0641\u0627\u062a \u0627\u0644\u0646\u0638\u0627\u0645 \u0627\u0644\u0645\u0627\u0644\u064a: \u0627\u0644\u0635\u0641\u062d\u0627\u062a (pages/finance/\u060c pages/Finance.tsx\u060c pages/FinancialTracking.tsx\u060c pages/SyncPaymentsToLedger.tsx)\u060c \u0627\u0644\u0645\u0643\u0648\u0646\u0627\u062a (components/finance/)\u060c \u0627\u0644\u0647\u0648\u0643\u0633 (hooks/finance/\u060c hooks/useFinance.ts\u060c hooks/useGeneralLedger.ts\u060c hooks/useChartOfAccounts.ts\u060c hooks/useEnhancedFinancialReports.ts\u060c hooks/useFinancialAnalysis.t",
   "status": "running",
-  "timestamp": "2026-07-05T08:43:28.556398",
+  "timestamp": "2026-07-05T10:53:34.338717",
   "plan": {
-    "task": "\u062a\u0648\u0633\u064a\u0639 \u062a\u062f\u0642\u064a\u0642 \u0627\u0644\u0646\u0638\u0627\u0645 \u0627\u0644\u0645\u0627\u0644\u064a \u0648\u0627\u0644\u062a\u0643\u0627\u0645\u0644 \u0641\u064a Fleetify ERP \u2014 \u062a\u0642\u0631\u064a\u0631 \u0641\u0642\u0637\u060c \u0644\u0627 \u062a\u063a\u064a\u064a\u0631 \u0641\u064a \u0627\u0644\u0643\u0648\u062f\n\n## \u0627\u0644\u0645\u0647\u0645\u0629\n\u0623\u0643\u0645\u0644 \u0627\u0644\u062a\u062f\u0642\u064a\u0642 \u0627\u0644\u0645\u0627\u0644\u064a \u0627\u0644\u0645\u0648\u062c\u0648\u062f \u0641\u064a `docs/financial-system-integration-audit-report.md` \u0628\u0625\u0636\u0627\u0641\u0629 \u0627\u0644\u0623\u0642\u0633\u0627\u0645 \u0627\u0644\u062a\u0627\u0644\u064a\u0629. \u0627\u0644\u0646\u062a\u064a\u062c\u0629 \u0627\u0644\u0646\u0647\u0627\u0626\u064a\u0629 \u064a\u062c\u0628 \u0623\u0646 \u062a\u0643\u0648\u0646 \u062a\u0642\u0631\u064a\u0631\u064b\u0627 \u0648\u0627\u062d\u062f\u064b\u0627 \u0643\u0627\u0645\u0644\u0627\u064b \u0641\u064a \u0645\u0644\u0641 `docs/financial-system-integration-audit-report-comprehensive.md`.\n\n## \u0627\u0644\u0623\u0642\u0633\u0627\u0645 \u0627\u0644\u0645\u0637\u0644\u0648\u0628 \u0625\u0636\u0627\u0641\u062a\u0647\u0627\n\n### 1. \u0641\u062d\u0635 Edge Functions \u0627\u0644\u0640 48\n- \u0627\u0641\u062d\u0635 \u062c\u0645\u064a\u0639 \u0627\u0644\u0640 Edge Functions \u0641\u064a `src/functions/` \u0623\u0648 `supabase/functions/`\n- \u0644\u0643\u0644 function: \u0647\u0644 \u062a\u062a\u062d\u0642\u0642 \u0645\u0646 auth (JWT)\u061f \u0647\u0644 \u062a\u062a\u062d\u0642\u0642 \u0645\u0646 company_id\u061f\n- \u0647\u0644 \u062a\u0633\u062a\u062e\u062f\u0645 service role key \u0628\u062f\u0648\u0646 \u062a\u062d\u0642\u0642 \u0645\u0646\u0627\u0633\u0628\u061f\n- \u0642\u0627\u0626\u0645\u0629 \u0628\u062c\u0645\u064a\u0639 \u0627\u0644\u0640 functions \u0645\u0639 \u062d\u0627\u0644\u0629 auth/company validation\n- \u0631\u0627\u062c\u0639 \u0627\u0644\u0645\u0644\u0641\u0627\u062a \u0627\u0644\u0645\u0648\u062c\u0648\u062f\u0629 \u0641\u064a `src/server/` \u0623\u064a\u0636\u0627\u064b\n\n### 2. \u062a\u062d\u0644\u064a\u0644 RLS Policies\n- \u0627\u0641\u062d\u0635 \u0645\u0644\u0641\u0627\u062a \u0627\u0644\u0640 migrations \u0641\u064a `src/migrations/` \u0623\u0648 `supabase/migrations/`\n- \u0627\u0628\u062d\u062b \u0639\u0646 RLS policies \u0644\u0644\u062c\u062f\u0627\u0648\u0644 \u0627\u0644\u0645\u0627\u0644\u064a\u0629: `journal_entries`, `journal_entry_lines`, `chart_of_accounts`, `payments`, `invoices`\n- \u0647\u0644 \u0627\u0644\u0640 policies \u062a\u0641\u0631\u0636 company isolation\u061f\n- \u0647\u0644 \u0647\u0646\u0627\u0643 \u0623\u064a policies \u0645\u0641\u0642\u0648\u062f\u0629 \u0623\u0648 \u0636\u0639\u064a\u0641\u0629\u061f\n\n### 3. \u0641\u062d\u0635 \u0642\u0627\u0639\u062f\u0629 \u0627\u0644\u0628\u064a\u0627\u0646\u0627\u062a \u0627\u0644\u062d\u064a\u0629 \u0639\u0628\u0631 Supabase API\n- \u0627\u0642\u0631\u0623 \u0645\u0644\u0641 `.env` \u0644\u0627\u0633\u062a\u062e\u0631\u0627\u062c \u0631\u0627\u0628\u0637 Supabase \u0648\u0627\u0644\u0645\u0641\u0627\u062a\u064a\u062d\n- \u0627\u0633\u062a\u062e\u062f\u0645 `curl` \u0645\u0639 service role key \u0644\u0641\u062d\u0635:\n  - \u0639\u062f\u062f \u0627\u0644\u0642\u064a\u0648\u062f \u0627\u0644\u0645\u062d\u0627\u0633\u0628\u064a\u0629\n  - \u0627\u0644\u0642\u064a\u0648\u062f \u063a\u064a\u0631 \u0627\u0644\u0645\u062a\u0648\u0627\u0632\u0646\u0629 (debit \u2260 credit)\n  - \u0627\u0644\u0642\u064a\u0648\u062f \u0628\u062f\u0648\u0646 \u0628\u0646\u0648\u062f\n  - \u0627\u0644\u0645\u062f\u0641\u0648\u0639\u0627\u062a \u0628\u062f\u0648\u0646 journal_entry_id\n  - \u0627\u0644\u0641\u0648\u0627\u062a\u064a\u0631 \u0628\u062f\u0648\u0646 journal_entry_id\n  - \u0645\u0639\u0627\u062f\u0644\u0629 A = L + E (\u0625\u0646 \u0623\u0645\u0643\u0646)\n- **\u0647\u0627\u0645:** \u0627\u0633\u062a\u062e\u062f\u0645 pagination (HTTP Range headers) \u0644\u062c\u0644\u0628 \u0643\u0644 \u0627\u0644\u0628\u064a\u0627\u0646\u0627\u062a\u060c \u0644\u0627 \u062a\u0639\u062a\u0645\u062f \u0639\u0644\u0649 default limit 1000\n\n### 4. \u062a\u062d\u0644\u064a\u0644 \u0627\u0644\u0623\u0645\u0627\u0646 (Security Audit)\n- \u0641\u062d\u0635 `validateEnv.ts` \u2014 \u0647\u0644 \u0647\u0646\u0627\u0643 \u0645\u0641\u0627\u062a\u064a\u062d \u0627\u062d\u062a\u064a\u0627\u0637\u064a\u0629/fallback\u061f\n- \u0641\u062d\u0635 `.env` \u0648 `.env.example` \u2014 \u0647\u0644 \u0647\u0646\u0627\u0643 \u0645\u0641\u0627\u062a\u064a\u062d \u0645\u0633\u0631\u0628\u0629\u061f\n- \u0641\u062d\u0635 `src/components/finance/ProtectedFinanceRoute.tsx` \u2014 \u0647\u0644 \u0627\u0644\u062d\u0645\u0627\u064a\u0629 \u0643\u0627\u0641\u064a\u0629\u061f\n- \u0641\u062d\u0635 \u0635\u0644\u0627\u062d\u064a\u0627\u062a \u0627\u0644\u0640 API endpoints\n- \u0627\u0644\u0628\u062d\u062b \u0639\u0646 \u0623\u064a hardcoded credentials \u0623\u0648 fallback keys\n\n### 5. \u062a\u062f\u0642\u064a\u0642 i18n\n- \u0627\u0641\u062d\u0635 \u0645\u0644\u0641\u0627\u062a \u0627\u0644\u062a\u0631\u062c\u0645\u0629 \u0641\u064a `src/translations/` \u0623\u0648 `src/locales/`\n- \u0647\u0644 \u062c\u0645\u064a\u0639 \u0627\u0644\u0646\u0635\u0648\u0635 \u0641\u064a \u0627\u0644\u0635\u0641\u062d\u0627\u062a \u0627\u0644\u0645\u0627\u0644\u064a\u0629 (`src/pages/finance/`) \u062a\u0633\u062a\u062e\u062f\u0645 `t()` \u0623\u0648 `useTranslation`\u061f\n- \u0647\u0644 \u0647\u0646\u0627\u0643 hardcoded English/Arabic labels\u061f\n- \u0642\u064a\u0627\u0633 \u0646\u0633\u0628\u0629 \u0627\u0644\u062a\u063a\u0637\u064a\u0629 \u0627\u0644\u0644\u063a\u0648\u064a\u0629\n\n### 6. \u062a\u062d\u0644\u064a\u0644 \u0627\u0644\u0623\u062f\u0627\u0621\n- \u0647\u0644 \u0647\u0646\u0627\u0643 \u0627\u0633\u062a\u0639\u0644\u0627\u0645\u0627\u062a N+1 \u0641\u064a \u0627\u0644\u0640 hooks \u0627\u0644\u0645\u0627\u0644\u064a\u0629\u061f\n- \u0647\u0644 \u0647\u0646\u0627\u0643 `useQuery` \u0628\u062f\u0648\u0646 `staleTime` \u0645\u0646\u0627\u0633\u0628\u061f\n- \u0647\u0644 \u0647\u0646\u0627\u0643 \u0645\u0643\u0648\u0646\u0627\u062a \u062b\u0642\u064a\u0644\u0629 \u0628\u062f\u0648\u0646 `React.memo` \u0623\u0648 `useMemo`\u061f\n- \u0647\u0644 \u0647\u0646\u0627\u0643 \u0627\u0633\u062a\u0639\u0644\u0627\u0645\u0627\u062a \u0645\u062a\u0643\u0631\u0631\u0629 \u0623\u0648 \u063a\u064a\u0631 \u0645\u062d\u0633\u0651\u0646\u0629\u061f\n\n### 7. \u0627\u0644\u062a\u062d\u0642\u0642 \u0645\u0646 \u0646\u062a\u0627\u0626\u062c \u0627\u0644\u062a\u0642\u0631\u064a\u0631 \u0627\u0644\u0633\u0627\u0628\u0642\n- \u0627\u0642\u0631\u0623 \u0627\u0644\u062a\u0642\u0631\u064a\u0631 \u0627\u0644\u0645\u0648\u062c\u0648\u062f \u0641\u064a `docs/financial-system-integration-audit-report.md`\n- \u062a\u062d\u0642\u0642 \u0645\u0646 \u0643\u0644 finding \u0628\u0634\u0643\u0644 \u0645\u0633\u062a\u0642\u0644:\n  - H1: \u0647\u0644 `AccountingService.ts:168` \u0644\u0627 \u064a\u0632\u0627\u0644 TODO\u061f\n  - H2: \u0647\u0644 \u062a\u0648\u062c\u062f \u0635\u0641\u062d\u0627\u062a \u0642\u0648\u0627\u0626\u0645 \u0645\u0627\u0644\u064a\u0629 \u0631\u0633\u0645\u064a\u0629\u061f\n  - H3: \u0647\u0644 \u064a\u0648\u062c\u062f deferred_revenue table\u061f\n  - M1: \u0647\u0644 \u064a\u0648\u062c\u062f AP Aging report\u061f\n  - M2: \u0647\u0644 PaymentService.ts \u064a\u062a\u062d\u0642\u0642 \u0645\u0646 \u0627\u0644\u0645\u0648\u0627\u0641\u0642\u0627\u062a\u061f\n  - M3: \u0647\u0644 useFinancialOverview.ts \u064a\u0633\u062a\u062e\u062f\u0645 payments \u0645\u0628\u0627\u0634\u0631\u0629\u061f\n  - L1-L4: \u062a\u062d\u0642\u0642 \u0645\u0646 \u0648\u062c\u0648\u062f\u0647\u0627\n\n## \u0642\u0648\u0627\u0639\u062f \u0635\u0627\u0631\u0645\u0629\n1. **\u0644\u0627 \u062a\u063a\u064a\u064a\u0631 \u0641\u064a \u0627\u0644\u0643\u0648\u062f** \u2014 \u062a\u0642\u0631\u064a\u0631 \u0641\u0642\u0637\n2. \u0643\u0644 finding \u064a\u062c\u0628 \u0623\u0646 \u064a\u0643\u0648\u0646 \u0644\u0647 \u0645\u0631\u062c\u0639 `file:line` \u0645\u062d\u062f\u062f\n3. \u0627\u0633\u062a\u062e\u062f\u0645 `read_file` \u0648 `search_files` \u0644\u0644\u062a\u062d\u0642\u0642 \u0627\u0644\u0645\u0628\u0627\u0634\u0631 \u2014 \u0644\u0627 \u062a\u0639\u062a\u0645\u062f \u0639\u0644\u0649 \u062a\u0642\u0627\u0631\u064a\u0631 \u0630\u0627\u062a\u064a\u0629\n4. \u0625\u0630\u0627 \u0643\u0627\u0646 \u0647\u0646\u0627\u0643 \u062a\u0639\u0627\u0631\u0636 \u0645\u0639 \u0627\u0644\u062a\u0642\u0631\u064a\u0631 \u0627\u0644\u0633\u0627\u0628\u0642\u060c \u0648\u062b\u0651\u0642 \u0627\u0644\u062a\u0639\u0627\u0631\u0636\n5. \u0627\u0633\u062a\u062e\u062f\u0645 pagination \u0641\u064a \u0627\u0633\u062a\u0639\u0644\u0627\u0645\u0627\u062a Supabase (HTTP Range headers)\n6. \u0627\u0644\u0646\u062a\u064a\u062c\u0629 \u0627\u0644\u0646\u0647\u0627\u0626\u064a\u0629: \u0645\u0644\u0641 \u0648\u0627\u062d\u062f \u0634\u0627\u0645\u0644 \u0641\u064a `docs/financial-system-integration-audit-report-comprehensive.md`\n\n## \u0645\u0633\u0627\u0631 \u0627\u0644\u0645\u0634\u0631\u0648\u0639\nC:\\Users\\khamis\\Documents\\fleetifyapp",
+    "task": "\u0642\u0645 \u0628\u0645\u0631\u0627\u062c\u0639\u0629 \u0634\u0627\u0645\u0644\u0629 \u0644\u0644\u0646\u0638\u0627\u0645 \u0627\u0644\u0645\u0627\u0644\u064a \u0641\u064a \u0645\u0634\u0631\u0648\u0639 Fleetify (C:\\Users\\khamis\\Documents\\fleetifyapp) \u0648\u062a\u0643\u0627\u0645\u0644\u0647 \u0645\u0639 \u0628\u0642\u064a\u0629 \u0627\u0644\u0648\u062d\u062f\u0627\u062a. \u0642\u062f\u0645 \u062a\u0642\u0631\u064a\u0631\u0627\u064b \u0643\u0627\u0645\u0644\u0627\u064b \u0628\u062f\u0648\u0646 \u062a\u063a\u064a\u064a\u0631 \u0623\u064a \u0643\u0648\u062f.\n\n\u0627\u0644\u0645\u0637\u0644\u0648\u0628:\n1. \u0641\u062d\u0635 \u062c\u0645\u064a\u0639 \u0645\u0644\u0641\u0627\u062a \u0627\u0644\u0646\u0638\u0627\u0645 \u0627\u0644\u0645\u0627\u0644\u064a: \u0627\u0644\u0635\u0641\u062d\u0627\u062a (pages/finance/\u060c pages/Finance.tsx\u060c pages/FinancialTracking.tsx\u060c pages/SyncPaymentsToLedger.tsx)\u060c \u0627\u0644\u0645\u0643\u0648\u0646\u0627\u062a (components/finance/)\u060c \u0627\u0644\u0647\u0648\u0643\u0633 (hooks/finance/\u060c hooks/useFinance.ts\u060c hooks/useGeneralLedger.ts\u060c hooks/useChartOfAccounts.ts\u060c hooks/useEnhancedFinancialReports.ts\u060c hooks/useFinancialAnalysis.ts\u060c hooks/useFinancialOverview.ts\u060c hooks/useFinancialAudit.ts\u060c hooks/useTreasury.ts\u060c hooks/useMonthlyObligations.ts\u060c hooks/useMonthlyRentTracking.ts\u060c hooks/useCostCenterReports.ts\u060c hooks/useCostCenters.ts\u060c hooks/useCustomerFinancialSummary.ts\u060c hooks/useFleetFinancialAnalytics.ts\u060c hooks/useAdvancedFinancialAnalytics.ts\u060c hooks/useAdvancedFinancialRatios.ts\u060c hooks/useFinancialReportsExport.ts\u060c hooks/useFinancialSystemAnalysis.ts\u060c hooks/useFinancialAIAnalysis.ts\u060c hooks/useFinancialFixes.ts\u060c hooks/usePayrollFinancialAnalysis.ts\u060c hooks/usePendingJournalEntries.ts\u060c hooks/useJournalEntryPermissions.ts\u060c hooks/useInvoiceJournalLinking.ts\u060c hooks/useInvoiceMatching.ts\u060c hooks/useReportingAccounts.ts\u060c hooks/useEntryAllowedAccounts.ts\u060c hooks/useAccountMappings.ts\u060c hooks/useEssentialAccountMappings.ts\u060c hooks/useEnhancedAccountDeletion.ts\u060c hooks/useEnhancedAccountSuggestions.ts\u060c hooks/useEnhancedChartOfAccountsCSVUpload.ts\u060c hooks/useCopySelectedAccounts.ts\u060c hooks/useAccountingWizard.ts\u060c hooks/useAccountConflictCheck.ts\u060c hooks/useDeposits.ts\u060c hooks/useDelinquencyStats.ts\u060c hooks/useLateFines.ts\u060c hooks/usePaymentSchedules.ts\u060c hooks/useCustomerAccounts.ts\u060c hooks/useCustomerAccountStatement.ts\u060c hooks/useCustomerAccountTypes.ts\u060c hooks/useEnhancedCustomerAccounts.ts\u060c hooks/useEnhancedCustomerFinancials.ts\u060c hooks/useVendorAccounts.ts\u060c hooks/useCreateCustomerWithAccount.ts\u060c hooks/useSimpleAccountDeletion.ts\u060c hooks/useUnifiedAccountSelector.ts)\u060c \u0627\u0644\u062e\u062f\u0645\u0627\u062a (services/AccountingService.ts\u060c services/financialControls.ts\u060c services/PaymentService.ts\u060c services/PaymentLinkingService.ts\u060c services/PaymentStateMachine.ts\u060c services/InvoiceService.ts\u060c services/UnifiedInvoiceService.ts\u060c services/reportDataService.ts)\n\n2. \u0641\u062d\u0635 \u062c\u0645\u064a\u0639 \u0646\u0642\u0627\u0637 \u0627\u0644\u062a\u0643\u0627\u0645\u0644 \u0645\u0639 \u0627\u0644\u0648\u062d\u062f\u0627\u062a \u0627\u0644\u0623\u062e\u0631\u0649:\n   - \u0627\u0644\u062a\u0643\u0627\u0645\u0644 \u0645\u0639 \u0627\u0644\u0639\u0642\u0648\u062f (Contracts): hooks/useContracts.ts\u060c hooks/useContractsData.tsx\u060c pages/contracts/\n   - \u0627\u0644\u062a\u0643\u0627\u0645\u0644 \u0645\u0639 \u0627\u0644\u0625\u064a\u062c\u0627\u0631\u0627\u062a (Rental Payments): hooks/useRentalPaymentJournalIntegration.ts\u060c hooks/useRentalPayments.ts\n   - \u0627\u0644\u062a\u0643\u0627\u0645\u0644 \u0645\u0639 \u0627\u0644\u0635\u064a\u0627\u0646\u0629 (Maintenance): hooks/useMaintenanceJournalIntegration.ts\u060c hooks/useMaintenanceDetails.ts\n   - \u0627\u0644\u062a\u0643\u0627\u0645\u0644 \u0645\u0639 \u0627\u0644\u0631\u0648\u0627\u062a\u0628 (Payroll): hooks/usePayrollJournalIntegration.ts\u060c hooks/usePayroll.ts\n   - \u0627\u0644\u062a\u0643\u0627\u0645\u0644 \u0645\u0639 \u0645\u062e\u0627\u0644\u0641\u0627\u062a \u0627\u0644\u0645\u0631\u0648\u0631 (Traffic Violations): hooks/useTrafficViolationJournalIntegration.ts\u060c hooks/useTrafficViolationPayments.ts\n   - \u0627\u0644\u062a\u0643\u0627\u0645\u0644 \u0645\u0639 \u0623\u0642\u0633\u0627\u0637 \u0627\u0644\u0645\u0631\u0643\u0628\u0627\u062a (Vehicle Installments): hooks/useVehicleInstallmentJournalIntegration.ts\u060c hooks/useVehicleInstallments.ts\n   - \u0627\u0644\u062a\u0643\u0627\u0645\u0644 \u0645\u0639 \u0627\u0644\u0641\u0648\u0627\u062a\u064a\u0631 (Invoices): hooks/useInvoiceJournalLinking.ts\u060c hooks/useInvoiceMatching.ts\u060c services/InvoiceService.ts\n   - \u0627\u0644\u062a\u0643\u0627\u0645\u0644 \u0645\u0639 \u0627\u0644\u0645\u062f\u0641\u0648\u0639\u0627\u062a (Payments): hooks/usePayments.unified.ts\u060c services/PaymentService.ts\u060c services/PaymentLinkingService.ts\n   - \u0627\u0644\u062a\u0643\u0627\u0645\u0644 \u0645\u0639 \u0627\u0644\u062a\u062d\u0635\u064a\u0644\u0627\u062a (Collections): hooks/useMonthlyCollections.ts\n   - \u0627\u0644\u062a\u0643\u0627\u0645\u0644 \u0645\u0639 \u0627\u0644\u0639\u0645\u0644\u0627\u0621 (Customers): hooks/useCustomerAccounts.ts\u060c hooks/useEnhancedCustomerFinancials.ts\n   - \u0627\u0644\u062a\u0643\u0627\u0645\u0644 \u0645\u0639 \u0627\u0644\u0645\u062e\u0632\u0648\u0646 (Inventory): hooks/useInventoryReports.ts\n   - \u0627\u0644\u062a\u0643\u0627\u0645\u0644 \u0645\u0639 \u0627\u0644\u0645\u0648\u0627\u0631\u062f \u0627\u0644\u0628\u0634\u0631\u064a\u0629 (HR): hooks/useHRReports.ts\n   - \u0627\u0644\u062a\u0643\u0627\u0645\u0644 \u0645\u0639 \u0627\u0644\u062a\u0642\u0627\u0631\u064a\u0631 (Reports): hooks/useUnifiedReports.ts\u060c hooks/useModuleReportData.ts\n   - \u0627\u0644\u062a\u0643\u0627\u0645\u0644 \u0645\u0639 \u0627\u0644\u0641\u0631\u064a\u0642 (Team): hooks/useEmployeeDetailedReport.tsx\n   - \u0627\u0644\u062a\u0643\u0627\u0645\u0644 \u0645\u0639 \u0627\u0644\u062a\u062d\u0644\u064a\u0644 \u0627\u0644\u0645\u0627\u0644\u064a (Financial Analysis): hooks/useFinancialAnalysis.ts\u060c hooks/useAdvancedFinancialAnalytics.ts\n   - \u0627\u0644\u062a\u0643\u0627\u0645\u0644 \u0645\u0639 \u0627\u0644\u062a\u062f\u0642\u064a\u0642 (Audit): hooks/useFinancialAudit.ts\u060c hooks/useAuditLog.ts\u060c hooks/useAuditTrail.ts\n   - \u0627\u0644\u062a\u0643\u0627\u0645\u0644 \u0645\u0639 \u0627\u0644\u0645\u0648\u0627\u0641\u0642\u0627\u062a (Approvals): hooks/useApprovalWorkflows.ts\n   - \u0627\u0644\u062a\u0643\u0627\u0645\u0644 \u0645\u0639 \u0627\u0644\u0646\u0638\u0627\u0645 \u0627\u0644\u0642\u0627\u0646\u0648\u0646\u064a (Legal): hooks/useLegalCollectionReport.ts\u060c hooks/usePaymentLegalIntegration.ts\n   - \u0627\u0644\u062a\u0643\u0627\u0645\u0644 \u0645\u0639 \u0627\u0644\u0645\u0648\u0631\u062f\u064a\u0646 (Vendors): hooks/useVendorAccounts.ts\n\n3. \u0641\u062d\u0635 \u0642\u0627\u0639\u062f\u0629 \u0627\u0644\u0628\u064a\u0627\u0646\u0627\u062a: \u0645\u0644\u0641\u0627\u062a SQL \u0641\u064a supabase/ \u0648\u0627\u0644\u0645\u062c\u0644\u062f\u0627\u062a \u0627\u0644\u0645\u062a\u0639\u0644\u0642\u0629 \u0628\u0627\u0644\u0645igrations\n\n4. \u0641\u062d\u0635 \u0627\u0644\u062a\u0648\u062c\u064a\u0647 (Routing): \u0643\u064a\u0641 \u064a\u062a\u0645 \u0631\u0628\u0637 \u0627\u0644\u0635\u0641\u062d\u0627\u062a \u0627\u0644\u0645\u0627\u0644\u064a\u0629 \u0641\u064a \u0646\u0638\u0627\u0645 \u0627\u0644\u062a\u0648\u062c\u064a\u0647\n\n5. \u0641\u062d\u0635 \u0627\u0644\u0623\u0645\u0627\u0646 \u0648\u0627\u0644\u0635\u0644\u0627\u062d\u064a\u0627\u062a: hooks/useJournalEntryPermissions.ts\u060c hooks/usePermissionCheck.ts\u060c hooks/usePermissions.ts\u060c hooks/useRolePermissions.ts\u060c hooks/useUserPermissions.ts\u060c hooks/useFeatureAccess.ts\n\n\u0627\u0644\u0645\u062e\u0631\u062c\u0627\u062a \u0627\u0644\u0645\u0637\u0644\u0648\u0628\u0629:\n- \u062a\u0642\u0631\u064a\u0631 \u0643\u0627\u0645\u0644 \u0628\u0627\u0644\u0644\u063a\u0629 \u0627\u0644\u0639\u0631\u0628\u064a\u0629 \u0639\u0646 \u0627\u0644\u0646\u0638\u0627\u0645 \u0627\u0644\u0645\u0627\u0644\u064a \u0648\u062a\u0643\u0627\u0645\u0644\u0647\n- \u062a\u062d\u062f\u064a\u062f \u0646\u0642\u0627\u0637 \u0627\u0644\u0642\u0648\u0629 \u0648\u0627\u0644\u0636\u0639\u0641\n- \u062a\u062d\u062f\u064a\u062f \u0627\u0644\u062b\u063a\u0631\u0627\u062a \u0641\u064a \u0627\u0644\u062a\u0643\u0627\u0645\u0644\n- \u062a\u0648\u0635\u064a\u0627\u062a \u0644\u0644\u062a\u062d\u0633\u064a\u0646\n- \u0627\u0644\u0625\u0634\u0627\u0631\u0629 \u0625\u0644\u0649 \u0645\u0644\u0641\u0627\u062a \u0645\u062d\u062f\u062f\u0629 \u0645\u0639 \u0623\u0631\u0642\u0627\u0645 \u0627\u0644\u0623\u0633\u0637\u0631 \u0644\u0643\u0644 finding",
     "subtasks": [
       {
-        "goal": "Scan all Edge Functions in src/functions/ or supabase/functions/ and src/server/ for JWT auth verification and company_id validation. List each function with its auth/company validation status. Report findings in a structured section.",
-        "agent": "security-auditor",
-        "toolsets": [
-          "terminal",
-          "file"
-        ],
-        "dependencies": [],
-        "parallel_group": 0,
-        "id": "edge-functions-audit",
-        "files": [
-          "src/functions/",
-          "supabase/functions/",
-          "src/server/"
-        ],
-        "success_criteria": "All Edge Functions are listed with their auth/company validation status. Missing or weak validations are documented with file:line references.",
-        "milestone": "milestone-1",
-        "milestone_index": 0,
-        "model_hint": "analytical",
-        "max_iterations": 1
-      },
-      {
-        "goal": "Examine translation files in src/translations/ or src/locales/ and all finance pages in src/pages/finance/. Check if all UI strings use t() or useTranslation. Identify hardcoded English/Arabic labels. Measure language coverage (percentage of keys translated). Report findings.",
-        "agent": "frontend-engineer",
-        "toolsets": [
-          "terminal",
-          "file"
-        ],
-        "dependencies": [],
-        "parallel_group": 0,
-        "id": "i18n-audit",
-        "files": [
-          "src/translations/",
-          "src/locales/",
-          "src/pages/finance/"
-        ],
-        "success_criteria": "All finance pages checked for i18n usage. Hardcoded strings listed with file:line. Language coverage percentage calculated.",
-        "milestone": "milestone-1",
-        "milestone_index": 0,
-        "model_hint": "balanced",
-        "max_iterations": 1
-      },
-      {
-        "goal": "Read .env to get Supabase URL and service role key. Use curl with HTTP Range headers (pagination) to query: count of journal_entries, unbalanced entries (debit != credit), entries without lines, payments without journal_entry_id, invoices without journal_entry_id, and check A=L+E if possible. Report all findings with actual numbers.",
+        "goal": "Read and analyze all core financial system files: pages (pages/finance/, pages/Finance.tsx, pages/FinancialTracking.tsx, pages/SyncPaymentsToLedger.tsx), components (components/finance/), hooks (hooks/finance/, hooks/useFinance.ts, hooks/useGeneralLedger.ts, hooks/useChartOfAccounts.ts, hooks/useEnhancedFinancialReports.ts, hooks/useFinancialAnalysis.ts, hooks/useFinancialOverview.ts, hooks/useFinancialAudit.ts, hooks/useTreasury.ts, hooks/useMonthlyObligations.ts, hooks/useMonthlyRentTracking.ts, hooks/useCostCenterReports.ts, hooks/useCostCenters.ts, hooks/useCustomerFinancialSummary.ts, hooks/useFleetFinancialAnalytics.ts, hooks/useAdvancedFinancialAnalytics.ts, hooks/useAdvancedFinancialRatios.ts, hooks/useFinancialReportsExport.ts, hooks/useFinancialSystemAnalysis.ts, hooks/useFinancialAIAnalysis.ts, hooks/useFinancialFixes.ts, hooks/usePayrollFinancialAnalysis.ts, hooks/usePendingJournalEntries.ts, hooks/useJournalEntryPermissions.ts, hooks/useInvoiceJournalLinking.ts, hooks/useInvoiceMatching.ts, hooks/useReportingAccounts.ts, hooks/useEntryAllowedAccounts.ts, hooks/useAccountMappings.ts, hooks/useEssentialAccountMappings.ts, hooks/useEnhancedAccountDeletion.ts, hooks/useEnhancedAccountSuggestions.ts, hooks/useEnhancedChartOfAccountsCSVUpload.ts, hooks/useCopySelectedAccounts.ts, hooks/useAccountingWizard.ts, hooks/useAccountConflictCheck.ts, hooks/useDeposits.ts, hooks/useDelinquencyStats.ts, hooks/useLateFines.ts, hooks/usePaymentSchedules.ts, hooks/useCustomerAccounts.ts, hooks/useCustomerAccountStatement.ts, hooks/useCustomerAccountTypes.ts, hooks/useEnhancedCustomerAccounts.ts, hooks/useEnhancedCustomerFinancials.ts, hooks/useVendorAccounts.ts, hooks/useCreateCustomerWithAccount.ts, hooks/useSimpleAccountDeletion.ts, hooks/useUnifiedAccountSelector.ts), and services (services/AccountingService.ts, services/financialControls.ts, services/PaymentService.ts, services/PaymentLinkingService.ts, services/PaymentStateMachine.ts, services/InvoiceService.ts, services/UnifiedInvoiceService.ts, services/reportDataService.ts). Produce a structured list of findings (strengths, weaknesses, gaps, recommendations) with file paths and line numbers.",
         "agent": "code-reviewer",
         "toolsets": [
           "terminal",
@@ -57,38 +15,79 @@
         ],
         "dependencies": [],
         "parallel_group": 0,
-        "id": "live-database-audit",
+        "id": "review-core-financial-files",
         "files": [
-          ".env"
+          "pages/finance/",
+          "pages/Finance.tsx",
+          "pages/FinancialTracking.tsx",
+          "pages/SyncPaymentsToLedger.tsx",
+          "components/finance/",
+          "hooks/finance/",
+          "hooks/useFinance.ts",
+          "hooks/useGeneralLedger.ts",
+          "hooks/useChartOfAccounts.ts",
+          "hooks/useEnhancedFinancialReports.ts",
+          "hooks/useFinancialAnalysis.ts",
+          "hooks/useFinancialOverview.ts",
+          "hooks/useFinancialAudit.ts",
+          "hooks/useTreasury.ts",
+          "hooks/useMonthlyObligations.ts",
+          "hooks/useMonthlyRentTracking.ts",
+          "hooks/useCostCenterReports.ts",
+          "hooks/useCostCenters.ts",
+          "hooks/useCustomerFinancialSummary.ts",
+          "hooks/useFleetFinancialAnalytics.ts",
+          "hooks/useAdvancedFinancialAnalytics.ts",
+          "hooks/useAdvancedFinancialRatios.ts",
+          "hooks/useFinancialReportsExport.ts",
+          "hooks/useFinancialSystemAnalysis.ts",
+          "hooks/useFinancialAIAnalysis.ts",
+          "hooks/useFinancialFixes.ts",
+          "hooks/usePayrollFinancialAnalysis.ts",
+          "hooks/usePendingJournalEntries.ts",
+          "hooks/useJournalEntryPermissions.ts",
+          "hooks/useInvoiceJournalLinking.ts",
+          "hooks/useInvoiceMatching.ts",
+          "hooks/useReportingAccounts.ts",
+          "hooks/useEntryAllowedAccounts.ts",
+          "hooks/useAccountMappings.ts",
+          "hooks/useEssentialAccountMappings.ts",
+          "hooks/useEnhancedAccountDeletion.ts",
+          "hooks/useEnhancedAccountSuggestions.ts",
+          "hooks/useEnhancedChartOfAccountsCSVUpload.ts",
+          "hooks/useCopySelectedAccounts.ts",
+          "hooks/useAccountingWizard.ts",
+          "hooks/useAccountConflictCheck.ts",
+          "hooks/useDeposits.ts",
+          "hooks/useDelinquencyStats.ts",
+          "hooks/useLateFines.ts",
+          "hooks/usePaymentSchedules.ts",
+          "hooks/useCustomerAccounts.ts",
+          "hooks/useCustomerAccountStatement.ts",
+          "hooks/useCustomerAccountTypes.ts",
+          "hooks/useEnhancedCustomerAccounts.ts",
+          "hooks/useEnhancedCustomerFinancials.ts",
+          "hooks/useVendorAccounts.ts",
+          "hooks/useCreateCustomerWithAccount.ts",
+          "hooks/useSimpleAccountDeletion.ts",
+          "hooks/useUnifiedAccountSelector.ts",
+          "services/AccountingService.ts",
+          "services/financialControls.ts",
+          "services/PaymentService.ts",
+          "services/PaymentLinkingService.ts",
+          "services/PaymentStateMachine.ts",
+          "services/InvoiceService.ts",
+          "services/UnifiedInvoiceService.ts",
+          "services/reportDataService.ts"
         ],
-        "success_criteria": "All required queries executed with pagination. Results include counts and examples of anomalies. No default limit of 1000 used.",
+        "success_criteria": "A structured findings document (JSON or markdown) is produced listing strengths, weaknesses, gaps, and recommendations for each file, with specific line numbers where issues are found.",
         "milestone": "milestone-1",
         "milestone_index": 0,
         "model_hint": "analytical",
         "max_iterations": 1
       },
       {
-        "goal": "Examine financial hooks (e.g., useFinancialOverview, usePayments, etc.) for N+1 queries, missing staleTime in useQuery, heavy components without React.memo or useMemo, and repeated/unoptimized queries. Report findings with file:line references.",
-        "agent": "devops-engineer",
-        "toolsets": [
-          "terminal",
-          "file"
-        ],
-        "dependencies": [],
-        "parallel_group": 0,
-        "id": "performance-audit",
-        "files": [
-          "src/hooks/",
-          "src/components/finance/"
-        ],
-        "success_criteria": "All financial hooks and components reviewed. Performance issues documented with file:line and suggested fixes.",
-        "milestone": "milestone-1",
-        "milestone_index": 0,
-        "model_hint": "speed",
-        "max_iterations": 1
-      },
-      {
-        "goal": "Examine migration files in src/migrations/ or supabase/migrations/ for RLS policies on tables: journal_entries, journal_entry_lines, chart_of_accounts, payments, invoices. Check if policies enforce company isolation. Report any missing or weak policies.",
+        "goal": "Read and analyze all SQL migration files in supabase/ and related directories (e.g., migrations/). Identify the database schema for financial tables (journal_entries, journal_entry_lines, chart_of_accounts, etc.), relationships, constraints, indexes, and any inconsistencies. Produce a structured list of findings about schema design, missing indexes, foreign key issues, and potential data integrity problems.",
         "agent": "backend-engineer",
         "toolsets": [
           "terminal",
@@ -96,286 +95,150 @@
         ],
         "dependencies": [],
         "parallel_group": 0,
-        "id": "rls-policies-audit",
+        "id": "review-database-schema",
         "files": [
-          "src/migrations/",
-          "supabase/migrations/"
+          "supabase/",
+          "migrations/"
         ],
-        "success_criteria": "All RLS policies for financial tables are listed with their SQL definitions. Missing or weak policies are identified with file:line references.",
+        "success_criteria": "A structured findings document (JSON or markdown) is produced listing schema strengths, weaknesses, gaps, and recommendations, with specific file paths and line numbers where issues are found.",
         "milestone": "milestone-1",
         "milestone_index": 0,
         "model_hint": "analytical",
         "max_iterations": 1
       },
       {
-        "goal": "Examine validateEnv.ts for fallback keys, .env and .env.example for leaked keys, src/components/finance/ProtectedFinanceRoute.tsx for protection adequacy, and search for hardcoded credentials or fallback keys across the codebase. Report all findings with file:line references.",
-        "agent": "devops-engineer",
-        "toolsets": [
-          "terminal",
-          "file"
-        ],
-        "dependencies": [],
-        "parallel_group": 1,
-        "id": "security-audit",
-        "files": [
-          "validateEnv.ts",
-          ".env",
-          ".env.example",
-          "src/components/finance/ProtectedFinanceRoute.tsx"
-        ],
-        "success_criteria": "All security checks completed. Any hardcoded credentials, fallback keys, or weak protections are documented with file:line references.",
-        "milestone": "milestone-1",
-        "milestone_index": 0,
-        "model_hint": "speed",
-        "max_iterations": 1
-      },
-      {
-        "goal": "Read docs/financial-system-integration-audit-report.md. For each finding (H1, H2, H3, M1, M2, M3, L1-L4), independently verify using file reads and searches. Check if AccountingService.ts:168 still has TODO, if official financial report pages exist, if deferred_revenue table exists, if AP Aging report exists, if PaymentService.ts checks approvals, if useFinancialOverview uses payments directly, and existence of L1-L4. Report any discrepancies.",
+        "goal": "Read and analyze all integration hooks and services that connect the financial system with other modules: Contracts (hooks/useContracts.ts, hooks/useContractsData.tsx, pages/contracts/), Rental Payments (hooks/useRentalPaymentJournalIntegration.ts, hooks/useRentalPayments.ts), Maintenance (hooks/useMaintenanceJournalIntegration.ts, hooks/useMaintenanceDetails.ts), Payroll (hooks/usePayrollJournalIntegration.ts, hooks/usePayroll.ts), Traffic Violations (hooks/useTrafficViolationJournalIntegration.ts, hooks/useTrafficViolationPayments.ts), Vehicle Installments (hooks/useVehicleInstallmentJournalIntegration.ts, hooks/useVehicleInstallments.ts), Invoices (hooks/useInvoiceJournalLinking.ts, hooks/useInvoiceMatching.ts, services/InvoiceService.ts), Payments (hooks/usePayments.unified.ts, services/PaymentService.ts, services/PaymentLinkingService.ts), Collections (hooks/useMonthlyCollections.ts), Customers (hooks/useCustomerAccounts.ts, hooks/useEnhancedCustomerFinancials.ts), Inventory (hooks/useInventoryReports.ts), HR (hooks/useHRReports.ts), Reports (hooks/useUnifiedReports.ts, hooks/useModuleReportData.ts), Team (hooks/useEmployeeDetailedReport.tsx), Financial Analysis (hooks/useFinancialAnalysis.ts, hooks/useAdvancedFinancialAnalytics.ts), Audit (hooks/useFinancialAudit.ts, hooks/useAuditLog.ts, hooks/useAuditTrail.ts), Approvals (hooks/useApprovalWorkflows.ts), Legal (hooks/useLegalCollectionReport.ts, hooks/usePaymentLegalIntegration.ts), Vendors (hooks/useVendorAccounts.ts). Produce a structured list of findings about integration quality, data consistency, and potential gaps.",
         "agent": "code-reviewer",
         "toolsets": [
           "terminal",
           "file"
         ],
         "dependencies": [],
-        "parallel_group": 0,
-        "id": "verify-previous-findings",
+        "parallel_group": 1,
+        "id": "review-integration-points",
         "files": [
-          "docs/financial-system-integration-audit-report.md",
-          "src/services/AccountingService.ts",
-          "src/services/PaymentService.ts",
-          "src/hooks/useFinancialOverview.ts"
+          "hooks/useContracts.ts",
+          "hooks/useContractsData.tsx",
+          "pages/contracts/",
+          "hooks/useRentalPaymentJournalIntegration.ts",
+          "hooks/useRentalPayments.ts",
+          "hooks/useMaintenanceJournalIntegration.ts",
+          "hooks/useMaintenanceDetails.ts",
+          "hooks/usePayrollJournalIntegration.ts",
+          "hooks/usePayroll.ts",
+          "hooks/useTrafficViolationJournalIntegration.ts",
+          "hooks/useTrafficViolationPayments.ts",
+          "hooks/useVehicleInstallmentJournalIntegration.ts",
+          "hooks/useVehicleInstallments.ts",
+          "hooks/useInvoiceJournalLinking.ts",
+          "hooks/useInvoiceMatching.ts",
+          "services/InvoiceService.ts",
+          "hooks/usePayments.unified.ts",
+          "services/PaymentService.ts",
+          "services/PaymentLinkingService.ts",
+          "hooks/useMonthlyCollections.ts",
+          "hooks/useCustomerAccounts.ts",
+          "hooks/useEnhancedCustomerFinancials.ts",
+          "hooks/useInventoryReports.ts",
+          "hooks/useHRReports.ts",
+          "hooks/useUnifiedReports.ts",
+          "hooks/useModuleReportData.ts",
+          "hooks/useEmployeeDetailedReport.tsx",
+          "hooks/useFinancialAnalysis.ts",
+          "hooks/useAdvancedFinancialAnalytics.ts",
+          "hooks/useFinancialAudit.ts",
+          "hooks/useAuditLog.ts",
+          "hooks/useAuditTrail.ts",
+          "hooks/useApprovalWorkflows.ts",
+          "hooks/useLegalCollectionReport.ts",
+          "hooks/usePaymentLegalIntegration.ts",
+          "hooks/useVendorAccounts.ts"
         ],
-        "success_criteria": "Each previous finding is independently verified. Discrepancies or confirmations documented with current file:line references.",
+        "success_criteria": "A structured findings document (JSON or markdown) is produced listing integration strengths, weaknesses, gaps, and recommendations for each integration point, with specific line numbers where issues are found.",
         "milestone": "milestone-1",
         "milestone_index": 0,
         "model_hint": "analytical",
         "max_iterations": 1
       },
       {
-        "goal": "Collect all findings from the 7 prior subtasks and produce the final comprehensive audit report in docs/financial-system-integration-audit-report-comprehensive.md. The report must include all sections in the specified order, with file:line references, and note any conflicts with the previous report.",
+        "goal": "Read and analyze the routing configuration for financial pages. Look for files like App.tsx, routes/ or similar that define how financial pages are accessed. Identify any missing routes, incorrect paths, or security issues in route definitions. Produce a structured list of findings.",
+        "agent": "devops-engineer",
+        "toolsets": [
+          "terminal",
+          "file"
+        ],
+        "dependencies": [],
+        "parallel_group": 0,
+        "id": "review-routing",
+        "files": [
+          "App.tsx",
+          "routes/",
+          "src/App.tsx",
+          "src/routes/"
+        ],
+        "success_criteria": "A structured findings document (JSON or markdown) is produced listing routing strengths, weaknesses, gaps, and recommendations, with specific file paths and line numbers where issues are found.",
+        "milestone": "milestone-1",
+        "milestone_index": 0,
+        "model_hint": "speed",
+        "max_iterations": 1
+      },
+      {
+        "goal": "Read and analyze all security and permission hooks: hooks/useJournalEntryPermissions.ts, hooks/usePermissionCheck.ts, hooks/usePermissions.ts, hooks/useRolePermissions.ts, hooks/useUserPermissions.ts, hooks/useFeatureAccess.ts. Also check any Row Level Security (RLS) policies in the database schema. Identify gaps in access control, missing permission checks, and potential security vulnerabilities. Produce a structured list of findings.",
+        "agent": "code-reviewer",
+        "toolsets": [
+          "terminal",
+          "file"
+        ],
+        "dependencies": [],
+        "parallel_group": 1,
+        "id": "review-security-permissions",
+        "files": [
+          "hooks/useJournalEntryPermissions.ts",
+          "hooks/usePermissionCheck.ts",
+          "hooks/usePermissions.ts",
+          "hooks/useRolePermissions.ts",
+          "hooks/useUserPermissions.ts",
+          "hooks/useFeatureAccess.ts",
+          "supabase/migrations/",
+          "supabase/seed.sql"
+        ],
+        "success_criteria": "A structured findings document (JSON or markdown) is produced listing security strengths, weaknesses, gaps, and recommendations, with specific file paths and line numbers where issues are found.",
+        "milestone": "milestone-1",
+        "milestone_index": 0,
+        "model_hint": "analytical",
+        "max_iterations": 1
+      },
+      {
+        "goal": "Collect all findings from the five prior subtasks (review-core-financial-files, review-integration-points, review-database-schema, review-routing, review-security-permissions). Combine them into a single comprehensive report in Arabic. The report should include: an executive summary, detailed findings per area (with file paths and line numbers), strengths, weaknesses, integration gaps, and recommendations. Write the final report to a file named 'financial-system-audit-report.md' in the project root.",
         "agent": "code-reviewer",
         "toolsets": [
           "terminal",
           "file"
         ],
         "dependencies": [
-          "edge-functions-audit",
-          "rls-policies-audit",
-          "live-database-audit",
-          "security-audit",
-          "i18n-audit",
-          "performance-audit",
-          "verify-previous-findings"
+          "review-core-financial-files",
+          "review-integration-points",
+          "review-database-schema",
+          "review-routing",
+          "review-security-permissions"
         ],
         "parallel_group": 1,
         "id": "assembly",
         "files": [
-          "docs/financial-system-integration-audit-report-comprehensive.md"
+          "financial-system-audit-report.md"
         ],
-        "success_criteria": "Final deliverable file is written and contains all findings from prior subtasks, structured as required.",
+        "success_criteria": "Final deliverable file 'financial-system-audit-report.md' is written and contains all findings from prior subtasks in Arabic, with clear structure and actionable recommendations.",
         "milestone": "milestone-2",
         "milestone_index": 1,
         "model_hint": "analytical",
         "max_iterations": 1
       }
     ],
-    "risk_level": "medium",
+    "risk_level": "low",
     "parallel_group_count": 2,
     "routing_decisions": [
       {
-        "subtask_id": "edge-functions-audit",
-        "task_type": "security",
-        "agent": "security-auditor",
-        "model_hint": "analytical",
-        "complexity": "medium",
-        "is_risky": false,
-        "confidence": 0.57,
-        "profile": {
-          "name": "security-auditor",
-          "task_type": "security",
-          "model_tier": "balanced",
-          "timeout": 120.0,
-          "max_retries": 1,
-          "priority": "P1",
-          "requires_review": false,
-          "estimated_tokens": 4000,
-          "parallel_safe": true,
-          "toolsets": [
-            "terminal",
-            "file"
-          ],
-          "model": "glm-5.2:cloud",
-          "provider": "custom:ollama",
-          "base_url": "https://ollama.com/v1"
-        },
-        "parallel_safe": true,
-        "toolsets": [
-          "terminal",
-          "file"
-        ]
-      },
-      {
-        "subtask_id": "i18n-audit",
-        "task_type": "frontend",
-        "agent": "frontend-engineer",
-        "model_hint": "balanced",
-        "complexity": "medium",
-        "is_risky": false,
-        "confidence": 0.64,
-        "profile": {
-          "name": "frontend-engineer",
-          "task_type": "frontend",
-          "model_tier": "balanced",
-          "timeout": 120.0,
-          "max_retries": 1,
-          "priority": "P1",
-          "requires_review": false,
-          "estimated_tokens": 4000,
-          "parallel_safe": true,
-          "toolsets": [
-            "terminal",
-            "file"
-          ],
-          "model": "glm-5.2:cloud",
-          "provider": "custom:ollama",
-          "base_url": "https://ollama.com/v1"
-        },
-        "parallel_safe": true,
-        "toolsets": [
-          "terminal",
-          "file"
-        ]
-      },
-      {
-        "subtask_id": "live-database-audit",
-        "task_type": "review",
-        "agent": "code-reviewer",
-        "model_hint": "analytical",
-        "complexity": "medium",
-        "is_risky": false,
-        "confidence": 0.58,
-        "profile": {
-          "name": "code-reviewer",
-          "task_type": "review",
-          "model_tier": "balanced",
-          "timeout": 120.0,
-          "max_retries": 1,
-          "priority": "P1",
-          "requires_review": false,
-          "estimated_tokens": 4000,
-          "parallel_safe": true,
-          "toolsets": [
-            "terminal",
-            "file"
-          ],
-          "model": "glm-5.2:cloud",
-          "provider": "custom:ollama",
-          "base_url": "https://ollama.com/v1"
-        },
-        "parallel_safe": true,
-        "toolsets": [
-          "terminal",
-          "file"
-        ]
-      },
-      {
-        "subtask_id": "performance-audit",
-        "task_type": "config",
-        "agent": "devops-engineer",
-        "model_hint": "speed",
-        "complexity": "medium",
-        "is_risky": false,
-        "confidence": 0.58,
-        "profile": {
-          "name": "devops-engineer",
-          "task_type": "devops",
-          "model_tier": "balanced",
-          "timeout": 120.0,
-          "max_retries": 1,
-          "priority": "P1",
-          "requires_review": false,
-          "estimated_tokens": 4000,
-          "parallel_safe": true,
-          "toolsets": [
-            "terminal",
-            "file"
-          ],
-          "model": "glm-5.2:cloud",
-          "provider": "custom:ollama",
-          "base_url": "https://ollama.com/v1"
-        },
-        "parallel_safe": true,
-        "toolsets": [
-          "terminal",
-          "file"
-        ]
-      },
-      {
-        "subtask_id": "rls-policies-audit",
-        "task_type": "database",
-        "agent": "backend-engineer",
-        "model_hint": "analytical",
-        "complexity": "high",
-        "is_risky": true,
-        "confidence": 0.64,
-        "profile": {
-          "name": "backend-engineer",
-          "task_type": "database",
-          "model_tier": "balanced",
-          "timeout": 120.0,
-          "max_retries": 1,
-          "priority": "P1",
-          "requires_review": false,
-          "estimated_tokens": 4000,
-          "parallel_safe": true,
-          "toolsets": [
-            "terminal",
-            "file"
-          ],
-          "model": "glm-5.2:cloud",
-          "provider": "custom:ollama",
-          "base_url": "https://ollama.com/v1"
-        },
-        "parallel_safe": true,
-        "toolsets": [
-          "terminal",
-          "file"
-        ]
-      },
-      {
-        "subtask_id": "security-audit",
-        "task_type": "config",
-        "agent": "devops-engineer",
-        "model_hint": "speed",
-        "complexity": "medium",
-        "is_risky": false,
-        "confidence": 0.58,
-        "profile": {
-          "name": "devops-engineer",
-          "task_type": "devops",
-          "model_tier": "balanced",
-          "timeout": 120.0,
-          "max_retries": 1,
-          "priority": "P1",
-          "requires_review": false,
-          "estimated_tokens": 4000,
-          "parallel_safe": true,
-          "toolsets": [
-            "terminal",
-            "file"
-          ],
-          "model": "glm-5.2:cloud",
-          "provider": "custom:ollama",
-          "base_url": "https://ollama.com/v1"
-        },
-        "parallel_safe": true,
-        "toolsets": [
-          "terminal",
-          "file"
-        ]
-      },
-      {
-        "subtask_id": "verify-previous-findings",
+        "subtask_id": "review-core-financial-files",
         "task_type": "review",
         "agent": "code-reviewer",
         "model_hint": "analytical",
@@ -407,13 +270,141 @@
         ]
       },
       {
+        "subtask_id": "review-database-schema",
+        "task_type": "database",
+        "agent": "backend-engineer",
+        "model_hint": "analytical",
+        "complexity": "high",
+        "is_risky": true,
+        "confidence": 0.86,
+        "profile": {
+          "name": "backend-engineer",
+          "task_type": "database",
+          "model_tier": "balanced",
+          "timeout": 120.0,
+          "max_retries": 1,
+          "priority": "P1",
+          "requires_review": false,
+          "estimated_tokens": 4000,
+          "parallel_safe": true,
+          "toolsets": [
+            "terminal",
+            "file"
+          ],
+          "model": "glm-5.2:cloud",
+          "provider": "custom:ollama",
+          "base_url": "https://ollama.com/v1"
+        },
+        "parallel_safe": true,
+        "toolsets": [
+          "terminal",
+          "file"
+        ]
+      },
+      {
+        "subtask_id": "review-integration-points",
+        "task_type": "review",
+        "agent": "code-reviewer",
+        "model_hint": "analytical",
+        "complexity": "medium",
+        "is_risky": false,
+        "confidence": 0.67,
+        "profile": {
+          "name": "code-reviewer",
+          "task_type": "review",
+          "model_tier": "balanced",
+          "timeout": 120.0,
+          "max_retries": 1,
+          "priority": "P1",
+          "requires_review": false,
+          "estimated_tokens": 4000,
+          "parallel_safe": true,
+          "toolsets": [
+            "terminal",
+            "file"
+          ],
+          "model": "glm-5.2:cloud",
+          "provider": "custom:ollama",
+          "base_url": "https://ollama.com/v1"
+        },
+        "parallel_safe": true,
+        "toolsets": [
+          "terminal",
+          "file"
+        ]
+      },
+      {
+        "subtask_id": "review-routing",
+        "task_type": "config",
+        "agent": "devops-engineer",
+        "model_hint": "speed",
+        "complexity": "medium",
+        "is_risky": false,
+        "confidence": 0.67,
+        "profile": {
+          "name": "devops-engineer",
+          "task_type": "devops",
+          "model_tier": "balanced",
+          "timeout": 120.0,
+          "max_retries": 1,
+          "priority": "P1",
+          "requires_review": false,
+          "estimated_tokens": 4000,
+          "parallel_safe": true,
+          "toolsets": [
+            "terminal",
+            "file"
+          ],
+          "model": "glm-5.2:cloud",
+          "provider": "custom:ollama",
+          "base_url": "https://ollama.com/v1"
+        },
+        "parallel_safe": true,
+        "toolsets": [
+          "terminal",
+          "file"
+        ]
+      },
+      {
+        "subtask_id": "review-security-permissions",
+        "task_type": "review",
+        "agent": "code-reviewer",
+        "model_hint": "analytical",
+        "complexity": "medium",
+        "is_risky": false,
+        "confidence": 0.67,
+        "profile": {
+          "name": "code-reviewer",
+          "task_type": "review",
+          "model_tier": "balanced",
+          "timeout": 120.0,
+          "max_retries": 1,
+          "priority": "P1",
+          "requires_review": false,
+          "estimated_tokens": 4000,
+          "parallel_safe": true,
+          "toolsets": [
+            "terminal",
+            "file"
+          ],
+          "model": "glm-5.2:cloud",
+          "provider": "custom:ollama",
+          "base_url": "https://ollama.com/v1"
+        },
+        "parallel_safe": true,
+        "toolsets": [
+          "terminal",
+          "file"
+        ]
+      },
+      {
         "subtask_id": "assembly",
         "task_type": "review",
         "agent": "code-reviewer",
         "model_hint": "analytical",
         "complexity": "medium",
         "is_risky": false,
-        "confidence": 0.58,
+        "confidence": 0.67,
         "profile": {
           "name": "code-reviewer",
           "task_type": "review",
@@ -444,22 +435,18 @@
         "id": "milestone-1",
         "name": "Parallel group 1",
         "subtask_ids": [
-          "edge-functions-audit",
-          "i18n-audit",
-          "live-database-audit",
-          "performance-audit",
-          "rls-policies-audit",
-          "security-audit",
-          "verify-previous-findings"
+          "review-core-financial-files",
+          "review-database-schema",
+          "review-integration-points",
+          "review-routing",
+          "review-security-permissions"
         ],
         "acceptance_criteria": [
-          "All Edge Functions are listed with their auth/company validation status. Missing or weak validations are documented with file:line references.",
-          "All finance pages checked for i18n usage. Hardcoded strings listed with file:line. Language coverage percentage calculated.",
-          "All required queries executed with pagination. Results include counts and examples of anomalies. No default limit of 1000 used.",
-          "All financial hooks and components reviewed. Performance issues documented with file:line and suggested fixes.",
-          "All RLS policies for financial tables are listed with their SQL definitions. Missing or weak policies are identified with file:line references.",
-          "All security checks completed. Any hardcoded credentials, fallback keys, or weak protections are documented with file:line references.",
-          "Each previous finding is independently verified. Discrepancies or confirmations documented with current file:line references."
+          "A structured findings document (JSON or markdown) is produced listing strengths, weaknesses, gaps, and recommendations for each file, with specific line numbers where issues are found.",
+          "A structured findings document (JSON or markdown) is produced listing schema strengths, weaknesses, gaps, and recommendations, with specific file paths and line numbers where issues are found.",
+          "A structured findings document (JSON or markdown) is produced listing integration strengths, weaknesses, gaps, and recommendations for each integration point, with specific line numbers where issues are found.",
+          "A structured findings document (JSON or markdown) is produced listing routing strengths, weaknesses, gaps, and recommendations, with specific file paths and line numbers where issues are found.",
+          "A structured findings document (JSON or markdown) is produced listing security strengths, weaknesses, gaps, and recommendations, with specific file paths and line numbers where issues are found."
         ],
         "assumptions": [
           "Dependencies from earlier milestones remain stable."
@@ -472,7 +459,7 @@
           "assembly"
         ],
         "acceptance_criteria": [
-          "Final deliverable file is written and contains all findings from prior subtasks, structured as required."
+          "Final deliverable file 'financial-system-audit-report.md' is written and contains all findings from prior subtasks in Arabic, with clear structure and actionable recommendations."
         ],
         "assumptions": [
           "Dependencies from earlier milestones remain stable."
@@ -482,19 +469,17 @@
     "clarifying_questions": [
       "What authentication method should be used (JWT, OAuth, session-based)?",
       "What user roles or permission levels are needed?",
-      "What API style (REST, GraphQL, gRPC) and versioning strategy?",
-      "What error response format and status code conventions?",
-      "What database and ORM are in use? Any existing migration strategy?"
+      "What is the deployment pipeline (staging, canary, production)?",
+      "Are there any approval gates or change management processes?",
+      "Is there an existing design system or component library to follow?"
     ],
     "completion_criteria": [
-      "Subtask complete: Scan all Edge Functions in src/functions/ or supabase/functions/ and src/server/ for JWT auth verifi",
-      "Subtask complete: Examine translation files in src/translations/ or src/locales/ and all finance pages in src/pages/fi",
-      "Subtask complete: Read .env to get Supabase URL and service role key. Use curl with HTTP Range headers (pagination) to",
-      "Subtask complete: Examine financial hooks (e.g., useFinancialOverview, usePayments, etc.) for N+1 queries, missing sta",
-      "Subtask complete: Examine migration files in src/migrations/ or supabase/migrations/ for RLS policies on tables: journ",
-      "Subtask complete: Examine validateEnv.ts for fallback keys, .env and .env.example for leaked keys, src/components/fina",
-      "Subtask complete: Read docs/financial-system-integration-audit-report.md. For each finding (H1, H2, H3, M1, M2, M3, L1",
-      "Subtask complete: Collect all findings from the 7 prior subtasks and produce the final comprehensive audit report in d",
+      "Subtask complete: Read and analyze all core financial system files: pages (pages/finance/, pages/Finance.tsx, pages/Fi",
+      "Subtask complete: Read and analyze all SQL migration files in supabase/ and related directories (e.g., migrations/). I",
+      "Subtask complete: Read and analyze all integration hooks and services that connect the financial system with other mod",
+      "Subtask complete: Read and analyze the routing configuration for financial pages. Look for files like App.tsx, routes/",
+      "Subtask complete: Read and analyze all security and permission hooks: hooks/useJournalEntryPermissions.ts, hooks/usePe",
+      "Subtask complete: Collect all findings from the five prior subtasks (review-core-financial-files, review-integration-p",
       "All quality gates pass (syntax, lint, type, test)",
       "No regressions in existing test suite"
     ],

@@ -144,7 +144,9 @@ export const MobileEmployeeLayout: React.FC<MobileEmployeeLayoutProps> = ({ chil
       className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-teal-50/30"
       style={{
         paddingTop: 'env(safe-area-inset-top)',
-        paddingBottom: showBottomNav ? 'calc(70px + env(safe-area-inset-bottom))' : 'env(safe-area-inset-bottom)',
+        paddingBottom: showBottomNav
+          ? 'calc(70px + var(--safe-area-bottom, env(safe-area-inset-bottom)))'
+          : 'var(--safe-area-bottom, env(safe-area-inset-bottom))',
         paddingLeft: 'env(safe-area-inset-left)',
         paddingRight: 'env(safe-area-inset-right)',
       }}
@@ -160,7 +162,7 @@ export const MobileEmployeeLayout: React.FC<MobileEmployeeLayoutProps> = ({ chil
         <nav
           className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-xl border-t border-slate-200/50 shadow-lg z-40"
           style={{
-            paddingBottom: 'env(safe-area-inset-bottom)',
+            paddingBottom: 'var(--safe-area-bottom, env(safe-area-inset-bottom))',
           }}
         >
           <div className="flex items-center justify-around h-[70px] px-2">
@@ -244,7 +246,7 @@ export const MobileEmployeeLayout: React.FC<MobileEmployeeLayoutProps> = ({ chil
               'transition-all duration-300'
             )}
             style={{
-              bottom: 'calc(90px + env(safe-area-inset-bottom))',
+              bottom: 'calc(90px + var(--safe-area-bottom, env(safe-area-inset-bottom)))',
             }}
             whileTap={{ scale: 0.9 }}
             animate={showFABMenu ? { rotate: 45 } : { rotate: 0 }}
@@ -268,7 +270,7 @@ export const MobileEmployeeLayout: React.FC<MobileEmployeeLayoutProps> = ({ chil
                 {/* Menu Items */}
                 <div className="fixed bottom-[160px] left-6 z-50 space-y-3"
                   style={{
-                    bottom: 'calc(160px + env(safe-area-inset-bottom))',
+                    bottom: 'calc(160px + var(--safe-area-bottom, env(safe-area-inset-bottom)))',
                   }}
                 >
                   {fabActions.map((action, index) => {

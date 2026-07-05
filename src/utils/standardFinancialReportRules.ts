@@ -24,7 +24,12 @@ export type FinancialReportApprovalInput = {
 const toMoney = (value: number) => Number(Number(value || 0).toFixed(2));
 
 function normalizeAccountType(value: string) {
-  return String(value || "").trim().toLowerCase();
+  const normalized = String(value || "").trim().toLowerCase();
+  if (normalized === "assets") return "asset";
+  if (normalized === "liabilities") return "liability";
+  if (normalized === "expenses") return "expense";
+  if (normalized === "income") return "revenue";
+  return normalized;
 }
 
 function lineBalance(line: StandardLedgerLine) {

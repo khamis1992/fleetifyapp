@@ -31,7 +31,13 @@ function createReportFingerprint(payload: unknown) {
 function inferCashFlowCategory(line: CashFlowMovementLine): "operating" | "investing" | "financing" {
   if (line.cashFlowCategory) return line.cashFlowCategory;
 
-  const accountType = String(line.accountType || "").toLowerCase();
+  const rawAccountType = String(line.accountType || "").trim().toLowerCase();
+  const accountType =
+    rawAccountType === "assets" ? "asset"
+    : rawAccountType === "liabilities" ? "liability"
+    : rawAccountType === "expenses" ? "expense"
+    : rawAccountType;
+
   if (accountType === "asset" && /^(15|16|17|18)/.test(line.accountCode)) return "investing";
   if (accountType === "liability" || accountType === "equity") return "financing";
   return "operating";

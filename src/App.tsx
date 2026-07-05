@@ -198,6 +198,20 @@ const App: React.FC = () => {
     });
   }, [queryClient]);
 
+  React.useEffect(() => {
+    const platform = Capacitor.getPlatform();
+    const isNative = Capacitor.isNativePlatform() || platform !== 'web';
+    const root = document.documentElement;
+
+    root.classList.toggle('capacitor-native', isNative);
+    root.classList.toggle('capacitor-android', platform === 'android');
+    root.classList.toggle('capacitor-ios', platform === 'ios');
+
+    return () => {
+      root.classList.remove('capacitor-native', 'capacitor-android', 'capacitor-ios');
+    };
+  }, []);
+
   // DISABLED: Advanced tab sync causes performance issues and tab freezing
   // Each tab will work independently with its own cache
   // React.useEffect(() => {
