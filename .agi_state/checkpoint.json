@@ -1,13 +1,13 @@
 {
   "stage": "plan_approved",
-  "task": "Review the Fleetify financial system and its integration with other modules, then provide a comprehensive report without modifying any code. Focus on system integration, data flow, and overall architecture.",
+  "task": "Produce a COMPREHENSIVE INTEGRATION REPORT (Arabic language, NO code changes) about the Fleetify financial system and how it integrates with all other system modules. This is a READ-ONLY audit \u2014 do NOT modify any source files.\n\nProject path: C:\\Users\\khamis\\Documents\\fleetifyapp\n\n## What to analyze\n\nThe financial system consists of:\n- 19+ database tables (chart_of_accounts, journal_entries, journal_entry_lines, invoices, payments, vendors, purchase_orders, banks, bank_transactions, bank_reconcil",
   "status": "running",
-  "timestamp": "2026-07-05T18:50:00.265429",
+  "timestamp": "2026-07-05T19:02:45.122360",
   "plan": {
-    "task": "Review the Fleetify financial system and its integration with other modules, then provide a comprehensive report without modifying any code. Focus on system integration, data flow, and overall architecture.",
+    "task": "Produce a COMPREHENSIVE INTEGRATION REPORT (Arabic language, NO code changes) about the Fleetify financial system and how it integrates with all other system modules. This is a READ-ONLY audit \u2014 do NOT modify any source files.\n\nProject path: C:\\Users\\khamis\\Documents\\fleetifyapp\n\n## What to analyze\n\nThe financial system consists of:\n- 19+ database tables (chart_of_accounts, journal_entries, journal_entry_lines, invoices, payments, vendors, purchase_orders, banks, bank_transactions, bank_reconciliation, cost_centers, fixed_assets, budgets, accounting_periods, customer_deposits, annual_financial_close, etc.)\n- 44 page routes under /finance/*\n- 96 financial components\n- 6 integration hooks connecting other modules to accounting\n- 20+ financial control migrations with DB triggers\n\n## Report must cover (every claim with file:line reference)\n\n1. **Executive Summary** \u2014 overall integration health, critical findings first\n2. **Integration Map** \u2014 which modules connect to the financial system and HOW:\n   - Contracts/Rentals \u2192 journal entries (useRentalPaymentJournalIntegration)\n   - Vehicle Assets \u2192 journal entries (useVehicleInstallmentJournalIntegration)\n   - Payroll/HR \u2192 journal entries (usePayrollJournalIntegration)\n   - Fleet Maintenance \u2192 journal entries (useMaintenanceJournalIntegration)\n   - Fleet Violations \u2192 journal entries (useTrafficViolationJournalIntegration)\n   - Legal Cases \u2192 journal entries (useConvertToLegalCase)\n   - Payments \u2192 journal entries (usePaymentOperations \u2014 the CORRECT pattern)\n   - Invoices \u2192 journal entries\n   - Bank reconciliation \u2192 journal entries\n   - Customer deposits \u2192 journal entries\n   - Budgets \u2192 chart of accounts\n   - Fixed assets \u2192 depreciation entries\n   - Purchase orders \u2192 vendor payments\n3. **Integration Hook Analysis** \u2014 for EACH of the 6 hooks:\n   - Exact operation sequence (which table, what status, what order)\n   - Does it pass total_debit/total_credit?\n   - Balance check present?\n   - Accounting logic correctness (debit/credit account selection)\n   - Reversal pattern (delete vs reversal entry)\n   - Cross-reference against the 7 DB triggers (T1\u2013T7)\n4. **DB Trigger Impact on Integration** \u2014 the critical posted-line mutation problem:\n   - All 6 hooks create JE header as 'posted' FIRST, then insert lines SECOND\n   - T6 trigger (prevent_posted_journal_line_mutation) blocks line INSERT\n   - T3 trigger blocks rollback DELETE\n   - Result: orphaned posted headers with no lines\n   - Only usePaymentOperations uses correct pattern (draft\u2192lines\u2192post)\n5. **Data Flow Between Modules** \u2014 trace how data moves:\n   - Contract payment \u2192 invoice \u2192 journal entry \u2192 GL\n   - Payroll run \u2192 journal entry \u2192 GL\n   - Maintenance work order \u2192 journal entry \u2192 GL\n   - Vehicle installment \u2192 journal entry \u2192 GL\n   - Legal case conversion \u2192 AR journal entry \u2192 GL\n   - Bank transaction \u2192 reconciliation \u2192 journal entry\n6. **Currency Integration** \u2014 does the financial system handle multi-currency correctly across modules?\n7. **Approval Workflow Integration** \u2014 is the multi-stage approval wired into the financial flow?\n8. **Period Close Integration** \u2014 do all modules respect accounting period locks?\n9. **Audit Trail Integration** \u2014 is every financial transaction tracked across modules?\n10. **Report Export Integration** \u2014 can financial data be exported for external systems?\n11. **Risk Assessment** \u2014 Critical/High/Medium per integration point\n12. **Recommendations** (no code changes \u2014 just recommendations)\n\n## CRITICAL METHODOLOGY RULES\n- READ every source file yourself \u2014 do NOT trust subagent summaries\n- Every finding MUST have file:line reference\n- Read ALL migration files in supabase/migrations/ that are financial-related\n- Build the trigger matrix (T1\u2013T7) from migration files\n- Read each integration hook and trace its exact operation sequence\n- Cross-reference each hook operation against each trigger\n- Verify bypass mechanism (financial_controls_bypass_enabled)\n- Check types.ts for actual column presence\n- Distinguish \"code infrastructure exists\" from \"runtime state verified\"\n- The report should be in ARABIC (the user reads Arabic)\n- Save the final report to: C:\\Users\\khamis\\Documents\\fleetifyapp\\docs\\financial-integration-report.md\n\n## Previous audit context (v4 findings \u2014 verify these still hold)\nPrevious audits found these critical issues:\n- All 6 hooks broken at runtime (posted-first pattern vs T6 trigger)\n- Vehicle installment debits revenue instead of payable\n- Payroll entries unbalanced when deductions > 0\n- useReverseJournalEntry only updates status (no reversal entry)\n- Hardcoded account IDs in useConvertToLegalCase\n- Export function is a fake stub\n- approved_by/approved_at columns written but don't exist in types.ts\n- Math.abs() in 27 places hiding accounting signs\n- Approval verification logic exists but is NOT wired in\n- Two separate audit tables (audit_logs vs audit_trail)\n- 25 finance components hardcode KWD instead of using useCompanyCurrency()\n\nVERIFY each of these findings against the current codebase \u2014 they may have been fixed since the last audit. Report the current state accurately.",
     "subtasks": [
       {
-        "goal": "Review core financial system files to understand the architecture and key components.",
+        "goal": "Analyze cross-cutting integration concerns: (1) Currency integration \u2014 does the financial system handle multi-currency correctly across modules? Check useCompanyCurrency usage, hardcoded currency codes. (2) Approval workflow \u2014 is multi-stage approval wired into financial flow? Check approval verification logic. (3) Period close \u2014 do all modules respect accounting period locks? Check accounting_periods usage. (4) Audit trail \u2014 is every financial transaction tracked? Check audit_logs vs audit_trail tables. (5) Report export \u2014 can financial data be exported? Check export functions for stubs. Record file:line references for all findings.",
         "agent": "code-reviewer",
         "toolsets": [
           "terminal",
@@ -15,21 +15,44 @@
         ],
         "dependencies": [],
         "parallel_group": 0,
-        "id": "analyze-core-files",
+        "id": "cross-cutting-concerns",
         "files": [
-          "config.py",
-          "task_delegation.py",
-          "analyze_company_jes.py",
-          "analyze_je_structure.py"
+          "src/hooks/useCompanyCurrency.ts",
+          "src/components/finance/",
+          "src/pages/finance/",
+          "src/lib/",
+          "supabase/migrations/"
         ],
-        "success_criteria": "Documented summary of core components, their roles, and interactions.",
+        "success_criteria": "All 5 cross-cutting concerns are analyzed with file:line references. Output written to a temp findings file.",
         "milestone": "milestone-1",
         "milestone_index": 0,
         "model_hint": "analytical",
         "max_iterations": 1
       },
       {
-        "goal": "Review audit and analysis scripts to understand financial validation and reporting logic.",
+        "goal": "Trace data flows between modules and the financial system. For each path: (1) Contract payment \u2192 invoice \u2192 journal entry \u2192 GL, (2) Payroll run \u2192 journal entry \u2192 GL, (3) Maintenance work order \u2192 journal entry \u2192 GL, (4) Vehicle installment \u2192 journal entry \u2192 GL, (5) Legal case conversion \u2192 AR journal entry \u2192 GL, (6) Bank transaction \u2192 reconciliation \u2192 journal entry. Read the relevant page routes under /finance/*, components, and API/service files. Document how data moves with file:line references.",
+        "agent": "frontend-engineer",
+        "toolsets": [
+          "terminal",
+          "file"
+        ],
+        "dependencies": [],
+        "parallel_group": 1,
+        "id": "data-flow-tracing",
+        "files": [
+          "src/pages/finance/",
+          "src/components/finance/",
+          "src/services/",
+          "src/api/"
+        ],
+        "success_criteria": "All 6 data flow paths are traced with intermediate steps, tables touched, and file:line references. Output written to a temp findings file.",
+        "milestone": "milestone-1",
+        "milestone_index": 0,
+        "model_hint": "balanced",
+        "max_iterations": 1
+      },
+      {
+        "goal": "Read ALL 6 financial integration hooks in the codebase. For each hook (useRentalPaymentJournalIntegration, useVehicleInstallmentJournalIntegration, usePayrollJournalIntegration, useMaintenanceJournalIntegration, useTrafficViolationJournalIntegration, useConvertToLegalCase), trace the exact operation sequence: which table is written first, what status is set, whether total_debit/total_credit are passed, whether a balance check exists, debit/credit account selection logic, and reversal pattern (delete vs reversal entry). Also read usePaymentOperations as the 'correct pattern' reference. Record exact file:line references for every claim.",
         "agent": "code-reviewer",
         "toolsets": [
           "terminal",
@@ -37,164 +60,165 @@
         ],
         "dependencies": [],
         "parallel_group": 0,
-        "id": "audit-analysis-scripts",
+        "id": "hooks-analysis",
         "files": [
-          "audit_analysis.py",
-          "audit_analysis2.py",
-          "audit_detail.py",
-          "audit_detail2.py",
-          "audit_detail3.py",
-          "audit_full.py"
+          "src/hooks/useRentalPaymentJournalIntegration.ts",
+          "src/hooks/useVehicleInstallmentJournalIntegration.ts",
+          "src/hooks/usePayrollJournalIntegration.ts",
+          "src/hooks/useMaintenanceJournalIntegration.ts",
+          "src/hooks/useTrafficViolationJournalIntegration.ts",
+          "src/hooks/useConvertToLegalCase.ts",
+          "src/hooks/usePaymentOperations.ts",
+          "src/hooks/useReverseJournalEntry.ts"
         ],
-        "success_criteria": "Documented audit logic, validation rules, and reporting mechanisms.",
+        "success_criteria": "A structured analysis of all 6 hooks plus usePaymentOperations is produced with: operation sequence, posted-first vs draft-first pattern, balance check presence, debit/credit logic, reversal pattern, and file:line references for every claim. Output is written to a temp findings file.",
         "milestone": "milestone-1",
         "milestone_index": 0,
         "model_hint": "analytical",
         "max_iterations": 1
       },
       {
-        "goal": "Analyze migration scripts to understand data transformation and system updates.",
+        "goal": "Read ALL financial-related migration files in supabase/migrations/. Build the complete trigger matrix (T1-T7 or however many exist): trigger name, table, event (INSERT/UPDATE/DELETE), condition, action. Specifically identify: T6 prevent_posted_journal_line_mutation trigger, T3 rollback block trigger, and the financial_controls_bypass_enabled mechanism. Also check types.ts for actual column presence (approved_by, approved_at, etc.). Record exact file:line references.",
+        "agent": "backend-engineer",
+        "toolsets": [
+          "terminal",
+          "file"
+        ],
+        "dependencies": [],
+        "parallel_group": 1,
+        "id": "triggers-migrations",
+        "files": [
+          "supabase/migrations/",
+          "src/types.ts"
+        ],
+        "success_criteria": "A complete trigger matrix is built from migration files with: trigger name, table, event, condition, action, and file:line references. The bypass mechanism is documented. types.ts column presence is verified. Output written to a temp findings file.",
+        "milestone": "milestone-1",
+        "milestone_index": 0,
+        "model_hint": "analytical",
+        "max_iterations": 1
+      },
+      {
+        "goal": "Verify each of the 12 previous v4 audit findings against the current codebase: (1) All 6 hooks broken at runtime (posted-first vs T6), (2) Vehicle installment debits revenue instead of payable, (3) Payroll entries unbalanced when deductions > 0, (4) useReverseJournalEntry only updates status, (5) Hardcoded account IDs in useConvertToLegalCase, (6) Export function is fake stub, (7) approved_by/approved_at columns don't exist in types.ts, (8) Math.abs() in 27 places hiding accounting signs, (9) Approval verification not wired in, (10) Two audit tables (audit_logs vs audit_trail), (11) 25 finance components hardcode KWD, (12) Orphaned posted headers. For each: state CONFIRMED, FIXED, or PARTIALLY FIXED with file:line evidence.",
         "agent": "code-reviewer",
         "toolsets": [
           "terminal",
           "file"
         ],
         "dependencies": [],
-        "parallel_group": 0,
-        "id": "examine-migration-scripts",
+        "parallel_group": 2,
+        "id": "verify-v4-findings",
         "files": [
-          "apply_migration_psql.py",
-          "apply_migration_psycopg.py",
-          "apply_migration_v2.py"
+          "src/hooks/",
+          "src/components/finance/",
+          "src/types.ts",
+          "src/lib/",
+          "src/utils/"
         ],
-        "success_criteria": "Documented migration processes, data transformations, and system update logic.",
+        "success_criteria": "All 12 v4 findings are verified with CONFIRMED/FIXED/PARTIALLY FIXED status and file:line evidence. Output written to a temp findings file.",
         "milestone": "milestone-1",
         "milestone_index": 0,
         "model_hint": "analytical",
         "max_iterations": 1
       },
       {
-        "goal": "Examine data fetching mechanisms and integration with external systems (e.g., Supabase).",
+        "goal": "Collect findings from all 5 research subtasks. Write the comprehensive integration report in ARABIC to C:\\Users\\khamis\\Documents\\fleetifyapp\\docs\\financial-integration-report.md. The report must cover all 12 required sections: Executive Summary, Integration Map, Integration Hook Analysis, DB Trigger Impact, Data Flow Between Modules, Currency Integration, Approval Workflow Integration, Period Close Integration, Audit Trail Integration, Report Export Integration, Risk Assessment, and Recommendations. Every claim must have file:line references. Include the trigger matrix (T1-T7) and the hook-vs-trigger cross-reference table. Report should be in Arabic with technical terms in English where appropriate.",
         "agent": "builder",
         "toolsets": [
           "hermes-cli"
         ],
-        "dependencies": [],
-        "parallel_group": 0,
-        "id": "review-data-fetching",
-        "files": [
-          "fetch_all_data.py",
-          "apply_fixes.py",
-          "apply_migration.py"
-        ],
-        "success_criteria": "Documented data flow between the system and external sources, including APIs and pagination logic.",
-        "milestone": "milestone-1",
-        "milestone_index": 0,
-        "model_hint": "balanced",
-        "max_iterations": 3
-      },
-      {
-        "goal": "Review financial remediation scripts to understand issue resolution and data correction logic.",
-        "agent": "code-reviewer",
-        "toolsets": [
-          "terminal",
-          "file"
-        ],
-        "dependencies": [],
-        "parallel_group": 0,
-        "id": "review-remediation-scripts",
-        "files": [
-          "fix_financial_issues.py",
-          "bulk_delete_pyinv.py"
-        ],
-        "success_criteria": "Documented remediation processes, issue resolution logic, and data correction mechanisms.",
-        "milestone": "milestone-1",
-        "milestone_index": 0,
-        "model_hint": "analytical",
-        "max_iterations": 1
-      },
-      {
-        "goal": "Identify and document integration points between financial modules and other system components.",
-        "agent": "doc-writer",
-        "toolsets": [
-          "terminal",
-          "file"
-        ],
         "dependencies": [
-          "analyze-core-files",
-          "review-data-fetching",
-          "audit-analysis-scripts",
-          "examine-migration-scripts",
-          "review-remediation-scripts"
+          "hooks-analysis",
+          "triggers-migrations",
+          "data-flow-tracing",
+          "verify-v4-findings",
+          "cross-cutting-concerns"
         ],
         "parallel_group": 1,
-        "id": "analyze-integration-points",
-        "files": [
-          "task_delegation.py",
-          "config.py"
-        ],
-        "success_criteria": "Documented integration points, dependencies, and data flow between modules.",
-        "milestone": "milestone-2",
-        "milestone_index": 1,
-        "model_hint": "speed",
-        "max_iterations": 1
-      },
-      {
-        "goal": "Assess the overall system architecture, including scalability, maintainability, and potential bottlenecks.",
-        "agent": "builder",
-        "toolsets": [
-          "hermes-cli"
-        ],
-        "dependencies": [
-          "analyze-integration-points"
-        ],
-        "parallel_group": 2,
-        "id": "assess-system-architecture",
-        "files": [],
-        "success_criteria": "Documented assessment of system architecture, including strengths, weaknesses, and recommendations.",
-        "milestone": "milestone-3",
-        "milestone_index": 2,
-        "model_hint": "balanced",
-        "max_iterations": 3
-      },
-      {
-        "goal": "Consolidate all findings into a comprehensive report on the Fleetify financial system.",
-        "agent": "devops-engineer",
-        "toolsets": [
-          "terminal",
-          "file"
-        ],
-        "dependencies": [
-          "analyze-core-files",
-          "review-data-fetching",
-          "audit-analysis-scripts",
-          "examine-migration-scripts",
-          "review-remediation-scripts",
-          "analyze-integration-points",
-          "assess-system-architecture"
-        ],
-        "parallel_group": 3,
         "id": "assembly",
         "files": [
-          "comprehensive_report.md"
+          "docs/financial-integration-report.md"
         ],
-        "success_criteria": "Final deliverable file is written and contains all findings from prior subtasks.",
-        "milestone": "milestone-4",
-        "milestone_index": 3,
-        "model_hint": "speed",
-        "max_iterations": 1
+        "success_criteria": "Final deliverable file is written and contains all findings from prior subtasks. Report is in Arabic, covers all 12 sections, includes trigger matrix, hook analysis, v4 findings verification, and file:line references throughout.",
+        "milestone": "milestone-2",
+        "milestone_index": 1,
+        "model_hint": "balanced",
+        "max_iterations": 3
       }
     ],
     "risk_level": "low",
-    "parallel_group_count": 4,
+    "parallel_group_count": 2,
     "routing_decisions": [
       {
-        "subtask_id": "analyze-core-files",
+        "subtask_id": "cross-cutting-concerns",
         "task_type": "review",
         "agent": "code-reviewer",
         "model_hint": "analytical",
-        "complexity": "high",
+        "complexity": "medium",
         "is_risky": false,
+        "confidence": 0.75,
+        "profile": {
+          "name": "code-reviewer",
+          "task_type": "review",
+          "model_tier": "balanced",
+          "timeout": 120.0,
+          "max_retries": 1,
+          "priority": "P1",
+          "requires_review": false,
+          "estimated_tokens": 4000,
+          "parallel_safe": true,
+          "toolsets": [
+            "terminal",
+            "file"
+          ],
+          "model": "glm-5.2:cloud",
+          "provider": "custom:ollama",
+          "base_url": "https://ollama.com/v1"
+        },
+        "parallel_safe": true,
+        "toolsets": [
+          "terminal",
+          "file"
+        ]
+      },
+      {
+        "subtask_id": "data-flow-tracing",
+        "task_type": "frontend",
+        "agent": "frontend-engineer",
+        "model_hint": "balanced",
+        "complexity": "medium",
+        "is_risky": false,
+        "confidence": 0.64,
+        "profile": {
+          "name": "frontend-engineer",
+          "task_type": "frontend",
+          "model_tier": "balanced",
+          "timeout": 120.0,
+          "max_retries": 1,
+          "priority": "P1",
+          "requires_review": false,
+          "estimated_tokens": 4000,
+          "parallel_safe": true,
+          "toolsets": [
+            "terminal",
+            "file"
+          ],
+          "model": "glm-5.2:cloud",
+          "provider": "custom:ollama",
+          "base_url": "https://ollama.com/v1"
+        },
+        "parallel_safe": true,
+        "toolsets": [
+          "terminal",
+          "file"
+        ]
+      },
+      {
+        "subtask_id": "hooks-analysis",
+        "task_type": "review",
+        "agent": "code-reviewer",
+        "model_hint": "analytical",
+        "complexity": "medium",
+        "is_risky": true,
         "confidence": 0.58,
         "profile": {
           "name": "code-reviewer",
@@ -221,7 +245,39 @@
         ]
       },
       {
-        "subtask_id": "audit-analysis-scripts",
+        "subtask_id": "triggers-migrations",
+        "task_type": "database",
+        "agent": "backend-engineer",
+        "model_hint": "analytical",
+        "complexity": "high",
+        "is_risky": true,
+        "confidence": 0.64,
+        "profile": {
+          "name": "backend-engineer",
+          "task_type": "database",
+          "model_tier": "balanced",
+          "timeout": 120.0,
+          "max_retries": 1,
+          "priority": "P1",
+          "requires_review": false,
+          "estimated_tokens": 4000,
+          "parallel_safe": true,
+          "toolsets": [
+            "terminal",
+            "file"
+          ],
+          "model": "glm-5.2:cloud",
+          "provider": "custom:ollama",
+          "base_url": "https://ollama.com/v1"
+        },
+        "parallel_safe": true,
+        "toolsets": [
+          "terminal",
+          "file"
+        ]
+      },
+      {
+        "subtask_id": "verify-v4-findings",
         "task_type": "review",
         "agent": "code-reviewer",
         "model_hint": "analytical",
@@ -253,191 +309,33 @@
         ]
       },
       {
-        "subtask_id": "examine-migration-scripts",
-        "task_type": "review",
-        "agent": "code-reviewer",
-        "model_hint": "analytical",
-        "complexity": "high",
-        "is_risky": true,
-        "confidence": 0.58,
-        "profile": {
-          "name": "code-reviewer",
-          "task_type": "review",
-          "model_tier": "balanced",
-          "timeout": 120.0,
-          "max_retries": 1,
-          "priority": "P1",
-          "requires_review": false,
-          "estimated_tokens": 4000,
-          "parallel_safe": true,
-          "toolsets": [
-            "terminal",
-            "file"
-          ],
-          "model": "glm-5.2:cloud",
-          "provider": "custom:ollama",
-          "base_url": "https://ollama.com/v1"
-        },
-        "parallel_safe": true,
-        "toolsets": [
-          "terminal",
-          "file"
-        ]
-      },
-      {
-        "subtask_id": "review-data-fetching",
-        "task_type": "implementation",
-        "agent": "builder",
-        "model_hint": "balanced",
-        "complexity": "medium",
-        "is_risky": false,
-        "confidence": 0.5,
-        "profile": {
-          "name": "builder",
-          "task_type": "implementation",
-          "model_tier": "balanced",
-          "timeout": 600,
-          "max_retries": 3,
-          "priority": "P1",
-          "requires_review": false,
-          "estimated_tokens": 4000,
-          "parallel_safe": true,
-          "toolsets": [
-            "hermes-cli"
-          ],
-          "model": "glm-5.2:cloud",
-          "provider": "custom:ollama",
-          "base_url": "http://localhost:11434/v1"
-        },
-        "parallel_safe": true,
-        "toolsets": [
-          "hermes-cli"
-        ]
-      },
-      {
-        "subtask_id": "review-remediation-scripts",
-        "task_type": "review",
-        "agent": "code-reviewer",
-        "model_hint": "analytical",
-        "complexity": "medium",
-        "is_risky": false,
-        "confidence": 0.58,
-        "profile": {
-          "name": "code-reviewer",
-          "task_type": "review",
-          "model_tier": "balanced",
-          "timeout": 120.0,
-          "max_retries": 1,
-          "priority": "P1",
-          "requires_review": false,
-          "estimated_tokens": 4000,
-          "parallel_safe": true,
-          "toolsets": [
-            "terminal",
-            "file"
-          ],
-          "model": "glm-5.2:cloud",
-          "provider": "custom:ollama",
-          "base_url": "https://ollama.com/v1"
-        },
-        "parallel_safe": true,
-        "toolsets": [
-          "terminal",
-          "file"
-        ]
-      },
-      {
-        "subtask_id": "analyze-integration-points",
-        "task_type": "docs",
-        "agent": "doc-writer",
-        "model_hint": "speed",
-        "complexity": "medium",
-        "is_risky": false,
-        "confidence": 0.6,
-        "profile": {
-          "name": "doc-writer",
-          "task_type": "docs",
-          "model_tier": "balanced",
-          "timeout": 120.0,
-          "max_retries": 1,
-          "priority": "P1",
-          "requires_review": false,
-          "estimated_tokens": 4000,
-          "parallel_safe": true,
-          "toolsets": [
-            "terminal",
-            "file"
-          ],
-          "model": "glm-5.2:cloud",
-          "provider": "custom:ollama",
-          "base_url": "https://ollama.com/v1"
-        },
-        "parallel_safe": true,
-        "toolsets": [
-          "terminal",
-          "file"
-        ]
-      },
-      {
-        "subtask_id": "assess-system-architecture",
-        "task_type": "implementation",
-        "agent": "builder",
-        "model_hint": "balanced",
-        "complexity": "high",
-        "is_risky": false,
-        "confidence": 0.5,
-        "profile": {
-          "name": "builder",
-          "task_type": "implementation",
-          "model_tier": "balanced",
-          "timeout": 600,
-          "max_retries": 3,
-          "priority": "P1",
-          "requires_review": false,
-          "estimated_tokens": 4000,
-          "parallel_safe": true,
-          "toolsets": [
-            "hermes-cli"
-          ],
-          "model": "glm-5.2:cloud",
-          "provider": "custom:ollama",
-          "base_url": "http://localhost:11434/v1"
-        },
-        "parallel_safe": true,
-        "toolsets": [
-          "hermes-cli"
-        ]
-      },
-      {
         "subtask_id": "assembly",
-        "task_type": "config",
-        "agent": "devops-engineer",
-        "model_hint": "speed",
+        "task_type": "implementation",
+        "agent": "builder",
+        "model_hint": "balanced",
         "complexity": "medium",
         "is_risky": false,
-        "confidence": 0.58,
+        "confidence": 0.57,
         "profile": {
-          "name": "devops-engineer",
-          "task_type": "devops",
+          "name": "builder",
+          "task_type": "implementation",
           "model_tier": "balanced",
-          "timeout": 120.0,
-          "max_retries": 1,
+          "timeout": 600,
+          "max_retries": 3,
           "priority": "P1",
           "requires_review": false,
           "estimated_tokens": 4000,
           "parallel_safe": true,
           "toolsets": [
-            "terminal",
-            "file"
+            "hermes-cli"
           ],
           "model": "glm-5.2:cloud",
           "provider": "custom:ollama",
-          "base_url": "https://ollama.com/v1"
+          "base_url": "http://localhost:11434/v1"
         },
         "parallel_safe": true,
         "toolsets": [
-          "terminal",
-          "file"
+          "hermes-cli"
         ]
       }
     ],
@@ -446,18 +344,18 @@
         "id": "milestone-1",
         "name": "Parallel group 1",
         "subtask_ids": [
-          "analyze-core-files",
-          "audit-analysis-scripts",
-          "examine-migration-scripts",
-          "review-data-fetching",
-          "review-remediation-scripts"
+          "cross-cutting-concerns",
+          "data-flow-tracing",
+          "hooks-analysis",
+          "triggers-migrations",
+          "verify-v4-findings"
         ],
         "acceptance_criteria": [
-          "Documented summary of core components, their roles, and interactions.",
-          "Documented audit logic, validation rules, and reporting mechanisms.",
-          "Documented migration processes, data transformations, and system update logic.",
-          "Documented data flow between the system and external sources, including APIs and pagination logic.",
-          "Documented remediation processes, issue resolution logic, and data correction mechanisms."
+          "All 5 cross-cutting concerns are analyzed with file:line references. Output written to a temp findings file.",
+          "All 6 data flow paths are traced with intermediate steps, tables touched, and file:line references. Output written to a temp findings file.",
+          "A structured analysis of all 6 hooks plus usePaymentOperations is produced with: operation sequence, posted-first vs draft-first pattern, balance check presence, debit/credit logic, reversal pattern, and file:line references for every claim. Output is written to a temp findings file.",
+          "A complete trigger matrix is built from migration files with: trigger name, table, event, condition, action, and file:line references. The bypass mechanism is documented. types.ts column presence is verified. Output written to a temp findings file.",
+          "All 12 v4 findings are verified with CONFIRMED/FIXED/PARTIALLY FIXED status and file:line evidence. Output written to a temp findings file."
         ],
         "assumptions": [
           "Dependencies from earlier milestones remain stable."
@@ -467,36 +365,10 @@
         "id": "milestone-2",
         "name": "Parallel group 2",
         "subtask_ids": [
-          "analyze-integration-points"
-        ],
-        "acceptance_criteria": [
-          "Documented integration points, dependencies, and data flow between modules."
-        ],
-        "assumptions": [
-          "Dependencies from earlier milestones remain stable."
-        ]
-      },
-      {
-        "id": "milestone-3",
-        "name": "Parallel group 3",
-        "subtask_ids": [
-          "assess-system-architecture"
-        ],
-        "acceptance_criteria": [
-          "Documented assessment of system architecture, including strengths, weaknesses, and recommendations."
-        ],
-        "assumptions": [
-          "Dependencies from earlier milestones remain stable."
-        ]
-      },
-      {
-        "id": "milestone-4",
-        "name": "Parallel group 4",
-        "subtask_ids": [
           "assembly"
         ],
         "acceptance_criteria": [
-          "Final deliverable file is written and contains all findings from prior subtasks."
+          "Final deliverable file is written and contains all findings from prior subtasks. Report is in Arabic, covers all 12 sections, includes trigger matrix, hook analysis, v4 findings verification, and file:line references throughout."
         ],
         "assumptions": [
           "Dependencies from earlier milestones remain stable."
@@ -504,18 +376,19 @@
       }
     ],
     "clarifying_questions": [
+      "What authentication method should be used (JWT, OAuth, session-based)?",
+      "What user roles or permission levels are needed?",
+      "What database and ORM are in use? Any existing migration strategy?",
       "What is the deployment pipeline (staging, canary, production)?",
       "Are there any approval gates or change management processes?"
     ],
     "completion_criteria": [
-      "Subtask complete: Review core financial system files to understand the architecture and key components.",
-      "Subtask complete: Review audit and analysis scripts to understand financial validation and reporting logic.",
-      "Subtask complete: Analyze migration scripts to understand data transformation and system updates.",
-      "Subtask complete: Examine data fetching mechanisms and integration with external systems (e.g., Supabase).",
-      "Subtask complete: Review financial remediation scripts to understand issue resolution and data correction logic.",
-      "Subtask complete: Identify and document integration points between financial modules and other system components.",
-      "Subtask complete: Assess the overall system architecture, including scalability, maintainability, and potential bottle",
-      "Subtask complete: Consolidate all findings into a comprehensive report on the Fleetify financial system.",
+      "Subtask complete: Analyze cross-cutting integration concerns: (1) Currency integration \u2014 does the financial system han",
+      "Subtask complete: Trace data flows between modules and the financial system. For each path: (1) Contract payment \u2192 inv",
+      "Subtask complete: Read ALL 6 financial integration hooks in the codebase. For each hook (useRentalPaymentJournalIntegr",
+      "Subtask complete: Read ALL financial-related migration files in supabase/migrations/. Build the complete trigger matri",
+      "Subtask complete: Verify each of the 12 previous v4 audit findings against the current codebase: (1) All 6 hooks broke",
+      "Subtask complete: Collect findings from all 5 research subtasks. Write the comprehensive integration report in ARABIC ",
       "All quality gates pass (syntax, lint, type, test)",
       "No regressions in existing test suite"
     ],
