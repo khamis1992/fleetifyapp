@@ -1,380 +1,311 @@
 {
   "stage": "plan_approved",
-  "task": "READ-ONLY AUDIT MODE: Do not modify source code, do not run self-healing, and only create the requested report artifact if a deliverable file is required.\n\n\u0642\u0645 \u0628\u0645\u0631\u0627\u062c\u0639\u0629 \u0634\u0627\u0645\u0644\u0629 \u062c\u062f\u064a\u062f\u0629 \u0648\u0643\u0627\u0645\u0644\u0629 \u0644\u0644\u0646\u0638\u0627\u0645 \u0627\u0644\u0645\u0627\u0644\u064a \u0641\u064a \u0645\u0634\u0631\u0648\u0639 Fleetify ERP \u0648\u062a\u0643\u0627\u0645\u0644\u0647 \u0645\u0639 \u062c\u0645\u064a\u0639 \u0627\u0644\u0648\u062d\u062f\u0627\u062a \u0627\u0644\u0623\u062e\u0631\u0649. \u0642\u062f\u0645 \u062a\u0642\u0631\u064a\u0631\u0627\u064b \u0645\u0641\u0635\u0644\u0627\u064b \u0628\u0627\u0644\u0644\u063a\u0629 \u0627\u0644\u0639\u0631\u0628\u064a\u0629.\n\n\u0647\u0630\u0647 \u0645\u0631\u0627\u062c\u0639\u0629 \u062c\u062f\u064a\u062f\u0629 \u062a\u0645\u0627\u0645\u0627\u064b \u2014 \u0644\u0627 \u062a\u0639\u062a\u0645\u062f \u0639\u0644\u0649 \u0623\u064a \u062a\u0642\u0627\u0631\u064a\u0631 \u0633\u0627\u0628\u0642\u0629. \u0627\u0642\u0631\u0623 \u0627\u0644\u0643\u0648\u062f \u0627\u0644\u0641\u0639\u0644\u064a \u0645\u0646 \u0627\u0644\u0645\u0635\u062f\u0631.\n\n\u0627\u0644\u0645\u0637\u0644\u0648\u0628 \u0628\u0627\u0644\u062a\u0641\u0635\u064a\u0644:\n\n## 1. \u0647\u064a\u0643\u0644 \u0627\u0644\u0646\u0638\u0627\u0645 \u0627\u0644\u0645\u0627\u0644\u064a\n- \u0627\u0642\u0631\u0623 \u062c\u0645\u064a\u0639 \u062c\u062f\u0627\u0648\u0644 \u0627\u0644\u0646\u0638\u0627\u0645 \u0627\u0644\u0645\u0627\u0644\u064a \u0645\u0646 \u0645\u0644\u0641\u0627\u062a types.ts \u0648\u0645\u0644\u0641\u0627\u062a \u0627\u0644\u062a\u0631\u062d\u064a\u0644 (migrations)\n- ",
+  "task": "READ-ONLY AUDIT MODE: Do not modify source code, do not run self-healing, and only create the requested report artifact if a deliverable file is required.\n\n\u0631\u0627\u062c\u0639 \u0627\u0644\u0646\u0638\u0627\u0645 \u0627\u0644\u0645\u0627\u0644\u064a \u0648\u062a\u0643\u0627\u0645\u0644\u0647 \u0645\u0639 \u0628\u0642\u064a\u0629 \u0627\u0644\u0648\u062d\u062f\u0627\u062a \u0648\u0642\u062f\u0645 \u0644\u064a \u062a\u0642\u0631\u064a\u0631 \u0643\u0627\u0645\u0644 \u0628\u062f\u0648\u0646 \u062a\u063a\u064a\u0631 \u0627\u0644\u0643\u0648\u062f \u0641\u0642\u0637 \u062a\u0642\u0631\u064a\u0631 \u0639\u0646 \u062a\u0643\u0627\u0645\u0644 \u0627\u0644\u0646\u0638\u0627\u0645\n\nThis is a comprehensive financial system integration audit for the Fleetify project. The audit must:\n1. Find the Fleetify project codebase (likely under C:\\Users\\khamis\\Documents\\ or similar)\n2. Review ALL financial modules and their integ",
   "status": "running",
-  "timestamp": "2026-07-05T21:58:39.819576",
+  "timestamp": "2026-07-05T22:14:11.519945",
   "plan": {
-    "task": "READ-ONLY AUDIT MODE: Do not modify source code, do not run self-healing, and only create the requested report artifact if a deliverable file is required.\n\n\u0642\u0645 \u0628\u0645\u0631\u0627\u062c\u0639\u0629 \u0634\u0627\u0645\u0644\u0629 \u062c\u062f\u064a\u062f\u0629 \u0648\u0643\u0627\u0645\u0644\u0629 \u0644\u0644\u0646\u0638\u0627\u0645 \u0627\u0644\u0645\u0627\u0644\u064a \u0641\u064a \u0645\u0634\u0631\u0648\u0639 Fleetify ERP \u0648\u062a\u0643\u0627\u0645\u0644\u0647 \u0645\u0639 \u062c\u0645\u064a\u0639 \u0627\u0644\u0648\u062d\u062f\u0627\u062a \u0627\u0644\u0623\u062e\u0631\u0649. \u0642\u062f\u0645 \u062a\u0642\u0631\u064a\u0631\u0627\u064b \u0645\u0641\u0635\u0644\u0627\u064b \u0628\u0627\u0644\u0644\u063a\u0629 \u0627\u0644\u0639\u0631\u0628\u064a\u0629.\n\n\u0647\u0630\u0647 \u0645\u0631\u0627\u062c\u0639\u0629 \u062c\u062f\u064a\u062f\u0629 \u062a\u0645\u0627\u0645\u0627\u064b \u2014 \u0644\u0627 \u062a\u0639\u062a\u0645\u062f \u0639\u0644\u0649 \u0623\u064a \u062a\u0642\u0627\u0631\u064a\u0631 \u0633\u0627\u0628\u0642\u0629. \u0627\u0642\u0631\u0623 \u0627\u0644\u0643\u0648\u062f \u0627\u0644\u0641\u0639\u0644\u064a \u0645\u0646 \u0627\u0644\u0645\u0635\u062f\u0631.\n\n\u0627\u0644\u0645\u0637\u0644\u0648\u0628 \u0628\u0627\u0644\u062a\u0641\u0635\u064a\u0644:\n\n## 1. \u0647\u064a\u0643\u0644 \u0627\u0644\u0646\u0638\u0627\u0645 \u0627\u0644\u0645\u0627\u0644\u064a\n- \u0627\u0642\u0631\u0623 \u062c\u0645\u064a\u0639 \u062c\u062f\u0627\u0648\u0644 \u0627\u0644\u0646\u0638\u0627\u0645 \u0627\u0644\u0645\u0627\u0644\u064a \u0645\u0646 \u0645\u0644\u0641\u0627\u062a types.ts \u0648\u0645\u0644\u0641\u0627\u062a \u0627\u0644\u062a\u0631\u062d\u064a\u0644 (migrations)\n- \u0648\u062b\u0642: chart_of_accounts, journal_entries, journal_entry_lines, account_mappings, financial_periods, financial_approval_policies, financial_approval_requests, financial_approval_actions, financial_report_snapshots, annual_financial_close_runs\n- \u0627\u0634\u0631\u062d \u0627\u0644\u0639\u0644\u0627\u0642\u0627\u062a \u0628\u064a\u0646 \u0627\u0644\u062c\u062f\u0627\u0648\u0644 \u0648\u0627\u0644\u0645\u0641\u0627\u062a\u064a\u062d \u0627\u0644\u062e\u0627\u0631\u062c\u064a\u0629\n\n## 2. \u0627\u0644\u062a\u0643\u0627\u0645\u0644 \u0645\u0639 \u0643\u0644 \u0648\u062d\u062f\u0629 \u2014 \u0628\u0627\u0644\u062a\u0641\u0635\u064a\u0644\n\u0644\u0643\u0644 \u0648\u062d\u062f\u0629 \u0645\u0646 \u0627\u0644\u0648\u062d\u062f\u0627\u062a \u0627\u0644\u062a\u0627\u0644\u064a\u0629\u060c \u0627\u0642\u0631\u0623 \u0627\u0644\u0643\u0648\u062f \u0627\u0644\u0641\u0639\u0644\u064a \u0648\u0627\u0634\u0631\u062d:\n- \u0643\u064a\u0641 \u062a\u0646\u0634\u0626 \u0627\u0644\u0642\u064a\u0648\u062f \u0627\u0644\u0645\u062d\u0627\u0633\u0628\u064a\u0629\u061f\n- \u0645\u0627 \u0647\u0648 \u0627\u0644\u0645\u0646\u0637\u0642 \u0627\u0644\u0645\u062d\u0627\u0633\u0628\u064a (\u0623\u064a \u062d\u0633\u0627\u0628 \u0645\u062f\u064a\u0646 \u0648\u0623\u064a \u062d\u0633\u0627\u0628 \u062f\u0627\u0626\u0646)\u061f\n- \u0647\u0644 \u062a\u0633\u062a\u062e\u062f\u0645 Trigger \u0623\u0645 RPC \u0623\u0645 Frontend code\u061f\n- \u0647\u0644 \u062a\u062a\u062d\u0642\u0642 \u0645\u0646 \u062a\u0648\u0627\u0632\u0646 \u0627\u0644\u0642\u064a\u062f\u061f\n- \u0647\u0644 \u062a\u062a\u062d\u0642\u0642 \u0645\u0646 \u0627\u0644\u0641\u062a\u0631\u0629 \u0627\u0644\u0645\u0627\u0644\u064a\u0629 \u0627\u0644\u0645\u0641\u062a\u0648\u062d\u0629\u061f\n- \u0647\u0644 \u062a\u0637\u0628\u0642 \u0641\u0635\u0644 \u0627\u0644\u0645\u0647\u0627\u0645 (SoD)\u061f\n\n\u0627\u0644\u0648\u062d\u062f\u0627\u062a:\n\u0623. **\u0627\u0644\u0645\u062f\u0641\u0648\u0639\u0627\u062a (Payments)** \u2014 payments/usePaymentOperations.ts\n\u0628. **\u0627\u0644\u0641\u0648\u0627\u062a\u064a\u0631 (Invoices)** \u2014 invoices/useInvoices.ts\n\u062c. **\u0627\u0644\u0639\u0642\u0648\u062f (Contracts)** \u2014 contracts/useContractCreation.ts + contractJournalEntry.ts\n\u062f. **\u0627\u0644\u0645\u0634\u062a\u0631\u064a\u0627\u062a (Purchase Orders)** \u2014 integrations/useInventoryPurchaseOrders.ts + usePurchaseOrderFinancialIntegration.ts\n\u0647\u0640. **\u0627\u0644\u0631\u0648\u0627\u062a\u0628 (Payroll)** \u2014 payroll/usePayrollJournalIntegration.ts\n\u0648. **\u0627\u0644\u0635\u064a\u0627\u0646\u0629 (Maintenance)** \u2014 maintenance/useMaintenanceJournalIntegration.ts\n\u0632. **\u0645\u062e\u0627\u0644\u0641\u0627\u062a \u0627\u0644\u0645\u0631\u0648\u0631 (Traffic Violations)** \u2014 traffic/useTrafficViolationJournalIntegration.ts\n\u062d. **\u0623\u0642\u0633\u0627\u0637 \u0627\u0644\u0645\u0631\u0643\u0628\u0627\u062a (Vehicle Installments)** \u2014 vehicle/useVehicleInstallmentJournalIntegration.ts\n\u0637. **\u0627\u0644\u0625\u064a\u062c\u0627\u0631 (Rental Payments)** \u2014 rental/useRentalPaymentJournalIntegration.ts\n\n## 3. \u0633\u064a\u0631 \u0627\u0644\u0639\u0645\u0644 \u0627\u0644\u0645\u0627\u0644\u064a \u0627\u0644\u0643\u0627\u0645\u0644\n- \u0645\u0646 \u0625\u0646\u0634\u0627\u0621 \u0627\u0644\u0645\u0639\u0627\u0645\u0644\u0629 \u2192 \u0625\u0646\u0634\u0627\u0621 \u0627\u0644\u0642\u064a\u062f \u2192 \u0625\u062f\u0631\u0627\u062c \u0627\u0644\u0628\u0646\u0648\u062f \u2192 \u0627\u0644\u062a\u0631\u062d\u064a\u0644 \u2192 \u0627\u0644\u0625\u0642\u0641\u0627\u0644\n- \u0627\u0634\u0631\u062d \u062f\u0648\u0631 \u0627\u0644\u0645\u062d\u0641\u0632\u0627\u062a (Triggers) \u0641\u064a \u0643\u0644 \u062e\u0637\u0648\u0629\n- \u0627\u0634\u0631\u062d \u0622\u0644\u064a\u0629 \u0627\u0644\u062a\u062c\u0627\u0648\u0632 (Bypass) \u0648\u0645\u062a\u0649 \u062a\u0633\u062a\u062e\u062f\u0645\n\n## 4. \u062a\u062d\u0644\u064a\u0644 \u0627\u0644\u0645\u062d\u0641\u0632\u0627\u062a (Trigger Analysis)\n\u0627\u0642\u0631\u0623 \u062c\u0645\u064a\u0639 \u0645\u0644\u0641\u0627\u062a \u0627\u0644\u062a\u0631\u062d\u064a\u0644 \u0627\u0644\u0645\u0627\u0644\u064a\u0629 \u0648\u0648\u062b\u0642 \u0643\u0644 \u0645\u062d\u0641\u0632:\n- \u0627\u0633\u0645 \u0627\u0644\u0645\u062d\u0641\u0632\n- \u0627\u0644\u062c\u062f\u0648\u0644 \u0648\u0627\u0644\u0639\u0645\u0644\u064a\u0629\n- \u0627\u0644\u062a\u0648\u0642\u064a\u062a (BEFORE/AFTER)\n- \u0627\u0644\u0634\u0631\u0637\n- \u0645\u0627\u0630\u0627 \u064a\u062d\u062f\u062b \u0639\u0646\u062f \u0627\u0644\u0645\u062e\u0627\u0644\u0641\u0629\n- \u0627\u0644\u0645\u0644\u0641:\u0627\u0644\u0633\u0637\u0631\n\n## 5. \u0627\u0644\u0642\u064a\u0648\u062f \u0648\u0627\u0644\u0645\u0634\u0627\u0643\u0644\n- \u0623\u064a \u0645\u0634\u0627\u0643\u0644 \u0641\u064a \u062a\u0631\u062a\u064a\u0628 \u0625\u0646\u0634\u0627\u0621 \u0627\u0644\u0642\u064a\u0648\u062f (status posted \u0642\u0628\u0644 \u0627\u0644\u0628\u0646\u0648\u062f)\n- \u0623\u064a \u0645\u0633\u0627\u0631\u0627\u062a \u0645\u062a\u0648\u0627\u0632\u064a\u0629 \u0644\u0625\u0646\u0634\u0627\u0621 \u0627\u0644\u0642\u064a\u0648\u062f (\u062e\u0637\u0631 \u0627\u0644\u0627\u0632\u062f\u0648\u0627\u062c\u064a\u0629)\n- \u0623\u064a \u0643\u0648\u062f \u0645\u0643\u0631\u0631\n- \u0623\u064a \u0645\u0646\u0637\u0642 \u0645\u062d\u0627\u0633\u0628\u064a \u063a\u064a\u0631 \u0635\u062d\u064a\u062d\n- \u0623\u064a \u062b\u063a\u0631\u0627\u062a \u0641\u064a \u0627\u0644\u0631\u0642\u0627\u0628\u0629 (SoD, period check, approval workflow)\n- \u0623\u064a \u0642\u064a\u0645 \u062b\u0627\u0628\u062a\u0629 (hardcoded) \u0628\u062f\u0644\u0627\u064b \u0645\u0646 \u0627\u0644\u062d\u0633\u0627\u0628 \u0627\u0644\u062f\u064a\u0646\u0627\u0645\u064a\u0643\u064a\n\n## 6. \u062a\u0642\u064a\u064a\u0645 \u0639\u0627\u0645\n- \u0646\u0642\u0627\u0637 \u0627\u0644\u0642\u0648\u0629\n- \u0646\u0642\u0627\u0637 \u0627\u0644\u0636\u0639\u0641\n- \u062a\u0648\u0635\u064a\u0627\u062a \u0645\u0631\u062a\u0628\u0629 \u062d\u0633\u0628 \u0627\u0644\u0623\u0648\u0644\u0648\u064a\u0629 (\u0641\u0648\u0631\u064a / \u0642\u0635\u064a\u0631 / \u0645\u062a\u0648\u0633\u0637 / \u0628\u0639\u064a\u062f)\n\n\u0647\u0627\u0645 \u062c\u062f\u0627\u064b:\n- \u0644\u0627 \u062a\u0642\u0645 \u0628\u062a\u063a\u064a\u064a\u0631 \u0623\u064a \u0643\u0648\u062f \u2014 \u0647\u0630\u0627 \u062a\u0642\u0631\u064a\u0631 \u0641\u0642\u0637\n- \u0627\u0642\u0631\u0623 \u0627\u0644\u0645\u0644\u0641\u0627\u062a \u0627\u0644\u0641\u0639\u0644\u064a\u0629 \u0645\u0646 src/ \u0648 supabase/migrations/\n- \u0627\u0630\u0643\u0631 \u0645\u0631\u0627\u062c\u0639 \u0645\u0644\u0641:\u0633\u0637\u0631 \u0644\u0643\u0644 \u0646\u062a\u064a\u062c\u0629\n- \u0627\u0643\u062a\u0628 \u0627\u0644\u062a\u0642\u0631\u064a\u0631 \u0625\u0644\u0649 \u0645\u0644\u0641 docs/financial-system-integration-audit-v5-2026-07-05.md",
+    "task": "READ-ONLY AUDIT MODE: Do not modify source code, do not run self-healing, and only create the requested report artifact if a deliverable file is required.\n\n\u0631\u0627\u062c\u0639 \u0627\u0644\u0646\u0638\u0627\u0645 \u0627\u0644\u0645\u0627\u0644\u064a \u0648\u062a\u0643\u0627\u0645\u0644\u0647 \u0645\u0639 \u0628\u0642\u064a\u0629 \u0627\u0644\u0648\u062d\u062f\u0627\u062a \u0648\u0642\u062f\u0645 \u0644\u064a \u062a\u0642\u0631\u064a\u0631 \u0643\u0627\u0645\u0644 \u0628\u062f\u0648\u0646 \u062a\u063a\u064a\u0631 \u0627\u0644\u0643\u0648\u062f \u0641\u0642\u0637 \u062a\u0642\u0631\u064a\u0631 \u0639\u0646 \u062a\u0643\u0627\u0645\u0644 \u0627\u0644\u0646\u0638\u0627\u0645\n\nThis is a comprehensive financial system integration audit for the Fleetify project. The audit must:\n1. Find the Fleetify project codebase (likely under C:\\Users\\khamis\\Documents\\ or similar)\n2. Review ALL financial modules and their integration with other system modules\n3. Check database migrations, triggers, hooks, API routes, and frontend components\n4. Verify double-entry integrity, chart of accounts, GL reconciliation, trial balance, AP/AR, revenue recognition, financial statements, internal controls, cash flow, and period-end close\n5. Cross-reference every finding against actual source files with file:line references\n6. Produce a comprehensive Arabic report saved to docs/ in the hermes-agent repo\n7. NO CODE CHANGES - read-only audit mode\n8. Use the financial-system-audit-verification methodology: read all migrations, build trigger matrix, trace hook operations, cross-reference each operation against each trigger",
     "subtasks": [
       {
-        "goal": "Read contracts/useContractCreation.ts, contracts/contractJournalEntry.ts, integrations/useInventoryPurchaseOrders.ts, integrations/usePurchaseOrderFinancialIntegration.ts to analyze journal entry creation for contracts and purchase orders. Document accounting logic, triggers, checks. Output findings file (contract_purchase_findings.md).",
+        "goal": "Identify all API endpoints, hooks, and service functions that handle financial operations (invoices, payments, journal entries, accounts, etc.). Scan src/integrations/supabase/ and any other backend code. Produce a list of operations with file:line references.",
         "agent": "code-reviewer",
         "toolsets": [
           "terminal",
-          "file"
+          "file",
+          "search",
+          "skills"
         ],
         "dependencies": [],
         "parallel_group": 0,
-        "id": "contract-purchase-integration",
+        "id": "catalog-api-routes",
         "files": [
-          "src/hooks/contracts/useContractCreation.ts",
-          "src/hooks/contracts/contractJournalEntry.ts",
-          "src/hooks/integrations/useInventoryPurchaseOrders.ts",
-          "src/hooks/integrations/usePurchaseOrderFinancialIntegration.ts"
+          "src/integrations/supabase/**/*.ts",
+          "src/integrations/supabase/**/*.tsx",
+          "src/api/**/*.ts",
+          "src/hooks/**/*.ts"
         ],
-        "success_criteria": "A findings file (contract_purchase_findings.md) is created.",
+        "success_criteria": "A structured list of all financial API operations (create, read, update, delete) with file paths and line numbers is produced.",
         "milestone": "milestone-1",
         "milestone_index": 0,
-        "model_hint": "analytical",
-        "max_iterations": 1
+        "model_hint": "speed",
+        "max_iterations": 1,
+        "expert_route": {
+          "name": "financial_audit",
+          "agent": "code-reviewer",
+          "role": "CFO financial-system integration auditor",
+          "skills": [
+            "cfo-financial-system-audit",
+            "financial-system-audit-verification",
+            "graphify"
+          ],
+          "toolsets": [
+            "file",
+            "terminal",
+            "search",
+            "skills"
+          ],
+          "confidence": 0.8500000000000001
+        }
       },
       {
-        "goal": "Read types.ts and all migration files in supabase/migrations/ to extract all financial tables (chart_of_accounts, journal_entries, etc.), their columns, foreign keys, and relationships. Output a structured JSON file (financial_tables.json) with table definitions.",
+        "goal": "Extract all financial-related database tables, columns, migrations, triggers, functions, and RLS policies from the codebase. Parse supabase/migrations/*.sql, src/integrations/supabase/types.ts, and any other SQL files. Produce a structured list with file:line references.",
         "agent": "backend-engineer",
         "toolsets": [
           "terminal",
-          "file"
+          "file",
+          "search",
+          "skills"
         ],
         "dependencies": [],
         "parallel_group": 0,
-        "id": "financial-tables-structure",
+        "id": "catalog-db-schema",
         "files": [
+          "supabase/migrations/*.sql",
           "src/integrations/supabase/types.ts",
-          "supabase/migrations/*.sql"
+          "**/*.sql"
         ],
-        "success_criteria": "A JSON file (financial_tables.json) is created containing all financial tables with columns and relationships.",
+        "success_criteria": "A JSON or markdown file listing all financial tables, columns, triggers, functions, and RLS policies with exact file paths and line numbers is created.",
         "milestone": "milestone-1",
         "milestone_index": 0,
         "model_hint": "analytical",
-        "max_iterations": 1
+        "max_iterations": 1,
+        "expert_route": {
+          "name": "database",
+          "agent": "backend-engineer",
+          "role": "Database and data-integrity engineer",
+          "skills": [
+            "API Integration Specialist",
+            "graphify"
+          ],
+          "toolsets": [
+            "file",
+            "terminal",
+            "search",
+            "skills"
+          ],
+          "confidence": 0.95
+        }
       },
       {
-        "goal": "Read payments/usePaymentOperations.ts and invoices/useInvoices.ts to understand how journal entries are created for payments and invoices. Document the accounting logic (debit/credit accounts), whether triggers or RPCs are used, balance checks, period checks, SoD. Output a findings file (payment_invoice_findings.md).",
-        "agent": "builder",
+        "goal": "Identify all frontend components that display or interact with financial data (dashboards, forms, reports, drilldowns). Scan src/components/ and any other UI code. Produce a list of components with file:line references.",
+        "agent": "frontend-engineer",
         "toolsets": [
-          "hermes-cli"
+          "terminal",
+          "file",
+          "search",
+          "skills",
+          "browser"
         ],
         "dependencies": [],
         "parallel_group": 0,
-        "id": "payment-invoice-integration",
+        "id": "catalog-frontend-components",
         "files": [
-          "src/hooks/payments/usePaymentOperations.ts",
-          "src/hooks/invoices/useInvoices.ts"
+          "src/components/**/*.tsx",
+          "src/components/**/*.ts",
+          "src/pages/**/*.tsx"
         ],
-        "success_criteria": "A findings file (payment_invoice_findings.md) is created with detailed analysis.",
+        "success_criteria": "A structured list of all frontend components that handle financial data, with file paths and line numbers, is produced.",
         "milestone": "milestone-1",
         "milestone_index": 0,
         "model_hint": "balanced",
-        "max_iterations": 3
+        "max_iterations": 1,
+        "expert_route": {
+          "name": "frontend",
+          "agent": "frontend-engineer",
+          "role": "Senior frontend engineer",
+          "skills": [
+            "senior-frontend",
+            "frontend-design",
+            "webapp-testing"
+          ],
+          "toolsets": [
+            "file",
+            "terminal",
+            "search",
+            "skills",
+            "browser"
+          ],
+          "confidence": 0.95
+        }
       },
       {
-        "goal": "Read payroll/usePayrollJournalIntegration.ts and maintenance/useMaintenanceJournalIntegration.ts to analyze journal entry creation for payroll and maintenance. Document accounting logic, triggers, checks. Output findings file (payroll_maintenance_findings.md).",
-        "agent": "code-reviewer",
-        "toolsets": [
-          "terminal",
-          "file"
-        ],
-        "dependencies": [],
-        "parallel_group": 0,
-        "id": "payroll-maintenance-integration",
-        "files": [
-          "src/hooks/payroll/usePayrollJournalIntegration.ts",
-          "src/hooks/maintenance/useMaintenanceJournalIntegration.ts"
-        ],
-        "success_criteria": "A findings file (payroll_maintenance_findings.md) is created.",
-        "milestone": "milestone-1",
-        "milestone_index": 0,
-        "model_hint": "analytical",
-        "max_iterations": 1
-      },
-      {
-        "goal": "Read traffic/useTrafficViolationJournalIntegration.ts, vehicle/useVehicleInstallmentJournalIntegration.ts, rental/useRentalPaymentJournalIntegration.ts to analyze journal entry creation for traffic violations, vehicle installments, and rental payments. Document accounting logic, triggers, checks. Output findings file (traffic_vehicle_rental_findings.md).",
-        "agent": "code-reviewer",
-        "toolsets": [
-          "terminal",
-          "file"
-        ],
-        "dependencies": [],
-        "parallel_group": 0,
-        "id": "traffic-vehicle-rental-integration",
-        "files": [
-          "src/hooks/traffic/useTrafficViolationJournalIntegration.ts",
-          "src/hooks/vehicle/useVehicleInstallmentJournalIntegration.ts",
-          "src/hooks/rental/useRentalPaymentJournalIntegration.ts"
-        ],
-        "success_criteria": "A findings file (traffic_vehicle_rental_findings.md) is created.",
-        "milestone": "milestone-1",
-        "milestone_index": 0,
-        "model_hint": "analytical",
-        "max_iterations": 1
-      },
-      {
-        "goal": "Read all migration files in supabase/migrations/ that contain financial triggers. Document each trigger: name, table, operation, timing, condition, action, file:line. Also analyze the overall workflow from transaction creation to journal entry posting to period close. Output findings file (trigger_workflow_findings.md).",
+        "goal": "Analyze double-entry integrity: verify journal entry lines structure, debit/credit balancing constraints, account mappings, and any database-level checks. Use the catalog from catalog-db-schema. Document findings with file:line references.",
         "agent": "backend-engineer",
         "toolsets": [
           "terminal",
-          "file"
-        ],
-        "dependencies": [],
-        "parallel_group": 1,
-        "id": "trigger-workflow-analysis",
-        "files": [
-          "supabase/migrations/*.sql"
-        ],
-        "success_criteria": "A findings file (trigger_workflow_findings.md) is created with all triggers documented and workflow described.",
-        "milestone": "milestone-1",
-        "milestone_index": 0,
-        "model_hint": "analytical",
-        "max_iterations": 1
-      },
-      {
-        "goal": "Based on all findings from previous subtasks (financial_tables.json, payment_invoice_findings.md, contract_purchase_findings.md, payroll_maintenance_findings.md, traffic_vehicle_rental_findings.md, trigger_workflow_findings.md), produce an overall assessment including strengths, weaknesses, and prioritized recommendations. Output a summary JSON file (overall_assessment.json).",
-        "agent": "devops-engineer",
-        "toolsets": [
-          "terminal",
-          "file"
+          "file",
+          "search",
+          "skills"
         ],
         "dependencies": [
-          "financial-tables-structure",
-          "payment-invoice-integration",
-          "contract-purchase-integration",
-          "payroll-maintenance-integration",
-          "traffic-vehicle-rental-integration",
-          "trigger-workflow-analysis"
+          "catalog-db-schema"
         ],
         "parallel_group": 1,
-        "id": "overall-assessment",
+        "id": "analyze-double-entry",
         "files": [
-          "overall_assessment.json"
+          "supabase/migrations/*.sql",
+          "src/integrations/supabase/types.ts"
         ],
-        "success_criteria": "A summary JSON file (overall_assessment.json) is created with strengths, weaknesses, recommendations.",
+        "success_criteria": "A report section detailing double-entry integrity, including any missing constraints, unbalanced entries, or incorrect mappings, with file:line references.",
         "milestone": "milestone-2",
         "milestone_index": 1,
-        "model_hint": "speed",
-        "max_iterations": 1
+        "model_hint": "analytical",
+        "max_iterations": 1,
+        "expert_route": {
+          "name": "database",
+          "agent": "backend-engineer",
+          "role": "Database and data-integrity engineer",
+          "skills": [
+            "API Integration Specialist",
+            "graphify"
+          ],
+          "toolsets": [
+            "file",
+            "terminal",
+            "search",
+            "skills"
+          ],
+          "confidence": 0.95
+        }
       },
       {
-        "goal": "Collect all findings from all prior subtasks (financial_tables.json, payment_invoice_findings.md, contract_purchase_findings.md, payroll_maintenance_findings.md, traffic_vehicle_rental_findings.md, trigger_workflow_findings.md, overall_assessment.json) and produce the final report in Arabic at docs/financial-system-integration-audit-v5-2026-07-05.md. The report must include all sections as specified: financial system structure, integration details for each module, full workflow, trigger analysis, issues, overall assessment. Write in Arabic.",
-        "agent": "builder",
+        "goal": "Analyze chart of accounts, GL reconciliation, trial balance, AP/AR, revenue recognition, financial statements, internal controls, cash flow, and period-end close. Cross-reference with cataloged API routes and frontend components. Document findings with file:line references.",
+        "agent": "code-reviewer",
         "toolsets": [
-          "hermes-cli"
+          "terminal",
+          "file",
+          "search",
+          "skills"
         ],
         "dependencies": [
-          "financial-tables-structure",
-          "payment-invoice-integration",
-          "contract-purchase-integration",
-          "payroll-maintenance-integration",
-          "traffic-vehicle-rental-integration",
-          "trigger-workflow-analysis",
-          "overall-assessment"
+          "catalog-db-schema",
+          "catalog-api-routes",
+          "catalog-frontend-components"
         ],
         "parallel_group": 2,
-        "id": "assembly",
+        "id": "analyze-financial-modules",
         "files": [
-          "docs/financial-system-integration-audit-v5-2026-07-05.md"
+          "src/integrations/supabase/**/*.ts",
+          "src/components/**/*.tsx",
+          "supabase/migrations/*.sql"
         ],
-        "success_criteria": "Final deliverable file is written and contains all findings from prior subtasks.",
+        "success_criteria": "A report section covering each financial module, identifying gaps, missing features, or integration issues, with file:line references.",
+        "milestone": "milestone-2",
+        "milestone_index": 1,
+        "model_hint": "analytical",
+        "max_iterations": 1,
+        "expert_route": {
+          "name": "financial_audit",
+          "agent": "code-reviewer",
+          "role": "CFO financial-system integration auditor",
+          "skills": [
+            "cfo-financial-system-audit",
+            "financial-system-audit-verification",
+            "graphify"
+          ],
+          "toolsets": [
+            "file",
+            "terminal",
+            "search",
+            "skills"
+          ],
+          "confidence": 0.95
+        }
+      },
+      {
+        "goal": "Build a trigger-operation matrix: map every database trigger/function to the API operations that invoke them. Cross-reference each financial operation against each trigger to identify missing triggers, redundant triggers, or incorrect logic. Use catalogs and double-entry analysis.",
+        "agent": "backend-engineer",
+        "toolsets": [
+          "hermes-cli",
+          "file",
+          "terminal",
+          "search",
+          "skills"
+        ],
+        "dependencies": [
+          "catalog-db-schema",
+          "catalog-api-routes",
+          "analyze-double-entry"
+        ],
+        "parallel_group": 3,
+        "id": "cross-reference-triggers",
+        "files": [
+          "supabase/migrations/*.sql",
+          "src/integrations/supabase/**/*.ts"
+        ],
+        "success_criteria": "A trigger-operation matrix and gap analysis with file:line references, highlighting any missing or misconfigured triggers.",
         "milestone": "milestone-3",
         "milestone_index": 2,
         "model_hint": "balanced",
-        "max_iterations": 3
+        "max_iterations": 3,
+        "expert_route": {
+          "name": "database",
+          "agent": "backend-engineer",
+          "role": "Database and data-integrity engineer",
+          "skills": [
+            "API Integration Specialist",
+            "graphify"
+          ],
+          "toolsets": [
+            "file",
+            "terminal",
+            "search",
+            "skills"
+          ],
+          "confidence": 0.95
+        }
+      },
+      {
+        "goal": "Compile all findings from previous subtasks into a comprehensive Arabic report. Structure the report with sections for each audit area, include file:line references, and save to docs/financial-integration-audit-report.md. No code changes.",
+        "agent": "code-reviewer",
+        "toolsets": [
+          "terminal",
+          "file",
+          "search",
+          "skills"
+        ],
+        "dependencies": [
+          "catalog-db-schema",
+          "catalog-api-routes",
+          "catalog-frontend-components",
+          "analyze-double-entry",
+          "analyze-financial-modules",
+          "cross-reference-triggers"
+        ],
+        "parallel_group": 3,
+        "id": "assembly",
+        "files": [
+          "docs/financial-integration-audit-report.md"
+        ],
+        "success_criteria": "Final deliverable file docs/financial-integration-audit-report.md is written and contains all findings from prior subtasks, in Arabic, with file:line references.",
+        "milestone": "milestone-4",
+        "milestone_index": 3,
+        "model_hint": "analytical",
+        "max_iterations": 1,
+        "expert_route": {
+          "name": "financial_audit",
+          "agent": "code-reviewer",
+          "role": "CFO financial-system integration auditor",
+          "skills": [
+            "cfo-financial-system-audit",
+            "financial-system-audit-verification",
+            "graphify"
+          ],
+          "toolsets": [
+            "file",
+            "terminal",
+            "search",
+            "skills"
+          ],
+          "confidence": 0.65
+        }
       }
     ],
     "risk_level": "medium",
-    "parallel_group_count": 3,
+    "parallel_group_count": 4,
     "routing_decisions": [
       {
-        "subtask_id": "contract-purchase-integration",
-        "task_type": "review",
-        "agent": "code-reviewer",
-        "model_hint": "analytical",
-        "complexity": "medium",
-        "is_risky": false,
-        "confidence": 0.67,
-        "profile": {
-          "name": "code-reviewer",
-          "task_type": "review",
-          "model_tier": "balanced",
-          "timeout": 120.0,
-          "max_retries": 1,
-          "priority": "P1",
-          "requires_review": false,
-          "estimated_tokens": 4000,
-          "parallel_safe": true,
-          "toolsets": [
-            "terminal",
-            "file"
-          ],
-          "model": "glm-5.2:cloud",
-          "provider": "custom:ollama",
-          "base_url": "https://ollama.com/v1"
-        },
-        "parallel_safe": true,
-        "toolsets": [
-          "terminal",
-          "file"
-        ]
-      },
-      {
-        "subtask_id": "financial-tables-structure",
-        "task_type": "database",
-        "agent": "backend-engineer",
-        "model_hint": "analytical",
-        "complexity": "high",
-        "is_risky": true,
-        "confidence": 0.64,
-        "profile": {
-          "name": "backend-engineer",
-          "task_type": "database",
-          "model_tier": "balanced",
-          "timeout": 120.0,
-          "max_retries": 1,
-          "priority": "P1",
-          "requires_review": false,
-          "estimated_tokens": 4000,
-          "parallel_safe": true,
-          "toolsets": [
-            "terminal",
-            "file"
-          ],
-          "model": "glm-5.2:cloud",
-          "provider": "custom:ollama",
-          "base_url": "https://ollama.com/v1"
-        },
-        "parallel_safe": true,
-        "toolsets": [
-          "terminal",
-          "file"
-        ]
-      },
-      {
-        "subtask_id": "payment-invoice-integration",
-        "task_type": "implementation",
-        "agent": "builder",
-        "model_hint": "balanced",
-        "complexity": "medium",
-        "is_risky": false,
-        "confidence": 0.57,
-        "profile": {
-          "name": "builder",
-          "task_type": "implementation",
-          "model_tier": "balanced",
-          "timeout": 600,
-          "max_retries": 3,
-          "priority": "P1",
-          "requires_review": false,
-          "estimated_tokens": 4000,
-          "parallel_safe": true,
-          "toolsets": [
-            "hermes-cli"
-          ],
-          "model": "glm-5.2:cloud",
-          "provider": "custom:ollama",
-          "base_url": "http://localhost:11434/v1"
-        },
-        "parallel_safe": true,
-        "toolsets": [
-          "hermes-cli"
-        ]
-      },
-      {
-        "subtask_id": "payroll-maintenance-integration",
-        "task_type": "review",
-        "agent": "code-reviewer",
-        "model_hint": "analytical",
-        "complexity": "medium",
-        "is_risky": false,
-        "confidence": 0.67,
-        "profile": {
-          "name": "code-reviewer",
-          "task_type": "review",
-          "model_tier": "balanced",
-          "timeout": 120.0,
-          "max_retries": 1,
-          "priority": "P1",
-          "requires_review": false,
-          "estimated_tokens": 4000,
-          "parallel_safe": true,
-          "toolsets": [
-            "terminal",
-            "file"
-          ],
-          "model": "glm-5.2:cloud",
-          "provider": "custom:ollama",
-          "base_url": "https://ollama.com/v1"
-        },
-        "parallel_safe": true,
-        "toolsets": [
-          "terminal",
-          "file"
-        ]
-      },
-      {
-        "subtask_id": "traffic-vehicle-rental-integration",
-        "task_type": "review",
-        "agent": "code-reviewer",
-        "model_hint": "analytical",
-        "complexity": "medium",
-        "is_risky": false,
-        "confidence": 0.67,
-        "profile": {
-          "name": "code-reviewer",
-          "task_type": "review",
-          "model_tier": "balanced",
-          "timeout": 120.0,
-          "max_retries": 1,
-          "priority": "P1",
-          "requires_review": false,
-          "estimated_tokens": 4000,
-          "parallel_safe": true,
-          "toolsets": [
-            "terminal",
-            "file"
-          ],
-          "model": "glm-5.2:cloud",
-          "provider": "custom:ollama",
-          "base_url": "https://ollama.com/v1"
-        },
-        "parallel_safe": true,
-        "toolsets": [
-          "terminal",
-          "file"
-        ]
-      },
-      {
-        "subtask_id": "trigger-workflow-analysis",
-        "task_type": "database",
-        "agent": "backend-engineer",
-        "model_hint": "analytical",
-        "complexity": "high",
-        "is_risky": true,
-        "confidence": 0.64,
-        "profile": {
-          "name": "backend-engineer",
-          "task_type": "database",
-          "model_tier": "balanced",
-          "timeout": 120.0,
-          "max_retries": 1,
-          "priority": "P1",
-          "requires_review": false,
-          "estimated_tokens": 4000,
-          "parallel_safe": true,
-          "toolsets": [
-            "terminal",
-            "file"
-          ],
-          "model": "glm-5.2:cloud",
-          "provider": "custom:ollama",
-          "base_url": "https://ollama.com/v1"
-        },
-        "parallel_safe": true,
-        "toolsets": [
-          "terminal",
-          "file"
-        ]
-      },
-      {
-        "subtask_id": "overall-assessment",
+        "subtask_id": "catalog-api-routes",
         "task_type": "config",
         "agent": "devops-engineer",
         "model_hint": "speed",
@@ -406,7 +337,135 @@
         ]
       },
       {
-        "subtask_id": "assembly",
+        "subtask_id": "catalog-db-schema",
+        "task_type": "database",
+        "agent": "backend-engineer",
+        "model_hint": "analytical",
+        "complexity": "high",
+        "is_risky": true,
+        "confidence": 0.79,
+        "profile": {
+          "name": "backend-engineer",
+          "task_type": "database",
+          "model_tier": "balanced",
+          "timeout": 120.0,
+          "max_retries": 1,
+          "priority": "P1",
+          "requires_review": false,
+          "estimated_tokens": 4000,
+          "parallel_safe": true,
+          "toolsets": [
+            "terminal",
+            "file"
+          ],
+          "model": "glm-5.2:cloud",
+          "provider": "custom:ollama",
+          "base_url": "https://ollama.com/v1"
+        },
+        "parallel_safe": true,
+        "toolsets": [
+          "terminal",
+          "file"
+        ]
+      },
+      {
+        "subtask_id": "catalog-frontend-components",
+        "task_type": "frontend",
+        "agent": "frontend-engineer",
+        "model_hint": "balanced",
+        "complexity": "medium",
+        "is_risky": false,
+        "confidence": 0.64,
+        "profile": {
+          "name": "frontend-engineer",
+          "task_type": "frontend",
+          "model_tier": "balanced",
+          "timeout": 120.0,
+          "max_retries": 1,
+          "priority": "P1",
+          "requires_review": false,
+          "estimated_tokens": 4000,
+          "parallel_safe": true,
+          "toolsets": [
+            "terminal",
+            "file"
+          ],
+          "model": "glm-5.2:cloud",
+          "provider": "custom:ollama",
+          "base_url": "https://ollama.com/v1"
+        },
+        "parallel_safe": true,
+        "toolsets": [
+          "terminal",
+          "file"
+        ]
+      },
+      {
+        "subtask_id": "analyze-double-entry",
+        "task_type": "review",
+        "agent": "code-reviewer",
+        "model_hint": "analytical",
+        "complexity": "medium",
+        "is_risky": false,
+        "confidence": 0.75,
+        "profile": {
+          "name": "code-reviewer",
+          "task_type": "review",
+          "model_tier": "balanced",
+          "timeout": 120.0,
+          "max_retries": 1,
+          "priority": "P1",
+          "requires_review": false,
+          "estimated_tokens": 4000,
+          "parallel_safe": true,
+          "toolsets": [
+            "terminal",
+            "file"
+          ],
+          "model": "glm-5.2:cloud",
+          "provider": "custom:ollama",
+          "base_url": "https://ollama.com/v1"
+        },
+        "parallel_safe": true,
+        "toolsets": [
+          "terminal",
+          "file"
+        ]
+      },
+      {
+        "subtask_id": "analyze-financial-modules",
+        "task_type": "review",
+        "agent": "code-reviewer",
+        "model_hint": "analytical",
+        "complexity": "medium",
+        "is_risky": false,
+        "confidence": 0.58,
+        "profile": {
+          "name": "code-reviewer",
+          "task_type": "review",
+          "model_tier": "balanced",
+          "timeout": 120.0,
+          "max_retries": 1,
+          "priority": "P1",
+          "requires_review": false,
+          "estimated_tokens": 4000,
+          "parallel_safe": true,
+          "toolsets": [
+            "terminal",
+            "file"
+          ],
+          "model": "glm-5.2:cloud",
+          "provider": "custom:ollama",
+          "base_url": "https://ollama.com/v1"
+        },
+        "parallel_safe": true,
+        "toolsets": [
+          "terminal",
+          "file"
+        ]
+      },
+      {
+        "subtask_id": "cross-reference-triggers",
         "task_type": "implementation",
         "agent": "builder",
         "model_hint": "balanced",
@@ -434,6 +493,38 @@
         "toolsets": [
           "hermes-cli"
         ]
+      },
+      {
+        "subtask_id": "assembly",
+        "task_type": "review",
+        "agent": "code-reviewer",
+        "model_hint": "analytical",
+        "complexity": "medium",
+        "is_risky": false,
+        "confidence": 0.58,
+        "profile": {
+          "name": "code-reviewer",
+          "task_type": "review",
+          "model_tier": "balanced",
+          "timeout": 120.0,
+          "max_retries": 1,
+          "priority": "P1",
+          "requires_review": false,
+          "estimated_tokens": 4000,
+          "parallel_safe": true,
+          "toolsets": [
+            "terminal",
+            "file"
+          ],
+          "model": "glm-5.2:cloud",
+          "provider": "custom:ollama",
+          "base_url": "https://ollama.com/v1"
+        },
+        "parallel_safe": true,
+        "toolsets": [
+          "terminal",
+          "file"
+        ]
       }
     ],
     "milestones": [
@@ -441,20 +532,14 @@
         "id": "milestone-1",
         "name": "Parallel group 1",
         "subtask_ids": [
-          "contract-purchase-integration",
-          "financial-tables-structure",
-          "payment-invoice-integration",
-          "payroll-maintenance-integration",
-          "traffic-vehicle-rental-integration",
-          "trigger-workflow-analysis"
+          "catalog-api-routes",
+          "catalog-db-schema",
+          "catalog-frontend-components"
         ],
         "acceptance_criteria": [
-          "A findings file (contract_purchase_findings.md) is created.",
-          "A JSON file (financial_tables.json) is created containing all financial tables with columns and relationships.",
-          "A findings file (payment_invoice_findings.md) is created with detailed analysis.",
-          "A findings file (payroll_maintenance_findings.md) is created.",
-          "A findings file (traffic_vehicle_rental_findings.md) is created.",
-          "A findings file (trigger_workflow_findings.md) is created with all triggers documented and workflow described."
+          "A structured list of all financial API operations (create, read, update, delete) with file paths and line numbers is produced.",
+          "A JSON or markdown file listing all financial tables, columns, triggers, functions, and RLS policies with exact file paths and line numbers is created.",
+          "A structured list of all frontend components that handle financial data, with file paths and line numbers, is produced."
         ],
         "assumptions": [
           "Dependencies from earlier milestones remain stable."
@@ -464,10 +549,12 @@
         "id": "milestone-2",
         "name": "Parallel group 2",
         "subtask_ids": [
-          "overall-assessment"
+          "analyze-double-entry",
+          "analyze-financial-modules"
         ],
         "acceptance_criteria": [
-          "A summary JSON file (overall_assessment.json) is created with strengths, weaknesses, recommendations."
+          "A report section detailing double-entry integrity, including any missing constraints, unbalanced entries, or incorrect mappings, with file:line references.",
+          "A report section covering each financial module, identifying gaps, missing features, or integration issues, with file:line references."
         ],
         "assumptions": [
           "Dependencies from earlier milestones remain stable."
@@ -477,10 +564,23 @@
         "id": "milestone-3",
         "name": "Parallel group 3",
         "subtask_ids": [
+          "cross-reference-triggers"
+        ],
+        "acceptance_criteria": [
+          "A trigger-operation matrix and gap analysis with file:line references, highlighting any missing or misconfigured triggers."
+        ],
+        "assumptions": [
+          "Dependencies from earlier milestones remain stable."
+        ]
+      },
+      {
+        "id": "milestone-4",
+        "name": "Parallel group 4",
+        "subtask_ids": [
           "assembly"
         ],
         "acceptance_criteria": [
-          "Final deliverable file is written and contains all findings from prior subtasks."
+          "Final deliverable file docs/financial-integration-audit-report.md is written and contains all findings from prior subtasks, in Arabic, with file:line references."
         ],
         "assumptions": [
           "Dependencies from earlier milestones remain stable."
@@ -490,19 +590,18 @@
     "clarifying_questions": [
       "What authentication method should be used (JWT, OAuth, session-based)?",
       "What user roles or permission levels are needed?",
-      "What database and ORM are in use? Any existing migration strategy?",
-      "What is the deployment pipeline (staging, canary, production)?",
-      "Are there any approval gates or change management processes?"
+      "What API style (REST, GraphQL, gRPC) and versioning strategy?",
+      "What error response format and status code conventions?",
+      "What database and ORM are in use? Any existing migration strategy?"
     ],
     "completion_criteria": [
-      "Subtask complete: Read contracts/useContractCreation.ts, contracts/contractJournalEntry.ts, integrations/useInventoryP",
-      "Subtask complete: Read types.ts and all migration files in supabase/migrations/ to extract all financial tables (chart",
-      "Subtask complete: Read payments/usePaymentOperations.ts and invoices/useInvoices.ts to understand how journal entries ",
-      "Subtask complete: Read payroll/usePayrollJournalIntegration.ts and maintenance/useMaintenanceJournalIntegration.ts to ",
-      "Subtask complete: Read traffic/useTrafficViolationJournalIntegration.ts, vehicle/useVehicleInstallmentJournalIntegrati",
-      "Subtask complete: Read all migration files in supabase/migrations/ that contain financial triggers. Document each trig",
-      "Subtask complete: Based on all findings from previous subtasks (financial_tables.json, payment_invoice_findings.md, co",
-      "Subtask complete: Collect all findings from all prior subtasks (financial_tables.json, payment_invoice_findings.md, co",
+      "Subtask complete: Identify all API endpoints, hooks, and service functions that handle financial operations (invoices,",
+      "Subtask complete: Extract all financial-related database tables, columns, migrations, triggers, functions, and RLS pol",
+      "Subtask complete: Identify all frontend components that display or interact with financial data (dashboards, forms, re",
+      "Subtask complete: Analyze double-entry integrity: verify journal entry lines structure, debit/credit balancing constra",
+      "Subtask complete: Analyze chart of accounts, GL reconciliation, trial balance, AP/AR, revenue recognition, financial s",
+      "Subtask complete: Build a trigger-operation matrix: map every database trigger/function to the API operations that inv",
+      "Subtask complete: Compile all findings from previous subtasks into a comprehensive Arabic report. Structure the report",
       "All quality gates pass (syntax, lint, type, test)",
       "No regressions in existing test suite"
     ],
