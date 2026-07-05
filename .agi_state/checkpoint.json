@@ -1,13 +1,13 @@
 {
   "stage": "plan_approved",
-  "task": "\u0631\u0627\u062c\u0639 \u0627\u0644\u0646\u0638\u0627\u0645 \u0627\u0644\u0645\u0627\u0644\u064a \u0648\u062a\u0643\u0627\u0645\u0644\u0647 \u0645\u0639 \u0628\u0642\u064a\u0629 \u0627\u0644\u0648\u062d\u062f\u0627\u062a \u0641\u064a \u0645\u0634\u0631\u0648\u0639 Fleetify ERP \u0648\u0642\u062f\u0645 \u062a\u0642\u0631\u064a\u0631 \u0643\u0627\u0645\u0644 \u0628\u062f\u0648\u0646 \u062a\u063a\u064a\u064a\u0631 \u0623\u064a \u0643\u0648\u062f. \n\n\u0627\u0644\u0645\u0634\u0631\u0648\u0639 \u0645\u0648\u062c\u0648\u062f \u0641\u064a: C:\\Users\\khamis\\Documents\\fleetifyapp\n\n\u0627\u0644\u0645\u0637\u0644\u0648\u0628:\n1. \u0641\u062d\u0635 \u062c\u0645\u064a\u0639 \u062c\u062f\u0627\u0648\u0644 \u0627\u0644\u0646\u0638\u0627\u0645 \u0627\u0644\u0645\u0627\u0644\u064a (chart_of_accounts, journal_entries, journal_entry_lines, invoices, payments, accounting_periods, fixed_assets, cost_centers, budgets, audit_logs)\n2. \u0641\u062d\u0635 \u062c\u0645\u064a\u0639 \u0647\u0648\u0643\u0627\u062a \u0627\u0644\u062a\u0643\u0627\u0645\u0644 \u0627\u0644\u0645\u062d\u0627\u0633\u0628\u064a (6 \u0647\u0648\u0643\u0627\u062a): payroll, vehicle_installment, rental_payment, traffic_violation, maintenance, payments\n3. \u0641\u062d\u0635 \u0637\u0628\u0642\u0627\u062a \u0627\u0644\u062e\u062f\u0645\u0629:",
+  "task": "\u0631\u0627\u062c\u0639 \u0627\u0644\u0646\u0638\u0627\u0645 \u0627\u0644\u0645\u0627\u0644\u064a \u0648\u062a\u0643\u0627\u0645\u0644\u0647 \u0645\u0639 \u0628\u0642\u064a\u0629 \u0627\u0644\u0648\u062d\u062f\u0627\u062a \u0641\u064a \u0645\u0634\u0631\u0648\u0639 Fleetify \u0648\u0642\u062f\u0645 \u062a\u0642\u0631\u064a\u0631 \u0643\u0627\u0645\u0644 \u0628\u062f\u0648\u0646 \u062a\u063a\u064a\u064a\u0631 \u0627\u0644\u0643\u0648\u062f. \n\n\u0627\u0644\u0645\u0634\u0631\u0648\u0639 \u0645\u0648\u062c\u0648\u062f \u0641\u064a: C:\\Users\\khamis\\Documents\\fleetifyapp\n\n\u0627\u0644\u0645\u0637\u0644\u0648\u0628:\n1. \u0642\u0631\u0627\u0621\u0629 \u062c\u0645\u064a\u0639 \u0645\u0644\u0641\u0627\u062a \u0627\u0644\u062a\u0631\u062d\u064a\u0644 (migrations) \u0627\u0644\u0645\u0627\u0644\u064a\u0629 \u0641\u064a supabase/migrations/\n2. \u0642\u0631\u0627\u0621\u0629 \u062c\u0645\u064a\u0639 hooks \u0627\u0644\u062a\u0643\u0627\u0645\u0644 \u0627\u0644\u0645\u0627\u0644\u064a (use*JournalIntegration.ts) \u0641\u064a src/hooks/\n3. \u0642\u0631\u0627\u0621\u0629 \u0623\u0646\u0648\u0627\u0639 \u0627\u0644\u0628\u064a\u0627\u0646\u0627\u062a \u0627\u0644\u0645\u0627\u0644\u064a\u0629 (finance.types.ts, payment.ts, invoice.ts)\n4. \u0642\u0631\u0627\u0621\u0629 \u0645\u0644\u0641\u0627\u062a \u0627\u0644\u062a\u0642\u0627\u0631\u064a\u0631 \u0627\u0644\u0645\u0627\u0644\u064a\u0629 (ledgerCashFlowReportRules.ts)\n5. \u0642\u0631\u0627\u0621\u0629 \u0645\u0644\u0641\u0627\u062a \u0627\u0644\u0636\u0648\u0627\u0628\u0637 \u0627\u0644\u0645\u0627\u0644\u064a\u0629 (financeAccessRule",
   "status": "running",
-  "timestamp": "2026-07-05T18:04:30.188994",
+  "timestamp": "2026-07-05T18:29:57.416358",
   "plan": {
-    "task": "\u0631\u0627\u062c\u0639 \u0627\u0644\u0646\u0638\u0627\u0645 \u0627\u0644\u0645\u0627\u0644\u064a \u0648\u062a\u0643\u0627\u0645\u0644\u0647 \u0645\u0639 \u0628\u0642\u064a\u0629 \u0627\u0644\u0648\u062d\u062f\u0627\u062a \u0641\u064a \u0645\u0634\u0631\u0648\u0639 Fleetify ERP \u0648\u0642\u062f\u0645 \u062a\u0642\u0631\u064a\u0631 \u0643\u0627\u0645\u0644 \u0628\u062f\u0648\u0646 \u062a\u063a\u064a\u064a\u0631 \u0623\u064a \u0643\u0648\u062f. \n\n\u0627\u0644\u0645\u0634\u0631\u0648\u0639 \u0645\u0648\u062c\u0648\u062f \u0641\u064a: C:\\Users\\khamis\\Documents\\fleetifyapp\n\n\u0627\u0644\u0645\u0637\u0644\u0648\u0628:\n1. \u0641\u062d\u0635 \u062c\u0645\u064a\u0639 \u062c\u062f\u0627\u0648\u0644 \u0627\u0644\u0646\u0638\u0627\u0645 \u0627\u0644\u0645\u0627\u0644\u064a (chart_of_accounts, journal_entries, journal_entry_lines, invoices, payments, accounting_periods, fixed_assets, cost_centers, budgets, audit_logs)\n2. \u0641\u062d\u0635 \u062c\u0645\u064a\u0639 \u0647\u0648\u0643\u0627\u062a \u0627\u0644\u062a\u0643\u0627\u0645\u0644 \u0627\u0644\u0645\u062d\u0627\u0633\u0628\u064a (6 \u0647\u0648\u0643\u0627\u062a): payroll, vehicle_installment, rental_payment, traffic_violation, maintenance, payments\n3. \u0641\u062d\u0635 \u0637\u0628\u0642\u0627\u062a \u0627\u0644\u062e\u062f\u0645\u0629: AccountingService, PaymentService, PaymentStateMachine, PaymentLinkingService, InvoiceService, ContractService, financialControls, auditService\n4. \u0641\u062d\u0635 \u0627\u0644\u0636\u0648\u0627\u0628\u0637 \u0627\u0644\u062f\u0627\u062e\u0644\u064a\u0629: \u0635\u0644\u0627\u062d\u064a\u0627\u062a\u060c \u0645\u0648\u0627\u0641\u0642\u0627\u062a\u060c \u0633\u062c\u0644 \u062a\u062f\u0642\u064a\u0642\u060c \u0627\u0644\u062a\u062d\u0643\u0645 \u0628\u0627\u0644\u0641\u062a\u0631\u0627\u062a \u0627\u0644\u0645\u0627\u0644\u064a\u0629\n5. \u0641\u062d\u0635 \u0627\u0644\u062a\u0642\u0627\u0631\u064a\u0631 \u0627\u0644\u0645\u0627\u0644\u064a\u0629 \u0648\u0644\u0648\u062d\u0627\u062a \u0627\u0644\u0645\u0639\u0644\u0648\u0645\u0627\u062a\n6. \u0641\u062d\u0635 \u0627\u0644\u062a\u0643\u0627\u0645\u0644 \u0645\u0639 \u0627\u0644\u0648\u062d\u062f\u0627\u062a \u0627\u0644\u0623\u062e\u0631\u0649: \u0627\u0644\u0639\u0642\u0648\u062f\u060c \u0627\u0644\u0645\u0648\u0638\u0641\u064a\u0646\u060c \u0627\u0644\u0645\u0631\u0643\u0628\u0627\u062a\u060c \u0627\u0644\u0635\u064a\u0627\u0646\u0629\u060c \u0627\u0644\u0645\u062e\u0627\u0644\u0641\u0627\u062a\n7. \u0641\u062d\u0635 \u0642\u0648\u0627\u0639\u062f \u0627\u0644\u0628\u064a\u0627\u0646\u0627\u062a (migrations) \u0648\u0627\u0644\u0640 triggers\n\n\u0627\u0644\u0645\u062e\u0631\u062c\u0627\u062a:\n- \u062a\u0642\u0631\u064a\u0631 \u0645\u0641\u0635\u0644 \u0628\u0627\u0644\u0644\u063a\u0629 \u0627\u0644\u0639\u0631\u0628\u064a\u0629 \u0641\u064a \u0645\u0644\u0641 docs/financial-system-integration-audit-report.md\n- \u064a\u062c\u0628 \u0623\u0646 \u064a\u0634\u0645\u0644 \u0627\u0644\u062a\u0642\u0631\u064a\u0631: \u0645\u0644\u062e\u0635 \u062a\u0646\u0641\u064a\u0630\u064a\u060c \u062a\u062d\u0644\u064a\u0644 \u0643\u0644 \u0648\u062d\u062f\u0629\u060c \u062e\u0631\u064a\u0637\u0629 \u062a\u0643\u0627\u0645\u0644\u060c \u0646\u062a\u0627\u0626\u062c \u062d\u0633\u0628 \u0627\u0644\u062e\u0637\u0648\u0631\u0629\u060c \u062a\u0648\u0635\u064a\u0627\u062a\n- \u0643\u0644 \u0646\u062a\u064a\u062c\u0629 \u064a\u062c\u0628 \u0623\u0646 \u062a\u062d\u062a\u0648\u064a \u0639\u0644\u0649 \u0645\u0631\u062c\u0639 \u0645\u0644\u0641:\u0633\u0637\u0631 \u0645\u062d\u062f\u062f\n- \u0644\u0627 \u062a\u063a\u064a\u064a\u0631 \u0641\u064a \u0623\u064a \u0643\u0648\u062f - \u0641\u0642\u0637 \u062a\u0642\u0631\u064a\u0631\n\n\u0645\u0644\u0627\u062d\u0638\u0629 \u0645\u0647\u0645\u0629: \u0644\u0627 \u062a\u062b\u0642 \u0641\u064a \u062a\u0642\u0627\u0631\u064a\u0631 \u0627\u0644\u0640 subagents \u0627\u0644\u0630\u0627\u062a\u064a\u0629 - \u062a\u062d\u0642\u0642 \u0645\u0646 \u0643\u0644 \u0645\u0644\u0641 \u0628\u0646\u0641\u0633\u0643 \u0648\u0627\u0642\u0631\u0623 \u0627\u0644\u0645\u0644\u0641\u0627\u062a \u0645\u0628\u0627\u0634\u0631\u0629 \u0644\u0644\u062a\u0623\u0643\u062f \u0645\u0646 \u0635\u062d\u0629 \u0627\u0644\u0645\u0639\u0644\u0648\u0645\u0627\u062a.",
+    "task": "\u0631\u0627\u062c\u0639 \u0627\u0644\u0646\u0638\u0627\u0645 \u0627\u0644\u0645\u0627\u0644\u064a \u0648\u062a\u0643\u0627\u0645\u0644\u0647 \u0645\u0639 \u0628\u0642\u064a\u0629 \u0627\u0644\u0648\u062d\u062f\u0627\u062a \u0641\u064a \u0645\u0634\u0631\u0648\u0639 Fleetify \u0648\u0642\u062f\u0645 \u062a\u0642\u0631\u064a\u0631 \u0643\u0627\u0645\u0644 \u0628\u062f\u0648\u0646 \u062a\u063a\u064a\u064a\u0631 \u0627\u0644\u0643\u0648\u062f. \n\n\u0627\u0644\u0645\u0634\u0631\u0648\u0639 \u0645\u0648\u062c\u0648\u062f \u0641\u064a: C:\\Users\\khamis\\Documents\\fleetifyapp\n\n\u0627\u0644\u0645\u0637\u0644\u0648\u0628:\n1. \u0642\u0631\u0627\u0621\u0629 \u062c\u0645\u064a\u0639 \u0645\u0644\u0641\u0627\u062a \u0627\u0644\u062a\u0631\u062d\u064a\u0644 (migrations) \u0627\u0644\u0645\u0627\u0644\u064a\u0629 \u0641\u064a supabase/migrations/\n2. \u0642\u0631\u0627\u0621\u0629 \u062c\u0645\u064a\u0639 hooks \u0627\u0644\u062a\u0643\u0627\u0645\u0644 \u0627\u0644\u0645\u0627\u0644\u064a (use*JournalIntegration.ts) \u0641\u064a src/hooks/\n3. \u0642\u0631\u0627\u0621\u0629 \u0623\u0646\u0648\u0627\u0639 \u0627\u0644\u0628\u064a\u0627\u0646\u0627\u062a \u0627\u0644\u0645\u0627\u0644\u064a\u0629 (finance.types.ts, payment.ts, invoice.ts)\n4. \u0642\u0631\u0627\u0621\u0629 \u0645\u0644\u0641\u0627\u062a \u0627\u0644\u062a\u0642\u0627\u0631\u064a\u0631 \u0627\u0644\u0645\u0627\u0644\u064a\u0629 (ledgerCashFlowReportRules.ts)\n5. \u0642\u0631\u0627\u0621\u0629 \u0645\u0644\u0641\u0627\u062a \u0627\u0644\u0636\u0648\u0627\u0628\u0637 \u0627\u0644\u0645\u0627\u0644\u064a\u0629 (financeAccessRules.ts)\n6. \u0628\u0646\u0627\u0621 \u0645\u0635\u0641\u0648\u0641\u0629 \u0627\u0644\u0645\u0634\u063a\u0644\u0627\u062a (Trigger Matrix) \u0644\u0643\u0644 trigger \u0641\u064a \u0642\u0627\u0639\u062f\u0629 \u0627\u0644\u0628\u064a\u0627\u0646\u0627\u062a\n7. \u062a\u062d\u0644\u064a\u0644 \u062a\u0633\u0644\u0633\u0644 \u0639\u0645\u0644\u064a\u0627\u062a \u0643\u0644 hook \u0648\u0645\u0642\u0627\u0631\u0646\u062a\u0647\u0627 \u0645\u0639 \u0627\u0644\u0645\u0634\u063a\u0644\u0627\u062a\n8. \u062a\u062d\u0644\u064a\u0644 \u0627\u0644\u0645\u0646\u0637\u0642 \u0627\u0644\u0645\u062d\u0627\u0633\u0628\u064a \u0644\u0643\u0644 \u0648\u062d\u062f\u0629 (\u0627\u0644\u0625\u064a\u062c\u0627\u0631\u0627\u062a\u060c \u0627\u0644\u0635\u064a\u0627\u0646\u0629\u060c \u0627\u0644\u0645\u062e\u0627\u0644\u0641\u0627\u062a\u060c \u0627\u0644\u0631\u0648\u0627\u062a\u0628\u060c \u0623\u0642\u0633\u0627\u0637 \u0627\u0644\u0645\u0631\u0643\u0628\u0627\u062a)\n9. \u062a\u062d\u0644\u064a\u0644 \u0627\u0644\u062a\u0642\u0627\u0631\u064a\u0631 \u0627\u0644\u0645\u0627\u0644\u064a\u0629 (\u0647\u0644 \u062a\u0633\u062d\u0628 \u0628\u064a\u0627\u0646\u0627\u062a \u062d\u0642\u064a\u0642\u064a\u0629 \u0623\u0645 mock data)\n10. \u062a\u062d\u0644\u064a\u0644 \u0627\u0644\u0636\u0648\u0627\u0628\u0637 \u0627\u0644\u062f\u0627\u062e\u0644\u064a\u0629 (\u0641\u0635\u0644 \u0627\u0644\u0645\u0647\u0627\u0645\u060c \u0627\u0644\u0645\u0648\u0627\u0641\u0642\u0627\u062a\u060c \u0633\u062c\u0644 \u0627\u0644\u062a\u062f\u0642\u064a\u0642)\n11. \u062a\u062d\u0644\u064a\u0644 \u0627\u0644\u0639\u0645\u0644\u0629 (\u0647\u0644 \u062a\u062f\u0639\u0645 \u0639\u0645\u0644\u0627\u062a \u0645\u062a\u0639\u062f\u062f\u0629 \u0623\u0645 KWD \u0641\u0642\u0637)\n12. \u062a\u062d\u0644\u064a\u0644 \u062e\u0631\u064a\u0637\u0629 \u0627\u0644\u062a\u0643\u0627\u0645\u0644 \u0628\u064a\u0646 \u0627\u0644\u0648\u062d\u062f\u0627\u062a\n13. \u062a\u0642\u064a\u064a\u0645 \u0627\u0644\u0645\u062e\u0627\u0637\u0631\n\n\u0627\u0644\u0645\u062e\u0631\u062c\u0627\u062a: \u062a\u0642\u0631\u064a\u0631 \u0643\u0627\u0645\u0644 \u0628\u0627\u0644\u0644\u063a\u0629 \u0627\u0644\u0639\u0631\u0628\u064a\u0629 \u0645\u0639 \u062a\u0641\u0627\u0635\u064a\u0644 file:line \u0644\u0643\u0644 finding. \u0644\u0627 \u062a\u063a\u064a\u064a\u0631 \u0641\u064a \u0627\u0644\u0643\u0648\u062f.",
     "subtasks": [
       {
-        "goal": "Analyze integration of financial system with other modules: contracts, employees, vehicles, maintenance, violations. Read service files, hooks, and any cross-module code. Map data flow and dependencies between financial and non-financial modules. Write findings to scripts/audit-part-integrations.json.",
+        "goal": "Read source files that implement accounting logic for each module: rentals (e.g., scripts/analyze_company_jes.py, scripts/analyze_je_structure.py), maintenance (e.g., scripts/apply_fixes.py), violations (e.g., scripts/audit_analysis.py), salaries (e.g., scripts/apply_migration.py), vehicle installments (e.g., scripts/apply_migration_v2.py). For each module, document the journal entry creation logic, double-entry rules, and integration points. Output findings as a JSON file.",
         "agent": "code-reviewer",
         "toolsets": [
           "terminal",
@@ -15,178 +15,145 @@
         ],
         "dependencies": [],
         "parallel_group": 0,
-        "id": "audit-cross-module-integrations",
+        "id": "analyze-accounting-logic",
         "files": [
-          "src/**/*.ts",
-          "supabase/functions/**/*.ts",
-          "supabase/migrations/*.sql"
+          "scripts/analyze_company_jes.py",
+          "scripts/analyze_je_structure.py",
+          "scripts/apply_fixes.py",
+          "scripts/audit_analysis.py",
+          "scripts/apply_migration.py",
+          "scripts/apply_migration_v2.py"
         ],
-        "success_criteria": "A JSON file scripts/audit-part-integrations.json exists with an integration map and analysis.",
+        "success_criteria": "A JSON file 'findings_accounting_logic.json' is created with per-module accounting logic analysis.",
         "milestone": "milestone-1",
         "milestone_index": 0,
         "model_hint": "analytical",
         "max_iterations": 1
       },
       {
-        "goal": "Read all migration files in supabase/migrations/ and any database triggers that affect financial tables. List each migration and trigger, its purpose, and any issues (e.g., missing triggers, incorrect logic). Write findings to scripts/audit-part-migrations.json.",
+        "goal": "Read all migration files in supabase/migrations/ that are related to finance (e.g., contain 'finance', 'payment', 'invoice', 'journal', 'ledger'). For each, extract trigger definitions, table schemas, and function logic. Build a trigger matrix (table, event, function, timing). Output findings as a JSON file with file:line references.",
         "agent": "backend-engineer",
         "toolsets": [
           "terminal",
           "file"
         ],
         "dependencies": [],
+        "parallel_group": 0,
+        "id": "analyze-migrations",
+        "files": [
+          "supabase/migrations/*.sql"
+        ],
+        "success_criteria": "A JSON file 'findings_migrations.json' is created containing trigger matrix and schema analysis with file:line for each finding.",
+        "milestone": "milestone-1",
+        "milestone_index": 0,
+        "model_hint": "analytical",
+        "max_iterations": 1
+      },
+      {
+        "goal": "Read finance.types.ts, payment.ts, invoice.ts, ledgerCashFlowReportRules.ts, and financeAccessRules.ts. Document data structures, report logic (whether real data or mock), and internal controls (segregation of duties, approvals, audit trail). Output findings as a JSON file.",
+        "agent": "code-reviewer",
+        "toolsets": [
+          "terminal",
+          "file"
+        ],
+        "dependencies": [],
+        "parallel_group": 0,
+        "id": "analyze-types-and-controls",
+        "files": [
+          "src/types/finance.types.ts",
+          "src/types/payment.ts",
+          "src/types/invoice.ts",
+          "src/reports/ledgerCashFlowReportRules.ts",
+          "src/access/financeAccessRules.ts"
+        ],
+        "success_criteria": "A JSON file 'findings_types_controls.json' is created with data model, report analysis, and control findings.",
+        "milestone": "milestone-1",
+        "milestone_index": 0,
+        "model_hint": "analytical",
+        "max_iterations": 1
+      },
+      {
+        "goal": "Read all hook files in src/hooks/ matching the pattern use*JournalIntegration.ts. For each hook, document the sequence of operations (API calls, state updates, side effects) and compare with the trigger matrix from subtask 1. Identify gaps or inconsistencies. Output findings as a JSON file.",
+        "agent": "doc-writer",
+        "toolsets": [
+          "terminal",
+          "file"
+        ],
+        "dependencies": [
+          "analyze-migrations"
+        ],
         "parallel_group": 1,
-        "id": "audit-database-migrations-triggers",
+        "id": "analyze-hooks",
         "files": [
-          "supabase/migrations/*.sql"
+          "src/hooks/use*JournalIntegration.ts"
         ],
-        "success_criteria": "A JSON file scripts/audit-part-migrations.json exists with a list of migrations/triggers and analysis.",
-        "milestone": "milestone-1",
-        "milestone_index": 0,
-        "model_hint": "analytical",
+        "success_criteria": "A JSON file 'findings_hooks.json' is created with hook analysis and comparison to triggers.",
+        "milestone": "milestone-2",
+        "milestone_index": 1,
+        "model_hint": "speed",
         "max_iterations": 1
       },
       {
-        "goal": "Analyze all financial tables (chart_of_accounts, journal_entries, journal_entry_lines, invoices, payments, accounting_periods, fixed_assets, cost_centers, budgets, audit_logs). Read schema definitions from supabase/migrations/*.sql and src/integrations/supabase/types.ts. Also read any Python scripts in scripts/ that reference these tables. For each table, list columns, relationships, and any issues (missing fields, wrong types, missing indexes). Write findings to scripts/audit-part-financial-tables.json.",
-        "agent": "backend-engineer",
+        "goal": "Based on findings from subtasks 1-4, analyze: (a) currency support \u2013 search for 'KWD', 'QAR', 'currency' in all source files to determine if multi-currency is supported; (b) integration map \u2013 document how each module connects to the financial system (direct DB, hooks, triggers); (c) risk assessment \u2013 identify risks like missing audit trails, lack of segregation, hardcoded values, error handling gaps. Output findings as a JSON file.",
+        "agent": "code-reviewer",
         "toolsets": [
           "terminal",
           "file"
         ],
-        "dependencies": [],
+        "dependencies": [
+          "analyze-migrations",
+          "analyze-hooks",
+          "analyze-types-and-controls",
+          "analyze-accounting-logic"
+        ],
         "parallel_group": 2,
-        "id": "audit-financial-tables",
+        "id": "analyze-currency-integration-risk",
         "files": [
-          "supabase/migrations/*.sql",
-          "src/integrations/supabase/types.ts",
-          "scripts/*.py"
+          "**/*.py",
+          "**/*.ts",
+          "**/*.sql"
         ],
-        "success_criteria": "A JSON file scripts/audit-part-financial-tables.json exists with a list of each table, its columns, relationships, and any issues found.",
-        "milestone": "milestone-1",
-        "milestone_index": 0,
+        "success_criteria": "A JSON file 'findings_currency_integration_risk.json' is created with currency analysis, integration map, and risk assessment.",
+        "milestone": "milestone-3",
+        "milestone_index": 2,
         "model_hint": "analytical",
         "max_iterations": 1
       },
       {
-        "goal": "Find and analyze all 6 integration hooks: payroll, vehicle_installment, rental_payment, traffic_violation, maintenance, payments. Search for these hooks in supabase/functions/ (edge functions) and supabase/migrations/*.sql (database functions). Read each hook's code and describe its trigger, logic, and correctness. Write findings to scripts/audit-part-hooks.json.",
-        "agent": "backend-engineer",
-        "toolsets": [
-          "terminal",
-          "file"
-        ],
-        "dependencies": [],
-        "parallel_group": 3,
-        "id": "audit-integration-hooks",
-        "files": [
-          "supabase/functions/**/*.ts",
-          "supabase/migrations/*.sql",
-          "scripts/*.py"
-        ],
-        "success_criteria": "A JSON file scripts/audit-part-hooks.json exists with a description of each hook, its trigger, and analysis.",
-        "milestone": "milestone-1",
-        "milestone_index": 0,
-        "model_hint": "analytical",
-        "max_iterations": 1
-      },
-      {
-        "goal": "Examine internal controls: permissions (RLS policies in supabase/migrations/), approval workflows (look for approval logic in src/), audit trail (audit_logs table usage), and period control (accounting_periods enforcement). Read relevant files and document the controls, their implementation, and any gaps. Write findings to scripts/audit-part-controls.json.",
-        "agent": "builder",
-        "toolsets": [
-          "hermes-cli"
-        ],
-        "dependencies": [],
-        "parallel_group": 4,
-        "id": "audit-internal-controls",
-        "files": [
-          "supabase/migrations/*.sql",
-          "src/**/*.ts",
-          "src/**/*.py"
-        ],
-        "success_criteria": "A JSON file scripts/audit-part-controls.json exists with a list of controls and their analysis.",
-        "milestone": "milestone-1",
-        "milestone_index": 0,
-        "model_hint": "balanced",
-        "max_iterations": 3
-      },
-      {
-        "goal": "Find and analyze financial reports and dashboards. Search for report generation code (e.g., in scripts/ or src/), dashboard components (likely in src/), and any API endpoints serving financial data. Document each report/dashboard, its data sources, and completeness. Write findings to scripts/audit-part-reports.json.",
-        "agent": "code-reviewer",
-        "toolsets": [
-          "terminal",
-          "file"
-        ],
-        "dependencies": [],
-        "parallel_group": 5,
-        "id": "audit-reports-dashboards",
-        "files": [
-          "scripts/*.py",
-          "src/**/*.ts",
-          "src/**/*.vue",
-          "src/**/*.jsx"
-        ],
-        "success_criteria": "A JSON file scripts/audit-part-reports.json exists with a list of reports/dashboards and analysis.",
-        "milestone": "milestone-1",
-        "milestone_index": 0,
-        "model_hint": "analytical",
-        "max_iterations": 1
-      },
-      {
-        "goal": "Analyze service layers: AccountingService, PaymentService, PaymentStateMachine, PaymentLinkingService, InvoiceService, ContractService, financialControls, auditService. Search for these in src/ directory (likely .ts files). Read each service file and document its responsibilities, methods, and integration points with other services. Write findings to scripts/audit-part-services.json.",
-        "agent": "code-reviewer",
-        "toolsets": [
-          "terminal",
-          "file"
-        ],
-        "dependencies": [],
-        "parallel_group": 6,
-        "id": "audit-service-layers",
-        "files": [
-          "src/**/*.ts",
-          "src/**/*.py"
-        ],
-        "success_criteria": "A JSON file scripts/audit-part-services.json exists with analysis of each service.",
-        "milestone": "milestone-1",
-        "milestone_index": 0,
-        "model_hint": "analytical",
-        "max_iterations": 1
-      },
-      {
-        "goal": "Collect all findings from the 7 audit part files (scripts/audit-part-*.json). Compile them into a comprehensive Arabic report in docs/financial-system-integration-audit-report.md. The report must include: executive summary, analysis of each module, integration map, results by severity, and recommendations. Each finding must reference specific file:line. Do not change any code. Write the final report file.",
+        "goal": "Collect all findings JSON files from subtasks 1-5. Combine them into a single comprehensive report in Arabic. The report must include: trigger matrix, hook analysis, data model, report analysis, controls, accounting logic per module, currency support, integration map, and risk assessment. Write the final report to 'reports/financial_system_review_arabic.md'. Ensure all file:line references are preserved.",
         "agent": "builder",
         "toolsets": [
           "hermes-cli"
         ],
         "dependencies": [
-          "audit-financial-tables",
-          "audit-integration-hooks",
-          "audit-service-layers",
-          "audit-internal-controls",
-          "audit-reports-dashboards",
-          "audit-cross-module-integrations",
-          "audit-database-migrations-triggers"
+          "analyze-migrations",
+          "analyze-hooks",
+          "analyze-types-and-controls",
+          "analyze-accounting-logic",
+          "analyze-currency-integration-risk"
         ],
-        "parallel_group": 1,
+        "parallel_group": 3,
         "id": "assembly",
         "files": [
-          "docs/financial-system-integration-audit-report.md"
+          "reports/financial_system_review_arabic.md"
         ],
-        "success_criteria": "Final deliverable file docs/financial-system-integration-audit-report.md is written and contains all findings from prior subtasks.",
-        "milestone": "milestone-2",
-        "milestone_index": 1,
+        "success_criteria": "Final report file 'reports/financial_system_review_arabic.md' is written and contains all findings from prior subtasks in Arabic.",
+        "milestone": "milestone-4",
+        "milestone_index": 3,
         "model_hint": "balanced",
         "max_iterations": 3
       }
     ],
     "risk_level": "medium",
-    "parallel_group_count": 2,
+    "parallel_group_count": 4,
     "routing_decisions": [
       {
-        "subtask_id": "audit-cross-module-integrations",
+        "subtask_id": "analyze-accounting-logic",
         "task_type": "review",
         "agent": "code-reviewer",
         "model_hint": "analytical",
-        "complexity": "medium",
-        "is_risky": false,
+        "complexity": "high",
+        "is_risky": true,
         "confidence": 0.67,
         "profile": {
           "name": "code-reviewer",
@@ -213,7 +180,7 @@
         ]
       },
       {
-        "subtask_id": "audit-database-migrations-triggers",
+        "subtask_id": "analyze-migrations",
         "task_type": "database",
         "agent": "backend-engineer",
         "model_hint": "analytical",
@@ -245,107 +212,13 @@
         ]
       },
       {
-        "subtask_id": "audit-financial-tables",
-        "task_type": "database",
-        "agent": "backend-engineer",
-        "model_hint": "analytical",
-        "complexity": "high",
-        "is_risky": true,
-        "confidence": 0.79,
-        "profile": {
-          "name": "backend-engineer",
-          "task_type": "database",
-          "model_tier": "balanced",
-          "timeout": 120.0,
-          "max_retries": 1,
-          "priority": "P1",
-          "requires_review": false,
-          "estimated_tokens": 4000,
-          "parallel_safe": true,
-          "toolsets": [
-            "terminal",
-            "file"
-          ],
-          "model": "glm-5.2:cloud",
-          "provider": "custom:ollama",
-          "base_url": "https://ollama.com/v1"
-        },
-        "parallel_safe": true,
-        "toolsets": [
-          "terminal",
-          "file"
-        ]
-      },
-      {
-        "subtask_id": "audit-integration-hooks",
-        "task_type": "database",
-        "agent": "backend-engineer",
-        "model_hint": "analytical",
-        "complexity": "high",
-        "is_risky": true,
-        "confidence": 0.71,
-        "profile": {
-          "name": "backend-engineer",
-          "task_type": "database",
-          "model_tier": "balanced",
-          "timeout": 120.0,
-          "max_retries": 1,
-          "priority": "P1",
-          "requires_review": false,
-          "estimated_tokens": 4000,
-          "parallel_safe": true,
-          "toolsets": [
-            "terminal",
-            "file"
-          ],
-          "model": "glm-5.2:cloud",
-          "provider": "custom:ollama",
-          "base_url": "https://ollama.com/v1"
-        },
-        "parallel_safe": true,
-        "toolsets": [
-          "terminal",
-          "file"
-        ]
-      },
-      {
-        "subtask_id": "audit-internal-controls",
-        "task_type": "implementation",
-        "agent": "builder",
-        "model_hint": "balanced",
-        "complexity": "high",
-        "is_risky": true,
-        "confidence": 0.64,
-        "profile": {
-          "name": "builder",
-          "task_type": "implementation",
-          "model_tier": "balanced",
-          "timeout": 600,
-          "max_retries": 3,
-          "priority": "P1",
-          "requires_review": false,
-          "estimated_tokens": 4000,
-          "parallel_safe": true,
-          "toolsets": [
-            "hermes-cli"
-          ],
-          "model": "glm-5.2:cloud",
-          "provider": "custom:ollama",
-          "base_url": "http://localhost:11434/v1"
-        },
-        "parallel_safe": true,
-        "toolsets": [
-          "hermes-cli"
-        ]
-      },
-      {
-        "subtask_id": "audit-reports-dashboards",
+        "subtask_id": "analyze-types-and-controls",
         "task_type": "review",
         "agent": "code-reviewer",
         "model_hint": "analytical",
         "complexity": "medium",
         "is_risky": false,
-        "confidence": 0.67,
+        "confidence": 0.58,
         "profile": {
           "name": "code-reviewer",
           "task_type": "review",
@@ -371,7 +244,39 @@
         ]
       },
       {
-        "subtask_id": "audit-service-layers",
+        "subtask_id": "analyze-hooks",
+        "task_type": "docs",
+        "agent": "doc-writer",
+        "model_hint": "speed",
+        "complexity": "medium",
+        "is_risky": false,
+        "confidence": 0.6,
+        "profile": {
+          "name": "doc-writer",
+          "task_type": "docs",
+          "model_tier": "balanced",
+          "timeout": 120.0,
+          "max_retries": 1,
+          "priority": "P1",
+          "requires_review": false,
+          "estimated_tokens": 4000,
+          "parallel_safe": true,
+          "toolsets": [
+            "terminal",
+            "file"
+          ],
+          "model": "glm-5.2:cloud",
+          "provider": "custom:ollama",
+          "base_url": "https://ollama.com/v1"
+        },
+        "parallel_safe": true,
+        "toolsets": [
+          "terminal",
+          "file"
+        ]
+      },
+      {
+        "subtask_id": "analyze-currency-integration-risk",
         "task_type": "review",
         "agent": "code-reviewer",
         "model_hint": "analytical",
@@ -438,22 +343,14 @@
         "id": "milestone-1",
         "name": "Parallel group 1",
         "subtask_ids": [
-          "audit-cross-module-integrations",
-          "audit-database-migrations-triggers",
-          "audit-financial-tables",
-          "audit-integration-hooks",
-          "audit-internal-controls",
-          "audit-reports-dashboards",
-          "audit-service-layers"
+          "analyze-accounting-logic",
+          "analyze-migrations",
+          "analyze-types-and-controls"
         ],
         "acceptance_criteria": [
-          "A JSON file scripts/audit-part-integrations.json exists with an integration map and analysis.",
-          "A JSON file scripts/audit-part-migrations.json exists with a list of migrations/triggers and analysis.",
-          "A JSON file scripts/audit-part-financial-tables.json exists with a list of each table, its columns, relationships, and any issues found.",
-          "A JSON file scripts/audit-part-hooks.json exists with a description of each hook, its trigger, and analysis.",
-          "A JSON file scripts/audit-part-controls.json exists with a list of controls and their analysis.",
-          "A JSON file scripts/audit-part-reports.json exists with a list of reports/dashboards and analysis.",
-          "A JSON file scripts/audit-part-services.json exists with analysis of each service."
+          "A JSON file 'findings_accounting_logic.json' is created with per-module accounting logic analysis.",
+          "A JSON file 'findings_migrations.json' is created containing trigger matrix and schema analysis with file:line for each finding.",
+          "A JSON file 'findings_types_controls.json' is created with data model, report analysis, and control findings."
         ],
         "assumptions": [
           "Dependencies from earlier milestones remain stable."
@@ -463,10 +360,36 @@
         "id": "milestone-2",
         "name": "Parallel group 2",
         "subtask_ids": [
+          "analyze-hooks"
+        ],
+        "acceptance_criteria": [
+          "A JSON file 'findings_hooks.json' is created with hook analysis and comparison to triggers."
+        ],
+        "assumptions": [
+          "Dependencies from earlier milestones remain stable."
+        ]
+      },
+      {
+        "id": "milestone-3",
+        "name": "Parallel group 3",
+        "subtask_ids": [
+          "analyze-currency-integration-risk"
+        ],
+        "acceptance_criteria": [
+          "A JSON file 'findings_currency_integration_risk.json' is created with currency analysis, integration map, and risk assessment."
+        ],
+        "assumptions": [
+          "Dependencies from earlier milestones remain stable."
+        ]
+      },
+      {
+        "id": "milestone-4",
+        "name": "Parallel group 4",
+        "subtask_ids": [
           "assembly"
         ],
         "acceptance_criteria": [
-          "Final deliverable file docs/financial-system-integration-audit-report.md is written and contains all findings from prior subtasks."
+          "Final report file 'reports/financial_system_review_arabic.md' is written and contains all findings from prior subtasks in Arabic."
         ],
         "assumptions": [
           "Dependencies from earlier milestones remain stable."
@@ -477,18 +400,16 @@
       "What authentication method should be used (JWT, OAuth, session-based)?",
       "What user roles or permission levels are needed?",
       "What database and ORM are in use? Any existing migration strategy?",
-      "What is the deployment pipeline (staging, canary, production)?",
-      "Are there any approval gates or change management processes?"
+      "What is the rollback strategy if the refactor introduces regressions?",
+      "Are there any backward compatibility requirements?"
     ],
     "completion_criteria": [
-      "Subtask complete: Analyze integration of financial system with other modules: contracts, employees, vehicles, maintena",
-      "Subtask complete: Read all migration files in supabase/migrations/ and any database triggers that affect financial tab",
-      "Subtask complete: Analyze all financial tables (chart_of_accounts, journal_entries, journal_entry_lines, invoices, pay",
-      "Subtask complete: Find and analyze all 6 integration hooks: payroll, vehicle_installment, rental_payment, traffic_viol",
-      "Subtask complete: Examine internal controls: permissions (RLS policies in supabase/migrations/), approval workflows (l",
-      "Subtask complete: Find and analyze financial reports and dashboards. Search for report generation code (e.g., in scrip",
-      "Subtask complete: Analyze service layers: AccountingService, PaymentService, PaymentStateMachine, PaymentLinkingServic",
-      "Subtask complete: Collect all findings from the 7 audit part files (scripts/audit-part-*.json). Compile them into a co",
+      "Subtask complete: Read source files that implement accounting logic for each module: rentals (e.g., scripts/analyze_co",
+      "Subtask complete: Read all migration files in supabase/migrations/ that are related to finance (e.g., contain 'finance",
+      "Subtask complete: Read finance.types.ts, payment.ts, invoice.ts, ledgerCashFlowReportRules.ts, and financeAccessRules.",
+      "Subtask complete: Read all hook files in src/hooks/ matching the pattern use*JournalIntegration.ts. For each hook, doc",
+      "Subtask complete: Based on findings from subtasks 1-4, analyze: (a) currency support \u2013 search for 'KWD', 'QAR', 'curre",
+      "Subtask complete: Collect all findings JSON files from subtasks 1-5. Combine them into a single comprehensive report i",
       "All quality gates pass (syntax, lint, type, test)",
       "No regressions in existing test suite"
     ],

@@ -1,26 +1,26 @@
-# Plan: راجع النظام المالي وتكامله مع بقية الوحدات في مشروع Fleetify ERP وقدم تقرير كامل بدون تغيير أي كود. 
+# Plan: راجع النظام المالي وتكامله مع بقية الوحدات في مشروع Fleetify وقدم تقرير كامل بدون تغيير الكود. 
 
 المشروع موجود في: C:\Users\khamis\Documents\fleetifyapp
 
 المطلوب:
-1. فحص جميع جداول النظام المالي (chart_of_accounts, journal_entries, journal_entry_lines, invoices, payments, accounting_periods, fixed_assets, cost_centers, budgets, audit_logs)
-2. فحص جميع هوكات التكامل المحاسبي (6 هوكات): payroll, vehicle_installment, rental_payment, traffic_violation, maintenance, payments
-3. فحص طبقات الخدمة: AccountingService, PaymentService, PaymentStateMachine, PaymentLinkingService, InvoiceService, ContractService, financialControls, auditService
-4. فحص الضوابط الداخلية: صلاحيات، موافقات، سجل تدقيق، التحكم بالفترات المالية
-5. فحص التقارير المالية ولوحات المعلومات
-6. فحص التكامل مع الوحدات الأخرى: العقود، الموظفين، المركبات، الصيانة، المخالفات
-7. فحص قواعد البيانات (migrations) والـ triggers
+1. قراءة جميع ملفات الترحيل (migrations) المالية في supabase/migrations/
+2. قراءة جميع hooks التكامل المالي (use*JournalIntegration.ts) في src/hooks/
+3. قراءة أنواع البيانات المالية (finance.types.ts, payment.ts, invoice.ts)
+4. قراءة ملفات التقارير المالية (ledgerCashFlowReportRules.ts)
+5. قراءة ملفات الضوابط المالية (financeAccessRules.ts)
+6. بناء مصفوفة المشغلات (Trigger Matrix) لكل trigger في قاعدة البيانات
+7. تحليل تسلسل عمليات كل hook ومقارنتها مع المشغلات
+8. تحليل المنطق المحاسبي لكل وحدة (الإيجارات، الصيانة، المخالفات، الرواتب، أقساط المركبات)
+9. تحليل التقارير المالية (هل تسحب بيانات حقيقية أم mock data)
+10. تحليل الضوابط الداخلية (فصل المهام، الموافقات، سجل التدقيق)
+11. تحليل العملة (هل تدعم عملات متعددة أم KWD فقط)
+12. تحليل خريطة التكامل بين الوحدات
+13. تقييم المخاطر
 
-المخرجات:
-- تقرير مفصل باللغة العربية في ملف docs/financial-system-integration-audit-report.md
-- يجب أن يشمل التقرير: ملخص تنفيذي، تحليل كل وحدة، خريطة تكامل، نتائج حسب الخطورة، توصيات
-- كل نتيجة يجب أن تحتوي على مرجع ملف:سطر محدد
-- لا تغيير في أي كود - فقط تقرير
-
-ملاحظة مهمة: لا تثق في تقارير الـ subagents الذاتية - تحقق من كل ملف بنفسك واقرأ الملفات مباشرة للتأكد من صحة المعلومات.
+المخرجات: تقرير كامل باللغة العربية مع تفاصيل file:line لكل finding. لا تغيير في الكود.
 
 ## Reasoning
-The task is to audit the financial system and its integration across the Fleetify ERP project, producing a detailed Arabic report. We decompose into 7 parallel analysis subtasks covering: financial tables, integration hooks, service layers, internal controls, reports/dashboards, cross-module integrations, and database migrations/triggers. Each subtask reads relevant files directly and writes findings to a temporary JSON file. The final assembly subtask depends on all others and compiles the final report. This ensures independent verification and no code changes.
+The task is to review the financial system and its integration across modules in the Fleetify project, producing a full Arabic report without code changes. I decomposed into 6 subtasks: (1) analyze migration files for trigger matrix and schema, (2) analyze hooks for integration logic, (3) analyze types, report rules, and access rules for data model and controls, (4) analyze accounting logic per module by reading relevant source files, (5) analyze currency, integration map, and risk assessment (depends on 1-4), and (6) assembly to write the final report. Each subtask produces structured findings that the assembly subtask combines. This keeps subtasks independently executable and verifiable, with clear dependencies.
 
 ## Risk Level
 medium
@@ -31,27 +31,31 @@ medium
 ## Milestones
 
 ### Parallel group 1
-- Subtasks: audit-cross-module-integrations, audit-database-migrations-triggers, audit-financial-tables, audit-integration-hooks, audit-internal-controls, audit-reports-dashboards, audit-service-layers
+- Subtasks: analyze-accounting-logic, analyze-migrations, analyze-types-and-controls
 - Acceptance criteria:
-  - A JSON file scripts/audit-part-integrations.json exists with an integration map and analysis.
-  - A JSON file scripts/audit-part-migrations.json exists with a list of migrations/triggers and analysis.
-  - A JSON file scripts/audit-part-financial-tables.json exists with a list of each table, its columns, relationships, and any issues found.
-  - A JSON file scripts/audit-part-hooks.json exists with a description of each hook, its trigger, and analysis.
-  - A JSON file scripts/audit-part-controls.json exists with a list of controls and their analysis.
-  - A JSON file scripts/audit-part-reports.json exists with a list of reports/dashboards and analysis.
-  - A JSON file scripts/audit-part-services.json exists with analysis of each service.
+  - A JSON file 'findings_accounting_logic.json' is created with per-module accounting logic analysis.
+  - A JSON file 'findings_migrations.json' is created containing trigger matrix and schema analysis with file:line for each finding.
+  - A JSON file 'findings_types_controls.json' is created with data model, report analysis, and control findings.
 
 ### Parallel group 2
+- Subtasks: analyze-hooks
+- Acceptance criteria:
+  - A JSON file 'findings_hooks.json' is created with hook analysis and comparison to triggers.
+
+### Parallel group 3
+- Subtasks: analyze-currency-integration-risk
+- Acceptance criteria:
+  - A JSON file 'findings_currency_integration_risk.json' is created with currency analysis, integration map, and risk assessment.
+
+### Parallel group 4
 - Subtasks: assembly
 - Acceptance criteria:
-  - Final deliverable file docs/financial-system-integration-audit-report.md is written and contains all findings from prior subtasks.
+  - Final report file 'reports/financial_system_review_arabic.md' is written and contains all findings from prior subtasks in Arabic.
 
 ## DAG
-- `audit-cross-module-integrations` group=0 deps=none: Analyze integration of financial system with other modules: contracts, employees, vehicles, maintenance, violations. Read service files, hooks, and any cross-module code. Map data flow and dependencies between financial and non-financial modules. Write findings to scripts/audit-part-integrations.json.
-- `audit-database-migrations-triggers` group=0 deps=none: Read all migration files in supabase/migrations/ and any database triggers that affect financial tables. List each migration and trigger, its purpose, and any issues (e.g., missing triggers, incorrect logic). Write findings to scripts/audit-part-migrations.json.
-- `audit-financial-tables` group=0 deps=none: Analyze all financial tables (chart_of_accounts, journal_entries, journal_entry_lines, invoices, payments, accounting_periods, fixed_assets, cost_centers, budgets, audit_logs). Read schema definitions from supabase/migrations/*.sql and src/integrations/supabase/types.ts. Also read any Python scripts in scripts/ that reference these tables. For each table, list columns, relationships, and any issues (missing fields, wrong types, missing indexes). Write findings to scripts/audit-part-financial-tables.json.
-- `audit-integration-hooks` group=0 deps=none: Find and analyze all 6 integration hooks: payroll, vehicle_installment, rental_payment, traffic_violation, maintenance, payments. Search for these hooks in supabase/functions/ (edge functions) and supabase/migrations/*.sql (database functions). Read each hook's code and describe its trigger, logic, and correctness. Write findings to scripts/audit-part-hooks.json.
-- `audit-internal-controls` group=0 deps=none: Examine internal controls: permissions (RLS policies in supabase/migrations/), approval workflows (look for approval logic in src/), audit trail (audit_logs table usage), and period control (accounting_periods enforcement). Read relevant files and document the controls, their implementation, and any gaps. Write findings to scripts/audit-part-controls.json.
-- `audit-reports-dashboards` group=0 deps=none: Find and analyze financial reports and dashboards. Search for report generation code (e.g., in scripts/ or src/), dashboard components (likely in src/), and any API endpoints serving financial data. Document each report/dashboard, its data sources, and completeness. Write findings to scripts/audit-part-reports.json.
-- `audit-service-layers` group=0 deps=none: Analyze service layers: AccountingService, PaymentService, PaymentStateMachine, PaymentLinkingService, InvoiceService, ContractService, financialControls, auditService. Search for these in src/ directory (likely .ts files). Read each service file and document its responsibilities, methods, and integration points with other services. Write findings to scripts/audit-part-services.json.
-- `assembly` group=1 deps=audit-financial-tables, audit-integration-hooks, audit-service-layers, audit-internal-controls, audit-reports-dashboards, audit-cross-module-integrations, audit-database-migrations-triggers: Collect all findings from the 7 audit part files (scripts/audit-part-*.json). Compile them into a comprehensive Arabic report in docs/financial-system-integration-audit-report.md. The report must include: executive summary, analysis of each module, integration map, results by severity, and recommendations. Each finding must reference specific file:line. Do not change any code. Write the final report file.
+- `analyze-accounting-logic` group=0 deps=none: Read source files that implement accounting logic for each module: rentals (e.g., scripts/analyze_company_jes.py, scripts/analyze_je_structure.py), maintenance (e.g., scripts/apply_fixes.py), violations (e.g., scripts/audit_analysis.py), salaries (e.g., scripts/apply_migration.py), vehicle installments (e.g., scripts/apply_migration_v2.py). For each module, document the journal entry creation logic, double-entry rules, and integration points. Output findings as a JSON file.
+- `analyze-migrations` group=0 deps=none: Read all migration files in supabase/migrations/ that are related to finance (e.g., contain 'finance', 'payment', 'invoice', 'journal', 'ledger'). For each, extract trigger definitions, table schemas, and function logic. Build a trigger matrix (table, event, function, timing). Output findings as a JSON file with file:line references.
+- `analyze-types-and-controls` group=0 deps=none: Read finance.types.ts, payment.ts, invoice.ts, ledgerCashFlowReportRules.ts, and financeAccessRules.ts. Document data structures, report logic (whether real data or mock), and internal controls (segregation of duties, approvals, audit trail). Output findings as a JSON file.
+- `analyze-hooks` group=1 deps=analyze-migrations: Read all hook files in src/hooks/ matching the pattern use*JournalIntegration.ts. For each hook, document the sequence of operations (API calls, state updates, side effects) and compare with the trigger matrix from subtask 1. Identify gaps or inconsistencies. Output findings as a JSON file.
+- `analyze-currency-integration-risk` group=2 deps=analyze-migrations, analyze-hooks, analyze-types-and-controls, analyze-accounting-logic: Based on findings from subtasks 1-4, analyze: (a) currency support – search for 'KWD', 'QAR', 'currency' in all source files to determine if multi-currency is supported; (b) integration map – document how each module connects to the financial system (direct DB, hooks, triggers); (c) risk assessment – identify risks like missing audit trails, lack of segregation, hardcoded values, error handling gaps. Output findings as a JSON file.
+- `assembly` group=3 deps=analyze-migrations, analyze-hooks, analyze-types-and-controls, analyze-accounting-logic, analyze-currency-integration-risk: Collect all findings JSON files from subtasks 1-5. Combine them into a single comprehensive report in Arabic. The report must include: trigger matrix, hook analysis, data model, report analysis, controls, accounting logic per module, currency support, integration map, and risk assessment. Write the final report to 'reports/financial_system_review_arabic.md'. Ensure all file:line references are preserved.

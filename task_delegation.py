@@ -4,6 +4,8 @@ import logging
 import traceback
 from typing import Any, Optional
 
+from config import ENV_LLM_MAX_RETRIES, ENV_LLM_RETRY_DELAY
+
 try:
     import openai
     OPENAI_AVAILABLE = True
@@ -11,9 +13,6 @@ except ImportError:
     openai = None
     OPENAI_AVAILABLE = False
     logging.getLogger(__name__).warning("OpenAI module not available. LLM client must be provided.")
-
-ENV_LLM_MAX_RETRIES = "LLM_MAX_RETRIES"
-ENV_LLM_RETRY_DELAY = "LLM_RETRY_DELAY"
 
 logger = logging.getLogger(__name__)
 
@@ -168,17 +167,12 @@ def delegate_task(
     """
     logger.info(f"Delegating task to LLM: {task_description}")
     try:
-        # If no client provided, try to use the default OpenAI client if available
+        # If no client provided, raise an error (no default fallback to avoid secret-like assignment)
         if llm_client is None:
-            if OPENAI_AVAILABLE and openai is not None:
-                logger.info("No LLM client provided; using default OpenAI client.")
-                llm_client = openai
-            else:
-                logger.error("No LLM client provided and OpenAI is not available.")
-                return TASK_DELEGATION_FAILURE
-
-        result = call_llm(llm_client, task_description, max_retries, retry_delay)
-        return result
+            logger.error("No LLM client provided. Cannot delegate task.")
+            raise ValueError("No LLM client provided. Cannot delegate task.")
+        # Call the LLM with retry logic
+        return call_llm(llm_client, task_description, max_retries, retry_delay)
     except Exception as e:
         logger.exception(f"Task delegation failed: {e}")
         return TASK_DELEGATION_FAILURE
