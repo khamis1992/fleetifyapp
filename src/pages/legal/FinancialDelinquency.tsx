@@ -3,6 +3,7 @@ import React, { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
+  AlertCircle,
   AlertTriangle,
   CheckCircle2,
   Clock,
@@ -14,13 +15,31 @@ import {
   Scale,
   Search,
   ShieldCheck,
+  XCircle,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { ConvertToLegalDialog } from '@/components/contracts/ConvertToLegalDialog';
@@ -34,6 +53,7 @@ import { formatCustomerName } from '@/utils/formatCustomerName';
 import '@/styles/legal-system.css';
 
 type QueueItem = {
+  legalCaseId: string;
   contract: ContractForLegal;
   customerName: string;
   phone?: string | null;
@@ -49,6 +69,7 @@ type QueueItem = {
 };
 
 type CandidateSource = 'rent' | 'traffic';
+type CandidateSort = 'amount_desc' | 'amount_asc' | 'traffic_desc' | 'traffic_asc';
 
 type CandidateItem = {
   id: string;
@@ -199,6 +220,7 @@ const fetchLegalQueue = async (companyId: string): Promise<QueueItem[]> => {
     `)
     .eq('company_id', companyId)
     .not('contract_id', 'is', null)
+    .in('case_status', activeLegalStatuses)
     .order('created_at', { ascending: false });
 
   if (error) throw error;
@@ -262,6 +284,7 @@ const fetchLegalQueue = async (companyId: string): Promise<QueueItem[]> => {
     const detailedClaimTotal = overdueRent + lateFees + trafficViolations;
 
     return {
+      legalCaseId: legalCase.id,
       contract: normalized,
       customerName: legalCase.client_name || normalizeCustomerName(contract.customers),
       phone: legalCase.client_phone || contract.customers?.phone,
@@ -583,8 +606,11 @@ const FinancialDelinquencyPage: React.FC = () => {
   const [queueSearch, setQueueSearch] = useState('');
   const [candidateSearch, setCandidateSearch] = useState('');
   const [candidateType, setCandidateType] = useState<'all' | CandidateSource>('all');
+  const [candidateSort, setCandidateSort] = useState<CandidateSort>('amount_desc');
   const [selectedContract, setSelectedContract] = useState<ContractForLegal | null>(null);
   const [convertDialogOpen, setConvertDialogOpen] = useState(false);
+  const [removingItem, setRemovingItem] = useState<QueueItem | null>(null);
+  const [isRemovingLegal, setIsRemovingLegal] = useState(false);
 
   const isCompanyReady = !!companyId && !isInitializing && !isAuthenticating;
 
@@ -638,13 +664,27 @@ const FinancialDelinquencyPage: React.FC = () => {
         : [...rentCandidates, ...trafficCandidates];
 
     const seen = new Set<string>();
-    return merged.filter((candidate) => {
+    const uniqueCandidates = merged.filter((candidate) => {
       const key = `${candidate.source}-${candidate.contract?.id || candidate.id}`;
       if (seen.has(key)) return false;
       seen.add(key);
       return true;
     });
-  }, [candidateType, rentCandidates, trafficCandidates]);
+
+    return [...uniqueCandidates].sort((a, b) => {
+      switch (candidateSort) {
+        case 'amount_asc':
+          return a.detailedClaimTotal - b.detailedClaimTotal;
+        case 'traffic_desc':
+          return b.trafficViolations - a.trafficViolations;
+        case 'traffic_asc':
+          return a.trafficViolations - b.trafficViolations;
+        case 'amount_desc':
+        default:
+          return b.detailedClaimTotal - a.detailedClaimTotal;
+      }
+    });
+  }, [candidateSort, candidateType, rentCandidates, trafficCandidates]);
 
   const queueStats = useMemo(() => {
     const totalRentalValue = legalQueue.reduce((sum, item) => sum + item.overdueRent, 0);
@@ -657,6 +697,10 @@ const FinancialDelinquencyPage: React.FC = () => {
     queryClient.invalidateQueries({ queryKey: ['manual-legal-delinquency-queue'] });
     queryClient.invalidateQueries({ queryKey: ['legal-delinquency-rent-candidates'] });
     queryClient.invalidateQueries({ queryKey: ['legal-delinquency-traffic-candidates'] });
+    queryClient.invalidateQueries({ queryKey: ['contract-details'] });
+    queryClient.invalidateQueries({ queryKey: ['contracts'] });
+    queryClient.invalidateQueries({ queryKey: ['delinquent-customers'] });
+    queryClient.invalidateQueries({ queryKey: ['legal-cases'] });
   };
 
   const openConvertDialog = (candidate: CandidateItem) => {
@@ -667,6 +711,61 @@ const FinancialDelinquencyPage: React.FC = () => {
 
     setSelectedContract(candidate.contract);
     setConvertDialogOpen(true);
+  };
+
+  const removeLegalProcedure = async () => {
+    if (!companyId || !removingItem) return;
+
+    setIsRemovingLegal(true);
+    try {
+      const now = new Date().toISOString();
+      const { error: contractError } = await supabase
+        .from('contracts')
+        .update({
+          status: 'active',
+          updated_at: now,
+        })
+        .eq('id', removingItem.contract.id)
+        .eq('company_id', companyId);
+
+      if (contractError) throw contractError;
+
+      const { error: legalCaseError } = await supabase
+        .from('legal_cases')
+        .update({
+          case_status: 'closed',
+          outcome_type: 'dismissed',
+          outcome_date: now.slice(0, 10),
+          outcome_notes: 'تمت إزالة الإجراء القانوني من صفحة الشؤون القانونية.',
+          updated_at: now,
+        })
+        .eq('id', removingItem.legalCaseId)
+        .eq('company_id', companyId);
+
+      if (legalCaseError) throw legalCaseError;
+
+      await supabase
+        .from('delinquent_customers')
+        .delete()
+        .eq('contract_id', removingItem.contract.id);
+
+      toast.success('تمت إزالة الإجراء القانوني', {
+        description: `تم إرجاع العقد ${removingItem.contract.contract_number} إلى الحالة النشطة وإغلاق القضية المرتبطة.`,
+      });
+
+      setRemovingItem(null);
+      refreshAll();
+    } catch (error) {
+      console.error('Error removing legal procedure:', error);
+      const errorMessage = typeof error === 'object' && error && 'message' in error
+        ? String(error.message)
+        : 'حدث خطأ غير متوقع أثناء التحديث.';
+      toast.error('تعذر إزالة الإجراء القانوني', {
+        description: errorMessage,
+      });
+    } finally {
+      setIsRemovingLegal(false);
+    }
   };
 
   if (!isCompanyReady || queueLoading) {
@@ -871,6 +970,14 @@ const FinancialDelinquencyPage: React.FC = () => {
                           <FileText className="h-4 w-4" />
                           تفاصيل العقد
                         </Button>
+                        <Button
+                          variant="outline"
+                          onClick={() => setRemovingItem(item)}
+                          className="gap-2 rounded-xl border-rose-200 bg-white text-rose-600 hover:bg-rose-50 hover:text-rose-700"
+                        >
+                          <XCircle className="h-4 w-4" />
+                          إزالة الإجراء القانوني
+                        </Button>
                       </div>
                     </div>
                   </article>
@@ -881,7 +988,7 @@ const FinancialDelinquencyPage: React.FC = () => {
 
           <TabsContent value="search" className="space-y-4">
             <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-              <div className="grid gap-3 lg:grid-cols-[1fr_auto] lg:items-center">
+              <div className="grid gap-3 xl:grid-cols-[1fr_auto_auto] xl:items-center">
                 <div className="relative">
                   <Search className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#94A3B8]" />
                   <Input
@@ -901,7 +1008,10 @@ const FinancialDelinquencyPage: React.FC = () => {
                       key={value}
                       type="button"
                       variant={candidateType === value ? 'default' : 'outline'}
-                      onClick={() => setCandidateType(value as 'all' | CandidateSource)}
+                      onClick={() => {
+                        setCandidateType(value as 'all' | CandidateSource);
+                        if (value === 'traffic') setCandidateSort('traffic_desc');
+                      }}
                       className={cn(
                         'rounded-xl',
                         candidateType === value
@@ -913,6 +1023,17 @@ const FinancialDelinquencyPage: React.FC = () => {
                     </Button>
                   ))}
                 </div>
+                <Select value={candidateSort} onValueChange={(value) => setCandidateSort(value as CandidateSort)}>
+                  <SelectTrigger className="h-12 min-w-[210px] rounded-xl border-slate-200 bg-[#F6F8FB]">
+                    <SelectValue placeholder="ترتيب العرض" />
+                  </SelectTrigger>
+                  <SelectContent align="end">
+                    <SelectItem value="amount_desc">الإجمالي: الأعلى أولا</SelectItem>
+                    <SelectItem value="amount_asc">الإجمالي: الأقل أولا</SelectItem>
+                    <SelectItem value="traffic_desc">المخالفات: الأعلى أولا</SelectItem>
+                    <SelectItem value="traffic_asc">المخالفات: الأقل أولا</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
               <p className="mt-3 text-xs leading-6 text-[#94A3B8]">
                 البحث هنا لا يضيف العميل تلقائيًا. اضغط “تحويل قانوني” فقط بعد قرار الإدارة، حتى لا يدخل العملاء المتفق معهم على التأخير ضمن الإجراءات.
@@ -1018,6 +1139,45 @@ const FinancialDelinquencyPage: React.FC = () => {
           setActiveTab('queue');
         }}
       />
+
+      <AlertDialog open={!!removingItem} onOpenChange={(open) => !open && !isRemovingLegal && setRemovingItem(null)}>
+        <AlertDialogContent className="rounded-2xl text-right" dir="rtl">
+          <AlertDialogHeader className="text-right">
+            <div className="mb-2 flex h-11 w-11 items-center justify-center rounded-xl bg-rose-50 text-rose-600">
+              <AlertCircle className="h-5 w-5" />
+            </div>
+            <AlertDialogTitle>إزالة الإجراء القانوني</AlertDialogTitle>
+            <AlertDialogDescription className="leading-6">
+              سيتم إرجاع العقد {removingItem?.contract.contract_number || ''} إلى الحالة النشطة، وإغلاق القضية القانونية المرتبطة حتى لا تظهر ضمن قائمة المتابعة القانونية.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm leading-6 text-amber-800">
+            هذا لا يحذف السجل التاريخي للقضية، بل يغلقه كإجراء ملغى ويحافظ على أثر المراجعة.
+          </div>
+          <AlertDialogFooter className="gap-2 sm:space-x-0">
+            <AlertDialogCancel disabled={isRemovingLegal} className="rounded-xl">
+              تراجع
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(event) => {
+                event.preventDefault();
+                removeLegalProcedure();
+              }}
+              disabled={isRemovingLegal}
+              className="rounded-xl bg-rose-600 text-white hover:bg-rose-700"
+            >
+              {isRemovingLegal ? (
+                <>
+                  <Loader2 className="ml-2 h-4 w-4 animate-spin" />
+                  جار الإزالة...
+                </>
+              ) : (
+                'نعم، إزالة الإجراء'
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

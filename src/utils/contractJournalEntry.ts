@@ -359,7 +359,7 @@ export async function createContractJournalEntryManual(
         reference_id: contractId,
         total_debit: contract.contract_amount,
         total_credit: contract.contract_amount,
-        status: 'posted',
+        status: 'draft',
         created_by: contract.created_by
       })
       .select()
@@ -404,6 +404,25 @@ export async function createContractJournalEntryManual(
       return {
         success: false,
         error: 'Failed to create journal entry lines'
+      }
+    }
+
+    const { error: postEntryError } = await supabase
+      .from('journal_entries')
+      .update({
+        status: 'posted',
+        posted_by: contract.created_by,
+        posted_at: new Date().toISOString(),
+      })
+      .eq('id', journalEntry.id)
+      .eq('company_id', companyId)
+
+    if (postEntryError) {
+      await supabase.from('journal_entry_lines').delete().eq('journal_entry_id', journalEntry.id)
+      await supabase.from('journal_entries').delete().eq('id', journalEntry.id)
+      return {
+        success: false,
+        error: 'Failed to post journal entry'
       }
     }
 

@@ -113,8 +113,7 @@ async function createPOJournalEntryInternal(
       reference_id: poId,
       total_debit: totalAmount,
       total_credit: totalAmount,
-      status: 'posted',
-      posted_at: new Date().toISOString(),
+      status: 'draft',
     })
     .select()
     .single();
@@ -145,7 +144,25 @@ async function createPOJournalEntryInternal(
     .from('journal_entry_lines')
     .insert(lines);
 
-  if (linesError) throw linesError;
+  if (linesError) {
+    await supabase.from('journal_entries').delete().eq('id', journalEntry.id);
+    throw linesError;
+  }
+
+  const { error: postEntryError } = await supabase
+    .from('journal_entries')
+    .update({
+      status: 'posted',
+      posted_at: new Date().toISOString(),
+    })
+    .eq('id', journalEntry.id)
+    .eq('company_id', companyId);
+
+  if (postEntryError) {
+    await supabase.from('journal_entry_lines').delete().eq('journal_entry_id', journalEntry.id);
+    await supabase.from('journal_entries').delete().eq('id', journalEntry.id);
+    throw postEntryError;
+  }
 
   // Journal entry is linked via reference_id field in journal_entries table
   console.log(`Journal entry ${journalEntry.entry_number} created for PO ${orderNumber}`);

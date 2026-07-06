@@ -247,8 +247,7 @@ export const useCreatePOReceiptJournalEntry = () => {
           reference_id: po.id,
           total_debit: po.total_amount,
           total_credit: po.total_amount,
-          status: 'posted',
-          posted_at: new Date().toISOString(),
+          status: 'draft',
         })
         .select()
         .single();
@@ -279,7 +278,25 @@ export const useCreatePOReceiptJournalEntry = () => {
         .from('journal_entry_lines')
         .insert(lines);
 
-      if (linesError) throw linesError;
+      if (linesError) {
+        await supabase.from('journal_entries').delete().eq('id', journalEntry.id);
+        throw linesError;
+      }
+
+      const { error: postEntryError } = await supabase
+        .from('journal_entries')
+        .update({
+          status: 'posted',
+          posted_at: new Date().toISOString(),
+        })
+        .eq('id', journalEntry.id)
+        .eq('company_id', companyId);
+
+      if (postEntryError) {
+        await supabase.from('journal_entry_lines').delete().eq('journal_entry_id', journalEntry.id);
+        await supabase.from('journal_entries').delete().eq('id', journalEntry.id);
+        throw postEntryError;
+      }
 
       // Journal entry is linked via reference_type and reference_id fields
       return journalEntry;
@@ -416,8 +433,7 @@ export const useCreateVendorPaymentJournalEntry = () => {
           reference_id: payment.id,
           total_debit: payment.amount,
           total_credit: payment.amount,
-          status: 'posted',
-          posted_at: new Date().toISOString(),
+          status: 'draft',
         })
         .select()
         .single();
@@ -448,7 +464,25 @@ export const useCreateVendorPaymentJournalEntry = () => {
         .from('journal_entry_lines')
         .insert(lines);
 
-      if (linesError) throw linesError;
+      if (linesError) {
+        await supabase.from('journal_entries').delete().eq('id', journalEntry.id);
+        throw linesError;
+      }
+
+      const { error: postEntryError } = await supabase
+        .from('journal_entries')
+        .update({
+          status: 'posted',
+          posted_at: new Date().toISOString(),
+        })
+        .eq('id', journalEntry.id)
+        .eq('company_id', companyId);
+
+      if (postEntryError) {
+        await supabase.from('journal_entry_lines').delete().eq('journal_entry_id', journalEntry.id);
+        await supabase.from('journal_entries').delete().eq('id', journalEntry.id);
+        throw postEntryError;
+      }
 
       // 6. Update vendor payment with journal entry reference
       const { error: updateError } = await supabase

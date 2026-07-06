@@ -4,15 +4,11 @@
  */
 
 import { useMemo } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import {
   AlertTriangle,
-  AlertCircle,
   Clock,
-  CheckCircle2,
-  TrendingDown,
 } from 'lucide-react';
 import { format, differenceInDays } from 'date-fns';
 import { ar } from 'date-fns/locale';
@@ -20,14 +16,10 @@ import type { Contract } from '@/types/contracts';
 
 interface ContractAlertsProps {
   contract: Contract;
-  trafficViolationsCount?: number;
-  formatCurrency: (amount: number) => string;
 }
 
 export const ContractAlerts = ({
   contract,
-  trafficViolationsCount = 0,
-  formatCurrency,
 }: ContractAlertsProps) => {
   const alerts = useMemo(() => {
     const alertsList: Array<{
@@ -37,17 +29,6 @@ export const ContractAlerts = ({
       description: string;
       severity: number; // 1-5, higher = more severe
     }> = [];
-
-    // تنبيه: المخالفات المرورية
-    if (trafficViolationsCount > 0) {
-      alertsList.push({
-        type: 'error',
-        icon: <AlertTriangle className="w-4 h-4" />,
-        title: 'مخالفات مرورية معلقة',
-        description: `يوجد ${trafficViolationsCount} مخالفة مرورية غير مدفوعة`,
-        severity: 5,
-      });
-    }
 
     // تنبيه: قرب نهاية العقد
     if (contract.end_date) {
@@ -71,32 +52,9 @@ export const ContractAlerts = ({
       }
     }
 
-    // تنبيه: حالة قانونية
-    if (contract.status === 'under_legal_procedure') {
-      alertsList.push({
-        type: 'error',
-        icon: <AlertTriangle className="w-4 h-4" />,
-        title: 'تحت الإجراء القانوني',
-        description: 'هذا العقد قيد الإجراءات القانونية',
-        severity: 5,
-      });
-    }
-
-    // نجاح: جميع الدفعات مكتملة
-    const remaining = (contract.contract_amount || 0) - (contract.total_paid || 0);
-    if (remaining <= 0 && contract.status !== 'terminated' && contract.status !== 'cancelled') {
-      alertsList.push({
-        type: 'success',
-        icon: <CheckCircle2 className="w-4 h-4" />,
-        title: 'العقد مكتمل السداد',
-        description: 'تم سداد جميع دفعات العقد بنجاح',
-        severity: 1,
-      });
-    }
-
     // ترتيب التنبيهات حسب الأهمية
     return alertsList.sort((a, b) => b.severity - a.severity);
-  }, [contract, trafficViolationsCount, formatCurrency]);
+  }, [contract]);
 
   if (alerts.length === 0) {
     return null;

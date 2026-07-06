@@ -21,6 +21,7 @@ import {
   XCircle,
   DollarSign,
   Calendar,
+  Clock,
   CreditCard,
   Wallet,
   AlertTriangle,
@@ -500,6 +501,26 @@ const ContractCommandHeader = ({
                 <h1 className="mt-1 truncate text-2xl font-black tracking-normal text-[#142033] sm:text-3xl" dir="ltr">
                   {contract.contract_number}
                 </h1>
+                <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                  <div className="rounded-lg border border-[#E3EAF2] bg-white px-3 py-2">
+                    <div className="flex items-center gap-2 text-xs font-bold text-[#6A7688]">
+                      <Calendar className="h-3.5 w-3.5 text-[#173A63]" />
+                      تاريخ بداية العقد
+                    </div>
+                    <p className="mt-1 text-sm font-black text-[#142033]">
+                      {contract.start_date ? format(new Date(contract.start_date), 'dd MMMM yyyy', { locale: ar }) : '-'}
+                    </p>
+                  </div>
+                  <div className="rounded-lg border border-[#E3EAF2] bg-white px-3 py-2">
+                    <div className="flex items-center gap-2 text-xs font-bold text-[#6A7688]">
+                      <Clock className="h-3.5 w-3.5 text-[#173A63]" />
+                      تاريخ نهاية العقد
+                    </div>
+                    <p className="mt-1 text-sm font-black text-[#142033]">
+                      {contract.end_date ? format(new Date(contract.end_date), 'dd MMMM yyyy', { locale: ar }) : '-'}
+                    </p>
+                  </div>
+                </div>
               </div>
 
               <div className="grid gap-3 sm:grid-cols-2">
@@ -2803,8 +2824,20 @@ const ContractDetailsPageRedesigned = () => {
             العودة للعقود
           </Button>
           <div className="contract-topbar-identity">
-            <span>ملف عقد</span>
-            <strong dir="ltr">{contract.contract_number}</strong>
+            <div className="contract-topbar-contract-number">
+              <span>ملف عقد</span>
+              <strong dir="ltr">{contract.contract_number}</strong>
+            </div>
+          </div>
+          <div className="contract-topbar-dates">
+            <span>
+              بداية العقد:
+              <b dir="ltr">{contract.start_date ? format(new Date(contract.start_date), 'dd/MM/yyyy') : '-'}</b>
+            </span>
+            <span>
+              نهاية العقد:
+              <b dir="ltr">{contract.end_date ? format(new Date(contract.end_date), 'dd/MM/yyyy') : '-'}</b>
+            </span>
           </div>
           <div className="contract-topbar-actions">
             <Button variant="outline" onClick={handleExport}>
@@ -2830,8 +2863,6 @@ const ContractDetailsPageRedesigned = () => {
         <section className="contract-alerts-zone">
           <ContractAlerts
             contract={contract}
-            trafficViolationsCount={trafficViolations.length}
-            formatCurrency={formatCurrency}
           />
         </section>
 
@@ -3254,23 +3285,55 @@ const ContractDetailsPageRedesigned = () => {
           padding-inline-start: 14px;
         }
 
-        .contract-topbar-identity span,
-        .contract-topbar-identity strong {
+        .contract-topbar-contract-number span,
+        .contract-topbar-contract-number strong {
           display: block;
         }
 
-        .contract-topbar-identity span {
+        .contract-topbar-contract-number span {
           color: var(--contract-details-muted);
           font-size: 11px;
           font-weight: 900;
         }
 
-        .contract-topbar-identity strong {
+        .contract-topbar-contract-number strong {
           overflow: hidden;
           color: var(--contract-details-text);
           text-overflow: ellipsis;
           white-space: nowrap;
           font-size: 16px;
+          font-weight: 950;
+        }
+
+        .contract-topbar-dates {
+          position: absolute;
+          left: 50%;
+          top: 50%;
+          transform: translate(-50%, -50%);
+          display: flex;
+          flex-wrap: wrap;
+          justify-content: center;
+          gap: 6px;
+          min-width: 0;
+        }
+
+        .contract-topbar-dates span {
+          display: inline-flex;
+          align-items: center;
+          gap: 5px;
+          border: 1px solid #DDE5EF;
+          border-radius: 999px;
+          background: #FFFFFF;
+          color: #6A7688;
+          padding: 5px 9px;
+          font-size: 11px;
+          font-weight: 900;
+          white-space: nowrap;
+        }
+
+        .contract-topbar-dates b {
+          color: #142033;
+          font-size: 12px;
           font-weight: 950;
         }
 
@@ -4396,6 +4459,12 @@ const ContractDetailsPageRedesigned = () => {
 
           .contract-topbar-actions {
             justify-content: stretch;
+          }
+
+          .contract-topbar-dates {
+            position: static;
+            transform: none;
+            justify-content: center;
           }
 
           .contract-topbar-actions button {
