@@ -46,10 +46,11 @@ export const unifiedPaymentSchema = z.discriminatedUnion('type', [
   invoicePaymentSchema,
 ]);
 
-// Helper to transform empty strings to undefined for optional UUID fields
-const optionalUuid = z.string().optional().transform(val => 
-  val && val.length > 0 ? val : undefined
-).pipe(z.string().uuid().optional());
+// Helper to transform empty strings/null to undefined for optional UUID fields
+const optionalUuid = z.preprocess(
+  (val) => (val === null || val === '' ? undefined : val),
+  z.string().uuid().optional()
+);
 
 // Enhanced payment schema with additional fields
 export const enhancedPaymentSchema = basePaymentSchema.extend({

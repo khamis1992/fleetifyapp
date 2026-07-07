@@ -50,6 +50,7 @@ const MobileAppOverdue: React.FC = () => React.createElement(MobileApp, { initia
 // Core application pages - lazy loaded
 const Dashboard = lazy(() => import('@/pages/Dashboard'));
 const DashboardLanding = lazy(() => import('@/pages/dashboard/DashboardLanding'));
+const OperationalAICenter = lazy(() => import('@/pages/ai/OperationalAICenter'));
 const EmployeeWorkspace = lazy(() => import('@/pages/EmployeeWorkspace'));
 const TeamManagement = lazy(() => import('@/pages/TeamManagement'));
 const TeamReports = lazy(() => import('@/pages/TeamReports'));
@@ -546,6 +547,19 @@ const routeConfigs: RouteConfig[] = [
     exact: true,
     title: 'Dashboard',
     description: 'Dashboard redirect',
+    group: 'dashboard',
+    priority: 11,
+    protected: true,
+    layout: 'bento',
+    requiredRole: 'admin',
+  },
+  {
+    path: '/ai/operations',
+    component: OperationalAICenter,
+    lazy: true,
+    exact: true,
+    title: 'مركز AI التشغيلي',
+    description: 'Daily operational AI decision center',
     group: 'dashboard',
     priority: 11,
     protected: true,

@@ -46,6 +46,7 @@ import { TrafficViolationsAlertsPanel } from '@/components/fleet/TrafficViolatio
 import { TrafficViolationSidePanel } from '@/components/fleet/TrafficViolationSidePanel';
 import { TrafficViolationReportDialog } from '@/components/fleet/TrafficViolationReportDialog';
 import { TrafficViolationReminderDialog } from '@/components/fleet/TrafficViolationReminderDialog';
+import { TrafficViolationsAIAdvisor } from '@/components/fleet/TrafficViolationsAIAdvisor';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 import { useVehicles } from '@/hooks/useVehicles';
@@ -976,6 +977,12 @@ export default function TrafficViolationsRedesigned() {
           </Dialog>
         </div>
       </header>
+
+      <TrafficViolationsAIAdvisor
+        violations={filteredViolations}
+        formatCurrency={formatCurrency}
+        onOpenViolation={handleOpenSidePanel}
+      />
 
       {/* Print Header */}
       <div className="hidden print:block p-8 border-b border-slate-200 text-center mb-6">

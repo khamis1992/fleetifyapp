@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import * as XLSX from 'xlsx';
 import {
@@ -10,6 +10,7 @@ import {
   Pencil,
   RotateCcw,
   Search,
+  Sparkles,
   Trash2,
   UploadCloud,
   XCircle,
@@ -147,6 +148,19 @@ type ImportResult = {
 type ImportResultsByFile = Record<string, ImportResult>;
 type MatchedContractsByFile = Record<string, MatchedContract>;
 
+type ContractMatchAlternative = {
+  contract: MatchedContract;
+  confidence: number;
+  reasons: string[];
+};
+
+type ContractMatchAnalysis = {
+  contract: MatchedContract | null;
+  confidence: number;
+  reasons: string[];
+  alternatives: ContractMatchAlternative[];
+};
+
 type ImportFileOutcome = {
   fileId: string;
   fileName: string;
@@ -159,6 +173,29 @@ type ImportFileOutcome = {
 };
 
 type ImportFileOutcomesByFile = Record<string, ImportFileOutcome>;
+
+type ImportAiInsight = {
+  tone: 'success' | 'warning' | 'danger' | 'info';
+  title: string;
+  description: string;
+};
+
+type ExcelImportAiFileReview = {
+  fileId: string;
+  title: string;
+  explanation: string;
+  recommendedAction: string;
+  confidence: number;
+  riskLevel: 'low' | 'medium' | 'high';
+};
+
+type ExcelImportAiReview = {
+  summary: string;
+  source: 'openai' | 'local';
+  generatedAt: string;
+  insights: ImportAiInsight[];
+  fileReviews: ExcelImportAiFileReview[];
+};
 
 type ImportSessionSnapshot = {
   version: 1;
@@ -246,6 +283,14 @@ type ApprovalCache = {
   invoicesByMonth: Map<string, ImportInvoice>;
   paymentsByInvoiceId: Map<string, ImportPayment[]>;
   paymentsByReference: Map<string, ImportPayment>;
+  lateFeeInvoiceIds: Set<string>;
+  penaltyNumbers: Set<string>;
+};
+
+type PreparedApprovalRow = {
+  row: ParsedPaymentRow;
+  monthDate: string | null;
+  monthKey: string | null;
 };
 
 type SupabaseQueryError = {
@@ -731,6 +776,11 @@ const isCompatibleTextMatch = (source: string, target: string) =>
 const contractMatchWarning = (file: ParsedExcelFile) =>
   `لا يوجد عقد مطابق للملف "${file.customerName || file.fileName}". تأكد من تسجيل العميل والعقد أو صحح الاسم/اللوحة/الهاتف قبل الاعتماد.`;
 
+const isContractMatchWarning = (message: string) =>
+  message.includes('لا يوجد عقد مطابق للملف') ||
+  message.includes('لم تتم مطابقة الملف مع عقد') ||
+  message.includes('لم يتم العثور على عقد مطابق');
+
 const parseMonthToDate = (month: string) => {
   const [first, second] = month.split(/[-/]/).map((part) => Number(part));
   const year = first > 1000 ? first : second;
@@ -771,7 +821,8 @@ const findCachedHistoricalPayment = (
   row: ParsedPaymentRow,
   contract: MatchedContract,
   file: ParsedExcelFile,
-  amountToApply: number
+  amountToApply: number,
+  paymentDateOverride?: string | null,
 ) => {
   const stableReference = buildHistoricalPaymentReference({
     fileName: file.fileName,
@@ -779,7 +830,7 @@ const findCachedHistoricalPayment = (
     invoiceId: invoice.id,
     month: row.month,
   });
-  const paymentDate = parseMonthToDate(row.month) || invoice.invoice_date || invoice.due_date || null;
+  const paymentDate = paymentDateOverride || invoice.invoice_date || invoice.due_date || null;
   const payments = cache.paymentsByInvoiceId.get(invoice.id) || [];
 
   return payments.find((payment) =>
@@ -805,6 +856,16 @@ const calculateInvoiceBalanceFromCachedPayments = (cache: ApprovalCache, invoice
     payment_status: paymentStatus,
   } as ImportInvoice;
 };
+
+const prepareApprovalRows = (rows: ParsedPaymentRow[]): PreparedApprovalRow[] =>
+  rows.map((row) => {
+    const monthDate = parseMonthToDate(row.month);
+    return {
+      row,
+      monthDate,
+      monthKey: monthDate ? monthDate.slice(0, 7) : null,
+    };
+  });
 
 const alignInvoiceDueDateToExcelMonth = async ({
   companyId,
@@ -999,82 +1060,205 @@ const isMissingRpcError = (error: RpcError | null) => {
   return error?.code === 'PGRST202' || message.includes('function') || message.includes('not found');
 };
 
-const findBestContractMatch = async (companyId: string, file: ParsedExcelFile) => {
+const contractMatchSelect = `
+  id,
+  contract_number,
+  customer_id,
+  vehicle_id,
+  license_plate,
+  monthly_amount,
+  start_date,
+  end_date,
+  status,
+  customers:customer_id (
+    id,
+    first_name,
+    last_name,
+    first_name_ar,
+    last_name_ar,
+    company_name,
+    company_name_ar,
+    phone,
+    national_id
+  ),
+  vehicles:vehicle_id (
+    id,
+    plate_number
+  )
+`;
+
+const fetchContractCandidates = async (companyId: string) => {
   const { data, error } = await supabase
     .from('contracts')
-    .select(`
-      id,
-      contract_number,
-      customer_id,
-      vehicle_id,
-      license_plate,
-      monthly_amount,
-      start_date,
-      end_date,
-      status,
-      customers:customer_id (
-        id,
-        first_name,
-        last_name,
-        first_name_ar,
-        last_name_ar,
-        company_name,
-        company_name_ar,
-        phone,
-        national_id
-      ),
-      vehicles:vehicle_id (
-        id,
-        plate_number
-      )
-    `)
+    .select(contractMatchSelect)
     .eq('company_id', companyId)
     .order('created_at', { ascending: false })
     .limit(2000);
 
   if (error) throw error;
+  return (data || []) as MatchedContract[];
+};
 
+const scoreContractMatch = (contract: MatchedContract, file: ParsedExcelFile) => {
+  let score = 0;
+  const reasons: string[] = [];
   const filePlate = compactText(file.plateNumber);
   const filePhone = digitsOnly(file.phone);
   const fileId = digitsOnly(file.idNumber);
   const fileName = compactText(file.customerName);
+  const contractPlate = compactText(contract.vehicles?.plate_number || contract.license_plate || '');
+  const phone = digitsOnly(contract.customers?.phone || '');
+  const nationalId = digitsOnly(contract.customers?.national_id || '');
+  const name = buildContractCustomerName(contract);
+  const hasNameInFile = Boolean(fileName);
+  const nameMatches = isCompatibleTextMatch(fileName, name);
+  const plateMatches = Boolean(filePlate && contractPlate && (
+    filePlate === contractPlate ||
+    contractPlate.includes(filePlate) ||
+    filePlate.includes(contractPlate)
+  ));
+  const phoneMatches = Boolean(filePhone && phone && (
+    filePhone === phone ||
+    phone.endsWith(filePhone) ||
+    filePhone.endsWith(phone)
+  ));
+  const idMatches = Boolean(fileId && nationalId && fileId === nationalId);
+  const hasIdentifierMatch = idMatches || phoneMatches || plateMatches;
 
-  const scored = ((data || []) as MatchedContract[]).map((contract) => {
-    let score = 0;
-    const contractPlate = compactText(contract.vehicles?.plate_number || contract.license_plate || '');
-    const phone = digitsOnly(contract.customers?.phone || '');
-    const nationalId = digitsOnly(contract.customers?.national_id || '');
-    const name = buildContractCustomerName(contract);
-    const hasNameInFile = Boolean(fileName);
-    const nameMatches = isCompatibleTextMatch(fileName, name);
-    const plateMatches = Boolean(filePlate && contractPlate && (
-      filePlate === contractPlate ||
-      contractPlate.includes(filePlate) ||
-      filePlate.includes(contractPlate)
-    ));
-    const phoneMatches = Boolean(filePhone && phone && (
-      filePhone === phone ||
-      phone.endsWith(filePhone) ||
-      filePhone.endsWith(phone)
-    ));
-    const idMatches = Boolean(fileId && nationalId && fileId === nationalId);
-    const hasIdentifierMatch = idMatches || phoneMatches || plateMatches;
+  if (hasNameInFile && !nameMatches && !hasIdentifierMatch) {
+    return {
+      score: -1,
+      reasons: ['تم استبعاد العقد لأن الاسم لا يطابق ولا يوجد تطابق في الهوية أو الجوال أو اللوحة.'],
+    };
+  }
 
-    if (hasNameInFile && !nameMatches && !hasIdentifierMatch) {
-      return { contract, score: -1 };
-    }
+  if (idMatches) {
+    score += 100;
+    reasons.push('تطابق الرقم الشخصي مع بيانات العميل.');
+  }
+  if (phoneMatches) {
+    score += 55;
+    reasons.push('تطابق رقم الجوال أو آخر أرقامه.');
+  }
+  if (plateMatches) {
+    score += 55;
+    reasons.push('تطابق رقم المركبة مع العقد.');
+  }
+  if (idMatches && plateMatches) {
+    score += 35;
+    reasons.push('تطابق الرقم الشخصي ورقم المركبة معًا، وهذا أقوى مؤشر للمطابقة.');
+  }
+  if (nameMatches) {
+    score += 20;
+    reasons.push('اسم العميل قريب من الاسم الموجود في العقد.');
+  }
+  if (contract.status === 'active') {
+    score += 5;
+    reasons.push('العقد نشط حاليًا.');
+  }
 
-    if (idMatches) score += 100;
-    if (phoneMatches) score += 55;
-    if (plateMatches) score += 45;
-    if (idMatches && plateMatches) score += 40;
-    if (nameMatches) score += 20;
-    if (contract.status === 'active') score += 5;
+  return {
+    score,
+    reasons: reasons.length ? reasons : ['لا توجد مؤشرات كافية للمطابقة.'],
+  };
+};
 
-    return { contract, score };
+const analyzeContractMatch = async (
+  companyId: string,
+  file: ParsedExcelFile,
+  candidates?: MatchedContract[],
+): Promise<ContractMatchAnalysis> => {
+  const contracts = candidates || await fetchContractCandidates(companyId);
+
+  const scored = contracts.map((contract) => {
+    const result = scoreContractMatch(contract, file);
+    return { contract, score: result.score, reasons: result.reasons };
   }).sort((a, b) => b.score - a.score);
 
-  return scored[0]?.score >= 45 ? scored[0].contract : null;
+  const viableMatches = scored.filter((item) => item.score >= 45);
+  const best = viableMatches[0] || null;
+  const alternatives = scored.filter((item) => item.score > 0).slice(0, 3).map((item) => ({
+    contract: item.contract,
+    confidence: Math.min(100, Math.max(0, item.score)),
+    reasons: item.reasons,
+  }));
+
+  return {
+    contract: best?.contract || null,
+    confidence: best ? Math.min(100, Math.max(0, best.score)) : 0,
+    reasons: best?.reasons || ['لم يتم العثور على عقد يملك مؤشرات مطابقة كافية.'],
+    alternatives,
+  };
+};
+
+const findBestContractMatch = async (companyId: string, file: ParsedExcelFile) => {
+  const analysis = await analyzeContractMatch(companyId, file);
+  return analysis.contract;
+};
+
+const searchContractMatches = async (
+  companyId: string,
+  file: ParsedExcelFile,
+  searchTerm: string,
+  candidates?: MatchedContract[],
+): Promise<ContractMatchAlternative[]> => {
+  const contracts = candidates || await fetchContractCandidates(companyId);
+
+  const queryText = compactText(searchTerm);
+  const queryDigits = digitsOnly(searchTerm);
+
+  return contracts
+    .map((contract) => {
+      const reasons: string[] = [];
+      let score = 0;
+      const contractNumber = compactText(contract.contract_number || '');
+      const contractPlate = compactText(contract.vehicles?.plate_number || contract.license_plate || '');
+      const customerName = buildContractCustomerName(contract);
+      const customerPhone = digitsOnly(contract.customers?.phone || '');
+      const customerId = digitsOnly(contract.customers?.national_id || '');
+      const fileScore = scoreContractMatch(contract, file);
+
+      if (queryText && contractNumber.includes(queryText)) {
+        score += 120;
+        reasons.push('رقم العقد يطابق البحث اليدوي.');
+      }
+      if (queryDigits && customerId && (customerId === queryDigits || customerId.includes(queryDigits))) {
+        score += 110;
+        reasons.push('الرقم الشخصي يطابق البحث اليدوي.');
+      }
+      if (queryDigits && customerPhone && (customerPhone === queryDigits || customerPhone.endsWith(queryDigits) || queryDigits.endsWith(customerPhone))) {
+        score += 80;
+        reasons.push('رقم الجوال يطابق البحث اليدوي.');
+      }
+      if (queryText && contractPlate && (contractPlate === queryText || contractPlate.includes(queryText) || queryText.includes(contractPlate))) {
+        score += 75;
+        reasons.push('رقم المركبة يطابق البحث اليدوي.');
+      }
+      if (queryText && customerName && (customerName.includes(queryText) || queryText.includes(customerName))) {
+        score += 45;
+        reasons.push('اسم العميل قريب من البحث اليدوي.');
+      }
+
+      if (fileScore.score > 0) {
+        score += Math.min(45, Math.round(fileScore.score / 3));
+        reasons.push(...fileScore.reasons.slice(0, 2));
+      }
+
+      return {
+        contract,
+        confidence: Math.min(100, Math.max(0, score)),
+        reasons: Array.from(new Set(reasons)),
+        score,
+      };
+    })
+    .filter((item) => item.score > 0)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 10)
+    .map(({ contract, confidence, reasons }) => ({
+      contract,
+      confidence,
+      reasons: reasons.length ? reasons : ['تم العثور على العقد ضمن نتائج البحث اليدوي.'],
+    }));
 };
 
 const findExistingMonthlyInvoice = async (companyId: string, contractId: string, invoiceDate: string) => {
@@ -1259,6 +1443,278 @@ const summarizeFileAnalysis = (
   return summary;
 };
 
+const buildImportAiInsights = ({
+  files,
+  fileOutcomes,
+  importResults,
+}: {
+  files: ParsedExcelFile[];
+  fileOutcomes: ImportFileOutcomesByFile;
+  importResults: ImportResultsByFile;
+}): ImportAiInsight[] => {
+  if (files.length === 0) {
+    return [{
+      tone: 'info',
+      title: 'ابدأ برفع ملفات Excel',
+      description: 'بعد الرفع سيحلل المساعد جودة القراءة والمطابقة ويخبرك بالملفات الجاهزة والملفات التي تحتاج تدخل.',
+    }];
+  }
+
+  const approvedCount = Object.keys(importResults).length;
+  const failedOutcomes = Object.values(fileOutcomes).filter((outcome) => outcome.status === 'failed');
+  const reviewOutcomes = Object.values(fileOutcomes).filter((outcome) => outcome.status === 'review_required');
+  const pendingFiles = files.filter((file) => file.status === 'ready' && !importResults[file.id]);
+  const lowConfidenceFiles = files.filter((file) => file.confidence < 80);
+  const missingIdentityFiles = files.filter((file) => !file.idNumber && !file.phone && !file.plateNumber);
+
+  const insights: ImportAiInsight[] = [];
+
+  if (failedOutcomes.length > 0) {
+    const duplicateFailures = failedOutcomes.filter((outcome) => {
+      const message = localizeImportOutcomeMessage(outcome.message).toLowerCase();
+      return message.includes('مكرر') || message.includes('فاتورة لنفس العقد') || message.includes('duplicate');
+    }).length;
+    const dateFailures = failedOutcomes.filter((outcome) => {
+      const message = localizeImportOutcomeMessage(outcome.message);
+      return message.includes('قبل تاريخ بداية العقد');
+    }).length;
+    const overpaymentFailures = failedOutcomes.filter((outcome) => {
+      const message = localizeImportOutcomeMessage(outcome.message);
+      return message.includes('تجاوز حد المدفوعات') || message.includes('سيتجاوز');
+    }).length;
+
+    const reasons = [
+      duplicateFailures ? `${duplicateFailures} بسبب تكرار فاتورة أو دفعة` : null,
+      dateFailures ? `${dateFailures} بسبب تاريخ قبل بداية العقد` : null,
+      overpaymentFailures ? `${overpaymentFailures} بسبب تجاوز سقف العقد` : null,
+    ].filter(Boolean);
+
+    insights.push({
+      tone: 'danger',
+      title: `${failedOutcomes.length} ملف فشل أثناء الاعتماد`,
+      description: reasons.length
+        ? `الأسباب الأوضح: ${reasons.join('، ')}. عالج هذه الملفات ثم استخدم إعادة محاولة الفاشل فقط.`
+        : 'راجع بطاقة كل ملف فاشل؛ المساعد يعرض السبب بالعربي والخطوة المناسبة قبل إعادة المحاولة.',
+    });
+  }
+
+  if (reviewOutcomes.length > 0 || missingIdentityFiles.length > 0) {
+    insights.push({
+      tone: 'warning',
+      title: `${Math.max(reviewOutcomes.length, missingIdentityFiles.length)} ملف يحتاج مطابقة`,
+      description: 'الأولوية في المطابقة: الرقم الشخصي أولًا، ثم رقم الجوال، ثم رقم المركبة. إذا تطابق الرقم الشخصي مع اللوحة فالعقد غالبًا هو الصحيح.',
+    });
+  }
+
+  if (lowConfidenceFiles.length > 0) {
+    insights.push({
+      tone: 'warning',
+      title: `${lowConfidenceFiles.length} ملف جودة قراءته منخفضة`,
+      description: 'راجع الاسم والهوية والجوال واللوحة قبل الاعتماد؛ انخفاض الجودة يعني أن أعمدة Excel قد تكون غير واضحة أو ناقصة.',
+    });
+  }
+
+  if (pendingFiles.length > 0 && failedOutcomes.length === 0) {
+    insights.push({
+      tone: 'success',
+      title: `${pendingFiles.length} ملف جاهز للاعتماد`,
+      description: 'يمكنك استكمال الاعتماد الجماعي للملفات الجاهزة. الجلسة محفوظة، لذلك لو توقف التنفيذ يمكنك المتابعة بدون البدء من الصفر.',
+    });
+  }
+
+  if (approvedCount > 0) {
+    insights.push({
+      tone: 'success',
+      title: `تم اعتماد ${approvedCount} ملف`,
+      description: 'الملفات المعتمدة مرتبطة بعقودها ويمكن فتح العقد مباشرة من القائمة الجانبية لمراجعة الدفعات والفواتير.',
+    });
+  }
+
+  if (insights.length === 0) {
+    insights.push({
+      tone: 'info',
+      title: 'الملفات قيد التحليل',
+      description: 'انتظر اكتمال المطابقة، ثم سيعرض المساعد هل يمكن الاعتماد أو ما الذي يحتاج مراجعة.',
+    });
+  }
+
+  return insights.slice(0, 4);
+};
+
+const buildExcelImportAiReviewSession = ({
+  files,
+  fileOutcomes,
+  importResults,
+  matchedContractsByFile,
+  selectedFileId,
+  contractMatchAnalysis,
+}: {
+  files: ParsedExcelFile[];
+  fileOutcomes: ImportFileOutcomesByFile;
+  importResults: ImportResultsByFile;
+  matchedContractsByFile: MatchedContractsByFile;
+  selectedFileId: string | null;
+  contractMatchAnalysis: ContractMatchAnalysis | null;
+}) => {
+  const selectedFileReviewIds = new Set<string>();
+  if (selectedFileId) selectedFileReviewIds.add(selectedFileId);
+  Object.values(fileOutcomes)
+    .filter((outcome) => outcome.status === 'failed' || outcome.status === 'review_required')
+    .slice(0, 8)
+    .forEach((outcome) => selectedFileReviewIds.add(outcome.fileId));
+  files
+    .filter((file) => !matchedContractsByFile[file.id] || file.status === 'review_required' || file.confidence < 80)
+    .slice(0, 8)
+    .forEach((file) => selectedFileReviewIds.add(file.id));
+
+  const reviewFiles = files
+    .filter((file) => selectedFileReviewIds.has(file.id))
+    .slice(0, 12)
+    .map((file) => {
+      const outcome = fileOutcomes[file.id];
+      const matchedContract = matchedContractsByFile[file.id];
+      const localizedReason = localizeImportOutcomeMessage(outcome?.message || '');
+      const isSelected = file.id === selectedFileId;
+
+      return {
+        fileId: file.id,
+        fileName: file.fileName,
+        customerName: file.customerName,
+        idNumber: maskIdentifier(file.idNumber),
+        phone: maskIdentifier(file.phone),
+        plateNumber: file.plateNumber,
+        readConfidence: file.confidence,
+        status: outcome?.status || file.status,
+        reason: localizedReason || file.warnings.join('، '),
+        months: file.rows.length,
+        totalPayments: file.totalPayments,
+        hasMatchedContract: Boolean(matchedContract),
+        matchedContract: matchedContract ? {
+          contractNumber: matchedContract.contract_number,
+          customerName: getContractCustomerDisplayName(matchedContract),
+          plateNumber: matchedContract.vehicles?.plate_number || matchedContract.license_plate || null,
+          monthlyAmount: matchedContract.monthly_amount,
+          contractAmount: matchedContract.monthly_amount * Math.max(1, file.rows.length),
+        } : null,
+        matchConfidence: isSelected ? contractMatchAnalysis?.confidence : undefined,
+        matchReason: isSelected ? contractMatchAnalysis?.reasons?.slice(0, 4).join('، ') : undefined,
+        alternatives: isSelected ? contractMatchAnalysis?.alternatives?.slice(0, 3).map((alternative) => ({
+          contractNumber: alternative.contract.contract_number,
+          customerName: getContractCustomerDisplayName(alternative.contract),
+          plateNumber: alternative.contract.vehicles?.plate_number || alternative.contract.license_plate || null,
+          confidence: alternative.confidence,
+          reasons: alternative.reasons.slice(0, 3),
+        })) : [],
+        approved: Boolean(importResults[file.id]),
+      };
+    });
+
+  return {
+    totals: {
+      files: files.length,
+      ready: files.filter((file) => file.status === 'ready').length,
+      review: files.filter((file) => file.status === 'review_required').length,
+      approved: Object.keys(importResults).length,
+      failed: Object.values(fileOutcomes).filter((outcome) => outcome.status === 'failed').length,
+    },
+    rules: {
+      matchingPriority: ['personal_id', 'phone', 'vehicle_plate'],
+      strongSignal: 'personal_id_with_vehicle_plate',
+      duplicateCheck: 'before_approval',
+      overpaymentCheck: 'before_payment_creation',
+    },
+    files: reviewFiles,
+  };
+};
+
+const maskIdentifier = (value: string) => {
+  const digits = digitsOnly(value);
+  if (!digits) return '';
+  if (digits.length <= 4) return digits;
+  return `${digits.slice(0, 2)}***${digits.slice(-2)}`;
+};
+
+const getInsightClassName = (tone: ImportAiInsight['tone']) => {
+  switch (tone) {
+    case 'success':
+      return 'border-emerald-200 bg-emerald-50 text-emerald-800';
+    case 'warning':
+      return 'border-amber-200 bg-amber-50 text-amber-800';
+    case 'danger':
+      return 'border-red-200 bg-red-50 text-red-800';
+    default:
+      return 'border-sky-200 bg-sky-50 text-sky-800';
+  }
+};
+
+const buildSelectedFileAiDecision = ({
+  file,
+  outcome,
+  result,
+  matchedContract,
+  approvalBlockers,
+}: {
+  file: ParsedExcelFile | null;
+  outcome: ImportFileOutcome | null;
+  result: ImportResult | null;
+  matchedContract: MatchedContract | null;
+  approvalBlockers: string[];
+}): ImportAiInsight => {
+  if (!file) {
+    return {
+      tone: 'info',
+      title: 'لا يوجد ملف محدد',
+      description: 'اختر ملفًا من القائمة لعرض قرار المساعد لهذا العميل.',
+    };
+  }
+
+  if (result) {
+    return {
+      tone: 'success',
+      title: 'تم اعتماد هذا الملف',
+      description: `تم إنشاء أو ربط ${result.payments} دفعة و${result.invoicesCreated} فاتورة. يمكنك فتح العقد لمراجعة الأثر المالي.`,
+    };
+  }
+
+  if (outcome?.status === 'failed') {
+    return {
+      tone: 'danger',
+      title: 'لا تعيد الاعتماد قبل معالجة السبب',
+      description: localizeImportOutcomeMessage(outcome.message) || 'فشل الاعتماد. راجع السبب ثم استخدم إعادة محاولة الفاشل فقط.',
+    };
+  }
+
+  if (!matchedContract) {
+    return {
+      tone: 'warning',
+      title: 'المطابقة غير مكتملة',
+      description: 'ابحث عن العقد حسب الرقم الشخصي أولًا، ثم الجوال، ثم رقم المركبة. عند تطابق الهوية مع اللوحة تكون المطابقة أقوى.',
+    };
+  }
+
+  if (approvalBlockers.length > 0) {
+    return {
+      tone: 'warning',
+      title: 'يوجد مانع قبل الاعتماد',
+      description: approvalBlockers[0],
+    };
+  }
+
+  if (file.confidence < 80) {
+    return {
+      tone: 'warning',
+      title: 'راجع القراءة قبل الاعتماد',
+      description: 'جودة قراءة الملف منخفضة. تحقق من الاسم والهوية والجوال واللوحة قبل إنشاء الدفعات.',
+    };
+  }
+
+  return {
+    tone: 'success',
+    title: 'جاهز للاعتماد',
+    description: `المساعد يوصي بالاعتماد على العقد ${matchedContract.contract_number} بعد مراجعة إجمالي المدفوعات ${formatCurrency(file.totalPayments)}.`,
+  };
+};
+
 export default function ExcelPaymentImport() {
   const navigate = useNavigate();
   const { companyId, user } = useUnifiedCompanyAccess();
@@ -1268,12 +1724,20 @@ export default function ExcelPaymentImport() {
     autoUpdateBankBalance: true,
     enableNotifications: false,
   });
+  const contractCandidatesRef = useRef<{ companyId: string; contracts: MatchedContract[] } | null>(null);
+  const closedAccountingPeriodsRef = useRef<{ companyId: string; periods: AccountingPeriodRow[] } | null>(null);
+  const approvalCacheByContractRef = useRef<Map<string, ApprovalCache>>(new Map());
+  const manualMatchedFileIdsRef = useRef<Set<string>>(new Set());
   const [files, setFiles] = useState<ParsedExcelFile[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [isParsing, setIsParsing] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [approvalDialogOpen, setApprovalDialogOpen] = useState(false);
   const [matchedContract, setMatchedContract] = useState<MatchedContract | null>(null);
+  const [contractMatchAnalysis, setContractMatchAnalysis] = useState<ContractMatchAnalysis | null>(null);
+  const [manualContractSearch, setManualContractSearch] = useState('');
+  const [manualContractResults, setManualContractResults] = useState<ContractMatchAlternative[]>([]);
+  const [isManualContractSearchLoading, setIsManualContractSearchLoading] = useState(false);
   const [matchedContractsByFile, setMatchedContractsByFile] = useState<MatchedContractsByFile>({});
   const [isMatchingContract, setIsMatchingContract] = useState(false);
   const [isApproving, setIsApproving] = useState(false);
@@ -1288,12 +1752,41 @@ export default function ExcelPaymentImport() {
   const [sessionId, setSessionId] = useState<string>(() => buildImportSessionId());
   const [fileOutcomes, setFileOutcomes] = useState<ImportFileOutcomesByFile>({});
   const [hasLoadedStoredSession, setHasLoadedStoredSession] = useState(false);
+  const [aiReview, setAiReview] = useState<ExcelImportAiReview | null>(null);
+  const [isAiReviewLoading, setIsAiReviewLoading] = useState(false);
+  const aiReviewRequestKeyRef = useRef<string>('');
 
   const selectedFile = files.find((file) => file.id === selectedId) || files[0] || null;
   const importResult = selectedFile ? importResults[selectedFile.id] || null : null;
   const selectedOutcome = selectedFile ? fileOutcomes[selectedFile.id] || null : null;
   const openContractDetails = (contract: MatchedContract) => {
     navigate(`/contracts/${encodeURIComponent(contract.contract_number)}`);
+  };
+  const getContractCandidatesForSession = async () => {
+    if (!companyId) return [];
+    const cached = contractCandidatesRef.current;
+    if (cached?.companyId === companyId) return cached.contracts;
+
+    const contracts = await fetchContractCandidates(companyId);
+    contractCandidatesRef.current = { companyId, contracts };
+    return contracts;
+  };
+  const getClosedAccountingPeriodsForSession = async () => {
+    if (!companyId) return [];
+    const cached = closedAccountingPeriodsRef.current;
+    if (cached?.companyId === companyId) return cached.periods;
+
+    const { data, error } = await supabase
+      .from('accounting_periods')
+      .select('id,period_name,start_date,end_date,status')
+      .eq('company_id', companyId)
+      .in('status', ['closed', 'locked']);
+
+    if (error) throw error;
+
+    const periods = (data || []) as AccountingPeriodRow[];
+    closedAccountingPeriodsRef.current = { companyId, periods };
+    return periods;
   };
   const clearImportResultForFile = (fileId: string) => {
     setImportResults((current) => {
@@ -1317,6 +1810,81 @@ export default function ExcelPaymentImport() {
       },
     }));
   };
+  const runAiImportReview = async (mode: 'auto' | 'manual' = 'manual') => {
+    if (!companyId || files.length === 0) return;
+
+    const session = buildExcelImportAiReviewSession({
+      files,
+      fileOutcomes,
+      importResults,
+      matchedContractsByFile,
+      selectedFileId: selectedFile?.id || null,
+      contractMatchAnalysis,
+    });
+    const requestKey = JSON.stringify({
+      sessionId,
+      totals: session.totals,
+      selectedFileId: selectedFile?.id || null,
+      fileStatuses: session.files.map((file: any) => [file.fileId, file.status, file.hasMatchedContract, file.reason, file.matchConfidence]),
+    });
+
+    if (mode === 'auto' && aiReviewRequestKeyRef.current === requestKey) return;
+
+    aiReviewRequestKeyRef.current = requestKey;
+    setIsAiReviewLoading(true);
+
+    try {
+      const { data, error } = await supabase.functions.invoke('excel-import-ai-review', {
+        body: { session },
+      });
+
+      if (error) throw new Error(error.message);
+      if (data?.summary && Array.isArray(data?.insights)) {
+        setAiReview(data as ExcelImportAiReview);
+      }
+    } catch (error) {
+      console.warn('[ExcelPaymentImport] AI review unavailable:', error);
+      if (mode === 'manual') {
+        toast.warning('تعذر تشغيل OpenAI الآن، وسيبقى التحليل المحلي ظاهرًا.');
+      }
+    } finally {
+      setIsAiReviewLoading(false);
+    }
+  };
+  const applySuggestedContractMatch = (alternative: ContractMatchAlternative) => {
+    if (!selectedFile) return;
+
+    const cleanedSelectedFile = {
+      ...selectedFile,
+      warnings: selectedFile.warnings.filter((warning) => !isContractMatchWarning(warning)),
+      status: selectedFile.status === 'empty' || selectedFile.status === 'error' ? selectedFile.status : 'ready',
+    };
+    const reasons = [
+      'تم اختيار هذا العقد يدويًا من اقتراحات المساعد.',
+      ...alternative.reasons,
+    ];
+
+    manualMatchedFileIdsRef.current.add(selectedFile.id);
+    setMatchedContract(alternative.contract);
+    setContractMatchAnalysis({
+      contract: alternative.contract,
+      confidence: alternative.confidence,
+      reasons,
+      alternatives: contractMatchAnalysis?.alternatives || [alternative],
+    });
+    setMatchedContractsByFile((current) => ({ ...current, [selectedFile.id]: alternative.contract }));
+    setFileContractMatchState(selectedFile, true);
+    recordFileOutcome(selectedFile, {
+      status: 'pending',
+      message: `تم اختيار العقد ${alternative.contract.contract_number} يدويًا بنسبة ثقة ${alternative.confidence}%.`,
+      details: [
+        ...summarizeFileAnalysis(cleanedSelectedFile, alternative.contract),
+        ...reasons.map((reason) => `سبب المطابقة: ${reason}`),
+      ],
+      contractNumber: alternative.contract.contract_number,
+    });
+    toast.success(`تم ربط الملف بالعقد ${alternative.contract.contract_number}. راجع البيانات ثم نفذ الاعتماد.`);
+  };
   const clearImportSession = () => {
     if (companyId) {
       localStorage.removeItem(getImportSessionStorageKey(companyId));
@@ -1324,9 +1892,18 @@ export default function ExcelPaymentImport() {
     setFiles([]);
     setSelectedId(null);
     setMatchedContract(null);
+    setContractMatchAnalysis(null);
+    setManualContractSearch('');
+    setManualContractResults([]);
+    contractCandidatesRef.current = null;
+    closedAccountingPeriodsRef.current = null;
+    approvalCacheByContractRef.current.clear();
+    manualMatchedFileIdsRef.current.clear();
     setMatchedContractsByFile({});
     setImportResults({});
     setFileOutcomes({});
+    setAiReview(null);
+    aiReviewRequestKeyRef.current = '';
     setApprovalProgress(null);
     setBulkApprovalProgress(null);
     setSessionId(buildImportSessionId());
@@ -1343,7 +1920,7 @@ export default function ExcelPaymentImport() {
 
         const warning = contractMatchWarning(currentFile);
         const warnings = hasMatch
-          ? currentFile.warnings.filter((item) => item !== warning)
+          ? currentFile.warnings.filter((item) => item !== warning && !isContractMatchWarning(item))
           : Array.from(new Set([...currentFile.warnings, warning]));
 
         const updated = {
@@ -1370,6 +1947,24 @@ export default function ExcelPaymentImport() {
       return changed ? nextFiles : currentFiles;
     });
   };
+  const executeManualContractSearch = async () => {
+    if (!companyId || !selectedFile) return;
+
+    setIsManualContractSearchLoading(true);
+    try {
+      const contracts = await getContractCandidatesForSession();
+      const results = await searchContractMatches(companyId, selectedFile, manualContractSearch, contracts);
+      setManualContractResults(results);
+      if (results.length === 0) {
+        toast.warning('لم يتم العثور على عقود مطابقة للبحث الحالي.');
+      }
+    } catch (error) {
+      console.error('Manual contract search failed:', error);
+      toast.error('تعذر البحث عن العقود. حاول مرة أخرى.');
+    } finally {
+      setIsManualContractSearchLoading(false);
+    }
+  };
   const approvalSummary = useMemo(() => buildApprovalSummary(selectedFile), [selectedFile]);
   const editChanges = useMemo(
     () => buildRowEditChanges(editBaselineRows, selectedFile?.rows || null),
@@ -1382,6 +1977,39 @@ export default function ExcelPaymentImport() {
     if (financeAccess.isLoading) blockers.push('جاري التحقق من صلاحيات المالية.');
     return blockers;
   }, [approvalSummary.blockers, companyId, matchedContract, financeAccess.isLoading]);
+  const selectedFileAiDecision = useMemo(
+    () => {
+      const aiFileReview = selectedFile ? aiReview?.fileReviews.find((review) => review.fileId === selectedFile.id) : null;
+      if (aiFileReview) {
+        return {
+          tone: aiFileReview.riskLevel === 'high' ? 'danger' : aiFileReview.riskLevel === 'medium' ? 'warning' : 'success',
+          title: `${aiFileReview.title} - ثقة ${aiFileReview.confidence}%`,
+          description: `${aiFileReview.explanation} الإجراء المقترح: ${aiFileReview.recommendedAction}`,
+        } satisfies ImportAiInsight;
+      }
+
+      return buildSelectedFileAiDecision({
+        file: selectedFile,
+        outcome: selectedOutcome,
+        result: importResult,
+        matchedContract,
+        approvalBlockers,
+      });
+    },
+    [aiReview, approvalBlockers, importResult, matchedContract, selectedFile, selectedOutcome],
+  );
+  const contractMatchReviewAlternatives = useMemo(() => {
+    if (!contractMatchAnalysis) return [];
+    return contractMatchAnalysis.alternatives.filter(
+      (alternative) => alternative.contract.id !== contractMatchAnalysis.contract?.id,
+    );
+  }, [contractMatchAnalysis]);
+
+  useEffect(() => {
+    contractCandidatesRef.current = null;
+    closedAccountingPeriodsRef.current = null;
+    approvalCacheByContractRef.current.clear();
+  }, [companyId]);
 
   useEffect(() => {
     if (!companyId) return;
@@ -1454,13 +2082,37 @@ export default function ExcelPaymentImport() {
 
     const runMatch = async () => {
       setMatchedContract(null);
+      setContractMatchAnalysis(null);
+      setManualContractSearch('');
+      setManualContractResults([]);
       if (!companyId || !selectedFile) return;
+
+      const manuallySelectedContract = matchedContractsByFile[selectedFile.id];
+      if (manualMatchedFileIdsRef.current.has(selectedFile.id) && manuallySelectedContract) {
+        const manualAnalysis: ContractMatchAnalysis = {
+          contract: manuallySelectedContract,
+          confidence: 100,
+          reasons: ['تم اختيار هذا العقد يدويًا، لذلك لن يتم استبداله بالمطابقة التلقائية.'],
+          alternatives: [{
+            contract: manuallySelectedContract,
+            confidence: 100,
+            reasons: ['تم اختيار هذا العقد يدويًا.'],
+          }],
+        };
+        setMatchedContract(manuallySelectedContract);
+        setContractMatchAnalysis(manualAnalysis);
+        setFileContractMatchState(selectedFile, true);
+        return;
+      }
 
       setIsMatchingContract(true);
       try {
-        const match = await findBestContractMatch(companyId, selectedFile);
+        const contracts = await getContractCandidatesForSession();
+        const analysis = await analyzeContractMatch(companyId, selectedFile, contracts);
+        const match = analysis.contract;
         if (isMounted) {
           setMatchedContract(match);
+          setContractMatchAnalysis(analysis);
           setMatchedContractsByFile((current) => {
             if (match) return { ...current, [selectedFile.id]: match };
             const next = { ...current };
@@ -1471,9 +2123,12 @@ export default function ExcelPaymentImport() {
           recordFileOutcome(selectedFile, {
             status: match ? 'pending' : 'review_required',
             message: match
-              ? `تمت مطابقة الملف مع العقد ${match.contract_number}.`
+              ? `تمت مطابقة الملف مع العقد ${match.contract_number} بنسبة ثقة ${analysis.confidence}%.`
               : contractMatchWarning(selectedFile),
-            details: summarizeFileAnalysis(selectedFile, match),
+            details: [
+              ...summarizeFileAnalysis(selectedFile, match),
+              ...analysis.reasons.map((reason) => `سبب المطابقة: ${reason}`),
+            ],
             contractNumber: match?.contract_number,
           });
 
@@ -1485,6 +2140,7 @@ export default function ExcelPaymentImport() {
         console.error('Excel import contract matching failed:', error);
         if (isMounted) {
           setMatchedContract(null);
+          setContractMatchAnalysis(null);
           setMatchedContractsByFile((current) => {
             const next = { ...current };
             delete next[selectedFile.id];
@@ -1511,6 +2167,27 @@ export default function ExcelPaymentImport() {
     };
   }, [companyId, selectedFile]);
 
+  useEffect(() => {
+    if (!companyId || files.length === 0 || isParsing || isBulkApproving || isApproving) return;
+
+    const timer = window.setTimeout(() => {
+      runAiImportReview('auto');
+    }, 900);
+
+    return () => window.clearTimeout(timer);
+  }, [
+    companyId,
+    files,
+    fileOutcomes,
+    importResults,
+    matchedContractsByFile,
+    selectedId,
+    contractMatchAnalysis?.confidence,
+    isParsing,
+    isBulkApproving,
+    isApproving,
+  ]);
+
   const totals = useMemo(() => ({
     files: files.length,
     ready: files.filter((file) => file.status === 'ready').length,
@@ -1520,6 +2197,10 @@ export default function ExcelPaymentImport() {
     pendingApproval: files.filter((file) => file.status === 'ready' && !importResults[file.id]).length,
     payments: files.reduce((sum, file) => sum + file.totalPayments, 0),
   }), [files, fileOutcomes, importResults]);
+  const importAiInsights = useMemo(
+    () => aiReview?.insights?.length ? aiReview.insights : buildImportAiInsights({ files, fileOutcomes, importResults }),
+    [aiReview, files, fileOutcomes, importResults],
+  );
 
   const filteredFiles = useMemo(() => {
     const needle = normalizeArabic(searchTerm);
@@ -1564,6 +2245,8 @@ export default function ExcelPaymentImport() {
       );
 
       setSessionId(buildImportSessionId());
+      setAiReview(null);
+      aiReviewRequestKeyRef.current = '';
       setFiles(parsed);
       setSelectedId(parsed[0]?.id || null);
       setIsEditMode(false);
@@ -1678,24 +2361,18 @@ export default function ExcelPaymentImport() {
     const rpcClient = supabase as unknown as RpcClient;
     const paymentDates = file.rows
       .map((row) => parseMonthToDate(row.month))
-      .filter((date): date is string => Boolean(date));
+      .filter((date): date is string => Boolean(date))
+      .sort();
+    const uniquePaymentDates = Array.from(new Set(paymentDates));
 
-    if (paymentDates.length === 0) return [];
-    const minDate = paymentDates[0];
-    const maxDate = paymentDates[paymentDates.length - 1];
+    if (uniquePaymentDates.length === 0) return [];
+    const minDate = uniquePaymentDates[0];
+    const maxDate = uniquePaymentDates[uniquePaymentDates.length - 1];
 
-    const { data: periods, error } = await supabase
-      .from('accounting_periods')
-      .select('id,period_name,start_date,end_date,status')
-      .eq('company_id', companyId)
-      .lte('start_date', maxDate)
-      .gte('end_date', minDate)
-      .in('status', ['closed', 'locked']);
-
-    if (error) throw error;
-
-    const closedPeriods = ((periods || []) as AccountingPeriodRow[]).filter((period) =>
-      paymentDates.some((date) => date >= period.start_date && date <= period.end_date)
+    const closedPeriods = (await getClosedAccountingPeriodsForSession()).filter((period) =>
+      period.start_date <= maxDate &&
+      period.end_date >= minDate &&
+      uniquePaymentDates.some((date) => date >= period.start_date && date <= period.end_date)
     );
 
     if (closedPeriods.length === 0) return [];
@@ -1759,19 +2436,16 @@ export default function ExcelPaymentImport() {
     }
   };
 
-  const createLateFeeIfNeeded = async (invoice: ImportInvoice, row: ParsedPaymentRow, contract: MatchedContract, file: ParsedExcelFile) => {
+  const createLateFeeIfNeeded = async (
+    invoice: ImportInvoice,
+    row: ParsedPaymentRow,
+    contract: MatchedContract,
+    file: ParsedExcelFile,
+    approvalCache: ApprovalCache,
+  ) => {
     if (!companyId || !row.delayValue || row.delayValue <= 0) return false;
 
-    const { data: existing, error: existingError } = await supabase
-      .from('late_fees')
-      .select('id')
-      .eq('company_id', companyId)
-      .eq('invoice_id', invoice.id)
-      .eq('fee_type', 'historical_excel_import')
-      .maybeSingle();
-
-    if (existingError) throw existingError;
-    if (existing) return false;
+    if (approvalCache.lateFeeInvoiceIds.has(invoice.id)) return false;
 
     const { error } = await supabase.from('late_fees').insert({
       company_id: companyId,
@@ -1787,10 +2461,16 @@ export default function ExcelPaymentImport() {
     });
 
     if (error) throw error;
+    approvalCache.lateFeeInvoiceIds.add(invoice.id);
     return true;
   };
 
-  const createTrafficViolationsIfNeeded = async (row: ParsedPaymentRow, contract: MatchedContract, file: ParsedExcelFile) => {
+  const createTrafficViolationsIfNeeded = async (
+    row: ParsedPaymentRow,
+    contract: MatchedContract,
+    file: ParsedExcelFile,
+    approvalCache: ApprovalCache,
+  ) => {
     const trafficAmounts = row.trafficAmounts?.length
       ? row.trafficAmounts
       : row.trafficAmount && row.trafficAmount > 0
@@ -1808,15 +2488,7 @@ export default function ExcelPaymentImport() {
       const amount = trafficAmounts[index];
       const sequence = String(index + 1).padStart(2, '0');
       const penaltyNumber = `HIST-${contract.id.slice(0, 8)}-${row.month.replace('/', '-')}-${sequence}`;
-      const { data: existing, error: existingError } = await supabase
-        .from('penalties')
-        .select('id')
-        .eq('company_id', companyId)
-        .eq('penalty_number', penaltyNumber)
-        .maybeSingle();
-
-      if (existingError) throw existingError;
-      if (existing) continue;
+      if (approvalCache.penaltyNumbers.has(penaltyNumber)) continue;
 
       const { error } = await supabase.from('penalties').insert({
         company_id: companyId,
@@ -1836,6 +2508,7 @@ export default function ExcelPaymentImport() {
       });
 
       if (error) throw error;
+      approvalCache.penaltyNumbers.add(penaltyNumber);
       createdCount += 1;
     }
 
@@ -1848,10 +2521,12 @@ export default function ExcelPaymentImport() {
         invoicesByMonth: new Map(),
         paymentsByInvoiceId: new Map(),
         paymentsByReference: new Map(),
+        lateFeeInvoiceIds: new Set(),
+        penaltyNumbers: new Set(),
       };
     }
 
-    const [invoicesResult, paymentsResult] = await Promise.all([
+    const [invoicesResult, paymentsResult, lateFeesResult, penaltiesResult] = await Promise.all([
       supabase
         .from('invoices')
         .select('id, invoice_number, invoice_date, due_date, total_amount, paid_amount, balance_due, payment_status')
@@ -1865,20 +2540,53 @@ export default function ExcelPaymentImport() {
         .eq('contract_id', contract.id)
         .eq('payment_status', 'completed')
         .limit(2000),
+      supabase
+        .from('late_fees')
+        .select('invoice_id')
+        .eq('company_id', companyId)
+        .eq('contract_id', contract.id)
+        .eq('fee_type', 'historical_excel_import')
+        .limit(1000),
+      supabase
+        .from('penalties')
+        .select('penalty_number')
+        .eq('company_id', companyId)
+        .eq('contract_id', contract.id)
+        .like('penalty_number', `HIST-${contract.id.slice(0, 8)}-%`)
+        .limit(2000),
     ]);
 
     if (invoicesResult.error) throw invoicesResult.error;
     if (paymentsResult.error) throw paymentsResult.error;
+    if (lateFeesResult.error) throw lateFeesResult.error;
+    if (penaltiesResult.error) throw penaltiesResult.error;
 
     const cache: ApprovalCache = {
       invoicesByMonth: new Map(),
       paymentsByInvoiceId: new Map(),
       paymentsByReference: new Map(),
+      lateFeeInvoiceIds: new Set(),
+      penaltyNumbers: new Set(),
     };
 
     ((invoicesResult.data || []) as ImportInvoice[]).forEach((invoice) => cacheInvoice(cache, invoice));
     ((paymentsResult.data || []) as ImportPayment[]).forEach((payment) => cachePayment(cache, payment));
+    ((lateFeesResult.data || []) as Array<{ invoice_id: string | null }>).forEach((fee) => {
+      if (fee.invoice_id) cache.lateFeeInvoiceIds.add(fee.invoice_id);
+    });
+    ((penaltiesResult.data || []) as Array<{ penalty_number: string | null }>).forEach((penalty) => {
+      if (penalty.penalty_number) cache.penaltyNumbers.add(penalty.penalty_number);
+    });
 
+    return cache;
+  };
+
+  const getApprovalCacheForContract = async (contract: MatchedContract): Promise<ApprovalCache> => {
+    const cached = approvalCacheByContractRef.current.get(contract.id);
+    if (cached) return cached;
+
+    const cache = await loadApprovalCache(contract);
+    approvalCacheByContractRef.current.set(contract.id, cache);
     return cache;
   };
 
@@ -1903,21 +2611,21 @@ export default function ExcelPaymentImport() {
       let missingInvoiceRows = 0;
       const skippedReasons: string[] = [];
       const paymentReport: PaymentReportRow[] = [];
-      const approvalCache = await loadApprovalCache(contract);
+      const approvalCache = await getApprovalCacheForContract(contract);
+      const preparedRows = prepareApprovalRows(file.rows);
 
-      for (let index = 0; index < file.rows.length; index += 1) {
-        const row = file.rows[index];
+      for (let index = 0; index < preparedRows.length; index += 1) {
+        const { row, monthDate, monthKey } = preparedRows[index];
         const paymentAmount = row.paymentAmount || 0;
         if (paymentAmount > 0) payableRows += 1;
 
         onProgress?.({
           current: index + 1,
-          total: file.rows.length,
+          total: preparedRows.length,
           label: `معالجة ${file.customerName || file.fileName} - شهر ${row.month}: مطابقة الفاتورة وتسجيل الدفعات...`,
         });
 
-        const monthDate = parseMonthToDate(row.month);
-        let invoice = monthDate ? approvalCache.invoicesByMonth.get(monthDate.slice(0, 7)) || null : null;
+        let invoice = monthKey ? approvalCache.invoicesByMonth.get(monthKey) || null : null;
         let created = false;
 
         if (!invoice) {
@@ -1949,7 +2657,7 @@ export default function ExcelPaymentImport() {
         cacheInvoice(approvalCache, alignedInvoice);
 
         if (paymentAmount > 0) {
-          const existingExcelPayment = findCachedHistoricalPayment(approvalCache, alignedInvoice, row, contract, file, paymentAmount);
+          const existingExcelPayment = findCachedHistoricalPayment(approvalCache, alignedInvoice, row, contract, file, paymentAmount, monthDate);
           if (existingExcelPayment) {
             paymentReport.push({
               month: row.month,
@@ -1961,7 +2669,7 @@ export default function ExcelPaymentImport() {
               invoiceNumber: alignedInvoice.invoice_number || '-',
               paymentId: String(existingExcelPayment.id || ''),
               paymentNumber: String(existingExcelPayment.payment_number || '-'),
-              paymentDate: String(existingExcelPayment.payment_date || parseMonthToDate(row.month) || alignedInvoice.invoice_date || alignedInvoice.due_date || ''),
+              paymentDate: String(existingExcelPayment.payment_date || monthDate || alignedInvoice.invoice_date || alignedInvoice.due_date || ''),
               referenceNumber: String(existingExcelPayment.reference_number || '-'),
               destination: `payments.customer_id=${contract.customer_id} / payments.contract_id=${contract.id} / payments.invoice_id=${alignedInvoice.id}`,
             });
@@ -1998,7 +2706,7 @@ export default function ExcelPaymentImport() {
               contract_id: contract.id,
               invoice_id: invoiceForPayment.id,
               amount: amountToApply,
-              payment_date: parseMonthToDate(row.month) || invoiceForPayment.invoice_date || invoiceForPayment.due_date || new Date().toISOString().slice(0, 10),
+              payment_date: monthDate || invoiceForPayment.invoice_date || invoiceForPayment.due_date || new Date().toISOString().slice(0, 10),
               payment_method: 'cash',
               type: 'receipt',
               currency: 'QAR',
@@ -2009,7 +2717,7 @@ export default function ExcelPaymentImport() {
               cachePayment(approvalCache, {
                 id: String(insertedPayment.id),
                 payment_number: String(insertedPayment.payment_number || ''),
-                payment_date: String(insertedPayment.payment_date || parseMonthToDate(row.month) || invoiceForPayment.invoice_date || invoiceForPayment.due_date || ''),
+                payment_date: String(insertedPayment.payment_date || monthDate || invoiceForPayment.invoice_date || invoiceForPayment.due_date || ''),
                 reference_number: String(insertedPayment.reference_number || stableReference),
                 amount: Number(insertedPayment.amount || amountToApply),
                 invoice_id: invoiceForPayment.id,
@@ -2027,7 +2735,7 @@ export default function ExcelPaymentImport() {
               invoiceNumber: invoiceForPayment.invoice_number || '-',
               paymentId: String(insertedPayment?.id || ''),
               paymentNumber: String(insertedPayment?.payment_number || '-'),
-              paymentDate: String(insertedPayment?.payment_date || parseMonthToDate(row.month) || invoiceForPayment.invoice_date || invoiceForPayment.due_date || ''),
+              paymentDate: String(insertedPayment?.payment_date || monthDate || invoiceForPayment.invoice_date || invoiceForPayment.due_date || ''),
               referenceNumber: String(insertedPayment?.reference_number || stableReference),
               destination: `payments.customer_id=${contract.customer_id} / payments.contract_id=${contract.id} / payments.invoice_id=${invoiceForPayment.id}`,
             });
@@ -2061,8 +2769,8 @@ export default function ExcelPaymentImport() {
           skipped += 1;
         }
 
-        if (await createLateFeeIfNeeded(invoiceForPayment, row, contract, file)) lateFees += 1;
-        trafficViolations += await createTrafficViolationsIfNeeded(row, contract, file);
+        if (await createLateFeeIfNeeded(invoiceForPayment, row, contract, file, approvalCache)) lateFees += 1;
+        trafficViolations += await createTrafficViolationsIfNeeded(row, contract, file, approvalCache);
       }
 
       if (payableRows > 0 && payments === 0 && missingInvoiceRows > 0) {
@@ -2159,13 +2867,18 @@ export default function ExcelPaymentImport() {
           continue;
         }
 
-        const contract = await findBestContractMatch(companyId, file);
+        const contracts = await getContractCandidatesForSession();
+        const matchAnalysis = await analyzeContractMatch(companyId, file, contracts);
+        const contract = matchAnalysis.contract;
         if (!contract) {
           setFileContractMatchState(file, false);
           recordFileOutcome(file, {
             status: 'review_required',
             message: contractMatchWarning(file),
-            details: summarizeFileAnalysis(file),
+            details: [
+              ...summarizeFileAnalysis(file),
+              ...matchAnalysis.reasons.map((reason) => `سبب عدم المطابقة: ${reason}`),
+            ],
           });
           toast.error(contractMatchWarning(file));
           skippedCount += 1;
@@ -2176,8 +2889,11 @@ export default function ExcelPaymentImport() {
         setMatchedContractsByFile((current) => ({ ...current, [file.id]: contract }));
         recordFileOutcome(file, {
           status: 'processing',
-          message: `جاري اعتماد الملف على العقد ${contract.contract_number}.`,
-          details: summarizeFileAnalysis(file, contract),
+          message: `جاري اعتماد الملف على العقد ${contract.contract_number} بنسبة ثقة ${matchAnalysis.confidence}%.`,
+          details: [
+            ...summarizeFileAnalysis(file, contract),
+            ...matchAnalysis.reasons.map((reason) => `سبب المطابقة: ${reason}`),
+          ],
           contractNumber: contract.contract_number,
         });
 
@@ -2351,6 +3067,46 @@ export default function ExcelPaymentImport() {
             </div>
           </section>
         )}
+
+        <section className="rounded-2xl border border-sky-200 bg-white p-4 shadow-sm">
+          <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+            <div className="flex items-start gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-sky-50 text-sky-700">
+                <Sparkles className="h-5 w-5" />
+              </div>
+              <div>
+                <p className="text-sm font-black text-[#020617]">مساعد الرفع الذكي</p>
+                <p className="mt-1 text-xs font-semibold leading-5 text-[#64748B]">
+                  تحليل سريع لحالة الجلسة، يوضح أين تتوقف العملية وما الإجراء الأفضل قبل إعادة المحاولة.
+                </p>
+              </div>
+            </div>
+            <Badge variant="outline" className="w-fit border-sky-200 bg-sky-50 text-sky-700">
+              <Sparkles className="ml-1 h-3.5 w-3.5" />
+              {isAiReviewLoading
+                ? 'AI يحلل الآن'
+                : aiReview?.source === 'openai'
+                  ? 'AI عبر OpenAI'
+                  : 'AI احتياطي داخلي'}
+            </Badge>
+          </div>
+          {aiReview?.summary && (
+            <p className="mb-3 rounded-xl border border-sky-100 bg-sky-50 px-3 py-2 text-xs font-bold leading-5 text-sky-800">
+              {aiReview.summary}
+            </p>
+          )}
+          <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-4">
+            {importAiInsights.map((insight) => (
+              <div
+                key={`${insight.title}-${insight.description}`}
+                className={`rounded-xl border p-3 ${getInsightClassName(insight.tone)}`}
+              >
+                <p className="text-sm font-black">{insight.title}</p>
+                <p className="mt-1 text-xs font-semibold leading-5">{insight.description}</p>
+              </div>
+            ))}
+          </div>
+        </section>
 
         {Object.values(fileOutcomes).some((outcome) => outcome.status === 'failed' || outcome.status === 'review_required') && (
           <section className="rounded-2xl border border-amber-200 bg-white p-4 shadow-sm">
@@ -2644,6 +3400,157 @@ export default function ExcelPaymentImport() {
                         جلسة: {sessionId.slice(-8)}
                       </Badge>
                     </div>
+                    <div className={`mt-3 rounded-xl border p-3 ${getInsightClassName(selectedFileAiDecision.tone)}`}>
+                      <div className="flex items-start gap-2">
+                        <Sparkles className="mt-0.5 h-4 w-4 shrink-0" />
+                        <div>
+                          <p className="text-sm font-black">{selectedFileAiDecision.title}</p>
+                          <p className="mt-1 text-xs font-semibold leading-5">{selectedFileAiDecision.description}</p>
+                        </div>
+                      </div>
+                    </div>
+                    {contractMatchAnalysis && (
+                      <div className="mt-3 rounded-xl border border-slate-200 bg-white/80 p-3">
+                        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                          <div>
+                            <p className="text-sm font-black text-[#020617]">
+                              {contractMatchAnalysis.contract ? 'العقد المقترح للمطابقة' : 'لم يتم تأكيد عقد مطابق'}
+                            </p>
+                            <p className="mt-1 text-xs font-semibold text-[#64748B]">
+                              {contractMatchAnalysis.contract
+                                ? `${contractMatchAnalysis.contract.contract_number} - ${getContractCustomerDisplayName(contractMatchAnalysis.contract)}`
+                                : 'لا توجد نتيجة بثقة كافية للاعتماد التلقائي.'}
+                            </p>
+                          </div>
+                          <Badge variant="outline" className="w-fit border-slate-200 bg-[#F6F8FB] text-[#020617]">
+                            ثقة {contractMatchAnalysis.confidence}%
+                          </Badge>
+                        </div>
+                        <div className="mt-3 grid gap-2 md:grid-cols-2">
+                          {contractMatchAnalysis.reasons.slice(0, 4).map((reason) => (
+                            <p key={reason} className="rounded-lg bg-[#F6F8FB] px-3 py-2 text-xs font-semibold leading-5 text-[#475569]">
+                              - {reason}
+                            </p>
+                          ))}
+                        </div>
+                        {contractMatchAnalysis.contract && contractMatchReviewAlternatives.length > 0 && (
+                          <div className="mt-3 rounded-lg border border-slate-200 bg-[#F6F8FB] p-3">
+                            <p className="text-xs font-black text-[#020617]">عقود أخرى محتملة</p>
+                            <div className="mt-2 grid gap-2 md:grid-cols-3">
+                              {contractMatchReviewAlternatives.map((alternative) => (
+                                <div key={alternative.contract.id} className="rounded-lg border border-slate-200 bg-white p-2 text-xs font-semibold leading-5 text-[#475569]">
+                                  <p className="font-black text-[#020617]">{alternative.contract.contract_number}</p>
+                                  <p>{getContractCustomerDisplayName(alternative.contract)}</p>
+                                  <p>الثقة {alternative.confidence}%</p>
+                                  <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    className="mt-2 h-8 w-full rounded-lg border-slate-200 bg-white text-xs font-bold"
+                                    disabled={Boolean(importResult)}
+                                    onClick={() => applySuggestedContractMatch(alternative)}
+                                  >
+                                    استخدام هذا العقد
+                                  </Button>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                        {!contractMatchAnalysis.contract && contractMatchAnalysis.alternatives.length > 0 && (
+                          <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-3">
+                            <p className="text-xs font-black text-amber-800">أقرب عقود محتملة للمراجعة اليدوية</p>
+                            <div className="mt-2 grid gap-2 md:grid-cols-3">
+                              {contractMatchAnalysis.alternatives.map((alternative) => (
+                                <div key={alternative.contract.id} className="rounded-lg bg-white/80 p-2 text-xs font-semibold leading-5 text-amber-800">
+                                  <p className="font-black">{alternative.contract.contract_number}</p>
+                                  <p>{getContractCustomerDisplayName(alternative.contract)}</p>
+                                  <p>الثقة {alternative.confidence}%</p>
+                                  <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    className="mt-2 h-8 w-full rounded-lg border-amber-200 bg-white text-xs font-bold text-amber-800"
+                                    disabled={Boolean(importResult)}
+                                    onClick={() => applySuggestedContractMatch(alternative)}
+                                  >
+                                    استخدام هذا العقد
+                                  </Button>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    <div className="mt-3 rounded-xl border border-slate-200 bg-white/80 p-3">
+                      <div className="flex flex-col gap-2 lg:flex-row lg:items-end">
+                        <div className="flex-1">
+                          <p className="text-sm font-black text-[#020617]">بحث يدوي عن عقد</p>
+                          <p className="mt-1 text-xs font-semibold leading-5 text-[#64748B]">
+                            ابحث برقم العقد أو الرقم الشخصي أو الجوال أو رقم المركبة ثم اختر العقد الصحيح.
+                          </p>
+                          <Input
+                            value={manualContractSearch}
+                            onChange={(event) => setManualContractSearch(event.target.value)}
+                            onKeyDown={(event) => {
+                              if (event.key === 'Enter') {
+                                event.preventDefault();
+                                executeManualContractSearch();
+                              }
+                            }}
+                            placeholder="مثال: C-ALF-0039 أو رقم الهوية أو اللوحة"
+                            className="mt-2 h-10 rounded-xl border-slate-200 bg-white"
+                            disabled={Boolean(importResult) || isManualContractSearchLoading}
+                          />
+                        </div>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          className="h-10 gap-2 rounded-xl border-slate-200 bg-white font-bold"
+                          disabled={Boolean(importResult) || isManualContractSearchLoading}
+                          onClick={executeManualContractSearch}
+                        >
+                          <Search className="h-4 w-4" />
+                          {isManualContractSearchLoading ? 'جاري البحث...' : 'بحث'}
+                        </Button>
+                      </div>
+
+                      {manualContractResults.length > 0 && (
+                        <div className="mt-3 grid gap-2 md:grid-cols-2 xl:grid-cols-3">
+                          {manualContractResults.map((alternative) => (
+                            <div key={alternative.contract.id} className="rounded-lg border border-slate-200 bg-[#F6F8FB] p-3 text-xs font-semibold leading-5 text-[#475569]">
+                              <div className="flex items-start justify-between gap-2">
+                                <div>
+                                  <p className="font-black text-[#020617]">{alternative.contract.contract_number}</p>
+                                  <p>{getContractCustomerDisplayName(alternative.contract)}</p>
+                                </div>
+                                <Badge variant="outline" className="border-slate-200 bg-white text-[#020617]">
+                                  {alternative.confidence}%
+                                </Badge>
+                              </div>
+                              <p className="mt-2">اللوحة: {alternative.contract.vehicles?.plate_number || alternative.contract.license_plate || '-'}</p>
+                              <p>الجوال: {alternative.contract.customers?.phone || '-'}</p>
+                              <p>الهوية: {alternative.contract.customers?.national_id || '-'}</p>
+                              <div className="mt-2 space-y-1">
+                                {alternative.reasons.slice(0, 2).map((reason) => (
+                                  <p key={reason}>- {reason}</p>
+                                ))}
+                              </div>
+                              <Button
+                                type="button"
+                                size="sm"
+                                className="mt-3 h-8 w-full rounded-lg bg-[#020617] text-xs font-bold text-white hover:bg-[#1E293B]"
+                                disabled={Boolean(importResult)}
+                                onClick={() => applySuggestedContractMatch(alternative)}
+                              >
+                                استخدام هذا العقد
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                     <div className="mt-3 grid gap-2 text-sm font-semibold text-[#475569] md:grid-cols-2">
                       {(selectedOutcome?.details?.length ? selectedOutcome.details : summarizeFileAnalysis(selectedFile, matchedContract, importResult)).slice(0, 8).map((detail, index) => (
                         <p key={`${detail}-${index}`} className="rounded-lg bg-white/70 px-3 py-2">- {detail}</p>
@@ -2904,12 +3811,27 @@ export default function ExcelPaymentImport() {
           }`}>
             <p className="font-bold">{isMatchingContract ? 'جاري مطابقة العقد...' : matchedContract ? 'العقد المطابق' : 'لم يتم العثور على عقد مطابق'}</p>
             {matchedContract ? (
-              <div className="mt-2 grid gap-2 sm:grid-cols-2">
-                <p>رقم العقد: <span className="font-bold">{matchedContract.contract_number}</span></p>
-                <p>اللوحة: <span className="font-bold">{matchedContract.vehicles?.plate_number || matchedContract.license_plate || '-'}</span></p>
-                <p>العميل: <span className="font-bold">{`${matchedContract.customers?.first_name || ''} ${matchedContract.customers?.last_name || ''}`.trim() || '-'}</span></p>
-                <p>القسط: <span className="font-bold">{formatCurrency(matchedContract.monthly_amount || selectedFile?.monthlyRent || 0)}</span></p>
-              </div>
+              <>
+                <div className="mt-2 grid gap-2 sm:grid-cols-2">
+                  <p>رقم العقد: <span className="font-bold">{matchedContract.contract_number}</span></p>
+                  <p>اللوحة: <span className="font-bold">{matchedContract.vehicles?.plate_number || matchedContract.license_plate || '-'}</span></p>
+                  <p>العميل: <span className="font-bold">{getContractCustomerDisplayName(matchedContract)}</span></p>
+                  <p>القسط: <span className="font-bold">{formatCurrency(matchedContract.monthly_amount || selectedFile?.monthlyRent || 0)}</span></p>
+                </div>
+                {contractMatchAnalysis && (
+                  <div className="mt-3 rounded-lg bg-white/70 p-3">
+                    <div className="mb-2 flex items-center justify-between gap-2">
+                      <p className="text-xs font-black">سبب اختيار هذا العقد</p>
+                      <Badge variant="outline" className="border-emerald-200 bg-emerald-50 text-emerald-700">
+                        ثقة {contractMatchAnalysis.confidence}%
+                      </Badge>
+                    </div>
+                    {contractMatchAnalysis.reasons.slice(0, 3).map((reason) => (
+                      <p key={reason} className="text-xs font-semibold leading-5">- {reason}</p>
+                    ))}
+                  </div>
+                )}
+              </>
             ) : (
               <p className="mt-2">تأكد أن اللوحة أو الهاتف أو الهوية في ملف Excel تطابق عقدًا موجودًا في النظام.</p>
             )}
