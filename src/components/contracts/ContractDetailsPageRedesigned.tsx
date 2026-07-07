@@ -52,6 +52,7 @@ import {
   ShieldCheck,
   MoreVertical,
   PlayCircle,
+  Sparkles,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -105,6 +106,7 @@ import { EnhancedPaymentScheduleTabRedesigned as EnhancedPaymentScheduleTab } fr
 import { VehiclePickupReturnTabRedesigned } from './VehiclePickupReturnTabRedesigned';
 import { ContractViolationsTabRedesigned } from './ContractViolationsTabRedesigned';
 import { ContractDocuments } from './ContractDocuments';
+import { ContractHealthAnalysis } from './ContractHealthAnalysis';
 import { OfficialContractView } from './OfficialContractView';
 import { formatCustomerName } from '@/utils/formatCustomerName';
 import { cn } from '@/lib/utils';
@@ -831,6 +833,20 @@ const inactiveInvoiceStatuses = new Set(['cancelled', 'void', 'deleted']);
 const paidInvoiceStatuses = new Set(['paid', 'completed', 'cleared']);
 const inactiveScheduleStatuses = new Set(['cancelled', 'void', 'deleted']);
 const paidScheduleStatuses = new Set(['paid', 'completed', 'cleared']);
+const inactivePaymentStatuses = new Set(['cancelled', 'void', 'deleted', 'failed']);
+
+type ContractFinancialPayment = {
+  id: string;
+  amount: number | null;
+  payment_date: string | null;
+  payment_status: string | null;
+  payment_method: string | null;
+  payment_number?: string | null;
+  reference_number?: string | null;
+  invoice_id?: string | null;
+  contract_id?: string | null;
+  notes?: string | null;
+};
 
 const getInvoiceBalance = (invoice: Invoice) => {
   const total = Number(invoice.total_amount || 0);
@@ -859,6 +875,219 @@ const isActiveScheduleItem = (payment: { status: string }) => {
 const isPaidScheduleItem = (payment: { status: string }) => {
   const status = String(payment.status || '').toLowerCase();
   return paidScheduleStatuses.has(status);
+};
+
+const isActiveFinancialPayment = (payment: ContractFinancialPayment) => {
+  const status = String(payment.payment_status || '').toLowerCase();
+  return !inactivePaymentStatuses.has(status);
+};
+
+const getInvoiceMonthKey = (invoice: Invoice) => {
+  const source = invoice.due_date || invoice.invoice_date || invoice.created_at;
+  if (!source) return 'unknown';
+  const date = new Date(source);
+  if (Number.isNaN(date.getTime())) return String(source).slice(0, 7);
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+};
+
+const buildFinancialAIDiagnosis = ({
+  contract,
+  invoices,
+  payments,
+  paymentSchedules,
+  formatCurrency,
+}: {
+  contract: Contract;
+  invoices: Invoice[];
+  payments: ContractFinancialPayment[];
+  paymentSchedules: Array<{ status: string; due_date: string | null; amount: number | null }>;
+  formatCurrency: (amount: number) => string;
+}) => {
+  const activeInvoices = invoices.filter(isActiveFinancialInvoice);
+  const activePayments = payments.filter(isActiveFinancialPayment);
+  const activeSchedules = paymentSchedules.filter(isActiveScheduleItem);
+  const paymentsByInvoiceId = activePayments.reduce((map, payment) => {
+    if (!payment.invoice_id) return map;
+    map.set(payment.invoice_id, (map.get(payment.invoice_id) || 0) + Number(payment.amount || 0));
+    return map;
+  }, new Map<string, number>());
+  const invoicesByMonth = activeInvoices.reduce((map, invoice) => {
+    const key = getInvoiceMonthKey(invoice);
+    map.set(key, [...(map.get(key) || []), invoice]);
+    return map;
+  }, new Map<string, Invoice[]>());
+  const unlinkedPayments = activePayments.filter((payment) => !payment.invoice_id);
+  const invoicePaymentMismatches = activeInvoices.filter((invoice) => {
+    const linkedPaid = paymentsByInvoiceId.get(invoice.id) || 0;
+    const recordedPaid = Number(invoice.paid_amount || 0);
+    return Math.abs(linkedPaid - recordedPaid) > 1;
+  });
+  const balanceMismatches = activeInvoices.filter((invoice) => {
+    const expectedBalance = Math.max(0, Number(invoice.total_amount || 0) - Number(invoice.paid_amount || 0));
+    return Math.abs(expectedBalance - getInvoiceBalance(invoice)) > 1;
+  });
+  const duplicateInvoiceGroups = Array.from(invoicesByMonth.entries())
+    .filter(([, monthInvoices]) => monthInvoices.length > 1);
+  const duplicatePayments = activePayments.filter((payment, index, list) => {
+    const key = `${payment.payment_date || ''}-${Number(payment.amount || 0).toFixed(2)}-${payment.reference_number || ''}`;
+    return list.findIndex((other) => `${other.payment_date || ''}-${Number(other.amount || 0).toFixed(2)}-${other.reference_number || ''}` === key) !== index;
+  });
+  const openInvoices = activeInvoices.filter((invoice) => !isPaidFinancialInvoice(invoice) && getInvoiceBalance(invoice) > 1);
+  const invoicesTotal = activeInvoices.reduce((sum, invoice) => sum + Number(invoice.total_amount || 0), 0);
+  const recordedInvoicePaid = activeInvoices.reduce((sum, invoice) => sum + Number(invoice.paid_amount || 0), 0);
+  const activePaymentTotal = activePayments.reduce((sum, payment) => sum + Number(payment.amount || 0), 0);
+  const outstandingTotal = openInvoices.reduce((sum, invoice) => sum + getInvoiceBalance(invoice), 0);
+  const schedulesTotal = activeSchedules.reduce((sum, schedule) => sum + Number(schedule.amount || 0), 0);
+  const contractBalance = Number(contract.balance_due || 0);
+  const scheduleDifference = invoicesTotal - schedulesTotal;
+  const contractBalanceDifference = contractBalance - outstandingTotal;
+  const issues = [
+    unlinkedPayments.length > 0 && {
+      title: 'دفعات غير مرتبطة بفواتير',
+      detail: `${unlinkedPayments.length} دفعة بإجمالي ${formatCurrency(unlinkedPayments.reduce((sum, p) => sum + Number(p.amount || 0), 0))} لا ترتبط بأي فاتورة.`,
+      action: 'راجع هذه الدفعات واربطها بالفاتورة الصحيحة أو سجلها كدفعة مقدمة.',
+      severity: 'warning',
+    },
+    invoicePaymentMismatches.length > 0 && {
+      title: 'فرق بين paid_amount والدفعات المرتبطة',
+      detail: `${invoicePaymentMismatches.length} فاتورة لا يطابق مبلغها المدفوع مجموع الدفعات المرتبطة بها.`,
+      action: 'أعد احتساب حالة هذه الفواتير أو تحقق من الدفعات الملغاة/المكررة.',
+      severity: 'danger',
+    },
+    balanceMismatches.length > 0 && {
+      title: 'رصيد فاتورة غير مطابق للمعادلة',
+      detail: `${balanceMismatches.length} فاتورة رصيدها لا يساوي إجمالي الفاتورة ناقص المدفوع.`,
+      action: 'حدّث رصيد الفاتورة أو راجع التعديلات اليدوية على المبلغ.',
+      severity: 'danger',
+    },
+    duplicateInvoiceGroups.length > 0 && {
+      title: 'احتمال فواتير مكررة لنفس الشهر',
+      detail: `${duplicateInvoiceGroups.length} شهر يحتوي على أكثر من فاتورة فعالة لنفس العقد.`,
+      action: 'راجع الفواتير الشهرية وألغِ المكرر فقط بعد التأكد من عدم وجود دفعات مرتبطة.',
+      severity: 'warning',
+    },
+    duplicatePayments.length > 0 && {
+      title: 'احتمال دفعات مكررة',
+      detail: `${duplicatePayments.length} دفعة تتشابه في التاريخ والمبلغ والمرجع.`,
+      action: 'راجع أرقام الإيصالات والمراجع البنكية قبل الاعتماد.',
+      severity: 'warning',
+    },
+    Math.abs(contractBalanceDifference) > 1 && {
+      title: 'رصيد العقد لا يطابق الفواتير المفتوحة',
+      detail: `رصيد العقد ${formatCurrency(contractBalance)} بينما الفواتير المفتوحة ${formatCurrency(outstandingTotal)}. الفرق ${formatCurrency(Math.abs(contractBalanceDifference))}.`,
+      action: 'راجع تحديث رصيد العقد بعد آخر دفعة أو آخر إلغاء فاتورة.',
+      severity: 'danger',
+    },
+    activeInvoices.length > 0 && activeSchedules.length > 0 && Math.abs(scheduleDifference) > 1 && {
+      title: 'جدول الدفعات لا يطابق الفواتير',
+      detail: `إجمالي الفواتير ${formatCurrency(invoicesTotal)} وجدول الدفعات ${formatCurrency(schedulesTotal)}.`,
+      action: 'أعد توليد جدول الدفعات من الفواتير أو راجع الأشهر الناقصة.',
+      severity: 'warning',
+    },
+  ].filter(Boolean) as Array<{ title: string; detail: string; action: string; severity: 'danger' | 'warning' }>;
+
+  const score = Math.max(0, Math.min(100, 100 - issues.reduce((sum, issue) => sum + (issue.severity === 'danger' ? 18 : 10), 0)));
+  const status = score >= 85 ? 'سليم' : score >= 60 ? 'يحتاج مراجعة' : 'خلل مالي واضح';
+  const tone = score >= 85 ? 'ok' : score >= 60 ? 'warning' : 'danger';
+  const summary = issues[0]?.detail || 'لا توجد فروقات واضحة بين الفواتير والدفعات ورصيد العقد حسب البيانات الحالية.';
+
+  return {
+    activePaymentTotal,
+    issues,
+    openInvoicesCount: openInvoices.length,
+    outstandingTotal,
+    recordedInvoicePaid,
+    score,
+    status,
+    summary,
+    tone,
+  };
+};
+
+const FinancialAIDiagnosisCard = ({
+  contract,
+  invoices,
+  payments,
+  paymentSchedules,
+  formatCurrency,
+}: {
+  contract: Contract;
+  invoices: Invoice[];
+  payments: ContractFinancialPayment[];
+  paymentSchedules: Array<{ status: string; due_date: string | null; amount: number | null }>;
+  formatCurrency: (amount: number) => string;
+}) => {
+  const diagnosis = useMemo(
+    () => buildFinancialAIDiagnosis({ contract, invoices, payments, paymentSchedules, formatCurrency }),
+    [contract, invoices, payments, paymentSchedules, formatCurrency]
+  );
+
+  return (
+    <section className={`rounded-xl border bg-white p-4 shadow-sm ${
+      diagnosis.tone === 'danger'
+        ? 'border-rose-200'
+        : diagnosis.tone === 'warning'
+          ? 'border-amber-200'
+          : 'border-emerald-200'
+    }`}>
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_220px] lg:items-stretch">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#EAF2F9] text-[#173A63]">
+              <Sparkles className="h-5 w-5" />
+            </span>
+            <div>
+              <p className="text-xs font-black text-[#66758A]">تشخيص تلقائي للفواتير والدفعات</p>
+              <h3 className="text-lg font-black text-[#142033]">{diagnosis.status}</h3>
+            </div>
+          </div>
+          <p className="mt-3 rounded-lg bg-[#F8FBFD] p-3 text-sm font-bold leading-7 text-[#334155]">
+            {diagnosis.summary}
+          </p>
+        </div>
+
+        <div className="grid grid-cols-3 gap-2 lg:grid-cols-1">
+          <div className="rounded-lg border border-[#DCE6F0] bg-[#F8FBFD] p-3 text-center">
+            <span className="block text-xs font-black text-[#66758A]">درجة التطابق</span>
+            <strong className={`text-2xl ${
+              diagnosis.tone === 'danger' ? 'text-rose-600' : diagnosis.tone === 'warning' ? 'text-amber-600' : 'text-emerald-600'
+            }`}>{diagnosis.score}%</strong>
+          </div>
+          <div className="rounded-lg border border-[#DCE6F0] bg-[#F8FBFD] p-3 text-center">
+            <span className="block text-xs font-black text-[#66758A]">فواتير مفتوحة</span>
+            <strong className="text-lg text-[#142033]">{diagnosis.openInvoicesCount}</strong>
+          </div>
+          <div className="rounded-lg border border-[#DCE6F0] bg-[#F8FBFD] p-3 text-center">
+            <span className="block text-xs font-black text-[#66758A]">رصيد مفتوح</span>
+            <strong className="text-sm text-[#142033]">{formatCurrency(diagnosis.outstandingTotal)}</strong>
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-4 grid gap-2 xl:grid-cols-2">
+        {diagnosis.issues.length > 0 ? diagnosis.issues.slice(0, 4).map((issue) => (
+          <div key={issue.title} className={`rounded-lg border p-3 ${
+            issue.severity === 'danger'
+              ? 'border-rose-200 bg-rose-50'
+              : 'border-amber-200 bg-amber-50'
+          }`}>
+            <div className="flex items-start gap-2">
+              <AlertTriangle className={`mt-0.5 h-4 w-4 ${issue.severity === 'danger' ? 'text-rose-600' : 'text-amber-600'}`} />
+              <div>
+                <strong className="block text-sm font-black text-[#142033]">{issue.title}</strong>
+                <p className="mt-1 text-sm leading-6 text-[#475569]">{issue.detail}</p>
+                <p className="mt-2 text-xs font-black leading-5 text-[#173A63]">{issue.action}</p>
+              </div>
+            </div>
+          </div>
+        )) : (
+          <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm font-bold text-emerald-700 xl:col-span-2">
+            لا توجد مشاكل واضحة حاليًا. يتم تحديث التشخيص تلقائيًا عند تحديث الفواتير أو الدفعات.
+          </div>
+        )}
+      </div>
+    </section>
+  );
 };
 
 const ContractCommandCenter = ({
@@ -1530,6 +1759,7 @@ const ContractTab = ({
 const FinancialTab = ({
   contract,
   invoices,
+  payments,
   paymentSchedules,
   isLoadingPaymentSchedules,
   contractId,
@@ -1548,6 +1778,7 @@ const FinancialTab = ({
 }: {
   contract: Contract;
   invoices: Invoice[];
+  payments: ContractFinancialPayment[];
   paymentSchedules: Array<{
     id: string;
     installment_number: number | null;
@@ -1584,6 +1815,13 @@ const FinancialTab = ({
       <h2 className="text-xl font-black text-[#142033]">الملف المالي للعقد</h2>
       <p className="mt-1 text-sm text-[#6A7688]" dir="ltr">{contract.contract_number}</p>
     </div>
+    <FinancialAIDiagnosisCard
+      contract={contract}
+      invoices={invoices}
+      payments={payments}
+      paymentSchedules={paymentSchedules}
+      formatCurrency={formatCurrency}
+    />
     <Tabs defaultValue="overview" className="w-full">
     <TabsList className="mb-5 flex h-auto w-full justify-start gap-2 overflow-x-auto rounded-xl border border-[#D8E1EC] bg-white p-1 shadow-sm">
       <TabsTrigger
@@ -1648,6 +1886,7 @@ const FinancialTab = ({
         contractId={contractId}
         companyId={companyId}
         invoiceIds={invoices.map(inv => inv.id)}
+        contractStartDate={contract.start_date}
         formatCurrency={formatCurrency}
         contractNumber={contract.contract_number}
         customerInfo={{
@@ -1915,7 +2154,7 @@ const ContractDetailsPageRedesigned = () => {
   const { formatCurrency } = useCurrencyFormatter();
 
   // State
-  const [activeTab, setActiveTab] = useState('financial');
+  const [activeTab, setActiveTab] = useState('health');
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
   const [isPayDialogOpen, setIsPayDialogOpen] = useState(false);
   const [isPreviewDialogOpen, setIsPreviewDialogOpen] = useState(false);
@@ -2000,17 +2239,21 @@ const ContractDetailsPageRedesigned = () => {
 
   // Fetch invoices with caching (including cancelled to show full history)
   const { data: invoices = [] } = useQuery({
-    queryKey: ['contract-invoices', contract?.id],
+    queryKey: ['contract-invoices', contract?.id, contract?.start_date || null],
     queryFn: async () => {
       if (!contract?.id) return [];
 
-      const { data, error } = await supabase
+      let query = supabase
         .from('invoices')
         .select('*')
         .eq('contract_id', contract.id)
-        .eq('company_id', companyId)
-        // Include all invoices including cancelled ones
-        .order('due_date', { ascending: true });
+        .eq('company_id', companyId);
+
+      if (contract.start_date) {
+        query = query.gte('due_date', contract.start_date);
+      }
+
+      const { data, error } = await query.order('due_date', { ascending: true });
 
       if (error) throw error;
       return data as Invoice[];
@@ -2018,6 +2261,49 @@ const ContractDetailsPageRedesigned = () => {
     enabled: !!contract?.id,
     staleTime: 30000, // Cache for 30 seconds
     gcTime: 300000, // Keep in cache for 5 minutes
+  });
+
+  const invoiceIdsForPayments = useMemo(() => invoices.map((invoice) => invoice.id).filter(Boolean), [invoices]);
+
+  const { data: contractPayments = [] } = useQuery({
+    queryKey: ['contract-payments', contract?.id, true, invoiceIdsForPayments.join(','), contract?.start_date || null],
+    queryFn: async () => {
+      if (!contract?.id || !companyId) return [];
+
+      let query = supabase
+        .from('payments')
+        .select(`
+          id,
+          amount,
+          payment_date,
+          payment_status,
+          payment_method,
+          payment_number,
+          reference_number,
+          notes,
+          invoice_id,
+          contract_id
+        `)
+        .eq('company_id', companyId);
+
+      if (invoiceIdsForPayments.length) {
+        query = query.or(`contract_id.eq.${contract.id},invoice_id.in.(${invoiceIdsForPayments.join(',')})`);
+      } else {
+        query = query.eq('contract_id', contract.id);
+      }
+
+      if (contract.start_date) {
+        query = query.gte('payment_date', contract.start_date);
+      }
+
+      const { data, error } = await query.order('payment_date', { ascending: false });
+
+      if (error) throw error;
+      return (data || []) as ContractFinancialPayment[];
+    },
+    enabled: !!contract?.id && !!companyId,
+    staleTime: 30000,
+    gcTime: 300000,
   });
 
   // Fetch traffic violations with caching
@@ -2033,7 +2319,10 @@ const ContractDetailsPageRedesigned = () => {
         .order('violation_date', { ascending: false });
 
       if (error) throw error;
-      return data || [];
+      return (data || []).map((violation: any) => ({
+        ...violation,
+        description: violation.description || violation.violation_description,
+      }));
     },
     enabled: !!contract?.id,
     staleTime: 30000, // Cache for 30 seconds
@@ -2055,7 +2344,10 @@ const ContractDetailsPageRedesigned = () => {
   const checkOutInspection = checkOutInspections[0] || null;
 
   // Fetch payment schedules
-  const { data: paymentSchedules = [], isLoading: isLoadingPaymentSchedules } = useContractPaymentSchedules(contract?.id || '');
+  const { data: paymentSchedules = [], isLoading: isLoadingPaymentSchedules } = useContractPaymentSchedules(
+    contract?.id || '',
+    contract?.start_date || null
+  );
 
   const {
     activities: crmActivities = [],
@@ -2448,18 +2740,24 @@ const ContractDetailsPageRedesigned = () => {
       throw new Error('بيانات العقد غير مكتملة');
     }
 
+    const violationNumber =
+      violation.violation_number ||
+      `TV-${contract.contract_number || contract.id.slice(0, 8)}-${Date.now().toString().slice(-6)}`;
+
     const { error } = await supabase
       .from('traffic_violations')
       .insert({
         company_id: companyId,
         contract_id: contract.id,
         vehicle_id: contract.vehicle_id,
-        violation_number: violation.violation_number || null,
+        violation_number: violationNumber,
         violation_type: violation.violation_type,
         violation_date: violation.violation_date,
         fine_amount: violation.fine_amount,
+        total_amount: violation.fine_amount,
         location: violation.location || null,
-        description: violation.description || null,
+        violation_description: violation.description || null,
+        import_source: 'manual',
         status: 'pending',
       });
 
@@ -2477,7 +2775,7 @@ const ContractDetailsPageRedesigned = () => {
           contractNumber: contract.contract_number,
           vehiclePlate: contract.vehicle?.plate_number || contract.license_plate || 'غير محدد',
           violationType: violation.violation_type,
-          violationNumber: violation.violation_number,
+          violationNumber,
           violationDate: violation.violation_date,
           fineAmount: violation.fine_amount,
           location: violation.location,
@@ -2744,6 +3042,7 @@ const ContractDetailsPageRedesigned = () => {
   }
 
   const tabs = [
+    { value: 'health', label: 'صحة العقد', icon: ShieldCheck },
     { value: 'financial', label: 'المالي', icon: Receipt },
     { value: 'vehicle', label: 'المركبة', icon: Car },
     { value: 'violations', label: 'المخالفات', icon: AlertCircle },
@@ -2753,6 +3052,14 @@ const ContractDetailsPageRedesigned = () => {
 
   const contractWorkbenchContent = (
     <>
+      <TabsContent value="health" className="mt-0">
+        <ContractHealthAnalysis
+          contract={contract}
+          formatCurrency={formatCurrency}
+          paymentSchedules={paymentSchedules}
+        />
+      </TabsContent>
+
       <TabsContent value="contract" className="mt-0">
         <ContractTab
           contract={contract}
@@ -2766,6 +3073,7 @@ const ContractDetailsPageRedesigned = () => {
         <FinancialTab
           contract={contract}
           invoices={invoices}
+          payments={contractPayments}
           paymentSchedules={paymentSchedules}
           isLoadingPaymentSchedules={isLoadingPaymentSchedules}
           contractId={contract.id}
@@ -3369,7 +3677,7 @@ const ContractDetailsPageRedesigned = () => {
           grid-template-columns: minmax(360px, 420px) minmax(0, 1fr);
           grid-template-areas:
             "hero decision"
-            "operations operations";
+            "operations decision";
           gap: 16px;
           align-items: start;
         }
@@ -3483,7 +3791,7 @@ const ContractDetailsPageRedesigned = () => {
         }
 
         .contract-operations-zone .contract-operations-workspace {
-          grid-template-columns: minmax(280px, 0.8fr) minmax(360px, 1fr) minmax(360px, 1fr) !important;
+          grid-template-columns: 1fr !important;
           align-items: stretch;
         }
 
@@ -3766,6 +4074,21 @@ const ContractDetailsPageRedesigned = () => {
           background-color: var(--contract-details-inner) !important;
           border-color: var(--contract-details-border) !important;
           color: var(--contract-details-text) !important;
+          -webkit-text-fill-color: var(--contract-details-text) !important;
+          caret-color: var(--contract-details-text) !important;
+          color-scheme: light;
+        }
+
+        .contract-details-system input::placeholder,
+        .contract-details-system textarea::placeholder {
+          color: var(--contract-details-muted) !important;
+          -webkit-text-fill-color: var(--contract-details-muted) !important;
+          opacity: 1 !important;
+        }
+
+        .contract-details-system input::-webkit-calendar-picker-indicator {
+          opacity: 1 !important;
+          filter: none !important;
         }
 
         .contract-details-system [role="tablist"] {
@@ -3779,6 +4102,43 @@ const ContractDetailsPageRedesigned = () => {
         .contract-details-system [role="tab"] {
           color: var(--contract-details-muted) !important;
           min-height: 42px;
+        }
+
+        .contract-details-system button svg,
+        .contract-details-system [role="button"] svg,
+        .contract-details-system [role="tab"] svg,
+        .contract-details-system [role="option"] svg,
+        .contract-details-system [data-state="checked"] svg,
+        .contract-details-system [data-state="active"] svg,
+        .contract-details-system [data-selected="true"] svg {
+          color: currentColor !important;
+          stroke: currentColor !important;
+        }
+
+        .contract-details-system button[data-state="active"],
+        .contract-details-system button[data-state="checked"],
+        .contract-details-system button[aria-pressed="true"],
+        .contract-details-system [role="button"][data-state="active"],
+        .contract-details-system [role="button"][data-state="checked"],
+        .contract-details-system [role="button"][aria-pressed="true"],
+        .contract-details-system [role="option"][data-state="checked"],
+        .contract-details-system [role="option"][data-highlighted],
+        .contract-details-system [data-selected="true"] {
+          background-color: var(--contract-details-focus) !important;
+          border-color: var(--contract-details-focus) !important;
+          color: #FFFFFF !important;
+        }
+
+        .contract-details-system button[data-state="active"] *,
+        .contract-details-system button[data-state="checked"] *,
+        .contract-details-system button[aria-pressed="true"] *,
+        .contract-details-system [role="button"][data-state="active"] *,
+        .contract-details-system [role="button"][data-state="checked"] *,
+        .contract-details-system [role="button"][aria-pressed="true"] *,
+        .contract-details-system [role="option"][data-state="checked"] *,
+        .contract-details-system [role="option"][data-highlighted] *,
+        .contract-details-system [data-selected="true"] * {
+          color: inherit !important;
         }
 
         .contract-command-center {
@@ -4116,7 +4476,7 @@ const ContractDetailsPageRedesigned = () => {
 
         .contract-operations-workspace {
           display: grid;
-          grid-template-columns: minmax(240px, 0.85fr) minmax(320px, 1.15fr) minmax(300px, 1fr);
+          grid-template-columns: 1fr;
           gap: 14px;
           align-items: stretch;
         }

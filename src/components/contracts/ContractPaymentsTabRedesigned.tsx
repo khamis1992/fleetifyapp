@@ -111,6 +111,7 @@ interface ContractPaymentsTabRedesignedProps {
   contractId: string;
   companyId: string;
   invoiceIds: string[];
+  contractStartDate?: string | null;
   formatCurrency: (amount: number) => string;
   contractNumber?: string;
   customerInfo?: CustomerInfo;
@@ -579,6 +580,7 @@ export const ContractPaymentsTabRedesigned = ({
   contractId,
   companyId,
   invoiceIds,
+  contractStartDate,
   formatCurrency,
   contractNumber,
   customerInfo,
@@ -598,7 +600,7 @@ export const ContractPaymentsTabRedesigned = ({
 
   // Fetch payments with caching for better performance
   const { data: payments = [], isLoading } = useQuery({
-    queryKey: ['contract-payments', contractId, showAllPayments, invoiceIds.join(',')],
+    queryKey: ['contract-payments', contractId, showAllPayments, invoiceIds.join(','), contractStartDate || null],
     queryFn: async () => {
       let query = supabase
         .from('payments')
@@ -627,6 +629,10 @@ export const ContractPaymentsTabRedesigned = ({
       } else {
         if (!invoiceIds.length) return [];
         query = query.in('invoice_id', invoiceIds);
+      }
+
+      if (contractStartDate) {
+        query = query.gte('payment_date', contractStartDate);
       }
 
       query = query.order('payment_date', { ascending: false });

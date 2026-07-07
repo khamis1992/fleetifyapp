@@ -970,6 +970,7 @@ interface AddViolationDialogProps {
 }
 
 const AddViolationDialog = ({ open, onClose, onAdd }: AddViolationDialogProps) => {
+  const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     violation_number: '',
@@ -1008,6 +1009,13 @@ const AddViolationDialog = ({ open, onClose, onAdd }: AddViolationDialogProps) =
       });
       
       onClose();
+    } catch (error) {
+      console.error('Error adding traffic violation:', error);
+      toast({
+        title: 'خطأ في الإضافة',
+        description: error instanceof Error ? error.message : 'تعذر إضافة المخالفة المرورية',
+        variant: 'destructive',
+      });
     } finally {
       setIsSubmitting(false);
     }
