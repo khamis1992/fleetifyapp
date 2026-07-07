@@ -566,6 +566,86 @@
   color: #173a63;
 }
 
+.lawsuit-ai-card {
+  background: linear-gradient(180deg, #ffffff 0%, #f8fbfd 100%);
+}
+
+.lawsuit-ai-card h3 {
+  margin: 0.2rem 0;
+  color: #142033;
+  font-size: 1.05rem;
+  font-weight: 950;
+}
+
+.lawsuit-ai-card span {
+  color: #66758a;
+  font-size: 0.82rem;
+  font-weight: 750;
+  line-height: 1.7;
+}
+
+.lawsuit-ai-icon {
+  display: inline-flex;
+  width: 42px;
+  height: 42px;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background: #eaf2f9;
+  color: #173a63;
+}
+
+.lawsuit-ai-score {
+  display: inline-flex;
+  width: 58px;
+  height: 58px;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  border: 6px solid #dce7f1;
+  border-top-color: #d99b25;
+  border-radius: 999px;
+  color: #142033;
+  font-size: 0.9rem;
+  font-weight: 950;
+}
+
+.lawsuit-ai-score.is-ready {
+  border-color: #22b69a;
+  color: #0f8f78;
+}
+
+.lawsuit-ai-score.is-risk {
+  border-color: #f4c6cb;
+  border-top-color: #d8344c;
+  color: #b42335;
+}
+
+.lawsuit-ai-note {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.55rem;
+  align-items: start;
+  border: 1px solid #dce6f0;
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 0.65rem;
+}
+
+.lawsuit-ai-note svg {
+  margin-top: 0.18rem;
+  color: #d99b25;
+}
+
+.lawsuit-ai-card.is-risk .lawsuit-ai-note svg {
+  color: #d8344c;
+}
+
+.lawsuit-ai-card.is-ready .lawsuit-ai-note svg {
+  color: #0f8f78;
+}
+
 .lawsuit-linked-row {
   display: grid;
   width: 100%;

@@ -26,6 +26,7 @@ import {
   useLawsuitPreparationContext,
   type DocumentsState,
   type DocumentState,
+  type LawsuitPreparationState,
 } from './store';
 import { LegalHeader } from './components/LegalHeader';
 import { LegalOverview } from './components/LegalOverview';
@@ -79,6 +80,11 @@ function formatQar(amount?: number | null) {
   }).format(Number(amount || 0));
 }
 
+function formatLegalDate(date?: string | null) {
+  if (!date) return 'غير محدد';
+  return new Date(date).toLocaleDateString('ar-QA');
+}
+
 function getDocumentMetrics(documents: DocumentsState) {
   const mandatoryDocs: DocumentState[] = [
     documents.memo,
@@ -101,6 +107,92 @@ function getDocumentMetrics(documents: DocumentsState) {
     generating,
     percentage: mandatoryDocs.length ? Math.round((ready / mandatoryDocs.length) * 100) : 0,
     isComplete: ready === mandatoryDocs.length,
+  };
+}
+
+function buildLawsuitAIInsight(state: LawsuitPreparationState, readiness: ReturnType<typeof getDocumentMetrics>) {
+  const { calculations, contract, customer, documents, overdueInvoices, taqadiData, trafficViolations, vehicle } = state;
+  const customerName = customer ? formatCustomerName(customer) : 'عميل غير محدد';
+  const vehicleName = vehicle
+    ? [vehicle.make, vehicle.model, vehicle.year, vehicle.plate_number ? `لوحة ${vehicle.plate_number}` : ''].filter(Boolean).join(' ')
+    : contract?.license_plate
+      ? `لوحة ${contract.license_plate}`
+      : 'مركبة غير محددة';
+  const mandatoryDocs: DocumentState[] = [
+    documents.memo,
+    documents.claims,
+    documents.docsList,
+    documents.contract,
+    documents.commercialRegister,
+    documents.ibanCertificate,
+    documents.representativeId,
+  ];
+  const missingDocs = mandatoryDocs.filter((doc) => doc.status !== 'ready');
+  const issues: string[] = [];
+  const strengths: string[] = [];
+
+  if (!customer?.national_id) issues.push('رقم الهوية للمدعى عليه غير مكتمل.');
+  if (!customer?.phone) issues.push('رقم هاتف المدعى عليه غير موجود.');
+  if (!customer?.address) issues.push('عنوان المدعى عليه غير مسجل.');
+  if (documents.contract.status !== 'ready') issues.push('عقد الإيجار الموقع غير جاهز ضمن الحافظة.');
+  if (missingDocs.length > 0) issues.push(`يوجد ${missingDocs.length} مستند مطلوب غير جاهز.`);
+  if (trafficViolations.length > 0 && documents.violations.status !== 'ready') issues.push('توجد مخالفات مرورية لكن كشف المخالفات غير جاهز.');
+  if (!taqadiData?.caseTitle || !taqadiData?.facts || !taqadiData?.claims) issues.push('بيانات التقاضي تحتاج مراجعة قبل النسخ للنظام.');
+  if (!calculations || calculations.total <= 0) issues.push('مبلغ المطالبة غير واضح أو يساوي صفر.');
+
+  if (customer?.national_id) strengths.push('بيانات الهوية متوفرة.');
+  if (documents.memo.status === 'ready' && documents.claims.status === 'ready') strengths.push('المذكرة وكشف المطالبات جاهزان.');
+  if (taqadiData?.facts && taqadiData?.claims) strengths.push('نص الوقائع والطلبات متوفر للتقاضي.');
+  if (overdueInvoices.length > 0) strengths.push(`يوجد ${overdueInvoices.length} فاتورة متأخرة موثقة.`);
+
+  const score = Math.max(5, Math.min(100, readiness.percentage - issues.length * 6 + strengths.length * 4));
+  const level =
+    score >= 85 && issues.length <= 1
+      ? 'جاهز غالبًا'
+      : score >= 60
+        ? 'يحتاج مراجعة'
+        : 'غير جاهز للرفع';
+  const tone = score >= 85 ? 'ready' : score >= 60 ? 'review' : 'risk';
+  const totalClaim = formatQar(calculations?.total);
+  const summary = [
+    `ملف الدعوى لعقد ${contract?.contract_number || '-'} يخص ${customerName}.`,
+    `قيمة المطالبة الحالية ${totalClaim} وتشمل الإيجارات المتأخرة والرسوم والمخالفات المسجلة.`,
+    `عدد الفواتير المتأخرة ${overdueInvoices.length}، وعدد المخالفات ${trafficViolations.length}.`,
+    `نسبة جاهزية الحافظة ${readiness.percentage}%، والحالة المقترحة: ${level}.`,
+  ].join('\n');
+
+  const suggestedFacts = taqadiData?.facts || [
+    `بموجب عقد الإيجار رقم ${contract?.contract_number || '-'} المؤرخ ${formatLegalDate(contract?.start_date)}، استأجر المدعى عليه ${customerName} المركبة ${vehicleName}.`,
+    `وقد ترتب في ذمته مبلغ مستحق قدره ${totalClaim} نتيجة عدم سداد الالتزامات المالية المستحقة بموجب العقد.`,
+    trafficViolations.length > 0
+      ? `كما ترتبت مخالفات مرورية على المركبة محل العقد بعدد ${trafficViolations.length} مخالفة.`
+      : '',
+    'ورغم المطالبة بالسداد، لم يتم إغلاق المديونية حتى تاريخ تجهيز هذه الدعوى.',
+  ].filter(Boolean).join('\n');
+
+  const suggestedClaims = taqadiData?.claims || [
+    `إلزام المدعى عليه بسداد مبلغ ${totalClaim}.`,
+    'إلزامه بالرسوم والمصاريف وأي مبالغ مترتبة على العقد حتى تاريخ السداد.',
+    trafficViolations.length > 0 ? 'إلزامه بقيمة المخالفات المرورية المرتبطة بالمركبة محل العقد.' : '',
+    'حفظ حق الشركة في المطالبة بأي تعويضات أخرى تظهر لاحقًا.',
+  ].filter(Boolean).join('\n');
+
+  const nextSteps = [
+    ...issues.slice(0, 3),
+    ...(issues.length === 0 ? ['راجع بيانات التقاضي ثم حمّل الحزمة النهائية أو سجّل فتح القضية.'] : []),
+  ];
+
+  return {
+    customerName,
+    level,
+    missingDocs,
+    nextSteps,
+    score,
+    strengths,
+    suggestedClaims,
+    suggestedFacts,
+    summary,
+    tone,
   };
 }
 
@@ -142,6 +234,93 @@ function LegalStageTabs({
         );
       })}
     </nav>
+  );
+}
+
+function LawsuitAIAssistantCard({ readiness }: { readiness: ReturnType<typeof getDocumentMetrics> }) {
+  const { state, actions } = useLawsuitPreparationContext();
+  const insight = useMemo(() => buildLawsuitAIInsight(state, readiness), [state, readiness]);
+  const isReady = insight.tone === 'ready';
+  const isRisk = insight.tone === 'risk';
+  const copied = state.ui.copiedField;
+
+  return (
+    <section className={`lawsuit-command-card lawsuit-ai-card is-${insight.tone}`}>
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex min-w-0 items-start gap-3">
+          <span className="lawsuit-ai-icon">
+            <Sparkles className="h-5 w-5" />
+          </span>
+          <div className="min-w-0">
+            <p className="text-xs font-black text-[#66758A]">مساعد AI للدعوى</p>
+            <h3>{insight.level}</h3>
+            <span>تحليل سريع لجاهزية الملف قبل الرفع</span>
+          </div>
+        </div>
+        <span className={`lawsuit-ai-score ${isReady ? 'is-ready' : isRisk ? 'is-risk' : ''}`}>
+          {insight.score}%
+        </span>
+      </div>
+
+      <div className="mt-4 grid gap-2">
+        {insight.nextSteps.slice(0, 3).map((step, index) => (
+          <div key={`${step}-${index}`} className="lawsuit-ai-note">
+            <AlertCircle className="h-4 w-4" />
+            <span>{step}</span>
+          </div>
+        ))}
+      </div>
+
+      <div className="mt-4 rounded-lg border border-[#DCE6F0] bg-white p-3">
+        <p className="text-xs font-black text-[#66758A]">ملخص AI</p>
+        <p className="mt-2 whitespace-pre-line text-sm font-bold leading-7 text-[#142033]">{insight.summary}</p>
+      </div>
+
+      {insight.missingDocs.length > 0 && (
+        <div className="mt-3">
+          <p className="text-xs font-black text-[#66758A]">نواقص المستندات</p>
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            {insight.missingDocs.slice(0, 4).map((doc) => (
+              <Badge key={doc.id} variant="outline" className="border-amber-200 bg-amber-50 text-amber-700">
+                {doc.name}
+              </Badge>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div className="mt-4 grid gap-2">
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => actions.copyToClipboard(insight.summary, 'ai-lawsuit-summary')}
+          className="justify-center gap-2"
+        >
+          {copied === 'ai-lawsuit-summary' ? <CheckCircle2 className="h-4 w-4" /> : <ClipboardCheck className="h-4 w-4" />}
+          نسخ ملخص الدعوى
+        </Button>
+        <div className="grid grid-cols-2 gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => actions.copyToClipboard(insight.suggestedFacts, 'ai-lawsuit-facts')}
+            className="justify-center gap-2"
+          >
+            {copied === 'ai-lawsuit-facts' ? <CheckCircle2 className="h-4 w-4" /> : <FileText className="h-4 w-4" />}
+            الوقائع
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => actions.copyToClipboard(insight.suggestedClaims, 'ai-lawsuit-claims')}
+            className="justify-center gap-2"
+          >
+            {copied === 'ai-lawsuit-claims' ? <CheckCircle2 className="h-4 w-4" /> : <Gavel className="h-4 w-4" />}
+            الطلبات
+          </Button>
+        </div>
+      </div>
+    </section>
   );
 }
 
@@ -239,6 +418,8 @@ function LawsuitCommandPanel({
           {nextAction.button}
         </Button>
       </section>
+
+      <LawsuitAIAssistantCard readiness={readiness} />
 
       <section className="lawsuit-command-card">
         <p className="text-xs font-black text-[#66758A]">الملف المرتبط</p>

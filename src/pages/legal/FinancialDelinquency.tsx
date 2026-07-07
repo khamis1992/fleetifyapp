@@ -5,16 +5,22 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   AlertCircle,
   AlertTriangle,
+  Brain,
   CheckCircle2,
   Clock,
+  Copy,
   FileSearch,
   FileText,
   Gavel,
+  Handshake,
   Loader2,
+  MessageSquare,
   RefreshCw,
   Scale,
   Search,
+  Send,
   ShieldCheck,
+  Sparkles,
   XCircle,
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -44,6 +50,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { ConvertToLegalDialog } from '@/components/contracts/ConvertToLegalDialog';
 import type { ContractForLegal } from '@/hooks/useConvertToLegal';
+import { useDelinquentCustomers, type DelinquentCustomer } from '@/hooks/useDelinquentCustomers';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 import { supabase } from '@/integrations/supabase/client';
@@ -597,6 +604,149 @@ const CandidateBadge = ({ source }: { source: CandidateSource }) => (
   </Badge>
 );
 
+type CollectionRiskLevel = 'high' | 'medium' | 'low';
+type CollectionRecommendation = 'settlement' | 'legal' | 'reminder';
+
+type DelinquencyAIInsight = {
+  customer: DelinquentCustomer;
+  rank: number;
+  score: number;
+  riskLevel: CollectionRiskLevel;
+  riskLabel: string;
+  riskClassName: string;
+  recommendation: CollectionRecommendation;
+  recommendationLabel: string;
+  recommendationClassName: string;
+  paymentProbability: number;
+  reason: string;
+  nextAction: string;
+  whatsappMessage: string;
+};
+
+const getDaysSinceDate = (dateValue?: string | null) => {
+  if (!dateValue) return null;
+  const date = new Date(dateValue);
+  if (Number.isNaN(date.getTime())) return null;
+  return Math.max(0, Math.floor((Date.now() - date.getTime()) / (1000 * 60 * 60 * 24)));
+};
+
+const normalizeWhatsAppPhone = (phone?: string | null) => {
+  if (!phone) return '';
+  const digits = phone.replace(/\D/g, '');
+  if (!digits) return '';
+  if (digits.startsWith('974')) return digits;
+  if (digits.length === 8) return `974${digits}`;
+  return digits;
+};
+
+const buildDelinquencyAIInsights = (
+  customers: DelinquentCustomer[],
+  formatCurrency: (amount: number) => string
+): DelinquencyAIInsight[] => {
+  return customers
+    .map((customer) => {
+      const daysOverdue = Number(customer.days_overdue || 0);
+      const totalDebt = Number(customer.total_debt || 0);
+      const lastPaymentAge = getDaysSinceDate(customer.last_payment_date);
+      const hasRecentPayment = lastPaymentAge !== null && lastPaymentAge <= 45;
+      const hasPaymentHistory = Number(customer.actual_payments_count || 0) > 0 || lastPaymentAge !== null;
+      const hasLegalHistory = customer.has_previous_legal_cases || customer.is_blacklisted;
+
+      const score =
+        Number(customer.risk_score || 0) +
+        Math.min(daysOverdue, 180) * 0.75 +
+        Math.min(totalDebt / 1000, 70) +
+        Number(customer.violations_count || 0) * 5 +
+        (hasLegalHistory ? 30 : 0) -
+        (hasRecentPayment ? 22 : 0);
+
+      const riskLevel: CollectionRiskLevel =
+        customer.is_blacklisted || daysOverdue >= 90 || Number(customer.risk_score || 0) >= 85 || score >= 145
+          ? 'high'
+          : daysOverdue >= 45 || Number(customer.risk_score || 0) >= 65 || score >= 90
+          ? 'medium'
+          : 'low';
+
+      const paymentProbability = Math.max(
+        10,
+        Math.min(
+          94,
+          84 -
+            Math.min(daysOverdue, 180) * 0.32 -
+            Math.min(totalDebt / 1000, 40) +
+            (hasRecentPayment ? 18 : 0) +
+            (hasPaymentHistory ? 10 : -8) -
+            (hasLegalHistory ? 14 : 0)
+        )
+      );
+
+      const recommendation: CollectionRecommendation =
+        riskLevel === 'high' && (daysOverdue >= 90 || paymentProbability < 42 || hasLegalHistory)
+          ? 'legal'
+          : riskLevel === 'medium' || totalDebt >= 5000 || hasPaymentHistory
+          ? 'settlement'
+          : 'reminder';
+
+      const riskLabel = riskLevel === 'high' ? 'خطر عالي' : riskLevel === 'medium' ? 'خطر متوسط' : 'خطر منخفض';
+      const recommendationLabel =
+        recommendation === 'legal'
+          ? 'مرشح للتصعيد القانوني'
+          : recommendation === 'settlement'
+          ? 'مرشح للتسوية'
+          : 'تذكير واتساب أولًا';
+
+      const paymentPattern =
+        hasRecentPayment
+          ? `لكنه سدد سابقًا قبل ${lastPaymentAge} يوم`
+          : hasPaymentHistory && lastPaymentAge !== null
+          ? `وآخر سداد له قبل ${lastPaymentAge} يوم`
+          : 'ولا يوجد سداد حديث واضح';
+
+      const nextAction =
+        recommendation === 'legal'
+          ? 'إرسال إنذار واتساب نهائي وتجهيز الملف القانوني إذا لم يتم الرد.'
+          : recommendation === 'settlement'
+          ? 'عرض تسوية قصيرة الأجل مع موعد دفع واضح قبل التصعيد.'
+          : 'إرسال تذكير واتساب ودي قبل التصعيد.';
+
+      const reason = `هذا العميل متأخر ${daysOverdue} يومًا، بإجمالي ${formatCurrency(totalDebt)}، ${paymentPattern}. الأفضل ${nextAction}`;
+      const whatsappMessage =
+        recommendation === 'legal'
+          ? `مرحبًا ${customer.customer_name}، نود تذكيركم بوجود مبلغ متأخر قدره ${formatCurrency(totalDebt)} لمدة ${daysOverdue} يومًا. يرجى السداد أو التواصل معنا اليوم لتجنب اتخاذ إجراءات قانونية.`
+          : recommendation === 'settlement'
+          ? `مرحبًا ${customer.customer_name}، يوجد مبلغ مستحق قدره ${formatCurrency(totalDebt)}. يمكننا ترتيب تسوية مناسبة إذا تم تأكيد موعد السداد اليوم. يرجى التواصل معنا.`
+          : `مرحبًا ${customer.customer_name}، تذكير ودي بوجود مبلغ مستحق قدره ${formatCurrency(totalDebt)}. نرجو السداد أو إعلامنا بموعد الدفع المناسب.`;
+
+      return {
+        customer,
+        rank: 0,
+        score,
+        riskLevel,
+        riskLabel,
+        riskClassName:
+          riskLevel === 'high'
+            ? 'border-rose-200 bg-rose-50 text-rose-700'
+            : riskLevel === 'medium'
+            ? 'border-amber-200 bg-amber-50 text-amber-700'
+            : 'border-emerald-200 bg-emerald-50 text-emerald-700',
+        recommendation,
+        recommendationLabel,
+        recommendationClassName:
+          recommendation === 'legal'
+            ? 'border-rose-200 bg-white text-rose-700'
+            : recommendation === 'settlement'
+            ? 'border-[#7C83F6]/30 bg-white text-[#5B5FE8]'
+            : 'border-emerald-200 bg-white text-emerald-700',
+        paymentProbability: Math.round(paymentProbability),
+        reason,
+        nextAction,
+        whatsappMessage,
+      };
+    })
+    .sort((a, b) => b.score - a.score)
+    .map((insight, index) => ({ ...insight, rank: index + 1 }));
+};
+
 const FinancialDelinquencyPage: React.FC = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -642,6 +792,10 @@ const FinancialDelinquencyPage: React.FC = () => {
       return fetchTrafficCandidates(companyId, candidateSearch);
     },
     enabled: shouldLoadCandidates && candidateType !== 'rent',
+  });
+
+  const { data: delinquentCustomers = [], isFetching: aiFetching } = useDelinquentCustomers({
+    useCachedData: true,
   });
 
   const filteredQueue = useMemo(() => {
@@ -692,6 +846,56 @@ const FinancialDelinquencyPage: React.FC = () => {
     const readyForCourt = legalQueue.filter((item) => item.legalCaseStatus === 'pending').length;
     return { total: legalQueue.length, totalRentalValue, activeCases, readyForCourt };
   }, [legalQueue]);
+
+  const delinquencyAIInsights = useMemo(
+    () => buildDelinquencyAIInsights(delinquentCustomers, formatCurrency),
+    [delinquentCustomers, formatCurrency]
+  );
+
+  const topAIInsight = delinquencyAIInsights[0];
+  const aiStats = useMemo(() => {
+    const highRisk = delinquencyAIInsights.filter((insight) => insight.riskLevel === 'high').length;
+    const settlement = delinquencyAIInsights.filter((insight) => insight.recommendation === 'settlement').length;
+    const legal = delinquencyAIInsights.filter((insight) => insight.recommendation === 'legal').length;
+    const avgProbability = delinquencyAIInsights.length
+      ? Math.round(delinquencyAIInsights.reduce((sum, insight) => sum + insight.paymentProbability, 0) / delinquencyAIInsights.length)
+      : 0;
+
+    return { highRisk, settlement, legal, avgProbability };
+  }, [delinquencyAIInsights]);
+
+  const aiInsightByCandidateKey = useMemo(() => {
+    const map = new Map<string, DelinquencyAIInsight>();
+    delinquencyAIInsights.forEach((insight) => {
+      if (insight.customer.contract_id) {
+        map.set(`id:${insight.customer.contract_id}`, insight);
+      }
+      if (insight.customer.contract_number) {
+        map.set(`number:${insight.customer.contract_number}`, insight);
+      }
+    });
+    return map;
+  }, [delinquencyAIInsights]);
+
+  const copyAIMessage = async (message: string) => {
+    try {
+      await navigator.clipboard.writeText(message);
+      toast.success('تم نسخ رسالة واتساب');
+    } catch (error) {
+      console.error('Copy AI message error:', error);
+      toast.error('تعذر نسخ الرسالة');
+    }
+  };
+
+  const openAIWhatsApp = (insight: DelinquencyAIInsight) => {
+    const phone = normalizeWhatsAppPhone(insight.customer.phone);
+    if (!phone) {
+      toast.error('لا يوجد رقم واتساب صالح لهذا العميل');
+      return;
+    }
+
+    window.open(`https://wa.me/${phone}?text=${encodeURIComponent(insight.whatsappMessage)}`, '_blank', 'noopener,noreferrer');
+  };
 
   const refreshAll = () => {
     queryClient.invalidateQueries({ queryKey: ['manual-legal-delinquency-queue'] });
@@ -870,6 +1074,153 @@ const FinancialDelinquencyPage: React.FC = () => {
               </div>
             </CardContent>
           </Card>
+        </section>
+
+        <section className="hidden">
+          <div className="border-b border-slate-100 bg-[#F8FAFC] p-5">
+            <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+              <div className="flex items-start gap-3">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#020617] text-white">
+                  <Brain className="h-6 w-6" />
+                </div>
+                <div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h2 className="text-xl font-black text-[#020617]">AI للتحصيل والمتأخرات</h2>
+                    <Sparkles className="h-4 w-4 text-amber-500" />
+                  </div>
+                  <p className="mt-1 max-w-3xl text-sm leading-6 text-[#64748B]">
+                    يصنف العملاء المتأخرين، يحدد أولوية التواصل، يقترح رسالة واتساب، ويقرر هل الأنسب تسوية أم تصعيد قانوني.
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2 text-sm md:grid-cols-4">
+                <div className="rounded-xl border border-rose-100 bg-white px-3 py-2">
+                  <span className="block text-xs font-bold text-[#94A3B8]">خطر عالي</span>
+                  <strong className="text-lg text-rose-600">{aiStats.highRisk}</strong>
+                </div>
+                <div className="rounded-xl border border-[#7C83F6]/20 bg-white px-3 py-2">
+                  <span className="block text-xs font-bold text-[#94A3B8]">قابل للتسوية</span>
+                  <strong className="text-lg text-[#5B5FE8]">{aiStats.settlement}</strong>
+                </div>
+                <div className="rounded-xl border border-rose-100 bg-white px-3 py-2">
+                  <span className="block text-xs font-bold text-[#94A3B8]">تصعيد قانوني</span>
+                  <strong className="text-lg text-rose-700">{aiStats.legal}</strong>
+                </div>
+                <div className="rounded-xl border border-emerald-100 bg-white px-3 py-2">
+                  <span className="block text-xs font-bold text-[#94A3B8]">احتمال السداد</span>
+                  <strong className="text-lg text-emerald-600">{aiStats.avgProbability}%</strong>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-4 p-4">
+            {aiFetching ? (
+              <div className="flex items-center justify-center rounded-2xl border border-slate-200 bg-[#F8FAFC] p-8">
+                <Loader2 className="h-5 w-5 animate-spin text-[#22C7A1]" />
+                <span className="mr-3 text-sm font-bold text-[#94A3B8]">جاري تحليل العملاء المتأخرين...</span>
+              </div>
+            ) : topAIInsight ? (
+              <>
+                <div className="grid gap-4 rounded-2xl bg-[#020617] p-5 text-white xl:grid-cols-[minmax(0,1fr)_auto] xl:items-center">
+                  <div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Badge className="bg-white text-[#020617] hover:bg-white">الأولوية الأولى</Badge>
+                      <Badge className="bg-rose-500 text-white hover:bg-rose-500">{topAIInsight.riskLabel}</Badge>
+                      <Badge className="bg-[#22C7A1] text-white hover:bg-[#22C7A1]">{topAIInsight.recommendationLabel}</Badge>
+                    </div>
+                    <h3 className="mt-3 text-2xl font-black">{topAIInsight.customer.customer_name}</h3>
+                    <p className="mt-2 max-w-4xl text-sm leading-7 text-slate-200">{topAIInsight.reason}</p>
+                  </div>
+                  <div className="rounded-2xl bg-white px-6 py-4 text-center text-[#020617]">
+                    <span className="block text-xs font-bold text-[#64748B]">احتمال السداد</span>
+                    <strong className="text-4xl font-black">{topAIInsight.paymentProbability}%</strong>
+                  </div>
+                </div>
+
+                <div className="grid gap-3 xl:grid-cols-2">
+                  {delinquencyAIInsights.slice(0, 6).map((insight) => {
+                    const RecommendationIcon = insight.recommendation === 'legal'
+                      ? Scale
+                      : insight.recommendation === 'settlement'
+                      ? Handshake
+                      : MessageSquare;
+
+                    return (
+                      <article key={insight.customer.contract_id} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                        <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                          <div className="min-w-0">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <Badge variant="outline">#{insight.rank}</Badge>
+                              <Badge variant="outline" className={insight.riskClassName}>{insight.riskLabel}</Badge>
+                              <Badge variant="outline" className={insight.recommendationClassName}>
+                                <RecommendationIcon className="ml-1 h-3 w-3" />
+                                {insight.recommendationLabel}
+                              </Badge>
+                            </div>
+                            <h4 className="mt-3 font-black text-[#020617]">{insight.customer.customer_name}</h4>
+                            <p className="mt-1 text-sm text-[#64748B]">
+                              عقد {insight.customer.contract_number} · {formatCurrency(insight.customer.total_debt)} · متأخر {insight.customer.days_overdue || 0} يوم
+                            </p>
+                          </div>
+                          <div className="rounded-xl border border-emerald-100 bg-emerald-50 px-3 py-2 text-center">
+                            <span className="block text-xs font-bold text-emerald-700">سداد متوقع</span>
+                            <strong className="text-xl text-emerald-700">{insight.paymentProbability}%</strong>
+                          </div>
+                        </div>
+
+                        <p className="mt-3 rounded-xl bg-[#F8FAFC] p-3 text-sm leading-7 text-[#334155]">
+                          {insight.reason}
+                        </p>
+
+                        <div className="mt-3 rounded-xl border border-slate-200 bg-white p-3">
+                          <div className="mb-2 flex items-center gap-2 text-sm font-bold text-[#020617]">
+                            <MessageSquare className="h-4 w-4 text-[#22C7A1]" />
+                            رسالة واتساب مقترحة
+                          </div>
+                          <p className="text-sm leading-7 text-[#475569]">{insight.whatsappMessage}</p>
+                        </div>
+
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          <Button type="button" size="sm" variant="outline" onClick={() => copyAIMessage(insight.whatsappMessage)} className="gap-2 rounded-xl border-slate-200 bg-white">
+                            <Copy className="h-4 w-4" />
+                            نسخ الرسالة
+                          </Button>
+                          <Button type="button" size="sm" onClick={() => openAIWhatsApp(insight)} className="gap-2 rounded-xl bg-[#22C7A1] text-white hover:bg-[#1BAA8A]">
+                            <Send className="h-4 w-4" />
+                            فتح واتساب
+                          </Button>
+                          {insight.recommendation === 'legal' && (
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              onClick={() => {
+                                setActiveTab('search');
+                                setCandidateSearch(insight.customer.contract_number || insight.customer.customer_name);
+                                setCandidateType('rent');
+                              }}
+                              className="gap-2 rounded-xl border-rose-200 bg-white text-rose-600 hover:bg-rose-50"
+                            >
+                              <Gavel className="h-4 w-4" />
+                              ابحث للتحويل القانوني
+                            </Button>
+                          )}
+                        </div>
+                      </article>
+                    );
+                  })}
+                </div>
+              </>
+            ) : (
+              <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-8 text-center">
+                <CheckCircle2 className="mx-auto h-10 w-10 text-[#22C7A1]" />
+                <h3 className="mt-3 text-lg font-black text-[#020617]">لا توجد متأخرات للتحليل</h3>
+                <p className="mt-1 text-sm text-[#94A3B8]">عند ظهور عملاء متأخرين سيعرض النظام أولوية التواصل والتوصية المناسبة هنا.</p>
+              </div>
+            )}
+          </div>
         </section>
 
         <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'queue' | 'search')} className="space-y-4">
@@ -1053,7 +1404,17 @@ const FinancialDelinquencyPage: React.FC = () => {
               </div>
             ) : (
               <div className="grid gap-3">
-                {candidates.map((candidate) => (
+                {candidates.map((candidate) => {
+                  const candidateAIInsight =
+                    (candidate.contract?.id && aiInsightByCandidateKey.get(`id:${candidate.contract.id}`)) ||
+                    (candidate.contractNumber && aiInsightByCandidateKey.get(`number:${candidate.contractNumber}`));
+                  const RecommendationIcon = candidateAIInsight?.recommendation === 'legal'
+                    ? Scale
+                    : candidateAIInsight?.recommendation === 'settlement'
+                    ? Handshake
+                    : MessageSquare;
+
+                  return (
                   <article key={candidate.id} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
                     <div className="grid gap-4 lg:grid-cols-[1fr_auto] lg:items-center">
                       <div className="min-w-0 space-y-3">
@@ -1066,6 +1427,18 @@ const FinancialDelinquencyPage: React.FC = () => {
                             <Badge className="bg-amber-100 text-amber-700 hover:bg-amber-100">
                               يحتاج ربط بعقد
                             </Badge>
+                          )}
+                          {candidateAIInsight && (
+                            <>
+                              <Badge variant="outline">AI #{candidateAIInsight.rank}</Badge>
+                              <Badge variant="outline" className={candidateAIInsight.riskClassName}>
+                                {candidateAIInsight.riskLabel}
+                              </Badge>
+                              <Badge variant="outline" className={candidateAIInsight.recommendationClassName}>
+                                <RecommendationIcon className="ml-1 h-3 w-3" />
+                                {candidateAIInsight.recommendationLabel}
+                              </Badge>
+                            </>
                           )}
                         </div>
 
@@ -1098,6 +1471,43 @@ const FinancialDelinquencyPage: React.FC = () => {
                             <p className="mt-1 font-bold text-[#020617]" dir="ltr">{candidate.phone || '-'}</p>
                           </div>
                         </div>
+
+                        {candidateAIInsight && (
+                          <div className="grid gap-3 rounded-xl border border-[#22C7A1]/20 bg-[#F8FFFC] p-3 xl:grid-cols-[1fr_180px] xl:items-stretch">
+                            <div className="space-y-3">
+                              <div className="flex items-center gap-2 text-sm font-black text-[#020617]">
+                                <Brain className="h-4 w-4 text-[#22C7A1]" />
+                                توصية AI للتحصيل
+                              </div>
+                              <p className="rounded-lg bg-white/80 p-3 text-sm leading-7 text-[#334155]">
+                                {candidateAIInsight.reason}
+                              </p>
+                              <div className="rounded-lg border border-slate-200 bg-white p-3">
+                                <div className="mb-2 flex items-center gap-2 text-sm font-bold text-[#020617]">
+                                  <MessageSquare className="h-4 w-4 text-[#22C7A1]" />
+                                  رسالة واتساب مقترحة
+                                </div>
+                                <p className="text-sm leading-7 text-[#475569]">{candidateAIInsight.whatsappMessage}</p>
+                              </div>
+                            </div>
+                            <div className="flex flex-col justify-between gap-3 rounded-xl border border-emerald-100 bg-emerald-50 p-3 text-center">
+                              <div>
+                                <span className="block text-xs font-bold text-emerald-700">سداد متوقع</span>
+                                <strong className="text-2xl text-emerald-700">{candidateAIInsight.paymentProbability}%</strong>
+                              </div>
+                              <div className="grid gap-2">
+                                <Button type="button" size="sm" variant="outline" onClick={() => copyAIMessage(candidateAIInsight.whatsappMessage)} className="gap-2 rounded-xl border-slate-200 bg-white">
+                                  <Copy className="h-4 w-4" />
+                                  نسخ الرسالة
+                                </Button>
+                                <Button type="button" size="sm" onClick={() => openAIWhatsApp(candidateAIInsight)} className="gap-2 rounded-xl bg-[#22C7A1] text-white hover:bg-[#1BAA8A]">
+                                  <Send className="h-4 w-4" />
+                                  فتح واتساب
+                                </Button>
+                              </div>
+                            </div>
+                          </div>
+                        )}
                       </div>
 
                       <div className="flex flex-col gap-2 sm:flex-row lg:flex-col">
@@ -1122,7 +1532,8 @@ const FinancialDelinquencyPage: React.FC = () => {
                       </div>
                     </div>
                   </article>
-                ))}
+                  );
+                })}
               </div>
             )}
           </TabsContent>

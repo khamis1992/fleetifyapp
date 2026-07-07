@@ -418,41 +418,43 @@ class LawsuitService {
    * تحويل المبلغ إلى نص عربي
    */
   convertAmountToWords(amount: number): string {
-    const ones = ['', 'واحد', 'اثنان', 'ثلاثة', 'أربعة', 'خمسة', 'ستة', 'سبعة', 'ثمانية', 'تسعة'];
-    const tens = ['', 'عشرة', 'عشرون', 'ثلاثون', 'أربعون', 'خمسون', 'ستون', 'سبعون', 'ثمانون', 'تسعون'];
-    const teens = ['عشرة', 'أحد عشر', 'اثنا عشر', 'ثلاثة عشر', 'أربعة عشر', 'خمسة عشر', 'ستة عشر', 'سبعة عشر', 'ثمانية عشر', 'تسعة عشر'];
-    const hundreds = ['', 'مائة', 'مائتان', 'ثلاثمائة', 'أربعمائة', 'خمسمائة', 'ستمائة', 'سبعمائة', 'ثمانمائة', 'تسعمائة'];
-    
     const safeAmount = Number.isFinite(Number(amount)) ? Number(amount) : 0;
     if (safeAmount === 0) return 'صفر ريال قطري';
-    
+
     const intAmount = Math.floor(Math.abs(safeAmount));
-    let result = '';
-    
-    // الآلاف
-    const thousands = Math.floor(intAmount / 1000);
-    const remainder = intAmount % 1000;
-    
-    if (thousands > 0) {
-      if (thousands === 1) {
-        result = 'ألف';
-      } else if (thousands === 2) {
-        result = 'ألفان';
-      } else if (thousands >= 3 && thousands <= 9) {
-        result = ones[thousands] + ' آلاف';
-      } else if (thousands === 10) {
-        result = 'عشرة آلاف';
-      } else {
-        result = this.convertHundreds(thousands) + ' ألف';
-      }
-    }
-    
-    if (remainder > 0) {
-      if (result) result += ' و';
-      result += this.convertHundreds(remainder);
-    }
-    
+    const result = this.convertNumberGroups(intAmount);
+
     return `${safeAmount < 0 ? 'سالب ' : ''}${result} ريال قطري`;
+  }
+
+  private convertNumberGroups(num: number): string {
+    if (num === 0) return '';
+
+    const millions = Math.floor(num / 1_000_000);
+    const thousands = Math.floor((num % 1_000_000) / 1000);
+    const remainder = num % 1000;
+    const parts: string[] = [];
+
+    if (millions > 0) {
+      parts.push(this.convertScaleGroup(millions, 'مليون', 'مليونان', 'ملايين', 'مليون'));
+    }
+
+    if (thousands > 0) {
+      parts.push(this.convertScaleGroup(thousands, 'ألف', 'ألفان', 'آلاف', 'ألف'));
+    }
+
+    if (remainder > 0) {
+      parts.push(this.convertHundreds(remainder));
+    }
+
+    return parts.filter(Boolean).join(' و');
+  }
+
+  private convertScaleGroup(num: number, singular: string, dual: string, plural: string, suffix: string): string {
+    if (num === 1) return singular;
+    if (num === 2) return dual;
+    if (num >= 3 && num <= 10) return `${this.convertHundreds(num)} ${plural}`;
+    return `${this.convertHundreds(num)} ${suffix}`;
   }
 
   private convertHundreds(num: number): string {
