@@ -9,7 +9,7 @@
  * - Visual charts and statistics
  */
 
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -37,7 +37,14 @@ import {
   Users,
   FileText,
   Phone,
-  Mail
+  Mail,
+  Brain,
+  MessageSquare,
+  Scale,
+  Handshake,
+  Sparkles,
+  Copy,
+  Send
 } from 'lucide-react';
 interface ARSummary {
   total_customers_with_ar: number;
@@ -93,6 +100,157 @@ interface PriorityItem {
   avg_dso: number;
 }
 
+type CollectionRiskLevel = 'high' | 'medium' | 'low';
+type CollectionPath = 'settlement' | 'legal' | 'reminder';
+
+interface CollectionAIInsight {
+  item: PriorityItem;
+  riskLevel: CollectionRiskLevel;
+  riskLabel: string;
+  riskClassName: string;
+  paymentProbability: number;
+  collectionPath: CollectionPath;
+  collectionPathLabel: string;
+  collectionPathClassName: string;
+  nextAction: string;
+  reason: string;
+  whatsappMessage: string;
+  priorityRank: number;
+  score: number;
+}
+
+const formatQar = (amount: number) => `${Number(amount || 0).toLocaleString('en-US', {
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+})} ر.ق`;
+
+const getCustomerDisplayName = (item: PriorityItem) =>
+  item.customer_name_ar || item.customer_name_en || 'العميل';
+
+const getDaysSincePayment = (lastPaymentDate?: string | null) => {
+  if (!lastPaymentDate) return null;
+  const date = new Date(lastPaymentDate);
+  if (Number.isNaN(date.getTime())) return null;
+  return Math.max(0, Math.floor((Date.now() - date.getTime()) / (1000 * 60 * 60 * 24)));
+};
+
+const normalizePhoneForWhatsApp = (phone?: string | null) => {
+  if (!phone) return '';
+  const digits = phone.replace(/\D/g, '');
+  if (!digits) return '';
+  if (digits.startsWith('974')) return digits;
+  if (digits.length === 8) return `974${digits}`;
+  return digits;
+};
+
+const buildCollectionAIInsights = (items: PriorityItem[] = []): CollectionAIInsight[] => {
+  return items
+    .map((item) => {
+      const days = Number(item.max_days_overdue || 0);
+      const outstanding = Number(item.total_outstanding || 0);
+      const criticalAmount = Number(item.critical_amount || 0);
+      const highRiskAmount = Number(item.high_risk_amount || 0);
+      const lastPaymentAge = getDaysSincePayment(item.last_payment_date);
+      const hasRecentPayment = lastPaymentAge !== null && lastPaymentAge <= 45;
+      const hasPaymentHistory = lastPaymentAge !== null;
+
+      const score =
+        Number(item.priority_score || 0) +
+        Math.min(days, 120) * 0.9 +
+        Math.min(outstanding / 1000, 60) +
+        (criticalAmount > 0 ? 35 : 0) +
+        (highRiskAmount > 0 ? 18 : 0) -
+        (hasRecentPayment ? 18 : 0);
+
+      const riskLevel: CollectionRiskLevel =
+        days >= 61 || criticalAmount > 0 || score >= 120
+          ? 'high'
+          : days >= 31 || highRiskAmount > 0 || score >= 70
+          ? 'medium'
+          : 'low';
+
+      const paymentProbability = Math.max(
+        12,
+        Math.min(
+          92,
+          82 -
+            Math.min(days, 120) * 0.42 -
+            Math.min(outstanding / 1000, 35) +
+            (hasRecentPayment ? 16 : 0) +
+            (hasPaymentHistory ? 8 : -6) -
+            (criticalAmount > 0 ? 10 : 0)
+        )
+      );
+
+      const collectionPath: CollectionPath =
+        days >= 90 || (criticalAmount > 0 && paymentProbability < 45)
+          ? 'legal'
+          : days >= 31 || outstanding >= 5000
+          ? 'settlement'
+          : 'reminder';
+
+      const customerName = getCustomerDisplayName(item);
+      const riskLabel = riskLevel === 'high' ? 'خطر عالي' : riskLevel === 'medium' ? 'خطر متوسط' : 'خطر منخفض';
+      const collectionPathLabel =
+        collectionPath === 'legal'
+          ? 'مرشح للإجراء القانوني'
+          : collectionPath === 'settlement'
+          ? 'مرشح للتسوية'
+          : 'تذكير ودي أولًا';
+
+      const paymentPattern =
+        hasRecentPayment
+          ? `ولديه سداد سابق قريب قبل ${lastPaymentAge} يوم`
+          : hasPaymentHistory
+          ? `آخر سداد قبل ${lastPaymentAge} يوم`
+          : 'ولا يوجد سداد حديث مسجل';
+
+      const nextAction =
+        collectionPath === 'legal'
+          ? 'أرسل إنذار واتساب نهائي اليوم، ثم جهز ملف التصعيد إذا لم يتم الرد.'
+          : collectionPath === 'settlement'
+          ? 'ابدأ بعرض تسوية قصيرة الأجل مع موعد دفع واضح.'
+          : 'أرسل تذكير واتساب لطيف قبل أي تصعيد.';
+
+      const reason = `هذا العميل متأخر ${days} يومًا بمبلغ ${formatQar(outstanding)}، ${paymentPattern}. الأفضل ${nextAction}`;
+
+      const whatsappMessage =
+        collectionPath === 'legal'
+          ? `مرحبًا ${customerName}، نود تذكيركم بوجود مبلغ متأخر قدره ${formatQar(outstanding)} لمدة ${days} يومًا. يرجى السداد أو التواصل معنا اليوم لتجنب اتخاذ إجراءات قانونية.`
+          : collectionPath === 'settlement'
+          ? `مرحبًا ${customerName}، يوجد مبلغ مستحق قدره ${formatQar(outstanding)}. يمكننا ترتيب تسوية مناسبة إذا تم تأكيد موعد السداد اليوم. يرجى التواصل معنا.`
+          : `مرحبًا ${customerName}، تذكير ودي بوجود مبلغ مستحق قدره ${formatQar(outstanding)}. نرجو السداد أو إعلامنا بموعد الدفع المناسب.`;
+
+      return {
+        item,
+        riskLevel,
+        riskLabel,
+        riskClassName:
+          riskLevel === 'high'
+            ? 'border-red-200 bg-red-50 text-red-700'
+            : riskLevel === 'medium'
+            ? 'border-amber-200 bg-amber-50 text-amber-700'
+            : 'border-emerald-200 bg-emerald-50 text-emerald-700',
+        paymentProbability: Math.round(paymentProbability),
+        collectionPath,
+        collectionPathLabel,
+        collectionPathClassName:
+          collectionPath === 'legal'
+            ? 'border-red-200 bg-white text-red-700'
+            : collectionPath === 'settlement'
+            ? 'border-blue-200 bg-white text-blue-700'
+            : 'border-emerald-200 bg-white text-emerald-700',
+        nextAction,
+        reason,
+        whatsappMessage,
+        priorityRank: 0,
+        score,
+      };
+    })
+    .sort((a, b) => b.score - a.score)
+    .map((insight, index) => ({ ...insight, priorityRank: index + 1 }));
+};
+
 export const ARAgingReport: React.FC = () => {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState('summary');
@@ -138,6 +296,50 @@ export const ARAgingReport: React.FC = () => {
       return data as PriorityItem[];
     }
   });
+
+  const collectionAIInsights = useMemo(
+    () => buildCollectionAIInsights(priorityList || []),
+    [priorityList]
+  );
+
+  const topCollectionInsight = collectionAIInsights[0];
+  const highRiskAI = collectionAIInsights.filter((insight) => insight.riskLevel === 'high').length;
+  const settlementAI = collectionAIInsights.filter((insight) => insight.collectionPath === 'settlement').length;
+  const legalAI = collectionAIInsights.filter((insight) => insight.collectionPath === 'legal').length;
+  const avgPaymentProbability = collectionAIInsights.length
+    ? Math.round(collectionAIInsights.reduce((sum, insight) => sum + insight.paymentProbability, 0) / collectionAIInsights.length)
+    : 0;
+
+  const copyWhatsAppMessage = async (message: string) => {
+    try {
+      await navigator.clipboard.writeText(message);
+      toast({
+        title: 'تم نسخ رسالة واتساب',
+        description: 'يمكنك لصق الرسالة وإرسالها للعميل مباشرة.',
+      });
+    } catch (error) {
+      console.error('Copy WhatsApp message error:', error);
+      toast({
+        title: 'تعذر نسخ الرسالة',
+        description: 'انسخ النص يدويًا من بطاقة التحليل.',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const openWhatsAppMessage = (insight: CollectionAIInsight) => {
+    const phone = normalizePhoneForWhatsApp(insight.item.customer_phone);
+    if (!phone) {
+      toast({
+        title: 'لا يوجد رقم واتساب',
+        description: 'لم يتم العثور على رقم هاتف صالح لهذا العميل.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    window.open(`https://wa.me/${phone}?text=${encodeURIComponent(insight.whatsappMessage)}`, '_blank', 'noopener,noreferrer');
+  };
 
   // Export to Excel
   const exportToExcel = async () => {
@@ -376,6 +578,128 @@ export const ARAgingReport: React.FC = () => {
               color="bg-red-500"
             />
           </div>
+        </CardContent>
+      </Card>
+
+      <Card className="overflow-hidden border-slate-200 bg-white shadow-sm">
+        <CardHeader className="border-b border-slate-100 bg-slate-50">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex items-start gap-3">
+              <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-slate-900 text-white">
+                <Brain className="h-5 w-5" />
+              </div>
+              <div>
+                <CardTitle className="flex items-center gap-2 text-xl text-slate-950">
+                  AI للتحصيل والمتأخرات
+                  <Sparkles className="h-4 w-4 text-amber-500" />
+                </CardTitle>
+                <p className="mt-1 text-sm text-slate-500">
+                  ترتيب العملاء حسب أولوية المتابعة مع رسالة واتساب وتوصية تسوية أو إجراء قانوني.
+                </p>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-2 text-sm md:grid-cols-4">
+              <div className="rounded-lg border border-red-100 bg-white px-3 py-2">
+                <span className="block text-xs font-bold text-slate-500">خطر عالي</span>
+                <strong className="text-lg text-red-600">{highRiskAI}</strong>
+              </div>
+              <div className="rounded-lg border border-blue-100 bg-white px-3 py-2">
+                <span className="block text-xs font-bold text-slate-500">قابل للتسوية</span>
+                <strong className="text-lg text-blue-600">{settlementAI}</strong>
+              </div>
+              <div className="rounded-lg border border-red-100 bg-white px-3 py-2">
+                <span className="block text-xs font-bold text-slate-500">قانوني</span>
+                <strong className="text-lg text-red-700">{legalAI}</strong>
+              </div>
+              <div className="rounded-lg border border-emerald-100 bg-white px-3 py-2">
+                <span className="block text-xs font-bold text-slate-500">احتمال السداد</span>
+                <strong className="text-lg text-emerald-600">{avgPaymentProbability}%</strong>
+              </div>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4 p-4">
+          {priorityLoading ? (
+            <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm text-slate-500">
+              جاري تحليل أولويات التحصيل...
+            </div>
+          ) : topCollectionInsight ? (
+            <>
+              <div className="grid gap-3 rounded-lg border border-slate-200 bg-slate-950 p-4 text-white lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
+                <div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Badge className="bg-white text-slate-950 hover:bg-white">الأولوية الأولى</Badge>
+                    <Badge className="bg-red-500 hover:bg-red-500">{topCollectionInsight.riskLabel}</Badge>
+                  </div>
+                  <h3 className="mt-3 text-xl font-black">{getCustomerDisplayName(topCollectionInsight.item)}</h3>
+                  <p className="mt-2 max-w-3xl text-sm leading-7 text-slate-200">{topCollectionInsight.reason}</p>
+                </div>
+                <div className="rounded-lg bg-white px-5 py-4 text-center text-slate-950">
+                  <span className="block text-xs font-bold text-slate-500">احتمال السداد</span>
+                  <strong className="text-3xl font-black">{topCollectionInsight.paymentProbability}%</strong>
+                </div>
+              </div>
+
+              <div className="grid gap-3 xl:grid-cols-2">
+                {collectionAIInsights.slice(0, 6).map((insight) => {
+                  const PathIcon = insight.collectionPath === 'legal' ? Scale : insight.collectionPath === 'settlement' ? Handshake : MessageSquare;
+                  return (
+                    <div key={insight.item.customer_id} className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+                      <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                        <div className="min-w-0">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <Badge variant="outline">#{insight.priorityRank}</Badge>
+                            <Badge variant="outline" className={insight.riskClassName}>{insight.riskLabel}</Badge>
+                            <Badge variant="outline" className={insight.collectionPathClassName}>
+                              <PathIcon className="ml-1 h-3 w-3" />
+                              {insight.collectionPathLabel}
+                            </Badge>
+                          </div>
+                          <h4 className="mt-3 font-black text-slate-950">{getCustomerDisplayName(insight.item)}</h4>
+                          <p className="mt-1 text-sm text-slate-500">
+                            {formatQar(insight.item.total_outstanding)} · متأخر {insight.item.max_days_overdue || 0} يوم · {insight.item.total_invoices || 0} فواتير
+                          </p>
+                        </div>
+                        <div className="rounded-lg border border-emerald-100 bg-emerald-50 px-3 py-2 text-center">
+                          <span className="block text-xs font-bold text-emerald-700">سداد متوقع</span>
+                          <strong className="text-xl text-emerald-700">{insight.paymentProbability}%</strong>
+                        </div>
+                      </div>
+
+                      <p className="mt-3 rounded-lg bg-slate-50 p-3 text-sm leading-7 text-slate-700">
+                        {insight.reason}
+                      </p>
+
+                      <div className="mt-3 rounded-lg border border-slate-200 bg-white p-3">
+                        <div className="mb-2 flex items-center gap-2 text-sm font-bold text-slate-900">
+                          <MessageSquare className="h-4 w-4 text-emerald-600" />
+                          رسالة واتساب مقترحة
+                        </div>
+                        <p className="text-sm leading-7 text-slate-600">{insight.whatsappMessage}</p>
+                      </div>
+
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        <Button type="button" size="sm" variant="outline" onClick={() => copyWhatsAppMessage(insight.whatsappMessage)}>
+                          <Copy className="h-4 w-4" />
+                          نسخ الرسالة
+                        </Button>
+                        <Button type="button" size="sm" onClick={() => openWhatsAppMessage(insight)} className="bg-emerald-600 text-white hover:bg-emerald-700">
+                          <Send className="h-4 w-4" />
+                          فتح واتساب
+                        </Button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </>
+          ) : (
+            <Alert>
+              <AlertDescription>
+                لا توجد متأخرات كافية لإنشاء توصيات تحصيل ذكية حاليًا.
+              </AlertDescription>
+            </Alert>
+          )}
         </CardContent>
       </Card>
 

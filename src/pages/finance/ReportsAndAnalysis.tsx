@@ -132,6 +132,196 @@ const parseRatio = (ratios: any[] | undefined, labels: string[]) => {
   return Number(item?.value || 0);
 };
 
+const getTrendByMetric = (analysisData: any, keywords: string[]) => {
+  return (analysisData?.trends || analysisData?.historicalComparison || []).find((item: any) =>
+    keywords.some((keyword) => String(item.name || item.metric || "").toLowerCase().includes(keyword.toLowerCase())),
+  );
+};
+
+const formatPercentChange = (value: number) => {
+  if (!Number.isFinite(value) || value === 0) return "لا يوجد تغير واضح";
+  return `${value > 0 ? "+" : ""}${value.toFixed(1)}%`;
+};
+
+const buildReportsAIInsights = ({
+  analysisData,
+  stats,
+  formatCurrency,
+}: {
+  analysisData: any;
+  stats: {
+    revenue: number;
+    expenses: number;
+    netIncome: number;
+    profitMargin: number;
+    currentRatio: number;
+  };
+  formatCurrency: (value: number) => string;
+}) => {
+  const expenseRatio = stats.revenue > 0 ? (stats.expenses / stats.revenue) * 100 : 0;
+  const revenueTrend = getTrendByMetric(analysisData, ["الإيراد", "revenue"]);
+  const expenseTrend = getTrendByMetric(analysisData, ["المصروف", "expense"]);
+  const netIncomeTrend = getTrendByMetric(analysisData, ["الربح", "income"]);
+  const revenueChange = Number(revenueTrend?.change ?? revenueTrend?.changePercentage ?? 0);
+  const expenseChange = Number(expenseTrend?.change ?? expenseTrend?.changePercentage ?? 0);
+  const netIncomeChange = Number(netIncomeTrend?.change ?? netIncomeTrend?.changePercentage ?? 0);
+  const budget = analysisData?.budgetComparison;
+  const abnormalAccounts = [
+    Math.abs(revenueChange) >= 25 && {
+      label: "الإيرادات",
+      value: formatPercentChange(revenueChange),
+      reason: revenueChange > 0 ? "ارتفاع قوي مقارنة بالفترة السابقة" : "انخفاض قوي مقارنة بالفترة السابقة",
+      tone: revenueChange > 0 ? "positive" : "risk",
+    },
+    Math.abs(expenseChange) >= 20 && {
+      label: "المصروفات",
+      value: formatPercentChange(expenseChange),
+      reason: expenseChange > 0 ? "ارتفاع مصروفات يحتاج تفسيرًا" : "انخفاض مصروفات ملحوظ",
+      tone: expenseChange > 0 ? "risk" : "positive",
+    },
+    budget?.expenseVariancePercentage && Math.abs(Number(budget.expenseVariancePercentage)) >= 15 && {
+      label: "انحراف المصروفات عن الميزانية",
+      value: formatPercentChange(Number(budget.expenseVariancePercentage)),
+      reason: "المصروف الفعلي بعيد عن الميزانية المعتمدة",
+      tone: Number(budget.expenseVariancePercentage) > 0 ? "risk" : "positive",
+    },
+    budget?.revenueVariancePercentage && Math.abs(Number(budget.revenueVariancePercentage)) >= 15 && {
+      label: "انحراف الإيرادات عن الميزانية",
+      value: formatPercentChange(Number(budget.revenueVariancePercentage)),
+      reason: "الإيراد الفعلي بعيد عن المتوقع",
+      tone: Number(budget.revenueVariancePercentage) < 0 ? "risk" : "positive",
+    },
+  ].filter(Boolean) as Array<{ label: string; value: string; reason: string; tone: "positive" | "risk" }>;
+
+  const headline =
+    stats.revenue <= 0
+      ? "لا توجد إيرادات كافية لبناء قراءة موثوقة."
+      : stats.netIncome < 0
+        ? "الشركة تسجل خسارة في الفترة الحالية، والأولوية هي ضبط المصروفات والتحصيل."
+        : expenseRatio > 80
+          ? "الربح موجود لكن ضغط المصروفات مرتفع ويحتاج متابعة."
+          : stats.profitMargin >= 15
+            ? "الأداء المالي جيد، مع هامش ربح مريح نسبيًا."
+            : "الأداء مقبول لكنه يحتاج تحسين الهامش ومراقبة المصروفات.";
+
+  const explanation =
+    stats.revenue <= 0
+      ? "التحليل محدود لأن الإيرادات غير ظاهرة في البيانات الحالية. راجع ترحيل الفواتير والدفعات إلى القيود."
+      : expenseRatio > 100
+        ? `المصروفات ${formatCurrency(stats.expenses)} أعلى من الإيرادات ${formatCurrency(stats.revenue)}، وهذا يفسر الخسارة الحالية.`
+        : expenseChange > 20
+          ? `المصروفات ارتفعت ${formatPercentChange(expenseChange)}، لذلك يجب مراجعة بنود التشغيل والصيانة والرواتب.`
+          : revenueChange < -20
+            ? `الإيرادات انخفضت ${formatPercentChange(revenueChange)}، وقد يكون السبب ضعف التحصيل أو انخفاض العقود النشطة.`
+            : `الإيرادات ${formatCurrency(stats.revenue)} مقابل مصروفات ${formatCurrency(stats.expenses)}، وهامش الربح ${stats.profitMargin.toFixed(1)}%.`;
+
+  const decisions = [
+    expenseRatio > 75 && "راجع مصروفات التشغيل والصيانة وحدد أعلى حساب مصروف خلال الفترة.",
+    revenueChange < -10 && "تابع التحصيل والعقود النشطة لمعرفة سبب انخفاض الإيراد.",
+    stats.currentRatio > 0 && stats.currentRatio < 1 && "راجع السيولة والالتزامات قصيرة الأجل قبل أي التزام جديد.",
+    stats.netIncome < 0 && "أوقف المصروفات غير الضرورية مؤقتًا وراجع العقود ضعيفة الربحية.",
+    abnormalAccounts.length > 0 && "افتح الحسابات ذات التغير غير الطبيعي وراجع القيود الأخيرة.",
+    "راجع استخدام المركبات ذات الإيراد المنخفض أو المصروف المرتفع.",
+  ].filter(Boolean) as string[];
+
+  return {
+    abnormalAccounts,
+    decisions: decisions.slice(0, 5),
+    explanation,
+    headline,
+    monthComparison: [
+      { label: "الإيرادات", value: formatPercentChange(revenueChange), tone: revenueChange >= 0 ? "positive" : "risk" },
+      { label: "المصروفات", value: formatPercentChange(expenseChange), tone: expenseChange <= 0 ? "positive" : "risk" },
+      { label: "صافي الربح", value: formatPercentChange(netIncomeChange), tone: netIncomeChange >= 0 ? "positive" : "risk" },
+    ],
+    score: Math.max(0, Math.min(100, Math.round(
+      (stats.netIncome >= 0 ? 30 : 5) +
+      (expenseRatio <= 70 ? 25 : expenseRatio <= 90 ? 12 : 0) +
+      (stats.profitMargin > 0 ? Math.min(25, stats.profitMargin) : 0) +
+      (abnormalAccounts.length === 0 ? 20 : Math.max(0, 20 - abnormalAccounts.length * 6))
+    ))),
+  };
+};
+
+const ReportsAIInsightPanel = ({
+  analysisData,
+  stats,
+  formatCurrency,
+}: {
+  analysisData: any;
+  stats: {
+    revenue: number;
+    expenses: number;
+    netIncome: number;
+    profitMargin: number;
+    currentRatio: number;
+  };
+  formatCurrency: (value: number) => string;
+}) => {
+  const ai = useMemo(() => buildReportsAIInsights({ analysisData, stats, formatCurrency }), [analysisData, stats, formatCurrency]);
+
+  return (
+    <section className="analytics-ai-panel">
+      <div className="analytics-ai-main">
+        <div className="flex items-start gap-3">
+          <span className="analytics-ai-icon">
+            <Sparkles className="h-5 w-5" />
+          </span>
+          <div className="min-w-0">
+            <p className="text-xs font-black uppercase tracking-[0.16em]" style={{ color: analyticsColors.muted }}>
+              AI Financial Analyst
+            </p>
+            <h2>{ai.headline}</h2>
+            <p>{ai.explanation}</p>
+          </div>
+        </div>
+
+        <div className="analytics-ai-comparison">
+          {ai.monthComparison.map((item) => (
+            <div key={item.label} className={`is-${item.tone}`}>
+              <span>{item.label}</span>
+              <strong>{item.value}</strong>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="analytics-ai-score">
+        <span>درجة القراءة</span>
+        <strong>{ai.score}%</strong>
+      </div>
+
+      <div className="analytics-ai-grid">
+        <div>
+          <h3>حسابات تحتاج انتباه</h3>
+          <div className="grid gap-2">
+            {ai.abnormalAccounts.length > 0 ? ai.abnormalAccounts.slice(0, 4).map((item) => (
+              <div key={item.label} className={`analytics-ai-row is-${item.tone}`}>
+                <span>{item.label}</span>
+                <strong>{item.value}</strong>
+                <p>{item.reason}</p>
+              </div>
+            )) : (
+              <div className="analytics-ai-empty">لا توجد تغيرات غير طبيعية واضحة حسب البيانات الحالية.</div>
+            )}
+          </div>
+        </div>
+        <div>
+          <h3>قرارات مقترحة</h3>
+          <div className="grid gap-2">
+            {ai.decisions.map((decision, index) => (
+              <div key={`${decision}-${index}`} className="analytics-ai-decision">
+                <Target className="h-4 w-4" />
+                <span>{decision}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+};
+
 const printCurrentView = async (title: string) => {
   const reportDate = new Date().toISOString().slice(0, 10);
   const officialHtml = buildOfficialReportDocumentHtml({
@@ -693,6 +883,8 @@ const ReportsAndAnalysis = () => {
           </div>
         </motion.section>
 
+        <ReportsAIInsightPanel analysisData={analysisData} stats={stats} formatCurrency={formatCurrency} />
+
         <section className="analytics-health">
           <div className="flex min-w-0 items-center gap-3">
             <span className="analytics-icon h-11 w-11" style={{ color: analyticsColors.success, backgroundColor: `${analyticsColors.success}14` }}>
@@ -799,6 +991,7 @@ const ReportsAndAnalysis = () => {
         }
 
         .analytics-command,
+        .analytics-ai-panel,
         .analytics-health,
         .analytics-tabs-shell,
         .analytics-content-card,
@@ -816,6 +1009,172 @@ const ReportsAndAnalysis = () => {
           padding: 24px;
           position: relative;
           overflow: hidden;
+        }
+
+        .analytics-ai-panel {
+          display: grid;
+          grid-template-columns: minmax(0, 1fr) 140px;
+          gap: 14px;
+          padding: 18px;
+        }
+
+        .analytics-ai-main {
+          display: grid;
+          gap: 14px;
+          min-width: 0;
+        }
+
+        .analytics-ai-icon {
+          display: flex;
+          width: 44px;
+          height: 44px;
+          flex-shrink: 0;
+          align-items: center;
+          justify-content: center;
+          border: 1px solid color-mix(in srgb, var(--analytics-success) 24%, white);
+          border-radius: 8px;
+          background: color-mix(in srgb, var(--analytics-success) 12%, white);
+          color: var(--analytics-success);
+        }
+
+        .analytics-ai-main h2 {
+          margin-top: 4px;
+          color: var(--analytics-text);
+          font-size: 1.2rem;
+          font-weight: 950;
+          line-height: 1.5;
+        }
+
+        .analytics-ai-main p {
+          margin-top: 6px;
+          color: var(--analytics-muted);
+          font-size: 0.9rem;
+          font-weight: 750;
+          line-height: 1.8;
+        }
+
+        .analytics-ai-comparison {
+          display: grid;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: 8px;
+        }
+
+        .analytics-ai-comparison div,
+        .analytics-ai-score,
+        .analytics-ai-row,
+        .analytics-ai-decision,
+        .analytics-ai-empty {
+          border: 1px solid var(--analytics-border);
+          border-radius: 8px;
+          background: var(--analytics-inner);
+        }
+
+        .analytics-ai-comparison div {
+          padding: 10px;
+        }
+
+        .analytics-ai-comparison span,
+        .analytics-ai-score span {
+          display: block;
+          color: var(--analytics-muted);
+          font-size: 0.72rem;
+          font-weight: 900;
+        }
+
+        .analytics-ai-comparison strong,
+        .analytics-ai-score strong {
+          display: block;
+          margin-top: 4px;
+          color: var(--analytics-text);
+          font-size: 1rem;
+          font-weight: 950;
+        }
+
+        .analytics-ai-comparison .is-positive strong,
+        .analytics-ai-row.is-positive strong {
+          color: var(--analytics-success);
+        }
+
+        .analytics-ai-comparison .is-risk strong,
+        .analytics-ai-row.is-risk strong {
+          color: var(--analytics-alert);
+        }
+
+        .analytics-ai-score {
+          display: flex;
+          min-height: 130px;
+          align-items: center;
+          justify-content: center;
+          flex-direction: column;
+          text-align: center;
+        }
+
+        .analytics-ai-score strong {
+          font-size: 2rem;
+          color: var(--analytics-focus);
+        }
+
+        .analytics-ai-grid {
+          grid-column: 1 / -1;
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 12px;
+        }
+
+        .analytics-ai-grid h3 {
+          margin-bottom: 8px;
+          color: var(--analytics-text);
+          font-size: 0.95rem;
+          font-weight: 950;
+        }
+
+        .analytics-ai-row {
+          display: grid;
+          grid-template-columns: minmax(0, 1fr) auto;
+          gap: 6px 10px;
+          padding: 10px;
+        }
+
+        .analytics-ai-row span,
+        .analytics-ai-row strong {
+          font-size: 0.82rem;
+          font-weight: 950;
+        }
+
+        .analytics-ai-row span {
+          color: var(--analytics-text);
+        }
+
+        .analytics-ai-row p {
+          grid-column: 1 / -1;
+          color: var(--analytics-muted);
+          font-size: 0.75rem;
+          font-weight: 750;
+          line-height: 1.7;
+        }
+
+        .analytics-ai-decision {
+          display: grid;
+          grid-template-columns: auto minmax(0, 1fr);
+          gap: 8px;
+          align-items: start;
+          padding: 10px;
+          color: var(--analytics-text);
+          font-size: 0.82rem;
+          font-weight: 850;
+          line-height: 1.7;
+        }
+
+        .analytics-ai-decision svg {
+          margin-top: 3px;
+          color: var(--analytics-focus);
+        }
+
+        .analytics-ai-empty {
+          padding: 12px;
+          color: var(--analytics-muted);
+          font-size: 0.82rem;
+          font-weight: 850;
         }
 
         .analytics-command::before {
@@ -1127,10 +1486,15 @@ const ReportsAndAnalysis = () => {
         }
 
         @media (max-width: 1100px) {
+          .analytics-ai-panel,
           .analytics-health,
           .analytics-tabs-shell,
           .analytics-subtabs-shell,
           .analytics-decision-board {
+            grid-template-columns: 1fr;
+          }
+
+          .analytics-ai-grid {
             grid-template-columns: 1fr;
           }
 
@@ -1149,8 +1513,13 @@ const ReportsAndAnalysis = () => {
         }
 
         @media (max-width: 640px) {
-          .analytics-command {
+          .analytics-command,
+          .analytics-ai-panel {
             padding: 18px;
+          }
+
+          .analytics-ai-comparison {
+            grid-template-columns: 1fr;
           }
 
           .analytics-tabs-list,

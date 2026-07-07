@@ -12,6 +12,7 @@ import { PageSkeletonFallback } from "@/components/common/LazyPageWrapper";
 const Deposits = lazy(() => import("./Deposits"));
 const MonthlyRentTracking = lazy(() => import("./MonthlyRentTracking"));
 const ExcelPaymentImport = lazy(() => import("../payments/ExcelPaymentImport"));
+const BillingAIAssistant = lazy(() => import("@/components/finance/BillingAIAssistant"));
 import { useInvoices } from "@/hooks/finance/useInvoices";
 import { usePayments } from "@/hooks/useFinance";
 import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter";
@@ -69,6 +70,7 @@ import {
   Send,
   ArrowLeft,
   TrendingUp,
+  Brain,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { systemColorPattern } from "@/lib/design-system/systemColorPattern";
@@ -109,6 +111,7 @@ const billingStyle = {
 } as CSSProperties;
 
 const billingTabs = [
+  { id: "ai-collections", label: "AI التحصيل", helper: "خطر وتوقعات", icon: Brain, accent: billingColors.focus },
   { id: "invoices", label: "الفواتير", helper: "إصدار ومتابعة", icon: Receipt, accent: billingColors.info },
   { id: "payments", label: "المدفوعات", helper: "تحصيل وإيصالات", icon: CreditCard, accent: billingColors.success },
   { id: "deposits", label: "الودائع", helper: "ضمانات العملاء", icon: Wallet, accent: billingColors.focus },
@@ -117,6 +120,17 @@ const billingTabs = [
 ];
 
 const billingFeatureTours = {
+  aiCollections: {
+    title: "جولة AI التحصيل والفوترة",
+    description: "شرح سريع لطريقة استخدام التحليل الذكي لترتيب التحصيل ومراجعة مخاطر الفواتير.",
+    steps: [
+      "ابدأ من مؤشرات التوقع لمعرفة المبلغ المتوقع تحصيله خلال 7 أيام و30 يومًا.",
+      "راجع قائمة أولوية التحصيل؛ العملاء مرتبون حسب المبلغ، التأخير، التكرار، نقص الفواتير، وتجاوز العقد.",
+      "افتح سبب التصنيف لكل عميل لمعرفة لماذا اعتبره النظام عالي الخطورة أو حرجًا.",
+      "استخدم نسخ الرسالة أو زر واتساب لإرسال مطالبة مخصصة للعميل حسب حالته.",
+      "راجع تنبيهات الفوترة قبل الاعتماد حتى لا تمر فاتورة ناقصة أو مكررة أو دفعة تتجاوز قيمة العقد.",
+    ],
+  },
   overview: {
     title: "جولة مركز الفوترة والتحصيل",
     description: "شرح سريع لطريقة إدارة الفواتير والمدفوعات من هذه الصفحة.",
@@ -805,6 +819,31 @@ const BillingCenter = () => {
             </div>
           </section>
 
+        {/* AI Collections Tab */}
+        <TabsContent value="ai-collections">
+          <motion.div
+            data-tour="billing-ai-collections-tab"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.3 }}
+          >
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-3 rounded-[8px] border border-[#E5EAF1] bg-white p-4">
+              <div>
+                <p className="text-sm font-black text-[#020617]">AI التحصيل والفوترة</p>
+                <p className="text-xs text-[#64748B]">ترتيب العملاء، تفسير المخاطر، توقع التحصيل، وتنبيهات الفواتير</p>
+              </div>
+              <FeatureTourButton
+                tour={billingFeatureTours.aiCollections}
+                onStart={setActiveFeatureTour}
+                className="h-9 gap-2 border-[#E5EAF1] bg-white text-[#020617] hover:bg-[#F6F8FB]"
+              />
+            </div>
+            <Suspense fallback={<PageSkeletonFallback />}>
+              <BillingAIAssistant />
+            </Suspense>
+          </motion.div>
+        </TabsContent>
+
         {/* Invoices Tab */}
         <TabsContent value="invoices">
           <motion.div 
@@ -1214,7 +1253,7 @@ const BillingCenter = () => {
 
         .billing-tabs-list {
           display: grid !important;
-          grid-template-columns: repeat(5, minmax(0, 1fr));
+          grid-template-columns: repeat(6, minmax(0, 1fr));
           height: auto !important;
           gap: 6px;
           border: 1px solid var(--billing-border);

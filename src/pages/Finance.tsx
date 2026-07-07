@@ -19,6 +19,7 @@ const GeneralLedger = lazyWithRetry(() => import("./finance/GeneralLedger"), "Ge
 const Ledger = lazyWithRetry(() => import("./finance/Ledger"), "Ledger");
 const Treasury = lazyWithRetry(() => import("./finance/Treasury"), "Treasury");
 const MonthlyObligations = lazyWithRetry(() => import("./finance/MonthlyObligations"), "MonthlyObligations");
+const MonthlyCloseAudit = lazyWithRetry(() => import("./finance/MonthlyCloseAudit"), "MonthlyCloseAudit");
 const CostCenters = lazyWithRetry(() => import("./finance/CostCenters"), "CostCenters");
 // ⭐ مركز الفواتير والمدفوعات الموحد (بديل Invoices + PaymentsUnified)
 const BillingCenter = lazyWithRetry(() => import("./finance/BillingCenter"), "BillingCenter");
@@ -207,6 +208,16 @@ const Finance = () => {
             </Suspense>
           </ProtectedFinanceRoute>
         } 
+      />
+      <Route
+        path="monthly-close-audit"
+        element={
+          <ProtectedFinanceRoute permission="finance.view">
+            <Suspense fallback={<PageSkeletonFallback />}>
+              <MonthlyCloseAudit />
+            </Suspense>
+          </ProtectedFinanceRoute>
+        }
       />
       <Route path="cost-centers" element={<Navigate to="/finance/budgets-centers?tab=cost-centers" replace />} />
       {/* ⭐ مركز الفواتير والمدفوعات الموحد */}

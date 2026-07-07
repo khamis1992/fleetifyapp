@@ -20,6 +20,7 @@ import {
   FileText,
   BarChart3,
   LayoutDashboard,
+  ShieldCheck,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -479,6 +480,10 @@ const FinanceHub: React.FC = () => {
             <Button variant="outline" onClick={() => navigate('/finance/accounting?tab=ledger')}>
               <Calculator className="w-4 h-4 ml-2" />
               ميزان المراجعة
+            </Button>
+            <Button variant="outline" onClick={() => navigate('/finance/monthly-close-audit')}>
+              <ShieldCheck className="w-4 h-4 ml-2" />
+              تدقيق الإقفال الشهري
             </Button>
           </div>
         </motion.div>
