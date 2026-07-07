@@ -1,7 +1,13 @@
 import { useMemo } from 'react';
-import { usePermissionsCheck, usePermissionCheck } from './usePermissionCheck';
+import {
+  PERMISSION_ALIASES,
+  getPermissionCandidates,
+  usePermissionsCheck,
+  usePermissionCheck,
+} from './usePermissionCheck';
 import { useFeaturesAccess, useFeatureAccess } from './useFeatureAccess';
 import { useUnifiedCompanyAccess } from './useUnifiedCompanyAccess';
+import { PERMISSIONS } from '@/types/permissions';
 
 interface UsePermissionsOptions {
   permissions?: string[];
@@ -19,9 +25,15 @@ export const usePermissions = (options: UsePermissionsOptions = {}) => {
   } = options;
 
   const { hasCompanyAdminAccess, hasGlobalAccess } = useUnifiedCompanyAccess();
+  const permissionsToCheck = useMemo(
+    () => permissions.length > 0
+      ? permissions
+      : Array.from(new Set([...PERMISSIONS.map(permission => permission.id), ...Object.keys(PERMISSION_ALIASES)])),
+    [permissions]
+  );
 
   // Check permissions using batch hook (avoids calling hooks in loops)
-  const { data: permissionResults, isLoading: permissionsLoading } = usePermissionsCheck(permissions);
+  const { data: permissionResults, isLoading: permissionsLoading } = usePermissionsCheck(permissionsToCheck);
 
   // Check features using batch hook (avoids calling hooks in loops)
   const { data: featureResults, isLoading: featuresLoading } = useFeaturesAccess(features);
@@ -33,7 +45,8 @@ export const usePermissions = (options: UsePermissionsOptions = {}) => {
     // FIXED: Now uses actual permission checking instead of always returning true
     const hasPermission = (permission: string): boolean => {
       if (!permissionResults) return false;
-      const result = permissionResults.find(p => p.permissionId === permission);
+      const permissionCandidates = getPermissionCandidates(permission);
+      const result = permissionResults.find(p => permissionCandidates.includes(p.permissionId));
       return result?.hasPermission ?? false;
     };
 
@@ -83,6 +96,7 @@ export const usePermissions = (options: UsePermissionsOptions = {}) => {
     requireCompanyAdmin,
     requireGlobalAccess,
     permissions,
+    permissionsToCheck,
     features
   ]);
 };

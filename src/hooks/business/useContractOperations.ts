@@ -80,6 +80,7 @@ interface UpdateContractData extends CreateContractData {
 interface ContractPaymentCancellationResult {
   cancelledCount: number;
   invoiceIds: string[];
+  deletedScheduleCount?: number;
 }
 
 const normalizeDateOnly = (value?: string | Date | null): string | null => {
@@ -354,6 +355,41 @@ export const useContractOperations = (options: ContractOperationsOptions = {}) =
     };
   };
 
+  const deletePaymentSchedulesBeforeContractStart = async (
+    contractId: string,
+    newStartDate: string
+  ): Promise<number> => {
+    const { data: schedulesToDelete, error: fetchSchedulesError } = await supabase
+      .from('contract_payment_schedules')
+      .select('id')
+      .eq('contract_id', contractId)
+      .eq('company_id', companyId)
+      .lt('due_date', newStartDate);
+
+    if (fetchSchedulesError) {
+      console.error('[useContractOperations] Failed to fetch payment schedules before contract start date:', fetchSchedulesError);
+      throw new Error('تعذر جلب الدفعات السابقة لتاريخ بداية العقد');
+    }
+
+    if (!schedulesToDelete || schedulesToDelete.length === 0) {
+      return 0;
+    }
+
+    const { error: deleteSchedulesError } = await supabase
+      .from('contract_payment_schedules')
+      .delete()
+      .eq('contract_id', contractId)
+      .eq('company_id', companyId)
+      .lt('due_date', newStartDate);
+
+    if (deleteSchedulesError) {
+      console.error('[useContractOperations] Failed to delete payment schedules before contract start date:', deleteSchedulesError);
+      throw new Error('تعذر حذف الدفعات السابقة لتاريخ بداية العقد');
+    }
+
+    return schedulesToDelete.length;
+  };
+
   // Update contract operation
   const updateContract = useMutation({
     mutationFn: async (data: UpdateContractData) => {
@@ -438,6 +474,20 @@ export const useContractOperations = (options: ContractOperationsOptions = {}) =
         if (earlyPaymentCancellation.cancelledCount > 0) {
           console.log(
             `✅ [useContractOperations] Cancelled ${earlyPaymentCancellation.cancelledCount} payments before new start date ${newStartDate}`
+          );
+        }
+      }
+
+      if (newStartDate) {
+        const deletedScheduleCount = await deletePaymentSchedulesBeforeContractStart(
+          updatedContract.id,
+          newStartDate
+        );
+        earlyPaymentCancellation.deletedScheduleCount = deletedScheduleCount;
+
+        if (deletedScheduleCount > 0) {
+          console.log(
+            `✅ [useContractOperations] Deleted ${deletedScheduleCount} payment schedules before contract start date ${newStartDate}`
           );
         }
       }

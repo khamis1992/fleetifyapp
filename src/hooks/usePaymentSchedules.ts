@@ -12,20 +12,25 @@ import {
 } from "@/types/payment-schedules";
 
 // Hook to fetch payment schedules for a specific contract
-export const useContractPaymentSchedules = (contractId: string) => {
+export const useContractPaymentSchedules = (contractId: string, minDueDate?: string | null) => {
   const { user } = useAuth();
 
   return useQuery({
-    queryKey: ['payment-schedules', contractId],
+    queryKey: ['payment-schedules', contractId, minDueDate || null],
     queryFn: async () => {
-      Sentry.addBreadcrumb({ category: 'payment_schedules', message: 'Fetching contract payment schedules', level: 'info', data: { contractId } });
+      Sentry.addBreadcrumb({ category: 'payment_schedules', message: 'Fetching contract payment schedules', level: 'info', data: { contractId, minDueDate } });
       if (!user?.id) throw new Error('المستخدم غير مصرح له');
 
-      const { data, error } = await supabase
+      let query = supabase
         .from('contract_payment_schedules')
         .select('*')
-        .eq('contract_id', contractId)
-        .order('installment_number', { ascending: true });
+        .eq('contract_id', contractId);
+
+      if (minDueDate) {
+        query = query.gte('due_date', minDueDate);
+      }
+
+      const { data, error } = await query.order('installment_number', { ascending: true });
 
       if (error) {
         Sentry.captureException(error, { tags: { feature: 'payment_schedules', action: 'fetch_contract_schedules', component: 'useContractPaymentSchedules' }, extra: { contractId } });

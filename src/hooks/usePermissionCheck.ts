@@ -9,6 +9,23 @@ interface BatchPermissionResult {
   reason?: string;
 }
 
+export const PERMISSION_ALIASES: Record<string, string[]> = {
+  'payments:read': ['finance.payments.read', 'finance.payments.view'],
+  'payments.create': ['finance.payment.create', 'finance.payments.write'],
+  'payments:create': ['finance.payment.create', 'finance.payments.write', 'payments.create'],
+  'finance.payments.create': ['finance.payment.create', 'finance.payments.write'],
+  'finance.payment.create': ['finance.payments.write'],
+  'payments:update': ['finance.payments.write', 'finance.payment.edit_amount', 'finance.payment.edit_date'],
+  'payments.delete': ['finance.payment.cancel', 'finance.payments.write'],
+  'payments:delete': ['finance.payment.cancel', 'finance.payments.write', 'payments.delete'],
+  'payments.approve': ['finance.payment.cancel', 'finance.payments.write'],
+};
+
+export const getPermissionCandidates = (permissionId: string) => [
+  permissionId,
+  ...(PERMISSION_ALIASES[permissionId] || []),
+];
+
 /**
  * Hook to check multiple permissions at once (avoids calling hooks in loops)
  */
@@ -108,11 +125,14 @@ export const usePermissionsCheck = (permissionIds: string[]) => {
 
       // Check each requested permission
       return permissionIds.map(permissionId => {
-        const permission = PERMISSIONS.find(p => p.id === permissionId);
-        const override = permissionOverrides.get(permissionId);
+        const permissionCandidates = getPermissionCandidates(permissionId);
+        const permission = PERMISSIONS.find(p => permissionCandidates.includes(p.id));
+        const deniedOverride = permissionCandidates.find(candidate => permissionOverrides.get(candidate) === false);
+        const grantedOverride = permissionCandidates.find(candidate => permissionOverrides.get(candidate) === true);
+        const override = deniedOverride ? false : grantedOverride ? true : undefined;
 
         if (userRoles.includes('super_admin')) {
-          return { permissionId, hasPermission: override === false ? false : true };
+          return { permissionId, hasPermission: deniedOverride ? false : true };
         }
 
         if (override !== undefined) {
@@ -136,7 +156,7 @@ export const usePermissionsCheck = (permissionIds: string[]) => {
         }
 
         // Regular permission check
-        const hasPermission = allPermissions.has(permissionId);
+        const hasPermission = permissionCandidates.some(candidate => allPermissions.has(candidate));
 
         return {
           permissionId,
