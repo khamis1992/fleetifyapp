@@ -11,6 +11,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAIChat } from '@/contexts/AIChatContext';
 import { UnifiedNotificationBell } from '@/components/notifications/UnifiedNotificationBell';
 import { SimpleContractWizard } from '@/components/contracts/SimpleContractWizard';
+import { DailyDecisionCenter } from '@/components/dashboard/DailyDecisionCenter';
 import {
   Car,
   FileText,
@@ -508,6 +509,8 @@ const DashboardLanding: React.FC = () => {
               );
             })}
           </div>
+
+          <DailyDecisionCenter />
 
           {/* Main Grid */}
           <div className="grid grid-cols-12 gap-6">

@@ -41,6 +41,7 @@ import { UnifiedNotificationBell } from '@/components/notifications/UnifiedNotif
 import { useStableCompanyId } from '@/contexts/CompanyContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useDashboardStats } from '@/hooks/useDashboardStats';
+import { useDailyDecisionCenter } from '@/hooks/useDailyDecisionCenter';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
 import { systemColorPattern } from '@/lib/design-system/systemColorPattern';
@@ -82,6 +83,13 @@ type WorkItem = {
   icon: React.ElementType;
   action: string;
   path: string;
+};
+
+type DecisionPulseItem = {
+  label: string;
+  value: string | number;
+  icon: React.ElementType;
+  color: string;
 };
 
 type MetricCardProps = {
@@ -202,6 +210,7 @@ const BentoDashboard: React.FC = () => {
   const navigate = useNavigate();
   const { data: statsData } = useDashboardStats();
   const stats = statsData as any;
+  const { data: dailyDecision } = useDailyDecisionCenter();
   const [showContractWizard, setShowContractWizard] = useState(false);
 
   const rawCompanyId = user?.profile?.company_id || user?.company?.id;
@@ -315,7 +324,7 @@ const BentoDashboard: React.FC = () => {
     { name: 'محجوز', value: fleetStatus?.reserved || 0, color: dashboardColors.focus, path: '/fleet/reservations' },
   ];
 
-  const workItems: WorkItem[] = [
+  const fallbackWorkItems: WorkItem[] = [
     {
       id: 'collections',
       title: 'تحصيل المستحقات المفتوحة',
@@ -357,6 +366,44 @@ const BentoDashboard: React.FC = () => {
       path: '/team-management',
     },
   ];
+
+  const decisionWorkItems: WorkItem[] = (dailyDecision?.actions || []).slice(0, 4).map((action, index) => {
+    const tone: WorkItem['tone'] = action.priority === 'high' ? 'danger' : action.priority === 'medium' ? 'warning' : 'success';
+    const icon = action.route?.includes('fleet')
+      ? Car
+      : action.route?.includes('contract')
+      ? FileText
+      : action.route?.includes('legal')
+      ? ShieldAlert
+      : Wallet;
+
+    return {
+      id: `decision-${index}`,
+      title: action.title,
+      detail: action.reason,
+      value: action.priority === 'high' ? 'عاجل' : action.priority === 'medium' ? 'مهم' : 'متابعة',
+      tone,
+      icon,
+      action: 'فتح الإجراء',
+      path: action.route || '/tasks',
+    };
+  });
+
+  const workItems = decisionWorkItems.length > 0 ? decisionWorkItems : fallbackWorkItems;
+
+  const pulseItems: DecisionPulseItem[] = dailyDecision
+    ? [
+        { label: 'تحصيل 7 أيام', value: formatQar(dailyDecision.cashflow.next7Days), icon: Wallet, color: dashboardColors.success },
+        { label: 'تحصيل 30 يوم', value: formatQar(dailyDecision.cashflow.next30Days), icon: Banknote, color: dashboardColors.info },
+        { label: 'مخاطر اليوم', value: dailyDecision.risks.length, icon: AlertTriangle, color: dashboardColors.alert },
+        { label: 'مصدر التحليل', value: dailyDecision.source === 'openai' ? 'OpenAI' : 'تحليل داخلي', icon: Activity, color: dashboardColors.navy },
+      ]
+    : [
+        { label: 'الإيراد الشهري', value: formatQar(monthlyRevenue), icon: Banknote, color: dashboardColors.success },
+        { label: 'المستحقات المفتوحة', value: formatQar(overdueAmount), icon: AlertTriangle, color: dashboardColors.alert },
+        { label: 'إشغال الأسطول', value: `${occupancyRate}%`, icon: Car, color: dashboardColors.info },
+        { label: 'العقود النشطة', value: activeContracts || 0, icon: FileText, color: dashboardColors.navy },
+      ];
 
   const operationLanes = [
     {
@@ -499,11 +546,11 @@ const BentoDashboard: React.FC = () => {
                   </div>
                   <button
                     type="button"
-                    onClick={() => navigate('/tasks')}
+                    onClick={() => navigate('/ai/operations')}
                     className="inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-bold text-white"
                     style={{ backgroundColor: dashboardColors.navy }}
                   >
-                    فتح قائمة العمل
+                    فتح مركز AI
                     <ChevronLeft className="h-4 w-4" />
                   </button>
                 </div>
@@ -556,12 +603,7 @@ const BentoDashboard: React.FC = () => {
                   نبض اليوم
                 </p>
                 <div className="space-y-3">
-                  {[
-                    { label: 'الإيراد الشهري', value: formatQar(monthlyRevenue), icon: Banknote, color: dashboardColors.success },
-                    { label: 'المستحقات المفتوحة', value: formatQar(overdueAmount), icon: AlertTriangle, color: dashboardColors.alert },
-                    { label: 'إشغال الأسطول', value: `${occupancyRate}%`, icon: Car, color: dashboardColors.info },
-                    { label: 'العقود النشطة', value: activeContracts || 0, icon: FileText, color: dashboardColors.navy },
-                  ].map((item) => {
+                  {pulseItems.map((item) => {
                     const Icon = item.icon;
                     return (
                       <div key={item.label} className="flex items-center justify-between rounded-lg border bg-white p-3" style={{ borderColor: dashboardColors.border }}>

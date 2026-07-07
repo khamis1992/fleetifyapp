@@ -163,6 +163,7 @@ const navigation: NavItem[] = [
       { id: 'finance-accounting', label: 'المحاسبة العامة', href: '/finance/accounting', icon: BookOpen },
       { id: 'finance-treasury', label: 'الخزينة والبنوك', href: '/finance/treasury', icon: Building2 },
       { id: 'finance-obligations', label: 'الالتزامات الشهرية', href: '/finance/obligations', icon: CalendarDays },
+      { id: 'finance-monthly-close-audit', label: 'تدقيق الإقفال الشهري', href: '/finance/monthly-close-audit', icon: Shield },
       { id: 'finance-reports-analysis', label: 'التقارير والتحليل', href: '/finance/reports-analysis', icon: BarChart3 },
       { id: 'finance-planning', label: 'التخطيط والرقابة', href: '/finance/budgets-centers', icon: Scale },
       { id: 'finance-audit-settings', label: 'الإعدادات والتدقيق', href: '/finance/audit-settings', icon: Settings },

@@ -56,6 +56,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { cn } from '@/lib/utils';
 import { UnifiedPaymentForm } from '@/components/finance/UnifiedPaymentForm';
 import { EnhancedCustomerForm } from '@/components/customers/EnhancedCustomerForm';
+import { CustomerAISummary } from '@/components/customers/CustomerAISummary';
 import {
   Dialog,
   DialogContent,
@@ -130,7 +131,7 @@ const CustomerDetailsPageNew = () => {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   // State
-  const [activeTab, setActiveTab] = useState('info');
+  const [activeTab, setActiveTab] = useState('ai-summary');
   const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
   const [selectedDocumentType, setSelectedDocumentType] = useState<string>('identity');
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -851,6 +852,7 @@ const CustomerDetailsPageNew = () => {
                   </div>
                   <TabsList className="flex h-auto w-full flex-row gap-1 overflow-x-auto bg-transparent p-0 lg:flex-col lg:overflow-visible">
                     {[
+                      { value: 'ai-summary', label: 'ملخص AI', icon: Star },
                       { value: 'info', label: 'البيانات', icon: User },
                       { value: 'phones', label: 'الأرقام', icon: Phone },
                       { value: 'contracts', label: 'العقود', icon: FileText },
@@ -883,6 +885,20 @@ const CustomerDetailsPageNew = () => {
                 </div>
 
                 <div className="min-w-0 p-5">
+                  <TabsContent value="ai-summary" className="mt-0">
+                    <CustomerAISummary
+                      customer={customer}
+                      contracts={contracts}
+                      invoices={customerInvoices}
+                      payments={payments}
+                      violations={trafficViolations}
+                      activities={crmActivitiesMain}
+                      scheduledFollowups={scheduledFollowups}
+                      formatCurrency={formatCurrency}
+                      onCreateContract={() => navigate(`/contracts?customer=${customerId}`)}
+                      onOpenCrm={() => navigate(`/customers/crm?customer=${customerId}`)}
+                    />
+                  </TabsContent>
                   <TabsContent value="info" className="mt-0">
                     {loadingCustomer ? (
                       <div className="flex items-center justify-center h-32">
@@ -1306,6 +1322,7 @@ const CustomerDetailsPageNew = () => {
             <div className="px-4 pt-4 pb-0">
               <TabsList className="flex h-auto w-full flex-nowrap justify-start gap-1 overflow-x-auto rounded-xl border border-[#DDE5EF] bg-[#F8FAFC] p-1">
                 {[
+                  { value: 'ai-summary', label: 'ملخص AI', icon: Star },
                   { value: 'info', label: 'معلومات العميل', icon: User },
                   { value: 'phones', label: 'أرقام الهاتف', icon: Phone },
                   { value: 'contracts', label: 'العقود', icon: FileText },
@@ -1338,6 +1355,20 @@ const CustomerDetailsPageNew = () => {
             </div>
 
             <div className="p-6">
+              <TabsContent value="ai-summary" className="mt-0">
+                <CustomerAISummary
+                  customer={customer}
+                  contracts={contracts}
+                  invoices={customerInvoices}
+                  payments={payments}
+                  violations={trafficViolations}
+                  activities={crmActivitiesMain}
+                  scheduledFollowups={scheduledFollowups}
+                  formatCurrency={formatCurrency}
+                  onCreateContract={() => navigate(`/contracts?customer=${customerId}`)}
+                  onOpenCrm={() => navigate(`/customers/crm?customer=${customerId}`)}
+                />
+              </TabsContent>
               <TabsContent value="info" className="mt-0">
                 {loadingCustomer ? (
                   <div className="flex items-center justify-center h-32">
