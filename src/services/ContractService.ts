@@ -266,11 +266,14 @@ export class ContractService extends BaseService<Contract> {
       }
     }
 
-    // TODO: Send notifications (implement in future)
-    // await this.sendContractNotifications(contract);
-
-    // TODO: Update company statistics (implement in future)
-    // await this.updateCompanyStats(contract.company_id);
+    await supabase.from('notifications').insert({
+      company_id: contract.company_id,
+      title: 'عقد جديد',
+      message: `تم إنشاء عقد جديد برقم ${contract.contract_number} بمبلغ ${contract.contract_amount} ر.ق`,
+      type: 'contract_created',
+      reference_id: contract.id,
+      priority: 'medium'
+    });
 
     this.log('verifyAndComplete', 'Verification completed successfully', { contractId: contract.id });
   }
@@ -389,10 +392,15 @@ export class ContractService extends BaseService<Contract> {
   }
 
   private async createJournalEntry(contract: Contract): Promise<string | null> {
-    // TODO: Implement journal entry creation
-    // This will be implemented when integrating with the accounting system
-    logger.info('Journal entry creation not yet implemented');
-    return null;
+    const { data: journalEntryId, error } = await supabase
+      .rpc('create_contract_journal_entry', { p_contract_id: contract.id });
+
+    if (error) {
+      logger.warn('Journal entry creation failed', { contractId: contract.id, error });
+      return null;
+    }
+
+    return journalEntryId;
   }
 
   private async verifyJournalEntry(journalEntryId: string): Promise<boolean> {

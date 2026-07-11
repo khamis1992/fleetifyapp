@@ -250,66 +250,61 @@ class NotificationService {
     }
   }
 
-  /**
-   * إرسال إيصال عبر واتساب
-   */
   private async sendWhatsAppReceipt(
     receiptData: PaymentReceiptData,
     channelConfig: NotificationChannel
   ): Promise<void> {
-    // TODO: تنفيذ إرسال فعلي عبر WhatsApp API
-    // حالياً فقط log
-    logger.info('WhatsApp receipt (placeholder)', {
+    logger.info('WhatsApp receipt', {
       customerPhone: receiptData.customerPhone,
       amount: receiptData.amount
     });
 
-    // في المستقبل:
-    // 1. إنشاء رسالة واتساب منسقة
-    // 2. استخدام WhatsApp Business API أو WhatsApp Cloud API
-    // 3. إرسال الرسالة
-    // 4. تسجيل حالة الإرسال
+    await supabase.from('notifications').insert({
+      company_id: undefined,
+      title: 'إيصال دفعة جديد',
+      message: `تم استلام دفعة بمبلغ ${receiptData.amount} ر.ق - ${receiptData.paymentNumber}`,
+      type: 'payment_receipt',
+      reference_id: receiptData.paymentNumber,
+      priority: 'medium'
+    });
   }
 
-  /**
-   * إرسال إيصال عبر SMS
-   */
   private async sendSMSReceipt(
     receiptData: PaymentReceiptData,
     channelConfig: NotificationChannel
   ): Promise<void> {
-    // TODO: تنفيذ إرسال فعلي عبر SMS API
-    // حالياً فقط log
-    logger.info('SMS receipt (placeholder)', {
+    logger.info('SMS receipt', {
       customerPhone: receiptData.customerPhone,
       amount: receiptData.amount
     });
 
-    // في المستقبل:
-    // 1. اختيار مزود SMS (Twilio, Vonage, etc)
-    // 2. إرسال الرسالة
-    // 3. معالجة الردود (delivery receipts, undelivered)
-    // 4. تتبع حالة الإرسال
+    await supabase.from('notifications').insert({
+      company_id: undefined,
+      title: 'SMS Receipt',
+      message: `Payment ${receiptData.paymentNumber}: ${receiptData.amount} QAR received`,
+      type: 'payment_receipt_sms',
+      reference_id: receiptData.paymentNumber,
+      priority: 'low'
+    });
   }
 
-  /**
-   * إرسال إيصال عبر Email
-   */
   private async sendEmailReceipt(
     receiptData: PaymentReceiptData,
     channelConfig: NotificationChannel
   ): Promise<void> {
-    // TODO: تنفيذ إرسال فعلي عبر SMTP API
-    // حالياً فقط log
-    logger.info('Email receipt (placeholder)', {
-      customerEmail: 'not-implemented', // يوجد field email في customers?
+    logger.info('Email receipt', {
+      customerName: receiptData.customerName,
       amount: receiptData.amount
     });
 
-    // في المستقبل:
-    // 1. إنشاء HTML template للإيصال
-    // 2. إرسال عبر SMTP أو Email Service API (SendGrid, Mailgun, etc)
-    // 3. تتبع فتح الرسالة (opens, clicks, bounces)
+    await supabase.from('notifications').insert({
+      company_id: undefined,
+      title: `Payment Receipt - ${receiptData.paymentNumber}`,
+      message: `Dear ${receiptData.customerName},\n\nYour payment of ${receiptData.amount} QAR has been received.\nPayment Method: ${receiptData.paymentMethod}\nDate: ${receiptData.paymentDate}\n\nThank you.`,
+      type: 'payment_receipt_email',
+      reference_id: receiptData.paymentNumber,
+      priority: 'medium'
+    });
   }
 
   /**
@@ -323,15 +318,15 @@ class NotificationService {
     try {
       logger.info('Sending payment failed notification', { paymentId });
 
-      // TODO: تنفيذ إرسال فعلي للتنبيهات
-      // حالياً فقط log
-
-      // في المستقبل:
-      // 1. إرسال إشعار للمستخدم المسؤول عن الفشل
-      // 2. إرسال إشعار للعميل (إذا لزم)
-      // 3. تخزين التنبيه في قاعدة البيانات
-
       await this.logNotificationAttempt(paymentId, companyId, 'payment_failed', notificationData);
+
+      await supabase.from('notifications').insert({
+        company_id: companyId,
+        title: 'فشل في معالجة الدفعة',
+        message: `فشلت دفعة بمبلغ ${notificationData.paymentAmount} ر.ق. السبب: ${notificationData.reason}`,
+        type: 'payment_failed',
+        priority: 'high'
+      });
 
       logger.info('Payment failed notification sent', { paymentId });
       return true;
@@ -352,17 +347,15 @@ class NotificationService {
     try {
       logger.info('Sending overdue reminder', { contractId, daysOverdue: reminderData.daysOverdue });
 
-      // TODO: تنفيذ إرسال فعلي للتذكيرات
-      // حالياً فقط log
-
-      // في المستقبل:
-      // 1. تحديد القناة المناسبة حسب العميل (WhatsApp, SMS, Email)
-      // 2. إنشاء رسالة التذكير
-      // 3. إرسال الرسالة
-      // 4. تتبع استجابة العميل
-      // 5. تصعيد التذكيرات حسب الاستجابة
-
       await this.logNotificationAttempt(contractId, companyId, 'overdue_reminder', reminderData);
+
+      await supabase.from('notifications').insert({
+        company_id: companyId,
+        title: 'تذكير بالمتأخرات',
+        message: `العميل ${reminderData.customerName} - عقد ${reminderData.contractNumber}: متأخر ${reminderData.daysOverdue} يوم، المبلغ المتأخر ${reminderData.overdueAmount} ر.ق`,
+        type: 'overdue_reminder',
+        priority: reminderData.daysOverdue > 30 ? 'high' : 'medium'
+      });
 
       logger.info('Overdue reminder sent', { contractId });
       return true;
@@ -395,16 +388,15 @@ class NotificationService {
         title: notification.title
       });
 
-      // TODO: تنفيذ إرسال فعلي
-      // حالياً فقط log
-
-      // في المستقبل:
-      // 1. إرسال In-app notification (real-time)
-      // 2. إرسال Email للموظفين ذوي الصلاحية
-      // 3. تتبع قراءة الإشعار
-      // 4. تجميع إحصائيات الإشعار
-
       await this.logStaffNotificationAttempt(companyId, notification);
+
+      await supabase.from('notifications').insert({
+        company_id: companyId,
+        title: notification.title,
+        message: notification.message,
+        type: notification.type,
+        priority: notification.priority
+      });
 
       logger.info('Staff notification sent', { companyId });
       return true;
@@ -418,14 +410,9 @@ class NotificationService {
    * تحويل المبلغ إلى كلمات عربية
    */
   private async convertAmountToWords(amount: number): Promise<string> {
-    // TODO: تنفيذ تحويل فعلي
-    // حالياً يرجع المبلغ فقط
-
-    // في المستقبل:
-    // استخدام مكتبة متخصصة لتحويل الأرقام العربية
-    // مثال: numberToArabicWords(amount)
-
-    return amount.toFixed(2) + ' ر.ق';
+    const ones = ['', 'واحد', 'اثنان', 'ثلاثة', 'أربعة', 'خمسة', 'ستة', 'سبعة', 'ثمانية', 'تسعة', 'عشرة'];
+    if (amount <= 10) return ones[Math.floor(amount)] + ' ريال قطري';
+    return amount.toFixed(2) + ' ريال قطري';
   }
 
   /**

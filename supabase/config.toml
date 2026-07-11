@@ -53,3 +53,6 @@ verify_jwt = true
 
 [functions.financial-analysis-ai]
 verify_jwt = true
+
+[functions.daily-audit-agent]
+verify_jwt = false

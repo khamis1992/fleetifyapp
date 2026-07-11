@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { buildLongCatHeaders, getLongCatApiKey, LONGCAT_CHAT_COMPLETIONS_URL, LONGCAT_MODEL } from "../_shared/longcat.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -275,11 +276,9 @@ serve(async (req) => {
   }
 
   try {
-    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-    const GOOGLE_VISION_API_KEY = Deno.env.get('GOOGLE_VISION_API_KEY');
-    
-    if (!LOVABLE_API_KEY) {
-      throw new Error('LOVABLE_API_KEY not configured');
+    const longCatApiKey = getLongCatApiKey();
+    if (!longCatApiKey) {
+      throw new Error('LONGCAT_API_KEY not configured');
     }
 
     const { imageBase64, fileName, ocrEngine = 'hybrid', language = 'auto' }: OCRRequest = await req.json();
@@ -308,15 +307,12 @@ serve(async (req) => {
 
     console.log('Using OCR engine:', ocrEngine, 'Language:', languageDetected);
 
-    // Primary OCR with Gemini 2.5 Flash (enhanced for handwritten Arabic/English)
-    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+    // Primary OCR with LongCat.
+    const response = await fetch(LONGCAT_CHAT_COMPLETIONS_URL, {
       method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
+      headers: buildLongCatHeaders(longCatApiKey),
       body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
+        model: LONGCAT_MODEL,
         messages: [
           {
             role: 'system',

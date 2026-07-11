@@ -89,12 +89,13 @@ BEGIN
     END IF;
   END IF;
 
-  IF NEW.invoice_date IS NOT NULL AND NEW.invoice_date < v_contract_start_date THEN
+  -- Only block if invoice_date month is BEFORE contract start month (allow same month)
+  IF NEW.invoice_date IS NOT NULL AND DATE_TRUNC('month', NEW.invoice_date) < DATE_TRUNC('month', v_contract_start_date) THEN
     RAISE EXCEPTION 'Invoice date (%) cannot be before contract start date (%)',
       NEW.invoice_date, v_contract_start_date;
   END IF;
 
-  IF NEW.due_date IS NOT NULL AND NEW.due_date < v_contract_start_date THEN
+  IF NEW.due_date IS NOT NULL AND DATE_TRUNC('month', NEW.due_date) < DATE_TRUNC('month', v_contract_start_date) THEN
     RAISE EXCEPTION 'Invoice due date (%) cannot be before contract start date (%)',
       NEW.due_date, v_contract_start_date;
   END IF;

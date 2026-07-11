@@ -1,14 +1,13 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { buildLongCatHeaders, getLongCatApiKey, LONGCAT_CHAT_COMPLETIONS_URL, LONGCAT_MODEL } from "../_shared/longcat.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// OpenAI API Configuration - Read from environment variables
-const OPENAI_API_URL = 'https://api.openai.com/v1/chat/completions';
-const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY') || '';
-const MODEL = 'gpt-4o';
+// LongCat API Configuration - Read from environment variables
+const LONGCAT_API_KEY = getLongCatApiKey();
 
 const COMPANY_INFO = {
   name_ar: 'شركة العراف لتأجير السيارات',
@@ -270,15 +269,15 @@ serve(async (req) => {
     let aiContent = '';
     let aiUsed = false;
     
-    // Check if OpenAI API key is configured
-    if (!OPENAI_API_KEY) {
-      console.error('❌ OPENAI_API_KEY environment variable is not configured');
+    // Check if LongCat API key is configured
+    if (!LONGCAT_API_KEY) {
+      console.error('❌ LONGCAT_API_KEY environment variable is not configured');
       aiContent = `بالإشارة إلى الموضوع المذكور أعلاه، يسرنا أن نتقدم إليكم بهذا الكتاب الرسمي.\n\n${answers.content || 'نود إعلامكم بالتفاصيل المذكورة.'}\n\nنأمل التكرم باتخاذ الإجراء المناسب.\n\nنشكر لكم تعاونكم.`;
       aiUsed = false;
     } else {
-      // Use OpenAI API (faster and more reliable)
+      // Use LongCat API
       try {
-        console.log('🤖 Calling OpenAI GPT-4o API...');
+        console.log('🤖 Calling LongCat API...');
         
         const systemPrompt = `أنت كاتب محترف متخصص في صياغة المراسلات والكتب الرسمية باللغة العربية الفصحى. تعمل لدى شركة العراف لتأجير السيارات في قطر.
 
@@ -298,14 +297,11 @@ serve(async (req) => {
 
 اكتب المحتوى فقط (بدون ترويسة أو توقيع):`;
         
-        const response = await fetch(OPENAI_API_URL, {
+        const response = await fetch(LONGCAT_CHAT_COMPLETIONS_URL, {
           method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${OPENAI_API_KEY}`,
-            'Content-Type': 'application/json',
-          },
+          headers: buildLongCatHeaders(LONGCAT_API_KEY),
           body: JSON.stringify({
-            model: MODEL,
+            model: LONGCAT_MODEL,
             messages: [
               { role: 'system', content: systemPrompt },
               { role: 'user', content: userPrompt },
@@ -320,14 +316,14 @@ serve(async (req) => {
           aiContent = result.choices?.[0]?.message?.content || '';
           if (aiContent && aiContent.length > 100) {
             aiUsed = true;
-            console.log('✅ OpenAI GPT-4o document generated successfully');
+            console.log('✅ LongCat document generated successfully');
           }
         } else {
           const errorText = await response.text();
-          console.error('OpenAI API error:', response.status, errorText);
+          console.error('LongCat API error:', response.status, errorText);
         }
       } catch (aiErr) {
-        console.error('OpenAI call failed:', aiErr);
+        console.error('LongCat call failed:', aiErr);
       }
       
       // Fallback to template if AI fails

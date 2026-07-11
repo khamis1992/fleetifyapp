@@ -34,6 +34,71 @@ interface Payment {
   [key: string]: unknown;
 }
 
+const getSupabaseErrorMessage = (error: unknown): string => {
+  if (!error) return '';
+  if (error instanceof Error) return error.message;
+  if (typeof error === 'string') return error;
+
+  if (typeof error === 'object') {
+    const supabaseError = error as {
+      code?: string;
+      message?: string;
+      details?: string | null;
+      hint?: string | null;
+      status?: number;
+      statusText?: string;
+    };
+
+    return [
+      supabaseError.message,
+      supabaseError.details,
+      supabaseError.hint,
+      supabaseError.code,
+      supabaseError.statusText,
+      supabaseError.status ? `HTTP ${supabaseError.status}` : null,
+    ].filter(Boolean).join(' - ');
+  }
+
+  return String(error);
+};
+
+const isMissingPaymentCancellationRpc = (error: unknown): boolean => {
+  const supabaseError = error as { code?: string } | null;
+  const message = getSupabaseErrorMessage(error).toLowerCase();
+
+  return supabaseError?.code === 'PGRST202'
+    || message.includes('could not find the function')
+    || message.includes('function public.cancel_payment_with_reversal')
+    || message.includes('schema cache');
+};
+
+const isCompletedPaymentStatus = (status?: string | null): boolean => {
+  return ['completed', 'paid', 'cleared', 'confirmed', 'approved'].includes(
+    String(status || '').toLowerCase()
+  );
+};
+
+const getPaymentCancellationFailureMessage = (error: unknown): string => {
+  const message = getSupabaseErrorMessage(error);
+  const normalized = message.toLowerCase();
+
+  if (normalized.includes('authentication required')) {
+    return 'تعذر إلغاء الدفعة لأن الجلسة غير صالحة. أعد تسجيل الدخول ثم جرّب مرة أخرى.';
+  }
+
+  if (normalized.includes('financial period') || normalized.includes('locked')) {
+    return 'تعذر إلغاء الدفعة لأن الفترة المالية مقفلة. تم تجهيز إصلاح دالة الإلغاء لتتعامل مع الدفعات القديمة من داخل قاعدة البيانات.';
+  }
+
+  if (normalized.includes('completed payments are immutable') || normalized.includes('immutable')) {
+    return 'تعذر إلغاء الدفعة لأنها مكتملة ومحميّة من التعديل المباشر. يجب استخدام دالة الإلغاء الذري بعد تحديث قاعدة البيانات.';
+  }
+
+  return message
+    ? `تعذر إلغاء الدفعة من قاعدة البيانات. السبب: ${message}`
+    : 'تعذر إلغاء الدفعة من قاعدة البيانات.';
+};
+
 export const usePaymentOperations = (options: PaymentOperationsOptions = {}) => {
   const { companyId, user } = useUnifiedCompanyAccess();
   const queryClient = useQueryClient();
@@ -927,20 +992,24 @@ export const usePaymentOperations = (options: PaymentOperationsOptions = {}) => 
         } as any;
       }
 
-      const atomicCancelMessage = [
-        atomicCancelError.code,
-        atomicCancelError.message,
-        atomicCancelError.details,
-        atomicCancelError.hint,
-      ].filter(Boolean).join(' ');
-
-      const atomicCancelUnavailable =
-        atomicCancelError.code === 'PGRST202'
-        || atomicCancelMessage.includes('Could not find the function');
+      const atomicCancelUnavailable = isMissingPaymentCancellationRpc(atomicCancelError);
 
       if (!atomicCancelUnavailable) {
-        console.error('[usePaymentOperations] Atomic cancellation failed:', atomicCancelError);
-        throw atomicCancelError;
+        const readableMessage = getSupabaseErrorMessage(atomicCancelError);
+        console.error('[usePaymentOperations] Atomic cancellation failed:', {
+          message: readableMessage,
+          error: atomicCancelError,
+        });
+        throw new Error(getPaymentCancellationFailureMessage(atomicCancelError));
+      }
+
+      if (isCompletedPaymentStatus(existingPayment.payment_status)) {
+        console.error('[usePaymentOperations] Atomic cancellation RPC is unavailable for a completed payment:', {
+          paymentId,
+          paymentStatus: existingPayment.payment_status,
+          error: atomicCancelError,
+        });
+        throw new Error('تعذر إلغاء الدفعة المكتملة لأن دالة الإلغاء الذري غير متاحة حاليًا. تم تجهيز إصلاح قاعدة البيانات، وبعد نشره سيعمل زر الإلغاء مباشرة.');
       }
 
       console.warn('[usePaymentOperations] Atomic cancellation RPC is unavailable; using guarded client-side cancellation path.');
@@ -1108,7 +1177,7 @@ export const usePaymentOperations = (options: PaymentOperationsOptions = {}) => 
       toast.success('تم إلغاء الدفعة بنجاح');
     },
     onError: (error: unknown) => {
-      const errorMessage = error instanceof Error ? error.message : 'حدث خطأ أثناء إلغاء الدفعة'
+      const errorMessage = getSupabaseErrorMessage(error) || 'حدث خطأ أثناء إلغاء الدفعة'
       console.error('💥 [usePaymentOperations] Cancel payment error:', error);
       toast.error(errorMessage);
     }
@@ -1331,150 +1400,14 @@ export const usePaymentOperations = (options: PaymentOperationsOptions = {}) => 
       }
 
       const ensureMessage = String(ensureJournalError?.message || '');
-      const canFallbackToClientJournal =
-        ensureJournalError?.code === 'PGRST202'
-        || ensureMessage.includes('Could not find the function')
-        || ensureMessage.includes('ensure_payment_journal_entry');
-
-      if (!canFallbackToClientJournal && ensureJournalError) {
-        throw ensureJournalError;
+      if (ensureJournalError) {
+        console.error('ensure_payment_journal_entry RPC failed:', ensureJournalError);
       }
 
-      if (canFallbackToClientJournal) {
-        console.warn('ensure_payment_journal_entry RPC is unavailable; falling back to client journal creation.');
-      }
-
-      let cashAccount: { id: string } | null = null;
-
-      if (payment.account_id && typeof payment.account_id === 'string') {
-        const { data: selectedAccount } = await supabase
-          .from('chart_of_accounts')
-          .select('id')
-          .eq('company_id', companyId)
-          .eq('id', payment.account_id)
-          .eq('is_header', false)
-          .eq('is_active', true)
-          .maybeSingle();
-
-        cashAccount = selectedAccount;
-      }
-
-      if (!cashAccount) {
-        const { data: defaultCashAccount } = await supabase
-          .from('chart_of_accounts')
-          .select('id')
-          .eq('company_id', companyId)
-          .in('account_code', ['11151', '11111', '1010'])
-          .eq('is_header', false)
-          .eq('is_active', true)
-          .order('account_code')
-          .limit(1)
-          .maybeSingle();
-
-        cashAccount = defaultCashAccount;
-      }
-
-      const { data: receivableCandidates } = await supabase
-        .from('chart_of_accounts')
-        .select('id, account_code')
-        .eq('company_id', companyId)
-        .in('account_code', ['12101', '11211', '11212', '11221', '11222'])
-        .eq('is_header', false)
-        .eq('is_active', true);
-
-      const receivablePriority = ['12101', '11211', '11212', '11221', '11222'];
-      const receivableAccount = (receivableCandidates || []).sort(
-        (a, b) => receivablePriority.indexOf(a.account_code) - receivablePriority.indexOf(b.account_code)
-      )[0];
-
-      if (!cashAccount || !receivableAccount) {
-        throw new Error('Payment journal entry accounts are not configured. Required: cash/bank account and customer receivables account.');
-      }
-
-      const entryNumber = `JE-PAY-${payment.payment_number}`;
-      const entryDate = (payment as any).payment_date || new Date().toISOString().split('T')[0];
-
-      const { data: journalEntry, error: entryError } = await supabase
-        .from('journal_entries')
-        .insert({
-          company_id: companyId,
-          entry_number: entryNumber,
-          entry_date: entryDate,
-          status: 'draft',
-          description: `Payment receipt ${payment.payment_number}`,
-          reference_type: 'payment',
-          reference_id: payment.id,
-          total_debit: payment.amount,
-          total_credit: payment.amount,
-          created_by: user?.id
-        })
-        .select()
-        .single();
-
-      if (entryError) {
-        throw entryError;
-      }
-
-      const lines = [
-        {
-          journal_entry_id: journalEntry.id,
-          account_id: cashAccount.id,
-          line_number: 1,
-          line_description: `Payment received - ${payment.payment_number}`,
-          debit_amount: payment.amount,
-          credit_amount: 0
-        },
-        {
-          journal_entry_id: journalEntry.id,
-          account_id: receivableAccount.id,
-          line_number: 2,
-          line_description: `Receivables settlement - ${payment.payment_number}`,
-          debit_amount: 0,
-          credit_amount: payment.amount
-        }
-      ];
-
-      const { error: linesError } = await supabase
-        .from('journal_entry_lines')
-        .insert(lines);
-
-      if (linesError) {
-        await supabase.from('journal_entries').delete().eq('id', journalEntry.id);
-        throw linesError;
-      }
-
-      const { error: postEntryError } = await supabase
-        .from('journal_entries')
-        .update({
-          status: 'posted',
-          posted_by: user?.id,
-          posted_at: new Date().toISOString(),
-        })
-        .eq('id', journalEntry.id)
-        .eq('company_id', companyId);
-
-      if (postEntryError) {
-        await supabase.from('journal_entry_lines').delete().eq('journal_entry_id', journalEntry.id);
-        await supabase.from('journal_entries').delete().eq('id', journalEntry.id);
-        throw postEntryError;
-      }
-
-      const { error: paymentLinkError } = await supabase
-        .from('payments')
-        .update({ journal_entry_id: journalEntry.id })
-        .eq('id', payment.id)
-        .eq('company_id', companyId);
-
-      if (paymentLinkError) {
-        console.warn('Payment journal entry was created but direct payment link was blocked by validation. Using journal reference link instead.', {
-          paymentId: payment.id,
-          journalEntryId: journalEntry.id,
-          error: paymentLinkError.message,
-        });
-      }
-
-      console.log('Journal entry created successfully:', entryNumber);
-      return journalEntry.id;
+      throw new Error(
+        ensureMessage ||
+        'Payment journal entry could not be created by the database. The client-side journal fallback has been disabled to prevent duplicate accounting entries.'
+      );
     } catch (error) {
       console.error('Error in createJournalEntry:', error);
       throw error;

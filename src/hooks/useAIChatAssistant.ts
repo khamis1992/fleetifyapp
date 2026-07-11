@@ -5,16 +5,14 @@
 
 import { useState, useCallback, useRef } from 'react';
 import { getSystemPrompt } from '@/lib/ai-knowledge-base';
+import { getLongCatConfig } from '@/lib/env';
 
-// Z.AI API Configuration - Using GLM Coding Plan
-// Coding Plan MUST use: https://api.z.ai/api/coding/paas/v4/chat/completions
-// General Plan uses: https://api.z.ai/api/paas/v4/chat/completions (NOT for Coding Plan!)
-const ZAI_API_URL = 'https://api.z.ai/api/coding/paas/v4/chat/completions';
-const ZAI_API_KEY = '136e9f29ddd445c0a5287440f6ab13e0.DSO2qKJ4AiP1SRrH';
-const MODEL = 'glm-4.6';
+// LongCat API configuration
+const LONGCAT_API_URL = 'https://api.longcat.chat/openai/v1/chat/completions';
+const MODEL = 'LongCat-2.0';
 
 // Using only Coding endpoint for Coding Plan subscription
-const API_ENDPOINTS = [ZAI_API_URL];
+const API_ENDPOINTS = [LONGCAT_API_URL];
 
 export interface ChatMessage {
   id: string;
@@ -99,10 +97,15 @@ export const useAIChatAssistant = (options?: UseAIChatAssistantOptions): UseAICh
         max_tokens: 2048,
       };
 
+      const longCatConfig = getLongCatConfig();
+      if (!longCatConfig.apiKey) {
+        throw new Error('LONGCAT API key is not configured');
+      }
+
       const headers = {
         'Content-Type': 'application/json',
         'Accept-Language': 'en-US,en',
-        'Authorization': `Bearer ${ZAI_API_KEY}`,
+        'Authorization': `Bearer ${longCatConfig.apiKey}`,
       };
 
       // Try endpoints in order (Coding first, then General)

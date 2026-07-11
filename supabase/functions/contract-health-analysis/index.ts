@@ -1,5 +1,6 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { buildLongCatHeaders, getLongCatApiKey, LONGCAT_CHAT_COMPLETIONS_URL, LONGCAT_MODEL } from "../_shared/longcat.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -19,8 +20,32 @@ interface ContractHealthResult {
   score: number;
   summary: string;
   recommendation: string;
-  source: "openai" | "local";
+  source: "longcat" | "local";
   issues: HealthIssue[];
+}
+
+type RepairTool =
+  | "repair_linked_invoice_contracts"
+  | "cancel_duplicate_schedules"
+  | "repair_outside_invoices"
+  | "create_missing_invoices"
+  | "repair_out_of_period_payments"
+  | "reconcile_invoice_amounts"
+  | "reconcile_schedule_invoices"
+  | "recalculate_invoice_balances"
+  | "final_balance_audit";
+
+interface RepairAction {
+  tool: RepairTool;
+  priority: number;
+  reason: string;
+}
+
+interface ContractRepairPlan {
+  source: "longcat" | "local";
+  summary: string;
+  actions: RepairAction[];
+  requiresReview: string[];
 }
 
 serve(async (req) => {
@@ -37,10 +62,19 @@ serve(async (req) => {
       return jsonResponse({ error: "contract and metrics are required" }, 400);
     }
 
-    const fallback = buildFallback(metrics);
-    const openAIApiKey = Deno.env.get("OPENAI_API_KEY");
+    if (body?.mode === "repair_plan") {
+      return jsonResponse(await buildRepairPlan({
+        contract,
+        metrics,
+        allowedTools: body?.allowedTools,
+        allowExternalAI: body?.allowExternalAI === true,
+      }));
+    }
 
-    if (!openAIApiKey) {
+    const fallback = buildFallback(metrics);
+    const longCatApiKey = getLongCatApiKey();
+
+    if (!longCatApiKey) {
       return jsonResponse(fallback);
     }
 
@@ -70,14 +104,11 @@ Metrics JSON:
 ${JSON.stringify(metrics)}
 `;
 
-    const openAIResponse = await fetch("https://api.openai.com/v1/chat/completions", {
+    const longCatResponse = await fetch(LONGCAT_CHAT_COMPLETIONS_URL, {
       method: "POST",
-      headers: {
-        Authorization: `Bearer ${openAIApiKey}`,
-        "Content-Type": "application/json",
-      },
+      headers: buildLongCatHeaders(longCatApiKey),
       body: JSON.stringify({
-        model: "gpt-4o-mini",
+        model: LONGCAT_MODEL,
         messages: [
           {
             role: "system",
@@ -92,14 +123,14 @@ ${JSON.stringify(metrics)}
       }),
     });
 
-    if (!openAIResponse.ok) {
-      console.error("OpenAI contract health error:", openAIResponse.status, await openAIResponse.text());
+    if (!longCatResponse.ok) {
+      console.error("LongCat contract health error:", longCatResponse.status, await longCatResponse.text());
       return jsonResponse(fallback);
     }
 
-    const aiPayload = await openAIResponse.json();
+    const aiPayload = await longCatResponse.json();
     const content = aiPayload?.choices?.[0]?.message?.content;
-    const parsed = content ? JSON.parse(content) : {};
+    const parsed = content ? JSON.parse(stripJsonFences(content)) : {};
     const result = normalizeResult(parsed, fallback);
 
     return jsonResponse(result);
@@ -115,6 +146,145 @@ ${JSON.stringify(metrics)}
   }
 });
 
+async function buildRepairPlan({
+  contract,
+  metrics,
+  allowedTools,
+  allowExternalAI,
+}: {
+  contract: any;
+  metrics: any;
+  allowedTools?: unknown;
+  allowExternalAI?: boolean;
+}): Promise<ContractRepairPlan> {
+  const fallback = buildFallbackRepairPlan(metrics);
+  const longCatApiKey = getLongCatApiKey();
+  const externalAIEnabled = Deno.env.get("CONTRACT_REPAIR_EXTERNAL_AI_ENABLED") === "true";
+
+  if (!allowExternalAI || !externalAIEnabled || !longCatApiKey) {
+    return fallback;
+  }
+
+  const tools = Array.isArray(allowedTools) && allowedTools.length > 0
+    ? allowedTools
+    : [
+        "repair_linked_invoice_contracts",
+        "cancel_duplicate_schedules",
+        "repair_outside_invoices",
+        "create_missing_invoices",
+        "repair_out_of_period_payments",
+        "reconcile_invoice_amounts",
+        "reconcile_schedule_invoices",
+        "recalculate_invoice_balances",
+        "final_balance_audit",
+      ];
+
+  const prompt = `
+You are an AI repair agent for a car rental ERP contract in Qatar.
+You DO NOT write SQL. You choose from allowed repair tools only.
+Return ONLY valid JSON:
+{
+  "summary": "Arabic short explanation of the repair strategy",
+  "actions": [
+    {"tool": "one allowed tool", "priority": 1, "reason": "Arabic reason grounded in metrics"}
+  ],
+  "requiresReview": ["Arabic review note if a financial audit-sensitive item should not be auto-mutated"]
+}
+
+Allowed tools:
+${JSON.stringify(tools)}
+
+Rules:
+- Arabic explanations only.
+- Use only the provided tool names.
+- Prioritize fixing links/dates before creating or cancelling invoices.
+- Include final_balance_audit whenever any action exists.
+- Do not invent data not present in metrics.
+- Do not ask for manual review unless the metrics show paid invoices, journal entries, immutable payments, or unresolved contradictions.
+
+Contract JSON:
+${JSON.stringify(contract)}
+
+Metrics JSON:
+${JSON.stringify(metrics)}
+`;
+
+  try {
+    const response = await fetch(LONGCAT_CHAT_COMPLETIONS_URL, {
+      method: "POST",
+      headers: buildLongCatHeaders(longCatApiKey),
+      body: JSON.stringify({
+        model: LONGCAT_MODEL,
+        messages: [
+          {
+            role: "system",
+            content:
+              "You are a cautious ERP repair-planning agent. Return strict JSON only and choose only allowed tools.",
+          },
+          { role: "user", content: prompt },
+        ],
+        temperature: 0.05,
+        max_tokens: 1000,
+      }),
+    });
+
+    if (!response.ok) {
+      console.error("LongCat contract repair plan error:", response.status, await response.text());
+      return fallback;
+    }
+
+    const payload = await response.json();
+    const content = payload?.choices?.[0]?.message?.content;
+    const parsed = content ? JSON.parse(content) : {};
+    const allowed = new Set(tools.map(String));
+    const actions = Array.isArray(parsed?.actions)
+      ? parsed.actions
+          .filter((action: any) => allowed.has(String(action?.tool)))
+          .map((action: any, index: number) => ({
+            tool: String(action.tool) as RepairTool,
+            priority: Number.isFinite(Number(action?.priority)) ? Number(action.priority) : index + 1,
+            reason: String(action?.reason || "اختار الوكيل هذه الأداة بناءً على مؤشرات العقد."),
+          }))
+          .sort((left: RepairAction, right: RepairAction) => left.priority - right.priority)
+      : [];
+
+    if (actions.length === 0) {
+      return fallback;
+    }
+
+    const mergedActions = mergeRepairActions(actions, fallback.actions);
+
+    return {
+      source: "longcat",
+      summary: typeof parsed?.summary === "string" ? parsed.summary : fallback.summary,
+      actions: mergedActions,
+      requiresReview: Array.isArray(parsed?.requiresReview)
+        ? parsed.requiresReview.map((item: unknown) => String(item)).slice(0, 6)
+        : [],
+    };
+  } catch (error) {
+    console.error("contract repair plan failed:", error);
+    return fallback;
+  }
+}
+
+function mergeRepairActions(primary: RepairAction[], safetyNet: RepairAction[]) {
+  const merged = [...primary];
+  for (const action of safetyNet) {
+    if (merged.some((item) => item.tool === action.tool)) continue;
+    merged.push({
+      ...action,
+      priority: merged.length + 1,
+      reason: `شبكة الأمان المحلية: ${action.reason}`,
+    });
+  }
+
+  return merged.map((action, index) => ({
+    ...action,
+    priority: index + 1,
+  }));
+}
+
 function jsonResponse(payload: unknown, status = 200) {
   return new Response(JSON.stringify(payload), {
     status,
@@ -122,12 +292,21 @@ function jsonResponse(payload: unknown, status = 200) {
   });
 }
 
+function stripJsonFences(value: string) {
+  return value
+    .trim()
+    .replace(/^```json\s*/i, "")
+    .replace(/^```\s*/i, "")
+    .replace(/\s*```$/i, "")
+    .trim();
+}
+
 function normalizeResult(payload: any, fallback: ContractHealthResult): ContractHealthResult {
   return {
     score: clampScore(payload?.score, fallback.score),
     summary: typeof payload?.summary === "string" ? payload.summary : fallback.summary,
     recommendation: typeof payload?.recommendation === "string" ? payload.recommendation : fallback.recommendation,
-    source: "openai",
+    source: "longcat",
     issues: Array.isArray(payload?.issues) && payload.issues.length > 0
       ? payload.issues.slice(0, 6).map((issue: any) => ({
           title: String(issue?.title || "ملاحظة على العقد"),
@@ -217,6 +396,57 @@ function buildFallback(metrics: any): ContractHealthResult {
       : "يمكن متابعة العقد أو اتخاذ قرار التجديد/الإغلاق حسب حالة المركبة والتحصيل.",
     source: "local",
     issues,
+  };
+}
+
+function buildFallbackRepairPlan(metrics: any): ContractRepairPlan {
+  const actions: RepairAction[] = [];
+  const review: string[] = [];
+  const pushAction = (tool: RepairTool, reason: string) => {
+    if (actions.some((action) => action.tool === tool)) return;
+    actions.push({ tool, priority: actions.length + 1, reason });
+  };
+
+  if (toNumber(metrics?.scheduleInvoiceMismatchItems?.length, 0) > 0) {
+    pushAction("repair_linked_invoice_contracts", "توجد روابط أو تواريخ غير متطابقة بين الأقساط والفواتير.");
+    pushAction("reconcile_schedule_invoices", "تحتاج الأقساط والفواتير إلى مصالحة حسب شهر الاستحقاق والمبلغ.");
+  }
+
+  if (toNumber(metrics?.invoicesOutsideContract, 0) > 0 || Array.isArray(metrics?.outsideInvoices) && metrics.outsideInvoices.length > 0) {
+    pushAction("repair_outside_invoices", "توجد فواتير خارج فترة العقد.");
+    if ((metrics?.outsideInvoices || []).some((invoice: any) => invoice?.has_journal_entry || invoice?.has_linked_payments)) {
+      review.push("بعض الفواتير الخارجة مرتبطة بقيود أو دفعات، لذلك يجب استخدام مسار الإلغاء الآمن.");
+    }
+  }
+
+  if (toNumber(metrics?.missingInvoices, 0) > 0) {
+    pushAction("create_missing_invoices", "توجد أشهر أو أقساط بدون فاتورة نشطة.");
+  }
+
+  if (toNumber(metrics?.paymentsBeforeStart, 0) > 0 || toNumber(metrics?.paymentsAfterEnd, 0) > 0) {
+    pushAction("repair_out_of_period_payments", "توجد دفعات خارج فترة العقد.");
+  }
+
+  if (Math.abs(toNumber(metrics?.scheduleInvoiceDifference, 0)) > 1) {
+    pushAction("reconcile_invoice_amounts", "يوجد فرق مالي بين جدول الدفعات ومجموع الفواتير.");
+    pushAction("reconcile_schedule_invoices", "يلزم ربط ومصالحة الفواتير مع جدول الدفعات.");
+  }
+
+  if (toNumber(metrics?.invoicePaymentCorrections?.length, 0) > 0) {
+    pushAction("recalculate_invoice_balances", "توجد أرصدة فواتير أو حالات دفع تحتاج إعادة احتساب.");
+  }
+
+  if (actions.length > 0) {
+    pushAction("final_balance_audit", "مراجعة نهائية بعد الإصلاح للتأكد من ثبات الأرصدة.");
+  }
+
+  return {
+    source: "local",
+    summary: actions.length > 0
+      ? "تم إعداد خطة إصلاح تلقائية بناءً على مؤشرات صحة العقد."
+      : "لا توجد أدوات إصلاح مطلوبة حاليًا.",
+    actions,
+    requiresReview: review,
   };
 }
 

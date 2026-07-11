@@ -57,7 +57,7 @@ export const DailyDecisionCenter: React.FC = () => {
                 <h2 className="text-lg font-bold text-slate-900">مركز القرارات اليومي</h2>
                 {data?.source && (
                   <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-600">
-                    {data.source === 'openai' ? 'OpenAI' : 'تحليل داخلي'}
+                    {data.source === 'longcat' ? 'LongCat' : 'تحليل داخلي'}
                   </span>
                 )}
               </div>

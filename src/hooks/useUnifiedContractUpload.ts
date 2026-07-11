@@ -158,7 +158,7 @@ export function useUnifiedContractUpload() {
                     content: `اسم العميل: ${enhanced.customer_name}. اقترح رقم هاتف وإيميل معقولين للاختبار (استخدم أرقام وهمية).`
                   }
                 ],
-                model: 'gpt-4o-mini',
+                model: 'LongCat-2.0',
                 temperature: 0.3
               }
             });

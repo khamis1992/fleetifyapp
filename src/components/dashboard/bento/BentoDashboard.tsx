@@ -396,7 +396,7 @@ const BentoDashboard: React.FC = () => {
         { label: 'تحصيل 7 أيام', value: formatQar(dailyDecision.cashflow.next7Days), icon: Wallet, color: dashboardColors.success },
         { label: 'تحصيل 30 يوم', value: formatQar(dailyDecision.cashflow.next30Days), icon: Banknote, color: dashboardColors.info },
         { label: 'مخاطر اليوم', value: dailyDecision.risks.length, icon: AlertTriangle, color: dashboardColors.alert },
-        { label: 'مصدر التحليل', value: dailyDecision.source === 'openai' ? 'OpenAI' : 'تحليل داخلي', icon: Activity, color: dashboardColors.navy },
+        { label: 'مصدر التحليل', value: dailyDecision.source === 'longcat' ? 'LongCat' : 'تحليل داخلي', icon: Activity, color: dashboardColors.navy },
       ]
     : [
         { label: 'الإيراد الشهري', value: formatQar(monthlyRevenue), icon: Banknote, color: dashboardColors.success },

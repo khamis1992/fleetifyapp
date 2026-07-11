@@ -79,7 +79,7 @@ export interface DailyDecisionResult {
     note: string;
   };
   generatedAt: string;
-  source: 'openai' | 'local';
+  source: 'longcat' | 'local';
   metrics?: DailyDecisionMetrics;
 }
 

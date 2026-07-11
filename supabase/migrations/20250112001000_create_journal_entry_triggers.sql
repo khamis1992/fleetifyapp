@@ -1,5 +1,25 @@
 -- Create automatic journal entry triggers for Fleetify
 -- Based on actual schema: company_id exists, account_code, payment_status (text), invoice_date
+--
+-- =============================================================================
+-- ⚠️ SUPERSEDED NOTICE (added 2026-07-08 by Sisyphus Agent)
+-- =============================================================================
+-- The function `create_payment_journal_entry` defined in this file is SUPERSEDED
+-- by a newer definition in:
+--   20260705093000_fix_journal_entry_creation_order.sql
+--
+-- The newer version fixes a critical issue where journal entries were created
+-- with 'posted' status before the payment was fully committed, causing orphaned
+-- journal entries on payment failures. The newer version creates entries in
+-- 'draft' status first, then updates to 'posted' after successful payment commit.
+--
+-- This file is retained for migration history integrity. DO NOT re-run this
+-- migration independently. The `CREATE OR REPLACE FUNCTION` in the newer
+-- migration supersedes this definition when migrations are applied in order.
+--
+-- See: docs/financial-system-expanded-analysis-2026-07-08.md (issue C1)
+-- See: docs/financial-report-verification-remediation-plan.md (item B1)
+-- =============================================================================
 
 -- =============================================================================
 -- FUNCTION: Auto Journal Entry for Payments

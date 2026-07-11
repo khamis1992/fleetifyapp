@@ -13,6 +13,7 @@
 
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { buildLongCatHeaders, getLongCatApiKey, LONGCAT_CHAT_COMPLETIONS_URL, LONGCAT_MODEL } from "../_shared/longcat.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -23,7 +24,7 @@ interface OCRRequest {
   imageDataUrls: string[];
   language?: 'ar' | 'en' | 'both';
   detail?: 'low' | 'high' | 'auto';
-  provider?: 'deepseek' | 'qwen'; // Allow switching between providers
+  provider?: 'longcat';
 }
 
 interface OCRResponse {
@@ -31,15 +32,9 @@ interface OCRResponse {
   text?: string;
   confidence: number;
   pagesProcessed: number;
-  method: 'deepseek' | 'qwen';
+  method: 'longcat';
   error?: string;
 }
-
-// DeepSeek VL2 API endpoint (OpenAI-compatible)
-const DEEPSEEK_API_URL = 'https://api.deepseek.com/v1/chat/completions';
-
-// Qwen VL API endpoint (via Dashscope)
-const QWEN_API_URL = 'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions';
 
 serve(async (req) => {
   // Handle CORS preflight
@@ -48,7 +43,7 @@ serve(async (req) => {
   }
 
   try {
-    const { imageDataUrls, language = 'ar', detail = 'high', provider = 'deepseek' }: OCRRequest = await req.json();
+    const { imageDataUrls, language = 'ar', detail = 'high', provider = 'longcat' }: OCRRequest = await req.json();
 
     console.log('📄 DeepSeek/Qwen OCR Request received:', {
       pageCount: imageDataUrls?.length || 0,
@@ -66,25 +61,11 @@ serve(async (req) => {
       throw new Error('Too many pages - maximum 10 pages per request');
     }
 
-    // Get API key based on provider
-    let apiKey: string | undefined;
-    let apiUrl: string;
-    let modelName: string;
-
-    if (provider === 'qwen') {
-      apiKey = Deno.env.get('QWEN_API_KEY') || Deno.env.get('DASHSCOPE_API_KEY');
-      apiUrl = QWEN_API_URL;
-      modelName = 'qwen-vl-max'; // or qwen-vl-plus
-    } else {
-      // Default to DeepSeek
-      apiKey = Deno.env.get('DEEPSEEK_API_KEY');
-      apiUrl = DEEPSEEK_API_URL;
-      modelName = 'deepseek-vl2'; // DeepSeek Vision model
-    }
+    const apiKey = getLongCatApiKey();
 
     if (!apiKey) {
-      console.error(`${provider} API key not configured`);
-      throw new Error(`${provider} API key not configured. Please set ${provider === 'qwen' ? 'QWEN_API_KEY' : 'DEEPSEEK_API_KEY'} in Supabase environment.`);
+      console.error('LongCat API key not configured');
+      throw new Error('LongCat API key not configured. Please set LONGCAT_API_KEY in Supabase environment.');
     }
 
     console.log(`🔍 Processing ${imageDataUrls.length} page(s) with ${provider}...`);
@@ -100,8 +81,6 @@ serve(async (req) => {
         const pageText = await extractTextFromImage(
           imageUrl,
           apiKey,
-          apiUrl,
-          modelName,
           language,
           detail,
           provider
@@ -137,7 +116,7 @@ serve(async (req) => {
       text: fullText,
       confidence,
       pagesProcessed: imageDataUrls.length,
-      method: provider as 'deepseek' | 'qwen',
+      method: 'longcat',
     };
 
     return new Response(JSON.stringify(response), {
@@ -153,7 +132,7 @@ serve(async (req) => {
       success: false,
       confidence: 0,
       pagesProcessed: 0,
-      method: 'deepseek',
+      method: 'longcat',
       error: errorMessage,
     };
 
@@ -165,13 +144,11 @@ serve(async (req) => {
 });
 
 /**
- * Extract text from a single image using DeepSeek/Qwen Vision API
+ * Extract text from a single image using LongCat.
  */
 async function extractTextFromImage(
   imageUrl: string,
   apiKey: string,
-  apiUrl: string,
-  modelName: string,
   language: string,
   detail: string,
   provider: string
@@ -187,14 +164,11 @@ async function extractTextFromImage(
   // Build message content based on provider
   const imageContent = buildImageContent(imageUrl, detail, provider);
 
-  const response = await fetch(apiUrl, {
+  const response = await fetch(LONGCAT_CHAT_COMPLETIONS_URL, {
     method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
-    },
+    headers: buildLongCatHeaders(apiKey),
     body: JSON.stringify({
-      model: modelName,
+      model: LONGCAT_MODEL,
       messages: [
         {
           role: 'system',

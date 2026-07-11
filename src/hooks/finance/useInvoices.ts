@@ -50,6 +50,7 @@ export interface Invoice {
 interface InvoiceFilters {
   type?: string;
   status?: string;
+  payment_status?: string;
   customerId?: string;
   contractId?: string;
   page?: number;
@@ -142,6 +143,9 @@ export const useInvoices = (filters?: InvoiceFilters) => {
           if (filters?.status) {
             countQuery = countQuery.eq("status", filters.status);
           }
+          if (filters?.payment_status) {
+            countQuery = countQuery.eq("payment_status", filters.payment_status);
+          }
           if (filters?.customerId) {
             countQuery = countQuery.eq("customer_id", filters.customerId);
           }
@@ -166,6 +170,9 @@ export const useInvoices = (filters?: InvoiceFilters) => {
         }
         if (filters?.status) {
           query = query.eq("status", filters.status);
+        }
+        if (filters?.payment_status) {
+          query = query.eq("payment_status", filters.payment_status);
         }
         if (filters?.customerId) {
           query = query.eq("customer_id", filters.customerId);

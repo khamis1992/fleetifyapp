@@ -252,7 +252,7 @@ export const LateFeeManagement: React.FC = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {pendingFees?.reduce((sum, fee) => sum + fee.fee_amount, 0).toFixed(3) || '0.000'} د.ك
+              {(pendingFees?.reduce((sum, fee) => sum + fee.fee_amount, 0) || 0).toFixed(2)} ر.ق
             </div>
           </CardContent>
         </Card>
@@ -266,7 +266,7 @@ export const LateFeeManagement: React.FC = () => {
             <div className="text-2xl font-bold">
               {pendingFees?.length ? 
                 (pendingFees.reduce((sum, fee) => sum + fee.fee_amount, 0) / pendingFees.length).toFixed(3) 
-                : '0.000'} د.ك
+                : '0.00'} ر.ق
             </div>
           </CardContent>
         </Card>
@@ -332,9 +332,9 @@ export const LateFeeManagement: React.FC = () => {
                     <TableCell>
                       <Badge variant="destructive">{fee.days_overdue} يوم</Badge>
                     </TableCell>
-                    <TableCell>{fee.original_amount.toFixed(3)} د.ك</TableCell>
+                    <TableCell>{(fee.original_amount || 0).toFixed(2)} ر.ق</TableCell>
                     <TableCell className="font-bold text-red-600">
-                      {fee.fee_amount.toFixed(3)} د.ك
+                      {(fee.fee_amount || 0).toFixed(2)} ر.ق
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground">
                       {Math.round(fee.hours_pending || 0)} ساعة
@@ -402,7 +402,7 @@ export const LateFeeManagement: React.FC = () => {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-sm text-muted-foreground">مبلغ الغرامة:</span>
-                  <span className="font-bold text-red-600">{selectedFee.fee_amount.toFixed(3)} د.ك</span>
+                  <span className="font-bold text-red-600">{(selectedFee.fee_amount || 0).toFixed(2)} ر.ق</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-sm text-muted-foreground">أيام التأخير:</span>

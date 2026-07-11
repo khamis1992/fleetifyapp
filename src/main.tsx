@@ -1,6 +1,5 @@
 import React from 'react'
 import { createRoot } from 'react-dom/client'
-import App from './App.tsx'
 import './index.css'
 import { initSentry } from './lib/sentry';
 import { initializeI18n } from './lib/i18n/config';
@@ -30,6 +29,47 @@ setTimeout(removeLoadingClass, 500);
 const isBrowserExtensionAsyncResponseError = (message: string) =>
   message.includes('A listener indicated an asynchronous response by returning true') &&
   message.includes('message channel closed before a response was received');
+
+const getErrorMessage = (error: unknown) => {
+  if (typeof error === 'string') return error;
+  if (error instanceof Error) return error.message;
+  if (error && typeof error === 'object' && 'message' in error) {
+    return String((error as { message?: unknown }).message || '');
+  }
+  return '';
+};
+
+const prepareDevelopmentRuntime = async () => {
+  if (!import.meta.env.DEV || typeof window === 'undefined') return false;
+
+  const resetKey = 'fleetify_dev_cache_reset_v2';
+  if (sessionStorage.getItem(resetKey)) {
+    sessionStorage.removeItem(resetKey);
+    return false;
+  }
+
+  let changed = false;
+
+  if ('serviceWorker' in navigator) {
+    const registrations = await navigator.serviceWorker.getRegistrations();
+    await Promise.all(registrations.map((registration) => registration.unregister()));
+    changed = changed || registrations.length > 0;
+  }
+
+  if ('caches' in window) {
+    const keys = await caches.keys();
+    await Promise.all(keys.map((key) => caches.delete(key)));
+    changed = changed || keys.length > 0;
+  }
+
+  if (changed) {
+    sessionStorage.setItem(resetKey, 'true');
+    window.location.reload();
+    return true;
+  }
+
+  return false;
+};
 
 // CRITICAL FIX: Prevent page hanging on refresh
 // Add visibility change listener to detect tab switches
@@ -91,7 +131,7 @@ if (!import.meta.env.DEV) {
   // Handle unhandled promise rejections (for dynamic imports)
   window.addEventListener('unhandledrejection', (event) => {
     const error = event.reason;
-    const errorMessage = error?.message || '';
+    const errorMessage = getErrorMessage(error);
 
     if (isBrowserExtensionAsyncResponseError(errorMessage)) {
       event.preventDefault();
@@ -154,7 +194,7 @@ if (!import.meta.env.DEV) {
 
   window.addEventListener('unhandledrejection', (event) => {
     const error = event.reason;
-    const errorMessage = error?.message || '';
+    const errorMessage = getErrorMessage(error);
 
     if (isBrowserExtensionAsyncResponseError(errorMessage)) {
       event.preventDefault();
@@ -193,7 +233,11 @@ if (!import.meta.env.DEV) {
 
 // Initialize i18n before rendering — registers initReactI18next synchronously
 // so useTranslation() has an i18n instance available on first render.
-initializeI18n();
+const bootstrap = async () => {
+  if (await prepareDevelopmentRuntime()) return;
+
+  initializeI18n();
+  const { default: App } = await import('./App.tsx');
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {
@@ -218,3 +262,6 @@ if (import.meta.env.DEV) {
 }
 
 console.log('✅ [MAIN] App render called');// Cache bust: Tue, Jan 27, 2026  12:00:00 PM - Service Worker v2 Update
+};
+
+void bootstrap();

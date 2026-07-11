@@ -1,7 +1,7 @@
 /**
  * PDF OCR Edge Function
  *
- * This function uses OpenAI's GPT-4 Vision API to extract text from images.
+ * This function uses LongCat's OpenAI-compatible API to extract text from images.
  * It processes PDF pages that have been converted to images and returns
  * the extracted text with confidence scores.
  *
@@ -15,6 +15,7 @@
 
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { buildLongCatHeaders, getLongCatApiKey, LONGCAT_CHAT_COMPLETIONS_URL, LONGCAT_MODEL } from "../_shared/longcat.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -60,11 +61,10 @@ serve(async (req) => {
       throw new Error('Too many pages - maximum 50 pages per request');
     }
 
-    // Get OpenAI API key from environment
-    const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
-    if (!openAIApiKey) {
-      console.error('OpenAI API key not configured');
-      throw new Error('OpenAI API key not configured in Supabase environment');
+    const longCatApiKey = getLongCatApiKey();
+    if (!longCatApiKey) {
+      console.error('LongCat API key not configured');
+      throw new Error('LongCat API key not configured in Supabase environment');
     }
 
     console.log(`🔍 Processing ${imageDataUrls.length} page(s) with ${detail} detail...`);
@@ -79,7 +79,7 @@ serve(async (req) => {
       try {
         const pageText = await extractTextFromImage(
           imageUrl,
-          openAIApiKey,
+          longCatApiKey,
           language,
           detail
         );
@@ -143,7 +143,7 @@ serve(async (req) => {
 });
 
 /**
- * Extract text from a single image using OpenAI Vision API
+ * Extract text from a single image using LongCat.
  */
 async function extractTextFromImage(
   imageUrl: string,
@@ -154,19 +154,16 @@ async function extractTextFromImage(
   // Build the prompt based on language
   const systemPrompt = buildSystemPrompt(language);
 
-  // Prepare the image content for OpenAI Vision API
+  // Prepare the image content for the OpenAI-compatible request format.
   const imageContent = prepareImageContent(imageUrl, detail);
 
-  console.log('📤 Calling OpenAI Vision API...');
+  console.log('📤 Calling LongCat vision-compatible API...');
 
-  const response = await fetch('https://api.openai.com/v1/chat/completions', {
+  const response = await fetch(LONGCAT_CHAT_COMPLETIONS_URL, {
     method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
-    },
+    headers: buildLongCatHeaders(apiKey),
     body: JSON.stringify({
-      model: 'gpt-4o',
+      model: LONGCAT_MODEL,
       messages: [
         {
           role: 'system',
@@ -192,19 +189,19 @@ async function extractTextFromImage(
 
   if (!response.ok) {
     const errorText = await response.text();
-    console.error('OpenAI API error:', response.status, errorText);
-    throw new Error(`OpenAI Vision API error: ${response.status} - ${errorText}`);
+    console.error('LongCat API error:', response.status, errorText);
+    throw new Error(`LongCat API error: ${response.status} - ${errorText}`);
   }
 
   const result = await response.json();
 
   if (!result.choices || result.choices.length === 0) {
-    throw new Error('No response from OpenAI Vision API');
+    throw new Error('No response from LongCat API');
   }
 
   const extractedText = result.choices[0].message.content || '';
 
-  console.log(`📥 OpenAI response: ${extractedText.length} characters`);
+  console.log(`📥 LongCat response: ${extractedText.length} characters`);
 
   return extractedText;
 }
@@ -254,7 +251,7 @@ The output should be raw text ready for further processing.
 }
 
 /**
- * Prepare image content for OpenAI Vision API
+ * Prepare image content for the OpenAI-compatible request format.
  * Handles both base64 data URLs and regular URLs
  */
 function prepareImageContent(imageUrl: string, detail: string): Array<{ type: string; image_url: { url: string; detail: string } }> {

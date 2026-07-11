@@ -1,11 +1,12 @@
-import React, { useMemo } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import React, { useMemo, useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   AlertTriangle,
   CalendarX,
   CheckCircle2,
   CreditCard,
   FileWarning,
+  Loader2,
   RefreshCw,
   ShieldCheck,
   Sparkles,
@@ -15,6 +16,7 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { useToast } from '@/hooks/use-toast';
 import type { Contract } from '@/types/contracts';
 import type { Invoice } from '@/types/finance.types';
 
@@ -25,6 +27,8 @@ type ContractPaymentRow = {
   amount: number | null;
   payment_status: string | null;
   invoice_id: string | null;
+  contract_id?: string | null;
+  reference_number?: string | null;
 };
 
 type HealthSeverity = 'critical' | 'warning' | 'info' | 'good';
@@ -34,13 +38,70 @@ type HealthIssue = {
   detail: string;
   severity: HealthSeverity;
   count?: number;
+  items?: string[];
+  fixable?: boolean;
+};
+
+type InvoiceIssueItem = {
+  id: string;
+  invoice_number: string;
+  invoice_date: string | null;
+  due_date: string | null;
+  total_amount: number;
+  reason: 'before_start' | 'after_end';
+  target_month_has_invoice: boolean;
+  has_linked_payments: boolean;
+  has_journal_entry: boolean;
+  linked_payment_ids: string[];
+  linked_payment_numbers: string[];
+};
+
+type PaymentIssueItem = {
+  id: string;
+  payment_number: string;
+  payment_date: string | null;
+  amount: number;
+  payment_status: string | null;
+  invoice_id: string | null;
+  is_immutable: boolean;
+  reason: 'before_start' | 'after_end';
+};
+
+type MissingScheduleIssueItem = {
+  id: string;
+  installment_number: number | null;
+  due_date: string | null;
+  amount: number;
+};
+
+type InvoicePaymentCorrection = {
+  id: string;
+  invoice_number: string;
+  paid_amount: number;
+  balance_due: number;
+  payment_status: string;
+  status: string;
+};
+
+type ScheduleInvoiceMismatchItem = {
+  schedule_id: string;
+  invoice_id: string | null;
+  installment_number: number | null;
+  due_date: string | null;
+  schedule_amount: number;
+  invoice_number: string;
+  invoice_date: string | null;
+  invoice_due_date: string | null;
+  invoice_amount: number;
+  difference: number;
+  reason: 'amount_mismatch' | 'wrong_link' | 'missing_invoice' | 'duplicate_link' | 'date_mismatch';
 };
 
 type ContractHealthResult = {
   score: number;
   summary: string;
   recommendation: string;
-  source: 'openai' | 'local';
+  source: 'longcat' | 'local';
   issues: HealthIssue[];
   metrics: {
     expectedInvoices: number;
@@ -51,7 +112,18 @@ type ContractHealthResult = {
     totalPaid: number;
     contractAmount: number;
     overpaidAmount: number;
+    scheduleTotal: number;
+    invoicesTotal: number;
     scheduleInvoiceDifference: number;
+    contractPeriodLabel: string;
+    outsideInvoices: InvoiceIssueItem[];
+    paymentsBeforeStartItems: PaymentIssueItem[];
+    paymentsAfterEndItems: PaymentIssueItem[];
+    missingScheduleItems: string[];
+    missingScheduleIssueItems: MissingScheduleIssueItem[];
+    invoicePaymentCorrections: InvoicePaymentCorrection[];
+    scheduleInvoiceMismatchItems: ScheduleInvoiceMismatchItem[];
+    invoiceDateKeys: string[];
   };
 };
 
@@ -61,77 +133,125 @@ type PaymentScheduleLike = {
   due_date?: string | null;
   amount?: number | null;
   status?: string | null;
-  payment_date?: string | null;
+  paid_date?: string | null;
+  invoice_id?: string | null;
 };
+
+type ContractHealthInvoice = Invoice & {
+  contract_id?: string | null;
+};
+
+type SupabaseRpcClient = {
+  rpc: <T = unknown>(
+    functionName: string,
+    args: Record<string, unknown>,
+  ) => Promise<{ data: T | null; error: unknown }>;
+};
+
+type DeleteOutOfPeriodInvoiceResponse = {
+  deleted?: boolean;
+  reason?: string;
+} | null;
+
+type ContractRepairTool =
+  | 'repair_linked_invoice_contracts'
+  | 'cancel_duplicate_schedules'
+  | 'repair_outside_invoices'
+  | 'create_missing_invoices'
+  | 'repair_out_of_period_payments'
+  | 'reconcile_invoice_amounts'
+  | 'reconcile_schedule_invoices'
+  | 'recalculate_invoice_balances'
+  | 'final_balance_audit';
+
+type ContractRepairAgentPlan = {
+  source: 'longcat' | 'local';
+  summary: string;
+  actions: Array<{
+    tool: ContractRepairTool;
+    priority: number;
+    reason: string;
+  }>;
+  requiresReview: string[];
+};
+
+const CONTRACT_REPAIR_AGENT_TOOLS: ContractRepairTool[] = [
+  'repair_linked_invoice_contracts',
+  'cancel_duplicate_schedules',
+  'repair_outside_invoices',
+  'create_missing_invoices',
+  'repair_out_of_period_payments',
+  'reconcile_invoice_amounts',
+  'reconcile_schedule_invoices',
+  'recalculate_invoice_balances',
+  'final_balance_audit',
+];
 
 export const ContractHealthAnalysis: React.FC<{
   contract: Contract;
   formatCurrency: (amount: number) => string;
   paymentSchedules: PaymentScheduleLike[];
-}> = ({ contract, formatCurrency, paymentSchedules }) => {
+}> = ({ contract, formatCurrency }) => {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const [isFixing, setIsFixing] = useState(false);
+
   const { data, isLoading, isFetching, refetch } = useQuery({
     queryKey: ['contract-health-analysis', contract.id, contract.updated_at],
     queryFn: async () => {
-      const [invoicesResult, paymentsResult] = await Promise.all([
-        supabase
-          .from('invoices')
-          .select('id, invoice_number, invoice_date, due_date, total_amount, paid_amount, balance_due, status, payment_status, created_at, updated_at')
-          .eq('contract_id', contract.id)
-          .eq('company_id', contract.company_id)
-          .order('due_date', { ascending: true }),
-        supabase
-          .from('payments')
-          .select('id, payment_number, payment_date, amount, payment_status, invoice_id')
-          .eq('contract_id', contract.id)
-          .eq('company_id', contract.company_id)
-          .order('payment_date', { ascending: true }),
-      ]);
+      const schedulesResult = await supabase
+        .from('contract_payment_schedules')
+        .select('id, installment_number, due_date, amount, status, paid_date, invoice_id')
+        .eq('contract_id', contract.id)
+        .eq('company_id', contract.company_id)
+        .order('installment_number', { ascending: true });
+
+      if (schedulesResult.error) throw schedulesResult.error;
+      const currentPaymentSchedules = (schedulesResult.data || []) as PaymentScheduleLike[];
+
+      const scheduleInvoiceIds = Array.from(new Set(
+        currentPaymentSchedules
+          .map((schedule) => schedule.invoice_id)
+          .filter(Boolean),
+      )) as string[];
+
+      let invoicesQuery = supabase
+        .from('invoices')
+        .select('id, contract_id, invoice_number, invoice_date, due_date, total_amount, paid_amount, balance_due, status, payment_status, journal_entry_id, created_at, updated_at')
+        .eq('company_id', contract.company_id)
+        .order('due_date', { ascending: true });
+
+      invoicesQuery = scheduleInvoiceIds.length
+        ? invoicesQuery.or(`contract_id.eq.${contract.id},id.in.(${scheduleInvoiceIds.join(',')})`)
+        : invoicesQuery.eq('contract_id', contract.id);
+
+      const invoicesResult = await invoicesQuery;
 
       if (invoicesResult.error) throw invoicesResult.error;
+      const invoices = (invoicesResult.data || []) as ContractHealthInvoice[];
+      const invoiceIds = invoices.map((invoice) => invoice.id).filter(Boolean);
+
+      let paymentsQuery = supabase
+        .from('payments')
+        .select('id, payment_number, payment_date, amount, payment_status, invoice_id, contract_id, reference_number')
+        .eq('company_id', contract.company_id);
+
+      paymentsQuery = invoiceIds.length
+        ? paymentsQuery.or(`contract_id.eq.${contract.id},invoice_id.in.(${invoiceIds.join(',')})`)
+        : paymentsQuery.eq('contract_id', contract.id);
+
+      const paymentsResult = await paymentsQuery.order('payment_date', { ascending: true });
       if (paymentsResult.error) throw paymentsResult.error;
 
       const metrics = buildContractHealthMetrics({
         contract,
-        invoices: (invoicesResult.data || []) as Invoice[],
+        invoices,
         payments: (paymentsResult.data || []) as ContractPaymentRow[],
-        paymentSchedules,
+        paymentSchedules: currentPaymentSchedules,
+        formatCurrency,
       });
 
       const fallback = buildLocalContractHealth(metrics);
-
-      try {
-        const { data: aiData, error } = await supabase.functions.invoke('contract-health-analysis', {
-          body: {
-            contract: {
-              id: contract.id,
-              contract_number: contract.contract_number,
-              status: contract.status,
-              start_date: contract.start_date,
-              end_date: contract.end_date,
-              contract_amount: contract.contract_amount,
-              monthly_amount: contract.monthly_amount,
-              total_paid: contract.total_paid,
-              balance_due: contract.balance_due,
-              payment_status: contract.payment_status,
-            },
-            metrics,
-            locale: 'ar-QA',
-          },
-        });
-
-        if (error) throw new Error(error.message);
-        if (aiData?.summary && Array.isArray(aiData?.issues)) {
-          return {
-            ...fallback,
-            ...aiData,
-            source: aiData.source === 'openai' ? 'openai' : 'local',
-            metrics,
-          } as ContractHealthResult;
-        }
-      } catch (error) {
-        console.warn('[ContractHealthAnalysis] Falling back to local analysis:', error);
-      }
-
       return fallback;
     },
     enabled: !!contract.id && !!contract.company_id,
@@ -139,6 +259,309 @@ export const ContractHealthAnalysis: React.FC<{
   });
 
   const health = data;
+  const fixableIssuesCount = health
+    ? health.metrics.missingInvoices
+      + health.metrics.outsideInvoices.length
+      + health.metrics.paymentsBeforeStartItems.length
+      + health.metrics.paymentsAfterEndItems.length
+      + (health.metrics.scheduleInvoiceDifference > 1 ? 1 : 0)
+      + health.metrics.scheduleInvoiceMismatchItems.length
+      + health.metrics.invoicePaymentCorrections.length
+    : 0;
+
+  const handleAutoFix = async () => {
+    if (!health || fixableIssuesCount === 0) return;
+
+    setIsFixing(true);
+    const fixedActions: string[] = [];
+    const reviewItems: string[] = [];
+    let fixedCount = 0;
+    const now = new Date().toISOString();
+    const cancelledPaymentIds = new Set<string>();
+
+    try {
+      const agentPlan = await getContractRepairAgentPlan({ contract, health });
+      if (agentPlan.actions.length > 0) {
+        const actionLabels = agentPlan.actions
+          .slice(0, 5)
+          .map((action) => getRepairToolLabel(action.tool))
+          .join('، ');
+        fixedActions.push(
+          `${agentPlan.source === 'longcat' ? 'وكيل AI' : 'خطة ذكية محلية'}: ${agentPlan.summary} (${actionLabels})`,
+        );
+      }
+      reviewItems.push(...agentPlan.requiresReview);
+
+      const schedulesResult = await supabase
+        .from('contract_payment_schedules')
+        .select('id, installment_number, due_date, amount, status, paid_date, invoice_id')
+        .eq('contract_id', contract.id)
+        .eq('company_id', contract.company_id)
+        .order('installment_number', { ascending: true });
+
+      if (schedulesResult.error) throw schedulesResult.error;
+      const currentPaymentSchedules = (schedulesResult.data || []) as PaymentScheduleLike[];
+
+      const repairedInvoiceLinks = await repairScheduleLinkedInvoiceContracts({
+        contract,
+        paymentSchedules: currentPaymentSchedules,
+        now,
+      });
+      if (repairedInvoiceLinks > 0) {
+        fixedCount += repairedInvoiceLinks;
+        fixedActions.push(`تصحيح ربط فواتير بالعقد: ${repairedInvoiceLinks}`);
+      }
+
+      const duplicateScheduleIds = getDuplicatePaymentScheduleIds(currentPaymentSchedules, contract.start_date, contract.end_date);
+      if (duplicateScheduleIds.length > 0) {
+        const { error } = await supabase
+          .from('contract_payment_schedules')
+          .update({
+            status: 'cancelled',
+            notes: `تم إلغاء القسط لأنه مكرر ضمن إصلاح صحة العقد بتاريخ ${now}`,
+            updated_at: now,
+          })
+          .in('id', duplicateScheduleIds)
+          .eq('contract_id', contract.id)
+          .eq('company_id', contract.company_id);
+
+        if (error) throw error;
+        fixedCount += duplicateScheduleIds.length;
+        fixedActions.push(`إلغاء أقساط مكررة: ${duplicateScheduleIds.length}`);
+      }
+
+      let cancelledOutsideInvoices = 0;
+      let cancelledLinkedPayments = 0;
+      for (const invoice of health.metrics.outsideInvoices) {
+        for (const paymentId of invoice.linked_payment_ids) {
+          if (cancelledPaymentIds.has(paymentId)) continue;
+
+          await cancelPaymentForContractRepair({
+            paymentId,
+            companyId: contract.company_id,
+            invoiceId: invoice.id,
+            now,
+            reason: `إلغاء دفعة مرتبطة بفاتورة خارج فترة العقد ${invoice.invoice_number}`,
+          });
+          cancelledPaymentIds.add(paymentId);
+          cancelledLinkedPayments += 1;
+        }
+
+        const repairResult = await repairOutOfPeriodInvoice({
+          contract,
+          invoice,
+          now,
+        });
+
+        if (repairResult.reviewMessage) {
+          reviewItems.push(repairResult.reviewMessage);
+        }
+
+        if (repairResult.changed) cancelledOutsideInvoices += 1;
+      }
+      if (health.metrics.outsideInvoices.length > 0) {
+        fixedCount += cancelledOutsideInvoices + cancelledLinkedPayments;
+        fixedActions.push(`إلغاء فواتير خارج الفترة: ${cancelledOutsideInvoices}`);
+        if (cancelledLinkedPayments > 0) {
+          fixedActions.push(`إلغاء دفعات مرتبطة بالفواتير الخارجة: ${cancelledLinkedPayments}`);
+        }
+      }
+
+      if (health.metrics.missingInvoices > 0) {
+        const currentInvoiceDateKeys = await getCurrentActiveInvoiceMonthKeys(contract, currentPaymentSchedules);
+        const currentMissingSchedules = getMissingScheduleIssueItemsFromSchedules({
+          paymentSchedules: currentPaymentSchedules,
+          invoiceDateKeys: currentInvoiceDateKeys,
+          startDate: contract.start_date,
+          endDate: contract.end_date,
+        });
+        const activeScheduleCount = currentPaymentSchedules.filter((schedule) => !isCancelled(schedule.status)).length - duplicateScheduleIds.length;
+        if (activeScheduleCount <= 0) {
+          reviewItems.push('لا يوجد جدول دفعات حالي يمكن استخدامه لإنشاء الفواتير');
+        }
+
+        const targetScheduleMonthKeys = currentMissingSchedules
+          .map((schedule) => getMonthKey(schedule.due_date))
+          .filter((key) => key !== 'unknown');
+        const generatedCount = currentMissingSchedules.length > 0
+          ? await createMissingInvoicesFromActiveSchedules({
+              contract,
+              paymentSchedules: currentPaymentSchedules,
+              existingInvoices: currentInvoiceDateKeys,
+              maxInvoices: currentMissingSchedules.length,
+              targetScheduleIds: currentMissingSchedules.map((schedule) => schedule.id),
+              now,
+            })
+          : 0;
+        const missingContractMonthKeys = getMissingContractInvoiceMonthKeys({
+          contract,
+          invoiceDateKeys: [
+            ...currentInvoiceDateKeys,
+            ...targetScheduleMonthKeys.slice(0, generatedCount),
+          ],
+          paymentSchedules: currentPaymentSchedules,
+        });
+        const generatedMonthCount = await createMissingInvoicesForContractMonths({
+          contract,
+          existingInvoices: currentInvoiceDateKeys,
+          skipMonthKeys: targetScheduleMonthKeys,
+          targetMonthKeys: missingContractMonthKeys,
+          maxInvoices: missingContractMonthKeys.length,
+          now,
+          paymentSchedules: currentPaymentSchedules,
+        });
+
+        fixedCount += generatedCount + generatedMonthCount;
+        fixedActions.push(`إنشاء فواتير: ${generatedCount + generatedMonthCount}`);
+      }
+
+      const paymentsToFix = [...health.metrics.paymentsBeforeStartItems, ...health.metrics.paymentsAfterEndItems]
+        .filter((payment) => !cancelledPaymentIds.has(payment.id));
+      let cancelledOutOfPeriodPayments = 0;
+      for (const payment of paymentsToFix) {
+        if (payment.is_immutable) {
+          await cancelPaymentForContractRepair({
+            paymentId: payment.id,
+            companyId: contract.company_id,
+            invoiceId: payment.invoice_id,
+            now,
+            reason: `إلغاء دفعة خارج فترة العقد ${payment.payment_number}`,
+          });
+          cancelledPaymentIds.add(payment.id);
+          cancelledOutOfPeriodPayments += 1;
+          continue;
+        }
+
+        const nextPaymentDate = clampDateToContract(payment.payment_date, contract.start_date, contract.end_date);
+        if (!nextPaymentDate || nextPaymentDate === payment.payment_date) continue;
+
+        const { error } = await supabase
+          .from('payments')
+          .update({ payment_date: nextPaymentDate, updated_at: now })
+          .eq('id', payment.id)
+          .eq('company_id', contract.company_id);
+
+        if (error) {
+          if (!isImmutablePaymentError(error)) throw error;
+          reviewItems.push(`دفعة مكتملة: ${payment.payment_number}`);
+        }
+      }
+      if (paymentsToFix.length > 0) {
+        const editablePaymentsCount = paymentsToFix.filter((payment) => !payment.is_immutable).length;
+        fixedCount += editablePaymentsCount + cancelledOutOfPeriodPayments;
+        if (editablePaymentsCount > 0) fixedActions.push(`تصحيح تواريخ دفعات: ${editablePaymentsCount}`);
+        if (cancelledOutOfPeriodPayments > 0) fixedActions.push(`إلغاء دفعات خارج فترة العقد: ${cancelledOutOfPeriodPayments}`);
+      }
+
+      // Reconcile invoice amounts with payment schedules
+      const currentInvoicesForReconciliation = await getCurrentContractInvoices(contract, currentPaymentSchedules);
+      let reconciledAmounts = 0;
+      for (const schedule of currentPaymentSchedules) {
+        if (health.metrics.scheduleInvoiceDifference > 1 || health.metrics.scheduleInvoiceMismatchItems.length > 0) continue;
+        if (isCancelled(schedule.status) || !schedule.invoice_id) continue;
+
+        const matchingInvoice = currentInvoicesForReconciliation.find((inv) => inv.id === schedule.invoice_id);
+        if (!matchingInvoice) continue;
+
+        const scheduleAmount = Number(schedule.amount || 0);
+        const invoiceAmount = Number(matchingInvoice.total_amount || 0);
+
+        if (Math.abs(scheduleAmount - invoiceAmount) > 0.01) {
+          const { error } = await supabase
+            .from('invoices')
+            .update({
+              total_amount: scheduleAmount,
+              subtotal: scheduleAmount,
+              updated_at: now,
+            })
+            .eq('id', matchingInvoice.id)
+            .eq('company_id', contract.company_id);
+
+          if (error) {
+            if (!isConflictError(error)) throw error;
+            reviewItems.push(`تعذر مصالحة مبلغ الفاتورة ${matchingInvoice.invoice_number || matchingInvoice.id}`);
+          } else {
+            await recalculateInvoicePaymentTotals(matchingInvoice.id, contract.company_id, now);
+            reconciledAmounts += 1;
+          }
+        }
+      }
+      if (reconciledAmounts > 0) {
+        fixedCount += reconciledAmounts;
+        fixedActions.push(`مصالحة مبالغ الفواتير مع جدول الدفعات: ${reconciledAmounts}`);
+      }
+
+      if (health.metrics.scheduleInvoiceDifference > 1 || health.metrics.scheduleInvoiceMismatchItems.length > 0) {
+        const reconciliation = await reconcileScheduleInvoicesForContract({
+          contract,
+          now,
+        });
+
+        fixedCount += reconciliation.fixedCount;
+        fixedActions.push(...reconciliation.actions);
+        reviewItems.push(...reconciliation.reviewItems);
+      }
+
+      for (const invoice of health.metrics.invoicePaymentCorrections) {
+        try {
+          const changed = await recalculateInvoicePaymentTotals(invoice.id, contract.company_id, now);
+          if (changed) fixedCount += 1;
+        } catch (error) {
+          if (!isConflictError(error)) throw error;
+          reviewItems.push(`رصيد فاتورة متعارض: ${invoice.invoice_number}`);
+        }
+      }
+      if (health.metrics.invoicePaymentCorrections.length > 0) {
+        fixedActions.push(`إعادة احتساب أرصدة: ${health.metrics.invoicePaymentCorrections.length}`);
+      }
+
+      const finalBalanceCorrections = await recalculateCurrentContractInvoicePaymentTotals({
+        contract,
+        now,
+      });
+      if (finalBalanceCorrections > 0) {
+        fixedCount += finalBalanceCorrections;
+        fixedActions.push(`مراجعة نهائية لأرصدة الفواتير: ${finalBalanceCorrections}`);
+      }
+
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['contract-health-analysis'] }),
+        queryClient.invalidateQueries({ queryKey: ['contract-details'] }),
+        queryClient.invalidateQueries({ queryKey: ['contract-details', contract.contract_number, contract.company_id] }),
+        queryClient.invalidateQueries({ queryKey: ['contract-invoices'] }),
+        queryClient.invalidateQueries({ queryKey: ['contract-invoices', contract.id] }),
+        queryClient.invalidateQueries({ queryKey: ['contract-payments'] }),
+        queryClient.invalidateQueries({ queryKey: ['payment-schedules'] }),
+        queryClient.invalidateQueries({ queryKey: ['invoices'] }),
+        queryClient.invalidateQueries({ queryKey: ['payments'] }),
+        queryClient.invalidateQueries({ queryKey: ['contracts'] }),
+      ]);
+      await Promise.all([
+        queryClient.refetchQueries({ queryKey: ['contract-health-analysis'], type: 'active' }),
+        queryClient.refetchQueries({ queryKey: ['contract-details'], type: 'active' }),
+        queryClient.refetchQueries({ queryKey: ['contract-invoices'], type: 'active' }),
+        queryClient.refetchQueries({ queryKey: ['contract-payments'], type: 'active' }),
+        queryClient.refetchQueries({ queryKey: ['payment-schedules'], type: 'active' }),
+      ]);
+      await refetch();
+
+      toast({
+        title: fixedCount > 0 ? 'تم تحديث صحة العقد' : 'لا توجد عناصر قابلة للإصلاح التلقائي',
+        description: buildAutoFixToastDescription(fixedActions, reviewItems),
+      });
+    } catch (error) {
+      const errorMessage = getReadableErrorMessage(error);
+      console.error('[ContractHealthAnalysis] auto fix failed:', errorMessage, error);
+      toast({
+        title: 'تعذر الإصلاح التلقائي',
+        description: error instanceof Error ? error.message : 'حدث خطأ أثناء تحديث بيانات العقد.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsFixing(false);
+    }
+  };
+
   const scoreTone = useMemo(() => {
     const score = health?.score || 0;
     if (score >= 85) return 'text-emerald-700 bg-emerald-50 border-emerald-200';
@@ -162,7 +585,7 @@ export const ContractHealthAnalysis: React.FC<{
         <div>
           <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-black text-blue-700">
             <Sparkles className="h-4 w-4" />
-            {health.source === 'openai' ? 'تحليل OpenAI' : 'تحليل ذكي داخلي'}
+            {health.source === 'longcat' ? 'تحليل LongCat' : 'تحليل ذكي داخلي'}
           </div>
           <h2 className="text-xl font-black text-[#142033]">تحليل صحة العقد</h2>
           <p className="mt-1 max-w-3xl text-sm font-medium leading-6 text-[#6A7688]">{health.summary}</p>
@@ -175,6 +598,14 @@ export const ContractHealthAnalysis: React.FC<{
           <Button variant="outline" onClick={() => refetch()} disabled={isFetching}>
             <RefreshCw className={cn('h-4 w-4', isFetching && 'animate-spin')} />
             تحديث
+          </Button>
+          <Button
+            onClick={handleAutoFix}
+            disabled={isFixing || fixableIssuesCount === 0}
+            className="gap-2 bg-[#22C7A1] text-white hover:bg-[#1BAA8A]"
+          >
+            {isFixing ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShieldCheck className="h-4 w-4" />}
+            إصلاح المشاكل تلقائيًا
           </Button>
         </div>
       </div>
@@ -205,36 +636,333 @@ export const ContractHealthAnalysis: React.FC<{
   );
 };
 
+async function getContractRepairAgentPlan({
+  contract,
+  health,
+}: {
+  contract: Contract;
+  health: ContractHealthResult;
+}): Promise<ContractRepairAgentPlan> {
+  try {
+    const { data, error } = await supabase.functions.invoke('contract-health-analysis', {
+      body: {
+        mode: 'repair_plan',
+        allowExternalAI: true,
+        contract: {
+          id: contract.id,
+          contract_number: contract.contract_number,
+          company_id: contract.company_id,
+          status: contract.status,
+          start_date: contract.start_date,
+          end_date: contract.end_date,
+          contract_amount: contract.contract_amount,
+          monthly_amount: contract.monthly_amount,
+          total_paid: contract.total_paid,
+          balance_due: contract.balance_due,
+          payment_status: contract.payment_status,
+        },
+        metrics: health.metrics,
+        allowedTools: CONTRACT_REPAIR_AGENT_TOOLS,
+      },
+    });
+
+    if (error) throw error;
+    return normalizeContractRepairAgentPlan(data);
+  } catch (error) {
+    console.warn('[ContractHealthAnalysis] AI repair agent fallback:', error);
+    return buildLocalContractRepairAgentPlan(health.metrics);
+  }
+}
+
+function normalizeContractRepairAgentPlan(payload: any): ContractRepairAgentPlan {
+  const allowedTools = new Set(CONTRACT_REPAIR_AGENT_TOOLS);
+  const actions = Array.isArray(payload?.actions)
+    ? payload.actions
+        .filter((action: any) => allowedTools.has(action?.tool))
+        .map((action: any, index: number) => ({
+          tool: action.tool as ContractRepairTool,
+          priority: Number.isFinite(Number(action?.priority)) ? Number(action.priority) : index + 1,
+          reason: typeof action?.reason === 'string' ? action.reason : 'اختار الوكيل هذه الأداة بناءً على حالة العقد.',
+        }))
+        .sort((left, right) => left.priority - right.priority)
+    : [];
+
+  if (actions.length === 0) {
+    return {
+      source: 'local',
+      summary: 'لا توجد أدوات إصلاح مطلوبة حاليًا.',
+      actions: [],
+      requiresReview: [],
+    };
+  }
+
+  return {
+    source: payload?.source === 'longcat' || payload?.source === 'openai' ? 'longcat' : 'local',
+    summary: typeof payload?.summary === 'string'
+      ? payload.summary
+      : 'تم إعداد خطة إصلاح تلقائية بناءً على مؤشرات صحة العقد.',
+    actions,
+    requiresReview: Array.isArray(payload?.requiresReview)
+      ? payload.requiresReview.map((item: unknown) => String(item)).slice(0, 6)
+      : [],
+  };
+}
+
+function buildLocalContractRepairAgentPlan(metrics: ContractHealthResult['metrics']): ContractRepairAgentPlan {
+  const actions: ContractRepairAgentPlan['actions'] = [];
+  const pushAction = (tool: ContractRepairTool, reason: string) => {
+    if (actions.some((action) => action.tool === tool)) return;
+    actions.push({ tool, priority: actions.length + 1, reason });
+  };
+
+  if (metrics.scheduleInvoiceMismatchItems.length > 0) {
+    pushAction('repair_linked_invoice_contracts', 'توجد روابط أو تواريخ غير متطابقة بين الأقساط والفواتير.');
+    pushAction('reconcile_schedule_invoices', 'يلزم تصحيح ربط وتواريخ الفواتير حسب جدول الدفعات.');
+  }
+  if (metrics.outsideInvoices.length > 0) pushAction('repair_outside_invoices', 'توجد فواتير خارج فترة العقد.');
+  if (metrics.missingInvoices > 0) pushAction('create_missing_invoices', 'توجد فواتير ناقصة داخل فترة العقد.');
+  if (metrics.paymentsBeforeStartItems.length > 0 || metrics.paymentsAfterEndItems.length > 0) {
+    pushAction('repair_out_of_period_payments', 'توجد دفعات خارج فترة العقد.');
+  }
+  if (Math.abs(metrics.scheduleInvoiceDifference) > 1) {
+    pushAction('reconcile_invoice_amounts', 'يوجد فرق مالي بين جدول الدفعات والفواتير.');
+    pushAction('reconcile_schedule_invoices', 'يلزم مصالحة الفواتير مع الأقساط.');
+  }
+  if (metrics.invoicePaymentCorrections.length > 0) {
+    pushAction('recalculate_invoice_balances', 'توجد أرصدة فواتير تحتاج إعادة احتساب.');
+  }
+  if (actions.length > 0) pushAction('final_balance_audit', 'مراجعة نهائية بعد الإصلاح.');
+
+  return {
+    source: 'local',
+    summary: actions.length > 0
+      ? 'تم إعداد خطة إصلاح تلقائية بناءً على مؤشرات صحة العقد.'
+      : 'لا توجد أدوات إصلاح مطلوبة حاليًا.',
+    actions,
+    requiresReview: [],
+  };
+}
+
+function getRepairToolLabel(tool: ContractRepairTool) {
+  const labels: Record<ContractRepairTool, string> = {
+    repair_linked_invoice_contracts: 'تصحيح روابط الفواتير',
+    cancel_duplicate_schedules: 'إلغاء الأقساط المكررة',
+    repair_outside_invoices: 'معالجة الفواتير خارج الفترة',
+    create_missing_invoices: 'إنشاء الفواتير الناقصة',
+    repair_out_of_period_payments: 'معالجة الدفعات خارج الفترة',
+    reconcile_invoice_amounts: 'مصالحة مبالغ الفواتير',
+    reconcile_schedule_invoices: 'مصالحة الأقساط والفواتير',
+    recalculate_invoice_balances: 'إعادة احتساب الأرصدة',
+    final_balance_audit: 'مراجعة نهائية',
+  };
+
+  return labels[tool];
+}
+
 function buildContractHealthMetrics({
   contract,
   invoices,
   payments,
   paymentSchedules,
+  formatCurrency,
 }: {
   contract: Contract;
-  invoices: Invoice[];
+  invoices: ContractHealthInvoice[];
   payments: ContractPaymentRow[];
   paymentSchedules: PaymentScheduleLike[];
+  formatCurrency: (amount: number) => string;
 }) {
   const startDate = normalizeDate(contract.start_date);
   const endDate = normalizeDate(contract.end_date);
   const activeInvoices = invoices.filter((invoice) => !isCancelled(invoice.status) && !isCancelled(invoice.payment_status));
-  const activePayments = payments.filter((payment) => !isCancelled(payment.payment_status));
+  const activeInvoiceIds = new Set(activeInvoices.map((invoice) => invoice.id));
+  const activePayments = payments.filter((payment) => {
+    if (isCancelled(payment.payment_status)) return false;
+    return !payment.invoice_id || activeInvoiceIds.has(payment.invoice_id);
+  });
   const completedPayments = activePayments.filter((payment) => isCompletedPayment(payment.payment_status));
   const totalPaid = completedPayments.reduce((sum, payment) => sum + Number(payment.amount || 0), 0);
   const contractAmount = Number(contract.contract_amount || 0);
-  const expectedByMonths = startDate && endDate ? monthSpanInclusive(startDate, endDate) : 0;
-  const expectedByAmount = Number(contract.monthly_amount || 0) > 0
-    ? Math.ceil(contractAmount / Number(contract.monthly_amount || 1))
+  const monthlyAmount = Number(contract.monthly_amount || 0);
+  const shouldExpectTimeBasedInvoices = !isCancelled(contract.status) && (monthlyAmount > 0 || contractAmount > 0);
+  const expectedByMonths = startDate && endDate && shouldExpectTimeBasedInvoices ? monthSpanInclusive(startDate, endDate) : 0;
+  const expectedByAmount = monthlyAmount > 0
+    ? Math.ceil(contractAmount / monthlyAmount)
     : 0;
-  const expectedInvoices = Math.max(paymentSchedules.length, expectedByMonths, expectedByAmount);
-  const invoicesInsideContract = activeInvoices.filter((invoice) => isDateInside(invoice.due_date || invoice.invoice_date, startDate, endDate));
+  const activeSchedules = getUniquePaymentSchedulesByMonth(paymentSchedules, startDate, endDate);
+  const activeSchedulesForLinks = getActivePaymentSchedulesForPeriod(paymentSchedules, startDate, endDate);
+  const expectedInvoices = Math.max(activeSchedules.length, expectedByMonths, expectedByAmount);
+  const invoicesInsideContract = activeInvoices.filter((invoice) => isMonthInsideContract(invoice.invoice_date || invoice.due_date, startDate, endDate));
+  const invoiceById = new Map(activeInvoices.map((invoice) => [invoice.id, invoice]));
+  const invoiceByInvoiceMonth = new Map<string, Invoice>();
+  for (const invoice of invoicesInsideContract) {
+    const monthKey = getInvoiceMonthKey(invoice);
+    if (monthKey !== 'unknown' && !invoiceByInvoiceMonth.has(monthKey)) {
+      invoiceByInvoiceMonth.set(monthKey, invoice);
+    }
+  }
+  const scheduleCountByInvoiceId = activeSchedulesForLinks.reduce((map, schedule) => {
+    if (!schedule.invoice_id) return map;
+    map.set(schedule.invoice_id, (map.get(schedule.invoice_id) || 0) + 1);
+    return map;
+  }, new Map<string, number>());
+  const invoiceMonths = new Set();
+  for (const invoice of invoicesInsideContract) {
+    const monthKey = getInvoiceMonthKey(invoice);
+    if (monthKey !== 'unknown') invoiceMonths.add(monthKey);
+  }
+  const linkedPaymentsByInvoiceId = activePayments.reduce((map, payment) => {
+    if (!payment.invoice_id) return map;
+    const items = map.get(payment.invoice_id) || [];
+    items.push(payment);
+    map.set(payment.invoice_id, items);
+    return map;
+  }, new Map<string, ContractPaymentRow[]>());
+  const outsideInvoices = activeInvoices
+    .filter((invoice) => !isMonthInsideContract(invoice.invoice_date || invoice.due_date, startDate, endDate))
+    .map((invoice) => {
+      const nextDueDate = clampDateToContract(invoice.invoice_date || invoice.due_date, contract.start_date, contract.end_date);
+      const linkedPayments = linkedPaymentsByInvoiceId.get(invoice.id) || [];
+      return {
+        id: invoice.id,
+        invoice_number: invoice.invoice_number || 'بدون رقم',
+        invoice_date: invoice.invoice_date || null,
+        due_date: invoice.due_date || null,
+        total_amount: Number(invoice.total_amount || 0),
+        reason: isBefore(invoice.invoice_date || invoice.due_date, startDate) ? 'before_start' : 'after_end',
+        target_month_has_invoice: nextDueDate ? invoiceMonths.has(getMonthKey(nextDueDate)) : false,
+        has_linked_payments: linkedPayments.length > 0,
+        has_journal_entry: Boolean(invoice.journal_entry_id),
+        linked_payment_ids: linkedPayments.map((payment) => payment.id),
+        linked_payment_numbers: linkedPayments.map((payment) => payment.payment_number || payment.reference_number || payment.id),
+      };
+    }) as InvoiceIssueItem[];
   const invoicesOutsideContract = activeInvoices.length - invoicesInsideContract.length;
-  const missingInvoices = Math.max(0, expectedInvoices - invoicesInsideContract.length);
-  const paymentsBeforeStart = activePayments.filter((payment) => isBefore(payment.payment_date, startDate)).length;
-  const paymentsAfterEnd = activePayments.filter((payment) => isAfter(payment.payment_date, endDate)).length;
-  const scheduleTotal = paymentSchedules.reduce((sum, schedule) => sum + Number(schedule.amount || 0), 0);
+  const missingScheduleIssueItems = activeSchedules
+    .filter((schedule) => schedule.due_date && !invoiceMonths.has(getMonthKey(schedule.due_date)))
+    .map((schedule) => ({
+      id: schedule.id,
+      installment_number: schedule.installment_number ?? null,
+      due_date: schedule.due_date || null,
+      amount: Number(schedule.amount || 0),
+    }));
+  const missingScheduleItems = missingScheduleIssueItems
+    .map((schedule) => `قسط ${schedule.installment_number || '-'} بتاريخ ${formatDateLabel(schedule.due_date)} بقيمة ${formatCurrency(schedule.amount)}`);
+  const coveredMonths = invoiceMonths.size;
+  const missingInvoices = Math.max(0, Math.max(expectedInvoices - coveredMonths, missingScheduleIssueItems.length));
+  const paymentsBeforeStartItems = activePayments
+    .filter((payment) => isBefore(payment.payment_date, startDate))
+    .map((payment) => ({
+      id: payment.id,
+      payment_number: payment.payment_number || payment.reference_number || 'دفعة بدون رقم',
+      payment_date: payment.payment_date || null,
+      amount: Number(payment.amount || 0),
+      payment_status: payment.payment_status || null,
+      invoice_id: payment.invoice_id || null,
+      is_immutable: isCompletedPayment(payment.payment_status),
+      reason: 'before_start',
+    })) as PaymentIssueItem[];
+  const paymentsAfterEndItems = activePayments
+    .filter((payment) => isAfter(payment.payment_date, endDate))
+    .map((payment) => ({
+      id: payment.id,
+      payment_number: payment.payment_number || payment.reference_number || 'دفعة بدون رقم',
+      payment_date: payment.payment_date || null,
+      amount: Number(payment.amount || 0),
+      payment_status: payment.payment_status || null,
+      invoice_id: payment.invoice_id || null,
+      is_immutable: isCompletedPayment(payment.payment_status),
+      reason: 'after_end',
+    })) as PaymentIssueItem[];
+  const paymentsBeforeStart = paymentsBeforeStartItems.length;
+  const paymentsAfterEnd = paymentsAfterEndItems.length;
+  const scheduleTotal = activeSchedules.reduce((sum, schedule) => sum + Number(schedule.amount || 0), 0);
   const invoicesTotal = invoicesInsideContract.reduce((sum, invoice) => sum + Number(invoice.total_amount || 0), 0);
+  const scheduleInvoiceMismatchItems = activeSchedulesForLinks.reduce((items, schedule) => {
+    const scheduleMonthKey = getMonthKey(schedule.due_date);
+    const linkedInvoice = schedule.invoice_id ? invoiceById.get(schedule.invoice_id) : null;
+    const expectedInvoice = invoiceByInvoiceMonth.get(scheduleMonthKey) || null;
+    const scheduleAmount = Number(schedule.amount || 0);
+    const linkedInvoiceAmount = Number(linkedInvoice?.total_amount || 0);
+    const linkedInvoiceCount = schedule.invoice_id ? scheduleCountByInvoiceId.get(schedule.invoice_id) || 0 : 0;
+    const wrongLink = Boolean(expectedInvoice && linkedInvoice && expectedInvoice.id !== linkedInvoice.id);
+    const duplicateLink = linkedInvoiceCount > 1;
+    const missingInvoice = Boolean(!linkedInvoice && !expectedInvoice);
+    const amountMismatch = Boolean(linkedInvoice && Math.abs(scheduleAmount - linkedInvoiceAmount) > 1);
+    const dateMismatch = Boolean(
+      linkedInvoice
+      && !wrongLink
+      && linkedInvoice.due_date
+      && getMonthKey(linkedInvoice.due_date) !== scheduleMonthKey
+      && getInvoiceMonthKey(linkedInvoice) === scheduleMonthKey,
+    );
+
+    if (!wrongLink && !duplicateLink && !missingInvoice && !amountMismatch && !dateMismatch) return items;
+
+    items.push({
+      schedule_id: schedule.id,
+      invoice_id: linkedInvoice?.id || schedule.invoice_id || null,
+      installment_number: schedule.installment_number ?? null,
+      due_date: schedule.due_date || null,
+      schedule_amount: scheduleAmount,
+      invoice_number: linkedInvoice?.invoice_number || expectedInvoice?.invoice_number || 'بدون فاتورة',
+      invoice_date: linkedInvoice?.invoice_date || expectedInvoice?.invoice_date || null,
+      invoice_due_date: linkedInvoice?.due_date || expectedInvoice?.due_date || null,
+      invoice_amount: Number((linkedInvoice || expectedInvoice)?.total_amount || 0),
+      difference: Number((scheduleAmount - Number((linkedInvoice || expectedInvoice)?.total_amount || 0)).toFixed(2)),
+      reason: wrongLink
+        ? 'wrong_link'
+        : duplicateLink
+        ? 'duplicate_link'
+        : missingInvoice
+        ? 'missing_invoice'
+        : dateMismatch
+        ? 'date_mismatch'
+        : 'amount_mismatch',
+    });
+
+    return items;
+  }, [] as ScheduleInvoiceMismatchItem[]);
+  const paymentsByInvoiceId = completedPayments.reduce((map, payment) => {
+    if (!payment.invoice_id) return map;
+    map.set(payment.invoice_id, (map.get(payment.invoice_id) || 0) + Number(payment.amount || 0));
+    return map;
+  }, new Map<string, number>());
+  const invoicePaymentCorrections = activeInvoices.reduce((items, invoice) => {
+    const paidAmount = paymentsByInvoiceId.get(invoice.id) || 0;
+    const totalAmount = Number(invoice.total_amount || 0);
+    const balanceDue = Math.max(0, totalAmount - paidAmount);
+    const paymentStatus = balanceDue <= 1 ? 'paid' : paidAmount > 0 ? 'partial' : 'unpaid';
+    const status = getInvoiceStatusForBalance(balanceDue, invoice.due_date, invoice.status);
+    const currentPaid = Number(invoice.paid_amount || 0);
+    const currentBalance = Number(invoice.balance_due ?? Math.max(0, totalAmount - currentPaid));
+    const currentPaymentStatus = String(invoice.payment_status || '').toLowerCase();
+    const currentStatus = String(invoice.status || '').toLowerCase();
+    const statusNeedsUpdate =
+      (paymentStatus === 'paid' && !['paid', 'completed', 'cleared'].includes(currentPaymentStatus))
+      || (paymentStatus === 'partial' && !['partial', 'partially_paid'].includes(currentPaymentStatus))
+      || (paymentStatus === 'unpaid' && ['paid', 'completed', 'cleared', 'partial', 'partially_paid'].includes(currentPaymentStatus));
+    const lifecycleStatusNeedsUpdate = currentStatus !== status;
+
+    if (
+      Math.abs(currentPaid - paidAmount) > 1
+      || Math.abs(currentBalance - balanceDue) > 1
+      || statusNeedsUpdate
+      || lifecycleStatusNeedsUpdate
+    ) {
+      items.push({
+        id: invoice.id,
+        invoice_number: invoice.invoice_number || 'بدون رقم',
+        paid_amount: paidAmount,
+        balance_due: balanceDue,
+        payment_status: paymentStatus,
+        status,
+      });
+    }
+
+    return items;
+  }, [] as InvoicePaymentCorrection[]);
+  const contractPeriodLabel = `${formatDateLabel(contract.start_date)} إلى ${formatDateLabel(contract.end_date)}`;
 
   return {
     contractNumber: contract.contract_number,
@@ -242,18 +970,29 @@ function buildContractHealthMetrics({
     startDate: contract.start_date,
     endDate: contract.end_date,
     expectedInvoices,
-    activeInvoices: invoicesInsideContract.length,
+    activeInvoices: coveredMonths,
     activeInvoicesTotal: invoicesTotal,
     missingInvoices,
     paymentsBeforeStart,
     paymentsAfterEnd,
     invoicesOutsideContract,
+    outsideInvoices,
+    paymentsBeforeStartItems,
+    paymentsAfterEndItems,
+    missingScheduleItems,
+    missingScheduleIssueItems,
+    invoicePaymentCorrections,
+    invoiceDateKeys: Array.from(invoiceMonths),
+    contractPeriodLabel,
     totalPaid,
     contractAmount,
     overpaidAmount: Math.max(0, totalPaid - contractAmount),
+    scheduleTotal,
+    invoicesTotal,
     scheduleInvoiceDifference: Math.abs(scheduleTotal - invoicesTotal),
     balanceDue: Number(contract.balance_due ?? Math.max(0, contractAmount - totalPaid)),
     daysUntilEnd: endDate ? Math.ceil((endDate.getTime() - startOfDay(new Date()).getTime()) / 86400000) : null,
+    scheduleInvoiceMismatchItems,
   };
 }
 
@@ -263,18 +1002,22 @@ function buildLocalContractHealth(metrics: ReturnType<typeof buildContractHealth
   if (metrics.paymentsBeforeStart > 0) {
     issues.push({
       title: 'توجد دفعات قبل بداية العقد',
-      detail: `تم العثور على ${metrics.paymentsBeforeStart} دفعة بتاريخ أقدم من بداية العقد. يجب مراجعتها قبل اعتماد صحة الملف المالي.`,
+      detail: `فترة العقد من ${metrics.contractPeriodLabel}. تم العثور على ${metrics.paymentsBeforeStart} دفعة بتاريخ أقدم من بداية العقد.`,
       severity: 'critical',
       count: metrics.paymentsBeforeStart,
+      fixable: true,
+      items: metrics.paymentsBeforeStartItems.map((payment) => `${payment.payment_number} - ${formatDateLabel(payment.payment_date)} - ${metricsFormatCurrency(metrics, payment.amount)}`),
     });
   }
 
   if (metrics.missingInvoices > 0) {
     issues.push({
       title: 'توجد فواتير ناقصة',
-      detail: `المتوقع ${metrics.expectedInvoices} فاتورة، والموجود داخل مدة العقد ${metrics.activeInvoices} فاتورة فقط.`,
+      detail: `فترة العقد من ${metrics.contractPeriodLabel}. المتوقع ${metrics.expectedInvoices} فاتورة، والموجود داخل مدة العقد ${metrics.activeInvoices} فاتورة فقط.`,
       severity: 'warning',
       count: metrics.missingInvoices,
+      fixable: true,
+      items: metrics.missingScheduleItems.slice(0, 8),
     });
   }
 
@@ -287,21 +1030,72 @@ function buildLocalContractHealth(metrics: ReturnType<typeof buildContractHealth
     });
   }
 
-  if (metrics.invoicesOutsideContract > 0 || metrics.paymentsAfterEnd > 0) {
+  if (metrics.invoicesOutsideContract > 0) {
     issues.push({
-      title: 'تعارض بين التواريخ والفواتير أو الدفعات',
-      detail: `يوجد ${metrics.invoicesOutsideContract} فاتورة خارج مدة العقد و${metrics.paymentsAfterEnd} دفعة بعد نهاية العقد.`,
+      title: 'فواتير خارج فترة العقد',
+      detail: `فترة العقد من ${metrics.contractPeriodLabel}. يوجد ${metrics.invoicesOutsideContract} فاتورة بتاريخ خارج هذه الفترة وسيتم إلغاؤها مع عكس القيود أو الدفعات المرتبطة عند الحاجة.`,
       severity: 'warning',
-      count: metrics.invoicesOutsideContract + metrics.paymentsAfterEnd,
+      count: metrics.invoicesOutsideContract,
+      fixable: true,
+      items: metrics.outsideInvoices.map((invoice) => `${invoice.invoice_number} - تاريخ الفاتورة ${formatDateLabel(invoice.invoice_date)} - تاريخ الاستحقاق ${formatDateLabel(invoice.due_date)} - ${metricsFormatCurrency(metrics, invoice.total_amount)}${invoice.has_linked_payments || invoice.has_journal_entry ? ' - سيتم إلغاؤها مع عكس الارتباطات المالية' : ' - سيتم إلغاؤها وإخراجها من التحليل'}`),
     });
   }
 
-  if (metrics.scheduleInvoiceDifference > 1) {
+  if (metrics.paymentsAfterEnd > 0) {
+    issues.push({
+      title: 'دفعات بعد نهاية العقد',
+      detail: `فترة العقد من ${metrics.contractPeriodLabel}. يوجد ${metrics.paymentsAfterEnd} دفعة بتاريخ بعد نهاية العقد.`,
+      severity: 'warning',
+      count: metrics.paymentsAfterEnd,
+      fixable: true,
+      items: metrics.paymentsAfterEndItems.map((payment) => `${payment.payment_number} - ${formatDateLabel(payment.payment_date)} - ${metricsFormatCurrency(metrics, payment.amount)}`),
+    });
+  }
+
+  if (metrics.scheduleInvoiceDifference > 1 || metrics.scheduleInvoiceMismatchItems.length > 0) {
     issues.push({
       title: 'فرق بين جدول الدفعات والفواتير',
-      detail: `يوجد فرق مالي بين جدول الدفعات والفواتير بقيمة ${metrics.scheduleInvoiceDifference.toLocaleString('ar-QA')} ر.ق.`,
+      detail: metrics.scheduleInvoiceDifference > 1
+        ? `يوجد فرق مالي بين جدول الدفعات والفواتير بقيمة ${metrics.scheduleInvoiceDifference.toLocaleString('ar-QA')} ر.ق.`
+        : `يوجد ${metrics.scheduleInvoiceMismatchItems.length} ربط غير متطابق بين جدول الدفعات والفواتير.`,
       severity: 'warning',
-      count: 1,
+      count: Math.max(1, metrics.scheduleInvoiceMismatchItems.length),
+    });
+  }
+
+  if (metrics.scheduleInvoiceDifference > 1 || metrics.scheduleInvoiceMismatchItems.length > 0) {
+    const scheduleIssue = issues[issues.length - 1];
+    if (scheduleIssue) {
+      scheduleIssue.detail = metrics.scheduleInvoiceDifference > 1
+        ? `يوجد فرق مالي بين جدول الدفعات والفواتير بقيمة ${metricsFormatCurrency(metrics, metrics.scheduleInvoiceDifference)}. مجموع جدول الدفعات ${metricsFormatCurrency(metrics, metrics.scheduleTotal)}، ومجموع الفواتير ${metricsFormatCurrency(metrics, metrics.invoicesTotal)}.`
+        : `يوجد ربط غير متطابق بين الأقساط والفواتير رغم أن الإجمالي المالي لا يظهر فرقًا كبيرًا.`;
+      scheduleIssue.fixable = true;
+      scheduleIssue.items = metrics.scheduleInvoiceMismatchItems.slice(0, 8).map((item) => {
+        if (item.reason === 'date_mismatch') {
+          return `قسط ${item.installment_number || '-'} بتاريخ ${formatDateLabel(item.due_date)}: تاريخ استحقاق الفاتورة لا يطابق شهر القسط - الفاتورة ${item.invoice_number}`;
+        }
+
+        const reasonLabel = item.reason === 'wrong_link'
+          ? 'ربط القسط بفاتورة شهر مختلف'
+          : item.reason === 'duplicate_link'
+          ? 'الفاتورة مرتبطة بأكثر من قسط'
+          : item.reason === 'missing_invoice'
+          ? 'لا توجد فاتورة مرتبطة بهذا القسط'
+          : 'مبلغ القسط لا يطابق مبلغ الفاتورة';
+
+        return `قسط ${item.installment_number || '-'} بتاريخ ${formatDateLabel(item.due_date)}: ${reasonLabel} - القسط ${metricsFormatCurrency(metrics, item.schedule_amount)} والفاتورة ${item.invoice_number} ${metricsFormatCurrency(metrics, item.invoice_amount)}`;
+      });
+    }
+  }
+
+  if (metrics.invoicePaymentCorrections.length > 0) {
+    issues.push({
+      title: 'أرصدة فواتير تحتاج إعادة احتساب',
+      detail: `${metrics.invoicePaymentCorrections.length} فاتورة لا تطابق الدفعات المرتبطة بها في المدفوع أو الرصيد المتبقي.`,
+      severity: 'warning',
+      count: metrics.invoicePaymentCorrections.length,
+      fixable: true,
+      items: metrics.invoicePaymentCorrections.slice(0, 8).map((invoice) => `${invoice.invoice_number} - المدفوع الصحيح ${metricsFormatCurrency(metrics, invoice.paid_amount)} - الرصيد الصحيح ${metricsFormatCurrency(metrics, invoice.balance_due)}`),
     });
   }
 
@@ -341,11 +1135,23 @@ function buildLocalContractHealth(metrics: ReturnType<typeof buildContractHealth
       activeInvoices: metrics.activeInvoices,
       missingInvoices: metrics.missingInvoices,
       paymentsBeforeStart: metrics.paymentsBeforeStart,
+      paymentsAfterEnd: metrics.paymentsAfterEnd,
       invoicesOutsideContract: metrics.invoicesOutsideContract,
       totalPaid: metrics.totalPaid,
       contractAmount: metrics.contractAmount,
       overpaidAmount: metrics.overpaidAmount,
+      scheduleTotal: metrics.scheduleTotal,
+      invoicesTotal: metrics.invoicesTotal,
       scheduleInvoiceDifference: metrics.scheduleInvoiceDifference,
+      contractPeriodLabel: metrics.contractPeriodLabel,
+      outsideInvoices: metrics.outsideInvoices,
+      paymentsBeforeStartItems: metrics.paymentsBeforeStartItems,
+      paymentsAfterEndItems: metrics.paymentsAfterEndItems,
+      missingScheduleItems: metrics.missingScheduleItems,
+      missingScheduleIssueItems: metrics.missingScheduleIssueItems,
+      invoicePaymentCorrections: metrics.invoicePaymentCorrections,
+      scheduleInvoiceMismatchItems: metrics.scheduleInvoiceMismatchItems,
+      invoiceDateKeys: metrics.invoiceDateKeys,
     },
   };
 }
@@ -393,6 +1199,16 @@ const IssueCard: React.FC<{ issue: HealthIssue }> = ({ issue }) => {
         <div>
           <p className="font-black">{issue.title}</p>
           <p className="mt-1 text-sm font-medium leading-6">{issue.detail}</p>
+          {issue.items && issue.items.length > 0 && (
+            <ul className="mt-3 space-y-1 rounded-md bg-white/65 p-2 text-xs font-bold leading-5">
+              {issue.items.slice(0, 8).map((item, index) => (
+                <li key={`${issue.title}-${index}`}>{item}</li>
+              ))}
+            </ul>
+          )}
+          {issue.fixable && issue.severity !== 'good' && (
+            <p className="mt-2 text-xs font-black">يمكن إصلاح هذه المشكلة من زر الإصلاح التلقائي بالأعلى.</p>
+          )}
         </div>
       </div>
     </div>
@@ -407,9 +1223,26 @@ function isCompletedPayment(status: string | null | undefined) {
   return ['completed', 'paid', 'cleared', 'confirmed', 'approved'].includes(String(status || '').toLowerCase());
 }
 
+function getInvoiceStatusForBalance(
+  balanceDue: number,
+  dueDateValue: string | null | undefined,
+  currentStatus?: string | null,
+) {
+  if (balanceDue <= 1) return 'paid';
+
+  const dueDate = normalizeDate(dueDateValue);
+  if (dueDate && dueDate < startOfDay(new Date())) return 'overdue';
+
+  const normalizedCurrent = String(currentStatus || '').toLowerCase();
+  return normalizedCurrent === 'draft' ? 'draft' : 'sent';
+}
+
 function normalizeDate(dateValue: string | null | undefined) {
   if (!dateValue) return null;
-  const date = new Date(dateValue);
+  const dateOnly = String(dateValue).match(/^(\d{4})-(\d{2})-(\d{2})/);
+  const date = dateOnly
+    ? new Date(Number(dateOnly[1]), Number(dateOnly[2]) - 1, Number(dateOnly[3]))
+    : new Date(dateValue);
   if (Number.isNaN(date.getTime())) return null;
   date.setHours(0, 0, 0, 0);
   return date;
@@ -431,10 +1264,1555 @@ function isAfter(dateValue: string | null | undefined, target: Date | null) {
   return !!date && !!target && date > target;
 }
 
-function isDateInside(dateValue: string | null | undefined, start: Date | null, end: Date | null) {
+function isMonthInsideContract(dateValue: string | null | undefined, start: Date | null, end: Date | null) {
   const date = normalizeDate(dateValue);
   if (!date || !start || !end) return false;
-  return date >= start && date <= end;
+  const month = date.getFullYear() * 12 + date.getMonth();
+  const startMonth = start.getFullYear() * 12 + start.getMonth();
+  const endMonth = end.getFullYear() * 12 + end.getMonth();
+  return month >= startMonth && month <= endMonth;
+}
+
+function getMonthKey(dateValue: string | null | undefined) {
+  const date = normalizeDate(dateValue);
+  if (!date) return 'unknown';
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+}
+
+function getUniquePaymentSchedulesByMonth(schedules: PaymentScheduleLike[], start: Date | null, end: Date | null) {
+  const byMonth = new Map<string, PaymentScheduleLike>();
+
+  for (const schedule of schedules) {
+    if (isCancelled(schedule.status) || !schedule.due_date) continue;
+    if (!isMonthInsideContract(schedule.due_date, start, end)) continue;
+
+    const key = getMonthKey(schedule.due_date);
+    const current = byMonth.get(key);
+    if (!current || (!current.invoice_id && schedule.invoice_id)) {
+      byMonth.set(key, schedule);
+    }
+  }
+
+  return Array.from(byMonth.values()).sort((a, b) => {
+    const left = normalizeDate(a.due_date)?.getTime() || 0;
+    const right = normalizeDate(b.due_date)?.getTime() || 0;
+    return left - right;
+  });
+}
+
+function getActivePaymentSchedulesForPeriod(schedules: PaymentScheduleLike[], start: Date | null, end: Date | null) {
+  return schedules
+    .filter((schedule) => !isCancelled(schedule.status) && !!schedule.due_date)
+    .filter((schedule) => isMonthInsideContract(schedule.due_date, start, end))
+    .sort((a, b) => {
+      const left = normalizeDate(a.due_date)?.getTime() || 0;
+      const right = normalizeDate(b.due_date)?.getTime() || 0;
+      return left - right;
+    });
+}
+
+function getDuplicatePaymentScheduleIds(schedules: PaymentScheduleLike[], startValue: string | null | undefined, endValue: string | null | undefined) {
+  const start = normalizeDate(startValue);
+  const end = normalizeDate(endValue);
+  const keepByMonth = new Map<string, PaymentScheduleLike>();
+  const duplicateIds: string[] = [];
+
+  for (const schedule of schedules) {
+    if (isCancelled(schedule.status) || !schedule.due_date) continue;
+    if (!isMonthInsideContract(schedule.due_date, start, end)) continue;
+
+    const key = getMonthKey(schedule.due_date);
+    const current = keepByMonth.get(key);
+    if (!current) {
+      keepByMonth.set(key, schedule);
+      continue;
+    }
+
+    if (!current.invoice_id && schedule.invoice_id) {
+      duplicateIds.push(current.id);
+      keepByMonth.set(key, schedule);
+    } else {
+      duplicateIds.push(schedule.id);
+    }
+  }
+
+  return duplicateIds;
+}
+
+function toDateInputValue(date: Date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function clampDateToContract(dateValue: string | null | undefined, startValue: string | null | undefined, endValue: string | null | undefined) {
+  const date = normalizeDate(dateValue);
+  const start = normalizeDate(startValue);
+  const end = normalizeDate(endValue);
+
+  if (!date || !start || !end) return null;
+  if (date < start) return toDateInputValue(start);
+  if (date > end) return toDateInputValue(end);
+  return toDateInputValue(date);
+}
+
+function formatDateLabel(dateValue: string | null | undefined) {
+  const date = normalizeDate(dateValue);
+  if (!date) return '-';
+  return new Intl.DateTimeFormat('ar-QA', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  }).format(date);
+}
+
+function metricsFormatCurrency(_metrics: ReturnType<typeof buildContractHealthMetrics>, amount: number) {
+  return new Intl.NumberFormat('ar-QA', {
+    style: 'currency',
+    currency: 'QAR',
+    maximumFractionDigits: 2,
+  }).format(Number(amount || 0));
+}
+
+async function getCurrentActiveInvoiceMonthKeys(contract: Contract, paymentSchedules: PaymentScheduleLike[]) {
+  const startDate = normalizeDate(contract.start_date);
+  const endDate = normalizeDate(contract.end_date);
+  const scheduleInvoiceIds = Array.from(new Set(
+    paymentSchedules
+      .map((schedule) => schedule.invoice_id)
+      .filter(Boolean),
+  )) as string[];
+
+  let invoicesQuery = supabase
+    .from('invoices')
+    .select('id, invoice_date, due_date, status, payment_status')
+    .eq('company_id', contract.company_id);
+
+  invoicesQuery = scheduleInvoiceIds.length
+    ? invoicesQuery.or(`contract_id.eq.${contract.id},id.in.(${scheduleInvoiceIds.join(',')})`)
+    : invoicesQuery.eq('contract_id', contract.id);
+
+  const { data, error } = await invoicesQuery;
+  if (error) throw error;
+
+  const invoiceMonthsSet = new Set();
+  for (const invoice of (data || [])) {
+    if (isCancelled(invoice.status) || isCancelled(invoice.payment_status)) continue;
+    if (!isMonthInsideContract(invoice.due_date || invoice.invoice_date, startDate, endDate)) continue;
+    const monthKey = getInvoiceMonthKey(invoice);
+    if (monthKey !== 'unknown') invoiceMonthsSet.add(monthKey);
+  }
+  return Array.from(invoiceMonthsSet);
+}
+
+async function getCurrentContractInvoices(contract: Contract, paymentSchedules: PaymentScheduleLike[]) {
+  const scheduleInvoiceIds = Array.from(new Set(
+    paymentSchedules
+      .map((schedule) => schedule.invoice_id)
+      .filter(Boolean),
+  )) as string[];
+
+  let invoicesQuery = supabase
+    .from('invoices')
+    .select('id, contract_id, invoice_number, invoice_date, due_date, total_amount, subtotal, paid_amount, balance_due, status, payment_status, journal_entry_id, created_at, updated_at')
+    .eq('company_id', contract.company_id)
+    .order('invoice_date', { ascending: true });
+
+  invoicesQuery = scheduleInvoiceIds.length
+    ? invoicesQuery.or(`contract_id.eq.${contract.id},id.in.(${scheduleInvoiceIds.join(',')})`)
+    : invoicesQuery.eq('contract_id', contract.id);
+
+  const { data, error } = await invoicesQuery;
+  if (error) throw error;
+  return (data || []) as ContractHealthInvoice[];
+}
+
+async function getCurrentContractPaymentSchedules(contract: Contract) {
+  const { data, error } = await supabase
+    .from('contract_payment_schedules')
+    .select('id, installment_number, due_date, amount, status, paid_date, paid_amount, invoice_id')
+    .eq('contract_id', contract.id)
+    .eq('company_id', contract.company_id)
+    .order('installment_number', { ascending: true });
+
+  if (error) throw error;
+  return (data || []) as PaymentScheduleLike[];
+}
+
+async function repairScheduleLinkedInvoiceContracts({
+  contract,
+  paymentSchedules,
+  now,
+}: {
+  contract: Contract;
+  paymentSchedules: PaymentScheduleLike[];
+  now: string;
+}) {
+  const linkedInvoiceIds = Array.from(new Set(
+    paymentSchedules
+      .filter((schedule) => !isCancelled(schedule.status))
+      .map((schedule) => schedule.invoice_id)
+      .filter(Boolean),
+  )) as string[];
+
+  if (linkedInvoiceIds.length === 0) return 0;
+
+  const { data, error } = await supabase
+    .from('invoices')
+    .select('id, contract_id, status, payment_status')
+    .in('id', linkedInvoiceIds)
+    .eq('company_id', contract.company_id);
+
+  if (error) throw error;
+
+  const invoiceIdsToRepair = (data || [])
+    .filter((invoice) => !isCancelled(invoice.status) && !isCancelled(invoice.payment_status))
+    .filter((invoice) => !invoice.contract_id)
+    .map((invoice) => invoice.id);
+
+  if (invoiceIdsToRepair.length === 0) return 0;
+
+  const { error: updateError } = await supabase
+    .from('invoices')
+    .update({
+      contract_id: contract.id,
+      customer_id: (contract as any).customer_id || null,
+      updated_at: now,
+    })
+    .in('id', invoiceIdsToRepair)
+    .eq('company_id', contract.company_id);
+
+  if (updateError) throw updateError;
+  return invoiceIdsToRepair.length;
+}
+
+async function recalculateCurrentContractInvoicePaymentTotals({
+  contract,
+  now,
+}: {
+  contract: Contract;
+  now: string;
+}) {
+  const schedules = await getCurrentContractPaymentSchedules(contract);
+  const invoices = await getCurrentContractInvoices(contract, schedules);
+  const activeInvoiceIds = Array.from(new Set(
+    invoices
+      .filter((invoice) => !isCancelled(invoice.status) && !isCancelled(invoice.payment_status))
+      .map((invoice) => invoice.id),
+  ));
+  let changedCount = 0;
+
+  for (const invoiceId of activeInvoiceIds) {
+    const changed = await recalculateInvoicePaymentTotals(invoiceId, contract.company_id, now);
+    if (changed) changedCount += 1;
+  }
+
+  return changedCount;
+}
+
+function getActiveContractInvoicesForPeriod(contract: Contract, invoices: Invoice[]) {
+  const startDate = normalizeDate(contract.start_date);
+  const endDate = normalizeDate(contract.end_date);
+
+  return invoices.filter((invoice) => {
+    if (isCancelled(invoice.status) || isCancelled(invoice.payment_status)) return false;
+    return isMonthInsideContract(invoice.invoice_date || invoice.due_date, startDate, endDate);
+  });
+}
+
+function getInvoiceMonthKey(invoice: Pick<Invoice, 'invoice_date' | 'due_date'>) {
+  return getMonthKey(invoice.invoice_date || invoice.due_date);
+}
+
+function getInvoiceMonthKeys(invoice: Pick<Invoice, 'invoice_date' | 'due_date'>) {
+  const keys = new Set<string>();
+  const invoiceDateKey = getMonthKey(invoice.invoice_date);
+  const dueDateKey = getMonthKey(invoice.due_date);
+
+  if (invoiceDateKey !== 'unknown') keys.add(invoiceDateKey);
+  if (dueDateKey !== 'unknown') keys.add(dueDateKey);
+
+  return keys;
+}
+
+function invoiceMatchesMonth(invoice: Pick<Invoice, 'invoice_date' | 'due_date'>, monthKey: string) {
+  return getInvoiceMonthKeys(invoice).has(monthKey);
+}
+
+async function reconcileScheduleInvoicesForContract({
+  contract,
+  now,
+}: {
+  contract: Contract;
+  now: string;
+}) {
+  const actions: string[] = [];
+  const reviewItems: string[] = [];
+  let fixedCount = 0;
+  const startDate = normalizeDate(contract.start_date);
+  const endDate = normalizeDate(contract.end_date);
+  const monthlyAmount = Number(contract.monthly_amount || 0);
+  const contractAmount = Number(contract.contract_amount || 0);
+  const expectedMonthCount = startDate && endDate ? monthSpanInclusive(startDate, endDate) : 0;
+
+  let schedules = await getCurrentContractPaymentSchedules(contract);
+  let activeSchedules = getUniquePaymentSchedulesByMonth(schedules, startDate, endDate);
+  const scheduleTotal = activeSchedules.reduce((sum, schedule) => sum + Number(schedule.amount || 0), 0);
+  const isUniformMonthlyContract = monthlyAmount > 0
+    && contractAmount > 0
+    && expectedMonthCount > 0
+    && Math.abs(expectedMonthCount * monthlyAmount - contractAmount) <= 1;
+
+  if (isUniformMonthlyContract && scheduleTotal > contractAmount + 1) {
+    let excessAmount = scheduleTotal - contractAmount;
+    let normalizedSchedules = 0;
+
+    for (const schedule of activeSchedules) {
+      if (excessAmount <= 1) break;
+      const currentAmount = Number(schedule.amount || 0);
+      if (currentAmount <= monthlyAmount + 1) continue;
+
+      const reduction = Math.min(currentAmount - monthlyAmount, excessAmount);
+      const nextAmount = Number((currentAmount - reduction).toFixed(2));
+      const { error } = await supabase
+        .from('contract_payment_schedules')
+        .update({
+          amount: nextAmount,
+          updated_at: now,
+        })
+        .eq('id', schedule.id)
+        .eq('contract_id', contract.id)
+        .eq('company_id', contract.company_id);
+
+      if (error) throw error;
+      excessAmount = Number((excessAmount - reduction).toFixed(2));
+      normalizedSchedules += 1;
+    }
+
+    if (normalizedSchedules > 0) {
+      fixedCount += normalizedSchedules;
+      actions.push(`تصحيح مبالغ الأقساط: ${normalizedSchedules}`);
+      schedules = await getCurrentContractPaymentSchedules(contract);
+      activeSchedules = getUniquePaymentSchedulesByMonth(schedules, startDate, endDate);
+    }
+
+    if (excessAmount > 1) {
+      reviewItems.push(`تبقى فرق في جدول الدفعات بقيمة ${excessAmount.toLocaleString('ar-QA')} ر.ق يحتاج مراجعة.`);
+    }
+  }
+
+  let invoices = await getCurrentContractInvoices(contract, schedules);
+  let activeInvoices = getActiveContractInvoicesForPeriod(contract, invoices);
+  let invoiceByMonth = new Map<string, Invoice>();
+  for (const invoice of activeInvoices) {
+    const monthKey = getInvoiceMonthKey(invoice);
+    if (monthKey !== 'unknown' && !invoiceByMonth.has(monthKey)) {
+      invoiceByMonth.set(monthKey, invoice);
+    }
+  }
+
+  const invoiceById = new Map(activeInvoices.map((invoice) => [invoice.id, invoice]));
+  let activeSchedulesForLinks = getActivePaymentSchedulesForPeriod(schedules, startDate, endDate);
+  let relinkedSchedules = 0;
+  const invoiceDateCorrections: Array<{ invoice: Invoice; dueDate: string }> = [];
+  for (const schedule of activeSchedulesForLinks) {
+    if (isCancelled(schedule.status) || !schedule.due_date) continue;
+
+    const scheduleMonthKey = getMonthKey(schedule.due_date);
+    let expectedInvoice = invoiceByMonth.get(scheduleMonthKey) || null;
+    const linkedInvoice = schedule.invoice_id ? invoiceById.get(schedule.invoice_id) : null;
+    const linkedInvoiceMonthKey = linkedInvoice ? getInvoiceMonthKey(linkedInvoice) : null;
+    const linkedInvoiceDueMonthKey = linkedInvoice ? getMonthKey(linkedInvoice.due_date) : null;
+
+    if (
+      linkedInvoice
+      && linkedInvoiceMonthKey === scheduleMonthKey
+      && linkedInvoiceDueMonthKey !== scheduleMonthKey
+    ) {
+      invoiceDateCorrections.push({
+        invoice: linkedInvoice,
+        dueDate: schedule.due_date,
+      });
+    }
+
+    if (expectedInvoice && schedule.invoice_id !== expectedInvoice.id) {
+      const { error } = await supabase
+        .from('contract_payment_schedules')
+        .update({
+          invoice_id: expectedInvoice.id,
+          updated_at: now,
+        })
+        .eq('id', schedule.id)
+        .eq('contract_id', contract.id)
+        .eq('company_id', contract.company_id);
+
+      if (error) throw error;
+      relinkedSchedules += 1;
+      continue;
+    }
+
+    if (!expectedInvoice && linkedInvoice && linkedInvoiceMonthKey !== scheduleMonthKey) {
+      const { error } = await supabase
+        .from('contract_payment_schedules')
+        .update({
+          invoice_id: null,
+          updated_at: now,
+        })
+        .eq('id', schedule.id)
+        .eq('contract_id', contract.id)
+        .eq('company_id', contract.company_id);
+
+      if (error) throw error;
+      relinkedSchedules += 1;
+    }
+  }
+
+  if (invoiceDateCorrections.length > 0) {
+    const correctedInvoiceDates = await applyInvoiceDueDateCorrections({
+      contract,
+      corrections: invoiceDateCorrections,
+      now,
+    });
+
+    fixedCount += correctedInvoiceDates;
+    actions.push(`تصحيح تواريخ استحقاق الفواتير: ${correctedInvoiceDates}`);
+    invoices = await getCurrentContractInvoices(contract, schedules);
+    activeInvoices = getActiveContractInvoicesForPeriod(contract, invoices);
+    invoiceByMonth = new Map<string, Invoice>();
+    for (const invoice of activeInvoices) {
+      const monthKey = getInvoiceMonthKey(invoice);
+      if (monthKey !== 'unknown' && !invoiceByMonth.has(monthKey)) {
+        invoiceByMonth.set(monthKey, invoice);
+      }
+    }
+  }
+
+  if (relinkedSchedules > 0) {
+    fixedCount += relinkedSchedules;
+    actions.push(`تصحيح ربط الأقساط بالفواتير: ${relinkedSchedules}`);
+    schedules = await getCurrentContractPaymentSchedules(contract);
+    activeSchedules = getUniquePaymentSchedulesByMonth(schedules, startDate, endDate);
+    activeSchedulesForLinks = getActivePaymentSchedulesForPeriod(schedules, startDate, endDate);
+    invoices = await getCurrentContractInvoices(contract, schedules);
+    activeInvoices = getActiveContractInvoicesForPeriod(contract, invoices);
+    invoiceByMonth = new Map<string, Invoice>();
+    for (const invoice of activeInvoices) {
+      const monthKey = getInvoiceMonthKey(invoice);
+      if (monthKey !== 'unknown' && !invoiceByMonth.has(monthKey)) {
+        invoiceByMonth.set(monthKey, invoice);
+      }
+    }
+  }
+
+  const missingScheduleIds = activeSchedulesForLinks
+    .filter((schedule) => !schedule.invoice_id && schedule.due_date && !invoiceByMonth.has(getMonthKey(schedule.due_date)))
+    .map((schedule) => schedule.id);
+
+  if (missingScheduleIds.length > 0) {
+    const existingInvoiceMonthKeys = activeInvoices
+      .map((invoice) => getInvoiceMonthKey(invoice))
+      .filter((key) => key !== 'unknown');
+    const createdCount = await createMissingInvoicesFromActiveSchedules({
+      contract,
+      paymentSchedules: schedules,
+      existingInvoices: existingInvoiceMonthKeys,
+      maxInvoices: missingScheduleIds.length,
+      targetScheduleIds: missingScheduleIds,
+      now,
+    });
+
+    if (createdCount > 0) {
+      fixedCount += createdCount;
+      actions.push(`إنشاء وربط فواتير ناقصة: ${createdCount}`);
+      schedules = await getCurrentContractPaymentSchedules(contract);
+      activeSchedules = getUniquePaymentSchedulesByMonth(schedules, startDate, endDate);
+      activeSchedulesForLinks = getActivePaymentSchedulesForPeriod(schedules, startDate, endDate);
+      invoices = await getCurrentContractInvoices(contract, schedules);
+    }
+  }
+
+  const latestInvoicesById = new Map(invoices.map((invoice) => [invoice.id, invoice]));
+  const schedulesByInvoiceId = activeSchedulesForLinks.reduce((map, schedule) => {
+    if (isCancelled(schedule.status) || !schedule.invoice_id) return map;
+    const items = map.get(schedule.invoice_id) || [];
+    items.push(schedule);
+    map.set(schedule.invoice_id, items);
+    return map;
+  }, new Map<string, PaymentScheduleLike[]>());
+  let reconciledAmounts = 0;
+  for (const [invoiceId, linkedSchedules] of schedulesByInvoiceId) {
+    const invoice = latestInvoicesById.get(invoiceId);
+    if (!invoice || isCancelled(invoice.status) || isCancelled(invoice.payment_status)) continue;
+
+    const scheduleAmount = linkedSchedules.reduce((sum, schedule) => sum + Number(schedule.amount || 0), 0);
+    const invoiceAmount = Number(invoice.total_amount || 0);
+    if (Math.abs(scheduleAmount - invoiceAmount) <= 1) continue;
+
+    await updateInvoiceAmountToSchedule({
+      contract,
+      invoice,
+      amount: scheduleAmount,
+      now,
+    });
+    reconciledAmounts += 1;
+  }
+
+  if (reconciledAmounts > 0) {
+    fixedCount += reconciledAmounts;
+    actions.push(`مطابقة مبالغ الفواتير مع الأقساط: ${reconciledAmounts}`);
+  }
+
+  return { fixedCount, actions, reviewItems };
+}
+
+async function applyInvoiceDueDateCorrections({
+  contract,
+  corrections,
+  now,
+}: {
+  contract: Contract;
+  corrections: Array<{ invoice: Invoice; dueDate: string }>;
+  now: string;
+}) {
+  const uniqueCorrections = Array.from(
+    corrections.reduce((map, correction) => {
+      map.set(correction.invoice.id, correction);
+      return map;
+    }, new Map<string, { invoice: Invoice; dueDate: string }>()).values(),
+  ).sort((left, right) => {
+    const leftTime = normalizeDate(left.invoice.invoice_date || left.invoice.due_date)?.getTime() || 0;
+    const rightTime = normalizeDate(right.invoice.invoice_date || right.invoice.due_date)?.getTime() || 0;
+    return leftTime - rightTime;
+  });
+
+  try {
+    for (const correction of uniqueCorrections) {
+      const { error } = await supabase
+        .from('invoices')
+        .update({
+          due_date: correction.dueDate,
+          updated_at: now,
+        })
+        .eq('id', correction.invoice.id)
+        .eq('company_id', contract.company_id);
+
+      if (error) throw error;
+    }
+
+    return uniqueCorrections.length;
+  } catch (error) {
+    if (!isConflictError(error)) throw error;
+  }
+
+  for (const correction of uniqueCorrections) {
+    const { error } = await supabase
+      .from('invoices')
+      .update({
+        due_date: null,
+        updated_at: now,
+      })
+      .eq('id', correction.invoice.id)
+      .eq('company_id', contract.company_id);
+
+    if (error) throw error;
+  }
+
+  for (const correction of uniqueCorrections) {
+    const { error } = await supabase
+      .from('invoices')
+      .update({
+        due_date: correction.dueDate,
+        updated_at: now,
+      })
+      .eq('id', correction.invoice.id)
+      .eq('company_id', contract.company_id);
+
+    if (error) throw error;
+  }
+
+  return uniqueCorrections.length;
+}
+
+async function updateInvoiceAmountToSchedule({
+  contract,
+  invoice,
+  amount,
+  now,
+}: {
+  contract: Contract;
+  invoice: Invoice;
+  amount: number;
+  now: string;
+}) {
+  const { error } = await supabase
+    .from('invoices')
+    .update({
+      subtotal: amount,
+      total_amount: amount,
+      updated_at: now,
+    })
+    .eq('id', invoice.id)
+    .eq('company_id', contract.company_id);
+
+  if (error) throw error;
+
+  const { data: items, error: itemsError } = await supabase
+    .from('invoice_items')
+    .select('id')
+    .eq('invoice_id', invoice.id)
+    .order('line_number', { ascending: true });
+
+  if (itemsError) throw itemsError;
+  if (!items || items.length !== 1) {
+    await recalculateInvoicePaymentTotals(invoice.id, contract.company_id, now);
+    return;
+  }
+
+  const { error: itemUpdateError } = await supabase
+    .from('invoice_items')
+    .update({
+      quantity: 1,
+      unit_price: amount,
+      line_total: amount,
+      tax_amount: 0,
+    })
+    .eq('id', items[0].id);
+
+  if (itemUpdateError) throw itemUpdateError;
+
+  await recalculateInvoicePaymentTotals(invoice.id, contract.company_id, now);
+}
+
+function getMissingScheduleIssueItemsFromSchedules({
+  paymentSchedules,
+  invoiceDateKeys,
+  startDate,
+  endDate,
+}: {
+  paymentSchedules: PaymentScheduleLike[];
+  invoiceDateKeys: string[];
+  startDate: string | null | undefined;
+  endDate: string | null | undefined;
+}) {
+  const invoiceMonths = new Set(invoiceDateKeys);
+  const missingSchedulesByMonth = new Map<string, MissingScheduleIssueItem>();
+
+  for (const schedule of paymentSchedules) {
+    if (isCancelled(schedule.status) || !schedule.due_date) continue;
+    if (!isMonthInsideContract(schedule.due_date, normalizeDate(startDate), normalizeDate(endDate))) continue;
+
+    const invoiceDate = clampDateToContract(schedule.due_date, startDate, endDate);
+    if (!invoiceDate) continue;
+
+    const monthKey = getMonthKey(invoiceDate);
+    if (invoiceMonths.has(monthKey) || missingSchedulesByMonth.has(monthKey)) continue;
+
+    missingSchedulesByMonth.set(monthKey, {
+      id: schedule.id,
+      installment_number: schedule.installment_number ?? null,
+      due_date: schedule.due_date || null,
+      amount: Number(schedule.amount || 0),
+    });
+  }
+
+  return Array.from(missingSchedulesByMonth.values()).sort((left, right) => {
+    const leftTime = normalizeDate(left.due_date)?.getTime() || 0;
+    const rightTime = normalizeDate(right.due_date)?.getTime() || 0;
+    return leftTime - rightTime;
+  });
+}
+
+function getMissingContractInvoiceMonthKeys({
+  contract,
+  invoiceDateKeys,
+  paymentSchedules,
+}: {
+  contract: Contract;
+  invoiceDateKeys: string[];
+  paymentSchedules: PaymentScheduleLike[];
+}) {
+  const start = normalizeDate(contract.start_date);
+  const end = normalizeDate(contract.end_date);
+  if (!start || !end) return [];
+
+  const invoiceMonths = new Set(invoiceDateKeys);
+  const activeScheduleMonths = new Set(
+    paymentSchedules
+      .filter((schedule) => !isCancelled(schedule.status) && !!schedule.due_date)
+      .filter((schedule) => isMonthInsideContract(schedule.due_date, start, end))
+      .map((schedule) => getMonthKey(schedule.due_date))
+      .filter((key) => key !== 'unknown'),
+  );
+
+  const missingMonths: string[] = [];
+  const cursor = new Date(start.getFullYear(), start.getMonth(), 1);
+
+  while (cursor <= end) {
+    const monthKey = getMonthKey(toDateInputValue(cursor));
+    if (!invoiceMonths.has(monthKey) && !activeScheduleMonths.has(monthKey)) {
+      missingMonths.push(monthKey);
+    }
+    cursor.setMonth(cursor.getMonth() + 1);
+  }
+
+  return missingMonths;
+}
+
+function isConflictError(error: unknown) {
+  const payload = error as { status?: number; code?: string; message?: string; details?: string };
+  const message = `${payload?.message || ''} ${payload?.details || ''}`.toLowerCase();
+
+  return payload?.status === 409
+    || payload?.code === '23505'
+    || message.includes('duplicate')
+    || message.includes('already exists')
+    || message.includes('unique');
+}
+
+function isImmutablePaymentError(error: unknown) {
+  const payload = error as { code?: string; message?: string; details?: string };
+  const message = `${payload?.message || ''} ${payload?.details || ''}`.toLowerCase();
+
+  return payload?.code === 'P0001'
+    || message.includes('completed payments are immutable')
+    || message.includes('immutable');
+}
+
+function isAlreadyCancelledError(error: unknown) {
+  const payload = error as { status?: number; code?: string; message?: string; details?: string };
+  const message = `${payload?.message || ''} ${payload?.details || ''}`.toLowerCase();
+
+  return message.includes('already_cancelled')
+    || message.includes('already cancelled')
+    || message.includes('already canceled')
+    || message.includes('ملغ')
+    || payload?.status === 404;
+}
+
+function getReadableErrorMessage(error: unknown) {
+  if (error instanceof Error) return error.message;
+
+  const payload = error as {
+    code?: string;
+    details?: string | null;
+    hint?: string | null;
+    message?: string | null;
+    status?: number;
+  };
+
+  return [
+    payload?.message,
+    payload?.details,
+    payload?.hint,
+    payload?.code,
+    payload?.status ? `HTTP ${payload.status}` : null,
+  ].filter(Boolean).join(' - ');
+}
+
+async function cancelPaymentForContractRepair({
+  paymentId,
+  companyId,
+  invoiceId,
+  now,
+  reason,
+}: {
+  paymentId: string;
+  companyId: string;
+  invoiceId: string | null;
+  now: string;
+  reason: string;
+}) {
+  const { error } = await supabase
+    .from('payments')
+    .update({
+      payment_status: 'cancelled',
+      updated_at: now,
+      processing_notes: `Contract health repair: ${reason}. Cancelled at ${now}`,
+    })
+    .eq('id', paymentId)
+    .eq('company_id', companyId);
+
+  if (error && !isAlreadyCancelledError(error)) throw error;
+
+  if (invoiceId) {
+    await recalculateInvoicePaymentTotals(invoiceId, companyId, now);
+  }
+}
+
+async function recalculateInvoicePaymentTotals(invoiceId: string, companyId: string, now: string) {
+  const { data: invoice, error: invoiceError } = await supabase
+    .from('invoices')
+    .select('id, total_amount, paid_amount, balance_due, due_date, status, payment_status')
+    .eq('id', invoiceId)
+    .eq('company_id', companyId)
+    .maybeSingle();
+
+  if (invoiceError) throw invoiceError;
+  if (!invoice || isCancelled(invoice.status) || isCancelled(invoice.payment_status)) return false;
+
+  const { data: payments, error: paymentsError } = await supabase
+    .from('payments')
+    .select('amount, payment_status')
+    .eq('invoice_id', invoiceId)
+    .eq('company_id', companyId);
+
+  if (paymentsError) throw paymentsError;
+
+  const paidAmount = (payments || [])
+    .filter((payment) => isCompletedPayment(payment.payment_status))
+    .reduce((sum, payment) => sum + Number(payment.amount || 0), 0);
+  const totalAmount = Number(invoice.total_amount || 0);
+  const balanceDue = Math.max(0, totalAmount - paidAmount);
+  const paymentStatus = balanceDue <= 1 ? 'paid' : paidAmount > 0 ? 'partial' : 'unpaid';
+  const status = getInvoiceStatusForBalance(balanceDue, invoice.due_date, invoice.status);
+  const changed =
+    Math.abs(Number(invoice.paid_amount || 0) - paidAmount) > 0.01
+    || Math.abs(Number(invoice.balance_due ?? Math.max(0, totalAmount - Number(invoice.paid_amount || 0))) - balanceDue) > 0.01
+    || String(invoice.payment_status || '').toLowerCase() !== paymentStatus
+    || String(invoice.status || '').toLowerCase() !== status;
+
+  if (!changed) return false;
+
+  const { error: updateError } = await supabase
+    .from('invoices')
+    .update({
+      paid_amount: paidAmount,
+      balance_due: balanceDue,
+      payment_status: paymentStatus,
+      status,
+      updated_at: now,
+    })
+    .eq('id', invoiceId)
+    .eq('company_id', companyId);
+
+  if (updateError) throw updateError;
+  return true;
+}
+
+async function repairOutOfPeriodInvoice({
+  contract,
+  invoice,
+  now,
+}: {
+  contract: Contract;
+  invoice: InvoiceIssueItem;
+  now: string;
+}) {
+  const firstDelete = await deleteContractOutOfPeriodInvoice({
+    contract,
+    invoiceId: invoice.id,
+  });
+
+  if (firstDelete.deleted) {
+    return { changed: true, reviewMessage: null as string | null };
+  }
+
+  if (firstDelete.error && isMissingFunctionError(firstDelete.error)) {
+    return {
+      changed: false,
+      reviewMessage: `تعذر حذف الفاتورة ${invoice.invoice_number} لأن تحديث قاعدة البيانات الخاص بحذف الفواتير خارج الفترة لم يطبق بعد.`,
+    };
+  }
+
+  if (firstDelete.error && !canFallbackToInvoiceCancellation(firstDelete.error)) {
+    throw firstDelete.error;
+  }
+
+  const { error: invoiceCancelError } = await (supabase as unknown as SupabaseRpcClient).rpc('cancel_invoice_with_reversal', {
+    p_invoice_id: invoice.id,
+    p_company_id: contract.company_id,
+    p_reason: `إلغاء فاتورة خارج فترة العقد ضمن إصلاح صحة العقد بتاريخ ${now}`,
+  });
+
+  if (invoiceCancelError && !isAlreadyCancelledError(invoiceCancelError)) {
+    throw invoiceCancelError;
+  }
+
+  const secondDelete = await deleteContractOutOfPeriodInvoice({
+    contract,
+    invoiceId: invoice.id,
+  });
+
+  if (secondDelete.deleted) {
+    return { changed: true, reviewMessage: null as string | null };
+  }
+
+  if (secondDelete.error && !isProtectedFinancialDeleteError(secondDelete.error) && !isMissingFunctionError(secondDelete.error)) {
+    throw secondDelete.error;
+  }
+
+  await detachAndCancelOutOfPeriodInvoice({
+    contract,
+    invoiceId: invoice.id,
+    now,
+  });
+
+  const reason = secondDelete.error
+    ? getReadableErrorMessage(secondDelete.error)
+    : secondDelete.reason || 'تعذر الحذف النهائي بعد الإلغاء';
+
+  return {
+    changed: true,
+    reviewMessage: `تم إلغاء الفاتورة ${invoice.invoice_number} وفصلها عن العقد، لكن الحذف النهائي يحتاج مراجعة: ${reason}`,
+  };
+}
+
+async function deleteContractOutOfPeriodInvoice({
+  contract,
+  invoiceId,
+}: {
+  contract: Contract;
+  invoiceId: string;
+}) {
+  const { data, error } = await (supabase as unknown as SupabaseRpcClient).rpc<DeleteOutOfPeriodInvoiceResponse>('delete_contract_out_of_period_invoice', {
+    p_invoice_id: invoiceId,
+    p_contract_id: contract.id,
+    p_company_id: contract.company_id,
+  });
+
+  if (error) {
+    return { deleted: false, error, reason: null as string | null };
+  }
+
+  return {
+    deleted: Boolean(data?.deleted) || data?.reason === 'invoice_not_found',
+    error: null,
+    reason: data?.reason ? String(data.reason) : null,
+  };
+}
+
+async function detachAndCancelOutOfPeriodInvoice({
+  contract,
+  invoiceId,
+  now,
+}: {
+  contract: Contract;
+  invoiceId: string;
+  now: string;
+}) {
+  const { error: detachScheduleError } = await supabase
+    .from('contract_payment_schedules')
+    .update({ invoice_id: null, updated_at: now })
+    .eq('invoice_id', invoiceId)
+    .eq('contract_id', contract.id)
+    .eq('company_id', contract.company_id);
+
+  if (detachScheduleError) throw detachScheduleError;
+
+  const { error: detachInvoiceError } = await supabase
+    .from('invoices')
+    .update({
+      contract_id: null,
+      status: 'cancelled',
+      payment_status: 'cancelled',
+      balance_due: 0,
+      updated_at: now,
+    })
+    .eq('id', invoiceId)
+    .eq('company_id', contract.company_id);
+
+  if (detachInvoiceError) throw detachInvoiceError;
+}
+
+async function createMissingInvoicesForContractMonths({
+  contract,
+  existingInvoices,
+  skipMonthKeys,
+  targetMonthKeys,
+  maxInvoices,
+  now,
+  paymentSchedules,
+}: {
+  contract: Contract;
+  existingInvoices: string[];
+  skipMonthKeys: string[];
+  targetMonthKeys?: string[];
+  maxInvoices: number;
+  now: string;
+  paymentSchedules?: PaymentScheduleLike[];
+}) {
+  const start = normalizeDate(contract.start_date);
+  const end = normalizeDate(contract.end_date);
+  const amount = Number(contract.monthly_amount || 0);
+  if (!start || !end || amount <= 0 || maxInvoices <= 0) return 0;
+
+  const existingMonths = new Set(existingInvoices);
+  const skipMonths = new Set(skipMonthKeys);
+  const targetMonths = new Set(targetMonthKeys || []);
+  const shouldRestrictToTargetMonths = targetMonths.size > 0;
+
+  // Also skip months that already have a payment schedule (they will be handled by createMissingInvoicesFromActiveSchedules)
+  if (paymentSchedules) {
+    for (const schedule of paymentSchedules) {
+      if (schedule.due_date && !isCancelled(schedule.status)) {
+        skipMonths.add(getMonthKey(schedule.due_date));
+      }
+    }
+  }
+
+  let createdCount = 0;
+  const cursor = new Date(start.getFullYear(), start.getMonth(), 1);
+
+  while (cursor <= end && createdCount < maxInvoices) {
+    const monthKey = getMonthKey(toDateInputValue(cursor));
+    if (
+      !existingMonths.has(monthKey)
+      && !skipMonths.has(monthKey)
+      && (!shouldRestrictToTargetMonths || targetMonths.has(monthKey))
+    ) {
+      const invoiceDate = cursor.getFullYear() === start.getFullYear() && cursor.getMonth() === start.getMonth()
+        ? toDateInputValue(start)
+        : toDateInputValue(cursor);
+
+      const insertResult = await insertInvoiceWithRetry({
+        contract,
+        invoiceDate,
+        amount,
+        now,
+        maxRetries: 3,
+      });
+
+      if (insertResult.status === 'created') {
+        existingMonths.add(monthKey);
+        createdCount += 1;
+      } else if (insertResult.status === 'linked') {
+        const restored = await restoreExistingInvoiceForContractMonth({
+          contract,
+          invoiceId: insertResult.invoiceId,
+          invoiceDate,
+          amount,
+          now,
+        });
+        existingMonths.add(monthKey);
+        if (restored || insertResult.restored) createdCount += 1;
+      } else if (insertResult.status === 'failed') {
+        throw insertResult.error;
+      }
+    }
+
+    cursor.setMonth(cursor.getMonth() + 1);
+  }
+
+  return createdCount;
+}
+
+type InsertInvoiceResult =
+  | { status: 'created'; invoiceId: string }
+  | { status: 'linked'; invoiceId: string; restored?: boolean }
+  | { status: 'failed'; error: unknown };
+
+async function insertInvoiceWithRetry({
+  contract,
+  invoiceDate,
+  amount,
+  now,
+  maxRetries,
+}: {
+  contract: Contract;
+  invoiceDate: string;
+  amount: number;
+  now: string;
+  maxRetries: number;
+}): Promise<InsertInvoiceResult> {
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    const invoiceNumber = await getAvailableInvoiceNumber(contract.contract_number, invoiceDate);
+    const { data: invoice, error: invoiceError } = await supabase
+      .from('invoices')
+      .insert({
+        company_id: contract.company_id,
+        customer_id: (contract as any).customer_id || null,
+        contract_id: contract.id,
+        invoice_number: invoiceNumber,
+        invoice_type: 'sales',
+        invoice_date: invoiceDate,
+        due_date: invoiceDate,
+        subtotal: amount,
+        tax_amount: 0,
+        total_amount: amount,
+        paid_amount: 0,
+        balance_due: amount,
+        status: 'overdue',
+        payment_status: 'unpaid',
+        currency: 'QAR',
+        notes: `Generated by contract health repair at ${now}`,
+      })
+      .select('id')
+      .single();
+
+    if (!invoiceError) {
+      const { error: itemError } = await supabase
+        .from('invoice_items')
+        .insert({
+          invoice_id: invoice.id,
+          line_number: 1,
+          item_description: `Monthly rental payment - ${invoiceDate.slice(0, 7)}`,
+          item_description_ar: 'قسط إيجار شهري',
+          quantity: 1,
+          unit_price: amount,
+          line_total: amount,
+          tax_rate: 0,
+          tax_amount: 0,
+        });
+
+      if (itemError) {
+        if (isConflictError(itemError)) {
+          const existingInvoice = await findExistingActiveInvoiceForMonth(contract, invoiceDate)
+            || await findAnyExistingInvoiceForMonth(contract, invoiceDate);
+          if (existingInvoice) return { status: 'linked', invoiceId: existingInvoice.id };
+        }
+        if (attempt < maxRetries - 1) continue;
+        return { status: 'failed', error: itemError };
+      }
+
+      return { status: 'created', invoiceId: invoice.id };
+    }
+
+    if (isConflictError(invoiceError)) {
+      const existingInvoice = await findExistingActiveInvoiceForMonth(contract, invoiceDate)
+        || await findAnyExistingInvoiceForMonth(contract, invoiceDate);
+      if (existingInvoice) return { status: 'linked', invoiceId: existingInvoice.id };
+      if (attempt < maxRetries - 1) {
+        await new Promise((resolve) => setTimeout(resolve, 50 + attempt * 50));
+        continue;
+      }
+    }
+
+    return { status: 'failed', error: invoiceError };
+  }
+
+  return { status: 'failed', error: new Error('Max retries exceeded') };
+}
+
+async function restoreExistingInvoiceForContractMonth({
+  contract,
+  invoiceId,
+  invoiceDate,
+  amount,
+  now,
+}: {
+  contract: Contract;
+  invoiceId: string;
+  invoiceDate: string;
+  amount: number;
+  now: string;
+}) {
+  const { data: invoice, error: invoiceError } = await supabase
+    .from('invoices')
+    .select('id, invoice_number, status, payment_status, paid_amount, balance_due, journal_entry_id')
+    .eq('id', invoiceId)
+    .eq('company_id', contract.company_id)
+    .maybeSingle();
+
+  if (invoiceError) throw invoiceError;
+  if (!invoice) return false;
+
+  const invoiceIsCancelled = isCancelled(invoice.status) || isCancelled(invoice.payment_status);
+  if (invoiceIsCancelled) {
+    const { data: payments, error: paymentsError } = await supabase
+      .from('payments')
+      .select('id, payment_status')
+      .eq('invoice_id', invoiceId)
+      .eq('company_id', contract.company_id);
+
+    if (paymentsError) throw paymentsError;
+
+    const hasActivePayments = (payments || []).some((payment) => !isCancelled(payment.payment_status));
+    if (hasActivePayments || invoice.journal_entry_id) {
+      throw new Error(`لا يمكن إعادة تفعيل الفاتورة ${invoice.invoice_number || invoiceId} تلقائيًا لأنها ملغاة وعليها أثر مالي.`);
+    }
+  }
+
+  const { error: updateError } = await supabase
+    .from('invoices')
+    .update({
+      company_id: contract.company_id,
+      customer_id: (contract as any).customer_id || null,
+      contract_id: contract.id,
+      invoice_date: invoiceDate,
+      due_date: invoiceDate,
+      subtotal: amount,
+      total_amount: amount,
+      tax_amount: 0,
+      paid_amount: invoiceIsCancelled ? 0 : Number(invoice.paid_amount || 0),
+      balance_due: invoiceIsCancelled ? amount : Number(invoice.balance_due ?? amount),
+      status: invoiceIsCancelled ? getInvoiceStatusForBalance(amount, invoiceDate, 'sent') : invoice.status,
+      payment_status: invoiceIsCancelled ? 'unpaid' : invoice.payment_status,
+      updated_at: now,
+    })
+    .eq('id', invoiceId)
+    .eq('company_id', contract.company_id);
+
+  if (updateError) throw updateError;
+  await recalculateInvoicePaymentTotals(invoiceId, contract.company_id, now);
+
+  const { data: items, error: itemsError } = await supabase
+    .from('invoice_items')
+    .select('id')
+    .eq('invoice_id', invoiceId)
+    .order('line_number', { ascending: true });
+
+  if (itemsError) throw itemsError;
+
+  if (!items || items.length === 0) {
+    const { error: insertItemError } = await supabase
+      .from('invoice_items')
+      .insert({
+        invoice_id: invoiceId,
+        line_number: 1,
+        item_description: `Monthly rental payment - ${invoiceDate.slice(0, 7)}`,
+        item_description_ar: 'قسط إيجار شهري',
+        quantity: 1,
+        unit_price: amount,
+        line_total: amount,
+        tax_rate: 0,
+        tax_amount: 0,
+      });
+
+    if (insertItemError) throw insertItemError;
+  } else if (items.length === 1) {
+    const { error: updateItemError } = await supabase
+      .from('invoice_items')
+      .update({
+        quantity: 1,
+        unit_price: amount,
+        line_total: amount,
+        tax_amount: 0,
+      })
+      .eq('id', items[0].id);
+
+    if (updateItemError) throw updateItemError;
+  }
+
+  return invoiceIsCancelled;
+}
+
+async function createMissingInvoicesFromActiveSchedules({
+  contract,
+  paymentSchedules,
+  existingInvoices,
+  maxInvoices,
+  targetScheduleIds,
+  now,
+}: {
+  contract: Contract;
+  paymentSchedules: PaymentScheduleLike[];
+  existingInvoices: string[];
+  maxInvoices: number;
+  targetScheduleIds?: string[];
+  now: string;
+}) {
+  const existingMonths = new Set(existingInvoices);
+  const targetIds = new Set(targetScheduleIds || []);
+  const shouldRestrictToTargets = targetIds.size > 0;
+  if (targetScheduleIds && targetScheduleIds.length === 0) return 0;
+  const schedulesByMonth = new Map<string, { schedule: PaymentScheduleLike; invoiceDate: string }>();
+  const linkedInvoiceIds = Array.from(new Set(paymentSchedules.map((schedule) => schedule.invoice_id).filter(Boolean))) as string[];
+  const activeLinkedInvoiceMonthsById = new Map<string, Set<string>>();
+  let linkedCount = 0;
+
+  if (linkedInvoiceIds.length > 0) {
+    const { data: linkedInvoices, error: linkedInvoicesError } = await supabase
+      .from('invoices')
+      .select('id, invoice_date, due_date, status, payment_status')
+      .in('id', linkedInvoiceIds)
+      .eq('company_id', contract.company_id);
+
+    if (linkedInvoicesError) throw linkedInvoicesError;
+
+    for (const invoice of linkedInvoices || []) {
+      if (
+        !isCancelled(invoice.status)
+        && !isCancelled(invoice.payment_status)
+        && isMonthInsideContract(invoice.due_date || invoice.invoice_date, normalizeDate(contract.start_date), normalizeDate(contract.end_date))
+      ) {
+        const monthKey = getInvoiceMonthKey(invoice);
+        activeLinkedInvoiceMonthsById.set(
+          invoice.id,
+          monthKey === 'unknown' ? new Set() : new Set([monthKey]),
+        );
+      }
+    }
+  }
+
+  for (const schedule of paymentSchedules) {
+    if (shouldRestrictToTargets && !targetIds.has(schedule.id)) continue;
+    if (isCancelled(schedule.status) || !schedule.due_date) continue;
+
+    const invoiceDate = clampDateToContract(schedule.due_date, contract.start_date, contract.end_date);
+    if (!invoiceDate) continue;
+
+    const monthKey = getMonthKey(invoiceDate);
+    if (schedule.invoice_id && activeLinkedInvoiceMonthsById.get(schedule.invoice_id)?.has(monthKey)) continue;
+    if (existingMonths.has(monthKey)) {
+      const linked = await linkScheduleToExistingInvoiceForMonth({
+        contract,
+        schedule,
+        invoiceDate,
+        now,
+      });
+      if (linked) linkedCount += 1;
+      continue;
+    }
+    if (schedulesByMonth.has(monthKey)) continue;
+
+    schedulesByMonth.set(monthKey, { schedule, invoiceDate });
+  }
+
+  let createdCount = 0;
+  const orderedSchedules = Array.from(schedulesByMonth.values()).sort((left, right) => {
+    const leftTime = normalizeDate(left.invoiceDate)?.getTime() || 0;
+    const rightTime = normalizeDate(right.invoiceDate)?.getTime() || 0;
+    return leftTime - rightTime;
+  });
+
+  for (const { schedule, invoiceDate } of orderedSchedules.slice(0, Math.max(0, maxInvoices))) {
+    const amount = Number(schedule.amount || 0);
+    if (amount <= 0) continue;
+
+    if (schedule.due_date !== invoiceDate) {
+      const { error: scheduleDateError } = await supabase
+        .from('contract_payment_schedules')
+        .update({
+          due_date: invoiceDate,
+          invoice_id: null,
+          updated_at: now,
+        })
+        .eq('id', schedule.id)
+        .eq('contract_id', contract.id)
+        .eq('company_id', contract.company_id);
+
+      if (scheduleDateError) throw scheduleDateError;
+    }
+
+    const existingInvoice = await findExistingActiveInvoiceForMonth(contract, invoiceDate);
+    if (existingInvoice) {
+      const { error: scheduleLinkError } = await supabase
+        .from('contract_payment_schedules')
+        .update({
+          due_date: invoiceDate,
+          invoice_id: existingInvoice.id,
+          updated_at: now,
+        })
+        .eq('id', schedule.id)
+        .eq('contract_id', contract.id)
+        .eq('company_id', contract.company_id);
+
+      if (scheduleLinkError) throw scheduleLinkError;
+      existingMonths.add(getMonthKey(invoiceDate));
+      linkedCount += 1;
+      continue;
+    }
+
+    const insertResult = await insertInvoiceWithRetry({
+      contract,
+      invoiceDate,
+      amount,
+      now,
+      maxRetries: 3,
+    });
+
+    if (insertResult.status === 'failed') {
+      if (isConflictError(insertResult.error)) {
+        const conflictInvoice = await findExistingActiveInvoiceForMonth(contract, invoiceDate)
+          || await findAnyExistingInvoiceForMonth(contract, invoiceDate);
+        if (conflictInvoice) {
+          await restoreExistingInvoiceForContractMonth({
+            contract,
+            invoiceId: conflictInvoice.id,
+            invoiceDate,
+            amount,
+            now,
+          });
+
+          const { error: conflictLinkError } = await supabase
+            .from('contract_payment_schedules')
+            .update({
+              due_date: invoiceDate,
+              invoice_id: conflictInvoice.id,
+              updated_at: now,
+            })
+            .eq('id', schedule.id)
+            .eq('contract_id', contract.id)
+            .eq('company_id', contract.company_id);
+
+          if (conflictLinkError) throw conflictLinkError;
+          existingMonths.add(getMonthKey(invoiceDate));
+          linkedCount += 1;
+          continue;
+        }
+      }
+      throw insertResult.error;
+    }
+
+    const invoiceId = insertResult.invoiceId;
+    if (insertResult.status === 'linked') {
+      await restoreExistingInvoiceForContractMonth({
+        contract,
+        invoiceId,
+        invoiceDate,
+        amount,
+        now,
+      });
+
+      const { error: linkSchedError } = await supabase
+        .from('contract_payment_schedules')
+        .update({
+          due_date: invoiceDate,
+          invoice_id: invoiceId,
+          updated_at: now,
+        })
+        .eq('id', schedule.id)
+        .eq('contract_id', contract.id)
+        .eq('company_id', contract.company_id);
+
+      if (linkSchedError) throw linkSchedError;
+      existingMonths.add(getMonthKey(invoiceDate));
+      linkedCount += 1;
+      continue;
+    }
+
+    const { error: scheduleError } = await supabase
+      .from('contract_payment_schedules')
+      .update({
+        due_date: invoiceDate,
+        invoice_id: invoiceId,
+        updated_at: now,
+      })
+      .eq('id', schedule.id)
+      .eq('contract_id', contract.id)
+      .eq('company_id', contract.company_id);
+
+    if (scheduleError) throw scheduleError;
+
+    existingMonths.add(getMonthKey(invoiceDate));
+    createdCount += 1;
+  }
+
+  return createdCount + linkedCount;
+}
+
+async function linkScheduleToExistingInvoiceForMonth({
+  contract,
+  schedule,
+  invoiceDate,
+  now,
+}: {
+  contract: Contract;
+  schedule: PaymentScheduleLike;
+  invoiceDate: string;
+  now: string;
+}) {
+  if (schedule.invoice_id) return false;
+
+  const existingInvoice = await findExistingActiveInvoiceForMonth(contract, invoiceDate);
+  if (!existingInvoice) return false;
+
+  const { error } = await supabase
+    .from('contract_payment_schedules')
+    .update({
+      due_date: invoiceDate,
+      invoice_id: existingInvoice.id,
+      updated_at: now,
+    })
+    .eq('id', schedule.id)
+    .eq('contract_id', contract.id)
+    .eq('company_id', contract.company_id);
+
+  if (error) throw error;
+  return true;
+}
+
+async function findExistingActiveInvoiceForMonth(contract: Contract, invoiceDate: string) {
+  const monthKey = getMonthKey(invoiceDate);
+  const { data, error } = await supabase
+    .from('invoices')
+    .select('id, invoice_date, due_date, status, payment_status')
+    .eq('contract_id', contract.id)
+    .eq('company_id', contract.company_id)
+    .order('invoice_date', { ascending: true });
+
+  if (error) throw error;
+
+  return (data || []).find((invoice) => {
+    if (isCancelled(invoice.status) || isCancelled(invoice.payment_status)) return false;
+    return getInvoiceMonthKey(invoice) === monthKey;
+  }) || null;
+}
+
+async function findAnyExistingInvoiceForMonth(contract: Contract, invoiceDate: string) {
+  const monthKey = getMonthKey(invoiceDate);
+  const { data, error } = await supabase
+    .from('invoices')
+    .select('id, invoice_date, due_date, status, payment_status')
+    .eq('contract_id', contract.id)
+    .eq('company_id', contract.company_id)
+    .order('invoice_date', { ascending: true });
+
+  if (error) throw error;
+
+  return (data || []).find((invoice) => {
+    return invoiceMatchesMonth(invoice, monthKey);
+  }) || null;
+}
+
+async function getAvailableInvoiceNumber(contractNumber: string, invoiceDate: string) {
+  const baseNumber = `INV-${contractNumber}-${invoiceDate.slice(0, 7)}`;
+  const { data, error } = await supabase
+    .from('invoices')
+    .select('invoice_number')
+    .like('invoice_number', `${baseNumber}%`);
+
+  if (error) throw error;
+  const existingNumbers = new Set((data || []).map((invoice) => invoice.invoice_number));
+  if (!existingNumbers.has(baseNumber)) return baseNumber;
+
+  let suffix = 2;
+  while (existingNumbers.has(`${baseNumber}-${suffix}`)) {
+    suffix += 1;
+  }
+  return `${baseNumber}-${suffix}`;
+}
+
+function isProtectedFinancialDeleteError(error: unknown) {
+  const payload = error as { code?: string; message?: string; details?: string };
+  const message = `${payload?.message || ''} ${payload?.details || ''}`.toLowerCase();
+
+  return payload?.code === 'P0001'
+    && (
+      message.includes('active payments')
+      || message.includes('journal entry')
+      || message.includes('paid amount')
+      || message.includes('cannot be hard deleted')
+      || message.includes('cannot be deleted')
+    );
+}
+
+function isMissingFunctionError(error: unknown) {
+  const payload = error as { code?: string; message?: string; details?: string };
+  const message = `${payload?.message || ''} ${payload?.details || ''}`.toLowerCase();
+
+  return payload?.code === 'PGRST202'
+    || message.includes('function')
+    || message.includes('schema cache')
+    || message.includes('not found');
+}
+
+function canFallbackToInvoiceCancellation(error: unknown) {
+  return isProtectedFinancialDeleteError(error)
+    || isMissingFunctionError(error)
+    || isAlreadyCancelledError(error);
+}
+
+function buildAutoFixToastDescription(fixedActions: string[], reviewItems: string[]) {
+  const fixedSummary = fixedActions.length > 0
+    ? fixedActions.slice(0, 3).join('، ')
+    : 'لم يتم تعديل بيانات تلقائيًا';
+  const reviewSummary = reviewItems.length > 0
+    ? `تحتاج مراجعة: ${reviewItems.length}`
+    : 'لا توجد عناصر متبقية للمراجعة';
+
+  return `${fixedSummary}. ${reviewSummary}.`;
 }
 
 function monthSpanInclusive(start: Date, end: Date) {

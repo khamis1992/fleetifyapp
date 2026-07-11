@@ -1,5 +1,6 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { buildLongCatHeaders, getLongCatApiKey, LONGCAT_CHAT_COMPLETIONS_URL, LONGCAT_MODEL } from "../_shared/longcat.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -33,9 +34,9 @@ serve(async (req) => {
     if (!session) return jsonResponse({ error: "session is required" }, 400);
 
     const fallback = buildFallbackReview(session);
-    const openAIApiKey = Deno.env.get("OPENAI_API_KEY");
+    const longCatApiKey = getLongCatApiKey();
 
-    if (!openAIApiKey) {
+    if (!longCatApiKey) {
       return jsonResponse(fallback);
     }
 
@@ -73,14 +74,11 @@ Session JSON:
 ${JSON.stringify(session)}
 `;
 
-    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+    const response = await fetch(LONGCAT_CHAT_COMPLETIONS_URL, {
       method: "POST",
-      headers: {
-        Authorization: `Bearer ${openAIApiKey}`,
-        "Content-Type": "application/json",
-      },
+      headers: buildLongCatHeaders(longCatApiKey),
       body: JSON.stringify({
-        model: "gpt-4o-mini",
+        model: LONGCAT_MODEL,
         messages: [
           {
             role: "system",
@@ -96,7 +94,7 @@ ${JSON.stringify(session)}
     });
 
     if (!response.ok) {
-      console.error("OpenAI excel import review error:", response.status, await response.text());
+      console.error("LongCat excel import review error:", response.status, await response.text());
       return jsonResponse(fallback);
     }
 
@@ -126,7 +124,7 @@ function jsonResponse(payload: unknown, status = 200) {
 function normalizeReview(payload: any, fallback: any) {
   return {
     summary: typeof payload?.summary === "string" ? payload.summary : fallback.summary,
-    source: "openai",
+    source: "longcat",
     generatedAt: new Date().toISOString(),
     insights: Array.isArray(payload?.insights) && payload.insights.length
       ? payload.insights.slice(0, 4).map((item: any) => ({

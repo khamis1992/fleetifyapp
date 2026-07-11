@@ -356,15 +356,15 @@ export const ARAgingReport: React.FC = () => {
         [],
         ['Total Customers with AR:', summary?.total_customers_with_ar || 0],
         ['Total Outstanding Invoices:', summary?.total_outstanding_invoices || 0],
-        ['Total AR Amount:', `${(summary?.total_ar_amount || 0).toFixed(3)} KWD`],
+         ['Total AR Amount:', formatQar(summary?.total_ar_amount || 0)],
         ['Average Days Overdue:', Math.round(summary?.avg_days_overdue || 0)],
         [],
-        ['Aging Category', 'Amount (KWD)', 'Percentage'],
-        ['Current', (summary?.current_total || 0).toFixed(3), `${summary?.current_percentage || 0}%`],
-        ['1-30 Days', (summary?.days_1_30_total || 0).toFixed(3), `${summary?.days_1_30_percentage || 0}%`],
-        ['31-60 Days', (summary?.days_31_60_total || 0).toFixed(3), `${summary?.days_31_60_percentage || 0}%`],
-        ['61-90 Days', (summary?.days_61_90_total || 0).toFixed(3), `${summary?.days_61_90_percentage || 0}%`],
-        ['90+ Days', (summary?.days_90_plus_total || 0).toFixed(3), `${summary?.days_90_plus_percentage || 0}%`],
+         ['Aging Category', 'Amount (QAR)', 'Percentage'],
+         ['Current', formatQar(summary?.current_total || 0), `${summary?.current_percentage || 0}%`],
+         ['1-30 Days', formatQar(summary?.days_1_30_total || 0), `${summary?.days_1_30_percentage || 0}%`],
+         ['31-60 Days', formatQar(summary?.days_31_60_total || 0), `${summary?.days_31_60_percentage || 0}%`],
+         ['61-90 Days', formatQar(summary?.days_61_90_total || 0), `${summary?.days_61_90_percentage || 0}%`],
+         ['90+ Days', formatQar(summary?.days_90_plus_total || 0), `${summary?.days_90_plus_percentage || 0}%`],
       ];
       const summarySheet = XLSX.utils.aoa_to_sheet(summaryData);
       XLSX.utils.book_append_sheet(workbook, summarySheet, 'Summary');
@@ -381,12 +381,12 @@ export const ARAgingReport: React.FC = () => {
             c.customer_name_en,
             c.customer_phone,
             c.customer_email,
-            (c.total_outstanding || 0).toFixed(3),
-            (c.current_amount || 0).toFixed(3),
-            (c.days_1_30 || 0).toFixed(3),
-            (c.days_31_60 || 0).toFixed(3),
-            (c.days_61_90 || 0).toFixed(3),
-            (c.days_90_plus || 0).toFixed(3),
+             formatQar(c.total_outstanding || 0),
+             formatQar(c.current_amount || 0),
+             formatQar(c.days_1_30 || 0),
+             formatQar(c.days_31_60 || 0),
+             formatQar(c.days_61_90 || 0),
+             formatQar(c.days_90_plus || 0),
             c.max_days_overdue || 0,
             c.total_invoices || 0
           ]);
@@ -407,11 +407,11 @@ export const ARAgingReport: React.FC = () => {
             p.customer_name_ar,
             p.customer_phone,
             p.customer_email,
-            (p.total_outstanding || 0).toFixed(3),
+             formatQar(p.total_outstanding || 0),
             p.risk_category,
             p.recommended_action,
-            (p.critical_amount || 0).toFixed(3),
-            (p.high_risk_amount || 0).toFixed(3),
+             formatQar(p.critical_amount || 0),
+             formatQar(p.high_risk_amount || 0),
             p.max_days_overdue || 0,
             (p.priority_score || 0).toFixed(2)
           ]);
@@ -489,10 +489,9 @@ export const ARAgingReport: React.FC = () => {
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              {(summary?.total_ar_amount || 0).toFixed(3)}
-            </div>
-            <p className="text-xs text-muted-foreground">د.ك</p>
+             <div className="text-2xl font-bold">
+               {formatQar(summary?.total_ar_amount || 0)}
+             </div>
           </CardContent>
         </Card>
 
@@ -517,9 +516,9 @@ export const ARAgingReport: React.FC = () => {
             <AlertTriangle className="h-4 w-4 text-red-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-red-600">
-              {(summary?.high_priority_amount || 0).toFixed(3)}
-            </div>
+             <div className="text-2xl font-bold text-red-600">
+               {formatQar(summary?.high_priority_amount || 0)}
+             </div>
             <p className="text-xs text-muted-foreground">
               {summary?.high_priority_count || 0} فاتورة (+60 يوم)
             </p>
@@ -892,7 +891,7 @@ const AgingBar: React.FC<{
       <div className="flex items-center justify-between text-sm">
         <span className="font-medium">{label}</span>
         <div className="flex items-center gap-4">
-          <span className="font-bold">{amount.toFixed(3)} د.ك</span>
+          <span className="font-bold">{formatQar(amount)}</span>
           <span className="text-muted-foreground">{percentage.toFixed(1)}%</span>
         </div>
       </div>

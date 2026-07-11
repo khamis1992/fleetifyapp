@@ -62,7 +62,7 @@ export const useEnhancedAccountSuggestions = () => {
               content: `اسم الحساب: \"${accountName}\"${accountType ? `\nنوع الحساب: ${accountType}` : ''}`
             }
           ],
-          model: 'gpt-4.1-2025-04-14',
+          model: 'LongCat-2.0',
           max_completion_tokens: 500,
           temperature: 0.3
         }

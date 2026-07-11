@@ -53,6 +53,7 @@ const GeneralAccounting = lazyWithRetry(() => import("./finance/GeneralAccountin
 const ReportsAndAnalysis = lazyWithRetry(() => import("./finance/ReportsAndAnalysis"), "ReportsAndAnalysis");
 const BudgetsAndCostCenters = lazyWithRetry(() => import("./finance/BudgetsAndCostCenters"), "BudgetsAndCostCenters");
 const AuditAndSettings = lazyWithRetry(() => import("./finance/AuditAndSettings"), "AuditAndSettings");
+const FinancialConsolidation = lazyWithRetry(() => import("./finance/FinancialConsolidation"), "FinancialConsolidation");
 
 // استخدام النظام الجديد للحماية
 const ProtectedFinanceRoute = ProtectedFinanceRouteComponent;
@@ -123,6 +124,18 @@ const Finance = () => {
           <ProtectedFinanceRoute permission="finance.view">
             <Suspense fallback={<PageSkeletonFallback />}>
               <AuditAndSettings />
+            </Suspense>
+          </ProtectedFinanceRoute>
+        } 
+      />
+      
+      {/* التوحيد المالي متعدد الشركات */}
+      <Route 
+        path="consolidation" 
+        element={
+          <ProtectedFinanceRoute permission="finance.view">
+            <Suspense fallback={<PageSkeletonFallback />}>
+              <FinancialConsolidation />
             </Suspense>
           </ProtectedFinanceRoute>
         } 

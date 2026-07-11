@@ -5,7 +5,8 @@ import { componentTagger } from "lovable-tagger";
 import { visualizer } from "rollup-plugin-visualizer";
 
 // https://vitejs.dev/config/
-export default defineConfig(({ mode }) => ({
+export default defineConfig(({ command, mode }) => ({
+  cacheDir: 'node_modules/.vite-fleetify-clean',
   server: {
     host: "localhost",
     port: 8080,
@@ -24,10 +25,7 @@ export default defineConfig(({ mode }) => ({
     },
   },
   plugins: [
-    react({
-      // Enable fast refresh with better stability
-      fastRefresh: true,
-    }),
+    command === 'build' && react(),
     mode === 'development' && componentTagger(),
     mode === 'production' && visualizer({
       filename: 'dist/stats.html',
@@ -37,16 +35,24 @@ export default defineConfig(({ mode }) => ({
     }),
   ].filter(Boolean),
   resolve: {
-    alias: {
-      "@": path.resolve(__dirname, "./src"),
+    alias: [
+      { find: "@", replacement: path.resolve(__dirname, "./src") },
       // CRITICAL: Force single React instance to prevent "useState is null" errors
-      'react': path.resolve(__dirname, './node_modules/react'),
-      'react-dom': path.resolve(__dirname, './node_modules/react-dom'),
-    },
-    dedupe: ['react', 'react-dom'],
+      { find: /^react$/, replacement: path.resolve(__dirname, './node_modules/react/index.js') },
+      { find: /^react\/jsx-runtime$/, replacement: path.resolve(__dirname, './node_modules/react/jsx-runtime.js') },
+      { find: /^react\/jsx-dev-runtime$/, replacement: path.resolve(__dirname, './node_modules/react/jsx-dev-runtime.js') },
+      { find: /^react-dom$/, replacement: path.resolve(__dirname, './node_modules/react-dom/index.js') },
+      { find: /^react-dom\/client$/, replacement: path.resolve(__dirname, './node_modules/react-dom/client.js') },
+    ],
+    dedupe: ['react', 'react-dom', 'react/jsx-runtime', 'react/jsx-dev-runtime'],
   },
   optimizeDeps: {
-    exclude: ['playwright', 'playwright-core', 'chromium-bidi'],
+    force: true,
+    exclude: [
+      'playwright',
+      'playwright-core',
+      'chromium-bidi',
+    ],
     include: [
       'react',
       'react-dom',
@@ -76,82 +82,83 @@ export default defineConfig(({ mode }) => ({
     rollupOptions: {
       output: {
         manualChunks: (id) => {
+          const normalizedId = id.replace(/\\/g, '/');
           // CRITICAL: Keep React & ReactDOM in main bundle to prevent createContext errors
           // Do NOT split React into a separate chunk - it must load first
-          if (id.includes('node_modules/react/') ||
-              id.includes('node_modules/react-dom/') ||
-              id.includes('node_modules/scheduler/')) {
+          if (normalizedId.includes('node_modules/react/') ||
+              normalizedId.includes('node_modules/react-dom/') ||
+              normalizedId.includes('node_modules/scheduler/')) {
             return undefined; // Keep in main entry
           }
 
           // Keep react-router-dom in main entry for routing stability
-          if (id.includes('react-router-dom')) {
+          if (normalizedId.includes('react-router-dom')) {
             return undefined;
           }
 
           // PDF libraries - split out safely
-          if (id.includes('node_modules/pdfjs-dist/')) {
+          if (normalizedId.includes('node_modules/pdfjs-dist/')) {
             return 'pdf';
           }
 
           // OCR library - only for invoice scanning
-          if (id.includes('node_modules/tesseract.js/')) {
+          if (normalizedId.includes('node_modules/tesseract.js/')) {
             return 'ocr';
           }
 
           // Heavy libraries - group together to avoid circular dependencies
-          if (id.includes('node_modules/recharts/') ||
-              id.includes('node_modules/leaflet/') ||
-              id.includes('node_modules/framer-motion/')) {
+          if (normalizedId.includes('node_modules/recharts/') ||
+              normalizedId.includes('node_modules/leaflet/') ||
+              normalizedId.includes('node_modules/framer-motion/')) {
             return 'heavy-vendor';
           }
 
           // Query library
-          if (id.includes('node_modules/@tanstack/react-query/')) {
+          if (normalizedId.includes('node_modules/@tanstack/react-query/')) {
             return 'query-vendor';
           }
 
           // Supabase client
-          if (id.includes('node_modules/@supabase/supabase-js/')) {
+          if (normalizedId.includes('node_modules/@supabase/supabase-js/')) {
             return 'supabase';
           }
 
           // Date handling library
-          if (id.includes('node_modules/date-fns/') ||
-              id.includes('node_modules/dayjs/')) {
+          if (normalizedId.includes('node_modules/date-fns/') ||
+              normalizedId.includes('node_modules/dayjs/')) {
             return 'date-utils';
           }
 
           // Document generation libraries
-          if (id.includes('node_modules/docx/') ||
-              id.includes('node_modules/file-saver/')) {
+          if (normalizedId.includes('node_modules/docx/') ||
+              normalizedId.includes('node_modules/file-saver/')) {
             return 'document-utils';
           }
 
           // Radix UI - keep together for consistency
-          if (id.includes('node_modules/@radix-ui/')) {
+          if (normalizedId.includes('node_modules/@radix-ui/')) {
             return 'ui';
           }
 
           // Icons library
-          if (id.includes('node_modules/lucide-react/')) {
+          if (normalizedId.includes('node_modules/lucide-react/')) {
             return 'icons';
           }
 
           // i18n library
-          if (id.includes('node_modules/i18next/') ||
-              id.includes('node_modules/react-i18next/')) {
+          if (normalizedId.includes('node_modules/i18next/') ||
+              normalizedId.includes('node_modules/react-i18next/')) {
             return 'i18n';
           }
 
           // Form validation
-          if (id.includes('node_modules/react-hook-form/') ||
-              id.includes('node_modules/@hookform/')) {
+          if (normalizedId.includes('node_modules/react-hook-form/') ||
+              normalizedId.includes('node_modules/@hookform/')) {
             return 'forms';
           }
 
           // Table library
-          if (id.includes('node_modules/@tanstack/react-table/')) {
+          if (normalizedId.includes('node_modules/@tanstack/react-table/')) {
             return 'tables';
           }
         },

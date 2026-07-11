@@ -8,7 +8,7 @@
 interface EnvConfig {
   VITE_SUPABASE_URL: string;
   VITE_SUPABASE_ANON_KEY: string;
-  VITE_OPENAI_API_KEY?: string; // Optional
+  VITE_LONGCAT_API_KEY?: string; // Optional
 }
 
 class EnvironmentError extends Error {
@@ -72,7 +72,7 @@ export function validateEnvironment(): EnvConfig {
   return {
     VITE_SUPABASE_URL,
     VITE_SUPABASE_ANON_KEY,
-    VITE_OPENAI_API_KEY: import.meta.env.VITE_OPENAI_API_KEY,
+    VITE_LONGCAT_API_KEY: import.meta.env.VITE_LONGCAT_API_KEY,
   };
 }
 
@@ -85,7 +85,7 @@ export function getEnvConfig(): EnvConfig {
   return {
     VITE_SUPABASE_URL: import.meta.env.VITE_SUPABASE_URL || FALLBACK_SUPABASE_URL,
     VITE_SUPABASE_ANON_KEY: import.meta.env.VITE_SUPABASE_ANON_KEY || FALLBACK_SUPABASE_ANON_KEY,
-    VITE_OPENAI_API_KEY: import.meta.env.VITE_OPENAI_API_KEY,
+    VITE_LONGCAT_API_KEY: import.meta.env.VITE_LONGCAT_API_KEY,
   };
 }
 

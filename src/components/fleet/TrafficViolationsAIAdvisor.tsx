@@ -50,7 +50,7 @@ type RankedViolation = {
 
 type AIAdvisorResult = {
   summary: string;
-  source: 'openai' | 'local';
+  source: 'longcat' | 'local';
   ranked: RankedViolation[];
 };
 
@@ -95,7 +95,7 @@ export const TrafficViolationsAIAdvisor: React.FC<{
           return {
             ...local,
             summary: String(aiData.summary),
-            source: aiData.source === 'openai' ? 'openai' : 'local',
+            source: aiData.source === 'longcat' || aiData.source === 'openai' ? 'longcat' : 'local',
           };
         }
       } catch (error) {
@@ -122,7 +122,7 @@ export const TrafficViolationsAIAdvisor: React.FC<{
           <div>
             <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-black text-blue-700">
               <Sparkles className="h-4 w-4" />
-              {advisor?.source === 'openai' ? 'تحليل OpenAI' : 'تحليل ذكي داخلي'}
+              {advisor?.source === 'longcat' ? 'تحليل LongCat' : 'تحليل ذكي داخلي'}
             </div>
             <h2 className="text-xl font-black text-[#020617]">مساعد AI للمخالفات المرورية</h2>
             <p className="mt-1 max-w-4xl text-sm font-bold leading-7 text-[#64748B]">

@@ -1,6 +1,7 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.4';
+import { buildLongCatHeaders, getLongCatApiKey, LONGCAT_CHAT_COMPLETIONS_URL, LONGCAT_MODEL } from "../_shared/longcat.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -23,10 +24,10 @@ serve(async (req) => {
       overallScore: analysisData?.overallScore 
     });
     
-    const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
-    if (!openAIApiKey) {
-      console.error('OpenAI API key not configured');
-      throw new Error('OpenAI API key not configured - please add the API key in Supabase settings');
+    const longCatApiKey = getLongCatApiKey();
+    if (!longCatApiKey) {
+      console.error('LongCat API key not configured');
+      throw new Error('LongCat API key not configured - please add LONGCAT_API_KEY in Supabase settings');
     }
 
     if (!analysisData) {
@@ -86,16 +87,13 @@ ${analysisData.issues?.map((issue: any) => `- ${issue.title}: ${issue.descriptio
 Please provide a detailed analysis and actionable recommendations.
 `;
 
-    console.log('Calling OpenAI with prompt length:', userPrompt.length);
+    console.log('Calling LongCat with prompt length:', userPrompt.length);
 
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    const response = await fetch(LONGCAT_CHAT_COMPLETIONS_URL, {
       method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${openAIApiKey}`,
-        'Content-Type': 'application/json',
-      },
+      headers: buildLongCatHeaders(longCatApiKey),
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
+        model: LONGCAT_MODEL,
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt }
@@ -105,16 +103,16 @@ Please provide a detailed analysis and actionable recommendations.
       }),
     });
 
-    console.log('OpenAI response status:', response.status);
+    console.log('LongCat response status:', response.status);
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('OpenAI API error:', response.status, errorText);
-      throw new Error(`OpenAI API error: ${response.status} - ${errorText}`);
+      console.error('LongCat API error:', response.status, errorText);
+      throw new Error(`LongCat API error: ${response.status} - ${errorText}`);
     }
 
     const aiResult = await response.json();
-    console.log('OpenAI result received, choices length:', aiResult.choices?.length);
+    console.log('LongCat result received, choices length:', aiResult.choices?.length);
     
     if (!aiResult.choices || aiResult.choices.length === 0) {
       throw new Error('No AI response received');

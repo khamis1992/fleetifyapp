@@ -84,7 +84,7 @@ const OperationalAICenter: React.FC = () => {
             <div className="space-y-2">
               <div className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-sm font-bold text-emerald-700">
                 <Sparkles className="h-4 w-4" />
-                {data?.source === 'openai' ? 'تحليل OpenAI' : 'تحليل ذكي داخلي'}
+                {data?.source === 'longcat' ? 'تحليل LongCat' : 'تحليل ذكي داخلي'}
               </div>
               <h1 className="text-3xl font-black text-slate-950">مركز AI التشغيلي</h1>
               <p className="max-w-3xl text-sm font-medium leading-7 text-slate-500">

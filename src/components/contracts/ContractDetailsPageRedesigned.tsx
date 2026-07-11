@@ -877,6 +877,37 @@ const isPaidScheduleItem = (payment: { status: string }) => {
   return paidScheduleStatuses.has(status);
 };
 
+const getScheduleMonthKey = (payment: { due_date: string | null }) => {
+  const source = payment.due_date;
+  if (!source) return 'unknown';
+  const dateOnly = String(source).match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (dateOnly) return `${dateOnly[1]}-${dateOnly[2]}`;
+
+  const date = new Date(source);
+  if (Number.isNaN(date.getTime())) return String(source).slice(0, 7);
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+};
+
+const getUniqueActiveSchedulesByMonth = <T extends { status: string; due_date: string | null; invoice_id?: string | null }>(paymentSchedules: T[]) => {
+  const byMonth = new Map<string, T>();
+
+  for (const schedule of paymentSchedules) {
+    if (!isActiveScheduleItem(schedule) || !schedule.due_date) continue;
+
+    const key = getScheduleMonthKey(schedule);
+    const current = byMonth.get(key);
+    if (!current || (!current.invoice_id && schedule.invoice_id)) {
+      byMonth.set(key, schedule);
+    }
+  }
+
+  return Array.from(byMonth.values()).sort((left, right) => {
+    const leftTime = new Date(left.due_date || '2999-12-31').getTime();
+    const rightTime = new Date(right.due_date || '2999-12-31').getTime();
+    return leftTime - rightTime;
+  });
+};
+
 const isActiveFinancialPayment = (payment: ContractFinancialPayment) => {
   const status = String(payment.payment_status || '').toLowerCase();
   return !inactivePaymentStatuses.has(status);
@@ -900,12 +931,12 @@ const buildFinancialAIDiagnosis = ({
   contract: Contract;
   invoices: Invoice[];
   payments: ContractFinancialPayment[];
-  paymentSchedules: Array<{ status: string; due_date: string | null; amount: number | null }>;
+  paymentSchedules: Array<{ status: string; due_date: string | null; amount: number | null; invoice_id?: string | null }>;
   formatCurrency: (amount: number) => string;
 }) => {
   const activeInvoices = invoices.filter(isActiveFinancialInvoice);
   const activePayments = payments.filter(isActiveFinancialPayment);
-  const activeSchedules = paymentSchedules.filter(isActiveScheduleItem);
+  const activeSchedules = getUniqueActiveSchedulesByMonth(paymentSchedules);
   const paymentsByInvoiceId = activePayments.reduce((map, payment) => {
     if (!payment.invoice_id) return map;
     map.set(payment.invoice_id, (map.get(payment.invoice_id) || 0) + Number(payment.amount || 0));
@@ -1014,7 +1045,7 @@ const FinancialAIDiagnosisCard = ({
   contract: Contract;
   invoices: Invoice[];
   payments: ContractFinancialPayment[];
-  paymentSchedules: Array<{ status: string; due_date: string | null; amount: number | null }>;
+  paymentSchedules: Array<{ status: string; due_date: string | null; amount: number | null; invoice_id?: string | null }>;
   formatCurrency: (amount: number) => string;
 }) => {
   const diagnosis = useMemo(
@@ -1111,7 +1142,7 @@ const ContractCommandCenter = ({
   contract: Contract;
   contractStats: Record<string, unknown> | null;
   invoices: Invoice[];
-  paymentSchedules: Array<{ status: string; due_date: string | null; amount: number | null }>;
+  paymentSchedules: Array<{ status: string; due_date: string | null; amount: number | null; invoice_id?: string | null }>;
   crmActivities: CustomerActivity[];
   auditLogs: ContractAuditLog[];
   violationsCount: number;
@@ -1128,7 +1159,7 @@ const ContractCommandCenter = ({
   const daysRemaining = Number(contractStats?.daysRemaining ?? 0);
   const activeInvoices = invoices.filter(isActiveFinancialInvoice);
   const collectibleInvoices = activeInvoices.filter((invoice) => !isPaidFinancialInvoice(invoice) && getInvoiceBalance(invoice) > 1);
-  const activeSchedules = paymentSchedules.filter(isActiveScheduleItem);
+  const activeSchedules = getUniqueActiveSchedulesByMonth(paymentSchedules);
   const unpaidSchedules = activeSchedules.filter((payment) => !isPaidScheduleItem(payment));
   const totalOutstanding = collectibleInvoices.reduce((sum, invoice) => sum + getInvoiceBalance(invoice), 0);
   const invoicesTotal = activeInvoices.reduce((sum, invoice) => sum + Number(invoice.total_amount || 0), 0);
@@ -1446,7 +1477,7 @@ const ContractOperationsWorkspace = ({
   contract: Contract;
   contractStats: Record<string, unknown> | null;
   invoices: Invoice[];
-  paymentSchedules: Array<{ status: string; due_date: string | null; amount: number | null }>;
+  paymentSchedules: Array<{ status: string; due_date: string | null; amount: number | null; invoice_id?: string | null }>;
   crmActivities: CustomerActivity[];
   crmStats: { total: number; calls: number; successfulCalls: number; missedCalls: number; messages: number; notes: number };
   violationsCount: number;
@@ -1466,7 +1497,7 @@ const ContractOperationsWorkspace = ({
   const daysRemaining = Number(contractStats?.daysRemaining ?? 0);
   const activeInvoices = invoices.filter(isActiveFinancialInvoice);
   const collectibleInvoices = activeInvoices.filter((invoice) => !isPaidFinancialInvoice(invoice) && getInvoiceBalance(invoice) > 1);
-  const activeSchedules = paymentSchedules.filter(isActiveScheduleItem);
+  const activeSchedules = getUniqueActiveSchedulesByMonth(paymentSchedules);
   const totalOutstanding = collectibleInvoices.reduce((sum, invoice) => sum + getInvoiceBalance(invoice), 0);
   const invoicesTotal = activeInvoices.reduce((sum, invoice) => sum + Number(invoice.total_amount || 0), 0);
   const schedulesTotal = activeSchedules.reduce((sum, payment) => sum + Number(payment.amount || 0), 0);
@@ -2243,14 +2274,32 @@ const ContractDetailsPageRedesigned = () => {
     queryFn: async () => {
       if (!contract?.id) return [];
 
+      const { data: scheduleInvoiceLinks, error: scheduleInvoiceLinksError } = await supabase
+        .from('contract_payment_schedules')
+        .select('invoice_id')
+        .eq('contract_id', contract.id)
+        .eq('company_id', companyId)
+        .not('invoice_id', 'is', null);
+
+      if (scheduleInvoiceLinksError) throw scheduleInvoiceLinksError;
+
+      const scheduleInvoiceIds = Array.from(new Set(
+        (scheduleInvoiceLinks || [])
+          .map((schedule) => schedule.invoice_id)
+          .filter(Boolean),
+      )) as string[];
+
       let query = supabase
         .from('invoices')
         .select('*')
-        .eq('contract_id', contract.id)
         .eq('company_id', companyId);
 
+      query = scheduleInvoiceIds.length
+        ? query.or(`contract_id.eq.${contract.id},id.in.(${scheduleInvoiceIds.join(',')})`)
+        : query.eq('contract_id', contract.id);
+
       if (contract.start_date) {
-        query = query.gte('due_date', contract.start_date);
+        query = query.gte('due_date', `${contract.start_date.slice(0, 7)}-01`);
       }
 
       const { data, error } = await query.order('due_date', { ascending: true });
@@ -2343,10 +2392,12 @@ const ContractDetailsPageRedesigned = () => {
   const checkInInspection = checkInInspections[0] || null;
   const checkOutInspection = checkOutInspections[0] || null;
 
+  const scheduleMinDueDate = contract?.start_date ? `${contract.start_date.slice(0, 7)}-01` : null;
+
   // Fetch payment schedules
   const { data: paymentSchedules = [], isLoading: isLoadingPaymentSchedules } = useContractPaymentSchedules(
     contract?.id || '',
-    contract?.start_date || null
+    scheduleMinDueDate
   );
 
   const {
@@ -3052,24 +3103,24 @@ const ContractDetailsPageRedesigned = () => {
 
   const contractWorkbenchContent = (
     <>
-      <TabsContent value="health" className="mt-0">
+      {activeTab === 'health' && (
         <ContractHealthAnalysis
           contract={contract}
           formatCurrency={formatCurrency}
           paymentSchedules={paymentSchedules}
         />
-      </TabsContent>
+      )}
 
-      <TabsContent value="contract" className="mt-0">
+      {activeTab === 'contract' && (
         <ContractTab
           contract={contract}
           paymentSchedules={paymentSchedules}
           checkInInspection={checkInInspection}
           checkOutInspection={checkOutInspection}
         />
-      </TabsContent>
+      )}
 
-      <TabsContent value="financial" className="mt-0">
+      {activeTab === 'financial' && (
         <FinancialTab
           contract={contract}
           invoices={invoices}
@@ -3090,29 +3141,29 @@ const ContractDetailsPageRedesigned = () => {
           customerName={customerName}
           trafficViolations={trafficViolations}
         />
-      </TabsContent>
+      )}
 
-      <TabsContent value="vehicle" className="mt-0">
+      {activeTab === 'vehicle' && (
         <VehicleTab
           contract={contract}
           customerName={customerName}
           plateNumber={plateNumber}
           formatCurrency={formatCurrency}
         />
-      </TabsContent>
+      )}
 
-      <TabsContent value="violations" className="mt-0">
+      {activeTab === 'violations' && (
         <ViolationsTab
           trafficViolations={trafficViolations}
           formatCurrency={formatCurrency}
           contractNumber={contract.contract_number}
           onAddViolation={handleAddViolation}
         />
-      </TabsContent>
+      )}
 
-      <TabsContent value="documents" className="mt-0">
+      {activeTab === 'documents' && (
         <DocumentsTab contract={contract} />
-      </TabsContent>
+      )}
     </>
   );
 

@@ -31,7 +31,7 @@ type CustomerAIResult = {
   repeatedIssues: string[];
   recommendation: RecommendationType;
   recommendationReason: string;
-  source: 'openai' | 'local';
+  source: 'longcat' | 'local';
 };
 
 type CustomerAISummaryProps = {
@@ -117,7 +117,7 @@ export const CustomerAISummary: React.FC<CustomerAISummaryProps> = ({
           <div>
             <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-black text-blue-700">
               <Sparkles className="h-4 w-4" />
-              {data.source === 'openai' ? 'ملخص OpenAI' : 'تحليل ذكي داخلي'}
+              {data.source === 'longcat' ? 'ملخص LongCat' : 'تحليل ذكي داخلي'}
             </div>
             <h2 className="text-xl font-black text-[#142033]">ملخص ذكي للعميل</h2>
             <p className="mt-1 max-w-3xl text-sm font-medium leading-7 text-[#6A7688]">{data.summary}</p>
@@ -315,7 +315,7 @@ function normalizeCustomerAIResult(payload: any, fallback: CustomerAIResult): Cu
       : fallback.repeatedIssues,
     recommendation: normalizeRecommendation(payload?.recommendation, fallback.recommendation),
     recommendationReason: typeof payload?.recommendationReason === 'string' ? payload.recommendationReason : fallback.recommendationReason,
-    source: payload?.source === 'openai' ? 'openai' : 'local',
+    source: payload?.source === 'longcat' || payload?.source === 'openai' ? 'longcat' : 'local',
   };
 }
 

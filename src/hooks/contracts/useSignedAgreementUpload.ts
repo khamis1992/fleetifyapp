@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
+import { getLongCatConfig } from '@/lib/env';
 
 export interface MatchData {
   contractId?: string;
@@ -570,10 +571,8 @@ export function useSignedAgreementUpload() {
   };
 }
 
-// Z.AI API Configuration - Using GLM-4.6 Model (same as AI Chat Assistant)
-const ZAI_API_URL = 'https://api.z.ai/api/coding/paas/v4/chat/completions';
-const ZAI_API_KEY = '136e9f29ddd445c0a5287440f6ab13e0.DSO2qKJ4AiP1SRrH';
-const MODEL = 'glm-4.6';
+const LONGCAT_API_URL = 'https://api.longcat.chat/openai/v1/chat/completions';
+const MODEL = 'LongCat-2.0';
 
 /**
  * Use GLM-4.6 AI to analyze filename and extract identifiers
@@ -616,11 +615,16 @@ async function analyzeFilenameWithAI(fileName: string): Promise<{
     const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 seconds timeout
 
     try {
-      const response = await fetch(ZAI_API_URL, {
+      const longCatConfig = getLongCatConfig();
+      if (!longCatConfig.apiKey) {
+        throw new Error('LONGCAT API key is not configured');
+      }
+
+      const response = await fetch(LONGCAT_API_URL, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${ZAI_API_KEY}`,
+          'Authorization': `Bearer ${longCatConfig.apiKey}`,
         },
         body: JSON.stringify({
           model: MODEL,

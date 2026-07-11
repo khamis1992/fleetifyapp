@@ -45,12 +45,12 @@ export function getSupabaseConfig() {
 }
 
 /**
- * Get OpenAI configuration (optional)
+ * Get LongCat configuration (optional)
  */
-export function getOpenAIConfig() {
+export function getLongCatConfig() {
   return {
-    apiKey: import.meta.env.VITE_OPENAI_API_KEY,
-    hasKey: !!import.meta.env.VITE_OPENAI_API_KEY,
+    apiKey: import.meta.env.VITE_LONGCAT_API_KEY,
+    hasKey: !!import.meta.env.VITE_LONGCAT_API_KEY,
   };
 }
 
@@ -88,7 +88,7 @@ export function getEnvironmentConfig() {
     apiBaseUrl: getApiBaseUrl(),
     appVersion: getAppVersion(),
     supabase: getSupabaseConfig(),
-    openai: getOpenAIConfig(),
+    longcat: getLongCatConfig(),
   };
 }
 

@@ -76,6 +76,10 @@ export const DemoDataGenerator: React.FC = () => {
     checkCompanyType();
   }, [companyId]);
 
+  if (import.meta.env.PROD) {
+    return null;
+  }
+
   // بيانات العملاء الوهمية
   const demoCustomers = [
     { name: 'شركة الخليج للتجارة', name_ar: 'شركة الخليج للتجارة', email: 'gulf@example.com', phone: '+965 2222 3333' },

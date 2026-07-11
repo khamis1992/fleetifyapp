@@ -48,7 +48,39 @@ export class PaymentService extends BaseService<Payment> {
       // Generate payment number if not provided
       const paymentNumber = await this.generatePaymentNumber(companyId);
 
-      // Prepare payment data
+      if (data.invoice_id || data.contract_id) {
+        const { data: paymentId, error: rpcError } = await supabase.rpc('create_payment_atomic', {
+          p_company_id: companyId,
+          p_customer_id: data.customer_id || null,
+          p_contract_id: data.contract_id || null,
+          p_invoice_id: data.invoice_id || null,
+          p_payment_number: paymentNumber,
+          p_payment_date: data.payment_date,
+          p_amount: data.amount,
+          p_payment_method: data.payment_method,
+          p_payment_type: data.payment_type || 'regular',
+          p_transaction_type: data.transaction_type || 'receipt',
+          p_reference_number: data.reference_number || null,
+          p_agreement_number: data.agreement_number || null,
+          p_check_number: data.check_number || null,
+          p_bank_id: data.bank_id || null,
+          p_notes: data.notes || null,
+          p_created_by: userId
+        });
+
+        if (rpcError) {
+          throw new Error(`Atomic payment failed: ${rpcError.message}`);
+        }
+
+        const payment = await this.getById(paymentId);
+        if (!payment) {
+          throw new Error('Payment created but could not be retrieved');
+        }
+
+        this.log('createPayment', 'Payment created atomically', { paymentId: payment.id });
+        return payment;
+      }
+
       const paymentData: Omit<Payment, 'id'> = {
         company_id: companyId,
         customer_id: data.customer_id || null,
@@ -60,7 +92,7 @@ export class PaymentService extends BaseService<Payment> {
         payment_method: data.payment_method,
         payment_type: data.payment_type || 'regular',
         payment_status: 'completed',
-        transaction_type: data.transaction_type || 'income',
+        transaction_type: data.transaction_type || 'receipt',
         reference_number: data.reference_number || null,
         agreement_number: data.agreement_number || null,
         check_number: data.check_number || null,

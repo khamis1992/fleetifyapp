@@ -1,21 +1,18 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { TrafficViolationRegexParser } from "./regex-parser.ts";
+import { buildLongCatHeaders, getLongCatApiKey, LONGCAT_CHAT_COMPLETIONS_URL, LONGCAT_MODEL } from "../_shared/longcat.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Try to get Z.AI/GLM API key first, fallback to OpenAI
-const glmApiKey = Deno.env.get('GLM_API_KEY');
-const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
-
-// Use GLM by default if available, otherwise fallback to OpenAI
-// Note: GLM-4.7 has timeout issues with large payloads (>15K chars with full system prompt)
-// Consider using smaller chunk sizes or OpenAI for large files
-const useGLM = !!glmApiKey;
-const apiKey = useGLM ? glmApiKey : openAIApiKey;
+const longCatApiKey = getLongCatApiKey();
+const useGLM = false;
+const apiKey = longCatApiKey;
+const glmApiKey = longCatApiKey;
+const openAIApiKey = longCatApiKey;
 
 // Helper function to convert ArrayBuffer to base64 (handles large files)
 function arrayBufferToBase64(buffer: ArrayBuffer): string {
@@ -123,20 +120,20 @@ async function processTextWithGLM(text: string, requestId: string): Promise<Resp
     console.log(`[${requestId}] Using JWT authentication with BigModel API`);
     console.log(`[${requestId}] API Key ID:`, id);
     token = await generateGLMToken(glmApiKey!);
-    baseUrl = 'https://open.bigmodel.cn/api/paas/v4/chat/completions';
+    baseUrl = LONGCAT_CHAT_COMPLETIONS_URL;
   } else {
     // Use direct Bearer token with Z.AI endpoint
     console.log(`[${requestId}] Using direct Bearer authentication with Z.AI API`);
     console.log(`[${requestId}] API Key format: id length=${id?.length || 0}, secret length=${secret?.length || 0}`);
     token = glmApiKey!;
-    baseUrl = 'https://api.z.ai/api/paas/v4/chat/completions';
+    baseUrl = LONGCAT_CHAT_COMPLETIONS_URL;
   }
 
   console.log(`[${requestId}] API URL:`, baseUrl);
   console.log(`[${requestId}] Token prefix:`, token.substring(0, 20) + '...');
 
   const requestBody = {
-    model: 'glm-4.7',
+    model: LONGCAT_MODEL,
     max_tokens: 8000,
     messages: [
       {
@@ -194,9 +191,9 @@ async function processTextWithGLM(text: string, requestId: string): Promise<Resp
   }
 }
 
-// Process text with GPT-4 (fallback if GLM is not available)
+// Process text with LongCat.
 async function processTextWithGPT4(text: string): Promise<Response> {
-  console.log('Processing PDF text with GPT-4 (fallback)...');
+  console.log('Processing PDF text with LongCat...');
   console.log('Text length:', text.length, 'characters');
 
   const maxTextLength = 50000;
@@ -206,14 +203,11 @@ async function processTextWithGPT4(text: string): Promise<Response> {
 
   console.log('Using text length:', truncatedText.length, 'characters (truncated from', text.length, ')');
 
-  const response = await fetch('https://api.openai.com/v1/chat/completions', {
+  const response = await fetch(LONGCAT_CHAT_COMPLETIONS_URL, {
     method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${openAIApiKey}`,
-      'Content-Type': 'application/json',
-    },
+    headers: buildLongCatHeaders(longCatApiKey),
     body: JSON.stringify({
-      model: 'gpt-4o',
+      model: LONGCAT_MODEL,
       max_tokens: 4000,
       messages: [
         {
@@ -241,107 +235,26 @@ serve(async (req) => {
 
   // Handle test endpoint for API key validation
   if (req.url.includes('/test-api-key')) {
-    console.log(`[${requestId}] Testing GLM API key...`);
+    console.log(`[${requestId}] Testing LongCat API key...`);
 
     const testResults = {
       timestamp: new Date().toISOString(),
-      glm_api_key_exists: !!glmApiKey,
-      openai_api_key_exists: !!openAIApiKey,
-      glm_api_key_prefix: glmApiKey ? `${glmApiKey.substring(0, 10)}...` : null,
+      longcat_api_key_exists: !!longCatApiKey,
       tests: [] as any[]
     };
 
-    // Test GLM API with JWT method (BigModel endpoint)
-    if (glmApiKey) {
-      const [id, secret] = glmApiKey.split('.');
-      const usesJWT = id && secret && id.length === 24 && secret.length > 20;
-
-      if (usesJWT) {
-        console.log(`[${requestId}] Testing JWT authentication with BigModel API...`);
-        testResults.tests.push({
-          method: 'JWT (BigModel)',
-          endpoint: 'https://open.bigmodel.cn/api/paas/v4/chat/completions',
-          api_key_id: id,
-          status: 'testing...'
-        });
-
-        try {
-          const token = await generateGLMToken(glmApiKey);
-          const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
-
-          const response = await fetch('https://open.bigmodel.cn/api/paas/v4/chat/completions', {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${token}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              model: 'glm-4.7',
-              messages: [{ role: 'user', content: 'Hello' }],
-              max_tokens: 10
-            }),
-            signal: controller.signal,
-          });
-
-          clearTimeout(timeoutId);
-          const responseData = await response.json();
-
-          testResults.tests[0].status = response.ok ? 'success' : 'failed';
-          testResults.tests[0].http_status = response.status;
-          testResults.tests[0].response = response.ok ? 'API key works!' : responseData;
-          console.log(`[${requestId}] JWT test result:`, response.status);
-        } catch (error) {
-          testResults.tests[0].status = 'error';
-          testResults.tests[0].error = error.message;
-          console.error(`[${requestId}] JWT test error:`, error);
-        }
-      } else {
-        // Test direct Bearer authentication (Z.AI endpoint)
-        console.log(`[${requestId}] Testing direct Bearer authentication with Z.AI API...`);
-        testResults.tests.push({
-          method: 'Bearer (Z.AI)',
-          endpoint: 'https://api.z.ai/api/paas/v4/chat/completions',
-          api_key_format: `id length=${id?.length || 0}, secret length=${secret?.length || 0}`,
-          status: 'testing...'
-        });
-
-        try {
-          const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
-
-          const response = await fetch('https://api.z.ai/api/paas/v4/chat/completions', {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${glmApiKey}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              model: 'glm-4.7',
-              messages: [{ role: 'user', content: 'Hello' }],
-              max_tokens: 10
-            }),
-            signal: controller.signal,
-          });
-
-          clearTimeout(timeoutId);
-          const responseData = await response.json();
-
-          testResults.tests[0].status = response.ok ? 'success' : 'failed';
-          testResults.tests[0].http_status = response.status;
-          testResults.tests[0].response = response.ok ? 'API key works!' : responseData;
-          console.log(`[${requestId}] Bearer test result:`, response.status);
-        } catch (error) {
-          testResults.tests[0].status = 'error';
-          testResults.tests[0].error = error.message;
-          console.error(`[${requestId}] Bearer test error:`, error);
-        }
-      }
+    if (longCatApiKey) {
+      testResults.tests.push({
+        method: 'Bearer (LongCat)',
+        endpoint: LONGCAT_CHAT_COMPLETIONS_URL,
+        model: LONGCAT_MODEL,
+        status: 'configured'
+      });
     } else {
       testResults.tests.push({
         method: 'N/A',
         status: 'skipped',
-        reason: 'No GLM_API_KEY configured'
+        reason: 'No LONGCAT_API_KEY configured'
       });
     }
 
@@ -388,14 +301,14 @@ serve(async (req) => {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 second timeout per test
 
-        const response = await fetch('https://api.z.ai/api/paas/v4/chat/completions', {
+        const response = await fetch(LONGCAT_CHAT_COMPLETIONS_URL, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${glmApiKey}`,
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            model: 'glm-4.7',
+            model: LONGCAT_MODEL,
             messages: [
               {
                 role: 'system',
@@ -584,14 +497,14 @@ serve(async (req) => {
       return new Response(JSON.stringify({
         success: false,
         error: 'No API key configured',
-        details: 'Please set GLM_API_KEY (recommended) or OPENAI_API_KEY in Supabase Edge Function secrets.'
+        details: 'Please set LONGCAT_API_KEY in Supabase Edge Function secrets.'
       }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    console.log('Using AI provider:', useGLM ? 'GLM-4' : 'OpenAI GPT-4o');
+    console.log('Using AI provider:', 'LongCat');
 
     // Check content type
     const contentType = req.headers.get('content-type') || '';
@@ -623,7 +536,7 @@ serve(async (req) => {
         });
       }
 
-      // Use GLM if available, otherwise fallback to GPT-4
+      // Use LongCat for AI extraction.
       if (useGLM) {
         response = await processTextWithGLM(text, requestId);
       } else {
@@ -687,10 +600,10 @@ serve(async (req) => {
 
         if (usesJWT) {
           token = await generateGLMToken(glmApiKey!);
-          baseUrl = 'https://open.bigmodel.cn/api/paas/v4/chat/completions';
+          baseUrl = LONGCAT_CHAT_COMPLETIONS_URL;
         } else {
           token = glmApiKey!;
-          baseUrl = 'https://api.z.ai/api/paas/v4/chat/completions';
+          baseUrl = LONGCAT_CHAT_COMPLETIONS_URL;
         }
 
         response = await fetch(baseUrl, {
@@ -700,7 +613,7 @@ serve(async (req) => {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            model: 'glm-4v',
+            model: LONGCAT_MODEL,
             max_tokens: 8000,
             messages: [
               {
@@ -722,15 +635,12 @@ serve(async (req) => {
           }),
         });
       } else {
-        // OpenAI GPT-4o Vision fallback
-        response = await fetch('https://api.openai.com/v1/chat/completions', {
+        // LongCat vision-compatible extraction
+        response = await fetch(LONGCAT_CHAT_COMPLETIONS_URL, {
           method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${openAIApiKey}`,
-            'Content-Type': 'application/json',
-          },
+          headers: buildLongCatHeaders(longCatApiKey),
           body: JSON.stringify({
-            model: 'gpt-4o',
+            model: LONGCAT_MODEL,
             max_tokens: 4000,
             messages: [
               {
@@ -777,7 +687,7 @@ serve(async (req) => {
     const data = await response.json();
     console.log('AI response received');
 
-    // Handle both GLM and OpenAI response formats
+    // Handle OpenAI-compatible response format
     const content = data.choices?.[0]?.message?.content;
 
     if (!content) {
@@ -841,7 +751,7 @@ serve(async (req) => {
           violations: extractedData.violations,
           total_count: extractedData.violations.length,
           images_processed: 1,
-          provider: useGLM ? 'GLM-4' : 'OpenAI'
+          provider: 'LongCat'
         }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });

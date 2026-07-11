@@ -56,7 +56,13 @@ export const useLatePaymentCustomers = () => {
           status,
           customers (
             id,
-            full_name,
+            first_name,
+            last_name,
+            first_name_ar,
+            last_name_ar,
+            company_name,
+            company_name_ar,
+            customer_type,
             phone,
             email
           ),
@@ -75,7 +81,10 @@ export const useLatePaymentCustomers = () => {
       }
 
       // Get payment receipts for these contracts
-      const contractIds = contracts.map(c => c.id);
+      const contractIds = contracts.map(c => c.id).filter(Boolean);
+      if (contractIds.length === 0) {
+        return [];
+      }
       const { data: payments, error: paymentsError } = await supabase
         .from('rental_payment_receipts')
         .select('*')
@@ -94,11 +103,11 @@ export const useLatePaymentCustomers = () => {
         const customerPayments = payments?.filter(p => p.contract_id === contract.id) || [];
         
         // Calculate total paid and outstanding
-        const totalPaid = customerPayments.reduce((sum, p) => sum + (p.amount_paid || 0), 0);
-        const totalFines = customerPayments.reduce((sum, p) => sum + (p.late_fee || 0), 0);
+        const totalPaid = customerPayments.reduce((sum, p) => sum + (p.total_paid || 0), 0);
+        const totalFines = customerPayments.reduce((sum, p) => sum + (p.fine || 0), 0);
         
         // Get oldest unpaid month
-        const paidMonths = customerPayments.map(p => p.payment_month).filter(Boolean);
+        const paidMonths = customerPayments.map(p => p.month).filter(Boolean);
         const contractStart = new Date(contract.start_date);
         const monthsSinceStart = Math.floor((today.getTime() - contractStart.getTime()) / (1000 * 60 * 60 * 24 * 30));
         

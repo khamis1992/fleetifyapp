@@ -4,7 +4,6 @@ import { supabase } from '@/integrations/supabase/client'
 import { toast } from 'sonner'
 import { useUnifiedCompanyAccess } from './useUnifiedCompanyAccess'
 import { useEssentialAccountMappings } from './useEssentialAccountMappings'
-import { createContractWithFallback } from '@/utils/contractJournalEntry'
 import { generateContractPdf } from '@/utils/contractPdfGenerator'
 import { useCreateContractDocument } from './useContractDocuments'
 import { useContractDocumentSaving } from './useContractDocumentSaving'
@@ -239,35 +238,14 @@ export const useContractCreation = () => {
         // استخدام الإدخال المباشر في جدول العقود
         console.log('🚀 [CONTRACT_CREATION] استخدام الإدخال المباشر في جدول العقود...')
         
-        // Generate contract number
-        const timestamp = Date.now().toString(36).toUpperCase()
-        const random = Math.random().toString(36).substring(2, 6).toUpperCase()
-        const contractNumber = `CON-${new Date().getFullYear().toString().slice(-2)}-${timestamp.slice(-4)}${random.slice(0, 2)}`
-        
         const monthlyAmount = Number(inputContractData.monthly_amount || contractAmount) || contractAmount
         const vehicleId = inputContractData.vehicle_id === 'none' ? null : inputContractData.vehicle_id
-        
-        const { data: insertedContract, error: createError } = await supabase
-          .from('contracts')
-          .insert({
-            company_id: companyId,
-            customer_id: inputContractData.customer_id,
-            vehicle_id: vehicleId || null,
-            contract_type: inputContractData.contract_type || 'rental',
-            contract_number: contractNumber,
-            contract_date: inputContractData.start_date,
-            start_date: inputContractData.start_date,
-            end_date: inputContractData.end_date,
-            monthly_amount: monthlyAmount,
-            contract_amount: contractAmount,
-            description: inputContractData.description || null,
-            terms: inputContractData.terms || null,
-            cost_center_id: inputContractData.cost_center_id || null,
-            status: 'active',
-            created_by: inputContractData.created_by || user?.id,
-          })
-          .select()
-          .single()
+
+        updateStepStatus('activation', 'processing')
+        console.log('[CONTRACT_CREATION] Creating contract through create_contract_with_journal_entry RPC...')
+
+        const { data: contractRpcResult, error: createError } = await supabase
+          .rpc('create_contract_with_journal_entry', rpcParams)
 
         // معالجة أخطاء الاتصال بقاعدة البيانات
         if (createError) {
@@ -282,17 +260,47 @@ export const useContractCreation = () => {
           updateStepStatus('verification', 'failed', errorMessage)
           updateStepStatus('finalization', 'failed', errorMessage)
           
-          await logContractStep(null, 'direct_creation', 'failed', 1, errorMessage)
+          await logContractStep(null, 'rpc_creation', 'failed', 1, errorMessage)
           throw new Error(errorMessage)
         }
 
         // معالجة عدم وجود استجابة
-        if (!insertedContract) {
+        const typedResult = (contractRpcResult || {}) as ContractCreationResult
+
+        if (!typedResult.success || !typedResult.contract_id) {
+          const rpcError = typedResult.error || typedResult.errors?.join(', ')
+          const errorMessage = rpcError || 'لم يتم إنشاء العقد من قاعدة البيانات'
+          console.error('[CONTRACT_CREATION] Contract RPC did not return a successful result:', typedResult)
+
+          updateStepStatus('creation', 'failed', errorMessage)
+          updateStepStatus('activation', 'failed', errorMessage)
+          updateStepStatus('verification', 'failed', errorMessage)
+          updateStepStatus('finalization', 'failed', errorMessage)
+          await logContractStep(null, 'rpc_creation', 'failed', 1, errorMessage)
+          throw new Error(errorMessage)
+        }
+
+        const contractId = typedResult.contract_id
+        const journalEntryId = typedResult.journal_entry_id || null
+        const warnings = [
+          ...(typedResult.warnings || []),
+          ...(typedResult.warning ? [typedResult.warning] : []),
+        ].filter(Boolean)
+        const requiresManualEntry = Boolean(typedResult.requires_manual_entry)
+
+        const { data: insertedContract, error: fetchCreatedContractError } = await supabase
+          .from('contracts')
+          .select('*')
+          .eq('id', contractId)
+          .eq('company_id', companyId)
+          .single()
+
+        if (fetchCreatedContractError || !insertedContract) {
           const errorMessage = 'لم يتم تلقي استجابة من الخادم'
           console.error('❌ [CONTRACT_CREATION] لم يتم تلقي استجابة')
           
           updateStepStatus('creation', 'failed', errorMessage)
-          await logContractStep(null, 'direct_creation', 'failed', 1, errorMessage)
+          await logContractStep(null, 'rpc_creation', 'failed', 1, errorMessage)
           throw new Error(errorMessage)
         }
 
@@ -317,36 +325,6 @@ export const useContractCreation = () => {
         updateStepStatus('validation', 'completed')
         updateStepStatus('accounts', 'completed')
         updateStepStatus('creation', 'completed')
-
-        const contractId = insertedContract.id
-        let journalEntryId: string | null = null
-        const warnings: string[] = []
-        let requiresManualEntry = false
-
-        // محاولة إنشاء القيد المحاسبي تلقائياً (فقط إذا كان المبلغ > 0)
-        if (contractAmount > 0 && companyId) {
-          updateStepStatus('activation', 'processing')
-          console.log('📝 [CONTRACT_CREATION] محاولة إنشاء القيد المحاسبي تلقائياً...')
-          
-          try {
-            const { createContractJournalEntryManual } = await import('@/utils/contractJournalEntry')
-            const journalResult = await createContractJournalEntryManual(contractId, companyId)
-            
-            if (journalResult.success && journalResult.journal_entry_id) {
-              journalEntryId = journalResult.journal_entry_id
-              console.log('✅ [CONTRACT_CREATION] تم إنشاء القيد المحاسبي بنجاح:', journalEntryId)
-            } else {
-              console.warn('⚠️ [CONTRACT_CREATION] فشل في إنشاء القيد:', journalResult.error)
-              requiresManualEntry = true
-              if (journalResult.error) {
-                warnings.push(journalResult.error)
-              }
-            }
-          } catch (journalError: unknown) {
-            console.error('❌ [CONTRACT_CREATION] خطأ في إنشاء القيد المحاسبي:', journalError)
-            requiresManualEntry = true
-          }
-        }
 
         // Link vehicle condition report to contract if exists
         if (inputContractData.vehicle_condition_report_id && contractId) {

@@ -191,7 +191,7 @@ type ExcelImportAiFileReview = {
 
 type ExcelImportAiReview = {
   summary: string;
-  source: 'openai' | 'local';
+  source: 'longcat' | 'local';
   generatedAt: string;
   insights: ImportAiInsight[];
   fileReviews: ExcelImportAiFileReview[];
@@ -1845,7 +1845,7 @@ export default function ExcelPaymentImport() {
     } catch (error) {
       console.warn('[ExcelPaymentImport] AI review unavailable:', error);
       if (mode === 'manual') {
-        toast.warning('تعذر تشغيل OpenAI الآن، وسيبقى التحليل المحلي ظاهرًا.');
+        toast.warning('تعذر تشغيل LongCat الآن، وسيبقى التحليل المحلي ظاهرًا.');
       }
     } finally {
       setIsAiReviewLoading(false);
@@ -3085,8 +3085,8 @@ export default function ExcelPaymentImport() {
               <Sparkles className="ml-1 h-3.5 w-3.5" />
               {isAiReviewLoading
                 ? 'AI يحلل الآن'
-                : aiReview?.source === 'openai'
-                  ? 'AI عبر OpenAI'
+                : aiReview?.source === 'longcat'
+                  ? 'AI عبر LongCat'
                   : 'AI احتياطي داخلي'}
             </Badge>
           </div>

@@ -64,7 +64,8 @@ const Overview: React.FC = () => {
   const { data: stats } = useDashboardStats();
   const { data: recentActivities } = useRecentActivities();
   const { data: treasurySummary } = useTreasurySummary();
-  const { data: invoices } = useInvoices({ status: 'pending' });
+  // Use payment_status filter: real statuses are 'unpaid', 'paid', 'partial' (not 'pending')
+  const { data: invoices } = useInvoices({ payment_status: 'unpaid' });
   const { data: installmentSummary } = useVehicleInstallmentSummary();
 
   const invoicesData = Array.isArray(invoices) ? invoices : (invoices as any)?.data || [];

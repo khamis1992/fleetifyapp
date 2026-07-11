@@ -1315,7 +1315,7 @@ const FinancialDelinquencyPage: React.FC = () => {
                         </Button>
                         <Button
                           variant="outline"
-                          onClick={() => navigate(`/contracts/${item.contract.contract_number}`)}
+                          onClick={() => window.open(`/contracts/${encodeURIComponent(item.contract.contract_number)}`, '_blank', 'noopener,noreferrer')}
                           className="gap-2 rounded-xl border-slate-200 bg-white"
                         >
                           <FileText className="h-4 w-4" />
@@ -1522,7 +1522,7 @@ const FinancialDelinquencyPage: React.FC = () => {
                         {candidate.contract?.id && (
                           <Button
                             variant="outline"
-                            onClick={() => navigate(`/contracts/${candidate.contract?.contract_number}`)}
+                            onClick={() => window.open(`/contracts/${encodeURIComponent(candidate.contract.contract_number)}`, '_blank', 'noopener,noreferrer')}
                             className="gap-2 rounded-xl border-slate-200 bg-white"
                           >
                             <FileText className="h-4 w-4" />

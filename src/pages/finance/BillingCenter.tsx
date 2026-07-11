@@ -404,7 +404,7 @@ const BillingCenter = () => {
     const totalInvoices = invoices.reduce((sum, inv) => sum + (inv?.total_amount || 0), 0);
     const paidInvoices = invoices.filter(inv => inv?.payment_status === 'paid')
       .reduce((sum, inv) => sum + (inv?.total_amount || 0), 0);
-    const pendingInvoices = invoices.filter(inv => inv?.payment_status === 'pending' || inv?.payment_status === 'partial')
+    const pendingInvoices = invoices.filter(inv => inv?.payment_status === 'unpaid' || inv?.payment_status === 'partial')
       .reduce((sum, inv) => sum + (inv?.total_amount || 0), 0);
     const totalPayments = payments.reduce((sum, pmt) => sum + (Number(pmt?.amount) || 0), 0);
 

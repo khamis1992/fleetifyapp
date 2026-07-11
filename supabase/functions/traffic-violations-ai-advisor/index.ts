@@ -1,5 +1,6 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { buildLongCatHeaders, getLongCatApiKey, LONGCAT_CHAT_COMPLETIONS_URL, LONGCAT_MODEL } from "../_shared/longcat.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -21,9 +22,9 @@ serve(async (req) => {
     }
 
     const fallback = buildFallback(summary, ranked);
-    const openAIApiKey = Deno.env.get("OPENAI_API_KEY");
+    const longCatApiKey = getLongCatApiKey();
 
-    if (!openAIApiKey) {
+    if (!longCatApiKey) {
       return jsonResponse(fallback);
     }
 
@@ -47,14 +48,11 @@ Top ranked violations JSON:
 ${JSON.stringify(ranked)}
 `;
 
-    const openAIResponse = await fetch("https://api.openai.com/v1/chat/completions", {
+    const longCatResponse = await fetch(LONGCAT_CHAT_COMPLETIONS_URL, {
       method: "POST",
-      headers: {
-        Authorization: `Bearer ${openAIApiKey}`,
-        "Content-Type": "application/json",
-      },
+      headers: buildLongCatHeaders(longCatApiKey),
       body: JSON.stringify({
-        model: "gpt-4o-mini",
+        model: LONGCAT_MODEL,
         messages: [
           {
             role: "system",
@@ -69,18 +67,18 @@ ${JSON.stringify(ranked)}
       }),
     });
 
-    if (!openAIResponse.ok) {
-      console.error("OpenAI traffic violations advisor error:", openAIResponse.status, await openAIResponse.text());
+    if (!longCatResponse.ok) {
+      console.error("LongCat traffic violations advisor error:", longCatResponse.status, await longCatResponse.text());
       return jsonResponse(fallback);
     }
 
-    const aiPayload = await openAIResponse.json();
+    const aiPayload = await longCatResponse.json();
     const content = aiPayload?.choices?.[0]?.message?.content;
     const parsed = content ? JSON.parse(content) : {};
 
     return jsonResponse({
       summary: typeof parsed?.summary === "string" ? parsed.summary : fallback.summary,
-      source: "openai",
+      source: "longcat",
     });
   } catch (error) {
     console.error("traffic-violations-ai-advisor failed:", error);

@@ -1,5 +1,6 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { buildLongCatHeaders, getLongCatApiKey, LONGCAT_CHAT_COMPLETIONS_URL, LONGCAT_MODEL } from "../_shared/longcat.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -32,7 +33,7 @@ interface DecisionCenterResult {
     note: string;
   };
   generatedAt: string;
-  source: "openai" | "local";
+  source: "longcat" | "local";
 }
 
 serve(async (req) => {
@@ -49,9 +50,9 @@ serve(async (req) => {
     }
 
     const fallback = buildFallbackDecision(metrics);
-    const openAIApiKey = Deno.env.get("OPENAI_API_KEY");
+    const longCatApiKey = getLongCatApiKey();
 
-    if (!openAIApiKey) {
+    if (!longCatApiKey) {
       return jsonResponse(fallback);
     }
 
@@ -80,14 +81,11 @@ Metrics JSON:
 ${JSON.stringify(metrics)}
 `;
 
-    const openAIResponse = await fetch("https://api.openai.com/v1/chat/completions", {
+    const longCatResponse = await fetch(LONGCAT_CHAT_COMPLETIONS_URL, {
       method: "POST",
-      headers: {
-        Authorization: `Bearer ${openAIApiKey}`,
-        "Content-Type": "application/json",
-      },
+      headers: buildLongCatHeaders(longCatApiKey),
       body: JSON.stringify({
-        model: "gpt-4o-mini",
+        model: LONGCAT_MODEL,
         messages: [
           {
             role: "system",
@@ -102,12 +100,12 @@ ${JSON.stringify(metrics)}
       }),
     });
 
-    if (!openAIResponse.ok) {
-      console.error("OpenAI daily decision error:", openAIResponse.status, await openAIResponse.text());
+    if (!longCatResponse.ok) {
+      console.error("LongCat daily decision error:", longCatResponse.status, await longCatResponse.text());
       return jsonResponse(fallback);
     }
 
-    const aiPayload = await openAIResponse.json();
+    const aiPayload = await longCatResponse.json();
     const content = aiPayload?.choices?.[0]?.message?.content;
     const parsed = content ? JSON.parse(content) : {};
     const result: DecisionCenterResult = normalizeDecisionResult(parsed, metrics);
@@ -158,7 +156,7 @@ function normalizeDecisionResult(payload: any, metrics: any): DecisionCenterResu
       note: typeof payload?.cashflow?.note === "string" ? payload.cashflow.note : fallback.cashflow.note,
     },
     generatedAt: new Date().toISOString(),
-    source: "openai",
+    source: "longcat",
   };
 }
 

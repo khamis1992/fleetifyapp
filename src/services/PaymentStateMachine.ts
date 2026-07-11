@@ -519,10 +519,16 @@ class PaymentStateMachine {
       userId
     });
 
-    // TODO: إرسال إشعارات فعلية:
-    // - لكل من الفشل/void/reverse
-    // - رسائل WhatsApp/Email للعملاء
-    // - إشعارات داخل النظام للموظفين
+    if (toState === PaymentState.FAILED || toState === PaymentState.VOIDED || toState === PaymentState.REVERSED) {
+      supabase.from('notifications').insert({
+        company_id: payment.company_id,
+        title: 'تحديث حالة الدفعة',
+        message: `الدفعة ${payment.payment_number}: تغيرت الحالة من ${fromState} إلى ${toState}`,
+        type: 'payment_state_change',
+        reference_id: payment.id,
+        priority: toState === PaymentState.FAILED ? 'high' : 'medium'
+      }).then().catch(() => {});
+    }
   }
 
   /**
@@ -632,10 +638,17 @@ class PaymentStateMachine {
       reason: reason || 'إلغاء الدفعة وإنشاء قيد عكسي'
     });
 
-    // TODO: إنشاء قيد محاسبي عكسي
-    // 1. الحصول على القيد الأصلي
-    // 2. إنشاء قيد عكسي (debits become credits)
-    // 3. ربط القيد العكسي بالدفعة
+    if (result.success) {
+      const { data: reversalId } = await supabase
+        .rpc('reverse_journal_entry', {
+          p_original_journal_entry_id: payment.journal_entry_id,
+          p_reason: options.reason || 'Payment reversal'
+        });
+
+      if (reversalId) {
+        logger.info('Reversal journal entry created', { paymentId, reversalId });
+      }
+    }
 
     return result;
   }

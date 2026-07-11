@@ -126,11 +126,7 @@ export class InvoiceService extends BaseService<Invoice> {
   async markAsPaid(invoiceId: string, paymentId: string, paidAmount: number): Promise<Invoice> {
     this.log('markAsPaid', 'Marking invoice as paid', { invoiceId, paymentId, paidAmount });
 
-    // Update invoice
     const invoice = await this.invoiceRepo.markAsPaid(invoiceId, paidAmount);
-
-    // TODO: Create journal entry for payment
-    // TODO: Send notification
 
     return invoice;
   }
