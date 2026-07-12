@@ -1,24 +1,29 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { TrafficViolationRegexParser } from "./regex-parser.ts";
-import { buildLongCatHeaders, getLongCatApiKey, LONGCAT_CHAT_COMPLETIONS_URL, LONGCAT_MODEL } from "../_shared/longcat.ts";
+import {
+  buildLongCatHeaders,
+  getLongCatApiKey,
+  LONGCAT_CHAT_COMPLETIONS_URL,
+  LONGCAT_MODEL,
+} from "../_shared/longcat.ts";
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type",
 };
 
 const longCatApiKey = getLongCatApiKey();
 const useGLM = false;
 const apiKey = longCatApiKey;
 const glmApiKey = longCatApiKey;
-const openAIApiKey = longCatApiKey;
 
 // Helper function to convert ArrayBuffer to base64 (handles large files)
 function arrayBufferToBase64(buffer: ArrayBuffer): string {
   const bytes = new Uint8Array(buffer);
   const chunkSize = 8192;
-  let binary = '';
+  let binary = "";
 
   for (let i = 0; i < bytes.length; i += chunkSize) {
     const chunk = bytes.subarray(i, Math.min(i + chunkSize, bytes.length));
@@ -42,7 +47,7 @@ const EXTRACTION_SYSTEM_PROMPT = `استخرج المخالفات المروري
 // Generate JWT token for GLM API (id.secret format)
 async function generateGLMToken(apiKey: string): Promise<string> {
   // GLM API key format: id.secret
-  const [id, secret] = apiKey.split('.');
+  const [id, secret] = apiKey.split(".");
 
   if (!id || !secret) {
     // If no dot in key, return it as-is (might be a direct API key)
@@ -54,11 +59,11 @@ async function generateGLMToken(apiKey: string): Promise<string> {
   const payload = {
     api_key: id,
     exp: now + 3600000, // 1 hour expiration
-    timestamp: now
+    timestamp: now,
   };
 
   // Simple JWT encoding for Deno
-  const header = btoa(JSON.stringify({ alg: 'HS256', sign_type: 'SIGN' }));
+  const header = btoa(JSON.stringify({ alg: "HS256", sign_type: "SIGN" }));
   const encodedPayload = btoa(JSON.stringify(payload));
 
   // Create signature
@@ -75,82 +80,93 @@ async function hmacSha256(message: string, secret: string): Promise<string> {
   const messageData = encoder.encode(message);
 
   const cryptoKey = await crypto.subtle.importKey(
-    'raw',
+    "raw",
     keyData,
-    { name: 'HMAC', hash: 'SHA-256' },
+    { name: "HMAC", hash: "SHA-256" },
     false,
-    ['sign']
+    ["sign"]
   );
 
-  const signature = await crypto.subtle.sign(
-    'HMAC',
-    cryptoKey,
-    messageData
-  );
+  const signature = await crypto.subtle.sign("HMAC", cryptoKey, messageData);
 
   // Convert to base64url
   const hashArray = Array.from(new Uint8Array(signature));
   const hashBase64 = btoa(String.fromCharCode.apply(null, hashArray));
-  return hashBase64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+  return hashBase64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "");
 }
 
-// Process text with GLM-4.7 (supports much larger context than GPT-4)
-async function processTextWithGLM(text: string, requestId: string): Promise<Response> {
+// Process text with the configured long-context model.
+async function processTextWithGLM(
+  text: string,
+  requestId: string
+): Promise<Response> {
   console.log(`[${requestId}] Processing PDF text with GLM-4...`);
-  console.log(`[${requestId}] Text length:`, text.length, 'characters');
+  console.log(`[${requestId}] Text length:`, text.length, "characters");
 
   // GLM-4.7 supports up to 128K-1M tokens
   // For large PDFs, we need to be more conservative to avoid timeouts
   const maxTextLength = 150000; // 150K characters (reduced for stability)
-  const truncatedText = text.length > maxTextLength
-    ? text.substring(0, maxTextLength) + '\n\n[Text truncated due to size...]'
-    : text;
+  const truncatedText =
+    text.length > maxTextLength
+      ? text.substring(0, maxTextLength) + "\n\n[Text truncated due to size...]"
+      : text;
 
-  console.log(`[${requestId}] Using text length:`, truncatedText.length, 'characters (truncated from', text.length, ')');
+  console.log(
+    `[${requestId}] Using text length:`,
+    truncatedText.length,
+    "characters (truncated from",
+    text.length,
+    ")"
+  );
 
   // Check if API key has the format id.secret
-  const [id, secret] = (glmApiKey || '').split('.');
+  const [id, secret] = (glmApiKey || "").split(".");
   const usesJWT = id && secret && id.length === 24 && secret.length > 20;
 
   let token: string;
   let baseUrl: string;
 
   if (usesJWT) {
-    // Use JWT token with original BigModel endpoint
-    console.log(`[${requestId}] Using JWT authentication with BigModel API`);
-    console.log(`[${requestId}] API Key ID:`, id);
+    console.log(`[${requestId}] Using signed provider authentication`);
     token = await generateGLMToken(glmApiKey!);
     baseUrl = LONGCAT_CHAT_COMPLETIONS_URL;
   } else {
-    // Use direct Bearer token with Z.AI endpoint
-    console.log(`[${requestId}] Using direct Bearer authentication with Z.AI API`);
-    console.log(`[${requestId}] API Key format: id length=${id?.length || 0}, secret length=${secret?.length || 0}`);
+    console.log(`[${requestId}] Using LongCat bearer authentication`);
     token = glmApiKey!;
     baseUrl = LONGCAT_CHAT_COMPLETIONS_URL;
   }
 
   console.log(`[${requestId}] API URL:`, baseUrl);
-  console.log(`[${requestId}] Token prefix:`, token.substring(0, 20) + '...');
 
   const requestBody = {
     model: LONGCAT_MODEL,
     max_tokens: 8000,
     messages: [
       {
-        role: 'system',
-        content: EXTRACTION_SYSTEM_PROMPT
+        role: "system",
+        content: EXTRACTION_SYSTEM_PROMPT,
       },
       {
-        role: 'user',
-        content: `استخرج جميع المخالفات المرورية من النص التالي:\n\n${truncatedText}`
-      }
-    ]
+        role: "user",
+        content: `استخرج جميع المخالفات المرورية من النص التالي:\n\n${truncatedText}`,
+      },
+    ],
   };
 
-  console.log(`[${requestId}] Request body:`, JSON.stringify({
-    ...requestBody,
-    messages: [`[system prompt (${requestBody.messages[0].content.length} chars)]`, `[user content (${requestBody.messages[1].content.length} chars)]`]
-  }, null, 2));
+  console.log(
+    `[${requestId}] Request body:`,
+    JSON.stringify(
+      {
+        ...requestBody,
+        messages: [
+          `[system prompt (${requestBody.messages[0].content.length} chars)]`,
+          `[user content (${requestBody.messages[1].content.length} chars)]`,
+        ],
+      },
+      null,
+      2
+    )
+  );
 
   try {
     // Add timeout to prevent hanging requests
@@ -158,10 +174,10 @@ async function processTextWithGLM(text: string, requestId: string): Promise<Resp
     const timeoutId = setTimeout(() => controller.abort(), 180000); // 3 minute timeout
 
     const response = await fetch(baseUrl, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
       },
       body: JSON.stringify(requestBody),
       signal: controller.signal,
@@ -173,11 +189,21 @@ async function processTextWithGLM(text: string, requestId: string): Promise<Resp
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error(`[${requestId}] GLM API error:`, response.status, errorText);
-      console.error(`[${requestId}] Error headers:`, Object.fromEntries(response.headers.entries()));
+      console.error(
+        `[${requestId}] GLM API error:`,
+        response.status,
+        errorText
+      );
+      console.error(
+        `[${requestId}] Error headers:`,
+        Object.fromEntries(response.headers.entries())
+      );
       try {
         const errorJson = JSON.parse(errorText);
-        console.error(`[${requestId}] Parsed error:`, JSON.stringify(errorJson, null, 2));
+        console.error(
+          `[${requestId}] Parsed error:`,
+          JSON.stringify(errorJson, null, 2)
+        );
       } catch {
         // Not JSON, keep as text
       }
@@ -193,32 +219,39 @@ async function processTextWithGLM(text: string, requestId: string): Promise<Resp
 
 // Process text with LongCat.
 async function processTextWithGPT4(text: string): Promise<Response> {
-  console.log('Processing PDF text with LongCat...');
-  console.log('Text length:', text.length, 'characters');
+  console.log("Processing PDF text with LongCat...");
+  console.log("Text length:", text.length, "characters");
 
   const maxTextLength = 50000;
-  const truncatedText = text.length > maxTextLength
-    ? text.substring(0, maxTextLength) + '\n\n[Text truncated due to size...]'
-    : text;
+  const truncatedText =
+    text.length > maxTextLength
+      ? text.substring(0, maxTextLength) + "\n\n[Text truncated due to size...]"
+      : text;
 
-  console.log('Using text length:', truncatedText.length, 'characters (truncated from', text.length, ')');
+  console.log(
+    "Using text length:",
+    truncatedText.length,
+    "characters (truncated from",
+    text.length,
+    ")"
+  );
 
   const response = await fetch(LONGCAT_CHAT_COMPLETIONS_URL, {
-    method: 'POST',
+    method: "POST",
     headers: buildLongCatHeaders(longCatApiKey),
     body: JSON.stringify({
       model: LONGCAT_MODEL,
       max_tokens: 4000,
       messages: [
         {
-          role: 'system',
-          content: EXTRACTION_SYSTEM_PROMPT
+          role: "system",
+          content: EXTRACTION_SYSTEM_PROMPT,
         },
         {
-          role: 'user',
-          content: `استخرج جميع المخالفات المرورية من النص التالي:\n\n${truncatedText}`
-        }
-      ]
+          role: "user",
+          content: `استخرج جميع المخالفات المرورية من النص التالي:\n\n${truncatedText}`,
+        },
+      ],
     }),
   });
 
@@ -229,52 +262,56 @@ serve(async (req) => {
   const requestId = crypto.randomUUID();
 
   // Handle CORS preflight requests FIRST - before any other processing
-  if (req.method === 'OPTIONS') {
+  if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   // Handle test endpoint for API key validation
-  if (req.url.includes('/test-api-key')) {
+  if (req.url.includes("/test-api-key")) {
     console.log(`[${requestId}] Testing LongCat API key...`);
 
     const testResults = {
       timestamp: new Date().toISOString(),
       longcat_api_key_exists: !!longCatApiKey,
-      tests: [] as any[]
+      tests: [] as any[],
     };
 
     if (longCatApiKey) {
       testResults.tests.push({
-        method: 'Bearer (LongCat)',
+        method: "Bearer (LongCat)",
         endpoint: LONGCAT_CHAT_COMPLETIONS_URL,
         model: LONGCAT_MODEL,
-        status: 'configured'
+        status: "configured",
       });
     } else {
       testResults.tests.push({
-        method: 'N/A',
-        status: 'skipped',
-        reason: 'No LONGCAT_API_KEY configured'
+        method: "N/A",
+        status: "skipped",
+        reason: "No LONGCAT_API_KEY configured",
       });
     }
 
     return new Response(JSON.stringify(testResults, null, 2), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
 
   // Handle test endpoint for payload size performance
-  if (req.url.includes('/test-payload-sizes')) {
-    console.log(`[${requestId}] Testing GLM API with different payload sizes...`);
+  if (req.url.includes("/test-payload-sizes")) {
+    console.log(
+      `[${requestId}] Testing GLM API with different payload sizes...`
+    );
 
     const testSizes = [5000, 10000, 15000, 20000, 25000, 30000];
     const results = {
       timestamp: new Date().toISOString(),
-      tests: [] as any[]
+      tests: [] as any[],
     };
 
     // Sample Arabic text that mimics traffic violation content
-    const arabicSample = `مخالفة مرورية رقم المرجع: ${Math.random().toString(36).substring(7)} تاريخ المخالفة: 2025-01-12
+    const arabicSample = `مخالفة مرورية رقم المرجع: ${Math.random()
+      .toString(36)
+      .substring(7)} تاريخ المخالفة: 2025-01-12
     نوع المخالفة: تجاوز السرعة المحددة مكان المخالفة: الدائري الأول الغربي
     مبلغ المخالفة: 500 ريال قطري حالة المخالفة: غير مدفوعة
     تاريخ الاستحقاق: 2025-02-12 ملاحظات: المخالفة مسجلة على اللوحة 86-2015
@@ -284,15 +321,17 @@ serve(async (req) => {
       console.log(`[${requestId}] Testing payload size: ${size} characters`);
 
       // Create test text of specified size
-      const testText = arabicSample.repeat(Math.ceil(size / arabicSample.length)).substring(0, size);
+      const testText = arabicSample
+        .repeat(Math.ceil(size / arabicSample.length))
+        .substring(0, size);
 
       const testResult = {
         payload_size: size,
         actual_length: testText.length,
-        status: 'testing...',
+        status: "testing...",
         duration_ms: null,
         http_status: null,
-        error: null
+        error: null,
       };
 
       const startTime = performance.now();
@@ -302,24 +341,24 @@ serve(async (req) => {
         const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 second timeout per test
 
         const response = await fetch(LONGCAT_CHAT_COMPLETIONS_URL, {
-          method: 'POST',
+          method: "POST",
           headers: {
-            'Authorization': `Bearer ${glmApiKey}`,
-            'Content-Type': 'application/json',
+            Authorization: `Bearer ${glmApiKey}`,
+            "Content-Type": "application/json",
           },
           body: JSON.stringify({
             model: LONGCAT_MODEL,
             messages: [
               {
-                role: 'system',
-                content: EXTRACTION_SYSTEM_PROMPT.substring(0, 500) // Use truncated prompt for testing
+                role: "system",
+                content: EXTRACTION_SYSTEM_PROMPT.substring(0, 500), // Use truncated prompt for testing
               },
               {
-                role: 'user',
-                content: `استخرج جميع المخالفات المرورية من النص التالي:\n\n${testText}`
-              }
+                role: "user",
+                content: `استخرج جميع المخالفات المرورية من النص التالي:\n\n${testText}`,
+              },
             ],
-            max_tokens: 100
+            max_tokens: 100,
           }),
           signal: controller.signal,
         });
@@ -327,20 +366,23 @@ serve(async (req) => {
         clearTimeout(timeoutId);
         const duration = performance.now() - startTime;
 
-        testResult.status = response.ok ? 'success' : 'failed';
+        testResult.status = response.ok ? "success" : "failed";
         testResult.duration_ms = Math.round(duration);
         testResult.http_status = response.status;
 
         if (!response.ok) {
-          const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+          const errorData = await response
+            .json()
+            .catch(() => ({ error: "Unknown error" }));
           testResult.error = errorData;
         }
 
-        console.log(`[${requestId}] Payload ${size} chars: ${testResult.status} (${testResult.duration_ms}ms)`);
-
+        console.log(
+          `[${requestId}] Payload ${size} chars: ${testResult.status} (${testResult.duration_ms}ms)`
+        );
       } catch (error) {
         const duration = performance.now() - startTime;
-        testResult.status = 'error';
+        testResult.status = "error";
         testResult.duration_ms = Math.round(duration);
         testResult.error = error.message;
         console.error(`[${requestId}] Payload ${size} chars error:`, error);
@@ -350,12 +392,12 @@ serve(async (req) => {
     }
 
     return new Response(JSON.stringify(results, null, 2), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
 
   // Handle test endpoint for regex parser
-  if (req.url.includes('/test-regex')) {
+  if (req.url.includes("/test-regex")) {
     console.log(`[${requestId}] Testing regex parser...`);
 
     try {
@@ -363,13 +405,16 @@ serve(async (req) => {
       const { test_text, options } = body;
 
       if (!test_text) {
-        return new Response(JSON.stringify({
-          success: false,
-          error: 'No test_text provided'
-        }), {
-          status: 400,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: "No test_text provided",
+          }),
+          {
+            status: 400,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          }
+        );
       }
 
       const startTime = performance.now();
@@ -377,115 +422,151 @@ serve(async (req) => {
       const result = parser.extract();
       const duration = performance.now() - startTime;
 
-      console.log(`[${requestId}] Regex parsing completed in ${duration.toFixed(2)}ms`);
-      console.log(`[${requestId}] Extracted ${result.violations.length} violations`);
+      console.log(
+        `[${requestId}] Regex parsing completed in ${duration.toFixed(2)}ms`
+      );
+      console.log(
+        `[${requestId}] Extracted ${result.violations.length} violations`
+      );
 
-      return new Response(JSON.stringify({
-        success: true,
-        test_input: {
-          length: test_text.length,
-          preview: test_text.substring(0, 200)
-        },
-        extracted: result,
-        performance: {
-          duration_ms: Math.round(duration),
-          violations_per_second: Math.round((result.violations.length / duration) * 1000)
+      return new Response(
+        JSON.stringify(
+          {
+            success: true,
+            test_input: {
+              length: test_text.length,
+              preview: test_text.substring(0, 200),
+            },
+            extracted: result,
+            performance: {
+              duration_ms: Math.round(duration),
+              violations_per_second: Math.round(
+                (result.violations.length / duration) * 1000
+              ),
+            },
+          },
+          null,
+          2
+        ),
+        {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
         }
-      }, null, 2), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-
+      );
     } catch (error) {
       console.error(`[${requestId}] Regex test error:`, error);
-      return new Response(JSON.stringify({
-        success: false,
-        error: error.message,
-        stack: error.stack?.split('\n').slice(0, 5).join('\n')
-      }), {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: error.message,
+          stack: error.stack?.split("\n").slice(0, 5).join("\n"),
+        }),
+        {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
     }
   }
 
   // Handle regex extraction endpoint
-  if (req.url.includes('/extract-regex')) {
+  if (req.url.includes("/extract-regex")) {
     console.log(`[${requestId}] Processing with regex parser...`);
 
     try {
       const body = await req.json();
       const { pdf_text, options } = body;
 
-      if (!pdf_text || typeof pdf_text !== 'string') {
-        return new Response(JSON.stringify({
-          success: false,
-          error: 'No pdf_text provided or invalid type'
-        }), {
-          status: 400,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
+      if (!pdf_text || typeof pdf_text !== "string") {
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: "No pdf_text provided or invalid type",
+          }),
+          {
+            status: 400,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          }
+        );
       }
 
       console.log(`[${requestId}] PDF text length:`, pdf_text.length);
 
       // Validate minimum text length
       if (pdf_text.trim().length < 20) {
-        return new Response(JSON.stringify({
-          success: false,
-          error: 'PDF_NO_TEXT',
-          details: 'لم يتم العثور على نص كافٍ في ملف PDF.',
-          suggestion: 'قد يكون الملف عبارة عن صور ممسوحة ضوئياً.'
-        }), {
-          status: 400,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: "PDF_NO_TEXT",
+            details: "لم يتم العثور على نص كافٍ في ملف PDF.",
+            suggestion: "قد يكون الملف عبارة عن صور ممسوحة ضوئياً.",
+          }),
+          {
+            status: 400,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          }
+        );
       }
 
       // Process with regex parser
       const parser = new TrafficViolationRegexParser(pdf_text, options);
       const result = parser.extract();
 
-      console.log(`[${requestId}] Regex extraction complete in ${result.metadata.processing_time_ms.toFixed(2)}ms`);
-      console.log(`[${requestId}] Extracted ${result.violations.length} violations`);
+      console.log(
+        `[${requestId}] Regex extraction complete in ${result.metadata.processing_time_ms.toFixed(
+          2
+        )}ms`
+      );
+      console.log(
+        `[${requestId}] Extracted ${result.violations.length} violations`
+      );
 
       // Validate results
       if (result.violations.length === 0) {
-        return new Response(JSON.stringify({
-          success: false,
-          error: 'No violations found',
-          details: 'لم يتم العثور على أي مخالفات مرورية في هذا الملف.',
-          suggestion: 'تأكد من أن الملف يحتوي على مخالفات مرورية بصيغة وزارة الداخلية القطرية.',
-          metadata: result.metadata
-        }), {
-          status: 404,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: "No violations found",
+            details: "لم يتم العثور على أي مخالفات مرورية في هذا الملف.",
+            suggestion:
+              "تأكد من أن الملف يحتوي على مخالفات مرورية بصيغة وزارة الداخلية القطرية.",
+            metadata: result.metadata,
+          }),
+          {
+            status: 404,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          }
+        );
       }
 
       // Return successful result
-      return new Response(JSON.stringify({
-        success: true,
-        header: result.header,
-        violations: result.violations,
-        total_count: result.violations.length,
-        provider: 'regex-parser',
-        metadata: result.metadata
-      }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-
+      return new Response(
+        JSON.stringify({
+          success: true,
+          header: result.header,
+          violations: result.violations,
+          total_count: result.violations.length,
+          provider: "regex-parser",
+          metadata: result.metadata,
+        }),
+        {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
     } catch (error) {
       console.error(`[${requestId}] Regex extraction error:`, error);
-      return new Response(JSON.stringify({
-        success: false,
-        error: error.message,
-        errorType: error.name,
-        details: 'فشل في استخراج المخالفات باستخدام المحلل التلقائي.',
-        stack: error.stack?.split('\n').slice(0, 3).join('\n')
-      }), {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: error.message,
+          errorType: error.name,
+          details: "فشل في استخراج المخالفات باستخدام المحلل التلقائي.",
+          stack: error.stack?.split("\n").slice(0, 3).join("\n"),
+        }),
+        {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
     }
   }
 
@@ -494,46 +575,58 @@ serve(async (req) => {
   try {
     if (!apiKey) {
       console.error(`[${requestId}] No API key configured`);
-      return new Response(JSON.stringify({
-        success: false,
-        error: 'No API key configured',
-        details: 'Please set LONGCAT_API_KEY in Supabase Edge Function secrets.'
-      }), {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: "No API key configured",
+          details:
+            "Please set LONGCAT_API_KEY in Supabase Edge Function secrets.",
+        }),
+        {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
     }
 
-    console.log('Using AI provider:', 'LongCat');
+    console.log("Using AI provider:", "LongCat");
 
     // Check content type
-    const contentType = req.headers.get('content-type') || '';
+    const contentType = req.headers.get("content-type") || "";
 
     let response;
 
     // Handle JSON body (text from PDF)
-    if (contentType.includes('application/json')) {
+    if (contentType.includes("application/json")) {
       const body = await req.json();
       const { text, source } = body;
 
-      if (!text || typeof text !== 'string') {
-        throw new Error('No text provided in JSON body');
+      if (!text || typeof text !== "string") {
+        throw new Error("No text provided in JSON body");
       }
 
-      console.log('Processing extracted PDF text. Source:', source || 'unknown');
-      console.log('Text preview:', text.substring(0, 200));
+      console.log(
+        "Processing extracted PDF text. Source:",
+        source || "unknown"
+      );
+      console.log("Text preview:", text.substring(0, 200));
 
       // Check if text is meaningful (not just whitespace)
       if (text.trim().length < 20) {
-        return new Response(JSON.stringify({
-          success: false,
-          error: 'PDF_NO_TEXT',
-          details: 'لم يتم العثور على نص كافٍ في ملف PDF. قد يكون الملف عبارة عن صور ممسوحة ضوئياً.',
-          suggestion: 'جرب رفع صورة (JPG/PNG) بدلاً من PDF أو استخدم ملف PDF نصي.'
-        }), {
-          status: 400,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: "PDF_NO_TEXT",
+            details:
+              "لم يتم العثور على نص كافٍ في ملف PDF. قد يكون الملف عبارة عن صور ممسوحة ضوئياً.",
+            suggestion:
+              "جرب رفع صورة (JPG/PNG) بدلاً من PDF أو استخدم ملف PDF نصي.",
+          }),
+          {
+            status: 400,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          }
+        );
       }
 
       // Use LongCat for AI extraction.
@@ -542,57 +635,71 @@ serve(async (req) => {
       } else {
         response = await processTextWithGPT4(text);
       }
-
     } else {
       // Handle FormData (file upload - for images)
       const formData = await req.formData();
-      const file = formData.get('file') as File;
+      const file = formData.get("file") as File;
 
       if (!file) {
-        throw new Error('No file provided');
+        throw new Error("No file provided");
       }
 
-      console.log('Processing file:', file.name, 'Type:', file.type, 'Size:', file.size);
+      console.log(
+        "Processing file:",
+        file.name,
+        "Type:",
+        file.type,
+        "Size:",
+        file.size
+      );
 
       // Check file size limit (10MB)
       if (file.size > 10 * 1024 * 1024) {
-        throw new Error('File size too large. Maximum allowed size is 10MB');
+        throw new Error("File size too large. Maximum allowed size is 10MB");
       }
 
       // Read the file as ArrayBuffer
       const arrayBuffer = await file.arrayBuffer();
 
       // Determine file type
-      const isPDF = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
-      const isImage = file.type.startsWith('image/') ||
-                      /\.(jpg|jpeg|png|gif|webp)$/i.test(file.name);
+      const isPDF =
+        file.type === "application/pdf" ||
+        file.name.toLowerCase().endsWith(".pdf");
+      const isImage =
+        file.type.startsWith("image/") ||
+        /\.(jpg|jpeg|png|gif|webp)$/i.test(file.name);
 
       if (!isPDF && !isImage) {
-        throw new Error('Unsupported file type. Please upload a PDF or image file (JPG, PNG, GIF, WEBP).');
+        throw new Error(
+          "Unsupported file type. Please upload a PDF or image file (JPG, PNG, GIF, WEBP)."
+        );
       }
 
       if (isPDF) {
         // PDF should be processed client-side and sent as text
-        return new Response(JSON.stringify({
-          success: false,
-          error: 'PDF_SHOULD_BE_TEXT',
-          details: 'يجب استخراج النص من PDF في المتصفح وإرساله كـ JSON.',
-          suggestion: 'يجب تعديل الكود لإرسال النص المستخرج.'
-        }), {
-          status: 400,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: "PDF_SHOULD_BE_TEXT",
+            details: "يجب استخراج النص من PDF في المتصفح وإرساله كـ JSON.",
+            suggestion: "يجب تعديل الكود لإرسال النص المستخرج.",
+          }),
+          {
+            status: 400,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          }
+        );
       }
 
       // For images, use Vision API
       const base64Image = arrayBufferToBase64(arrayBuffer);
-      const mimeType = file.type || 'image/png';
+      const mimeType = file.type || "image/png";
 
-      console.log('Processing as image with Vision API');
+      console.log("Processing as image with Vision API");
 
       if (useGLM) {
         // GLM-4V for vision
-        const [id, secret] = (glmApiKey || '').split('.');
+        const [id, secret] = (glmApiKey || "").split(".");
         const usesJWT = id && secret && id.length === 24 && secret.length > 20;
 
         let token: string;
@@ -607,63 +714,65 @@ serve(async (req) => {
         }
 
         response = await fetch(baseUrl, {
-          method: 'POST',
+          method: "POST",
           headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
           },
           body: JSON.stringify({
             model: LONGCAT_MODEL,
             max_tokens: 8000,
             messages: [
               {
-                role: 'user',
+                role: "user",
                 content: [
                   {
-                    type: 'text',
-                    text: EXTRACTION_SYSTEM_PROMPT + '\n\nاستخرج جميع المخالفات المرورية من هذه الصورة.'
+                    type: "text",
+                    text:
+                      EXTRACTION_SYSTEM_PROMPT +
+                      "\n\nاستخرج جميع المخالفات المرورية من هذه الصورة.",
                   },
                   {
-                    type: 'image_url',
+                    type: "image_url",
                     image_url: {
-                      url: `data:${mimeType};base64,${base64Image}`
-                    }
-                  }
-                ]
-              }
-            ]
+                      url: `data:${mimeType};base64,${base64Image}`,
+                    },
+                  },
+                ],
+              },
+            ],
           }),
         });
       } else {
         // LongCat vision-compatible extraction
         response = await fetch(LONGCAT_CHAT_COMPLETIONS_URL, {
-          method: 'POST',
+          method: "POST",
           headers: buildLongCatHeaders(longCatApiKey),
           body: JSON.stringify({
             model: LONGCAT_MODEL,
             max_tokens: 4000,
             messages: [
               {
-                role: 'system',
-                content: EXTRACTION_SYSTEM_PROMPT
+                role: "system",
+                content: EXTRACTION_SYSTEM_PROMPT,
               },
               {
-                role: 'user',
+                role: "user",
                 content: [
                   {
-                    type: 'text',
-                    text: 'استخرج جميع المخالفات المرورية من هذه الصورة.'
+                    type: "text",
+                    text: "استخرج جميع المخالفات المرورية من هذه الصورة.",
                   },
                   {
-                    type: 'image_url',
+                    type: "image_url",
                     image_url: {
                       url: `data:${mimeType};base64,${base64Image}`,
-                      detail: 'high'
-                    }
-                  }
-                ]
-              }
-            ]
+                      detail: "high",
+                    },
+                  },
+                ],
+              },
+            ],
           }),
         });
       }
@@ -671,7 +780,7 @@ serve(async (req) => {
 
     if (!response.ok) {
       const errorData = await response.text();
-      console.error('AI API error:', response.status, errorData);
+      console.error("AI API error:", response.status, errorData);
 
       let errorDetails = errorData;
       try {
@@ -685,33 +794,34 @@ serve(async (req) => {
     }
 
     const data = await response.json();
-    console.log('AI response received');
+    console.log("AI response received");
 
     // Handle OpenAI-compatible response format
     const content = data.choices?.[0]?.message?.content;
 
     if (!content) {
-      console.error('Invalid response from AI API');
-      throw new Error('Invalid response from AI API');
+      console.error("Invalid response from AI API");
+      throw new Error("Invalid response from AI API");
     }
 
-    console.log('Response content preview:', content.substring(0, 500));
+    console.log("Response content preview:", content.substring(0, 500));
 
     // Try to parse JSON from the response
     try {
       // Extract JSON from the response (it might be wrapped in markdown)
-      const jsonMatch = content.match(/```json\n([\s\S]*?)\n```/) ||
-                        content.match(/```\n([\s\S]*?)\n```/) ||
-                        content.match(/\{[\s\S]*"header"[\s\S]*"violations"[\s\S]*\}/) ||
-                        content.match(/\{[\s\S]*"violations"[\s\S]*\}/);
+      const jsonMatch =
+        content.match(/```json\n([\s\S]*?)\n```/) ||
+        content.match(/```\n([\s\S]*?)\n```/) ||
+        content.match(/\{[\s\S]*"header"[\s\S]*"violations"[\s\S]*\}/) ||
+        content.match(/\{[\s\S]*"violations"[\s\S]*\}/);
 
-      let jsonString = jsonMatch ? (jsonMatch[1] || jsonMatch[0]) : content;
+      let jsonString = jsonMatch ? jsonMatch[1] || jsonMatch[0] : content;
 
       // Clean up the string
       jsonString = jsonString.trim();
-      if (!jsonString.startsWith('{')) {
-        const startIndex = jsonString.indexOf('{');
-        const endIndex = jsonString.lastIndexOf('}');
+      if (!jsonString.startsWith("{")) {
+        const startIndex = jsonString.indexOf("{");
+        const endIndex = jsonString.lastIndexOf("}");
         if (startIndex !== -1 && endIndex !== -1) {
           jsonString = jsonString.substring(startIndex, endIndex + 1);
         }
@@ -720,73 +830,93 @@ serve(async (req) => {
       const extractedData = JSON.parse(jsonString);
 
       if (extractedData.error) {
-        console.log('AI could not process the file:', extractedData.error);
-        return new Response(JSON.stringify({
-          success: false,
-          error: 'Could not read PDF content',
-          details: extractedData.error || 'لا يمكن قراءة محتوى ملف PDF. جرب رفع صورة بدلاً من PDF أو تأكد من أن الملف يحتوي على نص قابل للقراءة.'
-        }), {
-          status: 400,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
+        console.log("AI could not process the file:", extractedData.error);
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: "Could not read PDF content",
+            details:
+              extractedData.error ||
+              "لا يمكن قراءة محتوى ملف PDF. جرب رفع صورة بدلاً من PDF أو تأكد من أن الملف يحتوي على نص قابل للقراءة.",
+          }),
+          {
+            status: 400,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          }
+        );
       }
 
       if (extractedData.violations && Array.isArray(extractedData.violations)) {
         console.log(`Extracted ${extractedData.violations.length} violations`);
 
         if (extractedData.violations.length === 0) {
-          return new Response(JSON.stringify({
-            success: false,
-            error: 'No violations found',
-            details: 'لم يتم العثور على أي مخالفات مرورية في هذا الملف. تأكد من أن الملف يحتوي على مخالفات مرورية واضحة.'
-          }), {
-            status: 404,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          });
+          return new Response(
+            JSON.stringify({
+              success: false,
+              error: "No violations found",
+              details:
+                "لم يتم العثور على أي مخالفات مرورية في هذا الملف. تأكد من أن الملف يحتوي على مخالفات مرورية واضحة.",
+            }),
+            {
+              status: 404,
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            }
+          );
         }
 
-        return new Response(JSON.stringify({
-          success: true,
-          header: extractedData.header || {},
-          violations: extractedData.violations,
-          total_count: extractedData.violations.length,
-          images_processed: 1,
-          provider: 'LongCat'
-        }), {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
+        return new Response(
+          JSON.stringify({
+            success: true,
+            header: extractedData.header || {},
+            violations: extractedData.violations,
+            total_count: extractedData.violations.length,
+            images_processed: 1,
+            provider: "LongCat",
+          }),
+          {
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          }
+        );
       } else {
-        throw new Error('Invalid response format from AI');
+        throw new Error("Invalid response format from AI");
       }
     } catch (parseError) {
-      console.error('Failed to parse JSON from AI response:', parseError);
-      console.error('Raw response:', content);
+      console.error("Failed to parse JSON from AI response:", parseError);
+      console.error("Raw response:", content);
 
-      return new Response(JSON.stringify({
-        success: false,
-        error: 'Failed to parse AI response',
-        details: 'فشل في تحليل استجابة الذكاء الاصطناعي. جرب مرة أخرى أو استخدم ملف PDF مختلف.'
-      }), {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: "Failed to parse AI response",
+          details:
+            "فشل في تحليل استجابة الذكاء الاصطناعي. جرب مرة أخرى أو استخدم ملف PDF مختلف.",
+        }),
+        {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
     }
-
   } catch (error) {
-    console.error('Error in extract-traffic-violations function:', error.message);
-    console.error('Error stack:', error.stack);
+    console.error(
+      "Error in extract-traffic-violations function:",
+      error.message
+    );
+    console.error("Error stack:", error.stack);
 
     const errorDetails = {
       success: false,
       error: error.message,
       errorType: error.name,
-      details: error.message || 'تعذر استخراج المخالفات من الملف. تأكد من أن الملف صالح ويحتوي على مخالفات مرورية واضحة.',
-      stack: error.stack?.split('\n').slice(0, 3).join('\n')
+      details:
+        error.message ||
+        "تعذر استخراج المخالفات من الملف. تأكد من أن الملف صالح ويحتوي على مخالفات مرورية واضحة.",
+      stack: error.stack?.split("\n").slice(0, 3).join("\n"),
     };
 
     return new Response(JSON.stringify(errorDetails), {
       status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
 });

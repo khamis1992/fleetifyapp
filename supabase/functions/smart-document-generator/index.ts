@@ -339,7 +339,7 @@ serve(async (req) => {
       success: true, 
       content: htmlContent,
       aiPowered: aiUsed,
-      model: aiUsed ? 'GPT-4o' : 'Template'
+      model: aiUsed ? LONGCAT_MODEL : 'Template'
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
