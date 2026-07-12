@@ -20,7 +20,7 @@ loadDotEnv();
 const requireDb = process.argv.includes('--require-db');
 const hasDbEnv = Boolean(
   process.env.VITE_SUPABASE_URL
-  && (process.env.VITE_SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY)
+  && (process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY)
 );
 
 const steps = [

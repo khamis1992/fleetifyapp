@@ -11,7 +11,7 @@ from datetime import datetime
 
 vals = dotenv_values('.env')
 BASE_URL = vals.get('VITE_SUPABASE_URL', '').strip()
-SRK = vals.get('VITE_SUPABASE_SERVICE_ROLE_KEY', '').strip()
+SRK = vals.get('SUPABASE_SERVICE_ROLE_KEY', '').strip()
 H = {
     'apikey': SRK,
     'Authorization': 'Bearer ' + SRK,

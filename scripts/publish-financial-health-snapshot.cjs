@@ -70,7 +70,7 @@ function deriveSnapshot(integrity, controls, reconciliation) {
 async function main() {
   const requireSnapshot = process.argv.includes('--require-db') || process.argv.includes('--require-snapshot');
   const supabaseUrl = readEnv('VITE_SUPABASE_URL');
-  const serviceRoleKey = readEnv('VITE_SUPABASE_SERVICE_ROLE_KEY') || readEnv('SUPABASE_SERVICE_ROLE_KEY');
+  const serviceRoleKey = readEnv('SUPABASE_SERVICE_ROLE_KEY') || readEnv('SUPABASE_SERVICE_ROLE_KEY');
 
   if (!supabaseUrl || !serviceRoleKey) {
     if (requireSnapshot) {

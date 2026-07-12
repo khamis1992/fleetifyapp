@@ -1,7 +1,10 @@
 # Test Webhook Endpoint
 $url = "https://qwhunliohlkkahbspfiu.supabase.co/functions/v1/process-traffic-fine"
-$secret = "fleetify_zapier_webhook_khamis_2025_secure_traffic_fines_integration_v1"
-$anonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF3aHVubGlvaGxra2FoYnNwZml1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MjE3NTEyODYsImV4cCI6MjAzNzMyNzI4Nn0.Ju8U5PqHR9r-CpBbGrfTXIXTHf8qN5EQZcL7ZhVoB88"
+$secret = $env:ZAPIER_WEBHOOK_SECRET
+$anonKey = $env:SUPABASE_ANON_KEY
+if ([string]::IsNullOrWhiteSpace($secret) -or [string]::IsNullOrWhiteSpace($anonKey)) {
+    throw "ZAPIER_WEBHOOK_SECRET and SUPABASE_ANON_KEY are required"
+}
 
 # Test 1: With Supabase Authorization
 Write-Host "=== Test 1: With Supabase Authorization (anon key) ===" -ForegroundColor Cyan

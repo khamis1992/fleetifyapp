@@ -46,10 +46,10 @@ const companyArgIndex = process.argv.findIndex((arg) => arg === '--company-id');
 const companyId = companyArgIndex >= 0 ? process.argv[companyArgIndex + 1] : undefined;
 
 const supabaseUrl = process.env.VITE_SUPABASE_URL;
-const serviceRoleKey = process.env.VITE_SUPABASE_SERVICE_ROLE_KEY;
+const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 if (!supabaseUrl || !serviceRoleKey) {
-  throw new Error('Missing VITE_SUPABASE_URL or VITE_SUPABASE_SERVICE_ROLE_KEY in .env');
+  throw new Error('Missing VITE_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY in .env');
 }
 
 const supabase = createClient(supabaseUrl, serviceRoleKey, {

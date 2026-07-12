@@ -72,7 +72,7 @@ const { data } = await supabase
 ### Option 1: Use Service Role Key (Recommended for Admin Tasks)
 **File**: `.env`
 ```bash
-VITE_SUPABASE_SERVICE_ROLE_KEY=your-service-role-key-here
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key-here
 ```
 
 **Benefits**:

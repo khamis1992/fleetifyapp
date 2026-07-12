@@ -7,7 +7,7 @@ import psycopg2
 from dotenv import dotenv_values
 
 vals = dotenv_values('.env')
-SRK = vals.get('VITE_SUPABASE_SERVICE_ROLE_KEY', '').strip()
+SRK = vals.get('SUPABASE_SERVICE_ROLE_KEY', '').strip()
 ANON = vals.get('VITE_SUPABASE_ANON_KEY', '').strip()
 
 # Try connecting with the service role key as password

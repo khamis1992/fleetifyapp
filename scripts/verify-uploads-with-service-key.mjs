@@ -2,12 +2,12 @@
 /**
  * Verify All Vehicle Document Uploads
  *
- * This script requires VITE_SUPABASE_SERVICE_ROLE_KEY in .env file
+ * This script requires SUPABASE_SERVICE_ROLE_KEY in .env file
  * to bypass RLS policies and see ALL uploaded documents.
  *
  * INSTRUCTIONS:
  * 1. Get service role key from: https://supabase.com/dashboard/project/qwhunliohlkkahbspfiu/settings/api
- * 2. Add to .env: VITE_SUPABASE_SERVICE_ROLE_KEY=your-key-here
+ * 2. Add to .env: SUPABASE_SERVICE_ROLE_KEY=your-key-here
  * 3. Run: node scripts/verify-uploads-with-service-key.mjs
  */
 
@@ -15,7 +15,7 @@ import 'dotenv/config';
 import { createClient } from '@supabase/supabase-js';
 
 const supabaseUrl = process.env.VITE_SUPABASE_URL;
-const supabaseKey = process.env.VITE_SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY;
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY;
 
 if (!supabaseKey) {
   console.error('❌ Error: No Supabase key found in .env');
@@ -23,7 +23,7 @@ if (!supabaseKey) {
   console.error('1. Go to: https://supabase.com/dashboard/project/qwhunliohlkkahbspfiu/settings/api');
   console.error('2. Copy the "service_role" key (NOT "anon" key)');
   console.error('3. Add to .env file:');
-  console.error('   VITE_SUPABASE_SERVICE_ROLE_KEY=your-service-role-key-here\n');
+  console.error('   SUPABASE_SERVICE_ROLE_KEY=your-service-role-key-here\n');
   process.exit(1);
 }
 

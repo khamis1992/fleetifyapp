@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
+import { requireSupabaseScriptConfig } from './_shared/supabase-env.mjs'
 
-const supabaseUrl = 'https://qwhunliohlkkahbspfiu.supabase.co'
-const supabaseServiceKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF3aHVubGlvaGxra2FoYnNwZml1Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1MzQxMzA4NiwiZXhwIjoyMDY4OTg5MDg2fQ.vw3DWeoAyLSe_0MLQPFgSu-TL28W8mbTx7tEfhKe6Zg'
+const { url: supabaseUrl, key: supabaseServiceKey } = requireSupabaseScriptConfig({ serviceRole: true })
 
 const supabase = createClient(supabaseUrl, supabaseServiceKey, {
   auth: {

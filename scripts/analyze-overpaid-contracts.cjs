@@ -21,7 +21,7 @@ const env = {
 
 const supabase = createClient(
   env.VITE_SUPABASE_URL,
-  env.SUPABASE_SERVICE_ROLE_KEY || env.VITE_SUPABASE_SERVICE_ROLE_KEY,
+  env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_SERVICE_ROLE_KEY,
   { auth: { persistSession: false, autoRefreshToken: false } }
 );
 

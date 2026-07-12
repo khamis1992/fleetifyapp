@@ -11,7 +11,7 @@ function readEnv(name) {
 }
 
 const supabaseUrl = readEnv('VITE_SUPABASE_URL');
-const serviceRoleKey = readEnv('VITE_SUPABASE_SERVICE_ROLE_KEY') || readEnv('SUPABASE_SERVICE_ROLE_KEY');
+const serviceRoleKey = readEnv('SUPABASE_SERVICE_ROLE_KEY') || readEnv('SUPABASE_SERVICE_ROLE_KEY');
 
 if (!supabaseUrl || !serviceRoleKey) {
   console.error('Missing VITE_SUPABASE_URL and service role key.');

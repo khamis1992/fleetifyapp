@@ -17,7 +17,7 @@ from dotenv import dotenv_values
 # Load environment variables
 vals: Dict[str, Optional[str]] = dotenv_values('.env')
 BASE_URL: str = (vals.get('VITE_SUPABASE_URL') or '').strip()
-SRK: str = (vals.get('VITE_SUPABASE_SERVICE_ROLE_KEY') or '').strip()
+SRK: str = (vals.get('SUPABASE_SERVICE_ROLE_KEY') or '').strip()
 
 # Headers for Supabase API
 H: Dict[str, str] = {

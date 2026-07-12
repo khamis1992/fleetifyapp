@@ -7,7 +7,7 @@ from dotenv import dotenv_values
 
 vals: dict[str, str | None] = dict(dotenv_values('.env'))
 BASE_URL: str = (vals.get('VITE_SUPABASE_URL') or '').strip()
-SRK: str = (vals.get('VITE_SUPABASE_SERVICE_ROLE_KEY') or '').strip()
+SRK: str = (vals.get('SUPABASE_SERVICE_ROLE_KEY') or '').strip()
 HEADERS: dict[str, str] = {
     'apikey': SRK,
     'Authorization': f'Bearer {SRK}',

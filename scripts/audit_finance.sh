@@ -1,6 +1,6 @@
 #!/bin/bash
 cd /c/Users/khamis/Documents/fleetifyapp
-SRK=$(grep VITE_SUPABASE_SERVICE_ROLE_KEY .env | cut -d'"' -f2)
+SRK=$(grep SUPABASE_SERVICE_ROLE_KEY .env | cut -d'"' -f2)
 CID="24bc0b21-4e2d-4413-9842-31719a3669f4"
 BASE="https://qwhunliohlkkahbspfiu.supabase.co/rest/v1"
 AUTH="apikey: $SRK"

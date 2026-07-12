@@ -17,7 +17,7 @@ print(f"Project ref: {project_ref}")
 
 # Try using the Supabase SQL endpoint
 # The /pg/exec endpoint might work with the service role key
-SRK = vals.get('VITE_SUPABASE_SERVICE_ROLE_KEY', '').strip()
+SRK = vals.get('SUPABASE_SERVICE_ROLE_KEY', '').strip()
 
 # Read the migration SQL
 migration_path = os.path.join(os.path.dirname(__file__), '..', 'supabase', 'migrations', '20260701000006_link_payment_journal_bypass.sql')

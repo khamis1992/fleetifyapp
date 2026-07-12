@@ -27,12 +27,12 @@ const BATCH_SIZE = 2; // Process 2 files at a time for quality
 
 // Supabase configuration (read from .env)
 const supabaseUrl = process.env.VITE_SUPABASE_URL;
-const supabaseKey = process.env.VITE_SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY;
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY;
 
 if (!supabaseUrl || !supabaseKey) {
   console.error('❌ Missing Supabase credentials. Please ensure .env file contains:');
   console.error('   VITE_SUPABASE_URL');
-  console.error('   VITE_SUPABASE_SERVICE_ROLE_KEY (or VITE_SUPABASE_ANON_KEY)');
+  console.error('   SUPABASE_SERVICE_ROLE_KEY (or VITE_SUPABASE_ANON_KEY)');
   process.exit(1);
 }
 

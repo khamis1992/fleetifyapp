@@ -5,7 +5,7 @@ import json, os, urllib.request, urllib.parse
 env_path = os.path.join(os.path.dirname(__file__), '..', '.env')
 with open(env_path, 'r') as f:
     for line in f:
-        if line.startswith('VITE_SUPABASE_SERVICE_ROLE_KEY='):
+        if line.startswith('SUPABASE_SERVICE_ROLE_KEY='):
             SRK = line.split('"')[1]
             break
 

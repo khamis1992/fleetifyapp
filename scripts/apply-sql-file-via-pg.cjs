@@ -7,9 +7,10 @@ const { Client } = require('pg');
 const projectRoot = process.cwd();
 const sqlFile = process.argv[2];
 const checkOnly = process.argv.includes('--check');
+const rollbackOnly = process.argv.includes('--rollback');
 
 if (!sqlFile) {
-  console.error('Usage: node scripts/apply-sql-file-via-pg.cjs <sql-file> [--check]');
+  console.error('Usage: node scripts/apply-sql-file-via-pg.cjs <sql-file> [--check|--rollback]');
   process.exit(1);
 }
 
@@ -54,8 +55,13 @@ async function main() {
   await client.query('begin');
   try {
     await client.query(sql);
-    await client.query('commit');
-    console.log(JSON.stringify({ status: 'applied', file: resolvedSqlFile }));
+    if (rollbackOnly) {
+      await client.query('rollback');
+      console.log(JSON.stringify({ status: 'validated', file: resolvedSqlFile }));
+    } else {
+      await client.query('commit');
+      console.log(JSON.stringify({ status: 'applied', file: resolvedSqlFile }));
+    }
   } catch (error) {
     await client.query('rollback');
     throw error;

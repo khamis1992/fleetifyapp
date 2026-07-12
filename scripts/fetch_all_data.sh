@@ -1,6 +1,6 @@
 #!/bin/bash
 cd /c/Users/khamis/Documents/fleetifyapp
-SRK=$(grep VITE_SUPABASE_SERVICE_ROLE_KEY .env | cut -d'"' -f2)
+SRK=$(grep SUPABASE_SERVICE_ROLE_KEY .env | cut -d'"' -f2)
 BASE="https://qwhunliohlkkahbspfiu.supabase.co/rest/v1"
 
 # Fetch ALL JEs (4519 total) — paginate with range headers

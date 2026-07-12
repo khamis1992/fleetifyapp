@@ -2,8 +2,11 @@
 # This script will help identify exactly which fields are causing validation errors
 
 $webhookUrl = "https://qwhunliohlkkahbspfiu.supabase.co/functions/v1/process-traffic-fine"
-$webhookSecret = "fleetify_zapier_webhook_khamis_2025_secure_traffic_fines_integration_v1"
-$anonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF3aHVubGlvaGxra2FoYnNwZml1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM0MTMwODYsImV4cCI6MjA2ODk4OTA4Nn0.x5o6IpzWcYo7a6jRq2J8V0hKyNeRKZCEQIuXTPADQqs"
+$webhookSecret = $env:ZAPIER_WEBHOOK_SECRET
+$anonKey = $env:SUPABASE_ANON_KEY
+if ([string]::IsNullOrWhiteSpace($webhookSecret) -or [string]::IsNullOrWhiteSpace($anonKey)) {
+    throw "ZAPIER_WEBHOOK_SECRET and SUPABASE_ANON_KEY are required"
+}
 
 Write-Host "🧪 Testing Traffic Fine Webhook - Debug Mode" -ForegroundColor Cyan
 Write-Host "================================================" -ForegroundColor Cyan

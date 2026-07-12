@@ -1,7 +1,7 @@
 #!/bin/bash
 # Fetch the 6 unbalanced JEs with their lines to understand what's missing
 cd /c/Users/khamis/Documents/fleetifyapp
-SRK=$(grep VITE_SUPABASE_SERVICE_ROLE_KEY .env | cut -d'"' -f2)
+SRK=$(grep SUPABASE_SERVICE_ROLE_KEY .env | cut -d'"' -f2)
 BASE="https://qwhunliohlkkahbspfiu.supabase.co/rest/v1"
 
 # Get the unbalanced JEs

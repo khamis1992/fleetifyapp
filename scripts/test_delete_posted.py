@@ -6,7 +6,7 @@ from dotenv import dotenv_values
 
 vals = dotenv_values('.env')
 BASE_URL = vals.get('VITE_SUPABASE_URL','').strip()
-API_KEY = vals.get("VITE_SUPABASE_SERVICE_ROLE_KEY","").strip()
+API_KEY = vals.get("SUPABASE_SERVICE_ROLE_KEY","").strip()
 HEADERS = {
     'apikey': API_KEY,
     'Authorization': f'Bearer {API_KEY}',

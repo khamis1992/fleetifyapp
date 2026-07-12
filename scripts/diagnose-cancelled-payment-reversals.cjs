@@ -23,7 +23,7 @@ const env = {
 };
 
 const supabaseUrl = env.VITE_SUPABASE_URL;
-const serviceRoleKey = env.SUPABASE_SERVICE_ROLE_KEY || env.VITE_SUPABASE_SERVICE_ROLE_KEY;
+const serviceRoleKey = env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_SERVICE_ROLE_KEY;
 
 if (!supabaseUrl || !serviceRoleKey) {
   console.error('Missing VITE_SUPABASE_URL or service role key.');
@@ -111,6 +111,10 @@ function classifyLikelyCause(row) {
   const referenceNumber = String(row.reference_number || '');
   const notes = String(row.notes || '');
 
+  if (processingNotes.startsWith('Contract health repair:')) {
+    return 'contract_health_out_of_period_cancellation_without_reversal';
+  }
+
   if (paymentNumber.startsWith('PAY-IMP-') || paymentNumber.startsWith('PAY-MIG-') || entryNumber.startsWith('JE-PAY-BF-')) {
     return 'historical_import_cleanup_or_backfill';
   }
@@ -170,7 +174,7 @@ function markdown(result) {
 async function run() {
   const { companyId, outputDir } = parseArgs();
 
-  const [payments, journalEntries] = await Promise.all([
+  const [payments, journalEntries, contracts, invoices] = await Promise.all([
     selectAll(
       'payments',
       'id,payment_number,amount,payment_date,payment_status,transaction_type,journal_entry_id,customer_id,contract_id,invoice_id,reference_number,payment_method,notes,processing_notes,created_at,updated_at,created_by',
@@ -181,9 +185,22 @@ async function run() {
       'id,entry_number,entry_date,status,total_debit,total_credit,reference_type,reference_id,reversal_entry_id,created_at,updated_at,description',
       (query) => query.eq('company_id', companyId)
     ),
+    selectAll(
+      'contracts',
+      'id,contract_number,customer_id,start_date,end_date,status,contract_amount,total_paid,balance_due',
+      (query) => query.eq('company_id', companyId)
+    ),
+    selectAll(
+      'invoices',
+      'id,invoice_number,invoice_date,due_date,total_amount,paid_amount,balance_due,status,payment_status,contract_id,customer_id',
+      (query) => query.eq('company_id', companyId)
+    ),
   ]);
 
   const journalById = new Map(journalEntries.map((entry) => [entry.id, entry]));
+  const contractById = new Map(contracts.map((contract) => [contract.id, contract]));
+  const invoiceById = new Map(invoices.map((invoice) => [invoice.id, invoice]));
+  const invoiceByNumber = new Map(invoices.map((invoice) => [invoice.invoice_number, invoice]));
   const journalsByReference = new Map();
 
   for (const entry of journalEntries) {
@@ -230,6 +247,29 @@ async function run() {
     }
   }
 
+  const originalJournalIds = missingReversals.map((row) => row.original_journal_entry_id);
+  const journalLines = originalJournalIds.length > 0
+    ? await selectAll(
+      'journal_entry_lines',
+      'id,journal_entry_id,account_id,debit_amount,credit_amount,line_description,line_number',
+      (query) => query.in('journal_entry_id', originalJournalIds)
+    )
+    : [];
+  const accountIds = Array.from(new Set(journalLines.map((line) => line.account_id).filter(Boolean)));
+  const accounts = accountIds.length > 0
+    ? await selectAll(
+      'chart_of_accounts',
+      'id,account_code,account_name,account_type,balance_type',
+      (query) => query.in('id', accountIds)
+    )
+    : [];
+  const accountById = new Map(accounts.map((account) => [account.id, account]));
+  const linesByJournalId = new Map();
+  for (const line of journalLines) {
+    if (!linesByJournalId.has(line.journal_entry_id)) linesByJournalId.set(line.journal_entry_id, []);
+    linesByJournalId.get(line.journal_entry_id).push(line);
+  }
+
   const totalAmount = n(missingReversals.reduce((sum, row) => sum + n(row.amount), 0));
   const groups = {
     by_likely_cause: groupSummary(missingReversals, (row) => row.likely_cause),
@@ -257,27 +297,96 @@ async function run() {
       missing_reversal_amount: totalAmount,
     },
     groups,
-    samples: missingReversals.slice(0, 25).map((row) => ({
-      id: row.id,
-      payment_number: row.payment_number,
-      amount: row.amount,
-      payment_date: row.payment_date,
-      created_at: row.created_at,
-      updated_at: row.updated_at,
-      invoice_id: row.invoice_id,
-      reference_number: row.reference_number,
-      original_entry_number: row.original_entry_number,
-      original_entry_status: row.original_entry_status,
-      original_reference_type: row.original_reference_type,
-      likely_cause: row.likely_cause,
-      has_processing_notes: Boolean(row.processing_notes),
-      notes_hint: String(row.notes || '').slice(0, 120),
-    })),
+    samples: missingReversals.slice(0, 25).map((row) => {
+      const contract = contractById.get(row.contract_id);
+      const notedInvoiceNumber = String(row.processing_notes || '').match(/INV-[A-Z0-9]+(?:-[A-Z0-9]+)*/)?.[0] || null;
+      const invoice = row.invoice_id
+        ? invoiceById.get(row.invoice_id)
+        : notedInvoiceNumber
+          ? invoiceByNumber.get(notedInvoiceNumber)
+          : null;
+      const coveringContracts = contracts
+        .filter((candidate) => (
+          candidate.customer_id === row.customer_id
+          && row.payment_date
+          && row.payment_date >= candidate.start_date
+          && row.payment_date <= candidate.end_date
+        ))
+        .map((candidate) => ({
+          id: candidate.id,
+          contract_number: candidate.contract_number,
+          start_date: candidate.start_date,
+          end_date: candidate.end_date,
+          status: candidate.status,
+        }));
+      const paymentMonth = monthOf(row.payment_date);
+      const matchingMonthInvoices = invoices
+        .filter((candidate) => (
+          candidate.customer_id === row.customer_id
+          && monthOf(candidate.due_date || candidate.invoice_date) === paymentMonth
+        ))
+        .slice(0, 10)
+        .map((candidate) => ({
+          id: candidate.id,
+          invoice_number: candidate.invoice_number,
+          contract_id: candidate.contract_id,
+          invoice_date: candidate.invoice_date,
+          due_date: candidate.due_date,
+          total_amount: candidate.total_amount,
+          paid_amount: candidate.paid_amount,
+          balance_due: candidate.balance_due,
+          status: candidate.status,
+          payment_status: candidate.payment_status,
+        }));
+      return {
+        id: row.id,
+        payment_number: row.payment_number,
+        amount: row.amount,
+        payment_date: row.payment_date,
+        contract_id: row.contract_id,
+        contract_number: contract?.contract_number || null,
+        contract_start_date: contract?.start_date || null,
+        contract_end_date: contract?.end_date || null,
+        payment_is_outside_contract_period: Boolean(
+          row.payment_date
+          && contract?.start_date
+          && contract?.end_date
+          && (row.payment_date < contract.start_date || row.payment_date > contract.end_date)
+        ),
+        customer_id: row.customer_id,
+        created_at: row.created_at,
+        updated_at: row.updated_at,
+        invoice_id: row.invoice_id,
+        noted_invoice_number: notedInvoiceNumber,
+        invoice_number: invoice?.invoice_number || null,
+        invoice_date: invoice?.invoice_date || null,
+        reference_number: row.reference_number,
+        original_entry_number: row.original_entry_number,
+        original_entry_status: row.original_entry_status,
+        original_reference_type: row.original_reference_type,
+        original_journal_lines: (linesByJournalId.get(row.original_journal_entry_id) || [])
+          .sort((a, b) => Number(a.line_number || 0) - Number(b.line_number || 0))
+          .map((line) => ({
+            account_id: line.account_id,
+            account_code: accountById.get(line.account_id)?.account_code || null,
+            account_name: accountById.get(line.account_id)?.account_name || null,
+            debit_amount: line.debit_amount,
+            credit_amount: line.credit_amount,
+            line_description: line.line_description,
+          })),
+        likely_cause: row.likely_cause,
+        has_processing_notes: Boolean(row.processing_notes),
+        processing_notes_hint: String(row.processing_notes || '').slice(0, 500),
+        notes_hint: String(row.notes || '').slice(0, 120),
+        covering_customer_contracts: coveringContracts,
+        matching_customer_invoices_for_payment_month: matchingMonthInvoices,
+      };
+    }),
     likelyCause: [
-      'Most affected payments are historical PAY-IMP/PAY-MIG records with JE-PAY-BF journals.',
-      'That pattern matches cleanup/backfill scripts that temporarily set payment_status=cancelled to unlink placeholder PYINV invoices, then attempted to set the payment back to completed.',
-      'Those scripts bypassed the central payment cancellation operation, so no payment_reversal journal was created.',
-      'The central cancellation flow also has a design weakness: it updates payment_status before creating the reversal, so a reversal failure can leave a cancelled payment without reversal.',
+      'The current affected payments were changed by the contract-health repair flow.',
+      'That flow directly updated payment_status to cancelled instead of using the atomic payment-cancellation RPC.',
+      'The direct update left the original posted receipt journals active without payment_reversal entries.',
+      'Each affected payment must be validated against its contract period, then repaired through an auditable accounting reversal.',
     ].join(' '),
   };
 
