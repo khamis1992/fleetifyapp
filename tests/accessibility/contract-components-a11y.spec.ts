@@ -7,17 +7,12 @@
 
 import { test, expect } from '@playwright/test';
 import { injectAxe, getViolations, checkA11y } from 'axe-playwright';
+import { loginAsAdmin } from '../utils/financialTestHelpers';
 
 test.describe('Contract Components Accessibility', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/login');
     await page.setViewportSize({ width: 1280, height: 720 });
-
-    // Login for authenticated components
-    await page.fill('[data-testid="email-input"]', 'test@fleetify.com');
-    await page.fill('[data-testid="password-input"]', 'testpassword123');
-    await page.click('[data-testid="login-button"]');
-    await page.waitForURL('/dashboard');
+    await loginAsAdmin(page);
 
     // Inject axe for accessibility testing
     await injectAxe(page);

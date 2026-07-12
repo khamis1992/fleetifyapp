@@ -6,7 +6,8 @@
  */
 
 import { Page, expect } from '@playwright/test';
-import testAccounts from '../fixtures/financial-test-accounts.json';
+import testAccounts from '../fixtures/financial-test-accounts.json' with { type: 'json' };
+import { getE2ECredentials } from './e2eCredentials';
 
 const BASE_URL = 'http://localhost:8080';
 const COMPANY_ID = testAccounts.companyId;
@@ -74,9 +75,10 @@ export async function loginAsAdmin(page: Page): Promise<void> {
     return;
   }
 
+  const { email, password } = getE2ECredentials();
   await page.waitForSelector('#email', { timeout: 20000 });
-  await page.locator('#email').fill('khamis-1992@hotmail.com');
-  await page.locator('#password').fill('123456789');
+  await page.locator('#email').fill(email);
+  await page.locator('#password').fill(password);
   await page.locator('button[type="submit"]').click();
   await page.waitForURL('**/dashboard**', { timeout: 20000 });
 }

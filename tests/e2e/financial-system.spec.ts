@@ -34,6 +34,7 @@ import {
   MockPayment,
   PaymentTestScenario,
 } from '../utils/testDataGenerators';
+import { getE2ECredentials } from '../utils/e2eCredentials';
 
 // Test configuration
 const COMPANY_ID = '24bc0b21-4e2d-4413-9842-31719a3669f4';
@@ -76,12 +77,13 @@ async function loginAsAdmin(page: Page): Promise<void> {
 
   // Wait for login form - the form uses #email and #password IDs
   await page.waitForSelector('#email', { timeout: 20000 });
+  const { email, password } = getE2ECredentials();
 
   // Fill email
-  await page.locator('#email').fill('khamis-1992@hotmail.com');
+  await page.locator('#email').fill(email);
 
   // Fill password
-  await page.locator('#password').fill('123456789');
+  await page.locator('#password').fill(password);
 
   // Submit login - button has type="submit" 
   await page.locator('button[type="submit"]').click();

@@ -853,3 +853,8 @@ export function generateFinancialTestFixture() {
     getScenario: (name: string) => scenarios.find(s => s.name === name),
   };
 }
+
+// Backward-compatible names used by the integration suite.
+export const generateMockContract = generateTestContract;
+export const generateMockCustomer = generateTestCustomer;
+export const generateMockVehicle = generateTestVehicle;

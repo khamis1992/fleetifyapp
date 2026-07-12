@@ -18,6 +18,7 @@ import {
   generateCashPayment,
   generateBankTransferPayment,
 } from '../utils/testDataGenerators';
+import { getE2ECredentials } from '../utils/e2eCredentials';
 
 const BASE_URL = 'http://localhost:8080';
 const COMPANY_ID = '24bc0b21-4e2d-4413-9842-31719a3669f4';
@@ -34,9 +35,10 @@ async function loginAsAdmin(page: Page): Promise<void> {
     return;
   }
 
+  const { email, password } = getE2ECredentials();
   await page.waitForSelector('#email', { timeout: 20000 });
-  await page.locator('#email').fill('khamis-1992@hotmail.com');
-  await page.locator('#password').fill('123456789');
+  await page.locator('#email').fill(email);
+  await page.locator('#password').fill(password);
   await page.locator('button[type="submit"]').click();
   await page.waitForURL('**/dashboard**', { timeout: 20000 });
 }

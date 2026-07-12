@@ -15,18 +15,17 @@
  */
 
 import { test, expect } from '@playwright/test';
+import { getE2ECredentials } from '../utils/e2eCredentials';
 
-// Test credentials
-const TEST_EMAIL = 'khamis-1992@hotmail.com';
-const TEST_PASSWORD = '123456789';
 const BASE_URL = 'http://localhost:8080';
 
 test.describe('Billing Center - Invoices', () => {
   test.beforeEach(async ({ page }) => {
+    const { email, password } = getE2ECredentials();
     // Login before each test
     await page.goto(`${BASE_URL}/auth`);
-    await page.fill('input[name="email"]', TEST_EMAIL);
-    await page.fill('input[name="password"]', TEST_PASSWORD);
+    await page.fill('input[name="email"]', email);
+    await page.fill('input[name="password"]', password);
     await page.click('button[type="submit"]');
     await page.waitForURL(/\/dashboard/, { timeout: 10000 });
   });

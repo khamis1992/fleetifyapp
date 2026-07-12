@@ -4,8 +4,8 @@
 This document outlines the comprehensive end-to-end test plan for the FleetifyApp financial system, covering payments, invoices, contracts, and financial workflows.
 
 ## Test Credentials
-- **Email:** `khamis-1992@hotmail.com`
-- **Password:** `123456789`
+- **Email:** set `E2E_TEST_EMAIL` in the local or CI environment
+- **Password:** set `E2E_TEST_PASSWORD` in the local or CI environment
 - **Base URL:** `http://localhost:8080`
 - **Auth Route:** `/auth` (not `/login`)
 

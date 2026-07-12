@@ -114,6 +114,7 @@ export interface SystemAuditDashboardData {
 }
 
 const SYSTEM_AUDIT_REVIEW_TASK_CATEGORY = "system_audit_review";
+const OPEN_REVIEW_TASK_STATUSES = ["pending", "in_progress", "on_hold"];
 
 const domainLabels: Record<SystemAuditDomain, string> = {
   contracts: "العقود",
@@ -231,38 +232,69 @@ export function useSyncSystemAuditReviewTasks() {
     mutationFn: async (dashboard: SystemAuditDashboardData) => {
       const companyId = user?.profile?.company_id || dashboard.companyId;
       const profileId = user?.profile?.id;
-      if (!companyId || !profileId || !dashboard.overview.pendingReview) {
-        return { created: 0, skipped: 0 };
+      if (!companyId || !profileId) {
+        return { created: 0, skipped: 0, archived: 0 };
       }
 
       const seeds = buildReviewTaskSeeds(dashboard);
-      if (seeds.length === 0) return { created: 0, skipped: 0 };
 
       const { data: existingTasks, error: existingError } = await supabase
         .from("tasks")
-        .select("id,metadata,status")
+        .select("id,metadata,status,created_at")
         .eq("company_id", companyId)
         .eq("category", SYSTEM_AUDIT_REVIEW_TASK_CATEGORY)
-        .in(
-          "metadata->>systemAuditTaskKey",
-          seeds.map((seed) => seed.key)
-        );
+        .in("status", OPEN_REVIEW_TASK_STATUSES)
+        .order("created_at", { ascending: false });
       if (existingError) throw existingError;
 
-      const existingKeys = new Set(
-        (existingTasks || [])
-          .map((task) => {
-            const metadata = task.metadata as Record<string, unknown> | null;
-            return typeof metadata?.systemAuditTaskKey === "string"
-              ? metadata.systemAuditTaskKey
-              : null;
-          })
-          .filter(Boolean) as string[]
-      );
+      const currentKeys = new Set(seeds.map((seed) => seed.key));
+      const existingKeys = new Set<string>();
+      const staleTaskIds: string[] = [];
+
+      for (const task of existingTasks || []) {
+        const metadata = task.metadata as Record<string, unknown> | null;
+        const key = canonicalReviewTaskKeyFromMetadata(metadata);
+        if (!key || !currentKeys.has(key) || existingKeys.has(key)) {
+          staleTaskIds.push(task.id);
+          continue;
+        }
+        existingKeys.add(key);
+      }
+
+      if (staleTaskIds.length > 0) {
+        const { error: archiveError } = await supabase
+          .from("tasks")
+          .update({ status: "cancelled" })
+          .eq("company_id", companyId)
+          .in("id", staleTaskIds);
+        if (archiveError) throw archiveError;
+
+        const { error: archiveLogError } = await supabase
+          .from("task_activity_log")
+          .insert(
+            staleTaskIds.map((taskId) => ({
+              task_id: taskId,
+              user_id: profileId,
+              action: "status_changed",
+              description:
+                "أغلق وكيل تدقيق النظام هذه المهمة لأنها قديمة أو مكررة ولا تمثل قرارًا حاليًا.",
+              new_value: {
+                status: "cancelled",
+                reason: "system_audit_review_reconciled",
+                runId: dashboard.latestRun?.id || null,
+              },
+            }))
+          );
+        if (archiveLogError) throw archiveLogError;
+      }
 
       const newSeeds = seeds.filter((seed) => !existingKeys.has(seed.key));
       if (newSeeds.length === 0) {
-        return { created: 0, skipped: seeds.length };
+        return {
+          created: 0,
+          skipped: seeds.length,
+          archived: staleTaskIds.length,
+        };
       }
 
       const now = new Date();
@@ -315,15 +347,18 @@ export function useSyncSystemAuditReviewTasks() {
       return {
         created: insertedTasks?.length || 0,
         skipped: seeds.length - newSeeds.length,
+        archived: staleTaskIds.length,
       };
     },
     onSuccess: (result) => {
-      if (result.created > 0) {
+      if (result.created > 0 || result.archived > 0) {
         queryClient.invalidateQueries({ queryKey: ["tasks"] });
         queryClient.invalidateQueries({ queryKey: ["task-statistics"] });
-        toast.success(
-          `تم إدراج ${result.created} مهمة تحتاج قرارًا بشريًا في مهامك`
-        );
+        if (result.created > 0) {
+          toast.success(
+            `تم إدراج ${result.created} مهمة تحتاج قرارًا بشريًا في مهامك`
+          );
+        }
       }
     },
     onError: (error) => {
@@ -345,7 +380,7 @@ function buildReviewTaskSeeds(
 
   const uniqueSeeds = new Map<string, ReviewTaskSeed>();
   for (const seed of seeds) uniqueSeeds.set(seed.key, seed);
-  return [...uniqueSeeds.values()].slice(0, 40);
+  return [...uniqueSeeds.values()];
 }
 
 function buildFindingTaskSeed(
@@ -358,7 +393,11 @@ function buildFindingTaskSeed(
   const priority = priorityFromSeverity(finding.severity);
 
   return {
-    key: `finding:${finding.id}`,
+    key: findingReviewTaskKey(
+      finding.code,
+      finding.entityType,
+      finding.entityId
+    ),
     title: `قرار بشري مطلوب: ${typeLabel}`,
     priority,
     description: [
@@ -397,9 +436,7 @@ function buildAggregateReviewSeeds(
   if (dashboard.topReviewTypes.length === 0) {
     return [
       {
-        key: `run:${
-          dashboard.latestRun?.id || dashboard.generatedAt
-        }:pending-review`,
+        key: "pending-review:aggregate",
         title: "مراجعة قرارات وكيل النظام",
         priority: "high",
         description: `يوجد ${dashboard.overview.pendingReview} عنصرًا يحتاج قرارًا بشريًا من وكيل تدقيق النظام. افتح تبويب إنجازات الوكيل وراجع العناصر قبل اتخاذ أي إجراء يدوي.`,
@@ -416,9 +453,7 @@ function buildAggregateReviewSeeds(
     const typeLabel = reviewTypeLabels[item.code] || item.code;
     const domainLabel = domainLabels[item.domain] || item.domain;
     return {
-      key: `review-type:${dashboard.latestRun?.id || dashboard.generatedAt}:${
-        item.domain
-      }:${item.code}`,
+      key: `review-type:${item.domain}:${item.code}`,
       title: `مراجعة ${item.count} عنصر: ${typeLabel}`,
       priority: "high",
       description: [
@@ -436,6 +471,46 @@ function buildAggregateReviewSeeds(
       },
     };
   });
+}
+
+function findingReviewTaskKey(
+  code: string,
+  entityType: string,
+  entityId: string
+): string {
+  return `finding:${code}:${entityType}:${entityId}`;
+}
+
+function canonicalReviewTaskKeyFromMetadata(
+  metadata: Record<string, unknown> | null
+): string | null {
+  if (!metadata) return null;
+
+  if (
+    typeof metadata.code === "string" &&
+    typeof metadata.entityType === "string" &&
+    typeof metadata.entityId === "string"
+  ) {
+    return findingReviewTaskKey(
+      metadata.code,
+      metadata.entityType,
+      metadata.entityId
+    );
+  }
+
+  if (
+    metadata.aggregate === true &&
+    typeof metadata.domain === "string" &&
+    typeof metadata.code === "string"
+  ) {
+    return `review-type:${metadata.domain}:${metadata.code}`;
+  }
+
+  if (metadata.aggregate === true) return "pending-review:aggregate";
+
+  return typeof metadata.systemAuditTaskKey === "string"
+    ? metadata.systemAuditTaskKey
+    : null;
 }
 
 function priorityFromSeverity(

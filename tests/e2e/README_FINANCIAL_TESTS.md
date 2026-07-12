@@ -18,8 +18,8 @@ This directory contains comprehensive end-to-end tests for the FleetifyApp finan
 
 ## Test Credentials
 
-- **Email:** `khamis-1992@hotmail.com`
-- **Password:** `123456789`
+- **Email:** set `E2E_TEST_EMAIL` in the local or CI environment
+- **Password:** set `E2E_TEST_PASSWORD` in the local or CI environment
 - **Base URL:** `http://localhost:8080`
 - **Auth Route:** `/auth` (not `/login`)
 

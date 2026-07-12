@@ -392,33 +392,3 @@ test.describe('Contract Management', () => {
   });
 });
 
-// Helper functions for test data generation
-function generateTestContract() {
-  return {
-    agreementNumber: `AGR-${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}-${new Date().getFullYear()}`,
-    type: 'rental',
-    startDate: new Date().toISOString().split('T')[0],
-    endDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-    monthlyRate: Math.floor(Math.random() * 2000) + 500,
-    depositAmount: Math.floor(Math.random() * 5000) + 1000,
-    insuranceFees: Math.floor(Math.random() * 300) + 50,
-    serviceFees: Math.floor(Math.random() * 100) + 25,
-    taxRate: 0.15,
-    notes: 'Test contract for E2E testing',
-  };
-}
-
-function generateTestCustomer() {
-  return {
-    id: `cust_${Math.random().toString(36).substring(7)}`,
-    name: 'Test Customer Company',
-  };
-}
-
-function generateTestVehicle() {
-  return {
-    id: `veh_${Math.random().toString(36).substring(7)}`,
-    make: 'Toyota',
-    model: 'Camry',
-  };
-}
