@@ -9,7 +9,7 @@ Set these in your Vercel dashboard under **Project Settings > Environment Variab
 #### Production Variables
 ```
 VITE_SUPABASE_URL=https://qwhunliohlkkahbspfiu.supabase.co
-VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF3aHVubGlvaGxra2FoYnNwZml1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM0MTMwODYsImV4cCI6MjA2ODk4OTA4Nn0.vDZxVVqfQqnqrDo5Uw-Ew7RL6Ks8mVjCnXLXOWRxFms
+VITE_SUPABASE_ANON_KEY=<your-supabase-anon-key>
 VITE_ENCRYPTION_SECRET=12345678901234567890123456789012
 ```
 

@@ -617,7 +617,7 @@ All tables are scoped by `company_id`. The frontend uses:
 ### 10.2 API Key Usage
 
 - **Anon Key** (`VITE_SUPABASE_ANON_KEY`): Used by frontend, subject to RLS
-- **Service Role Key** (`VITE_SUPABASE_SERVICE_ROLE_KEY`): Used by Python scripts, bypasses RLS — **must be kept secure**
+- **Service Role Key** (`SUPABASE_SERVICE_ROLE_KEY`): Used by Python scripts, bypasses RLS — **must be kept secure**
 
 ### 10.3 Approval Workflows
 

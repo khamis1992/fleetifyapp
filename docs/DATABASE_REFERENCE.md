@@ -1,8 +1,9 @@
 # Fleetify Database Reference
 
 > **Generated**: 2026-01-12T13:30:37.587Z
-> **Total Tables**: 285
+> **Total Tables in generated snapshot**: 285
 > **Database**: PostgreSQL 17.6 (Supabase)
+> **Post-snapshot additions**: 5 system audit agent tables added on 2026-07-11; system audit command `schedule.realign_contract_invoice_links_v3` and duplicate-only schedule consolidation gateway added on 2026-07-12 with rollback.
 
 ## Table of Contents
 
@@ -48,6 +49,7 @@
 - [`payment_ai_analysis`](#payment_ai_analysis)
 - [`payment_allocation_rules`](#payment_allocation_rules)
 - [`payment_allocations`](#payment_allocations)
+- [`payment_accounting_classifications`](#payment_accounting_classifications)
 - [`payment_attempts`](#payment_attempts)
 - [`payment_behavior_analytics`](#payment_behavior_analytics)
 - [`payment_contract_linking_attempts`](#payment_contract_linking_attempts)
@@ -203,6 +205,11 @@
 - [`notifications`](#notifications)
 - [`system_alerts`](#system_alerts)
 - [`system_analytics`](#system_analytics)
+- [`system_agent_command_registry`](#system_agent_command_registry)
+- [`system_agent_findings`](#system_agent_findings)
+- [`system_agent_jobs`](#system_agent_jobs)
+- [`system_agent_repairs`](#system_agent_repairs)
+- [`system_agent_runs`](#system_agent_runs)
 - [`system_logs`](#system_logs)
 - [`system_notifications`](#system_notifications)
 - [`system_settings`](#system_settings)
@@ -1507,7 +1514,9 @@
 
 ### `payment_allocations`
 
-**Columns**: 11
+Canonical, append-preserving allocation ledger for completed receipts. Active rows are replaced through `replace_payment_invoice_allocations`; historical rows are voided with a reason rather than deleted.
+
+**Columns**: 17
 
 #### Required Columns
 
@@ -1515,10 +1524,13 @@
 |--------|------|
 | `allocated_date` | string |
 | `allocation_method` | string |
+| `allocation_order` | number |
 | `allocation_type` | string |
 | `amount` | number |
+| `company_id` | string |
 | `created_at` | string |
 | `id` | string |
+| `is_active` | boolean |
 | `payment_id` | string |
 | `target_id` | string |
 | `updated_at` | string |
@@ -1529,6 +1541,36 @@
 |--------|------|----------|
 | `created_by` | string | Yes |
 | `notes` | string | Yes |
+| `void_reason` | string | Yes |
+| `voided_at` | string | Yes |
+| `voided_by` | string | Yes |
+
+---
+
+### `payment_accounting_classifications`
+
+Explicit, service-managed accounting classification for completed receipts that remain unallocated customer advances. The system audit agent creates a row only after the mapped receivables, customer-advance, and legacy receipt accounts reconcile exactly to the payment amount. A later clear invoice allocation keeps this base classification and posts a balanced transfer from advances to receivables.
+
+**Columns**: 9
+
+#### Required Columns
+
+| Column | Type |
+|--------|------|
+| `classification` | string |
+| `company_id` | string |
+| `created_at` | string |
+| `id` | string |
+| `is_active` | boolean |
+| `payment_id` | string |
+| `source` | string |
+| `updated_at` | string |
+
+#### Optional Columns
+
+| Column | Type | Nullable |
+|--------|------|----------|
+| `normalization_journal_id` | string | Yes |
 
 ---
 
@@ -5920,6 +5962,38 @@
 
 ## System Domain
 
+### `system_agent_runs`
+
+Resumable top-level audit executions. Key fields: `id`, `correlation_id`, `requested_company_id`, `requested_domains`, `mode`, `status`, `trigger_source`, `idempotency_key`, `settings`, `summary`, timestamps, and terminal error.
+
+---
+
+### `system_agent_jobs`
+
+Company- and domain-scoped worker jobs. Stores the cursor, lease, heartbeat, retry state, batch count, settings, and aggregate statistics. Unique per run, company, and domain.
+
+---
+
+### `system_agent_findings`
+
+Typed and deduplicated integrity findings. Stores evidence, severity, confidence, registered repair command and payload, AI triage decision, repair link, status, and error.
+
+---
+
+### `system_agent_repairs`
+
+Immutable repair history for applied commands. Stores entity scope, before and after state, rollback metadata, status, timestamps, and rollback reason. Every row is linked to one finding.
+
+---
+
+### `system_agent_command_registry`
+
+Allowlist of reversible repair commands, domains, entity tables, permitted fields, confidence thresholds, approval policy, and closed-period policy. Workers cannot execute commands outside this registry.
+
+Key RPCs: `system_agent_create_run`, `system_agent_claim_job`, `system_agent_finish_job`, `system_agent_refresh_run`, `system_agent_apply_finance_repair`, `system_agent_apply_operational_repair`, `system_agent_apply_contract_invoice_repair_v3`, `system_agent_apply_contract_schedule_repair_v1`, `system_agent_apply_contract_schedule_graph_repair_v1`, `system_agent_apply_schedule_duplicate_rows_repair_v2`, `system_agent_apply_contract_schedule_matching_repair_v2`, `system_agent_apply_contract_schedule_matching_repair_v3`, `system_agent_apply_payment_classification_repair_v1`, `system_agent_apply_customer_balance_create_repair`, `system_agent_rollback_repair`, and `invoke_system_audit_orchestrator_resume_v1`. The worker does not route repairs through the legacy generic mutation gateway. The `customer.create_balance` command creates one missing `customer_balances` row from database-derived invoice and completed-receipt state; duplicate rows remain review-only. Contract schedule commands consolidate only financially identical same-date rows, accept either invoice issue month or due month as a valid existing link, atomically realign deterministic one-to-one link graphs, match every active schedule including previously unlinked rows through v3, and derive schedule amounts from their one authoritative invoice. Payment classification commands normalize legacy receipt credits to customer advances before applying a clear invoice allocation, with balanced compensating rollback journals. Scheduled dispatch currently targets `system-audit-orchestrator-v13`, which delegates to `system-audit-worker-v11`.
+
+---
+
 ### `approval_notifications`
 
 **Columns**: 8
@@ -9807,6 +9881,10 @@
 - **Contracts** ↔ **Vehicles** (many-to-many via contract_vehicles)
 - **Invoices** ← **Contracts** (via payment schedules)
 - **Payments** → **Invoices** (partial payments allowed)
+
+### System Audit Agent
+
+- `schedule.realign_contract_invoice_links_v3` applies a one-to-one invoice matching across every active schedule in one contract, including schedules that were previously unlinked. It is service-role only, reversible, and stores full before/after schedule state in `system_agent_repairs`.
 
 ### Data Records
 

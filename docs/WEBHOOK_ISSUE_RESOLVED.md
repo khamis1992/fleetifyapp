@@ -63,7 +63,7 @@ https://qwhunliohlkkahbspfiu.supabase.co/functions/v1/process-traffic-fine
 **Headers**:
 ```
 Content-Type: application/json
-x-webhook-secret: fleetify_zapier_webhook_khamis_2025_secure_traffic_fines_integration_v1
+x-webhook-secret: <your-zapier-webhook-secret>
 ```
 
 **Body** (JSON):
@@ -140,7 +140,7 @@ https://qwhunliohlkkahbspfiu.supabase.co/functions/v1/process-traffic-fine
 
 **Headers** (in Zapier Webhook step):
 ```
-x-webhook-secret: fleetify_zapier_webhook_khamis_2025_secure_traffic_fines_integration_v1
+x-webhook-secret: <your-zapier-webhook-secret>
 Content-Type: application/json
 ```
 
@@ -156,7 +156,7 @@ Content-Type: application/json
 **Cause**: Missing or incorrect webhook secret  
 **Fix**: Ensure header is exactly:
 ```
-x-webhook-secret: fleetify_zapier_webhook_khamis_2025_secure_traffic_fines_integration_v1
+x-webhook-secret: <your-zapier-webhook-secret>
 ```
 
 ### Error 2: 400 Bad Request - Validation Failed

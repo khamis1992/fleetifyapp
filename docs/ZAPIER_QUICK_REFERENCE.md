@@ -14,7 +14,7 @@ https://qwhunliohlkkahbspfiu.supabase.co/functions/v1/process-traffic-fine
 
 **Webhook Secret** (for Zapier):
 ```
-fleetify_zapier_webhook_khamis_2025_secure_traffic_fines_integration_v1
+<your-zapier-webhook-secret>
 ```
 
 **Supabase Dashboard**:
@@ -54,7 +54,7 @@ https://fleetifyapp.vercel.app/fleet/traffic-violations
 ### 4. Add Webhook
 - App: **Webhooks by Zapier**
 - URL: `https://qwhunliohlkkahbspfiu.supabase.co/functions/v1/process-traffic-fine`
-- Header: `x-webhook-secret: fleetify_zapier_webhook_khamis_2025_secure_traffic_fines_integration_v1`
+- Header: `x-webhook-secret: <your-zapier-webhook-secret>`
 
 ### 5. Test & Publish
 - Send test email

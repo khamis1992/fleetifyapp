@@ -33,7 +33,7 @@
 #### 3. Webhook Secret Configured
 ```bash
 ✅ Secret Name: ZAPIER_WEBHOOK_SECRET
-✅ Secret Value: fleetify_zapier_webhook_khamis_2025_secure_traffic_fines_integration_v1
+✅ Secret Value: <your-zapier-webhook-secret>
 ✅ Status: Active
 ```
 
@@ -48,7 +48,7 @@ https://qwhunliohlkkahbspfiu.supabase.co/functions/v1/process-traffic-fine
 
 ### **Webhook Secret** (for Zapier headers):
 ```
-fleetify_zapier_webhook_khamis_2025_secure_traffic_fines_integration_v1
+<your-zapier-webhook-secret>
 ```
 
 ---
@@ -141,7 +141,7 @@ Method: POST
 
 **Headers** (click "Show advanced"):
 ```
-x-webhook-secret: fleetify_zapier_webhook_khamis_2025_secure_traffic_fines_integration_v1
+x-webhook-secret: <your-zapier-webhook-secret>
 Content-Type: application/json
 ```
 
@@ -320,7 +320,7 @@ Kuwait
 #### Issue 1: "Unauthorized" Error
 **Fix**: Check webhook secret in Zapier headers matches:
 ```
-fleetify_zapier_webhook_khamis_2025_secure_traffic_fines_integration_v1
+<your-zapier-webhook-secret>
 ```
 
 #### Issue 2: "Validation failed"
@@ -505,7 +505,7 @@ Share these with your team:
 ### Quick Reference
 
 **Webhook URL**: https://qwhunliohlkkahbspfiu.supabase.co/functions/v1/process-traffic-fine  
-**Webhook Secret**: fleetify_zapier_webhook_khamis_2025_secure_traffic_fines_integration_v1  
+**Webhook Secret**: <your-zapier-webhook-secret>  
 **Project**: qwhunliohlkkahbspfiu (saas)  
 **Edge Function**: process-traffic-fine  
 

@@ -26,7 +26,7 @@ When configuring the Webhooks by Zapier step, use these headers:
   "Content-Type": "application/json",
   "apikey": "YOUR_SUPABASE_ANON_KEY",
   "Authorization": "Bearer YOUR_SUPABASE_ANON_KEY",
-  "x-webhook-secret": "fleetify_zapier_webhook_khamis_2025_secure_traffic_fines_integration_v1"
+  "x-webhook-secret": "<your-zapier-webhook-secret>"
 }
 ```
 
@@ -67,7 +67,7 @@ https://qwhunliohlkkahbspfiu.supabase.co/functions/v1/process-traffic-fine
 Content-Type: application/json
 apikey: <YOUR_SUPABASE_ANON_KEY>
 Authorization: Bearer <YOUR_SUPABASE_ANON_KEY>
-x-webhook-secret: fleetify_zapier_webhook_khamis_2025_secure_traffic_fines_integration_v1
+x-webhook-secret: <your-zapier-webhook-secret>
 ```
 
 **Data (JSON format)**:
@@ -192,7 +192,7 @@ https://qwhunliohlkkahbspfiu.supabase.co/functions/v1/process-traffic-fine
 1. `Content-Type: application/json`
 2. `apikey: <SUPABASE_ANON_KEY>`
 3. `Authorization: Bearer <SUPABASE_ANON_KEY>`
-4. `x-webhook-secret: fleetify_zapier_webhook_khamis_2025_secure_traffic_fines_integration_v1`
+4. `x-webhook-secret: <your-zapier-webhook-secret>`
 
 **Get Anon Key**: https://supabase.com/dashboard/project/qwhunliohlkkahbspfiu/settings/api
 

@@ -10,12 +10,12 @@
 
 ### **Anon Key** (Use this in Zapier):
 ```
-eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF3aHVubGlvaGxra2FoYnNwZml1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM0MTMwODYsImV4cCI6MjA2ODk4OTA4Nn0.x5o6IpzWcYo7a6jRq2J8V0hKyNeRKZCEQIuXTPADQqs
+<your-supabase-anon-key>
 ```
 
 ### **Webhook Secret**:
 ```
-fleetify_zapier_webhook_khamis_2025_secure_traffic_fines_integration_v1
+<your-zapier-webhook-secret>
 ```
 
 ---
@@ -36,9 +36,9 @@ https://qwhunliohlkkahbspfiu.supabase.co/functions/v1/process-traffic-fine
 | Header Name | Header Value |
 |-------------|--------------|
 | `Content-Type` | `application/json` |
-| `apikey` | `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF3aHVubGlvaGxra2FoYnNwZml1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM0MTMwODYsImV4cCI6MjA2ODk4OTA4Nn0.x5o6IpzWcYo7a6jRq2J8V0hKyNeRKZCEQIuXTPADQqs` |
-| `Authorization` | `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF3aHVubGlvaGxra2FoYnNwZml1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM0MTMwODYsImV4cCI6MjA2ODk4OTA4Nn0.x5o6IpzWcYo7a6jRq2J8V0hKyNeRKZCEQIuXTPADQqs` |
-| `x-webhook-secret` | `fleetify_zapier_webhook_khamis_2025_secure_traffic_fines_integration_v1` |
+| `apikey` | `<your-supabase-anon-key>` |
+| `Authorization` | `Bearer <your-supabase-anon-key>` |
+| `x-webhook-secret` | `<your-zapier-webhook-secret>` |
 
 **Data** (JSON format):
 ```json

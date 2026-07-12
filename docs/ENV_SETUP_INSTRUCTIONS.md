@@ -109,7 +109,7 @@ http://localhost:5173
 ```env
 # Supabase Configuration
 VITE_SUPABASE_URL=https://qwhunliohlkkahbspfiu.supabase.co
-VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF3aHVubGlvaGxra2FoYnNwZml1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE2OTg0MjEyMDAsImV4cCI6MjAxMzk5NzIwMH0.EXAMPLE_KEY_REPLACE_WITH_YOURS
+VITE_SUPABASE_ANON_KEY=<your-supabase-anon-key>
 ```
 
 ⚠️ **تحذير:** المفتاح أعلاه مثال فقط. استخدم مفتاحك الحقيقي!
