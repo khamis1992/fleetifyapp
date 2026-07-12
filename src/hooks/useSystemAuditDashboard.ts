@@ -362,7 +362,21 @@ export function useSyncSystemAuditReviewTasks() {
       }
     },
     onError: (error) => {
-      console.error("[system-audit-review-tasks] sync failed", error);
+      const details = error as {
+        message?: string;
+        code?: string;
+        details?: string;
+        hint?: string;
+      };
+      console.error(
+        "[system-audit-review-tasks] sync failed",
+        JSON.stringify({
+          message: details.message || String(error),
+          code: details.code || null,
+          details: details.details || null,
+          hint: details.hint || null,
+        })
+      );
     },
   });
 }

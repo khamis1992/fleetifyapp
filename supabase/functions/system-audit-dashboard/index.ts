@@ -295,16 +295,22 @@ async function loadFindings(admin: SupabaseAdminClient, runId: string, companyId
 }
 
 async function loadReviewFindings(admin: SupabaseAdminClient, runId: string, companyId: string): Promise<AgentReviewFinding[]> {
-  const { data, error } = await admin
-    .from("system_agent_findings")
-    .select("id,run_id,domain,code,severity,status,entity_type,entity_id,title,details,evidence,confidence,repair_command,ai_decision,created_at,updated_at")
-    .eq("run_id", runId)
-    .eq("company_id", companyId)
-    .in("status", ["review", "detected"])
-    .order("updated_at", { ascending: false })
-    .limit(40);
-  if (error) throw error;
-  return (data || []) as AgentReviewFinding[];
+  const findings: AgentReviewFinding[] = [];
+  const pageSize = 1_000;
+  for (let offset = 0; offset < 100_000; offset += pageSize) {
+    const { data, error } = await admin
+      .from("system_agent_findings")
+      .select("id,run_id,domain,code,severity,status,entity_type,entity_id,title,details,evidence,confidence,repair_command,ai_decision,created_at,updated_at")
+      .eq("run_id", runId)
+      .eq("company_id", companyId)
+      .in("status", ["review", "detected"])
+      .order("updated_at", { ascending: false })
+      .range(offset, offset + pageSize - 1);
+    if (error) throw error;
+    findings.push(...((data || []) as AgentReviewFinding[]));
+    if (!data || data.length < pageSize) break;
+  }
+  return findings;
 }
 
 function summarizeFindings(findings: AgentFinding[]) {

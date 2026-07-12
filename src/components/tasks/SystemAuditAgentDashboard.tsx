@@ -268,11 +268,7 @@ export function SystemAuditAgentDashboard() {
     if (!data || !reviewTaskSyncKey || isSyncingReviewTasks) return;
     if (syncedReviewTaskKeyRef.current === reviewTaskSyncKey) return;
     syncedReviewTaskKeyRef.current = reviewTaskSyncKey;
-    syncReviewTasks(data, {
-      onError: () => {
-        syncedReviewTaskKeyRef.current = null;
-      },
-    });
+    syncReviewTasks(data);
   }, [data, isSyncingReviewTasks, reviewTaskSyncKey, syncReviewTasks]);
 
   if (isLoading || isWaitingForCompany) return <DashboardSkeleton />;
