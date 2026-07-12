@@ -24,9 +24,9 @@ import {
 import { format, formatDistanceToNow } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
+import { systemColorPattern } from '@/lib/design-system/systemColorPattern';
 import {
   Calendar,
-  Clock,
   User,
   Flag,
   MessageSquare,
@@ -55,11 +55,13 @@ const priorityLabels = {
   urgent: 'عاجلة',
 };
 
+const taskTheme = systemColorPattern.colors;
+
 const priorityColors = {
-  low: 'bg-slate-500',
-  medium: 'bg-blue-500',
-  high: 'bg-orange-500',
-  urgent: 'bg-red-500',
+  low: '#94A3B8',
+  medium: taskTheme.info,
+  high: '#F59E0B',
+  urgent: taskTheme.alert,
 };
 
 const statusLabels = {
@@ -70,12 +72,12 @@ const statusLabels = {
   on_hold: 'متوقفة',
 };
 
-const statusColors = {
-  pending: 'bg-slate-500',
-  in_progress: 'bg-blue-500',
-  completed: 'bg-green-500',
-  cancelled: 'bg-red-500',
-  on_hold: 'bg-yellow-500',
+const statusStyles = {
+  pending: { color: '#64748B', bg: '#F1F5F9' },
+  in_progress: { color: taskTheme.info, bg: `${taskTheme.info}14` },
+  completed: { color: taskTheme.success, bg: `${taskTheme.success}14` },
+  cancelled: { color: taskTheme.alert, bg: `${taskTheme.alert}14` },
+  on_hold: { color: '#D97706', bg: '#FFFBEB' },
 };
 
 export const TaskDetailsSheet: React.FC<TaskDetailsSheetProps> = ({
@@ -116,25 +118,29 @@ export const TaskDetailsSheet: React.FC<TaskDetailsSheetProps> = ({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="left" className="w-full sm:max-w-lg p-0 overflow-hidden" dir="rtl">
+      <SheetContent side="left" className="w-full border-r border-[#E5EAF1] bg-white p-0 sm:max-w-lg overflow-hidden" dir="rtl">
         {/* Header */}
-        <div className="bg-gradient-to-l from-rose-500 to-orange-500 p-6">
+        <div className="border-b border-[#E5EAF1] bg-white p-6 shadow-sm">
           <SheetHeader>
             <div className="flex items-start justify-between">
               <div className="flex-1">
                 <Badge
                   variant="secondary"
-                  className={cn('text-white mb-2', statusColors[task.status])}
+                  className="mb-2 rounded-full border-0 px-3 py-1 text-xs font-bold"
+                  style={{
+                    backgroundColor: statusStyles[task.status].bg,
+                    color: statusStyles[task.status].color,
+                  }}
                 >
                   {statusLabels[task.status]}
                 </Badge>
-                <SheetTitle className="text-white text-xl">{task.title}</SheetTitle>
+                <SheetTitle className="text-xl font-black text-[#020617]">{task.title}</SheetTitle>
               </div>
               <div className="flex gap-2">
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="text-white hover:bg-white/20"
+                  className="h-9 w-9 rounded-lg text-[#64748B] hover:bg-[#F6F8FB] hover:text-[#38BDF8]"
                   onClick={() => {
                     onOpenChange(false);
                     onEdit(task);
@@ -145,7 +151,7 @@ export const TaskDetailsSheet: React.FC<TaskDetailsSheetProps> = ({
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="text-white hover:bg-white/20"
+                  className="h-9 w-9 rounded-lg text-[#64748B] hover:bg-[#FB6B7A14] hover:text-[#FB6B7A]"
                   onClick={() => {
                     onOpenChange(false);
                     onDelete(task.id);
@@ -159,74 +165,74 @@ export const TaskDetailsSheet: React.FC<TaskDetailsSheetProps> = ({
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-6">
+        <div className="flex-1 space-y-6 overflow-y-auto bg-white p-6">
           {/* Description */}
           {task.description && (
             <div>
-              <h4 className="text-sm font-medium text-neutral-500 mb-2">الوصف</h4>
-              <p className="text-neutral-700 whitespace-pre-wrap">{task.description}</p>
+              <h4 className="mb-2 text-sm font-bold text-[#64748B]">الوصف</h4>
+              <p className="whitespace-pre-wrap rounded-lg border border-[#E5EAF1] bg-[#F6F8FB] p-3 text-sm leading-6 text-[#020617]">{task.description}</p>
             </div>
           )}
 
           {/* Details Grid */}
           <div className="grid grid-cols-2 gap-4">
             {/* Priority */}
-            <div className="bg-neutral-50 rounded-lg p-3">
-              <div className="flex items-center gap-2 text-neutral-500 text-sm mb-1">
+            <div className="rounded-lg border border-[#E5EAF1] bg-[#F6F8FB] p-3">
+              <div className="mb-1 flex items-center gap-2 text-sm font-semibold text-[#94A3B8]">
                 <Flag className="h-4 w-4" />
                 الأولوية
               </div>
               <div className="flex items-center gap-2">
-                <div className={cn('w-2 h-2 rounded-full', priorityColors[task.priority])} />
-                <span className="font-medium">{priorityLabels[task.priority]}</span>
+                <div className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: priorityColors[task.priority] }} />
+                <span className="font-bold text-[#020617]">{priorityLabels[task.priority]}</span>
               </div>
             </div>
 
             {/* Category */}
             {task.category && (
-              <div className="bg-neutral-50 rounded-lg p-3">
-                <div className="flex items-center gap-2 text-neutral-500 text-sm mb-1">
+              <div className="rounded-lg border border-[#E5EAF1] bg-[#F6F8FB] p-3">
+                <div className="mb-1 flex items-center gap-2 text-sm font-semibold text-[#94A3B8]">
                   <Folder className="h-4 w-4" />
                   التصنيف
                 </div>
-                <span className="font-medium">{task.category}</span>
+                <span className="font-bold text-[#020617]">{task.category}</span>
               </div>
             )}
 
             {/* Due Date */}
             {task.due_date && (
-              <div className="bg-neutral-50 rounded-lg p-3">
-                <div className="flex items-center gap-2 text-neutral-500 text-sm mb-1">
+              <div className="rounded-lg border border-[#E5EAF1] bg-[#F6F8FB] p-3">
+                <div className="mb-1 flex items-center gap-2 text-sm font-semibold text-[#94A3B8]">
                   <Calendar className="h-4 w-4" />
                   تاريخ الاستحقاق
                 </div>
-                <span className="font-medium">
+                <span className="font-bold text-[#020617]">
                   {format(new Date(task.due_date), 'd MMMM yyyy', { locale: ar })}
                 </span>
               </div>
             )}
 
             {/* Assignee */}
-            <div className="bg-neutral-50 rounded-lg p-3">
-              <div className="flex items-center gap-2 text-neutral-500 text-sm mb-1">
+            <div className="rounded-lg border border-[#E5EAF1] bg-[#F6F8FB] p-3">
+              <div className="mb-1 flex items-center gap-2 text-sm font-semibold text-[#94A3B8]">
                 <User className="h-4 w-4" />
                 المسؤول
               </div>
               {task.assignee ? (
                 <div className="flex items-center gap-2">
-                  <Avatar className="h-6 w-6">
+                  <Avatar className="h-6 w-6 border border-[#E5EAF1]">
                     <AvatarImage src={task.assignee.avatar_url || ''} />
-                    <AvatarFallback className="text-xs">
+                    <AvatarFallback className="bg-[#EAF8FE] text-xs font-bold text-[#38BDF8]">
                       {(task.assignee.first_name_ar || task.assignee.first_name || '?')[0]}
                     </AvatarFallback>
                   </Avatar>
-                  <span className="font-medium">
+                  <span className="font-bold text-[#020617]">
                     {task.assignee.first_name_ar || task.assignee.first_name}{' '}
                     {task.assignee.last_name_ar || task.assignee.last_name}
                   </span>
                 </div>
               ) : (
-                <span className="text-neutral-400">غير معين</span>
+                <span className="font-bold text-[#94A3B8]">غير معين</span>
               )}
             </div>
           </div>
@@ -234,13 +240,13 @@ export const TaskDetailsSheet: React.FC<TaskDetailsSheetProps> = ({
           {/* Tags */}
           {task.tags && task.tags.length > 0 && (
             <div>
-              <div className="flex items-center gap-2 text-neutral-500 text-sm mb-2">
+              <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-[#94A3B8]">
                 <Tag className="h-4 w-4" />
                 الوسوم
               </div>
               <div className="flex flex-wrap gap-2">
                 {task.tags.map((tag) => (
-                  <Badge key={tag} variant="secondary" className="bg-rose-100 text-coral-700">
+                  <Badge key={tag} variant="secondary" className="rounded-md border border-[#D7F0FB] bg-[#EAF8FE] text-[#0284C7]">
                     {tag}
                   </Badge>
                 ))}
@@ -251,13 +257,13 @@ export const TaskDetailsSheet: React.FC<TaskDetailsSheetProps> = ({
           {/* Checklists */}
           {task.checklists && task.checklists.length > 0 && (
             <div>
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2 text-neutral-500 text-sm">
+              <div className="mb-3 flex items-center justify-between">
+                <div className="flex items-center gap-2 text-sm font-semibold text-[#94A3B8]">
                   <CheckSquare className="h-4 w-4" />
                   المهام الفرعية
                 </div>
                 {checklistProgress && (
-                  <span className="text-sm text-neutral-500">
+                  <span className="text-sm font-bold text-[#64748B]">
                     {checklistProgress.completed}/{checklistProgress.total}
                   </span>
                 )}
@@ -271,7 +277,7 @@ export const TaskDetailsSheet: React.FC<TaskDetailsSheetProps> = ({
                   .map((item) => (
                     <div
                       key={item.id}
-                      className="flex items-center gap-3 p-2 rounded-lg hover:bg-neutral-50"
+                      className="flex items-center gap-3 rounded-lg border border-transparent p-2 transition hover:border-[#E5EAF1] hover:bg-[#F6F8FB]"
                     >
                       <Checkbox
                         checked={item.is_completed}
@@ -280,7 +286,7 @@ export const TaskDetailsSheet: React.FC<TaskDetailsSheetProps> = ({
                       <span
                         className={cn(
                           'flex-1',
-                          item.is_completed && 'line-through text-neutral-400'
+                          item.is_completed && 'text-[#94A3B8] line-through'
                         )}
                       >
                         {item.title}
@@ -295,12 +301,12 @@ export const TaskDetailsSheet: React.FC<TaskDetailsSheetProps> = ({
 
           {/* Tabs for Comments & Activity */}
           <Tabs defaultValue="comments" className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="comments" className="flex items-center gap-2">
+            <TabsList className="grid w-full grid-cols-2 rounded-lg border border-[#E5EAF1] bg-[#F6F8FB] p-1">
+              <TabsTrigger value="comments" className="flex items-center gap-2 rounded-md text-[#64748B] data-[state=active]:bg-white data-[state=active]:text-[#38BDF8] data-[state=active]:shadow-sm">
                 <MessageSquare className="h-4 w-4" />
                 التعليقات ({comments.length})
               </TabsTrigger>
-              <TabsTrigger value="activity" className="flex items-center gap-2">
+              <TabsTrigger value="activity" className="flex items-center gap-2 rounded-md text-[#64748B] data-[state=active]:bg-white data-[state=active]:text-[#38BDF8] data-[state=active]:shadow-sm">
                 <History className="h-4 w-4" />
                 السجل
               </TabsTrigger>
@@ -313,13 +319,13 @@ export const TaskDetailsSheet: React.FC<TaskDetailsSheetProps> = ({
                   placeholder="أضف تعليقاً..."
                   value={newComment}
                   onChange={(e) => setNewComment(e.target.value)}
-                  className="flex-1 min-h-[80px]"
+                  className="min-h-[80px] flex-1 rounded-lg border-[#C8D7E8] bg-[#F6F8FB] text-[#020617] placeholder:text-[#38BDF8] focus-visible:ring-[#38BDF8]"
                 />
               </div>
               <Button
                 onClick={handleAddComment}
                 disabled={!newComment.trim() || addComment.isPending}
-                className="w-full bg-gradient-to-l from-rose-500 to-orange-500"
+                className="h-11 w-full rounded-lg bg-[#38BDF8] font-bold text-white shadow-sm hover:bg-[#0EA5E9]"
               >
                 {addComment.isPending ? (
                   <Loader2 className="h-4 w-4 animate-spin ml-2" />
@@ -332,10 +338,10 @@ export const TaskDetailsSheet: React.FC<TaskDetailsSheetProps> = ({
               {/* Comments List */}
               {loadingComments ? (
                 <div className="flex justify-center py-8">
-                  <Loader2 className="h-6 w-6 animate-spin text-rose-500" />
+                  <Loader2 className="h-6 w-6 animate-spin text-[#38BDF8]" />
                 </div>
               ) : comments.length === 0 ? (
-                <p className="text-center text-neutral-400 py-8">لا توجد تعليقات بعد</p>
+                <p className="py-8 text-center text-sm font-semibold text-[#94A3B8]">لا توجد تعليقات بعد</p>
               ) : (
                 <div className="space-y-4">
                   <AnimatePresence mode="popLayout">
@@ -345,27 +351,27 @@ export const TaskDetailsSheet: React.FC<TaskDetailsSheetProps> = ({
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -10 }}
-                        className="bg-neutral-50 rounded-lg p-4"
+                        className="rounded-lg border border-[#E5EAF1] bg-[#F6F8FB] p-4"
                       >
                         <div className="flex items-center gap-2 mb-2">
-                          <Avatar className="h-6 w-6">
+                          <Avatar className="h-6 w-6 border border-[#E5EAF1]">
                             <AvatarImage src={comment.user?.avatar_url || ''} />
-                            <AvatarFallback className="text-xs">
+                            <AvatarFallback className="bg-[#EAF8FE] text-xs font-bold text-[#38BDF8]">
                               {(comment.user?.first_name_ar || comment.user?.first_name || '?')[0]}
                             </AvatarFallback>
                           </Avatar>
-                          <span className="font-medium text-sm">
+                          <span className="text-sm font-bold text-[#020617]">
                             {comment.user?.first_name_ar || comment.user?.first_name}{' '}
                             {comment.user?.last_name_ar || comment.user?.last_name}
                           </span>
-                          <span className="text-xs text-neutral-400">
+                          <span className="text-xs font-semibold text-[#94A3B8]">
                             {formatDistanceToNow(new Date(comment.created_at), {
                               addSuffix: true,
                               locale: ar,
                             })}
                           </span>
                         </div>
-                        <p className="text-neutral-700 whitespace-pre-wrap">{comment.content}</p>
+                        <p className="whitespace-pre-wrap text-sm leading-6 text-[#020617]">{comment.content}</p>
                       </motion.div>
                     ))}
                   </AnimatePresence>
@@ -376,18 +382,18 @@ export const TaskDetailsSheet: React.FC<TaskDetailsSheetProps> = ({
             <TabsContent value="activity" className="mt-4">
               {loadingActivity ? (
                 <div className="flex justify-center py-8">
-                  <Loader2 className="h-6 w-6 animate-spin text-rose-500" />
+                  <Loader2 className="h-6 w-6 animate-spin text-[#38BDF8]" />
                 </div>
               ) : activityLog.length === 0 ? (
-                <p className="text-center text-neutral-400 py-8">لا يوجد سجل نشاط</p>
+                <p className="py-8 text-center text-sm font-semibold text-[#94A3B8]">لا يوجد سجل نشاط</p>
               ) : (
                 <div className="space-y-4">
                   {activityLog.map((log) => (
                     <div key={log.id} className="flex gap-3">
-                      <div className="w-2 h-2 rounded-full bg-rose-500 mt-2 flex-shrink-0" />
+                      <div className="mt-2 h-2 w-2 flex-shrink-0 rounded-full bg-[#38BDF8]" />
                       <div className="flex-1">
-                        <p className="text-sm text-neutral-700">{log.description}</p>
-                        <p className="text-xs text-neutral-400 mt-1">
+                        <p className="text-sm font-medium text-[#020617]">{log.description}</p>
+                        <p className="mt-1 text-xs font-semibold text-[#94A3B8]">
                           {log.user?.first_name_ar || log.user?.first_name} -{' '}
                           {formatDistanceToNow(new Date(log.created_at), {
                             addSuffix: true,
@@ -403,7 +409,7 @@ export const TaskDetailsSheet: React.FC<TaskDetailsSheetProps> = ({
           </Tabs>
 
           {/* Metadata */}
-          <div className="text-xs text-neutral-400 space-y-1">
+          <div className="space-y-1 rounded-lg border border-[#E5EAF1] bg-[#F6F8FB] p-3 text-xs font-semibold text-[#94A3B8]">
             <p>
               أنشأ بواسطة: {task.creator?.first_name_ar || task.creator?.first_name}{' '}
               {task.creator?.last_name_ar || task.creator?.last_name}

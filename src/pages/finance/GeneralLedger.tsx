@@ -161,7 +161,7 @@ export default function GeneralLedger() {
       totalEntries: journalEntries?.length || 0,
       postedEntries: journalEntries?.filter(e => e.status === 'posted').length || 0,
       draftEntries: journalEntries?.filter(e => e.status === 'draft').length || 0,
-      reversedEntries: journalEntries?.filter(e => e.status === 'reversed').length || 0,
+      reversedEntries: journalEntries?.filter(e => e.status === 'reversed' || Boolean(e.reversed_at)).length || 0,
       totalAccounts: accounts?.length || 0,
       totalCostCenters: costCenters?.length || 0,
       trialDifference: Math.abs(totalDebitBalance - totalCreditBalance),
@@ -182,12 +182,8 @@ export default function GeneralLedger() {
     }
   };
 
-  const handleReverseEntry = async (entryId: string) => {
-    try {
-      await reverseEntry.mutateAsync({ entryId, reason: 'Manual reversal' });
-    } catch (error) {
-      console.error('Error reversing entry:', error);
-    }
+  const handleReverseEntry = async (entryId: string, reason: string) => {
+    await reverseEntry.mutateAsync({ entryId, reason });
   };
 
   const handleDeleteEntry = async (entryId: string) => {

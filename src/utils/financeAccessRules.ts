@@ -5,6 +5,7 @@ export type FinanceActionId =
   | "finance.invoice.edit_customer"
   | "finance.invoice.cancel"
   | "finance.payment.create"
+  | "finance.payment.approve"
   | "finance.payment.edit_amount"
   | "finance.payment.edit_date"
   | "finance.payment.edit_bank"
@@ -144,6 +145,15 @@ export const FINANCE_PERMISSION_MATRIX: FinancePermissionDefinition[] = [
     risk: "high",
   },
   {
+    id: "finance.payment.approve",
+    entity: "payment",
+    label: "اعتماد دفعة",
+    description: "اعتماد دفعة معلقة وإنشاء قيدها وحركتها البنكية ذريًا.",
+    level: "approve",
+    fallbackPermissions: [],
+    risk: "critical",
+  },
+  {
     id: "finance.payment.edit_amount",
     entity: "payment",
     label: "تعديل مبلغ الدفعة",
@@ -176,7 +186,7 @@ export const FINANCE_PERMISSION_MATRIX: FinancePermissionDefinition[] = [
     label: "إلغاء دفعة",
     description: "إلغاء دفعة مكتملة بقيد عكسي وسجل موافقة.",
     level: "approve",
-    fallbackPermissions: ["finance.payments.write"],
+    fallbackPermissions: [],
     risk: "critical",
   },
   {
@@ -382,6 +392,12 @@ export const SEGREGATION_OF_DUTIES_RULES: SegregationOfDutiesRule[] = [
     description: "ترحيل القيود الحساسة يحتاج شخصًا مختلفًا عن المنشئ.",
   },
   {
+    id: "payment_creator_cannot_approve",
+    action: "finance.payment.approve",
+    label: "مسجل الدفعة لا يعتمدها",
+    description: "اعتماد الدفعة المعلقة يحتاج مستخدمًا مختلفًا عن منفذ التسجيل.",
+  },
+  {
     id: "payment_creator_cannot_cancel",
     action: "finance.payment.cancel",
     label: "مسجل الدفعة لا يلغيها",
@@ -415,6 +431,13 @@ export const SEGREGATION_OF_DUTIES_RULES: SegregationOfDutiesRule[] = [
 ];
 
 export const FINANCE_PERMISSION_CONFLICT_RULES: PermissionConflictRule[] = [
+  {
+    id: "payment_create_approve_conflict",
+    primaryAction: "finance.payment.create",
+    conflictingAction: "finance.payment.approve",
+    severity: "critical",
+    label: "Payment creator cannot also approve pending payments",
+  },
   {
     id: "payment_create_cancel_conflict",
     primaryAction: "finance.payment.create",
@@ -470,6 +493,7 @@ export const requiredCriticalFinanceActions: FinanceActionId[] = [
   "finance.invoice.edit_amount",
   "finance.invoice.cancel",
   "finance.payment.create",
+  "finance.payment.approve",
   "finance.payment.edit_amount",
   "finance.payment.cancel",
   "finance.journal.approve",

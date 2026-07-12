@@ -9,13 +9,11 @@
  * هذا يضمن ثبات في المنطق وسجل شامل لقرارات الربط.
  */
 
-import { BaseService, type ValidationResult } from './core/BaseService';
+import { BaseService } from './core/BaseService';
 import { PaymentRepository } from './repositories/PaymentRepository';
 import type { Payment } from '@/types/payment';
 import { supabase } from '@/integrations/supabase/client';
-import { logger } from '@/lib/logger';
 import { auditTrailSystem } from '@/utils/auditTrailSystem';
-import { paymentStateMachine } from './PaymentStateMachine';
 
 export interface LinkingSuggestion {
   targetId: string;
@@ -54,6 +52,46 @@ export interface LinkingDecision {
   timestamp: string;
 }
 
+export interface InvoiceAllocationInput {
+  invoice_id: string;
+  amount: number;
+}
+
+interface InvoiceAllocationRow {
+  target_id: string;
+  amount: number;
+  allocation_order: number;
+}
+
+export interface InvoiceBalanceCandidate {
+  invoiceId: string;
+  availableAmount: number;
+}
+
+export function distributePaymentAcrossInvoices(
+  paymentAmount: number,
+  invoices: InvoiceBalanceCandidate[]
+): InvoiceAllocationInput[] {
+  const roundMoney = (value: number) => Math.round((value + Number.EPSILON) * 100) / 100;
+  const allocations: InvoiceAllocationInput[] = [];
+  let remaining = roundMoney(Math.max(Number(paymentAmount), 0));
+
+  for (const invoice of invoices) {
+    if (remaining <= 0.01) {
+      break;
+    }
+
+    const availableAmount = roundMoney(Math.max(Number(invoice.availableAmount), 0));
+    const allocationAmount = roundMoney(Math.min(remaining, availableAmount));
+    if (allocationAmount > 0.01) {
+      allocations.push({ invoice_id: invoice.invoiceId, amount: allocationAmount });
+      remaining = roundMoney(remaining - allocationAmount);
+    }
+  }
+
+  return allocations;
+}
+
 /**
  * عتبات الثقة للربط
  */
@@ -76,13 +114,11 @@ const CONFIDENCE_WEIGHTS = {
 } as const;
 
 class PaymentLinkingService extends BaseService<Payment> {
-  private paymentRepo: PaymentRepository;
   private linkingHistory: Map<string, LinkingDecision[]> = new Map();
 
   constructor() {
     const paymentRepo = new PaymentRepository();
     super(paymentRepo, 'PaymentLinkingService');
-    this.paymentRepo = paymentRepo;
   }
 
   /**
@@ -105,31 +141,27 @@ class PaymentLinkingService extends BaseService<Payment> {
         throw new Error('الدفعة غير موجودة');
       }
 
-      // 2. التحقق من عدم ربطها بالفعل
-      if (payment.invoice_id || payment.contract_id) {
-        const existingTarget = payment.invoice_id 
-          ? { type: 'invoice' as const, id: payment.invoice_id, number: 'الفاتورة' }
-          : { type: 'contract' as const, id: payment.contract_id!, number: 'العقد' };
-
-        this.log('linkPayment', 'Payment already linked', {
-          paymentId,
-          target: existingTarget
-        });
-
+      // A legacy invoice_id/contract_id is not proof of a financial allocation.
+      const currentAllocations = await this.getCurrentInvoiceAllocations(payment.id);
+      if (currentAllocations.length > 0) {
+        const primaryInvoiceId = currentAllocations[0].invoice_id;
         return {
           success: true,
           linkedTo: {
-            type: existingTarget.type,
-            id: existingTarget.id,
-            number: (await this.getTargetNumber(existingTarget.type, existingTarget.id)) || existingTarget.number
+            type: 'invoice',
+            id: primaryInvoiceId,
+            number: (await this.getTargetNumber('invoice', primaryInvoiceId)) || 'الفاتورة'
           },
-          confidence: 100,
-          reason: 'الدفعة مربوطة بالفعل'
+          confidence: 1,
+          reason: 'الدفعة مخصصة بالفعل في دفتر تخصيص الدفعات'
         };
       }
 
       // 3. الحصول على اقتراحات الربط
-      const suggestions = await this.findLinkingSuggestions(payment);
+      const allSuggestions = await this.findLinkingSuggestions(payment);
+      const suggestions = options.preferredTargetType
+        ? allSuggestions.filter((suggestion) => suggestion.targetType === options.preferredTargetType)
+        : allSuggestions;
 
       if (suggestions.length === 0) {
         const decision: LinkingDecision = {
@@ -241,181 +273,32 @@ class PaymentLinkingService extends BaseService<Payment> {
     suggestion: LinkingSuggestion
   ): Promise<LinkingResult> {
     try {
-      // التحقق من عدم تكرار الربط
-      if (suggestion.targetType === 'invoice') {
-        // التحقق من أن الفاتورة مربوطة بدفعة أخرى
-        const { data: existingPayment } = await supabase
-          .from('payments')
-          .select('id, payment_number, invoice_id, contract_id')
-          .eq('invoice_id', suggestion.targetId)
-          .neq('id', payment.id)
-          .eq('company_id', payment.company_id)
-          .limit(1)
-          .maybeSingle();
+      const expectedAllocations = await this.getCurrentInvoiceAllocations(payment.id);
+      const allocations = suggestion.targetType === 'invoice'
+        ? await this.buildInvoiceAllocation(payment, suggestion.targetId, expectedAllocations)
+        : await this.buildContractAllocations(payment, suggestion.targetId, expectedAllocations);
 
-        if (existingPayment) {
-          this.log('executeLinking', 'Invoice already linked to another payment', {
-            paymentId: payment.id,
-            invoiceId: suggestion.targetId,
-            existingPaymentId: existingPayment.id,
-            existingPaymentNumber: existingPayment.payment_number
-          });
+      const reason = suggestion.targetType === 'invoice'
+        ? `تخصيص الدفعة للفاتورة: ${suggestion.reason}`
+        : `توزيع الدفعة على فواتير العقد: ${suggestion.reason}`;
 
-          return {
-            success: false,
-            confidence: 0,
-            reason: `الفاتورة مربوطة بالفعل بدفعة أخرى (${existingPayment.payment_number})`
-          };
-        }
-
-        // التحقق من وجود journal_entry_id للدفعة
-        const paymentJournalEntryId = await this.getPaymentJournalEntryId(payment);
-        if (paymentJournalEntryId) {
-          this.log('executeLinking', 'Payment already has journal entry, skipping invoice creation', {
-            paymentId: payment.id,
-            journalEntryId: paymentJournalEntryId
-          });
-
-          // فقط تحديث الروابط دون إنشاء فاتورة جديدة
-          const updateData: any = {
-            linking_confidence: suggestion.confidence,
-            allocation_status: 'fully_allocated',
-            reconciliation_status: 'matched',
-            processing_status: 'completed',
-            processing_notes: `ربط آلي بثقة ${(suggestion.confidence * 100).toFixed(0)}% - ${suggestion.reason} - القيد المحاسبي موجود`
-          };
-
-          await this.paymentRepo.update(payment.id, updateData);
-          this.log('executeLinking', 'Payment linked without new invoice', {
-            paymentId: payment.id,
-            targetType: suggestion.targetType,
-            targetId: suggestion.targetId,
-            confidence: suggestion.confidence
-          });
-
-          return {
-            success: true,
-            linkedTo: {
-              type: suggestion.targetType,
-              id: suggestion.targetId,
-              number: await this.getTargetNumber(suggestion.targetType, suggestion.targetId) || 'غير معروف'
-            },
-            confidence: suggestion.confidence,
-            reason: suggestion.reason
-          };
-        }
-      } else if (suggestion.targetType === 'contract') {
-        // التحقق من أن العقد مربوط بدفعة أخرى بالفعل
-        const { data: existingPayments } = await supabase
-          .from('payments')
-          .select('id, payment_number, contract_id, invoice_id, payment_date, amount')
-          .eq('contract_id', suggestion.targetId)
-          .neq('id', payment.id)
-          .eq('company_id', payment.company_id)
-          .eq('payment_status', 'completed')
-          .order('payment_date', { ascending: false })
-          .limit(5);
-
-        if (existingPayments && existingPayments.length > 0) {
-          this.log('executeLinking', 'Contract already has other payments', {
-            paymentId: payment.id,
-            contractId: suggestion.targetId,
-            existingCount: existingPayments.length
-          });
-
-          // تحديث الروابط فقط
-          const updateData: any = {
-            linking_confidence: suggestion.confidence,
-            allocation_status: 'partially_allocated',
-            reconciliation_status: 'matched',
-            processing_status: 'completed',
-            processing_notes: `ربط آلي بثقة ${(suggestion.confidence * 100).toFixed(0)}% - ${suggestion.reason} - ${existingPayments.length} مدفوعات سابقة`
-          };
-
-          await this.paymentRepo.update(payment.id, updateData);
-          this.log('executeLinking', 'Payment linked to contract without new invoice', {
-            paymentId: payment.id,
-            targetType: suggestion.targetType,
-            targetId: suggestion.targetId,
-            confidence: suggestion.confidence
-          });
-
-          return {
-            success: true,
-            linkedTo: {
-              type: suggestion.targetType,
-              id: suggestion.targetId,
-              number: await this.getTargetNumber(suggestion.targetType, suggestion.targetId) || 'غير معروف'
-            },
-            confidence: suggestion.confidence,
-            reason: suggestion.reason
-          };
-        }
-
-        // التحقق من وجود journal_entry_id
-        const paymentJournalEntryId = await this.getPaymentJournalEntryId(payment);
-        if (paymentJournalEntryId) {
-          this.log('executeLinking', 'Payment already has journal entry', {
-            paymentId: payment.id,
-            journalEntryId: paymentJournalEntryId
-          });
-
-          const updateData: any = {
-            linking_confidence: suggestion.confidence,
-            allocation_status: 'fully_allocated',
-            reconciliation_status: 'matched',
-            processing_status: 'completed',
-            processing_notes: `ربط آلي بثقة ${(suggestion.confidence * 100).toFixed(0)}% - ${suggestion.reason} - القيد المحاسبي موجود`
-          };
-
-          await this.paymentRepo.update(payment.id, updateData);
-          this.log('executeLinking', 'Payment linked without new invoice', {
-            paymentId: payment.id,
-            targetType: suggestion.targetType,
-            targetId: suggestion.targetId,
-            confidence: suggestion.confidence
-          });
-
-          return {
-            success: true,
-            linkedTo: {
-              type: suggestion.targetType,
-              id: suggestion.targetId,
-              number: await this.getTargetNumber(suggestion.targetType, suggestion.targetId) || 'غير معروف'
-            },
-            confidence: suggestion.confidence,
-            reason: suggestion.reason
-          };
-        }
-      }
-
-      const updateData: any = {};
-
-      if (suggestion.targetType === 'invoice') {
-        updateData.invoice_id = suggestion.targetId;
-      } else if (suggestion.targetType === 'contract') {
-        updateData.contract_id = suggestion.targetId;
-      }
-
-      updateData.linking_confidence = suggestion.confidence;
-      updateData.allocation_status = 'fully_allocated';
-      updateData.reconciliation_status = 'matched';
-      updateData.processing_status = 'completed';
-      updateData.processing_notes = `ربط آلي بثقة ${(suggestion.confidence * 100).toFixed(0)}% - ${suggestion.reason}`;
-
-      await this.paymentRepo.update(payment.id, updateData);
+      await this.replaceInvoiceAllocations(payment, allocations, expectedAllocations, reason);
 
       this.log('executeLinking', 'Payment linked successfully', {
         paymentId: payment.id,
         targetType: suggestion.targetType,
         targetId: suggestion.targetId,
-        confidence: suggestion.confidence
+        confidence: suggestion.confidence,
+        allocations
       });
 
       const targetNumber = await this.getTargetNumber(
         suggestion.targetType,
         suggestion.targetId
       );
+
+      const allocatedAmount = allocations.reduce((total, allocation) => total + allocation.amount, 0);
+      const unallocatedAmount = this.roundMoney(Number(payment.amount) - allocatedAmount);
 
       return {
         success: true,
@@ -425,12 +308,201 @@ class PaymentLinkingService extends BaseService<Payment> {
           number: targetNumber || 'غير معروف'
         },
         confidence: suggestion.confidence,
-        reason: suggestion.reason
+        reason: suggestion.reason,
+        warnings: unallocatedAmount > 0.01
+          ? [`بقي ${unallocatedAmount.toFixed(2)} ر.ق كرصيد عميل غير مخصص`]
+          : undefined
       };
     } catch (error) {
       this.log('executeLinking', 'Failed to link payment', { error, paymentId: payment.id });
       throw error;
     }
+  }
+
+  private async getCurrentInvoiceAllocations(paymentId: string): Promise<InvoiceAllocationInput[]> {
+    const { data, error } = await (supabase as any)
+      .from('payment_allocations')
+      .select('target_id, amount, allocation_order')
+      .eq('payment_id', paymentId)
+      .eq('allocation_type', 'invoice')
+      .eq('is_active', true)
+      .order('allocation_order', { ascending: true });
+
+    if (error) {
+      throw new Error(`تعذر قراءة تخصيصات الدفعة الحالية: ${error.message}`);
+    }
+
+    return ((data || []) as InvoiceAllocationRow[]).map((allocation) => ({
+      invoice_id: allocation.target_id,
+      amount: this.roundMoney(Number(allocation.amount))
+    }));
+  }
+
+  private async buildInvoiceAllocation(
+    payment: Payment,
+    invoiceId: string,
+    currentAllocations: InvoiceAllocationInput[]
+  ): Promise<InvoiceAllocationInput[]> {
+    const { data: invoice, error } = await supabase
+      .from('invoices')
+      .select('id, company_id, customer_id, contract_id, invoice_number, total_amount, paid_amount, balance_due, status, payment_status')
+      .eq('id', invoiceId)
+      .eq('company_id', payment.company_id)
+      .maybeSingle();
+
+    if (error) {
+      throw new Error(`تعذر قراءة الفاتورة: ${error.message}`);
+    }
+    if (!invoice) {
+      throw new Error('الفاتورة غير موجودة في شركة الدفعة');
+    }
+
+    this.assertInvoiceCanReceivePayment(payment, invoice);
+    const currentAmount = currentAllocations.find((allocation) => allocation.invoice_id === invoice.id)?.amount || 0;
+    const availableAmount = this.getInvoiceAvailableAmount(invoice, currentAmount);
+    const allocations = distributePaymentAcrossInvoices(Number(payment.amount), [
+      { invoiceId: invoice.id, availableAmount }
+    ]);
+
+    if (allocations.length === 0) {
+      throw new Error(`الفاتورة ${invoice.invoice_number} مسددة بالكامل ولا تقبل تخصيصًا جديدًا`);
+    }
+
+    return allocations;
+  }
+
+  private async buildContractAllocations(
+    payment: Payment,
+    contractId: string,
+    currentAllocations: InvoiceAllocationInput[]
+  ): Promise<InvoiceAllocationInput[]> {
+    const { data: contract, error: contractError } = await supabase
+      .from('contracts')
+      .select('id, company_id, customer_id, contract_number, status')
+      .eq('id', contractId)
+      .eq('company_id', payment.company_id)
+      .maybeSingle();
+
+    if (contractError) {
+      throw new Error(`تعذر قراءة العقد: ${contractError.message}`);
+    }
+    if (!contract) {
+      throw new Error('العقد غير موجود في شركة الدفعة');
+    }
+    if (payment.customer_id && contract.customer_id && payment.customer_id !== contract.customer_id) {
+      throw new Error('لا يمكن ربط الدفعة بعقد يخص عميلًا آخر');
+    }
+    if (payment.contract_id && payment.contract_id !== contract.id) {
+      throw new Error('الدفعة مسجلة على عقد آخر ولا يمكن إعادة توجيهها دون تسوية معتمدة');
+    }
+
+    const { data: invoices, error: invoicesError } = await supabase
+      .from('invoices')
+      .select('id, company_id, customer_id, contract_id, invoice_number, total_amount, paid_amount, balance_due, status, payment_status, due_date')
+      .eq('company_id', payment.company_id)
+      .eq('contract_id', contract.id)
+      .order('due_date', { ascending: true, nullsFirst: false })
+      .order('invoice_number', { ascending: true });
+
+    if (invoicesError) {
+      throw new Error(`تعذر قراءة فواتير العقد: ${invoicesError.message}`);
+    }
+
+    const currentByInvoice = new Map(
+      currentAllocations.map((allocation) => [allocation.invoice_id, allocation.amount])
+    );
+    const candidates: InvoiceBalanceCandidate[] = [];
+
+    for (const invoice of invoices || []) {
+      if (this.isInactiveInvoice(invoice)) {
+        continue;
+      }
+
+      this.assertInvoiceCanReceivePayment(payment, invoice, contract.id);
+      const availableAmount = this.getInvoiceAvailableAmount(
+        invoice,
+        currentByInvoice.get(invoice.id) || 0
+      );
+      candidates.push({ invoiceId: invoice.id, availableAmount });
+    }
+
+    const allocations = distributePaymentAcrossInvoices(Number(payment.amount), candidates);
+
+    if (allocations.length === 0) {
+      throw new Error(`لا توجد فواتير مستحقة قابلة للتخصيص في العقد ${contract.contract_number}`);
+    }
+
+    return allocations;
+  }
+
+  private async replaceInvoiceAllocations(
+    payment: Payment,
+    allocations: InvoiceAllocationInput[],
+    expectedAllocations: InvoiceAllocationInput[],
+    reason: string
+  ): Promise<void> {
+    const { data: authData } = await supabase.auth.getUser();
+    const { error } = await (supabase as any).rpc('replace_payment_invoice_allocations', {
+      p_payment_id: payment.id,
+      p_company_id: payment.company_id,
+      p_allocations: allocations,
+      p_reason: reason,
+      p_expected_allocations: expectedAllocations,
+      p_actor_id: authData.user?.id || null
+    });
+
+    if (error) {
+      throw new Error(`فشل حفظ تخصيص الدفعة: ${error.message}`);
+    }
+  }
+
+  private assertInvoiceCanReceivePayment(
+    payment: Payment,
+    invoice: {
+      customer_id: string | null;
+      contract_id: string | null;
+      status: string;
+      payment_status: string;
+    },
+    expectedContractId?: string
+  ): void {
+    if (this.isInactiveInvoice(invoice)) {
+      throw new Error('لا يمكن تخصيص دفعة لفاتورة ملغاة أو غير نشطة');
+    }
+    if (invoice.customer_id && invoice.customer_id !== payment.customer_id) {
+      throw new Error('لا يمكن تخصيص الدفعة لفاتورة تخص عميلًا آخر');
+    }
+    if (payment.contract_id && invoice.contract_id !== payment.contract_id) {
+      throw new Error('الفاتورة لا تتبع العقد المسجل على الدفعة');
+    }
+    if (expectedContractId && invoice.contract_id !== expectedContractId) {
+      throw new Error('إحدى الفواتير لا تتبع العقد المحدد');
+    }
+  }
+
+  private isInactiveInvoice(invoice: { status: string; payment_status: string }): boolean {
+    const inactiveStatuses = new Set(['cancelled', 'canceled', 'void', 'voided', 'deleted']);
+    return inactiveStatuses.has((invoice.status || '').toLowerCase())
+      || inactiveStatuses.has((invoice.payment_status || '').toLowerCase());
+  }
+
+  private getInvoiceAvailableAmount(
+    invoice: { total_amount: number; paid_amount: number | null; balance_due: number | null },
+    currentPaymentAllocation: number
+  ): number {
+    const calculatedBalance = Math.max(
+      Number(invoice.total_amount || 0) - Number(invoice.paid_amount || 0),
+      0
+    );
+    const reportedBalance = invoice.balance_due === null
+      ? calculatedBalance
+      : Math.max(Number(invoice.balance_due), 0);
+
+    return this.roundMoney(Math.max(reportedBalance, calculatedBalance) + currentPaymentAllocation);
+  }
+
+  private roundMoney(value: number): number {
+    return Math.round((value + Number.EPSILON) * 100) / 100;
   }
 
   /**
@@ -893,10 +965,13 @@ class PaymentLinkingService extends BaseService<Payment> {
         throw new Error('الدفعة غير موجودة');
       }
 
-      // تنفيذ الربط مع forceLink
-      const result = await this.linkPayment(paymentId, {
-        forceLink: true,
-        preferredTargetType: targetType
+      // Manual linking must honor the exact target selected by the user.
+      const result = await this.executeLinking(payment, {
+        targetId,
+        targetType,
+        confidence: 1,
+        reason: 'اختيار يدوي معتمد من المستخدم',
+        details: {}
       });
 
       if (result.success) {
@@ -926,29 +1001,6 @@ class PaymentLinkingService extends BaseService<Payment> {
     }
   }
 
-  private async getPaymentJournalEntryId(payment: Payment): Promise<string | null> {
-    if (payment.journal_entry_id) {
-      return payment.journal_entry_id;
-    }
-
-    const { data: journalEntry, error } = await supabase
-      .from('journal_entries')
-      .select('id')
-      .eq('company_id', payment.company_id)
-      .eq('reference_type', 'payment')
-      .eq('reference_id', payment.id)
-      .maybeSingle();
-
-    if (error) {
-      this.log('getPaymentJournalEntryId', 'Failed to resolve payment journal entry reference', {
-        paymentId: payment.id,
-        error: error.message,
-      });
-      return null;
-    }
-
-    return journalEntry?.id || null;
-  }
   /**
    * فك ربط دفعة
    */
@@ -964,24 +1016,20 @@ class PaymentLinkingService extends BaseService<Payment> {
         throw new Error('الدفعة غير موجودة');
       }
 
-      if (!payment.invoice_id && !payment.contract_id) {
+      const currentAllocations = await this.getCurrentInvoiceAllocations(payment.id);
+      if (currentAllocations.length === 0) {
         return {
           success: true,
-          message: 'الدفعة غير مربوطة أصلاً'
+          message: 'لا توجد تخصيصات فواتير نشطة لهذه الدفعة'
         };
       }
 
-      // فك الربط
-      const updateData: any = {
-        invoice_id: null,
-        contract_id: null,
-        linking_confidence: null,
-        allocation_status: null,
-        reconciliation_status: 'unmatched',
-        processing_notes: 'فك الربط اليدوي'
-      };
-
-      await this.paymentRepo.update(payment.id, updateData);
+      await this.replaceInvoiceAllocations(
+        payment,
+        [],
+        currentAllocations,
+        'فك تخصيص الفواتير يدويًا'
+      );
 
       // سجل تدقيق
       auditTrailSystem.logPaymentAction(
@@ -991,7 +1039,7 @@ class PaymentLinkingService extends BaseService<Payment> {
         payment.company_id,
         undefined,
         {
-          reason: 'فك الربط اليدوي'
+          reason: 'فك تخصيص الفواتير يدويًا'
         }
       );
 
@@ -999,7 +1047,7 @@ class PaymentLinkingService extends BaseService<Payment> {
 
       return {
         success: true,
-        message: 'تم فك الربط بنجاح'
+        message: 'تم فك تخصيص الفواتير وحفظ التسوية المحاسبية بنجاح'
       };
     } catch (error) {
       this.handleError('unlinkPayment', error);

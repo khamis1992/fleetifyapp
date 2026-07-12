@@ -141,7 +141,9 @@ const Ledger = () => {
     const entries = journalEntries || [];
     const posted = entries.filter((entry) => entry.status === "posted");
     const draft = entries.filter((entry) => entry.status === "draft");
-    const cancelled = entries.filter((entry) => entry.status === "cancelled" || entry.status === "reversed");
+    const cancelled = entries.filter(
+      (entry) => Boolean(entry.reversed_at) || entry.status === "cancelled" || entry.status === "reversed",
+    );
     const totalDebit = entries.reduce((sum, entry) => sum + (entry.total_debit || 0), 0);
     const totalCredit = entries.reduce((sum, entry) => sum + (entry.total_credit || 0), 0);
 
@@ -377,7 +379,8 @@ const Ledger = () => {
             <div className="space-y-3">
               <AnimatePresence>
                 {journalEntries.map((entry, index) => {
-                  const statusMeta = getStatusMeta(entry.status);
+                  const effectiveStatus = entry.reversed_at ? "reversed" : entry.status;
+                  const statusMeta = getStatusMeta(effectiveStatus);
                   const StatusIcon = statusMeta.icon;
                   const lines = entry.journal_entry_lines || [];
                   const entryNumber = entry.entry_number || entry.id?.slice(0, 8);
@@ -406,7 +409,7 @@ const Ledger = () => {
                                     className="border-0"
                                     style={{ backgroundColor: `${statusMeta.color}14`, color: statusMeta.color }}
                                   >
-                                    {getStatusText(entry.status)}
+                                    {getStatusText(effectiveStatus)}
                                   </Badge>
                                 </div>
                                 <div className="mt-1 flex flex-wrap items-center gap-3 text-xs font-bold" style={{ color: ledgerColors.muted }}>

@@ -2,7 +2,6 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
-import { getLongCatConfig } from '@/lib/env';
 
 export interface MatchData {
   contractId?: string;
@@ -571,9 +570,6 @@ export function useSignedAgreementUpload() {
   };
 }
 
-const LONGCAT_API_URL = 'https://api.longcat.chat/openai/v1/chat/completions';
-const MODEL = 'LongCat-2.0';
-
 /**
  * Use GLM-4.6 AI to analyze filename and extract identifiers
  */
@@ -615,7 +611,7 @@ async function analyzeFilenameWithAI(fileName: string): Promise<{
     const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 seconds timeout
 
     try {
-      const longCatConfig = getLongCatConfig();
+      const longCatConfig = { apiKey: undefined };
       if (!longCatConfig.apiKey) {
         throw new Error('LONGCAT API key is not configured');
       }

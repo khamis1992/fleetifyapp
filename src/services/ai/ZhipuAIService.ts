@@ -2,11 +2,10 @@
  * Smart Document Generation Service
  * خدمة توليد الكتب الرسمية الذكية
  * 
- * تستخدم OpenAI عبر Supabase Edge Function لتوليد كتب احترافية
+ * تستخدم LongCat عبر Supabase Edge Function لتوليد كتب احترافية
  */
 
-// Supabase Edge Function URL
-const EDGE_FUNCTION_URL = 'https://qwhunliohlkkahbspfiu.supabase.co/functions/v1/smart-document-generator';
+import { supabase } from '@/integrations/supabase/client';
 
 export interface Message {
   role: 'system' | 'user' | 'assistant';
@@ -679,16 +678,16 @@ function generateLetterHTML(
 }
 
 /**
- * توليد كتاب رسمي باستخدام OpenAI عبر Edge Function
+ * توليد كتاب رسمي باستخدام LongCat عبر Edge Function
  */
 export async function generateOfficialDocument(
   template: DocumentTemplate,
   answers: Record<string, string>
 ): Promise<ChatResponse & { aiPowered?: boolean }> {
   
-  // أولاً: محاولة استخدام OpenAI عبر Edge Function
+  // أولاً: محاولة استخدام LongCat عبر Edge Function
   try {
-    console.log('🤖 Calling OpenAI via Edge Function...');
+    console.log('Calling LongCat through the authenticated document service...');
     
     // تحضير البيانات للإرسال
     const requestData = {
@@ -701,27 +700,19 @@ export async function generateOfficialDocument(
       },
     };
     
-    const response = await fetch(EDGE_FUNCTION_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(requestData),
+    const { data: result, error } = await supabase.functions.invoke('smart-document-generator', {
+      body: requestData,
     });
-    
-    if (response.ok) {
-      const result = await response.json();
-      if (result.success && result.content) {
-        console.log('✅ OpenAI document generated successfully, AI powered:', result.aiPowered);
-        return {
-          success: true,
-          content: result.content,
-          aiPowered: result.aiPowered,
-        };
-      }
+
+    if (!error && result?.success && result.content) {
+      return {
+        success: true,
+        content: result.content,
+        aiPowered: result.aiPowered,
+      };
     }
-    
-    console.log('⚠️ Edge function failed, falling back to local generation');
+
+    console.warn('Document service failed, using local generation:', error?.message || result?.error);
   } catch (error) {
     console.log('⚠️ Edge function error, falling back to local generation:', error);
   }

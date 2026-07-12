@@ -5,14 +5,8 @@
 
 import { useState, useCallback, useRef } from 'react';
 import { getSystemPrompt } from '@/lib/ai-knowledge-base';
-import { getLongCatConfig } from '@/lib/env';
-
-// LongCat API configuration
-const LONGCAT_API_URL = 'https://api.longcat.chat/openai/v1/chat/completions';
-const MODEL = 'LongCat-2.0';
-
-// Using only Coding endpoint for Coding Plan subscription
-const API_ENDPOINTS = [LONGCAT_API_URL];
+import { getSupabaseConfig } from '@/lib/env';
+import { supabase } from '@/integrations/supabase/client';
 
 export interface ChatMessage {
   id: string;
@@ -90,62 +84,32 @@ export const useAIChatAssistant = (options?: UseAIChatAssistantOptions): UseAICh
       ];
 
       const requestBody = {
-        model: MODEL,
         messages: conversationHistory,
         temperature: 0.7,
         stream: true,
         max_tokens: 2048,
       };
 
-      const longCatConfig = getLongCatConfig();
-      if (!longCatConfig.apiKey) {
-        throw new Error('LONGCAT API key is not configured');
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError || !sessionData.session?.access_token) {
+        throw new Error('انتهت جلسة المستخدم. يرجى تسجيل الدخول مرة أخرى.');
       }
+      const supabaseConfig = getSupabaseConfig();
 
       const headers = {
         'Content-Type': 'application/json',
-        'Accept-Language': 'en-US,en',
-        'Authorization': `Bearer ${longCatConfig.apiKey}`,
+        'apikey': supabaseConfig.anonKey,
+        'Authorization': `Bearer ${sessionData.session.access_token}`,
       };
 
-      // Try endpoints in order (Coding first, then General)
-      let response: Response | null = null;
-      let lastError: Error | null = null;
-
-      for (const apiUrl of API_ENDPOINTS) {
-        try {
-          console.log(`🤖 Trying AI endpoint: ${apiUrl}`);
-          response = await fetch(apiUrl, {
-            method: 'POST',
-            headers,
-            body: JSON.stringify(requestBody),
-            signal: abortControllerRef.current.signal,
-          });
-
-          if (response.ok) {
-            console.log(`✅ AI endpoint successful: ${apiUrl}`);
-            break;
-          } else if (response.status === 429 || response.status === 401 || response.status === 403) {
-            // Rate limit or auth issue - try next endpoint
-            const errorText = await response.text();
-            console.warn(`⚠️ Endpoint ${apiUrl} returned ${response.status}: ${errorText}`);
-            lastError = new Error(`API Error: ${response.status} - ${errorText}`);
-            response = null;
-            continue;
-          } else {
-            const errorText = await response.text();
-            throw new Error(`API Error: ${response.status} - ${errorText}`);
-          }
-        } catch (fetchError) {
-          if ((fetchError as Error).name === 'AbortError') throw fetchError;
-          console.warn(`⚠️ Failed to reach ${apiUrl}:`, fetchError);
-          lastError = fetchError as Error;
-          response = null;
-        }
-      }
-
-      if (!response || !response.ok) {
-        throw lastError || new Error('All API endpoints failed');
+      const response = await fetch(`${supabaseConfig.url}/functions/v1/longcat-chat`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(requestBody),
+        signal: abortControllerRef.current.signal,
+      });
+      if (!response.ok) {
+        throw new Error(`تعذر تشغيل المساعد الذكي (${response.status})`);
       }
 
       // Handle streaming response

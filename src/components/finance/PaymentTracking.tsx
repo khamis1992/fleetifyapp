@@ -192,14 +192,16 @@ export const PaymentTracking: React.FC = () => {
   // Reconcile payment mutation
   const reconcilePayment = useMutation({
     mutationFn: async (paymentId: string) => {
-      const { error } = await supabase
-        .from('payments')
-        .update({
-          reconciliation_status: 'reconciled'
-        })
-        .eq('id', paymentId);
+      const { error } = await (supabase as any).rpc('reconcile_payment_with_bank_transaction', {
+        p_payment_id: paymentId,
+        p_reason: 'تسوية يدوية من شاشة متابعة الدفعات',
+        p_bank_transaction_id: null,
+        p_actor_id: null,
+      });
       
-      if (error) throw error;
+      if (error) {
+        throw new Error(error.message || 'تعذر مطابقة الدفعة مع حركة بنكية مرتبطة');
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['payment-timeline-details'] });
@@ -209,10 +211,10 @@ export const PaymentTracking: React.FC = () => {
         description: 'تم تسوية الدفعة بنجاح',
       });
     },
-    onError: () => {
+    onError: (error: Error) => {
       toast({
         title: '❌ فشلت التسوية',
-        description: 'حدث خطأ أثناء تسوية الدفعة',
+        description: error.message,
         variant: 'destructive',
       });
     }

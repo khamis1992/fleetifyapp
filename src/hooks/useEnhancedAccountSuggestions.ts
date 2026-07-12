@@ -41,7 +41,7 @@ export const useEnhancedAccountSuggestions = () => {
   // Analyze account name patterns using AI
   const analyzeAccountWithAI = useCallback(async (accountName: string, accountType?: string) => {
     try {
-      const response = await supabase.functions.invoke('openai-chat', {
+      const response = await supabase.functions.invoke('longcat-chat', {
         body: {
           messages: [
             {

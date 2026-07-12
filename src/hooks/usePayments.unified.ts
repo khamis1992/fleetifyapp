@@ -608,16 +608,7 @@ export const useBulkDeletePayments = () => {
           }
         }
 
-        // ============================================================================
-        // FETCH PAYMENTS TO DELETE
-        // ============================================================================
-        const fetchSpan = transaction.startChild({
-          op: 'db.query',
-          description: 'Fetch payments to delete',
-        });
-
         const { data: paymentsToDelete, error: fetchError } = await query;
-        fetchSpan.finish();
 
         if (fetchError) {
           Sentry.captureException(fetchError, {
@@ -643,88 +634,9 @@ export const useBulkDeletePayments = () => {
           level: 'info',
         });
 
-        // ============================================================================
-        // PROCESS LINKED INVOICES
-        // ============================================================================
-        let processedInvoices = 0;
-        const invoicesToUpdate = new Map();
-
-        const invoiceSpan = transaction.startChild({
-          op: 'process',
-          description: 'Process linked invoices',
-        });
-
-        // Process linked invoices first
-        for (const payment of paymentsToDelete) {
-          if (payment.invoice_id) {
-            if (!invoicesToUpdate.has(payment.invoice_id)) {
-              const { data: invoice, error: invoiceError } = await supabase
-                .from('invoices')
-                .select('total_amount, paid_amount')
-                .eq('id', payment.invoice_id)
-                .single();
-
-              if (!invoiceError && invoice) {
-                invoicesToUpdate.set(payment.invoice_id, {
-                  ...invoice,
-                  paymentsToReverse: [],
-                });
-              }
-            }
-
-            if (invoicesToUpdate.has(payment.invoice_id)) {
-              invoicesToUpdate.get(payment.invoice_id).paymentsToReverse.push(payment.amount);
-            }
-          }
-        }
-
-        // Update invoices
-        for (const [invoiceId, invoiceData] of invoicesToUpdate) {
-          const totalToReverse = invoiceData.paymentsToReverse.reduce(
-            (sum: number, amount: number) => sum + amount,
-            0
-          );
-          const newPaidAmount = Math.max(0, (invoiceData.paid_amount || 0) - totalToReverse);
-          const newBalanceDue = (invoiceData.total_amount || 0) - newPaidAmount;
-
-          let newPaymentStatus: 'unpaid' | 'partial' | 'paid';
-          if (newPaidAmount >= (invoiceData.total_amount || 0)) {
-            newPaymentStatus = 'paid';
-          } else if (newPaidAmount > 0) {
-            newPaymentStatus = 'partial';
-          } else {
-            newPaymentStatus = 'unpaid';
-          }
-
-          const { error: updateError } = await supabase
-            .from('invoices')
-            .update({
-              paid_amount: newPaidAmount,
-              balance_due: Math.max(0, newBalanceDue),
-              payment_status: newPaymentStatus,
-            })
-            .eq('id', invoiceId);
-
-          if (updateError) {
-            Sentry.captureException(updateError, {
-              tags: { feature: 'bulk_delete_payments', step: 'update_invoice' },
-              extra: { invoiceId, newPaidAmount, newBalanceDue, newPaymentStatus },
-            });
-            // Continue with other invoices
-          } else {
-            processedInvoices++;
-          }
-        }
-
-        invoiceSpan.finish();
-
-        // ============================================================================
-        // CANCEL PAYMENTS IN BATCHES (preserve audit trail)
-        // ============================================================================
-        const deleteSpan = transaction.startChild({
-          op: 'db.update',
-          description: 'Cancel payments in batches',
-        });
+        const processedInvoices = new Set(
+          paymentsToDelete.map((payment) => payment.invoice_id).filter(Boolean)
+        ).size;
 
         const batchSize = 100;
         let deletedCount = 0;
@@ -734,16 +646,15 @@ export const useBulkDeletePayments = () => {
           const batch = paymentsToDelete.slice(i, i + batchSize);
           const ids = batch.map((p) => p.id);
 
-          const { error: deleteError, count } = await supabase
-            .from('payments')
-            .update({
-              payment_status: 'cancelled',
-              cancelled_at: new Date().toISOString(),
-              cancelled_by: user?.id,
-              cancellation_reason: 'Bulk payment cancellation',
-            }, { count: 'exact' })
-            .in('id', ids)
-            .eq('company_id', effectiveCompanyId);
+          const { data: batchResult, error: deleteError } = await (supabase as any).rpc(
+            'cancel_payments_batch_with_reversal',
+            {
+              p_payment_ids: ids,
+              p_company_id: effectiveCompanyId,
+              p_reason: 'Bulk payment cancellation from the payments workspace',
+              p_actor_id: user?.id || null,
+            }
+          );
 
           if (deleteError) {
             Sentry.captureException(deleteError, {
@@ -753,11 +664,9 @@ export const useBulkDeletePayments = () => {
             throw deleteError;
           }
 
-          const actualDeleted = count || batch.length;
+          const actualDeleted = Number(batchResult?.cancelled_count ?? batch.length);
           deletedCount += actualDeleted;
         }
-
-        deleteSpan.finish();
 
         // ============================================================================
         // AUDIT LOG (Safe - doesn't fail the operation)
@@ -914,13 +823,57 @@ export const useUpdatePayment = () => {
           data: { paymentId, companyId },
         });
 
+        const { data: currentPayment, error: currentPaymentError } = await supabase
+          .from('payments')
+          .select('id, payment_number, payment_status')
+          .eq('id', paymentId)
+          .eq('company_id', companyId)
+          .maybeSingle();
+
+        if (currentPaymentError) {
+          throw new Error(`خطأ في قراءة الدفعة الحالية: ${currentPaymentError.message}`);
+        }
+        if (!currentPayment) {
+          throw new Error('الدفع غير موجود');
+        }
+
+        const currentStatus = (currentPayment.payment_status || '').toLowerCase();
+        if (['completed', 'paid', 'success', 'succeeded', 'cancelled', 'canceled'].includes(currentStatus)) {
+          throw new Error('لا يمكن تعديل دفعة مكتملة أو ملغاة. استخدم عملية الإلغاء أو التسوية المعتمدة.');
+        }
+        if (paymentData.payment_status !== undefined) {
+          throw new Error('تغيير حالة الدفعة يتم فقط من خلال الاعتماد أو الإلغاء المعتمد.');
+        }
+        if (paymentData.invoice_id !== undefined || paymentData.contract_id !== undefined) {
+          throw new Error('ربط الدفعة بالفاتورة أو العقد يتم من شاشة تخصيص الدفعات فقط.');
+        }
+
+        const safePaymentData = {
+          ...(paymentData.amount !== undefined && { amount: paymentData.amount }),
+          ...(paymentData.payment_date !== undefined && { payment_date: paymentData.payment_date }),
+          ...(paymentData.reference_number !== undefined && { reference_number: paymentData.reference_number }),
+          ...(paymentData.notes !== undefined && { notes: paymentData.notes }),
+          ...(paymentData.customer_id !== undefined && { customer_id: paymentData.customer_id }),
+          ...(paymentData.vendor_id !== undefined && { vendor_id: paymentData.vendor_id }),
+          ...(paymentData.late_fine_amount !== undefined && { late_fine_amount: paymentData.late_fine_amount }),
+          ...(paymentData.late_fine_status !== undefined && { late_fine_status: paymentData.late_fine_status }),
+          ...(paymentData.late_fine_type !== undefined && { late_fine_type: paymentData.late_fine_type }),
+          ...(paymentData.late_fine_waiver_reason !== undefined && {
+            late_fine_waiver_reason: paymentData.late_fine_waiver_reason,
+          }),
+        };
+
+        if (Object.keys(safePaymentData).length === 0) {
+          throw new Error('لا توجد حقول قابلة للتعديل في هذا الطلب.');
+        }
+
         // ============================================================================
         // UPDATE PAYMENT
         // ============================================================================
         const { data, error } = await supabase
           .from('payments')
           .update({
-            ...paymentData,
+            ...safePaymentData,
             updated_at: new Date().toISOString(),
           })
           .eq('id', paymentId)
@@ -959,10 +912,10 @@ export const useUpdatePayment = () => {
             paymentId,
             data.payment_number || paymentId,
             {
-              new_values: paymentData,
+              new_values: safePaymentData,
               changes_summary: `تم تحديث دفع ${data.payment_number}`,
               metadata: {
-                updated_fields: Object.keys(paymentData),
+                updated_fields: Object.keys(safePaymentData),
                 payment_number: data.payment_number,
               },
               severity: 'medium',
@@ -1110,97 +1063,15 @@ export const useDeletePayment = () => {
           throw new Error('الدفع غير موجود');
         }
 
-        // ============================================================================
-        // REVERSE INVOICE PAYMENT
-        // ============================================================================
-        if (payment.invoice_id) {
-          Sentry.addBreadcrumb({
-            category: 'delete_payment',
-            message: 'Reversing invoice payment',
-            level: 'info',
-            data: { invoiceId: payment.invoice_id },
-          });
-
-          const { data: invoice, error: invoiceError } = await supabase
-            .from('invoices')
-            .select('total_amount, paid_amount')
-            .eq('id', payment.invoice_id)
-            .single();
-
-          if (invoiceError) {
-            Sentry.captureException(invoiceError, {
-              tags: {
-                feature: 'payments',
-                action: 'delete',
-                component: 'useDeletePayment.unified',
-                step: 'fetch_invoice',
-              },
-              extra: { invoiceId: payment.invoice_id },
-            });
-            throw new Error(`خطأ في جلب بيانات الفاتورة: ${invoiceError.message}`);
+        const { error: deleteError } = await (supabase as any).rpc(
+          'cancel_payment_with_reversal',
+          {
+            p_payment_id: paymentId,
+            p_company_id: companyId,
+            p_reason: 'Payment cancellation from the payments workspace',
+            p_actor_id: user?.id || null,
           }
-
-          const newPaidAmount = Math.max(0, (invoice.paid_amount || 0) - payment.amount);
-          const newBalanceDue = (invoice.total_amount || 0) - newPaidAmount;
-
-          let newPaymentStatus: 'unpaid' | 'partial' | 'paid';
-          if (newPaidAmount >= (invoice.total_amount || 0)) {
-            newPaymentStatus = 'paid';
-          } else if (newPaidAmount > 0) {
-            newPaymentStatus = 'partial';
-          } else {
-            newPaymentStatus = 'unpaid';
-          }
-
-          // Update invoice
-          const { error: updateError } = await supabase
-            .from('invoices')
-            .update({
-              paid_amount: newPaidAmount,
-              balance_due: Math.max(0, newBalanceDue),
-              payment_status: newPaymentStatus,
-            })
-            .eq('id', payment.invoice_id);
-
-          if (updateError) {
-            Sentry.captureException(updateError, {
-              tags: {
-                feature: 'payments',
-                action: 'delete',
-                component: 'useDeletePayment.unified',
-                step: 'update_invoice',
-              },
-              extra: {
-                invoiceId: payment.invoice_id,
-                newPaidAmount,
-                newBalanceDue,
-                newPaymentStatus,
-              },
-            });
-            throw new Error(`خطأ في تحديث الفاتورة: ${updateError.message}`);
-          }
-
-          Sentry.addBreadcrumb({
-            category: 'delete_payment',
-            message: 'Invoice payment reversed successfully',
-            level: 'info',
-            data: { invoiceId: payment.invoice_id, newPaymentStatus },
-          });
-        }
-
-        // ============================================================================
-        // CANCEL PAYMENT (preserve audit trail)
-        // ============================================================================
-        const { error: deleteError } = await supabase
-          .from('payments')
-          .update({
-            payment_status: 'cancelled',
-            cancelled_at: new Date().toISOString(),
-            cancelled_by: user?.id,
-            cancellation_reason: 'Payment cancellation',
-          })
-          .eq('id', paymentId)
-          .eq('company_id', companyId);
+        );
 
         if (deleteError) {
           Sentry.captureException(deleteError, {
@@ -1212,7 +1083,7 @@ export const useDeletePayment = () => {
             },
             extra: { paymentId, companyId },
           });
-          throw new Error(`خطأ في حذف الدفع: ${deleteError.message}`);
+          throw new Error(`خطأ في إلغاء الدفع ذريًا: ${deleteError.message}`);
         }
 
         Sentry.addBreadcrumb({

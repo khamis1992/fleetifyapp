@@ -12651,43 +12651,68 @@ export type Database = {
         Row: {
           allocated_date: string
           allocation_method: string
+          allocation_order: number
           allocation_type: string
           amount: number
+          company_id: string
           created_at: string
           created_by: string | null
           id: string
+          is_active: boolean
           notes: string | null
           payment_id: string
           target_id: string
           updated_at: string
+          void_reason: string | null
+          voided_at: string | null
+          voided_by: string | null
         }
         Insert: {
           allocated_date?: string
           allocation_method?: string
-          allocation_type: string
-          amount?: number
+          allocation_order?: number
+          allocation_type?: string
+          amount: number
+          company_id: string
           created_at?: string
           created_by?: string | null
           id?: string
+          is_active?: boolean
           notes?: string | null
           payment_id: string
           target_id: string
           updated_at?: string
+          void_reason?: string | null
+          voided_at?: string | null
+          voided_by?: string | null
         }
         Update: {
           allocated_date?: string
           allocation_method?: string
+          allocation_order?: number
           allocation_type?: string
           amount?: number
+          company_id?: string
           created_at?: string
           created_by?: string | null
           id?: string
+          is_active?: boolean
           notes?: string | null
           payment_id?: string
           target_id?: string
           updated_at?: string
+          void_reason?: string | null
+          voided_at?: string | null
+          voided_by?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "payment_allocations_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "payment_allocations_payment_id_fkey"
             columns: ["payment_id"]
@@ -25381,7 +25406,7 @@ export type Database = {
       }
       trigger_daily_report: { Args: never; Returns: undefined }
       trigger_weekly_report: { Args: never; Returns: undefined }
-      update_account_balances_from_entries: { Args: never; Returns: undefined }
+      update_account_balances_from_entries: { Args: never; Returns: Json }
       update_account_levels_manually: {
         Args: { company_id_param: string }
         Returns: undefined

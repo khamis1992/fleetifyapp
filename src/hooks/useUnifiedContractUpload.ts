@@ -139,47 +139,12 @@ export function useUnifiedContractUpload() {
           issues.push(`تم إنشاء رقم عقد تلقائي: ${enhanced.contract_number}`);
         }
         
-        // تحسين بيانات العميل - مع معالجة الأخطاء والوقت المحدد
-        if (enhanced.customer_name && (!enhanced.customer_phone || !enhanced.customer_email)) {
-          try {
-            // تعيين مهلة زمنية 5 ثواني للطلب
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 5000);
-            
-            const aiResponse = await supabase.functions.invoke('openai-chat', {
-              body: {
-                messages: [
-                  {
-                    role: 'system',
-                    content: `أنت مساعد ذكي لتحسين بيانات العقود. قم بتحليل اسم العميل واقتراح بيانات معقولة.`
-                  },
-                  {
-                    role: 'user',
-                    content: `اسم العميل: ${enhanced.customer_name}. اقترح رقم هاتف وإيميل معقولين للاختبار (استخدم أرقام وهمية).`
-                  }
-                ],
-                model: 'LongCat-2.0',
-                temperature: 0.3
-              }
-            });
-            
-            clearTimeout(timeoutId);
-            
-            if (aiResponse.data?.choices?.[0]?.message?.content) {
-              // استخراج الاقتراحات من الرد
-              const suggestions = aiResponse.data.choices[0].message.content;
-              if (!enhanced.customer_phone && suggestions.includes('05')) {
-                const phoneMatch = suggestions.match(/05\d{8}/);
-                if (phoneMatch) {
-                  enhanced.customer_phone = phoneMatch[0];
-                  issues.push(`تم اقتراح رقم هاتف: ${enhanced.customer_phone}`);
-                }
-              }
-            }
-          } catch (aiError) {
-            console.warn('AI enhancement skipped for customer (timeout or error):', enhanced.customer_name);
-            // لا نوقف العملية بسبب فشل AI - نستمر بدون التحسين
-          }
+        // بيانات الاتصال حقائق لا يمكن استنتاجها بأمان من اسم العميل.
+        if (enhanced.customer_name && !enhanced.customer_phone) {
+          issues.push('رقم هاتف العميل مفقود ويحتاج إلى مراجعة');
+        }
+        if (enhanced.customer_name && !enhanced.customer_email) {
+          issues.push('البريد الإلكتروني للعميل مفقود ويحتاج إلى مراجعة');
         }
         
         // إضافة الملاحظات

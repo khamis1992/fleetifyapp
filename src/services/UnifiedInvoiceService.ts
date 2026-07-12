@@ -409,31 +409,31 @@ class UnifiedInvoiceServiceClass {
     duplicateInvoiceId: string
   ): Promise<{ success: boolean; error?: string }> {
     try {
-      // 1. نقل الدفعات من الفاتورة المكررة إلى الأصلية
-      const { error: updatePaymentsError } = await supabase
-        .from('payments')
-        .update({ invoice_id: keepInvoiceId })
-        .eq('invoice_id', duplicateInvoiceId);
-
-      if (updatePaymentsError) {
-        throw new Error(`فشل في نقل الدفعات: ${updatePaymentsError.message}`);
-      }
-
-      // 2. إلغاء الفاتورة المكررة
-      const { error: cancelError } = await supabase
+      const { data: keepInvoice, error: keepInvoiceError } = await supabase
         .from('invoices')
-        .update({
-          status: 'cancelled',
-          notes: `ملغاة - تم دمجها مع الفاتورة ${keepInvoiceId}`
-        })
-        .eq('id', duplicateInvoiceId);
+        .select('company_id')
+        .eq('id', keepInvoiceId)
+        .maybeSingle();
 
-      if (cancelError) {
-        throw new Error(`فشل في إلغاء الفاتورة: ${cancelError.message}`);
+      if (keepInvoiceError || !keepInvoice) {
+        throw new Error('الفاتورة الأساسية غير موجودة');
       }
 
-      // 3. إعادة حساب الرصيد للفاتورة الأصلية
-      await this.recalculateInvoiceBalance(keepInvoiceId);
+      const { data: authData } = await supabase.auth.getUser();
+      const { error: mergeError } = await (supabase as any).rpc(
+        'merge_unpaid_duplicate_invoice_atomic',
+        {
+          p_keep_invoice_id: keepInvoiceId,
+          p_duplicate_invoice_id: duplicateInvoiceId,
+          p_company_id: keepInvoice.company_id,
+          p_reason: 'دمج فاتورة مكررة بعد التحقق من عدم وجود تاريخ مالي',
+          p_actor_id: authData.user?.id || null,
+        }
+      );
+
+      if (mergeError) {
+        throw new Error(mergeError.message);
+      }
 
       logger.info('Successfully merged duplicate invoices', {
         keepInvoiceId,
@@ -454,35 +454,27 @@ class UnifiedInvoiceServiceClass {
    * إعادة حساب رصيد الفاتورة بناءً على الدفعات
    */
   async recalculateInvoiceBalance(invoiceId: string): Promise<void> {
-    // جلب مجموع الدفعات
-    const { data: payments } = await supabase
-      .from('payments')
-      .select('amount')
-      .eq('invoice_id', invoiceId)
-      .eq('payment_status', 'completed');
-
-    const totalPaid = (payments || []).reduce((sum, p) => sum + (p.amount || 0), 0);
-
-    // جلب إجمالي الفاتورة
-    const { data: invoice } = await supabase
+    const { data: invoice, error: invoiceError } = await supabase
       .from('invoices')
-      .select('total_amount')
+      .select('company_id')
       .eq('id', invoiceId)
-      .single();
+      .maybeSingle();
 
-    if (!invoice) return;
+    if (invoiceError || !invoice) {
+      throw new Error('الفاتورة غير موجودة');
+    }
 
-    const balanceDue = Math.max(0, invoice.total_amount - totalPaid);
-    const paymentStatus = balanceDue <= 0 ? 'paid' : totalPaid > 0 ? 'partial' : 'unpaid';
+    const { data: authData } = await supabase.auth.getUser();
+    const { error } = await (supabase as any).rpc('repair_invoice_financial_state_atomic', {
+      p_invoice_id: invoiceId,
+      p_company_id: invoice.company_id,
+      p_reason: 'إعادة احتساب رصيد الفاتورة من دفتر تخصيص الدفعات',
+      p_actor_id: authData.user?.id || null,
+    });
 
-    await supabase
-      .from('invoices')
-      .update({
-        paid_amount: totalPaid,
-        balance_due: balanceDue,
-        payment_status: paymentStatus
-      })
-      .eq('id', invoiceId);
+    if (error) {
+      throw new Error(error.message);
+    }
   }
 
   /**

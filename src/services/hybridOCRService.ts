@@ -15,7 +15,7 @@
  * 
  * Tier 3: Cloud OCR APIs
  *   - OLMOCR (free, Arabic-optimized)
- *   - OpenAI Vision (fallback)
+ *   - LongCat Vision (fallback)
  *   - For complex/low-quality scans
  * 
  * Research Sources (2026):
@@ -78,7 +78,7 @@ const DEFAULT_CONFIG: HybridOCRConfig = {
  * 
  * Priority order:
  * 1. OLMOCR (free, Arabic-optimized, uses Google Vision)
- * 2. OpenAI Vision (pdf-ocr) as fallback
+ * 2. LongCat Vision (pdf-ocr) as fallback
  * 
  * Research: arxiv.org/abs/2506.02295 (QARI-OCR - 97% Arabic accuracy)
  */
@@ -126,14 +126,14 @@ async function callCloudOCR(
       }
     }
     
-    console.log('[Cloud OCR] OLMOCR not available or failed, trying OpenAI...');
+    console.log('[Cloud OCR] OLMOCR not available or failed, trying LongCat...');
   } catch (olmError) {
     console.log('[Cloud OCR] OLMOCR error:', olmError);
   }
   
-  // Fallback to OpenAI (pdf-ocr)
+  // Fallback to LongCat (pdf-ocr)
   try {
-    console.log(`[Cloud OCR] Trying OpenAI Vision with ${imagesToProcess.length} images...`);
+    console.log(`[Cloud OCR] Trying LongCat Vision with ${imagesToProcess.length} images...`);
     
     const response = await fetch(`${supabaseUrl}/functions/v1/pdf-ocr`, {
       method: 'POST',
@@ -150,7 +150,7 @@ async function callCloudOCR(
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('[Cloud OCR] OpenAI API error:', errorText);
+      console.error('[Cloud OCR] LongCat API error:', errorText);
       throw new Error(`Cloud OCR API error: ${response.status}`);
     }
 
@@ -160,7 +160,7 @@ async function callCloudOCR(
       throw new Error(result.error || 'Cloud OCR failed');
     }
     
-    console.log(`[Cloud OCR] OpenAI Success: ${result.text?.length || 0} chars, ${Math.round((result.confidence || 0) * 100)}% confidence`);
+    console.log(`[Cloud OCR] LongCat Success: ${result.text?.length || 0} chars, ${Math.round((result.confidence || 0) * 100)}% confidence`);
     
     return {
       text: result.text || '',
@@ -351,7 +351,7 @@ export async function hybridOCR(
   console.log('[Hybrid OCR] After Tier 2 block, proceeding...');
 
   // =========================================================================
-  // TIER 3: Cloud OCR API (OpenAI Vision via Supabase Edge Function)
+  // TIER 3: Cloud OCR API (LongCat Vision via Supabase Edge Function)
   // =========================================================================
   console.log(`[Hybrid OCR] Checking Tier 3... enableDeepSeek: ${opts.enableDeepSeek}`);
   
@@ -359,12 +359,12 @@ export async function hybridOCR(
     opts.onProgress?.({
       stage: 'deepseek',
       percent: 80,
-      message: 'جاري الاستخراج بالذكاء الاصطناعي (OpenAI)...',
+      message: 'جاري الاستخراج بالذكاء الاصطناعي (LongCat)...',
       tier: 3,
     });
 
     try {
-      console.log('[Hybrid OCR] Tier 3: Trying Cloud OCR (OpenAI Vision)...');
+      console.log('[Hybrid OCR] Tier 3: Trying Cloud OCR (LongCat Vision)...');
 
       // Get Supabase config - use hardcoded values as fallback
       const supabaseUrl = (supabase as any).supabaseUrl || 

@@ -45,16 +45,6 @@ export function getSupabaseConfig() {
 }
 
 /**
- * Get LongCat configuration (optional)
- */
-export function getLongCatConfig() {
-  return {
-    apiKey: import.meta.env.VITE_LONGCAT_API_KEY,
-    hasKey: !!import.meta.env.VITE_LONGCAT_API_KEY,
-  };
-}
-
-/**
  * Check if a feature flag is enabled
  */
 export function isFeatureEnabled(featureName: string): boolean {
@@ -88,7 +78,6 @@ export function getEnvironmentConfig() {
     apiBaseUrl: getApiBaseUrl(),
     appVersion: getAppVersion(),
     supabase: getSupabaseConfig(),
-    longcat: getLongCatConfig(),
   };
 }
 

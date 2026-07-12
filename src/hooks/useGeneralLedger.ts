@@ -159,6 +159,9 @@ export const useEnhancedJournalEntries = (filters?: LedgerFilters) => {
             total_debit,
             total_credit,
             status,
+            reversal_entry_id,
+            reversed_at,
+            reversed_by,
             reference_type,
             reference_id,
             created_at,
@@ -189,7 +192,9 @@ export const useEnhancedJournalEntries = (filters?: LedgerFilters) => {
           .order("entry_number", { ascending: false })
       
         if (filters?.status && filters.status !== 'all') {
-          query = query.eq("status", filters.status)
+          query = filters.status === 'reversed'
+            ? query.not("reversed_at", "is", null)
+            : query.eq("status", filters.status)
         }
         if (filters?.dateFrom) {
           query = query.gte("entry_date", filters.dateFrom)
@@ -834,94 +839,16 @@ export const useReverseJournalEntry = () => {
   
   return useMutation({
     mutationFn: async ({ entryId, reason }: { entryId: string; reason: string }) => {
-      const { data: originalEntry, error: originalEntryError } = await supabase
-        .from("journal_entries")
-        .select("id,company_id,entry_number,entry_date,status,total_debit,total_credit,reversal_entry_id,description,reference_type,reference_id")
-        .eq("id", entryId)
-        .eq("status", "posted")
-        .single()
+      const reversalReason = reason.trim()
+      if (!reversalReason) throw new Error("Reversal reason is required")
+      if (!user?.id) throw new Error("Authenticated user is required")
 
-      if (originalEntryError || !originalEntry) throw originalEntryError || new Error("Posted journal entry not found")
-      if (originalEntry.reversal_entry_id) return originalEntry
+      const { data, error } = await supabase.rpc("reverse_journal_entry", {
+        entry_id: entryId,
+        reversal_reason: reversalReason,
+        reversed_by_user: user.id,
+      })
 
-      const { data: originalLines, error: linesError } = await supabase
-        .from("journal_entry_lines")
-        .select("account_id,line_description,debit_amount,credit_amount,line_number,cost_center_id,asset_id,employee_id")
-        .eq("journal_entry_id", entryId)
-        .order("line_number", { ascending: true })
-
-      if (linesError) throw linesError
-      if (!originalLines?.length) throw new Error("Original journal entry has no lines to reverse")
-
-      const reversalEntryNumber = `REV-${originalEntry.entry_number}-${Date.now().toString().slice(-6)}`
-      const reversalDate = new Date().toISOString().split("T")[0]
-
-      const { data: reversalEntry, error: reversalEntryError } = await supabase
-        .from("journal_entries")
-        .insert({
-          company_id: originalEntry.company_id,
-          entry_number: reversalEntryNumber,
-          entry_date: reversalDate,
-          status: "draft",
-          description: `Reversal of ${originalEntry.entry_number}${reason ? ` - ${reason}` : ""}`,
-          reference_type: "journal_reversal",
-          reference_id: originalEntry.id,
-          total_debit: originalEntry.total_credit,
-          total_credit: originalEntry.total_debit,
-          created_by: user?.id,
-        })
-        .select("id")
-        .single()
-
-      if (reversalEntryError || !reversalEntry) throw reversalEntryError || new Error("Failed to create reversal journal entry")
-
-      const reversalLines = originalLines.map((line, index) => ({
-        journal_entry_id: reversalEntry.id,
-        account_id: line.account_id,
-        line_number: index + 1,
-        line_description: `Reversal - ${line.line_description || originalEntry.entry_number}`,
-        debit_amount: Number(line.credit_amount) || 0,
-        credit_amount: Number(line.debit_amount) || 0,
-        cost_center_id: line.cost_center_id || null,
-        asset_id: line.asset_id || null,
-        employee_id: line.employee_id || null,
-      }))
-
-      const { error: reversalLinesError } = await supabase
-        .from("journal_entry_lines")
-        .insert(reversalLines)
-
-      if (reversalLinesError) {
-        await supabase.from("journal_entries").delete().eq("id", reversalEntry.id)
-        throw reversalLinesError
-      }
-
-      const { error: postReversalError } = await supabase
-        .from("journal_entries")
-        .update({
-          status: "posted",
-          posted_by: user?.id,
-          posted_at: new Date().toISOString(),
-        })
-        .eq("id", reversalEntry.id)
-        .eq("company_id", originalEntry.company_id)
-
-      if (postReversalError) throw postReversalError
-
-      const { data, error } = await supabase
-        .from("journal_entries")
-        .update({
-          status: "reversed",
-          reversal_entry_id: reversalEntry.id,
-          reversed_by: user?.id,
-          reversed_at: new Date().toISOString(),
-          workflow_notes: reason || null,
-        })
-        .eq("id", entryId)
-        .eq("company_id", originalEntry.company_id)
-        .select()
-        .single()
-      
       if (error) throw error
       return data
     },

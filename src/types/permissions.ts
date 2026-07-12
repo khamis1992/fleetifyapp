@@ -447,6 +447,13 @@ export const PERMISSIONS: Permission[] = [
     level: 'write'
   },
   {
+    id: 'finance.payment.approve',
+    name: 'Approve Payment',
+    description: 'Approve pending payments through the atomic financial workflow',
+    category: PERMISSION_CATEGORIES[1],
+    level: 'admin'
+  },
+  {
     id: 'finance.payment.edit_amount',
     name: 'Edit Payment Amount',
     description: 'Edit payment amount after registration',

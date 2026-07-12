@@ -469,7 +469,7 @@ const PaymentRegistration = () => {
       const today = new Date().toISOString().split('T')[0];
 
       for (const payment of paymentsToSave) {
-        const createdPayment = await createPayment.mutateAsync({
+        await createPayment.mutateAsync({
           contract_id: payment.contractId,
           customer_id: payment.customerId,
           amount: payment.amountPaid + payment.lateFeeAmount,
@@ -480,11 +480,7 @@ const PaymentRegistration = () => {
           transaction_type: 'customer_payment',
           payment_status: 'completed',
           currency: 'QAR',
-        });
-
-        const { error: updatePaymentDetailsError } = await supabase
-          .from('payments')
-          .update({
+          registrationMetadata: {
             monthly_amount: payment.monthlyPayment,
             amount_paid: payment.amountPaid,
             remaining_amount: payment.remainingAmount,
@@ -492,11 +488,8 @@ const PaymentRegistration = () => {
             due_date: `${payment.paymentMonth}-01`,
             days_overdue: payment.daysOverdue,
             late_fee_amount: payment.lateFeeAmount,
-          })
-          .eq('id', createdPayment.id)
-          .eq('company_id', companyId);
-
-        if (updatePaymentDetailsError) throw updatePaymentDetailsError;
+          },
+        });
       }
 
       toast.success(`تم حفظ ${paymentsToSave.length} دفعة بنجاح!`);

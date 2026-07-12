@@ -9,11 +9,6 @@ import {
   enhancedPaymentSchema,
   paymentJournalPreviewSchema 
 } from '@/schemas/payment.schema';
-import { 
-  createBankTransactionFromPayment, 
-  reverseBankTransactionForPayment 
-} from '@/utils/bankTransactionHelper';
-import { calculateInvoiceTotalsAfterPaymentReversal } from '@/utils/invoiceHelpers';
 import { assertFinancialPeriodOpen } from '@/services/financialControls';
 import { useFinanceAccessGuard } from '@/hooks/finance/useFinanceAccessGuard';
 
@@ -23,6 +18,16 @@ export interface PaymentOperationsOptions {
   requireApproval?: boolean;
   enableNotifications?: boolean;
   validateBalance?: boolean;
+}
+
+export interface PaymentRegistrationMetadata {
+  monthly_amount?: number;
+  amount_paid?: number;
+  remaining_amount?: number;
+  payment_month?: string;
+  due_date?: string;
+  days_overdue?: number;
+  late_fee_amount?: number;
 }
 
 interface Payment {
@@ -62,22 +67,6 @@ const getSupabaseErrorMessage = (error: unknown): string => {
   return String(error);
 };
 
-const isMissingPaymentCancellationRpc = (error: unknown): boolean => {
-  const supabaseError = error as { code?: string } | null;
-  const message = getSupabaseErrorMessage(error).toLowerCase();
-
-  return supabaseError?.code === 'PGRST202'
-    || message.includes('could not find the function')
-    || message.includes('function public.cancel_payment_with_reversal')
-    || message.includes('schema cache');
-};
-
-const isCompletedPaymentStatus = (status?: string | null): boolean => {
-  return ['completed', 'paid', 'cleared', 'confirmed', 'approved'].includes(
-    String(status || '').toLowerCase()
-  );
-};
-
 const getPaymentCancellationFailureMessage = (error: unknown): string => {
   const message = getSupabaseErrorMessage(error);
   const normalized = message.toLowerCase();
@@ -106,7 +95,6 @@ export const usePaymentOperations = (options: PaymentOperationsOptions = {}) => 
 
   const {
     autoCreateJournalEntry = true,
-    autoUpdateBankBalance = true,
     requireApproval = false,
     enableNotifications = true,
     validateBalance = true
@@ -125,7 +113,10 @@ export const usePaymentOperations = (options: PaymentOperationsOptions = {}) => 
 
   // Create payment operation
   const createPayment = useMutation({
-    mutationFn: async (data: EnhancedPaymentData & { idempotencyKey?: string }) => {
+    mutationFn: async (data: EnhancedPaymentData & {
+      idempotencyKey?: string;
+      registrationMetadata?: PaymentRegistrationMetadata;
+    }) => {
       console.log('💰 [usePaymentOperations] Starting payment creation:', data);
 
       if (!financeAccess.can('finance.payment.create')) {
@@ -175,31 +166,7 @@ export const usePaymentOperations = (options: PaymentOperationsOptions = {}) => 
 
         if (existingPayment) {
           console.log('♻️ [usePaymentOperations] Idempotency key found, returning existing payment:', existingPayment.payment_number);
-          const needsRelink =
-            (validatedData.contract_id && existingPayment.contract_id !== validatedData.contract_id) ||
-            (validatedData.customer_id && existingPayment.customer_id !== validatedData.customer_id) ||
-            (validatedData.invoice_id && existingPayment.invoice_id !== validatedData.invoice_id);
-
-          if (needsRelink) {
-            const { data: relinkedPayment, error: relinkError } = await supabase
-              .from('payments')
-              .update({
-                contract_id: validatedData.contract_id ?? existingPayment.contract_id,
-                customer_id: validatedData.customer_id ?? existingPayment.customer_id,
-                invoice_id: validatedData.invoice_id ?? existingPayment.invoice_id,
-                updated_at: new Date().toISOString(),
-              })
-              .eq('id', existingPayment.id)
-              .eq('company_id', companyId)
-              .select()
-              .single();
-
-            if (!relinkError && relinkedPayment) {
-              return await ensurePaymentJournalOrThrow(relinkedPayment);
-            }
-          }
-
-          return await ensurePaymentJournalOrThrow(existingPayment); // Return existing payment instead of creating duplicate
+          return await ensurePaymentJournalOrThrow(existingPayment);
         }
         if (idempotencyError) {
           console.warn('⚠️ [usePaymentOperations] Idempotency check query failed (non-fatal):', idempotencyError.message);
@@ -236,31 +203,6 @@ export const usePaymentOperations = (options: PaymentOperationsOptions = {}) => 
       if (!duplicateCheckError && potentialDuplicates && potentialDuplicates.length > 0) {
         if (data.idempotencyKey) {
           const duplicate = potentialDuplicates[0];
-          const needsRelink =
-            (validatedData.contract_id && duplicate.contract_id !== validatedData.contract_id) ||
-            (validatedData.customer_id && duplicate.customer_id !== validatedData.customer_id) ||
-            (validatedData.invoice_id && duplicate.invoice_id !== validatedData.invoice_id);
-
-          if (needsRelink) {
-            const { data: relinkedPayment, error: relinkError } = await supabase
-              .from('payments')
-              .update({
-                contract_id: validatedData.contract_id ?? duplicate.contract_id,
-                customer_id: validatedData.customer_id ?? duplicate.customer_id,
-                invoice_id: validatedData.invoice_id ?? duplicate.invoice_id,
-                reference_number: data.idempotencyKey ?? validatedData.reference_number ?? duplicate.reference_number,
-                updated_at: new Date().toISOString(),
-              })
-              .eq('id', duplicate.id)
-              .eq('company_id', companyId)
-              .select()
-              .single();
-
-            if (!relinkError && relinkedPayment) {
-              return await ensurePaymentJournalOrThrow(relinkedPayment);
-            }
-          }
-
           return await ensurePaymentJournalOrThrow(duplicate);
         }
 
@@ -568,14 +510,48 @@ export const usePaymentOperations = (options: PaymentOperationsOptions = {}) => 
           console.warn('⚠️ [usePaymentOperations] Retrying payment insert with regenerated number:', paymentNumber);
         }
 
-        const insertResult = await supabase
-          .from('payments')
-          .insert(paymentData)
-          .select()
-          .single();
+        const { data: paymentId, error: atomicError } = await (supabase as any).rpc(
+          'create_payment_atomic',
+          {
+            p_company_id: companyId,
+            p_customer_id: paymentData.customer_id ?? null,
+            p_contract_id: paymentData.contract_id ?? null,
+            p_invoice_id: paymentData.invoice_id ?? null,
+            p_payment_number: paymentData.payment_number ?? null,
+            p_payment_date: paymentData.payment_date,
+            p_amount: paymentData.amount,
+            p_payment_method: paymentData.payment_method,
+            p_payment_type: paymentData.payment_type,
+            p_transaction_type: paymentData.transaction_type,
+            p_reference_number: paymentData.reference_number ?? null,
+            p_agreement_number: null,
+            p_check_number: paymentData.check_number ?? null,
+            p_bank_id: paymentData.bank_id ?? null,
+            p_notes: paymentData.notes ?? null,
+            p_created_by: paymentData.created_by ?? null,
+            p_idempotency_key: data.idempotencyKey ?? null,
+            p_account_id: paymentData.account_id ?? null,
+            p_cost_center_id: paymentData.cost_center_id ?? null,
+            p_currency: paymentData.currency ?? 'QAR',
+            p_initial_status: requireApproval ? 'pending' : 'completed',
+            p_registration_metadata: data.registrationMetadata ?? {},
+          }
+        );
 
-        insertedPayment = insertResult.data;
-        error = insertResult.error;
+        if (atomicError) {
+          insertedPayment = null;
+          error = atomicError;
+        } else {
+          const { data: createdPayment, error: fetchCreatedError } = await supabase
+            .from('payments')
+            .select('*')
+            .eq('id', paymentId)
+            .eq('company_id', companyId)
+            .single();
+
+          insertedPayment = createdPayment;
+          error = fetchCreatedError;
+        }
 
         if (!error) {
           break;
@@ -591,53 +567,8 @@ export const usePaymentOperations = (options: PaymentOperationsOptions = {}) => 
             break;
           }
 
-          // Second try: find a CANCELLED duplicate and reactivate it
-          // The database constraint unique_payment_per_invoice_date_amount blocks
-          // inserts even when the existing row is cancelled. Reactivate instead.
-          let cancelledQuery = supabase
-            .from('payments')
-            .select('*')
-            .eq('company_id', companyId)
-            .eq('amount', paymentData.amount)
-            .eq('payment_date', paymentData.payment_date)
-            .eq('payment_status', 'cancelled')
-            .limit(1);
-
-          if (paymentData.invoice_id) {
-            cancelledQuery = cancelledQuery.eq('invoice_id', paymentData.invoice_id);
-          }
-          if (paymentData.contract_id) {
-            cancelledQuery = cancelledQuery.eq('contract_id', paymentData.contract_id);
-          }
-
-          const { data: cancelledMatches } = await cancelledQuery;
-          const cancelledPayment = cancelledMatches?.[0];
-
-          if (cancelledPayment) {
-            console.log('♻️ [usePaymentOperations] Reactivating cancelled duplicate payment:', cancelledPayment.payment_number);
-            const { data: reactivatedPayment, error: reactivateError } = await supabase
-              .from('payments')
-              .update({
-                ...paymentData,
-                payment_status: 'completed',
-                updated_at: new Date().toISOString(),
-                processing_notes: [
-                  cancelledPayment.processing_notes,
-                  'تمت إعادة تفعيل الدفعة الملغاة أثناء اعتماد ملف Excel بدلاً من إنشاء سجل مكرر.',
-                ].filter(Boolean).join('\n'),
-              })
-              .eq('id', cancelledPayment.id)
-              .eq('company_id', companyId)
-              .select()
-              .single();
-
-            if (!reactivateError) {
-              insertedPayment = reactivatedPayment;
-              error = null;
-              break;
-            }
-            console.warn('⚠️ [usePaymentOperations] Reactivating cancelled payment failed, will retry:', reactivateError?.message);
-          }
+          // Cancelled payments are immutable audit records. A retry must create a
+          // new payment number and idempotency key rather than reactivate history.
         }
 
         if (error.code !== '23505' || hasManualPaymentNumber) {
@@ -686,71 +617,18 @@ export const usePaymentOperations = (options: PaymentOperationsOptions = {}) => 
 
       console.log('✅ [usePaymentOperations] Payment created successfully:', insertedPayment);
 
-      if (autoCreateJournalEntry && insertedPayment.payment_status === 'completed') {
-        try {
-          const journalEntryId = await createJournalEntry(insertedPayment);
-          if (journalEntryId && !insertedPayment.journal_entry_id) {
-            insertedPayment = { ...insertedPayment, journal_entry_id: journalEntryId };
-          }
-        } catch (journalError) {
-          console.error('Payment journal entry creation failed:', journalError);
-
-          try {
-            await supabase
-              .from('payments')
-              .update({
-                payment_status: 'cancelled',
-                processing_status: 'journal_failed',
-                processing_notes: [
-                  insertedPayment.processing_notes,
-                  `Payment cancelled automatically because journal creation failed: ${
-                    journalError instanceof Error ? journalError.message : String(journalError)
-                  }`,
-                ].filter(Boolean).join('\n'),
-                updated_at: new Date().toISOString(),
-              })
-              .eq('id', insertedPayment.id)
-              .eq('company_id', companyId);
-          } catch (cleanupError) {
-            console.error('Failed to cancel payment after journal creation failure:', cleanupError);
-          }
-
-          const journalMessage = journalError instanceof Error ? journalError.message : String(journalError);
-          throw new Error(`Payment was not completed because the accounting journal entry failed: ${journalMessage}`);
-        }
+      if (insertedPayment.payment_status === 'completed' && !insertedPayment.journal_entry_id) {
+        throw new Error('تم إيقاف العملية لأن قاعدة البيانات لم تُرجع القيد المحاسبي الذري للدفعة');
       }
 
-      // Secondary post-creation operations (do not block the accounting-safe payment)
+      // Notifications are non-financial and can safely run after the atomic commit.
       try {
-        // إنشاء حركة بنكية تلقائياً
-        if (autoUpdateBankBalance && insertedPayment.payment_status === 'completed' && insertedPayment.bank_id) {
-          const bankResult = await createBankTransactionFromPayment({
-            id: insertedPayment.id,
-            company_id: insertedPayment.company_id,
-            amount: insertedPayment.amount,
-            payment_date: insertedPayment.payment_date,
-            payment_method: insertedPayment.payment_method,
-            payment_number: insertedPayment.payment_number,
-            reference_number: insertedPayment.reference_number,
-            check_number: insertedPayment.check_number,
-            transaction_type: insertedPayment.transaction_type,
-            bank_id: insertedPayment.bank_id,
-            notes: insertedPayment.notes
-          }, user?.id);
-          
-          if (!bankResult.success) {
-            console.warn('⚠️ Bank transaction creation failed:', bankResult.error);
-          } else {
-            console.log('✅ Bank transaction created for payment');
-          }
-        }
-        
         if (enableNotifications) {
           await sendPaymentNotifications(insertedPayment);
         }
       } catch (postError) {
         console.warn('⚠️ Post-creation operations failed:', postError);
-        // Do not throw here; the payment already has its accounting journal.
+        // The payment, journal, allocation, and bank movement already committed together.
       }
 
       return insertedPayment;
@@ -804,13 +682,22 @@ export const usePaymentOperations = (options: PaymentOperationsOptions = {}) => 
         throw new Error('ليس لديك صلاحية تغيير حساب البنك للدفعة');
       }
 
-      // Check if payment can be updated
-      if (existingPayment.payment_status === 'completed' && !canApprovePayments) {
-        throw new Error('لا يمكن تعديل دفعة مكتملة بدون صلاحية الموافقة');
+      const currentStatus = String(existingPayment.payment_status || '').toLowerCase();
+      if (['completed', 'paid', 'success', 'succeeded', 'cancelled', 'canceled', 'voided'].includes(currentStatus)) {
+        throw new Error('الدفعة المكتملة سجل مالي ثابت؛ استخدم إعادة التخصيص أو الإلغاء ثم أنشئ دفعة جديدة');
+      }
+      if (data.payment_status !== undefined && data.payment_status !== existingPayment.payment_status) {
+        throw new Error('تغيير حالة الدفعة يتم فقط من خلال أوامر الاعتماد أو الإلغاء المعتمدة');
+      }
+      if (
+        (data.invoice_id !== undefined && data.invoice_id !== existingPayment.invoice_id)
+        || (data.contract_id !== undefined && data.contract_id !== existingPayment.contract_id)
+      ) {
+        throw new Error('ربط الدفعة بالفاتورة أو العقد يتم فقط من شاشة تخصيص الدفعات');
       }
 
       // Prepare update data - only include valid database fields
-      const updateData = {
+      const updateData = Object.fromEntries(Object.entries({
         amount: data.amount,
         payment_number: data.payment_number,
         payment_date: data.payment_date,
@@ -819,23 +706,20 @@ export const usePaymentOperations = (options: PaymentOperationsOptions = {}) => 
         check_number: data.check_number,
         currency: data.currency,
         notes: data.notes,
-        payment_type: data.type,
-        payment_status: data.payment_status,
+        payment_type: data.payment_method,
+        transaction_type: data.type === 'payment' ? 'payment' : data.type ? 'receipt' : undefined,
         customer_id: data.customer_id,
         vendor_id: data.vendor_id,
-        invoice_id: data.invoice_id,
-        contract_id: data.contract_id,
         cost_center_id: data.cost_center_id,
         bank_id: data.bank_id,
         account_id: data.account_id,
         updated_at: new Date().toISOString(),
-        updated_by: user?.id,
-      };
+      }).filter(([, value]) => value !== undefined));
 
       // Update payment
       const { data: updatedPayment, error } = await supabase
         .from('payments')
-        .update(updateData)
+        .update(updateData as any)
         .eq('id', paymentId)
         .eq('company_id', companyId)
         .select()
@@ -870,6 +754,9 @@ export const usePaymentOperations = (options: PaymentOperationsOptions = {}) => 
       if (!canApprovePayments) {
         throw new Error('ليس لديك صلاحية الموافقة على الدفعات');
       }
+      if (!companyId) {
+        throw new Error('لم يتم تحديد الشركة');
+      }
 
       // Get payment details
       const { data: payment, error: fetchError } = await supabase
@@ -887,29 +774,33 @@ export const usePaymentOperations = (options: PaymentOperationsOptions = {}) => 
         throw new Error('الدفعة ليست في انتظار الموافقة');
       }
 
-      // Approve payment
-      const { data: approvedPayment, error } = await supabase
-        .from('payments')
-        .update({
-          payment_status: 'completed',
-          processing_notes: [
-            payment.processing_notes,
-            `Payment approved by ${user?.id || 'system'} at ${new Date().toISOString()}`,
-          ].filter(Boolean).join('\n'),
-        })
-        .eq('id', paymentId)
-        .eq('company_id', companyId)
-        .select()
-        .single();
-
-      if (error) {
-        console.error('❌ [usePaymentOperations] Approval error:', error);
-        throw error;
+      const approvalDecision = financeAccess.checkSegregationOfDuties({
+        action: 'finance.payment.approve',
+        actorId: user?.id,
+        creatorId: payment.created_by,
+      });
+      if (!approvalDecision.allowed) {
+        throw new Error(approvalDecision.reason || 'يجب أن يعتمد الدفعة مستخدم مختلف عن منشئها');
       }
 
-      // Create journal entry after approval
-      if (autoCreateJournalEntry) {
-        await createJournalEntry(approvedPayment);
+      const { error: approvalError } = await (supabase as any).rpc('approve_payment_atomic', {
+        p_payment_id: paymentId,
+        p_company_id: companyId,
+        p_actor_id: user?.id || null,
+      });
+      if (approvalError) {
+        console.error('❌ [usePaymentOperations] Atomic approval error:', approvalError);
+        throw approvalError;
+      }
+
+      const { data: approvedPayment, error: fetchApprovedError } = await supabase
+        .from('payments')
+        .select('*')
+        .eq('id', paymentId)
+        .eq('company_id', companyId)
+        .single();
+      if (fetchApprovedError || !approvedPayment) {
+        throw fetchApprovedError || new Error('تعذر تحميل الدفعة بعد اعتمادها');
       }
 
       console.log('✅ [usePaymentOperations] Payment approved successfully:', approvedPayment);
@@ -969,32 +860,20 @@ export const usePaymentOperations = (options: PaymentOperationsOptions = {}) => 
         throw new Error(segregationDecision.reason || 'تم منع العملية بسبب قاعدة فصل المهام');
       }
 
-      const cancellationStamp = new Date().toISOString();
-      const cancellationNote = reason
-        ? `تم إلغاء الدفعة بتاريخ ${cancellationStamp}. السبب: ${reason}`
-        : `تم إلغاء الدفعة بتاريخ ${cancellationStamp}.`;
+      const cancellationReason = reason?.trim();
+      if (!cancellationReason) {
+        throw new Error('سبب إلغاء الدفعة مطلوب لحفظ سجل التدقيق المالي');
+      }
 
       const { data: atomicCancelResult, error: atomicCancelError } = await (supabase as any)
         .rpc('cancel_payment_with_reversal', {
           p_payment_id: paymentId,
           p_company_id: companyId,
-          p_reason: reason || cancellationNote,
+          p_reason: cancellationReason,
           p_actor_id: user?.id || null,
         });
 
-      if (!atomicCancelError) {
-        console.log('[usePaymentOperations] Payment cancelled atomically:', atomicCancelResult);
-        return {
-          ...existingPayment,
-          id: paymentId,
-          payment_status: 'cancelled',
-          atomic_cancel_result: atomicCancelResult,
-        } as any;
-      }
-
-      const atomicCancelUnavailable = isMissingPaymentCancellationRpc(atomicCancelError);
-
-      if (!atomicCancelUnavailable) {
+      if (atomicCancelError) {
         const readableMessage = getSupabaseErrorMessage(atomicCancelError);
         console.error('[usePaymentOperations] Atomic cancellation failed:', {
           message: readableMessage,
@@ -1003,168 +882,13 @@ export const usePaymentOperations = (options: PaymentOperationsOptions = {}) => 
         throw new Error(getPaymentCancellationFailureMessage(atomicCancelError));
       }
 
-      if (isCompletedPaymentStatus(existingPayment.payment_status)) {
-        console.error('[usePaymentOperations] Atomic cancellation RPC is unavailable for a completed payment:', {
-          paymentId,
-          paymentStatus: existingPayment.payment_status,
-          error: atomicCancelError,
-        });
-        throw new Error('تعذر إلغاء الدفعة المكتملة لأن دالة الإلغاء الذري غير متاحة حاليًا. تم تجهيز إصلاح قاعدة البيانات، وبعد نشره سيعمل زر الإلغاء مباشرة.');
-      }
-
-      console.warn('[usePaymentOperations] Atomic cancellation RPC is unavailable; using guarded client-side cancellation path.');
-
-      if (existingPayment.invoice_id) {
-        const { data: linkedInvoice, error: linkedInvoiceError } = await supabase
-          .from('invoices')
-          .select(`
-            id,
-            invoice_date,
-            due_date,
-            contracts:contract_id (
-              start_date
-            )
-          `)
-          .eq('id', existingPayment.invoice_id)
-          .eq('company_id', companyId)
-          .single();
-
-        if (linkedInvoiceError) {
-          console.error('❌ [usePaymentOperations] Fetch linked invoice before cancel failed:', linkedInvoiceError);
-          throw new Error('تعذر جلب الفاتورة المرتبطة قبل إلغاء الدفعة');
-        }
-
-        const contractStartDate = linkedInvoice?.contracts?.start_date;
-        const invoiceDate = linkedInvoice?.invoice_date;
-        const dueDate = linkedInvoice?.due_date;
-
-        if (contractStartDate && (
-          (invoiceDate && invoiceDate < contractStartDate) ||
-          (dueDate && dueDate < contractStartDate)
-        )) {
-          const { error: repairInvoiceDateError } = await supabase
-            .from('invoices')
-            .update({
-              invoice_date: invoiceDate && invoiceDate < contractStartDate ? contractStartDate : invoiceDate,
-              due_date: dueDate && dueDate < contractStartDate ? contractStartDate : dueDate,
-              updated_at: new Date().toISOString(),
-            })
-            .eq('id', existingPayment.invoice_id)
-            .eq('company_id', companyId);
-
-          if (repairInvoiceDateError) {
-            console.error('❌ [usePaymentOperations] Repair invoice dates before cancel failed:', repairInvoiceDateError);
-            throw new Error('تعذر تصحيح تاريخ الفاتورة القديمة قبل إلغاء الدفعة');
-          }
-        }
-      }
-
-      let reversalEntryId: string | null = null;
-      try {
-        reversalEntryId = await reverseJournalEntry(paymentId);
-      } catch (journalError) {
-        console.error('[usePaymentOperations] Journal reversal before cancellation failed:', journalError);
-        throw new Error('تعذر إنشاء قيد عكسي محاسبي، لذلك لم يتم إلغاء الدفعة.');
-      }
-
-      // Update payment status. The payments table does not currently expose
-      // cancelled_at/cancelled_by columns, so keep the audit note in existing fields.
-      const { data: cancelledPayment, error } = await supabase
-        .from('payments')
-        .update({
-          payment_status: 'cancelled',
-          updated_at: cancellationStamp,
-          processing_notes: [
-            existingPayment.processing_notes,
-            cancellationNote,
-            reversalEntryId ? `Accounting reversal entry: ${reversalEntryId}` : null,
-          ].filter(Boolean).join('\n'),
-        })
-        .eq('id', paymentId)
-        .eq('company_id', companyId)
-        .select()
-        .single();
-
-      if (error) {
-        console.error('❌ [usePaymentOperations] Cancellation error:', error);
-        throw error;
-      }
-
-      // If linked to invoice, recalculate invoice totals from active payments.
-      // This is safer than subtracting once because previous failed attempts may
-      // have already adjusted the invoice while leaving the payment completed.
-      if (existingPayment.invoice_id) {
-        console.log('📄 [usePaymentOperations] Recalculating invoice after cancellation:', existingPayment.invoice_id);
-
-        const { data: invoice, error: invoiceError } = await supabase
-          .from('invoices')
-          .select('id, total_amount')
-          .eq('id', existingPayment.invoice_id)
-          .eq('company_id', companyId)
-          .single();
-
-        if (invoiceError || !invoice) {
-          console.error('❌ [usePaymentOperations] Fetch invoice after cancel failed:', invoiceError);
-          throw new Error('تم إلغاء الدفعة، لكن تعذر جلب بيانات الفاتورة لتحديثها');
-        }
-
-        const { data: activePayments, error: activePaymentsError } = await supabase
-          .from('payments')
-          .select('amount')
-          .eq('invoice_id', existingPayment.invoice_id)
-          .eq('company_id', companyId)
-          .eq('payment_status', 'completed');
-
-        if (activePaymentsError) {
-          console.error('❌ [usePaymentOperations] Fetch active invoice payments failed:', activePaymentsError);
-          throw new Error('تم إلغاء الدفعة، لكن تعذر إعادة حساب مدفوعات الفاتورة');
-        }
-
-        const paidAmount = (activePayments || []).reduce(
-          (sum, payment) => sum + (Number(payment.amount) || 0),
-          0
-        );
-        const totalAmount = Number(invoice.total_amount) || 0;
-        const balanceDue = Math.max(totalAmount - paidAmount, 0);
-        const paymentStatus = paidAmount <= 0 ? 'unpaid' : balanceDue <= 0 ? 'paid' : 'partial';
-
-        const { error: updateInvoiceError } = await supabase
-          .from('invoices')
-          .update({
-            paid_amount: paidAmount,
-            balance_due: balanceDue,
-            payment_status: paymentStatus,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('id', invoice.id)
-          .eq('company_id', companyId);
-
-        if (updateInvoiceError) {
-          console.error('❌ [usePaymentOperations] Update invoice after cancel failed:', updateInvoiceError);
-          throw new Error('تم إلغاء الدفعة، لكن فشل تحديث الفاتورة بعد الإلغاء');
-        }
-
-        console.log('✅ [usePaymentOperations] Invoice recalculated successfully', {
-          paidAmount,
-          balanceDue,
-          paymentStatus,
-        });
-      } else {
-        console.log('ℹ️ [usePaymentOperations] Payment has no invoice_id, skipping invoice update');
-      }
-
-      // عكس حركة البنك إذا وجدت
-      if (autoUpdateBankBalance) {
-        const reversalResult = await reverseBankTransactionForPayment(paymentId, user?.id);
-        if (!reversalResult.success) {
-          console.warn('⚠️ Bank transaction reversal failed:', reversalResult.error);
-        } else {
-          console.log('✅ Bank transaction reversed for cancelled payment');
-        }
-      }
-
-      console.log('✅ [usePaymentOperations] Payment cancelled successfully:', cancelledPayment);
-      return cancelledPayment;
+      console.log('[usePaymentOperations] Payment cancelled atomically:', atomicCancelResult);
+      return {
+        ...existingPayment,
+        id: paymentId,
+        payment_status: 'cancelled',
+        atomic_cancel_result: atomicCancelResult,
+      } as any;
     },
     onSuccess: (payment) => {
       queryClient.invalidateQueries({ queryKey: ['payments'] });
@@ -1413,158 +1137,6 @@ export const usePaymentOperations = (options: PaymentOperationsOptions = {}) => 
       throw error;
     }
   };
-  const reverseJournalEntry = async (paymentId: string): Promise<string | null> => {
-    try {
-      console.log('Reversing journal entry for payment:', paymentId);
-
-      if (!companyId) {
-        throw new Error('Missing company for journal reversal');
-      }
-
-      const { data: payment, error: paymentError } = await supabase
-        .from('payments')
-        .select('id,payment_number,journal_entry_id,payment_date')
-        .eq('id', paymentId)
-        .eq('company_id', companyId)
-        .single();
-
-      if (paymentError || !payment) {
-        throw paymentError || new Error('Payment not found for journal reversal');
-      }
-
-      let journalEntryId = payment.journal_entry_id as string | null;
-
-      if (!journalEntryId) {
-        const { data: referencedJournalEntry, error: referenceError } = await supabase
-          .from('journal_entries')
-          .select('id')
-          .eq('company_id', companyId)
-          .eq('reference_type', 'payment')
-          .eq('reference_id', paymentId)
-          .maybeSingle();
-
-        if (referenceError) {
-          throw referenceError;
-        }
-
-        journalEntryId = referencedJournalEntry?.id || null;
-      }
-
-      if (!journalEntryId) {
-        console.warn('No journal entry found to reverse for payment:', paymentId);
-        return null;
-      }
-
-      const { data: originalEntry, error: originalEntryError } = await supabase
-        .from('journal_entries')
-        .select('id,entry_number,entry_date,status,total_debit,total_credit,reversal_entry_id')
-        .eq('id', journalEntryId)
-        .eq('company_id', companyId)
-        .single();
-
-      if (originalEntryError || !originalEntry) {
-        throw originalEntryError || new Error('Original journal entry not found');
-      }
-
-      if (originalEntry.reversal_entry_id) {
-        return originalEntry.reversal_entry_id;
-      }
-
-      const { data: originalLines, error: linesError } = await supabase
-        .from('journal_entry_lines')
-        .select('account_id,line_description,debit_amount,credit_amount,line_number,cost_center_id,asset_id,employee_id')
-        .eq('journal_entry_id', journalEntryId)
-        .order('line_number', { ascending: true });
-
-      if (linesError) {
-        throw linesError;
-      }
-
-      if (!originalLines || originalLines.length === 0) {
-        throw new Error('Original journal entry has no lines to reverse');
-      }
-
-      const reversalEntryNumber = `REV-${originalEntry.entry_number}-${Date.now().toString().slice(-6)}`;
-      const reversalDate = new Date().toISOString().split('T')[0];
-
-      const { data: reversalEntry, error: reversalEntryError } = await supabase
-        .from('journal_entries')
-        .insert({
-          company_id: companyId,
-          entry_number: reversalEntryNumber,
-          entry_date: reversalDate,
-          status: 'draft',
-          description: `Reversal of payment journal entry ${originalEntry.entry_number}`,
-          reference_type: 'payment_reversal',
-          reference_id: paymentId,
-          total_debit: originalEntry.total_credit,
-          total_credit: originalEntry.total_debit,
-          created_by: user?.id,
-        })
-        .select('id')
-        .single();
-
-      if (reversalEntryError || !reversalEntry) {
-        throw reversalEntryError || new Error('Failed to create reversal journal entry');
-      }
-
-      const reversalLines = originalLines.map((line: any, index: number) => ({
-        journal_entry_id: reversalEntry.id,
-        account_id: line.account_id,
-        line_number: index + 1,
-        line_description: `Reversal - ${line.line_description || originalEntry.entry_number}`,
-        debit_amount: Number(line.credit_amount) || 0,
-        credit_amount: Number(line.debit_amount) || 0,
-        cost_center_id: line.cost_center_id || null,
-        asset_id: line.asset_id || null,
-        employee_id: line.employee_id || null,
-      }));
-
-      const { error: reversalLinesError } = await supabase
-        .from('journal_entry_lines')
-        .insert(reversalLines);
-
-      if (reversalLinesError) {
-        await supabase.from('journal_entries').delete().eq('id', reversalEntry.id);
-        throw reversalLinesError;
-      }
-
-      const { error: postReversalError } = await supabase
-        .from('journal_entries')
-        .update({
-          status: 'posted',
-          posted_by: user?.id,
-          posted_at: new Date().toISOString(),
-        })
-        .eq('id', reversalEntry.id)
-        .eq('company_id', companyId);
-
-      if (postReversalError) {
-        throw postReversalError;
-      }
-
-      const { error: originalUpdateError } = await supabase
-        .from('journal_entries')
-        .update({
-          status: 'reversed',
-          reversal_entry_id: reversalEntry.id,
-          reversed_at: new Date().toISOString(),
-          reversed_by: user?.id,
-        })
-        .eq('id', originalEntry.id)
-        .eq('company_id', companyId);
-
-      if (originalUpdateError) {
-        throw originalUpdateError;
-      }
-
-      return reversalEntry.id;
-    } catch (error) {
-      console.error('Error in reverseJournalEntry:', error);
-      throw error;
-    }
-  };
-
   const sendPaymentNotifications = async (payment: Payment) => {
     try {
       console.log('📧 Sending payment notifications for:', payment.id);

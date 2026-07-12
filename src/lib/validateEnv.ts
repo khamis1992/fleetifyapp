@@ -8,7 +8,6 @@
 interface EnvConfig {
   VITE_SUPABASE_URL: string;
   VITE_SUPABASE_ANON_KEY: string;
-  VITE_LONGCAT_API_KEY?: string; // Optional
 }
 
 class EnvironmentError extends Error {
@@ -20,7 +19,6 @@ class EnvironmentError extends Error {
 
 // Fallback values for mobile app (Capacitor) where env vars may not be available
 const FALLBACK_SUPABASE_URL = "https://qwhunliohlkkahbspfiu.supabase.co";
-const FALLBACK_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF3aHVubGlvaGxra2FoYnNwZml1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM0MTMwODYsImV4cCI6MjA2ODk4OTA4Nn0.x5o6IpzWcYo7a6jRq2J8V0hKyNeRKZCEQIuXTPADQqs";
 
 /**
  * Validates all required environment variables
@@ -29,9 +27,9 @@ const FALLBACK_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3M
 export function validateEnvironment(): EnvConfig {
   const errors: string[] = [];
 
-  // Required variables - use fallbacks for mobile
+  // The public URL may use a project fallback, but keys must be supplied at build time.
   const VITE_SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || FALLBACK_SUPABASE_URL;
-  const VITE_SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || FALLBACK_SUPABASE_ANON_KEY;
+  const VITE_SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 
   // Only error if both env var and fallback are missing (should never happen now)
   if (!VITE_SUPABASE_URL) {
@@ -72,7 +70,6 @@ export function validateEnvironment(): EnvConfig {
   return {
     VITE_SUPABASE_URL,
     VITE_SUPABASE_ANON_KEY,
-    VITE_LONGCAT_API_KEY: import.meta.env.VITE_LONGCAT_API_KEY,
   };
 }
 
@@ -84,8 +81,7 @@ export function validateEnvironment(): EnvConfig {
 export function getEnvConfig(): EnvConfig {
   return {
     VITE_SUPABASE_URL: import.meta.env.VITE_SUPABASE_URL || FALLBACK_SUPABASE_URL,
-    VITE_SUPABASE_ANON_KEY: import.meta.env.VITE_SUPABASE_ANON_KEY || FALLBACK_SUPABASE_ANON_KEY,
-    VITE_LONGCAT_API_KEY: import.meta.env.VITE_LONGCAT_API_KEY,
+    VITE_SUPABASE_ANON_KEY: import.meta.env.VITE_SUPABASE_ANON_KEY || '',
   };
 }
 

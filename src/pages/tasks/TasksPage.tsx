@@ -39,6 +39,7 @@ import { UserGoals } from '@/components/tasks/UserGoals';
 import { QuickNotes } from '@/components/tasks/QuickNotes';
 import { MyTasksDashboard } from '@/components/tasks/MyTasksDashboard';
 import { VerificationTasksList } from '@/components/tasks/VerificationTasksList';
+import { SystemAuditAgentDashboard } from '@/components/tasks/SystemAuditAgentDashboard';
 import {
   useTasks,
   useDeleteTask,
@@ -73,12 +74,13 @@ import {
   RefreshCw,
   SlidersHorizontal,
   Sparkles,
+  ShieldCheck,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
 
 type ViewMode = 'kanban' | 'list' | 'grid';
-type TabType = 'all' | 'my-tasks' | 'reminders' | 'goals' | 'notes' | 'verification';
+type TabType = 'all' | 'my-tasks' | 'reminders' | 'goals' | 'notes' | 'verification' | 'system-audit';
 
 const taskTheme = systemColorPattern.colors;
 
@@ -205,6 +207,7 @@ export default function TasksPage() {
     { id: 'my-tasks' as TabType, label: 'مهامي', icon: User },
     { id: 'all' as TabType, label: 'كل المهام', icon: ListTodo },
     { id: 'verification' as TabType, label: 'مهام التدقيق', icon: ClipboardCheck },
+    { id: 'system-audit' as TabType, label: 'إنجازات الوكيل', icon: ShieldCheck },
     { id: 'reminders' as TabType, label: 'تذكيراتي', icon: Bell },
     { id: 'goals' as TabType, label: 'أهدافي', icon: Target },
     { id: 'notes' as TabType, label: 'ملاحظات', icon: StickyNote },
@@ -267,7 +270,7 @@ export default function TasksPage() {
         </section>
 
         <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-          <TabsList className="grid h-auto w-full grid-cols-2 gap-2 rounded-lg border bg-white p-2 shadow-sm md:grid-cols-3 xl:grid-cols-6" style={{ borderColor: taskTheme.border }}>
+          <TabsList className="grid h-auto w-full grid-cols-2 gap-2 rounded-lg border bg-white p-2 shadow-sm md:grid-cols-3 xl:grid-cols-7" style={{ borderColor: taskTheme.border }}>
             {tabItems.map((tab) => {
               const Icon = tab.icon;
               return (
@@ -413,6 +416,10 @@ export default function TasksPage() {
 
           <TabsContent value="verification" className="mt-5">
             <VerificationTasksList />
+          </TabsContent>
+
+          <TabsContent value="system-audit" className="mt-5">
+            <SystemAuditAgentDashboard />
           </TabsContent>
 
           <TabsContent value="reminders" className="mt-5">

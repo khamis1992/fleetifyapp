@@ -15,7 +15,7 @@ import type {
   PaymentMatchResult
 } from '@/types/payment';
 import { supabase } from '@/integrations/supabase/client';
-import { logger } from '@/lib/logger';
+import { paymentLinkingService } from './PaymentLinkingService';
 
 export class PaymentService extends BaseService<Payment> {
   private paymentRepo: PaymentRepository;
@@ -45,111 +45,41 @@ export class PaymentService extends BaseService<Payment> {
         throw new Error(`Validation failed: ${JSON.stringify(validation.errors)}`);
       }
 
-      // Generate payment number if not provided
-      const paymentNumber = await this.generatePaymentNumber(companyId);
+      const { data: paymentId, error: rpcError } = await (supabase as any).rpc('create_payment_atomic', {
+        p_company_id: companyId,
+        p_customer_id: data.customer_id || null,
+        p_contract_id: data.contract_id || null,
+        p_invoice_id: data.invoice_id || null,
+        p_payment_number: null,
+        p_payment_date: data.payment_date,
+        p_amount: data.amount,
+        p_payment_method: data.payment_method,
+        p_payment_type: data.payment_type || data.payment_method,
+        p_transaction_type: data.transaction_type === 'expense' ? 'payment' : 'receipt',
+        p_reference_number: data.reference_number || null,
+        p_agreement_number: data.agreement_number || null,
+        p_check_number: data.check_number || null,
+        p_bank_id: data.bank_id || null,
+        p_notes: data.notes || null,
+        p_created_by: userId,
+        p_idempotency_key: null,
+        p_account_id: null,
+        p_cost_center_id: null,
+        p_currency: 'QAR',
+        p_initial_status: 'completed',
+        p_registration_metadata: {},
+      });
 
-      if (data.invoice_id || data.contract_id) {
-        const { data: paymentId, error: rpcError } = await supabase.rpc('create_payment_atomic', {
-          p_company_id: companyId,
-          p_customer_id: data.customer_id || null,
-          p_contract_id: data.contract_id || null,
-          p_invoice_id: data.invoice_id || null,
-          p_payment_number: paymentNumber,
-          p_payment_date: data.payment_date,
-          p_amount: data.amount,
-          p_payment_method: data.payment_method,
-          p_payment_type: data.payment_type || 'regular',
-          p_transaction_type: data.transaction_type || 'receipt',
-          p_reference_number: data.reference_number || null,
-          p_agreement_number: data.agreement_number || null,
-          p_check_number: data.check_number || null,
-          p_bank_id: data.bank_id || null,
-          p_notes: data.notes || null,
-          p_created_by: userId
-        });
-
-        if (rpcError) {
-          throw new Error(`Atomic payment failed: ${rpcError.message}`);
-        }
-
-        const payment = await this.getById(paymentId);
-        if (!payment) {
-          throw new Error('Payment created but could not be retrieved');
-        }
-
-        this.log('createPayment', 'Payment created atomically', { paymentId: payment.id });
-        return payment;
+      if (rpcError) {
+        throw new Error(`Atomic payment failed: ${rpcError.message}`);
       }
 
-      const paymentData: Omit<Payment, 'id'> = {
-        company_id: companyId,
-        customer_id: data.customer_id || null,
-        contract_id: data.contract_id || null,
-        invoice_id: data.invoice_id || null,
-        payment_number: paymentNumber,
-        payment_date: data.payment_date,
-        amount: data.amount,
-        payment_method: data.payment_method,
-        payment_type: data.payment_type || 'regular',
-        payment_status: 'completed',
-        transaction_type: data.transaction_type || 'receipt',
-        reference_number: data.reference_number || null,
-        agreement_number: data.agreement_number || null,
-        check_number: data.check_number || null,
-        bank_id: data.bank_id || null,
-        bank_account: null,
-        account_id: null,
-        cost_center_id: null,
-        journal_entry_id: null,
-        currency: 'QAR',
-        notes: data.notes || null,
-        description_type: null,
-        allocation_status: null,
-        reconciliation_status: null,
-        processing_status: null,
-        processing_notes: null,
-        linking_confidence: null,
-        due_date: null,
-        original_due_date: null,
-        late_fine_amount: null,
-        late_fine_days_overdue: null,
-        late_fine_type: null,
-        late_fine_status: null,
-        late_fine_waiver_reason: null,
-        vendor_id: null,
-        created_by: userId,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      };
-
-      // Create payment
-      const payment = await this.paymentRepo.create(paymentData);
-
-      // Try auto-matching if not already linked
-      if (!payment.invoice_id && !payment.contract_id) {
-        try {
-          // Use centralized PaymentLinkingService
-          const { paymentLinkingService } = await import('./PaymentLinkingService');
-          const result = await paymentLinkingService.linkPayment(payment.id, { autoLink: true });
-          
-          if (result.success) {
-            this.log('createPayment', 'Auto-linked payment successfully', {
-              paymentId: payment.id,
-              linkedTo: result.linkedTo,
-              confidence: result.confidence
-            });
-          } else {
-            this.log('createPayment', 'Auto-linking failed', {
-              paymentId: payment.id,
-              reason: result.reason
-            });
-          }
-        } catch (error) {
-          logger.warn('Auto-match failed, manual matching may be required', error);
-        }
+      const payment = await this.getById(paymentId);
+      if (!payment) {
+        throw new Error('Payment created but could not be retrieved');
       }
 
-      this.log('createPayment', 'Payment created successfully', { paymentId: payment.id });
+      this.log('createPayment', 'Payment created atomically', { paymentId: payment.id });
       return payment;
     } catch (error) {
       this.handleError('createPayment', error);
@@ -163,27 +93,18 @@ export class PaymentService extends BaseService<Payment> {
   async findMatchingSuggestions(payment: Payment): Promise<PaymentMatchSuggestion[]> {
     try {
       this.log('findMatchingSuggestions', 'Finding matching suggestions', { paymentId: payment.id });
+      const suggestions = await paymentLinkingService.findLinkingSuggestions(payment);
 
-      const suggestions: PaymentMatchSuggestion[] = [];
-
-      // Match by amount (within 5% tolerance)
-      const amountMatches = await this.findByAmountMatch(payment);
-      suggestions.push(...amountMatches);
-
-      // Match by reference number
-      if (payment.reference_number || payment.agreement_number) {
-        const referenceMatches = await this.findByReferenceMatch(payment);
-        suggestions.push(...referenceMatches);
-      }
-
-      // Match by customer and date
-      if (payment.customer_id) {
-        const customerMatches = await this.findByCustomerAndDate(payment);
-        suggestions.push(...customerMatches);
-      }
-
-      // Sort by confidence score (highest first)
-      return this.rankSuggestions(suggestions);
+      return suggestions
+        .filter((suggestion) => suggestion.targetType === 'invoice')
+        .map((suggestion) => ({
+          invoice_id: suggestion.targetId,
+          invoice_number: suggestion.details.invoiceNumber || suggestion.targetId,
+          amount: payment.amount,
+          confidence: Math.round(suggestion.confidence * 100),
+          reason: suggestion.reason,
+          customer_id: payment.customer_id || undefined
+        }));
     } catch (error) {
       this.handleError('findMatchingSuggestions', error);
       throw error;
@@ -197,23 +118,14 @@ export class PaymentService extends BaseService<Payment> {
     try {
       this.log('matchPayment', 'Matching payment', { paymentId, targetType, targetId });
 
-      const payment = await this.getById(paymentId);
-      if (!payment) {
-        throw new Error('Payment not found');
-      }
-
-      if (targetType === 'invoice') {
-        await this.paymentRepo.linkToInvoice(paymentId, targetId);
-      } else {
-        await this.paymentRepo.linkToContract(paymentId, targetId);
-      }
+      const result = await paymentLinkingService.manualLink(paymentId, targetType, targetId);
 
       return {
-        success: true,
+        success: result.success,
         payment_id: paymentId,
-        invoice_id: targetType === 'invoice' ? targetId : undefined,
-        confidence: 100,
-        message: 'تم ربط الدفعة بنجاح'
+        invoice_id: result.success && targetType === 'invoice' ? targetId : undefined,
+        confidence: Math.round(result.confidence * 100),
+        message: result.success ? 'تم تخصيص الدفعة وحفظها بنجاح' : result.reason
       };
     } catch (error) {
       this.handleError('matchPayment', error);
@@ -279,7 +191,7 @@ export class PaymentService extends BaseService<Payment> {
       acc.total++;
       acc.totalAmount += payment.amount;
       
-      if (payment.invoice_id || payment.contract_id) {
+      if (['allocated', 'partially_allocated', 'fully_allocated'].includes(payment.allocation_status || '')) {
         acc.matched++;
       } else {
         acc.unmatched++;
@@ -297,150 +209,6 @@ export class PaymentService extends BaseService<Payment> {
     stats.averageAmount = stats.total > 0 ? stats.totalAmount / stats.total : 0;
 
     return stats;
-  }
-
-  // ============ Smart Matching Helper Methods ============
-
-  private async attemptAutoMatch(payment: Payment): Promise<void> {
-    const suggestions = await this.findMatchingSuggestions(payment);
-    
-    // Auto-match if confidence > 85%
-    const highConfidenceMatch = suggestions.find(s => s.confidence > 85);
-    
-    if (highConfidenceMatch) {
-      await this.paymentRepo.linkToInvoice(payment.id, highConfidenceMatch.invoice_id);
-      this.log('attemptAutoMatch', 'Auto-matched payment', {
-        paymentId: payment.id,
-        invoiceId: highConfidenceMatch.invoice_id,
-        confidence: highConfidenceMatch.confidence
-      });
-    }
-  }
-
-  private async findByAmountMatch(payment: Payment): Promise<PaymentMatchSuggestion[]> {
-    try {
-      const tolerance = payment.amount * 0.05; // 5% tolerance
-      
-      const { data: invoices } = await supabase
-        .from('invoices')
-        .select('id, invoice_number, amount, customer_id, contract_id')
-        .eq('company_id', payment.company_id)
-        .eq('status', 'pending')
-        .gte('amount', payment.amount - tolerance)
-        .lte('amount', payment.amount + tolerance);
-
-      if (!invoices) return [];
-
-      return invoices.map(invoice => ({
-        invoice_id: invoice.id,
-        invoice_number: invoice.invoice_number,
-        amount: invoice.amount,
-        confidence: this.calculateConfidence(payment, invoice, 'amount'),
-        reason: 'مطابقة المبلغ',
-        customer_id: invoice.customer_id,
-        contract_id: invoice.contract_id
-      }));
-    } catch (error) {
-      logger.error('Amount matching failed', error);
-      return [];
-    }
-  }
-
-  private async findByReferenceMatch(payment: Payment): Promise<PaymentMatchSuggestion[]> {
-    try {
-      const reference = payment.reference_number || payment.agreement_number;
-      if (!reference) return [];
-
-      const { data: invoices } = await supabase
-        .from('invoices')
-        .select('id, invoice_number, amount, customer_id, contract_id')
-        .eq('company_id', payment.company_id)
-        .eq('status', 'pending')
-        .or(`invoice_number.ilike.%${reference}%,reference_number.ilike.%${reference}%`);
-
-      if (!invoices) return [];
-
-      return invoices.map(invoice => ({
-        invoice_id: invoice.id,
-        invoice_number: invoice.invoice_number,
-        amount: invoice.amount,
-        confidence: this.calculateConfidence(payment, invoice, 'reference'),
-        reason: 'مطابقة الرقم المرجعي',
-        customer_id: invoice.customer_id,
-        contract_id: invoice.contract_id
-      }));
-    } catch (error) {
-      logger.error('Reference matching failed', error);
-      return [];
-    }
-  }
-
-  private async findByCustomerAndDate(payment: Payment): Promise<PaymentMatchSuggestion[]> {
-    try {
-      if (!payment.customer_id) return [];
-
-      const paymentDate = new Date(payment.payment_date);
-      const dateTolerance = 7; // days
-      const startDate = new Date(paymentDate);
-      startDate.setDate(startDate.getDate() - dateTolerance);
-      const endDate = new Date(paymentDate);
-      endDate.setDate(endDate.getDate() + dateTolerance);
-
-      const { data: invoices } = await supabase
-        .from('invoices')
-        .select('id, invoice_number, amount, customer_id, contract_id, due_date')
-        .eq('company_id', payment.company_id)
-        .eq('customer_id', payment.customer_id)
-        .eq('status', 'pending')
-        .gte('due_date', startDate.toISOString())
-        .lte('due_date', endDate.toISOString());
-
-      if (!invoices) return [];
-
-      return invoices.map(invoice => ({
-        invoice_id: invoice.id,
-        invoice_number: invoice.invoice_number,
-        amount: invoice.amount,
-        confidence: this.calculateConfidence(payment, invoice, 'customer'),
-        reason: 'مطابقة العميل والتاريخ',
-        customer_id: invoice.customer_id,
-        contract_id: invoice.contract_id
-      }));
-    } catch (error) {
-      logger.error('Customer/date matching failed', error);
-      return [];
-    }
-  }
-
-  private calculateConfidence(
-    payment: Payment,
-    invoice: any,
-    matchType: 'amount' | 'reference' | 'customer'
-  ): number {
-    let confidence = 0;
-
-    // Amount match (0-40 points)
-    const amountDiff = Math.abs(payment.amount - invoice.amount);
-    const amountScore = Math.max(0, 40 - (amountDiff / payment.amount * 100));
-    confidence += amountScore;
-
-    // Customer match (0-30 points)
-    if (payment.customer_id && payment.customer_id === invoice.customer_id) {
-      confidence += 30;
-    }
-
-    // Reference match (0-30 points)
-    if (matchType === 'reference') {
-      confidence += 30;
-    }
-
-    return Math.min(100, Math.round(confidence));
-  }
-
-  private rankSuggestions(suggestions: PaymentMatchSuggestion[]): PaymentMatchSuggestion[] {
-    return suggestions
-      .sort((a, b) => b.confidence - a.confidence)
-      .slice(0, 10); // Return top 10 suggestions
   }
 
   // ============ Helper Methods ============

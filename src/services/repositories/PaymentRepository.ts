@@ -141,14 +141,14 @@ export class PaymentRepository extends BaseRepository<Payment> {
   }
 
   /**
-   * Find unmatched payments (no invoice_id or contract_id)
+   * Find payments without a canonical invoice allocation.
    */
   async findUnmatched(companyId?: string): Promise<Payment[]> {
     try {
       let query = supabase
         .from('payments')
         .select('*')
-        .or('invoice_id.is.null,contract_id.is.null');
+        .or('allocation_status.is.null,allocation_status.eq.unallocated');
 
       if (companyId) {
         query = query.eq('company_id', companyId);
@@ -212,27 +212,27 @@ export class PaymentRepository extends BaseRepository<Payment> {
    * Update payment status
    */
   async updateStatus(id: string, status: Payment['payment_status']): Promise<Payment> {
-    return this.update(id, { payment_status: status } as Partial<Payment>);
+    throw new Error(
+      `Direct payment status updates are disabled (${id} -> ${status}). Use PaymentStateMachine. Changes to completed payments require an atomic approval or cancellation operation.`
+    );
   }
 
   /**
    * Link payment to invoice
    */
   async linkToInvoice(id: string, invoiceId: string): Promise<Payment> {
-    return this.update(id, {
-      invoice_id: invoiceId,
-      allocation_status: 'allocated'
-    } as Partial<Payment>);
+    throw new Error(
+      `Direct invoice linking is disabled (${id} -> ${invoiceId}). Use PaymentLinkingService so the allocation ledger and accounting adjustment are saved atomically.`
+    );
   }
 
   /**
    * Link payment to contract
    */
   async linkToContract(id: string, contractId: string): Promise<Payment> {
-    return this.update(id, {
-      contract_id: contractId,
-      allocation_status: 'allocated'
-    } as Partial<Payment>);
+    throw new Error(
+      `Direct contract linking is disabled (${id} -> ${contractId}). Use PaymentLinkingService so contract invoices are allocated atomically.`
+    );
   }
 }
 

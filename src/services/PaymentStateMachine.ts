@@ -125,6 +125,62 @@ class PaymentStateMachine {
 
       const currentState = payment.processing_status as PaymentState || PaymentState.PENDING;
 
+      if (event === PaymentEvent.VOID || event === PaymentEvent.REVERSE) {
+        const { error: cancellationError } = await (supabase as any).rpc('cancel_payment_with_reversal', {
+          p_payment_id: paymentId,
+          p_company_id: payment.company_id,
+          p_reason: options.reason || 'Payment cancellation through the approved reversal workflow',
+          p_actor_id: options.userId || null,
+        });
+
+        if (cancellationError) {
+          return {
+            success: false,
+            error: cancellationError.message || 'Failed to cancel payment with accounting reversal',
+          };
+        }
+
+        const newState = event === PaymentEvent.VOID ? PaymentState.VOIDED : PaymentState.REVERSED;
+        this.recordTransition({
+          fromState: currentState,
+          toState: newState,
+          event,
+          timestamp: new Date().toISOString(),
+          paymentId,
+          userId: options.userId,
+          reason: options.reason,
+        });
+
+        return { success: true, newState };
+      }
+
+      if (event === PaymentEvent.COMPLETE) {
+        const { error: approvalError } = await (supabase as any).rpc('approve_payment_atomic', {
+          p_payment_id: paymentId,
+          p_company_id: payment.company_id,
+          p_actor_id: options.userId || null,
+        });
+
+        if (approvalError) {
+          return {
+            success: false,
+            error: approvalError.message || 'Failed to approve payment atomically',
+          };
+        }
+
+        this.recordTransition({
+          fromState: currentState,
+          toState: PaymentState.COMPLETED,
+          event,
+          timestamp: new Date().toISOString(),
+          paymentId,
+          userId: options.userId,
+          reason: options.reason,
+        });
+
+        return { success: true, newState: PaymentState.COMPLETED };
+      }
+
       // 2. التحقق من الانتقال
       if (!options.skipValidation && !options.force) {
         const validationResult = this.validateTransition(currentState, event, payment);
@@ -633,24 +689,10 @@ class PaymentStateMachine {
   ): Promise<{ success: boolean; error?: string }> {
     logger.info('Reversing payment', { paymentId, reason });
 
-    const result = await this.transition(paymentId, PaymentEvent.REVERSE, {
+    return this.transition(paymentId, PaymentEvent.REVERSE, {
       userId,
       reason: reason || 'إلغاء الدفعة وإنشاء قيد عكسي'
     });
-
-    if (result.success) {
-      const { data: reversalId } = await supabase
-        .rpc('reverse_journal_entry', {
-          p_original_journal_entry_id: payment.journal_entry_id,
-          p_reason: options.reason || 'Payment reversal'
-        });
-
-      if (reversalId) {
-        logger.info('Reversal journal entry created', { paymentId, reversalId });
-      }
-    }
-
-    return result;
   }
 
   /**

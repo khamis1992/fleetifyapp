@@ -58,12 +58,10 @@ import { ContractInvoiceDialog } from "@/components/contracts/ContractInvoiceDia
 import { ContractExportDialog } from "@/components/contracts/ContractExportDialog";
 import { ContractCreationProgress } from "@/components/contracts/ContractCreationProgress";
 import { ContractCancellationDialog } from "@/components/contracts/ContractCancellationDialog";
-import { ContractDeleteDialog } from "@/components/contracts/ContractDeleteDialog";
 import { UnifiedContractUpload } from "@/components/contracts/UnifiedContractUpload";
 import { ContractsNeedingAttention } from "@/components/contracts/ContractsNeedingAttention";
 import { LateFinesSettings } from "@/components/contracts/LateFinesSettings";
 import SendRemindersDialog from "@/components/contracts/SendRemindersDialog";
-import { BulkDeleteContractsDialog } from "@/components/contracts/BulkDeleteContractsDialog";
 import { ContractAmendmentForm } from "@/components/contracts";
 import { ContractPDFImportRedesigned } from "@/components/contracts/ContractPDFImportRedesigned";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -404,7 +402,6 @@ const ContractListItem = ({
   onEdit,
   onRenew,
   onCancel,
-  onDelete,
   onManageStatus,
   onConvertToLegal,
   onRemoveLegal,
@@ -416,7 +413,6 @@ const ContractListItem = ({
   onEdit: (c: Contract) => void;
   onRenew: (c: Contract) => void;
   onCancel: (c: Contract) => void;
-  onDelete: (c: Contract) => void;
   onManageStatus: (c: Contract) => void;
   onConvertToLegal: (c: Contract) => void;
   onRemoveLegal: (c: Contract) => void;
@@ -581,10 +577,6 @@ const ContractListItem = ({
                     <DropdownMenuItem onClick={() => onConvertToLegal(contract)} className="text-purple-600 focus:text-purple-600">
                       <Scale className="w-4 h-4 ml-2" />
                       تحويل للقانونية
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => onDelete(contract)} className="text-rose-600 focus:text-rose-600">
-                      <Trash2 className="w-4 h-4 ml-2" />
-                      حذف نهائي
                     </DropdownMenuItem>
                   </>
                 )}
@@ -774,7 +766,6 @@ const ContractOperationsRow = ({
   onEdit,
   onRenew,
   onCancel,
-  onDelete,
   onManageStatus,
   onConvertToLegal,
   onRemoveLegal,
@@ -786,7 +777,6 @@ const ContractOperationsRow = ({
   onEdit: (c: Contract) => void;
   onRenew: (c: Contract) => void;
   onCancel: (c: Contract) => void;
-  onDelete: (c: Contract) => void;
   onManageStatus: (c: Contract) => void;
   onConvertToLegal: (c: Contract) => void;
   onRemoveLegal: (c: Contract) => void;
@@ -939,10 +929,6 @@ const ContractOperationsRow = ({
                     <Scale className="ml-2 h-4 w-4" />
                     تحويل للشؤون القانونية
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => onDelete(contract)} className="text-[#FB6B7A] focus:text-[#FB6B7A]">
-                    <Trash2 className="ml-2 h-4 w-4" />
-                    حذف نهائي
-                  </DropdownMenuItem>
                 </>
               )}
               {hasLegalStatus && (
@@ -975,12 +961,10 @@ function ContractsRedesigned() {
   const [showExportDialog, setShowExportDialog] = useState(false);
   const [showCreationProgress, setShowCreationProgress] = useState(false);
   const [showCancellationDialog, setShowCancellationDialog] = useState(false);
-  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showRemoveLegalDialog, setShowRemoveLegalDialog] = useState(false);
   const [isRemovingLegal, setIsRemovingLegal] = useState(false);
   const [showCSVUpload, setShowCSVUpload] = useState(false);
   const [showRemindersDialog, setShowRemindersDialog] = useState(false);
-  const [showBulkDelete, setShowBulkDelete] = useState(false);
   const [showContractPDFImport, setShowContractPDFImport] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
@@ -1297,11 +1281,6 @@ function ContractsRedesigned() {
       setIsRemovingLegal(false);
     }
   }, [selectedContract, companyId, toast, refetch]);
-
-  const handleDeleteContract = useCallback((contract: any) => {
-    setSelectedContract(contract);
-    setShowDeleteDialog(true);
-  }, []);
 
   const handleAmendContract = useCallback((contract: any) => {
     setSelectedContract(contract);
@@ -1830,7 +1809,6 @@ function ContractsRedesigned() {
                       }}
                       onRenew={handleRenewContract}
                       onCancel={handleCancelContract}
-                      onDelete={handleDeleteContract}
                       onManageStatus={handleManageStatus}
                       onConvertToLegal={handleConvertToLegal}
                       onRemoveLegal={handleRemoveLegalProcedure}
@@ -1936,12 +1914,6 @@ function ContractsRedesigned() {
           onOpenChange={setShowCancellationDialog} 
           contract={selectedContract} 
         />
-        <ContractDeleteDialog 
-          open={showDeleteDialog} 
-          onOpenChange={setShowDeleteDialog} 
-          contract={selectedContract} 
-          onSuccess={() => refetch()} 
-        />
         <UnifiedContractUpload
           open={showCSVUpload}
           onOpenChange={setShowCSVUpload}
@@ -1950,11 +1922,6 @@ function ContractsRedesigned() {
             refetch();
           }}
         />
-        <BulkDeleteContractsDialog 
-          open={showBulkDelete} 
-          onOpenChange={setShowBulkDelete} 
-        />
-        
         {/* Remove Legal Procedure Dialog */}
         <AlertDialog open={showRemoveLegalDialog} onOpenChange={setShowRemoveLegalDialog}>
           <AlertDialogContent className="rounded-xl" dir="rtl">

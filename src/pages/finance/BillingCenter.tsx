@@ -480,7 +480,7 @@ const BillingCenter = () => {
 
       const { data: invoice, error: invoiceError } = await supabase
         .from('invoices')
-        .select('id, company_id, created_by, status, payment_status, notes, journal_entry_id')
+        .select('id, company_id, created_by, status, payment_status')
         .eq('id', invoiceId)
         .maybeSingle();
 
@@ -502,56 +502,22 @@ const BillingCenter = () => {
         return invoice;
       }
 
-      const { data: payments } = await supabase
-        .from('payments')
-        .select('id, payment_number, payment_status, transaction_type')
-        .eq('invoice_id', invoiceId)
-        .eq('company_id', invoice.company_id);
-
-      const ignoredPaymentStatuses = new Set(['cancelled', 'canceled', 'failed', 'voided', 'reversed', 'refunded']);
-      const activePayments = (payments || []).filter((payment) => {
-        const status = String(payment.payment_status || '').toLowerCase();
-        const transactionType = String(payment.transaction_type || 'receipt').toLowerCase();
-        return transactionType === 'receipt' && !ignoredPaymentStatuses.has(status);
-      });
-
-      if (activePayments.length > 0) {
-        throw new Error('لا يمكن حذف الفاتورة لأنها مرتبطة بدفعات');
-      }
-
-      const previousNotes = invoice.notes ? `${invoice.notes}\n` : '';
       const cancellationNote = `تم إلغاء الفاتورة من مركز الفوترة بواسطة ${user?.email || user?.id || 'system'} في ${new Date().toISOString()}`;
-
-      if (invoice.journal_entry_id) {
-        const { error } = await (supabase as any).rpc('cancel_invoice_with_reversal', {
-          p_invoice_id: invoiceId,
-          p_company_id: invoice.company_id,
-          p_reason: cancellationNote,
-        });
-        if (error) throw error;
-      } else {
-        const { error } = await supabase
-          .from('invoices')
-          .update({
-            status: 'cancelled',
-            payment_status: 'cancelled',
-            balance_due: 0,
-            notes: `${previousNotes}${cancellationNote}`,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('id', invoiceId)
-          .eq('company_id', invoice.company_id);
-        if (error) throw error;
-      }
+      const { error } = await (supabase as any).rpc('cancel_invoice_with_reversal', {
+        p_invoice_id: invoiceId,
+        p_company_id: invoice.company_id,
+        p_reason: cancellationNote,
+      });
+      if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['invoices'] });
-      toast.success('تم حذف الفاتورة بنجاح');
+      toast.success('تم إلغاء الفاتورة بنجاح');
       setDeleteDialogOpen(false);
       setInvoiceToDelete(null);
     },
     onError: (error: any) => {
-      toast.error(error.message || 'فشل حذف الفاتورة');
+      toast.error(error.message || 'فشل إلغاء الفاتورة');
     }
   });
 

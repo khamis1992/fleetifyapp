@@ -277,7 +277,7 @@ export const ContractHealthAnalysis: React.FC<{
     const reviewItems: string[] = [];
     let fixedCount = 0;
     const now = new Date().toISOString();
-    const cancelledPaymentIds = new Set<string>();
+    const reviewedPaymentIds = new Set<string>();
 
     try {
       const agentPlan = await getContractRepairAgentPlan({ contract, health });
@@ -331,20 +331,12 @@ export const ContractHealthAnalysis: React.FC<{
       }
 
       let cancelledOutsideInvoices = 0;
-      let cancelledLinkedPayments = 0;
+      let preservedLinkedPayments = 0;
       for (const invoice of health.metrics.outsideInvoices) {
         for (const paymentId of invoice.linked_payment_ids) {
-          if (cancelledPaymentIds.has(paymentId)) continue;
-
-          await cancelPaymentForContractRepair({
-            paymentId,
-            companyId: contract.company_id,
-            invoiceId: invoice.id,
-            now,
-            reason: `إلغاء دفعة مرتبطة بفاتورة خارج فترة العقد ${invoice.invoice_number}`,
-          });
-          cancelledPaymentIds.add(paymentId);
-          cancelledLinkedPayments += 1;
+          if (reviewedPaymentIds.has(paymentId)) continue;
+          reviewedPaymentIds.add(paymentId);
+          preservedLinkedPayments += 1;
         }
 
         const repairResult = await repairOutOfPeriodInvoice({
@@ -360,10 +352,10 @@ export const ContractHealthAnalysis: React.FC<{
         if (repairResult.changed) cancelledOutsideInvoices += 1;
       }
       if (health.metrics.outsideInvoices.length > 0) {
-        fixedCount += cancelledOutsideInvoices + cancelledLinkedPayments;
+        fixedCount += cancelledOutsideInvoices;
         fixedActions.push(`إلغاء فواتير خارج الفترة: ${cancelledOutsideInvoices}`);
-        if (cancelledLinkedPayments > 0) {
-          fixedActions.push(`إلغاء دفعات مرتبطة بالفواتير الخارجة: ${cancelledLinkedPayments}`);
+        if (preservedLinkedPayments > 0) {
+          reviewItems.push(`تم الحفاظ على ${preservedLinkedPayments} دفعة مكتملة وفك ارتباطها بالفواتير الخارجة بدل إلغاء إيصالات القبض.`);
         }
       }
 
@@ -415,20 +407,16 @@ export const ContractHealthAnalysis: React.FC<{
         fixedActions.push(`إنشاء فواتير: ${generatedCount + generatedMonthCount}`);
       }
 
-      const paymentsToFix = [...health.metrics.paymentsBeforeStartItems, ...health.metrics.paymentsAfterEndItems]
-        .filter((payment) => !cancelledPaymentIds.has(payment.id));
-      let cancelledOutOfPeriodPayments = 0;
+      const paymentsToFix = Array.from(new Map(
+        [...health.metrics.paymentsBeforeStartItems, ...health.metrics.paymentsAfterEndItems]
+          .map((payment) => [payment.id, payment]),
+      ).values());
+      let reviewedOutOfPeriodPayments = 0;
+      let correctedPaymentDates = 0;
       for (const payment of paymentsToFix) {
         if (payment.is_immutable) {
-          await cancelPaymentForContractRepair({
-            paymentId: payment.id,
-            companyId: contract.company_id,
-            invoiceId: payment.invoice_id,
-            now,
-            reason: `إلغاء دفعة خارج فترة العقد ${payment.payment_number}`,
-          });
-          cancelledPaymentIds.add(payment.id);
-          cancelledOutOfPeriodPayments += 1;
+          reviewedPaymentIds.add(payment.id);
+          reviewedOutOfPeriodPayments += 1;
           continue;
         }
 
@@ -444,17 +432,21 @@ export const ContractHealthAnalysis: React.FC<{
         if (error) {
           if (!isImmutablePaymentError(error)) throw error;
           reviewItems.push(`دفعة مكتملة: ${payment.payment_number}`);
+        } else {
+          correctedPaymentDates += 1;
         }
       }
       if (paymentsToFix.length > 0) {
-        const editablePaymentsCount = paymentsToFix.filter((payment) => !payment.is_immutable).length;
-        fixedCount += editablePaymentsCount + cancelledOutOfPeriodPayments;
-        if (editablePaymentsCount > 0) fixedActions.push(`تصحيح تواريخ دفعات: ${editablePaymentsCount}`);
-        if (cancelledOutOfPeriodPayments > 0) fixedActions.push(`إلغاء دفعات خارج فترة العقد: ${cancelledOutOfPeriodPayments}`);
+        fixedCount += correctedPaymentDates;
+        if (correctedPaymentDates > 0) fixedActions.push(`تصحيح تواريخ دفعات: ${correctedPaymentDates}`);
+        if (reviewedOutOfPeriodPayments > 0) {
+          reviewItems.push(`توجد ${reviewedOutOfPeriodPayments} دفعة مكتملة خارج فترة العقد؛ تم الحفاظ على إيصالات القبض وتحتاج إعادة تخصيص آمنة.`);
+        }
       }
 
       // Reconcile invoice amounts with payment schedules
       const currentInvoicesForReconciliation = await getCurrentContractInvoices(contract, currentPaymentSchedules);
+      const { data: authData } = await supabase.auth.getUser();
       let reconciledAmounts = 0;
       for (const schedule of currentPaymentSchedules) {
         if (health.metrics.scheduleInvoiceDifference > 1 || health.metrics.scheduleInvoiceMismatchItems.length > 0) continue;
@@ -467,19 +459,18 @@ export const ContractHealthAnalysis: React.FC<{
         const invoiceAmount = Number(matchingInvoice.total_amount || 0);
 
         if (Math.abs(scheduleAmount - invoiceAmount) > 0.01) {
-          const { error } = await supabase
-            .from('invoices')
-            .update({
-              total_amount: scheduleAmount,
-              subtotal: scheduleAmount,
-              updated_at: now,
-            })
-            .eq('id', matchingInvoice.id)
-            .eq('company_id', contract.company_id);
+          const { error } = await (supabase as any).rpc('update_draft_invoice_amount_atomic', {
+            p_invoice_id: matchingInvoice.id,
+            p_company_id: contract.company_id,
+            p_new_total: scheduleAmount,
+            p_reason: `مطابقة مبلغ الفاتورة مع القسط ${schedule.installment_number || ''}`.trim(),
+            p_actor_id: authData.user?.id || null,
+          });
 
           if (error) {
-            if (!isConflictError(error)) throw error;
-            reviewItems.push(`تعذر مصالحة مبلغ الفاتورة ${matchingInvoice.invoice_number || matchingInvoice.id}`);
+            reviewItems.push(
+              `تعذر مصالحة مبلغ الفاتورة ${matchingInvoice.invoice_number || matchingInvoice.id}: ${getReadableErrorMessage(error)}`
+            );
           } else {
             await recalculateInvoicePaymentTotals(matchingInvoice.id, contract.company_id, now);
             reconciledAmounts += 1;
@@ -1473,18 +1464,25 @@ async function repairScheduleLinkedInvoiceContracts({
 
   if (invoiceIdsToRepair.length === 0) return 0;
 
-  const { error: updateError } = await supabase
-    .from('invoices')
-    .update({
-      contract_id: contract.id,
-      customer_id: (contract as any).customer_id || null,
-      updated_at: now,
-    })
-    .in('id', invoiceIdsToRepair)
-    .eq('company_id', contract.company_id);
+  const { data: authData } = await supabase.auth.getUser();
+  let repairedCount = 0;
+  for (const invoiceId of invoiceIdsToRepair) {
+    const { error: updateError } = await (supabase as any).rpc(
+      'attach_schedule_invoice_to_contract_atomic',
+      {
+        p_invoice_id: invoiceId,
+        p_contract_id: contract.id,
+        p_company_id: contract.company_id,
+        p_reason: `ربط فاتورة القسط بالعقد من إصلاح صحة العقد بتاريخ ${now}`,
+        p_actor_id: authData.user?.id || null,
+      }
+    );
 
-  if (updateError) throw updateError;
-  return invoiceIdsToRepair.length;
+    if (updateError) throw updateError;
+    repairedCount += 1;
+  }
+
+  return repairedCount;
 }
 
 async function recalculateCurrentContractInvoicePaymentTotals({
@@ -2010,84 +2008,17 @@ function getReadableErrorMessage(error: unknown) {
   ].filter(Boolean).join(' - ');
 }
 
-async function cancelPaymentForContractRepair({
-  paymentId,
-  companyId,
-  invoiceId,
-  now,
-  reason,
-}: {
-  paymentId: string;
-  companyId: string;
-  invoiceId: string | null;
-  now: string;
-  reason: string;
-}) {
-  const { error } = await supabase
-    .from('payments')
-    .update({
-      payment_status: 'cancelled',
-      updated_at: now,
-      processing_notes: `Contract health repair: ${reason}. Cancelled at ${now}`,
-    })
-    .eq('id', paymentId)
-    .eq('company_id', companyId);
-
-  if (error && !isAlreadyCancelledError(error)) throw error;
-
-  if (invoiceId) {
-    await recalculateInvoicePaymentTotals(invoiceId, companyId, now);
-  }
-}
-
 async function recalculateInvoicePaymentTotals(invoiceId: string, companyId: string, now: string) {
-  const { data: invoice, error: invoiceError } = await supabase
-    .from('invoices')
-    .select('id, total_amount, paid_amount, balance_due, due_date, status, payment_status')
-    .eq('id', invoiceId)
-    .eq('company_id', companyId)
-    .maybeSingle();
+  const { data: authData } = await supabase.auth.getUser();
+  const { data, error } = await (supabase as any).rpc('repair_invoice_financial_state_atomic', {
+    p_invoice_id: invoiceId,
+    p_company_id: companyId,
+    p_reason: `إعادة احتساب رصيد الفاتورة من دفتر التخصيص بتاريخ ${now}`,
+    p_actor_id: authData.user?.id || null,
+  });
 
-  if (invoiceError) throw invoiceError;
-  if (!invoice || isCancelled(invoice.status) || isCancelled(invoice.payment_status)) return false;
-
-  const { data: payments, error: paymentsError } = await supabase
-    .from('payments')
-    .select('amount, payment_status')
-    .eq('invoice_id', invoiceId)
-    .eq('company_id', companyId);
-
-  if (paymentsError) throw paymentsError;
-
-  const paidAmount = (payments || [])
-    .filter((payment) => isCompletedPayment(payment.payment_status))
-    .reduce((sum, payment) => sum + Number(payment.amount || 0), 0);
-  const totalAmount = Number(invoice.total_amount || 0);
-  const balanceDue = Math.max(0, totalAmount - paidAmount);
-  const paymentStatus = balanceDue <= 1 ? 'paid' : paidAmount > 0 ? 'partial' : 'unpaid';
-  const status = getInvoiceStatusForBalance(balanceDue, invoice.due_date, invoice.status);
-  const changed =
-    Math.abs(Number(invoice.paid_amount || 0) - paidAmount) > 0.01
-    || Math.abs(Number(invoice.balance_due ?? Math.max(0, totalAmount - Number(invoice.paid_amount || 0))) - balanceDue) > 0.01
-    || String(invoice.payment_status || '').toLowerCase() !== paymentStatus
-    || String(invoice.status || '').toLowerCase() !== status;
-
-  if (!changed) return false;
-
-  const { error: updateError } = await supabase
-    .from('invoices')
-    .update({
-      paid_amount: paidAmount,
-      balance_due: balanceDue,
-      payment_status: paymentStatus,
-      status,
-      updated_at: now,
-    })
-    .eq('id', invoiceId)
-    .eq('company_id', companyId);
-
-  if (updateError) throw updateError;
-  return true;
+  if (error) throw error;
+  return Boolean(data?.changed);
 }
 
 async function repairOutOfPeriodInvoice({

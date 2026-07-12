@@ -35,10 +35,17 @@ describe("financeAccessRules", () => {
   it("honors fallback permissions during the transition to granular roles", () => {
     expect(permissionMatches(["finance.invoices.write"], "finance.invoice.edit_amount")).toBe(true);
     expect(permissionMatches(["finance.payments.write"], "finance.payment.create")).toBe(true);
+    expect(permissionMatches(["finance.payments.write"], "finance.payment.approve")).toBe(false);
+    expect(permissionMatches(["finance.payments.write"], "finance.payment.cancel")).toBe(false);
     expect(permissionMatches(["finance.reports.view"], "finance.payment.create")).toBe(false);
   });
 
   it("blocks self approval and self posting for protected actions", () => {
+    const paymentApproval = evaluateSegregationOfDuties({
+      action: "finance.payment.approve",
+      actorId: "user-1",
+      creatorId: "user-1",
+    });
     const approval = evaluateSegregationOfDuties({
       action: "finance.journal.approve",
       actorId: "user-1",
@@ -50,6 +57,7 @@ describe("financeAccessRules", () => {
       creatorId: "user-1",
     });
 
+    expect(paymentApproval.allowed).toBe(false);
     expect(approval.allowed).toBe(false);
     expect(posting.allowed).toBe(false);
   });
@@ -68,6 +76,7 @@ describe("financeAccessRules", () => {
     expect(SEGREGATION_OF_DUTIES_RULES.map((rule) => rule.action)).toEqual(
       expect.arrayContaining([
         "finance.invoice.cancel",
+        "finance.payment.approve",
         "finance.payment.cancel",
         "finance.journal.approve",
         "finance.journal.post",
@@ -81,13 +90,14 @@ describe("financeAccessRules", () => {
   it("detects conflicting permission bundles before assigning a finance role", () => {
     const conflicts = findFinancePermissionConflicts([
       "finance.payment.create",
+      "finance.payment.approve",
       "finance.payment.cancel",
       "finance.journal.create_draft",
       "finance.journal.post",
     ]);
 
     expect(conflicts.map((conflict) => conflict.ruleId)).toEqual(
-      expect.arrayContaining(["payment_create_cancel_conflict", "journal_create_post_conflict"]),
+      expect.arrayContaining(["payment_create_approve_conflict", "payment_create_cancel_conflict", "journal_create_post_conflict"]),
     );
     expect(conflicts.every((conflict) => conflict.severity === "critical")).toBe(true);
   });
@@ -97,6 +107,6 @@ describe("financeAccessRules", () => {
       "finance.payment.create",
       "finance.audit.view",
     ])).toEqual([]);
-    expect(FINANCE_PERMISSION_CONFLICT_RULES.length).toBeGreaterThanOrEqual(7);
+    expect(FINANCE_PERMISSION_CONFLICT_RULES.length).toBeGreaterThanOrEqual(8);
   });
 });

@@ -1,191 +1,168 @@
-/**
- * Payment Linking Service Unit Tests
- * 
- * Tests for intelligent payment linking to invoices/contracts
- */
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import type { Payment } from '@/types/payment';
+import {
+  distributePaymentAcrossInvoices,
+  paymentLinkingService,
+  type InvoiceAllocationInput,
+  type LinkingResult,
+  type LinkingSuggestion,
+} from '@/services/PaymentLinkingService';
+import { PaymentRepository } from '@/services/repositories/PaymentRepository';
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { paymentLinkingService } from '@/services/PaymentLinkingService';
-import { supabase } from '@/integrations/supabase/client';
+const mocks = vi.hoisted(() => ({
+  logPaymentAction: vi.fn(),
+}));
 
-// Mock data
-const companyId = 'test-company-id';
-const contractId = 'test-contract-id';
-const invoiceId = 'test-invoice-id';
-const customerId = 'test-customer-id';
-const paymentId = 'test-payment-id';
+vi.mock('@/integrations/supabase/client', () => ({
+  supabase: {
+    from: vi.fn(),
+    rpc: vi.fn(),
+    auth: {
+      getUser: vi.fn().mockResolvedValue({ data: { user: { id: 'actor-id' } } }),
+    },
+  },
+}));
 
-describe('Payment Linking Service', () => {
+vi.mock('@/utils/auditTrailSystem', () => ({
+  auditTrailSystem: {
+    logPaymentAction: mocks.logPaymentAction,
+  },
+}));
+
+type TestablePaymentLinkingService = typeof paymentLinkingService & {
+  executeLinking(payment: Payment, suggestion: LinkingSuggestion): Promise<LinkingResult>;
+  getCurrentInvoiceAllocations(paymentId: string): Promise<InvoiceAllocationInput[]>;
+  replaceInvoiceAllocations(
+    payment: Payment,
+    allocations: InvoiceAllocationInput[],
+    expectedAllocations: InvoiceAllocationInput[],
+    reason: string
+  ): Promise<void>;
+};
+
+const service = paymentLinkingService as unknown as TestablePaymentLinkingService;
+const payment = {
+  id: 'payment-id',
+  company_id: 'company-id',
+  customer_id: 'customer-id',
+  created_by: 'creator-id',
+  amount: 300,
+  payment_status: 'completed',
+} as Payment;
+
+describe('distributePaymentAcrossInvoices', () => {
+  it('distributes one payment over invoices in order without exceeding the payment', () => {
+    expect(distributePaymentAcrossInvoices(300, [
+      { invoiceId: 'invoice-1', availableAmount: 100 },
+      { invoiceId: 'invoice-2', availableAmount: 150 },
+      { invoiceId: 'invoice-3', availableAmount: 200 },
+    ])).toEqual([
+      { invoice_id: 'invoice-1', amount: 100 },
+      { invoice_id: 'invoice-2', amount: 150 },
+      { invoice_id: 'invoice-3', amount: 50 },
+    ]);
+  });
+
+  it('leaves excess payment unallocated when invoice balances are smaller', () => {
+    expect(distributePaymentAcrossInvoices(500, [
+      { invoiceId: 'invoice-1', availableAmount: 120 },
+    ])).toEqual([{ invoice_id: 'invoice-1', amount: 120 }]);
+  });
+
+  it('rounds currency and ignores zero or negative balances', () => {
+    expect(distributePaymentAcrossInvoices(100.005, [
+      { invoiceId: 'invoice-0', availableAmount: 0 },
+      { invoiceId: 'invoice-negative', availableAmount: -10 },
+      { invoiceId: 'invoice-1', availableAmount: 100.005 },
+    ])).toEqual([{ invoice_id: 'invoice-1', amount: 100.01 }]);
+  });
+});
+
+describe('PaymentLinkingService canonical linking', () => {
   beforeEach(() => {
-    // Clear all mocks before each test
-    vi.clearAllMocks();
+    mocks.logPaymentAction.mockReset();
   });
 
-  describe('linkPaymentToContract', () => {
-    it('should successfully link payment to contract', async () => {
-      const result = await paymentLinkingService.linkPaymentToContract(
-        paymentId,
-        contractId,
-        companyId
-      );
-
-      expect(result.success).toBe(true);
-      expect(result.linked).toBe(true);
-    });
-
-    it('should fail to link non-existent payment', async () => {
-      const result = await paymentLinkingService.linkPaymentToContract(
-        'non-existent-payment',
-        contractId,
-        companyId
-      );
-
-      expect(result.success).toBe(false);
-      expect(result.errors).toContain('الدفعة غير موجودة');
-    });
-
-    it('should fail to link payment to already linked contract', async () => {
-      const result = await paymentLinkingService.linkPaymentToContract(
-        paymentId,
-        contractId,
-        companyId
-      );
-
-      // Mock payment already linked
-      vi.spyOn(paymentLinkingService, 'isPaymentLinkedToContract')
-        .mockResolvedValueOnce(true);
-
-      expect(result.success).toBe(false);
-      expect(result.errors).toContain('الدفعة مرتبطة بعقد بالفعل');
-    });
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
 
-  describe('linkPaymentToInvoice', () => {
-    it('should successfully link payment to invoice', async () => {
-      const result = await paymentLinkingService.linkPaymentToInvoice(
-        paymentId,
-        invoiceId,
-        companyId
-      );
-
-      expect(result.success).toBe(true);
-      expect(result.linked).toBe(true);
+  it('manual linking executes the exact target selected by the user', async () => {
+    vi.spyOn(service, 'getById').mockResolvedValue(payment);
+    const executeLinking = vi.spyOn(service, 'executeLinking').mockResolvedValue({
+      success: true,
+      linkedTo: { type: 'invoice', id: 'selected-invoice', number: 'INV-10' },
+      confidence: 1,
+      reason: 'manual',
     });
 
-    it('should fail to link non-existent payment', async () => {
-      const result = await paymentLinkingService.linkPaymentToInvoice(
-        'non-existent-payment',
-        invoiceId,
-        companyId
-      );
+    const result = await service.manualLink(
+      payment.id,
+      'invoice',
+      'selected-invoice',
+      'actor-id'
+    );
 
-      expect(result.success).toBe(false);
-      expect(result.errors).toContain('الدفعة غير موجودة');
-    });
-
-    it('should fail to link payment to already linked invoice', async () => {
-      const result = await paymentLinkingService.linkPaymentToInvoice(
-        paymentId,
-        invoiceId,
-        companyId
-      );
-
-      // Mock invoice already linked
-      vi.spyOn(paymentLinkingService, 'isPaymentLinkedToInvoice')
-        .mockResolvedValueOnce(true);
-
-      expect(result.success).toBe(false);
-      expect(result.errors).toContain('الدفعة مرتبطة بفاتورة بالفعل');
-    });
+    expect(result.success).toBe(true);
+    expect(executeLinking).toHaveBeenCalledWith(payment, expect.objectContaining({
+      targetId: 'selected-invoice',
+      targetType: 'invoice',
+      confidence: 1,
+    }));
+    expect(mocks.logPaymentAction).toHaveBeenCalledWith(
+      'linked_manually',
+      payment.id,
+      'actor-id',
+      payment.company_id,
+      'selected-invoice',
+      expect.any(Object)
+    );
   });
 
-  describe('autoLinkPayments', () => {
-    it('should auto-link payments to contracts', async () => {
-      const payments = [
-        { id: 'payment-1', amount: 1000, customer_id: 'customer-1' },
-        { id: 'payment-2', amount: 1500, customer_id: 'customer-2' }
-      ];
+  it('unlinking replaces active allocations with an empty atomic allocation set', async () => {
+    const currentAllocations = [{ invoice_id: 'invoice-1', amount: 300 }];
+    vi.spyOn(service, 'getById').mockResolvedValue(payment);
+    vi.spyOn(service, 'getCurrentInvoiceAllocations').mockResolvedValue(currentAllocations);
+    const replace = vi.spyOn(service, 'replaceInvoiceAllocations').mockResolvedValue();
 
-      const result = await paymentLinkingService.autoLinkPayments(companyId, payments);
+    const result = await service.unlinkPayment(payment.id, 'actor-id');
 
-      expect(result.success).toBe(true);
-      expect(result.linkedCount).toBe(2);
-    });
-
-    it('should handle empty payments array', async () => {
-      const result = await paymentLinkingService.autoLinkPayments(companyId, []);
-
-      expect(result.success).toBe(true);
-      expect(result.linkedCount).toBe(0);
-      expect(result.failedCount).toBe(0);
-    });
-
-    it('should handle linking errors gracefully', async () => {
-      const payments = [
-        { id: 'payment-1', amount: 1000, customer_id: 'customer-1' },
-        { id: 'payment-2', amount: 1500, customer_id: null } // Missing customer
-      ];
-
-      const result = await paymentLinkingService.autoLinkPayments(companyId, payments);
-
-      expect(result.success).toBe(true);
-      expect(result.linkedCount).toBe(1); // Only first payment linked
-      expect(result.failedCount).toBe(1);
-    });
+    expect(result.success).toBe(true);
+    expect(replace).toHaveBeenCalledWith(
+      payment,
+      [],
+      currentAllocations,
+      expect.stringContaining('فك تخصيص')
+    );
   });
 
-  describe('getUnlinkedPayments', () => {
-    it('should return unlinked payments', async () => {
-      // This would require database query
-      // For unit tests, we'll just verify the method exists
-      expect(paymentLinkingService.getUnlinkedPayments).toBeDefined();
-    });
+  it('does not write anything when the payment has no active allocations', async () => {
+    vi.spyOn(service, 'getById').mockResolvedValue(payment);
+    vi.spyOn(service, 'getCurrentInvoiceAllocations').mockResolvedValue([]);
+    const replace = vi.spyOn(service, 'replaceInvoiceAllocations').mockResolvedValue();
 
-    it('should handle company filter', async () => {
-      expect(paymentLinkingService.getUnlinkedPayments).toBeDefined();
-    });
+    const result = await service.unlinkPayment(payment.id, 'actor-id');
+
+    expect(result.success).toBe(true);
+    expect(replace).not.toHaveBeenCalled();
+  });
+});
+
+describe('PaymentRepository financial guards', () => {
+  const repository = new PaymentRepository();
+
+  it('blocks direct invoice and contract links', async () => {
+    await expect(repository.linkToInvoice('payment-id', 'invoice-id')).rejects.toThrow(
+      'Direct invoice linking is disabled'
+    );
+    await expect(repository.linkToContract('payment-id', 'contract-id')).rejects.toThrow(
+      'Direct contract linking is disabled'
+    );
   });
 
-  describe('getPaymentLinkingStatistics', () => {
-    it('should return linking statistics', async () => {
-      // Mock the statistics
-      const mockStats = {
-        totalPayments: 100,
-        linkedPayments: 75,
-        unlinkedPayments: 25,
-        autoLinkingRate: 75
-      };
-
-      vi.spyOn(paymentLinkingService, 'getPaymentLinkingStatistics')
-        .mockResolvedValueOnce(mockStats);
-
-      const result = await paymentLinkingService.getPaymentLinkingStatistics(companyId);
-
-      expect(result.success).toBe(true);
-      expect(result.data).toEqual(mockStats);
-    });
-  });
-
-  describe('relinkPayment', () => {
-    it('should successfully relink payment to different contract', async () => {
-      const result = await paymentLinkingService.relinkPayment(
-        paymentId,
-        'new-contract-id', // Different contract
-        companyId
-      );
-
-      expect(result.success).toBe(true);
-    });
-
-    it('should fail to relink non-existent payment', async () => {
-      const result = await paymentLinkingService.relinkPayment(
-        'non-existent-payment',
-        'new-contract-id',
-        companyId
-      );
-
-      expect(result.success).toBe(false);
-      expect(result.errors).toContain('الدفعة غير موجودة');
-    });
+  it('blocks direct status transitions', async () => {
+    await expect(repository.updateStatus('payment-id', 'completed')).rejects.toThrow(
+      'Direct payment status updates are disabled'
+    );
   });
 });

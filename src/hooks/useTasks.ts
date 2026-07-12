@@ -125,6 +125,7 @@ export interface CreateTaskInput {
   start_date?: string;
   category?: string;
   tags?: string[];
+  metadata?: Record<string, unknown>;
   checklists?: { title: string }[];
 }
 
@@ -352,6 +353,7 @@ export function useUpdateTask() {
         if (taskData.priority) changes.push(`الأولوية إلى "${getPriorityLabel(taskData.priority)}"`);
         if (taskData.due_date) changes.push('تاريخ الاستحقاق');
         if (taskData.assigned_to) changes.push('المسؤول');
+        if (taskData.metadata !== undefined) changes.push('قرار المعالجة');
 
         const description = changes.length > 0
           ? `تم تحديث: ${changes.join('، ')}`

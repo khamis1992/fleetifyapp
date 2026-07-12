@@ -37,16 +37,18 @@ export const AuthForm: FC = () => {
         const rememberMeEnabled = localStorage.getItem(REMEMBER_ME_KEY) === 'true';
         if (rememberMeEnabled) {
           const savedEmail = localStorage.getItem(REMEMBERED_EMAIL_KEY);
-          const savedPassword = localStorage.getItem(REMEMBERED_PASSWORD_KEY);
 
-          if (savedEmail && savedPassword) {
+          if (savedEmail) {
             setFormData({
               email: savedEmail,
-              password: savedPassword
+              password: ''
             });
             setRememberMe(true);
           }
         }
+
+        // Remove passwords saved by older versions of the login form.
+        localStorage.removeItem(REMEMBERED_PASSWORD_KEY);
       } catch (error) {
         console.warn('Failed to load saved credentials:', error);
         // Clear potentially corrupted data
@@ -73,12 +75,12 @@ export const AuthForm: FC = () => {
     setIsLoading(true);
 
     try {
-      // Save credentials if remember me is checked
+      // Remember the email only. Supabase owns secure session persistence.
       if (rememberMe) {
         try {
           localStorage.setItem(REMEMBER_ME_KEY, 'true');
           localStorage.setItem(REMEMBERED_EMAIL_KEY, formData.email);
-          localStorage.setItem(REMEMBERED_PASSWORD_KEY, formData.password);
+          localStorage.removeItem(REMEMBERED_PASSWORD_KEY);
         } catch (error) {
           console.warn('Failed to save credentials:', error);
         }
@@ -239,8 +241,8 @@ export const AuthForm: FC = () => {
               <span className="text-white font-bold text-3xl">F</span>
             </motion.div>
             <div>
-              <span className="text-3xl font-bold text-slate-900 dark:text-white block">{t("fleetify")}</span>
-              <span className="text-teal-600 dark:text-teal-400 text-sm">نظام إدارة الأساطيل</span>
+              <span className="block text-3xl font-bold text-white">{t("fleetify")}</span>
+              <span className="text-sm text-teal-300">نظام إدارة الأساطيل</span>
             </div>
           </motion.div>
 
@@ -282,15 +284,15 @@ export const AuthForm: FC = () => {
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.5 + feature.delay }}
                 whileHover={{ x: 10, transition: { duration: 0.2 } }}
-                className="flex items-center gap-4 text-slate-300 group cursor-pointer"
+                className="group flex cursor-pointer items-center gap-4 text-slate-300"
               >
                 <motion.div 
                   whileHover={{ scale: 1.1, rotate: 10 }}
-                  className="w-12 h-12 rounded-xl bg-teal-50 dark:bg-teal-500/20 flex items-center justify-center border border-teal-200 dark:border-teal-500/20 group-hover:border-teal-400/50 transition-colors"
+                  className="flex h-12 w-12 items-center justify-center rounded-xl border border-white/10 bg-white/95 transition-colors group-hover:border-teal-300"
                 >
-                  <feature.icon className="w-5 h-5 text-teal-600 dark:text-teal-400" />
+                  <feature.icon className="h-5 w-5 text-teal-600" />
                 </motion.div>
-                <span className="text-slate-700 dark:text-slate-300 group-hover:text-teal-600 dark:group-hover:text-teal-300 transition-colors">{feature.text}</span>
+                <span className="text-slate-300 transition-colors group-hover:text-teal-200">{feature.text}</span>
               </motion.div>
             ))}
           </motion.div>
@@ -313,10 +315,10 @@ export const AuthForm: FC = () => {
                 whileHover={{ scale: 1.05 }}
                 className="cursor-default"
               >
-                <p className="text-4xl font-bold text-teal-600 dark:text-teal-400">
+                <p className="text-4xl font-bold text-teal-400">
                   {stat.value}
                 </p>
-                <p className="text-slate-600 dark:text-slate-500 text-sm mt-1">{stat.label}</p>
+                <p className="mt-1 text-sm text-slate-400">{stat.label}</p>
               </motion.div>
             ))}
           </motion.div>
@@ -345,9 +347,9 @@ export const AuthForm: FC = () => {
               <div className="w-14 h-14 rounded-xl bg-teal-500 flex items-center justify-center shadow-lg">
                 <span className="text-white font-bold text-2xl">F</span>
               </div>
-              <span className="text-2xl font-bold text-slate-900 dark:text-white">{t("fleetify")}</span>
+              <span className="text-2xl font-bold text-white">{t("fleetify")}</span>
             </motion.div>
-            <p className="text-slate-600 dark:text-slate-400">نظام إدارة تأجير السيارات المتكامل</p>
+            <p className="text-slate-300">نظام إدارة تأجير السيارات المتكامل</p>
           </motion.div>
 
           {/* Form Card with glassmorphism */}
@@ -445,19 +447,19 @@ export const AuthForm: FC = () => {
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.55 }}
                 >
-                   <div className="flex items-center space-x-2 space-x-reverse">
+                   <div className="flex min-h-11 items-center space-x-2 space-x-reverse">
                      <Checkbox
                        id="remember"
                        checked={rememberMe}
                        onCheckedChange={(checked) => setRememberMe(checked as boolean)}
                        disabled={isLoading}
-                       className="border-slate-300 dark:border-slate-600 data-[state=checked]:bg-teal-500 data-[state=checked]:border-teal-500"
+                       className="!h-5 !min-h-5 !w-5 !min-w-5 border-slate-300 data-[state=checked]:border-teal-500 data-[state=checked]:bg-teal-500 dark:border-slate-600"
                      />
                      <label
                        htmlFor="remember"
                        className="text-sm text-slate-700 dark:text-slate-300 leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
                      >
-                       تذكر بياناتي
+                       تذكر بريدي الإلكتروني
                      </label>
                    </div>
                 </motion.div>
@@ -507,9 +509,9 @@ export const AuthForm: FC = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.8 }}
-            className="text-center mt-8 text-sm text-slate-600 dark:text-slate-500"
+            className="mt-8 text-center text-sm text-slate-400"
           >
-            © 2025 Fleetify - جميع الحقوق محفوظة
+            © {new Date().getFullYear()} Fleetify - جميع الحقوق محفوظة
           </motion.p>
         </motion.div>
       </div>

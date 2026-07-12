@@ -16,9 +16,9 @@ export const PERMISSION_ALIASES: Record<string, string[]> = {
   'finance.payments.create': ['finance.payment.create', 'finance.payments.write'],
   'finance.payment.create': ['finance.payments.write'],
   'payments:update': ['finance.payments.write', 'finance.payment.edit_amount', 'finance.payment.edit_date'],
-  'payments.delete': ['finance.payment.cancel', 'finance.payments.write'],
-  'payments:delete': ['finance.payment.cancel', 'finance.payments.write', 'payments.delete'],
-  'payments.approve': ['finance.payment.cancel', 'finance.payments.write'],
+  'payments.delete': ['finance.payment.cancel'],
+  'payments:delete': ['finance.payment.cancel', 'payments.delete'],
+  'payments.approve': ['finance.payment.approve'],
 };
 
 export const getPermissionCandidates = (permissionId: string) => [

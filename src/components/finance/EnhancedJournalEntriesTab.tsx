@@ -49,6 +49,7 @@ import {
   TrendingDown,
   Calculator,
   XCircle,
+  Loader2,
 } from 'lucide-react';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 import { cn } from '@/lib/utils';
@@ -84,6 +85,9 @@ interface JournalEntry {
   total_debit: number;
   total_credit: number;
   status: 'posted' | 'draft' | 'reversed' | 'cancelled';
+  reversal_entry_id?: string | null;
+  reversed_at?: string | null;
+  reversed_by?: string | null;
   reference_type?: string | null;
   reference_id?: string | null;
   created_at?: string;
@@ -96,7 +100,7 @@ interface EnhancedJournalEntriesTabProps {
   isLoading?: boolean;
   onFiltersChange: (filters: Partial<LedgerFilters>) => void;
   onPostEntry?: (entryId: string) => Promise<void>;
-  onReverseEntry?: (entryId: string) => Promise<void>;
+  onReverseEntry?: (entryId: string, reason: string) => Promise<void>;
   onDeleteEntry?: (entryId: string) => Promise<void>;
   onExport?: (format: 'excel' | 'pdf' | 'csv') => Promise<void>;
 }
@@ -141,7 +145,7 @@ interface JournalEntryCardProps {
   onView?: (entry: JournalEntry) => void;
   onEdit?: (entry: JournalEntry) => void;
   onPost?: (entry: JournalEntry) => void;
-  onReverse?: (entry: JournalEntry) => void;
+  onReverse?: (entry: JournalEntry, reason: string) => Promise<void> | void;
   onDelete?: (entry: JournalEntry) => void;
   onPrint?: (entry: JournalEntry) => void;
 }
@@ -159,8 +163,11 @@ function JournalEntryCard({
   const [isExpanded, setIsExpanded] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showReverseDialog, setShowReverseDialog] = useState(false);
+  const [reversalReason, setReversalReason] = useState('');
+  const [isReversing, setIsReversing] = useState(false);
 
-  const statusInfo = statusConfig[entry.status];
+  const effectiveStatus = entry.reversed_at ? 'reversed' : entry.status;
+  const statusInfo = statusConfig[effectiveStatus];
   const StatusIcon = statusInfo.icon;
 
   // حساب التوازن
@@ -239,7 +246,7 @@ function JournalEntryCard({
                     </DropdownMenuItem>
                   </>
                 )}
-                {entry.status === 'posted' && (
+                {entry.status === 'posted' && !entry.reversed_at && (
                   <DropdownMenuItem onClick={() => setShowReverseDialog(true)}>
                     <RotateCcw className="h-4 w-4 ml-2" />
                     عكس القيد
@@ -415,7 +422,14 @@ function JournalEntryCard({
       </AlertDialog>
 
       {/* نافذة تأكيد العكس */}
-      <AlertDialog open={showReverseDialog} onOpenChange={setShowReverseDialog}>
+      <AlertDialog
+        open={showReverseDialog}
+        onOpenChange={(open) => {
+          if (isReversing) return;
+          setShowReverseDialog(open);
+          if (!open) setReversalReason('');
+        }}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>تأكيد عكس القيد</AlertDialogTitle>
@@ -424,14 +438,38 @@ function JournalEntryCard({
               جديد.
             </AlertDialogDescription>
           </AlertDialogHeader>
+          <div className="space-y-2">
+            <label htmlFor={`reversal-reason-${entry.id}`} className="text-sm font-semibold text-[#0F172A]">
+              سبب العكس
+            </label>
+            <Input
+              id={`reversal-reason-${entry.id}`}
+              value={reversalReason}
+              onChange={(event) => setReversalReason(event.target.value)}
+              placeholder="اكتب سببًا واضحًا لسجل التدقيق المالي"
+              disabled={isReversing}
+              className="h-11 rounded-lg"
+            />
+          </div>
           <AlertDialogFooter>
-            <AlertDialogCancel>إلغاء</AlertDialogCancel>
+            <AlertDialogCancel disabled={isReversing}>إلغاء</AlertDialogCancel>
             <AlertDialogAction
-              onClick={() => {
-                onReverse?.(entry);
-                setShowReverseDialog(false);
+              disabled={!reversalReason.trim() || isReversing}
+              onClick={async (event) => {
+                event.preventDefault();
+                setIsReversing(true);
+                try {
+                  await onReverse?.(entry, reversalReason.trim());
+                  setShowReverseDialog(false);
+                  setReversalReason('');
+                } catch {
+                  // The mutation displays the accounting error and keeps the dialog open.
+                } finally {
+                  setIsReversing(false);
+                }
               }}
             >
+              {isReversing && <Loader2 className="ml-2 h-4 w-4 animate-spin" />}
               عكس القيد
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -464,7 +502,7 @@ export function EnhancedJournalEntriesTab({
     const posted = entries.filter((e) => e.status === 'posted').length;
     const draft = entries.filter((e) => e.status === 'draft').length;
     const cancelled = entries.filter(
-      (e) => e.status === 'reversed' || e.status === 'cancelled'
+      (e) => Boolean(e.reversed_at) || e.status === 'reversed' || e.status === 'cancelled'
     ).length;
     const unbalanced = entries.filter(
       (e) => Math.abs(e.total_debit - e.total_credit) >= 0.001
@@ -509,7 +547,7 @@ export function EnhancedJournalEntriesTab({
 
         <Card className="hover:shadow-md transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">ملغية</CardTitle>
+            <CardTitle className="text-sm font-medium">معكوسة أو ملغية</CardTitle>
             <XCircle className="h-4 w-4 text-red-600" />
           </CardHeader>
           <CardContent>
@@ -695,7 +733,7 @@ export function EnhancedJournalEntriesTab({
               key={entry.id}
               entry={entry}
               onPost={onPostEntry ? (e) => onPostEntry(e.id) : undefined}
-              onReverse={onReverseEntry ? (e) => onReverseEntry(e.id) : undefined}
+              onReverse={onReverseEntry ? (entry, reason) => onReverseEntry(entry.id, reason) : undefined}
               onDelete={onDeleteEntry ? (e) => onDeleteEntry(e.id) : undefined}
             />
           ))

@@ -451,7 +451,7 @@ export default function FinancialSystemAnalysis() {
                       <div className="font-medium text-destructive">فشل في التحليل الذكي</div>
                       <div className="text-sm text-muted-foreground">
                         {aiError?.message?.includes('API key') ? 
-                          'مفتاح OpenAI API غير مُعدّ بشكل صحيح' :
+                          'مفتاح LongCat API غير مُعدّ بشكل صحيح' :
                           aiError?.message || 'حدث خطأ في الاتصال بخدمة التحليل الذكي'
                         }
                       </div>
