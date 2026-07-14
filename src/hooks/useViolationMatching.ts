@@ -6,6 +6,7 @@
 import { useState, useCallback } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import type { Database } from '@/integrations/supabase/types';
 import {
   ExtractedViolation,
   MatchedViolation,
@@ -584,7 +585,7 @@ export function useViolationEnrichment() {
 
       try {
         // بناء كائن التحديث
-        const updateData: Record<string, string | null> = {};
+        const updateData: Database['public']['Tables']['penalties']['Update'] = {};
         
         for (const field of item.missingFields) {
           if (field.newValue) {

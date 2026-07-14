@@ -59,7 +59,7 @@ export interface UseExportReturn {
  */
 export function useExport(options: UseExportOptions = {}): UseExportReturn {
   const { browsedCompany } = useUnifiedCompanyAccess();
-  const companyName = options.companyName || browsedCompany?.company_name || 'FleetifyApp';
+  const companyName = options.companyName || browsedCompany?.name || 'FleetifyApp';
 
   const [state, setState] = useState<ExportState>({
     isExporting: false,

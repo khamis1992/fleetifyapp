@@ -28,6 +28,28 @@ export interface InvoiceJournalStats {
   linkingPercentage: number;
 }
 
+type JournalEntrySummary = {
+  id: string;
+  entry_number: string;
+  entry_date: string;
+  status: string;
+  reference_type: string | null;
+  reference_id: string | null;
+  reversed_at: string | null;
+};
+
+type InvoiceJournalQueryRow = {
+  id: string;
+  invoice_number: string;
+  invoice_date: string;
+  total_amount: number;
+  status: string;
+  payment_status: string;
+  journal_entry_id: string | null;
+  journal_entries: JournalEntrySummary | JournalEntrySummary[] | null;
+  customers: { id: string; name: string | null } | null;
+};
+
 /**
  * Hook لجلب بيانات ربط الفواتير بالقيود المحاسبية
  */
@@ -62,7 +84,7 @@ export function useInvoiceJournalLinking(startDate?: string, endDate?: string) {
           ),
           customers (
             id,
-            name
+            name:first_name
           )
         `)
         .eq('company_id', companyId)
@@ -79,10 +101,11 @@ export function useInvoiceJournalLinking(startDate?: string, endDate?: string) {
 
       if (invoicesError) throw invoicesError;
       if (!invoices) return null;
+      const invoiceRows = invoices as unknown as InvoiceJournalQueryRow[];
 
       // 2. Prefer the invoice FK. Only use an exact invoice reference as fallback.
-      const invoiceToJournalMap = new Map<string, any>();
-      for (const invoice of invoices as any[]) {
+      const invoiceToJournalMap = new Map<string, JournalEntrySummary>();
+      for (const invoice of invoiceRows) {
         const relation = Array.isArray(invoice.journal_entries)
           ? invoice.journal_entries[0]
           : invoice.journal_entries;
@@ -91,7 +114,7 @@ export function useInvoiceJournalLinking(startDate?: string, endDate?: string) {
         }
       }
 
-      const missingInvoiceIds = (invoices as any[])
+      const missingInvoiceIds = invoiceRows
         .filter((invoice) => !invoiceToJournalMap.has(invoice.id))
         .map((invoice) => invoice.id as string);
 
@@ -114,7 +137,7 @@ export function useInvoiceJournalLinking(startDate?: string, endDate?: string) {
       }
 
       // 4. Build the links array
-      const links: InvoiceJournalLink[] = invoices.map((invoice: any) => {
+      const links: InvoiceJournalLink[] = invoiceRows.map((invoice) => {
         const journalEntry = invoiceToJournalMap.get(invoice.id);
         const isLinked = !!journalEntry;
         
@@ -164,16 +187,16 @@ export function useInvoiceJournalLinking(startDate?: string, endDate?: string) {
 /**
  * Hook للحصول على تفاصيل القيد المحاسبي لفاتورة معينة
  */
-export function useInvoiceJournalDetails(invoiceId: string | null) {
+export function useInvoiceJournalDetails(journalEntryId: string | null) {
   const { user } = useAuth();
   const companyId = user?.profile?.company_id;
 
   return useQuery({
-    queryKey: ['invoice-journal-details', invoiceId],
+    queryKey: ['invoice-journal-details', journalEntryId, companyId],
     queryFn: async () => {
-      if (!invoiceId || !companyId) return null;
+      if (!journalEntryId || !companyId) return null;
 
-      // Get journal entry for this invoice
+      // The report passes the linked journal entry id, so resolve it directly.
       const { data: journalEntry, error: journalError } = await supabase
         .from('journal_entries')
         .select(`
@@ -187,13 +210,13 @@ export function useInvoiceJournalDetails(invoiceId: string | null) {
           )
         `)
         .eq('company_id', companyId)
-        .or(`reference_invoice_id.eq.${invoiceId},invoice_id.eq.${invoiceId}`)
+        .eq('id', journalEntryId)
         .maybeSingle();
 
       if (journalError && journalError.code !== 'PGRST116') throw journalError;
 
       return journalEntry;
     },
-    enabled: !!invoiceId && !!companyId
+    enabled: !!journalEntryId && !!companyId
   });
 }

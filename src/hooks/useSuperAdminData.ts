@@ -25,12 +25,12 @@ export interface CompanyOverview {
 export interface SubscriptionPlan {
   id: string;
   name: string;
-  name_ar?: string;
+  name_ar?: string | null;
   price: number;
   billing_cycle: string;
-  features: Json;
-  max_users?: number;
-  is_active: boolean;
+  features: Json | null;
+  max_users?: number | null;
+  is_active: boolean | null;
 }
 
 export const useSuperAdminData = () => {

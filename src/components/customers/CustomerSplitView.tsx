@@ -112,7 +112,7 @@ export const CustomerSplitView: React.FC<CustomerSplitViewProps> = ({
           status,
           start_date,
           end_date,
-          total_amount,
+          contract_amount,
           vehicles:vehicle_id (
             make,
             model,

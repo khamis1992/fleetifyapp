@@ -267,9 +267,9 @@ export const useUpdateLegalCase = () => {
 
         if (currentCase) {
           updateData.total_costs = 
-            (data.legal_fees ?? currentCase.legal_fees) +
-            (data.court_fees ?? currentCase.court_fees) +
-            (data.other_expenses ?? currentCase.other_expenses);
+            (data.legal_fees ?? currentCase.legal_fees ?? 0) +
+            (data.court_fees ?? currentCase.court_fees ?? 0) +
+            (data.other_expenses ?? currentCase.other_expenses ?? 0);
         }
       }
 

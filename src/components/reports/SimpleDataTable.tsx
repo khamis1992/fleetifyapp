@@ -9,11 +9,15 @@ interface SimpleDataTableProps {
 export function SimpleDataTable({ data, title }: SimpleDataTableProps) {
   const { formatCurrency } = useCurrencyFormatter();
 
-  if (!data || data.length === 0) {
+  const rows = data.filter((item): item is Record<string, unknown> =>
+    typeof item === 'object' && item !== null
+  );
+
+  if (rows.length === 0) {
     return null;
   }
 
-  const firstItem = data[0];
+  const firstItem = rows[0];
   const columns = Object.keys(firstItem);
 
   const formatCellValue = (value: unknown, column: string) => {
@@ -41,7 +45,7 @@ export function SimpleDataTable({ data, title }: SimpleDataTableProps) {
             </tr>
           </thead>
           <tbody>
-            {data.slice(0, 10).map((item, index) => (
+            {rows.slice(0, 10).map((item, index) => (
               <tr key={index} className={index % 2 === 0 ? 'bg-white' : 'bg-slate-50'}>
                 {columns.map((column) => (
                   <td 
@@ -55,9 +59,9 @@ export function SimpleDataTable({ data, title }: SimpleDataTableProps) {
             ))}
           </tbody>
         </table>
-        {data.length > 10 && (
+        {rows.length > 10 && (
           <div className="mt-3 text-center text-sm text-slate-500">
-            عرض 10 من أصل {data.length} عنصر
+            عرض 10 من أصل {rows.length} عنصر
           </div>
         )}
       </div>

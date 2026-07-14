@@ -230,6 +230,7 @@ export const useDelinquentCustomers = (filters?: UseDelinquentCustomersFilters) 
               contract_id: row.contract_id,
               contract_number: row.contract_number,
               contract_start_date: row.contract_start_date,
+              contract_status: row.contract_status || 'active',
               monthly_rent: row.monthly_rent || 0,
               vehicle_id: row.vehicle_id,
               vehicle_plate: row.vehicle_plate,
@@ -252,9 +253,9 @@ export const useDelinquentCustomers = (filters?: UseDelinquentCustomersFilters) 
               has_previous_legal_cases: row.has_previous_legal_cases || false,
               previous_legal_cases_count: row.previous_legal_cases_count || 0,
               id: row.id,
-              last_updated_at: row.last_updated_at,
-              first_detected_at: row.first_detected_at,
-              is_active: row.is_active,
+              last_updated_at: row.last_updated_at || undefined,
+              first_detected_at: row.first_detected_at || undefined,
+              is_active: row.is_active ?? undefined,
             }));
           }
 
@@ -370,7 +371,14 @@ async function calculateDelinquentCustomersDynamically(
     
     // ⚡ تقسيم الطلبات لتجنب مشاكل حجم URL
     // نقسم العقود إلى دفعات من 100 عقد لكل طلب
-    let allInvoicesData: Array<{contract_id: string, due_date: string, payment_status: string, total_amount: number, paid_amount: number, status: string}> = [];
+    let allInvoicesData: Array<{
+      contract_id: string | null;
+      due_date: string | null;
+      payment_status: string;
+      total_amount: number;
+      paid_amount: number | null;
+      status: string;
+    }> = [];
     
     const contractBatches: string[][] = [];
     for (let i = 0; i < contractIds.length; i += BATCH_SIZE) {
@@ -479,7 +487,7 @@ async function calculateDelinquentCustomersDynamically(
         });
         
         violations = violationsData.map(v => ({
-          customer_id: vehicleToCustomerMap.get(v.vehicle_id) || '',
+          customer_id: v.vehicle_id ? vehicleToCustomerMap.get(v.vehicle_id) || '' : '',
           fine_amount: v.amount,
           status: v.status,
           vehicle_id: v.vehicle_id,
@@ -824,9 +832,11 @@ export const useRefreshDelinquentCustomers = () => {
         }
       }
 
+      if (!targetCompanyId) throw new Error('Company not found');
+
       // Call the update function
       const { data, error } = await supabase.rpc('update_delinquent_customers', {
-        p_company_id: targetCompanyId || null
+        p_company_id: targetCompanyId
       });
 
       if (error) throw error;

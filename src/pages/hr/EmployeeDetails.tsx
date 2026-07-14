@@ -33,6 +33,7 @@ import EmployeePayrollDetails from '@/components/hr/EmployeePayrollDetails';
 import { useCreatePayroll, CreatePayrollData } from '@/hooks/usePayroll';
 import { useCompanyFilter } from '@/hooks/useUnifiedCompanyAccess';
 import { HRMetricCard, HRPageHeader, HRPageShell } from '@/components/hr/HRDesignSystem';
+import { Permission } from '@/lib/permissions/roles';
 
 interface Employee {
   id: string;
@@ -73,8 +74,8 @@ export default function EmployeeDetails() {
   const companyFilter = useCompanyFilter();
   const createPayrollMutation = useCreatePayroll();
 
-  const canEdit = hasPermission('edit_employees');
-  const canDelete = hasPermission('delete_employees');
+  const canEdit = hasPermission(Permission.EDIT_EMPLOYEE);
+  const canDelete = hasPermission(Permission.DELETE_EMPLOYEE);
 
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);

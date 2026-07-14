@@ -125,7 +125,7 @@ export const useCalculateCaseValue = (contractId: string, companyId?: string) =>
 /**
  * Hook الرئيسي لتحويل العقد إلى قضية قانونية
  */
-export const useConvertToLegal = () => {
+const useLegacyConvertToLegal = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
@@ -325,7 +325,7 @@ ${notes ? `ملاحظات: ${notes}` : ''}`,
 /**
  * Hook لإغلاق قضية قانونية محددة
  */
-export const useCloseLegalCase = () => {
+const useLegacyCloseLegalCase = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
@@ -369,7 +369,7 @@ export const useCloseLegalCase = () => {
   });
 };
 
-export const useRevertFromLegal = () => {
+const useLegacyRevertFromLegal = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
@@ -461,6 +461,102 @@ export const useRevertFromLegal = () => {
         description: error.message,
       });
     },
+  });
+};
+
+void useLegacyConvertToLegal;
+void useLegacyCloseLegalCase;
+void useLegacyRevertFromLegal;
+
+type ConvertLegalResult = {
+  legal_case: { id: string };
+  case_number: string;
+  total_case_value: number;
+};
+
+export const useConvertToLegal = () => {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (params: ConvertToLegalParams & { contract: ContractForLegal }) => {
+      if (!user?.id) throw new Error('المستخدم غير مصرح له');
+      const { data, error } = await supabase.rpc('convert_contract_to_legal_v1', {
+        p_company_id: params.contract.company_id,
+        p_contract_id: params.contract.id,
+        p_notes: params.notes || '',
+        p_priority: params.priority || 'high',
+        p_case_type: params.caseType || 'payment_collection',
+        p_actor_id: user.id,
+      });
+      if (error) throw error;
+      const result = data as unknown as ConvertLegalResult;
+      return { legalCase: result.legal_case, caseNumber: result.case_number, totalCaseValue: Number(result.total_case_value || 0) };
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['contract-details'] });
+      queryClient.invalidateQueries({ queryKey: ['contracts'] });
+      queryClient.invalidateQueries({ queryKey: ['legal-cases'] });
+      queryClient.invalidateQueries({ queryKey: ['legal-case-stats'] });
+      queryClient.invalidateQueries({ queryKey: ['vehicles'] });
+      toast.success(`تم التحويل بنجاح - قضية رقم ${data.caseNumber}`);
+    },
+    onError: (error: Error) => toast.error('فشل في تحويل العقد للشؤون القانونية', { description: error.message }),
+  });
+};
+
+export const useCloseLegalCase = () => {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ caseId, reason }: { caseId: string; reason: string }) => {
+      if (!user?.id || !user.profile?.company_id) throw new Error('المستخدم غير مصرح له');
+      const { data, error } = await supabase.rpc('close_legal_case_outcome_v1', {
+        p_company_id: user.profile.company_id,
+        p_case_id: caseId,
+        p_case_direction: 'filed_by_us',
+        p_outcome_type: 'withdrawn',
+        p_outcome_amount: 0,
+        p_outcome_amount_type: 'none',
+        p_payment_direction: 'none',
+        p_outcome_date: new Date().toISOString().slice(0, 10),
+        p_outcome_notes: reason,
+        p_actor_id: user.id,
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['legal-cases'] });
+      queryClient.invalidateQueries({ queryKey: ['existing-legal-case'] });
+      toast.success('تم إغلاق القضية بنجاح');
+    },
+    onError: (error: Error) => toast.error('فشل في إغلاق القضية', { description: error.message }),
+  });
+};
+
+export const useRevertFromLegal = () => {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ contractId, reason }: { contractId: string; reason: string }) => {
+      if (!user?.id || !user.profile?.company_id) throw new Error('المستخدم غير مصرح له');
+      const { data, error } = await supabase.rpc('revert_contract_from_legal_v1', {
+        p_company_id: user.profile.company_id,
+        p_contract_id: contractId,
+        p_reason: reason,
+        p_actor_id: user.id,
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['contract-details'] });
+      queryClient.invalidateQueries({ queryKey: ['contracts'] });
+      queryClient.invalidateQueries({ queryKey: ['legal-cases'] });
+      queryClient.invalidateQueries({ queryKey: ['vehicles'] });
+      toast.success('تم إلغاء الإجراء القانوني بنجاح');
+    },
+    onError: (error: Error) => toast.error('فشل في إلغاء الإجراء القانوني', { description: error.message }),
   });
 };
 

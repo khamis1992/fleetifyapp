@@ -1,65 +1,61 @@
 import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import type { Tables } from '@/integrations/supabase/types';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 import { queryKeys } from '@/utils/queryKeys';
 
-// Extend the contract type to include vehicle data
-interface ContractWithVehicle extends Record<string, any> {
-  id: string;
-  company_id: string;
-  customer_id: string;
-  vehicle_id?: string | null;
-  contract_number: string;
-  contract_date: string;
-  start_date: string;
-  end_date: string;
-  contract_amount: number;
-  monthly_amount: number;
-  status: string;
-  contract_type: string;
-  description?: string;
-  terms?: string;
-  created_at: string;
-  updated_at: string;
+type ContractRow = Tables<'contracts'>;
+type ContractCustomer = Pick<
+  Tables<'customers'>,
+  | 'id'
+  | 'first_name_ar'
+  | 'last_name_ar'
+  | 'first_name'
+  | 'last_name'
+  | 'company_name_ar'
+  | 'company_name'
+  | 'customer_type'
+  | 'phone'
+  | 'national_id'
+>;
+type ContractCustomerSearchFields = Omit<ContractCustomer, 'customer_type'>;
+type ContractVehicle = Pick<
+  Tables<'vehicles'>,
+  'id' | 'plate_number' | 'make' | 'model' | 'year' | 'status'
+>;
+type ContractVehicleRelation = ContractVehicle & Pick<Tables<'vehicles'>, 'daily_rate'>;
+type ContractCostCenter = Pick<
+  Tables<'cost_centers'>,
+  'id' | 'center_code' | 'center_name' | 'center_name_ar'
+>;
+
+export type ContractWithVehicle = ContractRow & {
+  customers: ContractCustomer | null;
+  vehicles: ContractVehicleRelation | null;
+  cost_center: ContractCostCenter | null;
+  vehicle: ContractVehicle | null;
+  customer_name?: string | null;
+  customer_phone?: string | null;
+};
+
+interface ContractsDataFilters {
+  page?: number;
+  pageSize?: number;
+  status?: string;
+  legal_status?: string;
+  contract_type?: string;
+  customer_id?: string;
   cost_center_id?: string;
-  account_id?: string;
-  journal_entry_id?: string;
-  auto_renew_enabled?: boolean;
-  renewal_terms?: any;
-  vehicle_returned?: boolean;
-  last_renewal_check?: string;
-  last_payment_check_date?: string;
-  suspension_reason?: string;
-  expired_at?: string;
-  created_by?: string;
-  total_paid?: number;
-  balance_due?: number;
-  linked_payments_amount?: number;
-  customers?: {
-    id: string;
-    first_name_ar?: string;
-    last_name_ar?: string;
-    first_name?: string;
-    last_name?: string;
-    company_name_ar?: string;
-    company_name?: string;
-    customer_type?: string;
-  };
-  cost_center?: {
-    id: string;
-    center_code?: string;
-    center_name?: string;
-    center_name_ar?: string;
-  };
-  vehicle?: {
-    id: string;
-    plate_number: string;
-    make: string;
-    model: string;
-    year?: number;
-    status: string;
-  };
+  vehicle_id?: string;
+  search?: string;
+  start_date?: string;
+  end_date?: string;
+  min_amount?: string | number;
+  max_amount?: string | number;
+  applyLocalSearch?: boolean;
+  showDraftLike?: boolean;
+  showIncomplete?: boolean;
 }
 
 const normalizeSearchText = (value: unknown): string =>
@@ -72,7 +68,7 @@ const normalizeSearchText = (value: unknown): string =>
     .replace(/\s+/g, ' ')
     .trim();
 
-const buildCustomerSearchText = (customer: Record<string, any>): string =>
+const buildCustomerSearchText = (customer: ContractCustomerSearchFields): string =>
   normalizeSearchText([
     customer.first_name,
     customer.last_name,
@@ -84,7 +80,7 @@ const buildCustomerSearchText = (customer: Record<string, any>): string =>
     customer.national_id,
   ].filter(Boolean).join(' '));
 
-export const useContractsData = (filters: any = {}) => {
+export const useContractsData = (filters: ContractsDataFilters = {}) => {
   const { filter, getQueryKey, user, isBrowsingMode, browsedCompany, actualUserCompanyId } = useUnifiedCompanyAccess();
 
   // Debug: log filters received
@@ -341,13 +337,17 @@ export const useContractsData = (filters: any = {}) => {
       }
       
       // If we have contracts, fetch vehicle data separately to avoid PostgREST relationship issues
+      let contractsWithVehicles: ContractWithVehicle[] = (data || []).map((contract) => ({
+        ...contract,
+        vehicle: contract.vehicles,
+      }));
+
       if (data && data.length > 0) {
         // Extract unique vehicle IDs (filter out null/undefined values)
         const vehicleIds = [...new Set(
           data
-            .filter((contract: any) => contract.vehicle_id)
-            .map((contract: any) => contract.vehicle_id)
-            .filter((id: any) => id != null)
+            .map((contract) => contract.vehicle_id)
+            .filter((id): id is string => id !== null)
         )];
         
         console.log('🔍 [CONTRACTS_QUERY] Found vehicle IDs to fetch:', vehicleIds.length);
@@ -364,14 +364,16 @@ export const useContractsData = (filters: any = {}) => {
             console.log('✅ [CONTRACTS_QUERY] Successfully fetched vehicles:', vehiclesData.length);
             
             // Create a map for quick lookup
-            const vehiclesMap = new Map(vehiclesData.map((vehicle: any) => [vehicle.id, vehicle]));
-            
-            // Attach vehicle data to contracts
-            data.forEach((contract: any) => {
-              if (contract.vehicle_id && vehiclesMap.has(contract.vehicle_id)) {
-                contract.vehicle = vehiclesMap.get(contract.vehicle_id);
-              }
-            });
+            const vehiclesMap = new Map<string, ContractVehicle>(
+              vehiclesData.map((vehicle) => [vehicle.id, vehicle])
+            );
+
+            contractsWithVehicles = data.map((contract) => ({
+              ...contract,
+              vehicle: contract.vehicle_id
+                ? vehiclesMap.get(contract.vehicle_id) ?? contract.vehicles
+                : contract.vehicles,
+            }));
           } else if (vehiclesError) {
             console.error('❌ [CONTRACTS_QUERY] Error fetching vehicles:', vehiclesError);
           }
@@ -383,7 +385,7 @@ export const useContractsData = (filters: any = {}) => {
         // Return with pagination info if pagination is requested
         if (filters?.page || filters?.pageSize) {
           return {
-            data: data || [],
+            data: contractsWithVehicles,
             pagination: {
               page,
               pageSize,
@@ -394,7 +396,7 @@ export const useContractsData = (filters: any = {}) => {
           };
         }
 
-        return data || [];
+        return contractsWithVehicles;
       } catch (err) {
         console.error('❌ [CONTRACTS_QUERY] Exception in contracts fetch:', err);
         return [];
@@ -682,14 +684,14 @@ export const useContractsData = (filters: any = {}) => {
 
       // Amount range filters
       if (filters.min_amount && filters.min_amount !== '') {
-        const minAmount = parseFloat(filters.min_amount);
+        const minAmount = parseFloat(String(filters.min_amount));
         if (!isNaN(minAmount) && contract.contract_amount < minAmount) {
           return false;
         }
       }
 
       if (filters.max_amount && filters.max_amount !== '') {
-        const maxAmount = parseFloat(filters.max_amount);
+        const maxAmount = parseFloat(String(filters.max_amount));
         if (!isNaN(maxAmount) && contract.contract_amount > maxAmount) {
           return false;
         }

@@ -16,6 +16,17 @@ interface ClockOutData extends LocationData {
   employeeId: string;
 }
 
+interface FunctionsHttpErrorLike extends Error {
+  context?: {
+    url?: string;
+    headers?: HeadersInit;
+    body?: BodyInit | null;
+  };
+}
+
+const isFunctionsHttpError = (error: unknown): error is FunctionsHttpErrorLike =>
+  error instanceof Error && error.name === 'FunctionsHttpError';
+
 export const useAttendance = () => {
   const queryClient = useQueryClient();
 
@@ -116,7 +127,7 @@ export const useAttendance = () => {
       let errorData = error;
       
       // Check if it's a FunctionsHttpError with response
-      if (error.name === 'FunctionsHttpError' && error.context) {
+      if (isFunctionsHttpError(error) && error.context) {
         try {
           // The actual error details should be in the response
           const response = await fetch(error.context.url || '', {
@@ -183,7 +194,7 @@ export const useAttendance = () => {
       let errorData = error;
       
       // Check if it's a FunctionsHttpError with response
-      if (error.name === 'FunctionsHttpError' && error.context) {
+      if (isFunctionsHttpError(error) && error.context) {
         try {
           // The actual error details should be in the response
           const response = await fetch(error.context.url || '', {

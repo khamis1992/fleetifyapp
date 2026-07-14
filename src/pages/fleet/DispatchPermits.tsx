@@ -149,7 +149,9 @@ export default function DispatchPermits() {
           editingPermitId={editingPermitId}
         />
       )}
-    <PageHelp content={<DispatchPermitsPageHelpContent />} />
+    <PageHelp title="مساعدة تصاريح التحرك">
+      <DispatchPermitsPageHelpContent />
+    </PageHelp>
 
     </div>
   );

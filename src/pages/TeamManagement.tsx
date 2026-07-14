@@ -85,10 +85,11 @@ export const TeamManagement: React.FC = () => {
   const { data: userProfile, isLoading: isRoleLoading } = useQuery({
     queryKey: ['user-profile-role', user?.id],
     queryFn: async () => {
+      if (!user?.id) throw new Error('User ID is required');
       const { data, error } = await supabase
         .from('profiles')
         .select('role')
-        .eq('user_id', user?.id)
+        .eq('user_id', user.id)
         .maybeSingle();
       
       if (error) throw error;
@@ -322,7 +323,7 @@ export const TeamManagement: React.FC = () => {
         />
         <StatCard
           title="متوسط الأداء"
-          value={`${Math.round(employees?.reduce((sum, e) => sum + (e.performance_score || 0), 0) / (employees?.length || 1) || 0)}%`}
+          value={`${Math.round((employees?.reduce((sum, e) => sum + (e.performance_score || 0), 0) ?? 0) / (employees?.length || 1))}%`}
           icon={TrendingUp}
           color="bg-emerald-500"
           delay={0.3}

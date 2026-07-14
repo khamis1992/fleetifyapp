@@ -394,7 +394,7 @@ const _exportCustomersToExcel = async (
       query = query.eq('is_active', true);
     }
 
-    if (filters.customer_type && filters.customer_type !== 'all' && filters.customer_type !== undefined) {
+    if (filters.customer_type) {
       query = query.eq('customer_type', filters.customer_type);
     }
 

@@ -279,7 +279,7 @@ const FixedAssets = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+      <div className="min-h-screen bg-[#F6F8FB] flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
           <RefreshCw className="w-10 h-10 animate-spin text-slate-500" />
           <p className="text-slate-500">جاري تحميل الأصول الثابتة...</p>
@@ -290,7 +290,7 @@ const FixedAssets = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+      <div className="min-h-screen bg-[#F6F8FB] flex items-center justify-center">
         <div className="text-center">
           <div className="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-4">
             <XCircle className="w-8 h-8 text-red-500" />

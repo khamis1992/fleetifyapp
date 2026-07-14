@@ -58,14 +58,15 @@ export const ItemDetailsDialog = ({ item, open, onOpenChange }: ItemDetailsDialo
         .from('purchase_order_items')
         .select(`
           *,
-          purchase_order:purchase_orders(
+          purchase_order:purchase_orders!inner(
             po_number,
             order_date,
             status,
             vendor:vendors(vendor_name)
           )
         `)
-        .eq('item_id', item.id)
+        .eq('inventory_item_id', item.id)
+        .eq('purchase_order.company_id', user.profile.company_id)
         .order('created_at', { ascending: false })
         .limit(10);
 
@@ -80,6 +81,8 @@ export const ItemDetailsDialog = ({ item, open, onOpenChange }: ItemDetailsDialo
   const totalStock = stockLevels?.reduce((sum, level) => sum + level.quantity_on_hand, 0) || 0;
   const totalAvailable = stockLevels?.reduce((sum, level) => sum + level.quantity_available, 0) || 0;
   const totalAllocated = stockLevels?.reduce((sum, level) => sum + level.quantity_allocated, 0) || 0;
+  const costPrice = item.cost_price ?? 0;
+  const unitPrice = item.unit_price ?? 0;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -139,7 +142,7 @@ export const ItemDetailsDialog = ({ item, open, onOpenChange }: ItemDetailsDialo
                   <DollarSign className="h-4 w-4 text-blue-500" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{(totalStock * item.cost_price).toFixed(2)}</div>
+                  <div className="text-2xl font-bold">{(totalStock * costPrice).toFixed(2)}</div>
                   <p className="text-xs text-muted-foreground">ريال سعودي</p>
                 </CardContent>
               </Card>
@@ -157,7 +160,7 @@ export const ItemDetailsDialog = ({ item, open, onOpenChange }: ItemDetailsDialo
                   </div>
                   <div>
                     <p className="text-sm font-medium text-muted-foreground">الحالة</p>
-                    <Badge variant={item.is_active ? "success" : "secondary"}>
+                    <Badge variant={item.is_active ? "default" : "secondary"}>
                       {item.is_active ? "نشط" : "غير نشط"}
                     </Badge>
                   </div>
@@ -236,10 +239,10 @@ export const ItemDetailsDialog = ({ item, open, onOpenChange }: ItemDetailsDialo
                           </TableCell>
                           <TableCell>{level.quantity_allocated}</TableCell>
                           <TableCell>
-                            <Badge variant="success">{level.quantity_available}</Badge>
+                            <Badge variant="default">{level.quantity_available}</Badge>
                           </TableCell>
                           <TableCell>
-                            {(level.quantity_on_hand * item.cost_price).toFixed(2)} ريال
+                            {(level.quantity_on_hand * costPrice).toFixed(2)} ريال
                           </TableCell>
                           <TableCell className="text-xs text-muted-foreground">
                             {level.last_movement_at
@@ -295,7 +298,7 @@ export const ItemDetailsDialog = ({ item, open, onOpenChange }: ItemDetailsDialo
                           </TableCell>
                           <TableCell>
                             <Badge variant={
-                              movement.movement_type === 'in' ? 'success' :
+                              movement.movement_type === 'in' ? 'default' :
                               movement.movement_type === 'out' ? 'destructive' :
                               'secondary'
                             }>
@@ -376,8 +379,8 @@ export const ItemDetailsDialog = ({ item, open, onOpenChange }: ItemDetailsDialo
                           </TableCell>
                           <TableCell>
                             <Badge variant={
-                              po.purchase_order?.status === 'completed' ? 'success' :
-                              po.purchase_order?.status === 'pending' ? 'warning' :
+                              po.purchase_order?.status === 'completed' ? 'default' :
+                              po.purchase_order?.status === 'pending' ? 'outline' :
                               'secondary'
                             }>
                               {po.purchase_order?.status === 'completed' ? 'مكتمل' :
@@ -404,7 +407,7 @@ export const ItemDetailsDialog = ({ item, open, onOpenChange }: ItemDetailsDialo
                 </CardHeader>
                 <CardContent>
                   <div className="text-3xl font-bold text-blue-600">
-                    {item.cost_price.toFixed(2)} ريال
+                    {costPrice.toFixed(2)} ريال
                   </div>
                   <p className="text-sm text-muted-foreground">لكل {item.unit_of_measure}</p>
                 </CardContent>
@@ -417,7 +420,7 @@ export const ItemDetailsDialog = ({ item, open, onOpenChange }: ItemDetailsDialo
                 </CardHeader>
                 <CardContent>
                   <div className="text-3xl font-bold text-green-600">
-                    {item.unit_price.toFixed(2)} ريال
+                    {unitPrice.toFixed(2)} ريال
                   </div>
                   <p className="text-sm text-muted-foreground">لكل {item.unit_of_measure}</p>
                 </CardContent>
@@ -430,10 +433,10 @@ export const ItemDetailsDialog = ({ item, open, onOpenChange }: ItemDetailsDialo
                 </CardHeader>
                 <CardContent>
                   <div className="text-3xl font-bold text-green-600">
-                    {(item.unit_price - item.cost_price).toFixed(2)} ريال
+                    {(unitPrice - costPrice).toFixed(2)} ريال
                   </div>
                   <p className="text-sm text-muted-foreground">
-                    {((item.unit_price - item.cost_price) / item.unit_price * 100).toFixed(1)}% نسبة الربح
+                    {unitPrice > 0 ? (((unitPrice - costPrice) / unitPrice) * 100).toFixed(1) : '0.0'}% نسبة الربح
                   </p>
                 </CardContent>
               </Card>
@@ -445,7 +448,7 @@ export const ItemDetailsDialog = ({ item, open, onOpenChange }: ItemDetailsDialo
                 </CardHeader>
                 <CardContent>
                   <div className="text-3xl font-bold text-green-600">
-                    {((item.unit_price - item.cost_price) * totalAvailable).toFixed(2)} ريال
+                    {((unitPrice - costPrice) * totalAvailable).toFixed(2)} ريال
                   </div>
                   <p className="text-sm text-muted-foreground">
                     على {totalAvailable} {item.unit_of_measure} متاح

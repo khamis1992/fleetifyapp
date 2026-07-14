@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import type { Json } from '@/integrations/supabase/types';
 import type { 
   VehicleInstallment, 
   VehicleInstallmentSchedule, 
@@ -142,94 +143,13 @@ export const useCreateVehicleInstallment = () => {
 
       if (!profile?.company_id) throw new Error('Company not found');
 
-      // Determine contract type
       const companyId = profile.company_id;
-      const isMultiVehicle = data.contract_type === 'multi_vehicle' || (data.vehicle_ids && data.vehicle_ids.length > 1);
-      
-      // Prepare installment data
-      const installmentData = {
-        vendor_id: data.vendor_id,
-        vehicle_id: isMultiVehicle ? null : data.vehicle_id,
-        agreement_number: data.agreement_number,
-        total_amount: data.total_amount,
-        down_payment: data.down_payment,
-        installment_amount: data.installment_amount,
-        number_of_installments: data.number_of_installments,
-        interest_rate: data.interest_rate,
-        start_date: data.start_date,
-        end_date: data.end_date,
-        agreement_date: data.agreement_date,
-        notes: data.notes,
-        status: 'active' as const,
-        contract_type: isMultiVehicle ? 'multi_vehicle' as const : 'single_vehicle' as const,
-        total_vehicles_count: isMultiVehicle ? (data.vehicle_ids?.length || 1) : 1,
-        company_id: companyId,
-        created_by: user.id,
-      };
-
-      // Create the installment agreement
-      const { data: installment, error: installmentError } = await supabase
-        .from('vehicle_installments')
-        .insert(installmentData)
-        .select()
-        .single();
-
-      if (installmentError) throw installmentError;
-
-      // Store allocations in the existing vehicle-installment junction table.
-      if (isMultiVehicle && data.vehicle_ids && data.vehicle_ids.length > 0) {
-        const vehicleAmounts = data.vehicle_amounts || {};
-        const allocations = data.vehicle_ids.map(vehicleId => ({
-          company_id: companyId,
-          installment_id: installment.id,
-          vehicle_id: vehicleId,
-          allocated_amount: vehicleAmounts[vehicleId] || 0,
-        }));
-
-        const { error: allocationError } = await supabase
-          .from('contract_vehicles')
-          .insert(allocations.map(({ installment_id, ...allocation }) => ({
-            ...allocation,
-            vehicle_installment_id: installment_id,
-          })));
-
-        if (allocationError) {
-          await supabase.from('vehicle_installments').delete().eq('id', installment.id).eq('company_id', companyId);
-          throw allocationError;
-        }
-      }
-
-      // Create the installment schedule directly
-      const scheduleEntries = [];
-      const startDate = new Date(data.start_date);
-      
-      for (let i = 1; i <= data.number_of_installments; i++) {
-        const dueDate = new Date(startDate);
-        dueDate.setMonth(dueDate.getMonth() + (i - 1));
-        
-        scheduleEntries.push({
-          company_id: companyId,
-          installment_id: installment.id,
-          installment_number: i,
-          due_date: dueDate.toISOString().split('T')[0],
-          amount: data.installment_amount,
-          principal_amount: data.installment_amount * (1 - (data.interest_rate || 0) / 100),
-          interest_amount: data.installment_amount * ((data.interest_rate || 0) / 100),
-          status: 'pending',
-          paid_amount: 0,
-        });
-      }
-
-      const { error: scheduleError } = await supabase
-        .from('vehicle_installment_schedules')
-        .insert(scheduleEntries);
-
-      if (scheduleError) {
-        await supabase.from('contract_vehicles').delete().eq('vehicle_installment_id', installment.id).eq('company_id', companyId);
-        await supabase.from('vehicle_installments').delete().eq('id', installment.id).eq('company_id', companyId);
-        throw scheduleError;
-      }
-
+      const { data: installment, error } = await supabase.rpc('create_vehicle_installment_agreement_v1', {
+        p_company_id: companyId,
+        p_data: data as unknown as Json,
+        p_actor_id: user.id,
+      });
+      if (error) throw error;
       return installment;
     },
     onSuccess: () => {

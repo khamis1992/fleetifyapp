@@ -1,0 +1,12 @@
+{
+  "extends": "../../tsconfig.app.json",
+  "include": [
+    "../../src/vite-env.d.ts",
+    "../../src/pages/tasks/TasksPage.tsx",
+    "../../src/components/tasks/**/*.ts",
+    "../../src/components/tasks/**/*.tsx",
+    "../../src/hooks/useSystemAuditDashboard.ts",
+    "../../src/hooks/useTasks.ts",
+    "../../src/types/task*.ts"
+  ]
+}

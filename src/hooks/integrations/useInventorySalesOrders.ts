@@ -56,6 +56,7 @@ export const useCreateSalesOrderFromInventory = () => {
       if (!user?.profile?.company_id) {
         throw new Error('Company ID is required');
       }
+      const companyId = user.profile.company_id;
 
       try {
         // 1. Check stock availability for all items
@@ -66,7 +67,7 @@ export const useCreateSalesOrderFromInventory = () => {
               .select('quantity_available')
               .eq('item_id', item.item_id)
               .eq('warehouse_id', data.warehouse_id)
-              .eq('company_id', user.profile.company_id)
+              .eq('company_id', companyId)
               .single();
 
             if (error) throw error;
@@ -98,12 +99,13 @@ export const useCreateSalesOrderFromInventory = () => {
               .from('inventory_items')
               .select('*')
               .eq('id', item.item_id)
-              .eq('company_id', user.profile.company_id)
+              .eq('company_id', companyId)
               .single();
 
             if (error) throw error;
 
-            const itemTotal = item.quantity * inventoryItem.unit_price;
+            const unitPrice = inventoryItem.unit_price ?? 0;
+            const itemTotal = item.quantity * unitPrice;
             subtotal += itemTotal;
 
             return {
@@ -111,7 +113,7 @@ export const useCreateSalesOrderFromInventory = () => {
               item_name: inventoryItem.item_name,
               item_code: inventoryItem.item_code,
               quantity: item.quantity,
-              unit_price: inventoryItem.unit_price,
+              unit_price: unitPrice,
               total: itemTotal,
             };
           })
@@ -124,7 +126,7 @@ export const useCreateSalesOrderFromInventory = () => {
         const { data: lastOrder } = await supabase
           .from('sales_orders')
           .select('order_number')
-          .eq('company_id', user.profile.company_id)
+          .eq('company_id', companyId)
           .order('created_at', { ascending: false })
           .limit(1);
 
@@ -140,7 +142,7 @@ export const useCreateSalesOrderFromInventory = () => {
         const { data: salesOrder, error: orderError } = await supabase
           .from('sales_orders')
           .insert({
-            company_id: user.profile.company_id,
+            company_id: companyId,
             customer_id: data.customer_id,
             order_number: orderNumber,
             order_date: data.order_date,
@@ -213,6 +215,7 @@ export const useFulfillSalesOrder = () => {
       if (!user?.profile?.company_id) {
         throw new Error('Company ID is required');
       }
+      const companyId = user.profile.company_id;
 
       try {
         // 1. Get sales order details
@@ -220,7 +223,7 @@ export const useFulfillSalesOrder = () => {
           .from('sales_orders')
           .select('*')
           .eq('id', data.order_id)
-          .eq('company_id', user.profile.company_id)
+          .eq('company_id', companyId)
           .single();
 
         if (orderError) throw orderError;
@@ -236,7 +239,7 @@ export const useFulfillSalesOrder = () => {
           const { error: movementError } = await supabase
             .from('inventory_movements')
             .insert({
-              company_id: user.profile.company_id,
+              company_id: companyId,
               item_id: item.item_id,
               warehouse_id: data.warehouse_id,
               movement_type: 'SALE',
@@ -259,7 +262,8 @@ export const useFulfillSalesOrder = () => {
             status: 'shipped',
             delivery_date: data.fulfillment_date || new Date().toISOString(),
           })
-          .eq('id', data.order_id);
+          .eq('id', data.order_id)
+          .eq('company_id', companyId);
 
         if (updateError) throw updateError;
 
@@ -305,6 +309,7 @@ export const useSalesOrderInventoryCheck = (
       if (!user?.profile?.company_id || !items || items.length === 0) {
         return [];
       }
+      const companyId = user.profile.company_id;
 
       try {
         const availabilityResults = await Promise.all(
@@ -314,6 +319,7 @@ export const useSalesOrderInventoryCheck = (
               .from('inventory_items')
               .select('item_name, item_name_ar')
               .eq('id', item.item_id)
+              .eq('company_id', companyId)
               .single();
 
             if (itemError) throw itemError;
@@ -321,10 +327,10 @@ export const useSalesOrderInventoryCheck = (
             // Get stock level
             const { data: stockLevel, error: stockError } = await supabase
               .from('inventory_stock_levels')
-              .select('quantity_available, quantity_allocated')
+              .select('quantity_available, quantity_reserved')
               .eq('item_id', item.item_id)
               .eq('warehouse_id', warehouseId)
-              .eq('company_id', user.profile.company_id)
+              .eq('company_id', companyId)
               .single();
 
             if (stockError && stockError.code !== 'PGRST116') {
@@ -332,14 +338,14 @@ export const useSalesOrderInventoryCheck = (
             }
 
             const quantityAvailable = stockLevel?.quantity_available || 0;
-            const quantityAllocated = stockLevel?.quantity_allocated || 0;
+            const quantityAllocated = stockLevel?.quantity_reserved || 0;
             const isAvailable = quantityAvailable >= item.quantity;
             const shortage = isAvailable ? 0 : item.quantity - quantityAvailable;
 
             return {
               item_id: item.item_id,
               item_name: inventoryItem.item_name,
-              item_name_ar: inventoryItem.item_name_ar,
+              item_name_ar: inventoryItem.item_name_ar ?? undefined,
               quantity_requested: item.quantity,
               quantity_available: quantityAvailable,
               quantity_allocated: quantityAllocated,

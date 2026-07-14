@@ -2,28 +2,11 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import * as Sentry from "@sentry/react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import type { Database } from '@/integrations/supabase/types';
 
-export interface VehicleInsurance {
-  id: string;
-  vehicle_id: string;
-  insurance_company: string;
-  policy_number: string;
-  coverage_type: string; // 'comprehensive' | 'third_party' | 'collision'
-  start_date: string;
-  end_date: string;
-  premium_amount: number;
-  coverage_amount?: number;
-  deductible_amount?: number;
-  contact_person?: string;
-  contact_phone?: string;
-  contact_email?: string;
-  policy_document_url?: string;
-  status?: string;
-  is_active: boolean;
-  notes?: string;
-  created_at: string;
-  updated_at: string;
-}
+export type VehicleInsurance = Database['public']['Tables']['vehicle_insurance']['Row'];
+type VehicleInsuranceInsert = Database['public']['Tables']['vehicle_insurance']['Insert'];
+type VehicleInsuranceUpdate = Database['public']['Tables']['vehicle_insurance']['Update'];
 
 export const useVehicleInsurance = (vehicleId: string) => {
   return useQuery({
@@ -57,7 +40,7 @@ export const useCreateVehicleInsurance = () => {
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: async (insuranceData: Omit<VehicleInsurance, 'id' | 'created_at' | 'updated_at'>) => {
+    mutationFn: async (insuranceData: VehicleInsuranceInsert) => {
       Sentry.addBreadcrumb({ category: "vehicleinsurance", message: "Mutation started", level: "info" });
 
       const { data, error } = await supabase
@@ -98,7 +81,7 @@ export const useUpdateVehicleInsurance = () => {
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: async ({ id, data }: { id: string; data: Partial<VehicleInsurance> }) => {
+    mutationFn: async ({ id, data }: { id: string; data: VehicleInsuranceUpdate }) => {
       Sentry.addBreadcrumb({ category: "vehicleinsurance", message: "Mutation started", level: "info" });
       const { data: result, error } = await supabase
         .from('vehicle_insurance')

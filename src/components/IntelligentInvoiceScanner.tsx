@@ -81,6 +81,15 @@ interface InvoiceScannerProps {
   className?: string;
 }
 
+type OcrEngine = 'gemini' | 'google-vision' | 'hybrid';
+type ProcessingLanguage = 'auto' | 'arabic' | 'english';
+
+const isOcrEngine = (value: unknown): value is OcrEngine =>
+  typeof value === 'string' && ['gemini', 'google-vision', 'hybrid'].includes(value);
+
+const isProcessingLanguage = (value: unknown): value is ProcessingLanguage =>
+  typeof value === 'string' && ['auto', 'arabic', 'english'].includes(value);
+
 const IntelligentInvoiceScanner: React.FC<InvoiceScannerProps> = ({ 
   onScanComplete, 
   className = "" 
@@ -90,8 +99,8 @@ const IntelligentInvoiceScanner: React.FC<InvoiceScannerProps> = ({
   const [scanResult, setScanResult] = useState<ScanResult | null>(null);
   const [progress, setProgress] = useState(0);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
-  const [ocrEngine, setOcrEngine] = useState<'gemini' | 'google-vision' | 'hybrid'>('gemini');
-  const [language, setLanguage] = useState<'auto' | 'arabic' | 'english'>('auto');
+  const [ocrEngine, setOcrEngine] = useState<OcrEngine>('gemini');
+  const [language, setLanguage] = useState<ProcessingLanguage>('auto');
   const [activeTab, setActiveTab] = useState('upload');
   const [enablePreprocessing, setEnablePreprocessing] = useState(true);
   const [preprocessingOptions, setPreprocessingOptions] = useState({
@@ -420,7 +429,12 @@ const IntelligentInvoiceScanner: React.FC<InvoiceScannerProps> = ({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>محرك التعرف الضوئي</Label>
-              <Select value={ocrEngine} onValueChange={(value: unknown) => setOcrEngine(value)}>
+              <Select
+                value={ocrEngine}
+                onValueChange={(value: unknown) => {
+                  if (isOcrEngine(value)) setOcrEngine(value);
+                }}
+              >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -433,7 +447,12 @@ const IntelligentInvoiceScanner: React.FC<InvoiceScannerProps> = ({
             </div>
             <div className="space-y-2">
               <Label>لغة المعالجة</Label>
-              <Select value={language} onValueChange={(value: unknown) => setLanguage(value)}>
+              <Select
+                value={language}
+                onValueChange={(value: unknown) => {
+                  if (isProcessingLanguage(value)) setLanguage(value);
+                }}
+              >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>

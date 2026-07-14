@@ -30,10 +30,11 @@ export default function LocationSettings() {
   const { data: company, isLoading } = useQuery({
     queryKey: ['company-location', user?.id],
     queryFn: async () => {
+      if (!user?.id) throw new Error('User identity is required');
       const { data: profile } = await supabase
         .from('profiles')
         .select('company_id')
-        .eq('user_id', user?.id)
+        .eq('user_id', user.id)
         .single();
 
       if (!profile?.company_id) throw new Error('No company found');
@@ -86,10 +87,11 @@ export default function LocationSettings() {
       work_end_time: string;
       auto_checkout_enabled: boolean;
     }) => {
+      if (!company?.id) throw new Error('Company identity is required');
       const { error } = await supabase
         .from('companies')
         .update(data)
-        .eq('id', company?.id);
+        .eq('id', company.id);
 
       if (error) throw error;
     },
@@ -98,7 +100,7 @@ export default function LocationSettings() {
       queryClient.invalidateQueries({ queryKey: ['company-location'] });
     },
     onError: (error: unknown) => {
-      toast.error(error.message || 'فشل في تحديث الإعدادات');
+      toast.error(error instanceof Error ? error.message : 'فشل في تحديث الإعدادات');
     },
   });
 
@@ -125,7 +127,8 @@ export default function LocationSettings() {
 
       toast.success('تم الحصول على الموقع الحالي بنجاح');
     } catch (error: unknown) {
-      toast.error(`فشل في الحصول على الموقع: ${error.message}`);
+      const message = error instanceof Error ? error.message : 'خطأ غير معروف';
+      toast.error(`فشل في الحصول على الموقع: ${message}`);
     } finally {
       setIsGettingLocation(false);
     }

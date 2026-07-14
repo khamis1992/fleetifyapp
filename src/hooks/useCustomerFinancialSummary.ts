@@ -61,7 +61,7 @@ export const useCustomerFinancialSummary = (customerId: string) => {
       today.setHours(0, 0, 0, 0);
       
       let overdueAmount = 0;
-      let oldestOverdueDate: Date | null = null;
+      let oldestOverdueTimestamp: number | null = null;
 
       invoices?.forEach(invoice => {
         if (invoice.due_date && invoice.balance_due && invoice.balance_due > 0) {
@@ -70,16 +70,17 @@ export const useCustomerFinancialSummary = (customerId: string) => {
           
           if (dueDate < today) {
             overdueAmount += invoice.balance_due;
-            if (!oldestOverdueDate || dueDate < oldestOverdueDate) {
-              oldestOverdueDate = dueDate;
+            const dueTimestamp = dueDate.getTime();
+            if (oldestOverdueTimestamp === null || dueTimestamp < oldestOverdueTimestamp) {
+              oldestOverdueTimestamp = dueTimestamp;
             }
           }
         }
       });
 
       // Calculate days overdue
-      const daysOverdue = oldestOverdueDate 
-        ? Math.floor((today.getTime() - oldestOverdueDate.getTime()) / (1000 * 60 * 60 * 24))
+      const daysOverdue = oldestOverdueTimestamp !== null
+        ? Math.floor((today.getTime() - oldestOverdueTimestamp) / (1000 * 60 * 60 * 24))
         : 0;
 
       // Get last payment info

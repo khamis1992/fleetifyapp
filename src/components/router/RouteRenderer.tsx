@@ -21,7 +21,7 @@ import { useFleetifyTranslation } from "@/hooks/useTranslation";
 interface RouteRendererProps {
   routes: RouteConfig[];
   fallback?: React.ComponentType;
-  errorBoundary?: React.ComponentType<{ error: Error; retry: () => void }>;
+  errorBoundary?: React.ComponentType<{ children: React.ReactNode }>;
 }
 
 const RouteRenderer: React.FC<RouteRendererProps> = ({
@@ -62,7 +62,9 @@ const RouteRenderer: React.FC<RouteRendererProps> = ({
         <ProtectedRoute
           permission={route.requiredPermissions?.[0]}
           feature={route.featureFlag}
-          role={route.requiredRole as 'admin' | 'super_admin' | undefined}
+          role={route.requiredRole === 'company_admin' || route.requiredRole === 'employee'
+            ? route.requiredRole
+            : undefined}
           requireCompanyAdmin={route.requiredRole === 'company_admin'}
           requireGlobalAccess={route.requiredRole === 'super_admin'}
         >

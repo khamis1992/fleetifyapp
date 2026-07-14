@@ -109,6 +109,7 @@ export default function CustomerVerificationPage() {
   const { data: task, isLoading: taskLoading } = useQuery({
     queryKey: ['verification-task', taskId, companyId],
     queryFn: async () => {
+      if (!taskId || !companyId) throw new Error('معرف المهمة أو الشركة غير موجود');
       const { data, error } = await supabase
         .from('customer_verification_tasks')
         .select(`
@@ -156,7 +157,7 @@ export default function CustomerVerificationPage() {
   const { data: invoices = [], isLoading: invoicesLoading } = useQuery({
     queryKey: ['unpaid-invoices', task?.contract_id, companyId],
     queryFn: async () => {
-      if (!task?.contract_id) return [];
+      if (!task?.contract_id || !companyId) return [];
 
       const { data, error } = await supabase
         .from('invoices')
@@ -180,7 +181,7 @@ export default function CustomerVerificationPage() {
   const { data: signedContract, isLoading: signedContractLoading, refetch: refetchSignedContract } = useQuery({
     queryKey: ['signed-contract', task?.contract_id],
     queryFn: async () => {
-      if (!task?.contract_id) return null;
+      if (!task?.contract_id || !companyId) return null;
 
       const { data, error } = await supabase
         .from('contract_documents')
@@ -202,7 +203,7 @@ export default function CustomerVerificationPage() {
   const { data: trafficViolations = [] } = useQuery({
     queryKey: ['contract-violations', task?.contract_id],
     queryFn: async () => {
-      if (!task?.contract_id) return [];
+      if (!task?.contract_id || !companyId) return [];
 
       const { data, error } = await supabase
         .from('penalties')
@@ -287,7 +288,7 @@ export default function CustomerVerificationPage() {
   // حفظ التعديلات
   const saveChangesMutation = useMutation({
     mutationFn: async () => {
-      if (!task?.customer?.id || !task?.contract?.id) throw new Error('بيانات غير مكتملة');
+      if (!task?.customer?.id || !task?.contract?.id || !companyId) throw new Error('بيانات غير مكتملة');
 
       const nameParts = editedData.customer_name.split(' ');
       const firstName = nameParts[0] || '';
@@ -369,9 +370,9 @@ export default function CustomerVerificationPage() {
   });
 
   // إلغاء العقد مع الاحتفاظ بالسجل المالي والقانوني
-  const deleteContractMutation = useMutation({
+  const deleteContractMutationLegacy = useMutation({
     mutationFn: async () => {
-      if (!task?.contract_id || !companyId) {
+      if (!task?.contract_id || !taskId || !companyId) {
         throw new Error('بيانات العقد غير مكتملة');
       }
 
@@ -443,6 +444,27 @@ export default function CustomerVerificationPage() {
     onSettled: () => setIsDeleting(false),
   });
 
+  void deleteContractMutationLegacy;
+  const deleteContractMutation = useMutation({
+    mutationFn: async () => {
+      if (!task?.contract_id || !taskId || !companyId) throw new Error('بيانات العقد غير مكتملة');
+      const { data, error } = await supabase.rpc('cancel_verified_contract_v1', {
+        p_company_id: companyId,
+        p_task_id: taskId,
+        p_actor_id: user?.id,
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      toast.success('تم إلغاء العقد ومهمة التحقق وحالة التعثر في معاملة واحدة');
+      queryClient.invalidateQueries({ queryKey: ['verification-task'] });
+      queryClient.invalidateQueries({ queryKey: ['delinquent-customers'] });
+      queryClient.invalidateQueries({ queryKey: ['contracts'] });
+    },
+    onError: (error) => toast.error(error instanceof Error ? error.message : 'فشل إلغاء العقد'),
+  });
+
   const cancelTaskMutation = useMutation({
     mutationFn: async () => {
       if (!taskId || !companyId) throw new Error('معرف المهمة أو الشركة غير موجود');
@@ -459,15 +481,17 @@ export default function CustomerVerificationPage() {
       if (error) throw error;
 
       // وضع علامة مقروء على التنبيه المرتبط
-      await supabase
-        .from('user_notifications')
-        .update({
-          is_read: true,
-          read_at: new Date().toISOString(),
-        })
-        .eq('related_id', taskId)
-        .eq('related_type', 'verification_task')
-        .eq('user_id', user?.id);
+      if (user?.id) {
+        await supabase
+          .from('user_notifications')
+          .update({
+            is_read: true,
+            read_at: new Date().toISOString(),
+          })
+          .eq('related_id', taskId)
+          .eq('related_type', 'verification_task')
+          .eq('user_id', user.id);
+      }
     },
     onSuccess: () => {
       toast.success('تم إلغاء المهمة بنجاح - سيعود العميل لصفحة المتعثرات');

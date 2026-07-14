@@ -11,11 +11,11 @@ import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 
 interface Customer {
   id: string;
-  customer_code: string;
-  first_name?: string;
-  last_name?: string;
-  company_name?: string;
-  customer_type: string;
+  customer_code: string | null;
+  first_name: string | null;
+  last_name: string | null;
+  company_name: string | null;
+  customer_type: string | null;
 }
 
 export const FixCustomerAccounts: React.FC = () => {
@@ -101,7 +101,7 @@ export const FixCustomerAccounts: React.FC = () => {
         }
       } catch (error: unknown) {
         newResults.failed++;
-        const errorMsg = `${customerName}: ${error.message || 'خطأ غير متوقع'}`;
+        const errorMsg = `${customerName}: ${error instanceof Error ? error.message : 'خطأ غير متوقع'}`;
         newResults.errors.push(errorMsg);
         console.error(`💥 Error fixing accounts for ${customerName}:`, error);
       }

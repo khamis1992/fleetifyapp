@@ -68,7 +68,7 @@ export const TrafficViolationPDFImport: React.FC = () => {
   const { toast } = useToast();
   const { companyId } = useUnifiedCompanyAccess();
   const { processViolations, isProcessing: isMatching } = useViolationMatching({
-    companyId,
+    companyId: companyId || '',
     autoLink: true,
     checkDuplicates: true
   });
@@ -360,6 +360,10 @@ export const TrafficViolationPDFImport: React.FC = () => {
 
   // Process uploaded files
   const processFiles = async () => {
+    if (!companyId) {
+      toast({ title: t("error"), description: 'تعذر تحديد الشركة', variant: 'destructive' });
+      return;
+    }
     if (uploadedFiles.length === 0) {
       toast({
         title: t("error"),
@@ -392,7 +396,7 @@ export const TrafficViolationPDFImport: React.FC = () => {
           console.error(`Failed to process file ${file.name}:`, error);
           toast({
             title: t("warning"),
-            description: `Failed to process file ${file.name}: ${error.message}`,
+            description: `Failed to process file ${file.name}: ${error instanceof Error ? error.message : String(error)}`,
             variant: "destructive"
           });
         }
@@ -441,7 +445,7 @@ export const TrafficViolationPDFImport: React.FC = () => {
     } catch (error: unknown) {
       toast({
         title: t("processingError"),
-        description: `Failed to process files: ${error.message}`,
+        description: `Failed to process files: ${error instanceof Error ? error.message : String(error)}`,
         variant: "destructive"
       });
     } finally {
@@ -504,6 +508,10 @@ export const TrafficViolationPDFImport: React.FC = () => {
 
   // Save selected violations
   const saveSelectedViolations = async () => {
+    if (!companyId) {
+      toast({ title: t("error"), description: 'تعذر تحديد الشركة', variant: 'destructive' });
+      return;
+    }
     if (!processingResult || selectedViolations.size === 0) {
       toast({
         title: t("error"),

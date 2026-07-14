@@ -4,6 +4,9 @@ import { useUnifiedCompanyAccess } from "./useUnifiedCompanyAccess";
 import { useToast } from "./use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 
+// The table exists in migration 20251025172829 but is absent from the current generated type snapshot.
+const reportFavoritesClient = supabase as any;
+
 /**
  * Report favorite interface
  */
@@ -48,7 +51,7 @@ export const useReportFavorites = () => {
         return [];
       }
 
-      const { data, error } = await supabase
+      const { data, error } = await reportFavoritesClient
         .from("report_favorites")
         .select("*")
         .eq("company_id", companyId)
@@ -72,7 +75,7 @@ export const useReportFavorites = () => {
         throw new Error("Company and user profile are required");
       }
 
-      const { data, error } = await supabase
+      const { data, error } = await reportFavoritesClient
         .from("report_favorites")
         .insert({
           company_id: companyId,
@@ -112,7 +115,7 @@ export const useReportFavorites = () => {
   const deleteFavoriteMutation = useMutation({
     mutationFn: async (favoriteId: string) => {
       if (!companyId || !profileId) throw new Error("Company and user profile are required");
-      const { error } = await supabase
+      const { error } = await reportFavoritesClient
         .from("report_favorites")
         .delete()
         .eq("id", favoriteId)

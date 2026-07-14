@@ -21,8 +21,7 @@ import {
 } from 'lucide-react';
 import { useRealtimeAuditMonitoring } from '@/hooks/useFinancialAudit';
 import { FinancialAuditLog } from '@/types/auditLog';
-import { format } from 'date-fns';
-import { relativeTime } from '@/lib/utils';
+import { format, formatDistanceToNow } from 'date-fns';
 
 import { useFleetifyTranslation } from "@/hooks/useTranslation";
 interface RealTimeAlertsProps {
@@ -54,7 +53,7 @@ export function RealTimeAlerts({
 
   const visibleAlerts = recentAlerts.filter(alert => !dismissedAlerts.has(alert.id));
 
-  const getAlertIcon = (severity: string) => {
+  const getAlertIcon = (severity?: string) => {
     switch (severity) {
       case 'critical':
         return <XCircle className="h-4 w-4 text-red-600" />;
@@ -69,7 +68,7 @@ export function RealTimeAlerts({
     }
   };
 
-  const getAlertColor = (severity: string) => {
+  const getAlertColor = (severity?: string) => {
     switch (severity) {
       case 'critical':
         return 'border-red-200 bg-red-50';
@@ -193,7 +192,7 @@ export function RealTimeAlerts({
                       </div>
                       <div className="flex items-center space-x-1">
                         <Activity className="h-3 w-3" />
-                        <span>{relativeTime(new Date(alert.created_at))}</span>
+                        <span>{formatDistanceToNow(new Date(alert.created_at), { addSuffix: true })}</span>
                       </div>
                     </div>
                     {alert.financial_data?.amount && (

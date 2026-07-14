@@ -53,11 +53,11 @@ const SalesOrders = () => {
       case 'confirmed':
         return 'secondary';
       case 'processing':
-        return 'warning';
+        return 'secondary';
       case 'shipped':
         return 'default';
       case 'delivered':
-        return 'success';
+        return 'default';
       case 'cancelled':
         return 'destructive';
       default:
@@ -295,8 +295,8 @@ const SalesOrders = () => {
                           {formatCurrency(order.total || 0)}
                         </TableCell>
                         <TableCell>
-                          <Badge variant={getStatusBadgeVariant(order.status)}>
-                            {getStatusLabel(order.status)}
+                          <Badge variant={getStatusBadgeVariant(order.status ?? '')}>
+                            {getStatusLabel(order.status ?? '')}
                           </Badge>
                         </TableCell>
                         <TableCell>

@@ -5,7 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 // import { DateRangePicker } from '@/components/ui/date-range-picker';
 import { BarChart3, TrendingUp, Users, MousePointer, Eye, Download, FileText } from 'lucide-react';
-import { useLandingAnalytics } from '@/hooks/useLandingAnalytics';
+import { useLandingAnalytics, type LandingAnalyticsRecord } from '@/hooks/useLandingAnalytics';
 import { useCompanies } from '@/hooks/useCompanies';
 import { exportAnalyticsSummaryToPDF } from '@/utils/exportHelpers';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -16,8 +16,8 @@ import { useFleetifyTranslation } from "@/hooks/useTranslation";
 interface RecentEvent {
   id: string;
   event_type?: string;
-  page_path?: string;
-  created_at: string;
+  page_path?: string | null;
+  created_at: string | null;
 }
 
 interface EventStats {
@@ -26,6 +26,9 @@ interface EventStats {
   conversion_rate: number;
   category: string;
 }
+
+const isConvertedEvent = (eventData: unknown): boolean =>
+  typeof eventData === 'object' && eventData !== null && 'converted' in eventData && eventData.converted === true;
 
 export const LandingAnalytics: React.FC = () => {
   const { t } = useFleetifyTranslation("ui");
@@ -105,7 +108,7 @@ export const LandingAnalytics: React.FC = () => {
     const fetchEventStats = async () => {
       const { data, error } = await supabase
         .from('landing_analytics')
-        .select('event_type, converted')
+        .select('event_type, event_data')
         .gte('created_at', dateRange.from.toISOString())
         .lte('created_at', dateRange.to.toISOString());
 
@@ -116,7 +119,7 @@ export const LandingAnalytics: React.FC = () => {
           const eventType = item.event_type || 'page_view';
           const existing = eventMap.get(eventType) || { count: 0, conversions: 0 };
           existing.count++;
-          if (item.converted) existing.conversions++;
+          if (isConvertedEvent(item.event_data)) existing.conversions++;
           eventMap.set(eventType, existing);
         });
 
@@ -261,28 +264,29 @@ export const LandingAnalytics: React.FC = () => {
         }
       };
 
-  function calculateAverageTime(data: unknown[]): string {
+  function calculateAverageTime(data: LandingAnalyticsRecord[]): string {
     if (!data.length) return '0:00';
-    const avgSeconds = data.reduce((sum, item) => sum + (item.time_on_page || 0), 0) / data.length;
+    const avgSeconds = data.reduce((sum, item) => sum + item.time_on_page, 0) / data.length;
     const minutes = Math.floor(avgSeconds / 60);
     const seconds = Math.floor(avgSeconds % 60);
     return `${minutes}:${seconds.toString().padStart(2, '0')}`;
   }
 
-  function getTopPages(data: unknown[]) {
+  function getTopPages(data: LandingAnalyticsRecord[]) {
     const pageCounts: Record<string, {path: string; title: string; views: number}> = {};
     data.forEach(item => {
-      if (item.page_path) {
-        if (!pageCounts[item.page_path]) {
-          pageCounts[item.page_path] = { path: item.page_path, title: item.page_title || item.page_path, views: 0 };
+      const pagePath = item.page_path;
+      if (pagePath) {
+        if (!pageCounts[pagePath]) {
+          pageCounts[pagePath] = { path: pagePath, title: item.page_title || pagePath, views: 0 };
         }
-        pageCounts[item.page_path].views++;
+        pageCounts[pagePath].views += item.views;
       }
     });
     return Object.values(pageCounts).sort((a, b) => b.views - a.views).slice(0, 3);
   }
 
-  function getDeviceBreakdown(data: unknown[]) {
+  function getDeviceBreakdown(data: LandingAnalyticsRecord[]) {
     if (!data.length) return { desktop: 0, mobile: 0, tablet: 0 };
     const counts = { desktop: 0, mobile: 0, tablet: 0 };
     data.forEach(item => {
@@ -297,7 +301,7 @@ export const LandingAnalytics: React.FC = () => {
     };
   }
 
-  function getTrafficSources(data: unknown[]) {
+  function getTrafficSources(data: LandingAnalyticsRecord[]) {
     if (!data.length) return { direct: 0, organic: 0, social: 0, referral: 0, email: 0 };
     const counts = { direct: 0, organic: 0, social: 0, referral: 0, email: 0 };
     data.forEach(item => {
@@ -529,7 +533,9 @@ export const LandingAnalytics: React.FC = () => {
                       <div key={event.id} className="flex justify-between">
                         <span>{event.event_type || 'Page view'}: {event.page_path || 'Unknown'}</span>
                         <span className="text-muted-foreground">
-                          {formatDistanceToNow(new Date(event.created_at), { addSuffix: true })}
+                          {event.created_at
+                            ? formatDistanceToNow(new Date(event.created_at), { addSuffix: true })
+                            : t("unknown")}
                         </span>
                       </div>
                     ))

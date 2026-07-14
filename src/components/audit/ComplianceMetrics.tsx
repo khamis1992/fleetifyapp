@@ -90,7 +90,17 @@ export function ComplianceMetrics({
     );
   }
 
-  const report = complianceReport; // Alias for easier access
+  const report: ComplianceReport = complianceReport ?? {
+    period_start: reportPeriod.start,
+    period_end: reportPeriod.end,
+    total_transactions: 0,
+    high_risk_transactions: 0,
+    compliance_violations: [],
+    required_approvals_missing: 0,
+    segregation_duties_violations: [],
+    compliance_score: 0,
+    audit_trail_complete: false,
+  };
 
   return (
     <div className="space-y-6">

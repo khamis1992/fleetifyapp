@@ -39,6 +39,18 @@ export interface ExportOptions {
   };
 }
 
+type ExportFormat = ExportOptions['format'];
+type ExportColorScheme = ExportOptions['colorScheme'];
+type ExportFrequency = NonNullable<ExportOptions['schedule']>['frequency'];
+
+const exportFormats: readonly ExportFormat[] = ['pdf', 'excel', 'csv', 'html', 'json'];
+
+const isExportColorScheme = (value: unknown): value is ExportColorScheme =>
+  typeof value === 'string' && ['blue', 'green', 'purple', 'orange'].includes(value);
+
+const isExportFrequency = (value: unknown): value is ExportFrequency =>
+  typeof value === 'string' && ['daily', 'weekly', 'monthly'].includes(value);
+
 interface PropertyExportManagerProps {
   reportData: any;
   reportType: string;
@@ -69,7 +81,7 @@ export const PropertyExportManager: React.FC<PropertyExportManagerProps> = ({
     }
   });
 
-  const formatIcons = {
+  const formatIcons: Record<ExportFormat, React.ComponentType<{ className?: string }>> = {
     pdf: FileText,
     excel: FileSpreadsheet,
     csv: FileSpreadsheet,
@@ -77,7 +89,7 @@ export const PropertyExportManager: React.FC<PropertyExportManagerProps> = ({
     json: FileText
   };
 
-  const formatLabels = {
+  const formatLabels: Record<ExportFormat, string> = {
     pdf: 'PDF',
     excel: 'Excel',
     csv: 'CSV', 
@@ -155,8 +167,8 @@ export const PropertyExportManager: React.FC<PropertyExportManagerProps> = ({
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                {Object.entries(formatLabels).map(([format, label]) => {
-                  const Icon = formatIcons[format as keyof typeof formatIcons];
+                {exportFormats.map((format) => {
+                  const Icon = formatIcons[format];
                   return (
                     <div
                       key={format}
@@ -165,11 +177,11 @@ export const PropertyExportManager: React.FC<PropertyExportManagerProps> = ({
                           ? 'border-primary bg-primary/5'
                           : 'border-border hover:border-primary/50'
                       }`}
-                      onClick={() => updateOption('format', format as any)}
+                      onClick={() => updateOption('format', format)}
                     >
                       <div className="flex items-center gap-2">
                         <Icon className="h-5 w-5" />
-                        <span className="font-medium">{label}</span>
+                        <span className="font-medium">{formatLabels[format]}</span>
                       </div>
                     </div>
                   );
@@ -248,7 +260,11 @@ export const PropertyExportManager: React.FC<PropertyExportManagerProps> = ({
                   <Label>نظام الألوان</Label>
                   <Select
                     value={options.colorScheme}
-                    onValueChange={(value: unknown) => updateOption('colorScheme', value)}
+                    onValueChange={(value: unknown) => {
+                      if (isExportColorScheme(value)) {
+                        updateOption('colorScheme', value);
+                      }
+                    }}
                   >
                     <SelectTrigger>
                       <SelectValue />
@@ -292,10 +308,14 @@ export const PropertyExportManager: React.FC<PropertyExportManagerProps> = ({
                     <Label>تكرار الإرسال</Label>
                     <Select
                       value={options.schedule.frequency}
-                      onValueChange={(value: unknown) => updateOption('schedule', {
-                        ...options.schedule!,
-                        frequency: value
-                      })}
+                      onValueChange={(value: unknown) => {
+                        if (isExportFrequency(value)) {
+                          updateOption('schedule', {
+                            ...options.schedule!,
+                            frequency: value
+                          });
+                        }
+                      }}
                     >
                       <SelectTrigger>
                         <SelectValue />

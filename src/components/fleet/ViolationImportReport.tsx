@@ -12,19 +12,10 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
+import type { MatchedViolation } from '@/types/violations';
 
 interface ViolationImportReportProps {
-  violations: Array<{
-    id: string;
-    violationNumber: string;
-    date: string;
-    plateNumber: string;
-    location: string;
-    violationType: string;
-    fineAmount: number;
-    status: 'extracted' | 'matched' | 'error';
-    errors: string[];
-  }>;
+  violations: MatchedViolation[];
   onExport: (format: 'pdf' | 'excel' | 'csv') => void;
 }
 
@@ -36,7 +27,7 @@ export const ViolationImportReport: React.FC<ViolationImportReportProps> = ({
     total: violations.length,
     successful: violations.filter(v => v.status === 'matched').length,
     failed: violations.filter(v => v.status === 'error').length,
-    totalAmount: violations.reduce((sum, v) => sum + v.fineAmount, 0)
+    totalAmount: violations.reduce((sum, v) => sum + v.fine_amount, 0)
   };
 
   const generateTextReport = () => {
@@ -60,12 +51,12 @@ export const ViolationImportReport: React.FC<ViolationImportReportProps> = ({
     ];
 
     violations.forEach((violation, index) => {
-      reportLines.push(`${index + 1}. رقم المخالفة: ${violation.violationNumber}`);
+      reportLines.push(`${index + 1}. رقم المخالفة: ${violation.violation_number}`);
       reportLines.push(`   التاريخ: ${format(new Date(violation.date), 'dd/MM/yyyy', { locale: ar })}`);
-      reportLines.push(`   رقم اللوحة: ${violation.plateNumber}`);
-      reportLines.push(`   الموقع: ${violation.location}`);
-      reportLines.push(`   نوع المخالفة: ${violation.violationType}`);
-      reportLines.push(`   مبلغ الغرامة: ${violation.fineAmount.toFixed(2)} ر.ق`);
+      reportLines.push(`   رقم اللوحة: ${violation.plate_number}`);
+      reportLines.push(`   الموقع: ${violation.location || 'غير محدد'}`);
+      reportLines.push(`   نوع المخالفة: ${violation.violation_type}`);
+      reportLines.push(`   مبلغ الغرامة: ${violation.fine_amount.toFixed(2)} ر.ق`);
       reportLines.push(`   الحالة: ${violation.status === 'matched' ? 'مطابقة' : violation.status === 'error' ? 'خطأ' : 'مستخرجة'}`);
       
       if (violation.errors.length > 0) {
@@ -110,12 +101,12 @@ export const ViolationImportReport: React.FC<ViolationImportReportProps> = ({
     const csvContent = [
       headers.join(','),
       ...violations.map(violation => [
-        violation.violationNumber,
+        violation.violation_number,
         violation.date,
-        violation.plateNumber,
-        violation.location,
-        violation.violationType,
-        violation.fineAmount.toFixed(2),
+        violation.plate_number,
+        violation.location || '',
+        violation.violation_type,
+        violation.fine_amount.toFixed(2),
         violation.status === 'matched' ? 'مطابقة' : violation.status === 'error' ? 'خطأ' : 'مستخرجة',
         violation.errors.join('; ')
       ].map(field => `"${field}"`).join(','))

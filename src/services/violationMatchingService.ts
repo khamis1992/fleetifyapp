@@ -193,11 +193,12 @@ export async function matchToVehicle(
     };
   } catch (error) {
     console.error('Error matching vehicle:', error);
+    const message = error instanceof Error ? error.message : String(error);
     return {
       vehicle_id: null,
       plate_number: plateNumber,
       confidence: 'none',
-      reason: `خطأ في البحث: ${error.message}`
+      reason: `خطأ في البحث: ${message}`
     };
   }
 }
@@ -434,13 +435,14 @@ export async function matchToContract(
 
   } catch (error) {
     console.error('Error matching contract:', error);
+    const message = error instanceof Error ? error.message : String(error);
     return {
       contract_id: null,
       customer_id: null,
       customer_name: null,
       contract_number: null,
       confidence: 'none',
-      reason: `خطأ في البحث: ${error.message}`
+      reason: `خطأ في البحث: ${message}`
     };
   }
 }

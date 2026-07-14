@@ -14,7 +14,7 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AccountConflictInfo } from '@/hooks/useAccountConflictCheck';
-import { FileText, Building2 } from 'lucide-react';
+import { AlertTriangle, FileText, Building2 } from 'lucide-react';
 
 export type ConflictResolutionStrategy = 'merge' | 'skip';
 

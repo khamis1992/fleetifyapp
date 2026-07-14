@@ -180,7 +180,7 @@ export function MaintenanceAlertsPanel({
             vehiclePlate: m.vehicles?.plate_number,
             vehicleId: m.vehicles?.id,
             maintenanceId: m.id,
-            scheduledDate: m.scheduled_date,
+            scheduledDate: m.scheduled_date || undefined,
             priority: 'low',
           });
         }

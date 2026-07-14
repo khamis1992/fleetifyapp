@@ -64,7 +64,7 @@ export const invalidateQueriesByPrefix = async (prefix: string) => {
 
   try {
     await client.invalidateQueries({
-      predicate: (query) => query.queryKey[0]?.toString().startsWith(prefix)
+      predicate: (query) => Boolean(query.queryKey[0]?.toString().startsWith(prefix))
     });
     console.log(`✅ Cache invalidated for queries with prefix: ${prefix}`);
     
@@ -175,7 +175,7 @@ export const prefetchCommonQueries = async () => {
 
   try {
     // Prefetch commonly accessed data
-    const prefetchPromises = [
+    const prefetchPromises: Promise<unknown>[] = [
       // Add common queries here
       // client.prefetchQuery({
       //   queryKey: ['dashboard-stats'],

@@ -416,6 +416,7 @@ export const useDeletePaymentSchedule = () => {
   const { toast } = useToast();
   const { user } = useAuth();
   const { hasPermission } = usePermissions();
+  const { companyId } = useUnifiedCompanyAccess();
   const queryClient = useQueryClient();
 
   return useMutation({

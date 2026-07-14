@@ -48,7 +48,7 @@ export const useRealTimeAlerts = () => {
             severity: alert.alert_type === 'budget_exceeded' ? 'critical' : 'high',
             title: 'تجاوز في الموازنة',
             message: alert.message_ar || alert.message,
-            created_at: alert.created_at,
+            created_at: alert.created_at || new Date().toISOString(),
             data: {
               percentage: alert.current_percentage,
               amount: alert.amount_exceeded,
@@ -74,7 +74,7 @@ export const useRealTimeAlerts = () => {
             severity: alert.priority === 'high' ? 'high' : 'medium',
             title: alert.alert_title,
             message: alert.alert_message,
-            created_at: alert.created_at,
+            created_at: alert.created_at || new Date().toISOString(),
             data: {
               vehicle_id: alert.vehicle_id,
               alert_type: alert.alert_type,

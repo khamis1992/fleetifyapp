@@ -467,7 +467,7 @@ export default function CustomerCRMRedesigned() {
   const [selectedLateReportCustomerIds, setSelectedLateReportCustomerIds] = useState<string[]>([]);
 
   // Use optimized CRM hook
-  const { data: crmCustomers = [], isLoading, refetch } = useCRMCustomersOptimized(companyId);
+  const { data: crmCustomers = [], isLoading, refetch } = useCRMCustomersOptimized(companyId ?? null);
 
   // Transform CRM data
   const customers = useMemo(() => {
@@ -495,7 +495,7 @@ export default function CustomerCRMRedesigned() {
         id: c.contract_id!,
         contract_number: c.contract_number!,
         customer_id: c.customer_id,
-        status: c.contract_status,
+        status: c.contract_status || '',
         start_date: c.contract_start_date || '',
         end_date: c.contract_end_date || '',
         monthly_amount: c.total_invoiced_amount || 0,
@@ -886,13 +886,16 @@ export default function CustomerCRMRedesigned() {
       // Get overdue invoices for this customer and format as month names with year
       const customerInvoices = collectibleOverdueInvoices.filter(inv => inv.customer_id === customer.id);
       const invoiceRows = customerInvoices.map(inv => {
-        const invoiceDate = new Date(inv.invoice_date || inv.due_date);
+        const invoiceDateValue = inv.invoice_date || inv.due_date;
+        const invoiceDate = invoiceDateValue ? new Date(invoiceDateValue) : null;
         const dueDate = inv.due_date ? format(new Date(inv.due_date), 'dd/MM/yyyy') : '-';
-        const monthIndex = invoiceDate.getMonth();
-        const year = invoiceDate.getFullYear();
+        const monthIndex = invoiceDate?.getMonth();
+        const year = invoiceDate?.getFullYear();
         const balance = Number(inv.balance_due ?? ((inv.total_amount || 0) - (inv.paid_amount || 0)));
         return {
-          label: `فاتورة شهر ${arabicMonths[monthIndex]} ${year}`,
+          label: monthIndex === undefined || year === undefined
+            ? 'فاتورة بدون تاريخ'
+            : `فاتورة شهر ${arabicMonths[monthIndex]} ${year}`,
           dueDate,
           amount: balance,
         };

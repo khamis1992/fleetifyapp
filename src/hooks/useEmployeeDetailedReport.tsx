@@ -6,7 +6,10 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { customerCommunicationsClient } from '@/integrations/supabase/customerCommunicationsClient';
+import {
+  customerCommunicationsClient,
+  type CustomerCommunicationRow,
+} from '@/integrations/supabase/customerCommunicationsClient';
 import { useAuth } from '@/contexts/AuthContext';
 
 export const useEmployeeDetailedReport = (employeeId: string, period: number = 30) => {
@@ -159,7 +162,7 @@ export const useEmployeeDetailedReport = (employeeId: string, period: number = 3
       const assignedCustomers = new Set(
         (contractsResult.data || []).map(contract => contract.customer_id)
       );
-      const communications = communicationsResult.data || [];
+      const communications = (communicationsResult.data || []) as unknown as CustomerCommunicationRow[];
       const calls = communications.filter(item => item.communication_type === 'phone');
       const contactedCustomers = new Set(communications.map(item => item.customer_id));
 

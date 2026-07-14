@@ -15,6 +15,7 @@ import {
   ReceiptText,
   ShieldAlert,
   Clock,
+  Scale,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
@@ -35,6 +36,7 @@ interface TrafficViolationSidePanelProps {
   open: boolean;
   onClose: () => void;
   onAddPayment?: (violation: TrafficViolation) => void;
+  onEscalateToLegal?: (violation: TrafficViolation) => void;
 }
 
 const DetailRow = ({
@@ -79,6 +81,7 @@ export const TrafficViolationSidePanel: React.FC<TrafficViolationSidePanelProps>
   open,
   onClose,
   onAddPayment,
+  onEscalateToLegal,
 }) => {
   const { formatCurrency } = useCurrencyFormatter();
   const confirmMutation = useConfirmTrafficViolation();
@@ -375,6 +378,16 @@ ${violation.location ? `- الموقع: ${violation.location}` : ''}
               <XCircle className="ml-2 h-4 w-4" />
               إلغاء المخالفة
             </Button>
+            {onEscalateToLegal && (
+              <Button
+                variant="outline"
+                className="col-span-2 h-11 rounded-[8px] border-[#DDE5EF] font-black text-[#102B4E]"
+                onClick={() => onEscalateToLegal(violation)}
+              >
+                <Scale className="ml-2 h-4 w-4" />
+                تحويل للشؤون القانونية
+              </Button>
+            )}
           </div>
         </div>
       </aside>

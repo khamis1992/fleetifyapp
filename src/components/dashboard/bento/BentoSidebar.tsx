@@ -702,7 +702,7 @@ const BentoSidebar: React.FC<BentoSidebarProps> = ({
       {/* === Navigation with Categories === */}
       <nav
         ref={navScrollRef}
-        onScroll={saveSidebarScroll}
+        onScroll={() => saveSidebarScroll()}
         className="flex-1 overflow-y-auto overflow-x-hidden px-3 py-3 scrollbar-thin scrollbar-track-transparent"
         style={{ scrollbarColor: `${sidebarColors.border} transparent` }}
       >

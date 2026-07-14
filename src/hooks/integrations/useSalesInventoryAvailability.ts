@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import type { Database } from '@/integrations/supabase/types';
 
 /**
  * Integration Hook: Sales → Inventory Availability
@@ -51,6 +52,35 @@ export interface InventoryAvailabilityResult {
   }>;
 }
 
+type AvailabilityRow = Database['public']['Views']['sales_inventory_availability']['Row'];
+
+const mapAvailability = (row: AvailabilityRow): SalesInventoryAvailability => ({
+  item_id: row.item_id ?? '',
+  company_id: row.company_id ?? '',
+  item_name: row.item_name ?? '',
+  item_name_ar: row.item_name_ar ?? '',
+  item_code: row.item_code ?? '',
+  sku: row.sku ?? '',
+  barcode: row.barcode ?? '',
+  unit_of_measure: row.unit_of_measure ?? '',
+  unit_price: row.unit_price ?? 0,
+  cost_price: row.cost_price ?? 0,
+  category_id: row.category_id ?? '',
+  category_name: row.category_name ?? '',
+  warehouse_id: row.warehouse_id ?? '',
+  warehouse_name: row.warehouse_name ?? '',
+  warehouse_name_ar: row.warehouse_name_ar ?? '',
+  quantity_on_hand: row.quantity_on_hand ?? 0,
+  quantity_allocated: row.quantity_reserved ?? 0,
+  quantity_available: row.quantity_available ?? 0,
+  last_movement_at: row.last_movement_at,
+  stock_status: row.stock_status === 'low_stock' || row.stock_status === 'out_of_stock'
+    ? row.stock_status
+    : 'available',
+  min_stock_level: row.min_stock_level ?? 0,
+  reorder_point: row.reorder_point ?? 0,
+});
+
 /**
  * Hook to fetch all sales inventory availability
  */
@@ -78,7 +108,7 @@ export const useSalesInventoryAvailability = (warehouseId?: string) => {
 
         if (error) throw error;
 
-        return (data || []) as SalesInventoryAvailability[];
+        return (data || []).map(mapAvailability);
       } catch (error) {
         console.error('Error fetching sales inventory availability:', error);
         throw error;
@@ -128,7 +158,7 @@ export const useInventoryAvailabilityCheck = (params: InventoryAvailabilityCheck
 
         if (error) throw error;
 
-        const inventoryData = (data || []) as SalesInventoryAvailability[];
+        const inventoryData = (data || []).map(mapAvailability);
 
         // Calculate totals
         const totalAvailable = inventoryData.reduce(
@@ -193,7 +223,7 @@ export const useAvailableItems = (warehouseId?: string) => {
 
         if (error) throw error;
 
-        return (data || []) as SalesInventoryAvailability[];
+        return (data || []).map(mapAvailability);
       } catch (error) {
         console.error('Error fetching available items:', error);
         throw error;
@@ -231,7 +261,7 @@ export const useLowStockItems = (warehouseId?: string) => {
 
         if (error) throw error;
 
-        return (data || []) as SalesInventoryAvailability[];
+        return (data || []).map(mapAvailability);
       } catch (error) {
         console.error('Error fetching low stock items:', error);
         throw error;
@@ -269,7 +299,7 @@ export const useOutOfStockItems = (warehouseId?: string) => {
 
         if (error) throw error;
 
-        return (data || []) as SalesInventoryAvailability[];
+        return (data || []).map(mapAvailability);
       } catch (error) {
         console.error('Error fetching out of stock items:', error);
         throw error;

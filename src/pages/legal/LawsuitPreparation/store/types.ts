@@ -15,7 +15,7 @@ export interface Customer {
   first_name_ar: string | null;
   last_name: string | null;
   last_name_ar: string | null;
-  customer_type: 'individual' | 'company' | null;
+  customer_type: 'individual' | 'corporate' | null;
   company_name: string | null;
   company_name_ar: string | null;
   national_id: string | null;
@@ -93,8 +93,16 @@ export interface FinancialCalculations {
   violationsFines: number;
   violationsCount: number;
   total: number;
-  invoiceLateFees: { invoiceId: string; amount: number; daysLate: number }[];
+  invoiceLateFees: {
+    invoiceId?: string;
+    invoiceNumber?: string;
+    dueDate: string;
+    remainingAmount: number;
+    daysOverdue: number;
+    lateFee: number;
+  }[];
   overdueInvoicesCount: number;
+  totalDaysOverdue: number;
   avgDaysOverdue: number;
   amountInWords: string;
 }

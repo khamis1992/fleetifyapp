@@ -268,7 +268,7 @@ class LawsuitService {
 
         for (const invoice of invoices) {
           const unpaid = (invoice.total_amount || 0) - (invoice.paid_amount || 0);
-          if (unpaid > 0) {
+          if (unpaid > 0 && invoice.due_date) {
             totalOverdue += unpaid;
             const dueDate = new Date(invoice.due_date);
             if (!oldestDueDate || dueDate < oldestDueDate) {
@@ -335,13 +335,15 @@ class LawsuitService {
     customerId: string,
     data: Partial<LawsuitPreparation>
   ): Promise<LawsuitPreparation> {
+    const defendantName = data.defendant_name?.trim();
+    if (!defendantName) throw new Error('Defendant name is required');
     const { data: lawsuit, error } = await supabase
       .from('lawsuit_preparations')
       .insert({
         company_id: companyId,
         contract_id: contractId,
         customer_id: customerId,
-        defendant_name: data.defendant_name,
+        defendant_name: defendantName,
         defendant_id_number: data.defendant_id_number,
         defendant_type: data.defendant_type || 'natural_person',
         overdue_rent: data.overdue_rent || 0,

@@ -515,7 +515,7 @@ export function CustomerDetailsDialog({
                         <div>
                           <div className="font-semibold">عقد #{contract.contract_number}</div>
                           <div className="text-sm text-muted-foreground">
-                            {formatCurrency(contract.contract_amount)} - {contract.status}
+                            {formatCurrency(contract.contract_amount ?? 0)} - {contract.status}
                           </div>
                         </div>
                         <Badge variant={contract.status === 'active' ? 'default' : 'secondary'}>

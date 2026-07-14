@@ -16,15 +16,35 @@ import { useFleetifyTranslation } from "@/hooks/useTranslation";
 interface Theme {
   id: string;
   theme_name: string;
-  theme_name_ar?: string;
-  colors: any;
-  fonts: any;
-  spacing: any;
-  custom_css?: string;
+  theme_name_ar?: string | null;
+  colors: Record<string, string>;
+  fonts: Record<string, string>;
+  spacing: Record<string, string>;
+  custom_css?: string | null;
   is_default: boolean;
   is_active: boolean;
-  company_id: string;
+  company_id: string | null;
 }
+
+const asStringRecord = (value: unknown): Record<string, string> => {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) return {};
+  return Object.fromEntries(
+    Object.entries(value).filter((entry): entry is [string, string] => typeof entry[1] === 'string')
+  );
+};
+
+const normalizeTheme = (theme: any): Theme => ({
+  id: theme.id,
+  theme_name: theme.theme_name,
+  theme_name_ar: theme.theme_name_ar ?? null,
+  colors: asStringRecord(theme.colors),
+  fonts: asStringRecord(theme.fonts),
+  spacing: asStringRecord(theme.spacing),
+  custom_css: theme.custom_css ?? null,
+  is_default: theme.is_default ?? false,
+  is_active: theme.is_active ?? true,
+  company_id: theme.company_id ?? null,
+});
 
 export const LandingThemeSettings: React.FC = () => {
   const { t } = useFleetifyTranslation("ui");
@@ -68,7 +88,7 @@ export const LandingThemeSettings: React.FC = () => {
         is_default: false,
         is_active: true
       });
-      setSelectedTheme(newTheme);
+      setSelectedTheme(normalizeTheme(newTheme));
       toast.success('Theme created successfully');
     } catch (error) {
       toast.error('Failed to create theme');
@@ -80,7 +100,7 @@ export const LandingThemeSettings: React.FC = () => {
     
     try {
       const updatedTheme = await updateTheme(selectedTheme.id, updates);
-      setSelectedTheme(updatedTheme);
+      setSelectedTheme(normalizeTheme(updatedTheme));
       toast.success('Theme updated successfully');
     } catch (error) {
       toast.error('Failed to update theme');
@@ -102,7 +122,7 @@ export const LandingThemeSettings: React.FC = () => {
         is_default: false,
         is_active: true
       });
-      setSelectedTheme(duplicatedTheme);
+      setSelectedTheme(normalizeTheme(duplicatedTheme));
       toast.success('Theme duplicated successfully');
     } catch (error) {
       toast.error('Failed to duplicate theme');
@@ -200,7 +220,7 @@ export const LandingThemeSettings: React.FC = () => {
             value={selectedTheme?.id || ''} 
             onValueChange={(value) => {
               const theme = themes.find(t => t.id === value);
-              setSelectedTheme(theme || null);
+              setSelectedTheme(theme ? normalizeTheme(theme) : null);
             }}
           >
             <SelectTrigger className="w-64">

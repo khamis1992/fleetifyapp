@@ -71,12 +71,7 @@ const I18nProvider: React.FC<I18nProviderProps> = ({
 
     // Get language configuration
     const lang = currentLanguage;
-    const isRTL = enableRTL && (
-      lang === 'ar' ||
-      lang === 'he' ||
-      lang === 'fa' ||
-      lang === 'ur'
-    );
+    const isRTL = enableRTL && lang === 'ar';
 
     // Set HTML attributes
     htmlElement.setAttribute('lang', lang);

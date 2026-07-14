@@ -26,13 +26,16 @@ const StockMovements = () => {
   const { data: items } = useInventoryItems();
   const { data: warehouses } = useInventoryWarehouses();
 
+  const getMovementDate = (movement: StockMovement) =>
+    new Date(movement.movement_date ?? movement.created_at ?? 0);
+
   // Filter movements
   const filteredMovements = movements?.filter((movement) => {
     const matchesItem = selectedItem === "all" || movement.item_id === selectedItem;
     const matchesWarehouse = selectedWarehouse === "all" || movement.warehouse_id === selectedWarehouse;
     const matchesType = selectedType === "all" || movement.movement_type === selectedType;
 
-    const movementDate = new Date(movement.movement_date);
+    const movementDate = getMovementDate(movement);
     const matchesDateFrom = !dateFrom || movementDate >= new Date(dateFrom);
     const matchesDateTo = !dateTo || movementDate <= new Date(dateTo);
 
@@ -55,7 +58,7 @@ const StockMovements = () => {
   // Get unique items moved this month
   const thisMonth = new Date();
   thisMonth.setDate(1);
-  const thisMonthMovements = movements?.filter(m => new Date(m.movement_date) >= thisMonth) || [];
+  const thisMonthMovements = movements?.filter(m => getMovementDate(m) >= thisMonth) || [];
   const uniqueItemsThisMonth = new Set(thisMonthMovements.map(m => m.item_id)).size;
 
   // Get most active warehouse
@@ -113,7 +116,7 @@ const StockMovements = () => {
       const warehouse = warehouses?.find(w => w.id === movement.warehouse_id);
 
       return [
-        format(new Date(movement.movement_date), "yyyy-MM-dd HH:mm"),
+        format(getMovementDate(movement), "yyyy-MM-dd HH:mm"),
         item?.item_name || "-",
         warehouse?.warehouse_name || "-",
         movement.movement_type,
@@ -328,7 +331,7 @@ const StockMovements = () => {
                   return (
                     <TableRow key={movement.id}>
                       <TableCell className="text-xs">
-                        {format(new Date(movement.movement_date), "dd/MM/yyyy HH:mm", { locale: ar })}
+                        {format(getMovementDate(movement), "dd/MM/yyyy HH:mm", { locale: ar })}
                       </TableCell>
                       <TableCell className="font-medium">
                         {item?.item_name || "-"}

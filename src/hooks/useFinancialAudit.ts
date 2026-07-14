@@ -651,7 +651,7 @@ function generateJournalEntrySummary(action: FinancialAuditEventType, oldData?: 
 function describeChanges(oldData?: any, newData?: any): string {
   if (!oldData || !newData) return 'No previous data available';
 
-  const changes = [];
+  const changes: string[] = [];
   const fields = ['amount', 'status', 'payment_method', 'due_date', 'customer_id'];
 
   fields.forEach(field => {

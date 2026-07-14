@@ -11,6 +11,7 @@ import { Separator } from "@/components/ui/separator"
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet"
 import { Skeleton } from "@/components/ui/skeleton"
 import { VisuallyHidden } from "@/components/ui/visually-hidden"
+import { useFleetifyTranslation } from "@/hooks/useTranslation"
 import {
   Tooltip,
   TooltipContent,
@@ -38,7 +39,6 @@ type SidebarContext = {
 const SidebarContext = React.createContext<SidebarContext | null>(null)
 
 function useSidebar() {
-  const { t } = useFleetifyTranslation("ui");
   const context = React.useContext(SidebarContext)
   if (!context) {
     throw new Error("useSidebar must be used within a SidebarProvider.")
@@ -174,6 +174,7 @@ const Sidebar = React.forwardRef<
     ref
   ) => {
     const { isMobile, state, openMobile, setOpenMobile } = useSidebar()
+    const { t } = useFleetifyTranslation("ui")
 
     if (collapsible === "none") {
       return (
@@ -265,6 +266,7 @@ const SidebarTrigger = React.forwardRef<
   React.ComponentProps<typeof Button>
 >(({ className, onClick, ...props }, ref) => {
   const { toggleSidebar } = useSidebar()
+  const { t } = useFleetifyTranslation("ui")
 
   return (
     <Button

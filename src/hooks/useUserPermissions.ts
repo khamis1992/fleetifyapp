@@ -57,6 +57,7 @@ export const useUpdateUserPermissions = () => {
     }) => {
       const currentUser = await supabase.auth.getUser();
       if (!currentUser.data.user) throw new Error('Not authenticated');
+      const actorUserId = currentUser.data.user.id;
 
       for (const permission of permissions) {
         await supabase
@@ -73,7 +74,7 @@ export const useUpdateUserPermissions = () => {
             user_id: userId,
             permission_id: permission.permissionId,
             granted: permission.granted,
-            granted_by: currentUser.data.user.id,
+            granted_by: actorUserId,
             granted_at: permission.granted ? new Date().toISOString() : null,
             revoked_at: permission.granted ? null : new Date().toISOString(),
           });
@@ -90,8 +91,8 @@ export const useUpdateUserPermissions = () => {
       const deniedPermissions = variables.permissions.filter(p => p.granted === false).map(p => p.permissionId);
       const inheritedPermissions = variables.permissions.filter(p => p.granted === null).map(p => p.permissionId);
       await createAuditLog(
-        'UPDATE',
-        'user_permission',
+        'PERMISSION_CHANGE',
+        'permission',
         variables.userId,
         variables.userId,
         {
@@ -144,6 +145,7 @@ export const useUpdateUserRoles = () => {
       // Get current user info for granted_by and company_id
       const currentUser = await supabase.auth.getUser();
       if (!currentUser.data.user) throw new Error('Not authenticated');
+      const actorUserId = currentUser.data.user.id;
       
       // Get company_id for the target user
       const { data: targetProfile, error: profileError } = await supabase
@@ -179,7 +181,7 @@ export const useUpdateUserRoles = () => {
           user_id: userId,
           company_id: companyId,
           role,
-          granted_by: currentUser.data.user.id,
+          granted_by: actorUserId,
         }));
 
         console.log('Inserting roles:', rolesToInsert);
@@ -202,8 +204,8 @@ export const useUpdateUserRoles = () => {
       
       // Log audit trail
       await createAuditLog(
-        'UPDATE',
-        'user_role',
+        'ROLE_CHANGE',
+        'role',
         variables.userId,
         variables.userId,
         {

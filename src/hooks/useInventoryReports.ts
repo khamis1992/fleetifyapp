@@ -98,8 +98,8 @@ export const useInventoryValuationReport = (
 
       const { data, error } = await supabase.rpc('calculate_inventory_valuation', {
         p_company_id: user.profile.company_id,
-        p_warehouse_id: warehouseId || null,
-        p_category_id: categoryId || null,
+        p_warehouse_id: warehouseId,
+        p_category_id: categoryId,
       });
 
       if (error) {
@@ -149,7 +149,19 @@ export const useInventoryAgingReport = (warehouseId?: string, categoryId?: strin
         throw error;
       }
 
-      return data || [];
+      return (data || []).map((row) => ({
+        ...row,
+        item_id: row.item_id ?? '',
+        company_id: row.company_id ?? '',
+        item_name: row.item_name ?? '',
+        warehouse_id: row.warehouse_id ?? '',
+        warehouse_name: row.warehouse_name ?? '',
+        quantity_on_hand: row.quantity_on_hand ?? 0,
+        quantity_available: row.quantity_available ?? 0,
+        days_since_last_movement: row.days_since_last_movement ?? 0,
+        aging_category: row.aging_category ?? '',
+        tied_up_value: row.tied_up_value ?? 0,
+      }));
     },
     enabled: !!user?.profile?.company_id,
   });
@@ -191,7 +203,21 @@ export const useInventoryTurnoverReport = (warehouseId?: string, categoryId?: st
         throw error;
       }
 
-      return data || [];
+      return (data || []).map((row) => ({
+        ...row,
+        item_id: row.item_id ?? '',
+        company_id: row.company_id ?? '',
+        item_name: row.item_name ?? '',
+        warehouse_id: row.warehouse_id ?? '',
+        warehouse_name: row.warehouse_name ?? '',
+        current_stock: row.current_stock ?? 0,
+        quantity_available: row.quantity_available ?? 0,
+        movements_last_90_days: row.movements_last_90_days ?? 0,
+        sales_quantity_last_90_days: row.sales_quantity_last_90_days ?? 0,
+        purchase_quantity_last_90_days: row.purchase_quantity_last_90_days ?? 0,
+        turnover_ratio: row.turnover_ratio ?? 0,
+        turnover_category: row.turnover_category ?? '',
+      }));
     },
     enabled: !!user?.profile?.company_id,
   });
@@ -234,7 +260,22 @@ export const useStockLevelAlerts = (warehouseId?: string, categoryId?: string) =
         throw error;
       }
 
-      return data || [];
+      return (data || []).map((row) => ({
+        ...row,
+        item_id: row.item_id ?? '',
+        company_id: row.company_id ?? '',
+        item_name: row.item_name ?? '',
+        warehouse_id: row.warehouse_id ?? '',
+        warehouse_name: row.warehouse_name ?? '',
+        quantity_on_hand: row.quantity_on_hand ?? 0,
+        quantity_reserved: row.quantity_reserved ?? 0,
+        quantity_available: row.quantity_available ?? 0,
+        min_stock_level: row.min_stock_level ?? 0,
+        alert_type: row.alert_type ?? '',
+        alert_priority: row.alert_priority ?? 0,
+        shortage_quantity: row.shortage_quantity ?? 0,
+        suggested_order_quantity: row.suggested_order_quantity ?? 0,
+      }));
     },
     enabled: !!user?.profile?.company_id,
   });
@@ -256,8 +297,8 @@ export const useInventoryValuationSummary = () => {
 
       const { data, error } = await supabase.rpc('calculate_inventory_valuation', {
         p_company_id: user.profile.company_id,
-        p_warehouse_id: null,
-        p_category_id: null,
+        p_warehouse_id: undefined,
+        p_category_id: undefined,
       });
 
       if (error) {

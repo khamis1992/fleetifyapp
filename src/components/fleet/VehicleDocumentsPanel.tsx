@@ -393,7 +393,6 @@ export function VehicleDocumentsPanel({ vehicleId, documents = [], onDocumentAdd
     documents.forEach(doc => {
       const exists = combined.some(existing => 
         existing.id === doc.id || 
-        (existing.file_path && existing.file_path === doc.file_path) ||
         (existing.document_url && existing.document_url === doc.document_url)
       );
       if (!exists) {
@@ -524,7 +523,7 @@ export function VehicleDocumentsPanel({ vehicleId, documents = [], onDocumentAdd
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
           {allDocuments.map((doc, index) => {
             const isFromFiles = documentFiles.some(f => f.id === doc.id);
-            const docUrl = doc.document_url || doc.file_path;
+            const docUrl = doc.document_url;
             
             return (
               <motion.div
@@ -562,9 +561,9 @@ export function VehicleDocumentsPanel({ vehicleId, documents = [], onDocumentAdd
                       {format(new Date(doc.expiry_date), 'dd/MM/yyyy')}
                     </p>
                   )}
-                  {!doc.expiry_date && (doc.created_at || doc.uploaded_at) && (
+                  {!doc.expiry_date && doc.created_at && (
                     <p className="text-[10px] text-slate-500 mt-1">
-                      {format(new Date(doc.created_at || doc.uploaded_at), 'dd/MM/yyyy')}
+                      {format(new Date(doc.created_at), 'dd/MM/yyyy')}
                     </p>
                   )}
                 </div>

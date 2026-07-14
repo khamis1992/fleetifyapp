@@ -1,0 +1,355 @@
+src/components/help/content/CollectionsPageHelp.tsx(63,8): error TS2322: Type '{ children: Element[]; number: number; title: string; }' is not assignable to type 'IntrinsicAttributes & HelpStepProps'.
+  Property 'children' does not exist on type 'IntrinsicAttributes & HelpStepProps'.
+src/components/help/content/CollectionsPageHelp.tsx(76,8): error TS2322: Type '{ children: Element[]; number: number; title: string; }' is not assignable to type 'IntrinsicAttributes & HelpStepProps'.
+  Property 'children' does not exist on type 'IntrinsicAttributes & HelpStepProps'.
+src/components/help/content/CollectionsPageHelp.tsx(90,8): error TS2322: Type '{ children: Element[]; number: number; title: string; }' is not assignable to type 'IntrinsicAttributes & HelpStepProps'.
+  Property 'children' does not exist on type 'IntrinsicAttributes & HelpStepProps'.
+src/components/help/content/CollectionsPageHelp.tsx(114,8): error TS2322: Type '{ children: Element[]; number: number; title: string; }' is not assignable to type 'IntrinsicAttributes & HelpStepProps'.
+  Property 'children' does not exist on type 'IntrinsicAttributes & HelpStepProps'.
+src/components/help/content/CollectionsPageHelp.tsx(126,8): error TS2322: Type '{ children: Element[]; number: number; title: string; }' is not assignable to type 'IntrinsicAttributes & HelpStepProps'.
+  Property 'children' does not exist on type 'IntrinsicAttributes & HelpStepProps'.
+src/components/help/content/CollectionsPageHelp.tsx(139,8): error TS2322: Type '{ children: Element[]; number: number; title: string; }' is not assignable to type 'IntrinsicAttributes & HelpStepProps'.
+  Property 'children' does not exist on type 'IntrinsicAttributes & HelpStepProps'.
+src/components/help/content/CollectionsPageHelp.tsx(202,8): error TS2322: Type '{ children: Element[]; number: number; title: string; }' is not assignable to type 'IntrinsicAttributes & HelpStepProps'.
+  Property 'children' does not exist on type 'IntrinsicAttributes & HelpStepProps'.
+src/components/help/content/CollectionsPageHelp.tsx(214,8): error TS2322: Type '{ children: Element; number: number; title: string; }' is not assignable to type 'IntrinsicAttributes & HelpStepProps'.
+  Property 'children' does not exist on type 'IntrinsicAttributes & HelpStepProps'.
+src/components/help/content/CollectionsPageHelp.tsx(220,8): error TS2322: Type '{ children: Element; number: number; title: string; }' is not assignable to type 'IntrinsicAttributes & HelpStepProps'.
+  Property 'children' does not exist on type 'IntrinsicAttributes & HelpStepProps'.
+src/components/help/content/CollectionsPageHelp.tsx(226,17): error TS2322: Type '"alert"' is not assignable to type '"warning" | "info" | "tip" | undefined'.
+src/components/help/content/CollectionsPageHelp.tsx(247,8): error TS2322: Type '{ children: Element; number: number; title: string; }' is not assignable to type 'IntrinsicAttributes & HelpStepProps'.
+  Property 'children' does not exist on type 'IntrinsicAttributes & HelpStepProps'.
+src/components/help/content/CollectionsPageHelp.tsx(253,8): error TS2322: Type '{ children: Element; number: number; title: string; }' is not assignable to type 'IntrinsicAttributes & HelpStepProps'.
+  Property 'children' does not exist on type 'IntrinsicAttributes & HelpStepProps'.
+src/components/help/content/CollectionsPageHelp.tsx(259,8): error TS2322: Type '{ children: Element; number: number; title: string; }' is not assignable to type 'IntrinsicAttributes & HelpStepProps'.
+  Property 'children' does not exist on type 'IntrinsicAttributes & HelpStepProps'.
+src/components/help/content/CollectionsPageHelp.tsx(265,17): error TS2322: Type '"alert"' is not assignable to type '"warning" | "info" | "tip" | undefined'.
+src/components/help/content/CollectionsPageHelp.tsx(276,8): error TS2322: Type '{ children: Element[]; number: number; title: string; }' is not assignable to type 'IntrinsicAttributes & HelpStepProps'.
+  Property 'children' does not exist on type 'IntrinsicAttributes & HelpStepProps'.
+src/components/help/content/CollectionsPageHelp.tsx(288,8): error TS2322: Type '{ children: Element; number: number; title: string; }' is not assignable to type 'IntrinsicAttributes & HelpStepProps'.
+  Property 'children' does not exist on type 'IntrinsicAttributes & HelpStepProps'.
+src/components/help/content/CollectionsPageHelp.tsx(294,8): error TS2322: Type '{ children: Element; number: number; title: string; }' is not assignable to type 'IntrinsicAttributes & HelpStepProps'.
+  Property 'children' does not exist on type 'IntrinsicAttributes & HelpStepProps'.
+src/components/help/content/CollectionsPageHelp.tsx(300,17): error TS2322: Type '"alert"' is not assignable to type '"warning" | "info" | "tip" | undefined'.
+src/components/help/content/CollectionsPageHelp.tsx(311,8): error TS2322: Type '{ children: Element[]; number: number; title: string; }' is not assignable to type 'IntrinsicAttributes & HelpStepProps'.
+  Property 'children' does not exist on type 'IntrinsicAttributes & HelpStepProps'.
+src/components/help/content/CollectionsPageHelp.tsx(323,8): error TS2322: Type '{ children: Element; number: number; title: string; }' is not assignable to type 'IntrinsicAttributes & HelpStepProps'.
+  Property 'children' does not exist on type 'IntrinsicAttributes & HelpStepProps'.
+src/components/help/content/CollectionsPageHelp.tsx(329,8): error TS2322: Type '{ children: Element[]; number: number; title: string; }' is not assignable to type 'IntrinsicAttributes & HelpStepProps'.
+  Property 'children' does not exist on type 'IntrinsicAttributes & HelpStepProps'.
+src/components/help/content/CollectionsPageHelp.tsx(340,8): error TS2322: Type '{ children: Element; number: number; title: string; }' is not assignable to type 'IntrinsicAttributes & HelpStepProps'.
+  Property 'children' does not exist on type 'IntrinsicAttributes & HelpStepProps'.
+src/components/help/content/CompaniesPageHelp.tsx(65,12): error TS2741: Property 'description' is missing in type '{ number: number; title: string; }' but required in type 'HelpStepProps'.
+src/components/help/content/CompaniesPageHelp.tsx(66,12): error TS2741: Property 'description' is missing in type '{ number: number; title: string; }' but required in type 'HelpStepProps'.
+src/components/help/content/CompaniesPageHelp.tsx(67,12): error TS2741: Property 'description' is missing in type '{ number: number; title: string; }' but required in type 'HelpStepProps'.
+src/components/help/content/CompaniesPageHelp.tsx(68,12): error TS2741: Property 'description' is missing in type '{ number: number; title: string; }' but required in type 'HelpStepProps'.
+src/components/help/content/CompaniesPageHelp.tsx(69,12): error TS2741: Property 'description' is missing in type '{ number: number; title: string; }' but required in type 'HelpStepProps'.
+src/components/help/content/CompaniesPageHelp.tsx(76,12): error TS2741: Property 'description' is missing in type '{ number: number; title: string; }' but required in type 'HelpStepProps'.
+src/components/help/content/CompaniesPageHelp.tsx(77,12): error TS2741: Property 'description' is missing in type '{ number: number; title: string; }' but required in type 'HelpStepProps'.
+src/components/help/content/CompaniesPageHelp.tsx(78,12): error TS2741: Property 'description' is missing in type '{ number: number; title: string; }' but required in type 'HelpStepProps'.
+src/components/help/content/CompaniesPageHelp.tsx(79,12): error TS2741: Property 'description' is missing in type '{ number: number; title: string; }' but required in type 'HelpStepProps'.
+src/components/help/content/CompaniesPageHelp.tsx(86,12): error TS2741: Property 'description' is missing in type '{ number: number; title: string; }' but required in type 'HelpStepProps'.
+src/components/help/content/CompaniesPageHelp.tsx(87,12): error TS2741: Property 'description' is missing in type '{ number: number; title: string; }' but required in type 'HelpStepProps'.
+src/components/help/content/CompaniesPageHelp.tsx(88,12): error TS2741: Property 'description' is missing in type '{ number: number; title: string; }' but required in type 'HelpStepProps'.
+src/components/help/content/DashboardPageHelp.tsx(68,14): error TS2741: Property 'description' is missing in type '{ number: number; title: string; }' but required in type 'HelpStepProps'.
+src/components/help/content/DashboardPageHelp.tsx(69,14): error TS2741: Property 'description' is missing in type '{ number: number; title: string; }' but required in type 'HelpStepProps'.
+src/components/help/content/DashboardPageHelp.tsx(70,14): error TS2741: Property 'description' is missing in type '{ number: number; title: string; }' but required in type 'HelpStepProps'.
+src/components/help/content/DashboardPageHelp.tsx(71,14): error TS2741: Property 'description' is missing in type '{ number: number; title: string; }' but required in type 'HelpStepProps'.
+src/components/help/content/DashboardPageHelp.tsx(72,14): error TS2741: Property 'description' is missing in type '{ number: number; title: string; }' but required in type 'HelpStepProps'.
+src/components/help/content/DashboardPageHelp.tsx(89,14): error TS2741: Property 'description' is missing in type '{ number: number; title: string; }' but required in type 'HelpStepProps'.
+src/components/help/content/DashboardPageHelp.tsx(90,14): error TS2741: Property 'description' is missing in type '{ number: number; title: string; }' but required in type 'HelpStepProps'.
+src/components/help/content/DashboardPageHelp.tsx(91,14): error TS2741: Property 'description' is missing in type '{ number: number; title: string; }' but required in type 'HelpStepProps'.
+src/components/help/content/DashboardPageHelp.tsx(92,14): error TS2741: Property 'description' is missing in type '{ number: number; title: string; }' but required in type 'HelpStepProps'.
+src/components/help/content/DashboardPageHelp.tsx(104,14): error TS2741: Property 'description' is missing in type '{ number: number; title: string; }' but required in type 'HelpStepProps'.
+src/components/help/content/DashboardPageHelp.tsx(105,14): error TS2741: Property 'description' is missing in type '{ number: number; title: string; }' but required in type 'HelpStepProps'.
+src/components/help/content/DashboardPageHelp.tsx(106,14): error TS2741: Property 'description' is missing in type '{ number: number; title: string; }' but required in type 'HelpStepProps'.
+src/components/help/content/DashboardPageHelp.tsx(107,14): error TS2741: Property 'description' is missing in type '{ number: number; title: string; }' but required in type 'HelpStepProps'.
+src/components/help/content/DashboardPageHelp.tsx(119,14): error TS2741: Property 'description' is missing in type '{ number: number; title: string; }' but required in type 'HelpStepProps'.
+src/components/help/content/DashboardPageHelp.tsx(120,14): error TS2741: Property 'description' is missing in type '{ number: number; title: string; }' but required in type 'HelpStepProps'.
+src/components/help/content/DashboardPageHelp.tsx(121,14): error TS2741: Property 'description' is missing in type '{ number: number; title: string; }' but required in type 'HelpStepProps'.
+src/components/help/content/DashboardPageHelp.tsx(122,14): error TS2741: Property 'description' is missing in type '{ number: number; title: string; }' but required in type 'HelpStepProps'.
+src/components/help/content/EmployeesPageHelp.tsx(57,9): error TS2322: Type '"number"' is not assignable to type '"check" | "bullet" | undefined'.
+src/components/help/content/FinanceReportsPageHelp.tsx(138,17): error TS2322: Type '"note"' is not assignable to type '"warning" | "info" | "tip" | undefined'.
+src/components/help/content/InventoryPageHelp.tsx(48,12): error TS2741: Property 'description' is missing in type '{ number: number; title: string; }' but required in type 'HelpStepProps'.
+src/components/help/content/InventoryPageHelp.tsx(49,12): error TS2741: Property 'description' is missing in type '{ number: number; title: string; }' but required in type 'HelpStepProps'.
+src/components/help/content/InventoryPageHelp.tsx(50,12): error TS2741: Property 'description' is missing in type '{ number: number; title: string; }' but required in type 'HelpStepProps'.
+src/components/help/content/InventoryPageHelp.tsx(51,12): error TS2741: Property 'description' is missing in type '{ number: number; title: string; }' but required in type 'HelpStepProps'.
+src/components/help/content/InventoryPageHelp.tsx(52,12): error TS2741: Property 'description' is missing in type '{ number: number; title: string; }' but required in type 'HelpStepProps'.
+src/components/help/content/InventoryPageHelp.tsx(53,12): error TS2741: Property 'description' is missing in type '{ number: number; title: string; }' but required in type 'HelpStepProps'.
+src/components/help/content/InventoryPageHelp.tsx(61,12): error TS2741: Property 'description' is missing in type '{ number: number; title: string; }' but required in type 'HelpStepProps'.
+src/components/help/content/InventoryPageHelp.tsx(62,12): error TS2741: Property 'description' is missing in type '{ number: number; title: string; }' but required in type 'HelpStepProps'.
+src/components/help/content/InventoryPageHelp.tsx(63,12): error TS2741: Property 'description' is missing in type '{ number: number; title: string; }' but required in type 'HelpStepProps'.
+src/components/help/content/InventoryPageHelp.tsx(64,12): error TS2741: Property 'description' is missing in type '{ number: number; title: string; }' but required in type 'HelpStepProps'.
+src/components/help/content/InventoryPageHelp.tsx(65,12): error TS2741: Property 'description' is missing in type '{ number: number; title: string; }' but required in type 'HelpStepProps'.
+src/components/help/content/InventoryPageHelp.tsx(73,12): error TS2741: Property 'description' is missing in type '{ number: number; title: string; }' but required in type 'HelpStepProps'.
+src/components/help/content/InventoryPageHelp.tsx(74,12): error TS2741: Property 'description' is missing in type '{ number: number; title: string; }' but required in type 'HelpStepProps'.
+src/components/help/content/InventoryPageHelp.tsx(75,12): error TS2741: Property 'description' is missing in type '{ number: number; title: string; }' but required in type 'HelpStepProps'.
+src/components/help/content/InventoryPageHelp.tsx(76,12): error TS2741: Property 'description' is missing in type '{ number: number; title: string; }' but required in type 'HelpStepProps'.
+src/components/help/content/InventoryPageHelp.tsx(77,12): error TS2741: Property 'description' is missing in type '{ number: number; title: string; }' but required in type 'HelpStepProps'.
+src/components/help/content/InvoicesPageHelp.tsx(63,11): error TS2322: Type '"number"' is not assignable to type '"check" | "bullet" | undefined'.
+src/components/help/content/JournalEntriesPageHelp.tsx(106,11): error TS2322: Type '"info"' is not assignable to type '"check" | "bullet" | undefined'.
+src/components/help/content/PaymentRegistrationPageHelp.tsx(73,8): error TS2322: Type '{ children: Element[]; number: number; title: string; }' is not assignable to type 'IntrinsicAttributes & HelpStepProps'.
+  Property 'children' does not exist on type 'IntrinsicAttributes & HelpStepProps'.
+src/components/help/content/PaymentRegistrationPageHelp.tsx(84,8): error TS2322: Type '{ children: Element[]; number: number; title: string; }' is not assignable to type 'IntrinsicAttributes & HelpStepProps'.
+  Property 'children' does not exist on type 'IntrinsicAttributes & HelpStepProps'.
+src/components/help/content/PaymentRegistrationPageHelp.tsx(96,8): error TS2322: Type '{ children: Element; number: number; title: string; }' is not assignable to type 'IntrinsicAttributes & HelpStepProps'.
+  Property 'children' does not exist on type 'IntrinsicAttributes & HelpStepProps'.
+src/components/help/content/PaymentRegistrationPageHelp.tsx(102,8): error TS2322: Type '{ children: Element[]; number: number; title: string; }' is not assignable to type 'IntrinsicAttributes & HelpStepProps'.
+  Property 'children' does not exist on type 'IntrinsicAttributes & HelpStepProps'.
+src/components/help/content/PaymentRegistrationPageHelp.tsx(115,8): error TS2322: Type '{ children: Element[]; number: number; title: string; }' is not assignable to type 'IntrinsicAttributes & HelpStepProps'.
+  Property 'children' does not exist on type 'IntrinsicAttributes & HelpStepProps'.
+src/components/help/content/PaymentRegistrationPageHelp.tsx(140,8): error TS2322: Type '{ children: Element; number: number; title: string; }' is not assignable to type 'IntrinsicAttributes & HelpStepProps'.
+  Property 'children' does not exist on type 'IntrinsicAttributes & HelpStepProps'.
+src/components/help/content/PaymentRegistrationPageHelp.tsx(146,8): error TS2322: Type '{ children: Element; number: number; title: string; }' is not assignable to type 'IntrinsicAttributes & HelpStepProps'.
+  Property 'children' does not exist on type 'IntrinsicAttributes & HelpStepProps'.
+src/components/help/content/PaymentRegistrationPageHelp.tsx(152,8): error TS2322: Type '{ children: Element; number: number; title: string; }' is not assignable to type 'IntrinsicAttributes & HelpStepProps'.
+  Property 'children' does not exist on type 'IntrinsicAttributes & HelpStepProps'.
+src/components/help/content/PaymentRegistrationPageHelp.tsx(159,17): error TS2322: Type '"alert"' is not assignable to type '"warning" | "info" | "tip" | undefined'.
+src/components/help/content/PaymentRegistrationPageHelp.tsx(196,8): error TS2322: Type '{ children: Element; number: number; title: string; }' is not assignable to type 'IntrinsicAttributes & HelpStepProps'.
+  Property 'children' does not exist on type 'IntrinsicAttributes & HelpStepProps'.
+src/components/help/content/PaymentRegistrationPageHelp.tsx(202,8): error TS2322: Type '{ children: Element[]; number: number; title: string; }' is not assignable to type 'IntrinsicAttributes & HelpStepProps'.
+  Property 'children' does not exist on type 'IntrinsicAttributes & HelpStepProps'.
+src/components/help/content/PaymentRegistrationPageHelp.tsx(215,8): error TS2322: Type '{ children: Element[]; number: number; title: string; }' is not assignable to type 'IntrinsicAttributes & HelpStepProps'.
+  Property 'children' does not exist on type 'IntrinsicAttributes & HelpStepProps'.
+src/components/help/content/PaymentRegistrationPageHelp.tsx(285,8): error TS2322: Type '{ children: Element; number: number; title: string; }' is not assignable to type 'IntrinsicAttributes & HelpStepProps'.
+  Property 'children' does not exist on type 'IntrinsicAttributes & HelpStepProps'.
+src/components/help/content/PaymentRegistrationPageHelp.tsx(291,8): error TS2322: Type '{ children: Element[]; number: number; title: string; }' is not assignable to type 'IntrinsicAttributes & HelpStepProps'.
+  Property 'children' does not exist on type 'IntrinsicAttributes & HelpStepProps'.
+src/components/help/content/PaymentRegistrationPageHelp.tsx(304,8): error TS2322: Type '{ children: Element[]; number: number; title: string; }' is not assignable to type 'IntrinsicAttributes & HelpStepProps'.
+  Property 'children' does not exist on type 'IntrinsicAttributes & HelpStepProps'.
+src/components/help/content/PaymentRegistrationPageHelp.tsx(406,17): error TS2322: Type '"alert"' is not assignable to type '"warning" | "info" | "tip" | undefined'.
+src/components/help/content/PaymentTrackingPageHelp.tsx(63,11): error TS2322: Type '"number"' is not assignable to type '"check" | "bullet" | undefined'.
+src/components/help/content/PropertyOwnersPageHelp.tsx(147,11): error TS2322: Type '"number"' is not assignable to type '"check" | "bullet" | undefined'.
+src/components/help/content/ReportsPageHelp.tsx(68,8): error TS2322: Type '{ children: Element; number: number; title: string; }' is not assignable to type 'IntrinsicAttributes & HelpStepProps'.
+  Property 'children' does not exist on type 'IntrinsicAttributes & HelpStepProps'.
+src/components/help/content/ReportsPageHelp.tsx(74,8): error TS2322: Type '{ children: Element; number: number; title: string; }' is not assignable to type 'IntrinsicAttributes & HelpStepProps'.
+  Property 'children' does not exist on type 'IntrinsicAttributes & HelpStepProps'.
+src/components/help/content/ReportsPageHelp.tsx(80,8): error TS2322: Type '{ children: Element[]; number: number; title: string; }' is not assignable to type 'IntrinsicAttributes & HelpStepProps'.
+  Property 'children' does not exist on type 'IntrinsicAttributes & HelpStepProps'.
+src/components/help/content/ReportsPageHelp.tsx(92,8): error TS2322: Type '{ children: Element[]; number: number; title: string; }' is not assignable to type 'IntrinsicAttributes & HelpStepProps'.
+  Property 'children' does not exist on type 'IntrinsicAttributes & HelpStepProps'.
+src/components/help/content/ReportsPageHelp.tsx(104,8): error TS2322: Type '{ children: Element[]; number: number; title: string; }' is not assignable to type 'IntrinsicAttributes & HelpStepProps'.
+  Property 'children' does not exist on type 'IntrinsicAttributes & HelpStepProps'.
+src/components/help/content/ReportsPageHelp.tsx(167,42): error TS2304: Cannot find name 't'.
+src/components/help/content/ReportsPageHelp.tsx(223,8): error TS2322: Type '{ children: Element; number: number; title: string; }' is not assignable to type 'IntrinsicAttributes & HelpStepProps'.
+  Property 'children' does not exist on type 'IntrinsicAttributes & HelpStepProps'.
+src/components/help/content/ReportsPageHelp.tsx(227,8): error TS2322: Type '{ children: Element; number: number; title: string; }' is not assignable to type 'IntrinsicAttributes & HelpStepProps'.
+  Property 'children' does not exist on type 'IntrinsicAttributes & HelpStepProps'.
+src/components/help/content/ReportsPageHelp.tsx(237,8): error TS2322: Type '{ children: Element; number: number; title: string; }' is not assignable to type 'IntrinsicAttributes & HelpStepProps'.
+  Property 'children' does not exist on type 'IntrinsicAttributes & HelpStepProps'.
+src/components/help/content/ReportsPageHelp.tsx(241,8): error TS2322: Type '{ children: Element; number: number; title: string; }' is not assignable to type 'IntrinsicAttributes & HelpStepProps'.
+  Property 'children' does not exist on type 'IntrinsicAttributes & HelpStepProps'.
+src/components/help/content/ReportsPageHelp.tsx(245,17): error TS2322: Type '"alert"' is not assignable to type '"warning" | "info" | "tip" | undefined'.
+src/components/help/content/ReportsPageHelp.tsx(284,17): error TS2322: Type '"alert"' is not assignable to type '"warning" | "info" | "tip" | undefined'.
+src/components/help/content/TrafficViolationsPageHelp.tsx(44,12): error TS2741: Property 'description' is missing in type '{ number: number; title: string; }' but required in type 'HelpStepProps'.
+src/components/help/content/TrafficViolationsPageHelp.tsx(45,12): error TS2741: Property 'description' is missing in type '{ number: number; title: string; }' but required in type 'HelpStepProps'.
+src/components/help/content/TrafficViolationsPageHelp.tsx(46,12): error TS2741: Property 'description' is missing in type '{ number: number; title: string; }' but required in type 'HelpStepProps'.
+src/components/help/content/TrafficViolationsPageHelp.tsx(47,12): error TS2741: Property 'description' is missing in type '{ number: number; title: string; }' but required in type 'HelpStepProps'.
+src/components/help/content/TrafficViolationsPageHelp.tsx(48,12): error TS2741: Property 'description' is missing in type '{ number: number; title: string; }' but required in type 'HelpStepProps'.
+src/components/help/content/TrafficViolationsPageHelp.tsx(56,12): error TS2741: Property 'description' is missing in type '{ number: number; title: string; }' but required in type 'HelpStepProps'.
+src/components/help/content/TrafficViolationsPageHelp.tsx(57,12): error TS2741: Property 'description' is missing in type '{ number: number; title: string; }' but required in type 'HelpStepProps'.
+src/components/help/content/TrafficViolationsPageHelp.tsx(58,12): error TS2741: Property 'description' is missing in type '{ number: number; title: string; }' but required in type 'HelpStepProps'.
+src/components/help/content/TrafficViolationsPageHelp.tsx(59,12): error TS2741: Property 'description' is missing in type '{ number: number; title: string; }' but required in type 'HelpStepProps'.
+src/components/help/content/TrafficViolationsPageHelp.tsx(60,12): error TS2741: Property 'description' is missing in type '{ number: number; title: string; }' but required in type 'HelpStepProps'.
+src/components/help/content/TrafficViolationsPageHelp.tsx(68,12): error TS2741: Property 'description' is missing in type '{ number: number; title: string; }' but required in type 'HelpStepProps'.
+src/components/help/content/TrafficViolationsPageHelp.tsx(69,12): error TS2741: Property 'description' is missing in type '{ number: number; title: string; }' but required in type 'HelpStepProps'.
+src/components/help/content/TrafficViolationsPageHelp.tsx(70,12): error TS2741: Property 'description' is missing in type '{ number: number; title: string; }' but required in type 'HelpStepProps'.
+src/components/help/content/TrafficViolationsPageHelp.tsx(71,12): error TS2741: Property 'description' is missing in type '{ number: number; title: string; }' but required in type 'HelpStepProps'.
+src/components/help/content/TrafficViolationsPageHelp.tsx(72,12): error TS2741: Property 'description' is missing in type '{ number: number; title: string; }' but required in type 'HelpStepProps'.
+src/components/help/content/TrafficViolationsPageHelp.tsx(81,33): error TS2322: Type 'string' is not assignable to type 'string[]'.
+src/components/help/content/TrafficViolationsPageHelp.tsx(83,11): error TS2695: Left side of comma operator is unused and has no side effects.
+src/components/help/content/TrafficViolationsPageHelp.tsx(83,11): error TS2695: Left side of comma operator is unused and has no side effects.
+src/components/help/content/TrafficViolationsPageHelp.tsx(83,11): error TS2695: Left side of comma operator is unused and has no side effects.
+src/components/help/content/TrafficViolationsPageHelp.tsx(83,11): error TS18007: JSX expressions may not use the comma operator. Did you mean to write an array?
+src/components/help/content/UsersPageHelp.tsx(57,14): error TS2741: Property 'description' is missing in type '{ number: number; title: string; }' but required in type 'HelpStepProps'.
+src/components/help/content/UsersPageHelp.tsx(58,14): error TS2741: Property 'description' is missing in type '{ number: number; title: string; }' but required in type 'HelpStepProps'.
+src/components/help/content/UsersPageHelp.tsx(59,14): error TS2741: Property 'description' is missing in type '{ number: number; title: string; }' but required in type 'HelpStepProps'.
+src/components/help/content/UsersPageHelp.tsx(60,14): error TS2741: Property 'description' is missing in type '{ number: number; title: string; }' but required in type 'HelpStepProps'.
+src/components/help/content/UsersPageHelp.tsx(70,14): error TS2741: Property 'description' is missing in type '{ number: number; title: string; }' but required in type 'HelpStepProps'.
+src/components/help/content/UsersPageHelp.tsx(71,14): error TS2741: Property 'description' is missing in type '{ number: number; title: string; }' but required in type 'HelpStepProps'.
+src/components/help/content/UsersPageHelp.tsx(72,14): error TS2741: Property 'description' is missing in type '{ number: number; title: string; }' but required in type 'HelpStepProps'.
+src/components/help/content/UsersPageHelp.tsx(73,14): error TS2741: Property 'description' is missing in type '{ number: number; title: string; }' but required in type 'HelpStepProps'.
+src/components/help/content/UsersPageHelp.tsx(83,14): error TS2741: Property 'description' is missing in type '{ number: number; title: string; }' but required in type 'HelpStepProps'.
+src/components/help/content/UsersPageHelp.tsx(84,14): error TS2741: Property 'description' is missing in type '{ number: number; title: string; }' but required in type 'HelpStepProps'.
+src/components/help/content/UsersPageHelp.tsx(85,14): error TS2741: Property 'description' is missing in type '{ number: number; title: string; }' but required in type 'HelpStepProps'.
+src/components/help/content/UsersPageHelp.tsx(86,14): error TS2741: Property 'description' is missing in type '{ number: number; title: string; }' but required in type 'HelpStepProps'.
+src/components/PageCustomizer.tsx(76,10): error TS2322: Type '{ children: ReactNode; widgets: DashboardWidget[]; dashboardId: string; }' is not assignable to type 'IntrinsicAttributes & CustomizableDashboardProps'.
+  Property 'children' does not exist on type 'IntrinsicAttributes & CustomizableDashboardProps'.
+src/hooks/useAccountMappings.ts(116,22): error TS18046: 'error' is of type 'unknown'.
+src/hooks/useAccountMappings.ts(156,22): error TS18046: 'error' is of type 'unknown'.
+src/hooks/useAccountMappings.ts(187,22): error TS18046: 'error' is of type 'unknown'.
+src/hooks/useAdvancedFinancialAnalytics.ts(142,52): error TS2345: Argument of type '{ accounting_period_id: string | null; company_id: string; created_at: string; created_by: string | null; description: string; entry_date: string; entry_number: string; id: string; posted_at: string | null; ... 15 more ...; journal_entry_lines: { ...; }[]; }[]' is not assignable to parameter of type 'JournalEntry[]'.
+  Type '{ accounting_period_id: string | null; company_id: string; created_at: string; created_by: string | null; description: string; entry_date: string; entry_number: string; id: string; posted_at: string | null; ... 15 more ...; journal_entry_lines: { ...; }[]; }' is not assignable to type 'JournalEntry'.
+    Types of property 'journal_entry_lines' are incompatible.
+      Type '{ account_id: string; asset_id: string | null; budget_override_request_id: string | null; cost_center_id: string | null; created_at: string; credit_amount: number | null; debit_amount: number | null; ... 6 more ...; cost_centers: { ...; } | null; }[]' is not assignable to type 'JournalEntryLine[]'.
+        Type '{ account_id: string; asset_id: string | null; budget_override_request_id: string | null; cost_center_id: string | null; created_at: string; credit_amount: number | null; debit_amount: number | null; ... 6 more ...; cost_centers: { ...; } | null; }' is not assignable to type 'JournalEntryLine'.
+          Types of property 'cost_center_id' are incompatible.
+            Type 'string | null' is not assignable to type 'string | undefined'.
+              Type 'null' is not assignable to type 'string | undefined'.
+src/hooks/useAdvancedFinancialAnalytics.ts(146,9): error TS2345: Argument of type '{ actual_amount: number | null; budget_amount: number | null; center_code: string; center_name: string; center_name_ar: string | null; company_id: string; created_at: string; created_by: string | null; ... 6 more ...; updated_at: string; }[]' is not assignable to parameter of type 'CostCenter[]'.
+  Type '{ actual_amount: number | null; budget_amount: number | null; center_code: string; center_name: string; center_name_ar: string | null; company_id: string; created_at: string; created_by: string | null; ... 6 more ...; updated_at: string; }' is not assignable to type 'CostCenter'.
+    Types of property 'budget_amount' are incompatible.
+      Type 'number | null' is not assignable to type 'number | undefined'.
+        Type 'null' is not assignable to type 'number | undefined'.
+src/hooks/useAdvancedFinancialAnalytics.ts(221,32): error TS18048: 'center.budget_amount' is possibly 'undefined'.
+src/hooks/useAdvancedFinancialAnalytics.ts(222,21): error TS18048: 'center.budget_amount' is possibly 'undefined'.
+src/hooks/useAuditTrail.ts(198,7): error TS2322: Type '{ action: string; changed_at: string; changed_fields: string[] | null; company_id: string; created_at: string; description: string | null; id: string; ip_address: string | null; new_values: Json; ... 6 more ...; user_name: string | null; }[]' is not assignable to type 'AuditTrailEntry[]'.
+  Type '{ action: string; changed_at: string; changed_fields: string[] | null; company_id: string; created_at: string; description: string | null; id: string; ip_address: string | null; new_values: Json; ... 6 more ...; user_name: string | null; }' is not assignable to type 'AuditTrailEntry'.
+    Types of property 'action' are incompatible.
+      Type 'string' is not assignable to type '"DELETE" | "UPDATE" | "INSERT"'.
+src/hooks/useChartValidation.ts(136,22): error TS18046: 'error' is of type 'unknown'.
+src/hooks/useChartValidation.ts(181,9): error TS2322: Type 'string | null' is not assignable to type 'string | undefined'.
+  Type 'null' is not assignable to type 'string | undefined'.
+src/hooks/useChartValidation.ts(182,9): error TS2322: Type 'string | null' is not assignable to type 'string | undefined'.
+  Type 'null' is not assignable to type 'string | undefined'.
+src/hooks/useChartValidation.ts(217,9): error TS2322: Type 'string | null' is not assignable to type 'string | undefined'.
+  Type 'null' is not assignable to type 'string | undefined'.
+src/hooks/useChartValidation.ts(219,9): error TS2322: Type 'string | null' is not assignable to type 'string | undefined'.
+  Type 'null' is not assignable to type 'string | undefined'.
+src/hooks/useChartValidation.ts(238,22): error TS18046: 'error' is of type 'unknown'.
+src/hooks/useCompanies.ts(56,7): error TS2322: Type '{ id: string; name: string; name_ar: string | null; email: string | null; phone: string | null; subscription_status: string | null; subscription_plan: string | null; created_at: string; ... 14 more ...; auto_checkout_enabled: boolean | null; }[]' is not assignable to type 'Company[]'.
+  Type '{ id: string; name: string; name_ar: string | null; email: string | null; phone: string | null; subscription_status: string | null; subscription_plan: string | null; created_at: string; ... 14 more ...; auto_checkout_enabled: boolean | null; }' is not assignable to type 'Company'.
+    Types of property 'name_ar' are incompatible.
+      Type 'string | null' is not assignable to type 'string | undefined'.
+        Type 'null' is not assignable to type 'string | undefined'.
+src/hooks/useCopySelectedAccounts.ts(55,22): error TS18046: 'error' is of type 'unknown'.
+src/hooks/useDashboardStats.ts(391,5): error TS2769: No overload matches this call.
+  Overload 1 of 3, '(options: DefinedInitialDataOptions<unknown, Error, unknown, (string | boolean | ModuleName[] | null | undefined)[]>, queryClient?: QueryClient | undefined): DefinedUseQueryResult<...>', gave the following error.
+    Object literal may only specify known properties, and 'keepPreviousData' does not exist in type 'DefinedInitialDataOptions<unknown, Error, unknown, (string | boolean | ModuleName[] | null | undefined)[]>'.
+  Overload 2 of 3, '(options: UndefinedInitialDataOptions<DashboardStats, Error, DashboardStats, (string | boolean | ModuleName[] | null | undefined)[]>, queryClient?: QueryClient | undefined): UseQueryResult<...>', gave the following error.
+    Object literal may only specify known properties, and 'keepPreviousData' does not exist in type 'UndefinedInitialDataOptions<DashboardStats, Error, DashboardStats, (string | boolean | ModuleName[] | null | undefined)[]>'.
+  Overload 3 of 3, '(options: UseQueryOptions<DashboardStats, Error, DashboardStats, (string | boolean | ModuleName[] | null | undefined)[]>, queryClient?: QueryClient | undefined): UseQueryResult<...>', gave the following error.
+    Object literal may only specify known properties, and 'keepPreviousData' does not exist in type 'UseQueryOptions<DashboardStats, Error, DashboardStats, (string | boolean | ModuleName[] | null | undefined)[]>'.
+src/hooks/useDirectTemplateCopy.ts(62,58): error TS7006: Parameter 'acc' implicitly has an 'any' type.
+src/hooks/useDirectTemplateCopy.ts(70,66): error TS18046: 'error' is of type 'unknown'.
+src/hooks/useDirectTemplateCopy.ts(83,45): error TS7006: Parameter 'acc' implicitly has an 'any' type.
+src/hooks/useDirectTemplateCopy.ts(112,48): error TS7006: Parameter 'a' implicitly has an 'any' type.
+src/hooks/useDirectTemplateCopy.ts(112,51): error TS7006: Parameter 'b' implicitly has an 'any' type.
+src/hooks/useDirectTemplateCopy.ts(205,42): error TS18046: 'error' is of type 'unknown'.
+src/hooks/useDirectTemplateCopy.ts(253,22): error TS18046: 'error' is of type 'unknown'.
+src/hooks/useMonthlyRentTracking.ts(85,27): error TS2345: Argument of type 'string | null' is not assignable to parameter of type 'string'.
+  Type 'null' is not assignable to type 'string'.
+src/hooks/useMonthlyRentTracking.ts(106,27): error TS2345: Argument of type 'string | null' is not assignable to parameter of type 'string'.
+  Type 'null' is not assignable to type 'string'.
+src/hooks/usePayrollFinancialAnalysis.ts(184,34): error TS2769: No overload matches this call.
+  Overload 1 of 4, '(value: string | number | Date): Date', gave the following error.
+    Argument of type 'string | null' is not assignable to parameter of type 'string | number | Date'.
+      Type 'null' is not assignable to type 'string | number | Date'.
+  Overload 2 of 4, '(value: string | number): Date', gave the following error.
+    Argument of type 'string | null' is not assignable to parameter of type 'string | number'.
+      Type 'null' is not assignable to type 'string | number'.
+src/hooks/usePayrollFinancialAnalysis.ts(184,71): error TS2769: No overload matches this call.
+  Overload 1 of 4, '(value: string | number | Date): Date', gave the following error.
+    Argument of type 'string | null' is not assignable to parameter of type 'string | number | Date'.
+      Type 'null' is not assignable to type 'string | number | Date'.
+  Overload 2 of 4, '(value: string | number): Date', gave the following error.
+    Argument of type 'string | null' is not assignable to parameter of type 'string | number'.
+      Type 'null' is not assignable to type 'string | number'.
+src/hooks/usePurchaseOrders.ts(212,17): error TS2345: Argument of type 'UpdatePurchaseOrderData' is not assignable to parameter of type 'RejectExcessProperties<{ approved_at?: string | null | undefined; approved_by?: string | null | undefined; company_id?: string | undefined; contact_person?: string | null | undefined; created_at?: string | undefined; ... 17 more ...; vendor_id?: string | undefined; }, UpdatePurchaseOrderData>'.
+  Type 'UpdatePurchaseOrderData' is not assignable to type '{ items: never; }'.
+    Types of property 'items' are incompatible.
+      Type '{ item_code?: string | undefined; description: string; description_ar?: string | undefined; quantity: number; unit_price: number; unit_of_measure?: string | undefined; notes?: string | undefined; }[] | undefined' is not assignable to type 'never'.
+        Type 'undefined' is not assignable to type 'never'.
+src/hooks/useRecentActivities.ts(105,33): error TS2345: Argument of type 'string | null' is not assignable to parameter of type 'string'.
+  Type 'null' is not assignable to type 'string'.
+src/hooks/useRecentActivities.ts(108,11): error TS2322: Type 'string | null' is not assignable to type 'string'.
+  Type 'null' is not assignable to type 'string'.
+src/hooks/useSimpleAccountDeletion.ts(76,11): error TS2322: Type 'boolean | null' is not assignable to type 'boolean'.
+  Type 'null' is not assignable to type 'boolean'.
+src/hooks/useTranslation.tsx(54,18): error TS2339: Property '__APP_DEBUG__' does not exist on type 'Window & typeof globalThis'.
+src/hooks/useTranslation.tsx(404,11): error TS2339: Property 'businessRules' does not exist on type '{ engine: LocaleBusinessRuleEngine; rules: LocaleBusinessRules; config: LocaleConfig; }'.
+src/hooks/useVehicleInstallmentJournalIntegration.ts(84,15): error TS2339: Property 'error' does not exist on type '({ ...props }: Toast) => { id: string; dismiss: () => void; update: (props: ToasterToast) => void; }'.
+src/hooks/useVehicleInstallments.ts(157,17): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(relation: "payroll" | "vehicle_maintenance" | "employees" | "chart_of_accounts" | "companies" | "default_account_types" | "contract_amendments" | "annual_financial_close_runs" | ... 332 more ... | "workflows"): PostgrestQueryBuilder<...>', gave the following error.
+    Argument of type '"vehicle_installment_allocations"' is not assignable to parameter of type '"payroll" | "vehicle_maintenance" | "employees" | "chart_of_accounts" | "companies" | "default_account_types" | "contract_amendments" | "annual_financial_close_runs" | "journal_entries" | ... 331 more ... | "workflows"'.
+  Overload 2 of 2, '(relation: "v_linkable_accounts" | "employee_capacity_view" | "employee_performance_view" | "contract_payment_health_dashboard" | "contract_payment_summary" | "contracts_complete" | ... 43 more ... | "v_report_schedule_status"): PostgrestQueryBuilder<...>', gave the following error.
+    Argument of type '"vehicle_installment_allocations"' is not assignable to parameter of type '"v_linkable_accounts" | "employee_capacity_view" | "employee_performance_view" | "contract_payment_health_dashboard" | "contract_payment_summary" | "contracts_complete" | ... 43 more ... | "v_report_schedule_status"'.
+src/hooks/useVehicleInstallments.ts(158,19): error TS2345: Argument of type '{ company_id: string | null; installment_id: string; vehicle_id: string; allocated_amount: number; }[]' is not assignable to parameter of type 'RejectExcessProperties<{ company_id: string; created_at?: string | undefined; direct_creation?: boolean | null | undefined; employee_id: string; id?: string | undefined; notes?: string | null | undefined; ... 9 more ...; updated_at?: string | undefined; } | ... 339 more ... | { ...; }, { ...; }> | RejectExcessProper...'.
+  Type '{ company_id: string | null; installment_id: string; vehicle_id: string; allocated_amount: number; }[]' is not assignable to type 'RejectExcessProperties<{ company_id: string; created_at?: string | undefined; direct_creation?: boolean | null | undefined; employee_id: string; id?: string | undefined; notes?: string | null | undefined; ... 9 more ...; updated_at?: string | undefined; } | ... 339 more ... | { ...; }, { ...; }>[]'.
+    Type '{ company_id: string | null; installment_id: string; vehicle_id: string; allocated_amount: number; }' is not assignable to type 'RejectExcessProperties<{ company_id: string; created_at?: string | undefined; direct_creation?: boolean | null | undefined; employee_id: string; id?: string | undefined; notes?: string | null | undefined; ... 9 more ...; updated_at?: string | undefined; } | ... 339 more ... | { ...; }, { ...; }>'.
+      Type '{ company_id: string | null; installment_id: string; vehicle_id: string; allocated_amount: number; }' is not assignable to type '{ company_id: never; vehicle_id: never; allocated_amount: never; installment_id: never; }'.
+        Types of property 'company_id' are incompatible.
+          Type 'string | null' is not assignable to type 'never'.
+            Type 'null' is not assignable to type 'never'.
+src/hooks/useVehicleInstallments.ts(396,15): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(relation: "payroll" | "vehicle_maintenance" | "employees" | "chart_of_accounts" | "companies" | "default_account_types" | "contract_amendments" | "annual_financial_close_runs" | ... 332 more ... | "workflows"): PostgrestQueryBuilder<...>', gave the following error.
+    Argument of type '"vehicle_installment_allocations"' is not assignable to parameter of type '"payroll" | "vehicle_maintenance" | "employees" | "chart_of_accounts" | "companies" | "default_account_types" | "contract_amendments" | "annual_financial_close_runs" | "journal_entries" | ... 331 more ... | "workflows"'.
+  Overload 2 of 2, '(relation: "v_linkable_accounts" | "employee_capacity_view" | "employee_performance_view" | "contract_payment_health_dashboard" | "contract_payment_summary" | "contracts_complete" | ... 43 more ... | "v_report_schedule_status"): PostgrestQueryBuilder<...>', gave the following error.
+    Argument of type '"vehicle_installment_allocations"' is not assignable to parameter of type '"v_linkable_accounts" | "employee_capacity_view" | "employee_performance_view" | "contract_payment_health_dashboard" | "contract_payment_summary" | "contracts_complete" | ... 43 more ... | "v_report_schedule_status"'.
+src/hooks/useVehicleInstallments.ts(398,13): error TS2345: Argument of type '"installment_id"' is not assignable to parameter of type 'never'.
+src/hooks/useVehicleStatusIntegration.ts(26,11): error TS2322: Type '"available" | "maintenance" | "rented" | "out_of_service" | "reserved"' is not assignable to type '"available" | "maintenance" | "police_station" | "rented" | "out_of_service" | "street_52" | "accident" | "stolen" | "reserved_employee" | "municipality" | null | undefined'.
+  Type '"reserved"' is not assignable to type '"available" | "maintenance" | "police_station" | "rented" | "out_of_service" | "street_52" | "accident" | "stolen" | "reserved_employee" | "municipality" | null | undefined'.
+src/hooks/useVehicleStatusIntegration.ts(87,22): error TS18046: 'error' is of type 'unknown'.
+src/lib/auth.ts(108,15): error TS2339: Property 'error' does not exist on type 'unknown'.
+src/lib/auth.ts(263,30): error TS2339: Property 'code' does not exist on type 'Error'.
+src/lib/auth.ts(265,33): error TS2339: Property 'details' does not exist on type 'Error'.
+src/lib/auth.ts(266,30): error TS2339: Property 'hint' does not exist on type 'Error'.
+src/lib/auth.ts(321,15): error TS2345: Argument of type 'Record<string, unknown>' is not assignable to parameter of type 'RejectExcessProperties<{ avatar_url?: string | null | undefined; company_id?: string | null | undefined; created_at?: string | undefined; email?: string | undefined; first_name?: string | undefined; first_name_ar?: string | ... 1 more ... | undefined; ... 13 more ...; user_id?: string | undefined; }, Record<...>>'.
+  Type 'Record<string, unknown>' is not assignable to type '{ [x: string]: never; }'.
+    'string' index signatures are incompatible.
+      Type 'unknown' is not assignable to type 'never'.
+src/lib/errorHandler.ts(407,12): error TS2678: Type '"critical"' is not comparable to type 'ErrorCategory'.
+src/lib/i18n/businessRules.ts(281,9): error TS2322: Type 'string' is not assignable to type '{ start: string; end: string; }'.
+src/lib/i18n/businessRules.ts(423,9): error TS2322: Type 'number' is not assignable to type '{ start: string; end: string; }'.
+src/lib/i18n/locales.ts(166,7): error TS2322: Type '6' is not assignable to type '0 | 1'.
+src/lib/i18n/validation.ts(86,7): error TS2561: Object literal may only specify known properties, but 'checkForPluralization' does not exist in type 'ValidationConfig'. Did you mean to write 'checkPluralization'?
+src/lib/monitoring/core.ts(333,9): error TS2353: Object literal may only specify known properties, and 'line' does not exist in type 'ErrorContext'.
+src/lib/monitoring/core.ts(343,9): error TS2353: Object literal may only specify known properties, and 'type' does not exist in type 'ErrorContext'.
+src/lib/monitoring/core.ts(352,33): error TS2345: Argument of type '{ type: "click"; target: string; properties: { id: string; className: string; textContent: string; }; }' is not assignable to parameter of type 'UserEvent'.
+  Property 'timestamp' is missing in type '{ type: "click"; target: string; properties: { id: string; className: string; textContent: string; }; }' but required in type 'UserEvent'.
+src/lib/monitoring/core.ts(367,35): error TS2345: Argument of type '{ type: "navigation"; target: string; properties: { from: string; to: string; }; }' is not assignable to parameter of type 'UserEvent'.
+  Property 'timestamp' is missing in type '{ type: "navigation"; target: string; properties: { from: string; to: string; }; }' but required in type 'UserEvent'.
+src/lib/monitoring/core.ts(395,52): error TS2339: Property 'memory' does not exist on type 'Performance'.
+src/lib/monitoring/core.ts(398,21): error TS2339: Property 'memory' does not exist on type 'Performance'.
+src/lib/monitoring/core.ts(399,29): error TS2345: Argument of type '{ name: string; value: any; unit: string; tags: { type: string; }; }' is not assignable to parameter of type 'PerformanceMetric'.
+  Property 'timestamp' is missing in type '{ name: string; value: any; unit: string; tags: { type: string; }; }' but required in type 'PerformanceMetric'.
+src/lib/monitoring/core.ts(401,28): error TS2339: Property 'memory' does not exist on type 'Performance'.
+src/lib/monitoring/core.ts(406,29): error TS2345: Argument of type '{ name: string; value: any; unit: string; tags: { type: string; }; }' is not assignable to parameter of type 'PerformanceMetric'.
+  Property 'timestamp' is missing in type '{ name: string; value: any; unit: string; tags: { type: string; }; }' but required in type 'PerformanceMetric'.
+src/lib/monitoring/core.ts(408,28): error TS2339: Property 'memory' does not exist on type 'Performance'.
+src/lib/monitoring/core.ts(417,29): error TS2345: Argument of type '{ name: string; value: any; unit: string; tags: { type: string; }; }' is not assignable to parameter of type 'PerformanceMetric'.
+  Property 'timestamp' is missing in type '{ name: string; value: any; unit: string; tags: { type: string; }; }' but required in type 'PerformanceMetric'.
+src/lib/monitoring/core.ts(587,3): error TS2484: Export declaration conflicts with exported declaration of 'MonitoringConfig'.
+src/lib/monitoring/core.ts(588,3): error TS2484: Export declaration conflicts with exported declaration of 'PerformanceMetric'.
+src/lib/monitoring/core.ts(589,3): error TS2484: Export declaration conflicts with exported declaration of 'ErrorContext'.
+src/lib/monitoring/core.ts(590,3): error TS2484: Export declaration conflicts with exported declaration of 'UserEvent'.
+src/lib/monitoring/core.ts(591,3): error TS2484: Export declaration conflicts with exported declaration of 'BusinessMetric'.
+src/lib/monitoring/core.ts(592,3): error TS2484: Export declaration conflicts with exported declaration of 'TraceContext'.
+src/lib/monitoring/core.ts(593,3): error TS2484: Export declaration conflicts with exported declaration of 'AlertRule'.
+src/lib/monitoring/errorTracking.ts(98,9): error TS2353: Object literal may only specify known properties, and 'timestamp' does not exist in type 'ErrorContext'.
+src/lib/monitoring/errorTracking.ts(190,11): error TS2353: Object literal may only specify known properties, and 'resolutionNotes' does not exist in type 'ErrorContext'.
+src/lib/monitoring/errorTracking.ts(202,29): error TS2339: Property 'resolutionNotes' does not exist on type 'ErrorContext'.
+src/lib/monitoring/errorTracking.ts(203,29): error TS2339: Property 'resolvedAt' does not exist on type 'ErrorContext'.
+src/lib/monitoring/errorTracking.ts(204,29): error TS2339: Property 'resolvedBy' does not exist on type 'ErrorContext'.
+src/lib/monitoring/errorTracking.ts(357,9): error TS2353: Object literal may only specify known properties, and 'line' does not exist in type 'ErrorContext'.
+src/lib/permissions/permissions.ts(98,36): error TS2339: Property 'COMPANY_MANAGER' does not exist on type 'typeof UserRole'.
+src/pages/payments/ExcelPaymentImport.tsx(1881,34): error TS2345: Argument of type '{ warnings: string[]; status: string; id: string; fileName: string; customerName: string; idNumber: string; phone: string; plateNumber: string; contractDate: string; monthlyRent: number; rows: ParsedPaymentRow[]; totalPayments: number; totalRemaining: number; confidence: number; }' is not assignable to parameter of type 'ParsedExcelFile'.
+  Types of property 'status' are incompatible.
+    Type 'string' is not assignable to type '"error" | "ready" | "empty" | "review_required"'.
+src/pages/payments/ExcelPaymentImport.tsx(1916,14): error TS2345: Argument of type '(currentFiles: ParsedExcelFile[]) => { warnings: string[]; status: string; id: string; fileName: string; customerName: string; idNumber: string; phone: string; plateNumber: string; ... 5 more ...; confidence: number; }[]' is not assignable to parameter of type 'SetStateAction<ParsedExcelFile[]>'.
+  Type '(currentFiles: ParsedExcelFile[]) => { warnings: string[]; status: string; id: string; fileName: string; customerName: string; idNumber: string; phone: string; plateNumber: string; ... 5 more ...; confidence: number; }[]' is not assignable to type '(prevState: ParsedExcelFile[]) => ParsedExcelFile[]'.
+    Type '{ warnings: string[]; status: string; id: string; fileName: string; customerName: string; idNumber: string; phone: string; plateNumber: string; contractDate: string; monthlyRent: number; rows: ParsedPaymentRow[]; totalPayments: number; totalRemaining: number; confidence: number; }[]' is not assignable to type 'ParsedExcelFile[]'.
+      Type '{ warnings: string[]; status: string; id: string; fileName: string; customerName: string; idNumber: string; phone: string; plateNumber: string; contractDate: string; monthlyRent: number; rows: ParsedPaymentRow[]; totalPayments: number; totalRemaining: number; confidence: number; }' is not assignable to type 'ParsedExcelFile'.
+        Types of property 'status' are incompatible.
+          Type 'string' is not assignable to type '"error" | "ready" | "empty" | "review_required"'.
+src/pages/payments/ExcelPaymentImport.tsx(2704,69): error TS2345: Argument of type '{ customer_id: string; contract_id: string; invoice_id: string; amount: number; payment_date: string; payment_method: "cash"; type: "receipt"; currency: string; notes: string; idempotencyKey: string; }' is not assignable to parameter of type '{ amount: number; currency: string; payment_status: "pending" | "cancelled" | "completed"; payment_date: string; payment_method: "cash" | "check" | "bank_transfer" | "credit_card" | "debit_card"; ... 14 more ...; payment_number?: string | undefined; } & { ...; }'.
+  Property 'payment_status' is missing in type '{ customer_id: string; contract_id: string; invoice_id: string; amount: number; payment_date: string; payment_method: "cash"; type: "receipt"; currency: string; notes: string; idempotencyKey: string; }' but required in type '{ amount: number; currency: string; payment_status: "pending" | "cancelled" | "completed"; payment_date: string; payment_method: "cash" | "check" | "bank_transfer" | "credit_card" | "debit_card"; ... 14 more ...; payment_number?: string | undefined; }'.
+src/services/ContractService.ts(270,7): error TS2353: Object literal may only specify known properties, and 'company_id' does not exist in type 'RejectExcessProperties<{ createdAt?: string | undefined; id?: number | undefined; isRead?: number | undefined; message: string; relatedId?: number | null | undefined; relatedType?: string | null | undefined; title: string; type: string; userId: number; }, { ...; }> | RejectExcessProperties<...>[]'.
+src/services/ContractService.ts(361,28): error TS2589: Type instantiation is excessively deep and possibly infinite.
+src/services/ContractService.ts(362,13): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(relation: "account_creation_requests" | "employees" | "account_deletion_log" | "chart_of_accounts" | "account_mappings" | "companies" | "default_account_types" | "account_movement_settings" | ... 332 more ... | "workflows"): PostgrestQueryBuilder<...>', gave the following error.
+    Argument of type '"company_account_mappings"' is not assignable to parameter of type '"account_creation_requests" | "employees" | "account_deletion_log" | "chart_of_accounts" | "account_mappings" | "companies" | "default_account_types" | "account_movement_settings" | ... 332 more ... | "workflows"'.
+  Overload 2 of 2, '(relation: "v_linkable_accounts" | "employee_capacity_view" | "employee_performance_view" | "contract_payment_health_dashboard" | "contract_payment_summary" | "contracts_complete" | ... 43 more ... | "v_report_schedule_status"): PostgrestQueryBuilder<...>', gave the following error.
+    Argument of type '"company_account_mappings"' is not assignable to parameter of type '"v_linkable_accounts" | "employee_capacity_view" | "employee_performance_view" | "contract_payment_health_dashboard" | "contract_payment_summary" | "contracts_complete" | ... 43 more ... | "v_report_schedule_status"'.
+src/services/ContractService.ts(364,11): error TS2345: Argument of type '"company_id"' is not assignable to parameter of type 'never'.
+src/services/core/BaseService.ts(13,10): error TS2305: Module '"@/lib/queryClient"' has no exported member 'createOptimizedQueryFn'.
+src/services/core/BaseService.ts(13,34): error TS2305: Module '"@/lib/queryClient"' has no exported member 'createOptimizedMutationFn'.
+src/services/core/BaseService.ts(82,46): error TS2345: Argument of type 'Omit<T, "id">' is not assignable to parameter of type 'Partial<T>'.
+  Type 'keyof T' is not assignable to type 'Exclude<keyof T, "id">'.
+    Type 'string | number | symbol' is not assignable to type 'Exclude<keyof T, "id">'.
+      Type 'string' is not assignable to type 'Exclude<keyof T, "id">'.
+src/services/core/BaseService.ts(472,31): error TS2554: Expected 0 arguments, but got 1.
+src/services/core/BaseService.ts(478,31): error TS2554: Expected 0 arguments, but got 1.
+src/services/core/QueryOptimizer.ts(572,30): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+src/utils/bankReconciliationCommands.ts(39,7): error TS2322: Type 'null' is not assignable to type 'string | undefined'.

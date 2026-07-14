@@ -1,5 +1,5 @@
 import React, { useCallback, useRef, useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion, type HTMLMotionProps } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
 import { Link, useNavigate } from 'react-router-dom';
 import {
@@ -124,7 +124,7 @@ const getStatNumber = (stats: any, keys: string[], fallback = 0) => {
   return fallback;
 };
 
-const ShellCard: React.FC<React.PropsWithChildren<React.HTMLAttributes<HTMLDivElement>>> = ({
+const ShellCard: React.FC<HTMLMotionProps<'div'>> = ({
   children,
   className,
   onClick,

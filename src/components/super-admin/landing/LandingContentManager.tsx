@@ -253,6 +253,7 @@ interface SectionFormProps {
 }
 
 const SectionForm: React.FC<SectionFormProps> = ({ section, onSubmit, sectionTypes }) => {
+  const { t } = useFleetifyTranslation("ui");
   const [formData, setFormData] = useState({
     section_type: section?.section_type || '',
     section_name: section?.section_name || '',

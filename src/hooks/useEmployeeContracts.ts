@@ -31,10 +31,11 @@ export const useEmployeeContracts = (
   const { data: profile } = useQuery({
     queryKey: ['employee-profile-contracts', user?.id],
     queryFn: async () => {
+      if (!user?.id) throw new Error('User is not authenticated');
       const { data, error } = await supabase
         .from('profiles')
         .select('id, company_id')
-        .eq('user_id', user?.id)
+        .eq('user_id', user.id)
         .single();
       
       if (error) throw error;
@@ -53,7 +54,7 @@ export const useEmployeeContracts = (
   } = useQuery({
     queryKey: ['employee-contracts', profile?.id, filters],
     queryFn: async () => {
-      if (!profile?.id) return [];
+      if (!profile?.id || !profile.company_id) return [];
 
       let query = supabase
         .from('contracts')

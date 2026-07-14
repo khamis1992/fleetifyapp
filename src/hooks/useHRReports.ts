@@ -70,7 +70,7 @@ export const useAttendanceReport = (startDate?: string, endDate?: string) => {
         .eq('user_id', user.user.id)
         .single();
       
-      if (!profile) throw new Error('لم يتم العثور على بيانات المستخدم');
+      if (!profile?.company_id) throw new Error('لم يتم العثور على شركة المستخدم');
 
       // Get attendance records for the period
       let attendanceQuery = supabase

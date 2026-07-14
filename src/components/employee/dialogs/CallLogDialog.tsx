@@ -10,6 +10,10 @@ import * as z from 'zod';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { customerCommunicationsClient } from '@/integrations/supabase/customerCommunicationsClient';
+import type {
+  CustomerCommunicationInsert,
+  CustomerCommunicationRow,
+} from '@/integrations/supabase/customerCommunicationsClient';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 
@@ -119,30 +123,34 @@ export const CallLogDialog: React.FC<CallLogDialogProps> = ({
       };
 
       // 1. Insert communication record
-      const { data: communication, error: commError } = await customerCommunicationsClient
+      const communicationPayload: CustomerCommunicationInsert = {
+        customer_id: contract.customer_id,
+        company_id: companyId,
+        contract_id: data.contract_id,
+        communication_type: 'phone',
+        communication_date: now.toISOString().slice(0, 10),
+        communication_time: now.toISOString().slice(11, 19),
+        duration_minutes: data.duration_minutes || null,
+        employee_id: user.id,
+        notes: `${data.call_purpose} - ${data.call_outcome}\nنوع المكالمة: ${data.call_type}\n${data.notes}`,
+        action_required: actionRequiredByPurpose[data.call_purpose],
+        action_description: data.notes,
+        follow_up_scheduled: data.follow_up_required,
+        follow_up_date: data.follow_up_required ? data.follow_up_date || null : null,
+        follow_up_time: null,
+        follow_up_status: data.follow_up_required ? 'pending' : null,
+        attachments: [],
+      };
+
+      const { data: insertedCommunication, error: commError } = await customerCommunicationsClient
         .from('customer_communications')
-        .insert({
-          customer_id: contract.customer_id,
-          company_id: companyId,
-          contract_id: data.contract_id,
-          communication_type: 'phone',
-          communication_date: now.toISOString().slice(0, 10),
-          communication_time: now.toISOString().slice(11, 19),
-          duration_minutes: data.duration_minutes || null,
-          employee_id: user.id,
-          notes: `${data.call_purpose} - ${data.call_outcome}\nنوع المكالمة: ${data.call_type}\n${data.notes}`,
-          action_required: actionRequiredByPurpose[data.call_purpose],
-          action_description: data.notes,
-          follow_up_scheduled: data.follow_up_required,
-          follow_up_date: data.follow_up_required ? data.follow_up_date || null : null,
-          follow_up_time: null,
-          follow_up_status: data.follow_up_required ? 'pending' : null,
-          attachments: [],
-        })
+        .insert(communicationPayload as never)
         .select()
         .single();
 
       if (commError) throw commError;
+      const communication = insertedCommunication as CustomerCommunicationRow | null;
+      if (!communication) throw new Error('Communication record was not returned');
 
       // 2. If follow-up required, create scheduled follow-up
       if (data.follow_up_required && data.follow_up_date) {

@@ -67,7 +67,7 @@ export const useCreateVehicleReturn = () => {
         .eq("user_id", user.user.id)
         .single();
 
-      if (!profile) throw new Error("User profile not found");
+      if (!profile?.company_id) throw new Error("User profile not found");
 
       const { data: result, error } = await supabase
         .from("vehicle_return_forms")

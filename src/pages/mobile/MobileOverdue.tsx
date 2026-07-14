@@ -373,14 +373,14 @@ const MobileOverdue: React.FC = () => {
                 {contract.phone && (
                   <>
                     <button
-                      onClick={() => handleCall(contract.phone)}
+                      onClick={() => handleCall(contract.phone ?? '')}
                       className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-green-500 text-white text-sm font-medium"
                     >
                       <Phone className="w-4 h-4" />
                       اتصال
                     </button>
                     <button
-                      onClick={() => handleWhatsApp(contract.phone)}
+                      onClick={() => handleWhatsApp(contract.phone ?? '')}
                       className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-emerald-500 text-white text-sm font-medium"
                     >
                       <MessageCircle className="w-4 h-4" />
@@ -485,7 +485,7 @@ const MobileOverdue: React.FC = () => {
                 <button
                   onClick={() => {
                     setShowPaymentModal(false);
-                    setSelectedCustomer(null);
+                    setSelectedContract(null);
                     setPaymentAmount('');
                     setPaymentReference('');
                   }}

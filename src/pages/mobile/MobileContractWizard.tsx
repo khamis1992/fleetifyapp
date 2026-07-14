@@ -113,7 +113,14 @@ const MobileContractWizard: React.FC = () => {
       .eq('company_id', companyId)
       .order('created_at', { ascending: false });
 
-    setCustomers(data || []);
+    setCustomers((data || []).map(customer => ({
+      id: customer.id,
+      first_name: customer.first_name ?? '',
+      last_name: customer.last_name ?? '',
+      phone: customer.phone,
+      email: customer.email,
+      customer_code: customer.customer_code ?? '',
+    })));
   };
 
   const fetchVehicles = async () => {
@@ -127,7 +134,17 @@ const MobileContractWizard: React.FC = () => {
       .eq('status', 'available')
       .order('created_at', { ascending: false });
 
-    setVehicles(data || []);
+    setVehicles((data || []).map(vehicle => ({
+      id: vehicle.id,
+      make: vehicle.make,
+      model: vehicle.model,
+      license_plate: vehicle.plate_number,
+      year: vehicle.year,
+      daily_rate: vehicle.daily_rate,
+      weekly_rate: vehicle.weekly_rate,
+      monthly_rate: vehicle.monthly_rate,
+      status: vehicle.status ?? 'available',
+    })));
   };
 
   // Update amount when vehicle is selected
@@ -196,7 +213,7 @@ const MobileContractWizard: React.FC = () => {
 
       // Generate contract number
       const { data: contractNumData } = await supabase.rpc('generate_contract_number', {
-        p_company_id: companyId,
+        company_id_param: companyId,
       });
 
       const contractNumber = contractNumData || `CNT-${Date.now()}`;
@@ -215,7 +232,6 @@ const MobileContractWizard: React.FC = () => {
           contract_type: formData.contractType,
           monthly_amount: formData.monthlyAmount,
           contract_amount: calculateTotalAmount(),
-          payment_day: formData.paymentDay,
           auto_renew_enabled: formData.autoRenew,
           terms: formData.notes,
           status: 'active',
@@ -845,11 +861,11 @@ const Step4Review: React.FC<{
           </div>
           <div className="flex items-center justify-between mb-2">
             <span className="text-sm text-slate-500">المبلغ الشهري:</span>
-            <span className="font-semibold text-slate-900">{t("qarFormdatamonthlyamounttolocalestring")}</span>
+            <span className="font-semibold text-slate-900">QAR {formData.monthlyAmount.toLocaleString()}</span>
           </div>
           <div className="flex items-center justify-between">
             <span className="text-sm text-slate-500">الإجمالي:</span>
-            <span className="text-xl font-bold text-teal-600">{t("qarTotaltolocalestring")}</span>
+            <span className="text-xl font-bold text-teal-600">QAR {total.toLocaleString()}</span>
           </div>
         </div>
 

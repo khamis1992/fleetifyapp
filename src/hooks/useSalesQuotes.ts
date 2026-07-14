@@ -2,25 +2,13 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import type { Tables, TablesInsert, TablesUpdate } from '@/integrations/supabase/types';
 
-export interface SalesQuote {
-  id: string;
-  company_id: string;
-  opportunity_id?: string;
-  customer_id?: string;
-  quote_number: string;
-  items: any[];
-  subtotal: number;
-  tax: number;
-  total: number;
-  valid_until?: string;
-  status: string;
-  notes?: string;
-  is_active: boolean;
-  created_by?: string;
-  created_at: string;
-  updated_at: string;
-}
+export type SalesQuote = Tables<'sales_quotes'>;
+type SalesQuoteCreateData = Omit<
+  TablesInsert<'sales_quotes'>,
+  'id' | 'company_id' | 'created_at' | 'updated_at'
+>;
 
 export interface SalesQuoteFilters {
   status?: string;
@@ -114,7 +102,7 @@ export const useCreateSalesQuote = () => {
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: async (quoteData: Omit<SalesQuote, 'id' | 'created_at' | 'updated_at' | 'company_id'>) => {
+    mutationFn: async (quoteData: SalesQuoteCreateData) => {
       if (!user?.profile?.company_id) {
         throw new Error('Company ID is required');
       }
@@ -159,7 +147,7 @@ export const useUpdateSalesQuote = () => {
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: async ({ id, data }: { id: string; data: Partial<SalesQuote> }) => {
+    mutationFn: async ({ id, data }: { id: string; data: TablesUpdate<'sales_quotes'> }) => {
       const { data: result, error } = await supabase
         .from('sales_quotes')
         .update(data)

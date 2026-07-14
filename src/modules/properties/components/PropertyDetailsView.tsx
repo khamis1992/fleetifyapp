@@ -240,7 +240,8 @@ export const PropertyDetailsView: React.FC<PropertyDetailsViewProps> = ({
                 <span className="text-sm text-muted-foreground">نوع العقار</span>
                 <p className="flex items-center mt-1">
                   <Home className="h-4 w-4 mr-1" />
-                  {propertyTypeLabels[property.property_type]}
+                  {propertyTypeLabels[property.property_type as keyof typeof propertyTypeLabels] ||
+                    property.property_type}
                 </p>
               </div>
               <div>

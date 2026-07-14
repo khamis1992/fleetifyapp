@@ -34,7 +34,7 @@ interface ABTest {
 export const LandingABTesting: React.FC = () => {
   const { t } = useFleetifyTranslation("ui");
   const { tests, loading, createTest, updateTest, deleteTest } = useLandingABTests();
-  const { companies } = useCompanies();
+  const { data: companies = [] } = useCompanies();
   const [selectedCompany, setSelectedCompany] = useState<string>('all');
   const [editingTest, setEditingTest] = useState<ABTest | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -162,7 +162,7 @@ export const LandingABTesting: React.FC = () => {
               <SelectItem value="all">{t("allCompaniesGlobal")}</SelectItem>
               {companies?.map((company) => (
                 <SelectItem key={company.id} value={company.id}>
-                  {company.company_name || company.company_name_ar || 'Unnamed Company'}
+                  {company.name || company.name_ar || 'Unnamed Company'}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -392,6 +392,7 @@ interface ABTestFormProps {
 }
 
 const ABTestForm: React.FC<ABTestFormProps> = ({ test, onSubmit }) => {
+  const { t } = useFleetifyTranslation("ui");
   const [formData, setFormData] = useState({
     test_name: test?.test_name || '',
     test_name_ar: test?.test_name_ar || '',

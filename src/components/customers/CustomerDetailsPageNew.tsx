@@ -387,10 +387,10 @@ const CustomerDetailsPageNew = () => {
   const primaryContract = contracts.find((contract: any) => contract.status === 'active') || contracts[0];
   const latestPayment = payments[0];
   const latestInvoice = customerInvoices[0];
-  const identityNumber = customer?.national_id || customer?.id_number || customer?.qatar_id || '-';
+  const identityNumber = customer.national_id || '-';
   const completionChecks = [
     Boolean(customerName && customerName !== 'غير محدد'),
-    Boolean(customer?.phone || customer?.mobile_number),
+    Boolean(customer.phone),
     Boolean(identityNumber && identityNumber !== '-'),
     Boolean(customer?.email),
     documents.length > 0,
@@ -630,7 +630,7 @@ const CustomerDetailsPageNew = () => {
                 <div className="space-y-2">
                   <a href={customer?.phone ? `tel:${customer.phone}` : undefined} className="flex items-center justify-between rounded-lg border border-[#DDE5EF] bg-white px-3 py-2.5 text-sm transition-colors hover:border-[#173A63] hover:bg-[#F8FAFC]">
                     <span className="flex items-center gap-2 font-bold text-[#142033]"><Phone className="h-4 w-4 text-[#173A63]" /> الهاتف</span>
-                    <span className="font-semibold text-[#536173]" dir="ltr">{customer?.phone || customer?.mobile_number || '-'}</span>
+                    <span className="font-semibold text-[#536173]" dir="ltr">{customer.phone || '-'}</span>
                   </a>
                   <div className="flex items-center justify-between rounded-lg border border-[#DDE5EF] bg-white px-3 py-2.5 text-sm">
                     <span className="flex items-center gap-2 font-bold text-[#142033]"><Mail className="h-4 w-4 text-[#173A63]" /> البريد</span>
@@ -900,8 +900,8 @@ const CustomerDetailsPageNew = () => {
                         }}
                         violations={trafficViolations}
                         customerName={customerName}
-                        customerPhone={customer?.phone || customer?.mobile_number}
-                        customerIdNumber={customer?.id_number || customer?.qatar_id}
+                        customerPhone={customer.phone}
+                        customerIdNumber={customer.national_id || undefined}
                       />
                     )}
                   </TabsContent>
@@ -916,8 +916,8 @@ const CustomerDetailsPageNew = () => {
                         navigate={navigate} 
                         onAddPayment={() => setIsPaymentDialogOpen(true)} 
                         customerName={customerName}
-                        customerPhone={customer?.phone || customer?.mobile_number}
-                        customerIdNumber={customer?.id_number || customer?.qatar_id}
+                        customerPhone={customer.phone}
+                        customerIdNumber={customer.national_id || undefined}
                       />
                     )}
                   </TabsContent>
@@ -947,7 +947,7 @@ const CustomerDetailsPageNew = () => {
                     ) : (
                       <NotesTab 
                         customerId={customerId || ''} 
-                        customerPhone={customer?.phone || customer?.mobile_number}
+                        customerPhone={customer.phone}
                         companyId={companyId || ''}
                       />
                     )}
@@ -1162,7 +1162,7 @@ const CustomerDetailsPageNew = () => {
               <Button
                 size="sm"
                 onClick={() => {
-                  const activeContract = customer?.contracts?.find((c: any) => c.status === 'active');
+                  const activeContract = contracts.find((contract: any) => contract.status === 'active');
                   if (activeContract) {
                     navigate(`/legal/lawsuit/prepare/${activeContract.id}`);
                   } else {
@@ -1370,8 +1370,8 @@ const CustomerDetailsPageNew = () => {
                     }}
                     violations={trafficViolations}
                     customerName={customerName}
-                    customerPhone={customer?.phone || customer?.mobile_number}
-                    customerIdNumber={customer?.id_number || customer?.qatar_id}
+                    customerPhone={customer.phone}
+                    customerIdNumber={customer.national_id || undefined}
                   />
                 )}
               </TabsContent>
@@ -1386,8 +1386,8 @@ const CustomerDetailsPageNew = () => {
                     navigate={navigate} 
                     onAddPayment={() => setIsPaymentDialogOpen(true)} 
                     customerName={customerName}
-                    customerPhone={customer?.phone || customer?.mobile_number}
-                    customerIdNumber={customer?.id_number || customer?.qatar_id}
+                    customerPhone={customer.phone}
+                    customerIdNumber={customer.national_id || undefined}
                   />
                 )}
               </TabsContent>
@@ -1417,7 +1417,7 @@ const CustomerDetailsPageNew = () => {
                 ) : (
                   <NotesTab 
                     customerId={customerId || ''} 
-                    customerPhone={customer?.phone || customer?.mobile_number}
+                    customerPhone={customer.phone}
                     companyId={companyId || ''}
                   />
                 )}

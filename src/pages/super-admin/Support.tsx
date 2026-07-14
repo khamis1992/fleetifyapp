@@ -274,7 +274,7 @@ const SuperAdminSupport: React.FC = () => {
                       <div className="flex items-center gap-2">
                         <div 
                           className="w-3 h-3 rounded-full"
-                          style={{ backgroundColor: category.color }}
+                          style={{ backgroundColor: category.color || undefined }}
                         />
                         <span className="text-sm">{category.name_ar}</span>
                       </div>

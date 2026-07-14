@@ -106,7 +106,7 @@ useEffect(() => {
           .select('country')
           .eq('id', companyFilter.company_id)
           .single();
-        if (!error) setCompanyCountry(data?.country);
+        if (!error) setCompanyCountry(data?.country ?? undefined);
       } catch (e) {
         // silent fail
       }

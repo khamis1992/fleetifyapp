@@ -28,6 +28,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { HelpIcon } from '@/components/help/HelpIcon';
 import { financialHelpContent } from '@/data/helpContent';
 import { printDocument, convertReceiptToPrintable } from '@/utils/printHelper';
+import { useBanks } from '@/hooks/useTreasury';
 
 import {
   UnpaidByMonthView,
@@ -54,7 +55,9 @@ const FinancialTrackingInner: React.FC = () => {
   const [displayPaymentDate, setDisplayPaymentDate] = useState(format(new Date(), 'dd/MM/yyyy')); // Display format
   const [paymentNotes, setPaymentNotes] = useState(''); // User notes for payment
   const [paymentMethod, setPaymentMethod] = useState('cash'); // Payment method
+  const [selectedBankId, setSelectedBankId] = useState('');
   const [referenceNumber, setReferenceNumber] = useState(''); // Reference/check number
+  const [receiptIdempotencyKey, setReceiptIdempotencyKey] = useState(() => crypto.randomUUID());
   
   // Date range filter state
   const [dateFilterEnabled, setDateFilterEnabled] = useState(false);
@@ -168,6 +171,7 @@ const FinancialTrackingInner: React.FC = () => {
 
   // Fetch customers with rental info from Supabase
   const { data: allCustomers = [], isLoading: loadingCustomers } = useCustomersWithRental();
+  const { data: banks = [] } = useBanks();
   
   // Fetch customer's vehicles
   const { data: customerVehicles = [], isLoading: loadingVehicles } = useCustomerVehicles(selectedCustomer?.id);
@@ -570,6 +574,11 @@ const FinancialTrackingInner: React.FC = () => {
       return;
     }
 
+    if (paymentMethod !== 'cash' && !selectedBankId) {
+      toast.error('الرجاء اختيار الحساب البنكي لطريقة الدفع غير النقدية');
+      return;
+    }
+
     // Validate vehicle selection for customers with multiple vehicles
     if (customerVehicles.length > 1 && !selectedVehicleId) {
       toast.error('الرجاء تحديد السيارة - لدى هذا العميل عدة سيارات');
@@ -603,73 +612,15 @@ const FinancialTrackingInner: React.FC = () => {
       const totalDue = rent_amount + fine;
       const paidAmount = parseFloat(paymentAmount);
       
-      let autoNotes = paymentNotes.trim(); // Start with user notes
-      let previousMonthUpdated = null;
-
-      // LATE FEE CLEARING LOGIC
-      // Check if payment covers previous month's late fee
-      if (paidAmount > totalDue && companyId) {
-        // Fetch receipts from previous months with unpaid late fees
-        // @ts-expect-error - Supabase type issue
-        const { data: previousReceipts, error: fetchError } = await supabase
-          .from('rental_payment_receipts')
-          .select('*')
-          .eq('customer_id', selectedCustomer.id)
-          .eq('company_id', companyId)
-          .gt('fine', 0)
-          .gt('pending_balance', 0)
-          .order('payment_date', { ascending: false })
-          .limit(10);
-
-        if (!fetchError && previousReceipts && previousReceipts.length > 0) {
-          // Sort by date to get the most recent unpaid late fee
-          const receiptsWithUnpaidFines = (previousReceipts as any[]).filter(
-            receipt => receipt.pending_balance >= receipt.fine && receipt.fine > 0
-          );
-
-          if (receiptsWithUnpaidFines.length > 0) {
-            const previousReceipt = receiptsWithUnpaidFines[0];
-            const excessAmount = paidAmount - totalDue;
-
-            // Check if excess amount covers the previous month's late fee
-            if (excessAmount >= previousReceipt.fine) {
-              // Clear the previous month's late fee
-              const newPendingBalance = Math.max(0, previousReceipt.pending_balance - previousReceipt.fine);
-              const newPaymentStatus = newPendingBalance === 0 ? 'paid' : 'partial';
-              
-              // Update previous receipt to clear the late fee
-              const clearedFeeNote = `تم دفع غرامة التأخير (${previousReceipt.fine.toLocaleString('en-US')} ريال) من شهر ${previousReceipt.month} في تاريخ ${format(new Date(paymentDate), 'dd/MM/yyyy')}`;
-              
-              const previousNotes = previousReceipt.notes ? `${previousReceipt.notes}\n\n${clearedFeeNote}` : clearedFeeNote;
-
-              // @ts-expect-error - Supabase type issue
-              const { error: updateError } = await supabase
-                .from('rental_payment_receipts')
-                .update({
-                  pending_balance: newPendingBalance,
-                  payment_status: newPaymentStatus,
-                  notes: previousNotes,
-                  updated_at: new Date().toISOString()
-                })
-                .eq('id', previousReceipt.id);
-
-              if (!updateError) {
-                previousMonthUpdated = previousReceipt.month;
-                // Add auto-note to current payment
-                const currentPaymentNote = `تم تطبيق ${excessAmount.toLocaleString('en-US')} ريال لسداد غرامة شهر ${previousReceipt.month} (${previousReceipt.fine.toLocaleString('en-US')} ريال)`;
-                autoNotes = autoNotes ? `${autoNotes}\n\n${currentPaymentNote}` : currentPaymentNote;
-                
-                console.log(`✅ Cleared late fee of ${previousReceipt.fine} QAR from ${previousReceipt.month}`);
-              } else {
-                console.error('Error updating previous receipt:', updateError);
-              }
-            }
-          }
-        }
+      let autoNotes = paymentNotes.trim();
+      if (paidAmount > totalDue) {
+        const excessAmount = paidAmount - totalDue;
+        const advanceNote = `فائض بقيمة ${excessAmount.toLocaleString('en-US')} ر.ق مسجل كدفعة عقد غير موزعة لحين اعتماده على مستند مستحق.`;
+        autoNotes = autoNotes ? `${autoNotes}\n\n${advanceNote}` : advanceNote;
       }
       
       // Create receipt via Supabase with partial payment support, notes, vehicle_id, payment_method, and reference_number
-      const createdReceipt = await createReceiptMutation.mutateAsync({
+      await createReceiptMutation.mutateAsync({
         customer_id: selectedCustomer.id,
         customer_name: selectedCustomer.name,
         month,
@@ -684,82 +635,12 @@ const FinancialTrackingInner: React.FC = () => {
         vehicle_id: vehicleId, // Add vehicle_id
         contract_id: contractId, // Add contract_id
         payment_method: paymentMethod, // Add payment_method
-        reference_number: referenceNumber || null // Add reference_number
+        bank_id: selectedBankId || null,
+        reference_number: referenceNumber || null, // Add reference_number
+        idempotency_key: receiptIdempotencyKey,
       } as any);
 
-      // Create invoice for this rental payment if contract_id exists
-      if (contractId && companyId && createdReceipt) {
-        try {
-          const { generateInvoiceNumber } = await import('@/utils/createInvoiceForPayment');
-          const invoiceNumber = await generateInvoiceNumber(companyId);
-          
-          // Get the receipt number from the created receipt
-          const receiptNumber = createdReceipt.receipt_number || 'N/A';
-          
-          // Create invoice description
-          const description = `إيصال دفع رقم ${receiptNumber} - ${month} - ${selectedCustomer.name}`;
-          const invoiceNotes = `مبلغ الإيجار: ${rent_amount.toFixed(2)} ر.ق\nغرامة التأخير: ${fine.toFixed(2)} ر.ق\nالإجمالي: ${paidAmount.toFixed(2)} ر.ق`;
-
-          // Create the invoice
-          const { data: invoice, error: invoiceError } = await supabase
-            .from('invoices')
-            .insert({
-              company_id: companyId,
-              invoice_number: invoiceNumber,
-              customer_id: selectedCustomer.id,
-              contract_id: contractId,
-              invoice_date: paymentDate,
-              due_date: paymentDate,
-              total_amount: paidAmount,
-              tax_amount: 0,
-              subtotal: paidAmount,
-              status: 'paid',
-              invoice_type: 'rental',
-              description: description,
-              notes: invoiceNotes,
-              payment_terms: 'مدفوع',
-              currency: 'QAR'
-            })
-            .select('id, invoice_number')
-            .single();
-
-          if (!invoiceError && invoice) {
-            // Create invoice item
-            await supabase
-              .from('invoice_items')
-              .insert({
-                invoice_id: invoice.id,
-                line_number: 1,
-                item_description: description,
-                quantity: 1,
-                unit_price: paidAmount,
-                line_total: paidAmount,
-                tax_rate: 0,
-                tax_amount: 0
-              });
-
-            // Link the rental payment receipt to the invoice
-            await supabase
-              .from('rental_payment_receipts')
-              .update({ invoice_id: invoice.id })
-              .eq('id', createdReceipt.id);
-
-            console.log('✅ Invoice created for rental payment:', invoice.invoice_number);
-          } else if (invoiceError) {
-            console.error('Error creating invoice for rental payment:', invoiceError);
-          }
-        } catch (invoiceCreationError) {
-          console.error('Exception creating invoice for rental payment:', invoiceCreationError);
-          // Don't fail the payment if invoice creation fails
-        }
-      }
-
-      // Show success message with late fee clearing info
-      if (previousMonthUpdated) {
-        toast.success(`تم إضافة الدفعة بنجاح ✅\nتم تسوية غرامة شهر ${previousMonthUpdated}`, { duration: 4000 });
-      } else {
-        toast.success('تم إضافة الدفعة بنجاح ✅');
-      }
+      toast.success('تم إضافة الإيصال والدفعة المحاسبية بنجاح ✅');
 
       // Invalidate queries to refresh data
       await queryClient.invalidateQueries({ queryKey: ['rental-receipts', companyId] });
@@ -774,7 +655,9 @@ const FinancialTrackingInner: React.FC = () => {
       setDisplayPaymentDate(format(new Date(), 'dd/MM/yyyy'));
       setPaymentNotes('');
       setPaymentMethod('cash');
+      setSelectedBankId('');
       setReferenceNumber('');
+      setReceiptIdempotencyKey(crypto.randomUUID());
       // Reset vehicle selection for multi-vehicle customers
       if (customerVehicles.length > 1) {
         setSelectedVehicleId(null);
@@ -1335,6 +1218,9 @@ const FinancialTrackingInner: React.FC = () => {
               onPaymentAmountChange={setPaymentAmount}
               paymentMethod={paymentMethod}
               onPaymentMethodChange={setPaymentMethod}
+              banks={banks}
+              selectedBankId={selectedBankId}
+              onSelectedBankIdChange={setSelectedBankId}
               referenceNumber={referenceNumber}
               onReferenceNumberChange={setReferenceNumber}
               paymentNotes={paymentNotes}

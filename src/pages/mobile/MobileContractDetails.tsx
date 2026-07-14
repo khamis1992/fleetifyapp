@@ -137,7 +137,12 @@ export const MobileContractDetails: React.FC = () => {
       const actualContractId = data.id;
       setContract({
         ...data,
-        customer: data.customers || { first_name: '', last_name: '', phone: null, email: null },
+        customer: data.customers ? {
+          first_name: data.customers.first_name ?? '',
+          last_name: data.customers.last_name ?? '',
+          phone: data.customers.phone,
+          email: data.customers.email,
+        } : { first_name: '', last_name: '', phone: null, email: null },
       });
 
       // Fetch payments for this contract using the actual contract ID (UUID)

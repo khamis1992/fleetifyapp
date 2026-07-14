@@ -8,6 +8,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { useCurrentCompanyId } from "@/hooks/useUnifiedCompanyAccess";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import type { Database } from "@/integrations/supabase/types";
+
+type ScheduledFollowupUpdate = Database['public']['Tables']['scheduled_followups']['Update'];
 
 export interface ScheduledFollowup {
   id: string;
@@ -290,8 +293,8 @@ export const useUpdateFollowup = () => {
 
   return useMutation({
     mutationFn: async (data: UpdateFollowupData) => {
-      const updateData: Record<string, unknown> = { ...data };
-      delete updateData.id;
+      const { id, ...changes } = data;
+      const updateData: ScheduledFollowupUpdate = { ...changes };
 
       // إذا تم الإكمال، أضف وقت الإكمال
       if (data.status === 'completed') {
@@ -301,7 +304,7 @@ export const useUpdateFollowup = () => {
       const { data: followup, error } = await supabase
         .from('scheduled_followups')
         .update(updateData)
-        .eq('id', data.id)
+        .eq('id', id)
         .select()
         .single();
 

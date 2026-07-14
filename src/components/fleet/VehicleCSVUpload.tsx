@@ -71,7 +71,7 @@ export function VehicleCSVUpload({ open, onOpenChange, onUploadComplete }: Vehic
       }
     } catch (error: unknown) {
       console.error('❌ [VEHICLE_CSV_UPLOAD_COMPONENT] Upload failed:', error)
-      toast.error(error.message || 'حدث خطأ أثناء رفع الملف')
+      toast.error(error instanceof Error ? error.message : 'حدث خطأ أثناء رفع الملف')
     }
   }
 

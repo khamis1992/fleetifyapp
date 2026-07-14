@@ -68,12 +68,23 @@ const IntegrationDashboard: React.FC = () => {
   });
 
   // Integration data hooks
-  const { data: itemsWithPendingPOs, isLoading: pendingPOsLoading } = useItemsWithPendingPOs();
+  const { data: pendingPOSummaries, isLoading: pendingPOsLoading } = useItemsWithPendingPOs();
   const { data: lowStockItems, isLoading: lowStockLoading } = useLowStockItems();
   const { data: outOfStockItems, isLoading: outOfStockLoading } = useOutOfStockItems();
   const { data: topVendors, isLoading: vendorsLoading } = useTopVendorsByPerformance(5);
   const { data: fulfillmentStats, isLoading: fulfillmentLoading } = useFulfillmentSummary();
   const { data: delayedOrders, isLoading: delayedLoading } = useDelayedOrders();
+
+  const itemsWithPendingPOs = pendingPOSummaries?.map((summary) => ({
+    item_id: `${summary.order_month ?? 'unknown'}-${summary.status ?? 'unknown'}`,
+    item_name: summary.order_month
+      ? new Date(summary.order_month).toLocaleDateString('ar-QA', { year: 'numeric', month: 'long' })
+      : '-',
+    pending_quantity: summary.order_count ?? 0,
+    unit_of_measure: summary.status ?? '',
+    total_pos: summary.order_count ?? 0,
+    next_expected_delivery: null as string | null,
+  }));
 
   // Calculate integration health score
   const calculateHealthScore = (): number => {

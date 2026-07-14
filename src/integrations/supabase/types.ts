@@ -2136,6 +2136,9 @@ export type Database = {
           description: string
           id: string
           journal_entry_id: string | null
+          manual_bank_account_id: string | null
+          manual_counterpart_account_id: string | null
+          manual_idempotency_key: string | null
           payment_id: string | null
           reconciled: boolean | null
           reconciled_at: string | null
@@ -2159,6 +2162,9 @@ export type Database = {
           description: string
           id?: string
           journal_entry_id?: string | null
+          manual_bank_account_id?: string | null
+          manual_counterpart_account_id?: string | null
+          manual_idempotency_key?: string | null
           payment_id?: string | null
           reconciled?: boolean | null
           reconciled_at?: string | null
@@ -2182,6 +2188,9 @@ export type Database = {
           description?: string
           id?: string
           journal_entry_id?: string | null
+          manual_bank_account_id?: string | null
+          manual_counterpart_account_id?: string | null
+          manual_idempotency_key?: string | null
           payment_id?: string | null
           reconciled?: boolean | null
           reconciled_at?: string | null
@@ -12846,6 +12855,7 @@ export type Database = {
           invoice_type: string
           is_legacy: boolean | null
           journal_entry_id: string | null
+          manual_idempotency_key: string | null
           manual_review_required: boolean | null
           notes: string | null
           ocr_confidence: number | null
@@ -12888,6 +12898,7 @@ export type Database = {
           invoice_type: string
           is_legacy?: boolean | null
           journal_entry_id?: string | null
+          manual_idempotency_key?: string | null
           manual_review_required?: boolean | null
           notes?: string | null
           ocr_confidence?: number | null
@@ -12930,6 +12941,7 @@ export type Database = {
           invoice_type?: string
           is_legacy?: boolean | null
           journal_entry_id?: string | null
+          manual_idempotency_key?: string | null
           manual_review_required?: boolean | null
           notes?: string | null
           ocr_confidence?: number | null
@@ -13061,6 +13073,7 @@ export type Database = {
           entry_date: string
           entry_number: string
           id: string
+          manual_idempotency_key: string | null
           posted_at: string | null
           posted_by: string | null
           reference_id: string | null
@@ -13087,6 +13100,7 @@ export type Database = {
           entry_date: string
           entry_number: string
           id?: string
+          manual_idempotency_key?: string | null
           posted_at?: string | null
           posted_by?: string | null
           reference_id?: string | null
@@ -13113,6 +13127,7 @@ export type Database = {
           entry_date?: string
           entry_number?: string
           id?: string
+          manual_idempotency_key?: string | null
           posted_at?: string | null
           posted_by?: string | null
           reference_id?: string | null
@@ -14429,6 +14444,9 @@ export type Database = {
           contract_number: string | null
           contract_start_date: string | null
           created_at: string | null
+          deleted_at: string | null
+          deleted_by: string | null
+          deletion_reason: string | null
           customer_id: string | null
           days_overdue: number | null
           defendant_address: string | null
@@ -14471,6 +14489,9 @@ export type Database = {
           contract_number?: string | null
           contract_start_date?: string | null
           created_at?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          deletion_reason?: string | null
           customer_id?: string | null
           days_overdue?: number | null
           defendant_address?: string | null
@@ -14513,6 +14534,9 @@ export type Database = {
           contract_number?: string | null
           contract_start_date?: string | null
           created_at?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          deletion_reason?: string | null
           customer_id?: string | null
           days_overdue?: number | null
           defendant_address?: string | null
@@ -15473,6 +15497,9 @@ export type Database = {
           company_id: string
           created_at: string
           created_by: string | null
+          deleted_at: string | null
+          deleted_by: string | null
+          deletion_reason: string | null
           description: string | null
           document_date: string | null
           document_title: string
@@ -15495,6 +15522,9 @@ export type Database = {
           company_id: string
           created_at?: string
           created_by?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          deletion_reason?: string | null
           description?: string | null
           document_date?: string | null
           document_title: string
@@ -15517,6 +15547,9 @@ export type Database = {
           company_id?: string
           created_at?: string
           created_by?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          deletion_reason?: string | null
           description?: string | null
           document_date?: string | null
           document_title?: string
@@ -16572,6 +16605,7 @@ export type Database = {
           notes: string | null
           obligation_id: string
           paid_amount: number
+          payment_ledger_baseline: number
           payment_date: string | null
           period_end: string
           period_start: string
@@ -16594,6 +16628,7 @@ export type Database = {
           notes?: string | null
           obligation_id: string
           paid_amount?: number
+          payment_ledger_baseline?: number
           payment_date?: string | null
           period_end: string
           period_start: string
@@ -16616,6 +16651,7 @@ export type Database = {
           notes?: string | null
           obligation_id?: string
           paid_amount?: number
+          payment_ledger_baseline?: number
           payment_date?: string | null
           period_end?: string
           period_start?: string
@@ -16658,6 +16694,139 @@ export type Database = {
             foreignKeyName: "monthly_obligation_installments_vendor_payment_id_fkey"
             columns: ["vendor_payment_id"]
             isOneToOne: false
+            referencedRelation: "vendor_payments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      monthly_obligation_payments: {
+        Row: {
+          amount: number
+          bank_id: string | null
+          bank_transaction_id: string | null
+          cash_account_id: string
+          company_id: string
+          created_at: string
+          created_by: string | null
+          id: string
+          idempotency_key: string
+          installment_id: string
+          interest_amount: number
+          journal_entry_id: string
+          notes: string | null
+          payment_date: string
+          principal_amount: number
+          reference_number: string | null
+          reversal_of_payment_id: string | null
+          status: string
+          updated_at: string
+          vendor_payment_id: string | null
+        }
+        Insert: {
+          amount: number
+          bank_id?: string | null
+          bank_transaction_id?: string | null
+          cash_account_id: string
+          company_id: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          idempotency_key: string
+          installment_id: string
+          interest_amount: number
+          journal_entry_id: string
+          notes?: string | null
+          payment_date: string
+          principal_amount: number
+          reference_number?: string | null
+          reversal_of_payment_id?: string | null
+          status?: string
+          updated_at?: string
+          vendor_payment_id?: string | null
+        }
+        Update: {
+          amount?: number
+          bank_id?: string | null
+          bank_transaction_id?: string | null
+          cash_account_id?: string
+          company_id?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          idempotency_key?: string
+          installment_id?: string
+          interest_amount?: number
+          journal_entry_id?: string
+          notes?: string | null
+          payment_date?: string
+          principal_amount?: number
+          reference_number?: string | null
+          reversal_of_payment_id?: string | null
+          status?: string
+          updated_at?: string
+          vendor_payment_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "monthly_obligation_payments_bank_id_fkey"
+            columns: ["bank_id"]
+            isOneToOne: false
+            referencedRelation: "banks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "monthly_obligation_payments_bank_transaction_id_fkey"
+            columns: ["bank_transaction_id"]
+            isOneToOne: true
+            referencedRelation: "bank_transactions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "monthly_obligation_payments_cash_account_id_fkey"
+            columns: ["cash_account_id"]
+            isOneToOne: false
+            referencedRelation: "chart_of_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "monthly_obligation_payments_cash_account_id_fkey"
+            columns: ["cash_account_id"]
+            isOneToOne: false
+            referencedRelation: "v_linkable_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "monthly_obligation_payments_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "monthly_obligation_payments_installment_id_fkey"
+            columns: ["installment_id"]
+            isOneToOne: false
+            referencedRelation: "monthly_obligation_installments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "monthly_obligation_payments_journal_entry_id_fkey"
+            columns: ["journal_entry_id"]
+            isOneToOne: true
+            referencedRelation: "journal_entries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "monthly_obligation_payments_reversal_of_payment_id_fkey"
+            columns: ["reversal_of_payment_id"]
+            isOneToOne: true
+            referencedRelation: "monthly_obligation_payments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "monthly_obligation_payments_vendor_payment_id_fkey"
+            columns: ["vendor_payment_id"]
+            isOneToOne: true
             referencedRelation: "vendor_payments"
             referencedColumns: ["id"]
           },
@@ -20165,6 +20334,7 @@ export type Database = {
       rental_payment_receipts: {
         Row: {
           amount_due: number
+          canonical_payment_id: string | null
           company_id: string
           contract_id: string | null
           created_at: string
@@ -20174,6 +20344,7 @@ export type Database = {
           fine: number
           fiscal_year: number | null
           id: string
+          idempotency_key: string | null
           invoice_id: string | null
           is_late: boolean | null
           month: string
@@ -20192,6 +20363,7 @@ export type Database = {
         }
         Insert: {
           amount_due?: number
+          canonical_payment_id?: string | null
           company_id: string
           contract_id?: string | null
           created_at?: string
@@ -20201,6 +20373,7 @@ export type Database = {
           fine?: number
           fiscal_year?: number | null
           id?: string
+          idempotency_key?: string | null
           invoice_id?: string | null
           is_late?: boolean | null
           month: string
@@ -20219,6 +20392,7 @@ export type Database = {
         }
         Update: {
           amount_due?: number
+          canonical_payment_id?: string | null
           company_id?: string
           contract_id?: string | null
           created_at?: string
@@ -20228,6 +20402,7 @@ export type Database = {
           fine?: number
           fiscal_year?: number | null
           id?: string
+          idempotency_key?: string | null
           invoice_id?: string | null
           is_late?: boolean | null
           month?: string
@@ -28702,6 +28877,43 @@ export type Database = {
         Returns: Json
       }
       contains_arabic: { Args: { text_to_check: string }; Returns: boolean }
+      complete_vehicle_maintenance_v1: {
+        Args: { p_actor_id?: string; p_company_id: string; p_maintenance_id: string }
+        Returns: Database["public"]["Tables"]["vehicle_maintenance"]["Row"]
+      }
+      close_accounting_period_v1: {
+        Args: {
+          p_actor_id?: string
+          p_company_id: string
+          p_end_date: string
+          p_period_name: string
+          p_start_date: string
+        }
+        Returns: string
+      }
+      close_legal_case_outcome_v1: {
+        Args: {
+          p_actor_id?: string
+          p_case_direction: string
+          p_case_id: string
+          p_company_id: string
+          p_outcome_amount: number
+          p_outcome_amount_type: string
+          p_outcome_date: string
+          p_outcome_notes: string
+          p_outcome_type: string
+          p_payment_direction: string
+        }
+        Returns: Database["public"]["Tables"]["legal_cases"]["Row"]
+      }
+      convert_contract_to_legal_v1: {
+        Args: { p_actor_id?: string; p_case_type: string; p_company_id: string; p_contract_id: string; p_notes: string; p_priority: string }
+        Returns: Json
+      }
+      cancel_vehicle_reservation_v1: {
+        Args: { p_actor_id?: string; p_company_id: string; p_reservation_id: string }
+        Returns: Database["public"]["Tables"]["vehicle_reservations"]["Row"]
+      }
       copy_default_accounts_to_company: {
         Args: { target_company_id: string }
         Returns: undefined
@@ -28727,6 +28939,62 @@ export type Database = {
           transaction_record: Database["public"]["Tables"]["bank_transactions"]["Row"]
         }
         Returns: string
+      }
+      create_manual_bank_transaction_v1: {
+        Args: {
+          p_actor_id?: string
+          p_amount: number
+          p_bank_account_id: string
+          p_bank_id: string
+          p_company_id: string
+          p_counterpart_account_id: string
+          p_description: string
+          p_idempotency_key: string
+          p_reference_number: string
+          p_transaction_date: string
+          p_transaction_type: string
+        }
+        Returns: Json
+      }
+      create_manual_journal_entry_v1: {
+        Args: {
+          p_actor_id?: string
+          p_company_id: string
+          p_description: string
+          p_entry_date: string
+          p_entry_number: string
+          p_idempotency_key: string
+          p_lines: Json
+          p_reference_id: string | null
+          p_reference_type: string
+        }
+        Returns: Database["public"]["Tables"]["journal_entries"]["Row"]
+      }
+      create_vehicle_installment_agreement_v1: {
+        Args: { p_actor_id?: string; p_company_id: string; p_data: Json }
+        Returns: Database["public"]["Tables"]["vehicle_installments"]["Row"]
+      }
+      create_manual_invoice_v1: {
+        Args: {
+          p_actor_id?: string
+          p_company_id: string
+          p_contract_id: string | null
+          p_cost_center_id: string | null
+          p_currency: string
+          p_customer_id: string | null
+          p_discount_amount: number
+          p_due_date: string | null
+          p_fixed_asset_id: string | null
+          p_idempotency_key: string
+          p_invoice_date: string
+          p_invoice_number: string
+          p_invoice_type: string
+          p_items: Json
+          p_notes: string
+          p_terms: string
+          p_vendor_id: string | null
+        }
+        Returns: Database["public"]["Tables"]["invoices"]["Row"]
       }
       create_condition_report_for_permit: {
         Args: { inspection_type_param?: string; permit_id_param: string }
@@ -29046,6 +29314,42 @@ export type Database = {
           p_transaction_type?: string
         }
         Returns: string
+      }
+      create_customer_payment_batch_v1: {
+        Args: {
+          p_account_id: string | null
+          p_actor_id?: string | null
+          p_allocations: Json
+          p_bank_id: string | null
+          p_batch_idempotency_key: string
+          p_company_id: string
+          p_currency: string
+          p_customer_id: string
+          p_payment_method: string
+        }
+        Returns: Json
+      }
+      create_rental_receipt_payment_v1: {
+        Args: {
+          p_actor_id?: string | null
+          p_amount_due: number
+          p_bank_id: string | null
+          p_company_id: string
+          p_contract_id: string | null
+          p_customer_id: string
+          p_customer_name: string
+          p_fine: number
+          p_idempotency_key: string
+          p_month: string
+          p_notes: string | null
+          p_payment_date: string
+          p_payment_method: string
+          p_reference_number: string | null
+          p_rent_amount: number
+          p_total_paid: number
+          p_vehicle_id: string | null
+        }
+        Returns: Database["public"]["Tables"]["rental_payment_receipts"]["Row"]
       }
       create_payment_bank_transaction: {
         Args: { payment_id_param: string }
@@ -31019,6 +31323,27 @@ export type Database = {
         }[]
       }
       process_failed_journal_entries: { Args: never; Returns: undefined }
+      pay_monthly_obligation_installment_v1: {
+        Args: {
+          p_actor_id?: string | null
+          p_amount: number
+          p_bank_id: string | null
+          p_cash_account_id: string
+          p_company_id: string
+          p_idempotency_key: string
+          p_installment_id: string
+          p_notes: string | null
+          p_payment_date: string
+          p_reference_number: string | null
+        }
+        Returns: Database["public"]["Tables"]["monthly_obligation_payments"]["Row"]
+        SetofOptions: {
+          from: "*"
+          to: "monthly_obligation_payments"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       process_monthly_depreciation: {
         Args: { company_id_param: string; depreciation_date_param?: string }
         Returns: number
@@ -31160,6 +31485,89 @@ export type Database = {
       recalculate_bank_balance: {
         Args: { bank_id_param: string }
         Returns: number
+      }
+      record_odometer_reading_v1: {
+        Args: {
+          p_actor_id?: string
+          p_company_id: string
+          p_contract_id: string | null
+          p_fuel_level_percentage: number
+          p_location: string
+          p_notes: string
+          p_odometer_reading: number
+          p_permit_id: string | null
+          p_reading_type: string
+          p_vehicle_id: string
+        }
+        Returns: Database["public"]["Tables"]["odometer_readings"]["Row"]
+      }
+      post_manual_journal_entry_v1: {
+        Args: { p_actor_id?: string; p_company_id: string; p_entry_id: string }
+        Returns: Database["public"]["Tables"]["journal_entries"]["Row"]
+      }
+      reverse_manual_bank_transaction_v1: {
+        Args: {
+          p_actor_id?: string
+          p_company_id: string
+          p_idempotency_key: string
+          p_reason: string
+          p_reversal_date: string
+          p_transaction_id: string
+        }
+        Returns: Json
+      }
+      revert_contract_from_legal_v1: {
+        Args: { p_actor_id?: string; p_company_id: string; p_contract_id: string; p_reason: string }
+        Returns: Json
+      }
+      cancel_verified_contract_v1: {
+        Args: { p_actor_id?: string; p_company_id: string; p_task_id: string }
+        Returns: Json
+      }
+      cancel_legal_cases_v1: {
+        Args: { p_actor_id?: string; p_case_ids: string[]; p_company_id: string; p_reason: string }
+        Returns: Json
+      }
+      soft_delete_legal_document_v1: {
+        Args: { p_actor_id?: string; p_company_id: string; p_document_id: string; p_reason: string }
+        Returns: Database["public"]["Tables"]["legal_case_documents"]["Row"]
+      }
+      soft_delete_lawsuit_template_v1: {
+        Args: { p_actor_id?: string; p_company_id: string; p_reason: string; p_template_id: number }
+        Returns: Database["public"]["Tables"]["lawsuit_templates"]["Row"]
+      }
+      setup_accounting_system_v1: {
+        Args: {
+          p_accounts: Json
+          p_actor_id?: string
+          p_banks: Json
+          p_business_type: string
+          p_company_id: string
+          p_strategy?: string
+        }
+        Returns: Json
+      }
+      save_vehicle_reservation_v1: {
+        Args: {
+          p_actor_id?: string
+          p_company_id: string
+          p_customer_name: string
+          p_end_date: string
+          p_notes: string
+          p_reservation_id: string | null
+          p_start_date: string
+          p_status: string
+          p_vehicle_id: string
+        }
+        Returns: Database["public"]["Tables"]["vehicle_reservations"]["Row"]
+      }
+      sync_company_vehicle_states_v1: {
+        Args: { p_actor_id?: string; p_company_id: string }
+        Returns: Json
+      }
+      deactivate_vehicle_v1: {
+        Args: { p_actor_id?: string; p_company_id: string; p_reason: string; p_vehicle_id: string }
+        Returns: Database["public"]["Tables"]["vehicles"]["Row"]
       }
       recalculate_contract_financial_state: {
         Args: { p_contract_id: string }

@@ -68,11 +68,11 @@ const getConditionColor = (condition: string) => {
 const getStatusBadge = (status: string) => {
   switch (status) {
     case 'approved':
-      return <Badge variant="default" className="bg-green-500"><CheckCircle className="h-3 w-3 mr-1" />{t("approved")}</Badge>;
+      return <Badge variant="default" className="bg-green-500"><CheckCircle className="h-3 w-3 mr-1" />معتمد</Badge>;
     case 'rejected':
-      return <Badge variant="destructive"><AlertTriangle className="h-3 w-3 mr-1" />{t("rejected")}</Badge>;
+      return <Badge variant="destructive"><AlertTriangle className="h-3 w-3 mr-1" />مرفوض</Badge>;
     default:
-      return <Badge variant="secondary"><ClipboardList className="h-3 w-3 mr-1" />{t("pending")}</Badge>;
+      return <Badge variant="secondary"><ClipboardList className="h-3 w-3 mr-1" />قيد المراجعة</Badge>;
   }
 };
 

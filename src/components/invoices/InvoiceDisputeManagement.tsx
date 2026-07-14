@@ -14,6 +14,7 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -70,6 +71,9 @@ interface DisputeStats {
   avg_resolution_days: number;
 }
 
+// These legacy dispute views predate the generated Supabase type snapshot.
+const disputeClient = supabase as any;
+
 export const InvoiceDisputeManagement: React.FC = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -77,28 +81,34 @@ export const InvoiceDisputeManagement: React.FC = () => {
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showResolveDialog, setShowResolveDialog] = useState(false);
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const { companyId } = useUnifiedCompanyAccess();
 
   // Fetch statistics
   const { data: stats } = useQuery({
     queryKey: ['dispute-stats'],
     queryFn: async () => {
-      const { data, error } = await supabase
+      if (!companyId) throw new Error('Company was not found');
+      const { data, error } = await disputeClient
         .from('dispute_dashboard_stats')
         .select('*')
+        .eq('company_id', companyId)
         .single();
       
       if (error) throw error;
       return data as DisputeStats;
-    }
+    },
+    enabled: !!companyId
   });
 
   // Fetch pending disputes
   const { data: disputes, isLoading } = useQuery({
     queryKey: ['pending-disputes', statusFilter],
     queryFn: async () => {
-      let query = supabase
+      if (!companyId) throw new Error('Company was not found');
+      let query = disputeClient
         .from('pending_disputes')
-        .select('*');
+        .select('*')
+        .eq('company_id', companyId);
       
       if (statusFilter !== 'all') {
         query = query.eq('status', statusFilter);
@@ -107,7 +117,8 @@ export const InvoiceDisputeManagement: React.FC = () => {
       const { data, error } = await query;
       if (error) throw error;
       return data as Dispute[];
-    }
+    },
+    enabled: !!companyId
   });
 
   // Get status badge color
@@ -391,6 +402,7 @@ const DisputeResolveDialog: React.FC<{
 }> = ({ open, onOpenChange, dispute }) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { companyId } = useUnifiedCompanyAccess();
   const [resolutionNotes, setResolutionNotes] = useState('');
   const [resolutionStatus, setResolutionStatus] = useState('resolved');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -407,15 +419,13 @@ const DisputeResolveDialog: React.FC<{
 
     setIsSubmitting(true);
     try {
-      const { error } = await supabase
-        .from('invoice_disputes')
-        .update({
-          status: resolutionStatus,
-          resolution_notes: resolutionNotes,
-          resolved_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', dispute.id);
+      if (!companyId) throw new Error('Company was not found');
+      const { error } = await disputeClient.rpc('resolve_invoice_dispute_v1', {
+        p_company_id: companyId,
+        p_dispute_id: dispute.id,
+        p_status: resolutionStatus,
+        p_resolution_notes: resolutionNotes,
+      });
 
       if (error) throw error;
 

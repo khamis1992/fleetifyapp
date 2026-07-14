@@ -49,7 +49,7 @@ export const useTransferUser = () => {
         p_from_company_id: transferData.fromCompanyId,
         p_to_company_id: transferData.toCompanyId,
         p_new_roles: transferData.newRoles,
-        p_transfer_reason: transferData.transferReason || null,
+        p_transfer_reason: transferData.transferReason,
         p_data_handling_strategy: transferData.dataHandlingStrategy || {},
       });
 
@@ -59,7 +59,7 @@ export const useTransferUser = () => {
         p_from_company_id: transferData.fromCompanyId,
         p_to_company_id: transferData.toCompanyId,
         p_new_roles: transferData.newRoles,
-        p_transfer_reason: transferData.transferReason || null,
+        p_transfer_reason: transferData.transferReason,
         p_data_handling_strategy: transferData.dataHandlingStrategy || {},
       });
 
@@ -76,10 +76,16 @@ export const useTransferUser = () => {
       }
 
       // Check if the RPC function returned an error in the data
-      if (data && typeof data === 'object' && 'success' in data && data.success === false) {
+      const responsePayload = data && typeof data === 'object' && !Array.isArray(data)
+        ? data as Record<string, unknown>
+        : null;
+
+      if (responsePayload?.success === false) {
         console.error("❌ ===== TRANSFER FAILED (RPC returned error) =====");
-        console.error("Error from RPC:", data.error);
-        throw new Error(data.error || 'فشل نقل المستخدم');
+        console.error("Error from RPC:", responsePayload.error);
+        throw new Error(typeof responsePayload.error === 'string'
+          ? responsePayload.error
+          : 'فشل نقل المستخدم');
       }
 
       console.log("✅ ===== TRANSFER SUCCESSFUL =====");
@@ -87,7 +93,11 @@ export const useTransferUser = () => {
 
       return {
         success: true,
-        transferLogId: data,
+        transferLogId: typeof data === 'string'
+          ? data
+          : typeof responsePayload?.transfer_log_id === 'string'
+            ? responsePayload.transfer_log_id
+            : undefined,
         message: 'تم نقل المستخدم بنجاح'
       };
     },

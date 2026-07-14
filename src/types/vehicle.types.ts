@@ -18,9 +18,12 @@ export interface Vehicle {
   vin_number?: string;
   registration_number?: string;
   insurance_policy?: string;
+  insurance_policy_number?: string;
+  insurance_provider?: string;
+  insurance_premium_amount?: number;
   insurance_expiry?: string;
   license_expiry?: string;
-  status?: 'available' | 'rented' | 'maintenance' | 'out_of_service' | 'reserved';
+  status?: 'available' | 'rented' | 'maintenance' | 'out_of_service' | 'street_52' | 'accident' | 'stolen' | 'police_station' | 'reserved_employee' | 'municipality';
   odometer_reading?: number;
   fuel_level?: number;
   location?: string;

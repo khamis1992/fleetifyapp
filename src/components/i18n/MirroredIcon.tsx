@@ -98,7 +98,7 @@ const RTL_MIRROR_ICONS = new Set([
   'battery-warning'
 ]);
 
-const MirroredIcon = forwardRef<any, MirroredIconProps>(
+const MirroredIcon = forwardRef<HTMLSpanElement, MirroredIconProps>(
   (
     {
       icon: IconComponent,
@@ -145,7 +145,7 @@ const MirroredIcon = forwardRef<any, MirroredIconProps>(
 
     // Generate accessible properties
     const accessibilityProps = useMemo(() => {
-      const props: any = {
+      const props: React.HTMLAttributes<HTMLElement> & { 'data-mirrored'?: 'true' } = {
         'aria-hidden': true,
         'role': 'img',
         'aria-label': name || 'icon'
@@ -223,11 +223,14 @@ export const useIconMirror = (iconName?: string) => {
 };
 
 // Higher-order component for automatic icon mirroring
-export const withMirroring = <P extends object>(
+export const withMirroring = <P extends { style?: React.CSSProperties }>(
   WrappedIconComponent: React.ComponentType<P>
 ) => {
-  const MirroredWrapper = forwardRef<any, P & { iconName?: string }>(
-    ({ iconName, ...props }, ref) => {
+  const MirroredWrapper = forwardRef<HTMLSpanElement, P & { iconName?: string }>(
+    (allProps, ref) => {
+      const { iconName } = allProps;
+      const wrappedProps = { ...allProps };
+      delete wrappedProps.iconName;
       const { rtl } = useFleetifyTranslation();
       const shouldMirror = rtl && iconName
         ? RTL_MIRROR_ICONS.has(iconName.toLowerCase())
@@ -236,23 +239,23 @@ export const withMirroring = <P extends object>(
       const mirroredProps = useMemo(() => {
         if (shouldMirror) {
           return {
-            ...props,
+            ...wrappedProps,
             style: {
-              ...props.style,
-              transform: `${(props.style as any)?.transform || ''} scaleX(-1)`.trim(),
+              ...wrappedProps.style,
+              transform: `${wrappedProps.style?.transform || ''} scaleX(-1)`.trim(),
               transformOrigin: 'center'
             }
           };
         }
-        return props;
-      }, [shouldMirror, props]);
+        return wrappedProps;
+      }, [shouldMirror, wrappedProps]);
 
       return (
         <span
           className={shouldMirror ? 'icon-mirrored' : ''}
           ref={ref}
         >
-          <WrappedIconComponent {...(mirroredProps as P)} />
+          <WrappedIconComponent {...(mirroredProps as unknown as P)} />
         </span>
       );
     }

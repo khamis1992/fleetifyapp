@@ -1,4 +1,4 @@
-import { type CSSProperties, type ElementType, useMemo, useState } from "react";
+import { type CSSProperties, type ElementType, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import {
@@ -17,7 +17,7 @@ import {
   Plus,
   RefreshCw,
   Search,
-  Trash2,
+  RotateCcw,
   X,
 } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
@@ -35,7 +35,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCompanyCurrency } from "@/hooks/useCompanyCurrency";
 import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter";
-import { Bank, BankTransaction, useBankTransactions, useBanks, useCreateBank, useCreateBankTransaction, useDeleteBankTransaction, useTreasurySummary } from "@/hooks/useTreasury";
+import { useChartOfAccounts } from "@/hooks/useChartOfAccounts";
+import { Bank, BankTransaction, useBankTransactions, useBanks, useCreateBank, useCreateBankTransaction, useReverseBankTransaction, useTreasurySummary } from "@/hooks/useTreasury";
 import { systemColorPattern } from "@/lib/design-system/systemColorPattern";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -119,7 +120,8 @@ export default function Treasury() {
   const { data: summary, isLoading: summaryLoading, refetch: refetchSummary } = useTreasurySummary();
   const createBank = useCreateBank();
   const createTransaction = useCreateBankTransaction();
-  const deleteTransaction = useDeleteBankTransaction();
+  const reverseTransaction = useReverseBankTransaction();
+  const { data: chartOfAccounts } = useChartOfAccounts();
   const { formatCurrency } = useCurrencyFormatter();
   const { currency: companyCurrency } = useCompanyCurrency();
 
@@ -140,7 +142,19 @@ export default function Treasury() {
     description: "",
     reference_number: "",
     bank_id: "",
+    bank_account_id: "",
+    counterpart_account_id: "",
+    idempotency_key: crypto.randomUUID(),
   });
+  const [reversalReason, setReversalReason] = useState("");
+  const reversalKeys = useRef(new Map<string, string>());
+
+  const postableAccounts = useMemo(() => (chartOfAccounts || []).filter((account) =>
+    account.is_active && !account.is_header && account.account_level >= 3
+  ), [chartOfAccounts]);
+  const bankLedgerAccounts = useMemo(() => postableAccounts.filter((account) =>
+    ["asset", "assets"].includes(account.account_type.toLowerCase()) && account.balance_type.toLowerCase() === "debit"
+  ), [postableAccounts]);
 
   const bankLookup = useMemo(() => {
     return new Map((banks || []).map((bank) => [bank.id, bank]));
@@ -230,6 +244,8 @@ export default function Treasury() {
 
     await createBank.mutateAsync({
       ...newBank,
+      opening_balance: 0,
+      current_balance: 0,
       company_id: user.profile.company_id,
     } as Omit<Bank, "id" | "created_at" | "updated_at">);
 
@@ -259,36 +275,39 @@ export default function Treasury() {
       toast.error("يرجى إدخال مبلغ صحيح");
       return;
     }
+    if (!newTransaction.bank_account_id || !newTransaction.counterpart_account_id) {
+      toast.error("يرجى اختيار حساب البنك والحساب المقابل");
+      return;
+    }
+    if (newTransaction.bank_account_id === newTransaction.counterpart_account_id) {
+      toast.error("يجب أن يكون الحساب المقابل مختلفًا عن حساب البنك");
+      return;
+    }
     if (!user?.profile?.company_id) {
       toast.error("خطأ في بيانات المستخدم");
       return;
     }
 
-    const transactionNumber = `TRX-${Date.now()}`;
     const selectedBank = banks?.find((bank) => bank.id === newTransaction.bank_id);
     if (!selectedBank) {
       toast.error("البنك المحدد غير موجود");
       return;
     }
 
-    const balanceAfter = newTransaction.transaction_type === "deposit"
-      ? selectedBank.current_balance + newTransaction.amount
-      : selectedBank.current_balance - newTransaction.amount;
-
     try {
       await createTransaction.mutateAsync({
         company_id: user.profile.company_id,
         bank_id: newTransaction.bank_id,
-        transaction_number: transactionNumber,
         transaction_date: new Date().toISOString().split("T")[0],
-        transaction_type: newTransaction.transaction_type,
+        transaction_type: newTransaction.transaction_type as "deposit" | "withdrawal",
         amount: newTransaction.amount,
-        balance_after: balanceAfter,
         description: newTransaction.description,
         reference_number: newTransaction.reference_number,
-        status: "completed",
-        reconciled: false,
-      } as Omit<BankTransaction, "id" | "created_at" | "updated_at">);
+        bank_account_id: newTransaction.bank_account_id,
+        counterpart_account_id: newTransaction.counterpart_account_id,
+        idempotency_key: newTransaction.idempotency_key,
+        actor_id: user.id,
+      });
 
       setNewTransaction({
         transaction_type: "deposit",
@@ -296,6 +315,9 @@ export default function Treasury() {
         description: "",
         reference_number: "",
         bank_id: "",
+        bank_account_id: "",
+        counterpart_account_id: "",
+        idempotency_key: crypto.randomUUID(),
       });
       setIsCreateTransactionDialogOpen(false);
     } catch (error) {
@@ -707,37 +729,63 @@ export default function Treasury() {
                             </div>
                           </TableCell>
                           <TableCell>
-                            <AlertDialog>
+                            {transaction.manual_idempotency_key && !transaction.reversal_of_transaction_id ? <AlertDialog>
                               <AlertDialogTrigger asChild>
                                 <Button
                                   variant="ghost"
                                   size="sm"
                                   className="gap-2 text-[#E04F5F] hover:bg-[#FFF0F2] hover:text-[#E04F5F]"
-                                  aria-label={`حذف المعاملة ${transaction.transaction_number}`}
+                                  aria-label={`عكس المعاملة ${transaction.transaction_number}`}
                                 >
-                                  <Trash2 className="h-4 w-4" />
-                                  حذف
+                                  <RotateCcw className="h-4 w-4" />
+                                  عكس
                                 </Button>
                               </AlertDialogTrigger>
                               <AlertDialogContent dir="rtl">
                                 <AlertDialogHeader>
-                                  <AlertDialogTitle>تأكيد حذف المعاملة</AlertDialogTitle>
+                                  <AlertDialogTitle>تأكيد عكس المعاملة</AlertDialogTitle>
                                   <AlertDialogDescription>
-                                    هل أنت متأكد من حذف المعاملة رقم {transaction.transaction_number}؟ هذا الإجراء لا يمكن التراجع عنه.
+                                    سيُنشأ قيد وحركة مصرفية معاكسان للمعاملة {transaction.transaction_number} مع إبقاء السجل الأصلي.
                                   </AlertDialogDescription>
                                 </AlertDialogHeader>
+                                <div className="space-y-2 py-2">
+                                  <Label htmlFor={`reversal-reason-${transaction.id}`}>سبب العكس</Label>
+                                  <Textarea
+                                    id={`reversal-reason-${transaction.id}`}
+                                    value={reversalReason}
+                                    onChange={(event) => setReversalReason(event.target.value)}
+                                    placeholder="اكتب سببًا واضحًا للعكس"
+                                    rows={2}
+                                  />
+                                </div>
                                 <AlertDialogFooter>
                                   <AlertDialogCancel>إلغاء</AlertDialogCancel>
                                   <AlertDialogAction
-                                    onClick={() => deleteTransaction.mutate(transaction.id)}
+                                    onClick={() => {
+                                      let idempotencyKey = reversalKeys.current.get(transaction.id);
+                                      if (!idempotencyKey) {
+                                        idempotencyKey = crypto.randomUUID();
+                                        reversalKeys.current.set(transaction.id, idempotencyKey);
+                                      }
+                                      reverseTransaction.mutate({
+                                        transactionId: transaction.id,
+                                        reason: reversalReason,
+                                        idempotencyKey,
+                                      }, {
+                                        onSuccess: () => {
+                                          reversalKeys.current.delete(transaction.id);
+                                          setReversalReason("");
+                                        },
+                                      });
+                                    }}
                                     className="bg-[#E04F5F] hover:bg-[#E04F5F]/90"
-                                    disabled={deleteTransaction.isPending}
+                                    disabled={reverseTransaction.isPending || !reversalReason.trim()}
                                   >
-                                    {deleteTransaction.isPending ? "جاري الحذف..." : "حذف"}
+                                    {reverseTransaction.isPending ? "جاري العكس..." : "إنشاء حركة عكسية"}
                                   </AlertDialogAction>
                                 </AlertDialogFooter>
                               </AlertDialogContent>
-                            </AlertDialog>
+                            </AlertDialog> : <span className="text-xs text-muted-foreground">محمي</span>}
                           </TableCell>
                         </motion.tr>
                       );
@@ -812,10 +860,11 @@ export default function Treasury() {
                 id="openingBalance"
                 type="number"
                 value={newBank.opening_balance}
-                onChange={(event) => setNewBank({ ...newBank, opening_balance: Number(event.target.value), current_balance: Number(event.target.value) })}
+                disabled
                 placeholder="0.000"
                 className="mt-1"
               />
+              <p className="mt-1 text-xs text-muted-foreground">يُسجل الرصيد الافتتاحي لاحقًا بحركة محاسبية لها حساب مقابل.</p>
             </div>
             <div className="flex items-center justify-between rounded-lg border border-[#E5EAF1] bg-[#F6F8FB] p-3">
               <Label htmlFor="isPrimary" className="cursor-pointer">حساب رئيسي</Label>
@@ -867,6 +916,36 @@ export default function Treasury() {
                 <SelectContent>
                   <SelectItem value="deposit">إيداع</SelectItem>
                   <SelectItem value="withdrawal">سحب</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label htmlFor="bankLedgerAccount">حساب البنك في دليل الحسابات</Label>
+              <Select value={newTransaction.bank_account_id} onValueChange={(value) => setNewTransaction({ ...newTransaction, bank_account_id: value })}>
+                <SelectTrigger id="bankLedgerAccount" className="mt-1">
+                  <SelectValue placeholder="اختر حساب البنك" />
+                </SelectTrigger>
+                <SelectContent>
+                  {bankLedgerAccounts.map((account) => (
+                    <SelectItem key={account.id} value={account.id}>
+                      {account.account_code} - {account.account_name_ar || account.account_name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label htmlFor="counterpartAccount">الحساب المقابل</Label>
+              <Select value={newTransaction.counterpart_account_id} onValueChange={(value) => setNewTransaction({ ...newTransaction, counterpart_account_id: value })}>
+                <SelectTrigger id="counterpartAccount" className="mt-1">
+                  <SelectValue placeholder="اختر الحساب المقابل" />
+                </SelectTrigger>
+                <SelectContent>
+                  {postableAccounts.filter((account) => account.id !== newTransaction.bank_account_id).map((account) => (
+                    <SelectItem key={account.id} value={account.id}>
+                      {account.account_code} - {account.account_name_ar || account.account_name}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>

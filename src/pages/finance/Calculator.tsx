@@ -240,7 +240,7 @@ const FinancialCalculator: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-hero">
+    <div className="min-h-screen bg-[#F6F8FB]">
       <div className="container mx-auto p-6 space-y-8">
         {/* رأس الصفحة المحدث */}
         <motion.div

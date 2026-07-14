@@ -88,7 +88,7 @@ export const useLeaveTypes = () => {
         .eq('user_id', currentUser.user.id)
         .single();
       
-      if (!profile) throw new Error('لم يتم العثور على بيانات المستخدم');
+      if (!profile?.company_id) throw new Error('لم يتم العثور على شركة المستخدم');
 
       const { data, error } = await supabase
         .from("leave_types")
@@ -245,8 +245,8 @@ export const useReviewLeaveRequest = () => {
         const { error: updateError } = await supabase
           .from("leave_balances")
           .update({
-            used_days: currentBalance.used_days + request.total_days,
-            remaining_days: currentBalance.remaining_days - request.total_days,
+            used_days: (currentBalance.used_days ?? 0) + request.total_days,
+            remaining_days: (currentBalance.remaining_days ?? 0) - request.total_days,
           })
           .eq("employee_id", request.employee_id)
           .eq("leave_type_id", request.leave_type_id)

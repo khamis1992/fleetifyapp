@@ -36,10 +36,11 @@ export const useMonthlyCollections = () => {
   const { data: profile } = useQuery({
     queryKey: ['employee-profile-collections', user?.id],
     queryFn: async () => {
+      if (!user?.id) throw new Error('User is not authenticated');
       const { data, error } = await supabase
         .from('profiles')
         .select('id, company_id')
-        .eq('user_id', user?.id)
+        .eq('user_id', user.id)
         .single();
       
       if (error) throw error;
@@ -51,7 +52,7 @@ export const useMonthlyCollections = () => {
   const { data: collections = [], isLoading, refetch } = useQuery({
     queryKey: ['monthly-collections', profile?.id],
     queryFn: async () => {
-      if (!profile?.id) return [];
+      if (!profile?.id || !profile.company_id) return [];
 
       const today = new Date();
       const currentMonthStart = startOfMonth(today);

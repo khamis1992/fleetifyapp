@@ -132,7 +132,7 @@ export const VehicleConditionReport: React.FC<VehicleConditionReportProps> = ({
               <label className="text-sm font-medium">الحالة العامة</label>
               <Select
                 value={formData.overall_condition}
-                onValueChange={(value: unknown) => setFormData({ ...formData, overall_condition: value })}
+                onValueChange={(value: VehicleConditionReportType['overall_condition']) => setFormData({ ...formData, overall_condition: value })}
                 disabled={readonly}
               >
                 <SelectTrigger dir="rtl">
@@ -192,7 +192,7 @@ export const VehicleConditionReport: React.FC<VehicleConditionReportProps> = ({
               <label className="text-sm font-medium">حالة التقرير</label>
               <Select
                 value={formData.status}
-                onValueChange={(value: unknown) => setFormData({ ...formData, status: value })}
+                onValueChange={(value: VehicleConditionReportType['status']) => setFormData({ ...formData, status: value })}
               >
                 <SelectTrigger dir="rtl">
                   <SelectValue />

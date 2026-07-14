@@ -28,7 +28,7 @@ export const extractWithVehicleOCR = async (file: File, signal?: AbortSignal): P
   }
 
   // إرسال الطلب إلى Edge Function مع timeout أقصر (30s بدلاً من 60s)
-  let timeoutId: ReturnType<typeof setTimeout>;
+  let timeoutId: ReturnType<typeof setTimeout> | undefined;
   const timeoutPromise = new Promise<never>((_, reject) => {
     timeoutId = setTimeout(() => reject(new Error('OCR_TIMEOUT')), 30000);
   });
@@ -54,7 +54,7 @@ export const extractWithVehicleOCR = async (file: File, signal?: AbortSignal): P
 
     return response.data as VehicleOCRResult;
   } catch (error: any) {
-    clearTimeout(timeoutId);
+    if (timeoutId) clearTimeout(timeoutId);
 
     // Check if it was a timeout or function not found
     if (error.name === 'AbortError' || error.message === 'OCR_TIMEOUT' || error.message?.includes('timeout') || error.message?.includes('Aborted')) {
@@ -66,6 +66,6 @@ export const extractWithVehicleOCR = async (file: File, signal?: AbortSignal): P
     console.warn('⚠️ Google Cloud Vision unavailable, falling back to Tesseract:', error.message);
     throw new Error('FALLBACK_TO_TESSERACT');
   } finally {
-    clearTimeout(timeoutId!);
+    if (timeoutId) clearTimeout(timeoutId);
   }
 };

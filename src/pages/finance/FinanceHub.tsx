@@ -255,7 +255,7 @@ const FinanceHub: React.FC = () => {
   const topCustomersData = financialAnalytics?.topCustomers || [];
 
   return (
-    <div className="min-h-screen bg-slate-50" dir="rtl">
+    <div className="min-h-screen bg-[#F6F8FB]" dir="rtl">
       <div className="p-6 space-y-6">
         {/* Page Header */}
         <div className="mb-6">

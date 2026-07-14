@@ -22,7 +22,12 @@ export type ObligationAccountingTreatment =
   | "right_of_use_asset";
 
 export type ObligationStatus = "active" | "paused" | "completed" | "cancelled";
-export type ObligationInstallmentStatus = "pending" | "partial" | "paid" | "overdue" | "cancelled";
+export type ObligationInstallmentStatus =
+  | "pending"
+  | "partial"
+  | "paid"
+  | "overdue"
+  | "cancelled";
 export type VehicleAmountMode = "total" | "per_vehicle";
 
 export interface MonthlyObligationVehicle {
@@ -55,6 +60,7 @@ export interface MonthlyObligationInstallment {
   principal_amount: number;
   interest_amount: number;
   paid_amount: number;
+  payment_ledger_baseline?: number;
   status: ObligationInstallmentStatus;
   payment_date?: string | null;
   vendor_payment_id?: string | null;
@@ -146,13 +152,15 @@ export interface CreateMonthlyObligationInput {
   notes?: string;
 }
 
-export interface UpdateMonthlyObligationInput extends CreateMonthlyObligationInput {
+export interface UpdateMonthlyObligationInput
+  extends CreateMonthlyObligationInput {
   id: string;
   status?: ObligationStatus;
 }
 
 export interface PayMonthlyObligationInput {
   installment_id: string;
+  idempotency_key: string;
   amount: number;
   payment_date: string;
   bank_id?: string | null;
@@ -171,10 +179,57 @@ interface CompanyUser {
 const getCompanyId = (user: CompanyUser | null | undefined) =>
   user?.profile?.company_id || user?.company?.id || user?.company_id || null;
 
-const cleanId = (value?: string | null) => (!value || value === "none" ? null : value);
+const cleanId = (value?: string | null) =>
+  !value || value === "none" ? null : value;
 const money = (value: number) => Math.round((Number(value) || 0) * 100) / 100;
+
+export const buildMonthlyObligationPaymentRpcArgs = (
+  companyId: string,
+  actorId: string | null | undefined,
+  input: PayMonthlyObligationInput
+) => {
+  if (!companyId) throw new Error("معرف الشركة مطلوب");
+  if (!input.installment_id) throw new Error("القسط مطلوب");
+  if (!input.idempotency_key) throw new Error("مفتاح منع التكرار مطلوب");
+
+  const amount = Number(input.amount);
+  if (!Number.isFinite(amount) || amount <= 0) {
+    throw new Error("مبلغ السداد يجب أن يكون أكبر من صفر");
+  }
+
+  const paymentDate = input.payment_date?.trim();
+  const parsedPaymentDate = new Date(`${paymentDate}T00:00:00Z`);
+  if (
+    !paymentDate ||
+    !/^\d{4}-\d{2}-\d{2}$/.test(paymentDate) ||
+    Number.isNaN(parsedPaymentDate.getTime()) ||
+    parsedPaymentDate.toISOString().slice(0, 10) !== paymentDate
+  ) {
+    throw new Error("تاريخ السداد غير صالح");
+  }
+
+  const cashAccountId = cleanId(input.cash_account_id);
+  if (!cashAccountId) throw new Error("حساب النقد أو البنك مطلوب");
+
+  return {
+    p_company_id: companyId,
+    p_installment_id: input.installment_id,
+    p_amount: amount,
+    p_payment_date: paymentDate,
+    p_bank_id: cleanId(input.bank_id),
+    p_cash_account_id: cashAccountId,
+    p_reference_number: input.reference_number || null,
+    p_notes: input.notes || null,
+    p_idempotency_key: input.idempotency_key,
+    p_actor_id: actorId || null,
+  };
+};
 const uniqueIds = (values: Array<string | null | undefined>) =>
-  Array.from(new Set(values.filter((value): value is string => !!value && value !== "none")));
+  Array.from(
+    new Set(
+      values.filter((value): value is string => !!value && value !== "none")
+    )
+  );
 let useLegacyObligationSchema = false;
 const schemaNeedsLegacyObligationQuery = (error: any) => {
   const text = [error?.code, error?.message, error?.details, error?.hint]
@@ -183,7 +238,9 @@ const schemaNeedsLegacyObligationQuery = (error: any) => {
     .toLowerCase();
 
   return (
-    ["PGRST200", "PGRST201", "PGRST204", "PGRST205", "42703", "42P01"].includes(error?.code) ||
+    ["PGRST200", "PGRST201", "PGRST204", "PGRST205", "42703", "42P01"].includes(
+      error?.code
+    ) ||
     text.includes("monthly_obligation_vehicles") ||
     text.includes("vehicle_amount_mode") ||
     text.includes("vehicle_count") ||
@@ -265,10 +322,17 @@ const buildInstallments = (
     if (!end && index > fallbackMonths) break;
     if (end && cursor > end) break;
 
-    const dueDay = Math.min(input.due_day || 1, lastDayOfMonth(cursor.getFullYear(), cursor.getMonth()));
+    const dueDay = Math.min(
+      input.due_day || 1,
+      lastDayOfMonth(cursor.getFullYear(), cursor.getMonth())
+    );
     const dueDate = new Date(cursor.getFullYear(), cursor.getMonth(), dueDay);
     const periodStart = new Date(cursor.getFullYear(), cursor.getMonth(), 1);
-    const periodEnd = new Date(cursor.getFullYear(), cursor.getMonth(), lastDayOfMonth(cursor.getFullYear(), cursor.getMonth()));
+    const periodEnd = new Date(
+      cursor.getFullYear(),
+      cursor.getMonth(),
+      lastDayOfMonth(cursor.getFullYear(), cursor.getMonth())
+    );
     const principal = money(input.principal_amount || 0);
     const interest = money(input.interest_amount || 0);
 
@@ -284,9 +348,10 @@ const buildInstallments = (
         input.accounting_treatment === "direct_expense"
           ? 0
           : principal > 0
-            ? principal
-            : money(input.monthly_amount - interest),
-      interest_amount: input.accounting_treatment === "direct_expense" ? 0 : interest,
+          ? principal
+          : money(input.monthly_amount - interest),
+      interest_amount:
+        input.accounting_treatment === "direct_expense" ? 0 : interest,
       paid_amount: 0,
       status: "pending",
     });
@@ -395,15 +460,25 @@ export const useMonthlyObligationSummary = () => {
     const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
     const monthEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0);
     const allInstallments = installments.data || [];
-    const activeObligations = (obligations.data || []).filter((item) => item.status === "active");
-    const activeRecurringObligations = activeObligations.filter((item) => item.auto_generate !== false);
-    const openInstallments = allInstallments.filter((item) => !["paid", "cancelled"].includes(item.status));
-    const oneTimeOpenInstallments = openInstallments.filter((item) => item.obligation?.auto_generate === false);
+    const activeObligations = (obligations.data || []).filter(
+      (item) => item.status === "active"
+    );
+    const activeRecurringObligations = activeObligations.filter(
+      (item) => item.auto_generate !== false
+    );
+    const openInstallments = allInstallments.filter(
+      (item) => !["paid", "cancelled"].includes(item.status)
+    );
+    const oneTimeOpenInstallments = openInstallments.filter(
+      (item) => item.obligation?.auto_generate === false
+    );
     const dueThisMonth = openInstallments.filter((item) => {
       const due = new Date(`${item.due_date}T00:00:00`);
       return due >= monthStart && due <= monthEnd;
     });
-    const overdue = openInstallments.filter((item) => new Date(`${item.due_date}T00:00:00`) < today);
+    const overdue = openInstallments.filter(
+      (item) => new Date(`${item.due_date}T00:00:00`) < today
+    );
     const paidThisMonth = allInstallments.filter((item) => {
       if (!item.payment_date) return false;
       const paid = new Date(`${item.payment_date}T00:00:00`);
@@ -412,14 +487,29 @@ export const useMonthlyObligationSummary = () => {
 
     return {
       activeCount: activeObligations.length,
-      monthlyCommittedAmount: activeRecurringObligations.reduce((sum, item) => sum + Number(item.monthly_amount || 0), 0),
-      oneTimeOutstandingAmount: oneTimeOpenInstallments.reduce(
-        (sum, item) => sum + Number(item.amount || 0) - Number(item.paid_amount || 0),
+      monthlyCommittedAmount: activeRecurringObligations.reduce(
+        (sum, item) => sum + Number(item.monthly_amount || 0),
         0
       ),
-      dueThisMonthAmount: dueThisMonth.reduce((sum, item) => sum + Number(item.amount || 0) - Number(item.paid_amount || 0), 0),
-      overdueAmount: overdue.reduce((sum, item) => sum + Number(item.amount || 0) - Number(item.paid_amount || 0), 0),
-      paidThisMonthAmount: paidThisMonth.reduce((sum, item) => sum + Number(item.paid_amount || 0), 0),
+      oneTimeOutstandingAmount: oneTimeOpenInstallments.reduce(
+        (sum, item) =>
+          sum + Number(item.amount || 0) - Number(item.paid_amount || 0),
+        0
+      ),
+      dueThisMonthAmount: dueThisMonth.reduce(
+        (sum, item) =>
+          sum + Number(item.amount || 0) - Number(item.paid_amount || 0),
+        0
+      ),
+      overdueAmount: overdue.reduce(
+        (sum, item) =>
+          sum + Number(item.amount || 0) - Number(item.paid_amount || 0),
+        0
+      ),
+      paidThisMonthAmount: paidThisMonth.reduce(
+        (sum, item) => sum + Number(item.paid_amount || 0),
+        0
+      ),
       upcomingInstallments: openInstallments.slice(0, 12),
     };
   }, [installments.data, obligations.data]);
@@ -441,18 +531,34 @@ export const useCreateMonthlyObligation = () => {
       if (!companyId) throw new Error("معرف الشركة مطلوب");
       if (!input.title.trim()) throw new Error("اسم الالتزام مطلوب");
       if (!input.start_date) throw new Error("تاريخ البداية مطلوب");
-      if (!input.monthly_amount || input.monthly_amount <= 0) throw new Error("المبلغ الشهري مطلوب");
+      if (!input.monthly_amount || input.monthly_amount <= 0)
+        throw new Error("المبلغ الشهري مطلوب");
 
-      const selectedVehicleIds = uniqueIds([...(input.vehicle_ids || []), input.vehicle_id]);
+      const selectedVehicleIds = uniqueIds([
+        ...(input.vehicle_ids || []),
+        input.vehicle_id,
+      ]);
       const vehicleCount = selectedVehicleIds.length;
-      if (["vehicle_installment", "vehicle_lease"].includes(input.obligation_type) && vehicleCount === 0) {
+      if (
+        ["vehicle_installment", "vehicle_lease"].includes(
+          input.obligation_type
+        ) &&
+        vehicleCount === 0
+      ) {
         throw new Error("يجب ربط التزام المركبات بمركبة واحدة على الأقل");
       }
       const vehicleAmountMode = input.vehicle_amount_mode || "total";
-      const amountMultiplier = vehicleAmountMode === "per_vehicle" ? Math.max(vehicleCount, 1) : 1;
-      const effectiveMonthlyAmount = money(input.monthly_amount * amountMultiplier);
-      const effectivePrincipalAmount = money((input.principal_amount || 0) * amountMultiplier);
-      const effectiveInterestAmount = money((input.interest_amount || 0) * amountMultiplier);
+      const amountMultiplier =
+        vehicleAmountMode === "per_vehicle" ? Math.max(vehicleCount, 1) : 1;
+      const effectiveMonthlyAmount = money(
+        input.monthly_amount * amountMultiplier
+      );
+      const effectivePrincipalAmount = money(
+        (input.principal_amount || 0) * amountMultiplier
+      );
+      const effectiveInterestAmount = money(
+        (input.interest_amount || 0) * amountMultiplier
+      );
       const effectiveInput: CreateMonthlyObligationInput = {
         ...input,
         vehicle_id: selectedVehicleIds[0] || null,
@@ -460,7 +566,9 @@ export const useCreateMonthlyObligation = () => {
         principal_amount: effectivePrincipalAmount,
         interest_amount: effectiveInterestAmount,
       };
-      const obligationNumber = `OBL-${new Date().getFullYear()}-${Date.now().toString().slice(-6)}`;
+      const obligationNumber = `OBL-${new Date().getFullYear()}-${Date.now()
+        .toString()
+        .slice(-6)}`;
       const insertPayload = {
         company_id: companyId,
         obligation_number: obligationNumber,
@@ -492,7 +600,8 @@ export const useCreateMonthlyObligation = () => {
         created_by: user?.id || null,
       };
       const legacyInsertPayload = { ...insertPayload };
-      delete (legacyInsertPayload as Record<string, unknown>).vehicle_amount_mode;
+      delete (legacyInsertPayload as Record<string, unknown>)
+        .vehicle_amount_mode;
       delete (legacyInsertPayload as Record<string, unknown>).vehicle_count;
 
       let usedLegacyVehicleLinking = useLegacyObligationSchema;
@@ -540,27 +649,36 @@ export const useCreateMonthlyObligation = () => {
             : money(effectiveMonthlyAmount / selectedVehicleIds.length);
         const allocationPercentage = money(100 / selectedVehicleIds.length);
 
-        const { error: vehicleError } = await db.from("monthly_obligation_vehicles").insert(
-          selectedVehicleIds.map((vehicleId, index) => ({
-            company_id: companyId,
-            obligation_id: obligation.id,
-            vehicle_id: vehicleId,
-            allocation_amount: allocationAmount,
-            allocation_percentage: allocationPercentage,
-            is_primary: index === 0,
-          }))
-        );
+        const { error: vehicleError } = await db
+          .from("monthly_obligation_vehicles")
+          .insert(
+            selectedVehicleIds.map((vehicleId, index) => ({
+              company_id: companyId,
+              obligation_id: obligation.id,
+              vehicle_id: vehicleId,
+              allocation_amount: allocationAmount,
+              allocation_percentage: allocationPercentage,
+              is_primary: index === 0,
+            }))
+          );
 
         if (vehicleError && schemaNeedsLegacyObligationQuery(vehicleError)) {
           usedLegacyVehicleLinking = true;
           useLegacyObligationSchema = true;
-          console.warn("[useMonthlyObligations] Vehicle link table is not available; saved primary vehicle only.", vehicleError);
+          console.warn(
+            "[useMonthlyObligations] Vehicle link table is not available; saved primary vehicle only.",
+            vehicleError
+          );
         } else if (vehicleError) {
           throw vehicleError;
         }
       }
 
-      const rows = buildInstallments(obligation as MonthlyObligation, effectiveInput, companyId);
+      const rows = buildInstallments(
+        obligation as MonthlyObligation,
+        effectiveInput,
+        companyId
+      );
       if (rows.length) {
         const { error: installmentError } = await db
           .from("monthly_obligation_installments")
@@ -568,10 +686,17 @@ export const useCreateMonthlyObligation = () => {
         if (installmentError) throw installmentError;
       }
 
-      if (input.accrue_on_create && input.expense_account_id && input.liability_account_id) {
-        const { data: entryNumberData } = await db.rpc("generate_journal_entry_number", {
-          company_id_param: companyId,
-        });
+      if (
+        input.accrue_on_create &&
+        input.expense_account_id &&
+        input.liability_account_id
+      ) {
+        const { data: entryNumberData } = await db.rpc(
+          "generate_journal_entry_number",
+          {
+            company_id_param: companyId,
+          }
+        );
 
         const { data: journalEntry, error: journalEntryError } = await db
           .from("journal_entries")
@@ -594,28 +719,30 @@ export const useCreateMonthlyObligation = () => {
 
         if (journalEntryError) throw journalEntryError;
 
-        const { error: lineError } = await db.from("journal_entry_lines").insert([
-          {
-            journal_entry_id: journalEntry.id,
-            account_id: input.expense_account_id,
-            debit_amount: effectiveMonthlyAmount,
-            credit_amount: 0,
-            line_description: `مصروف مستحق: ${input.title.trim()}`,
-            line_number: 1,
-            cost_center_id: cleanId(input.cost_center_id),
-            asset_id: cleanId(input.fixed_asset_id),
-          },
-          {
-            journal_entry_id: journalEntry.id,
-            account_id: input.liability_account_id,
-            debit_amount: 0,
-            credit_amount: effectiveMonthlyAmount,
-            line_description: `التزام غير مدفوع: ${input.title.trim()}`,
-            line_number: 2,
-            cost_center_id: cleanId(input.cost_center_id),
-            asset_id: cleanId(input.fixed_asset_id),
-          },
-        ]);
+        const { error: lineError } = await db
+          .from("journal_entry_lines")
+          .insert([
+            {
+              journal_entry_id: journalEntry.id,
+              account_id: input.expense_account_id,
+              debit_amount: effectiveMonthlyAmount,
+              credit_amount: 0,
+              line_description: `مصروف مستحق: ${input.title.trim()}`,
+              line_number: 1,
+              cost_center_id: cleanId(input.cost_center_id),
+              asset_id: cleanId(input.fixed_asset_id),
+            },
+            {
+              journal_entry_id: journalEntry.id,
+              account_id: input.liability_account_id,
+              debit_amount: 0,
+              credit_amount: effectiveMonthlyAmount,
+              line_description: `التزام غير مدفوع: ${input.title.trim()}`,
+              line_number: 2,
+              cost_center_id: cleanId(input.cost_center_id),
+              asset_id: cleanId(input.fixed_asset_id),
+            },
+          ]);
 
         if (lineError) throw lineError;
       }
@@ -624,11 +751,15 @@ export const useCreateMonthlyObligation = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["monthly-obligations"] });
-      queryClient.invalidateQueries({ queryKey: ["monthly-obligation-installments"] });
+      queryClient.invalidateQueries({
+        queryKey: ["monthly-obligation-installments"],
+      });
       toast.success("تم إنشاء الالتزام وجدولة دفعاته");
     },
     onError: (error) => {
-      toast.error(error instanceof Error ? error.message : "تعذر إنشاء الالتزام");
+      toast.error(
+        error instanceof Error ? error.message : "تعذر إنشاء الالتزام"
+      );
     },
   });
 };
@@ -644,26 +775,45 @@ export const useUpdateMonthlyObligation = () => {
       if (!input.id) throw new Error("الالتزام مطلوب");
       if (!input.title.trim()) throw new Error("اسم الالتزام مطلوب");
       if (!input.start_date) throw new Error("تاريخ البداية مطلوب");
-      if (!input.monthly_amount || input.monthly_amount <= 0) throw new Error("المبلغ الشهري مطلوب");
+      if (!input.monthly_amount || input.monthly_amount <= 0)
+        throw new Error("المبلغ الشهري مطلوب");
 
-      const selectedVehicleIds = uniqueIds([...(input.vehicle_ids || []), input.vehicle_id]);
+      const selectedVehicleIds = uniqueIds([
+        ...(input.vehicle_ids || []),
+        input.vehicle_id,
+      ]);
       const vehicleCount = selectedVehicleIds.length;
-      if (["vehicle_installment", "vehicle_lease"].includes(input.obligation_type) && vehicleCount === 0) {
+      if (
+        ["vehicle_installment", "vehicle_lease"].includes(
+          input.obligation_type
+        ) &&
+        vehicleCount === 0
+      ) {
         throw new Error("يجب ربط التزام المركبات بمركبة واحدة على الأقل");
       }
 
       const vehicleAmountMode = input.vehicle_amount_mode || "total";
-      const amountMultiplier = vehicleAmountMode === "per_vehicle" ? Math.max(vehicleCount, 1) : 1;
-      const effectiveMonthlyAmount = money(input.monthly_amount * amountMultiplier);
-      const effectivePrincipalAmount = money((input.principal_amount || 0) * amountMultiplier);
-      const effectiveInterestAmount = money((input.interest_amount || 0) * amountMultiplier);
+      const amountMultiplier =
+        vehicleAmountMode === "per_vehicle" ? Math.max(vehicleCount, 1) : 1;
+      const effectiveMonthlyAmount = money(
+        input.monthly_amount * amountMultiplier
+      );
+      const effectivePrincipalAmount = money(
+        (input.principal_amount || 0) * amountMultiplier
+      );
+      const effectiveInterestAmount = money(
+        (input.interest_amount || 0) * amountMultiplier
+      );
       const installmentPrincipal =
         input.accounting_treatment === "direct_expense"
           ? 0
           : effectivePrincipalAmount > 0
-            ? effectivePrincipalAmount
-            : money(effectiveMonthlyAmount - effectiveInterestAmount);
-      const installmentInterest = input.accounting_treatment === "direct_expense" ? 0 : effectiveInterestAmount;
+          ? effectivePrincipalAmount
+          : money(effectiveMonthlyAmount - effectiveInterestAmount);
+      const installmentInterest =
+        input.accounting_treatment === "direct_expense"
+          ? 0
+          : effectiveInterestAmount;
 
       const updatePayload = {
         title: input.title.trim(),
@@ -693,7 +843,8 @@ export const useUpdateMonthlyObligation = () => {
         updated_at: new Date().toISOString(),
       };
       const legacyUpdatePayload = { ...updatePayload };
-      delete (legacyUpdatePayload as Record<string, unknown>).vehicle_amount_mode;
+      delete (legacyUpdatePayload as Record<string, unknown>)
+        .vehicle_amount_mode;
       delete (legacyUpdatePayload as Record<string, unknown>).vehicle_count;
 
       let usedLegacyVehicleLinking = useLegacyObligationSchema;
@@ -747,7 +898,10 @@ export const useUpdateMonthlyObligation = () => {
           .eq("company_id", companyId)
           .eq("obligation_id", input.id);
 
-        if (deleteLinksError && schemaNeedsLegacyObligationQuery(deleteLinksError)) {
+        if (
+          deleteLinksError &&
+          schemaNeedsLegacyObligationQuery(deleteLinksError)
+        ) {
           usedLegacyVehicleLinking = true;
           useLegacyObligationSchema = true;
         } else if (deleteLinksError) {
@@ -761,16 +915,18 @@ export const useUpdateMonthlyObligation = () => {
               : money(effectiveMonthlyAmount / selectedVehicleIds.length);
           const allocationPercentage = money(100 / selectedVehicleIds.length);
 
-          const { error: vehicleError } = await db.from("monthly_obligation_vehicles").insert(
-            selectedVehicleIds.map((vehicleId, index) => ({
-              company_id: companyId,
-              obligation_id: input.id,
-              vehicle_id: vehicleId,
-              allocation_amount: allocationAmount,
-              allocation_percentage: allocationPercentage,
-              is_primary: index === 0,
-            }))
-          );
+          const { error: vehicleError } = await db
+            .from("monthly_obligation_vehicles")
+            .insert(
+              selectedVehicleIds.map((vehicleId, index) => ({
+                company_id: companyId,
+                obligation_id: input.id,
+                vehicle_id: vehicleId,
+                allocation_amount: allocationAmount,
+                allocation_percentage: allocationPercentage,
+                is_primary: index === 0,
+              }))
+            );
 
           if (vehicleError && schemaNeedsLegacyObligationQuery(vehicleError)) {
             useLegacyObligationSchema = true;
@@ -790,36 +946,55 @@ export const useUpdateMonthlyObligation = () => {
       if (installmentQueryError) throw installmentQueryError;
 
       const installmentUpdateResults = await Promise.all(
-        (openInstallments || []).map((installment: { id: string; period_start: string }) => {
-          const periodStart = new Date(`${installment.period_start}T00:00:00`);
-          const dueDay = Math.min(input.due_day || 1, lastDayOfMonth(periodStart.getFullYear(), periodStart.getMonth()));
-          const dueDate = formatDate(new Date(periodStart.getFullYear(), periodStart.getMonth(), dueDay));
+        (openInstallments || []).map(
+          (installment: { id: string; period_start: string }) => {
+            const periodStart = new Date(
+              `${installment.period_start}T00:00:00`
+            );
+            const dueDay = Math.min(
+              input.due_day || 1,
+              lastDayOfMonth(periodStart.getFullYear(), periodStart.getMonth())
+            );
+            const dueDate = formatDate(
+              new Date(
+                periodStart.getFullYear(),
+                periodStart.getMonth(),
+                dueDay
+              )
+            );
 
-          return db
-            .from("monthly_obligation_installments")
-            .update({
-              due_date: dueDate,
-              amount: effectiveMonthlyAmount,
-              principal_amount: installmentPrincipal,
-              interest_amount: installmentInterest,
-            })
-            .eq("id", installment.id)
-            .eq("company_id", companyId);
-        })
+            return db
+              .from("monthly_obligation_installments")
+              .update({
+                due_date: dueDate,
+                amount: effectiveMonthlyAmount,
+                principal_amount: installmentPrincipal,
+                interest_amount: installmentInterest,
+              })
+              .eq("id", installment.id)
+              .eq("company_id", companyId);
+          }
+        )
       );
 
-      const installmentUpdateError = installmentUpdateResults.find((result: any) => result?.error)?.error;
+      const installmentUpdateError = installmentUpdateResults.find(
+        (result: any) => result?.error
+      )?.error;
       if (installmentUpdateError) throw installmentUpdateError;
 
       return obligation as MonthlyObligation;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["monthly-obligations"] });
-      queryClient.invalidateQueries({ queryKey: ["monthly-obligation-installments"] });
+      queryClient.invalidateQueries({
+        queryKey: ["monthly-obligation-installments"],
+      });
       toast.success("تم تعديل الالتزام");
     },
     onError: (error) => {
-      toast.error(error instanceof Error ? error.message : "تعذر تعديل الالتزام");
+      toast.error(
+        error instanceof Error ? error.message : "تعذر تعديل الالتزام"
+      );
     },
   });
 };
@@ -833,239 +1008,44 @@ export const usePayMonthlyObligationInstallment = () => {
       const companyId = getCompanyId(user as CompanyUser);
       if (!companyId) throw new Error("معرف الشركة مطلوب");
       if (!input.installment_id) throw new Error("القسط مطلوب");
-      if (!input.amount || input.amount <= 0) throw new Error("مبلغ السداد مطلوب");
-
-      const { data: installment, error: installmentError } = await db
-        .from("monthly_obligation_installments")
-        .select("*, obligation:monthly_obligations(*)")
-        .eq("id", input.installment_id)
-        .eq("company_id", companyId)
-        .single();
-
-      if (installmentError) throw installmentError;
-      if (!installment?.obligation) throw new Error("لم يتم العثور على الالتزام المرتبط");
-
-      const obligation = installment.obligation as MonthlyObligation;
-      const paidBefore = Number(installment.paid_amount || 0);
-      const remaining = Number(installment.amount || 0) - paidBefore;
-      const amount = money(Math.min(Number(input.amount), remaining));
-      if (amount <= 0) throw new Error("هذا القسط مسدد بالكامل");
-
-      let vendorPaymentId: string | null = null;
-      let bankTransactionId: string | null = null;
-      let journalEntryId: string | null = null;
-
-      if (obligation.vendor_id) {
-        const { data: vendorPayment, error: vendorPaymentError } = await db
-          .from("vendor_payments")
-          .insert({
-            company_id: companyId,
-            vendor_id: obligation.vendor_id,
-            amount,
-            payment_date: input.payment_date,
-            payment_method: input.bank_id ? "bank_transfer" : "cash",
-            payment_number: `VP-OBL-${Date.now().toString().slice(-8)}`,
-            reference_number: input.reference_number || `OBL:${installment.id}`,
-            description: `سداد ${obligation.title} - ${installment.period_start}`,
-            notes: input.notes || null,
-            currency: obligation.currency || "QAR",
-            bank_id: cleanId(input.bank_id),
-            status: "completed",
-            created_by: user?.id,
-          })
-          .select("id")
-          .single();
-
-        if (vendorPaymentError) throw vendorPaymentError;
-        vendorPaymentId = vendorPayment.id;
+      const amount = Number(input.amount);
+      if (!Number.isFinite(amount) || amount <= 0)
+        throw new Error("مبلغ السداد مطلوب");
+      const paymentDate = input.payment_date?.trim();
+      const parsedPaymentDate = new Date(`${paymentDate}T00:00:00Z`);
+      if (
+        !paymentDate ||
+        !/^\d{4}-\d{2}-\d{2}$/.test(paymentDate) ||
+        Number.isNaN(parsedPaymentDate.getTime()) ||
+        parsedPaymentDate.toISOString().slice(0, 10) !== paymentDate
+      ) {
+        throw new Error("تاريخ السداد غير صالح");
       }
 
-      if (input.bank_id) {
-        const { data: bank, error: bankError } = await db
-          .from("banks")
-          .select("id, current_balance")
-          .eq("id", input.bank_id)
-          .eq("company_id", companyId)
-          .single();
+      const cashAccountId = cleanId(input.cash_account_id);
+      if (!cashAccountId) throw new Error("حساب النقد أو البنك مطلوب");
 
-        if (bankError) throw bankError;
-        const balanceAfter = money(Number(bank.current_balance || 0) - amount);
+      const rpcArgs = buildMonthlyObligationPaymentRpcArgs(
+        companyId,
+        user?.id,
+        input
+      );
 
-        const { data: bankTransaction, error: bankTransactionError } = await db
-          .from("bank_transactions")
-          .insert({
-            company_id: companyId,
-            bank_id: input.bank_id,
-            transaction_number: `BT-OBL-${Date.now().toString().slice(-8)}`,
-            transaction_date: input.payment_date,
-            transaction_type: "withdrawal",
-            amount,
-            balance_after: balanceAfter,
-            description: `سداد ${obligation.title} - ${installment.period_start}`,
-            reference_number: input.reference_number || `OBL:${installment.id}`,
-            status: "completed",
-            reconciled: false,
-            created_by: user?.id || null,
-          })
-          .select("id")
-          .single();
+      const { data, error } = await db.rpc(
+        "pay_monthly_obligation_installment_v1",
+        rpcArgs
+      );
 
-        if (bankTransactionError) throw bankTransactionError;
-        bankTransactionId = bankTransaction.id;
-
-        const { error: bankUpdateError } = await db
-          .from("banks")
-          .update({ current_balance: balanceAfter, updated_at: new Date().toISOString() })
-          .eq("id", input.bank_id)
-          .eq("company_id", companyId);
-
-        if (bankUpdateError) throw bankUpdateError;
-      }
-
-      if (input.cash_account_id) {
-        const treatment = obligation.accounting_treatment;
-        const lines: Array<{
-          account_id: string;
-          debit_amount: number;
-          credit_amount: number;
-          line_description: string;
-          cost_center_id?: string | null;
-          asset_id?: string | null;
-        }> = [];
-
-        if (treatment === "direct_expense") {
-          if (!obligation.expense_account_id) throw new Error("اختر حساب المصروف للالتزام قبل السداد");
-          lines.push({
-            account_id: obligation.expense_account_id,
-            debit_amount: amount,
-            credit_amount: 0,
-            line_description: `مصروف ${obligation.title}`,
-            cost_center_id: obligation.cost_center_id || null,
-          });
-        } else {
-          if (!obligation.liability_account_id) throw new Error("اختر حساب الالتزام قبل السداد");
-          const installmentInterest = Number(installment.interest_amount || obligation.interest_amount || 0);
-          const interestAmount = money(Math.min(amount, installmentInterest));
-          const principalAmount = money(amount - interestAmount);
-
-          if (principalAmount > 0) {
-            lines.push({
-              account_id: obligation.liability_account_id,
-              debit_amount: principalAmount,
-              credit_amount: 0,
-              line_description: `سداد أصل ${obligation.title}`,
-              cost_center_id: obligation.cost_center_id || null,
-              asset_id: obligation.fixed_asset_id || null,
-            });
-          }
-
-          if (interestAmount > 0) {
-            if (!obligation.interest_expense_account_id) {
-              throw new Error("اختر حساب مصروف الفوائد قبل سداد قسط يحتوي على فوائد");
-            }
-            lines.push({
-              account_id: obligation.interest_expense_account_id,
-              debit_amount: interestAmount,
-              credit_amount: 0,
-              line_description: `مصروف فوائد ${obligation.title}`,
-              cost_center_id: obligation.cost_center_id || null,
-            });
-          }
-        }
-
-        lines.push({
-          account_id: input.cash_account_id,
-          debit_amount: 0,
-          credit_amount: amount,
-          line_description: `خروج نقد لسداد ${obligation.title}`,
-          cost_center_id: obligation.cost_center_id || null,
-        });
-
-        const { data: entryNumberData } = await db.rpc("generate_journal_entry_number", {
-          company_id_param: companyId,
-        });
-
-        const { data: journalEntry, error: journalEntryError } = await db
-          .from("journal_entries")
-          .insert({
-            company_id: companyId,
-            entry_number: entryNumberData || `JE-OBL-${Date.now()}`,
-            entry_date: input.payment_date,
-            description: `سداد التزام شهري: ${obligation.title}`,
-            reference_type: "monthly_obligation",
-            reference_id: installment.id,
-            total_debit: amount,
-            total_credit: amount,
-            status: "posted",
-            created_by: user?.id || null,
-            posted_by: user?.id || null,
-            posted_at: new Date().toISOString(),
-          })
-          .select("id")
-          .single();
-
-        if (journalEntryError) throw journalEntryError;
-        journalEntryId = journalEntry.id;
-
-        const { error: lineError } = await db.from("journal_entry_lines").insert(
-          lines.map((line, index) => ({
-            journal_entry_id: journalEntry.id,
-            account_id: line.account_id,
-            debit_amount: line.debit_amount,
-            credit_amount: line.credit_amount,
-            line_description: line.line_description,
-            line_number: index + 1,
-            cost_center_id: line.cost_center_id || null,
-            asset_id: line.asset_id || null,
-          }))
-        );
-
-        if (lineError) throw lineError;
-
-        if (vendorPaymentId) {
-          await db
-            .from("vendor_payments")
-            .update({ journal_entry_id: journalEntryId })
-            .eq("id", vendorPaymentId)
-            .eq("company_id", companyId);
-        }
-
-        if (bankTransactionId) {
-          await db
-            .from("bank_transactions")
-            .update({ journal_entry_id: journalEntryId })
-            .eq("id", bankTransactionId)
-            .eq("company_id", companyId);
-        }
-      }
-
-      const newPaidAmount = money(paidBefore + amount);
-      const newStatus: ObligationInstallmentStatus =
-        newPaidAmount >= Number(installment.amount || 0) ? "paid" : "partial";
-
-      const { data: updatedInstallment, error: updateError } = await db
-        .from("monthly_obligation_installments")
-        .update({
-          paid_amount: newPaidAmount,
-          status: newStatus,
-          payment_date: input.payment_date,
-          vendor_payment_id: vendorPaymentId,
-          bank_transaction_id: bankTransactionId,
-          journal_entry_id: journalEntryId,
-          reference_number: input.reference_number || null,
-          notes: input.notes || null,
-        })
-        .eq("id", installment.id)
-        .eq("company_id", companyId)
-        .select("*")
-        .single();
-
-      if (updateError) throw updateError;
-      return updatedInstallment as MonthlyObligationInstallment;
+      if (error) throw error;
+      return data && typeof data === "object" && "installment" in data
+        ? data.installment
+        : data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["monthly-obligations"] });
-      queryClient.invalidateQueries({ queryKey: ["monthly-obligation-installments"] });
+      queryClient.invalidateQueries({
+        queryKey: ["monthly-obligation-installments"],
+      });
       queryClient.invalidateQueries({ queryKey: ["vendor-payments"] });
       queryClient.invalidateQueries({ queryKey: ["bank-transactions"] });
       queryClient.invalidateQueries({ queryKey: ["banks"] });

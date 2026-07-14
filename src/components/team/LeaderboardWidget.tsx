@@ -135,26 +135,26 @@ export const LeaderboardWidget: React.FC<LeaderboardWidgetProps> = ({ limit = 10
                     <h4 className="text-sm font-bold text-neutral-900 group-hover:text-teal-600 transition-colors">
                       {employee.employee_name || 'غير محدد'}
                     </h4>
-                    <Badge className={cn('text-xs font-bold border', getGradeColor(employee.grade))}>
+                    <Badge className={cn('text-xs font-bold border', getGradeColor(employee.grade || ''))}>
                       {employee.grade}
                     </Badge>
                   </div>
                   <div className="flex items-center gap-3 text-xs text-neutral-500">
                     <span>{employee.total_contracts} عقود</span>
                     <span>•</span>
-                    <span>{Math.round(employee.collection_rate)}% تحصيل</span>
+                    <span>{Math.round(employee.collection_rate || 0)}% تحصيل</span>
                   </div>
                 </div>
 
                 {/* Score */}
                 <div className="text-center">
                   <motion.p
-                    className={cn('text-2xl font-black', getScoreColor(employee.performance_score))}
+                    className={cn('text-2xl font-black', getScoreColor(employee.performance_score || 0))}
                     key={employee.performance_score}
                     initial={{ scale: 0.8 }}
                     animate={{ scale: 1 }}
                   >
-                    {Math.round(employee.performance_score)}
+                    {Math.round(employee.performance_score || 0)}
                   </motion.p>
                   <p className="text-[10px] text-neutral-500 font-semibold uppercase">نقطة</p>
                 </div>
@@ -194,7 +194,7 @@ export const LeaderboardWidget: React.FC<LeaderboardWidgetProps> = ({ limit = 10
             </div>
             <div className="text-center">
               <p className="text-2xl font-black text-amber-600">
-                {Math.round(topEmployees[0].performance_score)}
+                {Math.round(topEmployees[0].performance_score || 0)}
               </p>
               <p className="text-[10px] text-amber-700 font-semibold uppercase">نقطة</p>
             </div>

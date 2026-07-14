@@ -196,9 +196,6 @@ const HelpHub = lazy(() => import('@/pages/help/HelpHub'));
 // Task Management pages
 const TasksPage = lazy(() => import('@/pages/tasks/TasksPage'));
 
-// Performance monitoring
-const PerformanceMonitor = lazy(() => import('@/components/performance').then(m => ({ default: m.PerformanceMonitor })));
-
 // === Route Configuration ===
 
 const routeConfigs: RouteConfig[] = [
@@ -570,24 +567,40 @@ const routeConfigs: RouteConfig[] = [
     component: EmployeeWorkspace,
     lazy: true,
     exact: true,
+    title: 'Employee Workspace',
+    description: 'Employee workspace',
+    group: 'team',
+    priority: 12,
   },
   {
     path: '/team-management',
     component: TeamManagement,
     lazy: true,
     exact: true,
+    title: 'Team Management',
+    description: 'Team management',
+    group: 'team',
+    priority: 13,
   },
   {
     path: '/team-reports',
     component: TeamReports,
     lazy: true,
     exact: true,
+    title: 'Team Reports',
+    description: 'Team reports',
+    group: 'team',
+    priority: 14,
   },
   {
     path: '/employee/:employeeId',
     component: TeamEmployeeDetails,
     lazy: true,
     exact: true,
+    title: 'Employee Details',
+    description: 'Employee details',
+    group: 'team',
+    priority: 15,
   },
   {
     path: '/employee/:employeeId/report',
@@ -1389,6 +1402,7 @@ const routeConfigs: RouteConfig[] = [
     title: 'HR',
     description: 'Human Resources',
     group: 'hr',
+    priority: 80,
     protected: true,
     layout: 'bento',
     requiredRole: 'admin',
@@ -2115,7 +2129,7 @@ const routeConfigs: RouteConfig[] = [
   // === Performance Monitoring ===
   {
     path: '/performance/monitor',
-    component: PerformanceMonitor,
+    component: PerformanceDashboard,
     lazy: true,
     exact: true,
     title: 'Performance Monitor',

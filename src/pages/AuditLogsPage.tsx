@@ -7,6 +7,7 @@
 import { useState } from 'react';
 import { useAuditLogs } from '@/hooks/useAuditLog';
 import { RoleGuard } from '@/components/auth/RoleGuard';
+import { UserRole } from '@/lib/permissions/roles';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -131,7 +132,7 @@ export default function AuditLogsPage() {
   };
 
   return (
-    <RoleGuard allowedRoles={['super_admin', 'company_admin']}>
+    <RoleGuard roles={[UserRole.SUPER_ADMIN, UserRole.COMPANY_ADMIN]}>
       <div className="container mx-auto py-6 space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">

@@ -58,11 +58,11 @@ const SalesLeads = () => {
       case 'contacted':
         return 'secondary';
       case 'qualified':
-        return 'success';
+        return 'default';
       case 'converted':
-        return 'success';
+        return 'default';
       case 'unqualified':
-        return 'warning';
+        return 'secondary';
       case 'lost':
         return 'destructive';
       default:
@@ -325,15 +325,15 @@ const SalesLeads = () => {
                           )}
                         </TableCell>
                         <TableCell>
-                          <Badge variant="outline">{getSourceLabel(lead.source)}</Badge>
+                          <Badge variant="outline">{getSourceLabel(lead.source ?? undefined)}</Badge>
                         </TableCell>
                         <TableCell>
-                          <Badge variant={getStatusBadgeVariant(lead.status)}>
-                            {getStatusLabel(lead.status)}
+                          <Badge variant={getStatusBadgeVariant(lead.status ?? '')}>
+                            {getStatusLabel(lead.status ?? '')}
                           </Badge>
                         </TableCell>
                         <TableCell className="text-sm text-muted-foreground">
-                          {new Date(lead.created_at).toLocaleDateString('en-US')}
+                          {lead.created_at ? new Date(lead.created_at).toLocaleDateString('en-US') : '-'}
                         </TableCell>
                         <TableCell>
                           <div className="flex gap-2">

@@ -34,6 +34,9 @@ interface EnhancedMobileCameraProps {
   };
 }
 
+type TorchCapabilities = MediaTrackCapabilities & { torch?: boolean };
+type TorchConstraintSet = MediaTrackConstraintSet & { torch: boolean };
+
 const EnhancedMobileCamera: React.FC<EnhancedMobileCameraProps> = ({
   onImageCapture,
   isProcessing,
@@ -116,7 +119,7 @@ const EnhancedMobileCamera: React.FC<EnhancedMobileCameraProps> = ({
 
       // Check for flash capability
       const videoTrack = stream.getVideoTracks()[0];
-      const capabilities = videoTrack.getCapabilities();
+      const capabilities = videoTrack.getCapabilities() as TorchCapabilities;
       setHasFlash(!!capabilities.torch);
 
       setIsStreaming(true);
@@ -142,8 +145,8 @@ const EnhancedMobileCamera: React.FC<EnhancedMobileCameraProps> = ({
     try {
       const videoTrack = streamRef.current.getVideoTracks()[0];
       await videoTrack.applyConstraints({
-        advanced: [{ torch: !flashEnabled }]
-      } as MediaTrackConstraints);
+        advanced: [{ torch: !flashEnabled } as TorchConstraintSet]
+      });
       setFlashEnabled(!flashEnabled);
     } catch (error) {
       console.error('Error toggling flash:', error);

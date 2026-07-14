@@ -19,12 +19,12 @@ export interface ManualCollectionItem {
   id: string; // case_id
   case_number: string;
   customer_name: string;
-  client_id?: string;
+  client_id?: string | null;
   amount: number; // case_value
   remaining_amount: number; // calculated
   collected_amount: number; // calculated
   status: string; // case_status
-  description?: string;
+  description?: string | null;
   created_at: string;
   repayment_plans: RepaymentPlan[];
 }
@@ -37,6 +37,8 @@ export const useManualLegalCollections = () => {
   const collectionsQuery = useQuery({
     queryKey: ['manual-legal-collections', companyFilter],
     queryFn: async () => {
+      if (!companyFilter.company_id) throw new Error('Company not found');
+      const companyId = companyFilter.company_id;
       if (!user?.id) throw new Error('المستخدم غير مصرح له');
 
       // 1. Fetch cases of type 'manual_debt_collection'
@@ -52,7 +54,7 @@ export const useManualLegalCollections = () => {
           description,
           created_at
         `)
-        .eq('company_id', companyFilter.company_id)
+        .eq('company_id', companyId)
         .eq('case_type', 'manual_debt_collection')
         .order('created_at', { ascending: false });
 
@@ -66,7 +68,7 @@ export const useManualLegalCollections = () => {
       const { data: plans, error: plansError } = await supabase
         .from('legal_repayment_plans')
         .select('*')
-        .eq('company_id', companyFilter.company_id)
+        .eq('company_id', companyId)
         .in('case_id', caseIds);
 
       if (plansError) throw plansError;
@@ -89,7 +91,17 @@ export const useManualLegalCollections = () => {
           status: c.case_status,
           description: c.description,
           created_at: c.created_at,
-          repayment_plans: casePlans as RepaymentPlan[]
+          repayment_plans: casePlans
+            .filter((plan) => Boolean(plan.case_id))
+            .map((plan) => ({
+              id: plan.id,
+              case_id: plan.case_id!,
+              due_date: plan.due_date,
+              amount: Number(plan.amount),
+              status: plan.status as RepaymentPlan['status'],
+              notes: plan.notes || undefined,
+              created_at: plan.created_at || '',
+            })),
         };
       });
 
@@ -118,6 +130,7 @@ export const useManualLegalCollections = () => {
       // Generate case number
       const { data: caseNumber } = await supabase
         .rpc('generate_legal_case_number', { company_id_param: profile.company_id });
+      if (!caseNumber) throw new Error('Failed to generate legal case number');
 
       const { data: newCase, error } = await supabase
         .from('legal_cases')
@@ -150,15 +163,27 @@ export const useManualLegalCollections = () => {
     }
   });
 
+  type RepaymentPlanInput = Omit<RepaymentPlan, 'id' | 'created_at'>;
   const addRepaymentPlan = useMutation({
-    mutationFn: async (plans: Omit<RepaymentPlan, 'id' | 'created_at' | 'case_id'>[] & { case_id: string }) => {
+    mutationFn: async (plans: RepaymentPlanInput | RepaymentPlanInput[]) => {
        if (!user?.id) throw new Error('المستخدم غير مصرح له');
        
        const { data: profile } = await supabase.from('profiles').select('company_id').eq('user_id', user.id).single();
        if (!profile?.company_id) throw new Error('Company not found');
 
+       const planRows = Array.isArray(plans) ? plans : [plans];
+       const caseIds = [...new Set(planRows.map((plan) => plan.case_id).filter(Boolean))];
+       if (caseIds.length !== 1) throw new Error('يجب أن تنتمي الخطة إلى قضية واحدة');
+       const { data: legalCase, error: caseError } = await supabase
+         .from('legal_cases')
+         .select('id')
+         .eq('id', caseIds[0])
+         .eq('company_id', profile.company_id)
+         .single();
+       if (caseError || !legalCase) throw caseError || new Error('القضية لا تنتمي إلى الشركة الحالية');
+
        // Actually let's assume we pass an array of plans to insert
-       const plansToInsert = (Array.isArray(plans) ? plans : [plans]).map(p => ({
+       const plansToInsert = planRows.map(p => ({
          case_id: p.case_id, // Ensure case_id is passed in each object or map it
          due_date: p.due_date,
          amount: p.amount,
@@ -186,6 +211,9 @@ export const useManualLegalCollections = () => {
   const updateRepaymentStatus = useMutation({
     mutationFn: async ({ id, status }: { id: string, status: string }) => {
       if (!companyFilter.company_id) throw new Error('Company not found');
+      if (status === 'paid') {
+        throw new Error('لا يمكن تعليم القسط كمدفوع يدويًا؛ سجّل دفعة قانونية موثقة أولًا');
+      }
       const { error } = await supabase
         .from('legal_repayment_plans')
         .update({ status })
@@ -204,21 +232,12 @@ export const useManualLegalCollections = () => {
   const deleteCollection = useMutation({
     mutationFn: async (id: string) => {
       if (!companyFilter.company_id) throw new Error('Company not found');
-      const { data: legalCase, error: caseError } = await supabase
-        .from('legal_cases')
-        .select('id, case_status')
-        .eq('id', id)
-        .eq('company_id', companyFilter.company_id)
-        .eq('case_type', 'manual_debt_collection')
-        .single();
-      if (caseError || !legalCase) throw caseError || new Error('Case not found');
-
-      const { error } = await supabase
-        .from('legal_cases')
-        .update({ case_status: 'cancelled', updated_at: new Date().toISOString() })
-        .eq('id', id)
-        .eq('company_id', companyFilter.company_id)
-        .eq('case_status', legalCase.case_status);
+      const { error } = await supabase.rpc('cancel_legal_cases_v1', {
+        p_actor_id: user?.id,
+        p_case_ids: [id],
+        p_company_id: companyFilter.company_id,
+        p_reason: 'Cancelled from manual legal collections',
+      });
 
       if (error) throw error;
     },

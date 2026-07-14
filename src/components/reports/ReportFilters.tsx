@@ -260,7 +260,7 @@ export function ReportFilters({ moduleType, filters, onFiltersChange }: ReportFi
                   mode="single"
                   selected={startDate}
                   onSelect={(date) => handleDateChange('start', date)}
-                  disabled={(date) => date > new Date() || (endDate && date > endDate)}
+                  disabled={(date) => date > new Date() || (endDate !== undefined && date > endDate)}
                   initialFocus
                 />
               </PopoverContent>
@@ -284,7 +284,7 @@ export function ReportFilters({ moduleType, filters, onFiltersChange }: ReportFi
                   mode="single"
                   selected={endDate}
                   onSelect={(date) => handleDateChange('end', date)}
-                  disabled={(date) => date > new Date() || (startDate && date < startDate)}
+                  disabled={(date) => date > new Date() || (startDate !== undefined && date < startDate)}
                   initialFocus
                 />
               </PopoverContent>

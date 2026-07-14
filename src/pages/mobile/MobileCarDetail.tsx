@@ -140,6 +140,9 @@ export const MobileCarDetail: React.FC = () => {
 
       const formattedVehicle: Vehicle = {
         ...vehicleData,
+        status: vehicleData.status ?? 'available',
+        mileage: vehicleData.current_mileage,
+        transmission: vehicleData.transmission_type,
         current_contract: activeContract ? {
           id: activeContract.id,
           contract_number: activeContract.contract_number,
@@ -395,7 +398,7 @@ export const MobileCarDetail: React.FC = () => {
                 <div className="flex gap-3 pt-3 border-t border-slate-100">
                   {vehicle.current_contract.customer.phone && (
                     <button
-                      onClick={() => handleCallCustomer(vehicle.current_contract.customer.phone!)}
+                      onClick={() => handleCallCustomer(vehicle.current_contract?.customer.phone ?? '')}
                       className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-green-500 text-white font-semibold hover:bg-green-600 transition-colors"
                     >
                       <Phone className="w-4 h-4" />
@@ -404,7 +407,7 @@ export const MobileCarDetail: React.FC = () => {
                   )}
                   {vehicle.current_contract.customer.email && (
                     <button
-                      onClick={() => handleEmailCustomer(vehicle.current_contract.customer.email!)}
+                      onClick={() => handleEmailCustomer(vehicle.current_contract?.customer.email ?? '')}
                       className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-blue-500 text-white font-semibold hover:bg-blue-600 transition-colors"
                     >
                       <Mail className="w-4 h-4" />

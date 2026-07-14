@@ -290,7 +290,7 @@ export class AccessibilityTester {
       const ariaHidden = element.getAttribute('aria-hidden');
 
       // Check for ARIA hidden on focusable element
-      if (ariaHidden === 'true' && element.tabIndex >= 0) {
+      if (ariaHidden === 'true' && element instanceof HTMLElement && element.tabIndex >= 0) {
         violations.push({
           rule: 'aria-hidden-focus',
           description: 'ARIA hidden elements should not be focusable',

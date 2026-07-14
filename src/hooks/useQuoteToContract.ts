@@ -110,7 +110,7 @@ export const useQuoteToContract = () => {
 
       // 5. Generate contract number
       const { data: contractNumber, error: numberError } = await supabase
-        .rpc('generate_contract_number', { company_uuid: quote.company_id });
+        .rpc('generate_contract_number', { company_id_param: quote.company_id });
 
       if (numberError) throw numberError;
 
@@ -120,6 +120,7 @@ export const useQuoteToContract = () => {
         .insert({
           company_id: quote.company_id,
           contract_number: contractNumber,
+          contract_date: startDate,
           customer_id: quote.customer_id,
           vehicle_id: vehicleId,
           
@@ -128,28 +129,30 @@ export const useQuoteToContract = () => {
           end_date: endDate,
           
           // Rental details
-          rental_type: rentalType,
-          rental_duration: duration,
+          contract_type: rentalType,
           
           // Financial
-          total_amount: totalAmount,
-          amount_paid: 0,
-          amount_remaining: totalAmount,
-          security_deposit: securityDeposit,
-          security_deposit_paid: 0,
+          contract_amount: totalAmount,
+          monthly_amount: rentalType === 'monthly' ? totalAmount / duration : 0,
+          total_paid: 0,
+          balance_due: totalAmount,
           
           // Status
-          status: 'pending_payment',
-          
-          // Additional services
-          insurance_type: rentalOptions?.insurance_type || 'basic',
-          include_driver: rentalOptions?.include_driver || false,
-          include_gps: rentalOptions?.include_gps || false,
-          delivery_required: rentalOptions?.delivery_required || false,
-          delivery_address: rentalOptions?.delivery_address,
+          status: 'draft',
+          payment_status: 'pending',
           
           // Metadata
-          notes: `Created from Quote ${quote.quote_number}\n\n${quote.notes || ''}`,
+          description: `Created from Quote ${quote.quote_number}`,
+          terms: JSON.stringify({
+            insurance_type: rentalOptions?.insurance_type || 'basic',
+            include_driver: rentalOptions?.include_driver || false,
+            include_gps: rentalOptions?.include_gps || false,
+            delivery_required: rentalOptions?.delivery_required || false,
+            delivery_address: rentalOptions?.delivery_address || null,
+            security_deposit: securityDeposit,
+            quote_notes: quote.notes || null,
+          }),
+          created_via: 'sales_quote',
           created_by: userData.user.id,
         })
         .select()
@@ -160,7 +163,7 @@ export const useQuoteToContract = () => {
       // 7. Update vehicle status
       const { error: vehicleUpdateError } = await supabase
         .from('vehicles')
-        .update({ status: 'reserved' })
+        .update({ status: 'reserved_employee' })
         .eq('id', vehicleId);
 
       if (vehicleUpdateError) throw vehicleUpdateError;
@@ -175,23 +178,6 @@ export const useQuoteToContract = () => {
         .eq('id', quoteId);
 
       if (quoteUpdateError) throw quoteUpdateError;
-
-      // 9. Create activity log (if table exists)
-      try {
-        await supabase
-          .from('contract_activities')
-          .insert({
-            contract_id: contract.id,
-            company_id: quote.company_id,
-            activity_type: 'contract_created',
-            activity_title: 'Contract Created from Quote',
-            activity_description: `Contract ${contractNumber} was created from Quote ${quote.quote_number}`,
-            created_by: userData.user.id,
-          });
-      } catch (activityError) {
-        // Activity logging is optional, don't fail the whole operation
-        console.warn('Could not create activity log:', activityError);
-      }
 
       toast({
         title: 'تم التحويل بنجاح',

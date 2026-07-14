@@ -12,8 +12,8 @@ export interface MaintenanceDetailsData {
   id: string;
   maintenance_number: string | null;
   maintenance_type: string;
-  status: string;
-  priority: string;
+  status: string | null;
+  priority: string | null;
   description: string | null;
   scheduled_date: string | null;
   completion_date: string | null;
@@ -21,7 +21,7 @@ export interface MaintenanceDetailsData {
   actual_cost: number | null;
   technician_name: string | null;
   notes: string | null;
-  created_at: string;
+  created_at: string | null;
   
   // بيانات المركبة
   vehicle: {
@@ -33,7 +33,7 @@ export interface MaintenanceDetailsData {
     color: string | null;
     vin: string | null;
     current_mileage: number | null;
-    status: string;
+    status: string | null;
   } | null;
   
   // بيانات المورد
@@ -106,12 +106,21 @@ export const useMaintenanceDetails = (maintenanceId: string | undefined) => {
       if (maintenanceData.vendor_id) {
         const { data: vendorData, error: vendorError } = await supabase
           .from('vendors')
-          .select('id, name, contact_person, phone, email, address, rating')
+          .select('id, vendor_name, contact_person, phone, email, address')
           .eq('id', maintenanceData.vendor_id)
+          .eq('company_id', companyId)
           .maybeSingle();
 
         if (!vendorError && vendorData) {
-          vendor = vendorData;
+          vendor = {
+            id: vendorData.id,
+            name: vendorData.vendor_name,
+            contact_person: vendorData.contact_person,
+            phone: vendorData.phone,
+            email: vendorData.email,
+            address: vendorData.address,
+            rating: null,
+          };
         }
       }
 
@@ -128,20 +137,27 @@ export const useMaintenanceDetails = (maintenanceId: string | undefined) => {
       if (vehicleId) {
         const { data: historyData, error: historyError } = await supabase
           .from('vehicle_maintenance')
-          .select('id, maintenance_type, status, scheduled_date, actual_cost, completion_date')
+          .select('id, maintenance_type, status, scheduled_date, actual_cost, completed_date')
           .eq('vehicle_id', vehicleId)
           .eq('company_id', companyId)
           .order('created_at', { ascending: false })
           .limit(10);
 
         if (!historyError && historyData) {
-          vehicleMaintenanceHistory = historyData;
+          vehicleMaintenanceHistory = historyData.map((item) => ({
+            id: item.id,
+            maintenance_type: item.maintenance_type,
+            status: item.status || 'scheduled',
+            scheduled_date: item.scheduled_date,
+            actual_cost: item.actual_cost,
+            completion_date: item.completed_date,
+          }));
         }
 
         // حساب الإحصائيات
         const { data: allHistory, error: allHistoryError } = await supabase
           .from('vehicle_maintenance')
-          .select('actual_cost, completion_date, created_at')
+          .select('actual_cost, completed_date, created_at')
           .eq('vehicle_id', vehicleId)
           .eq('company_id', companyId);
 
@@ -153,18 +169,18 @@ export const useMaintenanceDetails = (maintenanceId: string | undefined) => {
 
           // آخر صيانة مكتملة
           const completedMaintenance = allHistory
-            .filter(m => m.completion_date)
-            .sort((a, b) => new Date(b.completion_date!).getTime() - new Date(a.completion_date!).getTime());
+            .filter(m => m.completed_date)
+            .sort((a, b) => new Date(b.completed_date!).getTime() - new Date(a.completed_date!).getTime());
           
           if (completedMaintenance.length > 0) {
-            stats.lastMaintenanceDate = completedMaintenance[0].completion_date;
+            stats.lastMaintenanceDate = completedMaintenance[0].completed_date;
           }
 
           // حساب معدل الصيانة السنوي
           const oneYearAgo = new Date();
           oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
           const maintenanceLastYear = allHistory.filter(m => {
-            const date = new Date(m.created_at);
+            const date = new Date(m.created_at || 0);
             return date >= oneYearAgo;
           });
           stats.maintenanceFrequency = maintenanceLastYear.length;
@@ -179,10 +195,10 @@ export const useMaintenanceDetails = (maintenanceId: string | undefined) => {
         priority: maintenanceData.priority,
         description: maintenanceData.description,
         scheduled_date: maintenanceData.scheduled_date,
-        completion_date: maintenanceData.completion_date,
+        completion_date: maintenanceData.completed_date,
         estimated_cost: maintenanceData.estimated_cost,
         actual_cost: maintenanceData.actual_cost,
-        technician_name: maintenanceData.technician_name,
+        technician_name: maintenanceData.service_provider || maintenanceData.assigned_to,
         notes: maintenanceData.notes,
         created_at: maintenanceData.created_at,
         vehicle: maintenanceData.vehicles,

@@ -129,7 +129,7 @@ const Vendors = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#f0efed] p-6" dir="rtl">
+    <div className="min-h-screen bg-[#F6F8FB] p-6" dir="rtl">
       <div className="space-y-6">
         {/* Page Header */}
         <div className="flex items-center justify-between">

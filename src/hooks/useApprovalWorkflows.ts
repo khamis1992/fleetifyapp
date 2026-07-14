@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import type { Json } from '@/integrations/supabase/types';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 import { toast } from '@/hooks/use-toast';
 
@@ -24,8 +25,8 @@ export interface ApprovalWorkflow {
   workflow_name_ar?: string;
   description?: string;
   source_type: RequestSource;
-  conditions: unknown;
-  steps: unknown;
+  conditions: Json | null;
+  steps: Json;
   is_active: boolean;
   created_by?: string;
   created_at: string;
@@ -57,8 +58,13 @@ export interface ApprovalRequest {
   created_at: string;
   updated_at: string;
   completed_at?: string;
-  workflow?: unknown;
-  requester?: unknown;
+  workflow?: {
+    workflow_name: string;
+    workflow_name_ar: string | null;
+  } | null;
+  requester?: {
+    full_name: string | null;
+  } | null;
 }
 
 export interface WorkflowConfiguration {
@@ -78,6 +84,8 @@ export const useApprovalWorkflows = (sourceType?: RequestSource) => {
   return useQuery({
     queryKey: ['approval-workflows', companyId, sourceType],
     queryFn: async () => {
+      if (!companyId) throw new Error('Company context is required');
+
       let query = supabase
         .from('approval_workflows')
         .select('*')
@@ -112,6 +120,8 @@ export const useApprovalRequests = (filters?: {
   return useQuery({
     queryKey: ['approval-requests', companyId, filters],
     queryFn: async () => {
+      if (!companyId) throw new Error('Company context is required');
+
       let query = supabase
         .from('approval_requests')
         .select(`
@@ -154,6 +164,8 @@ export const useCreateWorkflow = () => {
 
   return useMutation({
     mutationFn: async (workflow: Omit<ApprovalWorkflow, 'id' | 'company_id' | 'created_at' | 'updated_at'>) => {
+      if (!companyId) throw new Error('Company context is required');
+
       const { data, error } = await supabase
         .from('approval_workflows')
         .insert({
@@ -234,11 +246,17 @@ export const useCreateApprovalRequest = () => {
       priority?: ApprovalPriority;
       metadata?: Record<string, any>;
     }) => {
+      if (!companyId) throw new Error('Company context is required');
+
       // أولاً، الحصول على رقم الطلب
       const { data: requestNumber, error: numberError } = await supabase
         .rpc('generate_approval_request_number', { company_id_param: companyId });
 
       if (numberError) throw numberError;
+
+      const { data: authData, error: authError } = await supabase.auth.getUser();
+      if (authError) throw authError;
+      if (!authData.user) throw new Error('Authenticated user is required');
 
       // إنشاء طلب الموافقة
       const { data, error } = await supabase
@@ -247,7 +265,7 @@ export const useCreateApprovalRequest = () => {
           ...request,
           company_id: companyId,
           request_number: requestNumber,
-          requested_by: (await supabase.auth.getUser()).data.user?.id,
+          requested_by: authData.user.id,
         })
         .select()
         .single();
@@ -305,6 +323,8 @@ export const useWorkflowConfigurations = () => {
   return useQuery({
     queryKey: ['workflow-configurations', companyId],
     queryFn: async () => {
+      if (!companyId) throw new Error('Company context is required');
+
       const { data, error } = await supabase
         .from('workflow_configurations')
         .select(`

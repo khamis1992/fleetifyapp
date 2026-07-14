@@ -38,8 +38,6 @@ export const AddNoteModal: React.FC<AddNoteModalProps> = ({
     }
   }, [preselectedContractId]);
 
-  const selectedContract = contracts.find(c => c.id === selectedContractId);
-
   const noteTypes = [
     { value: 'general', label: 'عامة', icon: '📝' },
     { value: 'payment', label: 'دفعة', icon: '💰' },
@@ -57,22 +55,27 @@ export const AddNoteModal: React.FC<AddNoteModalProps> = ({
       return;
     }
 
+    if (!user?.id) {
+      toast({ title: 'خطأ', description: 'تعذر التحقق من المستخدم', variant: 'destructive' });
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
       const { data: profile } = await supabase
         .from('profiles')
         .select('id, company_id')
-        .eq('user_id', user?.id)
+        .eq('user_id', user.id)
         .single();
 
-      if (!profile) throw new Error('Profile not found');
+      if (!profile?.company_id) throw new Error('Profile company not found');
 
       const { error } = await supabase
         .from('contract_notes')
         .insert({
+          company_id: profile.company_id,
           contract_id: selectedContractId,
-          customer_id: selectedContract?.customer_id,
           created_by: profile.id,
           note_type: noteType,
           content: content.trim(),

@@ -33,31 +33,32 @@ import {
 import { useCompanyCurrency } from '@/hooks/useCompanyCurrency';
 import { ModuleName } from '@/types/modules';
 import { MODULE_REGISTRY } from '@/modules/moduleRegistry';
+import type { Company as CompanyRecord } from '@/hooks/useCompanies';
 
 
-interface Company {
+interface Company extends Omit<CompanyRecord, 'active_modules'> {
   id: string;
   name: string;
-  name_ar?: string;
-  email?: string;
-  phone?: string;
-  address?: string;
-  address_ar?: string;
-  city?: string;
-  country?: string;
-  commercial_register?: string;
-  license_number?: string;
-  subscription_status?: string;
-  subscription_plan?: string;
-  currency?: string;
+  name_ar?: string | null;
+  email?: string | null;
+  phone?: string | null;
+  address?: string | null;
+  address_ar?: string | null;
+  city?: string | null;
+  country?: string | null;
+  commercial_register?: string | null;
+  license_number?: string | null;
+  subscription_status?: string | null;
+  subscription_plan?: string | null;
+  currency?: string | null;
   created_at?: string;
-  office_latitude?: number;
-  office_longitude?: number;
-  allowed_radius?: number;
-  work_start_time?: string;
-  work_end_time?: string;
-  auto_checkout_enabled?: boolean;
-  active_modules?: ModuleName[];
+  office_latitude?: number | null;
+  office_longitude?: number | null;
+  allowed_radius?: number | null;
+  work_start_time?: string | null;
+  work_end_time?: string | null;
+  auto_checkout_enabled?: boolean | null;
+  active_modules?: string[] | null;
 }
 
 // خريطة الأيقونات للوحدات
@@ -79,6 +80,9 @@ const MODULE_ICONS: Record<ModuleName, React.ComponentType<{ className?: string 
   orders: ClipboardList
 };
 
+const isModuleName = (value: string): value is ModuleName =>
+  value in MODULE_REGISTRY && value in MODULE_ICONS;
+
 interface CompanyDetailsDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -96,7 +100,7 @@ export const CompanyDetailsDialog: React.FC<CompanyDetailsDialogProps> = ({
 
   if (!company) return null;
 
-  const getStatusVariant = (status?: string) => {
+  const getStatusVariant = (status?: string | null) => {
     switch (status) {
       case 'active': return 'default';
       case 'inactive': return 'secondary';
@@ -105,7 +109,7 @@ export const CompanyDetailsDialog: React.FC<CompanyDetailsDialogProps> = ({
     }
   };
 
-  const getStatusLabel = (status?: string) => {
+  const getStatusLabel = (status?: string | null) => {
     switch (status) {
       case 'active': return 'نشط';
       case 'inactive': return 'غير نشط';
@@ -114,7 +118,7 @@ export const CompanyDetailsDialog: React.FC<CompanyDetailsDialogProps> = ({
     }
   };
 
-  const getPlanLabel = (plan?: string) => {
+  const getPlanLabel = (plan?: string | null) => {
     switch (plan) {
       case 'basic': return 'أساسي';
       case 'premium': return 'مميز';
@@ -132,7 +136,7 @@ export const CompanyDetailsDialog: React.FC<CompanyDetailsDialogProps> = ({
     });
   };
 
-  const formatTime = (timeString?: string) => {
+  const formatTime = (timeString?: string | null) => {
     if (!timeString) return 'غير محدد';
     return new Date(`2000-01-01T${timeString}`).toLocaleTimeString('ar-QA', {
       hour: '2-digit',
@@ -337,7 +341,7 @@ export const CompanyDetailsDialog: React.FC<CompanyDetailsDialogProps> = ({
             <CardContent>
               <div className="flex flex-wrap gap-2">
                 {company.active_modules && company.active_modules.length > 0 ? (
-                  company.active_modules.map((moduleName) => {
+                  company.active_modules.filter(isModuleName).map((moduleName) => {
                     const config = MODULE_REGISTRY[moduleName];
                     const Icon = MODULE_ICONS[moduleName];
                     return (

@@ -220,7 +220,7 @@ export const MobileCustomerCollectionCard: React.FC<MobileCustomerCollectionCard
 
                     {/* Due Date */}
                     <div className="flex items-center gap-1.5 mt-2 text-xs text-slate-500">
-                      <CalendarIcon className="w-3 h-3" />
+                      <Calendar className="w-3 h-3" />
                       <span>
                         استحقاق: {format(new Date(invoice.due_date), 'd MMM yyyy', { locale: ar })}
                       </span>

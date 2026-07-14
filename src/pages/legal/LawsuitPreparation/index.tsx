@@ -586,7 +586,7 @@ export default function LawsuitPreparationPage() {
 
   return (
     <LawsuitPreparationProvider contractId={contractId}>
-      <div className="min-h-screen bg-[#F4F7FA]">
+      <div className="min-h-screen bg-[#F6F8FB]">
         <LawsuitPreparationContent />
       </div>
     </LawsuitPreparationProvider>

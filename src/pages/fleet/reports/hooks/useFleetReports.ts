@@ -71,7 +71,7 @@ export const useVehiclesReport = (filters?: ReportFilters) => {
         status: v.status as VehicleReportData['status'],
         daily_rate: v.daily_rate || 0,
         monthly_rate: v.monthly_rate || 0,
-        book_value: v.book_value || v.purchase_price || 0,
+        book_value: v.book_value || v.purchase_cost || 0,
         depreciation: v.accumulated_depreciation || 0,
         utilization_rate: v.status === 'rented' ? 100 : 0,
         revenue: (v.monthly_rate || 0) * (v.status === 'rented' ? 1 : 0),
@@ -111,12 +111,12 @@ export const useMaintenanceReport = (filters?: ReportFilters) => {
         vehicle_id: m.vehicle_id,
         plate_number: (m.vehicles as any)?.plate_number || 'غير محدد',
         maintenance_type: m.maintenance_type,
-        scheduled_date: m.scheduled_date,
-        completed_date: m.completed_date,
-        status: m.status,
+        scheduled_date: m.scheduled_date || m.created_at || '',
+        completed_date: m.completed_date || undefined,
+        status: (m.status || 'pending') as MaintenanceReportData['status'],
         estimated_cost: m.estimated_cost || 0,
-        actual_cost: m.actual_cost,
-        description: m.description,
+        actual_cost: m.actual_cost ?? undefined,
+        description: m.description || undefined,
       }));
     },
     enabled: !!companyId,
@@ -135,7 +135,7 @@ export const useFleetAnalytics = () => {
     const availableVehicles = vehicles.filter(v => v.status === 'available').length;
     const rentedVehicles = vehicles.filter(v => v.status === 'rented').length;
     const maintenanceVehicles = vehicles.filter(v => v.status === 'maintenance').length;
-    const reservedVehicles = vehicles.filter(v => v.status === 'reserved').length;
+    const reservedVehicles = vehicles.filter(v => v.status === 'reserved_employee').length;
     
     const totalBookValue = vehicles.reduce((sum, v) => sum + v.book_value, 0);
     const totalDepreciation = vehicles.reduce((sum, v) => sum + v.depreciation, 0);
@@ -211,7 +211,7 @@ export const useMonthlyRevenue = () => {
       return Array.from({ length: 6 }, (_, i) => {
         const monthIndex = (currentMonth - 5 + i + 12) % 12;
         const baseRevenue = contracts?.reduce((sum, c) => sum + (c.monthly_amount || 0), 0) || 50000;
-        const baseMaintenance = maintenance?.reduce((sum, m) => sum + (m.estimated_cost || 0), 0) / 6 || 5000;
+        const baseMaintenance = ((maintenance?.reduce((sum, m) => sum + (m.estimated_cost || 0), 0) || 0) / 6) || 5000;
         
         const variance = Math.random() * 0.3 - 0.15;
         const revenue = Math.round(baseRevenue * (0.8 + i * 0.05 + variance));
@@ -369,17 +369,17 @@ export const useInsuranceRegistrationReport = () => {
           make: vehicle.make,
           model: vehicle.model,
           year: vehicle.year,
-          status: vehicle.status,
+          status: vehicle.status || 'out_of_service',
           // Insurance
           has_insurance: !!insurance,
-          insurance_company: insurance?.insurance_company,
-          insurance_expiry: insurance?.end_date,
+          insurance_company: insurance?.insurance_company || undefined,
+          insurance_expiry: insurance?.end_date || undefined,
           insurance_days_remaining: getDaysRemaining(insurance?.end_date || null),
           insurance_status: getStatus(insurance?.end_date || null),
           // Registration
           has_registration: !!registration,
-          registration_number: registration?.document_number,
-          registration_expiry: registration?.expiry_date,
+          registration_number: registration?.document_number || undefined,
+          registration_expiry: registration?.expiry_date || undefined,
           registration_days_remaining: getDaysRemaining(registration?.expiry_date || null),
           registration_status: getStatus(registration?.expiry_date || null),
         };

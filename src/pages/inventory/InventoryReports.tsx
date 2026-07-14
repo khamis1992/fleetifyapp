@@ -57,10 +57,10 @@ const InventoryReports = () => {
   const { data: alertSummary } = useStockAlertSummary();
 
   const getAlertBadge = (alertType: string) => {
-    const types: Record<string, { variant: "default" | "secondary" | "destructive" | "outline" | "warning"; icon: React.ReactNode }> = {
+    const types: Record<string, { variant: "default" | "secondary" | "destructive" | "outline"; icon: React.ReactNode }> = {
       "نفذ المخزون": { variant: "destructive", icon: <AlertTriangle className="h-3 w-3" /> },
-      "أقل من الحد الأدنى": { variant: "warning", icon: <TrendingDown className="h-3 w-3" /> },
-      "نقطة إعادة الطلب": { variant: "warning", icon: <Package className="h-3 w-3" /> },
+      "أقل من الحد الأدنى": { variant: "secondary", icon: <TrendingDown className="h-3 w-3" /> },
+      "نقطة إعادة الطلب": { variant: "secondary", icon: <Package className="h-3 w-3" /> },
       "تخزين زائد": { variant: "secondary", icon: <TrendingUp className="h-3 w-3" /> },
     };
 
@@ -504,7 +504,7 @@ const InventoryReports = () => {
                               row.aging_category.includes("راكد جداً")
                                 ? "destructive"
                                 : row.aging_category.includes("راكد")
-                                ? "warning"
+                                ? "secondary"
                                 : row.aging_category.includes("بطيء")
                                 ? "secondary"
                                 : "default"
@@ -575,7 +575,7 @@ const InventoryReports = () => {
                         <TableCell className="font-medium">{alert.item_name}</TableCell>
                         <TableCell>{alert.warehouse_name}</TableCell>
                         <TableCell>
-                          <Badge variant={alert.quantity_available === 0 ? "destructive" : "warning"}>
+                          <Badge variant={alert.quantity_available === 0 ? "destructive" : "secondary"}>
                             {alert.quantity_available}
                           </Badge>
                         </TableCell>

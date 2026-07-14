@@ -1,21 +1,10 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import type { Database } from '@/integrations/supabase/types';
 
-export interface VehicleDocument {
-  id: string;
-  vehicle_id: string;
-  document_type: string;
-  document_name: string;
-  document_url?: string;
-  issue_date: string;
-  expiry_date: string;
-  issuing_authority?: string;
-  document_number?: string;
-  is_active: boolean;
-  created_at: string;
-  updated_at: string;
-}
+export type VehicleDocument = Database['public']['Tables']['vehicle_documents']['Row'];
+type VehicleDocumentInsert = Database['public']['Tables']['vehicle_documents']['Insert'];
 
 // Hook to get vehicle registration specifically
 export const useVehicleRegistration = (vehicleId: string) => {
@@ -52,7 +41,7 @@ export const useCreateVehicleRegistration = () => {
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: async (data: Omit<VehicleDocument, 'id' | 'created_at' | 'updated_at'>) => {
+    mutationFn: async (data: VehicleDocumentInsert) => {
       const { data: result, error } = await supabase
         .from('vehicle_documents')
         .insert({

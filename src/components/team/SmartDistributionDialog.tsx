@@ -69,7 +69,9 @@ export const SmartDistributionDialog: React.FC<SmartDistributionDialogProps> = (
         .order('capacity_score', { ascending: false });
 
       if (error) throw error;
-      return data;
+      return (data || []).filter(
+        (employee): employee is typeof employee & { employee_id: string } => Boolean(employee.employee_id)
+      );
     },
     enabled: open && !!companyId,
   });
@@ -116,8 +118,15 @@ export const SmartDistributionDialog: React.FC<SmartDistributionDialogProps> = (
       const contractsWithDifficulty = await Promise.all(
         selectedContracts.map(async (contractId) => {
           const contract = contracts?.find(c => c.id === contractId);
+          if (!contract?.customer_id) {
+            return {
+              contractId,
+              contract,
+              difficulty: 50,
+            };
+          }
           const { data } = await supabase.rpc('calculate_customer_difficulty', {
-            p_customer_id: contract?.customer_id
+            p_customer_id: contract.customer_id
           });
           
           return {
@@ -187,7 +196,7 @@ export const SmartDistributionDialog: React.FC<SmartDistributionDialogProps> = (
   // Apply distribution
   const applyDistributionMutation = useMutation({
     mutationFn: async () => {
-      if (!distributionPreview) throw new Error('No preview available');
+      if (!distributionPreview || !companyId) throw new Error('No preview or company available');
 
       const updates = [];
       for (const employee of distributionPreview) {
@@ -376,9 +385,9 @@ export const SmartDistributionDialog: React.FC<SmartDistributionDialogProps> = (
                             <div className="flex items-center gap-4 text-xs text-neutral-600">
                               <span>{employee.current_contracts} عقود</span>
                               <span>•</span>
-                              <span>أداء: {Math.round(employee.performance_score)}%</span>
+                              <span>أداء: {Math.round(employee.performance_score || 0)}%</span>
                               <span>•</span>
-                              <span>قدرة: {Math.round(employee.capacity_score)}%</span>
+                              <span>قدرة: {Math.round(employee.capacity_score || 0)}%</span>
                             </div>
                           </div>
                         </div>

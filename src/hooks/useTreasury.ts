@@ -57,12 +57,31 @@ export interface BankTransaction {
   check_number?: string;
   counterpart_bank_id?: string;
   journal_entry_id?: string;
+  manual_idempotency_key?: string;
+  manual_bank_account_id?: string;
+  manual_counterpart_account_id?: string;
+  payment_id?: string;
+  reversal_of_transaction_id?: string;
   status: string;
   reconciled: boolean;
   reconciled_at?: string;
   created_by?: string;
   created_at: string;
   updated_at: string;
+}
+
+export interface ManualBankTransactionInput {
+  company_id: string;
+  bank_id: string;
+  transaction_type: 'deposit' | 'withdrawal';
+  amount: number;
+  transaction_date: string;
+  description: string;
+  reference_number?: string;
+  bank_account_id: string;
+  counterpart_account_id: string;
+  idempotency_key: string;
+  actor_id?: string;
 }
 
 export interface CostCenter {
@@ -155,7 +174,7 @@ export const useBankTransactions = (bankId?: string) => {
   });
 };
 
-export const useCreateBankTransaction = () => {
+const useLegacyCreateBankTransaction = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -176,10 +195,11 @@ export const useCreateBankTransaction = () => {
         .eq('company_id', companyId)
         .single();
       if (bankError) throw bankError;
+      const currentBalance = Number(bank.current_balance ?? 0);
 
       const balanceAfter = transactionData.transaction_type === 'deposit'
-        ? Number(bank.current_balance) + amount
-        : Number(bank.current_balance) - amount;
+        ? currentBalance + amount
+        : currentBalance - amount;
       if (balanceAfter < 0) {
         throw new Error('لا يمكن تنفيذ السحب لأن الرصيد المتاح غير كافٍ');
       }
@@ -200,7 +220,7 @@ export const useCreateBankTransaction = () => {
         })
         .eq('id', transactionData.bank_id)
         .eq('company_id', companyId)
-        .eq('current_balance', bank.current_balance)
+        .eq('current_balance', currentBalance)
         .select('id')
         .single();
 
@@ -231,7 +251,7 @@ export const useCreateBankTransaction = () => {
   });
 };
 
-export const useDeleteBankTransaction = () => {
+const useLegacyDeleteBankTransaction = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -269,20 +289,21 @@ export const useDeleteBankTransaction = () => {
         .eq('company_id', companyId)
         .single();
       if (bankError) throw bankError;
-      if (Math.abs(Number(bank.current_balance) - Number(transaction.balance_after)) > 0.001) {
+      const currentBalance = Number(bank.current_balance ?? 0);
+      if (Math.abs(currentBalance - Number(transaction.balance_after)) > 0.001) {
         throw new Error('رصيد البنك تغير بعد هذه المعاملة؛ استخدم معاملة عكسية بدل الحذف.');
       }
 
       const restoredBalance = transaction.transaction_type === 'deposit'
-        ? Number(bank.current_balance) - Number(transaction.amount)
-        : Number(bank.current_balance) + Number(transaction.amount);
+        ? currentBalance - Number(transaction.amount)
+        : currentBalance + Number(transaction.amount);
 
       const { error: bankUpdateError } = await supabase
         .from('banks')
         .update({ current_balance: restoredBalance, updated_at: new Date().toISOString() })
         .eq('id', transaction.bank_id)
         .eq('company_id', companyId)
-        .eq('current_balance', bank.current_balance)
+        .eq('current_balance', currentBalance)
         .select('id')
         .single();
       if (bankUpdateError) throw bankUpdateError;
@@ -317,6 +338,79 @@ export const useDeleteBankTransaction = () => {
     onError: (error) => {
       toast.error('حدث خطأ في حذف المعاملة');
       console.error('Bank transaction deletion error:', error);
+    },
+  });
+};
+
+void useLegacyCreateBankTransaction;
+void useLegacyDeleteBankTransaction;
+
+export const useCreateBankTransaction = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (input: ManualBankTransactionInput) => {
+      const companyId = await getCurrentCompanyId();
+      if (input.company_id !== companyId) throw new Error('Company access denied');
+      const amount = Number(input.amount);
+      if (!Number.isFinite(amount) || amount <= 0) throw new Error('Transaction amount must be positive');
+
+      const { data, error } = await supabase.rpc('create_manual_bank_transaction_v1', {
+        p_company_id: companyId,
+        p_bank_id: input.bank_id,
+        p_transaction_type: input.transaction_type,
+        p_amount: amount,
+        p_transaction_date: input.transaction_date,
+        p_description: input.description.trim(),
+        p_reference_number: input.reference_number?.trim() || '',
+        p_bank_account_id: input.bank_account_id,
+        p_counterpart_account_id: input.counterpart_account_id,
+        p_idempotency_key: input.idempotency_key,
+        p_actor_id: input.actor_id,
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['bank-transactions'] });
+      queryClient.invalidateQueries({ queryKey: ['banks'] });
+      queryClient.invalidateQueries({ queryKey: ['treasury-summary'] });
+      toast.success('تم إنشاء الحركة وقيدها المحاسبي بنجاح');
+    },
+    onError: (error) => {
+      toast.error(error instanceof Error ? error.message : 'فشل إنشاء الحركة المصرفية');
+    },
+  });
+};
+
+export const useReverseBankTransaction = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ transactionId, reason, idempotencyKey }: {
+      transactionId: string;
+      reason: string;
+      idempotencyKey: string;
+    }) => {
+      const companyId = await getCurrentCompanyId();
+      const { data, error } = await supabase.rpc('reverse_manual_bank_transaction_v1', {
+        p_company_id: companyId,
+        p_transaction_id: transactionId,
+        p_reversal_date: new Date().toISOString().slice(0, 10),
+        p_reason: reason.trim(),
+        p_idempotency_key: idempotencyKey,
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['bank-transactions'] });
+      queryClient.invalidateQueries({ queryKey: ['banks'] });
+      queryClient.invalidateQueries({ queryKey: ['treasury-summary'] });
+      toast.success('تم عكس الحركة بقيد محاسبي مقابل');
+    },
+    onError: (error) => {
+      toast.error(error instanceof Error ? error.message : 'فشل عكس الحركة المصرفية');
     },
   });
 };

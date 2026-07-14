@@ -44,7 +44,7 @@ export const LandingMediaLibrary: React.FC = () => {
   const filteredMedia = media.filter(file => {
     const matchesSearch = file.file_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          file.alt_text?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         file.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()));
+                         file.tags.some((tag: string) => tag.toLowerCase().includes(searchTerm.toLowerCase()));
     const matchesType = filterType === 'all' || file.file_type === filterType;
     return matchesSearch && matchesType;
   });
@@ -248,7 +248,7 @@ export const LandingMediaLibrary: React.FC = () => {
                 
                 {file.tags.length > 0 && (
                   <div className="flex flex-wrap gap-1">
-                    {file.tags.slice(0, 2).map(tag => (
+                    {file.tags.slice(0, 2).map((tag: string) => (
                       <Badge key={tag} variant="outline" className="text-xs">
                         {tag}
                       </Badge>
@@ -290,6 +290,7 @@ interface MediaEditFormProps {
 }
 
 const MediaEditForm: React.FC<MediaEditFormProps> = ({ file, onSubmit }) => {
+  const { t } = useFleetifyTranslation("ui");
   const [formData, setFormData] = useState({
     alt_text: file.alt_text || '',
     alt_text_ar: file.alt_text_ar || '',

@@ -22,6 +22,14 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useRolePermissions } from '@/hooks/useRolePermissions';
+import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
+import {
+  Permission as SystemPermission,
+  UserRole as SystemUserRole,
+  getRoleDescription,
+  getRoleDisplayName,
+  getRolePermissions,
+} from '@/lib/permissions/roles';
 
 // Types
 interface Role {
@@ -42,16 +50,17 @@ interface Permission {
 interface UserRole {
   id: string;
   user_id: string;
-  role_id: string;
-  users: {
-    email: string;
-  };
-  roles: Role;
+  role: SystemUserRole;
+  email: string;
+  description: string;
 }
+
+const permissionsClient = supabase as any;
 
 const PermissionsManagement = () => {
   const { user } = useAuth();
   const { hasPermission } = useRolePermissions();
+  const { companyId } = useUnifiedCompanyAccess();
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedRole, setSelectedRole] = useState<Role | null>(null);
@@ -59,96 +68,76 @@ const PermissionsManagement = () => {
   const [isPermissionDialogOpen, setIsPermissionDialogOpen] = useState(false);
 
   // Check if user can manage permissions
-  const canManagePermissions = hasPermission('manage_permissions') || hasPermission('manage_roles');
+  const canManagePermissions = hasPermission(SystemPermission.ASSIGN_ROLES);
 
   // Fetch all roles
-  const { data: roles, isLoading: rolesLoading } = useQuery({
-    queryKey: ['roles'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('roles')
-        .select('*')
-        .order('name');
-      
-      if (error) {
-        console.warn('Roles table not available:', error.message);
-        return [] as Role[];
-      }
-      return data as Role[];
-    },
-  });
+  const roles: Role[] = Object.values(SystemUserRole).map((role) => ({
+    id: role,
+    name: getRoleDisplayName(role),
+    description: getRoleDescription(role),
+    is_system_role: true,
+    created_at: '',
+  }));
+  const rolesLoading = false;
 
   // Fetch all permissions
-  const { data: permissions, isLoading: permissionsLoading } = useQuery({
-    queryKey: ['permissions'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('permissions')
-        .select('*')
-        .order('category, name');
-      
-      if (error) {
-        console.warn('Permissions table not available:', error.message);
-        return [] as Permission[];
-      }
-      return data as Permission[];
-    },
-  });
+  const permissions: Permission[] = Object.values(SystemPermission).map((permission) => ({
+    id: permission,
+    name: permission,
+    description: permission.replaceAll('_', ' '),
+    category: permission.split('_').at(-1) || 'general',
+  }));
+  const permissionsLoading = false;
 
   // Fetch role permissions
-  const { data: rolePermissions } = useQuery({
-    queryKey: ['role-permissions', selectedRole?.id],
-    queryFn: async () => {
-      if (!selectedRole) return [];
-      
-      const { data, error } = await supabase
-        .from('role_permissions')
-        .select('permission_id')
-        .eq('role_id', selectedRole.id);
-      
-      if (error) {
-        console.warn('Role permissions table not available:', error.message);
-        return [] as string[];
-      }
-      return data.map(rp => rp.permission_id);
-    },
-    enabled: !!selectedRole,
-  });
+  const rolePermissions = selectedRole
+    ? getRolePermissions(selectedRole.id as SystemUserRole)
+    : [];
 
   // Fetch user roles
   const { data: userRoles, isLoading: userRolesLoading } = useQuery({
     queryKey: ['user-roles'],
     queryFn: async () => {
+      if (!companyId) return [];
       const { data, error } = await supabase
         .from('user_roles')
-        .select(`
-          id,
-          user_id,
-          role_id,
-          users (email),
-          roles (id, name, description)
-        `);
+        .select('id, user_id, role')
+        .eq('company_id', companyId);
       
       if (error) {
         console.warn('User roles table not available:', error.message);
         return [] as UserRole[];
       }
-      return data as UserRole[];
+      const userIds = [...new Set((data || []).map((item) => item.user_id))];
+      const { data: profiles, error: profilesError } = userIds.length > 0
+        ? await supabase.from('profiles').select('user_id, email').eq('company_id', companyId).in('user_id', userIds)
+        : { data: [], error: null };
+      if (profilesError) throw profilesError;
+      const emails = new Map((profiles || []).map((profile) => [profile.user_id, profile.email]));
+
+      return (data || []).map((item): UserRole => ({
+        id: item.id,
+        user_id: item.user_id,
+        role: item.role as SystemUserRole,
+        email: emails.get(item.user_id) || item.user_id,
+        description: getRoleDescription(item.role as SystemUserRole),
+      }));
     },
+    enabled: !!companyId,
   });
 
   // Update role permissions mutation
   const updateRolePermissionsMutation = useMutation({
     mutationFn: async ({ roleId, permissionIds }: { roleId: string; permissionIds: string[] }) => {
       // Delete existing permissions
-      await supabase
+      await permissionsClient
         .from('role_permissions')
         .delete()
         .eq('role_id', roleId);
 
       // Insert new permissions
       if (permissionIds.length > 0) {
-        const { error } = await supabase
+        const { error } = await permissionsClient
           .from('role_permissions')
           .insert(
             permissionIds.map(permissionId => ({
@@ -185,7 +174,7 @@ const PermissionsManagement = () => {
   );
 
   const RolePermissionsDialog = () => {
-    const [selectedPermissions, setSelectedPermissions] = useState<string[]>(rolePermissions || []);
+    const [selectedPermissions, setSelectedPermissions] = useState<string[]>(rolePermissions.map(String));
 
     const handleTogglePermission = (permissionId: string) => {
       setSelectedPermissions(prev =>
@@ -372,6 +361,7 @@ const PermissionsManagement = () => {
                           <Button
                             variant="outline"
                             size="sm"
+                            disabled
                             onClick={() => {
                               setSelectedRole(role);
                               setIsPermissionDialogOpen(true);
@@ -461,13 +451,13 @@ const PermissionsManagement = () => {
                     {userRoles?.map((userRole) => (
                       <TableRow key={userRole.id}>
                         <TableCell className="font-medium">
-                          {userRole.users.email}
+                          {userRole.email}
                         </TableCell>
                         <TableCell>
-                          <Badge>{userRole.roles.name}</Badge>
+                          <Badge>{getRoleDisplayName(userRole.role)}</Badge>
                         </TableCell>
                         <TableCell className="text-muted-foreground">
-                          {userRole.roles.description}
+                          {userRole.description}
                         </TableCell>
                       </TableRow>
                     ))}
@@ -480,7 +470,7 @@ const PermissionsManagement = () => {
       </Tabs>
 
       {/* Role Permissions Dialog */}
-      {selectedRole && <RolePermissionsDialog />}
+      {false && selectedRole && <RolePermissionsDialog />}
     </div>
   );
 };

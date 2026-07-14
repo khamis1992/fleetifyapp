@@ -64,10 +64,11 @@ export const TeamReports: React.FC = () => {
   const { data: userProfile } = useQuery({
     queryKey: ['user-profile-role', user?.id],
     queryFn: async () => {
+      if (!user?.id) throw new Error('User ID is required');
       const { data, error } = await supabase
         .from('profiles')
         .select('role')
-        .eq('user_id', user?.id)
+        .eq('user_id', user.id)
         .single();
       
       if (error) throw error;
@@ -164,6 +165,13 @@ export const TeamReports: React.FC = () => {
       task_completion: Math.round(values.completion / values.count),
     }));
   }, [performanceHistory]);
+
+  const comparisonData = useMemo(() => (teamPerformance || []).map(employee => ({
+    employee_name: employee.employee_name || '-',
+    performance_score: Number(employee.performance_score || 0),
+    collection_rate: Number(employee.collection_rate || 0),
+    task_completion: Number(employee.followup_completion_rate || 0),
+  })), [teamPerformance]);
 
   const handleExportExcel = async () => {
     if (teamPerformance) {
@@ -325,8 +333,8 @@ export const TeamReports: React.FC = () => {
               </SelectContent>
             </Select>
           </div>
-          <TeamComparisonChart 
-            data={teamPerformance || []} 
+          <TeamComparisonChart
+            data={comparisonData}
             metric={selectedMetric}
             title=""
           />

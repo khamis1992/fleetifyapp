@@ -183,15 +183,15 @@ export function MaintenanceSidePanel({
                   <div className="flex items-center gap-2">
                     <Badge className={cn(
                       "px-3 py-1 rounded-full text-sm font-medium border",
-                      statusColors[maintenance.status]
+                      statusColors[maintenance.status || 'pending']
                     )}>
-                      {statusLabels[maintenance.status]}
+                      {statusLabels[maintenance.status || 'pending']}
                     </Badge>
                     <Badge className={cn(
                       "px-3 py-1 rounded-full text-sm font-medium",
-                      priorityColors[maintenance.priority]
+                      priorityColors[maintenance.priority || 'medium']
                     )}>
-                      أولوية {priorityLabels[maintenance.priority]}
+                      أولوية {priorityLabels[maintenance.priority || 'medium']}
                     </Badge>
                     {maintenance.vehicle && (
                       <span className="px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-sm font-mono">
@@ -633,7 +633,7 @@ export function MaintenanceSidePanel({
                       onClick={() => onStatusChange?.(
                         maintenance.id,
                         maintenance.vehicle?.id || '',
-                        maintenance.status
+                        maintenance.status || 'pending'
                       )}
                       className="flex-1 bg-green-500 hover:bg-green-600 text-white rounded-xl py-3"
                     >

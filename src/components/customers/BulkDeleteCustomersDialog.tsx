@@ -62,7 +62,7 @@ export const BulkDeleteCustomersDialog: FC<BulkDeleteCustomersDialogProps> = ({
   }, [open]);
 
   const handleDeactivate = async () => {
-    if (confirmationText.trim() !== confirmationPhrase) return;
+    if (confirmationText.trim() !== confirmationPhrase || !actualCompanyId) return;
     await bulkDeleteCustomers.mutateAsync(actualCompanyId);
     setCompleted(true);
   };

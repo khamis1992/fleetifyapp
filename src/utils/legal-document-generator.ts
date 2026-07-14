@@ -8,7 +8,20 @@ import { ar } from 'date-fns/locale';
 import type { DelinquentCustomer } from '@/hooks/useDelinquentCustomers';
 
 export interface LegalDocumentData {
-  customer: DelinquentCustomer;
+  customer: Pick<
+    DelinquentCustomer,
+    | 'customer_name'
+    | 'customer_code'
+    | 'id_number'
+    | 'phone'
+    | 'email'
+    | 'days_overdue'
+    | 'late_penalty'
+    | 'overdue_amount'
+    | 'violations_amount'
+    | 'violations_count'
+    | 'total_debt'
+  >;
   companyInfo: {
     name_ar: string;
     name_en: string;

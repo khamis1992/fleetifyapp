@@ -20,6 +20,7 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
+import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 
 interface ReminderStats {
   total_reminders: number;
@@ -60,16 +61,17 @@ interface PendingMessage {
 
 interface FailedMessage {
   id: string;
-  customer_name: string;
-  phone_number: string;
+  customer_name: string | null;
+  phone_number: string | null;
   reminder_type: string;
   scheduled_date: string;
-  retry_count: number;
-  last_error: string;
-  next_retry_at: string;
+  retry_count: number | null;
+  last_error: string | null;
+  next_retry_at: string | null;
 }
 
 export const WhatsAppMessagesReport = () => {
+  const { companyId } = useUnifiedCompanyAccess();
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState<ReminderStats | null>(null);
   const [sentMessages, setSentMessages] = useState<SentMessage[]>([]);
@@ -78,18 +80,33 @@ export const WhatsAppMessagesReport = () => {
   const [activeTab, setActiveTab] = useState('overview');
 
   useEffect(() => {
-    loadReportData();
-  }, []);
+    if (companyId) loadReportData();
+    else setLoading(false);
+  }, [companyId]);
 
   const loadReportData = async () => {
+    if (!companyId) {
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     try {
       // Load statistics
-      const { data: statsData, error: statsError } = await supabase
-        .rpc('get_whatsapp_statistics');
-      
-      if (!statsError && statsData) {
-        setStats(statsData[0]);
+      const { data: statsRows, error: statsError } = await supabase
+        .from('reminder_schedules')
+        .select('status, customer_id, invoice_id')
+        .eq('company_id', companyId);
+
+      if (!statsError && statsRows) {
+        setStats({
+          total_reminders: statsRows.length,
+          sent_count: statsRows.filter((row) => row.status === 'sent').length,
+          failed_count: statsRows.filter((row) => row.status === 'failed').length,
+          pending_count: statsRows.filter((row) => row.status === 'pending').length,
+          cancelled_count: statsRows.filter((row) => row.status === 'cancelled').length,
+          unique_customers: new Set(statsRows.map((row) => row.customer_id)).size,
+          unique_invoices: new Set(statsRows.map((row) => row.invoice_id)).size,
+        });
       }
 
       // Load sent messages
@@ -110,6 +127,7 @@ export const WhatsAppMessagesReport = () => {
             due_date
           )
         `)
+        .eq('company_id', companyId)
         .eq('status', 'sent')
         .order('sent_at', { ascending: false })
         .limit(50);
@@ -148,6 +166,7 @@ export const WhatsAppMessagesReport = () => {
             due_date
           )
         `)
+        .eq('company_id', companyId)
         .eq('status', 'pending')
         .order('scheduled_date', { ascending: true });
 
@@ -172,6 +191,7 @@ export const WhatsAppMessagesReport = () => {
       const { data: failedData, error: failedError } = await supabase
         .from('reminder_schedules')
         .select('*')
+        .eq('company_id', companyId)
         .eq('status', 'failed')
         .order('updated_at', { ascending: false });
 

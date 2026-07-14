@@ -16,9 +16,12 @@ import {
   CreditCard,
   MoreHorizontal,
   AlertCircle,
+  ChevronLeft,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { EmployeeTask } from '@/types/mobile-employee.types';
+import { format } from 'date-fns';
+import { ar } from 'date-fns/locale';
 
 interface MobileTaskItemProps {
   task: EmployeeTask;

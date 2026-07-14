@@ -11,7 +11,7 @@ import {
   Palette, Upload, RotateCcw, Save, Eye, Settings, Type, Image,
   Info, CheckCircle, AlertCircle, Menu, Undo2, History
 } from 'lucide-react';
-import { useCompanyBranding } from '@/hooks/useCompanyBranding';
+import { useCompanyBranding, type BrandingSettings } from '@/hooks/useCompanyBranding';
 import { useAuth } from '@/contexts/AuthContext';
 import { useDebounce } from '@/hooks/useDebounce';
 import { ImageUploadField } from './ImageUploadField';
@@ -210,7 +210,7 @@ export const CompanyBrandingSettings = () => {
 
   const handleSave = async () => {
     // Validate all colors before saving
-    const colorFields = ['primary_color', 'secondary_color', 'accent_color',
+    const colorFields: Array<keyof BrandingSettings> = ['primary_color', 'secondary_color', 'accent_color',
       'sidebar_background_color', 'sidebar_foreground_color',
       'sidebar_accent_color', 'sidebar_border_color'];
 

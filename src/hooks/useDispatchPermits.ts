@@ -1,6 +1,9 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import type { Database } from '@/integrations/supabase/types';
+
+type DispatchPermitUpdate = Database['public']['Tables']['vehicle_dispatch_permits']['Update'];
 
 export interface DispatchPermit {
   id: string;
@@ -152,7 +155,7 @@ export const useUpdateDispatchPermit = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ id, updates }: { id: string; updates: Partial<DispatchPermit> }) => {
+    mutationFn: async ({ id, updates }: { id: string; updates: DispatchPermitUpdate }) => {
       const { data, error } = await supabase
         .from('vehicle_dispatch_permits')
         .update(updates)

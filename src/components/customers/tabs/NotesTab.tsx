@@ -30,7 +30,7 @@ const NotesTab = ({ customerId, customerPhone, companyId }: { customerId: string
   const [noteType, setNoteType] = useState<'note' | 'phone' | 'whatsapp'>('note');
   const [isAdding, setIsAdding] = useState(false);
   
-  const { activities, isLoading, addActivity, isAddingActivity } = useCustomerCRMActivity(customerId);
+  const { activities, isLoading, addActivity, isAdding: isAddingActivity } = useCustomerCRMActivity(customerId);
 
   const [isAddingFollowup, setIsAddingFollowup] = useState(false);
   const [newFollowup, setNewFollowup] = useState({
@@ -43,11 +43,13 @@ const NotesTab = ({ customerId, customerPhone, companyId }: { customerId: string
   const { data: followups, isLoading: isLoadingFollowups, refetch: refetchFollowups } = useQuery({
     queryKey: ['customer-followups', customerId],
     queryFn: async () => {
+      const scopedCompanyId = companyId;
+      if (!scopedCompanyId) return [];
       const { data, error } = await supabase
         .from('scheduled_followups')
         .select('*')
         .eq('customer_id', customerId)
-        .eq('company_id', companyId)
+        .eq('company_id', scopedCompanyId)
         .order('scheduled_date', { ascending: true });
       
       if (error) throw error;
@@ -60,7 +62,7 @@ const NotesTab = ({ customerId, customerPhone, companyId }: { customerId: string
   const completedFollowups = followups?.filter(f => f.status === 'completed') || [];
 
   const handleAddFollowup = async () => {
-    if (!newFollowup.title.trim() || !newFollowup.scheduled_date) return;
+    if (!companyId || !newFollowup.title.trim() || !newFollowup.scheduled_date) return;
 
     try {
       const { error } = await supabase

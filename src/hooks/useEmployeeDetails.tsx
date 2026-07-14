@@ -109,7 +109,6 @@ export const useEmployeeDetails = (employeeId: string) => {
         .select(`
           id,
           title,
-          title_ar,
           followup_type,
           scheduled_date,
           scheduled_time,

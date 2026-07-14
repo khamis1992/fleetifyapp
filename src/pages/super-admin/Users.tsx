@@ -76,8 +76,10 @@ const SuperAdminUsersContent: React.FC = () => {
   // Get orphaned users count and companies with orphans
   const orphanedData = useMemo(() => {
     const orphaned = users?.filter(user => !user.profiles && user.orphaned_employee) || [];
-    const companiesWithOrphans = new Set(
-      orphaned.map(user => user.orphaned_employee?.company_id).filter(Boolean)
+    const companiesWithOrphans = new Set<string>(
+      orphaned
+        .map(user => user.orphaned_employee?.company_id)
+        .filter((companyId): companyId is string => Boolean(companyId))
     );
     
     return {
@@ -300,7 +302,7 @@ const SuperAdminUsersContent: React.FC = () => {
                     {user.profiles?.companies?.name || user.orphaned_employee?.companies?.name || 'غير محدد'}
                   </TableCell>
                   <TableCell>
-                    {getRolesBadges(user.user_roles)}
+                    {getRolesBadges(user.user_roles || [])}
                   </TableCell>
                   <TableCell>
                     {getStatusBadge(user)}

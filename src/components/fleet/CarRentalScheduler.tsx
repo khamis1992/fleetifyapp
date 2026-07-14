@@ -406,25 +406,16 @@ export default function CarRentalScheduler() {
     mutationFn: async (values: any) => {
       if (!companyId) throw new Error('Company ID not found');
 
-      const vehicle = vehicles.find(v => v.id === values.carId);
-      
-      const { data, error } = await supabase
-        .from('vehicle_reservations')
-        .insert({
-          company_id: companyId,
-          vehicle_id: values.carId,
-          customer_name: values.customer,
-          vehicle_plate: vehicle?.plate_number || '',
-          vehicle_make: vehicle?.make || '',
-          vehicle_model: vehicle?.model || '',
-          start_date: values.start,
-          end_date: format(addDays(new Date(values.start), values.days - 1), 'yyyy-MM-dd'),
-          hold_until: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
-          status: values.status || 'pending',
-          notes: values.notes || null,
-        })
-        .select()
-        .single();
+      const { data, error } = await supabase.rpc('save_vehicle_reservation_v1', {
+        p_company_id: companyId,
+        p_reservation_id: null,
+        p_vehicle_id: values.carId,
+        p_customer_name: values.customer,
+        p_start_date: values.start,
+        p_end_date: format(addDays(new Date(values.start), values.days - 1), 'yyyy-MM-dd'),
+        p_status: values.status || 'pending',
+        p_notes: values.notes || '',
+      });
 
       if (error) throw error;
       return data;
@@ -449,17 +440,20 @@ export default function CarRentalScheduler() {
       endDate: Date; 
       vehicleId: string 
     }) => {
+      if (!companyId) throw new Error('Company ID not found');
       const reservationId = id.replace('reservation-', '');
-      const { data, error } = await supabase
-        .from('vehicle_reservations')
-        .update({
-          start_date: format(startDate, 'yyyy-MM-dd'),
-          end_date: format(endDate, 'yyyy-MM-dd'),
-          vehicle_id: vehicleId,
-        })
-        .eq('id', reservationId)
-        .select()
-        .single();
+      const existing = reservationBookings.find((booking) => booking.id === id);
+      if (!existing) throw new Error('Reservation was not found');
+      const { data, error } = await supabase.rpc('save_vehicle_reservation_v1', {
+        p_company_id: companyId,
+        p_reservation_id: reservationId,
+        p_vehicle_id: vehicleId,
+        p_customer_name: existing.customer,
+        p_start_date: format(startDate, 'yyyy-MM-dd'),
+        p_end_date: format(endDate, 'yyyy-MM-dd'),
+        p_status: existing.status,
+        p_notes: '',
+      });
 
       if (error) throw error;
       return data;
@@ -477,13 +471,12 @@ export default function CarRentalScheduler() {
   // Cancel Reservation
   const cancelReservation = useMutation({
     mutationFn: async (id: string) => {
+      if (!companyId) throw new Error('Company ID not found');
       const reservationId = id.replace('reservation-', '');
-      const { data, error } = await supabase
-        .from('vehicle_reservations')
-        .update({ status: 'cancelled' })
-        .eq('id', reservationId)
-        .select()
-        .single();
+      const { data, error } = await supabase.rpc('cancel_vehicle_reservation_v1', {
+        p_company_id: companyId,
+        p_reservation_id: reservationId,
+      });
 
       if (error) throw error;
       return data;
@@ -907,7 +900,7 @@ export default function CarRentalScheduler() {
                   </button>
                   <button 
                     onClick={() => setCurrentView('drivers')} 
-                    className={`px-4 py-1.5 rounded-md text-sm font-bold transition flex items-center gap-2 ${currentView === 'drivers' ? 'bg-white text-rose-500 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                    className="px-4 py-1.5 rounded-md text-sm font-bold transition flex items-center gap-2 text-slate-500 hover:text-slate-700"
                   >
                     <Users className="w-4 h-4" /> السائقين
                   </button>
@@ -1294,7 +1287,7 @@ export default function CarRentalScheduler() {
                 <div className="flex bg-slate-100 p-1 rounded-lg mt-2 inline-flex">
                   <button 
                     onClick={() => setCurrentView('scheduler')} 
-                    className={`px-4 py-1.5 rounded-md text-sm font-bold transition flex items-center gap-2 ${currentView === 'scheduler' ? 'bg-white text-rose-500 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                    className="px-4 py-1.5 rounded-md text-sm font-bold transition flex items-center gap-2 text-slate-500 hover:text-slate-700"
                   >
                     <LayoutGrid className="w-4 h-4" /> الجدول
                   </button>

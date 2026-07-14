@@ -1,7 +1,10 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import type { Database } from '@/integrations/supabase/types';
 import { PropertyOwner } from '../types';
 import { toast } from 'sonner';
+
+type PropertyOwnerUpdate = Database['public']['Tables']['property_owners']['Update'];
 
 export function usePropertyOwners(search?: string) {
   return useQuery({
@@ -167,7 +170,9 @@ export function useUpdatePropertyOwner() {
         delete normalizedUpdates.bank_account;
       }
       const allowedUpdate = new Set<string>(['full_name','full_name_ar','owner_code','civil_id','phone','email','address','address_ar','nationality','commission_percentage','notes','is_active','bank_account_info']);
-      const safeUpdates = Object.fromEntries(Object.entries(normalizedUpdates).filter(([k]) => allowedUpdate.has(k)));
+      const safeUpdates = Object.fromEntries(
+        Object.entries(normalizedUpdates).filter(([k]) => allowedUpdate.has(k))
+      ) as PropertyOwnerUpdate;
 
       const { data, error } = await supabase
         .from('property_owners')

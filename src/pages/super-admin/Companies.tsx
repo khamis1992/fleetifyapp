@@ -37,7 +37,7 @@ const Companies: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
 
-  const getStatusVariant = (status?: string) => {
+  const getStatusVariant = (status?: string | null) => {
     switch (status) {
       case 'active': return 'default';
       case 'inactive': return 'secondary';
@@ -46,7 +46,7 @@ const Companies: React.FC = () => {
     }
   };
 
-  const getStatusLabel = (status?: string) => {
+  const getStatusLabel = (status?: string | null) => {
     switch (status) {
       case 'active': return 'نشط';
       case 'inactive': return 'غير نشط';
@@ -55,7 +55,7 @@ const Companies: React.FC = () => {
     }
   };
 
-  const getPlanLabel = (plan?: string) => {
+  const getPlanLabel = (plan?: string | null) => {
     switch (plan) {
       case 'basic': return 'أساسي';
       case 'premium': return 'مميز';

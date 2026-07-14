@@ -18,28 +18,45 @@ export const HeaderAttendanceButton: React.FC = () => {
   // Check attendance permission
   const { data: permissionCheck, isLoading: isCheckingPermission } = usePermissionCheck('attendance.clock_in');
 
+  const { data: employeeId, isLoading: isLoadingEmployee } = useQuery({
+    queryKey: ['attendance-employee-id', user?.id],
+    queryFn: async () => {
+      if (!user?.id) throw new Error('User identity is required');
+      const { data, error } = await supabase
+        .from('employees')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('is_active', true)
+        .maybeSingle();
+
+      if (error) throw error;
+      return data?.id ?? null;
+    },
+    enabled: !!user?.id,
+  });
+
   // Get today's attendance
   const { data: todayAttendance, refetch: refetchAttendance } = useQuery({
-    queryKey: ['attendance', permissionCheck?.employee_id, new Date().toISOString().split('T')[0]],
+    queryKey: ['attendance', employeeId, new Date().toISOString().split('T')[0]],
     queryFn: async () => {
-      if (!permissionCheck?.employee_id) return null;
+      if (!employeeId) return null;
       
       const today = new Date().toISOString().split('T')[0];
       const { data, error } = await supabase
         .from('attendance_records')
         .select('*')
-        .eq('employee_id', permissionCheck.employee_id)
+        .eq('employee_id', employeeId)
         .eq('attendance_date', today)
         .maybeSingle();
 
       if (error && error.code !== 'PGRST116') throw error;
       return data;
     },
-    enabled: !!permissionCheck?.employee_id,
+    enabled: !!employeeId && !!permissionCheck?.hasPermission,
   });
 
   const handleClockAction = async () => {
-    if (!permissionCheck?.hasPermission || !permissionCheck.employee_id) {
+    if (!permissionCheck?.hasPermission || !employeeId) {
       toast.error(permissionCheck?.reason || 'ليس لديك صلاحية لتسجيل الحضور');
       return;
     }
@@ -51,14 +68,14 @@ export const HeaderAttendanceButton: React.FC = () => {
       if (!todayAttendance?.check_in_time) {
         // Clock in
         await clockIn.mutateAsync({
-          employeeId: permissionCheck.employee_id,
+          employeeId,
           latitude: location.latitude,
           longitude: location.longitude,
         });
       } else if (!todayAttendance?.check_out_time) {
         // Clock out
         await clockOut.mutateAsync({
-          employeeId: permissionCheck.employee_id,
+          employeeId,
           latitude: location.latitude,
           longitude: location.longitude,
         });
@@ -75,7 +92,7 @@ export const HeaderAttendanceButton: React.FC = () => {
   };
 
   // Loading state
-  if (isCheckingPermission) {
+  if (isCheckingPermission || isLoadingEmployee) {
     return (
       <div className="flex items-center gap-2">
         <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />

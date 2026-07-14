@@ -21,7 +21,10 @@ type UpdateInvoiceInput = Omit<InvoiceUpdate, "company_id" | "id"> & { id: strin
 // Simple permission check helper - permissions are handled at route level
 const useSimplePermissions = () => {
   return {
-    hasPermission: (_permission: string) => true, // Route-level permissions handle access control
+    hasPermission: (permission: string) => {
+      void permission;
+      return true; // Route-level permissions handle access control
+    },
   };
 };
 
@@ -203,7 +206,7 @@ export const useInvoices = (filters?: InvoiceFilters) => {
         }
 
         // Map vehicle number to invoices
-        const mappedData = (data || []).map((invoice: any) => ({
+        const mappedData = (data || []).map((invoice) => ({
           ...invoice,
           vehicle_number: invoice.contracts?.vehicles?.plate_number || ''
         }));
@@ -492,17 +495,31 @@ export const useDeleteInvoice = () => {
           });
           throw error;
         }
+
+        return {
+          ...invoice,
+          status: "cancelled" as const,
+          payment_status: "cancelled" as const,
+        };
       } catch (error) {
         Sentry.captureException(error);
         throw error;
       }
     },
-    onSuccess: () => {
+    onSuccess: (cancelledInvoice) => {
+      queryClient.setQueryData(
+        queryKeys.invoices.detail(cancelledInvoice.id),
+        (current: unknown) =>
+          current && typeof current === 'object'
+            ? { ...current, ...cancelledInvoice }
+            : cancelledInvoice,
+      );
       queryClient.invalidateQueries({ queryKey: queryKeys.invoices.lists() });
-      toast.success("تم حذف الفاتورة بنجاح");
+      queryClient.invalidateQueries({ queryKey: queryKeys.invoices.detail(cancelledInvoice.id) });
+      toast.success("تم إلغاء الفاتورة بنجاح");
     },
     onError: (error: Error) => {
-      toast.error(`خطأ في حذف الفاتورة: ${error.message}`);
+      toast.error(`خطأ في إلغاء الفاتورة: ${error.message}`);
     },
   });
 };

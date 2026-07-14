@@ -13,9 +13,9 @@ interface EmployeeAttendanceStatus {
   employee_number: string;
   first_name: string;
   last_name: string;
-  user_id?: string;
-  account_status: string;
-  has_system_access: boolean;
+  user_id: string | null;
+  account_status: string | null;
+  has_system_access: boolean | null;
   roles: string[];
   hasAttendancePermission: boolean;
 }
@@ -111,7 +111,7 @@ export const AttendancePermissionsPanel: React.FC = () => {
     onError: (error: unknown) => {
       toast({
         title: 'خطأ في إصلاح الصلاحيات',
-        description: error.message,
+        description: error instanceof Error ? error.message : 'تعذر إصلاح الصلاحيات',
         variant: 'destructive',
       });
     },

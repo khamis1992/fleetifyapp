@@ -34,6 +34,7 @@ import {
   Search
 } from 'lucide-react'
 import { PageCustomizer } from '@/components/PageCustomizer'
+import { useFleetifyTranslation } from '@/hooks/useTranslation'
 
 export default function NativeMobileDemo() {
   const { t } = useFleetifyTranslation("ui");

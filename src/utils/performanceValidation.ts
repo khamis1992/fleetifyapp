@@ -9,6 +9,8 @@ interface ValidationResult {
   timestamp: number;
 }
 
+type ValidationCheckResult = Omit<ValidationResult, 'component' | 'timestamp'>;
+
 interface SystemHealthReport {
   overall: 'healthy' | 'warning' | 'critical';
   components: {
@@ -47,8 +49,14 @@ export class PerformanceValidator {
     });
   }
 
+  private completeResult(component: string, result: ValidationCheckResult): ValidationResult {
+    const completed = { ...result, component, timestamp: Date.now() };
+    this.results.push(completed);
+    return completed;
+  }
+
   // Validate performance logger
-  private validatePerformanceLogger(): ValidationResult {
+  private validatePerformanceLogger(): ValidationCheckResult {
     try {
       // Test basic logging functionality
       const initialLogCount = performanceLogger.exportLogs().length;
@@ -121,7 +129,7 @@ export class PerformanceValidator {
   }
 
   // Validate performance monitoring hook
-  private validatePerformanceMonitor(): ValidationResult {
+  private validatePerformanceMonitor(): ValidationCheckResult {
     try {
       // Test global metrics functionality
       const metricsBefore = getGlobalPerformanceMetrics();
@@ -177,7 +185,7 @@ export class PerformanceValidator {
   }
 
   // Validate QueryClient configuration
-  private validateQueryClient(): ValidationResult {
+  private validateQueryClient(): ValidationCheckResult {
     try {
       // This would typically validate the actual QueryClient configuration
       // For this validation, we'll check if the performance callbacks are properly integrated
@@ -224,7 +232,7 @@ export class PerformanceValidator {
   }
 
   // Validate cache optimizations
-  private validateCacheOptimization(): ValidationResult {
+  private validateCacheOptimization(): ValidationCheckResult {
     try {
       // Test cache hit/miss tracking
       performanceLogger.logCache('cache-hit-validation', 5);
@@ -275,7 +283,7 @@ export class PerformanceValidator {
   }
 
   // Validate dashboard functionality
-  private validateDashboard(): ValidationResult {
+  private validateDashboard(): ValidationCheckResult {
     try {
       // Test dashboard data source
       const metrics = getGlobalPerformanceMetrics();
@@ -330,11 +338,11 @@ export class PerformanceValidator {
     this.results = [];
     
     // Run all validations
-    const performanceLoggerResult = this.validatePerformanceLogger();
-    const performanceMonitorResult = this.validatePerformanceMonitor();
-    const queryClientResult = this.validateQueryClient();
-    const cacheOptimizationResult = this.validateCacheOptimization();
-    const dashboardResult = this.validateDashboard();
+    const performanceLoggerResult = this.completeResult('performanceLogger', this.validatePerformanceLogger());
+    const performanceMonitorResult = this.completeResult('performanceMonitor', this.validatePerformanceMonitor());
+    const queryClientResult = this.completeResult('queryClient', this.validateQueryClient());
+    const cacheOptimizationResult = this.completeResult('cacheOptimization', this.validateCacheOptimization());
+    const dashboardResult = this.completeResult('dashboard', this.validateDashboard());
     
     // Determine overall system health
     const allResults = [performanceLoggerResult, performanceMonitorResult, queryClientResult, cacheOptimizationResult, dashboardResult];

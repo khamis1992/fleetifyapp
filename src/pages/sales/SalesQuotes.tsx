@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import type { BadgeProps } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
@@ -19,6 +20,46 @@ import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { useToast } from "@/hooks/use-toast";
 import { FileText, Plus, Search, Edit, Trash2, Eye, Send, CheckCircle, XCircle, Clock, Download, FileCheck } from "lucide-react";
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
+import type { Json } from "@/integrations/supabase/types";
+
+type QuoteItem = {
+  id: string;
+  description: string;
+  quantity: number;
+  unit_price: number;
+  total: number;
+};
+
+const isJsonRecord = (value: Json): value is { [key: string]: Json | undefined } =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
+
+const toFiniteNumber = (value: Json | undefined): number =>
+  typeof value === "number" && Number.isFinite(value) ? value : 0;
+
+const normalizeQuoteItems = (items: Json | null): QuoteItem[] => {
+  if (!Array.isArray(items)) return [];
+
+  return items.flatMap((item, index) => {
+    if (!isJsonRecord(item)) return [];
+
+    const quantity = toFiniteNumber(item.quantity);
+    const unitPrice = toFiniteNumber(item.unit_price);
+    const storedTotal = toFiniteNumber(item.total);
+    const description = typeof item.description === "string"
+      ? item.description
+      : typeof item.name === "string"
+        ? item.name
+        : "";
+
+    return [{
+      id: typeof item.id === "string" ? item.id : `item-${index}`,
+      description,
+      quantity,
+      unit_price: unitPrice,
+      total: storedTotal || quantity * unitPrice,
+    }];
+  });
+};
 
 const SalesQuotes = () => {
   const { toast } = useToast();
@@ -43,7 +84,7 @@ const SalesQuotes = () => {
   });
   const [formData, setFormData] = useState({
     quote_number: "",
-    items: [] as Array<{ id: string; description: string; quantity: number; unit_price: number; total: number }>,
+    items: [] as QuoteItem[],
     subtotal: 0,
     tax: 0,
     total: 0,
@@ -64,6 +105,55 @@ const SalesQuotes = () => {
   const { generateQuotePDF, isGenerating } = useQuotePDFGenerator();
   const { convertQuoteToContract, canConvertToContract, isConverting } = useQuoteToContract();
   const { data: vehicles } = useVehicles({ status: 'available' });
+  const availableVehicles = (vehicles || []).filter((vehicle) => vehicle.status === 'available');
+  const selectedQuoteItems = normalizeQuoteItems(selectedQuote?.items ?? null);
+
+  const filteredQuotes = (quotes || []).filter((quote) => {
+    const matchesTab = activeTab === 'all' || quote.status === activeTab;
+    const matchesStatus = selectedStatus === 'all' || quote.status === selectedStatus;
+    return matchesTab && matchesStatus;
+  });
+
+  const handleCreateQuote = async () => {
+    await createQuote.mutateAsync({
+      ...formData,
+      quote_number: nextQuoteNumber || formData.quote_number,
+    });
+    setIsCreateDialogOpen(false);
+    resetForm();
+  };
+
+  const handleViewDetails = (quote: SalesQuote) => {
+    setSelectedQuote(quote);
+    setIsDetailsDialogOpen(true);
+  };
+
+  const handleEditQuote = (quote: SalesQuote) => {
+    setSelectedQuote(quote);
+    setFormData({
+      quote_number: quote.quote_number,
+      items: normalizeQuoteItems(quote.items),
+      subtotal: quote.subtotal || 0,
+      tax: quote.tax || 0,
+      total: quote.total || 0,
+      valid_until: quote.valid_until || '',
+      status: quote.status ?? 'draft',
+      notes: quote.notes || '',
+      is_active: quote.is_active ?? true,
+    });
+    setIsEditDialogOpen(true);
+  };
+
+  const handleUpdateQuote = async () => {
+    if (!selectedQuote) return;
+    await updateQuote.mutateAsync({ id: selectedQuote.id, data: formData });
+    setIsEditDialogOpen(false);
+    resetForm();
+  };
+
+  const handleDeleteQuote = async (quote: SalesQuote) => {
+    await deleteQuote.mutateAsync(quote.id);
+  };
 
   const handleConvertToContractSubmit = async () => {
     if (!selectedQuote || !selectedVehicleId) {
@@ -123,7 +213,7 @@ const SalesQuotes = () => {
     setSelectedQuote(null);
   };
 
-  const getStatusBadgeVariant = (status: string) => {
+  const getStatusBadgeVariant = (status: string): BadgeProps['variant'] => {
     switch (status) {
       case 'draft':
         return 'default';
@@ -132,7 +222,7 @@ const SalesQuotes = () => {
       case 'viewed':
         return 'default';
       case 'accepted':
-        return 'success';
+        return 'default';
       case 'rejected':
         return 'destructive';
       case 'expired':
@@ -190,7 +280,7 @@ const SalesQuotes = () => {
 
   const totalValue = quotes?.reduce((sum, quote) => sum + (quote.total || 0), 0) || 0;
   const acceptedValue = quotes?.filter(q => q.status === 'accepted').reduce((sum, quote) => sum + (quote.total || 0), 0) || 0;
-  const pendingValue = quotes?.filter(q => ['sent', 'viewed'].includes(q.status)).reduce((sum, quote) => sum + (quote.total || 0), 0) || 0;
+  const pendingValue = quotes?.filter(q => ['sent', 'viewed'].includes(q.status ?? '')).reduce((sum, quote) => sum + (quote.total || 0), 0) || 0;
 
   return (
     <div className="space-y-6">
@@ -455,7 +545,7 @@ const SalesQuotes = () => {
                       <TableRow key={quote.id} className="cursor-pointer hover:bg-muted/50" onClick={() => handleViewDetails(quote)}>
                         <TableCell className="font-medium">
                           <div className="flex items-center gap-2">
-                            {getStatusIcon(quote.status)}
+                            {getStatusIcon(quote.status ?? '')}
                             {quote.quote_number}
                           </div>
                         </TableCell>
@@ -463,8 +553,8 @@ const SalesQuotes = () => {
                           {formatCurrency(quote.total || 0)}
                         </TableCell>
                         <TableCell>
-                          <Badge variant={getStatusBadgeVariant(quote.status)}>
-                            {getStatusLabel(quote.status)}
+                          <Badge variant={getStatusBadgeVariant(quote.status ?? '')}>
+                            {getStatusLabel(quote.status ?? '')}
                           </Badge>
                         </TableCell>
                         <TableCell className="text-sm text-muted-foreground">
@@ -474,7 +564,7 @@ const SalesQuotes = () => {
                           }
                         </TableCell>
                         <TableCell className="text-sm text-muted-foreground">
-                          {new Date(quote.created_at).toLocaleDateString('en-US')}
+                          {quote.created_at ? new Date(quote.created_at).toLocaleDateString('en-US') : '-'}
                         </TableCell>
                         <TableCell>
                           <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
@@ -662,8 +752,8 @@ const SalesQuotes = () => {
                 <div>
                   <Label className="text-muted-foreground">الحالة</Label>
                   <div className="mt-1">
-                    <Badge variant={getStatusBadgeVariant(selectedQuote.status)}>
-                      {getStatusLabel(selectedQuote.status)}
+                    <Badge variant={getStatusBadgeVariant(selectedQuote.status ?? '')}>
+                      {getStatusLabel(selectedQuote.status ?? '')}
                     </Badge>
                   </div>
                 </div>
@@ -679,14 +769,14 @@ const SalesQuotes = () => {
                 <div>
                   <Label className="text-muted-foreground">تاريخ الإنشاء</Label>
                   <p className="font-medium">
-                    {new Date(selectedQuote.created_at).toLocaleDateString('en-US')}
+                    {selectedQuote.created_at ? new Date(selectedQuote.created_at).toLocaleDateString('en-US') : '-'}
                   </p>
                 </div>
               </div>
 
               <div className="border rounded-lg p-4">
                 <h3 className="text-sm font-medium mb-3">البنود</h3>
-                {selectedQuote.items && selectedQuote.items.length > 0 ? (
+                {selectedQuoteItems.length > 0 ? (
                   <Table>
                     <TableHeader>
                       <TableRow>
@@ -697,12 +787,12 @@ const SalesQuotes = () => {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {selectedQuote.items.map((item, index) => (
-                        <TableRow key={index}>
-                          <TableCell>{item.name || 'صنف'}</TableCell>
-                          <TableCell>{item.quantity || 0}</TableCell>
-                          <TableCell>{formatCurrency(item.unit_price || 0)}</TableCell>
-                          <TableCell>{formatCurrency((item.quantity || 0) * (item.unit_price || 0))}</TableCell>
+                      {selectedQuoteItems.map((item) => (
+                        <TableRow key={item.id}>
+                          <TableCell>{item.description || 'صنف'}</TableCell>
+                          <TableCell>{item.quantity}</TableCell>
+                          <TableCell>{formatCurrency(item.unit_price)}</TableCell>
+                          <TableCell>{formatCurrency(item.total)}</TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
@@ -715,15 +805,15 @@ const SalesQuotes = () => {
               <div className="border rounded-lg p-4 space-y-2">
                 <div className="flex justify-between">
                   <span className="text-sm text-muted-foreground">المجموع الفرعي</span>
-                  <span className="font-medium">{formatCurrency(selectedQuote.subtotal)}</span>
+                  <span className="font-medium">{formatCurrency(selectedQuote.subtotal ?? 0)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-sm text-muted-foreground">الضريبة (15%)</span>
-                  <span className="font-medium">{formatCurrency(selectedQuote.tax)}</span>
+                  <span className="font-medium">{formatCurrency(selectedQuote.tax ?? 0)}</span>
                 </div>
                 <div className="border-t pt-2 flex justify-between">
                   <span className="font-semibold">الإجمالي</span>
-                  <span className="font-bold text-lg text-green-600">{formatCurrency(selectedQuote.total)}</span>
+                  <span className="font-bold text-lg text-green-600">{formatCurrency(selectedQuote.total ?? 0)}</span>
                 </div>
               </div>
 
@@ -772,9 +862,7 @@ const SalesQuotes = () => {
                   <SelectValue placeholder="اختر مركبة" />
                 </SelectTrigger>
                 <SelectContent>
-                  {(vehicles || [])
-                    .filter(v => v.status === 'available')
-                    .map(vehicle => (
+                  {availableVehicles.map(vehicle => (
                       <SelectItem key={vehicle.id} value={vehicle.id}>
                         {vehicle.make} {vehicle.model} - {vehicle.plate_number}
                       </SelectItem>
@@ -873,7 +961,7 @@ const SalesQuotes = () => {
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsConvertDialogOpen(false)}>
+            <Button variant="outline" onClick={() => setConvertDialogOpen(false)}>
               إلغاء
             </Button>
             <Button onClick={handleConvertToContractSubmit} disabled={!selectedVehicleId || isConverting}>

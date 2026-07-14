@@ -2,8 +2,9 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useCurrentCompanyId } from './useUnifiedCompanyAccess';
 import { useDebounce } from './useDebounce';
+import type { Vehicle } from '@/types/vehicle.types';
 
-type VehicleStatus = 'available' | 'rented' | 'maintenance' | 'out_of_service' | 'reserved' | 'accident' | 'stolen' | 'police_station';
+export type VehicleStatus = NonNullable<Vehicle['status']>;
 
 export interface VehicleFilters {
   search?: string;
@@ -20,7 +21,7 @@ export interface VehicleFilters {
 }
 
 export interface PaginatedVehiclesResponse {
-  data: unknown[];
+  data: Vehicle[];
   count: number;
   totalPages: number;
   currentPage: number;
@@ -132,8 +133,22 @@ export const useVehiclesPaginated = (
 
       const totalPages = count ? Math.ceil(count / pageSize) : 0;
 
+      const vehicles: Vehicle[] = (data || []).map((vehicle) => {
+        const normalized = {
+          ...vehicle,
+          images: Array.isArray(vehicle.images)
+            ? vehicle.images.filter((image): image is string => typeof image === 'string')
+            : [],
+          features: Array.isArray(vehicle.features)
+            ? vehicle.features.filter((feature): feature is string => typeof feature === 'string')
+            : [],
+          status: vehicle.status || undefined,
+        };
+        return normalized as Vehicle;
+      });
+
       return {
-        data: data || [],
+        data: vehicles,
         count: count || 0,
         totalPages,
         currentPage: page

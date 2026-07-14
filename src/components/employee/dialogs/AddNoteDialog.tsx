@@ -9,6 +9,10 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { customerCommunicationsClient } from '@/integrations/supabase/customerCommunicationsClient';
+import type {
+  CustomerCommunicationInsert,
+  CustomerCommunicationRow,
+} from '@/integrations/supabase/customerCommunicationsClient';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 
@@ -99,31 +103,33 @@ export const AddNoteDialog: React.FC<AddNoteDialogProps> = ({
 
       const now = new Date();
 
-      const { data: note, error } = await customerCommunicationsClient
+      const payload: CustomerCommunicationInsert = {
+        customer_id: contract.customer_id,
+        company_id: companyId,
+        contract_id: data.contract_id,
+        communication_type: 'note',
+        communication_date: now.toISOString().slice(0, 10),
+        communication_time: now.toISOString().slice(11, 19),
+        duration_minutes: null,
+        employee_id: user.id,
+        notes: `[${data.note_type}]${data.is_important ? ' [مهمة]' : ''} ${data.note_content}`,
+        action_required: 'none',
+        action_description: null,
+        follow_up_scheduled: false,
+        follow_up_date: null,
+        follow_up_time: null,
+        follow_up_status: null,
+        attachments: [],
+      };
+
+      const { data: insertedNote, error } = await customerCommunicationsClient
         .from('customer_communications')
-        .insert({
-          customer_id: contract.customer_id,
-          company_id: companyId,
-          contract_id: data.contract_id,
-          communication_type: 'note',
-          communication_date: now.toISOString().slice(0, 10),
-          communication_time: now.toISOString().slice(11, 19),
-          duration_minutes: null,
-          employee_id: user.id,
-          notes: `[${data.note_type}]${data.is_important ? ' [مهمة]' : ''} ${data.note_content}`,
-          action_required: 'none',
-          action_description: null,
-          follow_up_scheduled: false,
-          follow_up_date: null,
-          follow_up_time: null,
-          follow_up_status: null,
-          attachments: [],
-        })
+        .insert(payload as never)
         .select()
         .single();
 
       if (error) throw error;
-      return note;
+      return insertedNote as CustomerCommunicationRow;
     },
     onSuccess: () => {
       toast.success('تم إضافة الملاحظة بنجاح', {

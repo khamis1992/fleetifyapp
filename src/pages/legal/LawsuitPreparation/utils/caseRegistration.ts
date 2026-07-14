@@ -4,8 +4,7 @@
  */
 
 import { supabase } from '@/integrations/supabase/client';
-import { useConvertToLegalCase } from '@/hooks/useConvertToLegalCase';
-import type { LawsuitPreparationState, DocumentsState } from '../store';
+import type { LawsuitPreparationState } from '../store';
 import { formatCustomerName } from '@/utils/formatCustomerName';
 
 interface RegisterCaseResult {
@@ -52,7 +51,7 @@ async function uploadHtmlDocument(
 /**
  * Register legal case in the system
  */
-export async function registerLegalCase(
+async function registerLegalCaseLegacy(
   state: LawsuitPreparationState,
   userId: string
 ): Promise<RegisterCaseResult> {
@@ -121,16 +120,7 @@ export async function registerLegalCase(
       : undefined,
   };
   
-  // Generate case number using database function
-  const { data: caseNumberData, error: caseNumberError } = await supabase
-    .rpc('generate_case_number', { company_uuid: companyId });
-  
-  if (caseNumberError) {
-    console.error('Failed to generate case number:', caseNumberError);
-  }
-  
-  // Fallback case number if RPC fails
-  const caseNumber = caseNumberData || `LC-${new Date().getFullYear()}-${Date.now()}`;
+  const caseNumber = `LC-${new Date().getFullYear()}-${Date.now()}`;
   
   // Generate case title
   const caseTitle = taqadiData?.caseTitle || `قضية عقد ${contract.contract_number}`;
@@ -140,14 +130,16 @@ export async function registerLegalCase(
     .from('legal_cases')
     .insert({
       case_number: caseNumber,
-      title: caseTitle,
+      case_title: caseTitle,
+      case_title_ar: caseTitle,
       company_id: companyId,
-      customer_id: customer?.id,
+      client_id: customer?.id,
+      client_name: customer ? formatCustomerName(customer) : null,
       contract_id: contractId,
       case_type: 'contract_dispute',
-      status: 'open',
+      case_status: 'open',
       filing_date: new Date().toISOString(),
-      claim_amount: calculations.total,
+      case_value: calculations.total,
       description: taqadiData?.facts,
       created_by: userId,
     })
@@ -356,5 +348,50 @@ export async function registerLegalCase(
   return {
     caseId: newCase.id,
     caseNumber: newCase.case_number,
+  };
+}
+
+void registerLegalCaseLegacy;
+
+export async function registerLegalCase(
+  state: LawsuitPreparationState,
+  userId: string,
+): Promise<RegisterCaseResult> {
+  const { companyId, contractId, calculations, documents, taqadiData } = state;
+  if (!companyId || !contractId || !calculations) {
+    throw new Error('Legal case data is incomplete');
+  }
+
+  const requiredDocuments = ['memo', 'claims', 'docsList'] as const;
+  const readyCount = requiredDocuments.filter(
+    (documentId) => documents[documentId].status === 'ready',
+  ).length;
+  if (readyCount !== requiredDocuments.length) {
+    throw new Error(`All generated documents must be ready (${readyCount}/${requiredDocuments.length})`);
+  }
+
+  const { data, error } = await supabase.rpc('convert_contract_to_legal_v1', {
+    p_actor_id: userId,
+    p_case_type: 'contract_dispute',
+    p_company_id: companyId,
+    p_contract_id: contractId,
+    p_notes: taqadiData ? `${taqadiData.caseTitle}\n${taqadiData.claims}` : '',
+    p_priority: calculations.total > 10000 ? 'urgent' : 'high',
+  });
+  if (error || !data) {
+    throw new Error(`Failed to create the legal case: ${error?.message || 'Unknown error'}`);
+  }
+
+  const result = data as {
+    case_number?: string;
+    legal_case?: { id?: string; case_number?: string };
+  };
+  if (!result.legal_case?.id) {
+    throw new Error('The legal case command returned no case identifier');
+  }
+
+  return {
+    caseId: result.legal_case.id,
+    caseNumber: result.legal_case.case_number || result.case_number || '',
   };
 }

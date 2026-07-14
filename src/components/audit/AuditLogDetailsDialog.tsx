@@ -52,7 +52,7 @@ export function AuditLogDetailsDialog({ log, open, onClose }: AuditLogDetailsDia
     }).format(amount);
   };
 
-  const getSeverityColor = (severity: string) => {
+  const getSeverityColor = (severity?: string) => {
     switch (severity) {
       case 'critical':
         return 'text-red-600 bg-red-50 border-red-200';
@@ -182,7 +182,7 @@ export function AuditLogDetailsDialog({ log, open, onClose }: AuditLogDetailsDia
                       <div className="flex justify-between">
                         <span className="text-sm font-medium">User ID:</span>
                         <code className="text-xs bg-muted px-2 py-1 rounded">
-                          {log.user_id.substring(0, 8)}...
+                          {log.user_id ? `${log.user_id.substring(0, 8)}...` : 'N/A'}
                         </code>
                       </div>
                       <div className="flex justify-between">

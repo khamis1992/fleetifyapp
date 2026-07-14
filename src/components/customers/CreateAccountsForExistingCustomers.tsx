@@ -11,11 +11,11 @@ import { AlertCircle, CheckCircle2, Clock, User, Building2 } from 'lucide-react'
 
 interface Customer {
   id: string;
-  customer_type: 'individual' | 'corporate';
-  first_name: string;
-  last_name: string;
-  company_name: string;
-  customer_code: string;
+  customer_type: 'individual' | 'corporate' | null;
+  first_name: string | null;
+  last_name: string | null;
+  company_name: string | null;
+  customer_code: string | null;
 }
 
 export const CreateAccountsForExistingCustomers: React.FC = () => {
@@ -103,7 +103,7 @@ export const CreateAccountsForExistingCustomers: React.FC = () => {
         console.error(`❌ Failed to create account for customer ${customer.customer_code}:`, error);
         failedCustomers.push({ 
           customer, 
-          error: error.message || 'حدث خطأ غير متوقع' 
+          error: error instanceof Error ? error.message : 'حدث خطأ غير متوقع'
         });
       }
 

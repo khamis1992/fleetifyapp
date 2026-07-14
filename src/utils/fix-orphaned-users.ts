@@ -1,5 +1,8 @@
 import { supabase } from "@/integrations/supabase/client";
 
+const getErrorMessage = (error: unknown): string =>
+  error instanceof Error ? error.message : String(error);
+
 /**
  * Fixes orphaned user records by creating missing profiles and assigning default roles
  * This handles cases where employees have user_id but no profile/roles
@@ -39,6 +42,16 @@ export const fixOrphanedUsers = async (companyId: string) => {
 
     for (const employee of orphanedEmployees) {
       try {
+        if (!employee.user_id) {
+          errors.push(`Employee ${employee.id} has no linked user ID`);
+          continue;
+        }
+
+        if (!employee.email) {
+          errors.push(`Employee ${employee.id} has no email address`);
+          continue;
+        }
+
         // Check if profile exists
         const { data: existingProfile } = await supabase
           .from('profiles')
@@ -94,7 +107,7 @@ export const fixOrphanedUsers = async (companyId: string) => {
         fixedCount++;
       } catch (error) {
         console.error('Error fixing employee:', employee.id, error);
-        errors.push(`Error fixing ${employee.email}: ${error.message}`);
+        errors.push(`Error fixing ${employee.email ?? employee.id}: ${getErrorMessage(error)}`);
       }
     }
 

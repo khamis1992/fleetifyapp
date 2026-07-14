@@ -55,6 +55,7 @@ export default function UserAccountForm({ employee, open, onOpenChange, onSucces
 
   const createAccountMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
+      if (!user?.id) throw new Error('User identity is required');
       if (creationMethod === 'direct') {
         // Direct account creation
         const { data: result, error } = await supabase.functions.invoke('create-user-account', {
@@ -67,7 +68,7 @@ export default function UserAccountForm({ employee, open, onOpenChange, onSucces
             temporary_password: data.setCustomPassword ? data.password : undefined,
             requester_name: `${user?.profile?.first_name || ''} ${user?.profile?.last_name || ''}`.trim(),
             notes: data.notes,
-            user_id: user?.id,
+            user_id: user.id,
             company_id: employee.company_id
           }
         });
@@ -95,7 +96,7 @@ export default function UserAccountForm({ employee, open, onOpenChange, onSucces
           .insert({
             employee_id: employee.id,
             company_id: employee.company_id,
-            requested_by: user?.id,
+            requested_by: user.id,
             requested_roles: data.selectedRoles,
             notes: data.notes,
             direct_creation: false
@@ -195,7 +196,7 @@ export default function UserAccountForm({ employee, open, onOpenChange, onSucces
       toast({
         variant: "destructive",
         title: "خطأ في إنشاء الحساب",
-        description: error.message || "حدث خطأ أثناء إنشاء الحساب"
+        description: error instanceof Error ? error.message : "حدث خطأ أثناء إنشاء الحساب"
       });
     }
   });

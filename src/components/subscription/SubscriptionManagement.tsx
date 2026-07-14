@@ -123,7 +123,7 @@ export const SubscriptionManagement: React.FC = () => {
                       <span>{usage.users_count} / {currentPlan?.max_users || '∞'}</span>
                     </div>
                     {currentPlan?.max_users && (
-                      <Progress value={(usage.users_count / currentPlan.max_users) * 100} />
+                      <Progress value={((usage.users_count ?? 0) / currentPlan.max_users) * 100} />
                     )}
                   </div>
 
@@ -133,7 +133,7 @@ export const SubscriptionManagement: React.FC = () => {
                       <span>{usage.vehicles_count} / {currentPlan?.max_vehicles || '∞'}</span>
                     </div>
                     {currentPlan?.max_vehicles && (
-                      <Progress value={(usage.vehicles_count / currentPlan.max_vehicles) * 100} />
+                      <Progress value={((usage.vehicles_count ?? 0) / currentPlan.max_vehicles) * 100} />
                     )}
                   </div>
 
@@ -143,7 +143,7 @@ export const SubscriptionManagement: React.FC = () => {
                       <span>{usage.contracts_count} / {currentPlan?.max_contracts || '∞'}</span>
                     </div>
                     {currentPlan?.max_contracts && (
-                      <Progress value={(usage.contracts_count / currentPlan.max_contracts) * 100} />
+                      <Progress value={((usage.contracts_count ?? 0) / currentPlan.max_contracts) * 100} />
                     )}
                   </div>
                 </div>

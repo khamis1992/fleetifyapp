@@ -5,6 +5,7 @@
 export type {
   VehicleOCRResult,
   ExtractedVehicleData,
+  MatchCandidate,
   BatchProgress,
   UploadedFile,
   ProcessingState,

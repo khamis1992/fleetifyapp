@@ -10,6 +10,9 @@ import { startOfDay, isToday } from 'date-fns';
 import type { Database } from '@/integrations/supabase/types';
 import type { 
   EmployeeTask, 
+  TaskPriority,
+  TaskStatus,
+  TaskType,
   TaskStats, 
   TaskFilters 
 } from '@/types/mobile-employee.types';
@@ -47,7 +50,8 @@ export const useEmployeeTasks = (
         .single();
       
       if (error) throw error;
-      return data;
+      if (!data.company_id) throw new Error('Employee company is required');
+      return { id: data.id, company_id: data.company_id };
     },
     enabled: !!user?.id && !!companyId
   });
@@ -111,7 +115,7 @@ export const useEmployeeTasks = (
           visit: 'customer_visit',
           payment: 'payment_collection',
           other: 'other',
-        }[type]));
+        } satisfies Record<TaskType, string>)[type]);
         query = query.in('task_type', taskTypes);
       }
 
@@ -149,20 +153,30 @@ export const useEmployeeTasks = (
         const customerName = customer?.first_name_ar || customer?.company_name_ar || 
                             `${customer?.first_name || ''} ${customer?.last_name || ''}`.trim();
         const scheduledDate = task.scheduled_date || task.due_date || task.created_at || new Date().toISOString();
-        const taskType = {
+        const taskType: TaskType = ({
           followup: 'followup',
           payment_collection: 'payment',
           customer_visit: 'visit',
-        }[task.task_type] || 'other';
+        } as Record<string, TaskType>)[task.task_type] || 'other';
+        const taskStatus: TaskStatus = task.status === 'delayed'
+          ? 'pending'
+          : (['pending', 'in_progress', 'completed', 'cancelled'].includes(task.status || '')
+              ? task.status as TaskStatus
+              : 'pending');
+        const taskPriority: TaskPriority = task.priority === 'normal'
+          ? 'medium'
+          : (['low', 'medium', 'high', 'urgent'].includes(task.priority || '')
+              ? task.priority as TaskPriority
+              : 'medium');
 
         return {
           id: task.id,
           title: task.title,
-          title_ar: task.title_ar,
-          description: task.description,
+          title_ar: task.title_ar || undefined,
+          description: task.description || undefined,
           type: taskType,
-          status: task.status === 'delayed' ? 'pending' : (task.status || 'pending'),
-          priority: task.priority === 'normal' ? 'medium' : (task.priority || 'medium'),
+          status: taskStatus,
+          priority: taskPriority,
           scheduled_date: scheduledDate,
           scheduled_time: scheduledDate.includes('T') ? scheduledDate.slice(11, 16) : undefined,
           completed_at: task.completed_at || undefined,

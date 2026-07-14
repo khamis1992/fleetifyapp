@@ -121,31 +121,18 @@ export const useScheduleMaintenanceStatus = () => {
 
 // Hook specifically for completing maintenance (returns vehicle to available status)
 export const useCompleteMaintenanceStatus = () => {
-  const vehicleStatusUpdate = useVehicleStatusUpdate();
+  const companyId = useCurrentCompanyId();
 
   return useMutation({
     mutationFn: async ({ vehicleId, maintenanceId }: { vehicleId: string; maintenanceId?: string }) => {
-      // First complete the maintenance record
-      if (maintenanceId) {
-        const { error: maintenanceError } = await supabase
-          .from('vehicle_maintenance')
-          .update({ 
-            status: 'completed',
-            completed_date: new Date().toISOString()
-          })
-          .eq('id', maintenanceId);
-
-        if (maintenanceError) {
-          throw new Error(`Failed to complete maintenance record: ${maintenanceError.message}`);
-        }
-      }
-
-      // Then return vehicle to available status
-      return vehicleStatusUpdate.mutateAsync({
-        vehicleId,
-        newStatus: 'available',
-        reason: 'Maintenance completed'
+      if (!companyId || !maintenanceId) throw new Error('Company and maintenance are required');
+      const { data, error } = await supabase.rpc('complete_vehicle_maintenance_v1', {
+        p_company_id: companyId,
+        p_maintenance_id: maintenanceId,
       });
+      if (error) throw error;
+      if (data.vehicle_id !== vehicleId) throw new Error('Maintenance vehicle mismatch');
+      return data;
     }
   });
 };

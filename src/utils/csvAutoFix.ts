@@ -12,6 +12,14 @@ export interface AutoFixConfig {
   defaultType: string;
 }
 
+interface CSVFixRecord {
+  row: number;
+  field: string;
+  original: unknown;
+  fixed: unknown;
+  reason: string;
+}
+
 export const DEFAULT_AUTO_FIX_CONFIG: AutoFixConfig = {
   autoFillEmptyDates: true,
   autoFillEmptyPaymentMethods: true,
@@ -90,13 +98,13 @@ const TYPE_MAPPINGS: Record<string, string> = {
 
 export class CSVAutoFix {
   private config: AutoFixConfig;
-  private fixes: Array<{ row: number; field: string; original: any; fixed: any; reason: string }> = [];
+  private fixes: CSVFixRecord[] = [];
 
   constructor(config: Partial<AutoFixConfig> = {}) {
     this.config = { ...DEFAULT_AUTO_FIX_CONFIG, ...config };
   }
 
-  public autoFixData(data: any[]): { fixedData: any[]; fixes: typeof this.fixes } {
+  public autoFixData(data: any[]): { fixedData: any[]; fixes: CSVFixRecord[] } {
     this.fixes = [];
     const fixedData = data.map((row, index) => this.autoFixRow(row, index));
     return { fixedData, fixes: this.fixes };
@@ -300,7 +308,7 @@ export class CSVAutoFix {
             originalValue: fix.original,
             fixedValue: fix.fixed,
             reason: fix.reason,
-            confidence: 'high'  // String instead of number for compatibility
+            confidence: 1
           }
         })),
         originalData: data[index],

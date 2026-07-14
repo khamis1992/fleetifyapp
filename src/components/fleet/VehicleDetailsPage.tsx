@@ -153,9 +153,9 @@ const VehicleDetailsPage = () => {
 
   // جلب عقود المركبة
   const { data: contracts = [], isLoading: loadingContracts } = useQuery({
-    queryKey: ['vehicle-contracts', vehicleId],
+    queryKey: ['vehicle-contracts', vehicleId, companyId],
     queryFn: async () => {
-      if (!vehicleId) return [];
+      if (!vehicleId || !companyId) return [];
 
       const { data, error } = await supabase
         .from('contracts')
@@ -173,12 +173,13 @@ const VehicleDetailsPage = () => {
           )
         `)
         .eq('vehicle_id', vehicleId)
+        .eq('company_id', companyId)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
       return data || [];
     },
-    enabled: !!vehicleId,
+    enabled: !!vehicleId && !!companyId,
   });
 
   // جلب سجل الصيانة
@@ -206,14 +207,15 @@ const VehicleDetailsPage = () => {
 
   // جلب المخالفات المرورية
   const { data: violations = [], isLoading: loadingViolations } = useQuery({
-    queryKey: ['vehicle-violations', vehicleId],
+    queryKey: ['vehicle-violations', vehicleId, companyId],
     queryFn: async () => {
-      if (!vehicleId) return [];
+      if (!vehicleId || !companyId) return [];
 
       const { data, error } = await supabase
         .from('penalties')
         .select('*')
         .eq('vehicle_id', vehicleId)
+        .eq('company_id', companyId)
         .order('penalty_date', { ascending: false })
         .limit(10);
 
@@ -230,7 +232,7 @@ const VehicleDetailsPage = () => {
         responsible_party: violation.customer_id ? 'customer' : 'company',
       }));
     },
-    enabled: !!vehicleId,
+    enabled: !!vehicleId && !!companyId,
   });
 
   // حساب إحصائيات المركبة
@@ -331,7 +333,7 @@ const VehicleDetailsPage = () => {
     return colors[status] || 'bg-slate-100 text-slate-800';
   };
 
-  const getStatusText = (status: string): string => {
+  const getStatusText = (status?: string): string => {
     const texts: Record<string, string> = {
       available: 'متاحة',
       rented: 'مؤجرة',
@@ -345,7 +347,7 @@ const VehicleDetailsPage = () => {
       municipality: 'البلدية',
       street_52: 'الشارع 52',
     };
-    return texts[status] || status;
+    return status ? (texts[status] || status) : 'غير محددة';
   };
 
   const getCustomerName = (customer: any): string => {
@@ -967,12 +969,12 @@ const FinancialTab = ({ vehicle, formatCurrency }: FinancialTabProps) => (
           value={vehicle.purchase_date ? format(new Date(vehicle.purchase_date), 'dd/MM/yyyy') : undefined}
         />
         <InfoRow label="تكلفة الشراء" value={vehicle.purchase_cost ? formatCurrency(vehicle.purchase_cost) : undefined} />
-        <InfoRow label="القيمة الحالية" value={vehicle.current_value ? formatCurrency(vehicle.current_value) : undefined} />
+        <InfoRow label="القيمة الحالية" value={vehicle.book_value ? formatCurrency(vehicle.book_value) : undefined} />
         <InfoRow
           label="الإهلاك"
           value={
-            vehicle.purchase_cost && vehicle.current_value
-              ? formatCurrency(vehicle.purchase_cost - vehicle.current_value)
+            vehicle.purchase_cost && vehicle.book_value
+              ? formatCurrency(vehicle.purchase_cost - vehicle.book_value)
               : undefined
           }
         />
@@ -984,13 +986,13 @@ const FinancialTab = ({ vehicle, formatCurrency }: FinancialTabProps) => (
         <CardTitle>معلومات التأمين</CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
-        <InfoRow label="شركة التأمين" value={vehicle.insurance_company} />
+        <InfoRow label="شركة التأمين" value={vehicle.insurance_provider} />
         <InfoRow label="رقم البوليصة" value={vehicle.insurance_policy_number} mono />
         <InfoRow
           label="تاريخ الانتهاء"
           value={vehicle.insurance_expiry ? format(new Date(vehicle.insurance_expiry), 'dd/MM/yyyy') : undefined}
         />
-        <InfoRow label="قيمة التأمين" value={vehicle.insurance_value ? formatCurrency(vehicle.insurance_value) : undefined} />
+        <InfoRow label="قيمة التأمين" value={vehicle.insurance_premium_amount ? formatCurrency(vehicle.insurance_premium_amount) : undefined} />
       </CardContent>
     </Card>
   </div>

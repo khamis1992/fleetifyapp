@@ -268,24 +268,24 @@ export default function Attendance() {
                         <div className="text-right sm:text-center">
                           <p className="text-sm text-slate-600 dark:text-slate-400">ساعات العمل</p>
                           <p className="font-semibold text-slate-900 dark:text-slate-100">
-                            {record.total_hours.toFixed(1)} ساعة
+                            {(record.total_hours ?? 0).toFixed(1)} ساعة
                           </p>
                         </div>
 
-                        {record.late_hours > 0 && (
+                        {(record.late_hours ?? 0) > 0 && (
                           <div className="text-right sm:text-center">
                             <p className="text-sm text-slate-600 dark:text-slate-400">ساعات التأخير</p>
                             <p className="font-semibold text-orange-600">
-                              {record.late_hours.toFixed(1)} ساعة
+                              {(record.late_hours ?? 0).toFixed(1)} ساعة
                             </p>
                           </div>
                         )}
 
-                        {record.overtime_hours > 0 && (
+                        {(record.overtime_hours ?? 0) > 0 && (
                           <div className="text-right sm:text-center">
                             <p className="text-sm text-slate-600 dark:text-slate-400">ساعات إضافية</p>
                             <p className="font-semibold text-green-600">
-                              {record.overtime_hours.toFixed(1)} ساعة
+                              {(record.overtime_hours ?? 0).toFixed(1)} ساعة
                             </p>
                           </div>
                         )}
@@ -309,7 +309,7 @@ export default function Attendance() {
           })
         )}
       </div>
-    <PageHelp children={<AttendancePageHelpContent />} />
+    <PageHelp title="مساعدة الحضور" children={<AttendancePageHelpContent />} />
 
     </HRPageShell>
   );

@@ -459,16 +459,18 @@ export function CustomerAccountSelector({
                     <CreditCard className="h-4 w-4 text-blue-500" />
                     <div>
                       <div className="font-medium">
-                        {account.chart_of_accounts.account_code} - {account.chart_of_accounts.account_name}
+                        {account.chart_of_accounts
+                          ? `${account.chart_of_accounts.account_code} - ${account.chart_of_accounts.account_name}`
+                          : 'حساب غير متاح'}
                       </div>
-                      {account.chart_of_accounts.account_name_ar && <div className="text-sm text-muted-foreground">
+                      {account.chart_of_accounts?.account_name_ar && <div className="text-sm text-muted-foreground">
                           {account.chart_of_accounts.account_name_ar}
                         </div>}
                       <div className="flex items-center gap-2 mt-1">
                         <Badge variant="outline">محاسبي</Badge>
                         <Badge variant="secondary">
                           <DollarSign className="h-3 w-3 mr-1" />
-                          {formatCurrency.formatCurrency(account.chart_of_accounts.current_balance || 0)}
+                          {formatCurrency.formatCurrency(account.chart_of_accounts?.current_balance || 0)}
                         </Badge>
                       </div>
                     </div>

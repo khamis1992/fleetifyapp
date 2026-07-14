@@ -84,8 +84,8 @@ const Inventory = () => {
 
   const getStockIndicator = (item: InventoryItem, currentStock?: number) => {
     const stock = currentStock || 0;
-    const minLevel = item.min_stock_level;
-    const reorderPoint = item.reorder_point || minLevel;
+    const minLevel = item.min_stock_level ?? 0;
+    const reorderPoint = item.reorder_point ?? minLevel;
 
     if (stock === 0) {
       return { label: "نفذ", color: "bg-red-500", textColor: "text-red-600" };
@@ -303,12 +303,12 @@ const Inventory = () => {
                             )}
                           </TableCell>
                           <TableCell>{item.unit_of_measure}</TableCell>
-                          <TableCell>{item.unit_price.toFixed(2)} ريال</TableCell>
+                          <TableCell>{(item.unit_price ?? 0).toFixed(2)} ريال</TableCell>
                           <TableCell>
                             <Badge variant="outline">{item.item_type}</Badge>
                           </TableCell>
                           <TableCell>
-                            <Badge variant={item.is_active ? "success" : "secondary"}>
+                            <Badge variant={item.is_active ? "default" : "secondary"}>
                               {item.is_active ? "نشط" : "غير نشط"}
                             </Badge>
                           </TableCell>
@@ -407,7 +407,7 @@ const Inventory = () => {
                           -{item.shortage}
                         </TableCell>
                         <TableCell>
-                          <Badge variant="warning">
+                          <Badge variant="secondary">
                             <AlertTriangle className="h-3 w-3 mr-1" />
                             يحتاج إعادة طلب
                           </Badge>

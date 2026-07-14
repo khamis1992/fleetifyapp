@@ -51,6 +51,7 @@ const useCustomersForLegalCollection = () => {
   return useQuery({
     queryKey: ['customers-for-legal', companyFilter.company_id],
     queryFn: async () => {
+      if (!companyFilter.company_id) return [];
       const { data, error } = await supabase
         .from('customers')
         .select('id, first_name, last_name, company_name, phone')

@@ -24,6 +24,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { supabase } from "@/integrations/supabase/client";
+import type { Tables } from "@/integrations/supabase/types";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter";
 import { useCreateVehicleInstallment } from "@/hooks/useVehicleInstallments";
@@ -59,15 +60,28 @@ const wizardSchema = z.object({
   notes: z.string().optional(),
 });
 
-interface VehicleAllocation {
-  id: string; // Required for VehicleBulkSelector compatibility
+type WizardFormData = z.infer<typeof wizardSchema>;
+
+interface VehicleAllocation extends Pick<Tables<'vehicles'>, 'id' | 'plate_number' | 'make' | 'model'> {
   vehicle_id: string;
   allocated_amount: number;
-  plate_number?: string;
-  make?: string;
-  model?: string;
-  year?: number;
+  year?: NonNullable<Tables<'vehicles'>['year']>;
 }
+
+interface WizardDraft {
+  formData: Partial<WizardFormData>;
+  vehicleAllocations: VehicleAllocation[];
+  savedAt: string;
+}
+
+const isWizardDraft = (value: unknown): value is WizardDraft => {
+  if (!value || typeof value !== 'object') return false;
+  const draft = value as Partial<WizardDraft>;
+  return typeof draft.savedAt === 'string'
+    && !!draft.formData
+    && typeof draft.formData === 'object'
+    && Array.isArray(draft.vehicleAllocations);
+};
 
 interface MultiVehicleWizardProps {
   trigger?: React.ReactNode;
@@ -87,7 +101,7 @@ export default function MultiVehicleWizard({ trigger }: MultiVehicleWizardProps)
   const companyId = useCurrentCompanyId();
   const createInstallment = useCreateVehicleInstallment();
 
-  const form = useForm<z.infer<typeof wizardSchema>>({
+  const form = useForm<WizardFormData>({
     resolver: zodResolver(wizardSchema),
     defaultValues: {
       vendor_company_name: "",
@@ -150,7 +164,10 @@ export default function MultiVehicleWizard({ trigger }: MultiVehicleWizardProps)
       const savedDraft = localStorage.getItem(DRAFT_KEY);
       if (savedDraft) {
         try {
-          const draft = JSON.parse(savedDraft);
+          const draft: unknown = JSON.parse(savedDraft);
+          if (!isWizardDraft(draft)) {
+            throw new Error('Invalid installment draft');
+          }
           const savedTime = new Date(draft.savedAt);
           const now = new Date();
           const hoursDiff = (now.getTime() - savedTime.getTime()) / (1000 * 60 * 60);
@@ -167,10 +184,8 @@ export default function MultiVehicleWizard({ trigger }: MultiVehicleWizardProps)
                 },
               },
             });
-            Object.entries(draft.formData).forEach(([key, value]) => {
-              form.setValue(key as any, value as any);
-            });
-            setVehicleAllocations(draft.vehicleAllocations || []);
+            form.reset({ ...form.getValues(), ...draft.formData });
+            setVehicleAllocations(draft.vehicleAllocations);
           }
         } catch {
           localStorage.removeItem(DRAFT_KEY);
@@ -309,8 +324,10 @@ export default function MultiVehicleWizard({ trigger }: MultiVehicleWizardProps)
       return;
     }
 
+    if (!vendorId) return;
+
     const formData: VehicleInstallmentCreateData = {
-      vendor_id: vendorId!,
+      vendor_id: vendorId,
       vehicle_ids: vehicleAllocations.map(v => v.vehicle_id),
       vehicle_amounts: vehicleAllocations.reduce((acc, v) => {
         acc[v.vehicle_id] = v.allocated_amount;
@@ -458,9 +475,9 @@ export default function MultiVehicleWizard({ trigger }: MultiVehicleWizardProps)
                           vehicle_id: v.id,
                           allocated_amount: 0,
                           plate_number: v.plate_number,
-                          make: v.make,
-                          model: v.model,
-                          year: v.year,
+                          make: v.make ?? "",
+                          model: v.model ?? "",
+                          year: v.year ?? undefined,
                         })));
                       });
                     }}
@@ -644,7 +661,7 @@ export default function MultiVehicleWizard({ trigger }: MultiVehicleWizardProps)
                 <AgreementPreview
                   vendorName={watchedValues.vendor_company_name}
                   vendorPhone={watchedValues.vendor_phone || ""}
-                  agreementNumber={watchedValues.agreement_number}
+                  agreementNumber={watchedValues.agreement_number || ""}
                   agreementDate={watchedValues.agreement_date}
                   totalAmount={watchedValues.total_amount}
                   downPayment={watchedValues.down_payment}

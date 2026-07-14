@@ -3,7 +3,7 @@
 > **Generated**: 2026-01-12T13:30:37.587Z
 > **Total Tables in generated snapshot**: 285
 > **Database**: PostgreSQL 17.6 (Supabase)
-> **Post-snapshot additions**: 5 system audit agent tables added on 2026-07-11; system audit command `schedule.realign_contract_invoice_links_v3` and duplicate-only schedule consolidation gateway added on 2026-07-12 with rollback; atomic traffic-violation company payments and atomic vehicle-installment payments with canonical payment history added on 2026-07-14.
+> **Post-snapshot additions**: 5 system audit agent tables added on 2026-07-11; system audit command `schedule.realign_contract_invoice_links_v3` and duplicate-only schedule consolidation gateway added on 2026-07-12 with rollback; atomic traffic-violation company payments and atomic vehicle-installment payments with canonical payment history added on 2026-07-14; a reversible accounting-agent gateway can assign a missing payment bank only when the company has exactly one active bank; contract changes now recalculate affected vehicle states from canonical contract dates, reservations, and maintenance instead of assigning availability directly.
 
 ## Table of Contents
 
@@ -967,7 +967,7 @@
 
 ### `customer_payment_scores`
 
-**Columns**: 13
+**Columns**: 14
 
 #### Required Columns
 
@@ -2015,9 +2015,11 @@ Explicit, service-managed accounting classification for completed receipts that 
 | Column | Type | Nullable |
 |--------|------|----------|
 | `contract_id` | string | Yes |
+| `canonical_payment_id` | string | Yes |
 | `created_by` | string | Yes |
 | `fiscal_year` | number | Yes |
 | `invoice_id` | string | Yes |
+| `idempotency_key` | string | Yes |
 | `is_late` | boolean | Yes |
 | `month_number` | number | Yes |
 | `notes` | string | Yes |
@@ -4887,6 +4889,7 @@ Explicit, service-managed accounting classification for completed receipts that 
 | Column | Type | Nullable |
 |--------|------|----------|
 | `description_ar` | string | Yes |
+| `inventory_item_id` | string | Yes |
 | `item_code` | string | Yes |
 | `notes` | string | Yes |
 | `received_quantity` | number | Yes |
@@ -5836,7 +5839,7 @@ Explicit, service-managed accounting classification for completed receipts that 
 
 ### `leave_types`
 
-**Columns**: 11
+**Columns**: 13
 
 #### Required Columns
 
@@ -6035,7 +6038,7 @@ Immutable repair history for applied commands. Stores entity scope, before and a
 
 Allowlist of reversible repair commands, domains, entity tables, permitted fields, confidence thresholds, approval policy, and closed-period policy. Workers cannot execute commands outside this registry.
 
-Key RPCs: `system_agent_create_run`, `system_agent_claim_job`, `system_agent_finish_job`, `system_agent_refresh_run`, `system_agent_apply_finance_repair`, `system_agent_apply_operational_repair`, `system_agent_apply_payroll_repair_v1`, `system_agent_apply_contract_invoice_repair_v3`, `system_agent_apply_contract_invoice_billing_month_repair_v9`, `system_agent_apply_contract_schedule_repair_v1`, `system_agent_apply_contract_schedule_graph_repair_v1`, `system_agent_apply_schedule_duplicate_rows_repair_v2`, `system_agent_apply_contract_schedule_matching_repair_v2`, `system_agent_apply_contract_schedule_matching_repair_v3`, `system_agent_apply_payment_classification_repair_v1`, `system_agent_apply_legacy_overpayment_repair_v1`, `system_agent_apply_customer_balance_create_repair`, `system_agent_rollback_repair`, and `invoke_system_audit_orchestrator_resume_v1`. The worker does not route repairs through the legacy generic mutation gateway. The `customer.create_balance` command creates one missing `customer_balances` row from database-derived invoice and completed-receipt state; duplicate rows remain review-only. Contract schedule commands consolidate only financially identical same-date rows when the retained schedule total still equals the contract amount, infer one billing-date convention for the whole contract, preserve established links before maximizing matches, and atomically realign deterministic one-to-one link graphs only when every active schedule in the relevant full or linked graph satisfies the gateway lifecycle, date, and amount checks. The v9 billing-month gateway can generate a missing issue-month invoice, restore any preexisting inactive schedule changed by legacy side effects, remove only schedules created inside the same transaction, and retain reversible before/after state. Payment classification commands normalize legacy receipt credits to customer advances before applying a clear invoice allocation, with balanced compensating rollback journals. Migration `20260712055700` adds `legacy_invoice_overpayment_repairs`, `repair_legacy_overpaid_invoice_allocations_atomic`, and its rollback command: legacy direct receipts are capped through canonical allocations while only the unapplied remainder remains in customer advances. Migrations `20260712055800` and `20260712055900` disable obsolete payment validation triggers that treated allocation-only updates as new receipts; canonical payment controls remain active. Migrations `20260714130000` and `20260714140000` make payroll approval and payment atomic, audit finalized payroll journals, and let the employee agent create or relink only unambiguous balanced entries with compensating rollback journals. Canonical invoice recalculation uses `sent` for open future invoices so every generated state satisfies `invoices_status_check`. Accounting audit also reports bank payments without a verified bank or canonical movement and orphan bank transactions as review tasks; it never invents reconciliation evidence. Scheduled dispatch targets `system-audit-orchestrator-v14`, which delegates to `system-audit-worker-v12`; deployed source versions are orchestrator `2026-07-13.31` and worker `2026-07-13.42`.
+Key RPCs: `system_agent_create_run`, `system_agent_claim_job`, `system_agent_finish_job`, `system_agent_refresh_run`, `system_agent_apply_finance_repair`, `system_agent_apply_operational_repair`, `system_agent_apply_payroll_repair_v1`, `system_agent_apply_contract_invoice_repair_v3`, `system_agent_apply_contract_invoice_billing_month_repair_v9`, `system_agent_apply_contract_schedule_repair_v1`, `system_agent_apply_contract_schedule_graph_repair_v1`, `system_agent_apply_schedule_duplicate_rows_repair_v2`, `system_agent_apply_contract_schedule_matching_repair_v2`, `system_agent_apply_contract_schedule_matching_repair_v3`, `system_agent_apply_payment_classification_repair_v1`, `system_agent_apply_legacy_overpayment_repair_v1`, `system_agent_apply_customer_balance_create_repair`, `system_agent_apply_monthly_obligation_repair_v1`, `system_agent_rollback_repair`, and `invoke_system_audit_orchestrator_resume_v1`. The worker does not route repairs through the legacy generic mutation gateway. The `customer.create_balance` command creates one missing `customer_balances` row from database-derived invoice and completed-receipt state; duplicate rows remain review-only. Contract schedule commands consolidate only financially identical same-date rows when the retained schedule total still equals the contract amount, infer one billing-date convention for the whole contract, preserve established links before maximizing matches, and atomically realign deterministic one-to-one link graphs only when every active schedule in the relevant full or linked graph satisfies the gateway lifecycle, date, and amount checks. The v9 billing-month gateway can generate a missing issue-month invoice, restore any preexisting inactive schedule changed by legacy side effects, remove only schedules created inside the same transaction, and retain reversible before/after state. Payment classification commands normalize legacy receipt credits to customer advances before applying a clear invoice allocation, with balanced compensating rollback journals. Migration `20260712055700` adds `legacy_invoice_overpayment_repairs`, `repair_legacy_overpaid_invoice_allocations_atomic`, and its rollback command: legacy direct receipts are capped through canonical allocations while only the unapplied remainder remains in customer advances. Migrations `20260712055800` and `20260712055900` disable obsolete payment validation triggers that treated allocation-only updates as new receipts; canonical payment controls remain active. Migrations `20260714130000` and `20260714140000` make payroll approval and payment atomic, audit finalized payroll journals, and let the employee agent create or relink only unambiguous balanced entries with compensating rollback journals. Canonical invoice recalculation uses `sent` for open future invoices so every generated state satisfies `invoices_status_check`. Accounting audit also reports bank payments without a verified bank or canonical movement and orphan bank transactions as review tasks; it never invents reconciliation evidence. Scheduled dispatch targets `system-audit-orchestrator-v14`, which delegates to `system-audit-worker-v12`; deployed source versions are orchestrator `2026-07-13.31` and worker `2026-07-13.42`.
 
 ---
 
@@ -7732,7 +7735,9 @@ Key RPCs: `system_agent_create_run`, `system_agent_claim_job`, `system_agent_fin
 | Column | Type | Nullable |
 |--------|------|----------|
 | `delivery_note_number` | string | Yes |
+| `journal_entry_id` | string | Yes |
 | `notes` | string | Yes |
+| `warehouse_id` | string | Yes |
 
 ---
 
@@ -9938,7 +9943,21 @@ Key RPCs: `system_agent_create_run`, `system_agent_claim_job`, `system_agent_fin
 
 - `schedule.realign_contract_invoice_links_v3` applies a one-to-one invoice matching across every active schedule in one contract, including schedules that were previously unlinked. It is service-role only, reversible, and stores full before/after schedule state in `system_agent_repairs`.
 - `system_agent_apply_contract_invoice_billing_month_repair_v9` is service-role only, closed-period aware, optimistic-lock protected, and reversible. It preserves preexisting inactive schedules while repairing a missing invoice or stale schedule link.
-- Daily and resume dispatch use `system-audit-orchestrator-v14` and `system-audit-worker-v12`. Local worker source `2026-07-14.48` audits traffic-violation payments, vehicle-installment payment ledgers, unified maintenance journals, and finalized payroll accrual/payment journals while refusing to guess ambiguous historical cash, bank, or duplicate-entry facts. Production remains on worker `2026-07-13.42` until the required migrations are reconciled and deployed.
+- `create_purchase_order_v1`, `transition_purchase_order_status_v1`, and `receive_purchase_order_v1` provide the canonical atomic purchase-order lifecycle. Receiving creates the goods receipt, stock movements, posted balanced journal, item receipt quantities, and derived order status in one transaction.
+- `system_agent_apply_purchase_order_repair_v1` can reversibly synchronize purchase-order totals and receipt status from canonical item facts. Missing warehouses, journals, stock movements, or conflicting receipt quantities remain review findings because the agent cannot safely invent those facts.
+- Migration `20260714160000` adds `monthly_obligation_payments` as the canonical immutable payment ledger and `payment_ledger_baseline` on `monthly_obligation_installments` for pre-migration paid amounts. `pay_monthly_obligation_installment_v1` posts the payment, vendor payment, bank movement, balanced journal, and installment state atomically with an idempotency key.
+- `system_agent_apply_monthly_obligation_repair_v1` can reversibly synchronize `paid_amount`, `status`, and `payment_date` from completed canonical ledger rows. Historical baseline amounts and missing or inconsistent journal, bank, or vendor evidence remain review-only.
+- Migration `20260714170000` adds `create_rental_receipt_payment_v1`, receipt idempotency, and a unique `canonical_payment_id` link. `/finance/tracking` now creates the rental receipt and customer payment in one transaction and requires an explicit bank for non-cash methods; it no longer creates a separate paid invoice or silently edits an older receipt.
+- `system_agent_apply_rental_receipt_repair_v1` can reversibly derive only receipt balance and status after proving that customer, contract, date, amount, and completed canonical payment all match. Missing or conflicting payment evidence remains review-only.
+- Migrations `20260714190000` through `20260714240000` add atomic manual treasury transactions and reversals, manual journal creation/posting, invoice draft creation, derived contract last-payment dates, validated period close, and one-transaction accounting setup. Closed periods, tenant references, balanced line totals, and idempotency are enforced inside PostgreSQL.
+- Migrations `20260714250000` and `20260714260000` add canonical fleet state synchronization, safe vehicle deactivation, odometer recording, reservation overlap protection, maintenance completion, and atomic vehicle-installment agreement/schedule creation. Vehicle installment vendors and vehicles must belong to the company; schedule principal totals equal the financed principal.
+- Migration `20260714270000` adds atomic legal conversion/reversal/outcome/cancellation commands and evidence retention. Legal documents and lawsuit templates are archived rather than permanently deleted. A case outcome never recognizes cash before a completed payment exists.
+- Migrations `20260714280000` and `20260714290000` add reversible agent repairs for legal contract-state mismatches, unsupported paid repayment installments, and the single verified posted maintenance journal link. Ambiguous legal outcomes, duplicate journals, and maintenance records without a verified journal remain review-only.
+- Migration `20260714310000` replaces eleven broken finance and fleet RPCs with tenant-checked implementations using canonical invoice balances, `payments.payment_status`, customer/vendor account links, valid fleet statuses, and the current chart hierarchy. Anonymous execution is removed; authenticated callers are company-validated and service operations remain available to `service_role`.
+- Migration `20260714320000` makes bulk chart deletion reference-aware, copies selected template accounts with their ancestors, processes configured overdue fees idempotently, posts one balanced vehicle-depreciation journal per vehicle and month, and atomically creates the quick customer/contract pair used by `/finance/tracking`. It preserves referenced or non-zero accounts, blocks closed periods, and refuses to invent missing fee rules or depreciation mappings.
+- Migration `20260714330000` adds the missing tenant-isolated invoice dispute workflow, notes, dashboard views, and atomic create/resolve commands used by `/legal/disputes`. Taqadi automation is contacted only when `VITE_TAQADI_AUTOMATION_URL` is configured.
+- Migration `20260714340000` rebuilds legal delinquency from canonical overdue invoice balances, completed payments, recorded late fees, violations, and legal history; it also scopes WhatsApp reminder statistics and report rows to the active company.
+- Daily and resume dispatch use `system-audit-orchestrator-v14` and `system-audit-worker-v12`. Local worker source `2026-07-14.53` audits traffic-violation payments, vehicle-installment and monthly-obligation payment ledgers, canonical rental receipts, unified maintenance journals, finalized payroll accrual/payment journals, purchase-order receipt integrity, and deterministic legal integrity while refusing to guess ambiguous historical cash, bank, legal, warehouse, or duplicate-entry facts. Production remains on worker `2026-07-13.42` until the required migrations are reconciled and deployed.
 
 ### Data Records
 

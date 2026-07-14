@@ -88,12 +88,12 @@ const SalesOpportunities = () => {
     setFormData({
       opportunity_name: opportunity.opportunity_name,
       opportunity_name_ar: opportunity.opportunity_name_ar || "",
-      stage: opportunity.stage,
-      estimated_value: opportunity.estimated_value,
-      probability: opportunity.probability,
+      stage: opportunity.stage ?? "lead",
+      estimated_value: opportunity.estimated_value ?? 0,
+      probability: opportunity.probability ?? 0,
       expected_close_date: opportunity.expected_close_date || "",
       notes: opportunity.notes || "",
-      is_active: opportunity.is_active,
+      is_active: opportunity.is_active ?? true,
     });
     setIsEditDialogOpen(true);
   };
@@ -126,9 +126,9 @@ const SalesOpportunities = () => {
       case 'proposal':
         return 'default';
       case 'negotiation':
-        return 'warning';
+        return 'secondary';
       case 'won':
-        return 'success';
+        return 'default';
       case 'lost':
         return 'destructive';
       default:
@@ -165,7 +165,7 @@ const SalesOpportunities = () => {
   };
 
   const totalValue = opportunities?.reduce((sum, opp) => sum + (opp.estimated_value || 0), 0) || 0;
-  const weightedValue = opportunities?.reduce((sum, opp) => sum + ((opp.estimated_value || 0) * (opp.probability / 100)), 0) || 0;
+  const weightedValue = opportunities?.reduce((sum, opp) => sum + ((opp.estimated_value ?? 0) * ((opp.probability ?? 0) / 100)), 0) || 0;
   const avgValue = opportunities?.length ? totalValue / opportunities.length : 0;
 
   return (
@@ -437,8 +437,8 @@ const SalesOpportunities = () => {
                           </div>
                         </TableCell>
                         <TableCell>
-                          <Badge variant={getStageBadgeVariant(opportunity.stage)}>
-                            {getStageLabel(opportunity.stage)}
+                          <Badge variant={getStageBadgeVariant(opportunity.stage ?? '')}>
+                            {getStageLabel(opportunity.stage ?? '')}
                           </Badge>
                         </TableCell>
                         <TableCell className="font-semibold">
@@ -628,8 +628,8 @@ const SalesOpportunities = () => {
                   <div>
                     <Label className="text-muted-foreground">المرحلة</Label>
                     <div className="mt-1">
-                      <Badge variant={getStageBadgeVariant(selectedOpportunity.stage)}>
-                        {getStageLabel(selectedOpportunity.stage)}
+                    <Badge variant={getStageBadgeVariant(selectedOpportunity.stage ?? '')}>
+                      {getStageLabel(selectedOpportunity.stage ?? '')}
                       </Badge>
                     </div>
                   </div>
@@ -639,7 +639,7 @@ const SalesOpportunities = () => {
                   </div>
                   <div>
                     <Label className="text-muted-foreground">القيمة المتوقعة</Label>
-                    <p className="font-medium text-green-600">{formatCurrency(selectedOpportunity.estimated_value)}</p>
+                    <p className="font-medium text-green-600">{formatCurrency(selectedOpportunity.estimated_value ?? 0)}</p>
                   </div>
                   <div>
                     <Label className="text-muted-foreground">تاريخ الإغلاق المتوقع</Label>
@@ -668,7 +668,7 @@ const SalesOpportunities = () => {
                     <CardContent className="space-y-3">
                       <div className="flex justify-between items-center">
                         <span className="text-sm text-muted-foreground">القيمة الإجمالية</span>
-                        <span className="font-semibold">{formatCurrency(selectedOpportunity.estimated_value)}</span>
+                        <span className="font-semibold">{formatCurrency(selectedOpportunity.estimated_value ?? 0)}</span>
                       </div>
                       <div className="flex justify-between items-center">
                         <span className="text-sm text-muted-foreground">احتمالية النجاح</span>
@@ -677,7 +677,7 @@ const SalesOpportunities = () => {
                       <div className="border-t pt-3 flex justify-between items-center">
                         <span className="text-sm font-medium">القيمة المرجحة</span>
                         <span className="font-bold text-green-600">
-                          {formatCurrency(selectedOpportunity.estimated_value * (selectedOpportunity.probability / 100))}
+                          {formatCurrency((selectedOpportunity.estimated_value ?? 0) * ((selectedOpportunity.probability ?? 0) / 100))}
                         </span>
                       </div>
                     </CardContent>

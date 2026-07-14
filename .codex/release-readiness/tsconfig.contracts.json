@@ -1,0 +1,15 @@
+{
+  "extends": "../../tsconfig.app.json",
+  "include": [
+    "../../src/vite-env.d.ts",
+    "../../src/components/contracts/**/*.ts",
+    "../../src/components/contracts/**/*.tsx",
+    "../../src/pages/contracts/**/*.ts",
+    "../../src/pages/contracts/**/*.tsx",
+    "../../src/hooks/useContract*.ts",
+    "../../src/hooks/business/useContract*.ts",
+    "../../src/services/ContractService.ts",
+    "../../src/types/contract*.ts",
+    "../../src/utils/contract*.ts"
+  ]
+}

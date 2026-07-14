@@ -18,6 +18,7 @@
  */
 
 // Lazy load ExcelJS - only when exporting/importing (SECURE alternative to vulnerable xlsx)
+import type { Cell } from 'exceljs';
 
 export interface ExcelExportOptions {
   sheetName?: string;
@@ -72,7 +73,14 @@ async function createWorksheet(
   // Dynamically import ExcelJS only when needed (SECURE alternative)
   const ExcelJS = await import('exceljs');
 
-  const opts = { ...DEFAULT_OPTIONS, ...options };
+  const opts = {
+    ...DEFAULT_OPTIONS,
+    ...options,
+    headerStyle: {
+      ...DEFAULT_OPTIONS.headerStyle,
+      ...options.headerStyle,
+    },
+  };
 
   if (data.length === 0) {
     throw new Error('لا توجد بيانات للتصدير');
@@ -99,7 +107,7 @@ async function createWorksheet(
     const headerRow = worksheet.addRow(headers);
 
     if (opts.headerStyle) {
-      headerRow.eachCell((cell, colNumber) => {
+      headerRow.eachCell((cell: Cell, _colNumber: number) => {
         cell.font = {
           bold: opts.headerStyle.bold,
           color: { argb: opts.headerStyle.textColor?.replace('#', 'FF') || 'FFFFFFFF' },

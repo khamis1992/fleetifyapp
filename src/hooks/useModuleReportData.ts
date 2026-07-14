@@ -15,6 +15,8 @@ export const useModuleReportData = (reportId: string, moduleType: string, filter
   return useQuery({
     queryKey: ['moduleReportData', reportId, moduleType, filters, companyId],
     queryFn: async () => {
+      if (!companyId) throw new Error('Company ID is required');
+
       switch (moduleType) {
         case 'hr':
           return await fetchHRReportData(reportId, filters, companyId);
@@ -30,7 +32,7 @@ export const useModuleReportData = (reportId: string, moduleType: string, filter
           return { data: [], summary: {} };
       }
     },
-    enabled: !!reportId && !!moduleType
+    enabled: !!reportId && !!moduleType && !!companyId
   });
 };
 

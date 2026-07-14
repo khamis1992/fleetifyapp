@@ -108,7 +108,7 @@ export function AuditTrailTable({
   const startIndex = (currentPage - 1) * pageSize;
   const paginatedLogs = sortedLogs.slice(startIndex, startIndex + pageSize);
 
-  const getSeverityVariant = (severity: string) => {
+  const getSeverityVariant = (severity?: string) => {
     switch (severity) {
       case 'critical':
         return 'destructive';

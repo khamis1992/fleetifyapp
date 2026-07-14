@@ -24,6 +24,8 @@ export const FeatureManagement: React.FC = () => {
     backupRestore: { enabled: true, plans: ['enterprise'] },
   });
 
+  type FeatureKey = keyof typeof features;
+
   const subscriptionPlans = [
     {
       id: 'free',
@@ -63,7 +65,12 @@ export const FeatureManagement: React.FC = () => {
     },
   ];
 
-  const featureCategories = [
+  const featureCategories: Array<{
+    name: string;
+    key: FeatureKey;
+    icon: React.ComponentType<{ className?: string }>;
+    description: string;
+  }> = [
     {
       name: 'Fleet Management',
       key: 'fleetManagement',
@@ -102,7 +109,7 @@ export const FeatureManagement: React.FC = () => {
     },
   ];
 
-  const handleFeatureToggle = (featureKey: string, enabled: boolean) => {
+  const handleFeatureToggle = (featureKey: FeatureKey, enabled: boolean) => {
     setFeatures(prev => ({
       ...prev,
       [featureKey]: { ...prev[featureKey], enabled }

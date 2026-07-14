@@ -59,6 +59,11 @@ import { ExportButton } from '@/components/shared/ExportButton';
 import { exportEmployeeWorkspaceReport } from '@/utils/exports/employeeReport';
 import { NotificationBell } from '@/components/notifications/NotificationBell';
 import { VerificationTasksList } from '@/components/tasks/VerificationTasksList';
+import {
+  getPerformanceGrade as getReportPerformanceGrade,
+  type EmployeePerformance as ReportEmployeePerformance,
+  type EmployeeTask as ReportEmployeeTask,
+} from '@/types/employee-workspace.types';
 
 export const EmployeeWorkspace: React.FC = () => {
   const navigate = useNavigate();
@@ -156,6 +161,76 @@ export const EmployeeWorkspace: React.FC = () => {
     customer_id: contract.customer_id,
     balance_due: contract.balance_due || 0,
   }));
+
+  const selectedPaymentContract = contracts.find(contract => contract.id === selectedContractId);
+
+  const reportTasks = useMemo<ReportEmployeeTask[]>(() => tasks.map(task => {
+    const contract = contracts.find(item => item.id === task.contract_id);
+    const reportType: ReportEmployeeTask['type'] = ({
+      call: 'followup',
+      followup: 'followup',
+      visit: 'customer_contact',
+      payment: 'payment_collection',
+      other: 'task',
+    } as const)[task.type];
+
+    return {
+      id: task.id,
+      type: reportType,
+      title: task.title,
+      title_ar: task.title_ar || task.title,
+      description: task.description,
+      contract_id: task.contract_id || '',
+      contract_number: contract?.contract_number || '',
+      customer_id: task.customer_id || contract?.customer_id || '',
+      customer_name: task.customer_name || contract?.customer_name || '',
+      customer_phone: contract?.customer_phone,
+      scheduled_date: task.scheduled_date,
+      scheduled_time: task.scheduled_time,
+      priority: task.priority === 'medium' ? 'normal' : task.priority,
+      status: task.status,
+      outcome_notes: task.notes,
+      completed_at: task.completed_at,
+      created_at: task.created_at || task.scheduled_date,
+      assigned_to: task.assigned_to_profile_id,
+    };
+  }), [contracts, tasks]);
+
+  const reportPerformance = useMemo<ReportEmployeePerformance | null>(() => {
+    if (!performance) return null;
+
+    const employeeName = user?.email?.split('@')[0] || '';
+    const [firstName = '', ...lastNameParts] = employeeName.split(' ');
+
+    return {
+      employee_id: performance.profile_id,
+      user_id: user?.id || '',
+      first_name: firstName,
+      last_name: lastNameParts.join(' '),
+      company_id: user?.profile?.company_id || user?.company?.id || '',
+      assigned_contracts_count: contractStats.totalContracts,
+      active_contracts_count: contractStats.activeContracts,
+      contracts_with_balance_count: contracts.filter(contract => contract.balance_due > 0).length,
+      total_contract_value: contracts.reduce((sum, contract) => sum + contract.monthly_amount, 0),
+      total_collected: performance.total_collected,
+      total_balance_due: contractStats.totalBalanceDue,
+      collection_rate: performance.collection_rate,
+      total_followups: taskStats.totalTasks,
+      completed_followups: taskStats.completedTasks,
+      pending_followups: taskStats.pendingTasks,
+      overdue_followups: taskStats.overdueTasks,
+      followup_completion_rate: performance.followup_completion_rate,
+      total_communications: performance.calls_logged + performance.notes_added,
+      phone_calls_count: performance.calls_logged,
+      messages_count: 0,
+      contact_coverage_rate: 0,
+      performance_score: performance.performance_score,
+    };
+  }, [contractStats, contracts, performance, taskStats, user]);
+
+  const reportPerformanceGrade = reportPerformance
+    ? getReportPerformanceGrade(reportPerformance.performance_score)
+    : null;
 
   // Filter contracts based on search
   const filteredContracts = contracts.filter(c => 
@@ -292,9 +367,9 @@ export const EmployeeWorkspace: React.FC = () => {
                 await exportEmployeeWorkspaceReport({
                   employeeName: user?.email?.split('@')[0] || 'موظف',
                   contracts,
-                  tasks,
-                  performance: performance || null,
-                  performanceGrade: performanceGrade || null,
+                  tasks: reportTasks,
+                  performance: reportPerformance,
+                  performanceGrade: reportPerformanceGrade,
                   collections,
                   stats: {
                     contractStats,
@@ -980,8 +1055,9 @@ export const EmployeeWorkspace: React.FC = () => {
       <QuickPaymentDialog
         open={showPaymentDialog}
         onOpenChange={setShowPaymentDialog}
-        contracts={contractsForDialogs}
-        preselectedContractId={selectedContractId}
+        customerId={selectedPaymentContract?.customer_id || ''}
+        customerName={selectedPaymentContract?.customer_name || ''}
+        customerPhone={selectedPaymentContract?.customer_phone || null}
       />
 
       <CallLogDialog

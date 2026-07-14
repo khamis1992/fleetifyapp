@@ -74,7 +74,23 @@ export const MobileCustomerDetails: React.FC = () => {
         .single();
 
       if (error) throw error;
-      setCustomer(data);
+      setCustomer({
+        id: data.id,
+        first_name: data.first_name ?? '',
+        last_name: data.last_name ?? '',
+        phone_number: data.phone,
+        whatsapp_number: data.alternative_phone,
+        email: data.email,
+        qid_number: data.national_id,
+        driver_license: data.license_number,
+        license_expiry: data.license_expiry,
+        address: data.address,
+        city: data.city,
+        company_name: data.company_name,
+        nationality: data.nationality,
+        date_of_birth: data.date_of_birth,
+        created_at: data.created_at,
+      });
     } catch (error) {
       console.error('Error fetching customer:', error);
     } finally {
@@ -230,7 +246,7 @@ export const MobileCustomerDetails: React.FC = () => {
           <div className="flex gap-2 mt-4">
             {customer.phone_number && (
               <button
-                onClick={() => handleCall(customer.phone_number!)}
+                onClick={() => handleCall(customer.phone_number ?? '')}
                 className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-green-100 text-green-700 font-medium"
               >
                 <Phone className="w-4 h-4" />
@@ -239,7 +255,7 @@ export const MobileCustomerDetails: React.FC = () => {
             )}
             {customer.whatsapp_number && (
               <button
-                onClick={() => handleWhatsApp(customer.whatsapp_number!)}
+                onClick={() => handleWhatsApp(customer.whatsapp_number ?? '')}
                 className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-green-100 text-green-700 font-medium"
               >
                 <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">

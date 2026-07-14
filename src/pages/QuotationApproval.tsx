@@ -24,7 +24,7 @@ interface Quotation {
   valid_until: string
   status: string
   approved_by_client?: boolean
-  client_comments?: string
+  client_comments?: string | null
   approved_at?: string
   customers: {
     id: string
@@ -84,7 +84,7 @@ export default function QuotationApproval() {
 
         setQuotation(data.quotation)
       } catch (err: unknown) {
-        setError(err.message || 'حدث خطأ أثناء جلب بيانات العرض')
+        setError(err instanceof Error ? err.message : 'حدث خطأ أثناء جلب بيانات العرض')
       } finally {
         setLoading(false)
       }
@@ -133,7 +133,7 @@ export default function QuotationApproval() {
         })
       }
     } catch (err: unknown) {
-      toast.error(err.message || 'حدث خطأ أثناء معالجة الطلب')
+      toast.error(err instanceof Error ? err.message : 'حدث خطأ أثناء معالجة الطلب')
     } finally {
       setProcessing(false)
     }

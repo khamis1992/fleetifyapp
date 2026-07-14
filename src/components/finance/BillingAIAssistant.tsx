@@ -37,7 +37,7 @@ type InvoiceRow = {
     last_name?: string | null;
     company_name?: string | null;
     phone?: string | null;
-    mobile?: string | null;
+    alternative_phone?: string | null;
   } | null;
   contracts?: {
     id: string;
@@ -65,7 +65,7 @@ type ContractRow = {
     last_name?: string | null;
     company_name?: string | null;
     phone?: string | null;
-    mobile?: string | null;
+    alternative_phone?: string | null;
   } | null;
 };
 
@@ -125,7 +125,7 @@ const customerName = (customer?: InvoiceRow["customers"] | ContractRow["customer
 };
 
 const customerPhone = (customer?: InvoiceRow["customers"] | ContractRow["customers"]) =>
-  customer?.mobile || customer?.phone || "";
+  customer?.phone || customer?.alternative_phone || "";
 
 const normalizeWhatsAppPhone = (phone: string) => {
   const digits = phone.replace(/\D/g, "");
@@ -176,7 +176,7 @@ export const BillingAIAssistant = () => {
             `
             id, invoice_number, invoice_date, due_date, customer_id, contract_id,
             total_amount, paid_amount, balance_due, payment_status, status,
-            customers:customer_id(first_name,last_name,company_name,phone,mobile),
+            customers:customer_id(first_name,last_name,company_name,phone,alternative_phone),
             contracts:contract_id(id,contract_number,contract_amount,total_paid,balance_due,status)
           `
           )
@@ -191,7 +191,7 @@ export const BillingAIAssistant = () => {
             `
             id, contract_number, customer_id, contract_amount, monthly_amount,
             total_paid, balance_due, status, start_date, end_date,
-            customers:customer_id(first_name,last_name,company_name,phone,mobile)
+            customers:customer_id(first_name,last_name,company_name,phone,alternative_phone)
           `
           )
           .eq("company_id", companyId)
@@ -247,9 +247,11 @@ export const BillingAIAssistant = () => {
     }
 
     const invoicesByContractMonth = new Set(
-      invoices
-        .filter((invoice) => invoice.contract_id && invoice.invoice_date)
-        .map((invoice) => `${invoice.contract_id}|${invoice.invoice_date!.slice(0, 7)}`)
+      invoices.flatMap((invoice) =>
+        invoice.contract_id && invoice.invoice_date
+          ? [`${invoice.contract_id}|${invoice.invoice_date.slice(0, 7)}`]
+          : []
+      )
     );
 
     const missingContracts = contracts.filter((contract) => {

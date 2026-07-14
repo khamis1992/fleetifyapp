@@ -291,7 +291,7 @@ const ImportInner: React.FC = () => {
             successCount++;
           }
         } catch (error: unknown) {
-          errors.push(`السطر ${i}: ${error.message}`);
+          errors.push(`السطر ${i}: ${error instanceof Error ? error.message : String(error)}`);
           failedCount++;
         }
 
@@ -320,7 +320,7 @@ const ImportInner: React.FC = () => {
       }
 
     } catch (error: unknown) {
-      toast.error(`خطأ في الاستيراد: ${error.message}`);
+      toast.error(`خطأ في الاستيراد: ${error instanceof Error ? error.message : String(error)}`);
     } finally {
       setIsProcessing(false);
       setProgress(100);
@@ -537,7 +537,7 @@ const ImportInner: React.FC = () => {
                               <tr key={index} className="border-b border-border">
                                 {Object.values(row).map((value: unknown, cellIndex) => (
                                   <td key={cellIndex} className="p-2 text-right">
-                                    {value}
+                                    {String(value ?? '')}
                                   </td>
                                 ))}
                               </tr>

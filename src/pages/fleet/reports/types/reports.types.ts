@@ -13,7 +13,17 @@ export type DateFilterPeriod =
   | 'custom';
 
 // حالة المركبة
-export type VehicleStatus = 'available' | 'rented' | 'maintenance' | 'reserved';
+export type VehicleStatus =
+  | 'available'
+  | 'rented'
+  | 'maintenance'
+  | 'out_of_service'
+  | 'street_52'
+  | 'accident'
+  | 'stolen'
+  | 'police_station'
+  | 'reserved_employee'
+  | 'municipality';
 
 // نوع التقرير
 export type ReportType = 
@@ -78,7 +88,7 @@ export interface MaintenanceReportData {
   maintenance_type: string;
   scheduled_date: string;
   completed_date?: string;
-  status: 'pending' | 'in_progress' | 'completed';
+  status: 'pending' | 'in_progress' | 'completed' | 'cancelled';
   estimated_cost: number;
   actual_cost?: number;
   description?: string;

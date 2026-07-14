@@ -211,14 +211,6 @@ const ReceivePaymentWorkflow: React.FC = () => {
         currency: 'QAR',
       });
 
-      // 6. تحديث تاريخ آخر دفعة في العقد
-      await supabase
-        .from('contracts')
-        .update({ 
-          last_payment_date: data.paymentDate
-        })
-        .eq('id', data.contractId);
-
       return paymentData;
     },
     onSuccess: () => {
@@ -275,7 +267,7 @@ const ReceivePaymentWorkflow: React.FC = () => {
   // التحميل
   if (authLoading) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+      <div className="min-h-screen bg-[#F6F8FB] flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-rose-500" />
       </div>
     );
@@ -290,7 +282,7 @@ const ReceivePaymentWorkflow: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
+    <div className="min-h-screen bg-[#F6F8FB]">
       {/* Header */}
       <header className="bg-white border-b sticky top-0 z-10 shadow-sm">
         <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">

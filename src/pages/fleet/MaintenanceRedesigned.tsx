@@ -623,8 +623,7 @@ export default function MaintenanceRedesigned() {
 
   // Fetch data
   const { data: maintenanceRecords, isLoading: maintenanceLoading, refetch } = useVehicleMaintenance(undefined, {
-    limit: 100,
-    enabled: true
+    limit: 100
   });
 
   const { data: maintenanceVehicles, isLoading: maintenanceVehiclesLoading } = useMaintenanceVehicles({
@@ -685,7 +684,7 @@ export default function MaintenanceRedesigned() {
 
   const handleCompleteMaintenance = async (record: any) => {
     try {
-      await completeMaintenanceStatus.mutateAsync(record.id);
+      await completeMaintenanceStatus.mutateAsync({ vehicleId: record.vehicle_id, maintenanceId: record.id });
       toast.success('تم إكمال الصيانة بنجاح');
       refetch();
     } catch (error) {
@@ -823,7 +822,7 @@ export default function MaintenanceRedesigned() {
   // Loading state
   if (maintenanceLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-sky-50/30 flex items-center justify-center">
+      <div className="min-h-screen bg-[#F6F8FB] flex items-center justify-center">
         <div className="text-center">
           <div className="w-12 h-12 border-3 border-sky-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
           <p className="text-sm text-slate-600 font-medium">جاري التحميل...</p>

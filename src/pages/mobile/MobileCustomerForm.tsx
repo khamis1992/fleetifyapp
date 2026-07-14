@@ -87,11 +87,11 @@ export const MobileCustomerForm: React.FC = () => {
         setFormData({
           first_name: data.first_name || '',
           last_name: data.last_name || '',
-          phone_number: data.phone_number || '',
-          whatsapp_number: data.whatsapp_number || '',
+          phone_number: data.phone || '',
+          whatsapp_number: data.alternative_phone || '',
           email: data.email || '',
-          qid_number: data.qid_number || '',
-          driver_license: data.driver_license || '',
+          qid_number: data.national_id || '',
+          driver_license: data.license_number || '',
           license_expiry: data.license_expiry?.split('T')[0] || '',
           address: data.address || '',
           city: data.city || '',
@@ -151,6 +151,11 @@ export const MobileCustomerForm: React.FC = () => {
       return;
     }
 
+    if (!user?.id) {
+      setErrors({ form: 'تعذر التحقق من المستخدم' });
+      return;
+    }
+
     setSaving(true);
     try {
       let companyId: string;
@@ -158,7 +163,7 @@ export const MobileCustomerForm: React.FC = () => {
       const { data: profileData } = await supabase
         .from('profiles')
         .select('company_id')
-        .eq('user_id', user?.id)
+        .eq('user_id', user.id)
         .single();
 
       if (profileData?.company_id) {
@@ -167,7 +172,7 @@ export const MobileCustomerForm: React.FC = () => {
         const { data: employeeData } = await supabase
           .from('employees')
           .select('company_id')
-          .eq('user_id', user?.id)
+          .eq('user_id', user.id)
           .eq('is_active', true)
           .single();
 
@@ -180,11 +185,11 @@ export const MobileCustomerForm: React.FC = () => {
       const customerData = {
         first_name: formData.first_name.trim(),
         last_name: formData.last_name.trim(),
-        phone_number: formData.phone_number.trim() || null,
-        whatsapp_number: formData.whatsapp_number.trim() || null,
+        phone: formData.phone_number.trim(),
+        alternative_phone: formData.whatsapp_number.trim() || null,
         email: formData.email.trim() || null,
-        qid_number: formData.qid_number.trim() || null,
-        driver_license: formData.driver_license.trim() || null,
+        national_id: formData.qid_number.trim() || null,
+        license_number: formData.driver_license.trim() || null,
         license_expiry: formData.license_expiry || null,
         address: formData.address.trim() || null,
         city: formData.city.trim() || null,

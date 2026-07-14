@@ -542,7 +542,7 @@ export const usePropertyFinancialReport = (startDate?: string, endDate?: string)
   const { companyId, getQueryKey } = useUnifiedCompanyAccess();
 
   return useQuery({
-    queryKey: getQueryKey(['property-financial-report', startDate, endDate]),
+    queryKey: getQueryKey(['property-financial-report', startDate || '', endDate || '']),
     queryFn: async () => {
       if (!companyId) throw new Error('Company ID is required');
       let query = supabase

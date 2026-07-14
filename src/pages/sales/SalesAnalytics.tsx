@@ -44,21 +44,21 @@ const SalesAnalytics = () => {
     : "0.0";
 
   const avgDealSize = opportunities?.length
-    ? (opportunities.reduce((sum, opp) => sum + opp.estimated_value, 0) / opportunities.length)
+    ? (opportunities.reduce((sum, opp) => sum + (opp.estimated_value ?? 0), 0) / opportunities.length)
     : 0;
 
   const wonOpportunities = opportunities?.filter(o => o.stage === 'won') || [];
-  const wonValue = wonOpportunities.reduce((sum, opp) => sum + opp.estimated_value, 0);
+  const wonValue = wonOpportunities.reduce((sum, opp) => sum + (opp.estimated_value ?? 0), 0);
   const winRate = opportunities?.length
     ? ((wonOpportunities.length / opportunities.length) * 100).toFixed(1)
     : "0.0";
 
   // Sales by stage
   const stageData = [
-    { stage: 'عميل محتمل', count: opportunities?.filter(o => o.stage === 'lead').length || 0, value: opportunities?.filter(o => o.stage === 'lead').reduce((sum, opp) => sum + opp.estimated_value, 0) || 0 },
-    { stage: 'مؤهل', count: opportunities?.filter(o => o.stage === 'qualified').length || 0, value: opportunities?.filter(o => o.stage === 'qualified').reduce((sum, opp) => sum + opp.estimated_value, 0) || 0 },
-    { stage: 'عرض', count: opportunities?.filter(o => o.stage === 'proposal').length || 0, value: opportunities?.filter(o => o.stage === 'proposal').reduce((sum, opp) => sum + opp.estimated_value, 0) || 0 },
-    { stage: 'تفاوض', count: opportunities?.filter(o => o.stage === 'negotiation').length || 0, value: opportunities?.filter(o => o.stage === 'negotiation').reduce((sum, opp) => sum + opp.estimated_value, 0) || 0 },
+    { stage: 'عميل محتمل', count: opportunities?.filter(o => o.stage === 'lead').length || 0, value: opportunities?.filter(o => o.stage === 'lead').reduce((sum, opp) => sum + (opp.estimated_value ?? 0), 0) || 0 },
+    { stage: 'مؤهل', count: opportunities?.filter(o => o.stage === 'qualified').length || 0, value: opportunities?.filter(o => o.stage === 'qualified').reduce((sum, opp) => sum + (opp.estimated_value ?? 0), 0) || 0 },
+    { stage: 'عرض', count: opportunities?.filter(o => o.stage === 'proposal').length || 0, value: opportunities?.filter(o => o.stage === 'proposal').reduce((sum, opp) => sum + (opp.estimated_value ?? 0), 0) || 0 },
+    { stage: 'تفاوض', count: opportunities?.filter(o => o.stage === 'negotiation').length || 0, value: opportunities?.filter(o => o.stage === 'negotiation').reduce((sum, opp) => sum + (opp.estimated_value ?? 0), 0) || 0 },
     { stage: 'ناجح', count: wonOpportunities.length, value: wonValue },
   ];
 
@@ -311,7 +311,7 @@ const SalesAnalytics = () => {
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-muted-foreground">مؤهل</span>
-                  <Badge variant="success">{leads?.filter(l => l.status === 'qualified').length || 0}</Badge>
+                  <Badge variant="default">{leads?.filter(l => l.status === 'qualified').length || 0}</Badge>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-muted-foreground">تم التحويل</span>
@@ -342,7 +342,7 @@ const SalesAnalytics = () => {
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-muted-foreground">مقبول</span>
-                  <Badge variant="success">{quotes?.filter(q => q.status === 'accepted').length || 0}</Badge>
+                  <Badge variant="default">{quotes?.filter(q => q.status === 'accepted').length || 0}</Badge>
                 </div>
               </CardContent>
             </Card>
@@ -361,7 +361,7 @@ const SalesAnalytics = () => {
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-muted-foreground">قيد المعالجة</span>
-                  <Badge variant="warning">{orders?.filter(o => ['pending', 'confirmed', 'processing'].includes(o.status)).length || 0}</Badge>
+                  <Badge variant="secondary">{orders?.filter(o => ['pending', 'confirmed', 'processing'].includes(o.status ?? '')).length || 0}</Badge>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-muted-foreground">تم الشحن</span>
@@ -369,7 +369,7 @@ const SalesAnalytics = () => {
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-muted-foreground">تم التسليم</span>
-                  <Badge variant="success">{orders?.filter(o => o.status === 'delivered').length || 0}</Badge>
+                  <Badge variant="default">{orders?.filter(o => o.status === 'delivered').length || 0}</Badge>
                 </div>
               </CardContent>
             </Card>
@@ -383,8 +383,8 @@ const SalesAnalytics = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                {opportunities
-                  ?.sort((a, b) => b.estimated_value - a.estimated_value)
+                {[...(opportunities ?? [])]
+                  .sort((a, b) => (b.estimated_value ?? 0) - (a.estimated_value ?? 0))
                   .slice(0, 5)
                   .map((opp, index) => (
                     <div key={opp.id} className="flex items-center justify-between p-3 rounded-lg border">
@@ -400,9 +400,9 @@ const SalesAnalytics = () => {
                         </div>
                       </div>
                       <div className="text-right">
-                        <p className="font-bold text-green-600">{formatCurrency(opp.estimated_value)}</p>
+                        <p className="font-bold text-green-600">{formatCurrency(opp.estimated_value ?? 0)}</p>
                         <p className="text-xs text-muted-foreground">
-                          مرجح: {formatCurrency(opp.estimated_value * (opp.probability / 100))}
+                          مرجح: {formatCurrency((opp.estimated_value ?? 0) * ((opp.probability ?? 0) / 100))}
                         </p>
                       </div>
                     </div>

@@ -13,7 +13,7 @@ type BankInsert = Database['public']['Tables']['banks']['Insert'];
 
 export const useAccountingWizard = () => {
   const [progress, setProgress] = useState(0);
-  const { companyId } = useUnifiedCompanyAccess();
+  const { companyId, user } = useUnifiedCompanyAccess();
   const { getAccountsByType } = useTemplateSystem();
 
   const setupAccountingSystem = useMutation({
@@ -51,36 +51,34 @@ export const useAccountingWizard = () => {
         current_balance: 0
       }));
       
-      await handleAccountsConflictResolution(companyId, accountsToCreate, conflictStrategy);
-      
       setProgress(60);
-      
-      // 2. Create bank accounts if specified
-      if (wizardData.bankAccounts && wizardData.bankAccounts.length > 0) {
-        const banksToCreate = wizardData.bankAccounts.map(bank => ({
+
+      const banksToCreate = (wizardData.bankAccounts || []).map((bank, index) => {
+        if (Number(bank.openingBalance || 0) !== 0) {
+          throw new Error('سجّل الرصيد الافتتاحي بعد الإعداد من الخزينة بحساب مقابل');
+        }
+        return {
           company_id: companyId,
           bank_name: bank.name,
           account_number: bank.accountNumber,
           currency: bank.currency,
-          opening_balance: bank.openingBalance,
-          current_balance: bank.openingBalance,
+          opening_balance: 0,
+          current_balance: 0,
           is_active: true,
-          is_primary: wizardData.bankAccounts?.indexOf(bank) === 0
-        }));
-        
-        await handleBanksConflictResolution(companyId, banksToCreate, conflictStrategy);
-      }
-      
+          is_primary: index === 0
+        };
+      });
+
       setProgress(80);
-      
-      // 3. Create detailed accounts (levels 5-6) for customers and suppliers
-      await createDetailedAccounts(companyId, wizardData.businessType);
-      
-      setProgress(90);
-      
-      // 4. Set up account mappings based on business type
-      await setupAccountMappings(companyId, wizardData);
-      
+      const { error } = await supabase.rpc('setup_accounting_system_v1', {
+        p_company_id: companyId,
+        p_accounts: accountsToCreate,
+        p_banks: banksToCreate,
+        p_business_type: wizardData.businessType,
+        p_strategy: conflictStrategy === 'merge' ? 'merge' : 'skip',
+        p_actor_id: user?.id,
+      });
+      if (error) throw error;
       setProgress(100);
       
       return { success: true };

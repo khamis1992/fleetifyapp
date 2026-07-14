@@ -81,7 +81,18 @@ export const MobileCustomers: React.FC = () => {
 
       if (error) throw error;
 
-      setCustomers(data || []);
+      setCustomers((data || []).map(customer => ({
+        id: customer.id,
+        first_name: customer.first_name ?? '',
+        last_name: customer.last_name ?? '',
+        phone_number: customer.phone,
+        whatsapp_number: customer.alternative_phone,
+        email: customer.email,
+        qid_number: customer.national_id,
+        driver_license: customer.license_number,
+        company_id: customer.company_id,
+        created_at: customer.created_at,
+      })));
     } catch (error) {
       console.error('Error fetching customers:', error);
     } finally {

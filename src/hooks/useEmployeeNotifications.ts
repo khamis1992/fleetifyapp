@@ -74,7 +74,7 @@ export const useEmployeeNotifications = (
   } = useQuery({
     queryKey: ['employee-notifications', profile?.id, filters],
     queryFn: async () => {
-      if (!profile?.id) return [];
+      if (!profile?.id || !profile.company_id) return [];
 
       let query = supabase
         .from('staff_notifications')

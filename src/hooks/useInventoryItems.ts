@@ -2,32 +2,11 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import type { Database } from '@/integrations/supabase/types';
 
-export interface InventoryItem {
-  id: string;
-  company_id: string;
-  item_name: string;
-  item_name_ar?: string;
-  item_code?: string;
-  sku?: string;
-  barcode?: string;
-  category_id?: string;
-  description?: string;
-  unit_of_measure: string;
-  unit_price: number;
-  cost_price: number;
-  min_stock_level: number;
-  max_stock_level?: number;
-  reorder_point?: number;
-  reorder_quantity?: number;
-  is_active: boolean;
-  is_tracked: boolean;
-  item_type: string;
-  image_url?: string;
-  notes?: string;
-  created_at: string;
-  updated_at: string;
-}
+export type InventoryItem = Database['public']['Tables']['inventory_items']['Row'];
+type InventoryItemInsert = Omit<Database['public']['Tables']['inventory_items']['Insert'], 'company_id' | 'created_by'>;
+type InventoryItemUpdate = Database['public']['Tables']['inventory_items']['Update'];
 
 export interface InventoryItemFilters {
   category_id?: string;
@@ -121,7 +100,7 @@ export const useCreateInventoryItem = () => {
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: async (itemData: Omit<InventoryItem, 'id' | 'created_at' | 'updated_at' | 'company_id'>) => {
+    mutationFn: async (itemData: InventoryItemInsert) => {
       if (!user?.profile?.company_id) {
         throw new Error('Company ID is required');
       }
@@ -163,14 +142,17 @@ export const useCreateInventoryItem = () => {
 
 export const useUpdateInventoryItem = () => {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: async ({ id, data }: { id: string; data: Partial<InventoryItem> }) => {
+    mutationFn: async ({ id, data }: { id: string; data: InventoryItemUpdate }) => {
+      if (!user?.profile?.company_id) throw new Error('Company ID is required');
       const { data: result, error } = await supabase
         .from('inventory_items')
         .update(data)
         .eq('id', id)
+        .eq('company_id', user.profile.company_id)
         .select()
         .single();
 
@@ -202,15 +184,18 @@ export const useUpdateInventoryItem = () => {
 
 export const useDeleteInventoryItem = () => {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
   const { toast } = useToast();
 
   return useMutation({
     mutationFn: async (itemId: string) => {
+      if (!user?.profile?.company_id) throw new Error('Company ID is required');
       // Soft delete by setting is_active to false
       const { error } = await supabase
         .from('inventory_items')
         .update({ is_active: false })
-        .eq('id', itemId);
+        .eq('id', itemId)
+        .eq('company_id', user.profile.company_id);
 
       if (error) {
         console.error('Error deleting inventory item:', error);

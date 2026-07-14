@@ -632,13 +632,33 @@ describe("system audit agent rules", () => {
   it("does not mix invoice and due date conventions inside one contract", () => {
     const plan = deriveOneToOneScheduleInvoicePlan(
       [
-        { id: "schedule-april", due_date: "2026-04-01", invoice_id: "invoice-april" },
-        { id: "schedule-may", due_date: "2026-05-01", invoice_id: "invoice-april" },
-        { id: "schedule-june", due_date: "2026-06-01", invoice_id: "invoice-june" },
+        {
+          id: "schedule-april",
+          due_date: "2026-04-01",
+          invoice_id: "invoice-april",
+        },
+        {
+          id: "schedule-may",
+          due_date: "2026-05-01",
+          invoice_id: "invoice-april",
+        },
+        {
+          id: "schedule-june",
+          due_date: "2026-06-01",
+          invoice_id: "invoice-june",
+        },
       ],
       [
-        { id: "invoice-april", invoice_date: "2026-04-01", due_date: "2026-05-01" },
-        { id: "invoice-june", invoice_date: "2026-06-01", due_date: "2026-07-01" },
+        {
+          id: "invoice-april",
+          invoice_date: "2026-04-01",
+          due_date: "2026-05-01",
+        },
+        {
+          id: "invoice-june",
+          invoice_date: "2026-06-01",
+          due_date: "2026-07-01",
+        },
       ]
     );
 
@@ -654,14 +674,34 @@ describe("system audit agent rules", () => {
   it("uses canonical issue-month billing when both conventions are incomplete", () => {
     const plan = deriveOneToOneScheduleInvoicePlan(
       [
-        { id: "schedule-june", due_date: "2026-06-01", invoice_id: "invoice-may" },
-        { id: "schedule-july", due_date: "2026-07-01", invoice_id: "invoice-june" },
+        {
+          id: "schedule-june",
+          due_date: "2026-06-01",
+          invoice_id: "invoice-may",
+        },
+        {
+          id: "schedule-july",
+          due_date: "2026-07-01",
+          invoice_id: "invoice-june",
+        },
         { id: "schedule-august", due_date: "2026-08-01", invoice_id: null },
       ],
       [
-        { id: "invoice-may", invoice_date: "2026-05-01", due_date: "2026-06-01" },
-        { id: "invoice-june", invoice_date: "2026-06-01", due_date: "2026-07-01" },
-        { id: "invoice-august", invoice_date: "2026-08-01", due_date: "2026-09-01" },
+        {
+          id: "invoice-may",
+          invoice_date: "2026-05-01",
+          due_date: "2026-06-01",
+        },
+        {
+          id: "invoice-june",
+          invoice_date: "2026-06-01",
+          due_date: "2026-07-01",
+        },
+        {
+          id: "invoice-august",
+          invoice_date: "2026-08-01",
+          due_date: "2026-09-01",
+        },
       ]
     );
 
@@ -1720,6 +1760,108 @@ describe("system audit agent rules", () => {
     expect(result.hasMore).toBe(true);
   });
 
+  it("assigns a missing payment bank only when the company has one active bank", async () => {
+    const context = createWorkerContext("accounting", {
+      payments: [
+        {
+          id: "payment-single-bank",
+          company_id: "company-1",
+          payment_number: "PAY-SINGLE-BANK",
+          payment_date: "2026-07-01",
+          payment_status: "completed",
+          amount: 500,
+          journal_entry_id: "journal-single-bank",
+          payment_method: "bank_transfer",
+          bank_id: null,
+          reconciliation_status: "pending",
+          reconciled_at: null,
+        },
+      ],
+      journal_entries: [
+        {
+          id: "journal-single-bank",
+          company_id: "company-1",
+          status: "posted",
+          entry_date: "2026-07-01",
+          reference_type: "payment",
+          reference_id: "payment-single-bank",
+        },
+      ],
+      bank_transactions: [],
+      banks: [
+        {
+          id: "bank-only",
+          company_id: "company-1",
+          is_active: true,
+        },
+      ],
+    });
+    context.job.cursor = { phase: "payments", lastId: "" };
+
+    const result = await runDomainWorker(context);
+
+    expect(result.findings).toContainEqual(
+      expect.objectContaining({
+        code: "accounting.bank_payment_assigned_single_active_bank",
+        entityId: "payment-single-bank",
+        repair: {
+          command: "accounting.assign_single_active_bank",
+          entityType: "payment",
+          entityId: "payment-single-bank",
+          expectedBefore: { bank_id: null },
+          values: { bank_id: "bank-only" },
+          autoApply: true,
+        },
+      })
+    );
+  });
+
+  it("does not guess a payment bank when multiple active banks exist", async () => {
+    const context = createWorkerContext("accounting", {
+      payments: [
+        {
+          id: "payment-multiple-banks",
+          company_id: "company-1",
+          payment_number: "PAY-MULTIPLE-BANKS",
+          payment_date: "2026-07-01",
+          payment_status: "completed",
+          amount: 500,
+          journal_entry_id: "journal-multiple-banks",
+          payment_method: "bank_transfer",
+          bank_id: null,
+          reconciliation_status: "pending",
+          reconciled_at: null,
+        },
+      ],
+      journal_entries: [
+        {
+          id: "journal-multiple-banks",
+          company_id: "company-1",
+          status: "posted",
+          entry_date: "2026-07-01",
+          reference_type: "payment",
+          reference_id: "payment-multiple-banks",
+        },
+      ],
+      bank_transactions: [],
+      banks: [
+        { id: "bank-1", company_id: "company-1", is_active: true },
+        { id: "bank-2", company_id: "company-1", is_active: true },
+      ],
+    });
+    context.job.cursor = { phase: "payments", lastId: "" };
+
+    const result = await runDomainWorker(context);
+    const finding = result.findings.find(
+      (item) => item.entityId === "payment-multiple-banks"
+    );
+
+    expect(finding).toMatchObject({
+      code: "accounting.bank_payment_missing_bank_for_reconciliation",
+    });
+    expect(finding?.repair).toBeUndefined();
+  });
+
   it("plans the canonical repair for a completed traffic violation payment without a journal", async () => {
     const context = createWorkerContext("accounting", {
       traffic_violation_payments: [
@@ -1911,10 +2053,253 @@ describe("system audit agent rules", () => {
     );
     expect(result.findings[0].repair).toBeUndefined();
     expect(result.cursor).toEqual({
-      phase: "bank_transactions",
-      lastId: "bank-transaction-1",
+      phase: "monthly_obligation_payments",
+      lastId: "",
     });
-    expect(result.hasMore).toBe(false);
+    expect(result.hasMore).toBe(true);
+  });
+
+  it("plans a monthly-obligation payment-state repair from the canonical ledger", async () => {
+    const context = createWorkerContext("accounting", {
+      monthly_obligation_installments: [
+        {
+          id: "monthly-installment-1",
+          company_id: "company-1",
+          obligation_id: "monthly-obligation-1",
+          amount: 1_000,
+          paid_amount: 200,
+          payment_ledger_baseline: 0,
+          status: "partial",
+          payment_date: "2026-07-01",
+          vendor_payment_id: null,
+          bank_transaction_id: null,
+          journal_entry_id: null,
+        },
+      ],
+      monthly_obligation_payments: [
+        {
+          id: "monthly-payment-1",
+          company_id: "company-1",
+          installment_id: "monthly-installment-1",
+          amount: 1_000,
+          payment_date: "2026-07-02",
+          bank_id: null,
+          vendor_payment_id: null,
+          bank_transaction_id: null,
+          journal_entry_id: "monthly-journal-1",
+          status: "completed",
+          reversal_of_payment_id: null,
+        },
+      ],
+      journal_entries: [
+        {
+          id: "monthly-journal-1",
+          company_id: "company-1",
+          status: "posted",
+          total_debit: 1_000,
+          total_credit: 1_000,
+          reversal_entry_id: null,
+        },
+      ],
+      bank_transactions: [],
+      vendor_payments: [],
+    });
+    context.job.cursor = { phase: "monthly_obligation_payments", lastId: "" };
+
+    const result = await runDomainWorker(context);
+
+    expect(result.findings).toContainEqual(
+      expect.objectContaining({
+        code: "accounting.monthly_obligation_payment_state_mismatch",
+        entityId: "monthly-installment-1",
+        repair: expect.objectContaining({
+          command: "monthly_obligation.sync_payment_state",
+          expectedBefore: {
+            paid_amount: 200,
+            status: "partial",
+            payment_date: "2026-07-01",
+          },
+          values: {},
+          autoApply: true,
+        }),
+      })
+    );
+  });
+
+  it("keeps incomplete monthly-obligation accounting evidence in review", async () => {
+    const context = createWorkerContext("accounting", {
+      monthly_obligation_installments: [
+        {
+          id: "monthly-installment-2",
+          company_id: "company-1",
+          obligation_id: "monthly-obligation-2",
+          amount: 1_000,
+          paid_amount: 300,
+          payment_ledger_baseline: 0,
+          status: "partial",
+          payment_date: "2026-07-03",
+          vendor_payment_id: null,
+          bank_transaction_id: null,
+          journal_entry_id: null,
+        },
+      ],
+      monthly_obligation_payments: [
+        {
+          id: "monthly-payment-2",
+          company_id: "company-1",
+          installment_id: "monthly-installment-2",
+          amount: 300,
+          payment_date: "2026-07-03",
+          bank_id: "bank-1",
+          vendor_payment_id: null,
+          bank_transaction_id: null,
+          journal_entry_id: "missing-journal",
+          status: "completed",
+          reversal_of_payment_id: null,
+        },
+      ],
+      journal_entries: [],
+      bank_transactions: [],
+      vendor_payments: [],
+    });
+    context.job.cursor = { phase: "monthly_obligation_payments", lastId: "" };
+
+    const result = await runDomainWorker(context);
+
+    const journalFinding = result.findings.find(
+      (finding) =>
+        finding.code === "accounting.monthly_obligation_payment_invalid_journal"
+    );
+    const bankFinding = result.findings.find(
+      (finding) =>
+        finding.code ===
+        "accounting.monthly_obligation_payment_invalid_bank_movement"
+    );
+    expect(journalFinding?.repair).toBeUndefined();
+    expect(bankFinding?.repair).toBeUndefined();
+  });
+
+  it("keeps a legacy monthly-obligation baseline out of automatic repair", async () => {
+    const context = createWorkerContext("accounting", {
+      monthly_obligation_installments: [
+        {
+          id: "monthly-installment-3",
+          company_id: "company-1",
+          obligation_id: "monthly-obligation-3",
+          amount: 1_000,
+          paid_amount: 400,
+          payment_ledger_baseline: 400,
+          status: "partial",
+          payment_date: "2026-06-30",
+          vendor_payment_id: null,
+          bank_transaction_id: null,
+          journal_entry_id: null,
+        },
+      ],
+      monthly_obligation_payments: [],
+      journal_entries: [],
+      bank_transactions: [],
+      vendor_payments: [],
+    });
+    context.job.cursor = { phase: "monthly_obligation_payments", lastId: "" };
+
+    const result = await runDomainWorker(context);
+
+    expect(result.findings).toHaveLength(1);
+    expect(result.findings[0]).toMatchObject({
+      code: "accounting.monthly_obligation_legacy_payment_baseline",
+      entityId: "monthly-installment-3",
+    });
+    expect(result.findings[0].repair).toBeUndefined();
+  });
+
+  it("plans a canonical rental-receipt state repair", async () => {
+    const context = createWorkerContext("accounting", {
+      rental_payment_receipts: [
+        {
+          id: "rental-receipt-1",
+          company_id: "company-1",
+          customer_id: "customer-1",
+          contract_id: "contract-1",
+          payment_date: "2026-07-04",
+          amount_due: 1_000,
+          total_paid: 600,
+          pending_balance: 0,
+          payment_status: "paid",
+          idempotency_key: "idempotency-1",
+          canonical_payment_id: "canonical-payment-1",
+        },
+      ],
+      payments: [
+        {
+          id: "canonical-payment-1",
+          company_id: "company-1",
+          customer_id: "customer-1",
+          contract_id: "contract-1",
+          payment_date: "2026-07-04",
+          amount: 600,
+          payment_status: "completed",
+          transaction_type: "receipt",
+        },
+      ],
+    });
+    context.job.cursor = { phase: "rental_receipt_payments", lastId: "" };
+
+    const result = await runDomainWorker(context);
+
+    expect(result.findings).toContainEqual(
+      expect.objectContaining({
+        code: "accounting.rental_receipt_payment_state_mismatch",
+        entityId: "rental-receipt-1",
+        repair: expect.objectContaining({
+          command: "rental_receipt.sync_payment_state",
+          values: {},
+          autoApply: true,
+        }),
+      })
+    );
+  });
+
+  it("keeps a rental receipt with mismatched payment evidence in review", async () => {
+    const context = createWorkerContext("accounting", {
+      rental_payment_receipts: [
+        {
+          id: "rental-receipt-2",
+          company_id: "company-1",
+          customer_id: "customer-1",
+          contract_id: "contract-1",
+          payment_date: "2026-07-04",
+          amount_due: 1_000,
+          total_paid: 600,
+          pending_balance: 400,
+          payment_status: "partial",
+          idempotency_key: "idempotency-2",
+          canonical_payment_id: "canonical-payment-2",
+        },
+      ],
+      payments: [
+        {
+          id: "canonical-payment-2",
+          company_id: "company-1",
+          customer_id: "customer-1",
+          contract_id: "contract-1",
+          payment_date: "2026-07-04",
+          amount: 500,
+          payment_status: "completed",
+          transaction_type: "receipt",
+        },
+      ],
+    });
+    context.job.cursor = { phase: "rental_receipt_payments", lastId: "" };
+
+    const result = await runDomainWorker(context);
+
+    expect(result.findings).toHaveLength(1);
+    expect(result.findings[0]).toMatchObject({
+      code: "accounting.rental_receipt_canonical_payment_mismatch",
+      entityId: "rental-receipt-2",
+    });
+    expect(result.findings[0].repair).toBeUndefined();
   });
 
   it("flags completed maintenance with actual cost but no journal", async () => {
@@ -2001,6 +2386,8 @@ describe("system audit agent rules", () => {
           reference_type: "maintenance",
           reference_id: "maintenance-2",
           reversal_entry_id: null,
+          total_debit: 500,
+          total_credit: 500,
         },
       ],
     });
@@ -2009,6 +2396,67 @@ describe("system audit agent rules", () => {
 
     expect(result.findings).not.toContainEqual(
       expect.objectContaining({ entityId: "maintenance-2" })
+    );
+  });
+
+  it("links the one posted amount-matched maintenance journal", async () => {
+    const context = createWorkerContext("fleet", {
+      vehicles: [
+        {
+          id: "vehicle-3",
+          company_id: "company-1",
+          plate_number: "54321",
+          status: "available",
+          is_active: true,
+          current_mileage: 300,
+          odometer_reading: 300,
+        },
+      ],
+      vehicle_maintenance: [
+        {
+          id: "maintenance-3",
+          company_id: "company-1",
+          vehicle_id: "vehicle-3",
+          status: "completed",
+          actual_cost: 750,
+          tax_amount: 0,
+          total_cost_with_tax: 750,
+          expense_recorded: false,
+          journal_entry_id: null,
+          payment_method: "cash",
+        },
+      ],
+      contracts: [],
+      vehicle_reservations: [],
+      odometer_readings: [],
+      journal_entries: [
+        {
+          id: "maintenance-journal-3",
+          company_id: "company-1",
+          status: "posted",
+          entry_date: "2026-07-01",
+          reference_type: "maintenance",
+          reference_id: "maintenance-3",
+          reversal_entry_id: null,
+          total_debit: 750,
+          total_credit: 750,
+        },
+      ],
+    });
+
+    const result = await runDomainWorker(context);
+
+    expect(result.findings).toContainEqual(
+      expect.objectContaining({
+        code: "fleet.maintenance_verified_journal_unlinked",
+        repair: expect.objectContaining({
+          command: "maintenance.sync_accounting_link",
+          values: {
+            journal_entry_id: "maintenance-journal-3",
+            expense_recorded: true,
+          },
+        }),
+      })
     );
   });
 
@@ -2240,7 +2688,9 @@ describe("system audit agent rules", () => {
       expect.objectContaining({
         code: "inventory.purchase_order_totals_mismatch",
         entityId: "po-1",
-        repair: expect.objectContaining({ command: "purchase_order.sync_totals" }),
+        repair: expect.objectContaining({
+          command: "purchase_order.sync_totals",
+        }),
       })
     );
   });
@@ -2341,17 +2791,132 @@ describe("system audit agent rules", () => {
 
     const result = await runDomainWorker(context);
 
-    expect(result.findings).toContainEqual(
-      expect.objectContaining({
-        code: "inventory.goods_receipt_invalid_accounting",
-        repair: undefined,
-      })
+    const accountingFinding = result.findings.find(
+      (finding) => finding.code === "inventory.goods_receipt_invalid_accounting"
     );
-    expect(result.findings).toContainEqual(
-      expect.objectContaining({
-        code: "inventory.goods_receipt_movement_mismatch",
-        repair: undefined,
-      })
+    const movementFinding = result.findings.find(
+      (finding) => finding.code === "inventory.goods_receipt_movement_mismatch"
     );
+    expect(accountingFinding).toBeDefined();
+    expect(accountingFinding?.repair).toBeUndefined();
+    expect(movementFinding).toBeDefined();
+    expect(movementFinding?.repair).toBeUndefined();
+  });
+
+  it("repairs legal contract state and unsupported paid installments", async () => {
+    const context = createWorkerContext("legal", {
+      legal_cases: [
+        {
+          id: "case-1",
+          company_id: "company-1",
+          case_number: "LC-1",
+          case_status: "open",
+          contract_id: "contract-1",
+          total_costs: 0,
+          legal_fees: 0,
+          court_fees: 0,
+          other_expenses: 0,
+          outcome_date: null,
+          outcome_type: null,
+        },
+      ],
+      contracts: [
+        { id: "contract-1", company_id: "company-1", status: "active" },
+      ],
+      legal_case_payments: [],
+      legal_repayment_plans: [
+        {
+          id: "plan-1",
+          case_id: "case-1",
+          company_id: "company-1",
+          amount: 500,
+          due_date: "2026-07-01",
+          status: "paid",
+        },
+      ],
+    });
+
+    const result = await runDomainWorker(context);
+
+    expect(result.findings).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: "legal.contract_state_mismatch",
+          repair: expect.objectContaining({ command: "legal.sync_contract_state" }),
+        }),
+        expect.objectContaining({
+          code: "legal.repayment_paid_without_payment",
+          repair: expect.objectContaining({
+            command: "legal.reset_unsupported_repayment",
+            values: { status: "overdue" },
+          }),
+        }),
+      ])
+    );
+  });
+
+  it("matches legal payments to paid installments one-to-one", async () => {
+    const context = createWorkerContext("legal", {
+      legal_cases: [
+        {
+          id: "case-2",
+          company_id: "company-1",
+          case_number: "LC-2",
+          case_status: "open",
+          contract_id: "contract-2",
+          total_costs: 0,
+          legal_fees: 0,
+          court_fees: 0,
+          other_expenses: 0,
+          outcome_date: null,
+          outcome_type: null,
+        },
+      ],
+      contracts: [
+        {
+          id: "contract-2",
+          company_id: "company-1",
+          status: "under_legal_procedure",
+        },
+      ],
+      legal_case_payments: [
+        {
+          id: "legal-payment-1",
+          case_id: "case-2",
+          company_id: "company-1",
+          amount: 500,
+          payment_status: "completed",
+          invoice_id: "invoice-1",
+          journal_entry_id: "journal-1",
+          payment_date: "2026-07-01",
+        },
+      ],
+      legal_repayment_plans: [
+        {
+          id: "plan-1",
+          case_id: "case-2",
+          company_id: "company-1",
+          amount: 500,
+          due_date: "2026-06-01",
+          status: "paid",
+        },
+        {
+          id: "plan-2",
+          case_id: "case-2",
+          company_id: "company-1",
+          amount: 500,
+          due_date: "2026-07-01",
+          status: "paid",
+        },
+      ],
+    });
+
+    const result = await runDomainWorker(context);
+    const unsupported = result.findings.filter(
+      (finding) => finding.code === "legal.repayment_paid_without_payment"
+    );
+
+    expect(unsupported).toHaveLength(1);
+    expect(unsupported[0].entityId).toBe("plan-2");
   });
 });

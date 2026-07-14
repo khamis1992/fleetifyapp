@@ -67,6 +67,7 @@ interface ScheduleFollowupDialogProps {
     id: string;
     contract_number: string;
     customer_name: string;
+    customer_id: string;
   }>;
   preselectedContractId?: string;
 }
@@ -103,18 +104,23 @@ export const ScheduleFollowupDialog: React.FC<ScheduleFollowupDialogProps> = ({
     mutationFn: async (data: FollowupFormData) => {
       const contract = contracts.find((c) => c.id === data.contract_id);
       if (!contract) throw new Error('Contract not found');
+      const companyId = user?.profile?.company_id || user?.company?.id;
+      const profileId = user?.profile?.id;
+      if (!companyId || !profileId) throw new Error('Missing employee or company');
 
       const { data: followup, error } = await supabase
         .from('scheduled_followups')
         .insert({
+          company_id: companyId,
+          customer_id: contract.customer_id,
           contract_id: data.contract_id,
-          assigned_to: user?.profile?.id,
+          assigned_to: profileId,
+          created_by: profileId,
           followup_type: data.followup_type,
           scheduled_date: data.scheduled_date,
           scheduled_time: data.scheduled_time || null,
           priority: data.priority,
           title: data.title,
-          title_ar: data.title,
           notes: data.notes || null,
           status: 'pending',
         })

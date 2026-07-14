@@ -8,6 +8,7 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import type { Database as SupabaseDatabase } from '@/integrations/supabase/types';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -179,10 +180,10 @@ interface UploadedFile {
   extractedText?: string;
   matchedCustomer?: {
     id: string;
-    first_name: string;
-    last_name: string;
+    first_name: string | null;
+    last_name: string | null;
     phone: string;
-    national_id?: string;
+    national_id: string | null;
   };
   dataUpdated?: boolean;
   error?: string;
@@ -515,6 +516,10 @@ class ProcessingQueueManager {
   private completedCount = 0;
 
   constructor(options: QueueManagerOptions = {}) {
+    this.options = options;
+  }
+
+  setOptions(options: QueueManagerOptions): void {
     this.options = options;
   }
 
@@ -1129,8 +1134,10 @@ const CustomerDocumentDistributionDialog: React.FC<CustomerDocumentDistributionD
 
   // تحديث بيانات العميل مع دعم الحقول العربية
   const updateCustomerData = async (customerId: string, data: ExtractedCustomerData): Promise<boolean> => {
+    if (!companyId) return false;
+
     try {
-      const updateData: Record<string, unknown> = {};
+      const updateData: SupabaseDatabase['public']['Tables']['customers']['Update'] = {};
 
       // الحقول الإنجليزية
       if (data.nationalId) updateData.national_id = data.nationalId;
@@ -1154,14 +1161,15 @@ const CustomerDocumentDistributionDialog: React.FC<CustomerDocumentDistributionD
       const { error } = await supabase
         .from('customers')
         .update(updateData)
-        .eq('id', customerId);
+        .eq('id', customerId)
+        .eq('company_id', companyId);
 
       if (error) {
         // التعامل مع خطأ العمود غير الموجود (للحقول العربية الجديدة)
         if (error.message.includes('column') && error.message.includes('does not exist')) {
           console.warn('Some Arabic fields not found in database, updating only supported fields:', error);
           // إعادة المحاولة بدون الحقول العربية
-          const englishData: Record<string, unknown> = {};
+          const englishData: SupabaseDatabase['public']['Tables']['customers']['Update'] = {};
           if (data.nationalId) englishData.national_id = data.nationalId;
           if (data.firstName) englishData.first_name = data.firstName;
           if (data.lastName) englishData.last_name = data.lastName;
@@ -1172,7 +1180,8 @@ const CustomerDocumentDistributionDialog: React.FC<CustomerDocumentDistributionD
           const { error: retryError } = await supabase
             .from('customers')
             .update(englishData)
-            .eq('id', customerId);
+            .eq('id', customerId)
+            .eq('company_id', companyId);
 
           if (retryError) throw retryError;
         } else {
@@ -1197,7 +1206,7 @@ const CustomerDocumentDistributionDialog: React.FC<CustomerDocumentDistributionD
     queueManager.setFiles(files);
 
     // إعداد callbacks
-    queueManager.options = {
+    queueManager.setOptions({
       onProgress: (completed, total) => {
         setOverallProgress(Math.round((completed / total) * 100));
       },
@@ -1215,7 +1224,7 @@ const CustomerDocumentDistributionDialog: React.FC<CustomerDocumentDistributionD
       onSaveState: (state) => {
         saveProcessingState(dialogId.current, state);
       },
-    };
+    });
 
     setProcessingStatus('processing');
     setHasResumeState(false);

@@ -73,6 +73,8 @@ export const useLegalCollectionReport = () => {
   return useQuery({
     queryKey: ['legal-collection-report', companyFilter],
     queryFn: async () => {
+      const companyId = companyFilter.company_id;
+      if (!companyId) throw new Error('Company was not found');
       if (!user?.id) throw new Error('المستخدم غير مصرح له');
 
       // جلب العقود تحت الإجراءات القانونية مع القضايا المرتبطة
@@ -94,7 +96,7 @@ export const useLegalCollectionReport = () => {
             phone
           )
         `)
-        .eq('company_id', companyFilter.company_id)
+        .eq('company_id', companyId)
         .eq('status', 'under_legal_procedure');
 
       if (contractsError) throw contractsError;
@@ -116,7 +118,7 @@ export const useLegalCollectionReport = () => {
           client_id,
           created_at
         `)
-        .eq('company_id', companyFilter.company_id);
+        .eq('company_id', companyId);
 
       if (casesError) throw casesError;
 
@@ -231,20 +233,22 @@ export const useLegalCollectionStats = () => {
   return useQuery({
     queryKey: ['legal-collection-stats', companyFilter],
     queryFn: async () => {
+      const companyId = companyFilter.company_id;
+      if (!companyId) throw new Error('Company was not found');
       if (!user?.id) throw new Error('المستخدم غير مصرح له');
 
       // عدد العقود تحت الإجراءات القانونية
       const { count: contractsCount } = await supabase
         .from('contracts')
         .select('id', { count: 'exact', head: true })
-        .eq('company_id', companyFilter.company_id)
+        .eq('company_id', companyId)
         .eq('status', 'under_legal_procedure');
 
       // إجمالي المبالغ من القضايا
       const { data: cases } = await supabase
         .from('legal_cases')
         .select('case_value, case_status')
-        .eq('company_id', companyFilter.company_id);
+        .eq('company_id', companyId);
 
       const totalValue = cases?.reduce((sum, c) => sum + (c.case_value || 0), 0) || 0;
       const activeCases = cases?.filter(c => c.case_status === 'active').length || 0;

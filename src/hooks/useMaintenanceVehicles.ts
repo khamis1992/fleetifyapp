@@ -47,7 +47,12 @@ export const useMaintenanceVehicles = (options?: { limit?: number; enabled?: boo
         throw error;
       }
 
-      return data || [];
+      return (data || []).map((vehicle) => ({
+        ...vehicle,
+        status: vehicle.status || 'maintenance',
+        current_mileage: vehicle.current_mileage ?? undefined,
+        last_maintenance_date: vehicle.last_maintenance_date || undefined,
+      }));
     },
     enabled: enabled && !!companyId,
     staleTime: 5 * 60 * 1000, // 5 minutes - increased for better performance

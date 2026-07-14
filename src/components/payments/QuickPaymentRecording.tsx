@@ -10,7 +10,6 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
-import { usePaymentOperations } from '@/hooks/business/usePaymentOperations';
 import { useFinanceAccessGuard } from '@/hooks/finance/useFinanceAccessGuard';
 import { useBanks } from '@/hooks/useTreasury';
 import { PaymentReceipt } from './PaymentReceipt';
@@ -96,11 +95,6 @@ const getHistoricalPaymentDate = (invoice: Invoice, fallbackDate: string) => {
   return invoice.due_date || invoice.invoice_date || fallbackDate;
 };
 
-const getLatestPaymentDate = (currentDate: string | undefined, nextDate: string) => {
-  if (!currentDate) return nextDate;
-  return new Date(nextDate).getTime() > new Date(currentDate).getTime() ? nextDate : currentDate;
-};
-
 const formatPaymentSuccessDate = (date: string) => {
   return date === 'multiple' ? 'تواريخ متعددة حسب الفواتير' : formatReceiptDate(date);
 };
@@ -123,12 +117,6 @@ export function QuickPaymentRecording({ onStepChange }: QuickPaymentRecordingPro
   const { data: banks = [], isLoading: banksLoading } = useBanks();
   const receiptRef = useRef<HTMLDivElement>(null);
   
-  // استخدام hook الدفعات الموحد لإنشاء القيود المحاسبية تلقائياً
-  const { createPayment, isCreating } = usePaymentOperations({
-    autoCreateJournalEntry: true, // ✅ إنشاء قيد محاسبي تلقائياً
-    autoUpdateBankBalance: true,  // ✅ تحديث رصيد البنك
-    enableNotifications: false,   // عدم إرسال إشعارات من هنا
-  });
   const [searchTerm, setSearchTerm] = useState('');
   const [searching, setSearching] = useState(false);
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -153,10 +141,6 @@ export function QuickPaymentRecording({ onStepChange }: QuickPaymentRecordingPro
         first_name: customerName.split(' ')[0] || customerName,
         last_name: customerName.split(' ').slice(1).join(' ') || '',
         phone: phone || '',
-        customer_type: 'individual',
-        company_id: companyId || '',
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
       };
 
       setSelectedCustomer(customerFromUrl);
@@ -174,6 +158,7 @@ export function QuickPaymentRecording({ onStepChange }: QuickPaymentRecordingPro
   const [cashAndBankAccounts, setCashAndBankAccounts] = useState<AccountingAccount[]>([]);
   const [loadingAccounts, setLoadingAccounts] = useState(false);
   const [processing, setProcessing] = useState(false);
+  const [paymentBatchIdempotencyKey, setPaymentBatchIdempotencyKey] = useState(() => crypto.randomUUID());
   const [paymentSuccess, setPaymentSuccess] = useState<PaymentSuccess | null>(null);
   const [generatingPDF, setGeneratingPDF] = useState(false);
   const [showReceipt, setShowReceipt] = useState(false);
@@ -488,6 +473,10 @@ export function QuickPaymentRecording({ onStepChange }: QuickPaymentRecordingPro
   };
 
   const selectCustomer = async (customer: Customer) => {
+    if (!companyId) {
+      toast({ title: 'تعذر تحديد الشركة', variant: 'destructive' });
+      return;
+    }
     setSelectedCustomer(customer);
     setCustomers([]);
     setSearchTerm('');
@@ -876,8 +865,6 @@ export function QuickPaymentRecording({ onStepChange }: QuickPaymentRecordingPro
     let reopenedHistoricalPeriods: TemporaryPeriodReopening[] = [];
     try {
       const paymentDate = new Date().toISOString().split('T')[0];
-      const paymentNumber = `PAY-${Date.now()}`;
-      
       console.log('Processing payment with:', {
         companyId,
         customerId: selectedCustomer.id,
@@ -1002,8 +989,6 @@ export function QuickPaymentRecording({ onStepChange }: QuickPaymentRecordingPro
         }
       }
 
-      // Group invoices by contract
-      const contractIds = [...new Set(selectedInvoices.map(inv => inv.contract_id).filter((id): id is string => id !== null))];
       const invoiceNumbers = selectedInvoices.map(inv => inv.invoice_number).join(', ');
       const contractNumbers = selectedInvoices.map(inv => inv.contracts?.contract_number).filter(Boolean).join(', ');
 
@@ -1011,11 +996,15 @@ export function QuickPaymentRecording({ onStepChange }: QuickPaymentRecordingPro
 
       reopenedHistoricalPeriods = await openClosedPeriodsForHistoricalCash(selectedInvoices, paymentDate);
 
-      // ✅ إنشاء دفعة منفصلة لكل فاتورة (الحل الصحيح)
+      // Build the complete allocation set before one atomic database call.
       let remainingAmount = amount;
-      let firstPaymentId: string | null = null;
-      let paymentsCreated = 0;
-      const latestPaymentDateByContract = new Map<string, string>();
+      const allocations: Array<{
+        invoice_id: string;
+        contract_id: string | null;
+        payment_date: string;
+        amount: number;
+        notes: string;
+      }> = [];
 
       for (let i = 0; i < selectedInvoices.length && remainingAmount > 0; i++) {
         const invoice = selectedInvoices[i];
@@ -1027,83 +1016,47 @@ export function QuickPaymentRecording({ onStepChange }: QuickPaymentRecordingPro
         
         if (amountToApply <= 0) continue;
 
-        // ✅ استخدام usePaymentOperations بدلاً من الإدراج المباشر
-        // هذا ينشئ القيود المحاسبية تلقائياً
-        const paymentData: any = {
-          customer_id: selectedCustomer.id,
+        allocations.push({
           invoice_id: invoice.id,
-          amount: amountToApply,
+          contract_id: invoice.contract_id,
           payment_date: invoicePaymentDate,
-          payment_method: paymentMethod as 'cash' | 'bank_transfer' | 'check' | 'credit_card',
-          payment_number: `${paymentNumber}-${i + 1}`,
-          type: 'receipt' as const, // ✅ إصلاح: الـ schema يتوقع 'type' وليس 'payment_type'
-          currency: 'QAR',
+          amount: amountToApply,
           notes: historicalCashMode
             ? `دفعة نقدية تاريخية مستلمة سابقاً ولم تكن مسجلة في النظام - فاتورة ${invoice.invoice_number}`
             : `دفعة لفاتورة ${invoice.invoice_number}`,
-          idempotencyKey: `${selectedCustomer.id}-${invoice.id}-${invoicePaymentDate}-${amountToApply}`,
-        };
-
-        if (selectedAccountId) {
-          paymentData.account_id = selectedAccountId;
-        }
-
-        if (methodRequiresBank && selectedBankId) {
-          paymentData.bank_id = selectedBankId;
-        }
-        
-        // Only include contract_id if it exists and is a valid UUID
-        if (invoice.contract_id && invoice.contract_id !== '' && invoice.contract_id !== 'null' && invoice.contract_id !== 'undefined') {
-          paymentData.contract_id = invoice.contract_id;
-        }
-        
-        console.log(`Creating payment ${i + 1} for invoice ${invoice.invoice_number}:`, amountToApply);
-        
-        let payment: any;
-        try {
-          // استخدام الـ hook لإنشاء الدفعة مع القيود المحاسبية
-          payment = await createPayment.mutateAsync(paymentData);
-        } catch (paymentError: any) {
-          console.error('Payment insert error:', paymentError);
-          if (paymentError.message?.includes('موجود مسبقاً') || paymentError.message?.includes('duplicate')) {
-            console.warn(`تخطي الفاتورة ${invoice.invoice_number} - الدفعة مسجلة بالفعل`);
-            continue; // تخطي هذه الفاتورة والمتابعة مع الباقي
-          }
-          throw new Error(`خطأ في إنشاء الدفعة: ${paymentError.message}`);
-        }
-        
-        if (!firstPaymentId) firstPaymentId = payment.id;
-        paymentsCreated++;
-        if (invoice.contract_id) {
-          latestPaymentDateByContract.set(
-            invoice.contract_id,
-            getLatestPaymentDate(latestPaymentDateByContract.get(invoice.contract_id), invoicePaymentDate)
-          );
-        }
-
-        // ✅ لا نقوم بتحديث الفاتورة يدوياً - الـ trigger (update_invoice_payment_totals) يفعل ذلك تلقائياً
-        // هذا يمنع التعارض بين التحديث اليدوي والـ trigger
-        
+        });
         remainingAmount -= amountToApply;
       }
 
-      if (paymentsCreated === 0) {
-        throw new Error('لم يتم تسجيل أي دفعة. قد تكون جميع الدفعات مسجلة بالفعل.');
+      if (allocations.length === 0 || remainingAmount > 0.01) {
+        throw new Error('يجب توزيع كامل مبلغ الدفعة على الفواتير المختارة قبل الحفظ.');
       }
 
-      console.log(`Successfully created ${paymentsCreated} payment(s)`);
+      const { data: batchResult, error: batchError } = await supabase.rpc(
+        'create_customer_payment_batch_v1',
+        {
+          p_company_id: companyId,
+          p_customer_id: selectedCustomer.id,
+          p_payment_method: paymentMethod,
+          p_bank_id: selectedBankId || null,
+          p_account_id: selectedAccountId || null,
+          p_currency: 'QAR',
+          p_allocations: allocations,
+          p_batch_idempotency_key: paymentBatchIdempotencyKey,
+          p_actor_id: null,
+        }
+      );
+      if (batchError) throw batchError;
 
-      // ✅ تحديث last_payment_date فقط - الـ trigger يحسب total_paid تلقائياً
-      for (const contractId of contractIds) {
-        await supabase
-          .from('contracts')
-          .update({
-            last_payment_date: latestPaymentDateByContract.get(contractId) || paymentDate,
-          })
-          .eq('id', contractId);
+      const batch = batchResult as {
+        payment_count?: number;
+        payments?: Array<{ payment_id?: string }>;
+      } | null;
+      const firstPaymentId = batch?.payments?.[0]?.payment_id || null;
+      if (!firstPaymentId || Number(batch?.payment_count || 0) !== allocations.length) {
+        throw new Error('لم ترجع قاعدة البيانات جميع دفعات المجموعة بعد الحفظ.');
       }
-      
-      // للتوافق مع الكود التالي
+
       const payment = { id: firstPaymentId };
 
       // استخراج رقم المركبة من أول فاتورة
@@ -1135,6 +1088,7 @@ export function QuickPaymentRecording({ onStepChange }: QuickPaymentRecordingPro
       // ✅ مسح قائمة الفواتير فوراً لمنع إعادة الاختيار
       setSelectedInvoices([]);
       setInvoices([]);
+      setPaymentBatchIdempotencyKey(crypto.randomUUID());
 
     } catch (error: unknown) {
       console.error('Error processing payment:', JSON.stringify(error, null, 2));
@@ -1270,6 +1224,7 @@ export function QuickPaymentRecording({ onStepChange }: QuickPaymentRecordingPro
     setSearchTerm('');
     setCustomers([]);
     setPaymentSuccess(null);
+    setPaymentBatchIdempotencyKey(crypto.randomUUID());
     setShowReceipt(false);
     setReadyToPay(false);
     setHistoricalCashMode(false);
@@ -1295,6 +1250,7 @@ export function QuickPaymentRecording({ onStepChange }: QuickPaymentRecordingPro
     setSelectedBankId('');
     setSelectedAccountId('');
     setPaymentSuccess(null);
+    setPaymentBatchIdempotencyKey(crypto.randomUUID());
     setShowReceipt(false);
     setReadyToPay(false);
     setHistoricalCashMode(false);

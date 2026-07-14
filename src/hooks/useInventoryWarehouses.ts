@@ -2,24 +2,11 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import type { Database } from '@/integrations/supabase/types';
 
-export interface InventoryWarehouse {
-  id: string;
-  company_id: string;
-  warehouse_name: string;
-  warehouse_name_ar?: string;
-  warehouse_code?: string;
-  location_address?: string;
-  city?: string;
-  country?: string;
-  manager_id?: string;
-  contact_phone?: string;
-  contact_email?: string;
-  is_active: boolean;
-  notes?: string;
-  created_at: string;
-  updated_at: string;
-}
+export type InventoryWarehouse = Database['public']['Tables']['inventory_warehouses']['Row'];
+type InventoryWarehouseInsert = Omit<Database['public']['Tables']['inventory_warehouses']['Insert'], 'company_id'>;
+type InventoryWarehouseUpdate = Database['public']['Tables']['inventory_warehouses']['Update'];
 
 export const useInventoryWarehouses = () => {
   const { user } = useAuth();
@@ -83,7 +70,7 @@ export const useCreateInventoryWarehouse = () => {
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: async (warehouseData: Omit<InventoryWarehouse, 'id' | 'created_at' | 'updated_at' | 'company_id'>) => {
+    mutationFn: async (warehouseData: InventoryWarehouseInsert) => {
       if (!user?.profile?.company_id) {
         throw new Error('Company ID is required');
       }
@@ -124,14 +111,17 @@ export const useCreateInventoryWarehouse = () => {
 
 export const useUpdateInventoryWarehouse = () => {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: async ({ id, data }: { id: string; data: Partial<InventoryWarehouse> }) => {
+    mutationFn: async ({ id, data }: { id: string; data: InventoryWarehouseUpdate }) => {
+      if (!user?.profile?.company_id) throw new Error('Company ID is required');
       const { data: result, error } = await supabase
         .from('inventory_warehouses')
         .update(data)
         .eq('id', id)
+        .eq('company_id', user.profile.company_id)
         .select()
         .single();
 
@@ -163,15 +153,18 @@ export const useUpdateInventoryWarehouse = () => {
 
 export const useDeleteInventoryWarehouse = () => {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
   const { toast } = useToast();
 
   return useMutation({
     mutationFn: async (warehouseId: string) => {
+      if (!user?.profile?.company_id) throw new Error('Company ID is required');
       // Soft delete by setting is_active to false
       const { error } = await supabase
         .from('inventory_warehouses')
         .update({ is_active: false })
-        .eq('id', warehouseId);
+        .eq('id', warehouseId)
+        .eq('company_id', user.profile.company_id);
 
       if (error) {
         console.error('Error deleting warehouse:', error);

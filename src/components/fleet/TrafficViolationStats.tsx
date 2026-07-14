@@ -11,16 +11,10 @@ import {
   Calendar,
   MapPin
 } from 'lucide-react';
+import type { MatchedViolation } from '@/types/violations';
 
 interface ViolationStatsProps {
-  violations: Array<{
-    id: string;
-    violationType: string;
-    fineAmount: number;
-    date: string;
-    location: string;
-    status: 'extracted' | 'matched' | 'error';
-  }>;
+  violations: MatchedViolation[];
 }
 
 export const TrafficViolationStats: React.FC<ViolationStatsProps> = ({ violations }) => {
@@ -29,19 +23,19 @@ export const TrafficViolationStats: React.FC<ViolationStatsProps> = ({ violation
     total: violations.length,
     matched: violations.filter(v => v.status === 'matched').length,
     errors: violations.filter(v => v.status === 'error').length,
-    totalFines: violations.reduce((sum, v) => sum + v.fineAmount, 0),
-    avgFine: violations.length > 0 ? violations.reduce((sum, v) => sum + v.fineAmount, 0) / violations.length : 0
+    totalFines: violations.reduce((sum, v) => sum + v.fine_amount, 0),
+    avgFine: violations.length > 0 ? violations.reduce((sum, v) => sum + v.fine_amount, 0) / violations.length : 0
   };
 
   // تجميع المخالفات حسب النوع
   const violationsByType = violations.reduce((acc, violation) => {
-    acc[violation.violationType] = (acc[violation.violationType] || 0) + 1;
+    acc[violation.violation_type] = (acc[violation.violation_type] || 0) + 1;
     return acc;
   }, {} as Record<string, number>);
 
   // تجميع المخالفات حسب الموقع
   const violationsByLocation = violations.reduce((acc, violation) => {
-    const location = violation.location.split(' ')[0]; // أخذ أول كلمة من الموقع
+    const location = violation.location?.split(' ')[0] || 'غير محدد';
     acc[location] = (acc[location] || 0) + 1;
     return acc;
   }, {} as Record<string, number>);
@@ -214,25 +208,25 @@ export const TrafficViolationStats: React.FC<ViolationStatsProps> = ({ violation
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="text-center p-4 bg-blue-50 rounded-lg">
               <p className="text-2xl font-bold text-blue-600">
-                {violations.filter(v => v.fineAmount < 100).length}
+                {violations.filter(v => v.fine_amount < 100).length}
               </p>
               <p className="text-sm text-blue-800">أقل من 100 ر.ق</p>
             </div>
             <div className="text-center p-4 bg-green-50 rounded-lg">
               <p className="text-2xl font-bold text-green-600">
-                {violations.filter(v => v.fineAmount >= 100 && v.fineAmount < 300).length}
+                {violations.filter(v => v.fine_amount >= 100 && v.fine_amount < 300).length}
               </p>
               <p className="text-sm text-green-800">100 - 300 ر.ق</p>
             </div>
             <div className="text-center p-4 bg-orange-50 rounded-lg">
               <p className="text-2xl font-bold text-orange-600">
-                {violations.filter(v => v.fineAmount >= 300 && v.fineAmount < 500).length}
+                {violations.filter(v => v.fine_amount >= 300 && v.fine_amount < 500).length}
               </p>
               <p className="text-sm text-orange-800">300 - 500 ر.ق</p>
             </div>
             <div className="text-center p-4 bg-red-50 rounded-lg">
               <p className="text-2xl font-bold text-red-600">
-                {violations.filter(v => v.fineAmount >= 500).length}
+                {violations.filter(v => v.fine_amount >= 500).length}
               </p>
               <p className="text-sm text-red-800">500+ ر.ق</p>
             </div>

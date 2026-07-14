@@ -10,11 +10,22 @@ interface LeaveReportModalProps {
   onOpenChange: (open: boolean) => void;
 }
 
+interface LeaveReportRecord {
+  employee_number?: string;
+  employee_name?: string;
+  leave_type?: string;
+  start_date?: string;
+  end_date?: string;
+  days_count?: number;
+  status?: string;
+}
+
 export function LeaveReportModal({ open, onOpenChange }: LeaveReportModalProps) {
   const { data: leaveData, isLoading, error } = useLeaveReport();
+  const leaveRecords = (leaveData ?? []) as LeaveReportRecord[];
 
   const handleExport = () => {
-    if (!leaveData || leaveData.length === 0) return;
+    if (leaveRecords.length === 0) return;
 
     const tableContent = `
       <table>
@@ -30,7 +41,7 @@ export function LeaveReportModal({ open, onOpenChange }: LeaveReportModalProps) 
           </tr>
         </thead>
         <tbody>
-          ${leaveData.map(record => `
+          ${leaveRecords.map(record => `
             <tr>
               <td>${record.employee_number || '-'}</td>
               <td>${record.employee_name || '-'}</td>
@@ -71,7 +82,7 @@ export function LeaveReportModal({ open, onOpenChange }: LeaveReportModalProps) 
             <div className="text-center py-8 text-destructive">
               خطأ في تحميل البيانات: {error.message}
             </div>
-          ) : leaveData && leaveData.length > 0 ? (
+          ) : leaveRecords.length > 0 ? (
             <div className="max-h-96 overflow-auto">
               <table className="w-full border-collapse border border-border">
                 <thead>
@@ -86,7 +97,7 @@ export function LeaveReportModal({ open, onOpenChange }: LeaveReportModalProps) 
                   </tr>
                 </thead>
                 <tbody>
-                  {leaveData.map((record, index) => (
+                  {leaveRecords.map((record, index) => (
                     <tr key={index} className="hover:bg-muted/50">
                       <td className="border border-border p-2">{record.employee_number || '-'}</td>
                       <td className="border border-border p-2">{record.employee_name || '-'}</td>
@@ -118,7 +129,7 @@ export function LeaveReportModal({ open, onOpenChange }: LeaveReportModalProps) 
             <Button variant="outline" onClick={() => onOpenChange(false)}>
               إغلاق
             </Button>
-            <Button onClick={handleExport} disabled={!leaveData || leaveData.length === 0}>
+            <Button onClick={handleExport} disabled={leaveRecords.length === 0}>
               <Download className="h-4 w-4 mr-2" />
               تصدير التقرير
             </Button>

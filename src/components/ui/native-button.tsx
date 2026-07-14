@@ -6,7 +6,7 @@
 import * as React from "react"
 import { Slot } from "@radix-ui/react-slot"
 import { cva, type VariantProps } from "class-variance-authority"
-import { motion, HTMLMotionProps } from "framer-motion"
+import { motion, type MotionProps } from "framer-motion"
 import { Loader2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useHapticFeedback } from "@/hooks/useHapticFeedback"
@@ -45,10 +45,11 @@ const nativeButtonVariants = cva(
 )
 
 export interface NativeButtonProps
-  extends Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, "onClick">,
+  extends Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, "onClick" | keyof MotionProps>,
     VariantProps<typeof nativeButtonVariants> {
   asChild?: boolean
   loading?: boolean
+  children?: React.ReactNode
   onClick?: (event: React.MouseEvent<HTMLButtonElement>) => void
   haptic?: boolean
 }

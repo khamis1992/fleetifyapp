@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { supabase } from "@/integrations/supabase/client"
+import type { Tables } from "@/integrations/supabase/types"
 import { useAuth } from "@/contexts/AuthContext"
 import { useForm } from "react-hook-form"
 import { toast } from "sonner"
@@ -34,10 +35,16 @@ interface QuotationFormData {
   valid_until: string
 }
 
+type QuotationWithRelations = Tables<'quotations'> & {
+  customers?: Pick<Tables<'customers'>, 'id' | 'first_name' | 'last_name' | 'company_name' | 'customer_type' | 'phone' | 'alternative_phone'> | null
+  vehicles?: Pick<Tables<'vehicles'>, 'id' | 'make' | 'model' | 'year' | 'plate_number'> | null
+  companies?: Pick<Tables<'companies'>, 'id' | 'name' | 'name_ar' | 'logo_url'> | null
+}
+
 export default function Quotations() {
   const { t } = useFleetifyTranslation("ui");
   const [showQuotationForm, setShowQuotationForm] = useState(false)
-  const [selectedQuotation, setSelectedQuotation] = useState<any>(null)
+  const [selectedQuotation, setSelectedQuotation] = useState<QuotationWithRelations | null>(null)
   const { user } = useAuth()
   const { filter, companyId, hasGlobalAccess, getQueryKey } = useUnifiedCompanyAccess()
   const { formatCurrency } = useCurrencyFormatter()
@@ -153,6 +160,8 @@ export default function Quotations() {
   // Create quotation mutation
   const createQuotationMutation = useMutation({
     mutationFn: async (quotationData: QuotationFormData) => {
+      if (!companyId) throw new Error('Company ID is required')
+
       // Generate quotation number
       const quotationNumber = `QT-${Date.now()}`
       
@@ -311,7 +320,7 @@ export default function Quotations() {
   };
 
   // Share quotation via WhatsApp with approval link
-  const shareViaWhatsApp = async (quotation: any) => {
+  const shareViaWhatsApp = async (quotation: QuotationWithRelations) => {
     // Get customer and vehicle data from quotation relations or fallback to lookup
     const customer = quotation.customers || customers?.find(c => c.id === quotation.customer_id)
     const vehicle = quotation.vehicles || vehicles?.find(v => v.id === quotation.vehicle_id)
@@ -342,12 +351,12 @@ export default function Quotations() {
       }
     }
     
-    const customerName = customer?.customer_type === 'corporate' 
-      ? customer.company_name 
-      : `${customer?.first_name} ${customer?.last_name}`
+    const customerName = customer?.customer_type === 'corporate'
+      ? customer.company_name || 'العميل'
+      : [customer?.first_name, customer?.last_name].filter(Boolean).join(' ') || 'العميل'
 
-    const vehicleInfo = vehicle 
-      ? `\nالمركبة: ${vehicle.make} ${vehicle.model} - ${vehicle.plate_number}`
+    const vehicleInfo = vehicle
+      ? `\nالمركبة: ${vehicle.make || ''} ${vehicle.model || ''} - ${vehicle.plate_number || 'غير محدد'}`
       : ''
 
     const durationType = quotation.quotation_type === 'daily' ? 'يوم' : 
@@ -617,8 +626,8 @@ ${approvalUrl ? `\n*للموافقة على العرض أو رفضه، يرجى 
                       {customers?.map((customer) => (
                         <SelectItem key={customer.id} value={customer.id}>
                           {customer.customer_type === 'corporate'
-                            ? customer.company_name
-                            : `${customer.first_name} ${customer.last_name}`}
+                            ? customer.company_name || 'شركة بدون اسم'
+                            : [customer.first_name, customer.last_name].filter(Boolean).join(' ') || 'عميل بدون اسم'}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -634,7 +643,7 @@ ${approvalUrl ? `\n*للموافقة على العرض أو رفضه، يرجى 
                     <SelectContent>
                       {vehicles?.map((vehicle) => (
                         <SelectItem key={vehicle.id} value={vehicle.id}>
-                          {vehicle.make} {vehicle.model} - {vehicle.plate_number}
+                          {vehicle.make || ''} {vehicle.model || ''} - {vehicle.plate_number || 'غير محدد'}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -768,7 +777,9 @@ ${approvalUrl ? `\n*للموافقة على العرض أو رفضه، يرجى 
           </form>
         </DialogContent>
       </Dialog>
-    <PageHelp content={<QuotationsPageHelpContent />} />
+    <PageHelp title="مساعدة عروض الأسعار">
+      <QuotationsPageHelpContent />
+    </PageHelp>
 
     </div>
   )

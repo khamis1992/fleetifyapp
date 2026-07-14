@@ -56,6 +56,7 @@ import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 
 interface LawsuitTemplate {
   id: number;
+  contract_id?: string;
   case_title: string;
   facts: string;
   requests: string;
@@ -97,6 +98,7 @@ interface LawsuitTemplate {
   // تتبع الإنشاء التلقائي
   auto_created?: boolean;
   verification_task_id?: string;
+  deleted_at?: string | null;
 }
 
 export default function LawsuitDataPage() {
@@ -118,7 +120,7 @@ export default function LawsuitDataPage() {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      return data as LawsuitTemplate[];
+      return (data as LawsuitTemplate[]).filter((template) => !template.deleted_at);
     },
     enabled: !!companyId,
   });
@@ -151,13 +153,11 @@ export default function LawsuitDataPage() {
       return;
     }
 
-    const { error } = await supabase
-      .from('lawsuit_templates')
-      .delete()
-      .eq('id', id)
-      .eq('company_id', companyId)
-      .select('id')
-      .single();
+    const { error } = await supabase.rpc('soft_delete_lawsuit_template_v1', {
+      p_company_id: companyId,
+      p_reason: 'Archived from lawsuit data page',
+      p_template_id: id,
+    });
 
     if (error) {
       toast.error('فشل حذف القضية');
@@ -212,6 +212,10 @@ export default function LawsuitDataPage() {
 
   // توليد المستندات القانونية لجميع القضايا
   const handleGenerateAllDocuments = async () => {
+    if (!companyId) {
+      toast.error('تعذر تحديد الشركة');
+      return;
+    }
     if (!filteredLawsuits || filteredLawsuits.length === 0) {
       toast.error('لا توجد قضايا لتوليد المستندات');
       return;
@@ -236,6 +240,7 @@ export default function LawsuitDataPage() {
       // توليد المستندات لكل عميل
       for (const lawsuit of filteredLawsuits) {
         try {
+          if (!lawsuit.contract_id) continue;
           const customerName = `${lawsuit.defendant_first_name || ''} ${lawsuit.defendant_last_name || ''}`.trim();
           const folderName = `${customerName} - ${lawsuit.contract_number}`;
           const customerFolder = zip.folder(folderName);
@@ -247,6 +252,7 @@ export default function LawsuitDataPage() {
             .from('contracts')
             .select('*, vehicle:vehicles(*)')
             .eq('id', lawsuit.contract_id)
+            .eq('company_id', companyId)
             .single();
 
           if (!contract) continue;
@@ -260,11 +266,6 @@ export default function LawsuitDataPage() {
                 id_number: lawsuit.defendant_id_number || '',
                 phone: lawsuit.defendant_phone || '',
                 email: lawsuit.defendant_email || '',
-                contract_number: lawsuit.contract_number || '',
-                contract_start_date: lawsuit.contract_start_date || '',
-                vehicle_plate: lawsuit.vehicle_plate_number || '',
-                monthly_rent: Number(lawsuit.monthly_rent) || 0,
-                months_unpaid: lawsuit.months_unpaid || 0,
                 overdue_amount: lawsuit.overdue_amount || 0,
                 late_penalty: lawsuit.late_penalty || 0,
                 days_overdue: lawsuit.days_overdue || 0,

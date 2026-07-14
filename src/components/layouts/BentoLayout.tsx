@@ -82,6 +82,9 @@ export const BentoLayout: React.FC<BentoLayoutProps> = ({ children }) => {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const location = useLocation();
   const [hasMounted, setHasMounted] = useState(false);
+  const usesCanonicalOperationalPalette = ['/finance', '/fleet', '/legal'].some(
+    (prefix) => location.pathname === prefix || location.pathname.startsWith(`${prefix}/`),
+  );
 
   // Track mount state to avoid unnecessary loading spinners during navigation
   useEffect(() => {
@@ -117,7 +120,7 @@ export const BentoLayout: React.FC<BentoLayoutProps> = ({ children }) => {
   // This prevents loading spinners from appearing when navigating between pages
   if (loading && !hasMounted && !user) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-neutral-50">
+      <div className="min-h-screen flex items-center justify-center bg-[#F6F8FB]">
         <LoadingSpinner size="lg" />
       </div>
     );
@@ -130,7 +133,13 @@ export const BentoLayout: React.FC<BentoLayoutProps> = ({ children }) => {
 
   return (
     <TourProvider>
-      <div className="min-h-screen flex bg-neutral-50 dark:bg-neutral-950" dir="rtl">
+      <div
+        className={cn(
+          "min-h-screen flex bg-neutral-50 dark:bg-neutral-950",
+          usesCanonicalOperationalPalette && "dashboard-system-colors bg-[#F6F8FB]",
+        )}
+        dir="rtl"
+      >
         {/* Mobile Header */}
         <header className="lg:hidden fixed top-0 left-0 right-0 h-14 bg-white dark:bg-neutral-900 border-b border-neutral-200 dark:border-neutral-800 z-40 flex items-center justify-between px-4">
           <button

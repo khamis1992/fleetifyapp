@@ -77,6 +77,9 @@ export function VehicleInsurancePanel({ vehicleId }: VehicleInsurancePanelProps)
   const createRegistration = useCreateVehicleRegistration();
   
   const { formatCurrency } = useCurrencyFormatter();
+  const formatOptionalDate = (value?: string | null) => value
+    ? format(new Date(value), 'dd/MM/yyyy')
+    : 'غير محدد';
 
   const insuranceForm = useForm<InsuranceFormData>({
     defaultValues: {
@@ -160,8 +163,8 @@ export function VehicleInsurancePanel({ vehicleId }: VehicleInsurancePanelProps)
   const activeInsurance = insurance?.find(p => p.is_active);
   const activeRegistration = registration?.find(r => r.is_active);
   
-  const isInsuranceExpiringSoon = activeInsurance && new Date(activeInsurance.end_date) <= new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
-  const isRegistrationExpiringSoon = activeRegistration && new Date(activeRegistration.expiry_date) <= new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+  const isInsuranceExpiringSoon = Boolean(activeInsurance?.end_date && new Date(activeInsurance.end_date) <= new Date(Date.now() + 30 * 24 * 60 * 60 * 1000));
+  const isRegistrationExpiringSoon = Boolean(activeRegistration?.expiry_date && new Date(activeRegistration.expiry_date) <= new Date(Date.now() + 30 * 24 * 60 * 60 * 1000));
 
   return (
     <Card>
@@ -412,7 +415,7 @@ export function VehicleInsurancePanel({ vehicleId }: VehicleInsurancePanelProps)
                   </div>
                   <div className="p-3 bg-muted rounded-lg">
                     <p className="text-sm text-muted-foreground">قسط التأمين</p>
-                    <p className="font-semibold">{formatCurrency(activeInsurance.premium_amount)}</p>
+                    <p className="font-semibold">{formatCurrency(activeInsurance.premium_amount || 0)}</p>
                   </div>
                   {activeInsurance.coverage_amount && (
                     <div className="p-3 bg-muted rounded-lg">
@@ -430,8 +433,8 @@ export function VehicleInsurancePanel({ vehicleId }: VehicleInsurancePanelProps)
                 
                 <div className="flex items-center text-sm text-muted-foreground">
                   <Calendar className="h-4 w-4 ml-2" />
-                  ساري من {format(new Date(activeInsurance.start_date), 'dd/MM/yyyy')} 
-                  إلى {format(new Date(activeInsurance.end_date), 'dd/MM/yyyy')}
+                  ساري من {formatOptionalDate(activeInsurance.start_date)}
+                  إلى {formatOptionalDate(activeInsurance.end_date)}
                 </div>
 
                 {activeInsurance.contact_person && (
@@ -477,7 +480,7 @@ export function VehicleInsurancePanel({ vehicleId }: VehicleInsurancePanelProps)
                           {p.insurance_company} - {p.policy_number}
                         </span>
                         <span className="text-muted-foreground">
-                          {format(new Date(p.start_date), 'dd/MM/yyyy')} - {format(new Date(p.end_date), 'dd/MM/yyyy')}
+                          {formatOptionalDate(p.start_date)} - {formatOptionalDate(p.end_date)}
                         </span>
                       </div>
                     ))}
@@ -636,8 +639,8 @@ export function VehicleInsurancePanel({ vehicleId }: VehicleInsurancePanelProps)
                 
                 <div className="flex items-center text-sm text-muted-foreground">
                   <Calendar className="h-4 w-4 ml-2" />
-                  صادرة في {format(new Date(activeRegistration.issue_date), 'dd/MM/yyyy')} 
-                  - تنتهي في {format(new Date(activeRegistration.expiry_date), 'dd/MM/yyyy')}
+                  صادرة في {formatOptionalDate(activeRegistration.issue_date)}
+                  - تنتهي في {formatOptionalDate(activeRegistration.expiry_date)}
                 </div>
 
                 {activeRegistration.document_url && (
@@ -682,7 +685,7 @@ export function VehicleInsurancePanel({ vehicleId }: VehicleInsurancePanelProps)
                           {r.document_name} - {r.document_number}
                         </span>
                         <span className="text-muted-foreground">
-                          {format(new Date(r.issue_date), 'dd/MM/yyyy')} - {format(new Date(r.expiry_date), 'dd/MM/yyyy')}
+                          {formatOptionalDate(r.issue_date)} - {formatOptionalDate(r.expiry_date)}
                         </span>
                       </div>
                     ))}

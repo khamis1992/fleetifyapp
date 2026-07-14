@@ -30,7 +30,7 @@ export function PropertyContractDetails({
   const property = properties?.find(p => p.id === contract.property_id);
   const tenant = tenants?.find(t => t.id === contract.tenant_id);
 
-  const getStatusBadge = (status: string) => {
+  const getStatusBadge = (status?: string) => {
     const statusConfig = {
       active: { label: "نشط", variant: "default" as const },
       pending: { label: "في الانتظار", variant: "secondary" as const },
@@ -38,8 +38,10 @@ export function PropertyContractDetails({
       cancelled: { label: "ملغي", variant: "outline" as const },
     };
     
-    const config = statusConfig[status as keyof typeof statusConfig] || 
-                  { label: status, variant: "secondary" as const };
+    const config = status
+      ? statusConfig[status as keyof typeof statusConfig] ||
+        { label: status, variant: "secondary" as const }
+      : { label: "غير محدد", variant: "secondary" as const };
     
     return (
       <Badge variant={config.variant}>
@@ -57,14 +59,16 @@ export function PropertyContractDetails({
     return types[type as keyof typeof types] || type;
   };
 
-  const getPaymentFrequencyName = (frequency: string) => {
+  const getPaymentFrequencyName = (frequency?: string) => {
     const frequencies = {
       monthly: "شهري",
       quarterly: "ربع سنوي",
       semi_annual: "نصف سنوي",
       annual: "سنوي"
     };
-    return frequencies[frequency as keyof typeof frequencies] || frequency;
+    return frequency
+      ? frequencies[frequency as keyof typeof frequencies] || frequency
+      : "غير محدد";
   };
 
   const getTenantName = () => {
@@ -154,7 +158,9 @@ export function PropertyContractDetails({
                 <Calendar className="h-4 w-4 text-muted-foreground" />
                 <span className="text-muted-foreground">تاريخ النهاية:</span>
                 <span className="font-medium">
-                  {format(new Date(contract.end_date), 'dd MMMM yyyy', { locale: ar })}
+                  {contract.end_date
+                    ? format(new Date(contract.end_date), 'dd MMMM yyyy', { locale: ar })
+                    : "غير محدد"}
                 </span>
               </div>
             </div>

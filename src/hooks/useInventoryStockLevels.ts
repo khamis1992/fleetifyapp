@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import type { Database } from '@/integrations/supabase/types';
 
 export interface InventoryStockLevel {
   id: string;
@@ -24,16 +25,22 @@ export interface StockMovement {
   company_id: string;
   item_id: string;
   warehouse_id: string;
-  movement_type: 'PURCHASE' | 'SALE' | 'ADJUSTMENT' | 'TRANSFER_IN' | 'TRANSFER_OUT' | 'RETURN';
+  movement_type: string;
   quantity: number;
-  reference_type?: string;
-  reference_id?: string;
-  reference_number?: string;
-  movement_date: string;
-  notes?: string;
-  created_by: string;
-  created_at: string;
+  reference_type: string | null;
+  reference_id: string | null;
+  reference_number: string | null;
+  movement_date: string | null;
+  notes: string | null;
+  created_by: string | null;
+  created_at: string | null;
+  from_warehouse_id: string | null;
+  to_warehouse_id: string | null;
+  unit_cost: number | null;
+  total_cost: number | null;
 }
+
+type StockMovementInsert = Omit<Database['public']['Tables']['inventory_movements']['Insert'], 'company_id' | 'created_by'>;
 
 export const useInventoryStockLevels = (warehouseId?: string) => {
   const { user } = useAuth();
@@ -70,6 +77,9 @@ export const useInventoryStockLevels = (warehouseId?: string) => {
       // Map joined data to flat structure
       const mapped = data?.map((item: any) => ({
         ...item,
+        quantity_on_hand: item.quantity_on_hand ?? 0,
+        quantity_allocated: item.quantity_reserved ?? 0,
+        quantity_available: item.quantity_available ?? 0,
         item_name: item.inventory_items?.item_name,
         warehouse_name: item.inventory_warehouses?.warehouse_name,
       })) || [];
@@ -107,6 +117,9 @@ export const useItemStockLevels = (itemId: string) => {
 
       const mapped = data?.map((item: any) => ({
         ...item,
+        quantity_on_hand: item.quantity_on_hand ?? 0,
+        quantity_allocated: item.quantity_reserved ?? 0,
+        quantity_available: item.quantity_available ?? 0,
         warehouse_name: item.inventory_warehouses?.warehouse_name,
       })) || [];
 
@@ -160,7 +173,7 @@ export const useCreateStockMovement = () => {
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: async (movementData: Omit<StockMovement, 'id' | 'created_at' | 'company_id' | 'created_by'>) => {
+    mutationFn: async (movementData: StockMovementInsert) => {
       if (!user?.profile?.company_id) {
         throw new Error('Company ID is required');
       }

@@ -67,7 +67,7 @@ export const MobileContracts: React.FC = () => {
         .single();
 
       if (profileError || !profileData?.company_id) {
-      console.warn('[MobileContracts] No company_id in profiles, trying employees table', { profileError, user_id: user.id });
+        console.warn('[MobileContracts] No company_id in profiles, trying employees table', { profileError, user_id: user.id });
 
         // Try fallback to employees table
         const { data: employeeData, error: employeeError } = await supabase
@@ -82,7 +82,9 @@ export const MobileContracts: React.FC = () => {
           return;
         }
 
-      companyId = employeeData.company_id;
+        companyId = employeeData.company_id;
+      } else {
+        companyId = profileData.company_id;
       }
 
       const { data, error } = await supabase

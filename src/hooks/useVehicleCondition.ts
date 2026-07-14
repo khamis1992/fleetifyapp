@@ -191,7 +191,7 @@ export const useCreateConditionReport = () => {
     },
     onError: (error: unknown) => {
       console.error('Error creating condition report:', error);
-      const errorMessage = error.message || 'فشل في إنشاء تقرير حالة المركبة';
+      const errorMessage = error instanceof Error ? error.message : 'فشل في إنشاء تقرير حالة المركبة';
       toast.error(errorMessage);
     },
   });
@@ -247,7 +247,7 @@ export const useUpdateConditionReport = () => {
     },
     onError: (error: unknown) => {
       console.error('Error updating condition report:', error);
-      const errorMessage = error.message || 'فشل في تحديث تقرير حالة المركبة';
+      const errorMessage = error instanceof Error ? error.message : 'فشل في تحديث تقرير حالة المركبة';
       toast.error(errorMessage);
     },
   });

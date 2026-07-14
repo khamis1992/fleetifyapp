@@ -99,18 +99,18 @@ export function PropertyContractWizard({
       if (isEditing && initialData) {
         // Populate form with existing data with proper types
         setValue("property_id", initialData.property_id);
-        setValue("tenant_id", initialData.tenant_id);
+        setValue("tenant_id", initialData.tenant_id || '');
         setValue("contract_number", initialData.contract_number || '');
         setValue("contract_type", initialData.contract_type);
         setValue("start_date", initialData.start_date);
-        setValue("end_date", initialData.end_date);
+        setValue("end_date", initialData.end_date || '');
         setValue("rental_amount", Number(initialData.rental_amount) || 0);
         setValue("deposit_amount", Number(initialData.deposit_amount) || 0);
         setValue("commission_amount", Number(initialData.commission_amount) || 0);
-        setValue("payment_frequency", initialData.payment_frequency);
+        setValue("payment_frequency", initialData.payment_frequency || 'monthly');
         setValue("grace_period_days", Number(initialData.grace_period_days) || 30);
         setValue("terms_and_conditions", initialData.terms || '');
-        setValue("status", initialData.status);
+        setValue("status", initialData.status || 'active');
       } else {
         // Reset form for new contract with proper defaults
         reset({

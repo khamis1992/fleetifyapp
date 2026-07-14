@@ -38,7 +38,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
 import { useBanks } from "@/hooks/useTreasury";
 import { useChartOfAccounts } from "@/hooks/useChartOfAccounts";
@@ -165,34 +172,50 @@ const statusLabels: Record<string, string> = {
 };
 
 const toNumber = (value: string) => Number(value || 0);
-const roundMoney = (value: number) => Math.round((Number(value) || 0) * 100) / 100;
-const cleanSelect = (value?: string | null) => (!value || value === "none" ? undefined : value);
+const roundMoney = (value: number) =>
+  Math.round((Number(value) || 0) * 100) / 100;
+const cleanSelect = (value?: string | null) =>
+  !value || value === "none" ? undefined : value;
 
 const accountName = (account: any) =>
-  `${account.account_code || ""} - ${account.account_name_ar || account.account_name || ""}`.trim();
+  `${account.account_code || ""} - ${
+    account.account_name_ar || account.account_name || ""
+  }`.trim();
 
 const entityLabel = (obligation: MonthlyObligation) => {
-  const linkedVehicles = obligation.vehicle_links?.filter((link) => link.vehicle) || [];
+  const linkedVehicles =
+    obligation.vehicle_links?.filter((link) => link.vehicle) || [];
   if (linkedVehicles.length > 1) {
     const samplePlates = linkedVehicles
       .slice(0, 2)
       .map((link) => link.vehicle?.plate_number)
       .filter(Boolean)
       .join("، ");
-    return `${linkedVehicles.length} مركبة${samplePlates ? ` • ${samplePlates}` : ""}`;
+    return `${linkedVehicles.length} مركبة${
+      samplePlates ? ` • ${samplePlates}` : ""
+    }`;
   }
 
   if (linkedVehicles.length === 1) {
     const vehicle = linkedVehicles[0].vehicle;
-    return `${vehicle?.plate_number || "مركبة"} ${vehicle?.make || ""} ${vehicle?.model || ""}`.trim();
+    return `${vehicle?.plate_number || "مركبة"} ${vehicle?.make || ""} ${
+      vehicle?.model || ""
+    }`.trim();
   }
 
   if (obligation.vehicle) {
-    return `${obligation.vehicle.plate_number || "مركبة"} ${obligation.vehicle.make || ""} ${obligation.vehicle.model || ""}`.trim();
+    return `${obligation.vehicle.plate_number || "مركبة"} ${
+      obligation.vehicle.make || ""
+    } ${obligation.vehicle.model || ""}`.trim();
   }
 
   if (obligation.fixed_asset) {
-    return obligation.fixed_asset.asset_name_ar || obligation.fixed_asset.asset_name || obligation.fixed_asset.asset_code || "أصل ثابت";
+    return (
+      obligation.fixed_asset.asset_name_ar ||
+      obligation.fixed_asset.asset_name ||
+      obligation.fixed_asset.asset_code ||
+      "أصل ثابت"
+    );
   }
 
   if (obligation.vendor) {
@@ -203,18 +226,27 @@ const entityLabel = (obligation: MonthlyObligation) => {
 };
 
 const obligationVehicleIds = (obligation: MonthlyObligation) => {
-  const linkedIds = obligation.vehicle_links?.map((link) => link.vehicle_id).filter(Boolean) || [];
+  const linkedIds =
+    obligation.vehicle_links?.map((link) => link.vehicle_id).filter(Boolean) ||
+    [];
   const fallbackIds = obligation.vehicle_id ? [obligation.vehicle_id] : [];
   return Array.from(new Set(linkedIds.length ? linkedIds : fallbackIds));
 };
 
-const isOneTimeObligation = (obligation: MonthlyObligation) => obligation.auto_generate === false;
+const isOneTimeObligation = (obligation: MonthlyObligation) =>
+  obligation.auto_generate === false;
 
 const MonthlyObligations = () => {
   const navigate = useNavigate();
   const { formatCurrency } = useCurrencyFormatter();
-  const { data: obligations = [], isLoading, error: obligationsError, refetch } = useMonthlyObligations();
-  const { data: installments = [], error: installmentsError } = useMonthlyObligationInstallments();
+  const {
+    data: obligations = [],
+    isLoading,
+    error: obligationsError,
+    refetch,
+  } = useMonthlyObligations();
+  const { data: installments = [], error: installmentsError } =
+    useMonthlyObligationInstallments();
   const { data: summary } = useMonthlyObligationSummary();
   const { data: vendors = [] } = useVendors();
   const { data: banks = [] } = useBanks();
@@ -234,12 +266,19 @@ const MonthlyObligations = () => {
   const [editVehicleSearchTerm, setEditVehicleSearchTerm] = useState("");
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isOneTimeCreateOpen, setIsOneTimeCreateOpen] = useState(false);
-  const [editingObligation, setEditingObligation] = useState<MonthlyObligation | null>(null);
-  const [payingInstallment, setPayingInstallment] = useState<MonthlyObligationInstallment | null>(null);
-  const [newObligation, setNewObligation] = useState<CreateMonthlyObligationInput>(defaultObligation);
-  const [oneTimeObligation, setOneTimeObligation] = useState(defaultOneTimeObligation);
-  const [editObligation, setEditObligation] = useState<MonthlyObligationFormState | null>(null);
+  const [editingObligation, setEditingObligation] =
+    useState<MonthlyObligation | null>(null);
+  const [payingInstallment, setPayingInstallment] =
+    useState<MonthlyObligationInstallment | null>(null);
+  const [newObligation, setNewObligation] =
+    useState<CreateMonthlyObligationInput>(defaultObligation);
+  const [oneTimeObligation, setOneTimeObligation] = useState(
+    defaultOneTimeObligation
+  );
+  const [editObligation, setEditObligation] =
+    useState<MonthlyObligationFormState | null>(null);
   const [paymentForm, setPaymentForm] = useState({
+    idempotency_key: crypto.randomUUID(),
     amount: 0,
     payment_date: today,
     bank_id: "none",
@@ -249,15 +288,35 @@ const MonthlyObligations = () => {
   });
 
   const postingAccounts = useMemo(
-    () => accounts.filter((account: any) => account.is_active && !account.is_header && Number(account.account_level || 0) >= 3),
+    () =>
+      accounts.filter(
+        (account: any) =>
+          account.is_active &&
+          !account.is_header &&
+          Number(account.account_level || 0) >= 3
+      ),
     [accounts]
   );
-  const expenseAccounts = postingAccounts.filter((account: any) => account.account_type === "expenses");
-  const liabilityAccounts = postingAccounts.filter((account: any) => account.account_type === "liabilities");
-  const assetAccounts = postingAccounts.filter((account: any) => account.account_type === "assets");
+  const expenseAccounts = postingAccounts.filter(
+    (account: any) => account.account_type === "expenses"
+  );
+  const liabilityAccounts = postingAccounts.filter(
+    (account: any) => account.account_type === "liabilities"
+  );
+  const assetAccounts = postingAccounts.filter(
+    (account: any) => account.account_type === "assets"
+  );
   const cashAccounts = assetAccounts.filter((account: any) => {
-    const text = `${account.account_code || ""} ${account.account_name || ""} ${account.account_name_ar || ""}`.toLowerCase();
-    return text.includes("cash") || text.includes("bank") || text.includes("نقد") || text.includes("بنك") || text.startsWith("11");
+    const text = `${account.account_code || ""} ${account.account_name || ""} ${
+      account.account_name_ar || ""
+    }`.toLowerCase();
+    return (
+      text.includes("cash") ||
+      text.includes("bank") ||
+      text.includes("نقد") ||
+      text.includes("بنك") ||
+      text.startsWith("11")
+    );
   });
   const selectedVehicleIds = newObligation.vehicle_ids || [];
   const selectedEditVehicleIds = editObligation?.vehicle_ids || [];
@@ -266,7 +325,9 @@ const MonthlyObligations = () => {
     return vehicles
       .filter((vehicle: any) => {
         if (!term) return true;
-        return `${vehicle.plate_number || ""} ${vehicle.make || ""} ${vehicle.model || ""} ${vehicle.year || ""}`
+        return `${vehicle.plate_number || ""} ${vehicle.make || ""} ${
+          vehicle.model || ""
+        } ${vehicle.year || ""}`
           .toLowerCase()
           .includes(term);
       })
@@ -277,7 +338,9 @@ const MonthlyObligations = () => {
     return vehicles
       .filter((vehicle: any) => {
         if (!term) return true;
-        return `${vehicle.plate_number || ""} ${vehicle.make || ""} ${vehicle.model || ""} ${vehicle.year || ""}`
+        return `${vehicle.plate_number || ""} ${vehicle.make || ""} ${
+          vehicle.model || ""
+        } ${vehicle.year || ""}`
           .toLowerCase()
           .includes(term);
       })
@@ -292,7 +355,8 @@ const MonthlyObligations = () => {
     () => obligations.filter((obligation) => isOneTimeObligation(obligation)),
     [obligations]
   );
-  const visibleObligations = viewMode === "one_time" ? oneTimeObligations : recurringObligations;
+  const visibleObligations =
+    viewMode === "one_time" ? oneTimeObligations : recurringObligations;
   const openInstallmentByObligation = useMemo(() => {
     const pairs = installments
       .filter((item) => !["paid", "cancelled"].includes(item.status))
@@ -309,7 +373,9 @@ const MonthlyObligations = () => {
         obligation.vendor?.vendor_name,
         obligation.vendor?.vendor_name_ar,
         obligation.vehicle?.plate_number,
-        ...(obligation.vehicle_links?.map((link) => link.vehicle?.plate_number) || []),
+        ...(obligation.vehicle_links?.map(
+          (link) => link.vehicle?.plate_number
+        ) || []),
         obligation.fixed_asset?.asset_code,
         obligation.fixed_asset?.asset_name,
         obligation.fixed_asset?.asset_name_ar,
@@ -319,8 +385,10 @@ const MonthlyObligations = () => {
         .toLowerCase();
 
       const matchesSearch = !term || searchable.includes(term);
-      const matchesStatus = statusFilter === "all" || obligation.status === statusFilter;
-      const matchesType = typeFilter === "all" || obligation.obligation_type === typeFilter;
+      const matchesStatus =
+        statusFilter === "all" || obligation.status === statusFilter;
+      const matchesType =
+        typeFilter === "all" || obligation.obligation_type === typeFilter;
       return matchesSearch && matchesStatus && matchesType;
     });
   }, [visibleObligations, searchTerm, statusFilter, typeFilter]);
@@ -335,7 +403,9 @@ const MonthlyObligations = () => {
 
   const handleCreate = async () => {
     const monthlyAmount = Number(newObligation.monthly_amount || 0);
-    const requiresVehicle = ["vehicle_installment", "vehicle_lease"].includes(newObligation.obligation_type);
+    const requiresVehicle = ["vehicle_installment", "vehicle_lease"].includes(
+      newObligation.obligation_type
+    );
 
     if (!newObligation.title.trim()) {
       toast.error("اسم الالتزام مطلوب");
@@ -357,14 +427,17 @@ const MonthlyObligations = () => {
         ...newObligation,
         title: newObligation.title.trim(),
         vendor_id: cleanSelect(newObligation.vendor_id),
-        vehicle_id: selectedVehicleIds[0] || cleanSelect(newObligation.vehicle_id),
+        vehicle_id:
+          selectedVehicleIds[0] || cleanSelect(newObligation.vehicle_id),
         vehicle_ids: selectedVehicleIds,
         fixed_asset_id: cleanSelect(newObligation.fixed_asset_id),
         cost_center_id: cleanSelect(newObligation.cost_center_id),
         expense_account_id: cleanSelect(newObligation.expense_account_id),
         liability_account_id: cleanSelect(newObligation.liability_account_id),
         asset_account_id: cleanSelect(newObligation.asset_account_id),
-        interest_expense_account_id: cleanSelect(newObligation.interest_expense_account_id),
+        interest_expense_account_id: cleanSelect(
+          newObligation.interest_expense_account_id
+        ),
         monthly_amount: monthlyAmount,
         principal_amount: Number(newObligation.principal_amount || 0),
         interest_amount: Number(newObligation.interest_amount || 0),
@@ -400,10 +473,15 @@ const MonthlyObligations = () => {
 
     const dueDate = new Date(`${oneTimeObligation.due_date}T00:00:00`);
     const dueDay = dueDate.getDate();
-    const liabilityAccountId = cleanSelect(oneTimeObligation.liability_account_id);
+    const liabilityAccountId = cleanSelect(
+      oneTimeObligation.liability_account_id
+    );
     const expenseAccountId = cleanSelect(oneTimeObligation.expense_account_id);
 
-    if ((liabilityAccountId || expenseAccountId) && (!liabilityAccountId || !expenseAccountId)) {
+    if (
+      (liabilityAccountId || expenseAccountId) &&
+      (!liabilityAccountId || !expenseAccountId)
+    ) {
       toast.error("لإنشاء قيد استحقاق اختر حساب المصروف وحساب الالتزام معًا");
       return;
     }
@@ -413,10 +491,14 @@ const MonthlyObligations = () => {
         title: oneTimeObligation.title.trim(),
         description: oneTimeCategoryLabels[oneTimeObligation.category],
         obligation_type: "other",
-        accounting_treatment: liabilityAccountId ? "financing_liability" : "direct_expense",
+        accounting_treatment: liabilityAccountId
+          ? "financing_liability"
+          : "direct_expense",
         vendor_id: cleanSelect(oneTimeObligation.vendor_id),
         vehicle_id: cleanSelect(oneTimeObligation.vehicle_id),
-        vehicle_ids: cleanSelect(oneTimeObligation.vehicle_id) ? [oneTimeObligation.vehicle_id] : [],
+        vehicle_ids: cleanSelect(oneTimeObligation.vehicle_id)
+          ? [oneTimeObligation.vehicle_id]
+          : [],
         vehicle_amount_mode: "total",
         fixed_asset_id: undefined,
         cost_center_id: undefined,
@@ -440,14 +522,18 @@ const MonthlyObligations = () => {
       setIsOneTimeCreateOpen(false);
       setViewMode("one_time");
     } catch (error) {
-      console.error("[MonthlyObligations] Create one-time obligation failed", error);
+      console.error(
+        "[MonthlyObligations] Create one-time obligation failed",
+        error
+      );
     }
   };
 
   const openEditDialog = (obligation: MonthlyObligation) => {
     const vehicleIds = obligationVehicleIds(obligation);
     const amountMode = obligation.vehicle_amount_mode || "total";
-    const amountDivisor = amountMode === "per_vehicle" ? Math.max(vehicleIds.length, 1) : 1;
+    const amountDivisor =
+      amountMode === "per_vehicle" ? Math.max(vehicleIds.length, 1) : 1;
 
     setEditingObligation(obligation);
     setEditVehicleSearchTerm("");
@@ -465,10 +551,17 @@ const MonthlyObligations = () => {
       expense_account_id: obligation.expense_account_id || "none",
       liability_account_id: obligation.liability_account_id || "none",
       asset_account_id: obligation.asset_account_id || "none",
-      interest_expense_account_id: obligation.interest_expense_account_id || "none",
-      monthly_amount: roundMoney(Number(obligation.monthly_amount || 0) / amountDivisor),
-      principal_amount: roundMoney(Number(obligation.principal_amount || 0) / amountDivisor),
-      interest_amount: roundMoney(Number(obligation.interest_amount || 0) / amountDivisor),
+      interest_expense_account_id:
+        obligation.interest_expense_account_id || "none",
+      monthly_amount: roundMoney(
+        Number(obligation.monthly_amount || 0) / amountDivisor
+      ),
+      principal_amount: roundMoney(
+        Number(obligation.principal_amount || 0) / amountDivisor
+      ),
+      interest_amount: roundMoney(
+        Number(obligation.interest_amount || 0) / amountDivisor
+      ),
       currency: obligation.currency || "QAR",
       start_date: obligation.start_date || today,
       end_date: obligation.end_date || "",
@@ -489,7 +582,9 @@ const MonthlyObligations = () => {
   const handleUpdate = async () => {
     if (!editingObligation || !editObligation) return;
     const monthlyAmount = Number(editObligation.monthly_amount || 0);
-    const requiresVehicle = ["vehicle_installment", "vehicle_lease"].includes(editObligation.obligation_type);
+    const requiresVehicle = ["vehicle_installment", "vehicle_lease"].includes(
+      editObligation.obligation_type
+    );
 
     if (!editObligation.title.trim()) {
       toast.error("اسم الالتزام مطلوب");
@@ -512,14 +607,17 @@ const MonthlyObligations = () => {
         id: editingObligation.id,
         title: editObligation.title.trim(),
         vendor_id: cleanSelect(editObligation.vendor_id),
-        vehicle_id: selectedEditVehicleIds[0] || cleanSelect(editObligation.vehicle_id),
+        vehicle_id:
+          selectedEditVehicleIds[0] || cleanSelect(editObligation.vehicle_id),
         vehicle_ids: selectedEditVehicleIds,
         fixed_asset_id: cleanSelect(editObligation.fixed_asset_id),
         cost_center_id: cleanSelect(editObligation.cost_center_id),
         expense_account_id: cleanSelect(editObligation.expense_account_id),
         liability_account_id: cleanSelect(editObligation.liability_account_id),
         asset_account_id: cleanSelect(editObligation.asset_account_id),
-        interest_expense_account_id: cleanSelect(editObligation.interest_expense_account_id),
+        interest_expense_account_id: cleanSelect(
+          editObligation.interest_expense_account_id
+        ),
         monthly_amount: monthlyAmount,
         principal_amount: Number(editObligation.principal_amount || 0),
         interest_amount: Number(editObligation.interest_amount || 0),
@@ -564,7 +662,9 @@ const MonthlyObligations = () => {
   const openPayDialog = (installment: MonthlyObligationInstallment) => {
     setPayingInstallment(installment);
     setPaymentForm({
-      amount: Number(installment.amount || 0) - Number(installment.paid_amount || 0),
+      idempotency_key: crypto.randomUUID(),
+      amount:
+        Number(installment.amount || 0) - Number(installment.paid_amount || 0),
       payment_date: today,
       bank_id: "none",
       cash_account_id: "none",
@@ -575,9 +675,22 @@ const MonthlyObligations = () => {
 
   const handlePay = async () => {
     if (!payingInstallment) return;
+    if (!paymentForm.amount || Number(paymentForm.amount) <= 0) {
+      toast.error("مبلغ السداد يجب أن يكون أكبر من صفر");
+      return;
+    }
+    if (!paymentForm.payment_date) {
+      toast.error("تاريخ السداد مطلوب");
+      return;
+    }
+    if (!cleanSelect(paymentForm.cash_account_id)) {
+      toast.error("اختر حساب النقد أو البنك لإثبات القيد المحاسبي");
+      return;
+    }
     try {
       await payInstallment.mutateAsync({
         installment_id: payingInstallment.id,
+        idempotency_key: paymentForm.idempotency_key,
         amount: Number(paymentForm.amount || 0),
         payment_date: paymentForm.payment_date,
         bank_id: cleanSelect(paymentForm.bank_id),
@@ -587,7 +700,10 @@ const MonthlyObligations = () => {
       });
       setPayingInstallment(null);
     } catch (error) {
-      console.error("[MonthlyObligations] Pay obligation installment failed", error);
+      console.error(
+        "[MonthlyObligations] Pay obligation installment failed",
+        error
+      );
     }
   };
 
@@ -599,19 +715,26 @@ const MonthlyObligations = () => {
     ));
 
   return (
-    <div className="min-h-screen bg-slate-50" dir="rtl">
+    <div className="min-h-screen bg-[#F6F8FB]" dir="rtl">
       <div className="space-y-5 p-4 md:p-6">
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
             <div className="flex items-center gap-2 text-sm text-slate-500">
-              <Button variant="ghost" size="sm" onClick={() => navigate("/finance")}>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => navigate("/finance")}
+              >
                 <ArrowLeft className="h-4 w-4" />
               </Button>
               النظام المالي
             </div>
-            <h1 className="mt-2 text-2xl font-bold text-slate-950">الالتزامات</h1>
+            <h1 className="mt-2 text-2xl font-bold text-slate-950">
+              الالتزامات
+            </h1>
             <p className="mt-1 text-sm text-slate-500">
-              تسجيل التكاليف الثابتة والأقساط والمستحقات لمرة واحدة وربط سدادها بالخزينة والقيود.
+              تسجيل التكاليف الثابتة والأقساط والمستحقات لمرة واحدة وربط سدادها
+              بالخزينة والقيود.
             </p>
           </div>
 
@@ -627,11 +750,15 @@ const MonthlyObligations = () => {
                   التزام شهري
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-h-[90vh] max-w-5xl overflow-y-auto" dir="rtl">
+              <DialogContent
+                className="max-h-[90vh] max-w-5xl overflow-y-auto"
+                dir="rtl"
+              >
                 <DialogHeader>
                   <DialogTitle>إضافة التزام شهري</DialogTitle>
                   <DialogDescription>
-                    اختر نوع الالتزام وطريقة معالجته المحاسبية، وسيتم إنشاء جدول استحقاقات شهري.
+                    اختر نوع الالتزام وطريقة معالجته المحاسبية، وسيتم إنشاء جدول
+                    استحقاقات شهري.
                   </DialogDescription>
                 </DialogHeader>
 
@@ -640,7 +767,12 @@ const MonthlyObligations = () => {
                     <Label>اسم الالتزام</Label>
                     <Input
                       value={newObligation.title}
-                      onChange={(event) => setNewObligation({ ...newObligation, title: event.target.value })}
+                      onChange={(event) =>
+                        setNewObligation({
+                          ...newObligation,
+                          title: event.target.value,
+                        })
+                      }
                       placeholder="مثال: إيجار المكتب الرئيسي"
                     />
                   </div>
@@ -648,17 +780,24 @@ const MonthlyObligations = () => {
                     <Label>النوع</Label>
                     <Select
                       value={newObligation.obligation_type}
-                      onValueChange={(value: ObligationType) => setNewObligation({ ...newObligation, obligation_type: value })}
+                      onValueChange={(value: ObligationType) =>
+                        setNewObligation({
+                          ...newObligation,
+                          obligation_type: value,
+                        })
+                      }
                     >
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        {Object.entries(obligationTypeLabels).map(([value, label]) => (
-                          <SelectItem key={value} value={value}>
-                            {label}
-                          </SelectItem>
-                        ))}
+                        {Object.entries(obligationTypeLabels).map(
+                          ([value, label]) => (
+                            <SelectItem key={value} value={value}>
+                              {label}
+                            </SelectItem>
+                          )
+                        )}
                       </SelectContent>
                     </Select>
                   </div>
@@ -668,18 +807,23 @@ const MonthlyObligations = () => {
                     <Select
                       value={newObligation.accounting_treatment}
                       onValueChange={(value: ObligationAccountingTreatment) =>
-                        setNewObligation({ ...newObligation, accounting_treatment: value })
+                        setNewObligation({
+                          ...newObligation,
+                          accounting_treatment: value,
+                        })
                       }
                     >
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        {Object.entries(treatmentLabels).map(([value, label]) => (
-                          <SelectItem key={value} value={value}>
-                            {label}
-                          </SelectItem>
-                        ))}
+                        {Object.entries(treatmentLabels).map(
+                          ([value, label]) => (
+                            <SelectItem key={value} value={value}>
+                              {label}
+                            </SelectItem>
+                          )
+                        )}
                       </SelectContent>
                     </Select>
                   </div>
@@ -687,7 +831,9 @@ const MonthlyObligations = () => {
                     <Label>المورد</Label>
                     <Select
                       value={newObligation.vendor_id || "none"}
-                      onValueChange={(value) => setNewObligation({ ...newObligation, vendor_id: value })}
+                      onValueChange={(value) =>
+                        setNewObligation({ ...newObligation, vendor_id: value })
+                      }
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="اختياري" />
@@ -705,11 +851,15 @@ const MonthlyObligations = () => {
                   <div className="space-y-2 md:col-span-2">
                     <div className="flex items-center justify-between gap-2">
                       <Label>المركبات المرتبطة</Label>
-                      <Badge variant="outline">{selectedVehicleIds.length} مركبة</Badge>
+                      <Badge variant="outline">
+                        {selectedVehicleIds.length} مركبة
+                      </Badge>
                     </div>
                     <Input
                       value={vehicleSearchTerm}
-                      onChange={(event) => setVehicleSearchTerm(event.target.value)}
+                      onChange={(event) =>
+                        setVehicleSearchTerm(event.target.value)
+                      }
                       placeholder="ابحث برقم اللوحة أو نوع المركبة"
                     />
                     <div className="max-h-44 overflow-y-auto rounded-lg border border-slate-200 bg-white">
@@ -726,7 +876,9 @@ const MonthlyObligations = () => {
                             )}
                           >
                             <span>
-                              <span className="font-semibold text-slate-900">{vehicle.plate_number}</span>
+                              <span className="font-semibold text-slate-900">
+                                {vehicle.plate_number}
+                              </span>
                               <span className="mr-2 text-slate-500">
                                 {vehicle.make || ""} {vehicle.model || ""}
                               </span>
@@ -740,7 +892,9 @@ const MonthlyObligations = () => {
                         );
                       })}
                       {!visibleVehicles.length && (
-                        <div className="p-4 text-center text-sm text-slate-500">لا توجد مركبات مطابقة.</div>
+                        <div className="p-4 text-center text-sm text-slate-500">
+                          لا توجد مركبات مطابقة.
+                        </div>
                       )}
                     </div>
                   </div>
@@ -749,7 +903,12 @@ const MonthlyObligations = () => {
                     <Label>الأصل الثابت</Label>
                     <Select
                       value={newObligation.fixed_asset_id || "none"}
-                      onValueChange={(value) => setNewObligation({ ...newObligation, fixed_asset_id: value })}
+                      onValueChange={(value) =>
+                        setNewObligation({
+                          ...newObligation,
+                          fixed_asset_id: value,
+                        })
+                      }
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="اختياري" />
@@ -758,7 +917,8 @@ const MonthlyObligations = () => {
                         <SelectItem value="none">بدون أصل</SelectItem>
                         {fixedAssets.map((asset: any) => (
                           <SelectItem key={asset.id} value={asset.id}>
-                            {asset.asset_code} - {asset.asset_name_ar || asset.asset_name}
+                            {asset.asset_code} -{" "}
+                            {asset.asset_name_ar || asset.asset_name}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -770,28 +930,45 @@ const MonthlyObligations = () => {
                       type="number"
                       min="0"
                       value={newObligation.monthly_amount}
-                      onChange={(event) => setNewObligation({ ...newObligation, monthly_amount: toNumber(event.target.value) })}
+                      onChange={(event) =>
+                        setNewObligation({
+                          ...newObligation,
+                          monthly_amount: toNumber(event.target.value),
+                        })
+                      }
                     />
-                    {selectedVehicleIds.length > 1 && newObligation.vehicle_amount_mode === "per_vehicle" && (
-                      <p className="text-xs text-slate-500">
-                        الإجمالي الشهري: {formatCurrency(Number(newObligation.monthly_amount || 0) * selectedVehicleIds.length)}
-                      </p>
-                    )}
+                    {selectedVehicleIds.length > 1 &&
+                      newObligation.vehicle_amount_mode === "per_vehicle" && (
+                        <p className="text-xs text-slate-500">
+                          الإجمالي الشهري:{" "}
+                          {formatCurrency(
+                            Number(newObligation.monthly_amount || 0) *
+                              selectedVehicleIds.length
+                          )}
+                        </p>
+                      )}
                   </div>
                   <div className="space-y-2">
                     <Label>طريقة احتساب المركبات</Label>
                     <Select
                       value={newObligation.vehicle_amount_mode || "total"}
                       onValueChange={(value: "total" | "per_vehicle") =>
-                        setNewObligation({ ...newObligation, vehicle_amount_mode: value })
+                        setNewObligation({
+                          ...newObligation,
+                          vehicle_amount_mode: value,
+                        })
                       }
                     >
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="total">المبلغ إجمالي الالتزام</SelectItem>
-                        <SelectItem value="per_vehicle">المبلغ لكل مركبة</SelectItem>
+                        <SelectItem value="total">
+                          المبلغ إجمالي الالتزام
+                        </SelectItem>
+                        <SelectItem value="per_vehicle">
+                          المبلغ لكل مركبة
+                        </SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -802,7 +979,12 @@ const MonthlyObligations = () => {
                       min="1"
                       max="31"
                       value={newObligation.due_day}
-                      onChange={(event) => setNewObligation({ ...newObligation, due_day: toNumber(event.target.value) })}
+                      onChange={(event) =>
+                        setNewObligation({
+                          ...newObligation,
+                          due_day: toNumber(event.target.value),
+                        })
+                      }
                     />
                   </div>
 
@@ -811,7 +993,12 @@ const MonthlyObligations = () => {
                     <Input
                       type="date"
                       value={newObligation.start_date}
-                      onChange={(event) => setNewObligation({ ...newObligation, start_date: event.target.value })}
+                      onChange={(event) =>
+                        setNewObligation({
+                          ...newObligation,
+                          start_date: event.target.value,
+                        })
+                      }
                     />
                   </div>
                   <div className="space-y-2">
@@ -819,7 +1006,12 @@ const MonthlyObligations = () => {
                     <Input
                       type="date"
                       value={newObligation.end_date || ""}
-                      onChange={(event) => setNewObligation({ ...newObligation, end_date: event.target.value })}
+                      onChange={(event) =>
+                        setNewObligation({
+                          ...newObligation,
+                          end_date: event.target.value,
+                        })
+                      }
                     />
                   </div>
                   <div className="space-y-2">
@@ -829,7 +1021,12 @@ const MonthlyObligations = () => {
                       min="1"
                       max="120"
                       value={newObligation.months_count}
-                      onChange={(event) => setNewObligation({ ...newObligation, months_count: toNumber(event.target.value) })}
+                      onChange={(event) =>
+                        setNewObligation({
+                          ...newObligation,
+                          months_count: toNumber(event.target.value),
+                        })
+                      }
                     />
                   </div>
 
@@ -838,7 +1035,12 @@ const MonthlyObligations = () => {
                       <Label>حساب المصروف</Label>
                       <Select
                         value={newObligation.expense_account_id || "none"}
-                        onValueChange={(value) => setNewObligation({ ...newObligation, expense_account_id: value })}
+                        onValueChange={(value) =>
+                          setNewObligation({
+                            ...newObligation,
+                            expense_account_id: value,
+                          })
+                        }
                       >
                         <SelectTrigger>
                           <SelectValue placeholder="اختر حساب المصروف" />
@@ -855,7 +1057,12 @@ const MonthlyObligations = () => {
                         <Label>حساب الالتزام</Label>
                         <Select
                           value={newObligation.liability_account_id || "none"}
-                          onValueChange={(value) => setNewObligation({ ...newObligation, liability_account_id: value })}
+                          onValueChange={(value) =>
+                            setNewObligation({
+                              ...newObligation,
+                              liability_account_id: value,
+                            })
+                          }
                         >
                           <SelectTrigger>
                             <SelectValue placeholder="اختر حساب الالتزام" />
@@ -872,7 +1079,12 @@ const MonthlyObligations = () => {
                           type="number"
                           min="0"
                           value={newObligation.principal_amount}
-                          onChange={(event) => setNewObligation({ ...newObligation, principal_amount: toNumber(event.target.value) })}
+                          onChange={(event) =>
+                            setNewObligation({
+                              ...newObligation,
+                              principal_amount: toNumber(event.target.value),
+                            })
+                          }
                         />
                       </div>
                       <div className="space-y-2">
@@ -881,14 +1093,26 @@ const MonthlyObligations = () => {
                           type="number"
                           min="0"
                           value={newObligation.interest_amount}
-                          onChange={(event) => setNewObligation({ ...newObligation, interest_amount: toNumber(event.target.value) })}
+                          onChange={(event) =>
+                            setNewObligation({
+                              ...newObligation,
+                              interest_amount: toNumber(event.target.value),
+                            })
+                          }
                         />
                       </div>
                       <div className="space-y-2 md:col-span-2">
                         <Label>حساب مصروف الفوائد</Label>
                         <Select
-                          value={newObligation.interest_expense_account_id || "none"}
-                          onValueChange={(value) => setNewObligation({ ...newObligation, interest_expense_account_id: value })}
+                          value={
+                            newObligation.interest_expense_account_id || "none"
+                          }
+                          onValueChange={(value) =>
+                            setNewObligation({
+                              ...newObligation,
+                              interest_expense_account_id: value,
+                            })
+                          }
                         >
                           <SelectTrigger>
                             <SelectValue placeholder="اختياري عند عدم وجود فوائد" />
@@ -903,7 +1127,12 @@ const MonthlyObligations = () => {
                         <Label>حساب الأصل</Label>
                         <Select
                           value={newObligation.asset_account_id || "none"}
-                          onValueChange={(value) => setNewObligation({ ...newObligation, asset_account_id: value })}
+                          onValueChange={(value) =>
+                            setNewObligation({
+                              ...newObligation,
+                              asset_account_id: value,
+                            })
+                          }
                         >
                           <SelectTrigger>
                             <SelectValue placeholder="اختياري" />
@@ -921,33 +1150,51 @@ const MonthlyObligations = () => {
                     <Label>ملاحظات</Label>
                     <Textarea
                       value={newObligation.notes || ""}
-                      onChange={(event) => setNewObligation({ ...newObligation, notes: event.target.value })}
+                      onChange={(event) =>
+                        setNewObligation({
+                          ...newObligation,
+                          notes: event.target.value,
+                        })
+                      }
                     />
                   </div>
                 </div>
 
                 <div className="flex justify-end gap-2 pt-4">
-                  <Button variant="outline" onClick={() => setIsCreateOpen(false)}>
+                  <Button
+                    variant="outline"
+                    onClick={() => setIsCreateOpen(false)}
+                  >
                     إلغاء
                   </Button>
-                  <Button onClick={handleCreate} disabled={createObligation.isPending}>
+                  <Button
+                    onClick={handleCreate}
+                    disabled={createObligation.isPending}
+                  >
                     حفظ وجدولة
                   </Button>
                 </div>
               </DialogContent>
             </Dialog>
-            <Dialog open={isOneTimeCreateOpen} onOpenChange={setIsOneTimeCreateOpen}>
+            <Dialog
+              open={isOneTimeCreateOpen}
+              onOpenChange={setIsOneTimeCreateOpen}
+            >
               <DialogTrigger asChild>
                 <Button variant="outline">
                   <ReceiptText className="h-4 w-4" />
                   التزام لمرة واحدة
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-h-[90vh] max-w-3xl overflow-y-auto" dir="rtl">
+              <DialogContent
+                className="max-h-[90vh] max-w-3xl overflow-y-auto"
+                dir="rtl"
+              >
                 <DialogHeader>
                   <DialogTitle>إضافة التزام لمرة واحدة</DialogTitle>
                   <DialogDescription>
-                    سجل مخالفة أو غرامة أو رسوم مستحقة بدون خصم من البنك الآن، وسيظهر المبلغ كالتزام غير مدفوع حتى يتم سداده.
+                    سجل مخالفة أو غرامة أو رسوم مستحقة بدون خصم من البنك الآن،
+                    وسيظهر المبلغ كالتزام غير مدفوع حتى يتم سداده.
                   </DialogDescription>
                 </DialogHeader>
 
@@ -956,7 +1203,12 @@ const MonthlyObligations = () => {
                     <Label>اسم الالتزام</Label>
                     <Input
                       value={oneTimeObligation.title}
-                      onChange={(event) => setOneTimeObligation({ ...oneTimeObligation, title: event.target.value })}
+                      onChange={(event) =>
+                        setOneTimeObligation({
+                          ...oneTimeObligation,
+                          title: event.target.value,
+                        })
+                      }
                       placeholder="مثال: مخالفة مرورية - رسوم تجديد - غرامة"
                     />
                   </div>
@@ -965,18 +1217,23 @@ const MonthlyObligations = () => {
                     <Select
                       value={oneTimeObligation.category}
                       onValueChange={(value: OneTimeObligationCategory) =>
-                        setOneTimeObligation({ ...oneTimeObligation, category: value })
+                        setOneTimeObligation({
+                          ...oneTimeObligation,
+                          category: value,
+                        })
                       }
                     >
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        {Object.entries(oneTimeCategoryLabels).map(([value, label]) => (
-                          <SelectItem key={value} value={value}>
-                            {label}
-                          </SelectItem>
-                        ))}
+                        {Object.entries(oneTimeCategoryLabels).map(
+                          ([value, label]) => (
+                            <SelectItem key={value} value={value}>
+                              {label}
+                            </SelectItem>
+                          )
+                        )}
                       </SelectContent>
                     </Select>
                   </div>
@@ -986,7 +1243,12 @@ const MonthlyObligations = () => {
                       type="number"
                       min="0"
                       value={oneTimeObligation.amount}
-                      onChange={(event) => setOneTimeObligation({ ...oneTimeObligation, amount: toNumber(event.target.value) })}
+                      onChange={(event) =>
+                        setOneTimeObligation({
+                          ...oneTimeObligation,
+                          amount: toNumber(event.target.value),
+                        })
+                      }
                     />
                   </div>
                   <div className="space-y-2">
@@ -994,14 +1256,24 @@ const MonthlyObligations = () => {
                     <Input
                       type="date"
                       value={oneTimeObligation.due_date}
-                      onChange={(event) => setOneTimeObligation({ ...oneTimeObligation, due_date: event.target.value })}
+                      onChange={(event) =>
+                        setOneTimeObligation({
+                          ...oneTimeObligation,
+                          due_date: event.target.value,
+                        })
+                      }
                     />
                   </div>
                   <div className="space-y-2">
                     <Label>المورد/الجهة</Label>
                     <Select
                       value={oneTimeObligation.vendor_id}
-                      onValueChange={(value) => setOneTimeObligation({ ...oneTimeObligation, vendor_id: value })}
+                      onValueChange={(value) =>
+                        setOneTimeObligation({
+                          ...oneTimeObligation,
+                          vendor_id: value,
+                        })
+                      }
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="اختياري" />
@@ -1020,7 +1292,12 @@ const MonthlyObligations = () => {
                     <Label>مركبة مرتبطة</Label>
                     <Select
                       value={oneTimeObligation.vehicle_id}
-                      onValueChange={(value) => setOneTimeObligation({ ...oneTimeObligation, vehicle_id: value })}
+                      onValueChange={(value) =>
+                        setOneTimeObligation({
+                          ...oneTimeObligation,
+                          vehicle_id: value,
+                        })
+                      }
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="اختياري" />
@@ -1029,7 +1306,8 @@ const MonthlyObligations = () => {
                         <SelectItem value="none">بدون مركبة</SelectItem>
                         {vehicles.map((vehicle: any) => (
                           <SelectItem key={vehicle.id} value={vehicle.id}>
-                            {vehicle.plate_number} {vehicle.make || ""} {vehicle.model || ""}
+                            {vehicle.plate_number} {vehicle.make || ""}{" "}
+                            {vehicle.model || ""}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -1039,7 +1317,12 @@ const MonthlyObligations = () => {
                     <Label>حساب المصروف</Label>
                     <Select
                       value={oneTimeObligation.expense_account_id}
-                      onValueChange={(value) => setOneTimeObligation({ ...oneTimeObligation, expense_account_id: value })}
+                      onValueChange={(value) =>
+                        setOneTimeObligation({
+                          ...oneTimeObligation,
+                          expense_account_id: value,
+                        })
+                      }
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="اختياري" />
@@ -1054,7 +1337,12 @@ const MonthlyObligations = () => {
                     <Label>حساب الالتزام</Label>
                     <Select
                       value={oneTimeObligation.liability_account_id}
-                      onValueChange={(value) => setOneTimeObligation({ ...oneTimeObligation, liability_account_id: value })}
+                      onValueChange={(value) =>
+                        setOneTimeObligation({
+                          ...oneTimeObligation,
+                          liability_account_id: value,
+                        })
+                      }
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="اختياري" />
@@ -1069,16 +1357,27 @@ const MonthlyObligations = () => {
                     <Label>ملاحظات</Label>
                     <Textarea
                       value={oneTimeObligation.notes}
-                      onChange={(event) => setOneTimeObligation({ ...oneTimeObligation, notes: event.target.value })}
+                      onChange={(event) =>
+                        setOneTimeObligation({
+                          ...oneTimeObligation,
+                          notes: event.target.value,
+                        })
+                      }
                     />
                   </div>
                 </div>
 
                 <div className="flex justify-end gap-2 pt-4">
-                  <Button variant="outline" onClick={() => setIsOneTimeCreateOpen(false)}>
+                  <Button
+                    variant="outline"
+                    onClick={() => setIsOneTimeCreateOpen(false)}
+                  >
                     إلغاء
                   </Button>
-                  <Button onClick={handleCreateOneTime} disabled={createObligation.isPending}>
+                  <Button
+                    onClick={handleCreateOneTime}
+                    disabled={createObligation.isPending}
+                  >
                     حفظ الالتزام
                   </Button>
                 </div>
@@ -1089,7 +1388,12 @@ const MonthlyObligations = () => {
 
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
           {[
-            { title: "التزامات نشطة", value: summary?.activeCount || 0, icon: FileClock, tone: "text-slate-700" },
+            {
+              title: "التزامات نشطة",
+              value: summary?.activeCount || 0,
+              icon: FileClock,
+              tone: "text-slate-700",
+            },
             {
               title: "الالتزام الشهري",
               value: formatCurrency(summary?.monthlyCommittedAmount || 0),
@@ -1128,7 +1432,9 @@ const MonthlyObligations = () => {
                   <span className="text-sm text-slate-500">{item.title}</span>
                   <Icon className={cn("h-5 w-5", item.tone)} />
                 </div>
-                <div className="mt-3 text-xl font-bold text-slate-950">{item.value}</div>
+                <div className="mt-3 text-xl font-bold text-slate-950">
+                  {item.value}
+                </div>
               </motion.div>
             );
           })}
@@ -1136,8 +1442,9 @@ const MonthlyObligations = () => {
 
         {dataError && (
           <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
-            لم يتم تحميل بيانات الالتزامات. إذا كانت هذه أول مرة تستخدم الصفحة، طبّق هجرة قاعدة البيانات الخاصة
-            بالالتزامات الشهرية ثم أعد فتح الصفحة.
+            لم يتم تحميل بيانات الالتزامات. إذا كانت هذه أول مرة تستخدم الصفحة،
+            طبّق هجرة قاعدة البيانات الخاصة بالالتزامات الشهرية ثم أعد فتح
+            الصفحة.
           </div>
         )}
 
@@ -1217,11 +1524,17 @@ const MonthlyObligations = () => {
             <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3">
               <div>
                 <h2 className="font-semibold text-slate-950">
-                  {viewMode === "one_time" ? "سجل الالتزامات لمرة واحدة" : "سجل الالتزامات الشهرية"}
+                  {viewMode === "one_time"
+                    ? "سجل الالتزامات لمرة واحدة"
+                    : "سجل الالتزامات الشهرية"}
                 </h2>
-                <p className="text-xs text-slate-500">{filteredObligations.length} التزام ظاهر</p>
+                <p className="text-xs text-slate-500">
+                  {filteredObligations.length} التزام ظاهر
+                </p>
               </div>
-              <Badge variant="outline">{isLoading ? "جاري التحميل" : "جاهز"}</Badge>
+              <Badge variant="outline">
+                {isLoading ? "جاري التحميل" : "جاهز"}
+              </Badge>
             </div>
             <Table>
               <TableHeader>
@@ -1236,67 +1549,85 @@ const MonthlyObligations = () => {
               </TableHeader>
               <TableBody>
                 {filteredObligations.map((obligation) => {
-                  const openInstallment = openInstallmentByObligation.get(obligation.id);
+                  const openInstallment = openInstallmentByObligation.get(
+                    obligation.id
+                  );
                   return (
-                  <TableRow key={obligation.id}>
-                    <TableCell>
-                      <div className="font-semibold text-slate-950">{obligation.title}</div>
-                      <div className="text-xs text-slate-500">
-                        {obligation.obligation_number} •{" "}
-                        {isOneTimeObligation(obligation)
-                          ? obligation.description || "التزام لمرة واحدة"
-                          : obligationTypeLabels[obligation.obligation_type]}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2 text-sm text-slate-700">
-                        {obligation.vehicle_id ? (
-                          <Car className="h-4 w-4 text-slate-400" />
-                        ) : obligation.vendor_id ? (
-                          <Building2 className="h-4 w-4 text-slate-400" />
-                        ) : (
-                          <CircleDollarSign className="h-4 w-4 text-slate-400" />
-                        )}
-                        <span>{entityLabel(obligation)}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline">{treatmentLabels[obligation.accounting_treatment]}</Badge>
-                    </TableCell>
-                    <TableCell className="font-semibold">{formatCurrency(Number(obligation.monthly_amount || 0))}</TableCell>
-                    <TableCell>
-                      <Badge className={cn("border", statusStyles[obligation.status])}>{statusLabels[obligation.status]}</Badge>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-1">
-                        {openInstallment && (
+                    <TableRow key={obligation.id}>
+                      <TableCell>
+                        <div className="font-semibold text-slate-950">
+                          {obligation.title}
+                        </div>
+                        <div className="text-xs text-slate-500">
+                          {obligation.obligation_number} •{" "}
+                          {isOneTimeObligation(obligation)
+                            ? obligation.description || "التزام لمرة واحدة"
+                            : obligationTypeLabels[obligation.obligation_type]}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2 text-sm text-slate-700">
+                          {obligation.vehicle_id ? (
+                            <Car className="h-4 w-4 text-slate-400" />
+                          ) : obligation.vendor_id ? (
+                            <Building2 className="h-4 w-4 text-slate-400" />
+                          ) : (
+                            <CircleDollarSign className="h-4 w-4 text-slate-400" />
+                          )}
+                          <span>{entityLabel(obligation)}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline">
+                          {treatmentLabels[obligation.accounting_treatment]}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="font-semibold">
+                        {formatCurrency(Number(obligation.monthly_amount || 0))}
+                      </TableCell>
+                      <TableCell>
+                        <Badge
+                          className={cn(
+                            "border",
+                            statusStyles[obligation.status]
+                          )}
+                        >
+                          {statusLabels[obligation.status]}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1">
+                          {openInstallment && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8"
+                              title="سداد الالتزام"
+                              onClick={() => openPayDialog(openInstallment)}
+                            >
+                              <Banknote className="h-4 w-4" />
+                            </Button>
+                          )}
                           <Button
                             variant="ghost"
                             size="icon"
                             className="h-8 w-8"
-                            title="سداد الالتزام"
-                            onClick={() => openPayDialog(openInstallment)}
+                            title="تعديل الالتزام"
+                            onClick={() => openEditDialog(obligation)}
                           >
-                            <Banknote className="h-4 w-4" />
+                            <Pencil className="h-4 w-4" />
                           </Button>
-                        )}
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8"
-                          title="تعديل الالتزام"
-                          onClick={() => openEditDialog(obligation)}
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
+                        </div>
+                      </TableCell>
+                    </TableRow>
                   );
                 })}
                 {!filteredObligations.length && (
                   <TableRow>
-                    <TableCell colSpan={6} className="h-32 text-center text-sm text-slate-500">
+                    <TableCell
+                      colSpan={6}
+                      className="h-32 text-center text-sm text-slate-500"
+                    >
                       لا توجد التزامات مطابقة.
                     </TableCell>
                   </TableRow>
@@ -1308,33 +1639,52 @@ const MonthlyObligations = () => {
           <section className="rounded-lg border border-slate-200 bg-white shadow-sm">
             <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3">
               <div>
-                <h2 className="font-semibold text-slate-950">الاستحقاقات القادمة</h2>
-                <p className="text-xs text-slate-500">الأقساط غير المسددة مرتبة حسب التاريخ</p>
+                <h2 className="font-semibold text-slate-950">
+                  الاستحقاقات القادمة
+                </h2>
+                <p className="text-xs text-slate-500">
+                  الأقساط غير المسددة مرتبة حسب التاريخ
+                </p>
               </div>
               <Landmark className="h-5 w-5 text-slate-400" />
             </div>
             <div className="divide-y divide-slate-100">
               {upcomingInstallments.map((installment) => {
-                const remaining = Number(installment.amount || 0) - Number(installment.paid_amount || 0);
+                const remaining =
+                  Number(installment.amount || 0) -
+                  Number(installment.paid_amount || 0);
                 return (
                   <div key={installment.id} className="p-4">
                     <div className="flex items-start justify-between gap-3">
                       <div>
-                        <div className="font-semibold text-slate-950">{installment.obligation?.title || "التزام شهري"}</div>
+                        <div className="font-semibold text-slate-950">
+                          {installment.obligation?.title || "التزام شهري"}
+                        </div>
                         <div className="mt-1 text-xs text-slate-500">
-                          استحقاق {installment.due_date} • قسط {installment.installment_number}
+                          استحقاق {installment.due_date} • قسط{" "}
+                          {installment.installment_number}
                         </div>
                       </div>
-                      <Badge className={cn("border", statusStyles[installment.status])}>
+                      <Badge
+                        className={cn(
+                          "border",
+                          statusStyles[installment.status]
+                        )}
+                      >
                         {statusLabels[installment.status] || installment.status}
                       </Badge>
                     </div>
                     <div className="mt-3 flex items-center justify-between">
                       <div>
                         <div className="text-xs text-slate-500">المتبقي</div>
-                        <div className="font-bold text-slate-950">{formatCurrency(remaining)}</div>
+                        <div className="font-bold text-slate-950">
+                          {formatCurrency(remaining)}
+                        </div>
                       </div>
-                      <Button size="sm" onClick={() => openPayDialog(installment)}>
+                      <Button
+                        size="sm"
+                        onClick={() => openPayDialog(installment)}
+                      >
                         <Banknote className="h-4 w-4" />
                         سداد
                       </Button>
@@ -1343,18 +1693,27 @@ const MonthlyObligations = () => {
                 );
               })}
               {!upcomingInstallments.length && (
-                <div className="p-8 text-center text-sm text-slate-500">لا توجد استحقاقات مفتوحة.</div>
+                <div className="p-8 text-center text-sm text-slate-500">
+                  لا توجد استحقاقات مفتوحة.
+                </div>
               )}
             </div>
           </section>
         </div>
 
-        <Dialog open={!!editingObligation} onOpenChange={(open) => !open && closeEditDialog()}>
-          <DialogContent className="max-h-[90vh] max-w-5xl overflow-y-auto" dir="rtl">
+        <Dialog
+          open={!!editingObligation}
+          onOpenChange={(open) => !open && closeEditDialog()}
+        >
+          <DialogContent
+            className="max-h-[90vh] max-w-5xl overflow-y-auto"
+            dir="rtl"
+          >
             <DialogHeader>
               <DialogTitle>تعديل الالتزام</DialogTitle>
               <DialogDescription>
-                يتم تحديث بيانات الالتزام والأقساط المفتوحة فقط، ولا يتم تعديل الأقساط التي تم سدادها.
+                يتم تحديث بيانات الالتزام والأقساط المفتوحة فقط، ولا يتم تعديل
+                الأقساط التي تم سدادها.
               </DialogDescription>
             </DialogHeader>
 
@@ -1365,14 +1724,21 @@ const MonthlyObligations = () => {
                     <Label>اسم الالتزام</Label>
                     <Input
                       value={editObligation.title}
-                      onChange={(event) => setEditObligation({ ...editObligation, title: event.target.value })}
+                      onChange={(event) =>
+                        setEditObligation({
+                          ...editObligation,
+                          title: event.target.value,
+                        })
+                      }
                     />
                   </div>
                   <div className="space-y-2">
                     <Label>الحالة</Label>
                     <Select
                       value={editObligation.status || "active"}
-                      onValueChange={(value: ObligationStatus) => setEditObligation({ ...editObligation, status: value })}
+                      onValueChange={(value: ObligationStatus) =>
+                        setEditObligation({ ...editObligation, status: value })
+                      }
                     >
                       <SelectTrigger>
                         <SelectValue />
@@ -1390,17 +1756,24 @@ const MonthlyObligations = () => {
                     <Label>النوع</Label>
                     <Select
                       value={editObligation.obligation_type}
-                      onValueChange={(value: ObligationType) => setEditObligation({ ...editObligation, obligation_type: value })}
+                      onValueChange={(value: ObligationType) =>
+                        setEditObligation({
+                          ...editObligation,
+                          obligation_type: value,
+                        })
+                      }
                     >
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        {Object.entries(obligationTypeLabels).map(([value, label]) => (
-                          <SelectItem key={value} value={value}>
-                            {label}
-                          </SelectItem>
-                        ))}
+                        {Object.entries(obligationTypeLabels).map(
+                          ([value, label]) => (
+                            <SelectItem key={value} value={value}>
+                              {label}
+                            </SelectItem>
+                          )
+                        )}
                       </SelectContent>
                     </Select>
                   </div>
@@ -1409,18 +1782,23 @@ const MonthlyObligations = () => {
                     <Select
                       value={editObligation.accounting_treatment}
                       onValueChange={(value: ObligationAccountingTreatment) =>
-                        setEditObligation({ ...editObligation, accounting_treatment: value })
+                        setEditObligation({
+                          ...editObligation,
+                          accounting_treatment: value,
+                        })
                       }
                     >
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        {Object.entries(treatmentLabels).map(([value, label]) => (
-                          <SelectItem key={value} value={value}>
-                            {label}
-                          </SelectItem>
-                        ))}
+                        {Object.entries(treatmentLabels).map(
+                          ([value, label]) => (
+                            <SelectItem key={value} value={value}>
+                              {label}
+                            </SelectItem>
+                          )
+                        )}
                       </SelectContent>
                     </Select>
                   </div>
@@ -1428,7 +1806,12 @@ const MonthlyObligations = () => {
                     <Label>المورد</Label>
                     <Select
                       value={editObligation.vendor_id || "none"}
-                      onValueChange={(value) => setEditObligation({ ...editObligation, vendor_id: value })}
+                      onValueChange={(value) =>
+                        setEditObligation({
+                          ...editObligation,
+                          vendor_id: value,
+                        })
+                      }
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="اختياري" />
@@ -1447,16 +1830,22 @@ const MonthlyObligations = () => {
                   <div className="space-y-2 md:col-span-2">
                     <div className="flex items-center justify-between gap-2">
                       <Label>المركبات المرتبطة</Label>
-                      <Badge variant="outline">{selectedEditVehicleIds.length} مركبة</Badge>
+                      <Badge variant="outline">
+                        {selectedEditVehicleIds.length} مركبة
+                      </Badge>
                     </div>
                     <Input
                       value={editVehicleSearchTerm}
-                      onChange={(event) => setEditVehicleSearchTerm(event.target.value)}
+                      onChange={(event) =>
+                        setEditVehicleSearchTerm(event.target.value)
+                      }
                       placeholder="ابحث برقم اللوحة أو نوع المركبة"
                     />
                     <div className="max-h-44 overflow-y-auto rounded-lg border border-slate-200 bg-white">
                       {visibleEditVehicles.map((vehicle: any) => {
-                        const checked = selectedEditVehicleIds.includes(vehicle.id);
+                        const checked = selectedEditVehicleIds.includes(
+                          vehicle.id
+                        );
                         return (
                           <button
                             key={vehicle.id}
@@ -1468,12 +1857,19 @@ const MonthlyObligations = () => {
                             )}
                           >
                             <span>
-                              <span className="font-semibold text-slate-900">{vehicle.plate_number}</span>
+                              <span className="font-semibold text-slate-900">
+                                {vehicle.plate_number}
+                              </span>
                               <span className="mr-2 text-slate-500">
-                                {[vehicle.make, vehicle.model, vehicle.year].filter(Boolean).join(" ")}
+                                {[vehicle.make, vehicle.model, vehicle.year]
+                                  .filter(Boolean)
+                                  .join(" ")}
                               </span>
                             </span>
-                            <Checkbox checked={checked} onClick={(event) => event.stopPropagation()} />
+                            <Checkbox
+                              checked={checked}
+                              onClick={(event) => event.stopPropagation()}
+                            />
                           </button>
                         );
                       })}
@@ -1483,7 +1879,12 @@ const MonthlyObligations = () => {
                     <Label>الأصل الثابت</Label>
                     <Select
                       value={editObligation.fixed_asset_id || "none"}
-                      onValueChange={(value) => setEditObligation({ ...editObligation, fixed_asset_id: value })}
+                      onValueChange={(value) =>
+                        setEditObligation({
+                          ...editObligation,
+                          fixed_asset_id: value,
+                        })
+                      }
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="اختياري" />
@@ -1492,7 +1893,9 @@ const MonthlyObligations = () => {
                         <SelectItem value="none">بدون أصل</SelectItem>
                         {fixedAssets.map((asset: any) => (
                           <SelectItem key={asset.id} value={asset.id}>
-                            {asset.asset_name_ar || asset.asset_name || asset.asset_code}
+                            {asset.asset_name_ar ||
+                              asset.asset_name ||
+                              asset.asset_code}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -1504,7 +1907,10 @@ const MonthlyObligations = () => {
                     <Select
                       value={editObligation.vehicle_amount_mode || "total"}
                       onValueChange={(value: "total" | "per_vehicle") =>
-                        setEditObligation({ ...editObligation, vehicle_amount_mode: value })
+                        setEditObligation({
+                          ...editObligation,
+                          vehicle_amount_mode: value,
+                        })
                       }
                     >
                       <SelectTrigger>
@@ -1512,7 +1918,9 @@ const MonthlyObligations = () => {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="total">المبلغ إجمالي</SelectItem>
-                        <SelectItem value="per_vehicle">المبلغ لكل مركبة</SelectItem>
+                        <SelectItem value="per_vehicle">
+                          المبلغ لكل مركبة
+                        </SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -1522,13 +1930,23 @@ const MonthlyObligations = () => {
                       type="number"
                       min="0"
                       value={editObligation.monthly_amount}
-                      onChange={(event) => setEditObligation({ ...editObligation, monthly_amount: toNumber(event.target.value) })}
+                      onChange={(event) =>
+                        setEditObligation({
+                          ...editObligation,
+                          monthly_amount: toNumber(event.target.value),
+                        })
+                      }
                     />
-                    {editObligation.vehicle_amount_mode === "per_vehicle" && selectedEditVehicleIds.length > 1 && (
-                      <div className="text-xs text-slate-500">
-                        الإجمالي: {formatCurrency(Number(editObligation.monthly_amount || 0) * selectedEditVehicleIds.length)}
-                      </div>
-                    )}
+                    {editObligation.vehicle_amount_mode === "per_vehicle" &&
+                      selectedEditVehicleIds.length > 1 && (
+                        <div className="text-xs text-slate-500">
+                          الإجمالي:{" "}
+                          {formatCurrency(
+                            Number(editObligation.monthly_amount || 0) *
+                              selectedEditVehicleIds.length
+                          )}
+                        </div>
+                      )}
                   </div>
                   <div className="space-y-2">
                     <Label>يوم الاستحقاق</Label>
@@ -1537,7 +1955,12 @@ const MonthlyObligations = () => {
                       min="1"
                       max="31"
                       value={editObligation.due_day}
-                      onChange={(event) => setEditObligation({ ...editObligation, due_day: toNumber(event.target.value) })}
+                      onChange={(event) =>
+                        setEditObligation({
+                          ...editObligation,
+                          due_day: toNumber(event.target.value),
+                        })
+                      }
                     />
                   </div>
 
@@ -1546,7 +1969,12 @@ const MonthlyObligations = () => {
                     <Input
                       type="date"
                       value={editObligation.start_date}
-                      onChange={(event) => setEditObligation({ ...editObligation, start_date: event.target.value })}
+                      onChange={(event) =>
+                        setEditObligation({
+                          ...editObligation,
+                          start_date: event.target.value,
+                        })
+                      }
                     />
                   </div>
                   <div className="space-y-2">
@@ -1554,14 +1982,24 @@ const MonthlyObligations = () => {
                     <Input
                       type="date"
                       value={editObligation.end_date || ""}
-                      onChange={(event) => setEditObligation({ ...editObligation, end_date: event.target.value })}
+                      onChange={(event) =>
+                        setEditObligation({
+                          ...editObligation,
+                          end_date: event.target.value,
+                        })
+                      }
                     />
                   </div>
                   <div className="space-y-2">
                     <Label>حساب المصروف</Label>
                     <Select
                       value={editObligation.expense_account_id || "none"}
-                      onValueChange={(value) => setEditObligation({ ...editObligation, expense_account_id: value })}
+                      onValueChange={(value) =>
+                        setEditObligation({
+                          ...editObligation,
+                          expense_account_id: value,
+                        })
+                      }
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="اختياري" />
@@ -1579,7 +2017,12 @@ const MonthlyObligations = () => {
                         <Label>حساب الالتزام</Label>
                         <Select
                           value={editObligation.liability_account_id || "none"}
-                          onValueChange={(value) => setEditObligation({ ...editObligation, liability_account_id: value })}
+                          onValueChange={(value) =>
+                            setEditObligation({
+                              ...editObligation,
+                              liability_account_id: value,
+                            })
+                          }
                         >
                           <SelectTrigger>
                             <SelectValue placeholder="اختياري" />
@@ -1596,7 +2039,12 @@ const MonthlyObligations = () => {
                           type="number"
                           min="0"
                           value={editObligation.principal_amount}
-                          onChange={(event) => setEditObligation({ ...editObligation, principal_amount: toNumber(event.target.value) })}
+                          onChange={(event) =>
+                            setEditObligation({
+                              ...editObligation,
+                              principal_amount: toNumber(event.target.value),
+                            })
+                          }
                         />
                       </div>
                       <div className="space-y-2">
@@ -1605,14 +2053,26 @@ const MonthlyObligations = () => {
                           type="number"
                           min="0"
                           value={editObligation.interest_amount}
-                          onChange={(event) => setEditObligation({ ...editObligation, interest_amount: toNumber(event.target.value) })}
+                          onChange={(event) =>
+                            setEditObligation({
+                              ...editObligation,
+                              interest_amount: toNumber(event.target.value),
+                            })
+                          }
                         />
                       </div>
                       <div className="space-y-2">
                         <Label>حساب مصروف الفوائد</Label>
                         <Select
-                          value={editObligation.interest_expense_account_id || "none"}
-                          onValueChange={(value) => setEditObligation({ ...editObligation, interest_expense_account_id: value })}
+                          value={
+                            editObligation.interest_expense_account_id || "none"
+                          }
+                          onValueChange={(value) =>
+                            setEditObligation({
+                              ...editObligation,
+                              interest_expense_account_id: value,
+                            })
+                          }
                         >
                           <SelectTrigger>
                             <SelectValue placeholder="اختياري" />
@@ -1630,7 +2090,12 @@ const MonthlyObligations = () => {
                     <Label>ملاحظات</Label>
                     <Textarea
                       value={editObligation.notes || ""}
-                      onChange={(event) => setEditObligation({ ...editObligation, notes: event.target.value })}
+                      onChange={(event) =>
+                        setEditObligation({
+                          ...editObligation,
+                          notes: event.target.value,
+                        })
+                      }
                     />
                   </div>
                 </div>
@@ -1639,7 +2104,10 @@ const MonthlyObligations = () => {
                   <Button variant="outline" onClick={closeEditDialog}>
                     إلغاء
                   </Button>
-                  <Button onClick={handleUpdate} disabled={updateObligation.isPending}>
+                  <Button
+                    onClick={handleUpdate}
+                    disabled={updateObligation.isPending}
+                  >
                     حفظ التعديل
                   </Button>
                 </div>
@@ -1648,21 +2116,28 @@ const MonthlyObligations = () => {
           </DialogContent>
         </Dialog>
 
-        <Dialog open={!!payingInstallment} onOpenChange={(open) => !open && setPayingInstallment(null)}>
+        <Dialog
+          open={!!payingInstallment}
+          onOpenChange={(open) => !open && setPayingInstallment(null)}
+        >
           <DialogContent className="max-w-2xl" dir="rtl">
             <DialogHeader>
               <DialogTitle>تسجيل سداد الالتزام</DialogTitle>
               <DialogDescription>
-                سيتم تحديث القسط وربطه بحركة الخزينة، وسينشأ قيد محاسبي عند اختيار حساب النقد/البنك.
+                سيتم تحديث القسط وربطه بحركة الخزينة، وسينشأ قيد محاسبي عند
+                اختيار حساب النقد/البنك.
               </DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 md:grid-cols-2">
               <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 md:col-span-2">
-                <div className="font-semibold text-slate-950">{payingInstallment?.obligation?.title}</div>
+                <div className="font-semibold text-slate-950">
+                  {payingInstallment?.obligation?.title}
+                </div>
                 <div className="mt-1 text-sm text-slate-500">
                   المتبقي:{" "}
                   {formatCurrency(
-                    Number(payingInstallment?.amount || 0) - Number(payingInstallment?.paid_amount || 0)
+                    Number(payingInstallment?.amount || 0) -
+                      Number(payingInstallment?.paid_amount || 0)
                   )}
                 </div>
               </div>
@@ -1672,7 +2147,12 @@ const MonthlyObligations = () => {
                   type="number"
                   min="0"
                   value={paymentForm.amount}
-                  onChange={(event) => setPaymentForm({ ...paymentForm, amount: toNumber(event.target.value) })}
+                  onChange={(event) =>
+                    setPaymentForm({
+                      ...paymentForm,
+                      amount: toNumber(event.target.value),
+                    })
+                  }
                 />
               </div>
               <div className="space-y-2">
@@ -1680,12 +2160,22 @@ const MonthlyObligations = () => {
                 <Input
                   type="date"
                   value={paymentForm.payment_date}
-                  onChange={(event) => setPaymentForm({ ...paymentForm, payment_date: event.target.value })}
+                  onChange={(event) =>
+                    setPaymentForm({
+                      ...paymentForm,
+                      payment_date: event.target.value,
+                    })
+                  }
                 />
               </div>
               <div className="space-y-2">
-                <Label>البنك/الصندوق</Label>
-                <Select value={paymentForm.bank_id} onValueChange={(value) => setPaymentForm({ ...paymentForm, bank_id: value })}>
+                <Label>البنك (اختياري للسداد النقدي)</Label>
+                <Select
+                  value={paymentForm.bank_id}
+                  onValueChange={(value) =>
+                    setPaymentForm({ ...paymentForm, bank_id: value })
+                  }
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="اختياري" />
                   </SelectTrigger>
@@ -1700,17 +2190,20 @@ const MonthlyObligations = () => {
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label>حساب النقد/البنك للقيد</Label>
+                <Label>حساب النقد/البنك للقيد *</Label>
                 <Select
                   value={paymentForm.cash_account_id}
-                  onValueChange={(value) => setPaymentForm({ ...paymentForm, cash_account_id: value })}
+                  onValueChange={(value) =>
+                    setPaymentForm({ ...paymentForm, cash_account_id: value })
+                  }
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="اختياري" />
+                    <SelectValue placeholder="اختر حساب الترحيل" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="none">بدون قيد محاسبي</SelectItem>
-                    {renderAccountItems(cashAccounts.length ? cashAccounts : assetAccounts)}
+                    {renderAccountItems(
+                      cashAccounts.length ? cashAccounts : assetAccounts
+                    )}
                   </SelectContent>
                 </Select>
               </div>
@@ -1718,22 +2211,43 @@ const MonthlyObligations = () => {
                 <Label>رقم مرجعي</Label>
                 <Input
                   value={paymentForm.reference_number}
-                  onChange={(event) => setPaymentForm({ ...paymentForm, reference_number: event.target.value })}
+                  onChange={(event) =>
+                    setPaymentForm({
+                      ...paymentForm,
+                      reference_number: event.target.value,
+                    })
+                  }
                 />
               </div>
               <div className="space-y-2">
                 <Label>ملاحظات</Label>
                 <Input
                   value={paymentForm.notes}
-                  onChange={(event) => setPaymentForm({ ...paymentForm, notes: event.target.value })}
+                  onChange={(event) =>
+                    setPaymentForm({
+                      ...paymentForm,
+                      notes: event.target.value,
+                    })
+                  }
                 />
               </div>
             </div>
             <div className="flex justify-end gap-2 pt-4">
-              <Button variant="outline" onClick={() => setPayingInstallment(null)}>
+              <Button
+                variant="outline"
+                onClick={() => setPayingInstallment(null)}
+              >
                 إلغاء
               </Button>
-              <Button onClick={handlePay} disabled={payInstallment.isPending}>
+              <Button
+                onClick={handlePay}
+                disabled={
+                  payInstallment.isPending ||
+                  !paymentForm.payment_date ||
+                  Number(paymentForm.amount || 0) <= 0 ||
+                  !cleanSelect(paymentForm.cash_account_id)
+                }
+              >
                 تسجيل السداد
               </Button>
             </div>

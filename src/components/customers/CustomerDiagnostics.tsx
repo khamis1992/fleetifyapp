@@ -31,21 +31,21 @@ export const CustomerDiagnostics: React.FC<CustomerDiagnosticsProps> = ({
 
   if (!open) return null;
 
-  const getStatusIcon = (status: boolean | null, error?: string | null) => {
+  const getStatusIcon = (status: boolean | null | undefined, error?: string | null) => {
     if (error) return <XCircle className="h-4 w-4 text-red-600" />;
     if (status === true) return <CheckCircle2 className="h-4 w-4 text-green-600" />;
     if (status === false) return <XCircle className="h-4 w-4 text-red-600" />;
     return <AlertCircle className="h-4 w-4 text-yellow-600" />;
   };
 
-  const getStatusText = (status: boolean | null, error?: string | null) => {
+  const getStatusText = (status: boolean | null | undefined, error?: string | null) => {
     if (error) return 'خطأ';
     if (status === true) return 'صحيح';
     if (status === false) return 'غير صحيح';
     return 'غير معروف';
   };
 
-  const getStatusVariant = (status: boolean | null, error?: string | null) => {
+  const getStatusVariant = (status: boolean | null | undefined, error?: string | null) => {
     if (error) return 'destructive';
     if (status === true) return 'default';
     if (status === false) return 'destructive';

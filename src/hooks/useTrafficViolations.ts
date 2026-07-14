@@ -26,6 +26,7 @@ export interface TrafficViolation {
     model: string;
     year?: number;
     registration_expiry?: string;
+    status?: string;
   };
   customers?: {
     first_name: string;
@@ -139,7 +140,8 @@ export function useTrafficViolations(options?: { limit?: number; offset?: number
               make,
               model,
               year,
-              registration_expiry
+              registration_expiry,
+              status
             ),
             customers (
               id,

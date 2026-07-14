@@ -119,7 +119,7 @@ export function AuditFilters({ filters, onFiltersChange, onReset }: AuditFilters
         <div className="space-y-2">
           <Label>{t("entityType")}</Label>
           <Select
-            value={localFilters.resource_type || ''}
+            value={Array.isArray(localFilters.resource_type) ? (localFilters.resource_type[0] || '') : (localFilters.resource_type || '')}
             onValueChange={(value) =>
               handleFilterChange('resource_type', value === 'all' ? undefined : value)
             }
@@ -142,7 +142,7 @@ export function AuditFilters({ filters, onFiltersChange, onReset }: AuditFilters
         <div className="space-y-2">
           <Label>{t("action")}</Label>
           <Select
-            value={localFilters.action || ''}
+            value={Array.isArray(localFilters.action) ? (localFilters.action[0] || '') : (localFilters.action || '')}
             onValueChange={(value) =>
               handleFilterChange('action', value === 'all' ? undefined : value)
             }

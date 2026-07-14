@@ -68,17 +68,22 @@ export const ScheduleFollowupModal: React.FC<ScheduleFollowupModalProps> = ({
       return;
     }
 
+    if (!user?.id) {
+      toast({ title: 'خطأ', description: 'تعذر التحقق من المستخدم', variant: 'destructive' });
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('id, company_id')
-        .eq('user_id', user?.id)
+        .eq('user_id', user.id)
         .single();
 
       if (profileError) throw profileError;
-      if (!profile || !selectedContract) throw new Error('Profile or contract not found');
+      if (!profile?.company_id || !selectedContract) throw new Error('Profile company or contract not found');
 
       const taskTypeMap: Record<TaskType, 'followup' | 'customer_visit' | 'payment_collection' | 'other'> = {
         call: 'followup',

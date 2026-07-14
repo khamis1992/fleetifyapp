@@ -88,10 +88,10 @@ export function SmartCSVUpload({
   const downloadErrorReport = () => {
     if (!lastResult?.errors?.length) return;
     const headers = ['row', 'message'];
-    const rows = lastResult.errors.map((e: any) => [e.row, e.message]);
+    const rows: unknown[][] = lastResult.errors.map((e: any) => [e.row, e.message]);
     const csv = [
       headers.join(','),
-      ...rows.map(arr => arr.map((v: any) => `"${String(v ?? '').replace(/"/g, '""')}"`).join(','))
+      ...rows.map((arr) => arr.map((value) => `"${String(value ?? '').replace(/"/g, '""')}"`).join(','))
     ].join('\n');
     const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
@@ -253,23 +253,21 @@ export function SmartCSVUpload({
       // إضافة timeout للعملية لمنع التعليق
       const uploadTimeout = setTimeout(() => {
         clearInterval(progressInterval);
-        if (setUploadProgress) {
-          toast.warning('العملية تستغرق وقتاً أطول من المتوقع، يرجى التحقق من النتائج');
-        }
+        toast.warning('العملية تستغرق وقتاً أطول من المتوقع، يرجى التحقق من النتائج');
       }, 30000); // 30 seconds timeout
 
       let result;
       try {
         result = await uploadFunction(dataToUpload, {
           upsert: enableUpsert,
-          targetCompanyId: companyId,
+          targetCompanyId: companyId ?? undefined,
           autoCreateCustomers: createMissingCustomers,
           autoCompleteDates,
           autoCompleteType,
           autoCompleteAmounts,
           dryRun: enableDryRun,
           archiveFile: archiveFile,
-          originalFile: file
+          originalFile: file ?? undefined
         });
       } catch (error) {
         console.error('❌ [UPLOAD] Upload function failed:', error);
@@ -326,9 +324,9 @@ export function SmartCSVUpload({
           toast.error('لم يتم رفع أي سجل. يرجى التحقق من تنسيق الملف.');
         }
       }
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Error uploading data:', error);
-      toast.error(`خطأ في رفع البيانات: ${error.message}`);
+      toast.error(`خطأ في رفع البيانات: ${error instanceof Error ? error.message : String(error)}`);
     } finally {
       setIsUploading(false);
       setUploadProgress(0);
@@ -340,7 +338,7 @@ export function SmartCSVUpload({
     setUploadProgress(0);
 
     try {
-      const normalized = editedRows.map((row, idx) => ({
+      const normalized: Record<string, unknown>[] = editedRows.map((row, idx) => ({
         ...normalizeCsvHeaders(row, entityType),
         rowNumber: row?.rowNumber ?? idx + 2,
       }));
@@ -379,14 +377,14 @@ export function SmartCSVUpload({
       try {
         result = await uploadFunction(dataToUpload, {
           upsert: enableUpsert,
-          targetCompanyId: companyId,
+          targetCompanyId: companyId ?? undefined,
           autoCreateCustomers: createMissingCustomers,
           autoCompleteDates,
           autoCompleteType,
           autoCompleteAmounts,
           dryRun: enableDryRun,
           archiveFile: archiveFile,
-          originalFile: file
+          originalFile: file ?? undefined
         });
       } catch (error) {
         console.error('❌ [TABLE] Upload failed:', error);
@@ -440,7 +438,7 @@ export function SmartCSVUpload({
       }
     } catch (error: unknown) {
       console.error('Error uploading data (table):', error);
-      toast.error(`خطأ في رفع البيانات: ${error.message}`);
+      toast.error(`خطأ في رفع البيانات: ${error instanceof Error ? error.message : String(error)}`);
     } finally {
       setIsUploading(false);
       setUploadProgress(0);

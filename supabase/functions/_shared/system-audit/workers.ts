@@ -830,10 +830,7 @@ async function auditContracts(
           const currentIsWrong =
             Boolean(schedule.invoice_id) &&
             assignment?.oldInvoiceId !== assignment?.newInvoiceId;
-          if (
-            currentIsWrong &&
-            assignment?.candidateInvoiceIds.length === 0
-          )
+          if (currentIsWrong && assignment?.candidateInvoiceIds.length === 0)
             return 0;
           if (currentIsWrong) return 1;
           if (
@@ -1514,6 +1511,20 @@ async function auditAccounting(
     );
   }
 
+  if (phase === "monthly_obligation_payments") {
+    return await auditMonthlyObligationPayments(
+      context,
+      String(cursor.lastId || "")
+    );
+  }
+
+  if (phase === "rental_receipt_payments") {
+    return await auditRentalReceiptPayments(
+      context,
+      String(cursor.lastId || "")
+    );
+  }
+
   if (phase === "traffic_violation_payments") {
     return await auditTrafficViolationPayments(
       context,
@@ -1692,6 +1703,15 @@ async function auditAccounting(
     bankTransactions,
     (transaction) => transaction.payment_id
   );
+  const { data: activeBanks, error: activeBanksError } = await context.supabase
+    .from("banks")
+    .select("id")
+    .eq("company_id", context.job.company_id)
+    .eq("is_active", true)
+    .limit(2);
+  if (activeBanksError) throw new Error(`banks: ${activeBanksError.message}`);
+  const singleActiveBankId =
+    activeBanks?.length === 1 ? String(activeBanks[0].id) : null;
   const findings: AuditFinding[] = [];
 
   for (const payment of page.rows) {
@@ -1732,22 +1752,43 @@ async function auditAccounting(
       isPendingBankReconciliation(payment)
     ) {
       if (!payment.bank_id) {
-        findings.push(
-          reviewFinding(
-            `payment:${payment.id}:reconciliation-missing-bank`,
-            "accounting.bank_payment_missing_bank_for_reconciliation",
-            "high",
-            "payment",
-            payment.id,
-            "Bank payment cannot be reconciled without a bank account",
-            "Select the verified receiving bank before matching this payment to a bank statement. The agent will not guess the bank.",
-            {
-              amount: roundMoney(payment.amount),
-              paymentDate: payment.payment_date,
-              paymentMethod: payment.payment_method,
-              hasJournal: Boolean(payment.journal_entry_id),
-            }
-          )
+        findings.push(singleActiveBankId
+          ? repairFinding({
+              dedupeKey: `payment:${payment.id}:assign-single-active-bank`,
+              code: "accounting.bank_payment_assigned_single_active_bank",
+              severity: "high",
+              entityType: "payment",
+              entityId: payment.id,
+              title: "Bank payment is missing the company's only active bank",
+              details:
+                "The payment can be assigned atomically because the company has exactly one active bank account.",
+              evidence: {
+                amount: roundMoney(payment.amount),
+                paymentDate: payment.payment_date,
+                paymentMethod: payment.payment_method,
+                hasJournal: Boolean(payment.journal_entry_id),
+                activeBankCount: 1,
+              },
+              command: "accounting.assign_single_active_bank",
+              expectedBefore: { bank_id: null },
+              values: { bank_id: singleActiveBankId },
+            })
+          : reviewFinding(
+              `payment:${payment.id}:reconciliation-missing-bank`,
+              "accounting.bank_payment_missing_bank_for_reconciliation",
+              "high",
+              "payment",
+              payment.id,
+              "Bank payment cannot be reconciled without a bank account",
+              "Select the verified receiving bank before matching this payment to a bank statement. The agent will not guess the bank.",
+              {
+                amount: roundMoney(payment.amount),
+                paymentDate: payment.payment_date,
+                paymentMethod: payment.payment_method,
+                hasJournal: Boolean(payment.journal_entry_id),
+                activeBankCount: activeBanks?.length || 0,
+              }
+            )
         );
         continue;
       }
@@ -1849,7 +1890,9 @@ async function auditTrafficViolationPayments(
     "id,company_id,traffic_violation_id,payment_number,payment_date,amount,payment_method,status,journal_entry_id",
     lastId
   );
-  const journalIds = page.rows.map((row) => row.journal_entry_id).filter(Boolean);
+  const journalIds = page.rows
+    .map((row) => row.journal_entry_id)
+    .filter(Boolean);
   const journals = await loadByIds(
     context,
     "journal_entries",
@@ -1937,14 +1980,20 @@ async function auditVehicleInstallmentPayments(
     "schedule_id",
     scheduleIds
   );
-  const paymentsBySchedule = groupBy(payments, (payment) => payment.schedule_id);
+  const paymentsBySchedule = groupBy(
+    payments,
+    (payment) => payment.schedule_id
+  );
   const journalIds = payments
-    .flatMap((payment) => [payment.journal_entry_id, payment.reversal_journal_entry_id])
+    .flatMap((payment) => [
+      payment.journal_entry_id,
+      payment.reversal_journal_entry_id,
+    ])
     .filter(Boolean);
   const journals = await loadByIds(
     context,
     "journal_entries",
-    "id,company_id,status,entry_date,reference_type,reference_id,reversal_entry_id",
+    "id,company_id,status,entry_date,reference_type,reference_id,reversal_entry_id,total_debit,total_credit",
     "id",
     journalIds
   );
@@ -2107,11 +2156,344 @@ async function auditUnreconciledBankTransactions(
     );
   }
 
+  if (page.hasMore) {
+    return pageResult(
+      page,
+      findings,
+      { phase: "bank_transactions", lastId: page.nextLastId },
+      { bankTransactionsScanned: page.rows.length }
+    );
+  }
+
+  return {
+    findings,
+    cursor: { phase: "monthly_obligation_payments", lastId: "" },
+    hasMore: true,
+    scanned: page.rows.length,
+    stats: { bankTransactionsScanned: page.rows.length },
+  };
+}
+
+async function auditMonthlyObligationPayments(
+  context: WorkerContext,
+  lastId: string
+): Promise<WorkerBatchResult> {
+  const page = await loadCompanyPage(
+    context,
+    "monthly_obligation_installments",
+    "id,company_id,obligation_id,amount,paid_amount,payment_ledger_baseline,status,payment_date,vendor_payment_id,bank_transaction_id,journal_entry_id",
+    lastId
+  );
+  const installmentIds = page.rows.map((row) => row.id);
+  const payments = await loadByIds(
+    context,
+    "monthly_obligation_payments",
+    "id,company_id,installment_id,amount,payment_date,bank_id,vendor_payment_id,bank_transaction_id,journal_entry_id,status,reversal_of_payment_id",
+    "installment_id",
+    installmentIds
+  );
+  const journalIds = payments.map((payment) => payment.journal_entry_id).filter(Boolean);
+  const bankTransactionIds = payments
+    .map((payment) => payment.bank_transaction_id)
+    .filter(Boolean);
+  const vendorPaymentIds = payments
+    .map((payment) => payment.vendor_payment_id)
+    .filter(Boolean);
+  const [journals, bankTransactions, vendorPayments] = await Promise.all([
+    loadByIds(
+      context,
+      "journal_entries",
+      "id,company_id,status,total_debit,total_credit,reversal_entry_id",
+      "id",
+      journalIds
+    ),
+    loadByIds(
+      context,
+      "bank_transactions",
+      "id,company_id,bank_id,amount,status,journal_entry_id,reversal_of_transaction_id",
+      "id",
+      bankTransactionIds
+    ),
+    loadByIds(
+      context,
+      "vendor_payments",
+      "id,company_id,amount,status,journal_entry_id",
+      "id",
+      vendorPaymentIds
+    ),
+  ]);
+  const paymentsByInstallment = groupBy(
+    payments,
+    (payment) => String(payment.installment_id || "")
+  );
+  const journalById = new Map(journals.map((journal) => [journal.id, journal]));
+  const bankTransactionById = new Map(
+    bankTransactions.map((transaction) => [transaction.id, transaction])
+  );
+  const vendorPaymentById = new Map(
+    vendorPayments.map((payment) => [payment.id, payment])
+  );
+  const findings: AuditFinding[] = [];
+
+  for (const installment of page.rows) {
+    const installmentPayments = paymentsByInstallment.get(String(installment.id)) || [];
+    const completedPayments = installmentPayments.filter(
+      (payment) => normalizeStatus(payment.status) === "completed"
+    );
+    const ledgerPaid = roundMoney(
+      Number(installment.payment_ledger_baseline || 0) +
+        completedPayments.reduce(
+          (sum, payment) => sum + Number(payment.amount || 0),
+          0
+        )
+    );
+    const latestPaymentDate = latestTimestamp(
+      completedPayments.map((payment) => payment.payment_date)
+    )?.slice(0, 10) || null;
+    const expectedStatus =
+      ledgerPaid >= Number(installment.amount || 0) - MONEY_SETTLEMENT_TOLERANCE
+        ? "paid"
+        : ledgerPaid > 0
+        ? "partial"
+        : null;
+
+    if (
+      expectedStatus &&
+      Number(installment.payment_ledger_baseline || 0) <= 0 &&
+      (moneyDiffers(installment.paid_amount, ledgerPaid) ||
+        normalizeStatus(installment.status) !== expectedStatus ||
+        (completedPayments.length > 0 &&
+          dateOnly(installment.payment_date) !== latestPaymentDate))
+    ) {
+      findings.push(
+        repairFinding({
+          dedupeKey: `monthly-obligation-installment:${installment.id}:payment-state`,
+          code: "accounting.monthly_obligation_payment_state_mismatch",
+          severity: "critical",
+          entityType: "monthly_obligation_installment",
+          entityId: String(installment.id),
+          title: "Monthly obligation installment payment state is stale",
+          details: "Stored payment state does not match the canonical payment ledger.",
+          evidence: { ledgerPaid, expectedStatus, latestPaymentDate },
+          command: "monthly_obligation.sync_payment_state",
+          expectedBefore: {
+            paid_amount: installment.paid_amount,
+            status: installment.status,
+            payment_date: installment.payment_date,
+          },
+          values: {},
+        })
+      );
+    }
+
+    if (Number(installment.payment_ledger_baseline || 0) > 0) {
+      findings.push(
+        reviewFinding(
+          `monthly-obligation-installment:${installment.id}:legacy-baseline`,
+          "accounting.monthly_obligation_legacy_payment_baseline",
+          "high",
+          "monthly_obligation_installment",
+          String(installment.id),
+          "Monthly obligation contains a legacy payment baseline",
+          "The historical source, cash account, and principal/interest split must be verified before it can become a canonical payment row.",
+          { baseline: roundMoney(installment.payment_ledger_baseline) }
+        )
+      );
+    }
+
+    for (const payment of completedPayments) {
+      const journal = journalById.get(payment.journal_entry_id);
+      if (
+        !journal ||
+        normalizeStatus(journal.status) !== "posted" ||
+        journal.reversal_entry_id ||
+        moneyDiffers(journal.total_debit, payment.amount) ||
+        moneyDiffers(journal.total_credit, payment.amount)
+      ) {
+        findings.push(
+          reviewFinding(
+            `monthly-obligation-payment:${payment.id}:journal`,
+            "accounting.monthly_obligation_payment_invalid_journal",
+            "critical",
+            "monthly_obligation_payment",
+            String(payment.id),
+            "Monthly obligation payment has no valid posted journal",
+            "The recorded cash account and source document must be verified before accounting reconstruction.",
+            { journalEntryId: payment.journal_entry_id, amount: payment.amount }
+          )
+        );
+      }
+
+      if (payment.bank_id) {
+        const transaction = bankTransactionById.get(payment.bank_transaction_id);
+        if (
+          !transaction ||
+          transaction.bank_id !== payment.bank_id ||
+          normalizeStatus(transaction.status) !== "completed" ||
+          transaction.reversal_of_transaction_id ||
+          transaction.journal_entry_id !== payment.journal_entry_id ||
+          moneyDiffers(transaction.amount, payment.amount)
+        ) {
+          findings.push(
+            reviewFinding(
+              `monthly-obligation-payment:${payment.id}:bank`,
+              "accounting.monthly_obligation_payment_invalid_bank_movement",
+              "critical",
+              "monthly_obligation_payment",
+              String(payment.id),
+              "Monthly obligation payment bank movement is missing or inconsistent",
+              "The bank movement must be reconciled with the payment and journal before repair.",
+              {
+                bankId: payment.bank_id,
+                bankTransactionId: payment.bank_transaction_id,
+              }
+            )
+          );
+        }
+      }
+
+      if (payment.vendor_payment_id) {
+        const vendorPayment = vendorPaymentById.get(payment.vendor_payment_id);
+        if (
+          !vendorPayment ||
+          normalizeStatus(vendorPayment.status) !== "completed" ||
+          vendorPayment.journal_entry_id !== payment.journal_entry_id ||
+          moneyDiffers(vendorPayment.amount, payment.amount)
+        ) {
+          findings.push(
+            reviewFinding(
+              `monthly-obligation-payment:${payment.id}:vendor`,
+              "accounting.monthly_obligation_payment_invalid_vendor_payment",
+              "critical",
+              "monthly_obligation_payment",
+              String(payment.id),
+              "Monthly obligation vendor payment is missing or inconsistent",
+              "Vendor payment facts must be verified before relinking or reconstruction.",
+              { vendorPaymentId: payment.vendor_payment_id }
+            )
+          );
+        }
+      }
+    }
+  }
+
+  if (page.hasMore) {
+    return pageResult(
+      page,
+      findings,
+      { phase: "monthly_obligation_payments", lastId: page.nextLastId },
+      { monthlyObligationInstallmentsScanned: page.rows.length }
+    );
+  }
+
+  return {
+    findings,
+    cursor: { phase: "rental_receipt_payments", lastId: "" },
+    hasMore: true,
+    scanned: page.rows.length,
+    stats: { monthlyObligationInstallmentsScanned: page.rows.length },
+  };
+}
+
+async function auditRentalReceiptPayments(
+  context: WorkerContext,
+  lastId: string
+): Promise<WorkerBatchResult> {
+  const page = await loadCompanyPage(
+    context,
+    "rental_payment_receipts",
+    "id,company_id,customer_id,contract_id,payment_date,amount_due,total_paid,pending_balance,payment_status,idempotency_key,canonical_payment_id",
+    lastId
+  );
+  const canonicalReceipts = page.rows.filter(
+    (receipt) => receipt.idempotency_key || receipt.canonical_payment_id
+  );
+  const payments = await loadByIds(
+    context,
+    "payments",
+    "id,company_id,customer_id,contract_id,payment_date,amount,payment_status,transaction_type",
+    "id",
+    canonicalReceipts.map((receipt) => receipt.canonical_payment_id).filter(Boolean)
+  );
+  const paymentById = new Map(payments.map((payment) => [payment.id, payment]));
+  const findings: AuditFinding[] = [];
+
+  for (const receipt of canonicalReceipts) {
+    const payment = paymentById.get(receipt.canonical_payment_id);
+    if (!payment) {
+      findings.push(
+        reviewFinding(
+          `rental-receipt:${receipt.id}:canonical-payment`,
+          "accounting.rental_receipt_missing_canonical_payment",
+          "critical",
+          "rental_payment_receipt",
+          String(receipt.id),
+          "Canonical rental receipt has no linked payment",
+          "The original cash or bank evidence must be verified before reconstructing a customer payment.",
+          { canonicalPaymentId: receipt.canonical_payment_id }
+        )
+      );
+      continue;
+    }
+
+    const paymentMatches =
+      payment.company_id === receipt.company_id &&
+      payment.customer_id === receipt.customer_id &&
+      payment.contract_id === receipt.contract_id &&
+      dateOnly(payment.payment_date) === dateOnly(receipt.payment_date) &&
+      !moneyDiffers(payment.amount, receipt.total_paid) &&
+      normalizeStatus(payment.payment_status) === "completed" &&
+      normalizeStatus(payment.transaction_type || "receipt") === "receipt";
+    if (!paymentMatches) {
+      findings.push(
+        reviewFinding(
+          `rental-receipt:${receipt.id}:payment-mismatch`,
+          "accounting.rental_receipt_canonical_payment_mismatch",
+          "critical",
+          "rental_payment_receipt",
+          String(receipt.id),
+          "Rental receipt and canonical payment disagree",
+          "Customer, contract, date, amount, and payment status require source-document review before relinking.",
+          { canonicalPaymentId: payment.id }
+        )
+      );
+      continue;
+    }
+
+    const expectedPending = roundMoney(
+      Math.max(Number(receipt.amount_due || 0) - Number(receipt.total_paid || 0), 0)
+    );
+    const expectedStatus = expectedPending <= MONEY_SETTLEMENT_TOLERANCE ? "paid" : "partial";
+    if (
+      moneyDiffers(receipt.pending_balance, expectedPending) ||
+      normalizeStatus(receipt.payment_status) !== expectedStatus
+    ) {
+      findings.push(
+        repairFinding({
+          dedupeKey: `rental-receipt:${receipt.id}:payment-state`,
+          code: "accounting.rental_receipt_payment_state_mismatch",
+          severity: "high",
+          entityType: "rental_payment_receipt",
+          entityId: String(receipt.id),
+          title: "Rental receipt payment state is stale",
+          details: "Receipt state does not match its amount due and canonical payment.",
+          evidence: { expectedPending, expectedStatus, canonicalPaymentId: payment.id },
+          command: "rental_receipt.sync_payment_state",
+          expectedBefore: {
+            pending_balance: receipt.pending_balance,
+            payment_status: receipt.payment_status,
+          },
+          values: {},
+        })
+      );
+    }
+  }
+
   return pageResult(
     page,
     findings,
-    { phase: "bank_transactions", lastId: page.nextLastId },
-    { bankTransactionsScanned: page.rows.length }
+    { phase: "rental_receipt_payments", lastId: page.nextLastId },
+    { rentalReceiptsScanned: page.rows.length }
   );
 }
 
@@ -2191,6 +2573,13 @@ async function auditFleet(context: WorkerContext): Promise<WorkerBatchResult> {
       const activeReferenceJournals = (
         maintenanceJournalsByReference.get(item.id) || []
       ).filter((journal) => normalizeStatus(journal.status) !== "reversed");
+      const verifiedReferenceJournals = activeReferenceJournals.filter(
+        (journal) =>
+          normalizeStatus(journal.status) === "posted" &&
+          !journal.reversal_entry_id &&
+          !moneyDiffers(journal.total_debit, amount) &&
+          !moneyDiffers(journal.total_credit, amount)
+      );
       if (activeReferenceJournals.length > 1) {
         findings.push(
           reviewFinding(
@@ -2203,7 +2592,9 @@ async function auditFleet(context: WorkerContext): Promise<WorkerBatchResult> {
             "Review and reverse duplicate maintenance journals before changing the maintenance link.",
             {
               amount,
-              journalEntryIds: activeReferenceJournals.map((journal) => journal.id),
+              journalEntryIds: activeReferenceJournals.map(
+                (journal) => journal.id
+              ),
             }
           )
         );
@@ -2212,22 +2603,44 @@ async function auditFleet(context: WorkerContext): Promise<WorkerBatchResult> {
 
       if (!item.journal_entry_id) {
         findings.push(
-          reviewFinding(
-            `maintenance:${item.id}:missing-journal`,
-            "fleet.completed_maintenance_missing_journal",
-            "critical",
-            "vehicle_maintenance",
-            item.id,
-            "Completed maintenance expense has no journal link",
-            activeReferenceJournals.length === 1
-              ? "One maintenance journal candidate exists and must be verified before relinking."
-              : "Post the verified actual cost through the canonical maintenance accounting gateway.",
-            {
-              amount,
-              paymentMethod: item.payment_method,
-              candidateJournalEntryId: activeReferenceJournals[0]?.id || null,
-            }
-          )
+          verifiedReferenceJournals.length === 1
+            ? repairFinding({
+                dedupeKey: `maintenance:${item.id}:verified-journal-link`,
+                code: "fleet.maintenance_verified_journal_unlinked",
+                severity: "critical",
+                entityType: "vehicle_maintenance",
+                entityId: item.id,
+                title: "Verified maintenance journal is not linked",
+                details:
+                  "Exactly one posted, balanced, amount-matched maintenance journal can be linked safely.",
+                evidence: {
+                  amount,
+                  journalEntryId: verifiedReferenceJournals[0].id,
+                },
+                command: "maintenance.sync_accounting_link",
+                expectedBefore: {
+                  journal_entry_id: null,
+                  expense_recorded: item.expense_recorded,
+                },
+                values: {
+                  journal_entry_id: verifiedReferenceJournals[0].id,
+                  expense_recorded: true,
+                },
+              })
+            : reviewFinding(
+                `maintenance:${item.id}:missing-journal`,
+                "fleet.completed_maintenance_missing_journal",
+                "critical",
+                "vehicle_maintenance",
+                item.id,
+                "Completed maintenance expense has no journal link",
+                "Post the verified actual cost through the canonical maintenance accounting gateway.",
+                {
+                  amount,
+                  paymentMethod: item.payment_method,
+                  verifiedCandidateCount: verifiedReferenceJournals.length,
+                }
+              )
         );
         continue;
       }
@@ -2260,16 +2673,26 @@ async function auditFleet(context: WorkerContext): Promise<WorkerBatchResult> {
         );
       } else if (!item.expense_recorded) {
         findings.push(
-          reviewFinding(
-            `maintenance:${item.id}:expense-flag`,
-            "fleet.maintenance_expense_flag_stale",
-            "high",
-            "vehicle_maintenance",
-            item.id,
-            "Maintenance journal exists but its expense flag is stale",
-            "Verify the journal reference before restoring the derived expense flag.",
-            { amount, journalEntryId: item.journal_entry_id }
-          )
+          repairFinding({
+            dedupeKey: `maintenance:${item.id}:expense-flag`,
+            code: "fleet.maintenance_expense_flag_stale",
+            severity: "high",
+            entityType: "vehicle_maintenance",
+            entityId: item.id,
+            title: "Maintenance journal exists but its expense flag is stale",
+            details:
+              "The linked posted journal matches the maintenance amount and reference.",
+            evidence: { amount, journalEntryId: item.journal_entry_id },
+            command: "maintenance.sync_accounting_link",
+            expectedBefore: {
+              journal_entry_id: item.journal_entry_id,
+              expense_recorded: item.expense_recorded,
+            },
+            values: {
+              journal_entry_id: item.journal_entry_id,
+              expense_recorded: true,
+            },
+          })
         );
       }
     }
@@ -2972,14 +3395,14 @@ async function auditPurchaseOrders(
       receiptIds
     ),
   ]);
-  const itemsByOrder = groupBy(items, (item) => String(item.purchase_order_id || ""));
-  const receiptsByOrder = groupBy(
-    receipts,
-    (receipt) => String(receipt.purchase_order_id || "")
+  const itemsByOrder = groupBy(items, (item) =>
+    String(item.purchase_order_id || "")
   );
-  const receiptItemsByReceipt = groupBy(
-    receiptItems,
-    (item) => String(item.goods_receipt_id || "")
+  const receiptsByOrder = groupBy(receipts, (receipt) =>
+    String(receipt.purchase_order_id || "")
+  );
+  const receiptItemsByReceipt = groupBy(receiptItems, (item) =>
+    String(item.goods_receipt_id || "")
   );
   const movementsByReceipt = groupBy(
     movements.filter(
@@ -3013,7 +3436,8 @@ async function auditPurchaseOrders(
           entityType: "purchase_order",
           entityId: String(order.id),
           title: "Purchase order totals do not match its items",
-          details: "The stored subtotal or total differs from the purchase-order item ledger.",
+          details:
+            "The stored subtotal or total differs from the purchase-order item ledger.",
           evidence: { calculatedSubtotal: subtotal, calculatedTotal: total },
           command: "purchase_order.sync_totals",
           expectedBefore: {
@@ -3031,7 +3455,8 @@ async function auditPurchaseOrders(
     const allReceived =
       orderItems.length > 0 &&
       orderItems.every(
-        (item) => Number(item.received_quantity || 0) >= Number(item.quantity || 0)
+        (item) =>
+          Number(item.received_quantity || 0) >= Number(item.quantity || 0)
       );
     const expectedStatus = allReceived
       ? "received"
@@ -3047,7 +3472,8 @@ async function auditPurchaseOrders(
           entityType: "purchase_order",
           entityId: String(order.id),
           title: "Purchase order receipt status is stale",
-          details: "The order status does not match its stored received quantities.",
+          details:
+            "The order status does not match its stored received quantities.",
           evidence: { expectedStatus, anyReceived, allReceived },
           command: "purchase_order.sync_receipt_status",
           expectedBefore: { status: order.status },
@@ -3072,12 +3498,13 @@ async function auditPurchaseOrders(
       );
     }
 
-    const completedReceipts = (receiptsByOrder.get(String(order.id)) || []).filter(
-      (receipt) => normalizeStatus(receipt.status) === "completed"
-    );
+    const completedReceipts = (
+      receiptsByOrder.get(String(order.id)) || []
+    ).filter((receipt) => normalizeStatus(receipt.status) === "completed");
     const completedReceiptQuantityByItem = new Map<string, number>();
     for (const receipt of completedReceipts) {
-      for (const receiptItem of receiptItemsByReceipt.get(String(receipt.id)) || []) {
+      for (const receiptItem of receiptItemsByReceipt.get(String(receipt.id)) ||
+        []) {
         const itemId = String(receiptItem.purchase_order_item_id || "");
         completedReceiptQuantityByItem.set(
           itemId,
@@ -3089,7 +3516,8 @@ async function auditPurchaseOrders(
       }
     }
     for (const item of orderItems) {
-      const receiptQuantity = completedReceiptQuantityByItem.get(String(item.id)) || 0;
+      const receiptQuantity =
+        completedReceiptQuantityByItem.get(String(item.id)) || 0;
       if (moneyDiffers(item.received_quantity, receiptQuantity)) {
         findings.push(
           reviewFinding(
@@ -3115,7 +3543,8 @@ async function auditPurchaseOrders(
       const receiptJournals = journalsByReceipt.get(String(receipt.id)) || [];
       const activePostedJournals = receiptJournals.filter(
         (journal) =>
-          normalizeStatus(journal.status) === "posted" && !journal.reversal_entry_id
+          normalizeStatus(journal.status) === "posted" &&
+          !journal.reversal_entry_id
       );
       const linkedJournal = activePostedJournals.find(
         (journal) => journal.id === receipt.journal_entry_id
@@ -3152,7 +3581,9 @@ async function auditPurchaseOrders(
             "The receipt must have exactly one linked, posted, balanced journal entry.",
             {
               journalEntryId: receipt.journal_entry_id,
-              activePostedJournalIds: activePostedJournals.map((journal) => journal.id),
+              activePostedJournalIds: activePostedJournals.map(
+                (journal) => journal.id
+              ),
             }
           )
         );
@@ -3215,7 +3646,7 @@ async function auditLegal(context: WorkerContext): Promise<WorkerBatchResult> {
   );
   const caseIds = page.rows.map((row) => row.id);
   const contractIds = page.rows.map((row) => row.contract_id).filter(Boolean);
-  const [contracts, payments] = await Promise.all([
+  const [contracts, payments, repaymentPlans] = await Promise.all([
     loadByIds(context, "contracts", "id,company_id,status", "id", contractIds),
     loadByIds(
       context,
@@ -3224,11 +3655,22 @@ async function auditLegal(context: WorkerContext): Promise<WorkerBatchResult> {
       "case_id",
       caseIds
     ),
+    loadByIds(
+      context,
+      "legal_repayment_plans",
+      "id,case_id,company_id,amount,due_date,status",
+      "case_id",
+      caseIds
+    ),
   ]);
   const contractById = new Map(
     contracts.map((contract) => [contract.id, contract])
   );
   const paymentsByCase = groupBy(payments, (payment) => payment.case_id);
+  const repaymentPlansByCase = groupBy(
+    repaymentPlans,
+    (plan) => plan.case_id
+  );
   const findings: AuditFinding[] = [];
 
   for (const legalCase of page.rows) {
@@ -3269,6 +3711,37 @@ async function auditLegal(context: WorkerContext): Promise<WorkerBatchResult> {
           "Legal evidence links must be verified before relinking.",
           { contractId: legalCase.contract_id }
         )
+      );
+    }
+    const contract = legalCase.contract_id
+      ? contractById.get(legalCase.contract_id)
+      : null;
+    if (
+      contract &&
+      ["open", "active", "pending", "on_hold", "under_review"].includes(
+        normalizeStatus(legalCase.case_status)
+      ) &&
+      normalizeStatus(contract.status) !== "under_legal_procedure"
+    ) {
+      findings.push(
+        repairFinding({
+          dedupeKey: `legal-contract:${contract.id}:state`,
+          code: "legal.contract_state_mismatch",
+          severity: "critical",
+          entityType: "contract",
+          entityId: contract.id,
+          title: "Open legal case is not reflected on its contract",
+          details: "The contract status must reflect its non-terminal legal case.",
+          evidence: {
+            caseId: legalCase.id,
+            caseNumber: legalCase.case_number,
+            caseStatus: legalCase.case_status,
+            contractStatus: contract.status,
+          },
+          command: "legal.sync_contract_state",
+          expectedBefore: { status: contract.status },
+          values: { status: "under_legal_procedure" },
+        })
       );
     }
     if (
@@ -3313,6 +3786,55 @@ async function auditLegal(context: WorkerContext): Promise<WorkerBatchResult> {
           )
         );
       }
+    }
+    const completedPaymentCounts = new Map<string, number>();
+    for (const payment of paymentsByCase.get(legalCase.id) || []) {
+      if (!isCompletedPayment(payment.payment_status)) continue;
+      const amountKey = roundMoney(payment.amount).toFixed(2);
+      completedPaymentCounts.set(
+        amountKey,
+        (completedPaymentCounts.get(amountKey) || 0) + 1
+      );
+    }
+    const paidPlans = (repaymentPlansByCase.get(legalCase.id) || [])
+      .filter((plan) => normalizeStatus(plan.status) === "paid")
+      .sort(
+        (left, right) =>
+          String(left.due_date || "").localeCompare(String(right.due_date || "")) ||
+          String(left.id).localeCompare(String(right.id))
+      );
+    for (const plan of paidPlans) {
+      const amountKey = roundMoney(plan.amount).toFixed(2);
+      const availableEvidence = completedPaymentCounts.get(amountKey) || 0;
+      if (availableEvidence > 0) {
+        completedPaymentCounts.set(amountKey, availableEvidence - 1);
+        continue;
+      }
+      findings.push(
+        repairFinding({
+          dedupeKey: `legal-repayment:${plan.id}:unsupported-paid`,
+          code: "legal.repayment_paid_without_payment",
+          severity: "critical",
+          entityType: "legal_repayment_plan",
+          entityId: plan.id,
+          title: "Repayment installment is paid without payment evidence",
+          details:
+            "No completed legal payment with the same case and amount supports this paid status.",
+          evidence: {
+            caseId: legalCase.id,
+            amount: roundMoney(plan.amount),
+            dueDate: plan.due_date,
+          },
+          command: "legal.reset_unsupported_repayment",
+          expectedBefore: { status: plan.status },
+          values: {
+            status:
+              String(plan.due_date || "") < context.now.toISOString().slice(0, 10)
+                ? "overdue"
+                : "pending",
+          },
+        })
+      );
     }
   }
 
@@ -3934,8 +4456,7 @@ function isActiveInvoice(invoice: Row): boolean {
 
 function isActiveJournal(journal: Row): boolean {
   return (
-    normalizeStatus(journal.status) !== "reversed" &&
-    !journal.reversal_entry_id
+    normalizeStatus(journal.status) !== "reversed" && !journal.reversal_entry_id
   );
 }
 

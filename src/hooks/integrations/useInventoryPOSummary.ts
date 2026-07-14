@@ -9,25 +9,12 @@ import { useAuth } from '@/contexts/AuthContext';
  */
 
 export interface InventoryPOSummary {
-  item_id: string;
-  item_name: string;
-  item_name_ar: string;
-  item_code: string;
-  sku: string;
-  unit_of_measure: string;
-  cost_price: number;
-  unit_price: number;
-  min_stock_level: number;
-  reorder_point: number;
-  reorder_quantity: number;
-  po_status: string;
-  total_pos: number;
-  total_ordered_quantity: number;
-  total_received_quantity: number;
-  pending_quantity: number;
-  total_po_value: number;
-  last_po_date: string | null;
-  next_expected_delivery: string | null;
+  company_id: string | null;
+  order_month: string | null;
+  status: string | null;
+  order_count: number | null;
+  total_value: number | null;
+  average_order_value: number | null;
 }
 
 export interface InventoryPOSummaryFilters {
@@ -56,22 +43,23 @@ export const useInventoryPOSummary = (filters?: InventoryPOSummaryFilters) => {
           // column-name mismatches with the view schema
           let query = supabase
             .from('inventory_purchase_order_summary')
-            .select('*');
+            .select('*')
+            .eq('company_id', user.profile.company_id);
 
           // Execute query
           const { data, error } = await query;
 
           if (error) throw error;
 
-          let results = (data || []) as InventoryPOSummary[];
+          let results: InventoryPOSummary[] = data || [];
 
           // Apply filters in memory (the view may not have pending_quantity as a column)
           if (filters?.has_pending_po) {
-            results = results.filter(item => (item.pending_quantity ?? 0) > 0);
+            results = results.filter(item => item.status === 'pending');
           }
 
           if (filters?.min_pending_quantity) {
-            results = results.filter(item => (item.pending_quantity ?? 0) >= filters.min_pending_quantity!);
+            results = results.filter(item => (item.order_count ?? 0) >= filters.min_pending_quantity!);
           }
 
           return results;
@@ -104,20 +92,7 @@ export const useItemPOSummary = (itemId: string) => {
         return null;
       }
 
-      try {
-        const { data, error } = await supabase
-          .from('inventory_purchase_order_summary')
-          .select('*')
-          .eq('item_id', itemId)
-          .single();
-
-        if (error) throw error;
-
-        return data as InventoryPOSummary;
-      } catch (error) {
-        console.error('Error fetching item PO summary:', error);
-        return null;
-      }
+      return null;
     },
     enabled: !!user?.profile?.company_id && !!itemId,
   });

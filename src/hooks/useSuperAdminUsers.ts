@@ -61,6 +61,16 @@ export interface ResetPasswordData {
   new_password: string;
 }
 
+const optionalString = (value: string | null | undefined): string | undefined => value ?? undefined;
+
+const normalizeCompany = (company: { id: string; name: string; name_ar: string | null } | null): Company | undefined =>
+  company
+    ? { id: company.id, name: company.name, name_ar: optionalString(company.name_ar) }
+    : undefined;
+
+const getErrorMessage = (error: unknown): string =>
+  error instanceof Error ? error.message : String(error);
+
 export const useSuperAdminUsers = () => {
   const [users, setUsers] = useState<SuperAdminUser[]>([]);
   const [companies, setCompanies] = useState<Company[]>([]);
@@ -147,12 +157,12 @@ export const useSuperAdminUsers = () => {
           created_at: profile.created_at,
           profiles: {
             id: profile.user_id,
-            first_name: profile.first_name,
-            last_name: profile.last_name,
-            first_name_ar: profile.first_name_ar,
-            last_name_ar: profile.last_name_ar,
-            company_id: profile.company_id,
-            companies: profile.companies
+            first_name: optionalString(profile.first_name),
+            last_name: optionalString(profile.last_name),
+            first_name_ar: optionalString(profile.first_name_ar),
+            last_name_ar: optionalString(profile.last_name_ar),
+            company_id: optionalString(profile.company_id),
+            companies: normalizeCompany(profile.companies)
           },
           user_roles: userRoles.map(role => ({
             id: role.id,
@@ -177,12 +187,12 @@ export const useSuperAdminUsers = () => {
             })),
             // Add orphaned user info
             orphaned_employee: {
-              first_name: employee.first_name,
-              last_name: employee.last_name,
-              first_name_ar: employee.first_name_ar,
-              last_name_ar: employee.last_name_ar,
-              company_id: employee.company_id,
-              companies: employee.companies
+              first_name: optionalString(employee.first_name),
+              last_name: optionalString(employee.last_name),
+              first_name_ar: optionalString(employee.first_name_ar),
+              last_name_ar: optionalString(employee.last_name_ar),
+              company_id: optionalString(employee.company_id),
+              companies: normalizeCompany(employee.companies)
             }
           });
         }
@@ -209,7 +219,11 @@ export const useSuperAdminUsers = () => {
         .order('name');
 
       if (error) throw error;
-      setCompanies(data || []);
+      setCompanies((data || []).map(company => ({
+        id: company.id,
+        name: company.name,
+        name_ar: optionalString(company.name_ar),
+      })));
     } catch (error) {
       console.error('Error fetching companies:', error);
       toast({
@@ -516,7 +530,7 @@ export const useSuperAdminUsers = () => {
       console.error('Error details:', error);
       
       // Show user-friendly error message
-      const errorMessage = error.message || "An unexpected error occurred while creating the user. Please try again.";
+      const errorMessage = getErrorMessage(error) || "An unexpected error occurred while creating the user. Please try again.";
       
       toast({
         title: "Error Creating User",
@@ -654,11 +668,12 @@ export const useSuperAdminUsers = () => {
       }
       
       let errorMessage = 'فشل في تغيير كلمة المرور';
-      if (error.message?.includes('6 characters')) {
+      const message = getErrorMessage(error);
+      if (message.includes('6 characters')) {
         errorMessage = 'كلمة المرور يجب أن تكون 6 أحرف على الأقل';
-      } else if (error.message?.includes('permissions')) {
+      } else if (message.includes('permissions')) {
         errorMessage = 'ليس لديك صلاحية لتغيير كلمة المرور';
-      } else if (error.message?.includes('not found')) {
+      } else if (message.includes('not found')) {
         errorMessage = 'المستخدم غير موجود';
       }
       

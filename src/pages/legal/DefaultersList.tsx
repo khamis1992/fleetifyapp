@@ -35,6 +35,8 @@ export const DefaultersList: React.FC = () => {
   const { data: lateCustomers, isLoading, error } = useLatePaymentCustomers();
   const autoCreateCases = useAutoCreateLegalCases();
   const [selectedCustomers, setSelectedCustomers] = useState<string[]>([]);
+  const getRowId = (customer: { contract_id?: string; customer_id: string }) =>
+    customer.contract_id || customer.customer_id;
 
   const handleSelectCustomer = (customerId: string) => {
     setSelectedCustomers(prev => 
@@ -48,7 +50,7 @@ export const DefaultersList: React.FC = () => {
     if (selectedCustomers.length === lateCustomers?.length) {
       setSelectedCustomers([]);
     } else {
-      setSelectedCustomers(lateCustomers?.map(c => c.customer_id) || []);
+      setSelectedCustomers(lateCustomers?.map(getRowId) || []);
     }
   };
 
@@ -56,7 +58,7 @@ export const DefaultersList: React.FC = () => {
     if (!lateCustomers) return;
     
     const selectedCustomerData = lateCustomers.filter(c => 
-      selectedCustomers.includes(c.customer_id)
+      selectedCustomers.includes(getRowId(c))
     );
     
     await autoCreateCases.mutateAsync(selectedCustomerData);
@@ -117,9 +119,7 @@ export const DefaultersList: React.FC = () => {
                   <div className="flex items-center gap-2">
                     <CardTitle className="text-2xl text-slate-900">قائمة المتأخرين عن الدفع</CardTitle>
                     <HelpIcon
-                      title={financialHelpContent.defaultersList.title}
-                      content={financialHelpContent.defaultersList.content}
-                      examples={financialHelpContent.defaultersList.examples}
+                      topic="defaultersList"
                       size="md"
                     />
                   </div>
@@ -232,16 +232,18 @@ export const DefaultersList: React.FC = () => {
               </TableHeader>
               <TableBody>
                 {lateCustomers && lateCustomers.length > 0 ? (
-                  lateCustomers.map((customer) => (
+                  lateCustomers.map((customer) => {
+                    const rowId = getRowId(customer);
+                    return (
                     <TableRow 
-                      key={customer.customer_id}
-                      className={selectedCustomers.includes(customer.customer_id) ? 'bg-muted/50' : ''}
+                      key={rowId}
+                      className={selectedCustomers.includes(rowId) ? 'bg-muted/50' : ''}
                     >
                       <TableCell>
                         <input
                           type="checkbox"
-                          checked={selectedCustomers.includes(customer.customer_id)}
-                          onChange={() => handleSelectCustomer(customer.customer_id)}
+                          checked={selectedCustomers.includes(rowId)}
+                          onChange={() => handleSelectCustomer(rowId)}
                           className="rounded border-slate-300"
                         />
                       </TableCell>
@@ -294,7 +296,8 @@ export const DefaultersList: React.FC = () => {
                         </div>
                       </TableCell>
                     </TableRow>
-                  ))
+                    );
+                  })
                 ) : (
                   <TableRow>
                     <TableCell colSpan={11} className="text-center py-8 text-muted-foreground">

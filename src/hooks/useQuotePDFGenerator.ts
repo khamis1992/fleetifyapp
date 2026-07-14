@@ -2,7 +2,6 @@ import { useState } from 'react';
 import jsPDF from 'jspdf';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import type { SalesQuote } from '@/hooks/useSalesQuotes';
 import { formatCurrency } from '@/lib/utils';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
@@ -24,7 +23,7 @@ export const useQuotePDFGenerator = () => {
         .from('sales_quotes')
         .select(`
           *,
-          company:companies(id, name_ar, name_en, address, phone, email, logo_url, commercial_reg_no),
+          company:companies(id, name, name_ar, address, phone, email, logo_url, commercial_register),
           customer:customers(id, first_name, last_name, company_name, phone, email, address),
           opportunity:sales_opportunities(id, opportunity_name, opportunity_name_ar)
         `)
@@ -51,7 +50,7 @@ export const useQuotePDFGenerator = () => {
       // Header - Company Info
       pdf.setFontSize(20);
       pdf.setTextColor(41, 128, 185);
-      const companyName = quote.company?.name_ar || quote.company?.name_en || 'شركة العراف لتأجير السيارات';
+      const companyName = quote.company?.name_ar || quote.company?.name || 'شركة العراف لتأجير السيارات';
       pdf.text(companyName, pageWidth / 2, yPos, { align: 'center' });
       yPos += 10;
 
@@ -69,8 +68,8 @@ export const useQuotePDFGenerator = () => {
         pdf.text(`Email: ${quote.company.email}`, pageWidth / 2, yPos, { align: 'center' });
         yPos += 5;
       }
-      if (quote.company?.commercial_reg_no) {
-        pdf.text(`CR: ${quote.company.commercial_reg_no}`, pageWidth / 2, yPos, { align: 'center' });
+      if (quote.company?.commercial_register) {
+        pdf.text(`CR: ${quote.company.commercial_register}`, pageWidth / 2, yPos, { align: 'center' });
         yPos += 10;
       }
 
@@ -89,8 +88,9 @@ export const useQuotePDFGenerator = () => {
       pdf.setTextColor(0, 0, 0);
       
       // Left column
+      const quoteDate = quote.created_at ? new Date(quote.created_at) : new Date();
       pdf.text(`Quote Number: ${quote.quote_number}`, 20, yPos + 7);
-      pdf.text(`Date: ${format(new Date(quote.created_at), 'dd/MM/yyyy', { locale: ar })}`, 20, yPos + 14);
+      pdf.text(`Date: ${format(quoteDate, 'dd/MM/yyyy', { locale: ar })}`, 20, yPos + 14);
       if (quote.valid_until) {
         pdf.text(`Valid Until: ${format(new Date(quote.valid_until), 'dd/MM/yyyy', { locale: ar })}`, 20, yPos + 21);
       }
@@ -98,7 +98,7 @@ export const useQuotePDFGenerator = () => {
       // Right column
       const rightX = pageWidth - 20;
       pdf.text(`رقم العرض: ${quote.quote_number}`, rightX, yPos + 7, { align: 'right' });
-      pdf.text(`التاريخ: ${format(new Date(quote.created_at), 'dd/MM/yyyy', { locale: ar })}`, rightX, yPos + 14, { align: 'right' });
+      pdf.text(`التاريخ: ${format(quoteDate, 'dd/MM/yyyy', { locale: ar })}`, rightX, yPos + 14, { align: 'right' });
       if (quote.valid_until) {
         pdf.text(`صالح حتى: ${format(new Date(quote.valid_until), 'dd/MM/yyyy', { locale: ar })}`, rightX, yPos + 21, { align: 'right' });
       }
@@ -160,7 +160,7 @@ export const useQuotePDFGenerator = () => {
 
       // Table Rows
       pdf.setTextColor(0, 0, 0);
-      const items = quote.items || [];
+      const items = Array.isArray(quote.items) ? quote.items : [];
       
       items.forEach((item: any, index: number) => {
         if (yPos > pageHeight - 60) {

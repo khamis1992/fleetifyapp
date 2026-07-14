@@ -7,7 +7,7 @@ import { useFleetifyTranslation } from "@/hooks/useTranslation";
 export default function Careers() {
   const { t } = useFleetifyTranslation("ui");
   const currentYear = new Date().getFullYear();
-  const [selectedJob, setSelectedJob] = useState<string | null>(null);
+  const [selectedJob, setSelectedJob] = useState<number | null>(null);
 
   const benefits = [
     { icon: DollarSign, title: 'راتب تنافسي', description: 'رواتب جذابة تتناسب مع الخبرة والمهارات' },

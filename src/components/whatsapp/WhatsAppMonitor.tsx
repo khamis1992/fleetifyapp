@@ -37,6 +37,11 @@ interface WhatsAppStats {
   last_updated: string;
 }
 
+type LegacyWhatsAppStatsResult = {
+  data: WhatsAppStats | null;
+  error: { message: string } | null;
+};
+
 export const WhatsAppMonitor: React.FC = () => {
   const [testPhone, setTestPhone] = useState('');
   const [testMessage, setTestMessage] = useState('رسالة تجريبية من نظام التنبيهات ✅');
@@ -46,9 +51,13 @@ export const WhatsAppMonitor: React.FC = () => {
   const { data: stats, isLoading: statsLoading, refetch: refetchStats } = useQuery({
     queryKey: ['whatsapp-stats'],
     queryFn: async () => {
-      const { data, error } = await supabase.rpc('get_whatsapp_stats');
+      // This legacy RPC exists in the database migration but is missing from generated types.
+      const legacyStatsRpc = supabase.rpc as unknown as (
+        functionName: 'get_whatsapp_stats'
+      ) => PromiseLike<LegacyWhatsAppStatsResult>;
+      const { data, error } = await legacyStatsRpc('get_whatsapp_stats');
       if (error) throw error;
-      return data as WhatsAppStats;
+      return data;
     },
     refetchInterval: 30000, // Refresh every 30 seconds
   });

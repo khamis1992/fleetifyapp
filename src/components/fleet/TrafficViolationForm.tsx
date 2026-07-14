@@ -218,8 +218,8 @@ export function TrafficViolationForm({ onSuccess, vehicleId, violation }: Traffi
           location: data.location,
           vehicle_plate: data.vehicle_plate,
           vehicle_id: selectedVehicleId || violation.vehicle_id,
-          customer_id: data.customer_id || null,
-          contract_id: data.contract_id || null,
+          customer_id: data.customer_id || undefined,
+          contract_id: data.contract_id || undefined,
           reason: data.reason,
           notes: data.notes,
           status: data.status
@@ -237,8 +237,8 @@ export function TrafficViolationForm({ onSuccess, vehicleId, violation }: Traffi
           location: data.location,
           vehicle_plate: data.vehicle_plate,
           vehicle_id: selectedVehicleId,
-          customer_id: data.customer_id || null,
-          contract_id: data.contract_id || null,
+          customer_id: data.customer_id || undefined,
+          contract_id: data.contract_id || undefined,
           reason: data.reason,
           notes: data.notes,
           status: data.status

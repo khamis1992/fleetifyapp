@@ -27,6 +27,8 @@ import {
 import { UserRole } from '@/types/permissions';
 import PermissionsMatrix from './PermissionsMatrix';
 
+type PermissionOverrideValue = boolean | null;
+
 interface UserPermissionsDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -81,6 +83,7 @@ export default function UserPermissionsDialog({
       newRoles: UserRole[];
       reason: string;
     }) => {
+      if (!user?.id) throw new Error('User identity is required');
       // Remove existing roles
       await supabase
         .from('user_roles')
@@ -105,7 +108,7 @@ export default function UserPermissionsDialog({
       await supabase.rpc('log_user_account_action', {
         employee_id_param: employeeId,
         action_type_param: 'roles_updated',
-        performed_by_param: user?.id,
+        performed_by_param: user.id,
         details_param: {
           new_roles: newRoles,
           reason: reason
@@ -124,7 +127,7 @@ export default function UserPermissionsDialog({
       toast({
         variant: "destructive",
         title: "خطأ في تحديث الأدوار",
-        description: error.message
+        description: error instanceof Error ? error.message : 'تعذر تحديث الأدوار'
       });
     }
   });
@@ -141,6 +144,7 @@ export default function UserPermissionsDialog({
       requestedRoles: UserRole[];
       reason: string;
     }) => {
+      if (!user?.id) throw new Error('User identity is required');
       // Get company_id first
       const { data: employeeData } = await supabase
         .from('employees')
@@ -155,7 +159,7 @@ export default function UserPermissionsDialog({
         .insert({
           company_id: employeeData.company_id,
           employee_id: employeeId,
-          requested_by: user?.id,
+          requested_by: user.id,
           request_type: 'role_change',
           current_roles: currentRoles as string[],
           requested_roles: requestedRoles as string[],
@@ -179,7 +183,7 @@ export default function UserPermissionsDialog({
       toast({
         variant: "destructive",
         title: "خطأ في إرسال الطلب",
-        description: error.message
+        description: error instanceof Error ? error.message : 'تعذر إرسال الطلب'
       });
     }
   });
@@ -192,8 +196,8 @@ export default function UserPermissionsDialog({
     }
   };
 
-  const handlePermissionChange = (permission: string, granted: boolean) => {
-    if (granted) {
+  const handlePermissionChange = (permission: string, granted: PermissionOverrideValue) => {
+    if (granted === true) {
       setCustomPermissions(prev => [...prev, permission]);
     } else {
       setCustomPermissions(prev => prev.filter(p => p !== permission));

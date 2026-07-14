@@ -204,19 +204,19 @@ export const PropertyTable: React.FC<PropertyTableProps> = ({
                       <NumberDisplay value={property.area_sqm} className="inline" />م²
                     </div>
                   )}
-                  {property.bedrooms !== null && (
+                  {property.bedrooms != null && (
                     <div className="flex items-center gap-1">
                       <Bed className="h-3 w-3" />
                       <NumberDisplay value={property.bedrooms} className="inline" />
                     </div>
                   )}
-                  {property.bathrooms !== null && (
+                  {property.bathrooms != null && (
                     <div className="flex items-center gap-1">
                       <Bath className="h-3 w-3" />
                       <NumberDisplay value={property.bathrooms} className="inline" />
                     </div>
                   )}
-                  {property.parking_spaces !== null && property.parking_spaces > 0 && (
+                  {property.parking_spaces != null && property.parking_spaces > 0 && (
                     <div className="flex items-center gap-1">
                       <Car className="h-3 w-3" />
                       <NumberDisplay value={property.parking_spaces} className="inline" />

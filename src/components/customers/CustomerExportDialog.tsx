@@ -6,7 +6,8 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { Customer, CustomerFilters } from '@/types/customer';
+import type { Database } from '@/integrations/supabase/types';
+import { CustomerFilters } from '@/types/customer';
 import { toast } from 'sonner';
 import {
   Dialog,
@@ -41,6 +42,8 @@ interface CustomerExportDialogProps {
   filters: CustomerFilters;
 }
 
+type ExportCustomer = Database['public']['Tables']['customers']['Row'];
+
 // ===== التحقق من صحة رقم الهوية (11 رقم) =====
 const isValidNationalId = (nationalId: string | null | undefined): boolean => {
   if (!nationalId) return false;
@@ -59,7 +62,7 @@ const isValidPhone = (phone: string | null | undefined): boolean => {
 };
 
 // ===== تحديد المعلومات الناقصة للعميل =====
-const getMissingFields = (customer: Customer): string[] => {
+const getMissingFields = (customer: ExportCustomer): string[] => {
   const missing: string[] = [];
   
   if (customer.customer_type === 'individual') {
@@ -78,7 +81,7 @@ const getMissingFields = (customer: Customer): string[] => {
 };
 
 // ===== تحديد الحقول ذات الأخطاء =====
-const getInvalidFields = (customer: Customer): string[] => {
+const getInvalidFields = (customer: ExportCustomer): string[] => {
   const invalid: string[] = [];
   
   if (customer.national_id && !isValidNationalId(customer.national_id)) {
@@ -165,7 +168,7 @@ const CustomerExportDialog: React.FC<CustomerExportDialogProps> = ({
         query = query.eq('is_active', true);
       }
 
-      if (filters.customer_type && filters.customer_type !== 'all') {
+      if (filters.customer_type) {
         query = query.eq('customer_type', filters.customer_type);
       }
 
@@ -239,7 +242,7 @@ const CustomerExportDialog: React.FC<CustomerExportDialogProps> = ({
       const { data: violations } = await supabase
         .from('traffic_violations')
         .select(`
-          amount,
+          total_amount,
           violation_date,
           violation_type,
           status,
@@ -288,7 +291,7 @@ const CustomerExportDialog: React.FC<CustomerExportDialogProps> = ({
   };
 
   const exportToCSV = async (
-    customers: Customer[],
+    customers: ExportCustomer[],
     contractsMap: Map<string, any[]>,
     violationsMap: Map<string, any[]>
   ) => {
@@ -316,7 +319,7 @@ const CustomerExportDialog: React.FC<CustomerExportDialogProps> = ({
 
       const contracts = contractsMap.get(customer.id) || [];
       const customerViolations = violationsMap.get(customer.id) || [];
-      const totalViolationsAmount = customerViolations.reduce((sum, v) => sum + (v.amount || 0), 0);
+      const totalViolationsAmount = customerViolations.reduce((sum, v) => sum + (v.total_amount || 0), 0);
       
       const missingFields = getMissingFields(customer);
       const invalidFields = getInvalidFields(customer);
@@ -330,7 +333,7 @@ const CustomerExportDialog: React.FC<CustomerExportDialogProps> = ({
         customer.national_id || '',
         customer.address || '',
         customer.is_active ? 'نشط' : 'غير نشط',
-        customer.is_vip ? 'نعم' : 'لا',
+        'لا',
         contracts.length.toString(),
         customerViolations.length.toString(),
         totalViolationsAmount.toString(),
@@ -356,7 +359,7 @@ const CustomerExportDialog: React.FC<CustomerExportDialogProps> = ({
   };
 
   const exportToExcel = async (
-    customers: Customer[],
+    customers: ExportCustomer[],
     contractsMap: Map<string, any[]>,
     violationsMap: Map<string, any[]>
   ) => {
@@ -408,7 +411,7 @@ const CustomerExportDialog: React.FC<CustomerExportDialogProps> = ({
 
       const contracts = contractsMap.get(customer.id) || [];
       const customerViolations = violationsMap.get(customer.id) || [];
-      const totalViolationsAmount = customerViolations.reduce((sum, v) => sum + (v.amount || 0), 0);
+      const totalViolationsAmount = customerViolations.reduce((sum, v) => sum + (v.total_amount || 0), 0);
       
       const missingFields = getMissingFields(customer);
       const invalidFields = getInvalidFields(customer);
@@ -427,7 +430,7 @@ const CustomerExportDialog: React.FC<CustomerExportDialogProps> = ({
         national_id: customer.national_id || '',
         address: customer.address || '',
         status: customer.is_active ? 'نشط' : 'غير نشط',
-        vip: customer.is_vip ? 'نعم' : 'لا',
+        vip: 'لا',
         active_contracts: contracts.length,
         violations_count: customerViolations.length,
         violations_total: totalViolationsAmount,
@@ -552,7 +555,7 @@ const CustomerExportDialog: React.FC<CustomerExportDialogProps> = ({
   };
 
   const exportToHTML = async (
-    customers: Customer[],
+    customers: ExportCustomer[],
     contractsMap: Map<string, any[]>,
     violationsMap: Map<string, any[]>
   ) => {
@@ -578,7 +581,7 @@ const CustomerExportDialog: React.FC<CustomerExportDialogProps> = ({
 
       const contracts = contractsMap.get(customer.id) || [];
       const customerViolations = violationsMap.get(customer.id) || [];
-      const totalViolationsAmount = customerViolations.reduce((sum, v) => sum + (v.amount || 0), 0);
+      const totalViolationsAmount = customerViolations.reduce((sum, v) => sum + (v.total_amount || 0), 0);
       
       const missingFields = getMissingFields(customer);
       const invalidFields = getInvalidFields(customer);

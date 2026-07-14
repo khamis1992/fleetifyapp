@@ -2,23 +2,18 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import type { Database } from '@/integrations/supabase/types';
 
-export interface InventoryCategory {
-  id: string;
-  company_id: string;
-  category_name: string;
-  category_name_ar?: string;
-  description?: string;
-  parent_category_id?: string;
-  is_active: boolean;
-  created_at: string;
-  updated_at: string;
-  created_by?: string;
+type InventoryCategoryRow = Database['public']['Tables']['inventory_categories']['Row'];
+type InventoryCategoryInsert = Omit<Database['public']['Tables']['inventory_categories']['Insert'], 'company_id' | 'created_by'>;
+type InventoryCategoryUpdate = Database['public']['Tables']['inventory_categories']['Update'];
+
+export interface InventoryCategory extends InventoryCategoryRow {
   // Joined data for hierarchical display
   parent_category?: {
     category_name: string;
-    category_name_ar?: string;
-  };
+    category_name_ar: string | null;
+  } | null;
   // Calculated fields
   item_count?: number;
   subcategory_count?: number;
@@ -221,7 +216,7 @@ export const useCreateInventoryCategory = () => {
 
   return useMutation({
     mutationFn: async (
-      categoryData: Omit<InventoryCategory, 'id' | 'created_at' | 'updated_at' | 'company_id'>
+      categoryData: InventoryCategoryInsert
     ) => {
       if (!user?.profile?.company_id) {
         throw new Error('Company ID is required');
@@ -269,14 +264,17 @@ export const useCreateInventoryCategory = () => {
  */
 export const useUpdateInventoryCategory = () => {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: async ({ id, data }: { id: string; data: Partial<InventoryCategory> }) => {
+    mutationFn: async ({ id, data }: { id: string; data: InventoryCategoryUpdate }) => {
+      if (!user?.profile?.company_id) throw new Error('Company ID is required');
       const { data: result, error } = await supabase
         .from('inventory_categories')
         .update(data)
         .eq('id', id)
+        .eq('company_id', user.profile.company_id)
         .select()
         .single();
 
@@ -313,15 +311,18 @@ export const useUpdateInventoryCategory = () => {
  */
 export const useDeleteInventoryCategory = () => {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
   const { toast } = useToast();
 
   return useMutation({
     mutationFn: async (categoryId: string) => {
+      if (!user?.profile?.company_id) throw new Error('Company ID is required');
       // Check if category has items or subcategories
       const { count: itemCount } = await supabase
         .from('inventory_items')
         .select('*', { count: 'exact', head: true })
         .eq('category_id', categoryId);
+
 
       const { count: subcategoryCount } = await supabase
         .from('inventory_categories')
@@ -340,7 +341,8 @@ export const useDeleteInventoryCategory = () => {
       const { error } = await supabase
         .from('inventory_categories')
         .update({ is_active: false })
-        .eq('id', categoryId);
+        .eq('id', categoryId)
+        .eq('company_id', user.profile.company_id);
 
       if (error) {
         console.error('Error deleting inventory category:', error);

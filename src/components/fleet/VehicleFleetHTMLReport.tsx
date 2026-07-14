@@ -702,14 +702,15 @@ export const generateVehicleFleetHTMLReport = (
                 : (vehicle.registrationDocumentCount !== undefined && vehicle.registrationDocumentCount > 0);
               const docCount = vehicle.registrationDocumentCount || 0;
 
-              const statusConfig = statusColors[vehicle.status] || statusColors.available;
+              const vehicleStatus = vehicle.status || 'available';
+              const statusConfig = statusColors[vehicleStatus] || statusColors.available;
 
               return `
                 <tr style="${hasMissingData ? 'background: #fee2e2;' : ''}">
                   <td style="font-family: monospace; font-weight: 600;">${vehicle.plate_number || '-'}</td>
                   <td>
                     <span class="badge" style="background: ${statusConfig.bg}; color: ${statusConfig.text};">
-                      ${statusLabels[vehicle.status] || vehicle.status || 'متاحة'}
+                      ${statusLabels[vehicleStatus] || vehicleStatus}
                     </span>
                   </td>
                   <td style="text-align: center;">

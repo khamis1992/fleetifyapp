@@ -155,46 +155,14 @@ export function MonthlyClosePanel() {
       if (!periodName.trim() || !startDate || !endDate) throw new Error("أكمل بيانات الفترة المالية");
       if (new Date(startDate) > new Date(endDate)) throw new Error("تاريخ البداية يجب أن يكون قبل تاريخ النهاية");
 
-      const { data: existing, error: existingError } = await supabase
-        .from("accounting_periods")
-        .select("id,status")
-        .eq("company_id", companyId)
-        .eq("start_date", startDate)
-        .eq("end_date", endDate)
-        .maybeSingle();
-
-      if (existingError) throw existingError;
-
-      if (existing) {
-        const { error } = await supabase
-          .from("accounting_periods")
-          .update({
-            period_name: periodName.trim(),
-            status: "locked",
-            is_adjustment_period: false,
-            updated_at: new Date().toISOString(),
-          })
-          .eq("id", existing.id);
-
-        if (error) throw error;
-        return existing.id;
-      }
-
-      const { data, error } = await supabase
-        .from("accounting_periods")
-        .insert({
-          company_id: companyId,
-          period_name: periodName.trim(),
-          start_date: startDate,
-          end_date: endDate,
-          status: "locked",
-          is_adjustment_period: false,
-        })
-        .select("id")
-        .single();
-
+      const { data, error } = await supabase.rpc("close_accounting_period_v1", {
+        p_company_id: companyId,
+        p_period_name: periodName.trim(),
+        p_start_date: startDate,
+        p_end_date: endDate,
+      });
       if (error) throw error;
-      return data.id;
+      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["accounting-periods"] });

@@ -23,10 +23,15 @@ export const useCustomerAccountStatement = ({
       }
 
       // Get current user's company with currency
+      const { data: authData } = await supabase.auth.getUser();
+      if (!authData.user?.id) {
+        throw new Error('User is not authenticated');
+      }
+
       const { data: profile } = await supabase
         .from('profiles')
         .select('company_id, companies(currency)')
-        .eq('user_id', (await supabase.auth.getUser()).data.user?.id)
+        .eq('user_id', authData.user.id)
         .single();
 
       if (!profile?.company_id) {
@@ -37,15 +42,15 @@ export const useCustomerAccountStatement = ({
       console.log('🔍 [useCustomerAccountStatement] Calling RPC with:', {
         p_company_id: profile.company_id,
         p_customer_code: customerCode,
-        p_date_from: dateFrom || null,
-        p_date_to: dateTo || null
+        p_date_from: dateFrom,
+        p_date_to: dateTo
       });
 
       const { data, error } = await supabase.rpc('get_customer_account_statement_by_code', {
         p_company_id: profile.company_id,
         p_customer_code: customerCode,
-        p_date_from: dateFrom || null,
-        p_date_to: dateTo || null
+        p_date_from: dateFrom,
+        p_date_to: dateTo
       });
 
       if (error) {

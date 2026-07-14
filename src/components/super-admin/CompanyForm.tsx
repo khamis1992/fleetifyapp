@@ -45,6 +45,9 @@ const companySchema = z.object({
 
 type CompanyFormData = z.infer<typeof companySchema>;
 
+const getErrorMessage = (error: unknown): string =>
+  error instanceof Error ? error.message : String(error);
+
 interface CompanyFormProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -191,7 +194,7 @@ export const CompanyForm: React.FC<CompanyFormProps> = ({
       console.error('Error saving company:', error);
       toast({
         title: 'خطأ في حفظ البيانات',
-        description: error.message || 'حدث خطأ أثناء حفظ معلومات الشركة',
+        description: getErrorMessage(error) || 'حدث خطأ أثناء حفظ معلومات الشركة',
         variant: 'destructive',
       });
     } finally {
@@ -199,13 +202,13 @@ export const CompanyForm: React.FC<CompanyFormProps> = ({
     }
   };
 
-  const subscriptionPlanOptions = [
+  const subscriptionPlanOptions: Array<{ value: CompanyFormData['subscription_plan']; label: string }> = [
     { value: 'basic', label: 'أساسي' },
     { value: 'premium', label: 'مميز' },
     { value: 'enterprise', label: 'مؤسسي' },
   ];
 
-  const subscriptionStatusOptions = [
+  const subscriptionStatusOptions: Array<{ value: CompanyFormData['subscription_status']; label: string }> = [
     { value: 'active', label: 'نشط' },
     { value: 'inactive', label: 'غير نشط' },
     { value: 'suspended', label: 'معلق' },
@@ -422,7 +425,7 @@ export const CompanyForm: React.FC<CompanyFormProps> = ({
                       <Label htmlFor="subscription_plan">باقة الاشتراك</Label>
                       <Select
                         value={watch('subscription_plan')}
-                        onValueChange={(value: unknown) => setValue('subscription_plan', value)}
+                        onValueChange={(value) => setValue('subscription_plan', value as CompanyFormData['subscription_plan'])}
                       >
                         <SelectTrigger>
                           <SelectValue placeholder="اختر الباقة" />
@@ -441,7 +444,7 @@ export const CompanyForm: React.FC<CompanyFormProps> = ({
                       <Label htmlFor="subscription_status">حالة الاشتراك</Label>
                       <Select
                         value={watch('subscription_status')}
-                        onValueChange={(value: unknown) => setValue('subscription_status', value)}
+                        onValueChange={(value) => setValue('subscription_status', value as CompanyFormData['subscription_status'])}
                       >
                         <SelectTrigger>
                           <SelectValue placeholder="اختر الحالة" />

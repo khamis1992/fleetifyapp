@@ -1,4 +1,23 @@
 import { useEffect, useRef } from 'react';
+import { performanceLogger, type PerformanceLog } from '@/lib/performanceLogger';
+
+export const getGlobalPerformanceMetrics = (): Map<string, PerformanceLog> => {
+  return new Map(
+    performanceLogger.exportLogs().map((log, index) => [
+      `${log.type}:${log.operation}:${log.timestamp}:${index}`,
+      log,
+    ]),
+  );
+};
+
+export const getPerformanceSummary = (): string => {
+  performanceLogger.getMetrics();
+  return performanceLogger.getSummary();
+};
+
+export const clearAllPerformanceMetrics = (): void => {
+  performanceLogger.clear();
+};
 
 /**
  * Performance Monitoring Hook
@@ -25,8 +44,7 @@ export const usePerformanceMonitor = (componentName: string, enabled: boolean = 
           console.info(`ℹ️ [PERFORMANCE] ${componentName} render took ${renderTime.toFixed(2)}ms`);
         }
         
-        // Send to performance monitoring if needed
-        // performanceLogger?.logRender(componentName, renderTime);
+        performanceLogger.logRender(componentName, renderTime);
       }
     };
   }, [componentName, enabled]);

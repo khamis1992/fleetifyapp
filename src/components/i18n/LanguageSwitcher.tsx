@@ -10,6 +10,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { useFleetifyTranslation, useLanguageSwitcher } from '../../hooks/useTranslation';
+import type { SupportedLanguage } from '../../lib/i18n/config';
 import { ChevronDown, Globe, Check } from 'lucide-react';
 
 interface LanguageSwitcherProps {
@@ -63,11 +64,11 @@ const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({
   }, [isOpen]);
 
   // Handle language change
-  const handleLanguageChange = async (languageCode: string) => {
+  const handleLanguageChange = async (languageCode: SupportedLanguage) => {
     if (isChanging || disabled) return;
 
     try {
-      await changeLanguage(languageCode as any);
+      await changeLanguage(languageCode);
       setIsOpen(false);
     } catch (error) {
       console.error('Failed to change language:', error);

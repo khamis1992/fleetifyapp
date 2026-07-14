@@ -96,14 +96,14 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
 
           {/* Property Details */}
           <div className="grid grid-cols-2 gap-3 text-sm">
-            {property.bedrooms !== null && (
+            {property.bedrooms != null && (
               <div className="flex items-center gap-2">
                 <Bed className="h-4 w-4 text-primary" />
                 <span><NumberDisplay value={property.bedrooms} className="inline" /> غرفة</span>
               </div>
             )}
             
-            {property.bathrooms !== null && (
+            {property.bathrooms != null && (
               <div className="flex items-center gap-2">
                 <Bath className="h-4 w-4 text-primary" />
                 <span><NumberDisplay value={property.bathrooms} className="inline" /> حمام</span>
@@ -117,7 +117,7 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
               </div>
             )}
 
-            {property.parking_spaces !== null && property.parking_spaces > 0 && (
+            {property.parking_spaces != null && property.parking_spaces > 0 && (
               <div className="flex items-center gap-2">
                 <Car className="h-4 w-4 text-primary" />
                 <span><NumberDisplay value={property.parking_spaces} className="inline" /> موقف</span>

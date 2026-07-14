@@ -10,6 +10,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { PermissionGuard } from '@/components/auth/PermissionGuard';
+import { Permission } from '@/lib/permissions/roles';
 
 interface DeleteEmployeeConfirmDialogProps {
   open: boolean;
@@ -42,7 +43,7 @@ export default function DeleteEmployeeConfirmDialog({
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel disabled={isLoading}>إلغاء</AlertDialogCancel>
-          <PermissionGuard permission="DELETE_EMPLOYEE">
+          <PermissionGuard permission={Permission.DELETE_EMPLOYEE}>
             <AlertDialogAction 
               onClick={onConfirm}
               disabled={isLoading}

@@ -682,7 +682,7 @@ export const useChangeVehiclePlateFromTrafficAuthority = () => {
   });
 };
 
-export const useDeleteVehicle = () => {
+const useLegacyDeleteVehicle = () => {
   const queryClient = useQueryClient()
   const { toast } = useToast()
   const companyId = useCurrentCompanyId()
@@ -768,6 +768,38 @@ export const useDeleteVehicle = () => {
     }
   })
 }
+
+void useLegacyDeleteVehicle;
+
+export const useDeleteVehicle = () => {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const companyId = useCurrentCompanyId();
+
+  return useMutation({
+    mutationFn: async (vehicleId: string) => {
+      if (!companyId) throw new Error('Company ID not found');
+      const { data, error } = await supabase.rpc('deactivate_vehicle_v1', {
+        p_company_id: companyId,
+        p_vehicle_id: vehicleId,
+        p_reason: 'Deactivated from fleet management instead of permanent deletion',
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.vehicles.all });
+      toast({ title: 'تم تعطيل المركبة', description: 'احتُفظ بالسجل التشغيلي والمالي ولم تُحذف المركبة نهائيًا.' });
+    },
+    onError: (error) => {
+      toast({
+        title: 'تعذر تعطيل المركبة',
+        description: error instanceof Error ? error.message : 'حدث خطأ غير معروف',
+        variant: 'destructive',
+      });
+    },
+  });
+};
 
 // Vehicle Pricing Hooks
 export const useVehiclePricing = (vehicleId: string) => {

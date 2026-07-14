@@ -3,6 +3,7 @@
  * Extracted from useFinance.ts for better code organization and tree-shaking
  */
 
+import { useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useUnifiedCompanyAccess } from "@/hooks/useUnifiedCompanyAccess";
@@ -116,7 +117,7 @@ export const useJournalEntryLines = (journalEntryId: string) => {
   });
 };
 
-export const useCreateJournalEntry = () => {
+const useLegacyCreateJournalEntry = () => {
   const { companyId } = useUnifiedCompanyAccess();
   const queryClient = useQueryClient();
   const financeAccess = useFinanceAccessGuard();
@@ -185,7 +186,7 @@ export const useCreateJournalEntry = () => {
   });
 };
 
-export const usePostJournalEntry = () => {
+const useLegacyPostJournalEntry = () => {
   const queryClient = useQueryClient();
   const { companyId, user } = useUnifiedCompanyAccess();
   const financeAccess = useFinanceAccessGuard();
@@ -246,6 +247,86 @@ export const usePostJournalEntry = () => {
     },
     onError: (error) => {
       toast.error(`خطأ في ترحيل القيد: ${error.message}`);
+    },
+  });
+};
+
+void useLegacyCreateJournalEntry;
+void useLegacyPostJournalEntry;
+
+export const useCreateJournalEntry = () => {
+  const { companyId, user } = useUnifiedCompanyAccess();
+  const queryClient = useQueryClient();
+  const financeAccess = useFinanceAccessGuard();
+  const idempotencyKey = useRef(crypto.randomUUID());
+
+  return useMutation({
+    mutationFn: async (entry: CreateJournalEntryInput) => {
+      if (!companyId) throw new Error("No company access");
+      if (!financeAccess.can('finance.journal.create_draft')) {
+        throw new Error("ليس لديك صلاحية إنشاء قيد محاسبي");
+      }
+      const { lines, ...entryData } = entry;
+      const { data, error } = await supabase.rpc('create_manual_journal_entry_v1', {
+        p_company_id: companyId,
+        p_entry_number: entryData.entry_number || '',
+        p_entry_date: entryData.entry_date,
+        p_description: entryData.description,
+        p_reference_type: entryData.reference_type || '',
+        p_reference_id: entryData.reference_id || null,
+        p_lines: lines.map((line) => ({
+          account_id: line.account_id,
+          cost_center_id: line.cost_center_id || null,
+          asset_id: line.asset_id || null,
+          employee_id: line.employee_id || null,
+          line_description: line.line_description || '',
+          debit_amount: Number(line.debit_amount) || 0,
+          credit_amount: Number(line.credit_amount) || 0,
+        })),
+        p_idempotency_key: idempotencyKey.current,
+        p_actor_id: user?.id,
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      idempotencyKey.current = crypto.randomUUID();
+      queryClient.invalidateQueries({ queryKey: queryKeys.journalEntries.all });
+      toast.success("تم إنشاء القيد بنجاح");
+    },
+    onError: (error) => {
+      toast.error(`خطأ في إنشاء القيد: ${error instanceof Error ? error.message : 'خطأ غير معروف'}`);
+    },
+  });
+};
+
+export const usePostJournalEntry = () => {
+  const queryClient = useQueryClient();
+  const { companyId, user } = useUnifiedCompanyAccess();
+  const financeAccess = useFinanceAccessGuard();
+
+  return useMutation({
+    mutationFn: async (entryId: string) => {
+      if (!companyId) throw new Error("No company access");
+      if (!financeAccess.can('finance.journal.post')) {
+        throw new Error("ليس لديك صلاحية ترحيل القيود المحاسبية");
+      }
+      const { data, error } = await supabase.rpc('post_manual_journal_entry_v1', {
+        p_company_id: companyId,
+        p_entry_id: entryId,
+        p_actor_id: user?.id,
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.journalEntries.all });
+      queryClient.invalidateQueries({ queryKey: ["accountBalances"] });
+      queryClient.invalidateQueries({ queryKey: ["trialBalance"] });
+      toast.success("تم ترحيل القيد بنجاح");
+    },
+    onError: (error) => {
+      toast.error(`خطأ في ترحيل القيد: ${error instanceof Error ? error.message : 'خطأ غير معروف'}`);
     },
   });
 };

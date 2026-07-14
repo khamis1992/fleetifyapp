@@ -9,6 +9,46 @@ import { useCustomerViewContext } from '@/contexts/CustomerViewContext';
 export type EnhancedCustomer = Customer;
 
 type CustomerInsert = Database['public']['Tables']['customers']['Insert'];
+type CustomerRow = Database['public']['Tables']['customers']['Row'];
+type CustomerUpdate = Database['public']['Tables']['customers']['Update'];
+type CustomerNoteInsert = Database['public']['Tables']['customer_notes']['Insert'];
+
+const normalizeCustomer = (row: CustomerRow): Customer => ({
+  id: row.id,
+  company_id: row.company_id,
+  customer_code: row.customer_code ?? undefined,
+  customer_type: row.customer_type ?? 'individual',
+  first_name: row.first_name ?? undefined,
+  last_name: row.last_name ?? undefined,
+  first_name_ar: row.first_name_ar ?? undefined,
+  last_name_ar: row.last_name_ar ?? undefined,
+  company_name: row.company_name ?? undefined,
+  company_name_ar: row.company_name_ar ?? undefined,
+  email: row.email ?? undefined,
+  phone: row.phone,
+  alternative_phone: row.alternative_phone ?? undefined,
+  national_id: row.national_id ?? undefined,
+  nationality: row.nationality ?? undefined,
+  passport_number: row.passport_number ?? undefined,
+  license_number: row.license_number ?? undefined,
+  address: row.address ?? undefined,
+  address_ar: row.address_ar ?? undefined,
+  city: row.city ?? undefined,
+  country: row.country ?? undefined,
+  date_of_birth: row.date_of_birth ?? undefined,
+  license_expiry: row.license_expiry ?? undefined,
+  national_id_expiry: row.national_id_expiry ?? undefined,
+  credit_limit: row.credit_limit ?? undefined,
+  emergency_contact_name: row.emergency_contact_name ?? undefined,
+  emergency_contact_phone: row.emergency_contact_phone ?? undefined,
+  is_blacklisted: row.is_blacklisted ?? undefined,
+  blacklist_reason: row.blacklist_reason ?? undefined,
+  documents: row.documents ?? undefined,
+  notes: row.notes ?? undefined,
+  is_active: row.is_active ?? undefined,
+  created_at: row.created_at,
+  updated_at: row.updated_at,
+});
 
 interface CreateCustomerInput extends CustomerFormData {
   force_create?: boolean;
@@ -338,7 +378,7 @@ export const useCustomers = (filters?: CustomerFilters) => {
       }
       
       return {
-        data: filteredData,
+        data: filteredData.map(normalizeCustomer),
         total: searchWords.length > 1 ? filteredData.length : (count || 0)
       };
     },
@@ -410,7 +450,7 @@ export const useCustomerById = (customerId: string, options?: { enabled?: boolea
         throw error;
       }
       
-      return data;
+      return normalizeCustomer(data);
     },
     enabled: options?.enabled !== false && !!customerId && (isSystemLevel || !!companyId),
     staleTime: 5 * 60 * 1000, // 5 minutes - increased from 2 minutes
@@ -556,17 +596,20 @@ export const useCreateCustomer = () => {
         : [];
       if (duplicateRecord?.has_duplicates === true && !data.force_create) {
         const duplicateInfo = duplicates
-          .map((duplicate): DuplicateCustomerMatch => ({
-            name: typeof duplicate.name === 'string' ? duplicate.name : undefined,
-            duplicate_field:
-              typeof duplicate.duplicate_field === 'string'
-                ? duplicate.duplicate_field
-                : undefined,
-            duplicate_value:
-              typeof duplicate.duplicate_value === 'string'
-                ? duplicate.duplicate_value
-                : undefined,
-          }))
+          .map((duplicate): DuplicateCustomerMatch => {
+            const match = duplicate as Record<string, unknown>;
+            return {
+              name: typeof match.name === 'string' ? match.name : undefined,
+              duplicate_field:
+                typeof match.duplicate_field === 'string'
+                  ? match.duplicate_field
+                  : undefined,
+              duplicate_value:
+                typeof match.duplicate_value === 'string'
+                  ? match.duplicate_value
+                  : undefined,
+            };
+          })
           .map(
             (duplicate) =>
               `${duplicate.name || 'عميل'} (${duplicate.duplicate_field || 'حقل مطابق'}: ${duplicate.duplicate_value || '-'})`
@@ -700,7 +743,7 @@ export const useUpdateCustomer = () => {
       // Clean data by removing undefined values
       const cleanData = Object.fromEntries(
         Object.entries(data).filter(([, value]) => value !== undefined)
-      );
+      ) as CustomerUpdate;
 
       // إضافة التحقق من صلاحية الوثائق قبل التحديث
       const today = new Date().toISOString().split('T')[0];
@@ -770,10 +813,10 @@ export const useCreateCustomerNote = () => {
         throw new Error("No company access available");
       }
 
-      const insertData = noteData ? {
+      const insertData: CustomerNoteInsert = noteData ? {
         customer_id: customerId,
         title: noteData.title || 'ملاحظة',
-        content: noteData.content || content,
+        content: noteData.content || content || '',
         note_type: noteData.note_type || 'general',
         is_important: noteData.is_important || false,
         company_id: companyId

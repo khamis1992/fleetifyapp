@@ -121,8 +121,8 @@ export function useViolationNotifications() {
       
       return {
         name: arabicName || englishName || 'عميل',
-        phone: data.phone || data.alternative_phone,
-        email: data.email,
+        phone: data.phone || data.alternative_phone || undefined,
+        email: data.email || undefined,
       };
     } catch (err) {
       console.error('Error fetching customer:', err);
@@ -358,12 +358,13 @@ _${companyName}_`;
       }
 
       // 2. Notify customer by system notification (if they have a user account)
-      if (config.notifyCustomerBySystem && violation.customerId) {
-        // Check if customer has a linked user account
+      if (config.notifyCustomerBySystem && customerDetails.email && companyId) {
+        // Customer accounts are matched by their unique email within the company.
         const { data: customerUser } = await supabase
           .from('profiles')
           .select('id, user_id')
-          .eq('customer_id', violation.customerId)
+          .eq('email', customerDetails.email)
+          .eq('company_id', companyId)
           .maybeSingle();
 
         if (customerUser?.user_id) {

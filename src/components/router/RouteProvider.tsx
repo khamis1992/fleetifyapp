@@ -150,16 +150,19 @@ export const RouteProvider: React.FC<RouteProviderProps> = ({
         return regex.test(path);
       });
 
-      if (!route || !route.parent) {
-        return [];
+      const parents: RouteConfig[] = [];
+      let parentPath = route?.parent;
+      const visited = new Set<string>();
+
+      while (parentPath && !visited.has(parentPath)) {
+        visited.add(parentPath);
+        const parentRoute = routes.find(candidate => candidate.path === parentPath);
+        if (!parentRoute) break;
+        parents.unshift(parentRoute);
+        parentPath = parentRoute.parent;
       }
 
-      const parentRoute = routes.find(r => r.path === route.parent);
-      if (!parentRoute) {
-        return [];
-      }
-
-      return [...navigation.getParentRoutes(parentRoute.path), parentRoute];
+      return parents;
     },
 
     getChildRoutes: (path: string) => {
@@ -253,19 +256,19 @@ export const RouteProvider: React.FC<RouteProviderProps> = ({
       }
 
       // Update route-specific meta tags
-      if (currentRoute.meta) {
+      if (currentRoute.openGraph) {
         // SEO meta
-        if (currentRoute.meta.seo?.title) {
+        if (currentRoute.openGraph.title) {
           const ogTitle = document.querySelector('meta[property="og:title"]');
           if (ogTitle) {
-            ogTitle.setAttribute('content', currentRoute.meta.seo.title);
+            ogTitle.setAttribute('content', currentRoute.openGraph.title);
           }
         }
 
-        if (currentRoute.meta.seo?.description) {
+        if (currentRoute.openGraph.description) {
           const ogDescription = document.querySelector('meta[property="og:description"]');
           if (ogDescription) {
-            ogDescription.setAttribute('content', currentRoute.meta.seo.description);
+            ogDescription.setAttribute('content', currentRoute.openGraph.description);
           }
         }
       }

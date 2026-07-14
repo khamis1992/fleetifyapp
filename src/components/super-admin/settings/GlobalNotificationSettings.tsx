@@ -34,6 +34,12 @@ export const GlobalNotificationSettings: React.FC = () => {
     maintenance: { email: true, sms: false, push: true },
   });
 
+  type NotificationType = keyof typeof notificationTypes;
+  type NotificationChannel = keyof (typeof notificationTypes)[NotificationType];
+  const notificationEntries = Object.entries(notificationTypes) as Array<
+    [NotificationType, (typeof notificationTypes)[NotificationType]]
+  >;
+
   const [templates, setTemplates] = useState([
     {
       id: 'welcome',
@@ -72,7 +78,7 @@ export const GlobalNotificationSettings: React.FC = () => {
     });
   };
 
-  const handleNotificationToggle = (type: string, channel: string, enabled: boolean) => {
+  const handleNotificationToggle = (type: NotificationType, channel: NotificationChannel, enabled: boolean) => {
     setNotificationTypes(prev => ({
       ...prev,
       [type]: {
@@ -187,7 +193,7 @@ export const GlobalNotificationSettings: React.FC = () => {
         </CardHeader>
         <CardContent>
           <div className="space-y-6">
-            {Object.entries(notificationTypes).map(([type, channels]) => (
+            {notificationEntries.map(([type, channels]) => (
               <div key={type} className="border rounded-lg p-4">
                 <h4 className="font-medium mb-4 capitalize">
                   {type.replace(/([A-Z])/g, ' $1').trim()}

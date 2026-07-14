@@ -164,8 +164,8 @@ export const useCustomerStatementData = (customerId: string, startDate?: string,
       const { data, error } = await supabase.rpc('generate_customer_statement_data', {
         customer_id_param: customerId,
         company_id_param: companyId,
-        start_date_param: startDate || null,
-        end_date_param: endDate || null
+        start_date_param: startDate,
+        end_date_param: endDate
       });
 
       if (error) throw error;

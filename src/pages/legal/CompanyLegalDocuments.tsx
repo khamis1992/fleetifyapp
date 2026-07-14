@@ -81,7 +81,8 @@ type DocumentFilter = 'all' | 'missing' | 'uploaded' | 'attention';
 
 export default function CompanyLegalDocuments() {
   const queryClient = useQueryClient();
-  const { companyId, isLoading: companyLoading } = useUnifiedCompanyAccess();
+  const { companyId, isAuthenticating, isInitializing } = useUnifiedCompanyAccess();
+  const companyLoading = isAuthenticating || isInitializing;
 
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
   const [selectedDocType, setSelectedDocType] = useState<LegalDocumentType | ''>('');

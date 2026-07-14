@@ -14,7 +14,7 @@ import {
   triageFindingsWithLongCat,
 } from "../_shared/system-audit/runtime.ts";
 
-const WORKER_VERSION = "2026-07-14.49";
+const WORKER_VERSION = "2026-07-14.53";
 type SupabaseClient = ReturnType<typeof createClient>;
 
 const CANONICAL_FINANCE_COMMANDS = new Set([
@@ -80,6 +80,27 @@ const PAYROLL_ACCOUNTING_COMMANDS = new Set([
 const PURCHASE_ORDER_COMMANDS = new Set([
   "purchase_order.sync_totals",
   "purchase_order.sync_receipt_status",
+]);
+
+const MONTHLY_OBLIGATION_COMMANDS = new Set([
+  "monthly_obligation.sync_payment_state",
+]);
+
+const RENTAL_RECEIPT_COMMANDS = new Set([
+  "rental_receipt.sync_payment_state",
+]);
+
+const LEGAL_INTEGRITY_COMMANDS = new Set([
+  "legal.sync_contract_state",
+  "legal.reset_unsupported_repayment",
+]);
+
+const MAINTENANCE_INTEGRITY_COMMANDS = new Set([
+  "maintenance.sync_accounting_link",
+]);
+
+const BANK_PAYMENT_INTEGRITY_COMMANDS = new Set([
+  "accounting.assign_single_active_bank",
 ]);
 
 serve(async (req) => {
@@ -277,7 +298,8 @@ async function persistAndRepairFindings(
         ? "system_agent_apply_contract_invoice_billing_month_repair_v9"
         : finding.repair.command === "schedule.consolidate_duplicate_rows"
         ? "system_agent_apply_schedule_duplicate_rows_repair_v2"
-        : finding.repair.command === "schedule.realign_contract_invoice_links_v3"
+        : finding.repair.command ===
+          "schedule.realign_contract_invoice_links_v3"
         ? "system_agent_apply_contract_schedule_matching_repair_v3"
         : CONTRACT_SCHEDULE_MATCHING_COMMANDS.has(finding.repair.command)
         ? "system_agent_apply_contract_schedule_matching_repair_v2"
@@ -297,6 +319,16 @@ async function persistAndRepairFindings(
         ? "system_agent_apply_payroll_repair_v1"
         : PURCHASE_ORDER_COMMANDS.has(finding.repair.command)
         ? "system_agent_apply_purchase_order_repair_v1"
+        : MONTHLY_OBLIGATION_COMMANDS.has(finding.repair.command)
+        ? "system_agent_apply_monthly_obligation_repair_v1"
+        : RENTAL_RECEIPT_COMMANDS.has(finding.repair.command)
+        ? "system_agent_apply_rental_receipt_repair_v1"
+        : LEGAL_INTEGRITY_COMMANDS.has(finding.repair.command)
+        ? "system_agent_apply_legal_integrity_repair_v1"
+        : MAINTENANCE_INTEGRITY_COMMANDS.has(finding.repair.command)
+        ? "system_agent_apply_maintenance_integrity_repair_v1"
+        : BANK_PAYMENT_INTEGRITY_COMMANDS.has(finding.repair.command)
+        ? "system_agent_apply_bank_payment_integrity_repair_v1"
         : finding.repair.command === "schedule.link_invoice"
         ? "system_agent_apply_contract_invoice_repair_v3"
         : CANONICAL_FINANCE_COMMANDS.has(finding.repair.command)

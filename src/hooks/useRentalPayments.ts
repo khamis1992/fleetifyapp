@@ -7,21 +7,23 @@ import { toast } from 'sonner';
 import * as Sentry from '@sentry/react';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
-import { usePaymentOperations } from '@/hooks/business/usePaymentOperations';
 
 type RentalReceiptUpdate = Database['public']['Tables']['rental_payment_receipts']['Update'];
 type OutstandingBalanceRow = Database['public']['Functions']['get_all_customers_outstanding_balance']['Returns'][number];
-type SupportedPaymentMethod = 'cash' | 'bank_transfer' | 'check' | 'credit_card' | 'debit_card';
-
-const normalizePaymentMethod = (method: string | null | undefined): SupportedPaymentMethod => {
-  const supported: SupportedPaymentMethod[] = ['cash', 'bank_transfer', 'check', 'credit_card', 'debit_card'];
-  return supported.includes(method as SupportedPaymentMethod) ? method as SupportedPaymentMethod : 'cash';
-};
-
 const getRentalReceiptPaymentKey = (receiptId: string): string => `legacy-rental-receipt:${receiptId}`;
 
 const assertRentalReceiptHasNoFinancialEffect = async (receiptId: string, companyId: string): Promise<void> => {
-  const [{ data: canonicalPayment, error: paymentError }, { data: legacyJournal, error: journalError }] = await Promise.all([
+  const [
+    { data: receipt, error: receiptError },
+    { data: canonicalPayment, error: paymentError },
+    { data: legacyJournal, error: journalError },
+  ] = await Promise.all([
+    supabase
+      .from('rental_payment_receipts')
+      .select('canonical_payment_id')
+      .eq('id', receiptId)
+      .eq('company_id', companyId)
+      .single(),
     supabase
       .from('payments')
       .select('id')
@@ -41,9 +43,10 @@ const assertRentalReceiptHasNoFinancialEffect = async (receiptId: string, compan
       .maybeSingle(),
   ]);
 
+  if (receiptError) throw receiptError;
   if (paymentError) throw paymentError;
   if (journalError) throw journalError;
-  if (canonicalPayment || legacyJournal) {
+  if (receipt.canonical_payment_id || canonicalPayment || legacyJournal) {
     throw new Error('لا يمكن تعديل أو حذف إيصال له أثر مالي. ألغِ الدفعة أو اعكس القيد من المسار المالي المعتمد.');
   }
 };
@@ -127,6 +130,7 @@ export interface RentalPaymentReceipt {
   pending_balance: number;
   payment_status: 'paid' | 'partial' | 'pending';
   payment_method?: string;
+  bank_id?: string;
   receipt_number?: string;
   reference_number?: string;
   month_number?: number;
@@ -138,6 +142,8 @@ export interface RentalPaymentReceipt {
   vehicle_id?: string;
   contract_id?: string;
   invoice_id?: string;
+  canonical_payment_id?: string;
+  idempotency_key?: string;
   vehicle?: VehicleInfo;
   customer?: {
     id: string;
@@ -608,11 +614,6 @@ export const useCreateRentalReceipt = () => {
   const queryClient = useQueryClient();
   const { companyId, user } = useUnifiedCompanyAccess();
   const { hasPermission } = usePermissions();
-  const { createPayment } = usePaymentOperations({
-    autoCreateJournalEntry: true,
-    autoUpdateBankBalance: true,
-    enableNotifications: false,
-  });
 
   return useMutation({
     mutationFn: async (receipt: Omit<RentalPaymentReceipt, 'id' | 'created_at' | 'updated_at' | 'company_id' | 'created_by'>) => {
@@ -637,93 +638,35 @@ export const useCreateRentalReceipt = () => {
           data: { companyId, customerId: receipt.customer_id },
         });
 
-      console.log('Creating rental receipt with notes support...');
-      
-      // Direct insert with notes field (bypassing RPC for now to support notes)
-      const { data, error } = await supabase
-        .from('rental_payment_receipts')
-        .insert({
-          customer_id: receipt.customer_id,
-          customer_name: receipt.customer_name,
-          contract_id: receipt.contract_id || null,
-          invoice_id: receipt.invoice_id || null,
-          vehicle_id: receipt.vehicle_id || null,
-          month: receipt.month,
-          month_number: receipt.month_number || null,
-          fiscal_year: receipt.fiscal_year || null,
-          payment_date: receipt.payment_date,
-          payment_method: receipt.payment_method || 'cash',
-          receipt_number: receipt.receipt_number || null,
-          reference_number: receipt.reference_number || null,
-          rent_amount: receipt.rent_amount,
-          fine: receipt.fine,
-          total_paid: receipt.total_paid,
-          amount_due: receipt.amount_due,
-          pending_balance: receipt.pending_balance,
-          payment_status: receipt.payment_status,
-          notes: receipt.notes || null,
-          company_id: companyId,
-          created_by: user?.id || null
-        })
-        .select()
-        .single();
+      const idempotencyKey = receipt.idempotency_key;
+      if (!idempotencyKey) {
+        throw new Error('مفتاح العملية مطلوب لحفظ إيصال الإيجار بأمان');
+      }
+
+      const { data, error } = await supabase.rpc('create_rental_receipt_payment_v1', {
+        p_company_id: companyId,
+        p_customer_id: receipt.customer_id,
+        p_customer_name: receipt.customer_name,
+        p_contract_id: receipt.contract_id || null,
+        p_vehicle_id: receipt.vehicle_id || null,
+        p_month: receipt.month,
+        p_payment_date: receipt.payment_date,
+        p_rent_amount: receipt.rent_amount,
+        p_fine: receipt.fine,
+        p_total_paid: receipt.total_paid,
+        p_amount_due: receipt.amount_due,
+        p_payment_method: receipt.payment_method || 'cash',
+        p_bank_id: receipt.bank_id || null,
+        p_reference_number: receipt.reference_number || null,
+        p_notes: receipt.notes || null,
+        p_idempotency_key: idempotencyKey,
+        p_actor_id: user?.id || null,
+      });
 
       if (error) {
         console.error('❌ Error creating receipt:', error);
         throw error;
       }
-
-        if (data.total_paid > 0) {
-          const idempotencyKey = getRentalReceiptPaymentKey(data.id);
-          try {
-            await createPayment.mutateAsync({
-              contract_id: data.contract_id || undefined,
-              customer_id: data.customer_id,
-              invoice_id: data.invoice_id || undefined,
-              amount: data.total_paid,
-              payment_date: data.payment_date,
-              payment_method: normalizePaymentMethod(data.payment_method),
-              notes: [
-                `إيصال إيجار ${data.receipt_number || data.id}`,
-                data.notes,
-              ].filter(Boolean).join(' - '),
-              type: 'receipt',
-              transaction_type: 'customer_payment',
-              payment_status: 'completed',
-              currency: 'QAR',
-              idempotencyKey,
-              registrationMetadata: {
-                monthly_amount: data.rent_amount,
-                amount_paid: data.total_paid,
-                remaining_amount: data.pending_balance,
-                payment_month: data.month,
-                due_date: data.payment_date,
-                late_fee_amount: data.fine,
-              },
-            });
-          } catch (paymentError) {
-            const { data: persistedPayment } = await supabase
-              .from('payments')
-              .select('id')
-              .eq('company_id', companyId)
-              .eq('reference_number', idempotencyKey)
-              .neq('payment_status', 'cancelled')
-              .limit(1)
-              .maybeSingle();
-
-            if (!persistedPayment) {
-              const { error: cleanupError } = await supabase
-                .from('rental_payment_receipts')
-                .delete()
-                .eq('id', data.id)
-                .eq('company_id', companyId);
-              if (cleanupError) {
-                console.error('Failed to rollback rental receipt after payment error:', cleanupError);
-              }
-              throw paymentError;
-            }
-          }
-        }
 
         console.log('✅ Receipt and canonical payment created successfully');
         

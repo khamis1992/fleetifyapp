@@ -360,7 +360,7 @@ ${customerNames}${moreText}
                             {employee.full_name || employee.email}
                           </p>
                           {employee.phone && (
-                            <MessageCircle className="h-3.5 w-3.5 text-green-500" title="سيتم إرسال واتساب" />
+                            <MessageCircle className="h-3.5 w-3.5 text-green-500" aria-label="سيتم إرسال واتساب" />
                           )}
                         </div>
                         {employee.role && (

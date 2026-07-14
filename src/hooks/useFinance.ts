@@ -1,3 +1,4 @@
+import { useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import * as Sentry from "@sentry/react";
 import { supabase } from "@/integrations/supabase/client";
@@ -62,6 +63,9 @@ export {
   useUpdateVendorPerformance
 } from './useVendors';
 
+// Keep the legacy finance barrel on the same atomic treasury implementation.
+export { useCreateBankTransaction } from './useTreasury';
+
 // Chart of Accounts Hooks
 export const useChartOfAccounts = () => {
   const { companyId, filter, isAuthenticating, authError } = useUnifiedCompanyAccess()
@@ -125,7 +129,6 @@ export const useChartOfAccounts = () => {
     retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000)
   })
 }
-
 export const useCreateAccount = () => {
   const queryClient = useQueryClient()
   const { user } = useAuth()
@@ -590,6 +593,7 @@ export const useInvoices = (filters?: { type?: string; status?: string }) => {
 export const useCreateInvoice = () => {
   const queryClient = useQueryClient()
   const { user } = useAuth()
+  const idempotencyKey = useRef(crypto.randomUUID())
   
   return useMutation({
     mutationFn: async (invoiceData: {
@@ -624,83 +628,32 @@ export const useCreateInvoice = () => {
       Sentry.addBreadcrumb({ category: "finance", message: "Mutation started", level: "info" });
       if (!user?.profile?.company_id || !user?.id) throw new Error("User data is required")
       
-      const { data, error } = await supabase
-        .from("invoices")
-        .insert({
-          invoice_number: invoiceData.invoice_number,
-          invoice_date: invoiceData.invoice_date,
-          invoice_type: invoiceData.invoice_type,
-          due_date: invoiceData.due_date,
-          customer_id: invoiceData.customer_id,
-          vendor_id: invoiceData.vendor_id,
-          subtotal: invoiceData.subtotal || 0,
-          tax_amount: invoiceData.tax_amount || 0,
-          discount_amount: invoiceData.discount_amount || 0,
-          total_amount: invoiceData.total_amount || 0,
-          paid_amount: 0,
-          balance_due: invoiceData.total_amount || 0,
-          currency: invoiceData.currency || 'QAR',
-          status: invoiceData.status || 'draft',
-          payment_status: invoiceData.payment_status || 'unpaid',
-          notes: invoiceData.notes,
-          terms: invoiceData.terms,
-          contract_id: invoiceData.contract_id,
-          cost_center_id: invoiceData.cost_center_id || null,
-          fixed_asset_id: invoiceData.fixed_asset_id || null,
-          company_id: user.profile.company_id,
-          created_by: user.id
-        })
-        .select()
-        .single()
-      
+      if (!invoiceData.items?.length) throw new Error("يجب إضافة بند واحد على الأقل للفاتورة")
+      const { data, error } = await supabase.rpc('create_manual_invoice_v1', {
+        p_company_id: user.profile.company_id,
+        p_invoice_number: invoiceData.invoice_number,
+        p_invoice_date: invoiceData.invoice_date,
+        p_invoice_type: invoiceData.invoice_type,
+        p_due_date: invoiceData.due_date || null,
+        p_customer_id: invoiceData.customer_id || null,
+        p_vendor_id: invoiceData.vendor_id || null,
+        p_currency: invoiceData.currency || 'QAR',
+        p_discount_amount: invoiceData.discount_amount || 0,
+        p_notes: invoiceData.notes || '',
+        p_terms: invoiceData.terms || '',
+        p_contract_id: invoiceData.contract_id || null,
+        p_cost_center_id: invoiceData.cost_center_id || null,
+        p_fixed_asset_id: invoiceData.fixed_asset_id || null,
+        p_items: invoiceData.items,
+        p_idempotency_key: idempotencyKey.current,
+        p_actor_id: user.id,
+      })
       if (error) throw error
-
-      if (invoiceData.items && invoiceData.items.length > 0) {
-        const invoiceItems = invoiceData.items.map((item, index) => {
-          const lineTotal = item.quantity * item.unit_price
-          return {
-            invoice_id: data.id,
-            line_number: index + 1,
-            item_description: item.description,
-            item_description_ar: item.description_ar || null,
-            quantity: item.quantity,
-            unit_price: item.unit_price,
-            line_total: lineTotal,
-            tax_rate: item.tax_rate,
-            tax_amount: lineTotal * (item.tax_rate / 100),
-            account_id: item.account_id || null,
-            cost_center_id: item.cost_center_id || invoiceData.cost_center_id || null,
-          }
-        })
-
-        const { error: itemsError } = await supabase
-          .from('invoice_items')
-          .insert(invoiceItems)
-
-        if (itemsError) {
-          const cancellationNote = [
-            invoiceData.notes,
-            `ألغيت تلقائياً بسبب فشل حفظ بنود الفاتورة: ${itemsError.message}`,
-          ].filter(Boolean).join('\n')
-
-          const { error: cancellationError } = await supabase
-            .from('invoices')
-            .update({ status: 'cancelled', notes: cancellationNote })
-            .eq('id', data.id)
-            .eq('company_id', user.profile.company_id)
-            .eq('status', 'draft')
-
-          if (cancellationError) {
-            throw new Error(`فشل حفظ البنود وتعذر إلغاء الفاتورة ${data.invoice_number}: ${itemsError.message}`)
-          }
-          throw new Error(`فشل حفظ بنود الفاتورة؛ ألغيت المسودة ${data.invoice_number} تلقائياً`)
-        }
-      }
-
       return data
     },
     onSuccess: () => {
       Sentry.addBreadcrumb({ category: "finance", message: "Operation completed", level: "info" });
+      idempotencyKey.current = crypto.randomUUID()
       queryClient.invalidateQueries({ queryKey: ["invoices"] })
       toast.success("تم إنشاء الفاتورة بنجاح")
     },
@@ -1338,50 +1291,4 @@ export const useBankTransactions = () => {
     },
     enabled: !!user?.profile?.company_id
   })
-}
-
-export const useCreateBankTransaction = () => {
-  const queryClient = useQueryClient()
-  const { user } = useAuth()
-  
-  return useMutation({
-    mutationFn: async (transactionData: {
-      bank_id: string
-      transaction_number: string
-      transaction_date: string
-      transaction_type: 'deposit' | 'withdrawal' | 'transfer'
-      amount: number
-      balance_after: number
-      description: string
-      reference_number?: string
-      check_number?: string
-      counterpart_bank_id?: string
-      status?: 'pending' | 'completed' | 'cancelled'
-    }) => {
-      Sentry.addBreadcrumb({ category: "finance", message: "Mutation started", level: "info" });
-      if (!user?.profile?.company_id || !user?.id) throw new Error("User data is required")
-      
-      const { data, error } = await supabase
-        .from("bank_transactions")
-        .insert({
-          ...transactionData,
-          company_id: user.profile.company_id,
-          status: transactionData.status || 'completed',
-          created_by: user.id
-        })
-        .select()
-        .single()
-      
-      if (error) throw error
-      return data
-    },
-    onSuccess: () => {
-      Sentry.addBreadcrumb({ category: "finance", message: "Operation completed", level: "info" });
-      queryClient.invalidateQueries({ queryKey: ["bankTransactions"] })
-      toast.success("تم إنشاء الحركة البنكية بنجاح")
-    },
-    onError: (error) => {
-      toast.error("خطأ في إنشاء الحركة البنكية: " + error.message)
-    }
-  })
-}
+};

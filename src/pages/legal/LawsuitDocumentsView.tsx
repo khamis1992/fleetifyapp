@@ -26,6 +26,7 @@ import {
   CheckCircle2
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 import { toast } from 'sonner';
 import '@/styles/legal-system.css';
 
@@ -42,18 +43,20 @@ interface DocumentInfo {
 export default function LawsuitDocumentsView() {
   const { contractId } = useParams<{ contractId: string }>();
   const navigate = useNavigate();
+  const { companyId } = useUnifiedCompanyAccess();
   
   const [loading, setLoading] = useState(true);
   const [contract, setContract] = useState<any>(null);
   const [documents, setDocuments] = useState<DocumentInfo[]>([]);
 
   useEffect(() => {
-    if (contractId) {
+    if (contractId && companyId) {
       loadContractAndDocuments();
     }
-  }, [contractId]);
+  }, [contractId, companyId]);
 
   const loadContractAndDocuments = async () => {
+    if (!contractId || !companyId) return;
     try {
       setLoading(true);
 
@@ -80,6 +83,7 @@ export default function LawsuitDocumentsView() {
           )
         `)
         .eq('id', contractId)
+        .eq('company_id', companyId)
         .single();
 
       if (contractError) throw contractError;
@@ -89,7 +93,8 @@ export default function LawsuitDocumentsView() {
       const { data: savedDocs } = await supabase
         .from('lawsuit_documents')
         .select('*')
-        .eq('contract_id', contractId);
+        .eq('contract_id', contractId)
+        .eq('company_id', companyId);
 
       // بناء قائمة المستندات
       const docsList: DocumentInfo[] = [

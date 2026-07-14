@@ -283,7 +283,8 @@ export interface CustomerDocuments {
   contractNumber: string;
   documents: {
     name: string;
-    content: string;
+    content: string | Blob;
+    type?: 'html' | 'docx' | 'pdf';
   }[];
 }
 
@@ -315,7 +316,8 @@ async function fetchCustomerFullData(contractId: string) {
           national_id,
           phone,
           email,
-          address
+          address,
+          nationality
         ),
         vehicles (
           id,
@@ -416,7 +418,7 @@ async function generateCustomerDocuments(
   
   // حساب غرامات التأخير لكل فاتورة (120 ريال/يوم، حد أقصى 3000)
   const invoicesWithPenalties = unpaidInvoices.map(inv => {
-    const dueDate = new Date(inv.due_date);
+    const dueDate = inv.due_date ? new Date(inv.due_date) : new Date();
     const today = new Date();
     const daysLate = Math.max(0, Math.floor((today.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24)));
     const remaining = (inv.total_amount || 0) - (inv.paid_amount || 0);
@@ -439,7 +441,7 @@ async function generateCustomerDocuments(
   const claimAmount = totalOverdue + totalPenalties + damagesFee;
   const grandTotal = claimAmount + violationsTotal;
 
-  const documents: { name: string; content: string | Blob; type?: 'html' | 'docx' }[] = [];
+  const documents: CustomerDocuments['documents'] = [];
 
   // 1. المذكرة الشارحة - نفس التنسيق المستخدم في صفحة تجهيز الدعوى
   // Prepare memo data outside if block so it's accessible in documentsList section
@@ -522,7 +524,7 @@ async function generateCustomerDocuments(
     contractEndDate: contract.end_date || '',  // نفس صفحة تجهيز الدعوى
     invoices: invoicesWithPenalties.map(inv => ({
       invoiceNumber: inv.invoice_number || `INV-${inv.id.slice(0, 8)}`,
-      dueDate: inv.due_date,  // نفس صفحة تجهيز الدعوى - تُمرر كـ string
+      dueDate: inv.due_date || '',  // نفس صفحة تجهيز الدعوى - تُمرر كـ string
       totalAmount: inv.total_amount || 0,
       paidAmount: inv.paid_amount || 0,
       daysLate: inv.daysLate,
@@ -777,7 +779,7 @@ async function generateCustomerDocuments(
           documentsWithImages.push({
             name: `عقد_الإيجار.${fileExtension}`,
             content: contractBlob,
-            type: 'pdf' as any,
+            type: 'pdf',
           });
           
           console.log('[إضافة العقد] ✅ تمت إضافة العقد إلى قائمة المستندات');
@@ -847,7 +849,7 @@ export async function generateBulkDocumentsZip(
         const customerDocs = await generateCustomerDocuments(customer, companyId, companyDocuments, options);
 
         // استخراج بيانات القضية للـ Excel
-        const contractId = customer.contract_id || customer.id;
+        const contractId = customer.contract_id;
         const fullData = await fetchCustomerFullData(contractId);
         const lawsuitData = extractLawsuitData(
           customer,
@@ -928,16 +930,9 @@ export async function generateBulkDocumentsZip(
       // حفظ البيانات في قاعدة البيانات
       const { data: companyData } = await supabase.auth.getUser();
       if (companyData.user) {
-        const { data: profile } = await supabase
-          .from('user_profiles')
-          .select('company_id')
-          .eq('user_id', companyData.user.id)
-          .single();
-        
-        if (profile?.company_id) {
           // تحويل بيانات Excel إلى صيغة قاعدة البيانات
           const lawsuitRecords = lawsuitDataList.map(lawsuit => ({
-            company_id: profile.company_id,
+            company_id: companyId,
             case_title: lawsuit.case_title,
             facts: lawsuit.facts,
             requests: lawsuit.requests,
@@ -961,7 +956,6 @@ export async function generateBulkDocumentsZip(
             console.error('Error saving lawsuit data to database:', insertError);
             errors.push('فشل حفظ البيانات في قاعدة البيانات');
           }
-        }
       }
     } catch (error) {
       console.error('Error creating Excel file or saving data:', error);
@@ -1051,7 +1045,9 @@ export async function convertToOfficialCase(contractId: string, companyId: strin
     .insert({
       contract_id: contractId,
       company_id: companyId,
-      status: 'open',
+      case_number: `CASE-${Date.now()}`,
+      case_title: `Debt collection for contract ${contractId}`,
+      case_status: 'open',
       case_type: 'debt_collection',
       created_at: new Date().toISOString(),
     })

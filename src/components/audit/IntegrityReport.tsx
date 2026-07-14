@@ -66,7 +66,16 @@ export function IntegrityReport({ integrityReport, isLoading, onVerify }: Integr
     );
   }
 
-  const report = integrityReport;
+  const report: DataIntegrityReport = integrityReport ?? {
+    total_records: 0,
+    verified_records: 0,
+    tampered_records: 0,
+    suspicious_records: 0,
+    verification_errors: [],
+    integrity_score: 0,
+    last_verification: '',
+    recommendations: [],
+  };
 
   return (
     <div className="space-y-6">

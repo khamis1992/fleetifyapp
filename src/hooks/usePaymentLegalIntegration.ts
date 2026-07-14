@@ -137,7 +137,7 @@ export const useLatePaymentCustomers = () => {
               customer_email: (contract.customers as any)?.email,
               contract_id: contract.id,
               contract_number: contract.contract_number,
-              vehicle_id: contract.vehicle_id,
+              vehicle_id: contract.vehicle_id ?? undefined,
               vehicle_plate: (contract.vehicles as any)?.plate_number,
               total_outstanding: unpaidMonths * (contract.monthly_amount || 0),
               oldest_unpaid_date: oldestUnpaidDate.toISOString(),

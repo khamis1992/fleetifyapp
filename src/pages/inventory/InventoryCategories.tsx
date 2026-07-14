@@ -1,4 +1,5 @@
 import { useState } from "react";
+import type { ReactNode } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -62,7 +63,7 @@ const InventoryCategories = () => {
       category_name_ar: category.category_name_ar || "",
       description: category.description || "",
       parent_category_id: category.parent_category_id || "",
-      is_active: category.is_active,
+      is_active: category.is_active ?? true,
     });
     setIsEditDialogOpen(true);
   };
@@ -117,7 +118,10 @@ const InventoryCategories = () => {
     setExpandedCategories(newExpanded);
   };
 
-  const renderCategoryRow = (category: InventoryCategory & { children?: InventoryCategory[] }, level: number = 0) => {
+  const renderCategoryRow = (
+    category: InventoryCategory & { children?: InventoryCategory[] },
+    level: number = 0
+  ): ReactNode => {
     const hasChildren = category.children && category.children.length > 0;
     const isExpanded = expandedCategories.has(category.id);
 
@@ -157,7 +161,7 @@ const InventoryCategories = () => {
             </Badge>
           </TableCell>
           <TableCell>
-            <Badge variant={category.is_active ? "success" : "secondary"}>
+            <Badge variant={category.is_active ? "default" : "secondary"}>
               {category.is_active ? "نشط" : "غير نشط"}
             </Badge>
           </TableCell>

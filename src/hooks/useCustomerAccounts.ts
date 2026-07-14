@@ -188,7 +188,7 @@ export const useUpdateCompanyAccountSettings = () => {
       toast({
         variant: "destructive",
         title: "خطأ في تحديث الإعدادات",
-        description: error.message,
+        description: error instanceof Error ? error.message : "حدث خطأ غير متوقع",
       });
     },
   });
@@ -292,7 +292,7 @@ export const useLinkAccountToCustomer = () => {
       toast({
         variant: "destructive",
         title: "خطأ في ربط الحساب",
-        description: error.message,
+        description: error instanceof Error ? error.message : "حدث خطأ غير متوقع",
       });
     },
   });
@@ -338,7 +338,7 @@ export const useUnlinkAccountFromCustomer = () => {
       toast({
         variant: "destructive",
         title: "خطأ في إلغاء ربط الحساب",
-        description: error.message,
+        description: error instanceof Error ? error.message : "حدث خطأ غير متوقع",
       });
     },
   });

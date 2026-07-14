@@ -119,7 +119,7 @@ const MobileCars: React.FC = () => {
         model: v.model,
         plate_number: v.plate_number,
         year: v.year,
-        status: v.status,
+        status: v.status ?? 'available',
         daily_rate: v.daily_rate,
         current_contract: contractsByVehicle[v.id] ? {
           id: contractsByVehicle[v.id].id,

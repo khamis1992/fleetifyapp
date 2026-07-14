@@ -239,7 +239,7 @@ export const QuickSearch: React.FC = () => {
         results.push({
           id: c.id,
           title: getCustomerDisplayName(c),
-          subtitle: c.phone || c.national_id,
+          subtitle: c.phone || c.national_id || undefined,
           path: `/customers/${c.id}`,
           type: 'customer',
         });
@@ -315,7 +315,7 @@ export const QuickSearch: React.FC = () => {
         results.push({
           id: v.id,
           title: v.vendor_name_ar || v.vendor_name,
-          subtitle: v.phone,
+          subtitle: v.phone || undefined,
           path: '/finance/vendors',
           type: 'vendor',
         });
@@ -324,16 +324,16 @@ export const QuickSearch: React.FC = () => {
       // Search Employees
       const { data: employees } = await supabase
         .from('employees')
-        .select('id, full_name, employee_id, phone')
+        .select('id, first_name, last_name, first_name_ar, last_name_ar, employee_number, phone')
         .eq('company_id', companyId)
-        .or(`full_name.ilike.%${searchQuery}%,employee_id.ilike.%${searchQuery}%,phone.ilike.%${searchQuery}%`)
+        .or(`first_name.ilike.%${searchQuery}%,last_name.ilike.%${searchQuery}%,first_name_ar.ilike.%${searchQuery}%,last_name_ar.ilike.%${searchQuery}%,employee_number.ilike.%${searchQuery}%,phone.ilike.%${searchQuery}%`)
         .limit(5);
 
       employees?.forEach(e => {
         results.push({
           id: e.id,
-          title: e.full_name,
-          subtitle: e.employee_id || e.phone,
+          title: [e.first_name_ar || e.first_name, e.last_name_ar || e.last_name].filter(Boolean).join(' '),
+          subtitle: e.employee_number || e.phone || undefined,
           path: `/hr/employees/${e.id}`,
           type: 'employee',
         });

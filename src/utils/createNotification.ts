@@ -28,16 +28,28 @@ export const createNotification = async ({
   priority = 'normal',
 }: CreateNotificationParams) => {
   try {
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('user_id, company_id')
+      .eq('id', profileId)
+      .single();
+
+    if (profileError) throw profileError;
+    if (!profile?.user_id || !profile.company_id) {
+      throw new Error('Notification recipient is not linked to a company user');
+    }
+
     const { data, error } = await supabase
-      .from('notifications')
+      .from('user_notifications')
       .insert({
-        userId: profileId, // Using existing schema
-        type: type,
-        title: title,
-        message: message,
-        relatedId: contractId || null,
-        relatedType: contractId ? 'contract' : null,
-        isRead: false,
+        user_id: profile.user_id,
+        company_id: profile.company_id,
+        notification_type: type,
+        title,
+        message: link ? `${message}\n${link}` : message,
+        related_id: contractId || null,
+        related_type: contractId ? 'contract' : null,
+        is_read: false,
       })
       .select()
       .single();

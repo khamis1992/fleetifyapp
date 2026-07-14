@@ -7,6 +7,7 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import type { Database as SupabaseDatabase } from '@/integrations/supabase/types';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -752,12 +753,15 @@ const VehicleDocumentDistributionDialog: React.FC<VehicleDocumentDistributionDia
   // تحديث بيانات المركبة
   const updateVehicleData = async (vehicleId: string, data: ExtractedVehicleData): Promise<boolean> => {
     try {
-      const updateData: Record<string, unknown> = {};
+      if (!companyId) return false;
+
+      const updateData: SupabaseDatabase['public']['Tables']['vehicles']['Update'] = {};
 
       const { data: currentVehicle, error: currentVehicleError } = await supabase
         .from('vehicles')
         .select('vin, engine_number, make, model, year, color, seating_capacity')
         .eq('id', vehicleId)
+        .eq('company_id', companyId)
         .maybeSingle();
 
       if (currentVehicleError) throw currentVehicleError;
@@ -782,7 +786,8 @@ const VehicleDocumentDistributionDialog: React.FC<VehicleDocumentDistributionDia
       const { error } = await supabase
         .from('vehicles')
         .update(updateData)
-        .eq('id', vehicleId);
+        .eq('id', vehicleId)
+        .eq('company_id', companyId);
 
       if (error) throw error;
 

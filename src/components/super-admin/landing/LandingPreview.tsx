@@ -275,6 +275,7 @@ interface PreviewSectionProps {
 }
 
 const PreviewSection: React.FC<PreviewSectionProps> = ({ section, theme, deviceView }) => {
+  const { t } = useFleetifyTranslation("ui");
   const baseStyles = {
     padding: deviceView === 'mobile' ? '2rem 1rem' : '4rem 2rem',
     backgroundColor: theme?.colors?.background ? `hsl(${theme.colors.background})` : '#ffffff'

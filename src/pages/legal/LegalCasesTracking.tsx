@@ -181,26 +181,25 @@ export const LegalCasesTracking: React.FC = () => {
     payment_direction: 'receive' as 'receive' | 'pay',
     outcome_date: new Date().toISOString().split('T')[0],
     outcome_notes: '',
-    create_journal_entry: true,
+    create_journal_entry: false,
     debit_account_id: '',
     credit_account_id: '',
   });
 
-  const { companyId, isLoading: isLoadingCompany } = useUnifiedCompanyAccess();
+  const { companyId, isAuthenticating, isInitializing } = useUnifiedCompanyAccess();
+  const isLoadingCompany = isAuthenticating || isInitializing;
   const { user } = useAuth();
   
   // Preserve the legal audit trail by cancelling cases instead of deleting them.
   const deleteCaseMutation = useMutation({
     mutationFn: async (caseId: string) => {
       if (!companyId) throw new Error('تعذر تحديد الشركة');
-      const { error } = await supabase
-        .from('legal_cases')
-        .update({ case_status: 'cancelled', updated_at: new Date().toISOString() })
-        .eq('id', caseId)
-        .eq('company_id', companyId)
-        .neq('case_status', 'cancelled')
-        .select('id')
-        .single();
+      const { error } = await supabase.rpc('cancel_legal_cases_v1', {
+        p_actor_id: user?.id,
+        p_case_ids: [caseId],
+        p_company_id: companyId,
+        p_reason: 'Cancelled from legal case tracking',
+      });
       if (error) throw error;
     },
     onSuccess: () => {
@@ -220,12 +219,12 @@ export const LegalCasesTracking: React.FC = () => {
       if (caseIds.length === 0) return;
       if (!companyId) throw new Error('تعذر تحديد الشركة');
 
-      const { error } = await supabase
-        .from('legal_cases')
-        .update({ case_status: 'cancelled', updated_at: new Date().toISOString() })
-        .in('id', caseIds)
-        .eq('company_id', companyId)
-        .neq('case_status', 'cancelled');
+      const { error } = await supabase.rpc('cancel_legal_cases_v1', {
+        p_actor_id: user?.id,
+        p_case_ids: caseIds,
+        p_company_id: companyId,
+        p_reason: 'Bulk cancellation from legal case tracking',
+      });
 
       if (error) throw error;
     },
@@ -396,11 +395,16 @@ export const LegalCasesTracking: React.FC = () => {
 
   const handleSendCaseNotification = useCallback(async (legalCase: LegalCase) => {
     try {
+      if (!legalCase.contract_id || !companyId) {
+        toast.error('لا يوجد عقد مرتبط بهذه القضية');
+        return;
+      }
       // Get customer phone from contract
       const { data: contract } = await supabase
         .from('contracts')
         .select('customers(phone, first_name, last_name, first_name_ar, last_name_ar)')
         .eq('id', legalCase.contract_id)
+        .eq('company_id', companyId)
         .single();
 
       const customerPhone = contract?.customers?.phone;
@@ -471,14 +475,14 @@ export const LegalCasesTracking: React.FC = () => {
       payment_direction: legalCase.case_direction === 'filed_against_us' ? 'pay' : 'receive',
       outcome_date: new Date().toISOString().split('T')[0],
       outcome_notes: '',
-      create_journal_entry: true,
+      create_journal_entry: false,
       debit_account_id: '',
       credit_account_id: '',
     });
     setShowCloseDialog(true);
   }, []);
 
-  const handleCloseCase = useCallback(async () => {
+  const handleCloseCaseLegacy = useCallback(async () => {
     if (!caseToClose || !companyId || !user?.id) return;
 
     try {
@@ -701,6 +705,33 @@ export const LegalCasesTracking: React.FC = () => {
     } catch (error: any) {
       console.error('Error closing case:', error);
       toast.error(`فشل في إغلاق القضية: ${error.message}`);
+    }
+  }, [caseToClose, closeFormData, companyId, user?.id, queryClient]);
+
+  void handleCloseCaseLegacy;
+  const handleCloseCase = useCallback(async () => {
+    if (!caseToClose || !companyId || !user?.id) return;
+    try {
+      const { error } = await supabase.rpc('close_legal_case_outcome_v1', {
+        p_company_id: companyId,
+        p_case_id: caseToClose.id,
+        p_case_direction: closeFormData.case_direction,
+        p_outcome_type: closeFormData.outcome_type,
+        p_outcome_amount: Number(closeFormData.outcome_amount || 0),
+        p_outcome_amount_type: closeFormData.outcome_amount_type,
+        p_payment_direction: closeFormData.payment_direction,
+        p_outcome_date: closeFormData.outcome_date,
+        p_outcome_notes: closeFormData.outcome_notes || '',
+        p_actor_id: user.id,
+      });
+      if (error) throw error;
+      queryClient.invalidateQueries({ queryKey: ['legal-cases'] });
+      queryClient.invalidateQueries({ queryKey: ['legal-case-stats'] });
+      toast.success('تم إغلاق القضية دون تسجيل حركة نقدية قبل الدفع الفعلي');
+      setShowCloseDialog(false);
+      setCaseToClose(null);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'فشل في إغلاق القضية');
     }
   }, [caseToClose, closeFormData, companyId, user?.id, queryClient]);
 
@@ -968,7 +999,7 @@ export const LegalCasesTracking: React.FC = () => {
 
   if (isLoadingCompany) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-slate-50 dark:bg-slate-950">
+      <div className="flex items-center justify-center min-h-screen bg-[#F6F8FB] dark:bg-slate-950">
         <LoadingSpinner />
       </div>
     );
@@ -1834,7 +1865,7 @@ export const LegalCasesTracking: React.FC = () => {
             </Button>
             <div className="hidden md:flex flex-col items-end mr-2">
               <span className="text-sm font-semibold text-slate-700">
-                {user?.full_name || user?.email?.split('@')[0] || 'المستخدم'}
+                {user?.email?.split('@')[0] || 'المستخدم'}
               </span>
               <span className="text-xs text-slate-400">مدير النظام</span>
             </div>
@@ -2508,25 +2539,14 @@ export const LegalCasesTracking: React.FC = () => {
               />
             </div>
 
-            {/* إنشاء قيد محاسبي + ملخص */}
+            {/* The outcome is recognized as pending until an actual payment is recorded. */}
             {closeFormData.outcome_amount > 0 && (
-              <div className="p-3 bg-blue-50 rounded-lg border border-blue-200 space-y-2">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={closeFormData.create_journal_entry}
-                    onChange={(e) => setCloseFormData(prev => ({ ...prev, create_journal_entry: e.target.checked }))}
-                    className="rounded border-blue-300 w-4 h-4"
-                  />
-                  <span className="text-sm font-medium text-blue-800">إنشاء قيد محاسبي تلقائياً</span>
-                </label>
-                {closeFormData.create_journal_entry && (
-                  <p className="text-xs text-blue-600 flex items-center gap-1">
-                    <FileText className="w-3.5 h-3.5" />
-                    قيد {closeFormData.payment_direction === 'pay' ? 'مصروف' : 'إيراد'}: {formatCurrency(closeFormData.outcome_amount)}
-                  </p>
-                )}
-              </div>
+              <Alert className="border-amber-200 bg-amber-50 text-amber-900">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription className="text-xs">
+                  سيُحفظ مبلغ الحكم كمستحق. يُسجل القيد والحركة النقدية عند الدفع أو الاستلام الفعلي فقط.
+                </AlertDescription>
+              </Alert>
             )}
 
             {/* ملخص مضغوط */}

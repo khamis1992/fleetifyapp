@@ -39,7 +39,6 @@ import { formatCurrency } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { FeatureTourButton, FeatureTourDialog, type FeatureTourContent } from '@/components/common/FeatureTourGuide';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
-import { usePaymentOperations } from '@/hooks/business/usePaymentOperations';
 import { useFinanceAccessGuard } from '@/hooks/finance/useFinanceAccessGuard';
 
 const excelImportTour = {
@@ -1719,11 +1718,6 @@ export default function ExcelPaymentImport() {
   const navigate = useNavigate();
   const { companyId, user } = useUnifiedCompanyAccess();
   const financeAccess = useFinanceAccessGuard();
-  const { createPayment, isCreating } = usePaymentOperations({
-    autoCreateJournalEntry: true,
-    autoUpdateBankBalance: true,
-    enableNotifications: false,
-  });
   const contractCandidatesRef = useRef<{ companyId: string; contracts: MatchedContract[] } | null>(null);
   const closedAccountingPeriodsRef = useRef<{ companyId: string; periods: AccountingPeriodRow[] } | null>(null);
   const approvalCacheByContractRef = useRef<Map<string, ApprovalCache>>(new Map());
@@ -2611,6 +2605,13 @@ export default function ExcelPaymentImport() {
       let missingInvoiceRows = 0;
       const skippedReasons: string[] = [];
       const paymentReport: PaymentReportRow[] = [];
+      const pendingPaymentRows: Array<{
+        row: ParsedPaymentRow;
+        invoice: ImportInvoice;
+        amount: number;
+        paymentDate: string;
+        stableReference: string;
+      }> = [];
       const approvalCache = await getApprovalCacheForContract(contract);
       const preparedRows = prepareApprovalRows(file.rows);
 
@@ -2699,71 +2700,13 @@ export default function ExcelPaymentImport() {
             invoiceId: invoiceForPayment.id,
             month: row.month,
           });
-
-          try {
-            const insertedPayment = await createPayment.mutateAsync({
-              customer_id: contract.customer_id,
-              contract_id: contract.id,
-              invoice_id: invoiceForPayment.id,
-              amount: amountToApply,
-              payment_date: monthDate || invoiceForPayment.invoice_date || invoiceForPayment.due_date || new Date().toISOString().slice(0, 10),
-              payment_method: 'cash',
-              payment_status: 'completed',
-              type: 'receipt',
-              currency: 'QAR',
-              notes: `دفعة كاش تاريخية مستوردة من Excel - ${file.fileName} - شهر ${row.month}`,
-              idempotencyKey: stableReference,
-            });
-            if (insertedPayment?.id) {
-              cachePayment(approvalCache, {
-                id: String(insertedPayment.id),
-                payment_number: String(insertedPayment.payment_number || ''),
-                payment_date: String(insertedPayment.payment_date || monthDate || invoiceForPayment.invoice_date || invoiceForPayment.due_date || ''),
-                reference_number: String(insertedPayment.reference_number || stableReference),
-                amount: Number(insertedPayment.amount || amountToApply),
-                invoice_id: invoiceForPayment.id,
-                contract_id: contract.id,
-                payment_status: String(insertedPayment.payment_status || 'completed'),
-              });
-            }
-            paymentReport.push({
-              month: row.month,
-              amount: amountToApply,
-              customerName: getContractCustomerDisplayName(contract),
-              contractNumber: contract.contract_number,
-              contractPath: `/contracts/${encodeURIComponent(contract.contract_number)}`,
-              invoiceId: invoiceForPayment.id,
-              invoiceNumber: invoiceForPayment.invoice_number || '-',
-              paymentId: String(insertedPayment?.id || ''),
-              paymentNumber: String(insertedPayment?.payment_number || '-'),
-              paymentDate: String(insertedPayment?.payment_date || monthDate || invoiceForPayment.invoice_date || invoiceForPayment.due_date || ''),
-              referenceNumber: String(insertedPayment?.reference_number || stableReference),
-              destination: `payments.customer_id=${contract.customer_id} / payments.contract_id=${contract.id} / payments.invoice_id=${invoiceForPayment.id}`,
-            });
-            payments += 1;
-          } catch (error: unknown) {
-            const message = errorMessage(error);
-            if (isDuplicateOrContractOverpaymentError(message)) {
-              const reason = explainPaymentSkipWithContext(message, {
-                customerName: file.customerName,
-                month: row.month,
-                amount: amountToApply,
-                contractNumber: contract.contract_number,
-                invoiceNumber: invoiceForPayment.invoice_number || '-',
-              });
-              console.warn('[ExcelPaymentImport] Skipped historical payment row:', {
-                fileName: file.fileName,
-                customerName: file.customerName,
-                month: row.month,
-                amount: amountToApply,
-                reason: message,
-              });
-              skippedReasons.push(reason);
-              skipped += 1;
-            } else {
-              throw error;
-            }
-          }
+          pendingPaymentRows.push({
+            row,
+            invoice: invoiceForPayment,
+            amount: amountToApply,
+            paymentDate: monthDate || invoiceForPayment.invoice_date || invoiceForPayment.due_date || new Date().toISOString().slice(0, 10),
+            stableReference,
+          });
         } else if (paymentAmount > 0) {
           const reason = `فاتورة شهر ${row.month} لا يوجد عليها رصيد مستحق، لذلك لم يتم تسجيل دفعة جديدة.`;
           skippedReasons.push(reason);
@@ -2772,6 +2715,69 @@ export default function ExcelPaymentImport() {
 
         if (await createLateFeeIfNeeded(invoiceForPayment, row, contract, file, approvalCache)) lateFees += 1;
         trafficViolations += await createTrafficViolationsIfNeeded(row, contract, file, approvalCache);
+      }
+
+      if (pendingPaymentRows.length > 0) {
+        const { data: batchResult, error: batchError } = await supabase.rpc(
+          'create_customer_payment_batch_v1',
+          {
+            p_company_id: companyId,
+            p_customer_id: contract.customer_id,
+            p_payment_method: 'cash',
+            p_bank_id: null,
+            p_account_id: null,
+            p_currency: 'QAR',
+            p_allocations: pendingPaymentRows.map((pending) => ({
+              invoice_id: pending.invoice.id,
+              contract_id: contract.id,
+              payment_date: pending.paymentDate,
+              amount: pending.amount,
+              reference_number: pending.stableReference,
+              notes: `دفعة كاش تاريخية مستوردة من Excel - ${file.fileName} - شهر ${pending.row.month}`,
+            })),
+            p_batch_idempotency_key: `excel:${file.id}:${contract.id}`,
+            p_actor_id: user?.id || null,
+          }
+        );
+        if (batchError) throw batchError;
+
+        const batchPayments = ((batchResult as { payments?: Array<{ payment_id?: string }> } | null)?.payments || []);
+        const paymentIds = batchPayments.map((item) => item.payment_id).filter((id): id is string => Boolean(id));
+        if (paymentIds.length !== pendingPaymentRows.length) {
+          throw new Error('لم تُرجع قاعدة البيانات جميع دفعات ملف Excel بعد الحفظ الذري.');
+        }
+
+        const { data: persistedPayments, error: persistedError } = await supabase
+          .from('payments')
+          .select('id,payment_number,payment_date,reference_number,amount,invoice_id,contract_id,payment_status')
+          .eq('company_id', companyId)
+          .in('id', paymentIds);
+        if (persistedError) throw persistedError;
+        const persistedById = new Map((persistedPayments || []).map((payment) => [payment.id, payment]));
+
+        pendingPaymentRows.forEach((pending, index) => {
+          const paymentId = paymentIds[index];
+          const insertedPayment = persistedById.get(paymentId);
+          if (!insertedPayment) {
+            throw new Error(`تعذر تحميل الدفعة الذرية للفترة ${pending.row.month}.`);
+          }
+          cachePayment(approvalCache, insertedPayment as ImportPayment);
+          paymentReport.push({
+            month: pending.row.month,
+            amount: pending.amount,
+            customerName: getContractCustomerDisplayName(contract),
+            contractNumber: contract.contract_number,
+            contractPath: `/contracts/${encodeURIComponent(contract.contract_number)}`,
+            invoiceId: pending.invoice.id,
+            invoiceNumber: pending.invoice.invoice_number || '-',
+            paymentId: insertedPayment.id,
+            paymentNumber: insertedPayment.payment_number || '-',
+            paymentDate: insertedPayment.payment_date || pending.paymentDate,
+            referenceNumber: insertedPayment.reference_number || pending.stableReference,
+            destination: `payments.customer_id=${contract.customer_id} / payments.contract_id=${contract.id} / payments.invoice_id=${pending.invoice.id}`,
+          });
+          payments += 1;
+        });
       }
 
       if (payableRows > 0 && payments === 0 && missingInvoiceRows > 0) {
@@ -2984,7 +2990,7 @@ export default function ExcelPaymentImport() {
               <Button
                 type="button"
                 onClick={() => executeBulkApproval('pending')}
-                disabled={isParsing || isApproving || isBulkApproving || isCreating || totals.pendingApproval === 0}
+                disabled={isParsing || isApproving || isBulkApproving || totals.pendingApproval === 0}
                 className="gap-2 rounded-xl bg-[#020617] text-white hover:bg-[#1E293B]"
               >
                 <ClipboardCheck className="h-4 w-4" />
@@ -2994,7 +3000,7 @@ export default function ExcelPaymentImport() {
                 type="button"
                 variant="outline"
                 onClick={() => executeBulkApproval('failed')}
-                disabled={isParsing || isApproving || isBulkApproving || isCreating || Object.values(fileOutcomes).filter((outcome) => outcome.status === 'failed').length === 0}
+                disabled={isParsing || isApproving || isBulkApproving || Object.values(fileOutcomes).filter((outcome) => outcome.status === 'failed').length === 0}
                 className="gap-2 rounded-xl border-amber-200 bg-white text-amber-700 hover:bg-amber-50"
               >
                 <RotateCcw className="h-4 w-4" />
@@ -3122,7 +3128,7 @@ export default function ExcelPaymentImport() {
                 type="button"
                 variant="outline"
                 onClick={() => executeBulkApproval('failed')}
-                disabled={isParsing || isApproving || isBulkApproving || isCreating || totals.failed === 0}
+                disabled={isParsing || isApproving || isBulkApproving || totals.failed === 0}
                 className="h-9 gap-2 rounded-xl border-amber-200 text-xs font-bold text-amber-700"
               >
                 <RotateCcw className="h-4 w-4" />
@@ -4019,10 +4025,10 @@ export default function ExcelPaymentImport() {
             <Button
               type="button"
               className="rounded-xl bg-[#22C7A1] text-white hover:bg-[#1BAA8A]"
-              disabled={isApproving || isCreating || approvalBlockers.length > 0 || Boolean(importResult)}
+              disabled={isApproving || approvalBlockers.length > 0 || Boolean(importResult)}
               onClick={executeApproval}
             >
-              {importResult ? 'تم الاعتماد' : isApproving || isCreating ? 'جاري الاعتماد...' : 'تنفيذ الاعتماد'}
+              {importResult ? 'تم الاعتماد' : isApproving ? 'جاري الاعتماد...' : 'تنفيذ الاعتماد'}
             </Button>
             <Button
               type="button"

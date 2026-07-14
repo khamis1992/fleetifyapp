@@ -60,7 +60,7 @@ const useTrafficViolationsDashboardStats = () => {
 
       if (error) throw error;
 
-      return violations as any[];
+      return violations;
     },
     staleTime: 2 * 60 * 1000, // 2 minutes cache
   });
@@ -102,10 +102,6 @@ const useAllViolationsWithCustomers = (enabled: boolean) => {
           contract_id,
           created_at,
           updated_at,
-          issuing_authority,
-          violation_number,
-          violation_date,
-          fine_amount,
           vehicles (
             id,
             plate_number,
@@ -118,8 +114,7 @@ const useAllViolationsWithCustomers = (enabled: boolean) => {
             first_name,
             last_name,
             company_name,
-            phone,
-            mobile
+            phone
           ),
           contracts (
             id,
@@ -133,8 +128,7 @@ const useAllViolationsWithCustomers = (enabled: boolean) => {
               first_name,
               last_name,
               company_name,
-              phone,
-              mobile
+              phone
             )
           )
         `)
@@ -435,9 +429,9 @@ export const TrafficViolationsSmartDashboard: React.FC<TrafficViolationsSmartDas
       // Filter violations that are linked to contracts or have customer data
       const violationsWithCustomerData = allViolationsWithCustomers.filter(v => {
         // Has direct customer
-        if (v.customers && (v.customers.phone || v.customers.mobile)) return true;
+        if (v.customers?.phone) return true;
         // Has customer through contract
-        if (v.contracts?.customers && (v.contracts.customers.phone || v.contracts.customers.mobile)) return true;
+        if (v.contracts?.customers?.phone) return true;
         // Has contract_id (linked to contract)
         if (v.contract_id) return true;
         return false;

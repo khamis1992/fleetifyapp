@@ -11,6 +11,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { ExtractedInvoiceData, InvoiceMatchResult } from '@/types/invoiceOCR';
 import { Camera, Loader2, Save, ArrowRight, ArrowLeft } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 import { useNavigate } from 'react-router-dom';
 
 type Step = 'capture' | 'results' | 'matching' | 'save';
@@ -29,7 +30,8 @@ export const InvoiceScannerDashboard = () => {
   const { processImage, isProcessing } = useInvoiceOCR();
   const { findMatches, isMatching } = useInvoiceMatching();
   const { toast } = useToast();
-  const { profile } = useAuth();
+  const { user } = useAuth();
+  const { companyId } = useUnifiedCompanyAccess();
   const navigate = useNavigate();
 
   const handleImageCapture = async (file: File) => {
@@ -54,7 +56,7 @@ export const InvoiceScannerDashboard = () => {
   };
 
   const handleProceedToMatching = async () => {
-    if (!profile?.company_id) {
+    if (!companyId) {
       toast({
         title: "خطأ",
         description: "لم يتم العثور على معلومات الشركة",
@@ -66,7 +68,7 @@ export const InvoiceScannerDashboard = () => {
     setStep('matching');
 
     // Find matches
-    const matches = await findMatches(extractedData, profile.company_id);
+    const matches = await findMatches(extractedData, companyId);
     setMatchResult(matches);
   };
 
@@ -77,7 +79,7 @@ export const InvoiceScannerDashboard = () => {
   };
 
   const handleSave = async () => {
-    if (!profile?.company_id || !imageFile) {
+    if (!companyId || !user?.id || !imageFile) {
       toast({
         title: "خطأ",
         description: "البيانات غير مكتملة",
@@ -90,7 +92,7 @@ export const InvoiceScannerDashboard = () => {
 
     try {
       // Upload image to storage
-      const fileName = `${profile.company_id}/${Date.now()}_${imageFile.name}`;
+      const fileName = `${companyId}/${Date.now()}_${imageFile.name}`;
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('scanned-invoices')
         .upload(fileName, imageFile);
@@ -103,7 +105,7 @@ export const InvoiceScannerDashboard = () => {
 
       // Create invoice record
       const invoiceData: any = {
-        company_id: profile.company_id,
+        company_id: companyId,
         customer_id: selectedCustomerId,
         contract_id: selectedContractId,
         invoice_number: extractedData.invoice_number || `SCN-${Date.now()}`,
@@ -128,7 +130,7 @@ export const InvoiceScannerDashboard = () => {
 
       // Create OCR log
       const ocrLogData: any = {
-        company_id: profile.company_id,
+        company_id: companyId,
         invoice_id: invoice.id,
         image_url: publicUrl,
         ocr_confidence: confidence,
@@ -138,7 +140,7 @@ export const InvoiceScannerDashboard = () => {
         match_confidence: matchResult?.confidence,
         match_reasons: matchResult?.match_reasons,
         processing_status: 'completed',
-        processed_by: profile.user_id
+        processed_by: user.id
       };
 
       await supabase.from('invoice_ocr_logs').insert([ocrLogData]);

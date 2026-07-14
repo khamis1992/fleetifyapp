@@ -1,0 +1,455 @@
+src/components/contracts/BulkDeleteContractsDialog.tsx(107,45): error TS2345: Argument of type 'string | null | undefined' is not assignable to parameter of type 'void'.
+  Type 'null' is not assignable to type 'void'.
+src/components/contracts/BulkDeleteContractsDialog.tsx(134,9): error TS2353: Object literal may only specify known properties, and 'error_message' does not exist in type 'CreateAuditLogParams'.
+src/components/contracts/BulkDeleteContractsDialog.tsx(368,32): error TS2820: Type '"DELETE_CONTRACT"' is not assignable to type 'Permission | undefined'. Did you mean 'Permission.DELETE_CONTRACT'?
+src/components/contracts/ContractAmendmentForm.tsx(150,17): error TS2345: Argument of type 'Record<string, any>' is not assignable to parameter of type 'RejectExcessProperties<{ account_id?: string | null | undefined; assigned_at?: string | null | undefined; assigned_by_profile_id?: string | null | undefined; assigned_to_profile_id?: string | null | undefined; ... 40 more ...; year?: number | ... 1 more ... | undefined; }, Record<...>>'.
+  Type 'Record<string, any>' is not assignable to type '{ [x: string]: never; }'.
+    'string' index signatures are incompatible.
+      Type 'any' is not assignable to type 'never'.
+src/components/contracts/ContractAmendmentsList.tsx(363,51): error TS2339: Property 'map' does not exist on type '{}'.
+src/components/contracts/ContractHeader.tsx(154,27): error TS2339: Property 'daily_rate' does not exist on type 'Contract'.
+src/components/contracts/ContractHeader.tsx(166,27): error TS2339: Property 'total_amount' does not exist on type 'Contract'.
+src/components/contracts/ContractHeader.tsx(178,27): error TS2339: Property 'payment_method' does not exist on type 'Contract'.
+src/components/contracts/ContractHeader.tsx(179,27): error TS2339: Property 'payment_method' does not exist on type 'Contract'.
+src/components/contracts/ContractHeader.tsx(180,27): error TS2339: Property 'payment_method' does not exist on type 'Contract'.
+src/components/contracts/ContractHeader.tsx(181,27): error TS2339: Property 'payment_method' does not exist on type 'Contract'.
+src/components/contracts/ContractHeader.tsx(232,19): error TS2339: Property 'notes' does not exist on type 'Contract'.
+src/components/contracts/ContractHeader.tsx(237,62): error TS2339: Property 'notes' does not exist on type 'Contract'.
+src/components/contracts/ContractHeaderRedesigned.tsx(570,24): error TS2367: This comparison appears to be unintentional because the types '"individual" | "corporate"' and '"company"' have no overlap.
+src/components/contracts/ContractInvoiceDialog.tsx(117,20): error TS2345: Argument of type '(prev: { invoice_type: string; invoice_date: string; due_date: string; subtotal: any; tax_amount: number; discount_amount: number; total_amount: any; notes: string; terms: any; items: { item_description: string; ... 4 more ...; tax_amount: number; }[]; }) => { ...; }' is not assignable to parameter of type 'SetStateAction<{ invoice_type: string; invoice_date: string; due_date: string; subtotal: any; tax_amount: number; discount_amount: number; total_amount: any; notes: string; terms: any; items: { item_description: string; ... 4 more ...; tax_amount: number; }[]; }>'.
+  Type '(prev: { invoice_type: string; invoice_date: string; due_date: string; subtotal: any; tax_amount: number; discount_amount: number; total_amount: any; notes: string; terms: any; items: { item_description: string; ... 4 more ...; tax_amount: number; }[]; }) => { ...; }' is not assignable to type '(prevState: { invoice_type: string; invoice_date: string; due_date: string; subtotal: any; tax_amount: number; discount_amount: number; total_amount: any; notes: string; terms: any; items: { item_description: string; ... 4 more ...; tax_amount: number; }[]; }) => { ...; }'.
+    Call signature return types '{ subtotal: unknown; tax_amount: unknown; total_amount: number; items: { item_description: string; quantity: number; unit_price: any; line_total: any; tax_rate: number; tax_amount: number; }[]; invoice_type: string; ... 4 more ...; terms: any; }' and '{ invoice_type: string; invoice_date: string; due_date: string; subtotal: any; tax_amount: number; discount_amount: number; total_amount: any; notes: string; terms: any; items: { item_description: string; ... 4 more ...; tax_amount: number; }[]; }' are incompatible.
+      The types of 'tax_amount' are incompatible between these types.
+        Type 'unknown' is not assignable to type 'number'.
+src/components/contracts/ContractInvoiceDialog.tsx(125,56): error TS18046: 'item' is of type 'unknown'.
+src/components/contracts/ContractInvoiceDialog.tsx(126,56): error TS18046: 'item' is of type 'unknown'.
+src/components/contracts/ContractInvoiceDialog.tsx(127,19): error TS18046: 'subtotal' is of type 'unknown'.
+src/components/contracts/ContractInvoiceDialog.tsx(127,30): error TS18046: 'totalTax' is of type 'unknown'.
+src/components/contracts/ContractInvoiceDialog.tsx(155,22): error TS2345: Argument of type '(prev: { invoice_type: string; invoice_date: string; due_date: string; subtotal: any; tax_amount: number; discount_amount: number; total_amount: any; notes: string; terms: any; items: { item_description: string; ... 4 more ...; tax_amount: number; }[]; }) => { ...; }' is not assignable to parameter of type 'SetStateAction<{ invoice_type: string; invoice_date: string; due_date: string; subtotal: any; tax_amount: number; discount_amount: number; total_amount: any; notes: string; terms: any; items: { item_description: string; ... 4 more ...; tax_amount: number; }[]; }>'.
+  Type '(prev: { invoice_type: string; invoice_date: string; due_date: string; subtotal: any; tax_amount: number; discount_amount: number; total_amount: any; notes: string; terms: any; items: { item_description: string; ... 4 more ...; tax_amount: number; }[]; }) => { ...; }' is not assignable to type '(prevState: { invoice_type: string; invoice_date: string; due_date: string; subtotal: any; tax_amount: number; discount_amount: number; total_amount: any; notes: string; terms: any; items: { item_description: string; ... 4 more ...; tax_amount: number; }[]; }) => { ...; }'.
+    Call signature return types '{ subtotal: unknown; tax_amount: unknown; total_amount: number; items: { item_description: string; quantity: number; unit_price: any; line_total: any; tax_rate: number; tax_amount: number; }[]; invoice_type: string; ... 4 more ...; terms: any; }' and '{ invoice_type: string; invoice_date: string; due_date: string; subtotal: any; tax_amount: number; discount_amount: number; total_amount: any; notes: string; terms: any; items: { item_description: string; ... 4 more ...; tax_amount: number; }[]; }' are incompatible.
+      The types of 'tax_amount' are incompatible between these types.
+        Type 'unknown' is not assignable to type 'number'.
+src/components/contracts/ContractInvoiceDialog.tsx(194,18): error TS2322: Type '{ company_id: string | undefined; invoice_number: string; invoice_type: string; invoice_date: string; due_date: string | null; customer_id: any; contract_id: any; cost_center_id: any; subtotal: any; ... 8 more ...; created_by: string | undefined; }' is not assignable to type 'RejectExcessProperties<{ approval_notes?: string | null | undefined; approved_at?: string | null | undefined; approved_by?: string | null | undefined; balance_due?: number | null | undefined; company_id: string; ... 34 more ...; vendor_id?: string | ... 1 more ... | undefined; }, { ...; }>'.
+  Type '{ company_id: string | undefined; invoice_number: string; invoice_type: string; invoice_date: string; due_date: string | null; customer_id: any; contract_id: any; cost_center_id: any; subtotal: any; ... 8 more ...; created_by: string | undefined; }' is not assignable to type '{ approval_notes?: string | null | undefined; approved_at?: string | null | undefined; approved_by?: string | null | undefined; balance_due?: number | null | undefined; company_id: string; ... 34 more ...; vendor_id?: string | ... 1 more ... | undefined; }'.
+    Types of property 'company_id' are incompatible.
+      Type 'string | undefined' is not assignable to type 'string'.
+        Type 'undefined' is not assignable to type 'string'.
+src/components/contracts/ContractInvoiceDialog.tsx(494,38): error TS2345: Argument of type '(prev: { invoice_type: string; invoice_date: string; due_date: string; subtotal: any; tax_amount: number; discount_amount: number; total_amount: any; notes: string; terms: any; items: { item_description: string; ... 4 more ...; tax_amount: number; }[]; }) => { ...; }' is not assignable to parameter of type 'SetStateAction<{ invoice_type: string; invoice_date: string; due_date: string; subtotal: any; tax_amount: number; discount_amount: number; total_amount: any; notes: string; terms: any; items: { item_description: string; ... 4 more ...; tax_amount: number; }[]; }>'.
+  Type '(prev: { invoice_type: string; invoice_date: string; due_date: string; subtotal: any; tax_amount: number; discount_amount: number; total_amount: any; notes: string; terms: any; items: { item_description: string; ... 4 more ...; tax_amount: number; }[]; }) => { ...; }' is not assignable to type '(prevState: { invoice_type: string; invoice_date: string; due_date: string; subtotal: any; tax_amount: number; discount_amount: number; total_amount: any; notes: string; terms: any; items: { item_description: string; ... 4 more ...; tax_amount: number; }[]; }) => { ...; }'.
+    Call signature return types '{ subtotal: unknown; tax_amount: unknown; total_amount: number; discount_amount: number; invoice_type: string; invoice_date: string; due_date: string; notes: string; terms: any; items: { item_description: string; ... 4 more ...; tax_amount: number; }[]; }' and '{ invoice_type: string; invoice_date: string; due_date: string; subtotal: any; tax_amount: number; discount_amount: number; total_amount: any; notes: string; terms: any; items: { item_description: string; ... 4 more ...; tax_amount: number; }[]; }' are incompatible.
+      The types of 'tax_amount' are incompatible between these types.
+        Type 'unknown' is not assignable to type 'number'.
+src/components/contracts/ContractPaymentsTabRedesigned.tsx(261,7): error TS2322: Type '{ hidden: { opacity: number; y: number; }; visible: { opacity: number; y: number; transition: { duration: number; ease: number[]; }; }; }' is not assignable to type 'Variants'.
+  Property 'visible' is incompatible with index signature.
+    Type '{ opacity: number; y: number; transition: { duration: number; ease: number[]; }; }' is not assignable to type 'Variant'.
+      Type '{ opacity: number; y: number; transition: { duration: number; ease: number[]; }; }' is not assignable to type 'TargetAndTransition'.
+        Type '{ opacity: number; y: number; transition: { duration: number; ease: number[]; }; }' is not assignable to type '{ transition?: Transition<any> | undefined; transitionEnd?: ResolvedValues | undefined; }'.
+          Types of property 'transition' are incompatible.
+            Type '{ duration: number; ease: number[]; }' is not assignable to type 'Transition<any> | undefined'.
+              Type '{ duration: number; ease: number[]; }' is not assignable to type 'TransitionWithValueOverrides<any>'.
+                Type '{ duration: number; ease: number[]; }' is not assignable to type 'ValueAnimationTransition<any>'.
+                  Types of property 'ease' are incompatible.
+                    Type 'number[]' is not assignable to type 'Easing | Easing[] | undefined'.
+                      Type 'number[]' is not assignable to type 'EasingFunction | Easing[]'.
+                        Type 'number[]' is not assignable to type 'Easing[]'.
+                          Type 'number' is not assignable to type 'Easing'.
+src/components/contracts/ContractPaymentsTabRedesigned.tsx(267,11): error TS2322: Type '{ hidden: { opacity: number; scale: number; }; visible: { opacity: number; scale: number; transition: { duration: number; ease: number[]; }; }; }' is not assignable to type 'Variants'.
+  Property 'visible' is incompatible with index signature.
+    Type '{ opacity: number; scale: number; transition: { duration: number; ease: number[]; }; }' is not assignable to type 'Variant'.
+      Type '{ opacity: number; scale: number; transition: { duration: number; ease: number[]; }; }' is not assignable to type 'TargetAndTransition'.
+        Type '{ opacity: number; scale: number; transition: { duration: number; ease: number[]; }; }' is not assignable to type '{ transition?: Transition<any> | undefined; transitionEnd?: ResolvedValues | undefined; }'.
+          Types of property 'transition' are incompatible.
+            Type '{ duration: number; ease: number[]; }' is not assignable to type 'Transition<any> | undefined'.
+              Type '{ duration: number; ease: number[]; }' is not assignable to type 'TransitionWithValueOverrides<any>'.
+                Type '{ duration: number; ease: number[]; }' is not assignable to type 'ValueAnimationTransition<any>'.
+                  Types of property 'ease' are incompatible.
+                    Type 'number[]' is not assignable to type 'Easing | Easing[] | undefined'.
+                      Type 'number[]' is not assignable to type 'EasingFunction | Easing[]'.
+                        Type 'number[]' is not assignable to type 'Easing[]'.
+                          Type 'number' is not assignable to type 'Easing'.
+src/components/contracts/ContractPaymentsTabRedesigned.tsx(303,7): error TS2322: Type '{ hidden: { opacity: number; scale: number; }; visible: { opacity: number; scale: number; transition: { duration: number; ease: number[]; }; }; }' is not assignable to type 'Variants'.
+  Property 'visible' is incompatible with index signature.
+    Type '{ opacity: number; scale: number; transition: { duration: number; ease: number[]; }; }' is not assignable to type 'Variant'.
+      Type '{ opacity: number; scale: number; transition: { duration: number; ease: number[]; }; }' is not assignable to type 'TargetAndTransition'.
+        Type '{ opacity: number; scale: number; transition: { duration: number; ease: number[]; }; }' is not assignable to type '{ transition?: Transition<any> | undefined; transitionEnd?: ResolvedValues | undefined; }'.
+          Types of property 'transition' are incompatible.
+            Type '{ duration: number; ease: number[]; }' is not assignable to type 'Transition<any> | undefined'.
+              Type '{ duration: number; ease: number[]; }' is not assignable to type 'TransitionWithValueOverrides<any>'.
+                Type '{ duration: number; ease: number[]; }' is not assignable to type 'ValueAnimationTransition<any>'.
+                  Types of property 'ease' are incompatible.
+                    Type 'number[]' is not assignable to type 'Easing | Easing[] | undefined'.
+                      Type 'number[]' is not assignable to type 'EasingFunction | Easing[]'.
+                        Type 'number[]' is not assignable to type 'Easing[]'.
+                          Type 'number' is not assignable to type 'Easing'.
+src/components/contracts/ContractPaymentsTabRedesigned.tsx(1277,17): error TS2322: Type '{ hidden: { opacity: number; y: number; }; visible: { opacity: number; y: number; transition: { duration: number; ease: number[]; }; }; }' is not assignable to type 'Variants'.
+  Property 'visible' is incompatible with index signature.
+    Type '{ opacity: number; y: number; transition: { duration: number; ease: number[]; }; }' is not assignable to type 'Variant'.
+      Type '{ opacity: number; y: number; transition: { duration: number; ease: number[]; }; }' is not assignable to type 'TargetAndTransition'.
+        Type '{ opacity: number; y: number; transition: { duration: number; ease: number[]; }; }' is not assignable to type '{ transition?: Transition<any> | undefined; transitionEnd?: ResolvedValues | undefined; }'.
+          Types of property 'transition' are incompatible.
+            Type '{ duration: number; ease: number[]; }' is not assignable to type 'Transition<any> | undefined'.
+              Type '{ duration: number; ease: number[]; }' is not assignable to type 'TransitionWithValueOverrides<any>'.
+                Type '{ duration: number; ease: number[]; }' is not assignable to type 'ValueAnimationTransition<any>'.
+                  Types of property 'ease' are incompatible.
+                    Type 'number[]' is not assignable to type 'Easing | Easing[] | undefined'.
+                      Type 'number[]' is not assignable to type 'EasingFunction | Easing[]'.
+                        Type 'number[]' is not assignable to type 'Easing[]'.
+                          Type 'number' is not assignable to type 'Easing'.
+src/components/contracts/DuplicateContractsDiagnostic.tsx(37,29): error TS2345: Argument of type 'string | null | undefined' is not assignable to parameter of type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+src/components/contracts/DuplicateContractsDiagnostic.tsx(55,31): error TS2345: Argument of type 'string | null | undefined' is not assignable to parameter of type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+src/components/contracts/EnhancedPaymentScheduleTabRedesigned.tsx(190,7): error TS2322: Type '{ hidden: { opacity: number; y: number; }; visible: { opacity: number; y: number; transition: { duration: number; ease: number[]; }; }; }' is not assignable to type 'Variants'.
+  Property 'visible' is incompatible with index signature.
+    Type '{ opacity: number; y: number; transition: { duration: number; ease: number[]; }; }' is not assignable to type 'Variant'.
+      Type '{ opacity: number; y: number; transition: { duration: number; ease: number[]; }; }' is not assignable to type 'TargetAndTransition'.
+        Type '{ opacity: number; y: number; transition: { duration: number; ease: number[]; }; }' is not assignable to type '{ transition?: Transition<any> | undefined; transitionEnd?: ResolvedValues | undefined; }'.
+          Types of property 'transition' are incompatible.
+            Type '{ duration: number; ease: number[]; }' is not assignable to type 'Transition<any> | undefined'.
+              Type '{ duration: number; ease: number[]; }' is not assignable to type 'TransitionWithValueOverrides<any>'.
+                Type '{ duration: number; ease: number[]; }' is not assignable to type 'ValueAnimationTransition<any>'.
+                  Types of property 'ease' are incompatible.
+                    Type 'number[]' is not assignable to type 'Easing | Easing[] | undefined'.
+                      Type 'number[]' is not assignable to type 'EasingFunction | Easing[]'.
+                        Type 'number[]' is not assignable to type 'Easing[]'.
+                          Type 'number' is not assignable to type 'Easing'.
+src/components/contracts/EnhancedPaymentScheduleTabRedesigned.tsx(196,11): error TS2322: Type '{ hidden: { opacity: number; scale: number; }; visible: { opacity: number; scale: number; transition: { duration: number; ease: number[]; }; }; }' is not assignable to type 'Variants'.
+  Property 'visible' is incompatible with index signature.
+    Type '{ opacity: number; scale: number; transition: { duration: number; ease: number[]; }; }' is not assignable to type 'Variant'.
+      Type '{ opacity: number; scale: number; transition: { duration: number; ease: number[]; }; }' is not assignable to type 'TargetAndTransition'.
+        Type '{ opacity: number; scale: number; transition: { duration: number; ease: number[]; }; }' is not assignable to type '{ transition?: Transition<any> | undefined; transitionEnd?: ResolvedValues | undefined; }'.
+          Types of property 'transition' are incompatible.
+            Type '{ duration: number; ease: number[]; }' is not assignable to type 'Transition<any> | undefined'.
+              Type '{ duration: number; ease: number[]; }' is not assignable to type 'TransitionWithValueOverrides<any>'.
+                Type '{ duration: number; ease: number[]; }' is not assignable to type 'ValueAnimationTransition<any>'.
+                  Types of property 'ease' are incompatible.
+                    Type 'number[]' is not assignable to type 'Easing | Easing[] | undefined'.
+                      Type 'number[]' is not assignable to type 'EasingFunction | Easing[]'.
+                        Type 'number[]' is not assignable to type 'Easing[]'.
+                          Type 'number' is not assignable to type 'Easing'.
+src/components/contracts/EnhancedPaymentScheduleTabRedesigned.tsx(369,7): error TS2322: Type '{ hidden: { opacity: number; scale: number; }; visible: { opacity: number; scale: number; transition: { duration: number; ease: number[]; }; }; }' is not assignable to type 'Variants'.
+  Property 'visible' is incompatible with index signature.
+    Type '{ opacity: number; scale: number; transition: { duration: number; ease: number[]; }; }' is not assignable to type 'Variant'.
+      Type '{ opacity: number; scale: number; transition: { duration: number; ease: number[]; }; }' is not assignable to type 'TargetAndTransition'.
+        Type '{ opacity: number; scale: number; transition: { duration: number; ease: number[]; }; }' is not assignable to type '{ transition?: Transition<any> | undefined; transitionEnd?: ResolvedValues | undefined; }'.
+          Types of property 'transition' are incompatible.
+            Type '{ duration: number; ease: number[]; }' is not assignable to type 'Transition<any> | undefined'.
+              Type '{ duration: number; ease: number[]; }' is not assignable to type 'TransitionWithValueOverrides<any>'.
+                Type '{ duration: number; ease: number[]; }' is not assignable to type 'ValueAnimationTransition<any>'.
+                  Types of property 'ease' are incompatible.
+                    Type 'number[]' is not assignable to type 'Easing | Easing[] | undefined'.
+                      Type 'number[]' is not assignable to type 'EasingFunction | Easing[]'.
+                        Type 'number[]' is not assignable to type 'Easing[]'.
+                          Type 'number' is not assignable to type 'Easing'.
+src/components/contracts/EnhancedPaymentScheduleTabRedesigned.tsx(852,15): error TS2322: Type '{ hidden: { opacity: number; y: number; }; visible: { opacity: number; y: number; transition: { duration: number; ease: number[]; }; }; }' is not assignable to type 'Variants'.
+  Property 'visible' is incompatible with index signature.
+    Type '{ opacity: number; y: number; transition: { duration: number; ease: number[]; }; }' is not assignable to type 'Variant'.
+      Type '{ opacity: number; y: number; transition: { duration: number; ease: number[]; }; }' is not assignable to type 'TargetAndTransition'.
+        Type '{ opacity: number; y: number; transition: { duration: number; ease: number[]; }; }' is not assignable to type '{ transition?: Transition<any> | undefined; transitionEnd?: ResolvedValues | undefined; }'.
+          Types of property 'transition' are incompatible.
+            Type '{ duration: number; ease: number[]; }' is not assignable to type 'Transition<any> | undefined'.
+              Type '{ duration: number; ease: number[]; }' is not assignable to type 'TransitionWithValueOverrides<any>'.
+                Type '{ duration: number; ease: number[]; }' is not assignable to type 'ValueAnimationTransition<any>'.
+                  Types of property 'ease' are incompatible.
+                    Type 'number[]' is not assignable to type 'Easing | Easing[] | undefined'.
+                      Type 'number[]' is not assignable to type 'EasingFunction | Easing[]'.
+                        Type 'number[]' is not assignable to type 'Easing[]'.
+                          Type 'number' is not assignable to type 'Easing'.
+src/components/contracts/UnifiedContractUpload.tsx(91,36): error TS18046: 'error' is of type 'unknown'.
+src/components/contracts/vehicle-inspection/VehicleComparisonView.tsx(66,18): error TS2367: This comparison appears to be unintentional because the types '"missing" | "scratch" | "dent" | "crack" | "broken"' and '"clean"' have no overlap.
+src/components/contracts/vehicle-inspection/VehicleComparisonView.tsx(102,23): error TS18047: 'returnData' is possibly 'null'.
+src/components/contracts/vehicle-inspection/VehicleConditionDialog.tsx(106,48): error TS2339: Property 'asyncMap' does not exist on type 'File[]'.
+src/components/contracts/vehicle-inspection/VehicleConditionDialog.tsx(106,64): error TS7006: Parameter 'file' implicitly has an 'any' type.
+src/components/contracts/vehicle-inspection/VehicleMarking.tsx(164,21): error TS2322: Type '{ hidden: { scale: number; opacity: number; }; visible: { scale: number; opacity: number; transition: { type: string; stiffness: number; damping: number; }; }; }' is not assignable to type 'Variants'.
+  Property 'visible' is incompatible with index signature.
+    Type '{ scale: number; opacity: number; transition: { type: string; stiffness: number; damping: number; }; }' is not assignable to type 'Variant'.
+      Type '{ scale: number; opacity: number; transition: { type: string; stiffness: number; damping: number; }; }' is not assignable to type 'TargetAndTransition'.
+        Type '{ scale: number; opacity: number; transition: { type: string; stiffness: number; damping: number; }; }' is not assignable to type '{ transition?: Transition<any> | undefined; transitionEnd?: ResolvedValues | undefined; }'.
+          Types of property 'transition' are incompatible.
+            Type '{ type: string; stiffness: number; damping: number; }' is not assignable to type 'Transition<any> | undefined'.
+              Type '{ type: string; stiffness: number; damping: number; }' is not assignable to type 'TransitionWithValueOverrides<any>'.
+                Type '{ type: string; stiffness: number; damping: number; }' is not assignable to type 'ValueAnimationTransition<any>'.
+                  Types of property 'type' are incompatible.
+                    Type 'string' is not assignable to type 'AnimationGeneratorType | undefined'.
+src/components/contracts/vehicle-inspection/VisualVehicleDiagram.tsx(333,23): error TS17001: JSX elements cannot have multiple attributes with the same name.
+src/components/contracts/VehiclePickupReturnTabRedesigned.tsx(196,7): error TS2322: Type '{ hidden: { opacity: number; scale: number; }; visible: { opacity: number; scale: number; transition: { duration: number; ease: number[]; }; }; }' is not assignable to type 'Variants'.
+  Property 'visible' is incompatible with index signature.
+    Type '{ opacity: number; scale: number; transition: { duration: number; ease: number[]; }; }' is not assignable to type 'Variant'.
+      Type '{ opacity: number; scale: number; transition: { duration: number; ease: number[]; }; }' is not assignable to type 'TargetAndTransition'.
+        Type '{ opacity: number; scale: number; transition: { duration: number; ease: number[]; }; }' is not assignable to type '{ transition?: Transition<any> | undefined; transitionEnd?: ResolvedValues | undefined; }'.
+          Types of property 'transition' are incompatible.
+            Type '{ duration: number; ease: number[]; }' is not assignable to type 'Transition<any> | undefined'.
+              Type '{ duration: number; ease: number[]; }' is not assignable to type 'TransitionWithValueOverrides<any>'.
+                Type '{ duration: number; ease: number[]; }' is not assignable to type 'ValueAnimationTransition<any>'.
+                  Types of property 'ease' are incompatible.
+                    Type 'number[]' is not assignable to type 'Easing | Easing[] | undefined'.
+                      Type 'number[]' is not assignable to type 'EasingFunction | Easing[]'.
+                        Type 'number[]' is not assignable to type 'Easing[]'.
+                          Type 'number' is not assignable to type 'Easing'.
+src/components/contracts/VehiclePickupReturnTabRedesigned.tsx(591,15): error TS2322: Type '{ hidden: { opacity: number; y: number; }; visible: { opacity: number; y: number; transition: { duration: number; ease: number[]; }; }; }' is not assignable to type 'Variants'.
+  Property 'visible' is incompatible with index signature.
+    Type '{ opacity: number; y: number; transition: { duration: number; ease: number[]; }; }' is not assignable to type 'Variant'.
+      Type '{ opacity: number; y: number; transition: { duration: number; ease: number[]; }; }' is not assignable to type 'TargetAndTransition'.
+        Type '{ opacity: number; y: number; transition: { duration: number; ease: number[]; }; }' is not assignable to type '{ transition?: Transition<any> | undefined; transitionEnd?: ResolvedValues | undefined; }'.
+          Types of property 'transition' are incompatible.
+            Type '{ duration: number; ease: number[]; }' is not assignable to type 'Transition<any> | undefined'.
+              Type '{ duration: number; ease: number[]; }' is not assignable to type 'TransitionWithValueOverrides<any>'.
+                Type '{ duration: number; ease: number[]; }' is not assignable to type 'ValueAnimationTransition<any>'.
+                  Types of property 'ease' are incompatible.
+                    Type 'number[]' is not assignable to type 'Easing | Easing[] | undefined'.
+                      Type 'number[]' is not assignable to type 'EasingFunction | Easing[]'.
+                        Type 'number[]' is not assignable to type 'Easing[]'.
+                          Type 'number' is not assignable to type 'Easing'.
+src/components/contracts/VehiclePickupReturnTabRedesigned.tsx(620,15): error TS2322: Type '{ hidden: { opacity: number; y: number; }; visible: { opacity: number; y: number; transition: { duration: number; ease: number[]; }; }; }' is not assignable to type 'Variants'.
+  Property 'visible' is incompatible with index signature.
+    Type '{ opacity: number; y: number; transition: { duration: number; ease: number[]; }; }' is not assignable to type 'Variant'.
+      Type '{ opacity: number; y: number; transition: { duration: number; ease: number[]; }; }' is not assignable to type 'TargetAndTransition'.
+        Type '{ opacity: number; y: number; transition: { duration: number; ease: number[]; }; }' is not assignable to type '{ transition?: Transition<any> | undefined; transitionEnd?: ResolvedValues | undefined; }'.
+          Types of property 'transition' are incompatible.
+            Type '{ duration: number; ease: number[]; }' is not assignable to type 'Transition<any> | undefined'.
+              Type '{ duration: number; ease: number[]; }' is not assignable to type 'TransitionWithValueOverrides<any>'.
+                Type '{ duration: number; ease: number[]; }' is not assignable to type 'ValueAnimationTransition<any>'.
+                  Types of property 'ease' are incompatible.
+                    Type 'number[]' is not assignable to type 'Easing | Easing[] | undefined'.
+                      Type 'number[]' is not assignable to type 'EasingFunction | Easing[]'.
+                        Type 'number[]' is not assignable to type 'Easing[]'.
+                          Type 'number' is not assignable to type 'Easing'.
+src/components/contracts/VehicleReturnFormDialog.tsx(522,11): error TS2353: Object literal may only specify known properties, and 'contract_id' does not exist in type 'RejectExcessProperties<{ ac_condition?: string | null | undefined; battery_condition?: string | null | undefined; brake_condition?: string | null | undefined; company_id: string; created_at?: string | undefined; ... 23 more ...; vehicle_id: string; }, { ...; }> | RejectExcessProperties<...>[]'.
+src/components/contracts/VehicleReturnFormDialog.tsx(671,17): error TS2322: Type '{ hidden: { opacity: number; y: number; }; visible: { opacity: number; y: number; transition: { duration: number; ease: number[]; }; }; }' is not assignable to type 'Variants'.
+  Property 'visible' is incompatible with index signature.
+    Type '{ opacity: number; y: number; transition: { duration: number; ease: number[]; }; }' is not assignable to type 'Variant'.
+      Type '{ opacity: number; y: number; transition: { duration: number; ease: number[]; }; }' is not assignable to type 'TargetAndTransition'.
+        Type '{ opacity: number; y: number; transition: { duration: number; ease: number[]; }; }' is not assignable to type '{ transition?: Transition<any> | undefined; transitionEnd?: ResolvedValues | undefined; }'.
+          Types of property 'transition' are incompatible.
+            Type '{ duration: number; ease: number[]; }' is not assignable to type 'Transition<any> | undefined'.
+              Type '{ duration: number; ease: number[]; }' is not assignable to type 'TransitionWithValueOverrides<any>'.
+                Type '{ duration: number; ease: number[]; }' is not assignable to type 'ValueAnimationTransition<any>'.
+                  Types of property 'ease' are incompatible.
+                    Type 'number[]' is not assignable to type 'Easing | Easing[] | undefined'.
+                      Type 'number[]' is not assignable to type 'EasingFunction | Easing[]'.
+                        Type 'number[]' is not assignable to type 'Easing[]'.
+                          Type 'number' is not assignable to type 'Easing'.
+src/components/contracts/VehicleReturnFormDialog.tsx(799,17): error TS2322: Type '{ hidden: { opacity: number; y: number; }; visible: { opacity: number; y: number; transition: { duration: number; ease: number[]; }; }; }' is not assignable to type 'Variants'.
+  Property 'visible' is incompatible with index signature.
+    Type '{ opacity: number; y: number; transition: { duration: number; ease: number[]; }; }' is not assignable to type 'Variant'.
+      Type '{ opacity: number; y: number; transition: { duration: number; ease: number[]; }; }' is not assignable to type 'TargetAndTransition'.
+        Type '{ opacity: number; y: number; transition: { duration: number; ease: number[]; }; }' is not assignable to type '{ transition?: Transition<any> | undefined; transitionEnd?: ResolvedValues | undefined; }'.
+          Types of property 'transition' are incompatible.
+            Type '{ duration: number; ease: number[]; }' is not assignable to type 'Transition<any> | undefined'.
+              Type '{ duration: number; ease: number[]; }' is not assignable to type 'TransitionWithValueOverrides<any>'.
+                Type '{ duration: number; ease: number[]; }' is not assignable to type 'ValueAnimationTransition<any>'.
+                  Types of property 'ease' are incompatible.
+                    Type 'number[]' is not assignable to type 'Easing | Easing[] | undefined'.
+                      Type 'number[]' is not assignable to type 'EasingFunction | Easing[]'.
+                        Type 'number[]' is not assignable to type 'Easing[]'.
+                          Type 'number' is not assignable to type 'Easing'.
+src/components/contracts/VehicleReturnFormDialog.tsx(843,17): error TS2322: Type '{ hidden: { opacity: number; y: number; }; visible: { opacity: number; y: number; transition: { duration: number; ease: number[]; }; }; }' is not assignable to type 'Variants'.
+  Property 'visible' is incompatible with index signature.
+    Type '{ opacity: number; y: number; transition: { duration: number; ease: number[]; }; }' is not assignable to type 'Variant'.
+      Type '{ opacity: number; y: number; transition: { duration: number; ease: number[]; }; }' is not assignable to type 'TargetAndTransition'.
+        Type '{ opacity: number; y: number; transition: { duration: number; ease: number[]; }; }' is not assignable to type '{ transition?: Transition<any> | undefined; transitionEnd?: ResolvedValues | undefined; }'.
+          Types of property 'transition' are incompatible.
+            Type '{ duration: number; ease: number[]; }' is not assignable to type 'Transition<any> | undefined'.
+              Type '{ duration: number; ease: number[]; }' is not assignable to type 'TransitionWithValueOverrides<any>'.
+                Type '{ duration: number; ease: number[]; }' is not assignable to type 'ValueAnimationTransition<any>'.
+                  Types of property 'ease' are incompatible.
+                    Type 'number[]' is not assignable to type 'Easing | Easing[] | undefined'.
+                      Type 'number[]' is not assignable to type 'EasingFunction | Easing[]'.
+                        Type 'number[]' is not assignable to type 'Easing[]'.
+                          Type 'number' is not assignable to type 'Easing'.
+src/components/contracts/VehicleReturnFormDialog.tsx(1246,17): error TS2322: Type '{ hidden: { opacity: number; y: number; }; visible: { opacity: number; y: number; transition: { duration: number; ease: number[]; }; }; }' is not assignable to type 'Variants'.
+  Property 'visible' is incompatible with index signature.
+    Type '{ opacity: number; y: number; transition: { duration: number; ease: number[]; }; }' is not assignable to type 'Variant'.
+      Type '{ opacity: number; y: number; transition: { duration: number; ease: number[]; }; }' is not assignable to type 'TargetAndTransition'.
+        Type '{ opacity: number; y: number; transition: { duration: number; ease: number[]; }; }' is not assignable to type '{ transition?: Transition<any> | undefined; transitionEnd?: ResolvedValues | undefined; }'.
+          Types of property 'transition' are incompatible.
+            Type '{ duration: number; ease: number[]; }' is not assignable to type 'Transition<any> | undefined'.
+              Type '{ duration: number; ease: number[]; }' is not assignable to type 'TransitionWithValueOverrides<any>'.
+                Type '{ duration: number; ease: number[]; }' is not assignable to type 'ValueAnimationTransition<any>'.
+                  Types of property 'ease' are incompatible.
+                    Type 'number[]' is not assignable to type 'Easing | Easing[] | undefined'.
+                      Type 'number[]' is not assignable to type 'EasingFunction | Easing[]'.
+                        Type 'number[]' is not assignable to type 'Easing[]'.
+                          Type 'number' is not assignable to type 'Easing'.
+src/components/contracts/VehicleReturnFormDialog.tsx(1398,17): error TS2322: Type '{ hidden: { opacity: number; y: number; }; visible: { opacity: number; y: number; transition: { duration: number; ease: number[]; }; }; }' is not assignable to type 'Variants'.
+  Property 'visible' is incompatible with index signature.
+    Type '{ opacity: number; y: number; transition: { duration: number; ease: number[]; }; }' is not assignable to type 'Variant'.
+      Type '{ opacity: number; y: number; transition: { duration: number; ease: number[]; }; }' is not assignable to type 'TargetAndTransition'.
+        Type '{ opacity: number; y: number; transition: { duration: number; ease: number[]; }; }' is not assignable to type '{ transition?: Transition<any> | undefined; transitionEnd?: ResolvedValues | undefined; }'.
+          Types of property 'transition' are incompatible.
+            Type '{ duration: number; ease: number[]; }' is not assignable to type 'Transition<any> | undefined'.
+              Type '{ duration: number; ease: number[]; }' is not assignable to type 'TransitionWithValueOverrides<any>'.
+                Type '{ duration: number; ease: number[]; }' is not assignable to type 'ValueAnimationTransition<any>'.
+                  Types of property 'ease' are incompatible.
+                    Type 'number[]' is not assignable to type 'Easing | Easing[] | undefined'.
+                      Type 'number[]' is not assignable to type 'EasingFunction | Easing[]'.
+                        Type 'number[]' is not assignable to type 'Easing[]'.
+                          Type 'number' is not assignable to type 'Easing'.
+src/components/mobile/FABMenu.tsx(131,13): error TS2322: Type '{ hidden: { y: string; opacity: number; }; visible: { y: number; opacity: number; transition: { type: string; stiffness: number; damping: number; }; }; exit: { y: string; opacity: number; transition: { duration: number; }; }; }' is not assignable to type 'Variants'.
+  Property 'visible' is incompatible with index signature.
+    Type '{ y: number; opacity: number; transition: { type: string; stiffness: number; damping: number; }; }' is not assignable to type 'Variant'.
+      Type '{ y: number; opacity: number; transition: { type: string; stiffness: number; damping: number; }; }' is not assignable to type 'TargetAndTransition'.
+        Type '{ y: number; opacity: number; transition: { type: string; stiffness: number; damping: number; }; }' is not assignable to type '{ transition?: Transition<any> | undefined; transitionEnd?: ResolvedValues | undefined; }'.
+          Types of property 'transition' are incompatible.
+            Type '{ type: string; stiffness: number; damping: number; }' is not assignable to type 'Transition<any> | undefined'.
+              Type '{ type: string; stiffness: number; damping: number; }' is not assignable to type 'TransitionWithValueOverrides<any>'.
+                Type '{ type: string; stiffness: number; damping: number; }' is not assignable to type 'ValueAnimationTransition<any>'.
+                  Types of property 'type' are incompatible.
+                    Type 'string' is not assignable to type 'AnimationGeneratorType | undefined'.
+src/components/mobile/FloatingActionButton.tsx(173,13): error TS2322: Type '{ visible: { scale: number; opacity: number; y: number; transition: { type: string; stiffness: number; damping: number; }; }; hidden: { scale: number; opacity: number; y: number; transition: { duration: number; }; }; }' is not assignable to type 'Variants'.
+  Property 'visible' is incompatible with index signature.
+    Type '{ scale: number; opacity: number; y: number; transition: { type: string; stiffness: number; damping: number; }; }' is not assignable to type 'Variant'.
+      Type '{ scale: number; opacity: number; y: number; transition: { type: string; stiffness: number; damping: number; }; }' is not assignable to type 'TargetAndTransition'.
+        Type '{ scale: number; opacity: number; y: number; transition: { type: string; stiffness: number; damping: number; }; }' is not assignable to type '{ transition?: Transition<any> | undefined; transitionEnd?: ResolvedValues | undefined; }'.
+          Types of property 'transition' are incompatible.
+            Type '{ type: string; stiffness: number; damping: number; }' is not assignable to type 'Transition<any> | undefined'.
+              Type '{ type: string; stiffness: number; damping: number; }' is not assignable to type 'TransitionWithValueOverrides<any>'.
+                Type '{ type: string; stiffness: number; damping: number; }' is not assignable to type 'ValueAnimationTransition<any>'.
+                  Types of property 'type' are incompatible.
+                    Type 'string' is not assignable to type 'AnimationGeneratorType | undefined'.
+src/components/mobile/MobileFormWrapper.tsx(136,19): error TS2322: Type '"destructive" | "secondary" | "success"' is not assignable to type '"default" | "destructive" | "outline" | "secondary" | null | undefined'.
+  Type '"success"' is not assignable to type '"default" | "destructive" | "outline" | "secondary" | null | undefined'.
+src/components/mobile/TouchOptimization.tsx(506,7): error TS2322: Type 'RefObject<HTMLElement>' is not assignable to type 'LegacyRef<HTMLDivElement> | undefined'.
+  Type 'RefObject<HTMLElement>' is not assignable to type 'RefObject<HTMLDivElement>'.
+    Property 'align' is missing in type 'HTMLElement' but required in type 'HTMLDivElement'.
+src/components/PageCustomizer.tsx(76,10): error TS2322: Type '{ children: ReactNode; widgets: DashboardWidget[]; dashboardId: string; }' is not assignable to type 'IntrinsicAttributes & CustomizableDashboardProps'.
+  Property 'children' does not exist on type 'IntrinsicAttributes & CustomizableDashboardProps'.
+src/hooks/contracts/useSignedAgreementUpload.ts(333,15): error TS2322: Type 'string | null' is not assignable to type 'string | undefined'.
+  Type 'null' is not assignable to type 'string | undefined'.
+src/hooks/contracts/useSignedAgreementUpload.ts(378,15): error TS2322: Type 'string | null' is not assignable to type 'string | undefined'.
+  Type 'null' is not assignable to type 'string | undefined'.
+src/hooks/contracts/useSignedAgreementUpload.ts(391,13): error TS2322: Type 'string | null | undefined' is not assignable to type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+src/hooks/contracts/useSignedAgreementUpload.ts(425,17): error TS2322: Type 'string | null' is not assignable to type 'string | undefined'.
+  Type 'null' is not assignable to type 'string | undefined'.
+src/hooks/contracts/useSignedAgreementUpload.ts(474,15): error TS2322: Type 'string | null' is not assignable to type 'string | undefined'.
+  Type 'null' is not assignable to type 'string | undefined'.
+src/hooks/useBulkDeleteDuplicateContracts.ts(212,55): error TS18046: 'error' is of type 'unknown'.
+src/hooks/useBulkDeleteDuplicateContracts.ts(216,41): error TS18046: 'error' is of type 'unknown'.
+src/hooks/useCompanies.ts(56,7): error TS2322: Type '{ id: string; name: string; name_ar: string | null; email: string | null; phone: string | null; subscription_status: string | null; subscription_plan: string | null; created_at: string; ... 14 more ...; auto_checkout_enabled: boolean | null; }[]' is not assignable to type 'Company[]'.
+  Type '{ id: string; name: string; name_ar: string | null; email: string | null; phone: string | null; subscription_status: string | null; subscription_plan: string | null; created_at: string; ... 14 more ...; auto_checkout_enabled: boolean | null; }' is not assignable to type 'Company'.
+    Types of property 'name_ar' are incompatible.
+      Type 'string | null' is not assignable to type 'string | undefined'.
+        Type 'null' is not assignable to type 'string | undefined'.
+src/hooks/useContractDrafts.ts(106,19): error TS2345: Argument of type '{ company_id: string; created_by: string; data: Record<string, unknown>; last_saved_at: string; updated_at: string; }' is not assignable to parameter of type 'RejectExcessProperties<{ company_id?: string | undefined; created_at?: string | undefined; created_by?: string | undefined; current_step?: number | undefined; data?: Json | undefined; id?: string | undefined; last_saved_at?: string | undefined; updated_at?: string | undefined; }, { ...; }>'.
+  Type '{ company_id: string; created_by: string; data: Record<string, unknown>; last_saved_at: string; updated_at: string; }' is not assignable to type '{ company_id?: string | undefined; created_at?: string | undefined; created_by?: string | undefined; current_step?: number | undefined; data?: Json | undefined; id?: string | undefined; last_saved_at?: string | undefined; updated_at?: string | undefined; }'.
+    Types of property 'data' are incompatible.
+      Type 'Record<string, unknown>' is not assignable to type 'Json | undefined'.
+        Type 'Record<string, unknown>' is missing the following properties from type 'Json[]': length, pop, push, concat, and 29 more.
+src/hooks/useContractDrafts.ts(117,20): error TS2322: Type '{ company_id: string; created_by: string; data: Record<string, unknown>; last_saved_at: string; updated_at: string; }' is not assignable to type 'RejectExcessProperties<{ company_id: string; created_at?: string | undefined; created_by: string; current_step?: number | undefined; data?: Json | undefined; id?: string | undefined; last_saved_at?: string | undefined; updated_at?: string | undefined; }, { ...; }>'.
+  Type '{ company_id: string; created_by: string; data: Record<string, unknown>; last_saved_at: string; updated_at: string; }' is not assignable to type '{ company_id: string; created_at?: string | undefined; created_by: string; current_step?: number | undefined; data?: Json | undefined; id?: string | undefined; last_saved_at?: string | undefined; updated_at?: string | undefined; }'.
+    Types of property 'data' are incompatible.
+      Type 'Record<string, unknown>' is not assignable to type 'Json | undefined'.
+        Type 'Record<string, unknown>' is missing the following properties from type 'Json[]': length, pop, push, concat, and 29 more.
+src/hooks/useContractsData.tsx(180,60): error TS7006: Parameter 'w' implicitly has an 'any' type.
+src/hooks/useContractsData.tsx(220,45): error TS7006: Parameter 'word' implicitly has an 'any' type.
+src/hooks/useContractsData.tsx(563,60): error TS7006: Parameter 'w' implicitly has an 'any' type.
+src/hooks/useContractsData.tsx(589,49): error TS7006: Parameter 'word' implicitly has an 'any' type.
+src/hooks/useCurrentCompany.ts(36,7): error TS2322: Type '{ active_modules: string[] | null; address: string | null; address_ar: string | null; allowed_radius: number | null; auto_checkout_enabled: boolean | null; business_type: string | null; ... 28 more ...; work_start_time: string | null; }' is not assignable to type 'Company'.
+  Types of property 'business_type' are incompatible.
+    Type 'string | null' is not assignable to type 'string'.
+      Type 'null' is not assignable to type 'string'.
+src/hooks/useCustomerCRMActivity.ts(54,7): error TS2322: Type '{ id: string; customer_id: string; note_type: string; title: string; content: string; is_important: boolean; call_status: any; created_at: string; created_by: string | null; }[]' is not assignable to type 'CustomerActivity[]'.
+  Type '{ id: string; customer_id: string; note_type: string; title: string; content: string; is_important: boolean; call_status: any; created_at: string; created_by: string | null; }' is not assignable to type 'CustomerActivity'.
+    Types of property 'note_type' are incompatible.
+      Type 'string' is not assignable to type '"note" | "email" | "message" | "phone" | "whatsapp" | "followup"'.
+src/hooks/useCustomerCRMActivity.ts(61,27): error TS2339: Property 'call_status' does not exist on type '{ company_id: string; content: string; created_at: string; created_by: string | null; customer_id: string; id: string; is_important: boolean | null; note_type: string; title: string; updated_at: string; }'.
+src/hooks/useCustomerCRMActivity.ts(73,33): error TS2551: Property 'company_id' does not exist on type 'AuthUser'. Did you mean 'company'?
+src/hooks/useCustomerCRMActivity.ts(81,28): error TS2551: Property 'company_id' does not exist on type 'AuthUser'. Did you mean 'company'?
+src/hooks/useCustomerCRMActivity.ts(83,11): error TS2322: Type 'string | null' is not assignable to type 'string'.
+  Type 'null' is not assignable to type 'string'.
+src/hooks/useEnhancedContractDocuments.ts(66,9): error TS2322: Type 'string | null | undefined' is not assignable to type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+src/hooks/useEnhancedContractDocuments.ts(109,13): error TS2322: Type 'null' is not assignable to type 'string | undefined'.
+src/hooks/useEnhancedContractDocuments.ts(110,13): error TS2322: Type 'number | null' is not assignable to type 'number | undefined'.
+  Type 'null' is not assignable to type 'number | undefined'.
+src/hooks/useEnhancedContractDocuments.ts(111,13): error TS2322: Type 'string | null' is not assignable to type 'string | undefined'.
+  Type 'null' is not assignable to type 'string | undefined'.
+src/hooks/useEnhancedContractDocuments.ts(114,13): error TS2322: Type 'string | null' is not assignable to type 'string | undefined'.
+  Type 'null' is not assignable to type 'string | undefined'.
+src/hooks/useEnhancedContractDocuments.ts(267,32): error TS18047: 'log.retry_count' is possibly 'null'.
+src/hooks/useEnhancedContractDocuments.ts(319,5): error TS2322: Type '{ company_id: string; completed_at: string | null; contract_id: string | null; created_at: string | null; document_id: string | null; error_code: string | null; error_message: string | null; ... 6 more ...; retry_count: number | null; }[]' is not assignable to type 'DocumentOperationLog[]'.
+  Type '{ company_id: string; completed_at: string | null; contract_id: string | null; created_at: string | null; document_id: string | null; error_code: string | null; error_message: string | null; ... 6 more ...; retry_count: number | null; }' is not assignable to type 'DocumentOperationLog'.
+    Types of property 'error_message' are incompatible.
+      Type 'string | null' is not assignable to type 'string | undefined'.
+        Type 'null' is not assignable to type 'string | undefined'.
+src/hooks/useHapticFeedback.ts(37,30): error TS18048: 'DEFAULT_PATTERNS' is possibly 'undefined'.
+src/hooks/useLateFines.ts(61,9): error TS2322: Type 'number | undefined' is not assignable to type 'number'.
+  Type 'undefined' is not assignable to type 'number'.
+src/hooks/useSendManualReminders.ts(71,23): error TS2345: Argument of type 'string | null' is not assignable to parameter of type 'string'.
+  Type 'null' is not assignable to type 'string'.
+src/hooks/useSendManualReminders.ts(109,15): error TS2322: Type 'string | null' is not assignable to type 'string'.
+  Type 'null' is not assignable to type 'string'.
+src/hooks/useSignatureSettings.ts(53,55): error TS18046: 'error' is of type 'unknown'.
+src/hooks/useSignatureSettings.ts(80,55): error TS18046: 'error' is of type 'unknown'.
+src/hooks/useTranslation.tsx(54,18): error TS2339: Property '__APP_DEBUG__' does not exist on type 'Window & typeof globalThis'.
+src/hooks/useTranslation.tsx(404,11): error TS2339: Property 'businessRules' does not exist on type '{ engine: LocaleBusinessRuleEngine; rules: LocaleBusinessRules; config: LocaleConfig; }'.
+src/hooks/useUnifiedContractUpload.ts(200,93): error TS18046: 'err' is of type 'unknown'.
+src/hooks/useUnifiedContractUpload.ts(222,51): error TS18046: 'jsonError' is of type 'unknown'.
+src/hooks/useUnifiedContractUpload.ts(416,21): error TS2345: Argument of type '{ company_id: string; contract_number: string | undefined; contract_date: string | undefined; contract_type: string | undefined; description: any; customer_id: any; vehicle_id: string | null; ... 7 more ...; updated_at: string; }' is not assignable to parameter of type 'RejectExcessProperties<{ account_id?: string | null | undefined; assigned_at?: string | null | undefined; assigned_by_profile_id?: string | null | undefined; assigned_to_profile_id?: string | null | undefined; ... 40 more ...; year?: number | ... 1 more ... | undefined; }, { ...; }> | RejectExcessProperties<...>[]'.
+  Type '{ company_id: string; contract_number: string | undefined; contract_date: string | undefined; contract_type: string | undefined; description: any; customer_id: any; vehicle_id: string | null; ... 7 more ...; updated_at: string; }' is not assignable to type 'RejectExcessProperties<{ account_id?: string | null | undefined; assigned_at?: string | null | undefined; assigned_by_profile_id?: string | null | undefined; assigned_to_profile_id?: string | null | undefined; ... 40 more ...; year?: number | ... 1 more ... | undefined; }, { ...; }>'.
+    Type '{ company_id: string; contract_number: string | undefined; contract_date: string | undefined; contract_type: string | undefined; description: any; customer_id: any; vehicle_id: string | null; ... 7 more ...; updated_at: string; }' is not assignable to type '{ account_id?: string | null | undefined; assigned_at?: string | null | undefined; assigned_by_profile_id?: string | null | undefined; assigned_to_profile_id?: string | null | undefined; ... 40 more ...; year?: number | ... 1 more ... | undefined; }'.
+      Types of property 'contract_date' are incompatible.
+        Type 'string | undefined' is not assignable to type 'string'.
+          Type 'undefined' is not assignable to type 'string'.
+src/hooks/useUnifiedContractUpload.ts(479,36): error TS18046: 'error' is of type 'unknown'.
+src/hooks/useVehicleStatusIntegration.ts(26,11): error TS2322: Type '"available" | "rented" | "maintenance" | "out_of_service" | "reserved"' is not assignable to type '"police_station" | "available" | "rented" | "maintenance" | "out_of_service" | "street_52" | "accident" | "stolen" | "reserved_employee" | "municipality" | null | undefined'.
+  Type '"reserved"' is not assignable to type '"police_station" | "available" | "rented" | "maintenance" | "out_of_service" | "street_52" | "accident" | "stolen" | "reserved_employee" | "municipality" | null | undefined'.
+src/hooks/useVehicleStatusIntegration.ts(87,22): error TS18046: 'error' is of type 'unknown'.
+src/lib/auth.ts(108,15): error TS2339: Property 'error' does not exist on type 'unknown'.
+src/lib/auth.ts(263,30): error TS2339: Property 'code' does not exist on type 'Error'.
+src/lib/auth.ts(265,33): error TS2339: Property 'details' does not exist on type 'Error'.
+src/lib/auth.ts(266,30): error TS2339: Property 'hint' does not exist on type 'Error'.
+src/lib/auth.ts(321,15): error TS2345: Argument of type 'Record<string, unknown>' is not assignable to parameter of type 'RejectExcessProperties<{ avatar_url?: string | null | undefined; company_id?: string | null | undefined; created_at?: string | undefined; email?: string | undefined; first_name?: string | undefined; first_name_ar?: string | ... 1 more ... | undefined; ... 13 more ...; user_id?: string | undefined; }, Record<...>>'.
+  Type 'Record<string, unknown>' is not assignable to type '{ [x: string]: never; }'.
+    'string' index signatures are incompatible.
+      Type 'unknown' is not assignable to type 'never'.
+src/lib/contract-calculations.ts(256,12): error TS2678: Type '"custom"' is not comparable to type 'PricingModel'.
+src/lib/contract-calculations.ts(778,9): error TS2739: Type '{ agreementNumber: string; contractDuration: number; monthlyPayment: MonthlyPaymentResult; totalRevenue: number; depositRequired: number; currency: string; terms: { ...; }; }' is missing the following properties from type 'ContractSummary': billing_frequency, pricing_model
+src/lib/errorHandler.ts(407,12): error TS2678: Type '"critical"' is not comparable to type 'ErrorCategory'.
+src/lib/hijriDate.ts(1,20): error TS7016: Could not find a declaration file for module 'moment-hijri'. 'C:/Users/khamis/Documents/fleetifyapp/node_modules/moment-hijri/moment-hijri.js' implicitly has an 'any' type.
+  Try `npm i --save-dev @types/moment-hijri` if it exists or add a new declaration (.d.ts) file containing `declare module 'moment-hijri';`
+src/lib/i18n/businessRules.ts(281,9): error TS2322: Type 'string' is not assignable to type '{ start: string; end: string; }'.
+src/lib/i18n/businessRules.ts(423,9): error TS2322: Type 'number' is not assignable to type '{ start: string; end: string; }'.
+src/lib/i18n/locales.ts(166,7): error TS2322: Type '6' is not assignable to type '0 | 1'.
+src/lib/i18n/validation.ts(86,7): error TS2561: Object literal may only specify known properties, but 'checkForPluralization' does not exist in type 'ValidationConfig'. Did you mean to write 'checkPluralization'?
+src/lib/permissions/permissions.ts(98,36): error TS2339: Property 'COMPANY_MANAGER' does not exist on type 'typeof UserRole'.
+src/pages/contracts/SignedAgreementsUpload.tsx(167,52): error TS2339: Property 'matchData' does not exist on type 'MatchResult | { success: boolean; error: string; }'.
+  Property 'matchData' does not exist on type '{ success: boolean; error: string; }'.
+src/pages/contracts/SignedAgreementsUpload.tsx(172,40): error TS2339: Property 'matchData' does not exist on type 'MatchResult | { success: boolean; error: string; }'.
+  Property 'matchData' does not exist on type '{ success: boolean; error: string; }'.
+src/services/contractDataExtractor.ts(85,38): error TS2339: Property 'getBestTemplate' does not exist on type 'ContractTemplateService'.
+src/services/ContractService.ts(270,7): error TS2353: Object literal may only specify known properties, and 'company_id' does not exist in type 'RejectExcessProperties<{ createdAt?: string | undefined; id?: number | undefined; isRead?: number | undefined; message: string; relatedId?: number | null | undefined; relatedType?: string | null | undefined; title: string; type: string; userId: number; }, { ...; }> | RejectExcessProperties<...>[]'.
+src/services/ContractService.ts(361,28): error TS2589: Type instantiation is excessively deep and possibly infinite.
+src/services/ContractService.ts(362,13): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(relation: "properties" | "customers" | "contracts" | "invoices" | "payments" | "vehicles" | "companies" | "employees" | "vendors" | "branches" | "account_creation_requests" | "account_deletion_log" | ... 328 more ... | "workflows"): PostgrestQueryBuilder<...>', gave the following error.
+    Argument of type '"company_account_mappings"' is not assignable to parameter of type '"properties" | "customers" | "contracts" | "invoices" | "payments" | "vehicles" | "companies" | "employees" | "vendors" | "branches" | "account_creation_requests" | "account_deletion_log" | ... 328 more ... | "workflows"'.
+  Overload 2 of 2, '(relation: "v_linkable_accounts" | "employee_capacity_view" | "employee_performance_view" | "contract_payment_health_dashboard" | "contract_payment_summary" | "contracts_complete" | ... 43 more ... | "v_report_schedule_status"): PostgrestQueryBuilder<...>', gave the following error.
+    Argument of type '"company_account_mappings"' is not assignable to parameter of type '"v_linkable_accounts" | "employee_capacity_view" | "employee_performance_view" | "contract_payment_health_dashboard" | "contract_payment_summary" | "contracts_complete" | ... 43 more ... | "v_report_schedule_status"'.
+src/services/ContractService.ts(364,11): error TS2345: Argument of type '"company_id"' is not assignable to parameter of type 'never'.
+src/services/core/BaseService.ts(13,10): error TS2305: Module '"@/lib/queryClient"' has no exported member 'createOptimizedQueryFn'.
+src/services/core/BaseService.ts(13,34): error TS2305: Module '"@/lib/queryClient"' has no exported member 'createOptimizedMutationFn'.
+src/services/core/BaseService.ts(82,46): error TS2345: Argument of type 'Omit<T, "id">' is not assignable to parameter of type 'Partial<T>'.
+  Type 'keyof T' is not assignable to type 'Exclude<keyof T, "id">'.
+    Type 'string | number | symbol' is not assignable to type 'Exclude<keyof T, "id">'.
+      Type 'string' is not assignable to type 'Exclude<keyof T, "id">'.
+src/services/core/BaseService.ts(472,31): error TS2554: Expected 0 arguments, but got 1.
+src/services/core/BaseService.ts(478,31): error TS2554: Expected 0 arguments, but got 1.
+src/services/core/QueryOptimizer.ts(572,30): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+src/utils/contractJournalEntry.ts(512,15): error TS2345: Argument of type '{ contract_number: string; company_id: string; customer_id: string; vehicle_id: string | null | undefined; contract_type: string; contract_date: string; start_date: string | undefined; ... 6 more ...; created_by: string | ... 1 more ... | undefined; }' is not assignable to parameter of type 'RejectExcessProperties<{ account_id?: string | null | undefined; assigned_at?: string | null | undefined; assigned_by_profile_id?: string | null | undefined; assigned_to_profile_id?: string | null | undefined; ... 40 more ...; year?: number | ... 1 more ... | undefined; }, { ...; }> | RejectExcessProperties<...>[]'.
+  Type '{ contract_number: string; company_id: string; customer_id: string; vehicle_id: string | null | undefined; contract_type: string; contract_date: string; start_date: string | undefined; ... 6 more ...; created_by: string | ... 1 more ... | undefined; }' is not assignable to type 'RejectExcessProperties<{ account_id?: string | null | undefined; assigned_at?: string | null | undefined; assigned_by_profile_id?: string | null | undefined; assigned_to_profile_id?: string | null | undefined; ... 40 more ...; year?: number | ... 1 more ... | undefined; }, { ...; }>'.
+    Type '{ contract_number: string; company_id: string; customer_id: string; vehicle_id: string | null | undefined; contract_type: string; contract_date: string; start_date: string | undefined; ... 6 more ...; created_by: string | ... 1 more ... | undefined; }' is not assignable to type '{ account_id?: string | null | undefined; assigned_at?: string | null | undefined; assigned_by_profile_id?: string | null | undefined; assigned_to_profile_id?: string | null | undefined; ... 40 more ...; year?: number | ... 1 more ... | undefined; }'.
+      Types of property 'end_date' are incompatible.
+        Type 'string | undefined' is not assignable to type 'string'.
+          Type 'undefined' is not assignable to type 'string'.
+src/utils/contractJournalEntry.ts(580,52): error TS2345: Argument of type 'ContractCreationParams' is not assignable to parameter of type '{ contract_data: Json; } | { p_company_id: string; p_contract_amount?: number | undefined; p_contract_type?: string | undefined; p_cost_center_id?: string | undefined; p_created_by?: string | undefined; ... 6 more ...; p_vehicle_id?: string | undefined; } | { ...; } | undefined'.
+  Type 'ContractCreationParams' is not assignable to type '{ p_company_id: string; p_contract_amount?: number | undefined; p_contract_type?: string | undefined; p_cost_center_id?: string | undefined; p_created_by?: string | undefined; p_customer_id: string; ... 5 more ...; p_vehicle_id?: string | undefined; }'.
+    Types of property 'p_cost_center_id' are incompatible.
+      Type 'string | null | undefined' is not assignable to type 'string | undefined'.
+        Type 'null' is not assignable to type 'string | undefined'.
+src/utils/contractPdfGenerator.ts(41,7): error TS2353: Object literal may only specify known properties, and 'letterRendering' does not exist in type 'Partial<Options>'.
+src/utils/enhanced-customer-search.ts(119,30): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+src/utils/unsignedContractPdfGenerator.ts(24,7): error TS2353: Object literal may only specify known properties, and 'letterRendering' does not exist in type 'Partial<Options>'.

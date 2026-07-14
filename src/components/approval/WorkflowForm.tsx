@@ -115,7 +115,7 @@ export const WorkflowForm: React.FC<WorkflowFormProps> = ({
       onSuccess();
     } catch (error: unknown) {
       console.error('Error saving workflow:', error);
-      toast.error(error?.message || 'حدث خطأ في حفظ سير العمل');
+      toast.error(error instanceof Error ? error.message : 'حدث خطأ في حفظ سير العمل');
     }
   };
 

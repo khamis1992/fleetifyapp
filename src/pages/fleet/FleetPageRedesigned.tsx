@@ -16,6 +16,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import type { Vehicle } from '@/hooks/useVehicles';
+import type { LucideIcon } from 'lucide-react';
 import {
   Car,
   Plus,
@@ -384,7 +385,7 @@ const exportVehiclesToHTML = async (
   _vehicles: Vehicle[],
   companyId: string,
   filters: IVehicleFilters,
-  supabaseClient: any
+  supabaseClient: typeof supabase
 ): Promise<void> => {
   if (!companyId) {
     toast.error('لا يمكن تصدير البيانات - لا يوجد معرف الشركة');
@@ -399,7 +400,7 @@ const exportVehiclesToHTML = async (
       .select('*')
       .eq('company_id', companyId);
 
-    if (filters.status) {
+    if (filters.status && filters.status !== 'all') {
       query = query.eq('status', filters.status);
     }
 
@@ -425,7 +426,7 @@ const exportVehiclesToHTML = async (
 
     if (error) throw error;
 
-    const vehiclesToExport = allVehicles || [];
+    const vehiclesToExport = (allVehicles || []) as Vehicle[];
 
     if (!vehiclesToExport.length) {
       toast.dismiss();
@@ -493,7 +494,7 @@ const exportVehiclesToHTML = async (
 
     // Generate filter description
     const filterParts: string[] = [];
-    if (filters.status) {
+    if (filters.status && filters.status !== 'all') {
       filterParts.push(`الحالة: ${statusLabels[filters.status] || filters.status}`);
     }
     if (filters.search) {
@@ -553,7 +554,7 @@ const exportVehiclesToExcel = async (
   _vehicles: Vehicle[],
   companyId: string,
   filters: IVehicleFilters,
-  supabaseClient: any
+  supabaseClient: typeof supabase
 ): Promise<void> => {
   if (!companyId) {
     toast.error('لا يمكن تصدير البيانات - لا يوجد معرف الشركة');
@@ -570,7 +571,7 @@ const exportVehiclesToExcel = async (
       .select('*')
       .eq('company_id', companyId);
 
-    if (filters.status) {
+    if (filters.status && filters.status !== 'all') {
       query = query.eq('status', filters.status);
     }
 
@@ -596,7 +597,7 @@ const exportVehiclesToExcel = async (
 
     if (error) throw error;
 
-    const vehiclesToExport = allVehicles || [];
+    const vehiclesToExport = (allVehicles || []) as Vehicle[];
 
     if (!vehiclesToExport.length) {
       toast.dismiss();
@@ -894,7 +895,8 @@ const VehicleCard: React.FC<VehicleCardProps> = ({
 }) => {
   const config = statusConfig[vehicle.status as keyof typeof statusConfig] || statusConfig.available;
   const accent = config.accent;
-  const vehicleImage = vehicle.images?.[0] || vehicle.image_url || '';
+  const firstImage = vehicle.images?.[0];
+  const vehicleImage = typeof firstImage === 'string' ? firstImage : '';
   const mileage = vehicle.current_mileage ? vehicle.current_mileage.toLocaleString('en-US') : '0';
   const transmission = vehicle.transmission_type === 'automatic' || vehicle.transmission === 'automatic'
     ? 'أوتوماتيك'
@@ -1050,10 +1052,12 @@ const VehicleCard: React.FC<VehicleCardProps> = ({
   );
 };
 // ===== Quick Status Filter Chips =====
+type FleetFilterStatus = Exclude<NonNullable<IVehicleFilters['status']>, 'all'>;
+
 interface StatusChipProps {
   label: string;
   count: number;
-  status: string;
+  status: FleetFilterStatus;
   active: boolean;
   onClick: () => void;
 }
@@ -1128,7 +1132,14 @@ const FleetPageRedesigned: React.FC = () => {
   const readinessRate = totalVehicles ? Math.round(((fleetStatus?.available || 0) / totalVehicles) * 100) : 0;
   const activeVehicles = (fleetStatus?.available || 0) + (fleetStatus?.rented || 0);
 
-  const fleetMetrics = [
+  const fleetMetrics: Array<{
+    label: string;
+    value: string | number;
+    helper: string;
+    icon: LucideIcon;
+    color: string;
+    status?: FleetFilterStatus;
+  }> = [
     {
       label: 'إجمالي المركبات',
       value: totalVehicles,
@@ -1162,12 +1173,12 @@ const FleetPageRedesigned: React.FC = () => {
     },
   ];
 
-  const quickStatusFilters = [
+  const quickStatusFilters: Array<{ label: string; status: FleetFilterStatus; count: number }> = [
     { label: 'متاحة', status: 'available', count: fleetStatus?.available || 0 },
     { label: 'مؤجرة', status: 'rented', count: fleetStatus?.rented || 0 },
     { label: 'صيانة', status: 'maintenance', count: fleetStatus?.maintenance || 0 },
     { label: 'خارج الخدمة', status: 'out_of_service', count: fleetStatus?.outOfService || 0 },
-    { label: 'محجوزة', status: 'reserved', count: fleetStatus?.reserved || 0 },
+    { label: 'محجوزة', status: 'reserved_employee', count: fleetStatus?.reserved || 0 },
     { label: 'حادث', status: 'accident', count: fleetStatus?.accident || 0 },
   ];
 
@@ -1177,7 +1188,7 @@ const FleetPageRedesigned: React.FC = () => {
     setCurrentPage(1);
   };
 
-  const handleStatCardClick = (status: string) => {
+  const handleStatCardClick = (status: FleetFilterStatus) => {
     if (filters.status === status) {
       setFilters({ excludeMaintenanceStatus: false });
     } else {
@@ -1234,7 +1245,7 @@ const FleetPageRedesigned: React.FC = () => {
     });
   };
 
-  const openStatusFilterAction = (status: string, label?: string) => {
+  const openStatusFilterAction = (status: FleetFilterStatus, label?: string) => {
     openFeatureAction({
       title: label ? `عرض مركبات ${label}` : 'تطبيق فلتر الحالة',
       description: filters.status === status
@@ -1443,7 +1454,7 @@ const FleetPageRedesigned: React.FC = () => {
   // Loading
   if (statusLoading) {
     return (
-      <div className="min-h-screen bg-neutral-50 dark:bg-slate-900 flex items-center justify-center">
+      <div className="min-h-screen bg-[#F6F8FB] dark:bg-slate-900 flex items-center justify-center">
         <div className="text-center">
           <div className="w-10 h-10 border-2 border-teal-500 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
           <p className="text-sm text-teal-600 dark:text-teal-400">جاري التحميل...</p>
@@ -1733,7 +1744,7 @@ const FleetPageRedesigned: React.FC = () => {
             ))}
             {filters.status && (
               <button
-                onClick={() => filters.status && openStatusFilterAction(filters.status)}
+                onClick={() => filters.status && filters.status !== 'all' && openStatusFilterAction(filters.status)}
                 className="flex items-center gap-1 rounded-[8px] border px-3 py-2 text-sm font-semibold transition hover:bg-slate-50"
                 style={{ borderColor: fleetTheme.border, color: fleetTheme.muted }}
               >
@@ -1797,7 +1808,7 @@ const FleetPageRedesigned: React.FC = () => {
                       description: `سيتم تصدير ${selectedVehicles.size} مركبة محددة من الصفحة الحالية.`,
                       confirmLabel: 'تصدير المحدد',
                       tour: fleetTours.selection,
-                      onConfirm: () => toast.info('سيتم تفعيل تصدير المركبات المحددة في المرحلة التالية'),
+                      onConfirm: () => { toast.info('سيتم تفعيل تصدير المركبات المحددة في المرحلة التالية'); },
                     })}
                     className="h-10 rounded-[8px] border bg-white"
                     style={{ borderColor: fleetTheme.border, color: fleetTheme.text }}

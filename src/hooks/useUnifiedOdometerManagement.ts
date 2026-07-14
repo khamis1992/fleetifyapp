@@ -112,7 +112,7 @@ export const useVehicleOdometerHistory = (vehicleId?: string) => {
   });
 };
 
-// Create new odometer reading
+// Create a reading through the atomic database operation only.
 export const useCreateOdometerReading = () => {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -120,91 +120,46 @@ export const useCreateOdometerReading = () => {
 
   return useMutation({
     mutationFn: async (data: CreateOdometerReadingData): Promise<UnifiedOdometerReading> => {
-      if (!user?.profile?.company_id || !user?.id) {
-        throw new Error('User not authenticated');
-      }
+      if (!user?.profile?.company_id || !user.id) throw new Error('User not authenticated');
+      const { data: reading, error } = await supabase.rpc('record_odometer_reading_v1', {
+        p_company_id: user.profile.company_id,
+        p_vehicle_id: data.vehicle_id,
+        p_odometer_reading: data.odometer_reading,
+        p_fuel_level_percentage: data.fuel_level_percentage ?? 0,
+        p_reading_type: data.reading_type,
+        p_contract_id: data.contract_id || null,
+        p_permit_id: data.permit_id || null,
+        p_notes: data.notes || '',
+        p_location: data.location || '',
+        p_actor_id: user.id,
+      });
+      if (error) throw error;
+      if (!reading) throw new Error('Odometer service returned no reading');
 
-      // Validate odometer reading
-      if (data.odometer_reading <= 0) {
-        throw new Error('قراءة العداد يجب أن تكون أكبر من صفر');
-      }
-
-      // Get current odometer reading to validate increment
-      const { data: currentOdometer } = await supabase
-        .from('odometer_readings')
-        .select('odometer_reading')
-        .eq('vehicle_id', data.vehicle_id)
-        .eq('company_id', user.profile.company_id)
-        .order('reading_date', { ascending: false })
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      const { data: vehicle } = await supabase
-        .from('vehicles')
-        .select('odometer_reading')
-        .eq('id', data.vehicle_id)
-        .single();
-
-      const lastReading = Math.max(
-        currentOdometer?.odometer_reading || 0,
-        vehicle?.odometer_reading || 0
-      );
-
-      if (data.odometer_reading < lastReading) {
-        throw new Error(`قراءة العداد يجب أن تكون أكبر من أو تساوي القراءة الحالية (${lastReading.toLocaleString()} كم)`);
-      }
-
-      // Create odometer reading record
-      const insertData = {
-        ...data,
-        company_id: user.profile.company_id,
-        recorded_by: user.id,
-        reading_date: new Date().toISOString(),
+      return {
+        ...reading,
+        reading_type: data.reading_type,
+        recorded_by: reading.recorded_by ?? user.id,
+        contract_id: data.contract_id,
+        permit_id: data.permit_id,
+        fuel_level_percentage: data.fuel_level_percentage,
+        notes: reading.notes ?? data.notes,
+        location: data.location,
         is_verified: false,
+        updated_at: reading.created_at,
       };
-
-      const { data: result, error: insertError } = await supabase
-        .from('odometer_readings')
-        .insert(insertData)
-        .select('*')
-        .single();
-
-      if (insertError) throw insertError;
-
-      // Update vehicle's odometer reading
-      const { error: updateError } = await supabase
-        .from('vehicles')
-        .update({ 
-          odometer_reading: data.odometer_reading,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', data.vehicle_id);
-
-      if (updateError) {
-        console.warn('Failed to update vehicle odometer reading:', updateError);
-      }
-
-      return result as UnifiedOdometerReading;
     },
     onSuccess: (result) => {
-      // Invalidate related queries
       queryClient.invalidateQueries({ queryKey: ['current-vehicle-odometer', result.vehicle_id] });
       queryClient.invalidateQueries({ queryKey: ['vehicle-odometer-history', result.vehicle_id] });
       queryClient.invalidateQueries({ queryKey: ['vehicles'] });
-      
-      toast({
-        title: "تم تسجيل قراءة العداد بنجاح",
-        description: `تم تحديث العداد إلى ${result.odometer_reading.toLocaleString()} كم`,
-      });
+      toast({ title: 'تم تسجيل قراءة العداد', description: `القراءة الجديدة ${result.odometer_reading.toLocaleString()} كم` });
     },
-    onError: (error: unknown) => {
-      toast({
-        title: "خطأ في تسجيل قراءة العداد",
-        description: error.message || "حدث خطأ أثناء تسجيل قراءة العداد",
-        variant: "destructive",
-      });
-    },
+    onError: (error) => toast({
+      title: 'خطأ في تسجيل قراءة العداد',
+      description: error instanceof Error ? error.message : 'حدث خطأ غير معروف',
+      variant: 'destructive',
+    }),
   });
 };
 

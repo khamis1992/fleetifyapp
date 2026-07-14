@@ -2,19 +2,11 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import type { Database } from '@/integrations/supabase/types';
 
-export interface VehicleGroup {
-  id: string;
-  company_id: string;
-  group_name: string;
-  group_name_ar?: string;
-  description?: string;
-  manager_id?: string;
-  parent_group_id?: string;
-  is_active: boolean;
-  created_at: string;
-  updated_at: string;
-}
+export type VehicleGroup = Database['public']['Tables']['fleet_vehicle_groups']['Row'];
+type VehicleGroupInsert = Database['public']['Tables']['fleet_vehicle_groups']['Insert'];
+type VehicleGroupUpdate = Database['public']['Tables']['fleet_vehicle_groups']['Update'];
 
 export const useVehicleGroups = () => {
   const { user } = useAuth();
@@ -27,7 +19,7 @@ export const useVehicleGroups = () => {
       }
 
       const { data, error } = await supabase
-        .from('vehicle_groups')
+        .from('fleet_vehicle_groups')
         .select('*')
         .eq('company_id', user.profile.company_id)
         .eq('is_active', true)
@@ -50,13 +42,13 @@ export const useCreateVehicleGroup = () => {
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: async (groupData: Omit<VehicleGroup, 'id' | 'created_at' | 'updated_at' | 'company_id' | 'is_active'>) => {
+    mutationFn: async (groupData: Omit<VehicleGroupInsert, 'company_id'>) => {
       if (!user?.profile?.company_id) {
         throw new Error('Company ID is required');
       }
 
       const { data, error } = await supabase
-        .from('vehicle_groups')
+        .from('fleet_vehicle_groups')
         .insert({
           ...groupData,
           company_id: user.profile.company_id,
@@ -92,14 +84,17 @@ export const useCreateVehicleGroup = () => {
 
 export const useUpdateVehicleGroup = () => {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: async ({ id, data }: { id: string; data: Partial<VehicleGroup> }) => {
+    mutationFn: async ({ id, data }: { id: string; data: VehicleGroupUpdate }) => {
+      if (!user?.profile?.company_id) throw new Error('Company ID is required');
       const { data: result, error } = await supabase
-        .from('vehicle_groups')
+        .from('fleet_vehicle_groups')
         .update(data)
         .eq('id', id)
+        .eq('company_id', user.profile.company_id)
         .select()
         .single();
 
@@ -130,14 +125,17 @@ export const useUpdateVehicleGroup = () => {
 
 export const useDeleteVehicleGroup = () => {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
   const { toast } = useToast();
 
   return useMutation({
     mutationFn: async (groupId: string) => {
+      if (!user?.profile?.company_id) throw new Error('Company ID is required');
       const { error } = await supabase
-        .from('vehicle_groups')
+        .from('fleet_vehicle_groups')
         .update({ is_active: false })
-        .eq('id', groupId);
+        .eq('id', groupId)
+        .eq('company_id', user.profile.company_id);
 
       if (error) {
         console.error('Error deleting vehicle group:', error);

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { motion } from 'framer-motion';
+import { motion, type Variants } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useModuleConfig } from '@/modules/core/hooks';
 import { useDashboardStats, DashboardStats } from '@/hooks/useDashboardStats';
@@ -28,6 +28,7 @@ import {
   Activity,
   Target,
   Briefcase,
+  Wallet,
 } from 'lucide-react';
 import {
   AreaChart,
@@ -172,7 +173,7 @@ const DashboardLanding: React.FC = () => {
       endDate.setDate(endDate.getDate() + 7);
       
       const { data } = await supabase
-        .from('reservations')
+        .from('vehicle_reservations')
         .select('start_date, end_date')
         .eq('company_id', companyId)
         .in('status', ['confirmed', 'active'])
@@ -220,7 +221,7 @@ const DashboardLanding: React.FC = () => {
 
   // FAB Menu Component
   // Animation variants
-  const containerVariants = {
+  const containerVariants: Variants = {
     hidden: { opacity: 0 },
     visible: {
       opacity: 1,
@@ -231,7 +232,7 @@ const DashboardLanding: React.FC = () => {
     }
   };
 
-  const itemVariants = {
+  const itemVariants: Variants = {
     hidden: { opacity: 0, y: 25 },
     visible: {
       opacity: 1,

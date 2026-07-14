@@ -10,6 +10,7 @@ import {
   type CustomerWithRental,
   type CustomerVehicle,
 } from '@/hooks/useRentalPayments';
+import type { Bank } from '@/hooks/useTreasury';
 
 interface PaymentFormProps {
   selectedCustomer: CustomerWithRental;
@@ -19,6 +20,9 @@ interface PaymentFormProps {
   onPaymentAmountChange: (amount: string) => void;
   paymentMethod: string;
   onPaymentMethodChange: (method: string) => void;
+  banks: Bank[];
+  selectedBankId: string;
+  onSelectedBankIdChange: (bankId: string) => void;
   referenceNumber: string;
   onReferenceNumberChange: (ref: string) => void;
   paymentNotes: string;
@@ -38,6 +42,9 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
   onPaymentAmountChange,
   paymentMethod,
   onPaymentMethodChange,
+  banks,
+  selectedBankId,
+  onSelectedBankIdChange,
   referenceNumber,
   onReferenceNumberChange,
   paymentNotes,
@@ -103,6 +110,25 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
               <option value="debit_card">بطاقة مدين</option>
             </select>
           </div>
+
+          {paymentMethod !== 'cash' && (
+            <div>
+              <Label htmlFor="paymentBank">الحساب البنكي *</Label>
+              <select
+                id="paymentBank"
+                value={selectedBankId}
+                onChange={(event) => onSelectedBankIdChange(event.target.value)}
+                className="mt-1 flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              >
+                <option value="">اختر البنك</option>
+                {banks.filter((bank) => bank.is_active !== false).map((bank) => (
+                  <option key={bank.id} value={bank.id}>
+                    {bank.bank_name_ar || bank.bank_name} - {bank.account_number}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">

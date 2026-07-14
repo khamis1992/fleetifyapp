@@ -78,14 +78,14 @@ export function DocumentItem({
     
     try {
       if (document.url.startsWith('blob:')) {
-        const a = document.createElement('a');
+        const a = window.document.createElement('a');
         a.href = document.url;
         a.download = `${document.name}.html`;
         a.style.display = 'none';
-        document.body.appendChild(a);
+        window.document.body.appendChild(a);
         a.click();
         setTimeout(() => {
-          document.body.removeChild(a);
+          window.document.body.removeChild(a);
         }, 100);
       } else {
         // فتح الرابط في نافذة جديدة
@@ -130,7 +130,7 @@ export function DocumentItem({
             size="sm"
             onClick={() => {
               try {
-                const opened = window.open(document.url, '_blank');
+                const opened = window.open(document.url || undefined, '_blank');
                 if (!opened) {
                   console.error('Failed to preview document');
                 }

@@ -3,6 +3,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { useUnifiedCompanyAccess } from "./useUnifiedCompanyAccess";
 import { useToast } from "./use-toast";
 import { CustomerFormData } from "@/types/customer";
+import type { Database } from "@/integrations/supabase/types";
+
+type CustomerRow = Database["public"]["Tables"]["customers"]["Row"];
+type JournalEntryInsert = Database["public"]["Tables"]["journal_entries"]["Insert"];
 
 interface CreateCustomerWithAccountData extends CustomerFormData {
   createFinancialAccount?: boolean;
@@ -12,7 +16,7 @@ interface CreateCustomerWithAccountData extends CustomerFormData {
 }
 
 interface CreateCustomerWithAccountResult {
-  customer: unknown;
+  customer: CustomerRow;
   financialAccount?: {
     id: string;
     account_code: string;
@@ -185,14 +189,15 @@ export const useCreateCustomerWithAccount = (targetCompanyId?: string) => {
                     // Generate entry number
                     const entryNumber = `JE-${new Date().getFullYear()}-${Date.now().toString().slice(-6)}`;
 
-                    const journalPayload = {
+                    const journalPayload: JournalEntryInsert = {
                       company_id: effectiveCompanyId,
                       entry_date: new Date().toISOString().split('T')[0],
                       entry_number: entryNumber,
                       description: `Opening balance for customer: ${customer.customer_type === 'individual'
                         ? `${customer.first_name} ${customer.last_name}`.trim()
                         : customer.company_name}`,
-                      reference_number: `CUST-OPENING-${customer.id.slice(0, 8)}`,
+                      reference_id: customer.id,
+                      reference_type: 'customer_opening_balance',
                       status: 'posted',
                       created_by: customer.created_by
                     };
@@ -287,7 +292,7 @@ export const useCreateCustomerWithAccount = (targetCompanyId?: string) => {
       toast({
         variant: "destructive",
         title: "خطأ في إنشاء العميل",
-        description: error.message || "حدث خطأ غير متوقع",
+        description: error instanceof Error ? error.message : "حدث خطأ غير متوقع",
       });
     },
   });

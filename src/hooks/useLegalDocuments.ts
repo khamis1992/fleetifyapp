@@ -60,6 +60,7 @@ export const useLegalDocuments = (filters?: UseLegalDocumentsFilters, enabled: b
       let query = supabase
         .from('legal_case_documents')
         .select('*')
+        .is('deleted_at', null)
         .order('created_at', { ascending: false });
 
       // Apply company filter
@@ -95,6 +96,7 @@ export const useLegalDocuments = (filters?: UseLegalDocumentsFilters, enabled: b
 
 export const useLegalDocument = (documentId: string) => {
   const { user } = useAuth();
+  const companyFilter = useCompanyFilter();
 
   return useQuery({
     queryKey: ['legal-document', documentId],
@@ -105,12 +107,14 @@ export const useLegalDocument = (documentId: string) => {
         .from('legal_case_documents')
         .select('*')
         .eq('id', documentId)
+        .eq('company_id', companyFilter.company_id || '')
+        .is('deleted_at', null)
         .single();
 
       if (error) throw error;
       return data as LegalDocument;
     },
-    enabled: !!user?.id && !!documentId,
+    enabled: !!user?.id && !!companyFilter.company_id && !!documentId,
   });
 };
 
@@ -164,7 +168,7 @@ export const useCreateLegalDocument = () => {
         .limit(1);
 
       const nextVersion = existingVersions && existingVersions.length > 0 
-        ? existingVersions[0].version_number + 1 
+        ? (existingVersions[0].version_number ?? 0) + 1
         : 1;
 
       // استخراج file من formData قبل الإرسال (لا يوجد عمود file في قاعدة البيانات)
@@ -224,52 +228,18 @@ export const useDeleteLegalDocument = () => {
       if (!user?.id) throw new Error('المستخدم غير مصرح له');
       if (!companyFilter.company_id) throw new Error('تعذر تحديد الشركة');
 
-      // Get document details for file deletion
-      const { data: document, error: documentError } = await supabase
-        .from('legal_case_documents')
-        .select('file_path, document_title, case_id')
-        .eq('id', documentId)
-        .eq('company_id', companyFilter.company_id)
-        .single();
-      if (documentError || !document) throw documentError || new Error('المستند غير موجود');
-
-      // Delete document record
-      const { error } = await supabase
-        .from('legal_case_documents')
-        .delete()
-        .eq('id', documentId)
-        .eq('company_id', companyFilter.company_id)
-        .select('id')
-        .single();
-
+      const { data: document, error } = await supabase.rpc('soft_delete_legal_document_v1', {
+        p_company_id: companyFilter.company_id,
+        p_document_id: documentId,
+        p_reason: 'Archived from legal documents page',
+        p_actor_id: user.id,
+      });
       if (error) throw error;
-
-      if (document.file_path) {
-        const { error: storageError } = await supabase.storage
-          .from('documents')
-          .remove([document.file_path]);
-        if (storageError) console.warn('[useDeleteLegalDocument] orphaned storage file', storageError.message);
-      }
-
-      // Create activity log
-      if (document) {
-        await supabase
-            .from('legal_case_activities')
-            .insert({
-              case_id: document.case_id,
-              company_id: companyFilter.company_id,
-              activity_type: 'document_deleted',
-              activity_title: 'تم حذف مستند',
-              activity_description: `تم حذف المستند ${document.document_title}`,
-              created_by: user.id,
-            });
-      }
-
-      return documentId;
+      return document;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['legal-documents'] });
-      toast.success('تم حذف المستند بنجاح');
+      toast.success('تمت أرشفة المستند مع الاحتفاظ بملف الإثبات');
     },
     onError: (error: unknown) => {
       console.error('Error deleting legal document:', error);
@@ -280,16 +250,21 @@ export const useDeleteLegalDocument = () => {
 
 export const useDownloadLegalDocument = () => {
   const { user } = useAuth();
+  const companyFilter = useCompanyFilter();
 
   return useMutation({
     mutationFn: async (documentId: string) => {
       if (!user?.id) throw new Error('المستخدم غير مصرح له');
+
+      if (!companyFilter.company_id) throw new Error('Company was not found');
 
       // Get document details
       const { data: document, error: documentError } = await supabase
         .from('legal_case_documents')
         .select('file_path, file_name')
         .eq('id', documentId)
+        .eq('company_id', companyFilter.company_id)
+        .is('deleted_at', null)
         .single();
 
       if (documentError) throw documentError;

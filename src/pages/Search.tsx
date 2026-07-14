@@ -30,7 +30,7 @@ import { ErrorBoundary } from '@/components/ErrorBoundary';
 
 interface SearchResult {
   id: string;
-  type: 'customer' | 'vehicle' | 'contract' | 'payment' | 'company';
+  type: 'customer' | 'vehicle' | 'contract' | 'payment' | 'company' | 'error';
   title: string;
   subtitle: string;
   description: string;
@@ -44,6 +44,7 @@ interface SearchDebugState {
   resultsCount: number;
   isLoading: boolean;
   lastError: string | null;
+  companyId: string | null;
 }
 
 interface CustomerRelation {
@@ -65,7 +66,8 @@ const useSearchDebug = () => {
     searchType: '',
     resultsCount: 0,
     isLoading: false,
-    lastError: null
+    lastError: null,
+    companyId: null,
   });
 
 // Expose debug state globally for testing
@@ -109,7 +111,8 @@ const SearchInner: React.FC = () => {
       searchType: type,
       isLoading: true,
       resultsCount: 0,
-      lastError: null
+      lastError: null,
+      companyId: companyId ?? null,
     }));
 
     if (!term.trim()) {
@@ -118,8 +121,16 @@ const SearchInner: React.FC = () => {
       return;
     }
 
+    if (!companyId && !isSystemLevel) {
+      setResults([]);
+      setSearchDebug(prev => ({ ...prev, isLoading: false, lastError: 'Company was not found' }));
+      return;
+    }
+
     console.log('🔍 Starting search for:', { term, type, companyId, isSystemLevel });
     
+    const searchResults: SearchResult[] = [];
+
     try {
       // Test database connection first
       const connectionTest = await supabase.from('customers').select('count').limit(1);
@@ -129,8 +140,6 @@ const SearchInner: React.FC = () => {
         throw error;
       }
       
-      const searchResults: SearchResult[] = [];
-      
       // البحث في العملاء
       if (type === 'all' || type === 'customer') {
         console.log('🔍 Searching customers...');
@@ -139,7 +148,7 @@ const SearchInner: React.FC = () => {
         let customerQuery = supabase
           .from('customers')
           .select('*')
-          .eq('company_id', companyId)
+          .eq('company_id', companyId!)
           .eq('is_active', true)
           .limit(10);
 
@@ -161,12 +170,14 @@ const SearchInner: React.FC = () => {
         ];
 
         let customersData = null;
-        let searchError = null;
+        let searchError: Error | null = null;
 
         // Try strategies in sequence with fallback
         for (let i = 0; i < searchStrategies.length; i++) {
           try {
-            const query = searchStrategies[i]();
+            const strategy = searchStrategies[i];
+            if (!strategy) continue;
+            const query = strategy();
             const { data, error } = await query;
             
             if (!error && data && data.length > 0) {
@@ -176,14 +187,14 @@ const SearchInner: React.FC = () => {
               break;
             } else if (error) {
               console.warn(`⚠️ Strategy ${i + 1} failed:`, error);
-              searchError = error;
+              searchError = new Error(error.message);
             } else {
               console.warn(`⚠️ Strategy ${i + 1} returned no results`);
             }
           } catch (strategyError) {
             console.warn(`⚠️ Strategy ${i + 1} threw error:`, strategyError);
             if (i === searchStrategies.length - 1) {
-              searchError = strategyError;
+              searchError = strategyError instanceof Error ? strategyError : new Error(String(strategyError));
             }
           }
         }
@@ -202,7 +213,7 @@ const SearchInner: React.FC = () => {
               searchError = error || new Error('Basic search failed');
             }
           } catch (basicError) {
-            searchError = basicError;
+            searchError = basicError instanceof Error ? basicError : new Error(String(basicError));
           }
         }
         
@@ -226,7 +237,7 @@ const SearchInner: React.FC = () => {
           searchResults.push({
             id: customer.id,
             type: 'customer',
-            title: name,
+            title: name || customer.customer_code || 'عميل',
             subtitle: customer.customer_code || 'بدون رمز',
             description: `${customer.phone || 'بدون هاتف'} • ${customer.email || 'بدون بريد'}`,
             metadata: customer,
@@ -269,7 +280,7 @@ const SearchInner: React.FC = () => {
   }, [debouncedSearch, selectedType, companyId, isSystemLevel]);
 
   const getTypeIcon = (type: string) => {
-    const typeConfig = searchTypes.find(type => type.value === type);
+    const typeConfig = searchTypes.find(config => config.value === type);
     return typeConfig?.icon || SearchIcon;
   };
 

@@ -80,7 +80,7 @@ import { Loader2 } from "lucide-react";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 // Hook imports
-import { useContractsData } from "@/hooks/useContractsData";
+import { useContractsData, type ContractWithVehicle as Contract } from "@/hooks/useContractsData";
 import { useAuth } from "@/contexts/AuthContext";
 import { useContractCreation } from "@/hooks/useContractCreation";
 import { useContractDrafts } from "@/hooks/useContractDrafts";
@@ -94,39 +94,6 @@ import { supabase, supabaseConfig } from "@/integrations/supabase/client";
 import { EmptyState } from '@/components/ui/EmptyState';
 import { systemColorPattern } from "@/lib/design-system/systemColorPattern";
 import { revertContractLegalProcedure } from '@/services/contractLegalProcedureService';
-
-// Types
-interface Contract {
-  id: string;
-  contract_number: string;
-  customer_id: string;
-  vehicle_id?: string;
-  contract_date: string;
-  start_date: string;
-  end_date: string;
-  monthly_amount: number;
-  contract_amount: number;
-  status: string;
-  legal_status?: string | null;
-  customers?: {
-    first_name_ar?: string;
-    last_name_ar?: string;
-    first_name?: string;
-    last_name?: string;
-    company_name_ar?: string;
-    company_name?: string;
-    customer_type?: string;
-    phone?: string;
-  };
-  vehicle?: {
-    make_ar?: string;
-    model_ar?: string;
-    make?: string;
-    model?: string;
-    year?: number;
-    plate_number?: string;
-  };
-}
 
 const contractsTheme = systemColorPattern.colors;
 const contractsSystemStyle = {
@@ -427,8 +394,8 @@ const ContractListItem = ({
   const getVehicleInfo = () => {
     const v = contract.vehicle;
     if (!v) return "غير محدد";
-    const make = v.make_ar || v.make || "";
-    const model = v.model_ar || v.model || "";
+    const make = v.make || "";
+    const model = v.model || "";
     const year = v.year || "";
     const plate = v.plate_number || "";
     return `${make} ${model} ${year}`.trim() + (plate ? ` | ${plate}` : "");
@@ -685,8 +652,8 @@ const getContractCustomerName = (contract: Contract) => formatCustomerName(contr
 const getContractVehicleInfo = (contract: Contract) => {
   const vehicle = contract.vehicle;
   if (!vehicle) return "مركبة غير محددة";
-  const make = vehicle.make_ar || vehicle.make || "";
-  const model = vehicle.model_ar || vehicle.model || "";
+  const make = vehicle.make || "";
+  const model = vehicle.model || "";
   const year = vehicle.year || "";
   return `${make} ${model} ${year}`.trim() || "مركبة غير محددة";
 };
@@ -893,7 +860,7 @@ const ContractOperationsRow = ({
                 <MoreVertical className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-52" dir="rtl">
+            <DropdownMenuContent align="end" className="w-52 text-right">
               <DropdownMenuItem onClick={() => onEdit(contract)}>
                 <Edit className="ml-2 h-4 w-4" />
                 تعديل العقد
@@ -1025,6 +992,41 @@ function ContractsRedesigned() {
 
   const safeContracts = useMemo(() => Array.isArray(contracts) ? contracts : [], [contracts]);
   const safeFilteredContracts = useMemo(() => Array.isArray(filteredContracts) ? filteredContracts : [], [filteredContracts]);
+  const contractsNeedingAttention = useMemo(() => safeContracts.map((contract) => ({
+    ...contract,
+    customers: contract.customers ? {
+      first_name: contract.customers.first_name ?? undefined,
+      last_name: contract.customers.last_name ?? undefined,
+      first_name_ar: contract.customers.first_name_ar ?? undefined,
+      last_name_ar: contract.customers.last_name_ar ?? undefined,
+      company_name: contract.customers.company_name ?? undefined,
+      company_name_ar: contract.customers.company_name_ar ?? undefined,
+      customer_type: contract.customers.customer_type ?? undefined,
+    } : undefined,
+    vehicles: contract.vehicles ? {
+      plate_number: contract.vehicles.plate_number,
+      make: contract.vehicles.make,
+      model: contract.vehicles.model,
+    } : undefined,
+  })), [safeContracts]);
+  const reminderContracts = useMemo(() => safeContracts.map((contract) => ({
+    id: contract.id,
+    contract_number: contract.contract_number,
+    customer_name: contract.customer_name ?? undefined,
+    customer_phone: contract.customer_phone ?? contract.customers?.phone ?? undefined,
+    customers: contract.customers ? {
+      phone: contract.customers.phone,
+      first_name_ar: contract.customers.first_name_ar ?? undefined,
+      last_name_ar: contract.customers.last_name_ar ?? undefined,
+      first_name: contract.customers.first_name ?? undefined,
+      last_name: contract.customers.last_name ?? undefined,
+      company_name_ar: contract.customers.company_name_ar ?? undefined,
+      company_name: contract.customers.company_name ?? undefined,
+      customer_type: contract.customers.customer_type ?? undefined,
+    } : undefined,
+    monthly_amount: contract.monthly_amount,
+    status: contract.status,
+  })), [safeContracts]);
 
   // When the active tab/search/sort changes the filtered list may shrink, and the
   // browser would otherwise clamp the scroll position to a jarring mid-page spot.
@@ -1339,7 +1341,7 @@ function ContractsRedesigned() {
                       <MoreVertical className="h-4 w-4" />
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-56" dir="rtl">
+                  <DropdownMenuContent align="end" className="w-56 text-right">
                     {user?.roles?.includes('super_admin') && (
                       <DropdownMenuItem onClick={() => setShowCSVUpload(true)}>
                         <Upload className="ml-2 h-4 w-4" />
@@ -1576,7 +1578,7 @@ function ContractsRedesigned() {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -20 }}
               >
-                <ContractsNeedingAttention contracts={safeContracts} />
+                <ContractsNeedingAttention contracts={contractsNeedingAttention} />
               </motion.div>
             )}
           </AnimatePresence>
@@ -1950,7 +1952,7 @@ function ContractsRedesigned() {
         <SendRemindersDialog
           open={showRemindersDialog}
           onOpenChange={setShowRemindersDialog}
-          contracts={safeContracts as any || []}
+          contracts={reminderContracts}
         />
         <ContractPDFImportRedesigned
           open={showContractPDFImport}

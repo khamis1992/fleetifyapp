@@ -29,6 +29,7 @@ import { useDataIntegrityVerification } from '@/hooks/useFinancialAudit';
 import { useComplianceReport } from '@/hooks/useFinancialAudit';
 import { useAuditExport } from '@/hooks/useFinancialAudit';
 import { useAuth } from '@/contexts/AuthContext';
+import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 
 import { AuditTrailTable } from '@/components/audit/AuditTrailTable';
 import { AuditFilters } from '@/components/audit/AuditFilters';
@@ -42,6 +43,7 @@ import { useFleetifyTranslation } from "@/hooks/useTranslation";
 export function AuditDashboard() {
   const { t } = useFleetifyTranslation("ui");
   const { user } = useAuth();
+  const { companyId } = useUnifiedCompanyAccess();
   const [activeTab, setActiveTab] = useState('overview');
   const [showExportDialog, setShowExportDialog] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
@@ -59,7 +61,7 @@ export function AuditDashboard() {
 
   // Metrics data
   const { metrics, isLoading: metricsLoading } = useAuditMetrics(
-    user?.company_id || '',
+    companyId || '',
     30 // Last 30 days
   );
 
@@ -68,7 +70,7 @@ export function AuditDashboard() {
     integrityReport,
     isLoading: integrityLoading,
     verifyNow
-  } = useDataIntegrityVerification(user?.company_id || '');
+  } = useDataIntegrityVerification(companyId || '');
 
   // Compliance report
   const {
@@ -76,7 +78,7 @@ export function AuditDashboard() {
     isLoading: complianceLoading,
     reportPeriod,
     setReportPeriod
-  } = useComplianceReport(user?.company_id || '');
+  } = useComplianceReport(companyId || '');
 
   // Export functionality
   const { exportData, isExporting } = useAuditExport();
@@ -124,14 +126,14 @@ export function AuditDashboard() {
       </div>
 
       {/* Critical Alerts */}
-      {(integrityReport?.integrity_score || 100) < 90 && (
+      {(integrityReport?.integrity_score ?? 100) < 90 && (
         <Alert className="border-red-200 bg-red-50">
           <AlertTriangle className="h-4 w-4" />
           <AlertTitle>{t("dataIntegrityAlert")}</AlertTitle>
           <AlertDescription>
             Audit integrity score is {integrityReport?.integrity_score}%.
-            {integrityReport?.tampered_records > 0 && (
-              <> {integrityReport.tampered_records} records show signs of tampering.</>
+            {(integrityReport?.tampered_records ?? 0) > 0 && (
+              <> {integrityReport?.tampered_records ?? 0} records show signs of tampering.</>
             )}
             <Button
               variant="outline"
@@ -143,7 +145,7 @@ export function AuditDashboard() {
         </Alert>
       )}
 
-      {(complianceReport?.compliance_score || 100) < 80 && (
+      {(complianceReport?.compliance_score ?? 100) < 80 && (
         <Alert className="border-orange-200 bg-orange-50">
           <Shield className="h-4 w-4" />
           <AlertTitle>{t("complianceConcern")}</AlertTitle>
@@ -290,20 +292,20 @@ export function AuditDashboard() {
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-medium">{t("dataIntegrity")}</span>
-                    <Badge variant={integrityReport?.integrity_score || 100 > 90 ? 'default' : 'destructive'}>
-                      {integrityReport?.integrity_score || 100}% Verified
+                    <Badge variant={(integrityReport?.integrity_score ?? 100) >= 90 ? 'default' : 'destructive'}>
+                      {integrityReport?.integrity_score ?? 100}% Verified
                     </Badge>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-medium">{t("complianceScore")}</span>
-                    <Badge variant={complianceReport?.compliance_score || 100 > 80 ? 'default' : 'secondary'}>
-                      {complianceReport?.compliance_score || 100}%
+                    <Badge variant={(complianceReport?.compliance_score ?? 100) >= 80 ? 'default' : 'secondary'}>
+                      {complianceReport?.compliance_score ?? 100}%
                     </Badge>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-medium">{t("activeAlerts")}</span>
-                    <Badge variant={integrityReport?.tampered_records || 0 > 0 ? 'destructive' : 'default'}>
-                      {integrityReport?.tampered_records || 0}
+                    <Badge variant={(integrityReport?.tampered_records ?? 0) > 0 ? 'destructive' : 'default'}>
+                      {integrityReport?.tampered_records ?? 0}
                     </Badge>
                   </div>
                 </div>
@@ -329,6 +331,7 @@ export function AuditDashboard() {
           <AuditTrailTable
             logs={logs}
             isLoading={auditLoading}
+            totalCount={totalCount}
             onRefresh={refetchAudit}
           />
         </TabsContent>
@@ -336,7 +339,7 @@ export function AuditDashboard() {
         {/* Compliance Tab */}
         <TabsContent value="compliance" className="space-y-6">
           <ComplianceMetrics
-            complianceReport={complianceReport}
+            complianceReport={complianceReport ?? null}
             isLoading={complianceLoading}
             reportPeriod={reportPeriod}
             onPeriodChange={setReportPeriod}
@@ -346,7 +349,7 @@ export function AuditDashboard() {
         {/* Data Integrity Tab */}
         <TabsContent value="integrity" className="space-y-6">
           <IntegrityReport
-            integrityReport={integrityReport}
+            integrityReport={integrityReport ?? null}
             isLoading={integrityLoading}
             onVerify={verifyNow}
           />
@@ -360,7 +363,7 @@ export function AuditDashboard() {
               <CardDescription>{t("searchAuditTrailWith1")}</CardDescription>
             </CardHeader>
             <CardContent>
-              <AuditSearch companyId={user?.company_id || ''} />
+              <AuditSearch companyId={companyId || ''} />
             </CardContent>
           </Card>
         </TabsContent>
@@ -369,6 +372,7 @@ export function AuditDashboard() {
       {/* Export Dialog */}
       {showExportDialog && (
         <ExportDialog
+          open={showExportDialog}
           onClose={() => setShowExportDialog(false)}
           onExport={handleExport}
           isExporting={isExporting}

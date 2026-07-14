@@ -82,7 +82,7 @@ export function usePropertyMaintenanceStats() {
   return useQuery({
     queryKey: ['property-maintenance-stats'],
     queryFn: async () => {
-      const { data: maintenance, error } = await (supabase as any)
+      const { data: maintenanceData, error } = await (supabase as any)
         .from('property_maintenance')
         .select('status, maintenance_type, priority, estimated_cost, actual_cost, property_id, created_at')
         .eq('is_active', true);
@@ -92,7 +92,8 @@ export function usePropertyMaintenanceStats() {
         throw error;
       }
 
-      if (!maintenance) return null;
+      if (!maintenanceData) return null;
+      const maintenance = maintenanceData as PropertyMaintenance[];
 
       const total_maintenance = maintenance.length;
       const pending_maintenance = maintenance.filter(m => m.status === 'pending').length;
@@ -108,6 +109,7 @@ export function usePropertyMaintenanceStats() {
       const currentYear = new Date().getFullYear();
       const monthly_costs = maintenance
         .filter(m => {
+          if (!m.created_at) return false;
           const date = new Date(m.created_at);
           return date.getMonth() === currentMonth && date.getFullYear() === currentYear;
         })

@@ -1382,8 +1382,13 @@ const FinancialDelinquencyPage: React.FC = () => {
               <div className="grid gap-3">
                 {candidates.map((candidate) => {
                   const candidateAIInsight =
-                    (candidate.contract?.id && aiInsightByCandidateKey.get(`id:${candidate.contract.id}`)) ||
-                    (candidate.contractNumber && aiInsightByCandidateKey.get(`number:${candidate.contractNumber}`));
+                    (candidate.contract?.id
+                      ? aiInsightByCandidateKey.get(`id:${candidate.contract.id}`)
+                      : undefined) ??
+                    (candidate.contractNumber
+                      ? aiInsightByCandidateKey.get(`number:${candidate.contractNumber}`)
+                      : undefined);
+                  const candidateContractNumber = candidate.contract?.contract_number;
                   const RecommendationIcon = candidateAIInsight?.recommendation === 'legal'
                     ? Scale
                     : candidateAIInsight?.recommendation === 'settlement'
@@ -1495,10 +1500,10 @@ const FinancialDelinquencyPage: React.FC = () => {
                           <Gavel className="h-4 w-4" />
                           تحويل قانوني
                         </Button>
-                        {candidate.contract?.id && (
+                        {candidate.contract?.id && candidateContractNumber && (
                           <Button
                             variant="outline"
-                            onClick={() => window.open(`/contracts/${encodeURIComponent(candidate.contract.contract_number)}`, '_blank', 'noopener,noreferrer')}
+                            onClick={() => window.open(`/contracts/${encodeURIComponent(candidateContractNumber)}`, '_blank', 'noopener,noreferrer')}
                             className="gap-2 rounded-xl border-slate-200 bg-white"
                           >
                             <FileText className="h-4 w-4" />

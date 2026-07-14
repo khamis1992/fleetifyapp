@@ -3,7 +3,7 @@
  */
 
 import { UploadedFile, ProcessingState, ProcessingStatus, QueueManagerOptions } from './types';
-import { CHUNK_SIZE, MAX_RETRIES, RETRY_DELAYS, PROGRESS_SAVE_INTERVAL, MAX_CONCURRENT } from './constants';
+import { CHUNK_SIZE, DELAY_BETWEEN_CHUNKS, DELAY_BETWEEN_FILES, MAX_RETRIES, RETRY_DELAYS, PROGRESS_SAVE_INTERVAL, MAX_CONCURRENT } from './constants';
 
 export class ProcessingQueueManager {
   private files: UploadedFile[] = [];

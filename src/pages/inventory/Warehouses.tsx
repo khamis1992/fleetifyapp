@@ -7,7 +7,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { useInventoryWarehouses, useCreateInventoryWarehouse, useUpdateInventoryWarehouse, useDeleteInventoryWarehouse, type InventoryWarehouse } from "@/hooks/useInventoryWarehouses";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { Warehouse, Plus, Search, Edit, Trash2, MapPin, Phone, Mail } from "lucide-react";
@@ -19,11 +18,10 @@ interface WarehouseFormData {
   warehouse_name_ar?: string;
   warehouse_code?: string;
   location_address?: string;
-  city?: string;
-  country?: string;
-  contact_phone?: string;
-  contact_email?: string;
-  notes?: string;
+  location_city?: string;
+  location_country?: string;
+  phone?: string;
+  email?: string;
   is_active: boolean;
 }
 
@@ -41,14 +39,14 @@ const Warehouses = () => {
   const { register, handleSubmit, reset, setValue, formState: { errors } } = useForm<WarehouseFormData>({
     defaultValues: {
       is_active: true,
-      country: "السعودية"
+      location_country: "السعودية"
     }
   });
 
   const filteredWarehouses = warehouses?.filter(warehouse =>
     warehouse.warehouse_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     warehouse.warehouse_code?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    warehouse.city?.toLowerCase().includes(searchTerm.toLowerCase())
+    warehouse.location_city?.toLowerCase().includes(searchTerm.toLowerCase())
   ) || [];
 
   const handleCreate = async (data: WarehouseFormData) => {
@@ -67,12 +65,11 @@ const Warehouses = () => {
     setValue("warehouse_name_ar", warehouse.warehouse_name_ar || "");
     setValue("warehouse_code", warehouse.warehouse_code || "");
     setValue("location_address", warehouse.location_address || "");
-    setValue("city", warehouse.city || "");
-    setValue("country", warehouse.country || "السعودية");
-    setValue("contact_phone", warehouse.contact_phone || "");
-    setValue("contact_email", warehouse.contact_email || "");
-    setValue("notes", warehouse.notes || "");
-    setValue("is_active", warehouse.is_active);
+    setValue("location_city", warehouse.location_city || "");
+    setValue("location_country", warehouse.location_country || "السعودية");
+    setValue("phone", warehouse.phone || "");
+    setValue("email", warehouse.email || "");
+    setValue("is_active", warehouse.is_active ?? true);
     setIsEditDialogOpen(true);
   };
 
@@ -137,7 +134,7 @@ const Warehouses = () => {
           <Label htmlFor="city">المدينة</Label>
           <Input
             id="city"
-            {...register("city")}
+            {...register("location_city")}
             placeholder="الرياض"
           />
         </div>
@@ -157,7 +154,7 @@ const Warehouses = () => {
           <Label htmlFor="contact_phone">رقم الهاتف</Label>
           <Input
             id="contact_phone"
-            {...register("contact_phone")}
+            {...register("phone")}
             placeholder="+966 50 123 4567"
           />
         </div>
@@ -167,20 +164,10 @@ const Warehouses = () => {
           <Input
             id="contact_email"
             type="email"
-            {...register("contact_email")}
+            {...register("email")}
             placeholder="warehouse@company.com"
           />
         </div>
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="notes">ملاحظات</Label>
-        <Textarea
-          id="notes"
-          {...register("notes")}
-          placeholder="ملاحظات إضافية..."
-          rows={3}
-        />
       </div>
 
       <DialogFooter>
@@ -267,7 +254,7 @@ const Warehouses = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {new Set(warehouses?.map(w => w.city).filter(Boolean)).size || 0}
+              {new Set(warehouses?.map(w => w.location_city).filter(Boolean)).size || 0}
             </div>
             <p className="text-xs text-muted-foreground">موقع جغرافي</p>
           </CardContent>
@@ -280,7 +267,7 @@ const Warehouses = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {warehouses?.filter(w => w.country === "السعودية").length || 0}
+              {warehouses?.filter(w => w.location_country === "السعودية").length || 0}
             </div>
             <p className="text-xs text-muted-foreground">داخل المملكة</p>
           </CardContent>
@@ -347,7 +334,7 @@ const Warehouses = () => {
                     <TableCell>
                       <div className="flex items-center gap-1 text-sm">
                         <MapPin className="h-3 w-3" />
-                        {warehouse.city ? `${warehouse.city}${warehouse.country ? `, ${warehouse.country}` : ''}` : "-"}
+                        {warehouse.location_city ? `${warehouse.location_city}${warehouse.location_country ? `, ${warehouse.location_country}` : ''}` : "-"}
                       </div>
                       {warehouse.location_address && (
                         <div className="text-xs text-muted-foreground">{warehouse.location_address}</div>
@@ -355,23 +342,23 @@ const Warehouses = () => {
                     </TableCell>
                     <TableCell>
                       <div className="space-y-1 text-sm">
-                        {warehouse.contact_phone && (
+                        {warehouse.phone && (
                           <div className="flex items-center gap-1">
                             <Phone className="h-3 w-3" />
-                            {warehouse.contact_phone}
+                            {warehouse.phone}
                           </div>
                         )}
-                        {warehouse.contact_email && (
+                        {warehouse.email && (
                           <div className="flex items-center gap-1">
                             <Mail className="h-3 w-3" />
-                            {warehouse.contact_email}
+                            {warehouse.email}
                           </div>
                         )}
-                        {!warehouse.contact_phone && !warehouse.contact_email && "-"}
+                        {!warehouse.phone && !warehouse.email && "-"}
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Badge variant={warehouse.is_active ? "success" : "secondary"}>
+                      <Badge variant={warehouse.is_active ? "default" : "secondary"}>
                         {warehouse.is_active ? "نشط" : "غير نشط"}
                       </Badge>
                     </TableCell>

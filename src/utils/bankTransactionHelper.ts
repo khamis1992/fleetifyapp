@@ -60,7 +60,7 @@ export async function createBankTransactionFromPayment(
     }
 
     // تحديد نوع الحركة البنكية والرصيد الجديد
-    const isInflow = payment.transaction_type === 'receipt' || payment.transaction_type === 'inflow';
+    const isInflow = payment.transaction_type === 'receipt';
     const bankTransactionType = isInflow ? 'deposit' : 'withdrawal';
     const balanceChange = isInflow ? payment.amount : -payment.amount;
     const balanceAfter = (bank.current_balance || 0) + balanceChange;
@@ -186,7 +186,7 @@ export async function reverseBankTransactionForPayment(
     }
 
     // عكس الحركة
-    const isInflow = payment.transaction_type === 'receipt' || payment.transaction_type === 'inflow';
+    const isInflow = payment.transaction_type === 'receipt';
     const reversalType = isInflow ? 'withdrawal' : 'deposit';
     const balanceChange = isInflow ? -payment.amount : payment.amount;
     const balanceAfter = (bank.current_balance || 0) + balanceChange;

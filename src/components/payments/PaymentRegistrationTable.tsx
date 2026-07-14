@@ -78,7 +78,7 @@ interface PaymentRecord {
   payment_method: string;
   status: 'completed' | 'pending' | 'failed' | 'refunded';
   created_at: string;
-  notes?: string;
+  notes?: string | null;
 }
 
 interface PaymentRegistrationTableProps {

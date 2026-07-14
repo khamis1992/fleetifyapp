@@ -245,7 +245,7 @@ export const MonthlyRentTracker: React.FC = () => {
   const selectedMonthName = months.find(m => m.value === selectedMonth)?.label || '';
 
   return (
-    <div className="min-h-screen bg-[#f0efed]" dir="rtl">
+    <div className="min-h-screen bg-[#F6F8FB]" dir="rtl">
       {/* Date Selection & Filters */}
       <motion.div
         className="bg-white rounded-2xl p-4 mb-6 shadow-sm"

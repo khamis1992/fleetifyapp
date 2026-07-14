@@ -1,29 +1,29 @@
-import { useEffect, useMemo, useState } from 'react';
-import { Loader2, PackageCheck } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { useEffect, useMemo, useState } from "react";
+import { Loader2, PackageCheck } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
+} from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import {
   type PurchaseOrder,
   usePurchaseOrderItems,
-} from '@/hooks/usePurchaseOrders';
-import { useInventoryWarehouses } from '@/hooks/useInventoryWarehouses';
-import { useReceivePOToInventory } from '@/hooks/integrations/useInventoryPurchaseOrders';
+} from "@/hooks/usePurchaseOrders";
+import { useInventoryWarehouses } from "@/hooks/useInventoryWarehouses";
+import { useReceivePOToInventory } from "@/hooks/integrations/useInventoryPurchaseOrders";
 
 interface ReceivePurchaseOrderDialogProps {
   order: PurchaseOrder | null;
@@ -44,12 +44,12 @@ export function ReceivePurchaseOrderDialog({
   const { data: warehouses = [], isLoading: warehousesLoading } =
     useInventoryWarehouses();
   const receiveOrder = useReceivePOToInventory();
-  const [warehouseId, setWarehouseId] = useState('');
+  const [warehouseId, setWarehouseId] = useState("");
   const [receiptDate, setReceiptDate] = useState(
     new Date().toISOString().slice(0, 10)
   );
-  const [deliveryNote, setDeliveryNote] = useState('');
-  const [notes, setNotes] = useState('');
+  const [deliveryNote, setDeliveryNote] = useState("");
+  const [notes, setNotes] = useState("");
   const [quantities, setQuantities] = useState<Record<string, number>>({});
 
   useEffect(() => {
@@ -58,7 +58,10 @@ export function ReceivePurchaseOrderDialog({
       Object.fromEntries(
         items.map((item) => [
           item.id,
-          Math.max(0, Number(item.quantity) - Number(item.received_quantity || 0)),
+          Math.max(
+            0,
+            Number(item.quantity) - Number(item.received_quantity || 0)
+          ),
         ])
       )
     );
@@ -100,7 +103,8 @@ export function ReceivePurchaseOrderDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <PackageCheck className="h-5 w-5" />
-            استلام البضاعة {order?.order_number ? `- ${order.order_number}` : ''}
+            استلام البضاعة{" "}
+            {order?.order_number ? `- ${order.order_number}` : ""}
           </DialogTitle>
         </DialogHeader>
 
@@ -120,7 +124,8 @@ export function ReceivePurchaseOrderDialog({
                   <SelectContent>
                     {warehouses.map((warehouse) => (
                       <SelectItem key={warehouse.id} value={warehouse.id}>
-                        {warehouse.warehouse_name_ar || warehouse.warehouse_name}
+                        {warehouse.warehouse_name_ar ||
+                          warehouse.warehouse_name}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -164,7 +169,7 @@ export function ReceivePurchaseOrderDialog({
                     <div className="min-w-0">
                       <p className="truncate font-medium">{item.description}</p>
                       <p className="truncate text-xs text-muted-foreground">
-                        {item.item_code || 'غير مرتبط برمز صنف'}
+                        {item.item_code || "غير مرتبط برمز صنف"}
                       </p>
                     </div>
                     <span>{remaining.toFixed(3)}</span>
@@ -207,7 +212,9 @@ export function ReceivePurchaseOrderDialog({
             إلغاء
           </Button>
           <Button onClick={handleSubmit} disabled={!canSubmit}>
-            {receiveOrder.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+            {receiveOrder.isPending && (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            )}
             تأكيد الاستلام
           </Button>
         </DialogFooter>
@@ -215,4 +222,3 @@ export function ReceivePurchaseOrderDialog({
     </Dialog>
   );
 }
-

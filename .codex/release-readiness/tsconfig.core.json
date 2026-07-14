@@ -1,0 +1,22 @@
+{
+  "extends": "../../tsconfig.app.json",
+  "compilerOptions": {
+    "incremental": false
+  },
+  "include": [
+    "../../src/vite-env.d.ts",
+    "../../src/lib/**/*.ts",
+    "../../src/lib/**/*.tsx",
+    "../../src/services/core/**/*.ts",
+    "../../src/services/ContractService.ts",
+    "../../src/hooks/useCompanies.ts",
+    "../../src/hooks/useTranslation.tsx",
+    "../../src/hooks/useVehicleStatusIntegration.ts",
+    "../../src/components/PageCustomizer.tsx"
+  ],
+  "exclude": [
+    "../../src/**/__tests__/**",
+    "../../src/**/*.test.ts",
+    "../../src/**/*.test.tsx"
+  ]
+}

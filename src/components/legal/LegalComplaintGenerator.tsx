@@ -168,14 +168,22 @@ export const LegalComplaintGenerator: React.FC<LegalComplaintGeneratorProps> = (
   const fetchTemplate = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
-        .from('legal_templates')
+      let query = supabase
+        .from('legal_document_templates')
         .select('*')
         .eq('code', 'CIVIL_MEMO_TRAFFIC_FINES_TRANSFER')
         .eq('is_active', true)
-        .single();
+        .order('company_id', { ascending: false, nullsFirst: false })
+        .limit(1);
+
+      query = companyId
+        ? query.or(`company_id.is.null,company_id.eq.${companyId}`)
+        : query.is('company_id', null);
+
+      const { data, error } = await query.maybeSingle();
 
       if (error) throw error;
+      if (!data) throw new Error('لم يتم العثور على قالب قانوني نشط');
       setTemplate(data);
     } catch (error) {
       console.error('Error fetching template:', error);

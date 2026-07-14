@@ -92,7 +92,7 @@ const MonthlyCloseAudit: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50" dir="rtl">
+    <div className="min-h-screen bg-[#F6F8FB]" dir="rtl">
       <div className="mx-auto max-w-7xl space-y-6 p-4 sm:p-6">
         <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
