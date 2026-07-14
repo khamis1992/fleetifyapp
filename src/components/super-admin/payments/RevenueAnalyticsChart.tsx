@@ -7,10 +7,22 @@ import { useSubscriptionsAnalytics } from '@/hooks/useSubscriptionsAnalytics';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 
+interface ChartTooltipEntry {
+  color?: string;
+  dataKey?: string;
+  value?: number;
+}
+
+interface ChartTooltipProps {
+  active?: boolean;
+  payload?: ChartTooltipEntry[];
+  label?: string;
+}
+
 export const RevenueAnalyticsChart: React.FC = () => {
-  const { data: analytics, isLoading } = useSubscriptionsAnalytics();
   const [chartType, setChartType] = React.useState<'revenue' | 'subscriptions'>('revenue');
   const [period, setPeriod] = React.useState<'month' | 'quarter' | 'year'>('month');
+  const { data: analytics, isLoading } = useSubscriptionsAnalytics(period);
   const { formatCurrency } = useCurrencyFormatter();
 
   if (isLoading) {
@@ -31,14 +43,14 @@ export const RevenueAnalyticsChart: React.FC = () => {
 
   const chartData = analytics?.monthlyTrend || [];
 
-  const CustomTooltip = ({ active, payload, label }: any) => {
+  const CustomTooltip = ({ active, payload, label }: ChartTooltipProps) => {
     if (active && payload && payload.length) {
       return (
         <div className="bg-background border border-border rounded-lg shadow-md p-3">
           <p className="text-sm font-medium">{`الشهر: ${label}`}</p>
-          {payload.map((entry: any, index: number) => (
+          {payload.map((entry, index) => (
             <p key={index} className="text-sm" style={{ color: entry.color }}>
-              {entry.dataKey === 'revenue' ? 'الإيرادات' : 'الاشتراكات'}: {entry.dataKey === 'revenue' ? formatCurrency(entry.value) : entry.value}
+              {entry.dataKey === 'revenue' ? 'الإيرادات' : 'الاشتراكات'}: {entry.dataKey === 'revenue' ? formatCurrency(entry.value ?? 0) : entry.value ?? 0}
             </p>
           ))}
         </div>
@@ -170,11 +182,10 @@ export const RevenueAnalyticsChart: React.FC = () => {
         <div className="mt-6 pt-6 border-t">
           <h4 className="text-lg font-medium mb-4">الإيرادات حسب نوع الخطة</h4>
           <div className="grid grid-cols-3 gap-4">
-            {analytics?.revenueByPlan.map((plan, index) => (
+            {analytics?.revenueByPlan.map((plan) => (
               <div key={plan.plan} className="text-center p-3 rounded-lg bg-muted/50">
                 <div className="text-sm font-medium text-muted-foreground">
-                  {plan.plan === 'basic' ? 'أساسي' : 
-                   plan.plan === 'premium' ? 'مميز' : 'مؤسسي'}
+                  {plan.plan}
                 </div>
                 <div className="text-xl font-bold mt-1">
                   {formatCurrency(plan.revenue)}

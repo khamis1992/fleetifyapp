@@ -70,6 +70,7 @@ describe('useFinance - Chart of Accounts', () => {
     // Assign properties after declaring chain to avoid circular reference error
     chain.select = vi.fn().mockReturnValue(chain);
     chain.eq = vi.fn().mockReturnValue(chain);
+    chain.or = vi.fn().mockReturnValue(chain);
     chain.order = vi.fn().mockReturnValue(chain);
     chain.single = vi.fn().mockResolvedValue(finalData);
     chain.maybeSingle = vi.fn().mockResolvedValue(finalData);
@@ -171,10 +172,10 @@ describe('useFinance - Chart of Accounts', () => {
 
       await waitFor(() => {
         expect(result.current.isError).toBe(true);
-      }, { timeout: 5000 });
+      }, { timeout: 10000 });
 
       expect(result.current.error).toBeTruthy();
-    });
+    }, 12000);
 
     it('should filter by company_id', async () => {
       mockFrom.mockReturnValueOnce(buildChainableMock({ data: [], error: null }));

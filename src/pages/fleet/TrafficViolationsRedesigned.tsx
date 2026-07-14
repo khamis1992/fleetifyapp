@@ -4,9 +4,6 @@ import {
   Search, 
   Plus, 
   FileWarning, 
-  Trash2, 
-  FileText, 
-  DollarSign, 
   CheckCircle, 
   AlertCircle,
   Car,
@@ -20,7 +17,6 @@ import {
   Edit,
   Upload,
   List,
-  Gavel,
   RefreshCw,
   Link2,
   CheckCircle2,
@@ -30,16 +26,14 @@ import {
   ReceiptText,
   Send,
   Filter,
-  MoreHorizontal,
   ShieldAlert
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Progress } from '@/components/ui/progress';
-import { useTrafficViolations, TrafficViolation, useDeleteTrafficViolation, useDeleteAllTrafficViolations, useUpdatePaymentStatus, useTrafficViolationsStats } from '@/hooks/useTrafficViolations';
+import { useTrafficViolations, TrafficViolation, useDeleteTrafficViolation, useDeleteAllTrafficViolations, useTrafficViolationsStats } from '@/hooks/useTrafficViolations';
 import { useRelinkViolations } from '@/hooks/useRelinkViolations';
 import { TrafficViolationsSmartDashboard } from '@/components/fleet/TrafficViolationsSmartDashboard';
 import { TrafficViolationsAlertsPanel } from '@/components/fleet/TrafficViolationsAlertsPanel';
@@ -314,7 +308,6 @@ export default function TrafficViolationsRedesigned() {
   const totalPages = Math.ceil(totalCount / itemsPerPage);
   const deleteViolationMutation = useDeleteTrafficViolation();
   const deleteAllViolationsMutation = useDeleteAllTrafficViolations();
-  const updatePaymentStatusMutation = useUpdatePaymentStatus();
   const { formatCurrency } = useCurrencyFormatter();
   const { relinkViolations, isProcessing: isRelinking, progress: relinkProgress, result: relinkResult, resetResult: resetRelinkResult } = useRelinkViolations();
 
@@ -426,18 +419,17 @@ export default function TrafficViolationsRedesigned() {
   }, []);
 
   const handleDelete = useCallback(async (id: string) => {
-    if (window.confirm('هل أنت متأكد من حذف هذا السجل نهائياً؟')) {
+    if (window.confirm('هل أنت متأكد من إلغاء هذه المخالفة؟ سيبقى السجل محفوظًا لأغراض التدقيق.')) {
       try {
         await deleteViolationMutation.mutateAsync(id);
-        toast.success('تم حذف المخالفة بنجاح');
-      } catch (error) {
-        toast.error('حدث خطأ أثناء حذف المخالفة');
+      } catch {
+        // The mutation displays the precise reason when a paid record cannot be cancelled.
       }
     }
   }, [deleteViolationMutation]);
 
   const handleDeleteAllViolations = useCallback(async () => {
-    if (deleteAllConfirmText.trim() !== 'حذف') return;
+    if (deleteAllConfirmText.trim() !== 'إلغاء') return;
 
     try {
       await deleteAllViolationsMutation.mutateAsync();
@@ -451,21 +443,9 @@ export default function TrafficViolationsRedesigned() {
       setSearchTerm('');
       await refetch();
     } catch (error) {
-      console.error('Failed to delete all traffic violations:', error);
+      console.error('Failed to cancel traffic violations:', error);
     }
   }, [deleteAllConfirmText, deleteAllViolationsMutation, refetch]);
-
-  const handleMarkAsPaid = useCallback(async (violation: TrafficViolation) => {
-    try {
-      await updatePaymentStatusMutation.mutateAsync({
-        id: violation.id,
-        paymentStatus: 'paid'
-      });
-      toast.success('تم تحديث حالة الدفع بنجاح');
-    } catch (error) {
-      toast.error('حدث خطأ أثناء تحديث حالة الدفع');
-    }
-  }, [updatePaymentStatusMutation]);
 
   const handleOpenReportDialog = useCallback(() => {
     setIsReportDialogOpen(true);
@@ -611,24 +591,24 @@ export default function TrafficViolationsRedesigned() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-[#FB6B7A]">
               <AlertTriangle className="h-5 w-5" />
-              حذف جميع المخالفات المرورية
+              إلغاء المخالفات غير المسددة
             </DialogTitle>
             <DialogDescription className="text-right leading-7">
-              سيتم حذف كل المخالفات المرورية المسجلة للشركة الحالية وعددها{' '}
+              سيتم إلغاء المخالفات غير الملغاة المسجلة للشركة الحالية، من أصل{' '}
               <span className="font-black text-[#020617]">{totalCount.toLocaleString('en-US')}</span>{' '}
-              مخالفة. هذا الإجراء نهائي ولا يمكن التراجع عنه.
+              مخالفة. المخالفات المرتبطة بأي دفعة ستبقى محمية دون تغيير، وستظل كل السجلات محفوظة لأغراض التدقيق.
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-3 rounded-[8px] border border-[#FFD5DC] bg-[#FFF7F8] p-4">
             <p className="text-sm font-bold text-[#102B4E]">
-              للتأكيد اكتب كلمة <span className="font-black text-[#FB6B7A]">حذف</span> في الحقل التالي.
+              للتأكيد اكتب كلمة <span className="font-black text-[#FB6B7A]">إلغاء</span> في الحقل التالي.
             </p>
             <input
               value={deleteAllConfirmText}
               onChange={(event) => setDeleteAllConfirmText(event.target.value)}
               className="h-11 w-full rounded-[8px] border border-[#FFD5DC] bg-white px-3 text-sm font-black text-[#020617] outline-none focus:border-[#FB6B7A]"
-              placeholder="اكتب حذف"
+              placeholder="اكتب إلغاء"
               autoComplete="off"
             />
           </div>
@@ -646,9 +626,9 @@ export default function TrafficViolationsRedesigned() {
             <Button
               variant="destructive"
               onClick={handleDeleteAllViolations}
-              disabled={deleteAllConfirmText.trim() !== 'حذف' || deleteAllViolationsMutation.isPending}
+              disabled={deleteAllConfirmText.trim() !== 'إلغاء' || deleteAllViolationsMutation.isPending}
             >
-              {deleteAllViolationsMutation.isPending ? 'جاري الحذف...' : 'حذف جميع المخالفات'}
+              {deleteAllViolationsMutation.isPending ? 'جاري الإلغاء...' : 'إلغاء المخالفات غير المسددة'}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -877,8 +857,8 @@ export default function TrafficViolationsRedesigned() {
               disabled={totalCount === 0 || deleteAllViolationsMutation.isPending}
               className="h-11 rounded-[8px] border-[#FFD5DC] bg-[#FFF0F2] font-black text-[#FB6B7A] hover:bg-[#FFE3E8] hover:text-[#E84F61]"
             >
-              <Trash2 className="ml-2 h-4 w-4" />
-              حذف جميع المخالفات
+              <XCircle className="ml-2 h-4 w-4" />
+              إلغاء المخالفات غير المسددة
             </Button>
             <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
               <DialogTrigger asChild>
@@ -1234,7 +1214,17 @@ export default function TrafficViolationsRedesigned() {
                                 {violation.status === 'pending' && (
                                   <Button variant="outline" size="sm" onClick={() => handleOpenModal(violation)} className="h-9 rounded-[8px] border-[#DDE5EF] px-3 text-[#38BDF8]"><Edit className="h-4 w-4" /></Button>
                                 )}
-                                <Button variant="outline" size="sm" onClick={() => handleDelete(violation.id)} className="h-9 rounded-[8px] border-[#DDE5EF] px-3 text-[#FB6B7A]"><Trash2 className="h-4 w-4" /></Button>
+                                {violation.status !== 'cancelled' && (
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => handleDelete(violation.id)}
+                                    className="h-9 rounded-[8px] border-[#DDE5EF] px-3 text-[#FB6B7A]"
+                                    title="إلغاء المخالفة"
+                                  >
+                                    <XCircle className="h-4 w-4" />
+                                  </Button>
+                                )}
                               </div>
                             </td>
                           </tr>
@@ -1513,13 +1503,15 @@ export default function TrafficViolationsRedesigned() {
                                   <Edit className="w-4 h-4" />
                                 </button>
                               )}
-                              <button 
-                                onClick={() => handleDelete(violation.id)} 
-                                className="p-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition" 
-                                title="حذف"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </button>
+                              {violation.status !== 'cancelled' && (
+                                <button
+                                  onClick={() => handleDelete(violation.id)}
+                                  className="p-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition"
+                                  title="إلغاء المخالفة"
+                                >
+                                  <XCircle className="w-4 h-4" />
+                                </button>
+                              )}
                             </div>
                           </td>
                         </tr>

@@ -37,7 +37,12 @@ export const useFleetifyTranslation = (namespace?: string | string[]) => {
     useSuspense: false
   });
 
-  const currentLanguage = useMemo(() => getCurrentLanguage(), []);
+  const currentLanguage = useMemo(() => {
+    const language = (i18n.resolvedLanguage || i18n.language || getCurrentLanguage()).split('-')[0];
+    return language in SUPPORTED_LANGUAGES
+      ? language as SupportedLanguage
+      : getCurrentLanguage();
+  }, [i18n.language, i18n.resolvedLanguage]);
   const currentLocale = useMemo(() => SUPPORTED_LANGUAGES[currentLanguage], [currentLanguage]);
   const businessRulesEngine = useMemo(() => createBusinessRuleEngine(currentLanguage), [currentLanguage]);
 
@@ -46,7 +51,7 @@ export const useFleetifyTranslation = (namespace?: string | string[]) => {
     try {
       await changeLanguage(language);
       // Trigger any post-language-change logic
-      if (window.__APP_DEBUG__) {
+      if (import.meta.env.DEV) {
         console.log(`Language changed to: ${language}`);
       }
     } catch (error) {
@@ -174,14 +179,16 @@ export const useFleetifyTranslation = (namespace?: string | string[]) => {
 
   // Get available languages
   const availableLanguages = useMemo(() => {
-    return Object.entries(SUPPORTED_LANGUAGES).map(([code, config]) => ({
+    return Object.entries(SUPPORTED_LANGUAGES)
+      .filter(([code]) => code === 'ar' || code === 'en')
+      .map(([code, config]) => ({
       code: code as SupportedLanguage,
       name: config.name,
       nativeName: config.nativeName,
       flag: config.flag,
       direction: config.dir,
       isCurrent: code === currentLanguage
-    }));
+      }));
   }, [currentLanguage]);
 
   return {
@@ -212,6 +219,12 @@ export const useFleetifyTranslation = (namespace?: string | string[]) => {
     formatDateTime: formatLocalDateTime,
     formatTime: formatLocalTime,
     formatNumber: formatLocalNumber,
+    // Backward-compatible aliases used by older modules.
+    formatLocalCurrency,
+    formatLocalDate,
+    formatLocalDateTime,
+    formatLocalTime,
+    formatLocalNumber,
 
     // Business rules
     businessRules: businessRulesEngine,
@@ -388,7 +401,7 @@ export const useLocaleDateTime = () => {
 // Hook for business logic validation
 export const useLocaleBusinessLogic = () => {
   const { currentLanguage, validateBusinessData, getBusinessRules } = useFleetifyTranslation();
-  const { businessRules } = useLocaleBusinessRules(currentLanguage);
+  const { rules: businessRules } = useLocaleBusinessRules(currentLanguage);
 
   const validateContractData = useCallback((contractData: any) => {
     return validateBusinessData(contractData, 'contracts');

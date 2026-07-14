@@ -43,6 +43,13 @@ interface NoteFormData {
   is_important: boolean;
 }
 
+interface CustomerContractSummary {
+  id: string;
+  contract_number: string;
+  contract_amount?: number | null;
+  status?: string | null;
+}
+
 export function CustomerDetailsDialog({ 
   open, 
   onOpenChange, 
@@ -65,19 +72,10 @@ export function CustomerDetailsDialog({
   // OPTIMIZATION: Only fetch financial summary when financial tab is active
   const { data: financialSummary } = useCustomerFinancialSummary(customerId, { enabled: open && activeTab === "financial" });
   
-  const { formatCurrency, currency } = useCurrencyFormatter();
+  const { formatCurrency } = useCurrencyFormatter();
   const createNoteMutation = useCreateCustomerNote();
 
-  console.log('🔍 CustomerDetailsDialog state:', {
-    customerId,
-    isLoading,
-    isError,
-    error,
-    customer: customer ? 'loaded' : 'not loaded',
-    activeTab
-  });
-
-  const { register, handleSubmit, reset, setValue, watch } = useForm<NoteFormData>({
+  const { register, handleSubmit, reset, setValue } = useForm<NoteFormData>({
     defaultValues: {
       note_type: 'general',
       title: '',
@@ -369,7 +367,7 @@ export function CustomerDetailsDialog({
                   </CardHeader>
                   <CardContent>
                     <div className="text-2xl font-bold text-green-600">
-                      {formatCurrency(financialSummary.totalContracts)}
+                      {financialSummary.totalContracts.toLocaleString('ar-QA')}
                     </div>
                   </CardContent>
                 </Card>
@@ -505,7 +503,7 @@ export function CustomerDetailsDialog({
               <CardContent>
                 {customer.contracts && Array.isArray(customer.contracts) && customer.contracts.length > 0 ? (
                   <div className="space-y-2">
-                    {(customer.contracts as any[]).map((contract: any) => (
+                    {(customer.contracts as unknown as CustomerContractSummary[]).map((contract) => (
                       <div 
                         key={contract.id} 
                         onClick={() => {

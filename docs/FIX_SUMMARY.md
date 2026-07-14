@@ -166,8 +166,8 @@ URL: https://fleetifyapp.vercel.app/dashboard
 
 ### 2. Login
 ```
-Email: khamis-1992@hotmail.com
-Password: 123456789
+Email: `<test-email>`
+Password: `<test-password>`
 ```
 
 ### 3. Expected Results ✅

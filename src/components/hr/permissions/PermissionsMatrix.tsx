@@ -165,7 +165,7 @@ export default function PermissionsMatrix({
   return (
     <div className="space-y-4" dir="rtl">
       {selectedUser && (
-        <div className="rounded-2xl border border-slate-200 bg-white p-4">
+        <div className="rounded-lg border border-slate-200 bg-white p-4">
           <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
             <div>
               <h3 className="text-lg font-black text-[#020617]">الأدوار الأساسية</h3>
@@ -208,7 +208,7 @@ export default function PermissionsMatrix({
         </div>
       )}
 
-      <div className="rounded-2xl border border-slate-200 bg-white p-4">
+      <div className="rounded-lg border border-slate-200 bg-white p-4">
         <div className="mb-4 flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
           <div>
             <h3 className="text-lg font-black text-[#020617]">الصلاحيات التفصيلية</h3>
@@ -352,7 +352,7 @@ export default function PermissionsMatrix({
       </div>
 
       {showRoleComparison && (
-        <div className="rounded-2xl border border-slate-200 bg-white p-4">
+        <div className="rounded-lg border border-slate-200 bg-white p-4">
           <h3 className="mb-3 text-lg font-black text-[#020617]">ملخص الأدوار</h3>
           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
             {(Object.entries(ROLE_PERMISSIONS) as Array<[UserRole, typeof ROLE_PERMISSIONS[UserRole]]>).map(([role, data]) => (

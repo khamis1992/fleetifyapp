@@ -39,7 +39,7 @@ const CreateCompany: React.FC = () => {
     
     // Auto redirect after 3 seconds
     setTimeout(() => {
-      navigate('/super-admin/companies');
+      navigate('/admin/companies');
     }, 3000);
   };
 
@@ -57,7 +57,7 @@ const CreateCompany: React.FC = () => {
         </div>
         <Button 
           variant="outline" 
-          onClick={() => navigate('/super-admin/companies')}
+          onClick={() => navigate('/admin/companies')}
           className="flex items-center gap-2"
         >
           <ArrowLeft className="h-4 w-4" />
@@ -217,7 +217,7 @@ const CreateCompany: React.FC = () => {
             </p>
             <div className="flex items-center justify-center gap-4">
               <Button 
-                onClick={() => navigate('/super-admin/companies')}
+                onClick={() => navigate('/admin/companies')}
                 variant="outline"
               >
                 عرض جميع الشركات

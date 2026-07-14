@@ -164,7 +164,7 @@ export default function SignedAgreementsUpload() {
       setUploadedFiles(prev =>
         prev.map(f => {
           if (f.id === uploadedFile.id) {
-            if (matchResult.success && matchResult.matchData) {
+            if (matchResult.success && 'matchData' in matchResult && matchResult.matchData) {
               return {
                 ...f,
                 status: 'matched',

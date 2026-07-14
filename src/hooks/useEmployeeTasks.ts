@@ -6,7 +6,8 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { startOfDay, endOfDay, isToday } from 'date-fns';
+import { startOfDay, isToday } from 'date-fns';
+import type { Database } from '@/integrations/supabase/types';
 import type { 
   EmployeeTask, 
   TaskStats, 
@@ -31,21 +32,24 @@ export const useEmployeeTasks = (
 ): UseEmployeeTasksReturn => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const companyId = user?.profile?.company_id || user?.company?.id;
 
   // Get employee's profile
   const { data: profile } = useQuery({
-    queryKey: ['employee-profile-tasks', user?.id],
+    queryKey: ['employee-profile-tasks', companyId, user?.id],
     queryFn: async () => {
+      if (!user?.id || !companyId) throw new Error('Employee identity is required');
       const { data, error } = await supabase
         .from('profiles')
         .select('id, company_id')
-        .eq('user_id', user?.id)
+        .eq('user_id', user.id)
+        .eq('company_id', companyId)
         .single();
       
       if (error) throw error;
       return data;
     },
-    enabled: !!user?.id
+    enabled: !!user?.id && !!companyId
   });
 
   // Fetch tasks
@@ -56,7 +60,7 @@ export const useEmployeeTasks = (
     error,
     refetch
   } = useQuery({
-    queryKey: ['employee-tasks', profile?.id, filters],
+    queryKey: ['employee-tasks', companyId, profile?.id, filters],
     queryFn: async () => {
       if (!profile?.id) return [];
 
@@ -77,7 +81,6 @@ export const useEmployeeTasks = (
           customer_id,
           assigned_to,
           assigned_by,
-          notes,
           result_notes,
           delay_reason,
           delay_notes,
@@ -93,7 +96,8 @@ export const useEmployeeTasks = (
             company_name_ar
           )
         `)
-        .eq('assigned_to', profile.id);
+        .eq('assigned_to', profile.id)
+        .eq('company_id', profile.company_id);
 
       // Apply filters
       if (filters?.status && filters.status.length > 0) {
@@ -101,11 +105,20 @@ export const useEmployeeTasks = (
       }
 
       if (filters?.type && filters.type.length > 0) {
-        query = query.in('task_type', filters.type);
+        const taskTypes = filters.type.map(type => ({
+          call: 'followup',
+          followup: 'followup',
+          visit: 'customer_visit',
+          payment: 'payment_collection',
+          other: 'other',
+        }[type]));
+        query = query.in('task_type', taskTypes);
       }
 
       if (filters?.priority && filters.priority.length > 0) {
-        query = query.in('priority', filters.priority);
+        query = query.in('priority', filters.priority.map(priority =>
+          priority === 'medium' ? 'normal' : priority
+        ));
       }
 
       if (filters?.dateFrom) {
@@ -124,38 +137,43 @@ export const useEmployeeTasks = (
         `);
       }
 
-      query = query.order('scheduled_date', { ascending: true })
-                   .order('scheduled_time', { ascending: true });
+      query = query.order('scheduled_date', { ascending: true });
 
       const { data, error } = await query;
 
       if (error) throw error;
 
       // Transform data
-      const transformedData: EmployeeTask[] = (data || []).map((task: any) => {
+      const transformedData: EmployeeTask[] = (data || []).map(task => {
         const customer = task.customers;
         const customerName = customer?.first_name_ar || customer?.company_name_ar || 
                             `${customer?.first_name || ''} ${customer?.last_name || ''}`.trim();
+        const scheduledDate = task.scheduled_date || task.due_date || task.created_at || new Date().toISOString();
+        const taskType = {
+          followup: 'followup',
+          payment_collection: 'payment',
+          customer_visit: 'visit',
+        }[task.task_type] || 'other';
 
         return {
           id: task.id,
           title: task.title,
           title_ar: task.title_ar,
           description: task.description,
-          type: task.type,
-          status: task.status,
-          priority: task.priority,
-          scheduled_date: task.scheduled_date,
-          scheduled_time: task.scheduled_time,
-          completed_at: task.completed_at,
-          contract_id: task.contract_id,
-          customer_id: task.customer_id,
+          type: taskType,
+          status: task.status === 'delayed' ? 'pending' : (task.status || 'pending'),
+          priority: task.priority === 'normal' ? 'medium' : (task.priority || 'medium'),
+          scheduled_date: scheduledDate,
+          scheduled_time: scheduledDate.includes('T') ? scheduledDate.slice(11, 16) : undefined,
+          completed_at: task.completed_at || undefined,
+          contract_id: task.contract_id || undefined,
+          customer_id: task.customer_id || undefined,
           customer_name: customerName,
-          assigned_to_profile_id: task.assigned_to_profile_id,
-          created_by: task.created_by,
-          notes: task.notes,
-          created_at: task.created_at,
-          updated_at: task.updated_at,
+          assigned_to_profile_id: task.assigned_to || profile.id,
+          created_by: task.assigned_by || '',
+          notes: task.description || undefined,
+          created_at: task.created_at || undefined,
+          updated_at: task.updated_at || undefined,
         };
       });
 
@@ -188,6 +206,7 @@ export const useEmployeeTasks = (
   // Complete task mutation
   const completeTaskMutation = useMutation({
     mutationFn: async (taskId: string) => {
+      if (!profile?.id) throw new Error('Employee profile is required');
       const { error } = await supabase
         .from('employee_tasks')
         .update({
@@ -195,7 +214,11 @@ export const useEmployeeTasks = (
           completed_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         })
-        .eq('id', taskId);
+        .eq('id', taskId)
+        .eq('company_id', profile.company_id)
+        .eq('assigned_to', profile.id)
+        .select('id')
+        .single();
 
       if (error) throw error;
     },
@@ -207,10 +230,15 @@ export const useEmployeeTasks = (
   // Delete task mutation
   const deleteTaskMutation = useMutation({
     mutationFn: async (taskId: string) => {
+      if (!profile?.id) throw new Error('Employee profile is required');
       const { error } = await supabase
         .from('employee_tasks')
         .delete()
-        .eq('id', taskId);
+        .eq('id', taskId)
+        .eq('company_id', profile.company_id)
+        .eq('assigned_to', profile.id)
+        .select('id')
+        .single();
 
       if (error) throw error;
     },
@@ -228,13 +256,35 @@ export const useEmployeeTasks = (
       taskId: string; 
       updates: Partial<EmployeeTask> 
     }) => {
+      if (!profile?.id) throw new Error('Employee profile is required');
+      const databaseUpdates: Database['public']['Tables']['employee_tasks']['Update'] = {
+        updated_at: new Date().toISOString(),
+      };
+      if (updates.title !== undefined) databaseUpdates.title = updates.title;
+      if (updates.title_ar !== undefined) databaseUpdates.title_ar = updates.title_ar;
+      if (updates.description !== undefined) databaseUpdates.description = updates.description;
+      if (updates.notes !== undefined) databaseUpdates.description = updates.notes;
+      if (updates.status !== undefined) databaseUpdates.status = updates.status;
+      if (updates.priority !== undefined) {
+        databaseUpdates.priority = updates.priority === 'medium' ? 'normal' : updates.priority;
+      }
+      if (updates.type !== undefined) {
+        databaseUpdates.task_type = {
+          call: 'followup',
+          followup: 'followup',
+          visit: 'customer_visit',
+          payment: 'payment_collection',
+          other: 'other',
+        }[updates.type];
+      }
+      if (updates.scheduled_date !== undefined) databaseUpdates.scheduled_date = updates.scheduled_date;
+
       const { error } = await supabase
         .from('employee_tasks')
-        .update({
-          ...updates,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', taskId);
+        .update(databaseUpdates)
+        .eq('id', taskId)
+        .eq('company_id', profile.company_id)
+        .eq('assigned_to', profile.id);
 
       if (error) throw error;
     },

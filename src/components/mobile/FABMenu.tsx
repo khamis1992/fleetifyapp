@@ -11,7 +11,7 @@
  */
 
 import React, { useEffect, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, type Variants } from 'framer-motion';
 import { X } from 'lucide-react';
 import { FABAction } from '@/types/mobile';
 import { useHapticFeedback } from '@/hooks/useHapticFeedback';
@@ -65,7 +65,7 @@ export function FABMenu({ isOpen, onClose, actions }: FABMenuProps) {
   );
 
   // Animation variants
-  const backdropVariants = {
+  const backdropVariants: Variants = {
     hidden: { opacity: 0 },
     visible: {
       opacity: 1,
@@ -77,7 +77,7 @@ export function FABMenu({ isOpen, onClose, actions }: FABMenuProps) {
     },
   };
 
-  const menuVariants = {
+  const menuVariants: Variants = {
     hidden: {
       y: '100%',
       opacity: 0,
@@ -100,7 +100,7 @@ export function FABMenu({ isOpen, onClose, actions }: FABMenuProps) {
     },
   };
 
-  const itemVariants = {
+  const itemVariants: Variants = {
     hidden: { opacity: 0, x: -20 },
     visible: (i: number) => ({
       opacity: 1,

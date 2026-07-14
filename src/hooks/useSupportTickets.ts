@@ -161,6 +161,7 @@ export const useSupportTickets = () => {
 
   const updateTicketMutation = useMutation({
     mutationFn: async ({ id, updates }: { id: string; updates: UpdateTicketData }) => {
+      if (!companyId) throw new Error('تعذر تحديد الشركة');
       const updateData = { ...updates };
       
       // تحديث التواريخ بناءً على حالة التذكرة
@@ -175,6 +176,7 @@ export const useSupportTickets = () => {
         .from('support_tickets')
         .update(updateData)
         .eq('id', id)
+        .eq('company_id', companyId)
         .select()
         .single();
 
@@ -193,20 +195,27 @@ export const useSupportTickets = () => {
 
   const deleteTicketMutation = useMutation({
     mutationFn: async (id: string) => {
+      if (!companyId) throw new Error('تعذر تحديد الشركة');
       const { error } = await supabase
         .from('support_tickets')
-        .delete()
-        .eq('id', id);
+        .update({
+          status: 'closed',
+          closed_at: new Date().toISOString(),
+        })
+        .eq('id', id)
+        .eq('company_id', companyId)
+        .select('id')
+        .single();
 
       if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['support-tickets'] });
-      toast.success('تم حذف التذكرة بنجاح');
+      toast.success('تم إغلاق التذكرة بنجاح');
     },
     onError: (error) => {
       console.error('Error deleting ticket:', error);
-      toast.error('حدث خطأ في حذف التذكرة');
+      toast.error('حدث خطأ في إغلاق التذكرة');
     }
   });
 

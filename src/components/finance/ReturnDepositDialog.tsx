@@ -126,7 +126,7 @@ export function ReturnDepositDialog({
               name="returnAmount"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>مبلغ الاسترداد (د.ك)</FormLabel>
+                  <FormLabel>مبلغ الاسترداد (ر.ق)</FormLabel>
                   <FormControl>
                     <Input
                       type="number"

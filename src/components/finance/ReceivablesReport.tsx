@@ -24,7 +24,7 @@ const { data: receivablesData, isLoading } = useReceivablesReport()
         <thead>
           <tr>
             <th>اسم العميل</th>
-            <th>المبلغ المستحق (د.ك)</th>
+            <th>المبلغ المستحق (ر.ق)</th>
             <th>تاريخ الاستحقاق</th>
             <th>أيام التأخير</th>
             <th>الحالة</th>

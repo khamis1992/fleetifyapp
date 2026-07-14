@@ -29,6 +29,15 @@ type ContractPaymentRow = {
   invoice_id: string | null;
   contract_id?: string | null;
   reference_number?: string | null;
+  invoice_allocations?: Array<{
+    target_id: string;
+    amount: number;
+  }>;
+  contract_allocations?: Array<{
+    target_id: string;
+    amount: number;
+  }>;
+  has_active_allocations?: boolean;
 };
 
 type HealthSeverity = 'critical' | 'warning' | 'info' | 'good';
@@ -108,6 +117,7 @@ type ContractHealthResult = {
     activeInvoices: number;
     missingInvoices: number;
     paymentsBeforeStart: number;
+    paymentsAfterEnd: number;
     invoicesOutsideContract: number;
     totalPaid: number;
     contractAmount: number;
@@ -134,7 +144,13 @@ type PaymentScheduleLike = {
   amount?: number | null;
   status?: string | null;
   paid_date?: string | null;
+  paid_amount?: number | null;
   invoice_id?: string | null;
+};
+
+type InvoiceDateLike = {
+  invoice_date?: string | null;
+  due_date?: string | null;
 };
 
 type ContractHealthInvoice = Invoice & {
@@ -243,10 +259,79 @@ export const ContractHealthAnalysis: React.FC<{
       const paymentsResult = await paymentsQuery.order('payment_date', { ascending: true });
       if (paymentsResult.error) throw paymentsResult.error;
 
+      const directPayments = (paymentsResult.data || []) as ContractPaymentRow[];
+      const invoiceAllocationsResult = invoiceIds.length > 0
+        ? await supabase
+            .from('payment_allocations')
+            .select('payment_id, allocation_type, target_id, amount')
+            .eq('company_id', contract.company_id)
+            .eq('is_active', true)
+            .eq('allocation_type', 'invoice')
+            .in('target_id', invoiceIds)
+        : { data: [], error: null };
+
+      if (invoiceAllocationsResult.error) throw invoiceAllocationsResult.error;
+
+      const allocatedPaymentIds = Array.from(new Set(
+        (invoiceAllocationsResult.data || []).map((allocation) => allocation.payment_id),
+      ));
+      const directPaymentIds = new Set(directPayments.map((payment) => payment.id));
+      const missingAllocatedPaymentIds = allocatedPaymentIds.filter((id) => !directPaymentIds.has(id));
+      const allocatedPaymentsResult = missingAllocatedPaymentIds.length > 0
+        ? await supabase
+            .from('payments')
+            .select('id, payment_number, payment_date, amount, payment_status, invoice_id, contract_id, reference_number')
+            .eq('company_id', contract.company_id)
+            .in('id', missingAllocatedPaymentIds)
+        : { data: [], error: null };
+
+      if (allocatedPaymentsResult.error) throw allocatedPaymentsResult.error;
+
+      const payments = [
+        ...directPayments,
+        ...((allocatedPaymentsResult.data || []) as ContractPaymentRow[]),
+      ];
+      const paymentIds = payments.map((payment) => payment.id);
+      const allAllocationsResult = paymentIds.length > 0
+        ? await supabase
+            .from('payment_allocations')
+            .select('payment_id, allocation_type, target_id, amount')
+            .eq('company_id', contract.company_id)
+            .eq('is_active', true)
+            .in('payment_id', paymentIds)
+        : { data: [], error: null };
+
+      if (allAllocationsResult.error) throw allAllocationsResult.error;
+
+      const allocationsByPaymentId = new Map<string, Array<{ allocation_type: string; target_id: string; amount: number }>>();
+      for (const allocation of allAllocationsResult.data || []) {
+        const items = allocationsByPaymentId.get(allocation.payment_id) || [];
+        items.push({
+          allocation_type: allocation.allocation_type,
+          target_id: allocation.target_id,
+          amount: Number(allocation.amount || 0),
+        });
+        allocationsByPaymentId.set(allocation.payment_id, items);
+      }
+
+      const canonicalPayments = payments.map((payment) => {
+        const allocations = allocationsByPaymentId.get(payment.id) || [];
+        return {
+          ...payment,
+          has_active_allocations: allocations.length > 0,
+          invoice_allocations: allocations
+            .filter((allocation) => allocation.allocation_type === 'invoice')
+            .map((allocation) => ({ target_id: allocation.target_id, amount: allocation.amount })),
+          contract_allocations: allocations
+            .filter((allocation) => allocation.allocation_type === 'contract')
+            .map((allocation) => ({ target_id: allocation.target_id, amount: allocation.amount })),
+        };
+      });
+
       const metrics = buildContractHealthMetrics({
         contract,
         invoices,
-        payments: (paymentsResult.data || []) as ContractPaymentRow[],
+        payments: canonicalPayments,
         paymentSchedules: currentPaymentSchedules,
         formatCurrency,
       });
@@ -262,8 +347,8 @@ export const ContractHealthAnalysis: React.FC<{
   const fixableIssuesCount = health
     ? health.metrics.missingInvoices
       + health.metrics.outsideInvoices.length
-      + health.metrics.paymentsBeforeStartItems.length
-      + health.metrics.paymentsAfterEndItems.length
+      + health.metrics.paymentsBeforeStartItems.filter((payment) => !payment.is_immutable).length
+      + health.metrics.paymentsAfterEndItems.filter((payment) => !payment.is_immutable).length
       + (health.metrics.scheduleInvoiceDifference > 1 ? 1 : 0)
       + health.metrics.scheduleInvoiceMismatchItems.length
       + health.metrics.invoicePaymentCorrections.length
@@ -280,7 +365,7 @@ export const ContractHealthAnalysis: React.FC<{
     const reviewedPaymentIds = new Set<string>();
 
     try {
-      const agentPlan = await getContractRepairAgentPlan({ contract, health });
+      const agentPlan = buildLocalContractRepairAgentPlan(health.metrics);
       if (agentPlan.actions.length > 0) {
         const actionLabels = agentPlan.actions
           .slice(0, 5)
@@ -312,12 +397,18 @@ export const ContractHealthAnalysis: React.FC<{
         fixedActions.push(`تصحيح ربط فواتير بالعقد: ${repairedInvoiceLinks}`);
       }
 
-      const duplicateScheduleIds = getDuplicatePaymentScheduleIds(currentPaymentSchedules, contract.start_date, contract.end_date);
+      const duplicateScheduleIds = getDuplicatePaymentScheduleIds(
+        currentPaymentSchedules,
+        contract.start_date,
+        contract.end_date,
+        Number(contract.monthly_amount || 0),
+      );
       if (duplicateScheduleIds.length > 0) {
         const { error } = await supabase
           .from('contract_payment_schedules')
           .update({
             status: 'cancelled',
+            invoice_id: null,
             notes: `تم إلغاء القسط لأنه مكرر ضمن إصلاح صحة العقد بتاريخ ${now}`,
             updated_at: now,
           })
@@ -627,44 +718,6 @@ export const ContractHealthAnalysis: React.FC<{
   );
 };
 
-async function getContractRepairAgentPlan({
-  contract,
-  health,
-}: {
-  contract: Contract;
-  health: ContractHealthResult;
-}): Promise<ContractRepairAgentPlan> {
-  try {
-    const { data, error } = await supabase.functions.invoke('contract-health-analysis', {
-      body: {
-        mode: 'repair_plan',
-        allowExternalAI: true,
-        contract: {
-          id: contract.id,
-          contract_number: contract.contract_number,
-          company_id: contract.company_id,
-          status: contract.status,
-          start_date: contract.start_date,
-          end_date: contract.end_date,
-          contract_amount: contract.contract_amount,
-          monthly_amount: contract.monthly_amount,
-          total_paid: contract.total_paid,
-          balance_due: contract.balance_due,
-          payment_status: contract.payment_status,
-        },
-        metrics: health.metrics,
-        allowedTools: CONTRACT_REPAIR_AGENT_TOOLS,
-      },
-    });
-
-    if (error) throw error;
-    return normalizeContractRepairAgentPlan(data);
-  } catch (error) {
-    console.warn('[ContractHealthAnalysis] AI repair agent fallback:', error);
-    return buildLocalContractRepairAgentPlan(health.metrics);
-  }
-}
-
 function normalizeContractRepairAgentPlan(payload: any): ContractRepairAgentPlan {
   const allowedTools = new Set(CONTRACT_REPAIR_AGENT_TOOLS);
   const actions = Array.isArray(payload?.actions)
@@ -675,7 +728,7 @@ function normalizeContractRepairAgentPlan(payload: any): ContractRepairAgentPlan
           priority: Number.isFinite(Number(action?.priority)) ? Number(action.priority) : index + 1,
           reason: typeof action?.reason === 'string' ? action.reason : 'اختار الوكيل هذه الأداة بناءً على حالة العقد.',
         }))
-        .sort((left, right) => left.priority - right.priority)
+        .sort((left: ContractRepairAgentPlan['actions'][number], right: ContractRepairAgentPlan['actions'][number]) => left.priority - right.priority)
     : [];
 
   if (actions.length === 0) {
@@ -769,10 +822,22 @@ function buildContractHealthMetrics({
   const activeInvoiceIds = new Set(activeInvoices.map((invoice) => invoice.id));
   const activePayments = payments.filter((payment) => {
     if (isCancelled(payment.payment_status)) return false;
-    return !payment.invoice_id || activeInvoiceIds.has(payment.invoice_id);
+    const hasActiveInvoiceAllocation = payment.invoice_allocations?.some((allocation) => activeInvoiceIds.has(allocation.target_id));
+    return hasActiveInvoiceAllocation || !payment.invoice_id || activeInvoiceIds.has(payment.invoice_id);
   });
   const completedPayments = activePayments.filter((payment) => isCompletedPayment(payment.payment_status));
-  const totalPaid = completedPayments.reduce((sum, payment) => sum + Number(payment.amount || 0), 0);
+  const totalPaid = completedPayments.reduce((sum, payment) => {
+    if (payment.has_active_allocations) {
+      const invoiceAmount = (payment.invoice_allocations || [])
+        .filter((allocation) => activeInvoiceIds.has(allocation.target_id))
+        .reduce((allocationSum, allocation) => allocationSum + Number(allocation.amount || 0), 0);
+      const contractAmount = (payment.contract_allocations || [])
+        .filter((allocation) => allocation.target_id === contract.id)
+        .reduce((allocationSum, allocation) => allocationSum + Number(allocation.amount || 0), 0);
+      return sum + invoiceAmount + contractAmount;
+    }
+    return sum + Number(payment.amount || 0);
+  }, 0);
   const contractAmount = Number(contract.contract_amount || 0);
   const monthlyAmount = Number(contract.monthly_amount || 0);
   const shouldExpectTimeBasedInvoices = !isCancelled(contract.status) && (monthlyAmount > 0 || contractAmount > 0);
@@ -797,16 +862,19 @@ function buildContractHealthMetrics({
     map.set(schedule.invoice_id, (map.get(schedule.invoice_id) || 0) + 1);
     return map;
   }, new Map<string, number>());
-  const invoiceMonths = new Set();
+  const invoiceMonths = new Set<string>();
   for (const invoice of invoicesInsideContract) {
     const monthKey = getInvoiceMonthKey(invoice);
     if (monthKey !== 'unknown') invoiceMonths.add(monthKey);
   }
   const linkedPaymentsByInvoiceId = activePayments.reduce((map, payment) => {
-    if (!payment.invoice_id) return map;
-    const items = map.get(payment.invoice_id) || [];
-    items.push(payment);
-    map.set(payment.invoice_id, items);
+    const linkedInvoiceIds = payment.invoice_allocations?.map((allocation) => allocation.target_id)
+      || (payment.invoice_id ? [payment.invoice_id] : []);
+    for (const invoiceId of linkedInvoiceIds) {
+      const items = map.get(invoiceId) || [];
+      items.push(payment);
+      map.set(invoiceId, items);
+    }
     return map;
   }, new Map<string, ContractPaymentRow[]>());
   const outsideInvoices = activeInvoices
@@ -880,15 +948,7 @@ function buildContractHealthMetrics({
     const duplicateLink = linkedInvoiceCount > 1;
     const missingInvoice = Boolean(!linkedInvoice && !expectedInvoice);
     const amountMismatch = Boolean(linkedInvoice && Math.abs(scheduleAmount - linkedInvoiceAmount) > 1);
-    const dateMismatch = Boolean(
-      linkedInvoice
-      && !wrongLink
-      && linkedInvoice.due_date
-      && getMonthKey(linkedInvoice.due_date) !== scheduleMonthKey
-      && getInvoiceMonthKey(linkedInvoice) === scheduleMonthKey,
-    );
-
-    if (!wrongLink && !duplicateLink && !missingInvoice && !amountMismatch && !dateMismatch) return items;
+    if (!wrongLink && !duplicateLink && !missingInvoice && !amountMismatch) return items;
 
     items.push({
       schedule_id: schedule.id,
@@ -907,16 +967,21 @@ function buildContractHealthMetrics({
         ? 'duplicate_link'
         : missingInvoice
         ? 'missing_invoice'
-        : dateMismatch
-        ? 'date_mismatch'
         : 'amount_mismatch',
     });
 
     return items;
   }, [] as ScheduleInvoiceMismatchItem[]);
   const paymentsByInvoiceId = completedPayments.reduce((map, payment) => {
-    if (!payment.invoice_id) return map;
-    map.set(payment.invoice_id, (map.get(payment.invoice_id) || 0) + Number(payment.amount || 0));
+    if (payment.has_active_allocations) {
+      for (const allocation of payment.invoice_allocations || []) {
+        map.set(allocation.target_id, (map.get(allocation.target_id) || 0) + Number(allocation.amount || 0));
+      }
+      return map;
+    }
+    if (payment.invoice_id) {
+      map.set(payment.invoice_id, (map.get(payment.invoice_id) || 0) + Number(payment.amount || 0));
+    }
     return map;
   }, new Map<string, number>());
   const invoicePaymentCorrections = activeInvoices.reduce((items, invoice) => {
@@ -977,7 +1042,7 @@ function buildContractHealthMetrics({
     contractPeriodLabel,
     totalPaid,
     contractAmount,
-    overpaidAmount: Math.max(0, totalPaid - contractAmount),
+    overpaidAmount: contractAmount > 0 ? Math.max(0, totalPaid - contractAmount) : 0,
     scheduleTotal,
     invoicesTotal,
     scheduleInvoiceDifference: Math.abs(scheduleTotal - invoicesTotal),
@@ -991,13 +1056,14 @@ function buildLocalContractHealth(metrics: ReturnType<typeof buildContractHealth
   const issues: HealthIssue[] = [];
 
   if (metrics.paymentsBeforeStart > 0) {
+    const mutablePaymentCount = metrics.paymentsBeforeStartItems.filter((payment) => !payment.is_immutable).length;
     issues.push({
       title: 'توجد دفعات قبل بداية العقد',
       detail: `فترة العقد من ${metrics.contractPeriodLabel}. تم العثور على ${metrics.paymentsBeforeStart} دفعة بتاريخ أقدم من بداية العقد.`,
-      severity: 'critical',
+      severity: mutablePaymentCount > 0 ? 'critical' : 'warning',
       count: metrics.paymentsBeforeStart,
-      fixable: true,
-      items: metrics.paymentsBeforeStartItems.map((payment) => `${payment.payment_number} - ${formatDateLabel(payment.payment_date)} - ${metricsFormatCurrency(metrics, payment.amount)}`),
+      fixable: mutablePaymentCount > 0,
+      items: metrics.paymentsBeforeStartItems.map((payment) => `${payment.payment_number} - ${formatDateLabel(payment.payment_date)} - ${metricsFormatCurrency(metrics, payment.amount)}${payment.is_immutable ? ' - دفعة مكتملة محمية وتحتاج مراجعة' : ''}`),
     });
   }
 
@@ -1033,13 +1099,14 @@ function buildLocalContractHealth(metrics: ReturnType<typeof buildContractHealth
   }
 
   if (metrics.paymentsAfterEnd > 0) {
+    const mutablePaymentCount = metrics.paymentsAfterEndItems.filter((payment) => !payment.is_immutable).length;
     issues.push({
       title: 'دفعات بعد نهاية العقد',
       detail: `فترة العقد من ${metrics.contractPeriodLabel}. يوجد ${metrics.paymentsAfterEnd} دفعة بتاريخ بعد نهاية العقد.`,
       severity: 'warning',
       count: metrics.paymentsAfterEnd,
-      fixable: true,
-      items: metrics.paymentsAfterEndItems.map((payment) => `${payment.payment_number} - ${formatDateLabel(payment.payment_date)} - ${metricsFormatCurrency(metrics, payment.amount)}`),
+      fixable: mutablePaymentCount > 0,
+      items: metrics.paymentsAfterEndItems.map((payment) => `${payment.payment_number} - ${formatDateLabel(payment.payment_date)} - ${metricsFormatCurrency(metrics, payment.amount)}${payment.is_immutable ? ' - دفعة مكتملة محمية وتحتاج مراجعة' : ''}`),
     });
   }
 
@@ -1302,7 +1369,12 @@ function getActivePaymentSchedulesForPeriod(schedules: PaymentScheduleLike[], st
     });
 }
 
-function getDuplicatePaymentScheduleIds(schedules: PaymentScheduleLike[], startValue: string | null | undefined, endValue: string | null | undefined) {
+function getDuplicatePaymentScheduleIds(
+  schedules: PaymentScheduleLike[],
+  startValue: string | null | undefined,
+  endValue: string | null | undefined,
+  monthlyAmount: number,
+) {
   const start = normalizeDate(startValue);
   const end = normalizeDate(endValue);
   const keepByMonth = new Map<string, PaymentScheduleLike>();
@@ -1319,10 +1391,25 @@ function getDuplicatePaymentScheduleIds(schedules: PaymentScheduleLike[], startV
       continue;
     }
 
-    if (!current.invoice_id && schedule.invoice_id) {
+    const currentMatchesMonthly = monthlyAmount > 0
+      && Math.abs(Number(current.amount || 0) - monthlyAmount) <= 1;
+    const scheduleMatchesMonthly = monthlyAmount > 0
+      && Math.abs(Number(schedule.amount || 0) - monthlyAmount) <= 1;
+
+    if (currentMatchesMonthly !== scheduleMatchesMonthly) {
+      if (scheduleMatchesMonthly) {
+        duplicateIds.push(current.id);
+        keepByMonth.set(key, schedule);
+      } else {
+        duplicateIds.push(schedule.id);
+      }
+    } else if (!current.invoice_id && schedule.invoice_id) {
       duplicateIds.push(current.id);
       keepByMonth.set(key, schedule);
-    } else {
+    } else if (
+      Math.abs(Number(current.amount || 0) - Number(schedule.amount || 0)) <= 1
+      && Math.abs(Number(current.paid_amount || 0) - Number(schedule.paid_amount || 0)) <= 1
+    ) {
       duplicateIds.push(schedule.id);
     }
   }
@@ -1387,7 +1474,7 @@ async function getCurrentActiveInvoiceMonthKeys(contract: Contract, paymentSched
   const { data, error } = await invoicesQuery;
   if (error) throw error;
 
-  const invoiceMonthsSet = new Set();
+  const invoiceMonthsSet = new Set<string>();
   for (const invoice of (data || [])) {
     if (isCancelled(invoice.status) || isCancelled(invoice.payment_status)) continue;
     if (!isMonthInsideContract(invoice.due_date || invoice.invoice_date, startDate, endDate)) continue;
@@ -1519,11 +1606,11 @@ function getActiveContractInvoicesForPeriod(contract: Contract, invoices: Invoic
   });
 }
 
-function getInvoiceMonthKey(invoice: Pick<Invoice, 'invoice_date' | 'due_date'>) {
+function getInvoiceMonthKey(invoice: InvoiceDateLike) {
   return getMonthKey(invoice.invoice_date || invoice.due_date);
 }
 
-function getInvoiceMonthKeys(invoice: Pick<Invoice, 'invoice_date' | 'due_date'>) {
+function getInvoiceMonthKeys(invoice: InvoiceDateLike) {
   const keys = new Set<string>();
   const invoiceDateKey = getMonthKey(invoice.invoice_date);
   const dueDateKey = getMonthKey(invoice.due_date);
@@ -1534,7 +1621,7 @@ function getInvoiceMonthKeys(invoice: Pick<Invoice, 'invoice_date' | 'due_date'>
   return keys;
 }
 
-function invoiceMatchesMonth(invoice: Pick<Invoice, 'invoice_date' | 'due_date'>, monthKey: string) {
+function invoiceMatchesMonth(invoice: InvoiceDateLike, monthKey: string) {
   return getInvoiceMonthKeys(invoice).has(monthKey);
 }
 

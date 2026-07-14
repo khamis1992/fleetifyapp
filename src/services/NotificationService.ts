@@ -9,11 +9,15 @@
  */
 
 import { supabase } from '@/integrations/supabase/client';
+import type { Json } from '@/integrations/supabase/types';
 import { logger } from '@/lib/logger';
 import { PaymentMethod } from '@/types/payment-enums';
 
+type NotificationChannelType = 'whatsapp' | 'sms' | 'email' | 'in_app';
+type ExternalNotificationChannel = Exclude<NotificationChannelType, 'in_app'>;
+
 export interface NotificationChannel {
-  type: 'whatsapp' | 'sms' | 'email' | 'in_app';
+  type: NotificationChannelType;
   enabled: boolean;
   config?: {
     whatsapp?: {
@@ -67,11 +71,66 @@ export interface OverdueReminderData {
   overdueAmount: number;
 }
 
-class NotificationService {
-  private channelConfig: Map<string, NotificationChannel> = new Map();
+interface CustomerRelation {
+  first_name: string | null;
+  last_name: string | null;
+  first_name_ar: string | null;
+  last_name_ar: string | null;
+  company_name: string | null;
+  company_name_ar: string | null;
+  phone: string | null;
+}
+
+interface VehicleRelation {
+  plate_number: string | null;
+}
+
+interface ContractRelation {
+  contract_number: string;
+  monthly_amount: number;
+  vehicles: VehicleRelation | VehicleRelation[] | null;
+}
+
+interface InvoiceRelation {
+  invoice_number: string;
+  total_amount: number;
+}
+
+interface PaymentReceiptRecord {
+  payment_number: string;
+  amount: number;
+  payment_date: string;
+  payment_method: string;
+  notes: string | null;
+  customers: CustomerRelation | CustomerRelation[] | null;
+  contracts: ContractRelation | ContractRelation[] | null;
+  invoices: InvoiceRelation | InvoiceRelation[] | null;
+}
+
+interface StaffNotificationInput {
+  type: string;
+  title: string;
+  message: string;
+  priority: 'low' | 'medium' | 'high' | 'urgent';
+  data?: unknown;
+}
+
+const firstRelation = <T>(value: T | T[] | null | undefined): T | null => {
+  if (Array.isArray(value)) return value[0] ?? null;
+  return value ?? null;
+};
+
+const toJson = (value: unknown): Json => JSON.parse(JSON.stringify(value)) as Json;
+
+const isNotificationChannelType = (value: string): value is NotificationChannelType =>
+  value === 'whatsapp' || value === 'sms' || value === 'email' || value === 'in_app';
+
+export class NotificationService {
+  private channelConfig = new Map<string, Map<NotificationChannelType, NotificationChannel>>();
+  private readonly configurationsReady: Promise<void>;
 
   constructor() {
-    this.loadChannelConfigurations();
+    this.configurationsReady = this.loadChannelConfigurations();
   }
 
   /**
@@ -79,18 +138,24 @@ class NotificationService {
    */
   private async loadChannelConfigurations(): Promise<void> {
     try {
-      const { data: configs } = await supabase
+      const { data: configs, error } = await supabase
         .from('notification_channels')
         .select('*')
         .eq('is_active', true);
 
+      if (error) throw error;
+
       if (configs) {
         configs.forEach(config => {
-          this.channelConfig.set(config.company_id, {
+          if (!isNotificationChannelType(config.channel_type)) return;
+
+          const companyChannels = this.channelConfig.get(config.company_id) ?? new Map();
+          companyChannels.set(config.channel_type, {
             type: config.channel_type,
             enabled: config.is_enabled,
-            config: config.config as any
+            config: (config.config ?? undefined) as NotificationChannel['config']
           });
+          this.channelConfig.set(config.company_id, companyChannels);
         });
 
         logger.info('Loaded notification channel configurations', {
@@ -99,11 +164,6 @@ class NotificationService {
       }
     } catch (error) {
       logger.error('Failed to load notification configurations', error);
-      // Use default configurations
-      this.channelConfig.set('default', {
-        type: 'in_app',
-        enabled: true
-      });
     }
   }
 
@@ -114,7 +174,7 @@ class NotificationService {
     paymentId: string,
     companyId: string,
     options: {
-      channels?: Array<'whatsapp' | 'sms' | 'email'>;
+      channels?: ExternalNotificationChannel[];
       autoSend?: boolean;
     } = {}
   ): Promise<{
@@ -123,13 +183,18 @@ class NotificationService {
     errors: Array<{ channel: string; error: string }>;
   }> {
     try {
+      await this.configurationsReady;
       logger.info('Sending payment receipt', { paymentId, options });
 
       // 1. جلب بيانات الدفعة
-      const { data: payment } = await supabase
+      const { data, error: paymentError } = await supabase
         .from('payments')
         .select(`
-          *,
+          payment_number,
+          amount,
+          payment_date,
+          payment_method,
+          notes,
           customers!payments_customer_id_fkey (
             first_name,
             last_name,
@@ -139,12 +204,10 @@ class NotificationService {
             company_name_ar,
             phone
           ),
-          contracts!payments_contract_id_fkey (
+          contracts!fk_payments_contract_id (
             contract_number,
-            monthly_amount
-          ),
-          vehicles!contracts_vehicles_fkey (
-            plate_number
+            monthly_amount,
+            vehicles!contracts_vehicle_id_fkey (plate_number)
           ),
           invoices!payments_invoice_id_fkey (
             invoice_number,
@@ -152,82 +215,106 @@ class NotificationService {
           )
         `)
         .eq('id', paymentId)
-        .single();
+        .eq('company_id', companyId)
+        .maybeSingle();
 
-      if (!payment) {
+      if (paymentError) throw paymentError;
+      if (!data) {
         throw new Error('الدفعة غير موجودة');
       }
 
+      const payment = data as unknown as PaymentReceiptRecord;
+      const customer = firstRelation(payment.customers);
+      const contract = firstRelation(payment.contracts);
+      const invoice = firstRelation(payment.invoices);
+      const vehicle = firstRelation(contract?.vehicles);
+
+      if (!customer) throw new Error('Payment customer data is unavailable');
+
       // 2. بناء بيانات الإيصال
-      const customerName = payment.customers.company_name_ar || payment.customers.company_name ||
-        `${payment.customers.first_name_ar || payment.customers.first_name} ${payment.customers.last_name_ar || payment.customers.last_name}`;
+      const customerName = customer.company_name_ar || customer.company_name ||
+        `${customer.first_name_ar || customer.first_name || ''} ${customer.last_name_ar || customer.last_name || ''}`.trim() ||
+        'Customer';
 
       const receiptData: PaymentReceiptData = {
         customerName,
-        customerPhone: payment.customers.phone || '',
+        customerPhone: customer.phone || '',
         paymentNumber: payment.payment_number,
         amount: payment.amount,
         amountInWords: await this.convertAmountToWords(payment.amount),
         paymentDate: payment.payment_date,
         paymentMethod: payment.payment_method as PaymentMethod,
         description: payment.notes || `دفعة - ${payment.payment_number}`,
-        vehicleNumber: payment.contracts?.vehicles?.plate_number,
-        contractNumber: payment.contracts?.contract_number,
-        invoiceNumber: payment.invoices?.invoice_number
+        vehicleNumber: vehicle?.plate_number || undefined,
+        contractNumber: contract?.contract_number,
+        invoiceNumber: invoice?.invoice_number
       };
 
       // 3. الحصول على قنوات الإشعارات المفعلة
-      const companyChannels = this.channelConfig.get(companyId);
-      const channelsToUse = options.channels || this.determineDefaultChannels(companyChannels);
+      const channelsToUse: NotificationChannelType[] = options.channels
+        ? [...options.channels]
+        : this.determineDefaultChannels(companyId);
 
       const sentToChannels: string[] = [];
       const errors: Array<{ channel: string; error: string }> = [];
 
       // 4. إرسال عبر كل قناة
       for (const channel of channelsToUse) {
-        if (this.isChannelEnabled(companyChannels, channel)) {
-          try {
-            switch (channel) {
-              case 'whatsapp':
-                await this.sendWhatsAppReceipt(receiptData, companyChannels);
-                sentToChannels.push('whatsapp');
-                break;
+        if (!this.isChannelEnabled(companyId, channel)) {
+          errors.push({ channel, error: 'Notification channel is not enabled' });
+          continue;
+        }
 
-              case 'sms':
-                await this.sendSMSReceipt(receiptData, companyChannels);
-                sentToChannels.push('sms');
-                break;
-
-              case 'email':
-                await this.sendEmailReceipt(receiptData, companyChannels);
-                sentToChannels.push('email');
-                break;
-
-              case 'in_app':
-                // In-app notification is handled by frontend
-                sentToChannels.push('in_app');
-                break;
-            }
-          } catch (error) {
-            errors.push({
-              channel,
-              error: error instanceof Error ? error.message : 'خطأ غير معروف'
-            });
-            logger.error(`Failed to send ${channel} receipt`, {
-              paymentId,
-              error
+        try {
+          if (channel === 'whatsapp') {
+            await this.sendWhatsAppReceipt(receiptData);
+          } else if (channel === 'sms') {
+            await this.sendSMSReceipt(receiptData);
+          } else if (channel === 'email') {
+            await this.sendEmailReceipt(receiptData);
+          } else {
+            await this.insertStaffNotification(companyId, {
+              type: 'payment_receipt',
+              title: 'تم استلام دفعة',
+              message: `تم استلام دفعة بقيمة ${receiptData.amount} ر.ق - ${receiptData.paymentNumber}`,
+              priority: 'low',
+              data: { paymentId, receiptData }
             });
           }
+          sentToChannels.push(channel);
+        } catch (channelError) {
+          errors.push({
+            channel,
+            error: channelError instanceof Error ? channelError.message : 'Unknown notification error'
+          });
+          logger.error(`Failed to send ${channel} receipt`, {
+            paymentId,
+            error: channelError
+          });
         }
       }
 
       // 5. تسجيل محاولة الإرسال
-      await this.logReceiptAttempt(paymentId, companyId, {
-        channels: channelsToUse,
-        sentToChannels,
-        errors,
-        autoSend: options.autoSend || false
-      });
+      try {
+        await this.logNotificationAttempt({
+          targetId: paymentId,
+          resourceType: 'payment',
+          companyId,
+          action: 'send_payment_receipt',
+          message: `Payment receipt delivery attempted for ${payment.payment_number}`,
+          level: errors.length > 0 ? 'warning' : 'info',
+          metadata: {
+            channels: channelsToUse,
+            sentToChannels,
+            errors,
+            autoSend: options.autoSend ?? false
+          }
+        });
+      } catch (auditError) {
+        const errorMessage = auditError instanceof Error ? auditError.message : 'Failed to persist notification audit';
+        errors.push({ channel: 'audit', error: errorMessage });
+        logger.error('Failed to persist payment receipt audit', { paymentId, error: auditError });
+      }
 
       logger.info('Payment receipt sent', {
         paymentId,
@@ -236,7 +323,7 @@ class NotificationService {
       });
 
       return {
-        success: errors.length < channelsToUse.length || sentToChannels.length > 0,
+        success: sentToChannels.length > 0,
         sentToChannels,
         errors
       };
@@ -250,61 +337,38 @@ class NotificationService {
     }
   }
 
-  private async sendWhatsAppReceipt(
-    receiptData: PaymentReceiptData,
-    channelConfig: NotificationChannel
-  ): Promise<void> {
-    logger.info('WhatsApp receipt', {
-      customerPhone: receiptData.customerPhone,
-      amount: receiptData.amount
+  private async sendWhatsAppReceipt(receiptData: PaymentReceiptData): Promise<void> {
+    if (!receiptData.customerPhone) throw new Error('Customer phone number is missing');
+
+    const message = [
+      `مرحبًا ${receiptData.customerName}،`,
+      `تم استلام دفعتكم بقيمة ${receiptData.amount.toLocaleString()} ر.ق.`,
+      `رقم الدفعة: ${receiptData.paymentNumber}`,
+      `التاريخ: ${receiptData.paymentDate}`,
+      receiptData.contractNumber ? `رقم العقد: ${receiptData.contractNumber}` : null,
+      'شكرًا لتعاملكم معنا.'
+    ].filter(Boolean).join('\n');
+
+    const { data, error } = await supabase.functions.invoke('send-whatsapp-reminders', {
+      body: {
+        test: true,
+        phone: receiptData.customerPhone,
+        message
+      }
     });
 
-    await supabase.from('notifications').insert({
-      company_id: undefined,
-      title: 'إيصال دفعة جديد',
-      message: `تم استلام دفعة بمبلغ ${receiptData.amount} ر.ق - ${receiptData.paymentNumber}`,
-      type: 'payment_receipt',
-      reference_id: receiptData.paymentNumber,
-      priority: 'medium'
-    });
+    if (error) throw error;
+
+    const result = data as { success?: boolean; error?: string } | null;
+    if (!result?.success) throw new Error(result?.error || 'WhatsApp delivery failed');
   }
 
-  private async sendSMSReceipt(
-    receiptData: PaymentReceiptData,
-    channelConfig: NotificationChannel
-  ): Promise<void> {
-    logger.info('SMS receipt', {
-      customerPhone: receiptData.customerPhone,
-      amount: receiptData.amount
-    });
-
-    await supabase.from('notifications').insert({
-      company_id: undefined,
-      title: 'SMS Receipt',
-      message: `Payment ${receiptData.paymentNumber}: ${receiptData.amount} QAR received`,
-      type: 'payment_receipt_sms',
-      reference_id: receiptData.paymentNumber,
-      priority: 'low'
-    });
+  private async sendSMSReceipt(_receiptData: PaymentReceiptData): Promise<void> {
+    throw new Error('SMS delivery is not configured');
   }
 
-  private async sendEmailReceipt(
-    receiptData: PaymentReceiptData,
-    channelConfig: NotificationChannel
-  ): Promise<void> {
-    logger.info('Email receipt', {
-      customerName: receiptData.customerName,
-      amount: receiptData.amount
-    });
-
-    await supabase.from('notifications').insert({
-      company_id: undefined,
-      title: `Payment Receipt - ${receiptData.paymentNumber}`,
-      message: `Dear ${receiptData.customerName},\n\nYour payment of ${receiptData.amount} QAR has been received.\nPayment Method: ${receiptData.paymentMethod}\nDate: ${receiptData.paymentDate}\n\nThank you.`,
-      type: 'payment_receipt_email',
-      reference_id: receiptData.paymentNumber,
-      priority: 'medium'
-    });
+  private async sendEmailReceipt(_receiptData: PaymentReceiptData): Promise<void> {
+    throw new Error('Email delivery is not configured');
   }
 
   /**
@@ -318,14 +382,22 @@ class NotificationService {
     try {
       logger.info('Sending payment failed notification', { paymentId });
 
-      await this.logNotificationAttempt(paymentId, companyId, 'payment_failed', notificationData);
-
-      await supabase.from('notifications').insert({
-        company_id: companyId,
-        title: 'فشل في معالجة الدفعة',
-        message: `فشلت دفعة بمبلغ ${notificationData.paymentAmount} ر.ق. السبب: ${notificationData.reason}`,
+      await this.insertStaffNotification(companyId, {
         type: 'payment_failed',
-        priority: 'high'
+        title: 'فشل في معالجة الدفعة',
+        message: `فشلت دفعة بقيمة ${notificationData.paymentAmount} ر.ق. السبب: ${notificationData.reason}`,
+        priority: 'high',
+        data: { paymentId, ...notificationData }
+      });
+
+      await this.logNotificationAttempt({
+        targetId: paymentId,
+        resourceType: 'payment',
+        companyId,
+        action: 'payment_failed',
+        message: `Payment failed: ${notificationData.reason}`,
+        level: 'error',
+        metadata: notificationData
       });
 
       logger.info('Payment failed notification sent', { paymentId });
@@ -347,14 +419,22 @@ class NotificationService {
     try {
       logger.info('Sending overdue reminder', { contractId, daysOverdue: reminderData.daysOverdue });
 
-      await this.logNotificationAttempt(contractId, companyId, 'overdue_reminder', reminderData);
-
-      await supabase.from('notifications').insert({
-        company_id: companyId,
+      await this.insertStaffNotification(companyId, {
+        type: 'overdue_alert',
         title: 'تذكير بالمتأخرات',
-        message: `العميل ${reminderData.customerName} - عقد ${reminderData.contractNumber}: متأخر ${reminderData.daysOverdue} يوم، المبلغ المتأخر ${reminderData.overdueAmount} ر.ق`,
-        type: 'overdue_reminder',
-        priority: reminderData.daysOverdue > 30 ? 'high' : 'medium'
+        message: `العميل ${reminderData.customerName} - عقد ${reminderData.contractNumber}: متأخر ${reminderData.daysOverdue} يوم، والمبلغ المتأخر ${reminderData.overdueAmount} ر.ق`,
+        priority: reminderData.daysOverdue > 30 ? 'high' : 'medium',
+        data: { contractId, ...reminderData }
+      });
+
+      await this.logNotificationAttempt({
+        targetId: contractId,
+        resourceType: 'contract',
+        companyId,
+        action: 'overdue_reminder',
+        message: `Overdue reminder created for contract ${reminderData.contractNumber}`,
+        level: 'warning',
+        metadata: reminderData
       });
 
       logger.info('Overdue reminder sent', { contractId });
@@ -370,16 +450,10 @@ class NotificationService {
    */
   async sendStaffNotification(
     companyId: string,
-    notification: {
-      type: 'payment_failed' | 'overdue_alert' | 'system_alert';
-      title: string;
-      message: string;
-      priority: 'low' | 'medium' | 'high' | 'urgent';
-      data?: any;
-    },
-    options: {
+    notification: StaffNotificationInput,
+    _options: {
       channels?: Array<'in_app' | 'email'>;
-    }
+    } = {}
   ): Promise<boolean> {
     try {
       logger.info('Sending staff notification', {
@@ -388,14 +462,14 @@ class NotificationService {
         title: notification.title
       });
 
-      await this.logStaffNotificationAttempt(companyId, notification);
-
-      await supabase.from('notifications').insert({
-        company_id: companyId,
-        title: notification.title,
-        message: notification.message,
-        type: notification.type,
-        priority: notification.priority
+      await this.insertStaffNotification(companyId, notification);
+      await this.logNotificationAttempt({
+        companyId,
+        resourceType: 'staff_notification',
+        action: notification.type,
+        message: notification.title,
+        level: notification.priority === 'urgent' || notification.priority === 'high' ? 'warning' : 'info',
+        metadata: notification
       });
 
       logger.info('Staff notification sent', { companyId });
@@ -411,97 +485,88 @@ class NotificationService {
    */
   private async convertAmountToWords(amount: number): Promise<string> {
     const ones = ['', 'واحد', 'اثنان', 'ثلاثة', 'أربعة', 'خمسة', 'ستة', 'سبعة', 'ثمانية', 'تسعة', 'عشرة'];
-    if (amount <= 10) return ones[Math.floor(amount)] + ' ريال قطري';
-    return amount.toFixed(2) + ' ريال قطري';
+    if (Number.isInteger(amount) && amount >= 1 && amount <= 10) {
+      return `${ones[amount]} ريال قطري`;
+    }
+    return `${amount.toFixed(2)} ريال قطري`;
   }
 
   /**
    * التحقق من إعدادات القناة
    */
-  private isChannelEnabled(config: NotificationChannel | undefined, channel: string): boolean {
-    if (!config) return false;
-    return config.enabled && config.type === channel;
+  private isChannelEnabled(companyId: string, channel: NotificationChannelType): boolean {
+    if (channel === 'in_app') return true;
+    return this.channelConfig.get(companyId)?.get(channel)?.enabled === true;
   }
 
   /**
    * تحديد القنوات الافتراضية
    */
-  private determineDefaultChannels(config: NotificationChannel | undefined): Array<'whatsapp' | 'sms' | 'email'> {
-    if (config) {
-      const channels = [];
-      if (config.enabled && config.type === 'whatsapp') channels.push('whatsapp');
-      if (config.enabled && config.type === 'sms') channels.push('sms');
-      if (config.enabled && config.type === 'email') channels.push('email');
-      return channels.length > 0 ? channels : ['in_app'];
-    }
-    return ['in_app'];
+  private determineDefaultChannels(companyId: string): NotificationChannelType[] {
+    const enabledChannels = [...(this.channelConfig.get(companyId)?.values() ?? [])]
+      .filter((channel) => channel.enabled)
+      .map((channel) => channel.type);
+
+    return enabledChannels.length > 0 ? enabledChannels : ['in_app'];
   }
 
   /**
    * تسجيل محاولة إرسال إيصال
    */
-  private async logReceiptAttempt(
-    paymentId: string,
+  private async insertStaffNotification(
     companyId: string,
-    metadata: any
+    notification: StaffNotificationInput
   ): Promise<void> {
-    await supabase.from('payment_notifications').insert({
+    const { error } = await supabase.from('staff_notifications').insert({
       company_id: companyId,
-      payment_id: paymentId,
-      notification_type: 'receipt',
-      channel: 'in_app',
-      status: 'sent',
-      metadata,
-      sent_at: new Date().toISOString()
+      notification: toJson(notification),
+      priority: notification.priority,
+      status: 'unread'
     });
+
+    if (error) throw error;
   }
 
   /**
    * تسجيل محاولة إشعار
    */
-  private async logNotificationAttempt(
-    targetId: string,
-    companyId: string,
-    notificationType: string,
-    metadata: any
-  ): Promise<void> {
-    await supabase.from('payment_notifications').insert({
-      company_id: companyId,
-      payment_id: targetId,
-      notification_type: notificationType,
-      channel: 'in_app',
-      status: 'sent',
-      metadata,
-      sent_at: new Date().toISOString()
+  private async logNotificationAttempt(input: {
+    targetId?: string;
+    resourceType: string;
+    companyId: string;
+    action: string;
+    message: string;
+    level: 'info' | 'warning' | 'error';
+    metadata: unknown;
+  }): Promise<void> {
+    const { error } = await supabase.from('system_logs').insert({
+      action: input.action,
+      category: 'notification',
+      company_id: input.companyId,
+      level: input.level,
+      message: input.message,
+      metadata: toJson(input.metadata),
+      resource_id: input.targetId ?? null,
+      resource_type: input.resourceType
     });
+
+    if (error) throw error;
   }
 
   /**
    * تسجيل محاولة إشعار موظف
    */
-  private async logStaffNotificationAttempt(
-    companyId: string,
-    notification: any
-  ): Promise<void> {
-    await supabase.from('staff_notifications').insert({
-      company_id: companyId,
-      notification,
-      status: 'sent',
-      sent_at: new Date().toISOString()
-    });
-  }
-
-  /**
-   * الحصول على تاريخ إشعارات دفعة
-   */
-  async getPaymentNotifications(paymentId: string): Promise<any[]> {
-    const { data } = await supabase
-      .from('payment_notifications')
+  async getPaymentNotifications(paymentId: string): Promise<Array<Record<string, unknown>>> {
+    const { data, error } = await supabase
+      .from('system_logs')
       .select('*')
-      .eq('payment_id', paymentId)
-      .order('sent_at', { ascending: false });
+      .eq('category', 'notification')
+      .eq('resource_type', 'payment')
+      .eq('resource_id', paymentId)
+      .order('created_at', { ascending: false });
 
-    return data || [];
+    if (error) throw error;
+    return (data ?? []) as Array<Record<string, unknown>>;
   }
 
   /**
@@ -509,39 +574,52 @@ class NotificationService {
    */
   async updateChannelConfig(
     companyId: string,
-    channel: 'whatsapp' | 'sms' | 'email',
+    channel: ExternalNotificationChannel,
     config: Partial<NotificationChannel>
   ): Promise<boolean> {
     try {
-      const { data: existing } = await supabase
+      await this.configurationsReady;
+
+      const { data: existing, error: lookupError } = await supabase
         .from('notification_channels')
-        .select('id, config')
+        .select('id')
         .eq('company_id', companyId)
         .eq('channel_type', channel)
         .maybeSingle();
 
+      if (lookupError) throw lookupError;
+
       const configData = {
-        is_enabled: config.enabled !== undefined ? config.enabled : true,
-        config: config.config || {}
+        is_enabled: config.enabled ?? true,
+        config: toJson(config.config ?? {}),
+        is_active: true,
+        updated_at: new Date().toISOString()
       };
 
       if (existing) {
-        await supabase
+        const { error } = await supabase
           .from('notification_channels')
-          .update({ ...configData, updated_at: new Date().toISOString() })
+          .update(configData)
           .eq('id', existing.id);
+        if (error) throw error;
       } else {
-        await supabase
+        const { error } = await supabase
           .from('notification_channels')
           .insert({
             company_id: companyId,
             channel_type: channel,
-            ...configData,
-            is_active: true,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
+            ...configData
           });
+        if (error) throw error;
       }
+
+      const companyChannels = this.channelConfig.get(companyId) ?? new Map();
+      companyChannels.set(channel, {
+        type: channel,
+        enabled: configData.is_enabled,
+        config: config.config
+      });
+      this.channelConfig.set(companyId, companyChannels);
 
       logger.info('Channel configuration updated', { companyId, channel, enabled: configData.is_enabled });
       return true;

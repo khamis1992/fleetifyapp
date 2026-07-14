@@ -17,6 +17,7 @@ import {
   parseBankStatementRows,
   type BankStatementParseResult,
 } from "@/utils/bankStatementImportParser";
+import { reconcileLinkedBankTransactions } from "@/utils/bankReconciliationCommands";
 
 type ReconciliationTransaction = {
   id: string;
@@ -28,6 +29,8 @@ type ReconciliationTransaction = {
   description: string;
   reference_number: string | null;
   reconciled: boolean | null;
+  payment_id: string | null;
+  reversal_of_transaction_id: string | null;
 };
 
 type BankOption = {
@@ -70,6 +73,8 @@ export function BankReconciliationPanel() {
     queryKey: ["bank-reconciliation-banks", companyId],
     enabled: Boolean(companyId),
     queryFn: async () => {
+      if (!companyId) return [];
+
       const { data, error } = await supabase
         .from("banks")
         .select("id,bank_name,bank_name_ar")
@@ -85,11 +90,14 @@ export function BankReconciliationPanel() {
     queryKey: ["bank-reconciliation-workspace", companyId],
     enabled: Boolean(companyId),
     queryFn: async () => {
+      if (!companyId) return [];
+
       const { data, error } = await supabase
         .from("bank_transactions")
-        .select("id,bank_id,transaction_number,transaction_date,transaction_type,amount,description,reference_number,reconciled")
+        .select("id,bank_id,transaction_number,transaction_date,transaction_type,amount,description,reference_number,reconciled,payment_id,reversal_of_transaction_id")
         .eq("company_id", companyId)
         .eq("status", "completed")
+        .is("reversal_of_transaction_id", null)
         .or("reconciled.is.null,reconciled.eq.false")
         .order("transaction_date", { ascending: false })
         .limit(100);
@@ -196,39 +204,28 @@ export function BankReconciliationPanel() {
   const reconcileMutation = useMutation({
     mutationFn: async () => {
       if (selectedIds.length === 0) throw new Error("اختر معاملات للتسوية");
-      const now = new Date().toISOString();
-      const selectedRows = filteredTransactions.filter((transaction) => selectedIds.includes(transaction.id));
-
-      const { error: transactionError } = await supabase
-        .from("bank_transactions")
-        .update({ reconciled: true, reconciled_at: now, updated_at: now })
-        .in("id", selectedIds);
-
-      if (transactionError) throw transactionError;
-
-      const references = selectedRows
-        .flatMap((row) => [row.reference_number, row.transaction_number])
-        .filter((value): value is string => Boolean(value?.trim()));
-
-      if (references.length > 0) {
-        await supabase
-          .from("payments")
-          .update({
-            reconciliation_status: "reconciled",
-            reconciled_at: now,
-            reconciliation_reference: `bank-reconciliation-${now}`,
-            updated_at: now,
-          } as any)
-          .eq("company_id", companyId)
-          .in("payment_number", references);
+      const selectedRows = (transactionsQuery.data || []).filter((transaction) =>
+        selectedIds.includes(transaction.id),
+      );
+      if (selectedRows.length !== selectedIds.length) {
+        throw new Error("بعض الحركات المختارة لم تعد متاحة. حدّث القائمة ثم أعد المحاولة.");
       }
+
+      return reconcileLinkedBankTransactions(
+        selectedRows,
+        "تسوية من مساحة التسوية البنكية الرسمية",
+      );
     },
-    onSuccess: () => {
+    onSuccess: (reconciledCount) => {
       setSelectedIds([]);
+      toast.success(`تمت التسوية البنكية لـ ${reconciledCount} حركة`);
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ["bank-reconciliation-workspace"] });
       queryClient.invalidateQueries({ queryKey: ["bank-transactions"] });
       queryClient.invalidateQueries({ queryKey: ["treasury-summary"] });
-      toast.success("تمت التسوية البنكية");
+      queryClient.invalidateQueries({ queryKey: ["payment-timeline-details"] });
+      queryClient.invalidateQueries({ queryKey: ["bank-reconciliation-summary"] });
     },
     onError: (error) => {
       toast.error(error instanceof Error ? error.message : "تعذرت التسوية البنكية");
@@ -299,9 +296,8 @@ export function BankReconciliationPanel() {
       if (!selectedStatementLineId) throw new Error("اختر سطر كشف بنكي");
       if (selectedIds.length !== 1) throw new Error("اختر حركة بنك واحدة فقط للمطابقة");
 
-      const { error } = await (supabase as any).rpc("mark_bank_statement_line_matched", {
+      const { error } = await supabase.rpc("mark_bank_statement_line_matched", {
         p_line_id: selectedStatementLineId,
-        p_payment_id: null,
         p_bank_transaction_id: selectedIds[0],
         p_score: 100,
         p_method: "manual",

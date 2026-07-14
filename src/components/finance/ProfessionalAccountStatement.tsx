@@ -190,9 +190,9 @@ export const ProfessionalAccountStatement: React.FC<AccountStatementProps> = ({
   };
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('ar-KW', {
+    return new Intl.NumberFormat('ar-QA', {
       style: 'currency',
-      currency: 'KWD',
+      currency: 'QAR',
       minimumFractionDigits: 3,
       maximumFractionDigits: 3
     }).format(amount);
@@ -496,7 +496,7 @@ export const ProfessionalAccountStatement: React.FC<AccountStatementProps> = ({
           {/* Footer - للطباعة فقط */}
           <div className="hidden print:block text-center text-sm text-slate-500 border-t pt-4">
             <p>تم إنشاء هذا التقرير بواسطة نظام إدارة الحسابات</p>
-            <p>جميع المبالغ بالدينار الكويتي (د.ك)</p>
+            <p>جميع المبالغ بالريال القطري (ر.ق)</p>
           </div>
           
           </>

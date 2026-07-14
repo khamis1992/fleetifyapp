@@ -100,7 +100,7 @@ import {
   ChevronRight,
   Eye,
   Edit,
-  Trash2,
+  XCircle,
   Upload,
   File,
   Image,
@@ -189,47 +189,55 @@ export const LegalCasesTracking: React.FC = () => {
   const { companyId, isLoading: isLoadingCompany } = useUnifiedCompanyAccess();
   const { user } = useAuth();
   
-  // Delete case mutation
+  // Preserve the legal audit trail by cancelling cases instead of deleting them.
   const deleteCaseMutation = useMutation({
     mutationFn: async (caseId: string) => {
+      if (!companyId) throw new Error('تعذر تحديد الشركة');
       const { error } = await supabase
         .from('legal_cases')
-        .delete()
-        .eq('id', caseId);
+        .update({ case_status: 'cancelled', updated_at: new Date().toISOString() })
+        .eq('id', caseId)
+        .eq('company_id', companyId)
+        .neq('case_status', 'cancelled')
+        .select('id')
+        .single();
       if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['legal-cases'] });
       queryClient.invalidateQueries({ queryKey: ['legal-case-stats'] });
-      toast.success('تم حذف القضية بنجاح');
+      toast.success('تم إلغاء القضية مع الاحتفاظ بسجلها');
       setShowDeleteDialog(false);
       setCaseToDelete(null);
     },
     onError: (error: any) => {
-      toast.error(`فشل في حذف القضية: ${error.message}`);
+      toast.error(`فشل في إلغاء القضية: ${error.message}`);
     },
   });
 
   const bulkDeleteCasesMutation = useMutation({
     mutationFn: async (caseIds: string[]) => {
       if (caseIds.length === 0) return;
+      if (!companyId) throw new Error('تعذر تحديد الشركة');
 
       const { error } = await supabase
         .from('legal_cases')
-        .delete()
-        .in('id', caseIds);
+        .update({ case_status: 'cancelled', updated_at: new Date().toISOString() })
+        .in('id', caseIds)
+        .eq('company_id', companyId)
+        .neq('case_status', 'cancelled');
 
       if (error) throw error;
     },
     onSuccess: (_data, caseIds) => {
       queryClient.invalidateQueries({ queryKey: ['legal-cases'] });
       queryClient.invalidateQueries({ queryKey: ['legal-case-stats'] });
-      toast.success(`تم حذف ${caseIds.length} قضية بنجاح`);
+      toast.success(`تم إلغاء ${caseIds.length} قضية مع الاحتفاظ بسجلاتها`);
       setSelectedCaseIds([]);
       setShowBulkDeleteDialog(false);
     },
     onError: (error: any) => {
-      toast.error(`فشل حذف القضايا المحددة: ${error.message}`);
+      toast.error(`فشل إلغاء القضايا المحددة: ${error.message}`);
     },
   });
 
@@ -474,20 +482,47 @@ export const LegalCasesTracking: React.FC = () => {
     if (!caseToClose || !companyId || !user?.id) return;
 
     try {
-      let journalEntryId: string | null = null;
+      let journalEntryId: string | null = caseToClose.outcome_journal_entry_id || null;
+
+      if (journalEntryId) {
+        const { data: existingEntry, error: existingEntryError } = await supabase
+          .from('journal_entries')
+          .select('id, status')
+          .eq('id', journalEntryId)
+          .eq('company_id', companyId)
+          .single();
+        if (existingEntryError) throw existingEntryError;
+        if (existingEntry.status !== 'posted') {
+          throw new Error('قيد نتيجة القضية موجود لكنه غير مرحل ويحتاج إلى مراجعة');
+        }
+      }
 
       // إنشاء قيد محاسبي إذا طُلب ذلك والمبلغ أكبر من صفر
-      if (closeFormData.create_journal_entry && closeFormData.outcome_amount > 0) {
+      if (closeFormData.create_journal_entry && closeFormData.outcome_amount > 0 && !journalEntryId) {
         // تحديد الحسابات بناءً على اتجاه الدفع
         const isPayment = closeFormData.payment_direction === 'pay';
         
-        // معرفات الحسابات
-        // حساب البنك: 11151 (البنك التجاري - حساب الجاري)
-        const bankAccountId = '5f0f1a61-e5dd-427b-b063-1a20e5f1582a';
-        // حساب المصروفات القانونية: 53101
-        const expenseAccountId = '30a2bcf0-aed7-4b64-92fc-a64c2ab19917';
-        // حساب إيرادات التعويضات: 44100
-        const revenueAccountId = 'b8c824ec-44cb-4470-862b-2335fa4ab6a8';
+        const requiredAccountCodes = isPayment ? ['53101', '11151'] : ['11151', '44100'];
+        const { data: postingAccounts, error: accountsError } = await supabase
+          .from('chart_of_accounts')
+          .select('id, account_code')
+          .eq('company_id', companyId)
+          .eq('is_active', true)
+          .eq('is_header', false)
+          .in('account_code', requiredAccountCodes);
+
+        if (accountsError) throw accountsError;
+        const accountByCode = new Map(
+          (postingAccounts || []).map(account => [account.account_code, account.id])
+        );
+        const bankAccountId = accountByCode.get('11151');
+        const expenseAccountId = accountByCode.get('53101');
+        const revenueAccountId = accountByCode.get('44100');
+        const debitAccountId = isPayment ? expenseAccountId : bankAccountId;
+        const creditAccountId = isPayment ? bankAccountId : revenueAccountId;
+        if (!debitAccountId || !creditAccountId) {
+          throw new Error(`الحسابات المحاسبية المطلوبة غير مكتملة: ${requiredAccountCodes.join('، ')}`);
+        }
         
         // إنشاء القيد المحاسبي
         const entryNumber = `JE-LEGAL-${Date.now()}`;
@@ -500,7 +535,7 @@ export const LegalCasesTracking: React.FC = () => {
             description: `قيد ${isPayment ? 'مصروف' : 'إيراد'} نتيجة القضية ${caseToClose.case_number}`,
             total_debit: closeFormData.outcome_amount,
             total_credit: closeFormData.outcome_amount,
-            status: 'posted',
+            status: 'draft',
             reference_type: 'legal_case',
             reference_id: caseToClose.id,
             created_by: user.id,
@@ -522,7 +557,7 @@ export const LegalCasesTracking: React.FC = () => {
             // قيد مصروف: مدين المصروفات، دائن البنك
             {
               journal_entry_id: journalEntryId,
-              account_id: expenseAccountId,
+              account_id: debitAccountId,
               line_description: `غرامة/تعويض - القضية ${caseToClose.case_number}`,
               debit_amount: closeFormData.outcome_amount,
               credit_amount: 0,
@@ -530,7 +565,7 @@ export const LegalCasesTracking: React.FC = () => {
             },
             {
               journal_entry_id: journalEntryId,
-              account_id: bankAccountId,
+              account_id: creditAccountId,
               line_description: `سداد غرامة - القضية ${caseToClose.case_number}`,
               debit_amount: 0,
               credit_amount: closeFormData.outcome_amount,
@@ -540,7 +575,7 @@ export const LegalCasesTracking: React.FC = () => {
             // قيد إيراد: مدين البنك، دائن الإيرادات
             {
               journal_entry_id: journalEntryId,
-              account_id: bankAccountId,
+              account_id: debitAccountId,
               line_description: `استلام تعويض - القضية ${caseToClose.case_number}`,
               debit_amount: closeFormData.outcome_amount,
               credit_amount: 0,
@@ -548,7 +583,7 @@ export const LegalCasesTracking: React.FC = () => {
             },
             {
               journal_entry_id: journalEntryId,
-              account_id: revenueAccountId,
+              account_id: creditAccountId,
               line_description: `تعويض قضائي - القضية ${caseToClose.case_number}`,
               debit_amount: 0,
               credit_amount: closeFormData.outcome_amount,
@@ -563,9 +598,49 @@ export const LegalCasesTracking: React.FC = () => {
           if (linesError) {
             console.error('Error creating journal entry lines:', linesError);
             // حذف القيد إذا فشل إنشاء السطور
-            await supabase.from('journal_entries').delete().eq('id', journalEntryId);
+            await supabase.from('journal_entries').delete().eq('id', journalEntryId).eq('company_id', companyId).eq('status', 'draft');
             toast.error('فشل في إنشاء سطور القيد المحاسبي');
             return;
+          }
+
+          const { error: caseLinkError } = await supabase
+            .from('legal_cases')
+            .update({ outcome_journal_entry_id: journalEntryId, updated_at: new Date().toISOString() })
+            .eq('id', caseToClose.id)
+            .eq('company_id', companyId)
+            .is('outcome_journal_entry_id', null)
+            .select('id')
+            .single();
+
+          if (caseLinkError) {
+            await supabase.from('journal_entry_lines').delete().eq('journal_entry_id', journalEntryId);
+            await supabase.from('journal_entries').delete().eq('id', journalEntryId).eq('company_id', companyId).eq('status', 'draft');
+            throw caseLinkError;
+          }
+
+          const { error: postError } = await supabase
+            .from('journal_entries')
+            .update({
+              status: 'posted',
+              posted_at: new Date().toISOString(),
+              posted_by: user.id,
+            })
+            .eq('id', journalEntryId)
+            .eq('company_id', companyId)
+            .eq('status', 'draft')
+            .select('id')
+            .single();
+
+          if (postError) {
+            await supabase
+              .from('legal_cases')
+              .update({ outcome_journal_entry_id: null })
+              .eq('id', caseToClose.id)
+              .eq('company_id', companyId)
+              .eq('outcome_journal_entry_id', journalEntryId);
+            await supabase.from('journal_entry_lines').delete().eq('journal_entry_id', journalEntryId);
+            await supabase.from('journal_entries').delete().eq('id', journalEntryId).eq('company_id', companyId).eq('status', 'draft');
+            throw postError;
           }
 
           toast.success('تم إنشاء القيد المحاسبي بنجاح');
@@ -573,7 +648,7 @@ export const LegalCasesTracking: React.FC = () => {
       }
 
       // تحديث القضية
-      const { error: updateError } = await supabase
+      let caseUpdate = supabase
         .from('legal_cases')
         .update({
           case_status: 'closed',
@@ -588,7 +663,14 @@ export const LegalCasesTracking: React.FC = () => {
           outcome_payment_status: closeFormData.outcome_amount > 0 ? 'pending' : null,
           updated_at: new Date().toISOString(),
         })
-        .eq('id', caseToClose.id);
+        .eq('id', caseToClose.id)
+        .eq('company_id', companyId);
+
+      if (journalEntryId) {
+        caseUpdate = caseUpdate.eq('outcome_journal_entry_id', journalEntryId);
+      }
+
+      const { error: updateError } = await caseUpdate.select('id').single();
 
       if (updateError) {
         console.error('Error updating case:', updateError);
@@ -1090,7 +1172,7 @@ export const LegalCasesTracking: React.FC = () => {
               onClick={() => setShowBulkDeleteDialog(true)}
               className="flex min-h-[44px] w-full items-center justify-center gap-2 border-red-200 bg-red-50 px-4 py-2.5 text-sm text-red-700 hover:bg-red-100 sm:w-auto"
             >
-              <Trash2 size={16} />
+              <XCircle size={16} />
               <span>حذف المحدد ({selectedCaseIds.length})</span>
             </Button>
           )}
@@ -1173,8 +1255,8 @@ export const LegalCasesTracking: React.FC = () => {
               onClick={() => setShowBulkDeleteDialog(true)}
               className="bg-red-600 text-white hover:bg-red-700"
             >
-              <Trash2 className="ml-2 h-4 w-4" />
-              حذف القضايا المحددة
+              <XCircle className="ml-2 h-4 w-4" />
+              إلغاء القضايا المحددة
             </Button>
           </div>
         </div>
@@ -1311,7 +1393,7 @@ export const LegalCasesTracking: React.FC = () => {
                           className="gap-2 text-red-600 cursor-pointer"
                           onClick={() => handleDeleteCase(item as LegalCase)}
                         >
-                          <Trash2 size={14} />
+                          <XCircle size={14} />
                           حذف
                         </DropdownMenuItem>
                       </DropdownMenuContent>
@@ -1408,7 +1490,7 @@ export const LegalCasesTracking: React.FC = () => {
                 <div
                   key={idx}
                   className={cn(
-                    "flex gap-4 p-4 rounded-xl border transition-all bg-white",
+                    "flex gap-4 p-4 rounded-lg border transition-all bg-white",
                     event.daysUntil <= 3
                       ? "border-red-200 bg-red-50/50 shadow-sm"
                       : "border-slate-100 hover:border-rose-200 hover:shadow-md"
@@ -1951,7 +2033,7 @@ export const LegalCasesTracking: React.FC = () => {
                             onClick={() => handleDeleteDocument(doc.id)}
                             disabled={deleteDocumentMutation.isPending}
                           >
-                            <Trash2 className="w-4 h-4" />
+                            <XCircle className="w-4 h-4" />
                           </Button>
                         </div>
                       </div>
@@ -2482,10 +2564,10 @@ export const LegalCasesTracking: React.FC = () => {
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2 text-red-600">
               <AlertTriangle className="w-5 h-5" />
-              تأكيد حذف القضايا المحددة
+              تأكيد إلغاء القضايا المحددة
             </AlertDialogTitle>
             <AlertDialogDescription className="text-right">
-              هل أنت متأكد من حذف <strong>{selectedCaseIds.length}</strong> قضية محددة من سجل القضايا؟
+              هل أنت متأكد من إلغاء <strong>{selectedCaseIds.length}</strong> قضية محددة؟ ستبقى محفوظة في سجل القضايا.
               <br />
               هذا الإجراء لا يمكن التراجع عنه.
             </AlertDialogDescription>
@@ -2497,7 +2579,7 @@ export const LegalCasesTracking: React.FC = () => {
               disabled={bulkDeleteCasesMutation.isPending || selectedCaseIds.length === 0}
               className="bg-red-600 hover:bg-red-700"
             >
-              {bulkDeleteCasesMutation.isPending ? 'جاري الحذف...' : `حذف ${selectedCaseIds.length} قضية`}
+              {bulkDeleteCasesMutation.isPending ? 'جاري الإلغاء...' : `إلغاء ${selectedCaseIds.length} قضية`}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -2509,10 +2591,10 @@ export const LegalCasesTracking: React.FC = () => {
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2 text-red-600">
               <AlertTriangle className="w-5 h-5" />
-              تأكيد حذف القضية
+              تأكيد إلغاء القضية
             </AlertDialogTitle>
             <AlertDialogDescription className="text-right">
-              هل أنت متأكد من حذف القضية <strong>{caseToDelete?.case_number}</strong>؟
+              هل أنت متأكد من إلغاء القضية <strong>{caseToDelete?.case_number}</strong>؟ سيبقى سجلها محفوظًا.
               <br />
               هذا الإجراء لا يمكن التراجع عنه.
             </AlertDialogDescription>

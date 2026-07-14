@@ -337,8 +337,9 @@ fleetifyapp/
 │       └── Fatima Al-Ali-1737726789012.json
 │
 ├── .env                             ← Credentials (NOT in git)
-│   QATAR_COURT_USERNAME=29263400736
+│   QATAR_COURT_USERNAME=********
 │   QATAR_COURT_PASSWORD=********
+│   LEGAL_CASE_CONTACT_EMAIL=********
 │   HEADLESS=false
 │
 └── package.json                     ← NPM scripts

@@ -115,7 +115,7 @@ export const LateFinesSettings = () => {
               <DollarSign className="h-4 w-4 text-warning" />
               <div>
                 <p className="text-sm font-medium">الغرامات المحتملة</p>
-                <p className="text-2xl font-bold text-warning">{calculatePotentialFines().toFixed(3)} د.ك</p>
+                <p className="text-2xl font-bold text-warning">{calculatePotentialFines().toFixed(2)} ر.ق</p>
               </div>
             </div>
           </CardContent>

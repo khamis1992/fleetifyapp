@@ -291,7 +291,7 @@ export function PropertyContractWizard({
 
               {/* Rental Amount */}
               <div className="space-y-2">
-                <Label htmlFor="rental_amount">مبلغ الإيجار (د.ك) *</Label>
+                <Label htmlFor="rental_amount">مبلغ الإيجار (ر.ق) *</Label>
                 <Controller
                   name="rental_amount"
                   control={control}
@@ -314,7 +314,7 @@ export function PropertyContractWizard({
 
               {/* Deposit Amount */}
               <div className="space-y-2">
-                <Label htmlFor="deposit_amount">مبلغ الضمان (د.ك)</Label>
+                <Label htmlFor="deposit_amount">مبلغ الضمان (ر.ق)</Label>
                 <Controller
                   name="deposit_amount"
                   control={control}
@@ -334,7 +334,7 @@ export function PropertyContractWizard({
 
               {/* Commission Amount */}
               <div className="space-y-2">
-                <Label htmlFor="commission_amount">العمولة (د.ك)</Label>
+                <Label htmlFor="commission_amount">العمولة (ر.ق)</Label>
                 <Controller
                   name="commission_amount"
                   control={control}

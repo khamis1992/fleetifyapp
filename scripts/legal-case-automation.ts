@@ -8,7 +8,7 @@
 import { chromium, Browser, Page, BrowserContext } from 'playwright';
 import * as fs from 'fs';
 import * as path from 'path';
-import config, { getScreenshotPath, getLogFilePath } from './config/automation.config';
+import config, { assertAutomationConfig, getScreenshotPath, getLogFilePath } from './config/automation.config';
 import { readCustomerData, findCustomerDocuments, validateCustomerData, validateDocuments } from './utils/excelReader';
 import { convertAmountToArabic } from './utils/amountConverter';
 import { detectCaptcha, handleCaptcha, checkAndHandleCaptcha } from './utils/captchaHandler';
@@ -88,6 +88,7 @@ export class LegalCaseAutomation {
    * Initialize the automation
    */
   async initialize(): Promise<void> {
+    assertAutomationConfig();
     this.logger = new Logger(this.customerName);
     this.logger.log(`Starting automation for customer: ${this.customerName}`);
 

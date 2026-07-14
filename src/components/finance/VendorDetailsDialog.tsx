@@ -149,12 +149,12 @@ export const VendorDetailsDialog = ({ vendor, open, onOpenChange }: VendorDetail
                   <div>
                     <label className="text-sm font-medium text-muted-foreground">الرصيد الحالي</label>
                     <p className="text-lg font-bold text-primary">
-                      {vendor.current_balance.toFixed(3)} د.ك
+                      {vendor.current_balance.toFixed(2)} ر.ق
                     </p>
                   </div>
                   <div>
                     <label className="text-sm font-medium text-muted-foreground">حد الائتمان</label>
-                    <p className="font-medium">{vendor.credit_limit.toFixed(3)} د.ك</p>
+                    <p className="font-medium">{vendor.credit_limit.toFixed(2)} ر.ق</p>
                   </div>
                   <div className="flex items-center gap-2">
                     <Clock className="h-4 w-4 text-muted-foreground" />

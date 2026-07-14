@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useUnifiedCompanyAccess } from "./useUnifiedCompanyAccess";
 import { useToast } from "./use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 
 /**
  * Report favorite interface
@@ -33,14 +34,16 @@ export interface CreateReportFavoriteInput {
  */
 export const useReportFavorites = () => {
   const { companyId } = useUnifiedCompanyAccess();
+  const { user } = useAuth();
+  const profileId = user?.profile?.id;
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
   // Query to fetch user's report favorites
   const favoritesQuery = useQuery({
-    queryKey: ["report-favorites", companyId],
+    queryKey: ["report-favorites", companyId, profileId],
     queryFn: async () => {
-      if (!companyId) {
+      if (!companyId || !profileId) {
         console.warn("No company ID available for fetching report favorites");
         return [];
       }
@@ -49,6 +52,7 @@ export const useReportFavorites = () => {
         .from("report_favorites")
         .select("*")
         .eq("company_id", companyId)
+        .eq("user_id", profileId)
         .order("created_at", { ascending: false });
 
       if (error) {
@@ -58,37 +62,21 @@ export const useReportFavorites = () => {
 
       return (data || []) as ReportFavorite[];
     },
-    enabled: !!companyId,
+    enabled: !!companyId && !!profileId,
   });
 
   // Mutation to create a new favorite
   const createFavoriteMutation = useMutation({
     mutationFn: async (input: CreateReportFavoriteInput) => {
-      if (!companyId) {
-        throw new Error("Company ID is required");
-      }
-
-      // Get current user's profile ID
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        throw new Error("User not authenticated");
-      }
-
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("id")
-        .eq("user_id", user.id)
-        .single();
-
-      if (!profile) {
-        throw new Error("User profile not found");
+      if (!companyId || !profileId) {
+        throw new Error("Company and user profile are required");
       }
 
       const { data, error } = await supabase
         .from("report_favorites")
         .insert({
           company_id: companyId,
-          user_id: profile.id,
+          user_id: profileId,
           report_type: input.report_type,
           report_config: input.report_config || null,
           name: input.name,
@@ -123,10 +111,15 @@ export const useReportFavorites = () => {
   // Mutation to delete a favorite
   const deleteFavoriteMutation = useMutation({
     mutationFn: async (favoriteId: string) => {
+      if (!companyId || !profileId) throw new Error("Company and user profile are required");
       const { error } = await supabase
         .from("report_favorites")
         .delete()
-        .eq("id", favoriteId);
+        .eq("id", favoriteId)
+        .eq("company_id", companyId)
+        .eq("user_id", profileId)
+        .select("id")
+        .single();
 
       if (error) {
         console.error("Error deleting report favorite:", error);

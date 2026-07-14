@@ -19,6 +19,13 @@ export interface ErrorContext {
   userAgent?: string;
   component?: string;
   action?: string;
+  line?: number;
+  column?: number;
+  type?: string;
+  timestamp?: number;
+  resolutionNotes?: string;
+  resolvedAt?: number;
+  resolvedBy?: string;
   additionalData?: Record<string, any>;
 }
 
@@ -29,6 +36,21 @@ export interface UserEvent {
   userId?: string;
   sessionId?: string;
   properties?: Record<string, any>;
+}
+
+type UserEventInput = Omit<UserEvent, 'timestamp'> & { timestamp?: number };
+type PerformanceMetricInput = Omit<PerformanceMetric, 'timestamp'> & { timestamp?: number };
+
+interface BrowserPerformanceMemory {
+  usedJSHeapSize: number;
+  totalJSHeapSize: number;
+  jsHeapSizeLimit: number;
+}
+
+interface BrowserNetworkInformation {
+  downlink?: number;
+  effectiveType?: string;
+  rtt?: number;
 }
 
 export interface BusinessMetric {
@@ -81,6 +103,10 @@ export interface MonitoringConfig {
 }
 
 class MonitoringCore {
+  private static readonly MAX_METRICS = 5000;
+  private static readonly MAX_ERRORS = 1000;
+  private static readonly MAX_USER_EVENTS = 5000;
+  private static readonly MAX_BUSINESS_METRICS = 5000;
   private config: MonitoringConfig;
   private metrics: PerformanceMetric[] = [];
   private errors: Array<{ error: Error; context?: ErrorContext; timestamp: number }> = [];
@@ -135,7 +161,7 @@ class MonitoringCore {
   }
 
   // Performance Monitoring
-  trackPerformance(metric: PerformanceMetric): void {
+  trackPerformance(metric: PerformanceMetricInput): void {
     if (!this.shouldSample()) return;
 
     const enrichedMetric = {
@@ -149,6 +175,7 @@ class MonitoringCore {
     };
 
     this.metrics.push(enrichedMetric);
+    this.trimBuffer(this.metrics, MonitoringCore.MAX_METRICS);
     this.sendMetrics(enrichedMetric);
 
     // Check for performance thresholds
@@ -157,6 +184,7 @@ class MonitoringCore {
 
   // Error Tracking
   trackError(error: Error, context?: ErrorContext): void {
+    if (!this.config.enabled) return;
     // Skip harmless errors from multi-tab scenarios
     const errorMessage = error?.message || '';
     const isIgnorableError = 
@@ -183,6 +211,7 @@ class MonitoringCore {
     };
 
     this.errors.push(errorEntry);
+    this.trimBuffer(this.errors, MonitoringCore.MAX_ERRORS);
     this.sendError(errorEntry);
 
     // Check error rate thresholds
@@ -190,7 +219,7 @@ class MonitoringCore {
   }
 
   // User Interaction Tracking
-  trackUserInteraction(event: UserEvent): void {
+  trackUserInteraction(event: UserEventInput): void {
     if (!this.shouldSample()) return;
 
     const enrichedEvent = {
@@ -200,11 +229,13 @@ class MonitoringCore {
     };
 
     this.userEvents.push(enrichedEvent);
+    this.trimBuffer(this.userEvents, MonitoringCore.MAX_USER_EVENTS);
     this.sendUserEvent(enrichedEvent);
   }
 
   // Business Metrics
   trackBusinessMetric(metric: BusinessMetric): void {
+    if (!this.config.enabled) return;
     const enrichedMetric = {
       ...metric,
       timestamp: metric.timestamp || Date.now(),
@@ -215,6 +246,7 @@ class MonitoringCore {
     };
 
     this.businessMetrics.push(enrichedMetric);
+    this.trimBuffer(this.businessMetrics, MonitoringCore.MAX_BUSINESS_METRICS);
     this.sendBusinessMetric(enrichedMetric);
   }
 
@@ -283,7 +315,13 @@ class MonitoringCore {
 
   // Private Methods
   private shouldSample(): boolean {
-    return Math.random() < this.config.sampleRate;
+    return this.config.enabled && Math.random() < this.config.sampleRate;
+  }
+
+  private trimBuffer<T>(buffer: T[], maximum: number): void {
+    if (buffer.length > maximum) {
+      buffer.splice(0, buffer.length - maximum);
+    }
   }
 
   private generateTraceId(): string {
@@ -305,7 +343,7 @@ class MonitoringCore {
   }
 
   private async setupPerformanceObserver(): Promise<void> {
-    if (!window.PerformanceObserver) return;
+    if (typeof window === 'undefined' || !window.PerformanceObserver) return;
 
     const observer = new PerformanceObserver((list) => {
       for (const entry of list.getEntries()) {
@@ -316,7 +354,7 @@ class MonitoringCore {
           timestamp: entry.startTime,
           tags: {
             entryType: entry.entryType,
-            initiatorType: (entry as any).initiatorType
+            initiatorType: entry instanceof PerformanceResourceTiming ? entry.initiatorType : 'unknown'
           }
         });
       }
@@ -328,7 +366,8 @@ class MonitoringCore {
   private async setupErrorHandling(): Promise<void> {
     // Global error handler
     window.addEventListener('error', (event) => {
-      this.trackError(event.error, {
+      const error = event.error instanceof Error ? event.error : new Error(event.message || 'Unknown window error');
+      this.trackError(error, {
         url: event.filename,
         line: event.lineno,
         column: event.colno,
@@ -348,13 +387,14 @@ class MonitoringCore {
   private async setupUserInteractionTracking(): Promise<void> {
     // Track clicks
     document.addEventListener('click', (event) => {
-      const target = event.target as HTMLElement;
+      const target = event.target instanceof Element ? event.target : null;
+      if (!target) return;
       this.trackUserInteraction({
         type: 'click',
         target: target.tagName.toLowerCase(),
         properties: {
           id: target.id,
-          className: target.className,
+          className: target.getAttribute('class') || '',
           textContent: target.textContent?.slice(0, 50)
         }
       });
@@ -392,33 +432,42 @@ class MonitoringCore {
   }
 
   private collectSystemMetrics(): void {
-    if (!window.performance || !window.performance.memory) return;
+    if (typeof window === 'undefined' || !window.performance) return;
+    const memory = (window.performance as Performance & { memory?: BrowserPerformanceMemory }).memory;
 
     // Memory usage
-    if (performance.memory) {
+    if (memory) {
       this.trackPerformance({
         name: 'memory.used',
-        value: performance.memory.usedJSHeapSize,
+        value: memory.usedJSHeapSize,
         unit: 'bytes',
         tags: { type: 'memory' }
       });
 
       this.trackPerformance({
         name: 'memory.total',
-        value: performance.memory.totalJSHeapSize,
+        value: memory.totalJSHeapSize,
         unit: 'bytes',
         tags: { type: 'memory' }
       });
     }
 
     // Connection info
-    if ((navigator as any).connection) {
-      const connection = (navigator as any).connection;
+    const connection = (navigator as Navigator & { connection?: BrowserNetworkInformation }).connection;
+    if (connection?.downlink !== undefined) {
       this.trackPerformance({
-        name: 'connection.effectiveType',
-        value: connection.effectiveType,
-        unit: 'string',
-        tags: { type: 'network' }
+        name: 'connection.downlink',
+        value: connection.downlink,
+        unit: 'megabits_per_second',
+        tags: { type: 'network', effectiveType: connection.effectiveType || 'unknown' }
+      });
+    }
+    if (connection?.rtt !== undefined) {
+      this.trackPerformance({
+        name: 'connection.rtt',
+        value: connection.rtt,
+        unit: 'milliseconds',
+        tags: { type: 'network', effectiveType: connection.effectiveType || 'unknown' }
       });
     }
   }
@@ -511,19 +560,6 @@ class MonitoringCore {
       console.debug('[Monitoring] Alert triggered locally:', rule.name, rule.severity);
     }
     
-    // Original code disabled - no backend endpoint exists
-    return;
-    
-    // Send alert notification (disabled)
-    try {
-      await fetch('/api/monitoring/alerts', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ rule, timestamp: Date.now() })
-      });
-    } catch (error) {
-      console.debug('[Monitoring] Failed to trigger alert:', error);
-    }
   }
 
   private async checkMetricsHealth(): Promise<{ status: string; details: any }> {
@@ -546,6 +582,12 @@ class MonitoringCore {
 
   private async checkPerformanceHealth(): Promise<{ status: string; details: any }> {
     const performanceMetrics = this.metrics.filter(m => m.name.includes('response_time'));
+    if (performanceMetrics.length === 0) {
+      return {
+        status: 'degraded',
+        details: { avgResponseTime: null, threshold: this.config.thresholds.responseTime },
+      };
+    }
     const avgResponseTime = performanceMetrics.reduce((sum, m) => sum + m.value, 0) / performanceMetrics.length;
 
     const status = avgResponseTime < this.config.thresholds.responseTime ? 'healthy' :
@@ -581,17 +623,6 @@ class MonitoringCore {
 
 // Create singleton instance
 export const monitoring = new MonitoringCore();
-
-// Export types for external use
-export type {
-  MonitoringConfig,
-  PerformanceMetric,
-  ErrorContext,
-  UserEvent,
-  BusinessMetric,
-  TraceContext,
-  AlertRule
-};
 
 // Export utility functions
 export const createTrace = (operation: string) => monitoring.startTrace(operation);

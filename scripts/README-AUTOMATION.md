@@ -106,8 +106,9 @@ Create a `.env` file or set environment variables:
 
 ```bash
 # Qatar Court Credentials
-QATAR_COURT_USERNAME=29263400736
-QATAR_COURT_PASSWORD=Khamees1992#
+QATAR_COURT_USERNAME=<court-username>
+QATAR_COURT_PASSWORD=<court-password>
+LEGAL_CASE_CONTACT_EMAIL=<contact-email>
 
 # Headless Mode (true/false)
 HEADLESS=false

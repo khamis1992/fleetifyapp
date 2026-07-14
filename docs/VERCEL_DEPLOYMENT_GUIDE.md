@@ -10,7 +10,7 @@ Set these in your Vercel dashboard under **Project Settings > Environment Variab
 ```
 VITE_SUPABASE_URL=https://qwhunliohlkkahbspfiu.supabase.co
 VITE_SUPABASE_ANON_KEY=<your-supabase-anon-key>
-VITE_ENCRYPTION_SECRET=12345678901234567890123456789012
+VITE_ENCRYPTION_SECRET=<generate-a-strong-random-value>
 ```
 
 #### Optional Variables

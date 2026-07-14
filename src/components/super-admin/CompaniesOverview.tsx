@@ -112,11 +112,11 @@ export const CompaniesOverview: React.FC<CompaniesOverviewProps> = ({ companies,
                   </div>
                   <div className="flex items-center gap-1">
                     <DollarSign className="h-3 w-3" />
-                    {company.monthlyRevenue} د.ك/شهر
+                    {company.monthlyRevenue.toLocaleString('ar-QA')} ر.ق هذا الشهر
                   </div>
                   <span>•</span>
                    <span>
-                     آخر نشاط منذ {formatDistanceToNow(new Date(company.lastActive), { addSuffix: true })}
+                     آخر تحديث {formatDistanceToNow(new Date(company.lastActive), { addSuffix: true })}
                    </span>
                 </div>
                 

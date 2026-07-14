@@ -147,7 +147,14 @@ class UnifiedInvoiceServiceClass {
       return null;
     }
 
-    return existingInvoice && existingInvoice.length > 0 ? existingInvoice[0] : null;
+    if (!existingInvoice || existingInvoice.length === 0) return null;
+
+    const invoice = existingInvoice[0];
+    return {
+      ...invoice,
+      balance_due: invoice.balance_due ?? invoice.total_amount,
+      due_date: invoice.due_date ?? invoice.invoice_date,
+    };
   }
 
   /**
@@ -181,7 +188,14 @@ class UnifiedInvoiceServiceClass {
       return null;
     }
 
-    return unpaidInvoice && unpaidInvoice.length > 0 ? unpaidInvoice[0] : null;
+    if (!unpaidInvoice || unpaidInvoice.length === 0) return null;
+
+    const invoice = unpaidInvoice[0];
+    return {
+      ...invoice,
+      balance_due: invoice.balance_due ?? invoice.total_amount,
+      due_date: invoice.due_date ?? invoice.invoice_date,
+    };
   }
 
   /**
@@ -287,7 +301,7 @@ class UnifiedInvoiceServiceClass {
           invoice_number: invoice.invoice_number,
           total_amount: invoice.total_amount,
           invoice_date: invoice.invoice_date,
-          due_date: invoice.due_date,
+          due_date: invoice.due_date ?? invoice.invoice_date,
           payment_status: invoice.payment_status
         }
       };
@@ -576,5 +590,3 @@ class UnifiedInvoiceServiceClass {
 // Export singleton instance
 export const UnifiedInvoiceService = new UnifiedInvoiceServiceClass();
 
-// Export types
-export type { CreateMonthlyInvoiceParams, FindOrCreateInvoiceParams };

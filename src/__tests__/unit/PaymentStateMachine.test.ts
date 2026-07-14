@@ -1,134 +1,204 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { paymentStateMachine } from '@/services/PaymentStateMachine';
-import { PaymentStatus, ProcessingStatus } from '@/types/payment-enums';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-describe('PaymentStateMachine', () => {
-  const mockPayment = {
-    id: 'test-payment-id',
-    company_id: 'test-company-id',
-    customer_id: 'test-customer-id',
-    payment_date: new Date().toISOString(),
-    amount: 1000,
-    payment_status: PaymentStatus.PENDING,
-    processing_status: ProcessingStatus.NEW,
-    payment_method: 'cash',
-    payment_type: 'rental_income',
-    transaction_type: 'income'
-  };
+const mocks = vi.hoisted(() => ({
+  fetchPayment: vi.fn(),
+  update: vi.fn(),
+  updateEq: vi.fn(),
+  rpc: vi.fn(),
+  logPaymentAction: vi.fn(),
+}));
 
+vi.mock('@/integrations/supabase/client', () => ({
+  supabase: {
+    from: vi.fn((table: string) => {
+      if (table === 'notifications') {
+        return {
+          insert: vi.fn(() => Promise.resolve({ error: null })),
+        };
+      }
+
+      if (table !== 'payments') {
+        throw new Error(`Unexpected table: ${table}`);
+      }
+
+      return {
+        select: vi.fn(() => ({
+          eq: vi.fn(() => ({ single: mocks.fetchPayment })),
+        })),
+        update: mocks.update,
+      };
+    }),
+    rpc: mocks.rpc,
+  },
+}));
+
+vi.mock('@/lib/logger', () => ({
+  logger: {
+    debug: vi.fn(),
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+  },
+}));
+
+vi.mock('@/utils/auditTrailSystem', () => ({
+  auditTrailSystem: {
+    logPaymentAction: mocks.logPaymentAction,
+  },
+}));
+
+import {
+  createPaymentStateMachine,
+  PaymentEvent,
+  PaymentState,
+} from '@/services/PaymentStateMachine';
+
+const basePayment = {
+  id: 'payment-id',
+  company_id: 'company-id',
+  created_by: 'creator-id',
+  processing_status: PaymentState.PENDING,
+  payment_status: 'pending',
+  amount: 100,
+};
+
+describe('PaymentStateMachine approved transitions', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mocks.fetchPayment.mockResolvedValue({ data: { ...basePayment }, error: null });
+    mocks.updateEq.mockResolvedValue({ error: null });
+    mocks.update.mockReturnValue({ eq: mocks.updateEq });
+    mocks.rpc.mockResolvedValue({ data: null, error: null });
   });
 
-  describe('transitionPaymentState', () => {
-    it('should transition from NEW to PROCESSING', async () => {
-      const result = await paymentStateMachine.transitionPaymentState(
-        mockPayment.id,
-        undefined,
-        ProcessingStatus.PROCESSING
-      );
+  it('starts processing through the allowed local transition and audits it', async () => {
+    const machine = createPaymentStateMachine();
 
-      expect(result.payment_status).toBe(PaymentStatus.PENDING);
-      expect(result.processing_status).toBe(ProcessingStatus.PROCESSING);
-    });
+    const result = await machine.startProcessing(basePayment.id, 'actor-id');
 
-    it('should transition from PROCESSING to COMPLETED', async () => {
-      const result = await paymentStateMachine.transitionPaymentState(
-        mockPayment.id,
-        PaymentStatus.COMPLETED,
-        ProcessingStatus.COMPLETED
-      );
-
-      expect(result.payment_status).toBe(PaymentStatus.COMPLETED);
-      expect(result.processing_status).toBe(ProcessingStatus.COMPLETED);
-    });
-
-    it('should transition to FAILED with notes', async () => {
-      const notes = 'Payment processing failed: Network error';
-
-      const result = await paymentStateMachine.transitionPaymentState(
-        mockPayment.id,
-        PaymentStatus.FAILED,
-        ProcessingStatus.FAILED,
-        notes
-      );
-
-      expect(result.payment_status).toBe(PaymentStatus.FAILED);
-      expect(result.processing_status).toBe(ProcessingStatus.FAILED);
-      expect(result.processing_notes).toContain(notes);
-    });
-
-    it('should reject invalid transition', async () => {
-      // Try to transition from COMPLETED to PENDING (invalid)
-      const completedPayment = {
-        ...mockPayment,
-        payment_status: PaymentStatus.COMPLETED,
-        processing_status: ProcessingStatus.COMPLETED
-      };
-
-      await expect(
-        paymentStateMachine.transitionPaymentState(
-          completedPayment.id,
-          PaymentStatus.PENDING
-        )
-      ).rejects.toThrow('Invalid state transition');
-    });
+    expect(result).toEqual({ success: true, newState: PaymentState.PROCESSING });
+    expect(mocks.update).toHaveBeenCalledWith(expect.objectContaining({
+      processing_status: PaymentState.PROCESSING,
+      processing_started_at: expect.any(String),
+    }));
+    expect(mocks.updateEq).toHaveBeenCalledWith('id', basePayment.id);
+    expect(mocks.logPaymentAction).toHaveBeenCalledWith(
+      `state_transition_${PaymentEvent.START_PROCESSING}`,
+      basePayment.id,
+      'actor-id',
+      basePayment.company_id,
+      undefined,
+      expect.objectContaining({
+        fromState: PaymentState.PENDING,
+        toState: PaymentState.PROCESSING,
+      }),
+    );
   });
 
-  describe('markAsProcessing', () => {
-    it('should mark payment as processing', async () => {
-      const result = await paymentStateMachine.markAsProcessing(mockPayment.id);
+  it('rejects an invalid local transition without writing', async () => {
+    const machine = createPaymentStateMachine();
 
-      expect(result.processing_status).toBe(ProcessingStatus.PROCESSING);
-      expect(result.processing_notes).toContain('Payment processing initiated.');
-    });
+    const result = await machine.failPayment(basePayment.id, 'actor-id');
+
+    expect(result.success).toBe(false);
+    expect(result.error).toContain(PaymentEvent.FAIL);
+    expect(mocks.update).not.toHaveBeenCalled();
+    expect(mocks.rpc).not.toHaveBeenCalled();
   });
 
-  describe('markAsCompleted', () => {
-    it('should mark payment as completed', async () => {
-      const result = await paymentStateMachine.markAsCompleted(mockPayment.id);
-
-      expect(result.payment_status).toBe(PaymentStatus.COMPLETED);
-      expect(result.processing_status).toBe(ProcessingStatus.COMPLETED);
-      expect(result.processing_notes).toContain('completed successfully.');
+  it('completes a payment only through the atomic approval command', async () => {
+    mocks.fetchPayment.mockResolvedValue({
+      data: { ...basePayment, processing_status: PaymentState.PROCESSING },
+      error: null,
     });
+    const machine = createPaymentStateMachine();
+
+    const result = await machine.completePayment(basePayment.id, 'actor-id');
+
+    expect(result).toEqual({ success: true, newState: PaymentState.COMPLETED });
+    expect(mocks.rpc).toHaveBeenCalledWith('approve_payment_atomic', {
+      p_payment_id: basePayment.id,
+      p_company_id: basePayment.company_id,
+      p_actor_id: 'actor-id',
+    });
+    expect(mocks.update).not.toHaveBeenCalled();
   });
 
-  describe('markAsFailed', () => {
-    it('should mark payment as failed with reason', async () => {
-      const reason = 'Invalid payment method';
-
-      const result = await paymentStateMachine.markAsFailed(mockPayment.id, reason);
-
-      expect(result.payment_status).toBe(PaymentStatus.FAILED);
-      expect(result.processing_status).toBe(ProcessingStatus.FAILED);
-      expect(result.processing_notes).toContain(reason);
+  it('voids a payment only through the accounting reversal command', async () => {
+    mocks.fetchPayment.mockResolvedValue({
+      data: { ...basePayment, processing_status: PaymentState.COMPLETED },
+      error: null,
     });
+    const machine = createPaymentStateMachine();
+
+    const result = await machine.voidPayment(basePayment.id, 'actor-id', 'duplicate receipt');
+
+    expect(result).toEqual({ success: true, newState: PaymentState.VOIDED });
+    expect(mocks.rpc).toHaveBeenCalledWith('cancel_payment_with_reversal', {
+      p_payment_id: basePayment.id,
+      p_company_id: basePayment.company_id,
+      p_reason: 'duplicate receipt',
+      p_actor_id: 'actor-id',
+    });
+    expect(mocks.update).not.toHaveBeenCalled();
   });
 
-  describe('markForRetry', () => {
-    it('should mark failed payment for retry', async () => {
-      const failedPayment = {
-        ...mockPayment,
-        payment_status: PaymentStatus.FAILED,
-        processing_status: ProcessingStatus.FAILED
-      };
-
-      const result = await paymentStateMachine.markForRetry(failedPayment.id);
-
-      expect(result.payment_status).toBe(PaymentStatus.FAILED);
-      expect(result.processing_status).toBe(ProcessingStatus.RETRYING);
-      expect(result.processing_notes).toContain('Payment marked for retry.');
+  it('returns an atomic command error without reporting success', async () => {
+    mocks.fetchPayment.mockResolvedValue({
+      data: { ...basePayment, processing_status: PaymentState.PROCESSING },
+      error: null,
     });
+    mocks.rpc.mockResolvedValue({ data: null, error: { message: 'approval denied' } });
+    const machine = createPaymentStateMachine();
+
+    await expect(machine.completePayment(basePayment.id, 'actor-id')).resolves.toEqual({
+      success: false,
+      error: 'approval denied',
+    });
+    expect(mocks.update).not.toHaveBeenCalled();
   });
 
-  describe('markAsCancelled', () => {
-    it('should mark payment as cancelled', async () => {
-      const result = await paymentStateMachine.markAsCancelled(mockPayment.id);
-
-      expect(result.payment_status).toBe(PaymentStatus.CANCELLED);
-      expect(result.processing_status).toBe(ProcessingStatus.CANCELLED);
-      expect(result.processing_notes).toContain('Payment cancelled.');
+  it('marks a processing failure and clears allocation and reconciliation state', async () => {
+    mocks.fetchPayment.mockResolvedValue({
+      data: { ...basePayment, processing_status: PaymentState.PROCESSING },
+      error: null,
     });
+    const machine = createPaymentStateMachine();
+
+    const result = await machine.failPayment(basePayment.id, 'actor-id', 'gateway error');
+
+    expect(result).toEqual({ success: true, newState: PaymentState.FAILED });
+    expect(mocks.update).toHaveBeenCalledWith(expect.objectContaining({
+      processing_status: PaymentState.FAILED,
+      payment_status: 'failed',
+      allocation_status: null,
+      reconciliation_status: null,
+    }));
+  });
+
+  it('enforces the configured retry limit', async () => {
+    mocks.fetchPayment.mockResolvedValue({
+      data: { ...basePayment, processing_status: PaymentState.FAILED },
+      error: null,
+    });
+    const machine = createPaymentStateMachine({ maxRetries: 2 });
+
+    expect((await machine.retryPayment(basePayment.id)).success).toBe(true);
+    expect((await machine.retryPayment(basePayment.id)).success).toBe(true);
+    const thirdAttempt = await machine.retryPayment(basePayment.id);
+
+    expect(thirdAttempt.success).toBe(false);
+    expect(mocks.update).toHaveBeenCalledTimes(2);
+  });
+
+  it('does not write when the payment cannot be loaded', async () => {
+    mocks.fetchPayment.mockResolvedValue({ data: null, error: { message: 'not found' } });
+    const machine = createPaymentStateMachine();
+
+    const result = await machine.startProcessing('missing-payment');
+
+    expect(result.success).toBe(false);
+    expect(mocks.update).not.toHaveBeenCalled();
+    expect(mocks.rpc).not.toHaveBeenCalled();
   });
 });

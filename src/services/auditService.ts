@@ -4,8 +4,11 @@
  */
 
 import { supabase } from '@/integrations/supabase/client';
+import type { Database, Json } from '@/integrations/supabase/types';
 import { logger } from '@/lib/logger';
 import {
+  AuditAction,
+  AuditResourceType,
   FinancialAuditLog,
   FinancialAuditFilters,
   FinancialAuditSummary,
@@ -16,36 +19,86 @@ import {
   AuditExportOptions,
   FinancialAuditEventType,
   AuditStatus,
-  AuditSeverity
+  AuditSeverity,
+  CreateFinancialAuditLogParams
 } from '@/types/auditLog';
 
-export interface CreateFinancialAuditLogParams {
-  event_type: FinancialAuditEventType;
-  resource_type: 'payment' | 'invoice' | 'contract' | 'journal_entry' | 'account' | 'customer';
-  resource_id: string;
-  entity_name?: string;
-  old_values?: Record<string, any>;
-  new_values?: Record<string, any>;
-  changes_summary?: string;
-  metadata?: Record<string, any>;
-  notes?: string;
-  status?: AuditStatus;
-  severity?: AuditSeverity;
-  financial_data: {
-    amount?: number;
-    currency?: string;
-    account_code?: string;
-    reference_number?: string;
-    transaction_date?: string;
-    payment_method?: string;
-    invoice_number?: string;
-    contract_number?: string;
-    customer_id?: string;
-    vendor_id?: string;
-    tax_amount?: number;
-    discount_amount?: number;
-    balance?: number;
+type AuditLogRow = Database['public']['Tables']['audit_logs']['Row'];
+type AuditLogInsert = Database['public']['Tables']['audit_logs']['Insert'];
+type FinancialData = CreateFinancialAuditLogParams['financial_data'];
+
+interface AuditIntegrityRpcRow {
+  company_id: string | null;
+  checked_entries: number;
+  broken_entries: number;
+  missing_hash_entries: number;
+  is_valid: boolean;
+}
+
+interface AuditIntegrityRpcResult {
+  data: AuditIntegrityRpcRow[] | null;
+  error: { message: string } | null;
+}
+
+const AUDIT_ACTIONS = new Set<AuditAction>([
+  'CREATE', 'UPDATE', 'DELETE', 'APPROVE', 'REJECT', 'CANCEL', 'ARCHIVE',
+  'RESTORE', 'EXPORT', 'IMPORT', 'LOGIN', 'LOGOUT', 'PERMISSION_CHANGE', 'ROLE_CHANGE',
+]);
+
+const AUDIT_RESOURCE_TYPES = new Set<AuditResourceType>([
+  'contract', 'customer', 'vehicle', 'invoice', 'payment', 'employee', 'user',
+  'company', 'maintenance', 'penalty', 'journal_entry', 'account', 'role', 'permission',
+  'system', 'other',
+]);
+
+const AUDIT_STATUSES = new Set<AuditStatus>(['success', 'failed', 'pending']);
+const AUDIT_SEVERITIES = new Set<AuditSeverity>(['low', 'medium', 'high', 'critical']);
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function getString(value: unknown): string | undefined {
+  return typeof value === 'string' && value.length > 0 ? value : undefined;
+}
+
+function getNumber(value: unknown): number | undefined {
+  if (typeof value === 'number' && Number.isFinite(value)) return value;
+  if (typeof value === 'string' && value.trim() !== '') {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : undefined;
+  }
+  return undefined;
+}
+
+function normalizeFinancialData(value: unknown): FinancialData {
+  if (!isRecord(value)) return {};
+
+  return {
+    amount: getNumber(value.amount),
+    currency: getString(value.currency),
+    account_code: getString(value.account_code),
+    reference_number: getString(value.reference_number),
+    transaction_date: getString(value.transaction_date),
+    payment_method: getString(value.payment_method),
+    invoice_number: getString(value.invoice_number),
+    contract_number: getString(value.contract_number),
+    customer_id: getString(value.customer_id),
+    vendor_id: getString(value.vendor_id),
+    tax_amount: getNumber(value.tax_amount),
+    discount_amount: getNumber(value.discount_amount),
+    balance: getNumber(value.balance),
   };
+}
+
+function toJson(value: unknown): Json | null {
+  if (value === undefined || value === null) return null;
+
+  try {
+    return JSON.parse(JSON.stringify(value)) as Json;
+  } catch {
+    return null;
+  }
 }
 
 class FinancialAuditService {
@@ -71,36 +124,41 @@ class FinancialAuditService {
 
       const { data: profile } = await supabase
         .from('profiles')
-        .select('full_name')
-        .eq('id', user.id)
-        .single();
+        .select('first_name, last_name')
+        .eq('user_id', user.id)
+        .maybeSingle();
 
       // Get company context
       const { data: companyContext } = await supabase
-        .rpc('user_company_id');
+        .rpc('get_user_company_id');
+
+      if (!companyContext) {
+        throw new Error('User company context is unavailable');
+      }
 
       const complianceFlags = this.detectComplianceViolations(params);
+      const profileName = [profile?.first_name, profile?.last_name].filter(Boolean).join(' ');
 
       // Prepare audit log data
-      const auditLogData = {
+      const auditLogData: AuditLogInsert = {
         user_id: user.id,
-        user_email: user.email,
-        user_name: profile?.full_name || user.email?.split('@')[0],
+        user_email: user.email ?? null,
+        user_name: profileName || user.email?.split('@')[0] || null,
         company_id: companyContext,
         action: this.mapEventTypeToAction(params.event_type),
         resource_type: params.resource_type,
         resource_id: params.resource_id,
-        entity_name: params.entity_name,
-        old_values: params.old_values,
-        new_values: params.new_values,
-        changes_summary: params.changes_summary,
-        metadata: {
+        entity_name: params.entity_name ?? null,
+        old_values: toJson(params.old_values),
+        new_values: toJson(params.new_values),
+        changes_summary: params.changes_summary ?? null,
+        metadata: toJson({
           ...params.metadata,
           financial_data: params.financial_data,
           event_type: params.event_type,
           ...(complianceFlags.length > 0 ? { compliance_flags: complianceFlags } : {}),
-        },
-        notes: params.notes,
+        }),
+        notes: params.notes ?? null,
         status: params.status || 'success',
         severity: params.severity || this.getDefaultSeverity(params.event_type),
       };
@@ -141,7 +199,7 @@ class FinancialAuditService {
   }> {
     try {
       let query = supabase
-        .from('financial_audit_trail')
+        .from('audit_logs')
         .select('*', { count: 'exact' })
         .order('created_at', { ascending: false });
 
@@ -151,11 +209,11 @@ class FinancialAuditService {
       }
       if (filters.resource_type) {
         query = Array.isArray(filters.resource_type)
-          ? query.in('entity_type', filters.resource_type)
-          : query.eq('entity_type', filters.resource_type);
+          ? query.in('resource_type', filters.resource_type)
+          : query.eq('resource_type', filters.resource_type);
       }
       if (filters.resource_id) {
-        query = query.eq('entity_id', filters.resource_id);
+        query = query.eq('resource_id', filters.resource_id);
       }
       if (filters.user_id) {
         query = query.eq('user_id', filters.user_id);
@@ -178,27 +236,41 @@ class FinancialAuditService {
         query = query.lte('created_at', filters.date_to);
       }
       if (filters.search) {
-        query = query.or(`entity_name.ilike.%${filters.search}%,notes.ilike.%${filters.search}%`);
+        const search = filters.search.replace(/[,%()]/g, ' ').trim();
+        if (search) {
+          query = query.or(`entity_name.ilike.%${search}%,notes.ilike.%${search}%`);
+        }
+      }
+      if (filters.event_type) {
+        query = Array.isArray(filters.event_type)
+          ? query.in('metadata->>event_type', filters.event_type)
+          : query.eq('metadata->>event_type', filters.event_type);
       }
 
       // Financial-specific filters
-      if (filters.amount_min || filters.amount_max) {
-        query = query.filter('financial_data->>amount', 'gte', filters.amount_min || 0);
-        if (filters.amount_max) {
-          query = query.filter('financial_data->>amount', 'lte', filters.amount_max);
-        }
+      if (filters.amount_min !== undefined) {
+        query = query.filter('metadata->financial_data->>amount', 'gte', String(filters.amount_min));
+      }
+      if (filters.amount_max !== undefined) {
+        query = query.filter('metadata->financial_data->>amount', 'lte', String(filters.amount_max));
       }
       if (filters.currency) {
-        query = query.filter('financial_data->>currency', 'eq', filters.currency);
+        query = query.filter('metadata->financial_data->>currency', 'eq', filters.currency);
       }
       if (filters.account_code) {
-        query = query.filter('financial_data->>account_code', 'eq', filters.account_code);
+        query = query.filter('metadata->financial_data->>account_code', 'eq', filters.account_code);
       }
       if (filters.reference_number) {
-        query = query.filter('financial_data->>reference_number', 'ilike', `%${filters.reference_number}%`);
+        query = query.filter('metadata->financial_data->>reference_number', 'ilike', `%${filters.reference_number}%`);
       }
       if (filters.verification_status) {
-        query = query.eq('verification_status', filters.verification_status);
+        query = query.eq('metadata->>verification_status', filters.verification_status);
+      }
+      if (filters.transaction_date_from) {
+        query = query.gte('metadata->financial_data->>transaction_date', filters.transaction_date_from);
+      }
+      if (filters.transaction_date_to) {
+        query = query.lte('metadata->financial_data->>transaction_date', filters.transaction_date_to);
       }
 
       // Apply pagination
@@ -214,7 +286,7 @@ class FinancialAuditService {
       }
 
       // Transform data to FinancialAuditLog format
-      const transformedLogs: FinancialAuditLog[] = (logs || []).map(this.transformAuditLog);
+      const transformedLogs = (logs || []).map(log => this.transformAuditLog(log));
 
       // Generate summary
       const summary = await this.generateFinancialSummary(filters, transformedLogs, count || 0);
@@ -235,49 +307,57 @@ class FinancialAuditService {
    */
   async getTransactionLineage(transactionId: string, companyId: string): Promise<TransactionLineage | null> {
     try {
-      // Get the primary transaction
-      const { data: primaryLog, error } = await supabase
-        .from('financial_audit_trail')
+      const { data: transactionLogs, error } = await supabase
+        .from('audit_logs')
         .select('*')
-        .eq('entity_id', transactionId)
+        .eq('resource_id', transactionId)
         .eq('company_id', companyId)
-        .order('created_at', { ascending: true })
-        .limit(1);
+        .order('created_at', { ascending: true });
 
-      if (error || !primaryLog || primaryLog.length === 0) {
+      if (error || !transactionLogs || transactionLogs.length === 0) {
         logger.error('Failed to find primary transaction', { error, transactionId });
         return null;
       }
 
-      const primary = primaryLog[0];
+      const primary = this.transformAuditLog(transactionLogs[0]);
 
-      // Find related transactions based on metadata and reference numbers
-      const { data: relatedLogs } = await supabase
-        .from('financial_audit_trail')
+      const { data: explicitlyRelatedLogs, error: relatedError } = await supabase
+        .from('audit_logs')
         .select('*')
         .eq('company_id', companyId)
-        .or(`entity_id.eq.${transactionId},metadata->>related_transaction_ids.cs.{${transactionId}}`)
-        .neq('id', primary.id)
+        .contains('metadata', { related_transaction_ids: [transactionId] })
         .order('created_at', { ascending: true });
 
-      // Transform and build lineage
-      const auditTrail = [primary, ...(relatedLogs || [])].map(this.transformAuditLog);
+      if (relatedError) {
+        logger.warn('Unable to load explicitly related audit transactions', {
+          error: relatedError,
+          transactionId,
+        });
+      }
 
-      const financialData = primary.financial_data || {};
+      const uniqueRows = new Map<string, AuditLogRow>();
+      for (const row of [...transactionLogs, ...(explicitlyRelatedLogs || [])]) {
+        uniqueRows.set(row.id, row);
+      }
+
+      const auditTrail = [...uniqueRows.values()]
+        .sort((left, right) => (left.created_at || '').localeCompare(right.created_at || ''))
+        .map(row => this.transformAuditLog(row));
+      const relatedLogs = auditTrail.filter(log => log.resource_id !== transactionId);
 
       return {
         transaction_id: transactionId,
-        transaction_type: primary.action as FinancialAuditEventType,
-        amount: financialData.amount || 0,
-        currency: financialData.currency || 'USD',
+        transaction_type: primary.event_type,
+        amount: primary.financial_data.amount || 0,
+        currency: primary.financial_data.currency || 'QAR',
         created_at: primary.created_at,
-        created_by: primary.user_id,
+        created_by: primary.user_id || '',
         child_transaction_ids: [],
-        related_transactions: (relatedLogs || []).map(log => ({
-          id: log.entity_id || '',
-          type: log.action as FinancialAuditEventType,
+        related_transactions: relatedLogs.map(log => ({
+          id: log.resource_id || '',
+          type: log.event_type,
           relationship: this.determineTransactionRelationship(primary, log),
-          amount: log.financial_data?.amount
+          amount: log.financial_data.amount
         })),
         audit_trail: auditTrail,
         current_status: this.determineCurrentStatus(auditTrail),
@@ -294,57 +374,93 @@ class FinancialAuditService {
    */
   async verifyDataIntegrity(companyId: string, dateFrom?: string, dateTo?: string): Promise<DataIntegrityReport> {
     try {
-      let query = supabase
-        .from('audit_integrity')
-        .select(`
-          *,
-          audit_logs!inner(
-            company_id,
-            created_at
-          )
-        `)
-        .eq('audit_logs.company_id', companyId);
-
-      if (dateFrom) {
-        query = query.gte('audit_logs.created_at', dateFrom);
-      }
-      if (dateTo) {
-        query = query.lte('audit_logs.created_at', dateTo);
-      }
-
-      const { data, error } = await query;
+      // The hash-chain function is introduced by a migration newer than the
+      // generated client types, so keep the untyped boundary limited to this RPC.
+      const verifyHashChain = supabase.rpc as unknown as (
+        name: 'verify_audit_log_hash_chain',
+        args: { p_company_id: string }
+      ) => PromiseLike<AuditIntegrityRpcResult>;
+      const { data, error } = await verifyHashChain('verify_audit_log_hash_chain', {
+        p_company_id: companyId,
+      });
 
       if (error) {
         logger.error('Failed to verify data integrity', { error, companyId });
-        return this.createEmptyIntegrityReport();
+        let countQuery = supabase
+          .from('audit_logs')
+          .select('id', { count: 'exact', head: true })
+          .eq('company_id', companyId);
+        if (dateFrom) countQuery = countQuery.gte('created_at', dateFrom);
+        if (dateTo) countQuery = countQuery.lte('created_at', dateTo);
+        const { count } = await countQuery;
+        const unverifiedCount = count || 0;
+
+        return {
+          total_records: unverifiedCount,
+          verified_records: 0,
+          tampered_records: 0,
+          suspicious_records: unverifiedCount,
+          verification_errors: [],
+          integrity_score: 0,
+          last_verification: new Date().toISOString(),
+          recommendations: [
+            'Deploy the verify_audit_log_hash_chain migration before relying on audit integrity results.',
+          ],
+        };
       }
 
-      const integrityRecords = data || [];
-      const totalRecords = integrityRecords.length;
-      const verifiedRecords = integrityRecords.filter(r => r.verification_status === 'verified').length;
-      const tamperedRecords = integrityRecords.filter(r => r.verification_status === 'tampered').length;
-      const suspiciousRecords = integrityRecords.filter(r => r.verification_status === 'suspicious').length;
-
-      // Detailed verification for suspicious records
-      const verificationErrors = [];
-      for (const record of integrityRecords.filter(r => r.verification_status !== 'verified')) {
-        const error = await this.verifySingleRecord(record);
-        if (error) {
-          verificationErrors.push(error);
-        }
+      const result = data?.[0];
+      if (!result) {
+        return {
+          ...this.createEmptyIntegrityReport(),
+          integrity_score: 100,
+          recommendations: ['No audit records were found for this company.'],
+        };
       }
 
-      const integrityScore = totalRecords > 0 ? Math.round((verifiedRecords / totalRecords) * 100) : 100;
+      const invalidRecords = Math.max(result.broken_entries, result.missing_hash_entries);
+      const verifiedRecords = Math.max(0, result.checked_entries - invalidRecords);
+      const tamperedRecords = Math.max(0, result.broken_entries - result.missing_hash_entries);
+      const verificationErrors: DataIntegrityReport['verification_errors'] = [];
+
+      if (result.broken_entries > 0) {
+        verificationErrors.push({
+          record_id: 'audit-chain',
+          error_type: 'broken_hash_chain',
+          expected_hash: 'valid chained hashes',
+          actual_hash: `${result.broken_entries} broken entries`,
+        });
+      }
+      if (result.missing_hash_entries > 0) {
+        verificationErrors.push({
+          record_id: 'audit-chain',
+          error_type: 'missing_hash',
+          expected_hash: 'entry hash present',
+          actual_hash: `${result.missing_hash_entries} entries without hashes`,
+        });
+      }
+
+      const integrityScore = result.checked_entries > 0
+        ? Math.round((verifiedRecords / result.checked_entries) * 100)
+        : 100;
+      const recommendations = this.generateIntegrityRecommendations(integrityScore, verificationErrors);
+      if (dateFrom || dateTo) {
+        recommendations.push('Hash-chain verification covers the complete company ledger; date filters are informational only.');
+      }
+
+      if (result.is_valid && verificationErrors.length === 0) {
+        recommendations.unshift('The audit hash chain is complete and valid.');
+      }
 
       return {
-        total_records: totalRecords,
+        total_records: result.checked_entries,
         verified_records: verifiedRecords,
         tampered_records: tamperedRecords,
-        suspicious_records: suspiciousRecords,
+        suspicious_records: result.missing_hash_entries,
         verification_errors: verificationErrors,
         integrity_score: integrityScore,
         last_verification: new Date().toISOString(),
-        recommendations: this.generateIntegrityRecommendations(integrityScore, verificationErrors)
+        recommendations,
       };
     } catch (error) {
       logger.error('Error verifying data integrity', { error, companyId });
@@ -357,49 +473,67 @@ class FinancialAuditService {
    */
   async generateComplianceReport(companyId: string, startDate: string, endDate: string): Promise<ComplianceReport> {
     try {
-      // Get audit summary from database function
-      const { data: summaryData, error } = await supabase
-        .rpc('get_audit_summary', {
-          p_company_id: companyId,
-          p_start_date: startDate,
-          p_end_date: endDate
-        });
+      const periodEnd = endDate.length === 10 ? `${endDate}T23:59:59.999Z` : endDate;
+      const [allLogsResult, highRiskResult, failedResult, violationsResult] = await Promise.all([
+        supabase
+          .from('audit_logs')
+          .select('*', { count: 'exact' })
+          .eq('company_id', companyId)
+          .gte('created_at', startDate)
+          .lte('created_at', periodEnd)
+          .order('created_at', { ascending: false })
+          .range(0, 9999),
+        supabase
+          .from('audit_logs')
+          .select('id', { count: 'exact', head: true })
+          .eq('company_id', companyId)
+          .in('severity', ['critical', 'high'])
+          .gte('created_at', startDate)
+          .lte('created_at', periodEnd),
+        supabase
+          .from('audit_logs')
+          .select('id', { count: 'exact', head: true })
+          .eq('company_id', companyId)
+          .eq('status', 'failed')
+          .gte('created_at', startDate)
+          .lte('created_at', periodEnd),
+        supabase
+          .from('audit_logs')
+          .select('*')
+          .eq('company_id', companyId)
+          .in('action', ['DELETE', 'CANCEL', 'REJECT'])
+          .gte('created_at', startDate)
+          .lte('created_at', periodEnd)
+          .range(0, 9999),
+      ]);
 
-      if (error) {
-        logger.error('Failed to generate compliance report', { error, companyId });
+      if (allLogsResult.error) {
+        logger.error('Failed to generate compliance report', {
+          error: allLogsResult.error,
+          companyId,
+        });
         return this.createEmptyComplianceReport(startDate, endDate);
       }
 
-      // Get detailed compliance violations
-      const { data: violations } = await supabase
-        .from('financial_audit_trail')
-        .select('*')
-        .eq('company_id', companyId)
-        .in('action', ['DELETE', 'CANCEL', 'REJECT'])
-        .gte('created_at', startDate)
-        .lte('created_at', endDate);
-
-      // Check for segregation of duties violations
       const sodViolations = await this.checkSegregationOfDuties(companyId, startDate, endDate);
-
-      // Calculate compliance score
-      const totalTransactions = summaryData?.total_transactions || 0;
-      const highRiskOps = summaryData?.high_risk_operations || 0;
-      const failedOps = summaryData?.failed_operations || 0;
+      const totalTransactions = allLogsResult.count || 0;
+      const highRiskOps = highRiskResult.count || 0;
+      const failedOps = failedResult.count || 0;
       const complianceScore = totalTransactions > 0
         ? Math.max(0, 100 - Math.round(((highRiskOps + failedOps) / totalTransactions) * 100))
         : 100;
+      const violations = (violationsResult.data || []).map(row => this.transformAuditLog(row));
 
       return {
         period_start: startDate,
         period_end: endDate,
         total_transactions: totalTransactions,
         high_risk_transactions: highRiskOps,
-        compliance_violations: this.categorizeViolations(violations || []),
+        compliance_violations: this.categorizeViolations(violations),
         required_approvals_missing: 0, // Would need approval workflow data
         segregation_duties_violations: sodViolations,
         compliance_score: complianceScore,
-        audit_trail_complete: true // Assuming complete if we can query all data
+        audit_trail_complete: (allLogsResult.data?.length || 0) === totalTransactions,
       };
     } catch (error) {
       logger.error('Error generating compliance report', { error, companyId });
@@ -518,39 +652,94 @@ class FinancialAuditService {
     return flags;
   }
 
-  private transformAuditLog(log: any): FinancialAuditLog {
+  private transformAuditLog(log: AuditLogRow): FinancialAuditLog {
+    const metadata = isRecord(log.metadata) ? log.metadata : {};
+    const action = this.normalizeAction(log.action);
+    const resourceType = this.normalizeResourceType(log.resource_type);
+    const eventType = this.normalizeEventType(metadata.event_type, resourceType, action);
+    const verificationStatus = metadata.verification_status;
+
     return {
       id: log.id,
-      user_id: log.user_id,
-      user_email: log.user_email,
-      user_name: log.user_name,
-      company_id: log.company_id,
-      action: log.action as any,
-      resource_type: log.entity_type as any,
-      resource_id: log.entity_id,
-      entity_name: log.entity_name,
-      old_values: log.old_values,
-      new_values: log.new_values,
-      changes_summary: log.changes_summary,
-      ip_address: log.ip_address,
-      user_agent: log.user_agent,
-      request_method: log.request_method,
-      request_path: log.request_path,
-      status: log.status as any,
-      error_message: log.error_message,
-      severity: log.severity as any,
-      metadata: log.metadata,
-      notes: log.notes,
-      created_at: log.created_at,
-      event_type: log.metadata?.event_type as FinancialAuditEventType,
-      financial_data: log.financial_data || {},
-      hash_signature: log.hash_signature,
-      verification_status: log.verification_status,
-      previous_hash: null, // Not exposed in view
-      compliance_flags: log.metadata?.compliance_flags || [],
-      retention_period: log.metadata?.retention_period,
-      archival_date: log.metadata?.archival_date
+      user_id: log.user_id || undefined,
+      user_email: log.user_email || undefined,
+      user_name: log.user_name || undefined,
+      company_id: log.company_id || undefined,
+      action,
+      resource_type: resourceType,
+      resource_id: log.resource_id || undefined,
+      entity_name: log.entity_name || undefined,
+      old_values: isRecord(log.old_values) ? log.old_values : undefined,
+      new_values: isRecord(log.new_values) ? log.new_values : undefined,
+      changes_summary: log.changes_summary || undefined,
+      ip_address: getString(log.ip_address),
+      user_agent: log.user_agent || undefined,
+      request_method: log.request_method || undefined,
+      request_path: log.request_path || undefined,
+      status: this.normalizeStatus(log.status),
+      error_message: log.error_message || undefined,
+      severity: this.normalizeSeverity(log.severity),
+      metadata,
+      notes: log.notes || undefined,
+      created_at: log.created_at || '',
+      event_type: eventType,
+      financial_data: normalizeFinancialData(metadata.financial_data),
+      hash_signature: getString(metadata.entry_hash) || getString(metadata.hash_signature),
+      verification_status:
+        verificationStatus === 'verified' || verificationStatus === 'tampered' || verificationStatus === 'suspicious'
+          ? verificationStatus
+          : undefined,
+      previous_hash: getString(metadata.previous_hash),
+      compliance_flags: Array.isArray(metadata.compliance_flags)
+        ? metadata.compliance_flags.filter((flag): flag is string => typeof flag === 'string')
+        : [],
+      retention_period: getNumber(metadata.retention_period),
+      archival_date: getString(metadata.archival_date),
     };
+  }
+
+  private normalizeAction(value: string): AuditAction {
+    const normalized = value.toUpperCase() as AuditAction;
+    return AUDIT_ACTIONS.has(normalized) ? normalized : 'UPDATE';
+  }
+
+  private normalizeResourceType(value: string): AuditResourceType {
+    const normalized = value.toLowerCase() as AuditResourceType;
+    return AUDIT_RESOURCE_TYPES.has(normalized) ? normalized : 'other';
+  }
+
+  private normalizeStatus(value: string | null): AuditStatus {
+    const normalized = (value || 'success').toLowerCase() as AuditStatus;
+    return AUDIT_STATUSES.has(normalized) ? normalized : 'success';
+  }
+
+  private normalizeSeverity(value: string | null): AuditSeverity {
+    const normalized = (value || 'low').toLowerCase() as AuditSeverity;
+    return AUDIT_SEVERITIES.has(normalized) ? normalized : 'low';
+  }
+
+  private normalizeEventType(
+    value: unknown,
+    resourceType: AuditResourceType,
+    action: AuditAction
+  ): FinancialAuditEventType {
+    const storedEventType = getString(value);
+    if (storedEventType) return storedEventType as FinancialAuditEventType;
+
+    const suffixByAction: Partial<Record<AuditAction, string>> = {
+      CREATE: 'created',
+      UPDATE: 'updated',
+      DELETE: 'deleted',
+      APPROVE: 'approved',
+      REJECT: 'rejected',
+      CANCEL: 'cancelled',
+    };
+    const suffix = suffixByAction[action];
+    if (suffix && ['payment', 'invoice', 'contract', 'journal_entry', 'account'].includes(resourceType)) {
+      return `${resourceType}_${suffix}` as FinancialAuditEventType;
+    }
+
+    return 'audit_performed';
   }
 
   private createEmptySummary(): FinancialAuditSummary {
@@ -634,7 +823,10 @@ class FinancialAuditService {
     return summary;
   }
 
-  private determineTransactionRelationship(primary: any, related: any): 'parent' | 'child' | 'related' | 'reversal' | 'refund' {
+  private determineTransactionRelationship(
+    primary: FinancialAuditLog,
+    related: FinancialAuditLog
+  ): 'parent' | 'child' | 'related' | 'reversal' | 'refund' {
     const primaryDate = new Date(primary.created_at);
     const relatedDate = new Date(related.created_at);
 
@@ -642,8 +834,8 @@ class FinancialAuditService {
       return 'parent';
     }
 
-    if (related.action.includes('reverse') || related.action.includes('refund')) {
-      return related.action.includes('refund') ? 'refund' : 'reversal';
+    if (related.event_type.includes('reversed') || related.event_type.includes('refunded')) {
+      return related.event_type.includes('refunded') ? 'refund' : 'reversal';
     }
 
     return 'related';
@@ -652,38 +844,40 @@ class FinancialAuditService {
   private determineCurrentStatus(auditTrail: FinancialAuditLog[]): 'active' | 'cancelled' | 'reversed' | 'refunded' | 'disputed' {
     const latestLog = auditTrail[auditTrail.length - 1];
 
-    if (latestLog.action.includes('cancel')) return 'cancelled';
-    if (latestLog.action.includes('reverse')) return 'reversed';
-    if (latestLog.action.includes('refund')) return 'refunded';
+    if (latestLog.event_type.includes('cancelled') || latestLog.event_type.includes('terminated')) return 'cancelled';
+    if (latestLog.event_type.includes('reversed')) return 'reversed';
+    if (latestLog.event_type.includes('refunded')) return 'refunded';
     if (latestLog.status === 'failed') return 'disputed';
 
     return 'active';
   }
 
   private calculateNetAmount(auditTrail: FinancialAuditLog[]): number {
-    let netAmount = 0;
+    if (auditTrail.length === 0) return 0;
 
-    auditTrail.forEach(log => {
+    let netAmount = auditTrail.find(log => (log.financial_data.amount || 0) !== 0)?.financial_data.amount || 0;
+    for (const log of auditTrail.slice(1)) {
       const amount = log.financial_data.amount || 0;
-
-      if (log.action.includes('create') || log.action.includes('approve')) {
-        netAmount += amount;
-      } else if (log.action.includes('reverse') || log.action.includes('refund') || log.action.includes('delete')) {
+      if (log.event_type.includes('refunded') || log.event_type.includes('reversed')) {
         netAmount -= amount;
       }
-    });
+      if (
+        log.event_type.includes('deleted') ||
+        log.event_type.includes('cancelled') ||
+        log.event_type.includes('terminated')
+      ) {
+        netAmount = 0;
+      }
+    }
 
     return Math.max(0, netAmount);
   }
 
-  private async verifySingleRecord(record: any): Promise<any> {
-    // Implement detailed verification for a single record
-    // This would recalculate the hash and compare with stored hash
-    return null; // Placeholder
-  }
-
-  private generateIntegrityRecommendations(score: number, errors: any[]): string[] {
-    const recommendations = [];
+  private generateIntegrityRecommendations(
+    score: number,
+    errors: DataIntegrityReport['verification_errors']
+  ): string[] {
+    const recommendations: string[] = [];
 
     if (score < 90) {
       recommendations.push('Review suspicious audit records immediately');
@@ -726,9 +920,10 @@ class FinancialAuditService {
     };
   }
 
-  private categorizeViolations(violations: any[]): any[] {
-    // Categorize violations by type
-    const categories = {};
+  private categorizeViolations(
+    violations: FinancialAuditLog[]
+  ): ComplianceReport['compliance_violations'] {
+    const categories: Record<string, ComplianceReport['compliance_violations'][number]> = {};
 
     violations.forEach(violation => {
       const type = violation.action;
@@ -741,14 +936,14 @@ class FinancialAuditService {
         };
       }
       categories[type].count++;
-      categories[type].total_amount += violation.financial_data?.amount || 0;
+      categories[type].total_amount += violation.financial_data.amount || 0;
     });
 
     return Object.values(categories);
   }
 
   private getViolationDescription(type: string): string {
-    const descriptions = {
+    const descriptions: Record<string, string> = {
       'DELETE': 'Critical data deletion detected',
       'CANCEL': 'Important transaction cancellation',
       'REJECT': 'Approval rejection indicates potential issues'
@@ -757,7 +952,14 @@ class FinancialAuditService {
     return descriptions[type] || 'Unusual operation detected';
   }
 
-  private async checkSegregationOfDuties(companyId: string, startDate: string, endDate: string): Promise<any[]> {
+  private async checkSegregationOfDuties(
+    companyId: string,
+    startDate: string,
+    endDate: string
+  ): Promise<ComplianceReport['segregation_duties_violations']> {
+    void companyId;
+    void startDate;
+    void endDate;
     // Implement segregation of duties analysis
     // This would check if users are performing conflicting roles
     return [];
@@ -799,14 +1001,14 @@ class FinancialAuditService {
         {
           event: '*',
           schema: 'public',
-          table: 'financial_audit_trail',
+          table: 'audit_logs',
           filter: `company_id=eq.${companyId}`,
         },
         (payload) => {
-          const log = payload.new as FinancialAuditLog;
-          callback(log);
+          callback(this.transformAuditLog(payload.new as AuditLogRow));
         }
-      );
+      )
+      .subscribe();
 
     return channel;
   }
@@ -856,7 +1058,6 @@ class FinancialAuditService {
       {
         entity_type: 'account',
         retention_days: 2555,
-        archival_after_days: null,
         auto_delete: false, // Never auto-delete account records
         compliance_requirements: ['Regulatory Requirements']
       },

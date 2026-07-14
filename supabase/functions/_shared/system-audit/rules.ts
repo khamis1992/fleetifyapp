@@ -32,7 +32,7 @@ const PROTECTED_VEHICLE_STATUSES = new Set([
   "reserved_employee",
   "municipality",
 ]);
-const MONEY_SETTLEMENT_TOLERANCE = 0.01;
+export const MONEY_SETTLEMENT_TOLERANCE = 0.01;
 
 export function roundMoney(value: unknown): number {
   const numeric = Number(value || 0);
@@ -117,10 +117,7 @@ export function invoiceConflictsWithMonth(
   invoice: Record<string, unknown>,
   month: string
 ): boolean {
-  return (
-    monthKey(invoice.due_date) === month ||
-    monthKey(invoice.invoice_date) === month
-  );
+  return invoiceMonthKey(invoice) === month;
 }
 
 export type ScheduleInvoiceLinkAssignment = {
@@ -130,14 +127,56 @@ export type ScheduleInvoiceLinkAssignment = {
   candidateInvoiceIds: string[];
 };
 
-export function deriveOneToOneScheduleInvoicePlan(
-  schedules: Record<string, unknown>[],
-  invoices: Record<string, unknown>[]
-): {
+export type BillingDateMode = "invoice_date" | "due_date";
+
+export type ScheduleInvoiceLinkPlan = {
   complete: boolean;
+  billingDateMode: BillingDateMode;
   assignments: ScheduleInvoiceLinkAssignment[];
   unmatchedScheduleIds: string[];
-} {
+};
+
+export function invoiceMatchesBillingMonth(
+  invoice: Record<string, unknown>,
+  month: string,
+  mode: BillingDateMode
+): boolean {
+  const value =
+    mode === "invoice_date"
+      ? invoice.invoice_date || invoice.due_date
+      : invoice.due_date || invoice.invoice_date;
+  return monthKey(value) === month;
+}
+
+export function deriveOneToOneScheduleInvoicePlan(
+  schedules: Record<string, unknown>[],
+  invoices: Record<string, unknown>[],
+  preferredMode?: BillingDateMode
+): ScheduleInvoiceLinkPlan {
+  if (preferredMode) {
+    return derivePlanForBillingDateMode(schedules, invoices, preferredMode);
+  }
+
+  const issueDatePlan = derivePlanForBillingDateMode(
+    schedules,
+    invoices,
+    "invoice_date"
+  );
+  const dueDatePlan = derivePlanForBillingDateMode(
+    schedules,
+    invoices,
+    "due_date"
+  );
+  return compareScheduleInvoicePlans(issueDatePlan, dueDatePlan) >= 0
+    ? issueDatePlan
+    : dueDatePlan;
+}
+
+function derivePlanForBillingDateMode(
+  schedules: Record<string, unknown>[],
+  invoices: Record<string, unknown>[],
+  billingDateMode: BillingDateMode
+): ScheduleInvoiceLinkPlan {
   const orderedSchedules = [...schedules]
     .filter((schedule) => Boolean(schedule?.id))
     .sort(
@@ -153,16 +192,12 @@ export function deriveOneToOneScheduleInvoicePlan(
       .filter(
         (invoice) =>
           Boolean(invoice?.id) &&
-          invoiceConflictsWithMonth(invoice, scheduleMonth)
+          invoiceMatchesBillingMonth(invoice, scheduleMonth, billingDateMode)
       )
       .sort((left, right) => {
         const rank = (invoice: Record<string, unknown>) => {
           const isCurrent = invoice.id === schedule.invoice_id;
-          const isIssueMonth = monthKey(invoice.invoice_date) === scheduleMonth;
-          if (isCurrent && isIssueMonth) return 0;
-          if (isCurrent) return 1;
-          if (isIssueMonth) return 2;
-          return 3;
+          return isCurrent ? 0 : 1;
         };
         return (
           rank(left) - rank(right) ||
@@ -227,9 +262,42 @@ export function deriveOneToOneScheduleInvoicePlan(
     complete:
       unmatchedScheduleIds.length === 0 &&
       assignments.every((assignment) => Boolean(assignment.newInvoiceId)),
+    billingDateMode,
     assignments,
     unmatchedScheduleIds,
   };
+}
+
+function compareScheduleInvoicePlans(
+  left: ScheduleInvoiceLinkPlan,
+  right: ScheduleInvoiceLinkPlan
+): number {
+  const quality = (plan: ScheduleInvoiceLinkPlan) => {
+    const matched = plan.assignments.filter((item) => item.newInvoiceId).length;
+    const preserved = plan.assignments.filter(
+      (item) => item.oldInvoiceId && item.oldInvoiceId === item.newInvoiceId
+    ).length;
+    const ambiguity = plan.assignments.reduce(
+      (total, item) => total + Math.max(0, item.candidateInvoiceIds.length - 1),
+      0
+    );
+    return [
+      plan.complete ? 1 : 0,
+      !plan.complete && plan.billingDateMode === "invoice_date" ? 1 : 0,
+      preserved,
+      matched,
+      -ambiguity,
+      plan.billingDateMode === "invoice_date" ? 1 : 0,
+    ];
+  };
+  const leftQuality = quality(left);
+  const rightQuality = quality(right);
+  for (let index = 0; index < leftQuality.length; index += 1) {
+    if (leftQuality[index] !== rightQuality[index]) {
+      return leftQuality[index] - rightQuality[index];
+    }
+  }
+  return 0;
 }
 
 export function isInactivePaymentStatus(value: unknown): boolean {

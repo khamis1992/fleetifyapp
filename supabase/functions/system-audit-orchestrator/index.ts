@@ -1,5 +1,8 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.4";
+import {
+  createClient,
+  type SupabaseClient,
+} from "https://esm.sh/@supabase/supabase-js@2.57.4";
 import {
   SYSTEM_AUDIT_DOMAINS,
   isSystemAuditDomain,
@@ -34,7 +37,7 @@ type OrchestratorRequest = {
   waitForDispatch?: boolean;
 };
 
-const ORCHESTRATOR_VERSION = "2026-07-12.22";
+const ORCHESTRATOR_VERSION = "2026-07-13.31";
 
 serve(async (req) => {
   if (req.method === "OPTIONS")
@@ -188,7 +191,7 @@ serve(async (req) => {
 });
 
 async function loadDispatchableJobs(
-  supabase: any,
+  supabase: SupabaseClient,
   runId: string,
   includeStale: boolean
 ): Promise<string[]> {
@@ -239,7 +242,10 @@ async function dispatchJobs(jobIds: string[]): Promise<void> {
   }
 }
 
-async function getRunStatus(req: Request, supabase: any): Promise<Response> {
+async function getRunStatus(
+  req: Request,
+  supabase: SupabaseClient
+): Promise<Response> {
   const requestedRunId = new URL(req.url).searchParams.get("runId");
   let runQuery = supabase
     .from("system_agent_runs")
@@ -274,7 +280,7 @@ async function getRunStatus(req: Request, supabase: any): Promise<Response> {
 }
 
 async function loadRunFindings(
-  supabase: any,
+  supabase: SupabaseClient,
   runId: string
 ): Promise<Array<Record<string, string>>> {
   const findings: Array<Record<string, string>> = [];

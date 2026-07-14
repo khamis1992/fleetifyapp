@@ -92,9 +92,9 @@ export const CompanyDetailsDialog: React.FC<CompanyDetailsDialogProps> = ({
   company,
   onEdit
 }) => {
-  if (!company) return null;
-
   const { currency: companyCurrency } = useCompanyCurrency();
+
+  if (!company) return null;
 
   const getStatusVariant = (status?: string) => {
     switch (status) {
@@ -125,7 +125,7 @@ export const CompanyDetailsDialog: React.FC<CompanyDetailsDialogProps> = ({
 
   const formatDate = (dateString?: string) => {
     if (!dateString) return 'غير محدد';
-    return new Date(dateString).toLocaleDateString('ar-KW', {
+    return new Date(dateString).toLocaleDateString('ar-QA', {
       year: 'numeric',
       month: 'long',
       day: 'numeric',
@@ -134,7 +134,7 @@ export const CompanyDetailsDialog: React.FC<CompanyDetailsDialogProps> = ({
 
   const formatTime = (timeString?: string) => {
     if (!timeString) return 'غير محدد';
-    return new Date(`2000-01-01T${timeString}`).toLocaleTimeString('ar-KW', {
+    return new Date(`2000-01-01T${timeString}`).toLocaleTimeString('ar-QA', {
       hour: '2-digit',
       minute: '2-digit',
     });

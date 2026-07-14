@@ -176,7 +176,7 @@ export const VendorAccountManager: React.FC<VendorAccountManagerProps> = ({
                       {getAccountTypeBadge(vendorAccount.account_type)}
                       {vendorAccount.account?.current_balance !== undefined && (
                         <Badge variant="outline" className="text-xs">
-                          الرصيد: {vendorAccount.account.current_balance.toFixed(3)} د.ك
+                          الرصيد: {vendorAccount.account.current_balance.toFixed(2)} ر.ق
                         </Badge>
                       )}
                     </div>

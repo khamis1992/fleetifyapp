@@ -2,7 +2,6 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
-import { useVehicleInstallmentJournalIntegration } from "@/hooks/useVehicleInstallmentJournalIntegration";
 import type { 
   VehicleInstallment, 
   VehicleInstallmentSchedule, 
@@ -11,6 +10,40 @@ import type {
   VehicleInstallmentSummary,
   VehicleInstallmentWithDetails
 } from "@/types/vehicle-installments";
+
+async function getUserCompanyId(userId: string) {
+  const { data: profile, error } = await supabase
+    .from('profiles')
+    .select('company_id')
+    .eq('user_id', userId)
+    .single();
+  if (error) throw error;
+  if (!profile?.company_id) throw new Error('Company not found');
+  return profile.company_id;
+}
+
+export const buildVehicleInstallmentPaymentRpcArgs = (
+  companyId: string,
+  actorId: string,
+  paymentData: VehicleInstallmentPaymentData,
+  defaultDate: string,
+) => {
+  const amount = Number(paymentData.paid_amount);
+  if (!Number.isFinite(amount) || amount <= 0) {
+    throw new Error('مبلغ الدفعة يجب أن يكون أكبر من صفر');
+  }
+
+  return {
+    p_company_id: companyId,
+    p_schedule_id: paymentData.schedule_id,
+    p_amount: amount,
+    p_payment_date: paymentData.payment_date || defaultDate,
+    p_payment_method: paymentData.payment_method,
+    p_payment_reference: paymentData.payment_reference || null,
+    p_notes: paymentData.notes || null,
+    p_actor_id: actorId,
+  };
+};
 
 export const useVehicleInstallments = () => {
   const { user } = useAuth();
@@ -110,6 +143,7 @@ export const useCreateVehicleInstallment = () => {
       if (!profile?.company_id) throw new Error('Company not found');
 
       // Determine contract type
+      const companyId = profile.company_id;
       const isMultiVehicle = data.contract_type === 'multi_vehicle' || (data.vehicle_ids && data.vehicle_ids.length > 1);
       
       // Prepare installment data
@@ -129,7 +163,7 @@ export const useCreateVehicleInstallment = () => {
         status: 'active' as const,
         contract_type: isMultiVehicle ? 'multi_vehicle' as const : 'single_vehicle' as const,
         total_vehicles_count: isMultiVehicle ? (data.vehicle_ids?.length || 1) : 1,
-        company_id: profile.company_id,
+        company_id: companyId,
         created_by: user.id,
       };
 
@@ -142,23 +176,26 @@ export const useCreateVehicleInstallment = () => {
 
       if (installmentError) throw installmentError;
 
-      // Handle multi-vehicle allocations (optional - only if vehicle_installment_allocations table exists)
+      // Store allocations in the existing vehicle-installment junction table.
       if (isMultiVehicle && data.vehicle_ids && data.vehicle_ids.length > 0) {
         const vehicleAmounts = data.vehicle_amounts || {};
         const allocations = data.vehicle_ids.map(vehicleId => ({
-          company_id: profile.company_id,
+          company_id: companyId,
           installment_id: installment.id,
           vehicle_id: vehicleId,
           allocated_amount: vehicleAmounts[vehicleId] || 0,
         }));
 
-        // Try to insert allocations, but don't fail if table doesn't exist
         const { error: allocationError } = await supabase
-          .from('vehicle_installment_allocations')
-          .insert(allocations);
+          .from('contract_vehicles')
+          .insert(allocations.map(({ installment_id, ...allocation }) => ({
+            ...allocation,
+            vehicle_installment_id: installment_id,
+          })));
 
-        if (allocationError && !(allocationError.message?.includes('does not exist') || allocationError.code === '42P01')) {
-          console.warn('Error creating allocations:', allocationError);
+        if (allocationError) {
+          await supabase.from('vehicle_installments').delete().eq('id', installment.id).eq('company_id', companyId);
+          throw allocationError;
         }
       }
 
@@ -171,7 +208,7 @@ export const useCreateVehicleInstallment = () => {
         dueDate.setMonth(dueDate.getMonth() + (i - 1));
         
         scheduleEntries.push({
-          company_id: profile.company_id,
+          company_id: companyId,
           installment_id: installment.id,
           installment_number: i,
           due_date: dueDate.toISOString().split('T')[0],
@@ -187,7 +224,11 @@ export const useCreateVehicleInstallment = () => {
         .from('vehicle_installment_schedules')
         .insert(scheduleEntries);
 
-      if (scheduleError) throw scheduleError;
+      if (scheduleError) {
+        await supabase.from('contract_vehicles').delete().eq('vehicle_installment_id', installment.id).eq('company_id', companyId);
+        await supabase.from('vehicle_installments').delete().eq('id', installment.id).eq('company_id', companyId);
+        throw scheduleError;
+      }
 
       return installment;
     },
@@ -211,10 +252,61 @@ export const useUpdateVehicleInstallment = () => {
     mutationFn: async ({ id, data }: { id: string; data: Partial<VehicleInstallment> }) => {
       if (!user?.id) throw new Error('User not authenticated');
 
+      const companyId = await getUserCompanyId(user.id);
+      const { data: existing, error: existingError } = await supabase
+        .from('vehicle_installments')
+        .select('*')
+        .eq('id', id)
+        .eq('company_id', companyId)
+        .single();
+      if (existingError) throw existingError;
+
+      const { data: schedules, error: schedulesError } = await supabase
+        .from('vehicle_installment_schedules')
+        .select('status, paid_amount, journal_entry_id, invoice_id')
+        .eq('installment_id', id)
+        .eq('company_id', companyId);
+      if (schedulesError) throw schedulesError;
+
+      const financialFields = [
+        'total_amount',
+        'down_payment',
+        'installment_amount',
+        'number_of_installments',
+        'interest_rate',
+        'start_date',
+        'end_date',
+        'vendor_id',
+        'vehicle_id',
+      ] as const;
+      const changesFinancialTerms = financialFields.some(
+        (field) => data[field] !== undefined && data[field] !== existing[field]
+      );
+      if (changesFinancialTerms) {
+        throw new Error('لا يمكن تعديل الشروط المالية بعد إنشاء جدول الأقساط. ألغِ الاتفاقية غير المدفوعة وأنشئ اتفاقية جديدة.')
+      }
+
+      const hasFinancialHistory = (schedules || []).some(
+        (schedule) => Number(schedule.paid_amount || 0) > 0 || schedule.journal_entry_id || schedule.invoice_id
+      );
+      if (data.status === 'cancelled' && hasFinancialHistory) {
+        throw new Error('لا يمكن إلغاء اتفاقية لها دفعات أو قيود أو فواتير دون إجراء عكس محاسبي معتمد.')
+      }
+      if (data.status === 'completed' && !(schedules || []).every((schedule) => schedule.status === 'paid')) {
+        throw new Error('لا يمكن إكمال الاتفاقية قبل سداد جميع الأقساط.')
+      }
+
+      const updatePayload = {
+        agreement_number: data.agreement_number,
+        notes: data.notes,
+        status: data.status,
+      };
+
       const { data: updatedInstallment, error } = await supabase
         .from('vehicle_installments')
-        .update(data)
+        .update(updatePayload)
         .eq('id', id)
+        .eq('company_id', companyId)
         .select()
         .single();
 
@@ -235,77 +327,41 @@ export const useUpdateVehicleInstallment = () => {
 export const useProcessInstallmentPayment = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const { recordInstallmentPayment } = useVehicleInstallmentJournalIntegration();
 
   return useMutation({
     mutationFn: async (paymentData: VehicleInstallmentPaymentData) => {
       if (!user?.id) throw new Error('User not authenticated');
 
-      const { data: schedule, error: fetchError } = await supabase
-        .from('vehicle_installment_schedules')
-        .select('*')
-        .eq('id', paymentData.schedule_id)
-        .single();
-
-      if (fetchError) throw fetchError;
-
-      // Update the schedule with payment information
-      const newStatus = paymentData.paid_amount >= schedule.amount ? 'paid' : 'partially_paid';
-      
-      const { data: updatedSchedule, error: updateError } = await supabase
-        .from('vehicle_installment_schedules')
-        .update({
-          paid_amount: (schedule.paid_amount || 0) + paymentData.paid_amount,
-          paid_date: paymentData.payment_date || new Date().toISOString().split('T')[0],
-          payment_reference: paymentData.payment_reference,
-          notes: paymentData.notes,
-          status: newStatus,
-        })
-        .eq('id', paymentData.schedule_id)
-        .select()
-        .single();
-
-      if (updateError) throw updateError;
-
-      // Check if all installments are paid to update the main agreement status
-      const { data: allSchedules } = await supabase
-        .from('vehicle_installment_schedules')
-        .select('status')
-        .eq('installment_id', schedule.installment_id);
-
-      const allPaid = allSchedules?.every(s => s.status === 'paid');
-      
-      if (allPaid) {
-        await supabase
-          .from('vehicle_installments')
-          .update({ status: 'completed' })
-          .eq('id', schedule.installment_id);
-      }
-
-      return updatedSchedule;
+      const companyId = await getUserCompanyId(user.id);
+      const rpcArgs = buildVehicleInstallmentPaymentRpcArgs(
+        companyId,
+        user.id,
+        paymentData,
+        new Date().toISOString().split('T')[0],
+      );
+      const { data, error } = await supabase.rpc('process_vehicle_installment_payment_v1', rpcArgs);
+      if (error) throw error;
+      return data;
     },
-    onSuccess: async (data, variables) => {
+    onSuccess: async () => {
       queryClient.invalidateQueries({ queryKey: ['vehicle-installment-schedules'] });
       queryClient.invalidateQueries({ queryKey: ['vehicle-installments'] });
-      
-      // Create journal entry for installment payment
-      try {
-        await recordInstallmentPayment({
-          installmentId: data.installment_id,
-          scheduleId: data.id,
-          principalAmount: variables.paid_amount * 0.9, // Assuming 90% principal, 10% interest
-          interestAmount: variables.paid_amount * 0.1,
-          date: variables.payment_date || new Date().toISOString().split('T')[0]
-        });
-      } catch (error) {
-        console.error('Failed to create installment payment journal entry:', error);
-      }
-      
-      toast.success('تم تسجيل الدفعة بنجاح');
+      queryClient.invalidateQueries({ queryKey: ['vehicle-installment-summary'] });
+      toast.success('تم تسجيل الدفعة وترحيل قيدها المحاسبي بنجاح');
     },
     onError: (error: unknown) => {
       console.error('Error processing installment payment:', error);
-      toast.error('حدث خطأ أثناء تسجيل الدفعة');
+      const message = error instanceof Error ? error.message : 'حدث خطأ أثناء تسجيل الدفعة';
+      const translated = message.includes('VEHICLE_INSTALLMENT_PAYABLE')
+        ? 'اربط حساب التزامات أقساط المركبات قبل تسجيل الدفعة.'
+        : message.includes('VEHICLE_INSTALLMENT_INTEREST_EXPENSE')
+          ? 'اربط حساب مصروف فوائد أقساط المركبات قبل تسجيل الدفعة.'
+          : message.includes('CASH') || message.includes('BANK')
+            ? 'اربط حساب النقد أو البنك المناسب قبل تسجيل الدفعة.'
+            : message.includes('closed accounting period')
+              ? 'لا يمكن ترحيل الدفعة داخل فترة محاسبية مغلقة.'
+              : message;
+      toast.error(translated);
     },
   });
 };
@@ -383,30 +439,36 @@ export const useDeleteVehicleInstallment = () => {
     mutationFn: async (installmentId: string) => {
       if (!user?.id) throw new Error('User not authenticated');
 
-      // First, delete all related schedules
-      const { error: schedulesError } = await supabase
+      const companyId = await getUserCompanyId(user.id);
+      const { error: installmentLookupError } = await supabase
+        .from('vehicle_installments')
+        .select('id')
+        .eq('id', installmentId)
+        .eq('company_id', companyId)
+        .single();
+      if (installmentLookupError) throw installmentLookupError;
+
+      const { data: schedules, error: scheduleLookupError } = await supabase
         .from('vehicle_installment_schedules')
-        .delete()
-        .eq('installment_id', installmentId);
-
-      if (schedulesError) throw schedulesError;
-
-      // Then, delete all related vehicle allocations (for multi-vehicle contracts)
-      const { error: allocationsError } = await supabase
-        .from('vehicle_installment_allocations')
-        .delete()
-        .eq('installment_id', installmentId);
-
-      // Ignore error if table doesn't exist or no allocations
-      if (allocationsError && !allocationsError.message.includes('does not exist')) {
-        console.warn('Could not delete allocations:', allocationsError);
+        .select('paid_amount, journal_entry_id, invoice_id')
+        .eq('installment_id', installmentId)
+        .eq('company_id', companyId);
+      if (scheduleLookupError) throw scheduleLookupError;
+      const hasFinancialHistory = (schedules || []).some(
+        (schedule) => Number(schedule.paid_amount || 0) > 0 || schedule.journal_entry_id || schedule.invoice_id
+      );
+      if (hasFinancialHistory) {
+        throw new Error('لا يمكن إلغاء اتفاقية لها دفعات أو قيود أو فواتير دون إجراء عكس محاسبي معتمد.')
       }
 
-      // Finally, delete the main installment record
       const { error: installmentError } = await supabase
         .from('vehicle_installments')
-        .delete()
-        .eq('id', installmentId);
+        .update({ status: 'cancelled' })
+        .eq('id', installmentId)
+        .eq('company_id', companyId)
+        .neq('status', 'cancelled')
+        .select('id')
+        .single();
 
       if (installmentError) throw installmentError;
 
@@ -415,11 +477,11 @@ export const useDeleteVehicleInstallment = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['vehicle-installments'] });
       queryClient.invalidateQueries({ queryKey: ['vehicle-installment-summary'] });
-      toast.success('تم حذف الاتفاقية بنجاح');
+      toast.success('تم إلغاء الاتفاقية مع الاحتفاظ بسجلها بنجاح');
     },
     onError: (error: unknown) => {
-      console.error('Error deleting vehicle installment:', error);
-      toast.error('حدث خطأ أثناء حذف الاتفاقية');
+      console.error('Error cancelling vehicle installment:', error);
+      toast.error(error instanceof Error ? error.message : 'حدث خطأ أثناء إلغاء الاتفاقية');
     },
   });
 };

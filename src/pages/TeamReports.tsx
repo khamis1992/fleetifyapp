@@ -3,7 +3,7 @@
  * صفحة التقارير المفصلة للفريق
  */
 
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
@@ -104,15 +104,66 @@ export const TeamReports: React.FC = () => {
     enabled: !!companyId,
   });
 
-  // Mock data for trend chart (في الإنتاج، يجب جلبها من database)
-  const trendData = [
-    { month: 'يناير', performance_score: 75, collection_rate: 70, task_completion: 80 },
-    { month: 'فبراير', performance_score: 78, collection_rate: 75, task_completion: 82 },
-    { month: 'مارس', performance_score: 82, collection_rate: 80, task_completion: 85 },
-    { month: 'أبريل', performance_score: 85, collection_rate: 83, task_completion: 88 },
-    { month: 'مايو', performance_score: 87, collection_rate: 85, task_completion: 90 },
-    { month: 'يونيو', performance_score: 90, collection_rate: 88, task_completion: 92 },
-  ];
+  const periodType = {
+    week: 'weekly',
+    month: 'monthly',
+    quarter: 'quarterly',
+    year: 'yearly',
+  }[selectedPeriod];
+
+  const { data: performanceHistory = [] } = useQuery({
+    queryKey: ['team-performance-history', companyId, periodType],
+    queryFn: async () => {
+      if (!companyId) throw new Error('Company ID is required');
+      const { data, error } = await supabase
+        .from('employee_performance')
+        .select('period_start, performance_score, collection_rate, followup_completion_rate')
+        .eq('company_id', companyId)
+        .eq('period_type', periodType)
+        .order('period_start', { ascending: true })
+        .limit(240);
+
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!companyId,
+  });
+
+  const trendData = useMemo(() => {
+    const periods = new Map<string, {
+      performance: number;
+      collection: number;
+      completion: number;
+      count: number;
+    }>();
+
+    for (const row of performanceHistory) {
+      const current = periods.get(row.period_start) || {
+        performance: 0,
+        collection: 0,
+        completion: 0,
+        count: 0,
+      };
+      current.performance += Number(row.performance_score || 0);
+      current.collection += Number(row.collection_rate || 0);
+      current.completion += Number(row.followup_completion_rate || 0);
+      current.count += 1;
+      periods.set(row.period_start, current);
+    }
+
+    const formatter = new Intl.DateTimeFormat('ar-QA', {
+      month: 'short',
+      year: '2-digit',
+      timeZone: 'UTC',
+    });
+
+    return Array.from(periods.entries()).slice(-12).map(([date, values]) => ({
+      month: formatter.format(new Date(`${date}T00:00:00Z`)),
+      performance_score: Math.round(values.performance / values.count),
+      collection_rate: Math.round(values.collection / values.count),
+      task_completion: Math.round(values.completion / values.count),
+    }));
+  }, [performanceHistory]);
 
   const handleExportExcel = async () => {
     if (teamPerformance) {
@@ -137,7 +188,7 @@ export const TeamReports: React.FC = () => {
     return null;
   }
 
-  const avgPerformance = teamPerformance
+  const avgPerformance = teamPerformance && teamPerformance.length > 0
     ? Math.round(teamPerformance.reduce((sum, e) => sum + (e.performance_score || 0), 0) / teamPerformance.length)
     : 0;
 

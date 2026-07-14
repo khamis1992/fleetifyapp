@@ -28,6 +28,18 @@ export interface CreateReplyData {
 export const useSupportTicketReplies = (ticketId: string) => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const companyId = user?.profile?.company_id;
+
+  const assertTicketAccess = async () => {
+    if (!companyId || !ticketId) throw new Error('تعذر تحديد التذكرة أو الشركة');
+    const { error } = await supabase
+      .from('support_tickets')
+      .select('id')
+      .eq('id', ticketId)
+      .eq('company_id', companyId)
+      .single();
+    if (error) throw error;
+  };
 
   const {
     data: replies = [],
@@ -36,6 +48,7 @@ export const useSupportTicketReplies = (ticketId: string) => {
   } = useQuery({
     queryKey: ['support-ticket-replies', ticketId],
     queryFn: async () => {
+      await assertTicketAccess();
       const { data, error } = await supabase
         .from('support_ticket_replies')
         .select(`
@@ -47,7 +60,7 @@ export const useSupportTicketReplies = (ticketId: string) => {
       if (error) throw error;
       return (data || []) as any[];
     },
-    enabled: !!user && !!ticketId
+    enabled: !!user && !!companyId && !!ticketId
   });
 
   const createReplyMutation = useMutation({
@@ -55,6 +68,8 @@ export const useSupportTicketReplies = (ticketId: string) => {
       if (!user) {
         throw new Error('User not authenticated');
       }
+      if (replyData.ticket_id !== ticketId) throw new Error('معرّف التذكرة غير متطابق');
+      await assertTicketAccess();
 
       const { data, error } = await (supabase
         .from('support_ticket_replies') as any)
@@ -80,10 +95,14 @@ export const useSupportTicketReplies = (ticketId: string) => {
 
   const updateReplyMutation = useMutation({
     mutationFn: async ({ id, message }: { id: string; message: string }) => {
+      if (!user) throw new Error('User not authenticated');
+      await assertTicketAccess();
       const { data, error } = await supabase
         .from('support_ticket_replies')
         .update({ message, updated_at: new Date().toISOString() })
         .eq('id', id)
+        .eq('ticket_id', ticketId)
+        .eq('user_id', user.id)
         .select()
         .single();
 
@@ -102,10 +121,16 @@ export const useSupportTicketReplies = (ticketId: string) => {
 
   const deleteReplyMutation = useMutation({
     mutationFn: async (id: string) => {
+      if (!user) throw new Error('User not authenticated');
+      await assertTicketAccess();
       const { error } = await supabase
         .from('support_ticket_replies')
         .delete()
-        .eq('id', id);
+        .eq('id', id)
+        .eq('ticket_id', ticketId)
+        .eq('user_id', user.id)
+        .select('id')
+        .single();
 
       if (error) throw error;
     },

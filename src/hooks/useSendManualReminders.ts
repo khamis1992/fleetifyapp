@@ -64,6 +64,12 @@ export const useSendManualReminders = () => {
             continue;
           }
 
+          if (!invoice.customer_id) {
+            console.warn(`No customer linked to invoice ${invoice.invoice_number}`);
+            failedCount++;
+            continue;
+          }
+
           // Get customer details
           const { data: customer } = await supabase
             .from('customers')
@@ -84,16 +90,16 @@ export const useSendManualReminders = () => {
             // Use default templates based on reminder type
             switch (reminderType) {
               case 'pre_due':
-                messageTemplate = `مرحباً ${customer.first_name_ar || customer.first_name} 👋\n\nتذكير ودي: فاتورتك رقم ${invoice.invoice_number} بمبلغ ${invoice.total_amount} د.ك ستستحق قريباً.\n\nشكراً لتعاونكم 🙏`;
+                messageTemplate = `مرحباً ${customer.first_name_ar || customer.first_name} 👋\n\nتذكير ودي: فاتورتك رقم ${invoice.invoice_number} بمبلغ ${invoice.total_amount} ر.ق ستستحق قريباً.\n\nشكراً لتعاونكم 🙏`;
                 break;
               case 'due_date':
-                messageTemplate = `عزيزي العميل ${customer.first_name_ar || customer.first_name} 👋\n\nتذكير: فاتورتك رقم ${invoice.invoice_number} بمبلغ ${invoice.total_amount} د.ك مستحقة اليوم.\n\nنأمل سرعة السداد. شكراً 🙏`;
+                messageTemplate = `عزيزي العميل ${customer.first_name_ar || customer.first_name} 👋\n\nتذكير: فاتورتك رقم ${invoice.invoice_number} بمبلغ ${invoice.total_amount} ر.ق مستحقة اليوم.\n\nنأمل سرعة السداد. شكراً 🙏`;
                 break;
               case 'overdue':
-                messageTemplate = `عزيزي العميل ${customer.first_name_ar || customer.first_name} ⚠️\n\nتنبيه هام: فاتورتك رقم ${invoice.invoice_number} متأخرة. المبلغ: ${invoice.total_amount} د.ك + غرامات التأخير.\n\nيرجى السداد فوراً لتجنب الإجراءات القانونية. 🚨`;
+                messageTemplate = `عزيزي العميل ${customer.first_name_ar || customer.first_name} ⚠️\n\nتنبيه هام: فاتورتك رقم ${invoice.invoice_number} متأخرة. المبلغ: ${invoice.total_amount} ر.ق + غرامات التأخير.\n\nيرجى السداد فوراً لتجنب الإجراءات القانونية. 🚨`;
                 break;
               case 'escalation':
-                messageTemplate = `عزيزي العميل ${customer.first_name_ar || customer.first_name} 🚨\n\nإنذار نهائي: فاتورتك رقم ${invoice.invoice_number} متأخرة بشكل كبير.\n\nسيتم اتخاذ إجراءات قانونية خلال 48 ساعة في حالة عدم السداد.\n\nالمبلغ المستحق: ${invoice.total_amount} د.ك`;
+                messageTemplate = `عزيزي العميل ${customer.first_name_ar || customer.first_name} 🚨\n\nإنذار نهائي: فاتورتك رقم ${invoice.invoice_number} متأخرة بشكل كبير.\n\nسيتم اتخاذ إجراءات قانونية خلال 48 ساعة في حالة عدم السداد.\n\nالمبلغ المستحق: ${invoice.total_amount} ر.ق`;
                 break;
               default:
                 messageTemplate = `مرحباً ${customer.first_name_ar || customer.first_name} 👋\n\nتذكير: عقدك رقم ${contract.contract_number} يحتاج متابعة.\n\nللاستفسار تواصل معنا. شكراً 🙏`;

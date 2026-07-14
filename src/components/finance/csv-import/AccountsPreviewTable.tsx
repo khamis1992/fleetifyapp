@@ -70,8 +70,8 @@ export const AccountsPreviewTable: React.FC<AccountsPreviewTableProps> = ({
   }, [hierarchyErrors]);
 
   // Enhanced data with error information
-  const enhancedData = useMemo(() => {
-    return data.map(row => {
+  const enhancedData = useMemo<AccountData[]>(() => {
+    return data.map((row): AccountData => {
       const accountCode = row['رقم الحساب'] || row['account_code'] || '';
       const hasError = errorMap.has(accountCode);
       
@@ -220,7 +220,10 @@ export const AccountsPreviewTable: React.FC<AccountsPreviewTableProps> = ({
             </div>
           </div>
           <div className="flex gap-2">
-            <Select value={filterStatus} onValueChange={(value: unknown) => setFilterStatus(value)}>
+            <Select
+              value={filterStatus}
+              onValueChange={(value) => setFilterStatus(value as typeof filterStatus)}
+            >
               <SelectTrigger className="w-40">
                 <SelectValue />
               </SelectTrigger>

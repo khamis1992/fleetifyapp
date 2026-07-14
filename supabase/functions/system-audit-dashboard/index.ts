@@ -1,7 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.4";
 
-const DASHBOARD_VERSION = "2026-07-12.3";
+const DASHBOARD_VERSION = "2026-07-12.4";
 const DOMAINS = [
   "contracts",
   "accounting",

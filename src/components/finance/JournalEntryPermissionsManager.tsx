@@ -1,7 +1,8 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { 
+import type { LucideIcon } from "lucide-react";
+import {
   Shield, 
   FileEdit, 
   Send, 
@@ -23,8 +24,8 @@ interface PermissionRow {
   title: string;
   titleEn: string;
   description: string;
-  icon: any;
-  permissionKey: keyof typeof permissions;
+  icon: LucideIcon;
+  permissionKey: keyof ReturnType<typeof useJournalEntryPermissions>;
   level: 'basic' | 'intermediate' | 'advanced' | 'critical';
 }
 

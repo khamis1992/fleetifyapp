@@ -1,7 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { useTrafficViolationJournalIntegration } from '@/hooks/useTrafficViolationJournalIntegration';
 
 export interface TrafficViolation {
   id: string;
@@ -12,8 +11,8 @@ export interface TrafficViolation {
   location: string;
   vehicle_plate?: string;
   vehicle_id?: string;
-  customer_id?: string;
-  contract_id?: string;
+  customer_id?: string | null;
+  contract_id?: string | null;
   reason: string;
   notes?: string;
   status: 'pending' | 'confirmed' | 'cancelled';
@@ -77,6 +76,22 @@ export interface CreateTrafficViolationData {
 
 export interface UpdateTrafficViolationData extends Partial<CreateTrafficViolationData> {
   id: string;
+}
+
+async function getCurrentCompanyContext() {
+  const { data: authData, error: authError } = await supabase.auth.getUser();
+  if (authError) throw authError;
+  if (!authData.user) throw new Error('المستخدم غير مسجل الدخول');
+
+  const { data: profile, error: profileError } = await supabase
+    .from('profiles')
+    .select('company_id')
+    .eq('user_id', authData.user.id)
+    .single();
+  if (profileError) throw profileError;
+  if (!profile?.company_id) throw new Error('لم يتم العثور على بيانات الشركة');
+
+  return { companyId: profile.company_id, userId: authData.user.id };
 }
 
 // Hook لجلب جميع المخالفات المرورية مع التحسين
@@ -158,7 +173,7 @@ export function useTrafficViolations(options?: { limit?: number; offset?: number
           throw error;
         }
 
-        return data as any[];
+        return data as unknown as TrafficViolation[];
       } catch (error) {
         console.error('Error in useTrafficViolations:', error);
         throw error;
@@ -185,7 +200,7 @@ export function useTrafficViolation(id: string) {
         .eq('user_id', user.user.id)
         .single();
       
-      if (!profile) throw new Error('لم يتم العثور على بيانات المستخدم');
+      if (!profile?.company_id) throw new Error('لم يتم العثور على بيانات المستخدم');
 
       const { data, error } = await supabase
         .from('penalties')
@@ -207,7 +222,7 @@ export function useTrafficViolation(id: string) {
         throw error;
       }
 
-      return data as any;
+      return data as unknown as TrafficViolation;
     },
     enabled: !!id
   });
@@ -216,7 +231,6 @@ export function useTrafficViolation(id: string) {
 // Hook لإنشاء مخالفة جديدة
 export function useCreateTrafficViolation() {
   const queryClient = useQueryClient();
-  const { createViolationJournalEntry } = useTrafficViolationJournalIntegration();
 
   return useMutation({
     mutationFn: async (data: CreateTrafficViolationData) => {
@@ -230,7 +244,7 @@ export function useCreateTrafficViolation() {
         .eq('user_id', user.user.id)
         .single();
       
-      if (!profile) throw new Error('لم يتم العثور على بيانات المستخدم');
+      if (!profile?.company_id) throw new Error('لم يتم العثور على بيانات المستخدم');
 
       // توليد رقم المخالفة إذا لم يتم توفيره
       let penaltyNumber = data.penalty_number;
@@ -259,7 +273,7 @@ export function useCreateTrafficViolation() {
           reason: data.reason,
           notes: data.notes,
           status: data.status || 'pending',
-          payment_status: data.payment_status || 'unpaid',
+          payment_status: 'unpaid',
           created_by: user.user.id
         }])
         .select()
@@ -272,26 +286,11 @@ export function useCreateTrafficViolation() {
 
       return violation;
     },
-    onSuccess: async (data) => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['traffic-violations'] });
       queryClient.invalidateQueries({ queryKey: ['traffic-violations-count'] });
       queryClient.invalidateQueries({ queryKey: ['traffic-violations-stats'] });
-      
-      // Create journal entry for traffic violation
-      try {
-        await createViolationJournalEntry({
-          id: data.id,
-          company_id: data.company_id,
-          violation_type: data.violation_type,
-          amount: data.amount,
-          penalty_date: data.penalty_date,
-          isCompanyLiability: !data.customer_id,
-          customer_id: data.customer_id,
-        });
-      } catch (error) {
-        console.error('Failed to create traffic violation journal entry:', error);
-      }
-      
+
       toast.success('تم إنشاء المخالفة بنجاح');
     },
     onError: (error) => {
@@ -308,11 +307,40 @@ export function useUpdateTrafficViolation() {
   return useMutation({
     mutationFn: async (data: UpdateTrafficViolationData) => {
       const { id, ...updateData } = data;
+      const { companyId } = await getCurrentCompanyContext();
+
+      if (updateData.payment_status !== undefined) {
+        throw new Error('حالة سداد المخالفة تُحسب من سجلات الدفع ولا يمكن تعديلها يدويًا');
+      }
+
+      const protectedFields: Array<keyof typeof updateData> = [
+        'amount',
+        'customer_id',
+        'contract_id',
+        'vehicle_id',
+        'penalty_date',
+        'status',
+      ];
+      const changesProtectedField = protectedFields.some((field) => updateData[field] !== undefined);
+      if (changesProtectedField) {
+        const { data: payments, error: paymentsError } = await supabase
+          .from('traffic_violation_payments')
+          .select('id')
+          .eq('traffic_violation_id', id)
+          .eq('company_id', companyId)
+          .neq('status', 'cancelled')
+          .limit(1);
+        if (paymentsError) throw paymentsError;
+        if ((payments || []).length > 0) {
+          throw new Error('لا يمكن تعديل البيانات المالية أو الارتباطات بعد تسجيل دفعة للمخالفة');
+        }
+      }
       
       const { data: violation, error } = await supabase
         .from('penalties')
         .update(updateData)
         .eq('id', id)
+        .eq('company_id', companyId)
         .select()
         .single();
 
@@ -337,16 +365,33 @@ export function useUpdateTrafficViolation() {
   });
 }
 
-// Hook لحذف مخالفة
+// Preserve the violation audit trail by cancelling unpaid records instead of deleting them.
 export function useDeleteTrafficViolation() {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async (id: string) => {
+      const { companyId } = await getCurrentCompanyContext();
+      const { data: payments, error: paymentsError } = await supabase
+        .from('traffic_violation_payments')
+        .select('id')
+        .eq('traffic_violation_id', id)
+        .eq('company_id', companyId)
+        .or('status.is.null,status.neq.cancelled')
+        .limit(1);
+      if (paymentsError) throw paymentsError;
+      if ((payments || []).length > 0) {
+        throw new Error('لا يمكن إلغاء مخالفة لها دفعات. اعكس الدفعات أولًا بإجراء محاسبي معتمد.');
+      }
+
       const { error } = await supabase
         .from('penalties')
-        .delete()
-        .eq('id', id);
+        .update({ status: 'cancelled', updated_at: new Date().toISOString() })
+        .eq('id', id)
+        .eq('company_id', companyId)
+        .neq('status', 'cancelled')
+        .select('id')
+        .single();
 
       if (error) {
         console.error('Error deleting traffic violation:', error);
@@ -359,16 +404,15 @@ export function useDeleteTrafficViolation() {
       queryClient.invalidateQueries({ queryKey: ['traffic-violations'] });
       queryClient.invalidateQueries({ queryKey: ['traffic-violations-count'] });
       queryClient.invalidateQueries({ queryKey: ['traffic-violations-stats'] });
-      toast.success('تم حذف المخالفة بنجاح');
+      toast.success('تم إلغاء المخالفة مع الاحتفاظ بسجلها');
     },
     onError: (error) => {
-      console.error('Error deleting traffic violation:', error);
-      toast.error('حدث خطأ أثناء حذف المخالفة');
+      console.error('Error cancelling traffic violation:', error);
+      toast.error(error instanceof Error ? error.message : 'حدث خطأ أثناء إلغاء المخالفة');
     }
   });
 }
 
-// Hook لتأكيد المخالفة (تغيير الحالة إلى مؤكدة)
 export function useDeleteAllTrafficViolations() {
   const queryClient = useQueryClient();
 
@@ -385,19 +429,53 @@ export function useDeleteAllTrafficViolations() {
 
       if (!profile?.company_id) throw new Error('لم يتم العثور على بيانات الشركة');
 
-      const { count, error } = await supabase
+      const { data: paymentRows, error: paymentsError } = await supabase
+        .from('traffic_violation_payments')
+        .select('traffic_violation_id')
+        .eq('company_id', profile.company_id)
+        .or('status.is.null,status.neq.cancelled');
+      if (paymentsError) throw paymentsError;
+
+      const { data: violationRows, error: violationsError } = await supabase
         .from('penalties')
-        .delete({ count: 'exact' })
-        .eq('company_id', profile.company_id);
+        .select('id')
+        .eq('company_id', profile.company_id)
+        .neq('status', 'cancelled');
+      if (violationsError) throw violationsError;
+
+      const activeViolationIds = new Set((violationRows || []).map((row) => row.id));
+      const blockedIds = new Set(
+        (paymentRows || [])
+          .map((row) => row.traffic_violation_id)
+          .filter((id) => activeViolationIds.has(id))
+      );
+      const cancellableIds = (violationRows || [])
+        .map((row) => row.id)
+        .filter((id) => !blockedIds.has(id));
+
+      if (cancellableIds.length === 0) {
+        return { cancelledCount: 0, blockedCount: blockedIds.size };
+      }
+
+      const { data: cancelledRows, error } = await supabase
+        .from('penalties')
+        .update({ status: 'cancelled', updated_at: new Date().toISOString() })
+        .in('id', cancellableIds)
+        .eq('company_id', profile.company_id)
+        .neq('status', 'cancelled')
+        .select('id');
 
       if (error) {
         console.error('Error deleting all traffic violations:', error);
         throw error;
       }
 
-      return count || 0;
+      return {
+        cancelledCount: cancelledRows?.length || 0,
+        blockedCount: blockedIds.size,
+      };
     },
-    onSuccess: (deletedCount) => {
+    onSuccess: ({ cancelledCount, blockedCount }) => {
       queryClient.invalidateQueries({
         predicate: (query) =>
           Array.isArray(query.queryKey) &&
@@ -408,11 +486,12 @@ export function useDeleteAllTrafficViolations() {
       queryClient.invalidateQueries({ queryKey: ['traffic-violations-stats'] });
       queryClient.invalidateQueries({ queryKey: ['traffic-violations-dashboard-stats'] });
       queryClient.invalidateQueries({ queryKey: ['traffic-violations-all-for-report'] });
-      toast.success(`تم حذف ${deletedCount.toLocaleString('en-US')} مخالفة مرورية بنجاح`);
+      const blockedMessage = blockedCount > 0 ? `، وتم حماية ${blockedCount.toLocaleString('en-US')} مخالفة لها دفعات` : '';
+      toast.success(`تم إلغاء ${cancelledCount.toLocaleString('en-US')} مخالفة${blockedMessage}`);
     },
     onError: (error) => {
-      console.error('Error deleting all traffic violations:', error);
-      toast.error('حدث خطأ أثناء حذف جميع المخالفات المرورية');
+      console.error('Error cancelling traffic violations:', error);
+      toast.error('حدث خطأ أثناء إلغاء المخالفات المرورية');
     },
   });
 }
@@ -422,10 +501,12 @@ export function useConfirmTrafficViolation() {
 
   return useMutation({
     mutationFn: async (id: string) => {
+      const { companyId } = await getCurrentCompanyContext();
       const { data: violation, error } = await supabase
         .from('penalties')
         .update({ status: 'confirmed' })
         .eq('id', id)
+        .eq('company_id', companyId)
         .select()
         .single();
 
@@ -441,45 +522,11 @@ export function useConfirmTrafficViolation() {
       queryClient.invalidateQueries({ queryKey: ['traffic-violations-count'] });
       queryClient.invalidateQueries({ queryKey: ['traffic-violations-stats'] });
       queryClient.invalidateQueries({ queryKey: ['traffic-violation', data.id] });
-      toast.success('تم تأكيد المخالفة بنجاح - سيتم إنشاء قيد محاسبي تلقائياً');
+      toast.success('تم تأكيد المخالفة بنجاح');
     },
     onError: (error) => {
       console.error('Error confirming traffic violation:', error);
       toast.error('حدث خطأ أثناء تأكيد المخالفة');
-    }
-  });
-}
-
-// Hook لتحديث حالة الدفع
-export function useUpdatePaymentStatus() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async ({ id, paymentStatus }: { id: string; paymentStatus: 'unpaid' | 'paid' | 'partially_paid' }) => {
-      const { data: violation, error } = await supabase
-        .from('penalties')
-        .update({ payment_status: paymentStatus })
-        .eq('id', id)
-        .select()
-        .single();
-
-      if (error) {
-        console.error('Error updating payment status:', error);
-        throw error;
-      }
-
-      return violation;
-    },
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ['traffic-violations'] });
-      queryClient.invalidateQueries({ queryKey: ['traffic-violations-count'] });
-      queryClient.invalidateQueries({ queryKey: ['traffic-violations-stats'] });
-      queryClient.invalidateQueries({ queryKey: ['traffic-violation', data.id] });
-      toast.success('تم تحديث حالة الدفع بنجاح');
-    },
-    onError: (error) => {
-      console.error('Error updating payment status:', error);
-      toast.error('حدث خطأ أثناء تحديث حالة الدفع');
     }
   });
 }

@@ -1,4 +1,5 @@
 import { formatDateInGregorian } from './dateFormatter'
+import { escapeHtml, sanitizeDocumentHtmlToFragment } from './htmlSanitizer'
 
 export interface ContractPdfData {
   contract_number: string
@@ -26,7 +27,7 @@ export const generateContractPdf = async (contractData: ContractPdfData): Promis
 
   // Create a temporary container
   const container = document.createElement('div');
-  container.innerHTML = contractHtml;
+  container.replaceChildren(sanitizeDocumentHtmlToFragment(contractHtml));
   container.style.position = 'absolute';
   container.style.left = '-9999px';
   document.body.appendChild(container);
@@ -36,8 +37,7 @@ export const generateContractPdf = async (contractData: ContractPdfData): Promis
     const canvas = await html2canvas(container, {
       scale: 2,
       useCORS: true,
-      logging: false,
-      letterRendering: true
+      logging: false
     });
 
     // Get image data
@@ -79,13 +79,17 @@ export const generateContractPdf = async (contractData: ContractPdfData): Promis
 }
 
 export const generateContractHtml = (data: ContractPdfData): string => {
+  const contractType = escapeHtml(getContractTypeInArabic(data.contract_type));
+  const customerSignature = getSafeImageSource(data.customer_signature);
+  const companySignature = getSafeImageSource(data.company_signature);
+
   return `
     <!DOCTYPE html>
     <html lang="ar" dir="rtl">
     <head>
       <meta charset="UTF-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>عقد رقم ${data.contract_number}</title>
+      <title>عقد رقم ${escapeHtml(data.contract_number)}</title>
       <style>
         * {
           box-sizing: border-box;
@@ -234,9 +238,9 @@ export const generateContractHtml = (data: ContractPdfData): string => {
     <body>
       <div class="container">
         <div class="header">
-          <div class="company-name">${data.company_name}</div>
-          <div class="contract-title">عقد ${getContractTypeInArabic(data.contract_type)}</div>
-          <div class="contract-number">رقم العقد: ${data.contract_number}</div>
+          <div class="company-name">${escapeHtml(data.company_name)}</div>
+          <div class="contract-title">عقد ${contractType}</div>
+          <div class="contract-number">رقم العقد: ${escapeHtml(data.contract_number)}</div>
         </div>
 
         <div class="section">
@@ -244,19 +248,19 @@ export const generateContractHtml = (data: ContractPdfData): string => {
           <div class="info-grid">
             <div class="info-item">
               <div class="info-label">نوع العقد</div>
-              <div class="info-value">${getContractTypeInArabic(data.contract_type)}</div>
+              <div class="info-value">${contractType}</div>
             </div>
             <div class="info-item">
               <div class="info-label">تاريخ الإنشاء</div>
-              <div class="info-value">${data.created_date}</div>
+              <div class="info-value">${escapeHtml(data.created_date)}</div>
             </div>
             <div class="info-item">
               <div class="info-label">تاريخ البداية</div>
-              <div class="info-value">${formatDateInGregorian(data.start_date)}</div>
+              <div class="info-value">${escapeHtml(formatDateInGregorian(data.start_date))}</div>
             </div>
             <div class="info-item">
               <div class="info-label">تاريخ النهاية</div>
-              <div class="info-value">${formatDateInGregorian(data.end_date)}</div>
+              <div class="info-value">${escapeHtml(formatDateInGregorian(data.end_date))}</div>
             </div>
           </div>
         </div>
@@ -265,7 +269,7 @@ export const generateContractHtml = (data: ContractPdfData): string => {
           <div class="section-title">معلومات العميل</div>
           <div class="info-item">
             <div class="info-label">اسم العميل</div>
-            <div class="info-value">${data.customer_name}</div>
+            <div class="info-value">${escapeHtml(data.customer_name)}</div>
           </div>
         </div>
 
@@ -274,7 +278,7 @@ export const generateContractHtml = (data: ContractPdfData): string => {
           <div class="section-title">معلومات المركبة</div>
           <div class="info-item">
             <div class="info-label">تفاصيل المركبة</div>
-            <div class="info-value">${data.vehicle_info}</div>
+            <div class="info-value">${escapeHtml(data.vehicle_info)}</div>
           </div>
         </div>
         ` : ''}
@@ -285,7 +289,7 @@ export const generateContractHtml = (data: ContractPdfData): string => {
           <div class="info-grid">
             <div class="info-item">
               <div class="info-label">الحالة العامة</div>
-              <div class="info-value">${getConditionInArabic(data.condition_report.overall_condition)}</div>
+              <div class="info-value">${escapeHtml(getConditionInArabic(data.condition_report.overall_condition))}</div>
             </div>
             <div class="info-item">
               <div class="info-label">قراءة العداد</div>
@@ -297,13 +301,13 @@ export const generateContractHtml = (data: ContractPdfData): string => {
             </div>
             <div class="info-item">
               <div class="info-label">تاريخ الفحص</div>
-              <div class="info-value">${formatDateInGregorian(data.condition_report.created_at)}</div>
+              <div class="info-value">${escapeHtml(formatDateInGregorian(data.condition_report.created_at))}</div>
             </div>
           </div>
           ${data.condition_report.notes ? `
             <div class="info-item">
               <div class="info-label">ملاحظات الفحص</div>
-              <div class="info-value">${data.condition_report.notes}</div>
+              <div class="info-value">${escapeHtml(data.condition_report.notes)}</div>
             </div>
           ` : ''}
         </div>
@@ -314,15 +318,15 @@ export const generateContractHtml = (data: ContractPdfData): string => {
           <div class="info-grid">
             <div class="info-item">
               <div class="info-label">المبلغ الإجمالي</div>
-              <div class="info-value">${data.contract_amount.toFixed(3)} د.ك</div>
+              <div class="info-value">${data.contract_amount.toFixed(2)} ر.ق</div>
             </div>
             <div class="info-item">
               <div class="info-label">المبلغ الشهري</div>
-              <div class="info-value">${data.monthly_amount.toFixed(3)} د.ك</div>
+              <div class="info-value">${data.monthly_amount.toFixed(2)} ر.ق</div>
             </div>
           </div>
           <div class="amount-highlight">
-            إجمالي قيمة العقد: ${data.contract_amount.toFixed(3)} د.ك
+            إجمالي قيمة العقد: ${data.contract_amount.toFixed(2)} ر.ق
           </div>
         </div>
 
@@ -330,7 +334,7 @@ export const generateContractHtml = (data: ContractPdfData): string => {
         <div class="section">
           <div class="section-title">الشروط والأحكام</div>
           <div class="terms-section">
-            ${data.terms.replace(/\n/g, '<br>')}
+            ${escapeHtml(data.terms).replace(/\n/g, '<br>')}
           </div>
         </div>
         ` : ''}
@@ -338,8 +342,8 @@ export const generateContractHtml = (data: ContractPdfData): string => {
         <div class="signature-section">
           <div class="signature-box">
             <div class="signature-label">توقيع العميل</div>
-            ${data.customer_signature ? 
-              `<img src="${data.customer_signature}" alt="توقيع العميل" class="signature-image" />` :
+            ${customerSignature ?
+              `<img src="${escapeHtml(customerSignature)}" alt="توقيع العميل" class="signature-image" />` :
               '<div class="signature-line"></div>'
             }
             <div>الطرف الأول</div>
@@ -347,8 +351,8 @@ export const generateContractHtml = (data: ContractPdfData): string => {
           
           <div class="signature-box">
             <div class="signature-label">توقيع ممثل الشركة</div>
-            ${data.company_signature ? 
-              `<img src="${data.company_signature}" alt="توقيع الشركة" class="signature-image" />` :
+            ${companySignature ?
+              `<img src="${escapeHtml(companySignature)}" alt="توقيع الشركة" class="signature-image" />` :
               '<div class="signature-line"></div>'
             }
             <div>الطرف الثاني</div>
@@ -356,7 +360,7 @@ export const generateContractHtml = (data: ContractPdfData): string => {
         </div>
 
         <div class="footer">
-          تم إنشاء هذا العقد بتاريخ ${data.created_date}
+          تم إنشاء هذا العقد بتاريخ ${escapeHtml(data.created_date)}
         </div>
       </div>
     </body>
@@ -385,4 +389,18 @@ const getConditionInArabic = (condition: string): string => {
     'damaged': 'متضررة'
   }
   return conditions[condition] || condition
+}
+
+const getSafeImageSource = (source?: string): string | null => {
+  if (!source) return null;
+
+  try {
+    const url = new URL(source, window.location.origin);
+    if (url.protocol === 'data:') {
+      return /^data:image\/(?:png|jpe?g|webp|gif);base64,/i.test(source) ? source : null;
+    }
+    return ['https:', 'http:', 'blob:'].includes(url.protocol) ? source : null;
+  } catch {
+    return null;
+  }
 }

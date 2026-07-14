@@ -22,6 +22,7 @@ import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuditLog } from '@/hooks/useAuditLog';
+import { Permission } from '@/lib/permissions/roles';
 
 interface BulkDeleteContractsDialogProps {
   open: boolean;
@@ -104,7 +105,7 @@ export const BulkDeleteContractsDialog: React.FC<BulkDeleteContractsDialogProps>
     
     setStep('processing');
     try {
-      await bulkDeleteContracts.mutateAsync(actualCompanyId);
+      await bulkDeleteContracts.mutateAsync();
       
       // Log audit trail
       await logAudit({
@@ -131,7 +132,8 @@ export const BulkDeleteContractsDialog: React.FC<BulkDeleteContractsDialogProps>
         resource_type: 'contract',
         entity_name: `Failed bulk delete for ${companyName}`,
         status: 'failed',
-        error_message: error instanceof Error ? error.message : 'Unknown error',
+        notes: error instanceof Error ? error.message : 'Unknown error',
+        metadata: { company_id: actualCompanyId },
         severity: 'high',
       });
     }
@@ -365,7 +367,7 @@ export const BulkDeleteContractsDialog: React.FC<BulkDeleteContractsDialogProps>
               <Button variant="outline" onClick={handleClose}>
                 إلغاء
               </Button>
-              <PermissionGuard permission="DELETE_CONTRACT">
+              <PermissionGuard permission={Permission.DELETE_CONTRACT}>
                 <Button
                   variant="destructive"
                   onClick={handleConfirmDelete}

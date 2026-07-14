@@ -14,6 +14,12 @@ vi.mock('@/components/ui/loading-spinner', () => ({
   LoadingSpinner: () => <div data-testid="loading-spinner">Loading...</div>,
 }));
 
+vi.mock('@/hooks/useTranslation', () => ({
+  useFleetifyTranslation: () => ({
+    t: (key: string) => ({ pdf: 'PDF', word: 'Word' }[key] || key),
+  }),
+}));
+
 describe('DocumentItem', () => {
   const baseDocument: DocumentState = {
     id: 'memo',

@@ -26,8 +26,8 @@ import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 
 // Professional currency formatting for accounting
-const formatCurrency = (amount: number, currency: string = 'KWD') => {
-  return new Intl.NumberFormat('ar-KW', {
+const formatCurrency = (amount: number, currency: string = 'QAR') => {
+  return new Intl.NumberFormat('ar-QA', {
     style: 'currency',
     currency: currency,
     minimumFractionDigits: 3,
@@ -53,7 +53,7 @@ export const CustomerAccountStatement: React.FC<CustomerAccountStatementProps> =
   const [dateTo, setDateTo] = useState<string>('');
   const [showFilters, setShowFilters] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
-  const [companyCurrency, setCompanyCurrency] = useState<string>('KWD'); // Default to KWD
+  const [companyCurrency, setCompanyCurrency] = useState<string>('QAR');
 
   // Fetch company currency
   useEffect(() => {
@@ -69,45 +69,20 @@ export const CustomerAccountStatement: React.FC<CustomerAccountStatementProps> =
           .single();
 
         if (profile && profile.companies) {
-          const currency = (profile.companies as any).currency || 'KWD';
+          const currency = (profile.companies as any).currency || 'QAR';
           setCompanyCurrency(currency);
           console.log('✅ Company currency loaded:', currency);
         }
       } catch (error) {
         console.error('Failed to fetch company currency:', error);
-        // Keep default KWD
+        // Keep the Qatar company default when profile currency is unavailable.
       }
     };
 
     fetchCompanyCurrency();
   }, []);
 
-  // Check if customer has required data
-  if (!customer || !customer.customer_code) {
-    return (
-      <Card dir="rtl">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <FileText className="h-5 w-5" />
-            كشف حساب العميل
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-col items-center justify-center py-8 text-center">
-            <div className="text-red-500 text-lg mb-4">⚠️ خطأ في تحميل البيانات</div>
-            <p className="text-slate-600 mb-4">
-              لا يمكن عرض كشف الحساب - كود العميل غير متوفر
-            </p>
-            <p className="text-sm text-muted-foreground">
-              يجب أن يحتوي العميل على كود customer_code صحيح
-            </p>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  // Helper functions - MUST be before early return to satisfy React Hooks rules
+  // Helper functions
   const getTransactionTypeBadge = useCallback((type: string) => {
     const variants = {
       'invoice': 'destructive',
@@ -304,6 +279,26 @@ export const CustomerAccountStatement: React.FC<CustomerAccountStatementProps> =
       : `${customer.first_name} ${customer.last_name}`,
     [customer.customer_type, customer.company_name, customer.first_name, customer.last_name]
   );
+
+  if (!customer.customer_code) {
+    return (
+      <Card dir="rtl">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <FileText className="h-5 w-5" />
+            كشف حساب العميل
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-col items-center justify-center py-8 text-center">
+            <div className="mb-4 text-lg text-red-500">خطأ في تحميل البيانات</div>
+            <p className="mb-4 text-slate-600">لا يمكن عرض كشف الحساب - كود العميل غير متوفر</p>
+            <p className="text-sm text-muted-foreground">يجب أن يحتوي العميل على كود عميل صحيح</p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   if (isLoading) {
     return (

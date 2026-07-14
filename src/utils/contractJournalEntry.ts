@@ -183,6 +183,7 @@ export async function createContractJournalEntryManual(
       .from('contracts')
       .select('*')
       .eq('id', contractId)
+      .eq('company_id', companyId)
       .single()
 
     if (contractError || !contract) {
@@ -400,10 +401,38 @@ export async function createContractJournalEntryManual(
     if (linesError) {
       console.error('❌ [JOURNAL_ENTRY] Failed to create journal entry lines:', linesError)
       // Try to clean up the journal entry
-      await supabase.from('journal_entries').delete().eq('id', journalEntry.id)
+      await supabase
+        .from('journal_entries')
+        .delete()
+        .eq('id', journalEntry.id)
+        .eq('company_id', companyId)
+        .eq('status', 'draft')
       return {
         success: false,
         error: 'Failed to create journal entry lines'
+      }
+    }
+
+    const { error: contractLinkError } = await supabase
+      .from('contracts')
+      .update({ journal_entry_id: journalEntry.id })
+      .eq('id', contractId)
+      .eq('company_id', companyId)
+      .is('journal_entry_id', null)
+      .select('id')
+      .single()
+
+    if (contractLinkError) {
+      await supabase.from('journal_entry_lines').delete().eq('journal_entry_id', journalEntry.id)
+      await supabase
+        .from('journal_entries')
+        .delete()
+        .eq('id', journalEntry.id)
+        .eq('company_id', companyId)
+        .eq('status', 'draft')
+      return {
+        success: false,
+        error: 'Failed to link journal entry to contract'
       }
     }
 
@@ -416,21 +445,29 @@ export async function createContractJournalEntryManual(
       })
       .eq('id', journalEntry.id)
       .eq('company_id', companyId)
+      .eq('status', 'draft')
+      .select('id')
+      .single()
 
     if (postEntryError) {
+      await supabase
+        .from('contracts')
+        .update({ journal_entry_id: null })
+        .eq('id', contractId)
+        .eq('company_id', companyId)
+        .eq('journal_entry_id', journalEntry.id)
       await supabase.from('journal_entry_lines').delete().eq('journal_entry_id', journalEntry.id)
-      await supabase.from('journal_entries').delete().eq('id', journalEntry.id)
+      await supabase
+        .from('journal_entries')
+        .delete()
+        .eq('id', journalEntry.id)
+        .eq('company_id', companyId)
+        .eq('status', 'draft')
       return {
         success: false,
         error: 'Failed to post journal entry'
       }
     }
-
-    // Update contract with journal entry reference
-    await supabase
-      .from('contracts')
-      .update({ journal_entry_id: journalEntry.id })
-      .eq('id', contractId)
 
     console.log('✅ [JOURNAL_ENTRY] Successfully created manual journal entry')
 
@@ -454,8 +491,8 @@ export interface ContractCreationParams {
   p_customer_id: string
   p_vehicle_id?: string | null
   p_contract_type?: string
-  p_start_date?: string
-  p_end_date?: string
+  p_start_date: string
+  p_end_date: string
   p_contract_amount?: number
   p_monthly_amount?: number
   p_description?: string | null
@@ -576,8 +613,16 @@ export async function createContractWithFallback(contractParams: ContractCreatio
     
     // Try the database function as a secondary approach
     try {
+      const rpcParams = {
+        ...contractParams,
+        p_vehicle_id: contractParams.p_vehicle_id ?? undefined,
+        p_description: contractParams.p_description ?? undefined,
+        p_terms: contractParams.p_terms ?? undefined,
+        p_cost_center_id: contractParams.p_cost_center_id ?? undefined,
+        p_created_by: contractParams.p_created_by ?? undefined,
+      };
       const { data: result, error: createError } = await supabase
-        .rpc('create_contract_with_journal_entry', contractParams)
+        .rpc('create_contract_with_journal_entry', rpcParams)
 
       if (createError) {
         throw createError

@@ -108,7 +108,7 @@ export function VehiclePricingPanel({ vehicleId }: VehiclePricingPanelProps) {
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="daily_rate">التعرفة اليومية (د.ك)</Label>
+                    <Label htmlFor="daily_rate">التعرفة اليومية (ر.ق)</Label>
                     <Input
                       id="daily_rate"
                       type="number"
@@ -117,7 +117,7 @@ export function VehiclePricingPanel({ vehicleId }: VehiclePricingPanelProps) {
                     />
                   </div>
                   <div>
-                    <Label htmlFor="weekly_rate">التعرفة الأسبوعية (د.ك)</Label>
+                    <Label htmlFor="weekly_rate">التعرفة الأسبوعية (ر.ق)</Label>
                     <Input
                       id="weekly_rate"
                       type="number"
@@ -126,7 +126,7 @@ export function VehiclePricingPanel({ vehicleId }: VehiclePricingPanelProps) {
                     />
                   </div>
                   <div>
-                    <Label htmlFor="monthly_rate">التعرفة الشهرية (د.ك)</Label>
+                    <Label htmlFor="monthly_rate">التعرفة الشهرية (ر.ق)</Label>
                     <Input
                       id="monthly_rate"
                       type="number"
@@ -135,7 +135,7 @@ export function VehiclePricingPanel({ vehicleId }: VehiclePricingPanelProps) {
                     />
                   </div>
                   <div>
-                    <Label htmlFor="annual_rate">التعرفة السنوية (د.ك)</Label>
+                    <Label htmlFor="annual_rate">التعرفة السنوية (ر.ق)</Label>
                     <Input
                       id="annual_rate"
                       type="number"

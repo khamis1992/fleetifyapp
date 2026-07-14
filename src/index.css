@@ -229,7 +229,7 @@ All colors MUST be HSL.
     --transition-glass: all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
     --transition-micro: all 0.15s ease-out;
     
-    --radius: 0.75rem;
+    --radius: 0.5rem;
 
     /* Sidebar — Glass Coral (warm neutral glass + bold coral accent) */
     --sidebar-background: 0 0% 100%;

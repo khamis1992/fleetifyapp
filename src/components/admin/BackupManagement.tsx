@@ -1,15 +1,11 @@
 import * as React from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
-import { useToast } from '@/hooks/use-toast';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { 
   Database, 
-  Download, 
-  Upload, 
   RefreshCw, 
   Clock, 
   CheckCircle,
@@ -23,10 +19,6 @@ import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
 
 export const BackupManagement: React.FC = () => {
-  const [isCreatingBackup, setIsCreatingBackup] = React.useState(false);
-  const { toast } = useToast();
-  const queryClient = useQueryClient();
-
   const { data: backups, isLoading } = useQuery({
     queryKey: ['backup-logs'],
     queryFn: async () => {
@@ -40,93 +32,6 @@ export const BackupManagement: React.FC = () => {
       return data;
     },
     refetchInterval: 30000 // Refresh every 30 seconds
-  });
-
-  const createBackupMutation = useMutation({
-    mutationFn: async (type: 'full' | 'incremental') => {
-      const { data, error } = await supabase
-        .from('backup_logs')
-        .insert({
-          backup_type: type,
-          status: 'completed',
-          file_size_bytes: 1024 * 1024 * 100, // 100MB simulation
-          records_count: 1000,
-          completed_at: new Date().toISOString()
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
-      return data;
-    },
-    onSuccess: () => {
-      toast({
-        title: "تم إنشاء النسخة الاحتياطية",
-        description: "تم بدء عملية إنشاء النسخة الاحتياطية بنجاح",
-      });
-      queryClient.invalidateQueries({ queryKey: ['backup-logs'] });
-      setIsCreatingBackup(false);
-    },
-    onError: (error) => {
-      toast({
-        title: "خطأ في إنشاء النسخة الاحتياطية",
-        description: "حدث خطأ أثناء إنشاء النسخة الاحتياطية",
-        variant: "destructive",
-      });
-      setIsCreatingBackup(false);
-    }
-  });
-
-  const restoreBackupMutation = useMutation({
-    mutationFn: async (backupId: string) => {
-      // Simulate restore process
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      return { success: true };
-    },
-    onSuccess: () => {
-      toast({
-        title: "تم بدء عملية الاستعادة",
-        description: "تم بدء عملية استعادة النسخة الاحتياطية بنجاح",
-      });
-      queryClient.invalidateQueries({ queryKey: ['backup-logs'] });
-    },
-    onError: () => {
-      toast({
-        title: "خطأ في الاستعادة",
-        description: "حدث خطأ أثناء استعادة النسخة الاحتياطية",
-        variant: "destructive",
-      });
-    }
-  });
-
-  const downloadBackupMutation = useMutation({
-    mutationFn: async (backup: any) => {
-      // Simulate download process - in real implementation, this would download the actual backup file
-      const blob = new Blob(['Backup data simulation'], { type: 'application/octet-stream' });
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `backup-${backup.backup_type}-${backup.created_at.split('T')[0]}.zip`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
-      
-      return { success: true };
-    },
-    onSuccess: () => {
-      toast({
-        title: "تم بدء التحميل",
-        description: "تم بدء تحميل النسخة الاحتياطية بنجاح",
-      });
-    },
-    onError: () => {
-      toast({
-        title: "خطأ في التحميل",
-        description: "حدث خطأ أثناء تحميل النسخة الاحتياطية",
-        variant: "destructive",
-      });
-    }
   });
 
   const getStatusIcon = (status: string) => {
@@ -185,32 +90,13 @@ export const BackupManagement: React.FC = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex flex-wrap gap-4">
-            <Button 
-              onClick={() => {
-                setIsCreatingBackup(true);
-                createBackupMutation.mutate('full');
-              }}
-              disabled={isCreatingBackup || createBackupMutation.isPending}
-              className="flex items-center gap-2"
-            >
-              <HardDrive className="h-4 w-4" />
-              إنشاء نسخة احتياطية كاملة
-            </Button>
-            
-            <Button 
-              variant="outline"
-              onClick={() => {
-                setIsCreatingBackup(true);
-                createBackupMutation.mutate('incremental');
-              }}
-              disabled={isCreatingBackup || createBackupMutation.isPending}
-              className="flex items-center gap-2"
-            >
-              <RefreshCw className="h-4 w-4" />
-              إنشاء نسخة احتياطية تدريجية
-            </Button>
-          </div>
+          <Alert>
+            <AlertTriangle className="h-4 w-4" />
+            <AlertTitle>وضع المراقبة فقط</AlertTitle>
+            <AlertDescription>
+              إنشاء النسخ وتنزيلها واستعادتها غير متاح من الواجهة حتى يتم ربط خدمة خادم آمنة. يعرض هذا القسم السجل الفعلي فقط ولا ينشئ نتائج تجريبية.
+            </AlertDescription>
+          </Alert>
         </CardContent>
       </Card>
 
@@ -291,7 +177,9 @@ export const BackupManagement: React.FC = () => {
                       <div className="flex items-center gap-4 text-sm text-muted-foreground mt-1">
                         <span className="flex items-center gap-1">
                           <Calendar className="h-3 w-3" />
-                          {format(new Date(backup.created_at), 'dd MMM yyyy, HH:mm', { locale: ar })}
+                          {backup.created_at
+                            ? format(new Date(backup.created_at), 'dd MMM yyyy, HH:mm', { locale: ar })
+                            : 'غير متوفر'}
                         </span>
                         {backup.file_size_bytes && (
                           <span className="flex items-center gap-1">
@@ -299,7 +187,7 @@ export const BackupManagement: React.FC = () => {
                             {formatFileSize(backup.file_size_bytes)}
                           </span>
                         )}
-                        {backup.completed_at && (
+                        {backup.completed_at && backup.created_at && (
                           <span>
                             مدة الإنشاء: {Math.round((new Date(backup.completed_at).getTime() - new Date(backup.created_at).getTime()) / 1000 / 60)} دقيقة
                           </span>
@@ -311,32 +199,6 @@ export const BackupManagement: React.FC = () => {
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2">
-                    {backup.status === 'completed' && (
-                      <>
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          onClick={() => downloadBackupMutation.mutate(backup)}
-                          disabled={downloadBackupMutation.isPending}
-                          className="flex items-center gap-1"
-                        >
-                          <Download className="h-3 w-3" />
-                          تحميل
-                        </Button>
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          onClick={() => restoreBackupMutation.mutate(backup.id)}
-                          disabled={restoreBackupMutation.isPending}
-                          className="flex items-center gap-1"
-                        >
-                          <Upload className="h-3 w-3" />
-                          استعادة
-                        </Button>
-                      </>
-                    )}
-                  </div>
                 </div>
               ))}
             </div>
@@ -344,7 +206,7 @@ export const BackupManagement: React.FC = () => {
             <div className="text-center py-8">
               <Database className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
               <h3 className="text-lg font-medium">لا توجد نسخ احتياطية</h3>
-              <p className="text-muted-foreground">قم بإنشاء النسخة الاحتياطية الأولى</p>
+              <p className="text-muted-foreground">لم تسجل خدمة الخادم أي نسخة احتياطية بعد</p>
             </div>
           )}
         </CardContent>

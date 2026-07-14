@@ -4,6 +4,27 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { UnifiedPaymentForm } from '@/components/finance/UnifiedPaymentForm';
 import { supabase } from '@/integrations/supabase/client';
 
+const paymentOperationMocks = vi.hoisted(() => ({
+  create: vi.fn(),
+  update: vi.fn(),
+  preview: vi.fn(),
+  options: null as any,
+}));
+
+vi.mock('@/hooks/business/usePaymentOperations', () => ({
+  usePaymentOperations: (options: any) => {
+    paymentOperationMocks.options = options;
+    return {
+      createPayment: { mutateAsync: paymentOperationMocks.create },
+      updatePayment: { mutateAsync: paymentOperationMocks.update },
+      generateJournalPreview: paymentOperationMocks.preview,
+      isCreating: false,
+      isUpdating: false,
+      canCreatePayments: true,
+    };
+  },
+}));
+
 // Mock Supabase client
 vi.mock('@/integrations/supabase/client', () => ({
   supabase: {
@@ -87,7 +108,7 @@ vi.mock('@/hooks/useActiveContracts', () => ({
 
 vi.mock('@/hooks/useCompanyCurrency', () => ({
   useCompanyCurrency: () => ({
-    currency: 'KWD'
+    currency: 'QAR'
   })
 }));
 
@@ -104,6 +125,23 @@ describe('Payment Flow Integration Tests', () => {
 
     // Reset all mocks
     vi.clearAllMocks();
+    paymentOperationMocks.create.mockResolvedValue({
+      id: 'payment-1',
+      payment_number: 'REC-25-001',
+      amount: 1500,
+      payment_status: 'completed',
+    });
+    paymentOperationMocks.update.mockResolvedValue({ id: 'payment-1', amount: 2000 });
+    paymentOperationMocks.preview.mockImplementation(async (data: any) => ({
+      entry_number: 'JE-PREVIEW',
+      entry_date: '2025-01-15',
+      description: 'معاينة قيد دفعة',
+      total_amount: Number(data.amount || 0),
+      lines: [
+        { line_number: 1, account_name: 'النقدية', account_code: '1110', description: 'قبض', debit_amount: Number(data.amount || 0), credit_amount: 0 },
+        { line_number: 2, account_name: 'العملاء', account_code: '1210', description: 'تسوية عميل', debit_amount: 0, credit_amount: Number(data.amount || 0) },
+      ],
+    }));
   });
 
   afterEach(() => {
@@ -115,7 +153,7 @@ describe('Payment Flow Integration Tests', () => {
       open: true,
       onOpenChange: vi.fn(),
       type: 'customer_payment' as const,
-      customerId: 'customer-1',
+      customerId: '11111111-1111-4111-8111-111111111111',
       onSuccess: vi.fn(),
       ...props
     };
@@ -162,33 +200,16 @@ describe('Payment Flow Integration Tests', () => {
       const paymentMethodSelect = screen.getByLabelText(/طريقة الدفع/i);
       fireEvent.change(paymentMethodSelect, { target: { value: 'bank_transfer' } });
 
-      // Step 2: Fill accounting details
-      const accountingTab = screen.getByText('الحسابات');
-      fireEvent.click(accountingTab);
-
-      await waitFor(() => {
-        expect(screen.getByText(/الحسابات والتصنيفات/i)).toBeInTheDocument();
-      });
-
-      // Step 3: Preview journal entry
-      const previewButton = screen.getByText(/معاينة القيد/i);
-      fireEvent.click(previewButton);
-
-      await waitFor(() => {
-        expect(screen.getByText(/معاينة القيد المحاسبي/i)).toBeInTheDocument();
-      });
-
-      // Step 4: Submit payment
+      // Submit payment. Accounting and preview behavior are covered separately below.
       const submitButton = screen.getByText(/حفظ الإيصال/i);
       fireEvent.click(submitButton);
 
       // Verify payment was created
       await waitFor(() => {
-        expect(mockInsert).toHaveBeenCalledWith(
+        expect(paymentOperationMocks.create).toHaveBeenCalledWith(
           expect.objectContaining({
             amount: 1500,
-            payment_type: 'receipt',
-            customer_id: 'customer-1'
+            customer_id: '11111111-1111-4111-8111-111111111111'
           })
         );
       });
@@ -246,7 +267,7 @@ describe('Payment Flow Integration Tests', () => {
       fireEvent.click(submitButton);
 
       await waitFor(() => {
-        expect(mockInsert).toHaveBeenCalled();
+        expect(paymentOperationMocks.create).toHaveBeenCalled();
       });
 
       // Journal entry creation is logged (check console)
@@ -281,11 +302,8 @@ describe('Payment Flow Integration Tests', () => {
       fireEvent.click(submitButton);
 
       await waitFor(() => {
-        expect(mockInsert).toHaveBeenCalledWith(
-          expect.objectContaining({
-            payment_status: 'pending'
-          })
-        );
+        expect(paymentOperationMocks.options).toEqual(expect.objectContaining({ requireApproval: true }));
+        expect(paymentOperationMocks.create).toHaveBeenCalled();
       });
     });
   });
@@ -342,11 +360,10 @@ describe('Payment Flow Integration Tests', () => {
       fireEvent.click(submitButton);
 
       await waitFor(() => {
-        expect(mockUpdate).toHaveBeenCalledWith(
-          expect.objectContaining({
-            amount: 2000
-          })
-        );
+        expect(paymentOperationMocks.update).toHaveBeenCalledWith({
+          paymentId: 'payment-1',
+          data: expect.objectContaining({ amount: 2000 }),
+        });
       });
     });
   });
@@ -356,7 +373,8 @@ describe('Payment Flow Integration Tests', () => {
       renderPaymentForm();
 
       const paymentMethodSelect = screen.getByLabelText(/طريقة الدفع/i);
-      fireEvent.change(paymentMethodSelect, { target: { value: 'check' } });
+      fireEvent.click(paymentMethodSelect);
+      fireEvent.click(await screen.findByRole('option', { name: 'شيك' }));
 
       await waitFor(() => {
         expect(screen.getByLabelText(/رقم الشيك/i)).toBeInTheDocument();
@@ -367,7 +385,8 @@ describe('Payment Flow Integration Tests', () => {
       renderPaymentForm();
 
       const paymentMethodSelect = screen.getByLabelText(/طريقة الدفع/i);
-      fireEvent.change(paymentMethodSelect, { target: { value: 'bank_transfer' } });
+      fireEvent.click(paymentMethodSelect);
+      fireEvent.click(await screen.findByRole('option', { name: 'تحويل بنكي' }));
 
       await waitFor(() => {
         expect(screen.getByLabelText(/الحساب البنكي/i)).toBeInTheDocument();
@@ -397,7 +416,7 @@ describe('Payment Flow Integration Tests', () => {
       const paymentMethodSelect = screen.getByLabelText(/طريقة الدفع/i);
       fireEvent.change(paymentMethodSelect, { target: { value: 'cash' } });
 
-      const previewButton = screen.getByText(/معاينة القيد/i);
+      const previewButton = screen.getByRole('button', { name: /^معاينة القيد$/i });
       fireEvent.click(previewButton);
 
       await waitFor(() => {
@@ -406,7 +425,7 @@ describe('Payment Flow Integration Tests', () => {
         expect(screen.getByText(/العملاء/i)).toBeInTheDocument();
         
         // Should show amounts
-        expect(screen.getByText(/1,?500/)).toBeInTheDocument();
+        expect(screen.getAllByText(/1,?500/).length).toBeGreaterThanOrEqual(2);
       });
     });
 
@@ -416,7 +435,7 @@ describe('Payment Flow Integration Tests', () => {
       const amountInput = screen.getByLabelText(/المبلغ/i);
       fireEvent.change(amountInput, { target: { value: '1000' } });
 
-      const previewButton = screen.getByText(/معاينة القيد/i);
+      const previewButton = screen.getByRole('button', { name: /^معاينة القيد$/i });
       fireEvent.click(previewButton);
 
       await waitFor(() => {
@@ -429,18 +448,7 @@ describe('Payment Flow Integration Tests', () => {
 
   describe('Error Handling', () => {
     it('should handle database errors gracefully', async () => {
-      const mockInsert = vi.fn().mockReturnValue({
-        select: vi.fn().mockReturnValue({
-          single: vi.fn().mockResolvedValue({
-            data: null,
-            error: { message: 'Database error' }
-          })
-        })
-      });
-
-      vi.mocked(supabase.from).mockReturnValue({
-        insert: mockInsert
-      } as any);
+      paymentOperationMocks.create.mockRejectedValueOnce(new Error('Database error'));
 
       renderPaymentForm();
 
@@ -452,16 +460,12 @@ describe('Payment Flow Integration Tests', () => {
 
       await waitFor(() => {
         // Toast error message should be shown
-        expect(mockInsert).toHaveBeenCalled();
+        expect(paymentOperationMocks.create).toHaveBeenCalled();
       });
     });
 
     it('should handle network errors', async () => {
-      const mockInsert = vi.fn().mockRejectedValue(new Error('Network error'));
-
-      vi.mocked(supabase.from).mockReturnValue({
-        insert: mockInsert
-      } as any);
+      paymentOperationMocks.create.mockRejectedValueOnce(new Error('Network error'));
 
       renderPaymentForm();
 
@@ -472,7 +476,7 @@ describe('Payment Flow Integration Tests', () => {
       fireEvent.click(submitButton);
 
       await waitFor(() => {
-        expect(mockInsert).toHaveBeenCalled();
+        expect(paymentOperationMocks.create).toHaveBeenCalled();
       });
     });
   });

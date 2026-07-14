@@ -131,7 +131,7 @@ const StatCard = ({
   return (
     <motion.button
       onClick={onClick}
-      className={cn('rounded-xl border border-[#DDE5EF] bg-white p-5 text-right shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-[#173A63] hover:shadow-md', onClick && 'cursor-pointer group')}
+      className={cn('min-h-[132px] rounded-lg border border-[#DDE5EF] bg-white p-5 text-right shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-[#173A63] hover:shadow-md', onClick && 'cursor-pointer group')}
       whileHover={{ y: -2 }}
     >
       <div className="flex items-start justify-between mb-3">
@@ -345,7 +345,7 @@ const CustomerCard = ({
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      className="rounded-xl border border-[#DDE5EF] bg-white p-5 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-[#173A63] hover:shadow-md"
+      className="rounded-lg border border-[#DDE5EF] bg-white p-5 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-[#173A63] hover:shadow-md"
     >
       {/* Header */}
       <div className="flex items-start gap-4 mb-4">
@@ -1458,7 +1458,7 @@ export default function CustomerCRMRedesigned() {
           <ScheduledFollowupsPanel />
 
           {/* Filters & Content */}
-          <div className="overflow-hidden rounded-xl border border-[#DDE5EF] bg-white shadow-sm">
+          <div className="overflow-hidden rounded-lg border border-[#DDE5EF] bg-white shadow-sm">
             {/* Filter Tabs */}
             <div className="overflow-x-auto border-b border-[#DDE5EF] bg-[#F8FAFC] px-5 py-4">
               <div className="flex gap-2">
@@ -1651,7 +1651,7 @@ export default function CustomerCRMRedesigned() {
                 </Button>
               </div>
 
-              <div className="max-h-[360px] space-y-2 overflow-y-auto rounded-xl border border-[#DDE5EF] bg-white p-2">
+              <div className="max-h-[360px] space-y-2 overflow-y-auto rounded-lg border border-[#DDE5EF] bg-white p-2">
                 {lateReportCustomers.map(customer => {
                   const crmCustomer = crmCustomers.find(cc => cc.customer_id === customer.id);
                   const name = `${customer.first_name || ''} ${customer.last_name || ''}`.trim()

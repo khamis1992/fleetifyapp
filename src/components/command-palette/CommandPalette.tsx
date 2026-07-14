@@ -99,7 +99,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({ open,
       title: 'العقارات',
       subtitle: 'لوحة تحكم العقارات',
       icon: Building2,
-      action: () => navigate('/real-estate'),
+      action: () => navigate('/properties'),
       category: 'التنقل',
       keywords: ['real estate', 'property', 'building'],
     },
@@ -108,7 +108,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({ open,
       title: 'التجزئة',
       subtitle: 'لوحة تحكم التجزئة',
       icon: ShoppingCart,
-      action: () => navigate('/retail'),
+      action: () => navigate('/sales/pipeline'),
       category: 'التنقل',
       keywords: ['retail', 'sales', 'shop'],
     },
@@ -162,7 +162,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({ open,
       title: 'التحليلات',
       subtitle: 'التقارير والتحليلات',
       icon: BarChart3,
-      action: () => navigate('/analytics'),
+      action: () => navigate('/reports'),
       category: 'التنقل',
       keywords: ['analytics', 'reports'],
     },
@@ -232,15 +232,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({ open,
       subtitle: 'إنشاء فاتورة جديدة',
       icon: FileSpreadsheet,
       action: () => {
-        navigate('/invoices');
-        // Clear any existing timeout
-        if (actionTimeoutRef.current) {
-          clearTimeout(actionTimeoutRef.current);
-        }
-        actionTimeoutRef.current = setTimeout(() => {
-          document.querySelector<HTMLButtonElement>('[data-action="new-invoice"]')?.click();
-          actionTimeoutRef.current = null;
-        }, 100);
+        navigate('/finance/billing?tab=invoices&action=new-invoice');
       },
       category: 'إجراءات سريعة',
       keywords: ['new', 'invoice', 'create'],
@@ -366,7 +358,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({ open,
                   placeholder="ابحث عن أوامر، صفحات، أو إجراءات..."
                   className="flex h-14 w-full rounded-md bg-transparent py-3 px-3 text-sm outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50"
                 />
-                <kbd className="hidden sm:inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">{t("esc")}</kbd>
+                <kbd className="hidden sm:inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">{t("esc").toUpperCase()}</kbd>
               </div>
 
               <Command.List className="max-h-[400px] overflow-y-auto p-2">

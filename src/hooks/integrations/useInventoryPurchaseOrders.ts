@@ -2,8 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
-import type { InventoryItem } from '../useInventoryItems';
-import type { PurchaseOrder, PurchaseOrderItem } from '../usePurchaseOrders';
+import type { Json } from '@/integrations/supabase/types';
 
 /**
  * Integration Hook: Inventory <-> Purchase Orders
@@ -35,138 +34,16 @@ export interface POFromLowStockData {
 export interface ReceivePOData {
   po_id: string;
   warehouse_id: string;
+  receipt_date?: string;
+  delivery_note_number?: string;
+  notes?: string;
   items: Array<{
-    item_id: string;
+    purchase_order_item_id: string;
     quantity_received: number;
     notes?: string;
   }>;
 }
 
-// ============================================================================
-// Internal Helper: Create Journal Entry for PO Receipt
-// ============================================================================
-
-async function createPOJournalEntryInternal(
-  companyId: string,
-  poId: string,
-  orderNumber: string,
-  totalAmount: number
-): Promise<void> {
-  // Get account mappings or fallback to default accounts
-  const { data: mappings } = await supabase
-    .from('account_mappings')
-    .select(`
-      chart_of_accounts_id,
-      default_account_type:default_account_types(type_code)
-    `)
-    .eq('company_id', companyId)
-    .eq('is_active', true);
-
-  let purchasesAccountId: string | null = null;
-  let apAccountId: string | null = null;
-
-  mappings?.forEach((mapping: any) => {
-    const typeCode = mapping.default_account_type?.type_code;
-    if (typeCode === 'purchases' || typeCode === 'inventory') {
-      purchasesAccountId = mapping.chart_of_accounts_id;
-    } else if (typeCode === 'accounts_payable') {
-      apAccountId = mapping.chart_of_accounts_id;
-    }
-  });
-
-  // Fallback: Get accounts by code pattern
-  if (!purchasesAccountId || !apAccountId) {
-    const { data: defaultAccounts } = await supabase
-      .from('chart_of_accounts')
-      .select('id, account_code')
-      .eq('company_id', companyId)
-      .eq('is_header', false)
-      .gte('account_level', 3);
-
-    defaultAccounts?.forEach((acc: any) => {
-      if (acc.account_code.startsWith('51') && !purchasesAccountId) {
-        purchasesAccountId = acc.id;
-      }
-      if (acc.account_code.startsWith('21') && !apAccountId) {
-        apAccountId = acc.id;
-      }
-    });
-  }
-
-  if (!purchasesAccountId || !apAccountId) {
-    console.warn('Could not find accounts for PO journal entry');
-    return;
-  }
-
-  // Generate entry number
-  const entryNumber = `JE-PO-${Date.now().toString().slice(-6)}`;
-
-  // Create journal entry
-  const { data: journalEntry, error: entryError } = await supabase
-    .from('journal_entries')
-    .insert({
-      company_id: companyId,
-      entry_number: entryNumber,
-      entry_date: new Date().toISOString().split('T')[0],
-      description: `استلام أمر شراء رقم ${orderNumber}`,
-      reference_type: 'PURCHASE_ORDER',
-      reference_id: poId,
-      total_debit: totalAmount,
-      total_credit: totalAmount,
-      status: 'draft',
-    })
-    .select()
-    .single();
-
-  if (entryError) throw entryError;
-
-  // Create journal entry lines
-  const lines = [
-    {
-      journal_entry_id: journalEntry.id,
-      account_id: purchasesAccountId,
-      line_description: `مشتريات - أمر شراء ${orderNumber}`,
-      debit_amount: totalAmount,
-      credit_amount: 0,
-      line_number: 1,
-    },
-    {
-      journal_entry_id: journalEntry.id,
-      account_id: apAccountId,
-      line_description: `ذمم دائنة - أمر شراء ${orderNumber}`,
-      debit_amount: 0,
-      credit_amount: totalAmount,
-      line_number: 2,
-    },
-  ];
-
-  const { error: linesError } = await supabase
-    .from('journal_entry_lines')
-    .insert(lines);
-
-  if (linesError) {
-    await supabase.from('journal_entries').delete().eq('id', journalEntry.id);
-    throw linesError;
-  }
-
-  const { error: postEntryError } = await supabase
-    .from('journal_entries')
-    .update({
-      status: 'posted',
-      posted_at: new Date().toISOString(),
-    })
-    .eq('id', journalEntry.id)
-    .eq('company_id', companyId);
-
-  if (postEntryError) {
-    await supabase.from('journal_entry_lines').delete().eq('journal_entry_id', journalEntry.id);
-    await supabase.from('journal_entries').delete().eq('id', journalEntry.id);
-    throw postEntryError;
-  }
-
-  // Journal entry is linked via reference_id field in journal_entries table
-  console.log(`Journal entry ${journalEntry.entry_number} created for PO ${orderNumber}`);
-}
 
 // ============================================================================
 // Auto-generate PO from low stock item
@@ -182,73 +59,45 @@ export const useCreatePOFromLowStock = () => {
         throw new Error('Company ID is required');
       }
 
-      try {
-        // 1. Get item details
-        const { data: item, error: itemError } = await supabase
-          .from('inventory_items')
-          .select('*')
-          .eq('id', data.item_id)
-          .eq('company_id', user.profile.company_id)
-          .single();
+      const { data: item, error: itemError } = await supabase
+        .from('inventory_items')
+        .select('id,item_code,item_name,item_name_ar,cost_price,unit_price,unit_of_measure')
+        .eq('id', data.item_id)
+        .eq('company_id', user.profile.company_id)
+        .single();
+      if (itemError) throw itemError;
 
-        if (itemError) throw itemError;
-
-        // 2. Generate PO number
-        const { data: orderNumber, error: numberError } = await supabase
-          .rpc('generate_purchase_order_number', {
-            company_id_param: user.profile.company_id
-          });
-
-        if (numberError) throw numberError;
-
-        // 3. Calculate totals
-        const unitPrice = item.cost_price || item.unit_price;
-        const subtotal = data.quantity * unitPrice;
-
-        // 4. Create purchase order
-        const { data: purchaseOrder, error: orderError } = await supabase
-          .from('purchase_orders')
-          .insert({
-            company_id: user.profile.company_id,
-            vendor_id: data.vendor_id,
-            order_number: orderNumber,
-            order_date: new Date().toISOString(),
-            expected_delivery_date: data.expected_delivery_date,
-            subtotal,
-            total_amount: subtotal,
-            tax_amount: 0,
-            currency: 'QAR',
-            status: 'draft',
-            notes: data.notes || `Auto-generated from low stock item: ${item.item_name}`,
-            created_by: user.id,
-          })
-          .select()
-          .single();
-
-        if (orderError) throw orderError;
-
-        // 5. Create PO items
-        const { error: itemsError } = await supabase
-          .from('purchase_order_items')
-          .insert({
-            purchase_order_id: purchaseOrder.id,
-            item_code: item.item_code,
-            description: item.item_name,
-            description_ar: item.item_name_ar,
-            quantity: data.quantity,
-            unit_price: unitPrice,
-            total_price: subtotal,
-            unit_of_measure: item.unit_of_measure,
-            received_quantity: 0,
-          });
-
-        if (itemsError) throw itemsError;
-
-        return purchaseOrder;
-      } catch (error) {
-        console.error('Error creating PO from low stock:', error);
-        throw error;
-      }
+      const unitPrice = Number(item.cost_price || item.unit_price || 0);
+      const { data: purchaseOrder, error } = await supabase.rpc(
+        'create_purchase_order_v1',
+        {
+          p_company_id: user.profile.company_id,
+          p_vendor_id: data.vendor_id,
+          p_order_date: new Date().toISOString().slice(0, 10),
+          p_expected_delivery_date: data.expected_delivery_date,
+          p_notes:
+            data.notes || `Auto-generated from low stock item: ${item.item_name}`,
+          p_terms_and_conditions: null,
+          p_delivery_address: null,
+          p_contact_person: null,
+          p_phone: null,
+          p_email: null,
+          p_items: [
+            {
+              inventory_item_id: item.id,
+              item_code: item.item_code,
+              description: item.item_name,
+              description_ar: item.item_name_ar,
+              quantity: data.quantity,
+              unit_price: unitPrice,
+              unit_of_measure: item.unit_of_measure || 'PCS',
+            },
+          ] as unknown as Json,
+          p_actor_id: null,
+        }
+      );
+      if (error) throw error;
+      return purchaseOrder;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['purchase-orders'] });
@@ -275,112 +124,21 @@ export const useReceivePOToInventory = () => {
       if (!user?.profile?.company_id) {
         throw new Error('Company ID is required');
       }
-
-      try {
-        // 1. Get PO details
-        const { data: po, error: poError } = await supabase
-          .from('purchase_orders')
-          .select('*, purchase_order_items(*)')
-          .eq('id', data.po_id)
-          .eq('company_id', user.profile.company_id)
-          .single();
-
-        if (poError) throw poError;
-
-        // 2. Process each received item
-        for (const receivedItem of data.items) {
-          // Find corresponding PO item
-          const poItem = (po as any).purchase_order_items.find(
-            (item: any) => item.id === receivedItem.item_id
-          );
-
-          if (!poItem) continue;
-
-          // 3. Create inventory movement (PURCHASE type)
-          const { error: movementError } = await supabase
-            .from('inventory_movements')
-            .insert({
-              company_id: user.profile.company_id,
-              item_id: receivedItem.item_id,
-              warehouse_id: data.warehouse_id,
-              movement_type: 'PURCHASE',
-              quantity: receivedItem.quantity_received,
-              reference_type: 'PURCHASE_ORDER',
-              reference_id: data.po_id,
-              reference_number: po.order_number,
-              movement_date: new Date().toISOString(),
-              notes: receivedItem.notes || `Received from PO ${po.order_number}`,
-              created_by: user.id,
-            });
-
-          if (movementError) throw movementError;
-
-          // 4. Update PO item received quantity
-          const newReceivedQty = poItem.received_quantity + receivedItem.quantity_received;
-          const { error: updateError } = await supabase
-            .from('purchase_order_items')
-            .update({ received_quantity: newReceivedQty })
-            .eq('id', poItem.id);
-
-          if (updateError) throw updateError;
+      const { data: receipt, error } = await supabase.rpc(
+        'receive_purchase_order_v1',
+        {
+          p_company_id: user.profile.company_id,
+          p_purchase_order_id: data.po_id,
+          p_warehouse_id: data.warehouse_id,
+          p_receipt_date: data.receipt_date || new Date().toISOString().slice(0, 10),
+          p_delivery_note_number: data.delivery_note_number || null,
+          p_notes: data.notes || null,
+          p_items: data.items as unknown as Json,
+          p_actor_id: null,
         }
-
-        // 5. Update PO status
-        const allItems = (po as any).purchase_order_items;
-        const allReceived = allItems.every(
-          (item: any) => item.received_quantity >= item.quantity
-        );
-        const anyReceived = allItems.some(
-          (item: any) => item.received_quantity > 0
-        );
-
-        const newStatus = allReceived
-          ? 'received'
-          : anyReceived
-          ? 'partially_received'
-          : po.status;
-
-        const { error: statusError } = await supabase
-          .from('purchase_orders')
-          .update({
-            status: newStatus,
-            delivery_date: allReceived ? new Date().toISOString() : po.delivery_date
-          })
-          .eq('id', data.po_id);
-
-        if (statusError) throw statusError;
-
-        // 6. Create journal entry if fully received (financial integration)
-        if (newStatus === 'received') {
-          // Check if journal entry already exists for this PO
-          const { data: existingEntry } = await supabase
-            .from('journal_entries')
-            .select('id')
-            .eq('company_id', user.profile.company_id)
-            .eq('reference_type', 'PURCHASE_ORDER')
-            .eq('reference_id', data.po_id)
-            .maybeSingle();
-
-          if (!existingEntry) {
-            try {
-              await createPOJournalEntryInternal(
-                user.profile.company_id,
-                data.po_id,
-                po.order_number,
-                po.total_amount
-              );
-            } catch (journalError) {
-              console.error('Error creating journal entry for PO:', journalError);
-              // Don't fail the whole operation, just log the error
-            }
-          }
-        }
-
-        return { po, newStatus };
-      } catch (error) {
-        console.error('Error receiving PO to inventory:', error);
-        throw error;
-      }
+      );
+      if (error) throw error;
+      return receipt;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['purchase-orders'] });

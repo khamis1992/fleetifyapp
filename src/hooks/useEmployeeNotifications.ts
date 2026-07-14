@@ -6,6 +6,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import type { Json } from '@/integrations/supabase/types';
 import type { 
   EmployeeNotification, 
   NotificationStats, 
@@ -26,6 +27,21 @@ interface UseEmployeeNotificationsReturn {
   deleteNotification: (notificationId: string) => Promise<void>;
 }
 
+type NotificationPayload = {
+  type?: string;
+  title?: string;
+  title_ar?: string;
+  message?: string;
+  message_ar?: string;
+  related_id?: string;
+  related_type?: string;
+};
+
+const parseNotificationPayload = (value: Json): NotificationPayload =>
+  value && typeof value === 'object' && !Array.isArray(value)
+    ? value as NotificationPayload
+    : {};
+
 export const useEmployeeNotifications = (
   filters?: NotificationFilters
 ): UseEmployeeNotificationsReturn => {
@@ -39,7 +55,7 @@ export const useEmployeeNotifications = (
       const { data, error } = await supabase
         .from('profiles')
         .select('id, company_id')
-        .eq('user_id', user?.id)
+        .eq('user_id', user!.id)
         .single();
       
       if (error) throw error;
@@ -61,22 +77,10 @@ export const useEmployeeNotifications = (
       if (!profile?.id) return [];
 
       let query = supabase
-        .from('employee_notifications')
+        .from('staff_notifications')
         .select('*')
-        .eq('profile_id', profile.id);
-
-      // Apply filters
-      if (filters?.type && filters.type.length > 0) {
-        query = query.in('type', filters.type);
-      }
-
-      if (filters?.priority && filters.priority.length > 0) {
-        query = query.in('priority', filters.priority);
-      }
-
-      if (filters?.isRead !== undefined) {
-        query = query.eq('is_read', filters.isRead);
-      }
+        .eq('user_id', profile.id)
+        .eq('company_id', profile.company_id);
 
       if (filters?.dateFrom) {
         query = query.gte('created_at', filters.dateFrom);
@@ -92,9 +96,33 @@ export const useEmployeeNotifications = (
 
       if (error) throw error;
 
-      return (data || []) as EmployeeNotification[];
+      const mapped = (data || []).map((row): EmployeeNotification => {
+        const payload = parseNotificationPayload(row.notification);
+        return {
+          id: row.id,
+          type: (payload.type || 'new_task_assigned') as EmployeeNotification['type'],
+          title: payload.title || '',
+          title_ar: payload.title_ar,
+          message: payload.message || '',
+          message_ar: payload.message_ar,
+          priority: row.priority as EmployeeNotification['priority'],
+          is_read: row.status === 'read' || Boolean(row.read_at),
+          profile_id: row.user_id || profile.id,
+          related_id: payload.related_id,
+          related_type: payload.related_type,
+          created_at: row.created_at,
+          read_at: row.read_at || undefined,
+        };
+      });
+
+      return mapped.filter((notification) => {
+        if (filters?.type?.length && !filters.type.includes(notification.type)) return false;
+        if (filters?.priority?.length && !filters.priority.includes(notification.priority)) return false;
+        if (filters?.isRead !== undefined && notification.is_read !== filters.isRead) return false;
+        return true;
+      });
     },
-    enabled: !!profile?.id,
+    enabled: !!profile?.id && !!profile?.company_id,
     staleTime: 1 * 60 * 1000, // 1 minute
     refetchInterval: 2 * 60 * 1000, // Auto-refetch every 2 minutes
   });
@@ -113,13 +141,18 @@ export const useEmployeeNotifications = (
   // Mark as read mutation
   const markAsReadMutation = useMutation({
     mutationFn: async (notificationId: string) => {
+      if (!profile?.id || !profile.company_id) throw new Error('المستخدم أو الشركة غير محددين');
       const { error } = await supabase
-        .from('employee_notifications')
+        .from('staff_notifications')
         .update({
-          is_read: true,
+          status: 'read',
           read_at: new Date().toISOString(),
         })
-        .eq('id', notificationId);
+        .eq('id', notificationId)
+        .eq('user_id', profile.id)
+        .eq('company_id', profile.company_id)
+        .select('id')
+        .single();
 
       if (error) throw error;
     },
@@ -131,16 +164,17 @@ export const useEmployeeNotifications = (
   // Mark all as read mutation
   const markAllAsReadMutation = useMutation({
     mutationFn: async () => {
-      if (!profile?.id) return;
+      if (!profile?.id || !profile.company_id) return;
 
       const { error } = await supabase
-        .from('employee_notifications')
+        .from('staff_notifications')
         .update({
-          is_read: true,
+          status: 'read',
           read_at: new Date().toISOString(),
         })
-        .eq('profile_id', profile.id)
-        .eq('is_read', false);
+        .eq('user_id', profile.id)
+        .eq('company_id', profile.company_id)
+        .neq('status', 'read');
 
       if (error) throw error;
     },
@@ -152,10 +186,15 @@ export const useEmployeeNotifications = (
   // Delete notification mutation
   const deleteNotificationMutation = useMutation({
     mutationFn: async (notificationId: string) => {
+      if (!profile?.id || !profile.company_id) throw new Error('المستخدم أو الشركة غير محددين');
       const { error } = await supabase
-        .from('employee_notifications')
+        .from('staff_notifications')
         .delete()
-        .eq('id', notificationId);
+        .eq('id', notificationId)
+        .eq('user_id', profile.id)
+        .eq('company_id', profile.company_id)
+        .select('id')
+        .single();
 
       if (error) throw error;
     },

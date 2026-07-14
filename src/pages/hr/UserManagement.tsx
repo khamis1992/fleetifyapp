@@ -319,7 +319,7 @@ function UserManagementContent() {
   if (isLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[#F6F8FB]" dir="rtl">
-        <div className="rounded-2xl border border-slate-200 bg-white px-8 py-6 text-center shadow-sm">
+        <div className="rounded-lg border border-slate-200 bg-white px-8 py-6 text-center shadow-sm">
           <div className="mx-auto mb-4 h-11 w-11 animate-spin rounded-full border-4 border-[#22C7A1] border-t-transparent" />
           <p className="font-black text-[#020617]">جاري تحميل المستخدمين والصلاحيات...</p>
         </div>
@@ -330,7 +330,7 @@ function UserManagementContent() {
   if (accountsError) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[#F6F8FB] p-4" dir="rtl">
-        <div className="max-w-md rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm">
+        <div className="max-w-md rounded-lg border border-slate-200 bg-white p-8 text-center shadow-sm">
           <AlertCircle className="mx-auto mb-4 h-12 w-12 text-[#FB6B7A]" />
           <h3 className="mb-2 text-lg font-black text-[#020617]">تعذر تحميل المستخدمين</h3>
           <p className="mb-4 text-sm font-bold text-[#64748B]">{(accountsError as Error).message}</p>

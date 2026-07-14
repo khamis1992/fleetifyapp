@@ -91,8 +91,10 @@ const enforcementFiles = [
     markers: [
       "financeAccess.can('finance.invoice.cancel')",
       "action: 'finance.invoice.cancel'",
-      "status: 'cancelled'",
-      "payment_status: 'cancelled'",
+      "rpc('cancel_invoice_with_reversal'",
+      'p_invoice_id:',
+      'p_company_id:',
+      'p_reason:',
     ],
     forbiddenMarkers: [
       "supabase.from('invoice_items').delete().eq('invoice_id'",

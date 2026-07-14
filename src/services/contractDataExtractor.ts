@@ -82,21 +82,30 @@ export function extractContractFields(text: string): ExtractedContractFields {
   let usedLearnedPatterns = false;
   try {
     const templateService = getContractTemplateService();
-    const template = templateService.getBestTemplate();
+    const statistics = templateService.getStatistics();
     
     // Try learned patterns first (faster)
-    if (template.successCount > 0) {
-      console.log('📝 [Contract Extractor] Using learned patterns from template:', template.name);
+    if (statistics.totalPatterns > 0) {
+      console.log('📝 [Contract Extractor] Using learned extraction patterns');
       usedLearnedPatterns = true;
+
+      const patterns = {
+        customerName: templateService.getFieldPatterns('customerName'),
+        qatariId: templateService.getFieldPatterns('qatariId'),
+        plateNumber: templateService.getFieldPatterns('plateNumber'),
+        startDate: templateService.getFieldPatterns('startDate'),
+        endDate: templateService.getFieldPatterns('endDate'),
+        monthlyAmount: templateService.getFieldPatterns('monthlyAmount'),
+      };
       
       // Extract using learned patterns
-      fields.customerName = extractWithLearnedPatterns(text, template.patterns.customerName) || extractCustomerName(text);
-      fields.qatariId = extractWithLearnedPatterns(text, template.patterns.qatariId) || extractQatariId(text);
-      fields.plateNumber = extractWithLearnedPatterns(text, template.patterns.plateNumber) || extractPlateNumber(text);
-      fields.startDate = extractWithLearnedPatterns(text, template.patterns.startDate) || extractStartDate(text);
-      fields.endDate = extractWithLearnedPatterns(text, template.patterns.endDate) || extractEndDate(text);
+      fields.customerName = extractWithLearnedPatterns(text, patterns.customerName) || extractCustomerName(text);
+      fields.qatariId = extractWithLearnedPatterns(text, patterns.qatariId) || extractQatariId(text);
+      fields.plateNumber = extractWithLearnedPatterns(text, patterns.plateNumber) || extractPlateNumber(text);
+      fields.startDate = extractWithLearnedPatterns(text, patterns.startDate) || extractStartDate(text);
+      fields.endDate = extractWithLearnedPatterns(text, patterns.endDate) || extractEndDate(text);
       
-      const monthlyStr = extractWithLearnedPatterns(text, template.patterns.monthlyAmount);
+      const monthlyStr = extractWithLearnedPatterns(text, patterns.monthlyAmount);
       if (monthlyStr) {
         const parsed = parseFloat(monthlyStr.replace(/,/g, ''));
         if (!isNaN(parsed)) fields.monthlyAmount = parsed;

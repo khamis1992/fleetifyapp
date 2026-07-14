@@ -46,6 +46,7 @@ export class PaymentRepository extends BaseRepository<Payment> {
    */
   async findWithDetails(id: string): Promise<PaymentWithDetails | null> {
     try {
+      const companyId = await this.resolveCompanyId();
       const { data, error } = await supabase
         .from('payments')
         .select(`
@@ -65,6 +66,7 @@ export class PaymentRepository extends BaseRepository<Payment> {
           )
         `)
         .eq('id', id)
+        .eq('company_id', companyId)
         .single();
 
       if (error) {
@@ -83,7 +85,8 @@ export class PaymentRepository extends BaseRepository<Payment> {
    */
   async findAllWithDetails(companyId?: string): Promise<PaymentWithDetails[]> {
     try {
-      let query = supabase
+      const effectiveCompanyId = await this.resolveCompanyId(companyId);
+      const query = supabase
         .from('payments')
         .select(`
           *,
@@ -100,11 +103,8 @@ export class PaymentRepository extends BaseRepository<Payment> {
             contract_type,
             status
           )
-        `);
-
-      if (companyId) {
-        query = query.eq('company_id', companyId);
-      }
+        `)
+        .eq('company_id', effectiveCompanyId);
 
       const { data, error } = await query.order('payment_date', { ascending: false });
 
@@ -121,14 +121,12 @@ export class PaymentRepository extends BaseRepository<Payment> {
    */
   async findByStatus(status: Payment['payment_status'], companyId?: string): Promise<Payment[]> {
     try {
-      let query = supabase
+      const effectiveCompanyId = await this.resolveCompanyId(companyId);
+      const query = supabase
         .from('payments')
         .select('*')
-        .eq('payment_status', status);
-
-      if (companyId) {
-        query = query.eq('company_id', companyId);
-      }
+        .eq('payment_status', status)
+        .eq('company_id', effectiveCompanyId);
 
       const { data, error } = await query;
 
@@ -145,14 +143,12 @@ export class PaymentRepository extends BaseRepository<Payment> {
    */
   async findUnmatched(companyId?: string): Promise<Payment[]> {
     try {
-      let query = supabase
+      const effectiveCompanyId = await this.resolveCompanyId(companyId);
+      const query = supabase
         .from('payments')
         .select('*')
+        .eq('company_id', effectiveCompanyId)
         .or('allocation_status.is.null,allocation_status.eq.unallocated');
-
-      if (companyId) {
-        query = query.eq('company_id', companyId);
-      }
 
       const { data, error } = await query;
 
@@ -176,15 +172,13 @@ export class PaymentRepository extends BaseRepository<Payment> {
    */
   async findByDateRange(startDate: string, endDate: string, companyId?: string): Promise<Payment[]> {
     try {
-      let query = supabase
+      const effectiveCompanyId = await this.resolveCompanyId(companyId);
+      const query = supabase
         .from('payments')
         .select('*')
+        .eq('company_id', effectiveCompanyId)
         .gte('payment_date', startDate)
         .lte('payment_date', endDate);
-
-      if (companyId) {
-        query = query.eq('company_id', companyId);
-      }
 
       const { data, error } = await query.order('payment_date', { ascending: false });
 

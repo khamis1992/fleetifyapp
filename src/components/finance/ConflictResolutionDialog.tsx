@@ -14,9 +14,9 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AccountConflictInfo } from '@/hooks/useAccountConflictCheck';
-import { AlertTriangle, FileText, Building2 } from 'lucide-react';
+import { FileText, Building2 } from 'lucide-react';
 
-export type ConflictResolutionStrategy = 'replace' | 'merge' | 'skip' | 'backup_first';
+export type ConflictResolutionStrategy = 'merge' | 'skip';
 
 interface ConflictResolutionDialogProps {
   open: boolean;
@@ -33,7 +33,7 @@ export const ConflictResolutionDialog: React.FC<ConflictResolutionDialogProps> =
   onResolve,
   isResolving
 }) => {
-  const [selectedStrategy, setSelectedStrategy] = useState<ConflictResolutionStrategy>('backup_first');
+  const [selectedStrategy, setSelectedStrategy] = useState<ConflictResolutionStrategy>('merge');
 
   const handleResolve = async () => {
     await onResolve(selectedStrategy);
@@ -118,18 +118,6 @@ export const ConflictResolutionDialog: React.FC<ConflictResolutionDialogProps> =
             <RadioGroup value={selectedStrategy} onValueChange={(value) => setSelectedStrategy(value as ConflictResolutionStrategy)}>
               <div className="space-y-3">
                 <div className="flex items-center space-x-2 space-x-reverse">
-                  <RadioGroupItem value="backup_first" id="backup_first" />
-                  <Label htmlFor="backup_first" className="cursor-pointer">
-                    <div>
-                      <div className="font-medium">نسخ احتياطي ثم استبدال (موصى به)</div>
-                      <div className="text-sm text-muted-foreground">
-                        إنشاء نسخة احتياطية من البيانات الحالية ثم استبدالها بالبيانات الجديدة
-                      </div>
-                    </div>
-                  </Label>
-                </div>
-
-                <div className="flex items-center space-x-2 space-x-reverse">
                   <RadioGroupItem value="merge" id="merge" />
                   <Label htmlFor="merge" className="cursor-pointer">
                     <div>
@@ -153,29 +141,9 @@ export const ConflictResolutionDialog: React.FC<ConflictResolutionDialogProps> =
                   </Label>
                 </div>
 
-                <div className="flex items-center space-x-2 space-x-reverse">
-                  <RadioGroupItem value="replace" id="replace" />
-                  <Label htmlFor="replace" className="cursor-pointer">
-                    <div>
-                      <div className="font-medium text-destructive">استبدال كامل (خطير)</div>
-                      <div className="text-sm text-muted-foreground">
-                        حذف جميع البيانات الموجودة واستبدالها بالجديدة
-                      </div>
-                    </div>
-                  </Label>
-                </div>
               </div>
             </RadioGroup>
           </div>
-
-          {selectedStrategy === 'replace' && (
-            <Alert variant="destructive">
-              <AlertTriangle className="h-4 w-4" />
-              <AlertDescription className="text-sm">
-                تحذير: هذا الخيار سيحذف جميع الحسابات والبنوك الموجودة بشكل نهائي. تأكد من وجود نسخة احتياطية.
-              </AlertDescription>
-            </Alert>
-          )}
         </div>
 
         <DialogFooter>

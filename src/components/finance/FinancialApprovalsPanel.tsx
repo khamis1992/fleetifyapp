@@ -130,6 +130,8 @@ export function FinancialApprovalsPanel() {
     queryKey: ["financial-approval-requests", companyId],
     enabled: Boolean(companyId),
     queryFn: async () => {
+      if (!companyId) return [];
+
       const { data, error } = await supabase
         .from("approval_requests")
         .select("id,request_number,title,description,source_type,source_id,status,priority,total_amount,current_step_order,created_at")
@@ -148,6 +150,8 @@ export function FinancialApprovalsPanel() {
     queryKey: ["advanced-financial-approval-requests", companyId],
     enabled: Boolean(companyId),
     queryFn: async () => {
+      if (!companyId) return [];
+
       const { data, error } = await supabase
         .from("financial_approval_requests")
         .select("id,policy_id,action,source_table,source_id,amount,currency,status,current_step_order,requested_by,requested_at,completed_at,notes")
@@ -164,6 +168,8 @@ export function FinancialApprovalsPanel() {
     queryKey: ["advanced-financial-approval-policies", companyId],
     enabled: Boolean(companyId),
     queryFn: async () => {
+      if (!companyId) return [];
+
       const { data, error } = await supabase
         .from("financial_approval_policies")
         .select("id,action,branch_id,currency,min_amount,max_amount,is_active")

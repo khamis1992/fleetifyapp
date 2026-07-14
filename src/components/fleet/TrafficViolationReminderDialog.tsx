@@ -1,54 +1,46 @@
-/**
- * نافذة إرسال تذكير بالمخالفات المرورية للعملاء
- * يتم إرسال رسالة واتساب للعملاء بتفاصيل المخالفات المستحقة
- * يدعم الإرسال الفردي والجماعي
- */
-
-import React, { useState, useMemo } from 'react';
-import { useQuery, useMutation } from '@tanstack/react-query';
+import React, { useEffect, useMemo, useState } from 'react';
+import { useMutation } from '@tanstack/react-query';
+import { format, isValid } from 'date-fns';
+import { ar } from 'date-fns/locale';
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { LoadingSpinner } from '@/components/ui/loading-spinner';
-import { Separator } from '@/components/ui/separator';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Progress } from '@/components/ui/progress';
-import { toast } from 'sonner';
-import { supabase } from '@/integrations/supabase/client';
-import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
-import { 
-  Send, 
-  FileWarning,
   AlertCircle,
-  MessageCircle,
-  Car,
   Calendar,
-  User,
-  Phone,
-  Edit,
-  Eye,
+  Car,
   CheckCircle,
+  Eye,
+  FileWarning,
+  MessageCircle,
+  Phone,
+  Send,
+  User,
   Users,
   XCircle,
 } from 'lucide-react';
-import { sendWhatsAppMessage } from '@/utils/whatsappWebSender';
-import { format } from 'date-fns';
-import { ar } from 'date-fns/locale';
-import type { TrafficViolation } from '@/hooks/useTrafficViolations';
+import { toast } from 'sonner';
 
-// رقم الاختبار
-const TEST_PHONE_NUMBER = '66707063';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
+import { Progress } from '@/components/ui/progress';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Separator } from '@/components/ui/separator';
+import type { TrafficViolation } from '@/hooks/useTrafficViolations';
+import { sendWhatsAppMessage } from '@/utils/whatsappWebSender';
+
+const DEFAULT_TEST_PHONE = '66707063';
+const UNKNOWN_VALUE = 'غير محدد';
 
 interface TrafficViolationReminderDialogProps {
   open: boolean;
@@ -64,38 +56,6 @@ interface TrafficViolationReminderDialogProps {
   onSuccess?: () => void;
 }
 
-// قالب الرسالة الافتراضي
-const DEFAULT_MESSAGE_TEMPLATE = `السلام عليكم ورحمة الله وبركاته،
-
-السيد / السيدة {{customer_name}} المحترم(ة)،
-
-تحية طيبة وبعد،
-
-نود إفادتكم بأنه وبالرجوع إلى *عقد إيجار المركبة المبرم بينكم وبين شركة العراف لتأجير السيارات*، والمتضمن التزام الطرف الثاني بسداد *كافة المخالفات المرورية والقانونية المترتبة على استخدام المركبة طوال مدة العقد*، فقد تبين وجود *مخالفات مرورية مسجلة على المركبة المؤجرة ولم يتم سدادها حتى تاريخه*، وذلك وفق التفاصيل الموضحة أدناه:
-
-🚗 *بيانات المركبة:*
-• رقم المركبة: {{vehicle_number}}
-• نوع / موديل المركبة: {{vehicle_model}}
-• رقم العقد: {{contract_number}}
-• تاريخ العقد: {{contract_date}}
-
-📄 *تفاصيل المخالفات المرورية المستحقة:*
-{{violations_list}}
-
-💰 *إجمالي قيمة المخالفات المستحقة:* {{total_violations_amount}} ر.ق
-
-وعليه، نرجو منكم *المبادرة بسداد كامل قيمة المخالفات المرورية المستحقة فورًا*، وذلك خلال مهلة أقصاها *({{due_days}}) أيام عمل من تاريخ هذا الإشعار*، تفاديًا لاتخاذ الإجراءات النظامية المنصوص عليها في العقد، والتي تشمل – دون حصر – *تحميلكم كافة المبالغ والغرامات، واعتبار ذلك إخلالًا بشروط العقد، واتخاذ ما يلزم من إجراءات قانونية*.
-
-نؤكد أن عدم الالتزام بالسداد خلال المهلة المحددة سيترتب عليه *اتخاذ الإجراءات القانونية والإدارية اللازمة دون أي إشعار آخر*، وذلك حفاظًا على حقوق الشركة.
-
-للاستفسار أو السداد، يرجى التواصل معنا عبر قنوات التواصل المعتمدة.
-
-وتفضلوا بقبول فائق الاحترام،
-
-شركة العراف لتأجير السيارات – ذ.م.م
-إدارة الشركة
-📞 رقم التواصل: 31151919`;
-
 interface CustomerViolationsGroup {
   customerId: string;
   customerName: string;
@@ -108,7 +68,116 @@ interface CustomerViolationsGroup {
   contractDate: string;
 }
 
-export const TrafficViolationReminderDialog: React.FC<TrafficViolationReminderDialogProps> = ({
+interface SendProgress {
+  current: number;
+  total: number;
+  results: Array<{ name: string; success: boolean }>;
+}
+
+const formatDate = (value?: string) => {
+  if (!value) return UNKNOWN_VALUE;
+  const date = new Date(value);
+  return isValid(date) ? format(date, 'dd/MM/yyyy', { locale: ar }) : UNKNOWN_VALUE;
+};
+
+const getCustomerName = (violation: TrafficViolation) => {
+  const customer = violation.customers || violation.contracts?.customers;
+  if (!customer) return UNKNOWN_VALUE;
+  const individualName = `${customer.first_name || ''} ${customer.last_name || ''}`.trim();
+  return individualName || customer.company_name || UNKNOWN_VALUE;
+};
+
+const getCustomerPhone = (violation: TrafficViolation) =>
+  violation.customers?.phone || violation.contracts?.customers?.phone || '';
+
+const getVehicleModel = (violation: TrafficViolation) => {
+  const vehicle = violation.vehicles;
+  if (!vehicle) return UNKNOWN_VALUE;
+  return `${vehicle.make || ''} ${vehicle.model || ''} ${vehicle.year || ''}`.trim() || UNKNOWN_VALUE;
+};
+
+const getViolationAmount = (violation: TrafficViolation) => {
+  const amount = Number(violation.amount);
+  return Number.isFinite(amount) && amount > 0 ? amount : 0;
+};
+
+const buildReminderMessage = (group: CustomerViolationsGroup, dueDays: number) => {
+  const violationsList = group.violations
+    .map((violation) => {
+      const plate = violation.vehicles?.plate_number || violation.vehicle_plate || UNKNOWN_VALUE;
+      return [
+        `• رقم المخالفة: ${violation.penalty_number || UNKNOWN_VALUE}`,
+        `  التاريخ: ${formatDate(violation.penalty_date)}`,
+        `  المركبة: ${plate}`,
+        `  النوع: ${violation.violation_type || violation.reason || UNKNOWN_VALUE}`,
+        `  القيمة: ${getViolationAmount(violation).toLocaleString('ar-QA')} ر.ق`,
+      ].join('\n');
+    })
+    .join('\n\n');
+
+  return `السلام عليكم ورحمة الله وبركاته،
+
+السيد/السيدة ${group.customerName} المحترم/ة،
+
+نود تذكيركم بوجود مخالفات مرورية مستحقة مرتبطة بعقد إيجار المركبة الموضح أدناه:
+
+رقم المركبة: ${group.vehiclePlate}
+نوع المركبة: ${group.vehicleModel}
+رقم العقد: ${group.contractNumber}
+تاريخ العقد: ${group.contractDate}
+
+تفاصيل المخالفات:
+${violationsList}
+
+إجمالي المبلغ المستحق: ${group.totalAmount.toLocaleString('ar-QA')} ر.ق
+
+يرجى سداد المبلغ خلال ${dueDays} أيام عمل، أو التواصل معنا عند وجود أي استفسار.
+
+شركة العراف لتأجير السيارات
+رقم التواصل: 31151919`;
+};
+
+const buildGroups = (violations: TrafficViolation[]) => {
+  const groups = new Map<string, CustomerViolationsGroup>();
+
+  violations.forEach((violation) => {
+    const customerId =
+      violation.customer_id ||
+      violation.contracts?.customer_id ||
+      violation.contracts?.customers?.id;
+    if (!customerId) return;
+
+    const customerName = getCustomerName(violation);
+    if (customerName === UNKNOWN_VALUE) return;
+
+    if (!groups.has(customerId)) {
+      const vehicle = violation.vehicles;
+      groups.set(customerId, {
+        customerId,
+        customerName,
+        customerPhone: getCustomerPhone(violation),
+        violations: [],
+        totalAmount: 0,
+        vehiclePlate: vehicle?.plate_number || violation.vehicle_plate || UNKNOWN_VALUE,
+        vehicleModel: getVehicleModel(violation),
+        contractNumber: violation.contracts?.contract_number || UNKNOWN_VALUE,
+        contractDate: formatDate(violation.contracts?.start_date),
+      });
+    }
+
+    const group = groups.get(customerId);
+    if (!group) return;
+    group.violations.push(violation);
+    group.totalAmount += getViolationAmount(violation);
+    if (!group.customerPhone) group.customerPhone = getCustomerPhone(violation);
+  });
+
+  return Array.from(groups.values());
+};
+
+export const TrafficViolationReminderDialog: React.FC<
+  TrafficViolationReminderDialogProps
+> = ({
   open,
   onOpenChange,
   violations,
@@ -121,563 +190,375 @@ export const TrafficViolationReminderDialog: React.FC<TrafficViolationReminderDi
   contractDate: propContractDate,
   onSuccess,
 }) => {
-  const { companyId } = useUnifiedCompanyAccess();
-  
   const [dueDays, setDueDays] = useState(7);
   const [isTestMode, setIsTestMode] = useState(true);
+  const [testPhone, setTestPhone] = useState(DEFAULT_TEST_PHONE);
   const [showPreview, setShowPreview] = useState(false);
   const [selectedCustomers, setSelectedCustomers] = useState<Set<string>>(new Set());
-  const [sendProgress, setSendProgress] = useState<{ current: number; total: number; results: { name: string; success: boolean }[] } | null>(null);
+  const [sendProgress, setSendProgress] = useState<SendProgress | null>(null);
 
-  // تجميع المخالفات حسب العميل
-  const customerGroups = useMemo(() => {
-    if (!violations || violations.length === 0) return [];
+  const customerGroups = useMemo(() => buildGroups(violations || []), [violations]);
+  const isSingleCustomerMode = Boolean(propCustomerId || propCustomerName);
 
-    const groupsMap = new Map<string, CustomerViolationsGroup>();
-
-    violations.forEach(v => {
-      // Get customer from direct relation or through contract
-      const directCustomer = v.customers;
-      const contractCustomer = v.contracts?.customers;
-      const customer = directCustomer || contractCustomer;
-      const vehicle = v.vehicles;
-      const contract = v.contracts;
-
-      // Use customer_id from violation, contract, or customer object
-      const customerId = v.customer_id || contract?.customer_id || customer?.id || `unknown-${v.id}`;
-      
-      // Skip violations without any customer data
-      if (!customer && !v.customer_id && !contract?.customer_id) {
-        return;
-      }
-      
-      const customerName = customer 
-        ? `${customer.first_name || ''} ${customer.last_name || ''}`.trim() || customer.company_name || 'غير محدد'
-        : 'غير محدد';
-      
-      const customerPhone = customer?.phone || (customer as any)?.mobile || '';
-
-      if (!groupsMap.has(customerId)) {
-        groupsMap.set(customerId, {
-          customerId,
-          customerName,
-          customerPhone,
-          violations: [],
-          totalAmount: 0,
-          vehiclePlate: vehicle?.plate_number || v.vehicle_plate || 'غير محدد',
-          vehicleModel: vehicle ? `${vehicle.make || ''} ${vehicle.model || ''} ${vehicle.year || ''}`.trim() : 'غير محدد',
-          contractNumber: contract?.contract_number || 'غير محدد',
-          contractDate: contract?.start_date 
-            ? format(new Date(contract.start_date), 'dd/MM/yyyy', { locale: ar })
-            : 'غير محدد',
-        });
-      }
-
-      const group = groupsMap.get(customerId)!;
-      group.violations.push(v);
-      group.totalAmount += Number(v.amount) || Number(v.fine_amount) || 0;
-      
-      // Update phone if we find one (in case first violation didn't have it)
-      if (!group.customerPhone && customerPhone) {
-        group.customerPhone = customerPhone;
-      }
-    });
-
-    // Filter out groups without phone numbers or without customer name
-    return Array.from(groupsMap.values()).filter(g => 
-      g.customerPhone && g.customerName && g.customerName !== 'غير محدد'
-    );
-  }, [violations]);
-
-  // If props are provided (single customer mode), use them
-  const isSingleCustomerMode = !!propCustomerId || !!propCustomerName;
-  
-  const singleCustomerData = useMemo(() => {
-    if (!isSingleCustomerMode || !violations || violations.length === 0) return null;
-
+  const singleCustomerGroup = useMemo<CustomerViolationsGroup | null>(() => {
+    if (!isSingleCustomerMode || !violations?.length) return null;
     const firstViolation = violations[0];
-    const customer = firstViolation.customers || firstViolation.contracts?.customers;
+    const generatedGroup = buildGroups(violations)[0];
     const vehicle = firstViolation.vehicles;
-    const contract = firstViolation.contracts;
-
-    const totalAmount = violations.reduce((sum, v) => sum + (Number(v.amount) || Number(v.fine_amount) || 0), 0);
-
-    const violationsList = violations.map(v => {
-      const vDate = v.violation_date 
-        ? format(new Date(v.violation_date), 'dd/MM/yyyy', { locale: ar })
-        : 'غير محدد';
-      const vAmount = Number(v.amount) || Number(v.fine_amount) || 0;
-      return `• رقم المخالفة: ${v.violation_number || v.penalty_number || 'غير محدد'}
-  - تاريخ المخالفة: ${vDate}
-  - الجهة المختصة: ${v.issuing_authority || 'إدارة المرور'}
-  - قيمة المخالفة: ${vAmount.toLocaleString('ar-QA')} ر.ق`;
-    }).join('\n\n');
 
     return {
-      customerName: propCustomerName || (customer 
-        ? `${customer.first_name || ''} ${customer.last_name || ''}`.trim() || customer.company_name || 'غير محدد'
-        : 'غير محدد'),
-      customerPhone: propCustomerPhone || customer?.phone || customer?.mobile || '',
-      vehiclePlate: propVehiclePlate || vehicle?.plate_number || firstViolation.vehicle_plate || 'غير محدد',
-      vehicleModel: propVehicleModel || (vehicle 
-        ? `${vehicle.make || ''} ${vehicle.model || ''} ${vehicle.year || ''}`.trim()
-        : 'غير محدد'),
-      contractNumber: propContractNumber || contract?.contract_number || 'غير محدد',
-      contractDate: propContractDate || (contract?.start_date 
-        ? format(new Date(contract.start_date), 'dd/MM/yyyy', { locale: ar })
-        : 'غير محدد'),
-      totalAmount,
-      violationsList,
-      violationsCount: violations.length,
+      customerId:
+        propCustomerId ||
+        generatedGroup?.customerId ||
+        firstViolation.customer_id ||
+        `single-${firstViolation.id}`,
+      customerName: propCustomerName || generatedGroup?.customerName || UNKNOWN_VALUE,
+      customerPhone: propCustomerPhone || generatedGroup?.customerPhone || '',
+      violations,
+      totalAmount: violations.reduce(
+        (total, violation) => total + getViolationAmount(violation),
+        0
+      ),
+      vehiclePlate:
+        propVehiclePlate || vehicle?.plate_number || firstViolation.vehicle_plate || UNKNOWN_VALUE,
+      vehicleModel: propVehicleModel || getVehicleModel(firstViolation),
+      contractNumber:
+        propContractNumber || firstViolation.contracts?.contract_number || UNKNOWN_VALUE,
+      contractDate:
+        propContractDate || formatDate(firstViolation.contracts?.start_date),
     };
-  }, [violations, isSingleCustomerMode, propCustomerName, propCustomerPhone, propVehiclePlate, propVehicleModel, propContractNumber, propContractDate]);
+  }, [
+    isSingleCustomerMode,
+    propContractDate,
+    propContractNumber,
+    propCustomerId,
+    propCustomerName,
+    propCustomerPhone,
+    propVehicleModel,
+    propVehiclePlate,
+    violations,
+  ]);
 
-  // Build message for a customer group
-  const buildMessageForCustomer = (group: CustomerViolationsGroup) => {
-    const violationsList = group.violations.map(v => {
-      const vDate = v.violation_date 
-        ? format(new Date(v.violation_date), 'dd/MM/yyyy', { locale: ar })
-        : 'غير محدد';
-      const vAmount = Number(v.amount) || Number(v.fine_amount) || 0;
-      return `• رقم المخالفة: ${v.violation_number || v.penalty_number || 'غير محدد'}
-  - تاريخ المخالفة: ${vDate}
-  - الجهة المختصة: ${v.issuing_authority || 'إدارة المرور'}
-  - قيمة المخالفة: ${vAmount.toLocaleString('ar-QA')} ر.ق`;
-    }).join('\n\n');
+  const selectedGroups = useMemo(
+    () => customerGroups.filter((group) => selectedCustomers.has(group.customerId)),
+    [customerGroups, selectedCustomers]
+  );
+  const previewGroup = singleCustomerGroup || selectedGroups[0] || customerGroups[0] || null;
+  const previewMessage = previewGroup ? buildReminderMessage(previewGroup, dueDays) : '';
 
-    return DEFAULT_MESSAGE_TEMPLATE
-      .replace(/\{\{customer_name\}\}/g, group.customerName)
-      .replace('{{vehicle_number}}', group.vehiclePlate)
-      .replace('{{vehicle_model}}', group.vehicleModel)
-      .replace('{{contract_number}}', group.contractNumber)
-      .replace('{{contract_date}}', group.contractDate)
-      .replace('{{violations_list}}', violationsList)
-      .replace('{{total_violations_amount}}', group.totalAmount.toLocaleString('ar-QA'))
-      .replace('{{due_days}}', dueDays.toString());
-  };
-
-  // Preview message (for first selected customer or single customer)
-  const previewMessage = useMemo(() => {
-    if (singleCustomerData) {
-      return DEFAULT_MESSAGE_TEMPLATE
-        .replace(/\{\{customer_name\}\}/g, singleCustomerData.customerName)
-        .replace('{{vehicle_number}}', singleCustomerData.vehiclePlate)
-        .replace('{{vehicle_model}}', singleCustomerData.vehicleModel)
-        .replace('{{contract_number}}', singleCustomerData.contractNumber)
-        .replace('{{contract_date}}', singleCustomerData.contractDate)
-        .replace('{{violations_list}}', singleCustomerData.violationsList)
-        .replace('{{total_violations_amount}}', singleCustomerData.totalAmount.toLocaleString('ar-QA'))
-        .replace('{{due_days}}', dueDays.toString());
-    }
-    
-    if (customerGroups.length > 0) {
-      const firstGroup = customerGroups[0];
-      return buildMessageForCustomer(firstGroup);
-    }
-    
-    return '';
-  }, [singleCustomerData, customerGroups, dueDays]);
-
-  // Toggle customer selection
-  const toggleCustomer = (customerId: string) => {
-    const newSelected = new Set(selectedCustomers);
-    if (newSelected.has(customerId)) {
-      newSelected.delete(customerId);
-    } else {
-      newSelected.add(customerId);
-    }
-    setSelectedCustomers(newSelected);
-  };
-
-  // Select/deselect all
-  const toggleSelectAll = () => {
-    if (selectedCustomers.size === customerGroups.length) {
+  useEffect(() => {
+    if (!open) {
+      setSendProgress(null);
       setSelectedCustomers(new Set());
-    } else {
-      setSelectedCustomers(new Set(customerGroups.map(g => g.customerId)));
+      return;
     }
-  };
 
-  // All customers in groups now have phone numbers (filtered above)
-  const customersWithPhone = customerGroups;
+    if (!isSingleCustomerMode) {
+      setSelectedCustomers(
+        new Set(
+          customerGroups
+            .filter((group) => Boolean(group.customerPhone))
+            .map((group) => group.customerId)
+        )
+      );
+    }
+  }, [customerGroups, isSingleCustomerMode, open]);
 
-  // Send reminders mutation
   const sendRemindersMutation = useMutation({
     mutationFn: async () => {
-      if (isSingleCustomerMode && singleCustomerData) {
-        // Single customer mode
-        const targetPhone = isTestMode ? TEST_PHONE_NUMBER : singleCustomerData.customerPhone;
-        
-        if (!targetPhone) {
-          throw new Error('رقم الهاتف غير متوفر');
-        }
+      const groupsToSend = isSingleCustomerMode
+        ? singleCustomerGroup
+          ? [singleCustomerGroup]
+          : []
+        : selectedGroups;
+      const targets = isTestMode ? (previewGroup ? [previewGroup] : []) : groupsToSend;
 
-        const message = previewMessage;
-        const result = await sendWhatsAppMessage({
-          phone: targetPhone,
-          message,
-          customerName: isTestMode ? 'اختبار' : singleCustomerData.customerName,
-        });
-
-        if (!result.success) {
-          throw new Error(result.error || 'فشل إرسال الرسالة');
-        }
-
-        return { sent: 1, failed: 0, isTest: isTestMode };
+      if (!targets.length) throw new Error('لا توجد مخالفات صالحة للإرسال.');
+      if (isTestMode && !testPhone.trim()) throw new Error('أدخل رقم هاتف الاختبار.');
+      if (!isTestMode && targets.some((group) => !group.customerPhone)) {
+        throw new Error('يوجد عميل محدد دون رقم هاتف.');
       }
 
-      // Bulk mode
-      const customersToSend = isTestMode 
-        ? customerGroups.slice(0, 1) // In test mode, only send one message
-        : customerGroups.filter(g => selectedCustomers.has(g.customerId) && g.customerPhone);
-
-      if (customersToSend.length === 0) {
-        throw new Error('لا يوجد عملاء محددين للإرسال');
-      }
-
-      setSendProgress({ current: 0, total: customersToSend.length, results: [] });
-
+      const results: SendProgress['results'] = [];
       let sent = 0;
       let failed = 0;
-      const results: { name: string; success: boolean }[] = [];
+      setSendProgress({ current: 0, total: targets.length, results: [] });
 
-      for (let i = 0; i < customersToSend.length; i++) {
-        const group = customersToSend[i];
-        const targetPhone = isTestMode ? TEST_PHONE_NUMBER : group.customerPhone;
-        const message = buildMessageForCustomer(group);
-
+      for (const [index, group] of targets.entries()) {
+        const phone = isTestMode ? testPhone.trim() : group.customerPhone;
         try {
           const result = await sendWhatsAppMessage({
-            phone: targetPhone,
-            message,
-            customerName: isTestMode ? 'اختبار' : group.customerName,
+            phone,
+            message: buildReminderMessage(group, dueDays),
+            customerName: isTestMode ? 'اختبار تذكير المخالفات' : group.customerName,
           });
-
-          if (result.success) {
-            sent++;
-            results.push({ name: group.customerName, success: true });
-
-            // Log communication (only in live mode)
-            if (!isTestMode && companyId) {
-              await supabase.from('communication_logs').insert({
-                company_id: companyId,
-                customer_id: group.customerId !== `unknown-${group.violations[0]?.id}` ? group.customerId : null,
-                communication_type: 'whatsapp',
-                subject: 'تذكير بالمخالفات المرورية',
-                message,
-                phone_number: targetPhone,
-                status: 'sent',
-                metadata: {
-                  violations_count: group.violations.length,
-                  total_amount: group.totalAmount,
-                  due_days: dueDays,
-                },
-              }).catch(err => console.error('Failed to log communication:', err));
-            }
-          } else {
-            failed++;
-            results.push({ name: group.customerName, success: false });
-          }
+          if (!result.success) throw new Error(result.error || 'فشل إرسال الرسالة.');
+          sent += 1;
+          results.push({ name: group.customerName, success: true });
         } catch (error) {
-          failed++;
+          console.error('Error sending traffic violation reminder:', error);
+          failed += 1;
           results.push({ name: group.customerName, success: false });
         }
 
-        setSendProgress({ current: i + 1, total: customersToSend.length, results });
-
-        // Small delay between messages to avoid rate limiting
-        if (i < customersToSend.length - 1 && !isTestMode) {
-          await new Promise(resolve => setTimeout(resolve, 2000));
+        setSendProgress({ current: index + 1, total: targets.length, results: [...results] });
+        if (!isTestMode && index < targets.length - 1) {
+          await new Promise((resolve) => setTimeout(resolve, 2000));
         }
       }
 
+      if (sent === 0) throw new Error('لم يتم إرسال أي رسالة بنجاح.');
       return { sent, failed, isTest: isTestMode };
     },
     onSuccess: (result) => {
       if (result.isTest) {
-        toast.success(`✅ تم إرسال رسالة اختبار للرقم ${TEST_PHONE_NUMBER}`, { duration: 5000 });
+        toast.success(`تم إرسال رسالة الاختبار إلى ${testPhone.trim()}`);
       } else {
-        toast.success(`✅ تم إرسال ${result.sent} رسالة بنجاح${result.failed > 0 ? ` (${result.failed} فشل)` : ''}`);
+        toast.success(
+          `تم إرسال ${result.sent} رسالة${result.failed ? `، وتعذر إرسال ${result.failed}` : ''}`
+        );
         onOpenChange(false);
         onSuccess?.();
       }
       setSendProgress(null);
     },
-    onError: (error: any) => {
-      console.error('Error sending reminders:', error);
-      toast.error('فشل الإرسال: ' + (error.message || 'خطأ غير معروف'));
+    onError: (error: unknown) => {
+      console.error('Error sending traffic violation reminders:', error);
+      toast.error(error instanceof Error ? error.message : 'فشل إرسال التذكيرات.');
       setSendProgress(null);
     },
   });
 
-  const handleSend = () => {
-    sendRemindersMutation.mutate();
+  const toggleCustomer = (customerId: string) => {
+    setSelectedCustomers((current) => {
+      const next = new Set(current);
+      if (next.has(customerId)) next.delete(customerId);
+      else next.add(customerId);
+      return next;
+    });
   };
 
-  // Reset state when dialog closes
-  React.useEffect(() => {
-    if (!open) {
-      setSendProgress(null);
-      setSelectedCustomers(new Set());
-    }
-  }, [open]);
+  const selectableGroups = customerGroups.filter((group) => Boolean(group.customerPhone));
+  const allSelected =
+    selectableGroups.length > 0 &&
+    selectableGroups.every((group) => selectedCustomers.has(group.customerId));
 
-  // Auto-select all customers with phone when opening
-  React.useEffect(() => {
-    if (open && customerGroups.length > 0 && !isSingleCustomerMode) {
-      setSelectedCustomers(new Set(customersWithPhone.map(g => g.customerId)));
-    }
-  }, [open, customerGroups, isSingleCustomerMode, customersWithPhone]);
+  const toggleSelectAll = () => {
+    setSelectedCustomers(
+      allSelected ? new Set() : new Set(selectableGroups.map((group) => group.customerId))
+    );
+  };
 
-  if (!violations || violations.length === 0) {
+  if (!violations?.length) {
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent dir="rtl">
           <DialogHeader>
             <DialogTitle>لا توجد مخالفات</DialogTitle>
+            <DialogDescription>لم يتم تحديد مخالفات لإرسال تذكير عنها.</DialogDescription>
           </DialogHeader>
-          <div className="text-center py-8 text-muted-foreground">
-            لم يتم تحديد أي مخالفات للإرسال
-          </div>
         </DialogContent>
       </Dialog>
     );
   }
 
+  const liveSendDisabled = isSingleCustomerMode
+    ? !singleCustomerGroup?.customerPhone
+    : selectedGroups.length === 0;
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-hidden flex flex-col" dir="rtl">
+      <DialogContent
+        className="flex max-h-[90vh] flex-col overflow-hidden sm:max-w-[700px]"
+        dir="rtl"
+      >
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-xl">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-100 dark:bg-amber-900/30">
-              <FileWarning className="h-5 w-5 text-amber-600 dark:text-amber-400" />
-            </div>
-            إرسال تذكيرات المخالفات المرورية
+            <span className="flex h-10 w-10 items-center justify-center rounded-md bg-amber-100">
+              <FileWarning className="h-5 w-5 text-amber-700" />
+            </span>
+            إرسال تذكير بالمخالفات المرورية
           </DialogTitle>
           <DialogDescription>
-            {isSingleCustomerMode 
-              ? 'إرسال رسالة واتساب للعميل بتفاصيل المخالفات المستحقة'
-              : `إرسال رسائل واتساب لـ ${customerGroups.length} عميل بتفاصيل المخالفات المستحقة`
-            }
+            راجع المستلمين والرسالة قبل الانتقال من وضع الاختبار إلى الإرسال الفعلي.
           </DialogDescription>
         </DialogHeader>
 
-        <ScrollArea className="flex-1 -mx-6 px-6">
+        <ScrollArea className="-mx-6 flex-1 px-6">
           <div className="space-y-5 py-4">
-            {/* Single Customer Mode Summary */}
-            {isSingleCustomerMode && singleCustomerData && (
-              <div className="rounded-xl border bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/20 dark:to-orange-950/20 p-4">
-                <div className="flex items-center justify-between mb-3">
+            {isSingleCustomerMode && singleCustomerGroup && (
+              <div className="rounded-md border bg-amber-50 p-4">
+                <div className="mb-3 flex items-center justify-between gap-3">
                   <div className="flex items-center gap-2">
-                    <User className="h-4 w-4 text-amber-600" />
-                    <span className="font-medium">{singleCustomerData.customerName}</span>
+                    <User className="h-4 w-4 text-amber-700" />
+                    <span className="font-medium">{singleCustomerGroup.customerName}</span>
                   </div>
-                  <Badge variant="secondary" className="gap-1">
-                    {singleCustomerData.violationsCount} مخالفة
+                  <Badge variant="secondary">
+                    {singleCustomerGroup.violations.length} مخالفة
                   </Badge>
                 </div>
-                <div className="grid grid-cols-2 gap-3 text-sm">
+                <div className="grid gap-3 text-sm sm:grid-cols-2">
                   <div className="flex items-center gap-2">
                     <Car className="h-4 w-4 text-muted-foreground" />
-                    <span>{singleCustomerData.vehiclePlate}</span>
+                    <span>{singleCustomerGroup.vehiclePlate}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <Phone className="h-4 w-4 text-muted-foreground" />
-                    <span dir="ltr">{singleCustomerData.customerPhone || 'غير متوفر'}</span>
+                    <span dir="ltr">{singleCustomerGroup.customerPhone || 'لا يوجد هاتف'}</span>
                   </div>
                 </div>
                 <Separator className="my-3" />
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">إجمالي المخالفات:</span>
-                  <span className="text-lg font-bold text-amber-700">
-                    {singleCustomerData.totalAmount.toLocaleString('ar-QA')} ر.ق
+                  <span className="text-sm text-muted-foreground">الإجمالي</span>
+                  <span className="font-bold text-amber-800">
+                    {singleCustomerGroup.totalAmount.toLocaleString('ar-QA')} ر.ق
                   </span>
                 </div>
               </div>
             )}
 
-            {/* Bulk Mode - Customer List */}
-            {!isSingleCustomerMode && customerGroups.length > 0 && (
+            {!isSingleCustomerMode && (
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <Label className="flex items-center gap-2">
-                    <Users className="h-4 w-4 text-muted-foreground" />
-                    العملاء ({customerGroups.length})
+                    <Users className="h-4 w-4" /> العملاء ({customerGroups.length})
                   </Label>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={toggleSelectAll}
-                    className="text-xs"
-                  >
-                    {selectedCustomers.size === customerGroups.length ? 'إلغاء تحديد الكل' : 'تحديد الكل'}
+                  <Button type="button" variant="ghost" size="sm" onClick={toggleSelectAll}>
+                    {allSelected ? 'إلغاء تحديد الكل' : 'تحديد أصحاب أرقام الهاتف'}
                   </Button>
                 </div>
-
-                <div className="rounded-xl border bg-muted/30 max-h-[200px] overflow-y-auto">
+                <div className="max-h-[210px] overflow-y-auto rounded-md border">
                   {customerGroups.map((group) => (
-                    <div 
+                    <div
                       key={group.customerId}
-                      className="flex items-center gap-3 p-3 border-b last:border-b-0 hover:bg-muted/50"
+                      className="flex items-center gap-3 border-b p-3 last:border-b-0"
                     >
                       <Checkbox
                         checked={selectedCustomers.has(group.customerId)}
+                        disabled={!group.customerPhone}
                         onCheckedChange={() => toggleCustomer(group.customerId)}
+                        aria-label={`تحديد ${group.customerName}`}
                       />
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium truncate">{group.customerName}</span>
-                        </div>
-                        <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                          <span>{group.violations.length} مخالفة</span>
-                          <span>{group.vehiclePlate}</span>
-                          {group.customerPhone && (
-                            <span dir="ltr">{group.customerPhone}</span>
-                          )}
-                        </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate font-medium">{group.customerName}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {group.violations.length} مخالفة · {group.customerPhone || 'لا يوجد هاتف'}
+                        </p>
                       </div>
-                      <span className="text-sm font-bold text-amber-700">
+                      <span className="text-sm font-bold text-amber-800">
                         {group.totalAmount.toLocaleString('ar-QA')} ر.ق
                       </span>
                     </div>
                   ))}
                 </div>
-
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">
-                    محدد: {selectedCustomers.size} من {customerGroups.length}
-                  </span>
-                  <span className="font-bold text-amber-700">
-                    إجمالي: {customerGroups
-                      .filter(g => selectedCustomers.has(g.customerId))
-                      .reduce((sum, g) => sum + g.totalAmount, 0)
-                      .toLocaleString('ar-QA')} ر.ق
-                  </span>
-                </div>
               </div>
             )}
 
-            {/* Send Options */}
-            <div className="space-y-4">
-              {/* Due Days */}
-              <div className="flex items-center gap-4">
-                <Label className="flex items-center gap-2 min-w-[120px]">
-                  <Calendar className="h-4 w-4 text-muted-foreground" />
-                  مهلة السداد:
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="violation-due-days" className="flex items-center gap-2">
+                  <Calendar className="h-4 w-4" /> مهلة السداد بالأيام
                 </Label>
-                <div className="flex items-center gap-2">
+                <Input
+                  id="violation-due-days"
+                  type="number"
+                  min={1}
+                  max={30}
+                  value={dueDays}
+                  onChange={(event) =>
+                    setDueDays(Math.min(30, Math.max(1, Number(event.target.value) || 1)))
+                  }
+                />
+              </div>
+              {isTestMode && (
+                <div className="space-y-2">
+                  <Label htmlFor="violation-test-phone">رقم هاتف الاختبار</Label>
                   <Input
-                    type="number"
-                    value={dueDays}
-                    onChange={(e) => setDueDays(Number(e.target.value) || 7)}
-                    className="w-20"
-                    min={1}
-                    max={30}
+                    id="violation-test-phone"
+                    dir="ltr"
+                    inputMode="tel"
+                    value={testPhone}
+                    onChange={(event) => setTestPhone(event.target.value)}
                   />
-                  <span className="text-sm text-muted-foreground">يوم عمل</span>
-                </div>
-              </div>
-
-              {/* Test Mode Alert */}
-              <Alert className={isTestMode ? 'border-blue-200 bg-blue-50' : 'border-green-200 bg-green-50'}>
-                <AlertCircle className={`h-4 w-4 ${isTestMode ? 'text-blue-600' : 'text-green-600'}`} />
-                <AlertDescription className="flex items-center justify-between">
-                  <div>
-                    {isTestMode ? (
-                      <span>
-                        <strong>وضع الاختبار:</strong> سيتم الإرسال للرقم <span dir="ltr" className="font-mono">{TEST_PHONE_NUMBER}</span> فقط
-                      </span>
-                    ) : (
-                      <span>
-                        <strong>وضع الإرسال الحقيقي:</strong> سيتم الإرسال للعملاء مباشرة
-                      </span>
-                    )}
-                  </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setIsTestMode(!isTestMode)}
-                    className={isTestMode ? 'border-blue-300' : 'border-green-300'}
-                  >
-                    {isTestMode ? 'تفعيل الإرسال الحقيقي' : 'العودة لوضع الاختبار'}
-                  </Button>
-                </AlertDescription>
-              </Alert>
-            </div>
-
-            {/* Message Preview */}
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label className="flex items-center gap-2">
-                  <MessageCircle className="h-4 w-4 text-muted-foreground" />
-                  معاينة الرسالة
-                </Label>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setShowPreview(!showPreview)}
-                  className="gap-1"
-                >
-                  {showPreview ? <Eye className="h-4 w-4" /> : <Edit className="h-4 w-4" />}
-                  {showPreview ? 'إخفاء' : 'عرض'}
-                </Button>
-              </div>
-              
-              {showPreview && (
-                <div className="rounded-xl border bg-muted/30 p-4 max-h-[250px] overflow-y-auto">
-                  <pre className="text-sm whitespace-pre-wrap font-sans leading-relaxed text-foreground">
-                    {previewMessage}
-                  </pre>
                 </div>
               )}
             </div>
 
-            {/* Progress */}
+            <Alert className={isTestMode ? 'border-blue-200 bg-blue-50' : 'border-green-200 bg-green-50'}>
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription className="flex flex-wrap items-center justify-between gap-3">
+                <span>
+                  {isTestMode
+                    ? 'وضع الاختبار: ستُرسل رسالة واحدة إلى رقم الاختبار.'
+                    : 'الإرسال الفعلي: ستُرسل الرسائل مباشرة إلى العملاء المحددين.'}
+                </span>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIsTestMode((current) => !current)}
+                >
+                  {isTestMode ? 'تفعيل الإرسال الفعلي' : 'العودة إلى الاختبار'}
+                </Button>
+              </AlertDescription>
+            </Alert>
+
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label className="flex items-center gap-2">
+                  <MessageCircle className="h-4 w-4" /> معاينة الرسالة
+                </Label>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setShowPreview((current) => !current)}
+                  title={showPreview ? 'إخفاء المعاينة' : 'عرض المعاينة'}
+                >
+                  <Eye className="h-4 w-4" />
+                </Button>
+              </div>
+              {showPreview && (
+                <pre className="max-h-[260px] overflow-y-auto whitespace-pre-wrap rounded-md border bg-muted/30 p-4 font-sans text-sm leading-7">
+                  {previewMessage}
+                </pre>
+              )}
+            </div>
+
+            {!isTestMode && liveSendDisabled && (
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>
+                  اختر عميلًا لديه رقم هاتف، أو حدّث هاتف العميل قبل الإرسال.
+                </AlertDescription>
+              </Alert>
+            )}
+
             {sendProgress && (
               <div className="space-y-3">
                 <div className="flex items-center justify-between text-sm">
-                  <span>جاري الإرسال...</span>
+                  <span>جاري الإرسال</span>
                   <span>{sendProgress.current} / {sendProgress.total}</span>
                 </div>
-                <Progress value={(sendProgress.current / sendProgress.total) * 100} className="h-2" />
-                <div className="max-h-[100px] overflow-y-auto space-y-1">
-                  {sendProgress.results.map((r, i) => (
-                    <div key={i} className="flex items-center gap-2 text-xs">
-                      {r.success ? (
-                        <CheckCircle className="h-3 w-3 text-green-600" />
-                      ) : (
-                        <XCircle className="h-3 w-3 text-red-600" />
-                      )}
-                      <span>{r.name}</span>
-                    </div>
-                  ))}
-                </div>
+                <Progress value={(sendProgress.current / sendProgress.total) * 100} />
+                {sendProgress.results.map((result, index) => (
+                  <div key={`${result.name}-${index}`} className="flex items-center gap-2 text-xs">
+                    {result.success ? (
+                      <CheckCircle className="h-3 w-3 text-green-700" />
+                    ) : (
+                      <XCircle className="h-3 w-3 text-red-700" />
+                    )}
+                    <span>{result.name}</span>
+                  </div>
+                ))}
               </div>
-            )}
-
-            {/* Warning for missing phone */}
-            {!isTestMode && isSingleCustomerMode && singleCustomerData && !singleCustomerData.customerPhone && (
-              <Alert variant="destructive">
-                <AlertCircle className="h-4 w-4" />
-                <AlertDescription>
-                  لا يوجد رقم هاتف مسجل للعميل. يرجى تحديث بيانات العميل أولاً.
-                </AlertDescription>
-              </Alert>
-            )}
-
-            {!isTestMode && !isSingleCustomerMode && selectedCustomers.size === 0 && (
-              <Alert variant="destructive">
-                <AlertCircle className="h-4 w-4" />
-                <AlertDescription>
-                  يرجى تحديد عميل واحد على الأقل للإرسال.
-                </AlertDescription>
-              </Alert>
             )}
           </div>
         </ScrollArea>
 
         <DialogFooter className="gap-2 border-t pt-4">
           <Button
+            type="button"
             variant="outline"
             onClick={() => onOpenChange(false)}
             disabled={sendRemindersMutation.isPending}
@@ -685,30 +566,20 @@ export const TrafficViolationReminderDialog: React.FC<TrafficViolationReminderDi
             إلغاء
           </Button>
           <Button
-            onClick={handleSend}
+            type="button"
+            onClick={() => sendRemindersMutation.mutate()}
             disabled={
-              sendRemindersMutation.isPending || 
-              (!isTestMode && isSingleCustomerMode && singleCustomerData && !singleCustomerData.customerPhone) ||
-              (!isTestMode && !isSingleCustomerMode && selectedCustomers.size === 0)
+              sendRemindersMutation.isPending ||
+              (isTestMode ? !testPhone.trim() || !previewGroup : liveSendDisabled)
             }
-            className={`gap-2 ${isTestMode ? 'bg-blue-600 hover:bg-blue-700' : 'bg-green-600 hover:bg-green-700'}`}
+            className={isTestMode ? 'bg-blue-700 hover:bg-blue-800' : 'bg-green-700 hover:bg-green-800'}
           >
             {sendRemindersMutation.isPending ? (
-              <>
-                <LoadingSpinner className="h-4 w-4" />
-                جاري الإرسال...
-              </>
+              <LoadingSpinner className="ml-2 h-4 w-4" />
             ) : (
-              <>
-                <Send className="h-4 w-4" />
-                {isTestMode 
-                  ? 'إرسال للاختبار' 
-                  : isSingleCustomerMode 
-                    ? 'إرسال للعميل'
-                    : `إرسال لـ ${selectedCustomers.size} عميل`
-                }
-              </>
+              <Send className="ml-2 h-4 w-4" />
             )}
+            {isTestMode ? 'إرسال اختبار' : 'إرسال التذكيرات'}
           </Button>
         </DialogFooter>
       </DialogContent>

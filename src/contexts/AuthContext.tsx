@@ -204,55 +204,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const initializeAuth = async () => {
-    // DEVELOPMENT BYPASS: تسجيل دخول تلقائي في البيئة المحلية فقط
-    // تأكد من أن هذا الكود لا يعمل في الإنتاج أو في تطبيق الجوال
-    const isDevMode = import.meta.env.DEV;
-    const isLocalhost = window.location.hostname === 'localhost';
-    const isNativeApp = Capacitor.isNativePlatform();
-    
-    // تسجيل دخول تلقائي فقط في المتصفح المحلي، وليس في التطبيق المحمول
-    // DISABLED: Auto-login causes timeout issues when network is slow/unavailable
-    if (false && isDevMode && isLocalhost && !isNativeApp) {
-      console.log('🔓 [AUTH_CONTEXT] Development mode - auto login disabled to prevent timeouts');
-      
-      try {
-        // Add timeout to prevent hanging
-        const loginPromise = supabase.auth.signInWithPassword({
-          email: 'khamis-1992@hotmail.com',
-          password: '123456789',
-        });
-        
-        const timeoutPromise = new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Auto-login timeout')), 5000)
-        );
-        
-        const { data, error } = await Promise.race([loginPromise, timeoutPromise]) as any;
-        
-        if (error) {
-          console.error('🔓 [AUTH_CONTEXT] Auto login failed:', error);
-          setLoading(false);
-          isInitialized.current = true;
-          return;
-        } else if (data?.user && data?.session) {
-          console.log('✅ [AUTH_CONTEXT] Auto login successful');
-          // Fetch full user profile using getCurrentUser
-          const authUser = await authService.getCurrentUser();
-          if (authUser) {
-            setUser(authUser);
-            setSession(data.session);
-            cacheUser(authUser);
-          }
-        }
-        
-        setLoading(false);
-        isInitialized.current = true;
-        return;
-      } catch (err) {
-        console.error('🔓 [AUTH_CONTEXT] Auto login error (skipping):', err);
-        // Continue with normal initialization
-      }
-    }
-
     // Prevent double initialization in development (HMR)
     if (isInitialized.current) {
       if (import.meta.env.DEV) {
@@ -719,7 +670,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         console.log('📝 [AUTH_CONTEXT] Auth already initialized, skipping init');
       }
       // CRITICAL FIX: Always clear loading if we're in a potentially stuck state
-      const currentLoadingState = loadingRef.current;
       const checkStuckTimeout = setTimeout(() => {
         if (mountedRef.current && loadingRef.current) {
           console.warn('⚠️ [AUTH_CONTEXT] Stuck loading state detected - forcing to false');
@@ -760,7 +710,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   }, []);
 
   // Add a function to force refresh user data
-  const forceRefreshUserData = async () => {
+  const forceRefreshUserData = React.useCallback(async () => {
     if (session?.user) {
       try {
         const authUser = await authService.getCurrentUser();
@@ -773,14 +723,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         console.error('📝 [AUTH_CONTEXT] Error refreshing user data:', error);
       }
     }
-  };
+  }, [session?.user]);
 
 
-  const signUp = async (email: string, password: string, userData?: Record<string, unknown>) => {
+  const signUp = React.useCallback(async (email: string, password: string, userData?: Record<string, unknown>) => {
     return authService.signUp(email, password, userData);
-  };
+  }, []);
 
-  const signIn = async (email: string, password: string) => {
+  const signIn = React.useCallback(async (email: string, password: string) => {
     console.log('🔍 [AUTH_CONTEXT] signIn called with email:', email);
     const result = await authService.signIn(email, password);
     console.log('🔍 [AUTH_CONTEXT] authService.signIn completed with error:', result.error);
@@ -830,9 +780,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
 
     return result;
-  };
+  }, []);
 
-  const signOut = async () => {
+  const signOut = React.useCallback(async () => {
     isSigningOutRef.current = true;
     setIsSigningOut(true);
     const email = user?.email;
@@ -863,18 +813,18 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
 
     return result;
-  };
+  }, [user?.email]);
 
-  const updateProfile = async (updates: Record<string, unknown>) => {
+  const updateProfile = React.useCallback(async (updates: Record<string, unknown>) => {
     if (!user) return { error: new Error('No user logged in') };
     return authService.updateProfile(user.id, updates);
-  };
+  }, [user]);
 
-  const changePassword = async (newPassword: string) => {
-    return authService.changePassword(newPassword);
-  };
+  const changePassword = React.useCallback(async (currentPassword: string, newPassword: string) => {
+    return authService.changePassword(currentPassword, newPassword);
+  }, []);
 
-  const validateSession = async () => {
+  const validateSession = React.useCallback(async () => {
     if (!session) {
       return false;
     }
@@ -897,7 +847,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         
         // Clear error and refresh user
         setSessionError(null);
-        refreshUser();
+        const authUser = await authService.getCurrentUser();
+        if (authUser) {
+          setUser(authUser);
+          cacheUser(authUser);
+        }
         
         return true;
       }
@@ -910,9 +864,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
       return false;
     }
-  };
+  }, [isSigningOut, session]);
 
-  const refreshUser = async () => {
+  const refreshUser = React.useCallback(async () => {
     if (session?.user) {
       try {
         const authUser = await authService.getCurrentUser();
@@ -924,7 +878,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         console.error('📝 [AUTH_CONTEXT] Error refreshing user:', error);
       }
     }
-  };
+  }, [session?.user]);
 
   // OPTIMIZATION: Memoize context value to prevent unnecessary re-renders
   const value = useMemo<AuthContextType>(() => ({

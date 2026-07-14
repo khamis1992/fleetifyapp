@@ -1,15 +1,14 @@
 /**
- * useEmployeePerformance Hook
- * Hook لإدارة أداء الموظف
+ * Current employee performance from the canonical employee_performance table.
  */
 
 import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+
 import { useAuth } from '@/contexts/AuthContext';
-import { startOfMonth, endOfMonth, format } from 'date-fns';
-import type { 
-  EmployeePerformance, 
-  PerformanceGradeInfo 
+import { supabase } from '@/integrations/supabase/client';
+import type {
+  EmployeePerformance,
+  PerformanceGradeInfo,
 } from '@/types/mobile-employee.types';
 
 interface UseEmployeePerformanceReturn {
@@ -21,7 +20,6 @@ interface UseEmployeePerformanceReturn {
   refetch: () => void;
 }
 
-// Performance grade definitions
 const PERFORMANCE_GRADES: PerformanceGradeInfo[] = [
   {
     grade: 'excellent',
@@ -61,223 +59,91 @@ const PERFORMANCE_GRADES: PerformanceGradeInfo[] = [
   },
 ];
 
+const getGrade = (score: number) => PERFORMANCE_GRADES.find(
+  grade => score >= grade.minScore && score <= grade.maxScore
+) || PERFORMANCE_GRADES[PERFORMANCE_GRADES.length - 1];
+
 export const useEmployeePerformance = (): UseEmployeePerformanceReturn => {
   const { user } = useAuth();
+  const companyId = user?.profile?.company_id || user?.company?.id;
 
-  // Get employee's profile
-  const { data: profile } = useQuery({
-    queryKey: ['employee-profile-performance', user?.id],
+  const {
+    data: profile,
+    isLoading: profileLoading,
+    isError: profileError,
+    error: profileQueryError,
+  } = useQuery({
+    queryKey: ['employee-profile-performance', companyId, user?.id],
     queryFn: async () => {
+      if (!user?.id || !companyId) throw new Error('Employee identity is required');
       const { data, error } = await supabase
         .from('profiles')
         .select('id, company_id')
-        .eq('user_id', user?.id)
+        .eq('user_id', user.id)
+        .eq('company_id', companyId)
         .single();
-      
+
       if (error) throw error;
       return data;
     },
-    enabled: !!user?.id
+    enabled: !!user?.id && !!companyId,
   });
 
-  // Fetch performance data
-  const {
-    data: performance = null,
-    isLoading,
-    isError,
-    error,
-    refetch
-  } = useQuery({
-    queryKey: ['employee-performance', profile?.id],
-    queryFn: async () => {
-      if (!profile?.id) return null;
+  const performanceQuery = useQuery({
+    queryKey: ['employee-performance', companyId, profile?.id],
+    queryFn: async (): Promise<EmployeePerformance | null> => {
+      if (!profile?.id || !companyId) throw new Error('Employee profile is required');
 
-      const now = new Date();
-      const currentMonth = format(now, 'yyyy-MM');
-      const currentYear = now.getFullYear();
+      const { data, error } = await supabase
+        .from('employee_performance')
+        .select('*')
+        .eq('employee_id', profile.id)
+        .eq('company_id', companyId)
+        .eq('period_type', 'monthly')
+        .order('period_end', { ascending: false })
+        .limit(1)
+        .maybeSingle();
 
-      // Try to get existing performance record
-      // Note: employee_performance table may not exist in the database schema.
-      // If it doesn't, we calculate the performance on the fly and return it
-      // without trying to persist it.
-      let existingPerformance: any = null;
-      let fetchError: any = null;
-      
-      try {
-        const result = await supabase
-          .from('employee_performance')
-          .select('*')
-          .eq('profile_id', profile.id)
-          .eq('month', currentMonth)
-          .eq('year', currentYear)
-          .single();
-        
-        existingPerformance = result.data;
-        fetchError = result.error;
-      } catch (e) {
-        // Table doesn't exist — proceed with calculated data
-        fetchError = null;
-      }
+      if (error) throw error;
+      if (!data) return null;
 
-      if (fetchError && fetchError.code !== 'PGRST116') {
-        // If it's a 404 (table not found), treat as no existing record
-        if (fetchError.code === '42P01' || fetchError.message?.includes('Could not find')) {
-          fetchError = null;
-        } else {
-          throw fetchError;
-        }
-      }
+      const score = Math.max(0, Math.min(100, Number(data.performance_score || 0)));
+      const grade = getGrade(score);
+      const periodStart = new Date(`${data.period_start}T00:00:00Z`);
 
-      // If no record exists, calculate it
-      if (!existingPerformance) {
-        const startDate = startOfMonth(now).toISOString();
-        const endDate = endOfMonth(now).toISOString();
-
-        // Get contracts assigned to employee
-        const { data: contracts } = await supabase
-          .from('contracts')
-          .select('id, balance_due, total_paid, monthly_amount')
-          .eq('assigned_to_profile_id', profile.id)
-          .eq('company_id', profile.company_id);
-
-        // Get tasks (table may not exist — handle gracefully)
-        let tasks: any[] | null = null;
-        try {
-          const tasksResult = await supabase
-            .from('employee_tasks')
-            .select('id, status')
-            .eq('assigned_to_profile_id', profile.id)
-            .gte('scheduled_date', startDate)
-            .lte('scheduled_date', endDate);
-          if (!tasksResult.error) tasks = tasksResult.data;
-        } catch (e) { /* table doesn't exist */ }
-
-        // Get payments collected this month (query may fail on status filter)
-        let payments: any[] | null = null;
-        try {
-          const paymentsResult = await supabase
-            .from('payments')
-            .select('amount')
-            .eq('company_id', profile.company_id)
-            .eq('payment_status', 'verified')
-            .gte('payment_date', startDate)
-            .lte('payment_date', endDate);
-          if (!paymentsResult.error) payments = paymentsResult.data;
-          else {
-            // Fallback: try without status filter
-            const fallback = await supabase
-              .from('payments')
-              .select('amount')
-              .eq('company_id', profile.company_id)
-              .gte('payment_date', startDate)
-              .lte('payment_date', endDate);
-            if (!fallback.error) payments = fallback.data;
-          }
-        } catch (e) { /* table doesn't exist */ }
-
-        // Get calls logged (table may not exist)
-        let calls: any[] | null = null;
-        try {
-          const callsResult = await supabase
-            .from('call_logs')
-            .select('id')
-            .eq('profile_id', profile.id)
-            .gte('call_date', startDate)
-            .lte('call_date', endDate);
-          if (!callsResult.error) calls = callsResult.data;
-        } catch (e) { /* table doesn't exist */ }
-
-        // Get notes added (table may not exist)
-        let notes: any[] | null = null;
-        try {
-          const notesResult = await supabase
-            .from('contract_notes')
-            .select('id')
-            .eq('created_by', profile.id)
-            .gte('created_at', startDate)
-            .lte('created_at', endDate);
-          if (!notesResult.error) notes = notesResult.data;
-        } catch (e) { /* table doesn't exist */ }
-
-        // Calculate metrics
-        const totalCollected = payments?.reduce((sum, p) => sum + (p.amount || 0), 0) || 0;
-        const targetAmount = contracts?.reduce((sum, c) => sum + (c.monthly_amount || 0), 0) || 0;
-        const collectionRate = targetAmount > 0 ? (totalCollected / targetAmount) * 100 : 0;
-
-        const completedTasks = tasks?.filter(t => t.status === 'completed').length || 0;
-        const totalTasks = tasks?.length || 0;
-        const followupCompletionRate = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
-
-        // Calculate performance score (weighted average)
-        const performanceScore = Math.round(
-          (collectionRate * 0.5) + // 50% weight
-          (followupCompletionRate * 0.3) + // 30% weight
-          (Math.min((calls?.length || 0) / 20, 1) * 10) + // 10% weight (20 calls = 10 points)
-          (Math.min((notes?.length || 0) / 10, 1) * 10) // 10% weight (10 notes = 10 points)
-        );
-
-        // Determine grade
-        const grade = PERFORMANCE_GRADES.find(
-          g => performanceScore >= g.minScore && performanceScore <= g.maxScore
-        ) || PERFORMANCE_GRADES[PERFORMANCE_GRADES.length - 1];
-
-        // Create performance record
-        const performanceData: Omit<EmployeePerformance, 'created_at' | 'updated_at'> = {
-          profile_id: profile.id,
-          month: currentMonth,
-          year: currentYear,
-          performance_score: performanceScore,
-          collection_rate: Math.round(collectionRate),
-          followup_completion_rate: Math.round(followupCompletionRate),
-          calls_logged: calls?.length || 0,
-          notes_added: notes?.length || 0,
-          tasks_completed: completedTasks,
-          total_collected: totalCollected,
-          target_amount: targetAmount,
-          grade: grade.grade,
-          grade_ar: grade.label_ar,
-        };
-
-        // Save to database (gracefully handle if table doesn't exist)
-        let newPerformance: any = null;
-        try {
-          const result = await supabase
-            .from('employee_performance')
-            .insert(performanceData)
-            .select()
-            .single();
-          newPerformance = result.data;
-          if (result.error && result.error.code !== '42P01' && !result.error.message?.includes('Could not find')) {
-            console.error('Error creating performance record:', result.error);
-          }
-        } catch (e) {
-          console.error('Error creating performance record:', e);
-        }
-        
-        if (newPerformance) {
-          return newPerformance as EmployeePerformance;
-        }
-        // Return calculated data even if insert fails
-        return performanceData as EmployeePerformance;
-      }
-
-      return existingPerformance as EmployeePerformance;
+      return {
+        profile_id: profile.id,
+        month: data.period_start.slice(0, 7),
+        year: periodStart.getUTCFullYear(),
+        performance_score: score,
+        collection_rate: Number(data.collection_rate || 0),
+        followup_completion_rate: Number(data.followup_completion_rate || 0),
+        calls_logged: Number(data.phone_calls_count || 0),
+        notes_added: 0,
+        tasks_completed: Number(data.completed_followups || 0),
+        total_collected: Number(data.total_collected || 0),
+        target_amount: Number(data.target_collection_amount || 0),
+        grade: grade.grade,
+        grade_ar: grade.label_ar,
+        created_at: data.created_at || undefined,
+        updated_at: data.updated_at || undefined,
+      };
     },
-    enabled: !!profile?.id,
-    staleTime: 10 * 60 * 1000, // 10 minutes
+    enabled: !!profile?.id && !!companyId,
   });
 
-  // Get performance grade info
-  const performanceGrade = performance 
-    ? PERFORMANCE_GRADES.find(g => g.grade === performance.grade) || null
-    : null;
+  const performance = performanceQuery.data || null;
+  const performanceGrade = performance ? getGrade(performance.performance_score) : null;
+  const error = profileQueryError || performanceQuery.error;
 
   return {
     performance,
     performanceGrade,
-    isLoading,
-    isError,
-    error: error as Error | null,
-    refetch,
+    isLoading: profileLoading || performanceQuery.isLoading,
+    isError: profileError || performanceQuery.isError,
+    error: error instanceof Error ? error : null,
+    refetch: () => {
+      void performanceQuery.refetch();
+    },
   };
 };

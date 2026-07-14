@@ -34,7 +34,9 @@ export type AuditResourceType =
   | 'journal_entry'
   | 'account'
   | 'role'
-  | 'permission';
+  | 'permission'
+  | 'system'
+  | 'other';
 
 export type AuditStatus = 'success' | 'failed' | 'pending';
 
@@ -44,7 +46,7 @@ export interface AuditLog {
   id: string;
   
   // User Information
-  user_id: string;
+  user_id?: string;
   user_email?: string;
   user_name?: string;
   
@@ -192,6 +194,7 @@ export interface FinancialAuditLog extends AuditLog {
 }
 
 export interface FinancialAuditFilters extends AuditLogFilters {
+  resource_id?: string;
   event_type?: FinancialAuditEventType | FinancialAuditEventType[];
   amount_min?: number;
   amount_max?: number;
@@ -202,6 +205,37 @@ export interface FinancialAuditFilters extends AuditLogFilters {
   has_compliance_flags?: boolean;
   transaction_date_from?: string;
   transaction_date_to?: string;
+  limit?: number;
+  offset?: number;
+}
+
+export interface CreateFinancialAuditLogParams {
+  event_type: FinancialAuditEventType;
+  resource_type: 'payment' | 'invoice' | 'contract' | 'journal_entry' | 'account' | 'customer';
+  resource_id: string;
+  entity_name?: string;
+  old_values?: Record<string, any>;
+  new_values?: Record<string, any>;
+  changes_summary?: string;
+  metadata?: Record<string, any>;
+  notes?: string;
+  status?: AuditStatus;
+  severity?: AuditSeverity;
+  financial_data: {
+    amount?: number;
+    currency?: string;
+    account_code?: string;
+    reference_number?: string;
+    transaction_date?: string;
+    payment_method?: string;
+    invoice_number?: string;
+    contract_number?: string;
+    customer_id?: string;
+    vendor_id?: string;
+    tax_amount?: number;
+    discount_amount?: number;
+    balance?: number;
+  };
 }
 
 export interface FinancialAuditSummary {

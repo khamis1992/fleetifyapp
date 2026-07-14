@@ -177,7 +177,7 @@ export const useContractsData = (filters: any = {}) => {
       // إذا كان هناك نص بحث، نبحث أولاً عن العملاء المطابقين
       if (searchTerm) {
         // تقسيم كلمة البحث إلى كلمات منفصلة للبحث الأفضل
-        const searchWords = searchTerm.split(/\s+/).filter(w => w.length > 0);
+        const searchWords = searchTerm.split(/\s+/).filter((w: string) => w.length > 0);
         
         // Build a more comprehensive OR query for customer search
         // This handles cases where users search for "عمارة الخروبي" which is stored as first_name + last_name
@@ -217,7 +217,7 @@ export const useContractsData = (filters: any = {}) => {
           customerIds = matchingCustomers
             .filter((customer) => {
               const customerText = buildCustomerSearchText(customer);
-              return normalizedWords.every((word) => customerText.includes(word));
+              return normalizedWords.every((word: string) => customerText.includes(word));
             })
             .map(c => c.id);
         }
@@ -560,7 +560,7 @@ export const useContractsData = (filters: any = {}) => {
         const searchTerm = filters.search.trim();
         
         // Split search into words for better matching (e.g., "عمارة الخروبي" -> ["عمارة", "الخروبي"])
-        const searchWords = searchTerm.split(/\s+/).filter(w => w.length > 0);
+        const searchWords = searchTerm.split(/\s+/).filter((w: string) => w.length > 0);
         
         // Build customer name from contract.customers data
         let customerName = '';
@@ -586,7 +586,7 @@ export const useContractsData = (filters: any = {}) => {
         ].join(' ').toLowerCase();
         
         // Check if ALL search words are found (for multi-word searches like "عمارة الخروبي")
-        const allWordsFound = searchWords.every(word => 
+        const allWordsFound = searchWords.every((word: string) =>
           searchableText.includes(word.toLowerCase())
         );
         

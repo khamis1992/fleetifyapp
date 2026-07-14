@@ -3,15 +3,50 @@ import { cleanup } from '@testing-library/react';
 import * as matchers from '@testing-library/jest-dom/matchers';
 import { toHaveNoViolations } from 'jest-axe';
 
+// Compatibility for legacy suites while they are migrated from Jest to Vitest.
+(globalThis as typeof globalThis & { jest?: typeof vi }).jest = vi;
+
 // Extend Vitest's expect with jest-dom matchers
 expect.extend(matchers);
 
 // Extend Vitest's expect with jest-axe matchers for accessibility testing
 expect.extend(toHaveNoViolations);
 
+function createTestStorage(): Storage {
+  const values = new Map<string, string>();
+  return {
+    get length() {
+      return values.size;
+    },
+    clear: () => values.clear(),
+    getItem: (key: string) => values.get(String(key)) ?? null,
+    key: (index: number) => [...values.keys()][index] ?? null,
+    removeItem: (key: string) => values.delete(String(key)),
+    setItem: (key: string, value: string) => {
+      values.set(String(key), String(value));
+    },
+  };
+}
+
+function resetTestStorage() {
+  Object.defineProperty(globalThis, 'localStorage', {
+    configurable: true,
+    writable: true,
+    value: createTestStorage(),
+  });
+  Object.defineProperty(globalThis, 'sessionStorage', {
+    configurable: true,
+    writable: true,
+    value: createTestStorage(),
+  });
+}
+
+resetTestStorage();
+
 // Cleanup after each test
 afterEach(() => {
   cleanup();
+  resetTestStorage();
 });
 
 // Mock window.matchMedia
@@ -93,6 +128,14 @@ vi.mock('framer-motion', () => ({
     h1: 'h1',
     h2: 'h2',
     h3: 'h3',
+    header: 'header',
+    main: 'main',
+    nav: 'nav',
+    section: 'section',
+    article: 'article',
+    aside: 'aside',
+    ul: 'ul',
+    li: 'li',
   },
   AnimatePresence: ({ children }: { children: React.ReactNode }) => children,
 }));
@@ -167,10 +210,10 @@ vi.mock('@/hooks/useFinance', () => ({
 // Mock currency formatter hook
 vi.mock('@/hooks/useCurrencyFormatter', () => ({
   useCurrencyFormatter: () => ({
-    formatCurrency: (amount: number) => `${amount.toLocaleString('ar-KW')} KWD`,
-    formatNumber: (num: number) => num.toLocaleString('ar-KW'),
-    currency: 'KWD',
-    locale: 'ar-KW',
+    formatCurrency: (amount: number) => `${amount.toLocaleString('ar-QA')} QAR`,
+    formatNumber: (num: number) => num.toLocaleString('ar-QA'),
+    currency: 'QAR',
+    locale: 'ar-QA',
   }),
 }));
 

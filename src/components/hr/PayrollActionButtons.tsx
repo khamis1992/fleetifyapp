@@ -164,7 +164,7 @@ export default function PayrollActionButtons({
               <br />
               <span className="font-medium">رقم الراتب: {payroll.payroll_number}</span>
               <br />
-              <span className="font-medium">المبلغ: {payroll.net_amount} د.ك</span>
+              <span className="font-medium">المبلغ: {payroll.net_amount} ر.ق</span>
               <br />
               <br />
               سيتم إنشاء قيد محاسبي تلقائياً عند الاعتماد.
@@ -196,7 +196,7 @@ export default function PayrollActionButtons({
               <br />
               <span className="font-medium">رقم الراتب: {payroll.payroll_number}</span>
               <br />
-              <span className="font-medium">المبلغ: {payroll.net_amount} د.ك</span>
+              <span className="font-medium">المبلغ: {payroll.net_amount} ر.ق</span>
               <br />
               <span className="font-medium">طريقة الدفع: {
                 payroll.payment_method === 'bank_transfer' ? 'تحويل بنكي' :

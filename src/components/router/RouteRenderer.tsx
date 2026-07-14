@@ -137,7 +137,7 @@ const RouteRenderer: React.FC<RouteRendererProps> = ({
 
   // Memoize sorted routes to prevent recalculation on every render
   const sortedRoutes = useMemo(() => {
-    return routes.sort((a, b) => a.priority - b.priority);
+    return [...routes].sort((a, b) => a.priority - b.priority);
   }, [routes]);
 
 

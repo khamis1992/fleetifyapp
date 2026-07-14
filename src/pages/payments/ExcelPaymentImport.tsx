@@ -964,7 +964,7 @@ const explainPaymentSkipWithContext = (
     return `${prefix}تم تخطي الدفعة لأن الفاتورة المرتبطة مدفوعة أو لأن الدفعة ستتجاوز رصيدها.`;
   }
 
-  if (message.includes('مكررة') || message.includes('Ù…ÙƒØ±Ø±Ø©') || message.toLowerCase().includes('duplicate')) {
+  if (message.includes('مكررة') || message.toLowerCase().includes('duplicate')) {
     return `${prefix}تم تخطي الدفعة لأنها مكررة أو سبق استيرادها.`;
   }
 
@@ -1854,7 +1854,7 @@ export default function ExcelPaymentImport() {
   const applySuggestedContractMatch = (alternative: ContractMatchAlternative) => {
     if (!selectedFile) return;
 
-    const cleanedSelectedFile = {
+    const cleanedSelectedFile: ParsedExcelFile = {
       ...selectedFile,
       warnings: selectedFile.warnings.filter((warning) => !isContractMatchWarning(warning)),
       status: selectedFile.status === 'empty' || selectedFile.status === 'error' ? selectedFile.status : 'ready',
@@ -1923,7 +1923,7 @@ export default function ExcelPaymentImport() {
           ? currentFile.warnings.filter((item) => item !== warning && !isContractMatchWarning(item))
           : Array.from(new Set([...currentFile.warnings, warning]));
 
-        const updated = {
+        const updated: ParsedExcelFile = {
           ...currentFile,
           warnings,
           status: currentFile.status === 'empty' || currentFile.status === 'error'
@@ -2708,6 +2708,7 @@ export default function ExcelPaymentImport() {
               amount: amountToApply,
               payment_date: monthDate || invoiceForPayment.invoice_date || invoiceForPayment.due_date || new Date().toISOString().slice(0, 10),
               payment_method: 'cash',
+              payment_status: 'completed',
               type: 'receipt',
               currency: 'QAR',
               notes: `دفعة كاش تاريخية مستوردة من Excel - ${file.fileName} - شهر ${row.month}`,
@@ -2960,7 +2961,7 @@ export default function ExcelPaymentImport() {
   return (
     <div dir="rtl" className={`min-h-screen bg-[#F6F8FB] py-6 text-[#020617] ${isEditMode ? 'px-0 md:px-0' : 'px-4 md:px-6'}`}>
       <div className={`mx-auto space-y-5 ${isEditMode ? 'max-w-none' : 'max-w-7xl'}`}>
-        <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div className="flex items-start gap-3">
               <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#22C7A1]/10 text-[#22C7A1]">
@@ -3216,7 +3217,7 @@ export default function ExcelPaymentImport() {
                 />
               </div>
 
-              <div className="max-h-[640px] space-y-2 overflow-y-auto rounded-2xl border border-slate-200 bg-white p-2 shadow-sm">
+              <div className="max-h-[640px] space-y-2 overflow-y-auto rounded-lg border border-slate-200 bg-white p-2 shadow-sm">
                 {filteredFiles.map((file) => {
                   const meta = statusMeta[file.status];
                   const Icon = meta.icon;
@@ -3294,7 +3295,7 @@ export default function ExcelPaymentImport() {
               </div>
             </aside>
 
-            <main className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+            <main className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
               {selectedFile ? (
                 <div className="space-y-5">
                   <div className="flex flex-col gap-3 border-b border-slate-100 pb-4 lg:flex-row lg:items-start lg:justify-between">

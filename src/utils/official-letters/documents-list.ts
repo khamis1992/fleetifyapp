@@ -476,7 +476,12 @@ export function generateDocumentsListHtml(data: DocumentsListData): string {
                   })(p);
                 }
               }).catch(function(err) {
-                container.innerHTML = '<p style="text-align:center;color:#666;padding:20px;">تعذر تحميل ملف PDF</p>';
+                var message = document.createElement('p');
+                message.style.textAlign = 'center';
+                message.style.color = '#666';
+                message.style.padding = '20px';
+                message.textContent = 'تعذر تحميل ملف PDF';
+                container.replaceChildren(message);
               });
             }
           })();

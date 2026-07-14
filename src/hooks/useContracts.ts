@@ -2,56 +2,29 @@ import { useQuery } from "@tanstack/react-query"
 import { supabase } from "@/integrations/supabase/client"
 import { useUnifiedCompanyAccess } from './useUnifiedCompanyAccess'
 import * as Sentry from '@sentry/react'
+import type { Database } from '@/integrations/supabase/types'
 
-export interface Contract {
-  id: string;
-  company_id: string;
-  customer_id: string;
-  vehicle_id?: string;
-  contract_number: string;
-  contract_date: string;
-  start_date: string;
-  end_date: string;
-  contract_amount: number;
-  monthly_amount: number;
-  status: string;
-  legal_status?: string;
-  contract_type: string;
-  description?: string;
-  terms?: string;
-  created_at: string;
-  updated_at: string;
-  cost_center_id?: string;
-  account_id?: string;
-  journal_entry_id?: string;
-  auto_renew_enabled?: boolean;
-  renewal_terms?: Record<string, unknown>;
-  vehicle_returned?: boolean;
-  last_renewal_check?: string;
-  last_payment_check_date?: string;
-  suspension_reason?: string;
-  expired_at?: string;
-  created_by?: string;
-  total_paid?: number;
-  balance_due?: number;
+type ContractRow = Database['public']['Tables']['contracts']['Row'];
+
+export interface Contract extends ContractRow {
   linked_payments_amount?: number;
   customer?: {
     id: string;
-    first_name: string;
-    last_name: string;
-    first_name_ar?: string;
-    last_name_ar?: string;
-    phone?: string;
-    email?: string;
-  };
+    first_name: string | null;
+    last_name: string | null;
+    first_name_ar: string | null;
+    last_name_ar: string | null;
+    phone: string;
+    email: string | null;
+  } | null;
   vehicle?: {
     id: string;
     plate_number: string;
     make: string;
     model: string;
-    year?: number;
-    status: string;
-  };
+    year: number;
+    status: Database['public']['Enums']['vehicle_status'] | null;
+  } | null;
 }
 
 export const useContracts = (customerId?: string, vehicleId?: string, overrideCompanyId?: string) => {
@@ -134,6 +107,7 @@ export const useContracts = (customerId?: string, vehicleId?: string, overrideCo
 
       // Group payments by contract_id
       const paymentsByContract = (paymentsData || []).reduce((acc, payment) => {
+        if (!payment.contract_id) return acc
         if (!acc[payment.contract_id]) {
           acc[payment.contract_id] = 0
         }
@@ -145,6 +119,12 @@ export const useContracts = (customerId?: string, vehicleId?: string, overrideCo
       // لا حاجة لإضافة linked_payments_amount - total_paid يحتوي على المجموع الصحيح
       const contractsWithPayments = data.map(contract => ({
         ...contract,
+        balance_due:
+          contract.balance_due ??
+          Math.max(
+            Number(contract.contract_amount || 0) - Number(contract.total_paid || 0),
+            0
+          ),
         linked_payments_amount: paymentsByContract[contract.id] || 0, // للعرض فقط
         // total_paid و balance_due محسوبة من الـ trigger - لا تعدل هنا
       }))
@@ -240,6 +220,7 @@ export const useActiveContracts = (customerId?: string, vendorId?: string, overr
 
       // Group payments by contract_id
       const paymentsByContract = (paymentsData || []).reduce((acc, payment) => {
+        if (!payment.contract_id) return acc
         if (!acc[payment.contract_id]) {
           acc[payment.contract_id] = 0
         }
@@ -255,9 +236,17 @@ export const useActiveContracts = (customerId?: string, vendorId?: string, overr
       }))
 
       Sentry.addBreadcrumb({ category: 'contracts', message: 'Active contracts fetched successfully', level: 'info', data: { count: contractsWithPayments.length } });
-      return contractsWithPayments
+      return contractsWithPayments.map(contract => ({
+        ...contract,
+        balance_due:
+          contract.balance_due ??
+          Math.max(
+            Number(contract.contract_amount || 0) - Number(contract.total_paid || 0),
+            0
+          ),
+      }))
     },
-    enabled: !!targetCompanyId && !vendorId,
+    enabled: !!targetCompanyId,
     staleTime: 5 * 60 * 1000, // 5 minutes
     gcTime: 10 * 60 * 1000, // 10 minutes
     retry: 2,

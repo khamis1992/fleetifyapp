@@ -69,6 +69,11 @@ export interface FinancialSummary {
   unbalanced_entries_count: number
 }
 
+const normalizeJournalEntryStatus = (status: string): 'posted' | 'draft' | 'reversed' | 'cancelled' => {
+  if (status === 'posted' || status === 'reversed' || status === 'cancelled') return status
+  return 'draft'
+}
+
 // Journal Entry Lines Hook
 export const useJournalEntryLines = (entryId: string) => {
   const { user } = useAuth()
@@ -232,7 +237,10 @@ export const useEnhancedJournalEntries = (filters?: LedgerFilters) => {
           )
         }
         
-        return filteredData
+        return filteredData.map(entry => ({
+          ...entry,
+          status: normalizeJournalEntryStatus(entry.status),
+        }))
         
       } catch (error) {
         console.error("❌ [ENHANCED_JOURNAL_ENTRIES] Error:", error)
@@ -306,7 +314,8 @@ export const useAccountBalances = (filters?: { accountType?: string; asOfDate?: 
             credit_amount,
             journal_entry:journal_entries!inner(
               status,
-              company_id
+              company_id,
+              entry_date
             )
           `)
           .eq("journal_entry.status", "posted")
@@ -317,6 +326,10 @@ export const useAccountBalances = (filters?: { accountType?: string; asOfDate?: 
           console.log(`🔍 [ACCOUNT_BALANCES] Filtering journal entries by company_id: ${filter.company_id}`)
         }
         
+        if (filters?.asOfDate) {
+          journalQuery = journalQuery.lte("journal_entry.entry_date", filters.asOfDate)
+        }
+
         const { data: journalLines, error: linesError } = await journalQuery
         
         if (linesError) {
@@ -352,7 +365,7 @@ export const useAccountBalances = (filters?: { accountType?: string; asOfDate?: 
         // Build account balances with calculated totals
         const accountBalances: AccountBalance[] = (accounts || []).map(account => {
           const totals = accountTotals.get(account.id) || { debits: 0, credits: 0 }
-          const opening = Number(account.current_balance) || 0
+          const opening = accountTotals.has(account.id) ? 0 : Number(account.current_balance) || 0
           
           // Calculate closing balance based on account type
           let closing = opening
@@ -377,7 +390,7 @@ export const useAccountBalances = (filters?: { accountType?: string; asOfDate?: 
             account_id: account.id,
             account_code: account.account_code,
             account_name: account.account_name,
-            account_name_ar: account.account_name_ar,
+            account_name_ar: account.account_name_ar ?? undefined,
             account_type: account.account_type,
             balance_type: account.balance_type as 'debit' | 'credit',
             opening_balance: opening,
@@ -403,17 +416,22 @@ export const useAccountBalances = (filters?: { accountType?: string; asOfDate?: 
 
 // Account Movements (Detailed)  
 export const useAccountMovements = (accountId: string, filters?: LedgerFilters) => {
+  const { companyId } = useUnifiedCompanyAccess()
+
   return useQuery({
-    queryKey: ["accountMovements", accountId, filters],
+    queryKey: ["accountMovements", companyId, accountId, filters],
     queryFn: async () => {
+      if (!companyId) throw new Error("Company ID is required")
+
       // Get journal entry lines for the account
       const { data: lines, error: linesError } = await supabase
         .from("journal_entry_lines")
         .select(`
           *,
-          journal_entry:journal_entries(*)
+          journal_entry:journal_entries!inner(*)
         `)
         .eq("account_id", accountId)
+        .eq("journal_entry.company_id", companyId)
       
       if (linesError) throw linesError
       
@@ -455,7 +473,9 @@ export const useAccountMovements = (accountId: string, filters?: LedgerFilters) 
       // Calculate running balances
       let runningBalance = 0
       const movements: AccountMovement[] = filteredData.map(line => {
-        const movement = line.debit_amount - line.credit_amount
+        const debitAmount = Number(line.debit_amount || 0)
+        const creditAmount = Number(line.credit_amount || 0)
+        const movement = debitAmount - creditAmount
         runningBalance += movement
         
         const costCenter = line.cost_center_id 
@@ -468,8 +488,8 @@ export const useAccountMovements = (accountId: string, filters?: LedgerFilters) 
           entry_date: line.journal_entry.entry_date,
           description: line.journal_entry.description,
           line_description: line.line_description || '',
-          debit_amount: line.debit_amount,
-          credit_amount: line.credit_amount,
+          debit_amount: debitAmount,
+          credit_amount: creditAmount,
           running_balance: runningBalance,
           reference_type: line.journal_entry.reference_type || '',
           reference_id: line.journal_entry.reference_id || '',
@@ -481,7 +501,7 @@ export const useAccountMovements = (accountId: string, filters?: LedgerFilters) 
       
       return movements
     },
-    enabled: !!accountId
+    enabled: !!companyId && !!accountId
   })
 }
 
@@ -511,7 +531,7 @@ export const useTrialBalance = (asOfDate?: string) => {
         console.log("✅ [TRIAL_BALANCE] Found", data?.length || 0, "accounts for company", companyId)
         
         // Filter out system accounts for better display
-        const filteredData = (data || []).filter((item: unknown) => {
+        const filteredData = (data || []).filter((item) => {
           // Only show non-zero balances or active accounts
           return (item.debit_balance > 0 || item.credit_balance > 0) || 
                  item.account_level <= 4 // Show summary accounts regardless
@@ -692,7 +712,9 @@ export const useFinancialSummary = (filters?: { dateFrom?: string; dateTo?: stri
 }
 
 // Helper function to calculate from current balances as fallback
-const calculateSummaryFromCurrentBalances = (accounts: unknown[]): FinancialSummary => {
+const calculateSummaryFromCurrentBalances = (
+  accounts: Array<{ account_type: string; current_balance: number | null }>,
+): FinancialSummary => {
   let totalAssets = 0
   let totalLiabilities = 0
   let totalEquity = 0
@@ -700,7 +722,7 @@ const calculateSummaryFromCurrentBalances = (accounts: unknown[]): FinancialSumm
   let totalExpenses = 0
   
   accounts?.forEach(account => {
-    const balance = account.current_balance || 0
+    const balance = Number(account.current_balance || 0)
     switch (account.account_type) {
       case 'assets':
         totalAssets += Math.abs(balance)
@@ -868,13 +890,16 @@ export const useReverseJournalEntry = () => {
 // Delete Journal Entry
 export const useDeleteJournalEntry = () => {
   const queryClient = useQueryClient()
+  const { companyId } = useUnifiedCompanyAccess()
   
   return useMutation({
     mutationFn: async (entryId: string) => {
+      if (!companyId) throw new Error("Company ID is required")
       const { data: entry, error: entryFetchError } = await supabase
         .from("journal_entries")
         .select("id,status")
         .eq("id", entryId)
+        .eq("company_id", companyId)
         .single()
 
       if (entryFetchError) throw entryFetchError
@@ -882,19 +907,12 @@ export const useDeleteJournalEntry = () => {
         throw new Error("Only draft journal entries can be deleted. Posted entries must be reversed.")
       }
 
-      // First delete journal entry lines
-      const { error: linesError } = await supabase
-        .from("journal_entry_lines")
-        .delete()
-        .eq("journal_entry_id", entryId)
-      
-      if (linesError) throw linesError
-      
-      // Then delete the journal entry
       const { data, error } = await supabase
         .from("journal_entries")
         .delete()
         .eq("id", entryId)
+        .eq("company_id", companyId)
+        .eq("status", "draft")
         .select()
         .single()
       

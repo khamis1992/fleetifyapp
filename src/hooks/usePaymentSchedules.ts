@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { usePermissions } from "@/hooks/usePermissions";
+import { useUnifiedCompanyAccess } from "@/hooks/useUnifiedCompanyAccess";
 import * as Sentry from '@sentry/react';
 import {
   PaymentSchedule,
@@ -111,6 +112,7 @@ export const useCreatePaymentSchedules = () => {
   const { toast } = useToast();
   const { user } = useAuth();
   const { hasPermission } = usePermissions();
+  const { companyId } = useUnifiedCompanyAccess();
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -155,7 +157,7 @@ export const useCreatePaymentSchedules = () => {
           p_contract_id: data.contract_id,
           p_installment_plan: data.installment_plan,
           p_number_of_installments: data.number_of_installments,
-          p_first_payment_date: data.first_payment_date || null
+          p_first_payment_date: data.first_payment_date || undefined
         }
       );
 
@@ -431,6 +433,26 @@ export const useDeletePaymentSchedule = () => {
         });
         throw error;
       }
+      if (!companyId) throw new Error('تعذر تحديد الشركة');
+
+      const { data: schedule, error: scheduleError } = await supabase
+        .from('contract_payment_schedules')
+        .select('id, contract_id, invoice_id, paid_amount, status')
+        .eq('id', id)
+        .eq('company_id', companyId)
+        .single();
+      if (scheduleError || !schedule) throw scheduleError || new Error('القسط غير موجود');
+      if (schedule.invoice_id || Number(schedule.paid_amount || 0) > 0 || schedule.status === 'paid') {
+        throw new Error('لا يمكن حذف قسط مرتبط بفاتورة أو دفعة. استخدم إجراء تصحيح مالي معتمد.');
+      }
+      const { data: contract, error: contractError } = await supabase
+        .from('contracts')
+        .select('status')
+        .eq('id', schedule.contract_id)
+        .eq('company_id', companyId)
+        .single();
+      if (contractError || !contract) throw contractError || new Error('العقد غير موجود');
+      if (contract.status !== 'draft') throw new Error('حذف الأقساط مسموح لمسودة عقد فقط');
 
       Sentry.addBreadcrumb({
         category: 'payment_schedules',
@@ -441,7 +463,10 @@ export const useDeletePaymentSchedule = () => {
       const { error } = await supabase
         .from('contract_payment_schedules')
         .delete()
-        .eq('id', id);
+        .eq('id', id)
+        .eq('company_id', companyId)
+        .select('id')
+        .single();
 
       if (error) {
         Sentry.captureException(error, {
@@ -637,9 +662,10 @@ export const useGeneratePaymentSchedulesFromInvoices = () => {
       return result;
     },
     onSuccess: (result, variables) => {
-      const schedulesCreated = result?.schedules_created || 0;
-      const invoicesProcessed = result?.invoices_processed || 0;
-      const schedulesSkipped = result?.schedules_skipped || 0;
+      const resultObject = result && typeof result === 'object' && !Array.isArray(result) ? result : {};
+      const schedulesCreated = Number(resultObject.schedules_created || 0);
+      const invoicesProcessed = Number(resultObject.invoices_processed || 0);
+      const schedulesSkipped = Number(resultObject.schedules_skipped || 0);
 
       queryClient.invalidateQueries({
         queryKey: ['payment-schedules', variables]

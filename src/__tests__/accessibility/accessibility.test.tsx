@@ -8,7 +8,7 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
-import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { accessibilityTester, quickAccessibilityCheck } from '@/utils/accessibilityTesting';
 import { Button } from '@/components/ui/button';
 import { Form, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';

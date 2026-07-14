@@ -210,13 +210,19 @@ export const useUpdatePermitStatus = () => {
 
 export const useDeleteDispatchPermit = () => {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
 
   return useMutation({
     mutationFn: async (permitId: string) => {
+      const companyId = user?.profile?.company_id;
+      if (!companyId) throw new Error('Company ID is required');
       const { error } = await supabase
         .from('vehicle_dispatch_permits')
         .delete()
-        .eq('id', permitId);
+        .eq('id', permitId)
+        .eq('company_id', companyId)
+        .select('id')
+        .single();
 
       if (error) {
         throw error;

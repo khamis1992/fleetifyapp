@@ -95,7 +95,7 @@ export function isSuperAdmin(context: UserPermissionContext): boolean {
  * التحقق من أن المستخدم مدير شركة
  */
 export function isCompanyManager(context: UserPermissionContext): boolean {
-  return context.role === UserRole.COMPANY_MANAGER;
+  return context.role === UserRole.COMPANY_ADMIN;
 }
 
 /**

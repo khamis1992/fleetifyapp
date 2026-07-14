@@ -191,18 +191,6 @@ class PaymentStateMachine {
           };
         }
 
-        // التحقق من overpayment للدفعات المكتملة
-        if (currentState === PaymentState.COMPLETED && event === PaymentEvent.VOID) {
-          if (this.config.enableAutoVoidOnOverpayment) {
-            const overpaymentCheck = await this.checkOverpayment(payment);
-            if (overpaymentCheck.isOverpayment && !options.force) {
-              return {
-                success: false,
-                error: `الدفعة تتجاوز الحد المسموح (${overpaymentCheck.percentage}% من الحد الأقصى ${this.config.maxOverpaymentThreshold}%)`
-              };
-            }
-          }
-        }
       }
 
       // 3. تنفيذ الانتقال
@@ -226,9 +214,6 @@ class PaymentStateMachine {
         }
         this.retryCount.set(paymentId, currentRetries + 1);
         logger.info(`Retrying payment (${currentRetries + 1}/${this.config.maxRetries})`, { paymentId });
-      } else if (event === PaymentEvent.COMPLETE || event === PaymentEvent.VOID || event === PaymentEvent.REVERSE) {
-        // إعادة تعيين عداد المحاولات عند النجاح
-        this.retryCount.set(paymentId, 0);
       }
 
       // 5. تحديث الدفعة في قاعدة البيانات
@@ -355,24 +340,6 @@ class PaymentStateMachine {
         }
       }
       
-      if (event === PaymentEvent.REVERSE) {
-        // التحقق من أن القيد المحاسبي لم يتم مرحله بعد
-        const journalEntryId = await this.getPaymentJournalEntryId(payment);
-        if (journalEntryId) {
-          const { data: journalEntry } = await supabase
-            .from('journal_entries')
-            .select('status')
-            .eq('id', journalEntryId)
-            .single();
-
-          if (journalEntry?.status === 'posted') {
-            return {
-              isValid: false,
-              error: 'Cannot reverse a payment with a posted journal entry'
-            };
-          }
-        }
-      }
     }
 
     return { isValid: true };
@@ -410,7 +377,7 @@ class PaymentStateMachine {
       if (payment.invoice_id) {
         const { data: invoice } = await supabase
           .from('invoices')
-          .select('total_amount', 'paid_amount')
+          .select('total_amount, paid_amount')
           .eq('id', payment.invoice_id)
           .single();
 
@@ -429,7 +396,7 @@ class PaymentStateMachine {
       if (payment.contract_id) {
         const { data: contract } = await supabase
           .from('contracts')
-          .select('contract_amount', 'total_paid')
+          .select('contract_amount, total_paid')
           .eq('id', payment.contract_id)
           .single();
 
@@ -576,14 +543,28 @@ class PaymentStateMachine {
     });
 
     if (toState === PaymentState.FAILED || toState === PaymentState.VOIDED || toState === PaymentState.REVERSED) {
-      supabase.from('notifications').insert({
-        company_id: payment.company_id,
-        title: 'تحديث حالة الدفعة',
-        message: `الدفعة ${payment.payment_number}: تغيرت الحالة من ${fromState} إلى ${toState}`,
-        type: 'payment_state_change',
-        reference_id: payment.id,
-        priority: toState === PaymentState.FAILED ? 'high' : 'medium'
-      }).then().catch(() => {});
+      void (async () => {
+        try {
+          const { error } = await supabase.from('system_notifications').insert({
+            target_company_id: payment.company_id,
+            created_by: userId || null,
+            title: 'Payment state updated',
+            title_ar: 'تحديث حالة الدفعة',
+            message: `Payment ${payment.payment_number} changed from ${fromState} to ${toState}`,
+            message_ar: `الدفعة ${payment.payment_number}: تغيرت الحالة من ${fromState} إلى ${toState}`,
+            type: 'payment_state_change',
+            priority: toState === PaymentState.FAILED ? 'high' : 'medium',
+            target_audience: 'company',
+            action_url: `/payments/${payment.id}`,
+          });
+
+          if (error) {
+            logger.warn('Failed to create payment state notification', { paymentId: payment.id, error });
+          }
+        } catch (error) {
+          logger.warn('Failed to create payment state notification', { paymentId: payment.id, error });
+        }
+      })();
     }
   }
 

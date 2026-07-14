@@ -5,6 +5,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { formatDateInGregorian } from '@/utils/dateFormatter';
 import { PermissionGuard } from '@/components/auth/PermissionGuard';
+import { Permission } from '@/lib/permissions/roles';
 
 interface InvoiceCardProps {
   invoice: any;
@@ -70,7 +71,7 @@ export const InvoiceCard: React.FC<InvoiceCardProps> = ({
               <Eye className="h-4 w-4" />
             </Button>
             
-            <PermissionGuard permissions={['edit_invoices']}>
+            <PermissionGuard permissions={[Permission.EDIT_INVOICE]}>
               <Button
                 variant="outline"
                 size="sm"
@@ -81,7 +82,7 @@ export const InvoiceCard: React.FC<InvoiceCardProps> = ({
               </Button>
             </PermissionGuard>
             
-            <PermissionGuard permissions={['delete_invoices']}>
+            <PermissionGuard permissions={[Permission.DELETE_INVOICE]}>
               <Button
                 variant="outline"
                 size="sm"
@@ -105,7 +106,7 @@ export const InvoiceCard: React.FC<InvoiceCardProps> = ({
               {invoice.due_date && (
                 <span>تاريخ الاستحقاق: {formatDateInGregorian(invoice.due_date)}</span>
               )}
-              <span>المبلغ: {invoice.total_amount?.toFixed(3)} د.ك</span>
+              <span>المبلغ: {invoice.total_amount?.toFixed(2)} ر.ق</span>
             </div>
           </div>
         </div>

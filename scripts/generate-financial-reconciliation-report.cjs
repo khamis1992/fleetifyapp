@@ -61,10 +61,11 @@ function groupBy(rows, keySelector) {
 
 async function main() {
   const failOnCritical = process.argv.includes('--fail-on-critical');
-  const [companies, invoices, payments, journalEntries, bankTransactions] = await Promise.all([
+  const [companies, invoices, payments, paymentAllocations, journalEntries, bankTransactions] = await Promise.all([
     selectAll('companies', 'id,name'),
     selectAll('invoices', 'id,company_id,invoice_number,total_amount,paid_amount,balance_due,payment_status,status'),
-    selectAll('payments', 'id,company_id,payment_number,invoice_id,amount,payment_status,journal_entry_id,reconciliation_status,reconciled_at,payment_method'),
+    selectAll('payments', 'id,company_id,payment_number,invoice_id,amount,payment_status,transaction_type,journal_entry_id,reconciliation_status,reconciled_at,payment_method'),
+    selectAll('payment_allocations', 'id,company_id,payment_id,allocation_type,target_id,amount,is_active'),
     selectAll('journal_entries', 'id,company_id,entry_number,status,reference_type,reference_id,total_debit,total_credit'),
     selectAll('bank_transactions', 'id,company_id,transaction_number,amount,status,reconciled,reconciled_at,reference_number'),
   ]);
@@ -73,13 +74,30 @@ async function main() {
   const byCompany = companies.map((company) => {
     const companyInvoices = invoices.filter((row) => row.company_id === company.id);
     const companyPayments = payments.filter((row) => row.company_id === company.id);
+    const companyAllocations = paymentAllocations.filter((row) => row.company_id === company.id);
     const companyEntries = journalEntries.filter((row) => row.company_id === company.id);
     const companyBankTransactions = bankTransactions.filter((row) => row.company_id === company.id);
 
-    const paymentsByInvoice = groupBy(
-      companyPayments.filter((payment) => payment.payment_status === 'completed' && payment.invoice_id),
-      (payment) => payment.invoice_id
+    const completedReceipt = (payment) => (
+      ['completed', 'paid', 'success', 'succeeded'].includes(String(payment.payment_status || '').toLowerCase())
+      && String(payment.transaction_type || 'receipt').toLowerCase() === 'receipt'
     );
+    const paymentsById = new Map(companyPayments.map((payment) => [payment.id, payment]));
+    const activeAllocations = companyAllocations.filter((allocation) => allocation.is_active === true);
+    const allocatedPaymentIds = new Set(activeAllocations.map((allocation) => allocation.payment_id));
+    const canonicalInvoiceContributions = [
+      ...activeAllocations
+        .filter((allocation) => allocation.allocation_type === 'invoice')
+        .map((allocation) => ({ payment: paymentsById.get(allocation.payment_id), allocation }))
+        .filter(({ payment }) => payment && completedReceipt(payment))
+        .map(({ payment, allocation }) => ({ ...payment, invoice_id: allocation.target_id, amount: allocation.amount })),
+      ...companyPayments.filter((payment) => (
+        completedReceipt(payment)
+        && payment.invoice_id
+        && !allocatedPaymentIds.has(payment.id)
+      )),
+    ];
+    const paymentsByInvoice = groupBy(canonicalInvoiceContributions, (payment) => payment.invoice_id);
 
     const invoiceMismatches = [];
     for (const invoice of companyInvoices) {

@@ -1,6 +1,4 @@
 import React, { useMemo, useState } from 'react';
-import { format } from 'date-fns';
-import { ar } from 'date-fns/locale';
 import {
   Dialog,
   DialogContent,
@@ -9,7 +7,6 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { 
   FileText, 
   Printer, 
@@ -24,6 +21,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { FeatureTourButton, FeatureTourDialog, type FeatureTourContent } from '@/components/common/FeatureTourGuide';
+import { useAuth } from '@/contexts/AuthContext';
+import { useCurrentCompany } from '@/hooks/useCurrentCompany';
 
 interface VehicleComprehensiveReportDialogProps {
   open: boolean;
@@ -49,27 +48,33 @@ export const VehicleComprehensiveReportDialog: React.FC<VehicleComprehensiveRepo
   vehicleId,
 }) => {
   const { formatCurrency } = useCurrencyFormatter();
+  const { user } = useAuth();
+  const companyId = user?.profile?.company_id || user?.company?.id;
+  const { data: currentCompany } = useCurrentCompany();
   const [activeTour, setActiveTour] = useState<FeatureTourContent | null>(null);
 
   // جلب بيانات المركبة
   const { data: vehicle, isLoading: loadingVehicle } = useQuery({
-    queryKey: ['vehicle-report-details', vehicleId],
+    queryKey: ['vehicle-report-details', companyId, vehicleId],
     queryFn: async () => {
+      if (!companyId) throw new Error('Company ID is required');
       const { data, error } = await supabase
         .from('vehicles')
         .select('*')
         .eq('id', vehicleId)
+        .eq('company_id', companyId)
         .single();
       if (error) throw error;
       return data;
     },
-    enabled: open && !!vehicleId,
+    enabled: open && !!companyId && !!vehicleId,
   });
 
   // جلب العقود
   const { data: contracts = [], isLoading: loadingContracts } = useQuery({
-    queryKey: ['vehicle-report-contracts', vehicleId],
+    queryKey: ['vehicle-report-contracts', companyId, vehicleId],
     queryFn: async () => {
+      if (!companyId) throw new Error('Company ID is required');
       const { data, error } = await supabase
         .from('contracts')
         .select(`
@@ -87,17 +92,19 @@ export const VehicleComprehensiveReportDialog: React.FC<VehicleComprehensiveRepo
           )
         `)
         .eq('vehicle_id', vehicleId)
+        .eq('company_id', companyId)
         .order('start_date', { ascending: false });
       if (error) throw error;
       return data;
     },
-    enabled: open && !!vehicleId,
+    enabled: open && !!companyId && !!vehicleId,
   });
 
   // جلب المخالفات (من جدول penalties للحصول على العلاقات)
   const { data: violations = [], isLoading: loadingViolations } = useQuery({
-    queryKey: ['vehicle-report-violations', vehicleId],
+    queryKey: ['vehicle-report-violations', companyId, vehicleId],
     queryFn: async () => {
+      if (!companyId) throw new Error('Company ID is required');
       const { data, error } = await supabase
         .from('penalties')
         .select(`
@@ -116,11 +123,12 @@ export const VehicleComprehensiveReportDialog: React.FC<VehicleComprehensiveRepo
           )
         `)
         .eq('vehicle_id', vehicleId)
+        .eq('company_id', companyId)
         .order('penalty_date', { ascending: false });
       if (error) throw error;
       return data;
     },
-    enabled: open && !!vehicleId,
+    enabled: open && !!companyId && !!vehicleId,
   });
 
   const isLoading = loadingVehicle || loadingContracts || loadingViolations;
@@ -155,18 +163,18 @@ export const VehicleComprehensiveReportDialog: React.FC<VehicleComprehensiveRepo
       const date = new Date();
       const year = date.getFullYear();
       const month = String(date.getMonth() + 1).padStart(2, '0');
-      const random = Math.floor(Math.random() * 9000) + 1000;
-      const refNumber = `ALR-TR/${year}/${month}/${random}`;
+      const referenceSuffix = crypto.randomUUID().slice(0, 8).toUpperCase();
+      const refNumber = `TR/${year}/${month}/${referenceSuffix}`;
 
       const COMPANY_INFO = {
-        name_ar: 'شركة العراف لتأجير السيارات',
-        name_en: 'AL-ARAF CAR RENTAL L.L.C',
-        logo: '/receipts/logo.png',
-        address: 'أم صلال محمد – الشارع التجاري – مبنى (79) – الطابق الأول – مكتب (2)',
-        phone: '+974 3141 1919',
-        email: 'info@alaraf.qa',
-        cr: '146832',
-        authorized_signatory: 'خميس هاشم الجبر',
+        name_ar: currentCompany?.name_ar || currentCompany?.name || 'الشركة',
+        name_en: currentCompany?.name || '',
+        logo: currentCompany?.logo_url || '',
+        address: currentCompany?.address_ar || currentCompany?.address || '',
+        phone: currentCompany?.phone || '',
+        email: currentCompany?.email || '',
+        cr: currentCompany?.commercial_register || '',
+        authorized_signatory: '',
         authorized_title: 'المخول بالتوقيع',
       };
 
@@ -304,6 +312,27 @@ export const VehicleComprehensiveReportDialog: React.FC<VehicleComprehensiveRepo
       page-break-inside: avoid;
       break-inside: avoid;
     }
+  </style>
+</head>
+<body>
+  <div class="letter-container">
+    <div class="header">
+      <div class="company-ar">
+        <h1>${COMPANY_INFO.name_ar}</h1>
+        <p>السجل التجاري: ${COMPANY_INFO.cr || '-'}</p>
+      </div>
+      <div class="logo-container">
+        ${COMPANY_INFO.logo ? `<img src="${COMPANY_INFO.logo}" alt="شعار الشركة" />` : ''}
+      </div>
+      <div class="company-en">
+        <h1>${COMPANY_INFO.name_en}</h1>
+      </div>
+    </div>
+    <div class="ref-date">
+      <span>المرجع: ${refNumber}</span>
+      <span>التاريخ: ${today}</span>
+    </div>
+    <div class="info-box">
       <div class="info-row">
         <span class="info-label">إلى:</span>
         <span>السيد / رئيس نيابة المرور المحترم - الدوحة</span>
@@ -339,7 +368,7 @@ export const VehicleComprehensiveReportDialog: React.FC<VehicleComprehensiveRepo
         </p>
         <p>
           نتقدم إلى سعادتكم بطلب تحويل المخالفات المرورية ضد الشخص المذكور أعلاه،
-          والذي قام باستئجار مركبة من شركة العراف لتأجير السيارات بموجب العقد رقم <strong>(${contract.contract_number})</strong> المبرم بين الطرفين بتاريخ <strong>${contract.start_date ? new Date(contract.start_date).toLocaleDateString('ar-QA') : '-'}</strong>.
+          والذي قام باستئجار مركبة من ${COMPANY_INFO.name_ar} بموجب العقد رقم <strong>(${contract.contract_number})</strong> المبرم بين الطرفين بتاريخ <strong>${contract.start_date ? new Date(contract.start_date).toLocaleDateString('ar-QA') : '-'}</strong>.
         </p>
         <p>
           علماً بأنه تم إرجاع المركبة بتاريخ <strong>${contract.end_date ? new Date(contract.end_date).toLocaleDateString('ar-QA') : 'لا يزال العقد سارياً'}</strong>،

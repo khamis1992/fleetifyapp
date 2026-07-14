@@ -11,8 +11,6 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAIChat } from '@/contexts/AIChatContext';
 import {
-  MessageCircle,
-  X,
   Send,
   Loader2,
   Bot,
@@ -22,15 +20,12 @@ import {
   StopCircle,
   ChevronDown,
   Lightbulb,
-  HelpCircle,
-  ExternalLink,
   Play,
-  Navigation,
   MapPin,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { useAIChatAssistant, ChatMessage } from '@/hooks/useAIChatAssistant';
 import { PAGE_ROUTES } from '@/lib/ai-knowledge-base';
@@ -397,6 +392,7 @@ const WelcomeMessage: React.FC<{
 // Main Chat Widget
 export const AIChatWidget: React.FC<{
    hideFloatingButton?: boolean }> = ({ hideFloatingButton = false }) => {
+  const { t } = useFleetifyTranslation('ui');
   const externalAIChat = useAIChat();
   // Use external state if available, otherwise use local state
   const [localIsOpen, setLocalIsOpen] = useState(false);
@@ -421,7 +417,7 @@ export const AIChatWidget: React.FC<{
   const statsPrompt = useMemo(() => generateStatsPrompt(systemStats), [systemStats]);
   
   // نظام الجولات التفاعلية
-  const { startTour, navigateTo } = useTourGuide();
+  const { startTour } = useTourGuide();
   
   const {
     messages,
@@ -687,7 +683,7 @@ export const AIChatWidget: React.FC<{
               {/* Quick Suggestions (when chat has messages) */}
               {messages.length > 0 && !isLoading && (
                 <div className="px-4 pb-2 flex-shrink-0">
-                  <ScrollArea className="w-full" orientation="horizontal">
+                  <ScrollArea className="w-full">
                     <div className="flex gap-2 pb-2">
                       {SUGGESTED_QUESTIONS.slice(0, 3).map((q, i) => (
                         <Button
@@ -701,6 +697,7 @@ export const AIChatWidget: React.FC<{
                         </Button>
                       ))}
                     </div>
+                    <ScrollBar orientation="horizontal" />
                   </ScrollArea>
                 </div>
               )}

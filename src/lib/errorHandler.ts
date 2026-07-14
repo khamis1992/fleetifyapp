@@ -404,7 +404,6 @@ export const ErrorHandler = {
   getSeverity: (error: Error | string): ErrorSeverity => {
     const category = categorizeError(error);
     switch (category) {
-      case 'critical':
       case 'server':
         return 'critical';
       case 'network':

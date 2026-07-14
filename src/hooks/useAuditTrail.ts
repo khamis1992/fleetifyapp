@@ -195,7 +195,10 @@ export function useRecordAuditTrail(tableName: string, recordId: string) {
         .order('changed_at', { ascending: false });
 
       if (error) throw error;
-      return entries;
+      return entries.map((entry) => ({
+        ...entry,
+        action: mapAction(entry.action),
+      }));
     },
     enabled: !!companyId && !!tableName && !!recordId
   });

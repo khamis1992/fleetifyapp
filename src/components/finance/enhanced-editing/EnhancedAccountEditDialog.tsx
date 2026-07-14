@@ -28,6 +28,9 @@ import { AccountMoveValidator } from './AccountMoveValidator';
 import { ChartOfAccount } from '@/hooks/useChartOfAccounts';
 import { toast } from 'sonner';
 import { systemColorPattern } from '@/lib/design-system/systemColorPattern';
+import type { Database } from '@/integrations/supabase/types';
+
+type ChartOfAccountUpdate = Database['public']['Tables']['chart_of_accounts']['Update'];
 
 interface EnhancedAccountEditDialogProps {
   open: boolean;
@@ -157,24 +160,13 @@ export const EnhancedAccountEditDialog: React.FC<EnhancedAccountEditDialogProps>
     }
     
     try {
-      // Clean form data to handle UUID fields properly
-      const cleanedFormData = { ...formData };
-      
-      // Convert empty strings to null for UUID fields
-      if (cleanedFormData.parent_account_id === '') {
-        cleanedFormData.parent_account_id = null;
-      }
-      
-      // Ensure all required fields have valid values
-      const updates = Object.entries(cleanedFormData).reduce((acc, [key, value]) => {
-        // Handle UUID fields specially
-        if (key === 'parent_account_id' && (value === '' || value === undefined)) {
-          acc[key] = null;
-        } else if (value !== undefined && value !== '') {
-          acc[key] = value;
-        }
-        return acc;
-      }, {} as any);
+      const updates: ChartOfAccountUpdate = {
+        ...formData,
+        parent_account_id: formData.parent_account_id || null,
+        account_name_ar: formData.account_name_ar || null,
+        account_subtype: formData.account_subtype || null,
+        description: formData.description || null,
+      };
       
       console.log('🔄 Updating account with cleaned data:', {
         accountId: account.id,
@@ -190,9 +182,10 @@ export const EnhancedAccountEditDialog: React.FC<EnhancedAccountEditDialogProps>
       toast.success('تم تعديل الحساب بنجاح');
       onSuccess?.();
       onOpenChange(false);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Error updating account:', error);
-      toast.error('حدث خطأ في تعديل الحساب: ' + (error as any)?.message || 'خطأ غير معروف');
+      const message = error instanceof Error ? error.message : 'خطأ غير معروف';
+      toast.error(`حدث خطأ في تعديل الحساب: ${message}`);
     }
   };
 
@@ -202,7 +195,7 @@ export const EnhancedAccountEditDialog: React.FC<EnhancedAccountEditDialogProps>
     switch (key) {
       case 'parent_account_id':
         if (!value) return 'حساب رئيسي';
-        const parentAccount = allAccounts?.find(acc => acc.id === value);
+        const parentAccount = allAccounts?.find(acc => acc.id === String(value));
         return parentAccount ? (parentAccount.account_name_ar || parentAccount.account_name || parentAccount.account_code) : 'حساب غير معروف';
       
       case 'account_type':
@@ -213,10 +206,10 @@ export const EnhancedAccountEditDialog: React.FC<EnhancedAccountEditDialogProps>
           'revenue': 'الإيرادات',
           'expenses': 'المصروفات'
         };
-        return typeLabels[value] || value;
+        return typeLabels[String(value)] || String(value);
       
       case 'balance_type':
-        return value === 'debit' ? 'مدين' : value === 'credit' ? 'دائن' : value;
+        return value === 'debit' ? 'مدين' : value === 'credit' ? 'دائن' : String(value);
       
       case 'is_header':
         return value ? 'نعم' : 'لا';

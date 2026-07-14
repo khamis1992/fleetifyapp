@@ -2,6 +2,12 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import type { Database, Json } from '@/integrations/supabase/types';
+
+type TaskInsert = Database['public']['Tables']['tasks']['Insert'];
+type TaskUpdate = Database['public']['Tables']['tasks']['Update'];
+
+const toJson = (value: unknown): Json => JSON.parse(JSON.stringify(value)) as Json;
 
 // Helper functions for labels
 const getStatusLabel = (status: string): string => {
@@ -256,16 +262,18 @@ export function useCreateTask() {
       }
 
       const { checklists, assigned_to, ...taskData } = input;
+      const insertData: TaskInsert = {
+        ...taskData,
+        metadata: taskData.metadata === undefined ? undefined : toJson(taskData.metadata),
+        assigned_to: assigned_to || null,
+        company_id: companyId,
+        created_by: profileId,
+      };
 
       // Create the task (convert empty string to null for UUID fields)
       const { data: task, error: taskError } = await supabase
         .from('tasks')
-        .insert({
-          ...taskData,
-          assigned_to: assigned_to || null, // Empty string becomes null
-          company_id: companyId,
-          created_by: profileId, // Use profile.id instead of auth user.id
-        })
+        .insert(insertData)
         .select()
         .single();
 
@@ -331,12 +339,19 @@ export function useUpdateTask() {
 
   return useMutation({
     mutationFn: async (input: UpdateTaskInput) => {
+      const companyId = user?.profile?.company_id;
+      if (!companyId) throw new Error('تعذر تحديد الشركة');
       const { id, checklists, ...taskData } = input;
+      const taskUpdate: TaskUpdate = {
+        ...taskData,
+        metadata: taskData.metadata === undefined ? undefined : toJson(taskData.metadata),
+      };
 
       const { data: task, error } = await supabase
         .from('tasks')
-        .update(taskData)
+        .update(taskUpdate)
         .eq('id', id)
+        .eq('company_id', companyId)
         .select()
         .single();
 
@@ -366,7 +381,7 @@ export function useUpdateTask() {
             action: 'updated',
             description,
             old_value: null,
-            new_value: taskData,
+            new_value: toJson(taskUpdate),
           });
         } catch (err) {
           console.error('Error logging activity:', err);
@@ -401,13 +416,19 @@ export function useUpdateTask() {
 // Hook: Delete Task
 export function useDeleteTask() {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
 
   return useMutation({
     mutationFn: async (taskId: string) => {
+      const companyId = user?.profile?.company_id;
+      if (!companyId) throw new Error('تعذر تحديد الشركة');
       const { error } = await supabase
         .from('tasks')
         .delete()
-        .eq('id', taskId);
+        .eq('id', taskId)
+        .eq('company_id', companyId)
+        .select('id')
+        .single();
 
       if (error) throw error;
       return taskId;
@@ -429,13 +450,16 @@ export function useUpdateTaskStatus() {
 
   return useMutation({
     mutationFn: async ({ taskId, status }: { taskId: string; status: Task['status'] }) => {
+      const companyId = user?.profile?.company_id;
+      if (!companyId) throw new Error('تعذر تحديد الشركة');
       const { data, error } = await supabase
         .from('tasks')
         .update({ 
           status,
-          ...(status === 'completed' ? { completed_at: new Date().toISOString() } : {}),
+          completed_at: status === 'completed' ? new Date().toISOString() : null,
         })
         .eq('id', taskId)
+        .eq('company_id', companyId)
         .select()
         .single();
 
@@ -569,14 +593,34 @@ export function useToggleChecklist() {
 
   return useMutation({
     mutationFn: async ({ checklistId, isCompleted }: { checklistId: string; isCompleted: boolean }) => {
+      const companyId = user?.profile?.company_id;
+      const profileId = user?.profile?.id;
+      if (!companyId || !profileId) throw new Error('تعذر تحديد المستخدم أو الشركة');
+
+      const { data: checklist, error: checklistError } = await supabase
+        .from('task_checklists')
+        .select('task_id')
+        .eq('id', checklistId)
+        .single();
+      if (checklistError) throw checklistError;
+
+      const { error: taskError } = await supabase
+        .from('tasks')
+        .select('id')
+        .eq('id', checklist.task_id)
+        .eq('company_id', companyId)
+        .single();
+      if (taskError) throw taskError;
+
       const { data, error } = await supabase
         .from('task_checklists')
         .update({
           is_completed: isCompleted,
-          completed_by: isCompleted ? user?.id : null,
+          completed_by: isCompleted ? profileId : null,
           completed_at: isCompleted ? new Date().toISOString() : null,
         })
         .eq('id', checklistId)
+        .eq('task_id', checklist.task_id)
         .select()
         .single();
 

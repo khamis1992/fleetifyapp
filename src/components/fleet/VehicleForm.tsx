@@ -1155,7 +1155,7 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                           name="monthly_lease_amount"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel className="text-slate-700 font-medium">القسط الشهري (د.ك)</FormLabel>
+                              <FormLabel className="text-slate-700 font-medium">القسط الشهري (ر.ق)</FormLabel>
                               <FormControl>
                                 <Input {...field} type="number" step="0.01" placeholder="0.00" className="bg-white dark:bg-slate-900 border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all" />
                               </FormControl>
@@ -1256,7 +1256,7 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                       name="purchase_cost"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-slate-700 font-medium">تكلفة الشراء (د.ك)</FormLabel>
+                          <FormLabel className="text-slate-700 font-medium">تكلفة الشراء (ر.ق)</FormLabel>
                           <FormControl>
                             <Input {...field} type="number" step="0.01" placeholder="0.00" className="bg-white dark:bg-slate-900 border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all" />
                           </FormControl>
@@ -1284,7 +1284,7 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                       name="residual_value"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-slate-700 font-medium">القيمة المتبقية (د.ك)</FormLabel>
+                          <FormLabel className="text-slate-700 font-medium">القيمة المتبقية (ر.ق)</FormLabel>
                           <FormControl>
                             <Input {...field} type="number" step="0.01" placeholder="0.00" className="bg-white dark:bg-slate-900 border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all" />
                           </FormControl>
@@ -1481,13 +1481,13 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                                 <span className="text-teal-700">الإهلاك الشهري:</span>
                                 <span className="font-medium text-teal-900"> {
                                   ((vehicle.purchase_cost - (vehicle.salvage_value || 0)) / (vehicle.useful_life_years * 12)).toFixed(3)
-                                } د.ك</span>
+                                } ر.ق</span>
                               </div>
                               <div>
                                 <span className="text-teal-700">الإهلاك السنوي:</span>
                                 <span className="font-medium text-teal-900"> {
                                   ((vehicle.purchase_cost - (vehicle.salvage_value || 0)) / vehicle.useful_life_years).toFixed(3)
-                                } د.ك</span>
+                                } ر.ق</span>
                               </div>
                             </div>
                           </div>
@@ -1559,7 +1559,7 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                       name="daily_rate"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-slate-700 font-medium">التعرفة اليومية (د.ك)</FormLabel>
+                          <FormLabel className="text-slate-700 font-medium">التعرفة اليومية (ر.ق)</FormLabel>
                           <FormControl>
                             <Input {...field} type="number" step="0.01" placeholder="0.00" className="bg-white dark:bg-slate-900 border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all" />
                           </FormControl>
@@ -1573,7 +1573,7 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                       name="weekly_rate"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-slate-700 font-medium">التعرفة الأسبوعية (د.ك)</FormLabel>
+                          <FormLabel className="text-slate-700 font-medium">التعرفة الأسبوعية (ر.ق)</FormLabel>
                           <FormControl>
                             <Input {...field} type="number" step="0.01" placeholder="0.00" className="bg-white dark:bg-slate-900 border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all" />
                           </FormControl>
@@ -1587,7 +1587,7 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                       name="monthly_rate"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-slate-700 font-medium">التعرفة الشهرية (د.ك)</FormLabel>
+                          <FormLabel className="text-slate-700 font-medium">التعرفة الشهرية (ر.ق)</FormLabel>
                           <FormControl>
                             <Input {...field} type="number" step="0.01" placeholder="0.00" className="bg-white dark:bg-slate-900 border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all" />
                           </FormControl>
@@ -1601,7 +1601,7 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                       name="deposit_amount"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-slate-700 font-medium">التأمين (د.ك)</FormLabel>
+                          <FormLabel className="text-slate-700 font-medium">التأمين (ر.ق)</FormLabel>
                           <FormControl>
                             <Input {...field} type="number" step="0.01" placeholder="0.00" className="bg-white dark:bg-slate-900 border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all" />
                           </FormControl>
@@ -1629,7 +1629,7 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                         name="minimum_daily_rate"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel className="text-slate-700 font-medium">الحد الأدنى للسعر اليومي (د.ك)</FormLabel>
+                            <FormLabel className="text-slate-700 font-medium">الحد الأدنى للسعر اليومي (ر.ق)</FormLabel>
                             <FormControl>
                               <Input {...field} type="number" step="0.01" placeholder="0.00" className="bg-white dark:bg-slate-900 border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all" />
                             </FormControl>
@@ -1643,7 +1643,7 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                         name="minimum_weekly_rate"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel className="text-slate-700 font-medium">الحد الأدنى للسعر الأسبوعي (د.ك)</FormLabel>
+                            <FormLabel className="text-slate-700 font-medium">الحد الأدنى للسعر الأسبوعي (ر.ق)</FormLabel>
                             <FormControl>
                               <Input {...field} type="number" step="0.01" placeholder="0.00" className="bg-white dark:bg-slate-900 border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all" />
                             </FormControl>
@@ -1657,7 +1657,7 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                         name="minimum_monthly_rate"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel className="text-slate-700 font-medium">الحد الأدنى للسعر الشهري (د.ك)</FormLabel>
+                            <FormLabel className="text-slate-700 font-medium">الحد الأدنى للسعر الشهري (ر.ق)</FormLabel>
                             <FormControl>
                               <Input {...field} type="number" step="0.01" placeholder="0.00" className="bg-white dark:bg-slate-900 border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all" />
                             </FormControl>
@@ -1673,7 +1673,7 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                         name="minimum_rental_price"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel className="text-slate-700 font-medium">الحد الأدنى العام (د.ك)</FormLabel>
+                            <FormLabel className="text-slate-700 font-medium">الحد الأدنى العام (ر.ق)</FormLabel>
                             <FormControl>
                               <Input {...field} type="number" step="0.01" placeholder="0.00" className="bg-white dark:bg-slate-900 border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all" />
                             </FormControl>

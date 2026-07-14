@@ -4,7 +4,7 @@ import { Link as LinkIcon } from "lucide-react";
 
 export default function InvoiceJournalReport() {
   return (
-    <PageCustomizer>
+    <PageCustomizer pageId="invoice-journal-report" title="" titleAr="">
       <div className="space-y-6">
         {/* Header */}
         <div>

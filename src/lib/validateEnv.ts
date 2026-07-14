@@ -17,9 +17,6 @@ class EnvironmentError extends Error {
   }
 }
 
-// Fallback values for mobile app (Capacitor) where env vars may not be available
-const FALLBACK_SUPABASE_URL = "https://qwhunliohlkkahbspfiu.supabase.co";
-
 /**
  * Validates all required environment variables
  * @throws {EnvironmentError} if any required variable is missing
@@ -27,11 +24,9 @@ const FALLBACK_SUPABASE_URL = "https://qwhunliohlkkahbspfiu.supabase.co";
 export function validateEnvironment(): EnvConfig {
   const errors: string[] = [];
 
-  // The public URL may use a project fallback, but keys must be supplied at build time.
-  const VITE_SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || FALLBACK_SUPABASE_URL;
+  const VITE_SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || '';
   const VITE_SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 
-  // Only error if both env var and fallback are missing (should never happen now)
   if (!VITE_SUPABASE_URL) {
     errors.push('VITE_SUPABASE_URL is required');
   }
@@ -80,7 +75,7 @@ export function validateEnvironment(): EnvConfig {
  */
 export function getEnvConfig(): EnvConfig {
   return {
-    VITE_SUPABASE_URL: import.meta.env.VITE_SUPABASE_URL || FALLBACK_SUPABASE_URL,
+    VITE_SUPABASE_URL: import.meta.env.VITE_SUPABASE_URL || '',
     VITE_SUPABASE_ANON_KEY: import.meta.env.VITE_SUPABASE_ANON_KEY || '',
   };
 }

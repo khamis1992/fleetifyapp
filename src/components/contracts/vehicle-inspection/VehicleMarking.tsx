@@ -7,7 +7,7 @@
  */
 
 import { useState, useCallback, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, type Variants } from 'framer-motion';
 import { MapPin, X, Camera, ChevronDown, ChevronUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -24,13 +24,13 @@ import {
 } from './types';
 
 // ===== Animation Variants =====
-const fadeIn = {
+const fadeIn: Variants = {
   hidden: { opacity: 0 },
   visible: { opacity: 1, transition: { duration: 0.3 } },
   exit: { opacity: 0, transition: { duration: 0.2 } },
 };
 
-const popIn = {
+const popIn: Variants = {
   hidden: { scale: 0, opacity: 0 },
   visible: {
     scale: 1,

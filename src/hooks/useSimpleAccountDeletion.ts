@@ -73,7 +73,7 @@ export const useSimpleAccountAnalysis = () => {
           code: account.account_code,
           name: account.account_name,
           type: account.account_type,
-          is_system: account.is_system,
+          is_system: account.is_system ?? false,
         },
         has_journal_entries: journalCount > 0,
         has_child_accounts: childCount > 0,

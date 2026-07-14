@@ -54,7 +54,7 @@ export const useMonthlyRentTracking = (year: number, month: number, dateFilter: 
         .eq('user_id', user.id)
         .single();
 
-      if (!profile) throw new Error('Profile not found');
+      if (!profile?.company_id) throw new Error('Profile company not found');
 
       // Get all active contracts
       const { data: contracts, error: contractsError } = await supabase

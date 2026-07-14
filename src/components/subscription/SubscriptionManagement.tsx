@@ -103,7 +103,7 @@ export const SubscriptionManagement: React.FC = () => {
 
               {currentPlan?.price && currentPlan.price > 0 && (
                 <div className="flex items-center gap-2">
-                  <span className="text-2xl font-bold">{currentPlan.price} د.ك</span>
+                  <span className="text-2xl font-bold">{currentPlan.price} ر.ق</span>
                   <span className="text-muted-foreground">/ شهرياً</span>
                 </div>
               )}
@@ -200,7 +200,7 @@ export const SubscriptionManagement: React.FC = () => {
                         {plan.price > 0 ? (
                           <div>
                             <span className="text-3xl font-bold">{plan.price}</span>
-                            <span className="text-muted-foreground"> د.ك/شهر</span>
+                            <span className="text-muted-foreground"> ر.ق/شهر</span>
                           </div>
                         ) : (
                           <span className="text-2xl font-bold text-green-600">مجاني</span>

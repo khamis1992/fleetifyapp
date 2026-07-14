@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Clock, Download, RefreshCw } from 'lucide-react';
-import { useCustomersAgingReport, useUpdateCustomerAging } from '@/hooks/useEnhancedCustomerFinancials';
+import { useCustomersAgingReport } from '@/hooks/useEnhancedCustomerFinancials';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 
 interface CustomerAgingData {
@@ -12,12 +12,12 @@ interface CustomerAgingData {
   customer_id: string;
   customers: {
     id: string;
-    first_name?: string;
-    last_name?: string;
-    company_name?: string;
-    customer_type: 'individual' | 'corporate';
+    first_name?: string | null;
+    last_name?: string | null;
+    company_name?: string | null;
+    customer_type: 'individual' | 'corporate' | null;
     phone: string;
-    email?: string;
+    email?: string | null;
   };
   current_amount: number;
   days_1_30: number;
@@ -29,9 +29,8 @@ interface CustomerAgingData {
 }
 
 export const CustomerAgingReport: React.FC = () => {
-  const { data: agingData, isLoading, refetch } = useCustomersAgingReport();
-const updateAgingMutation = useUpdateCustomerAging();
-const { formatCurrency } = useCurrencyFormatter();
+  const { data: agingData, isLoading, isFetching, refetch } = useCustomersAgingReport();
+  const { formatCurrency } = useCurrencyFormatter();
 
   const getCustomerName = (customer: CustomerAgingData['customers']) => {
     if (customer.customer_type === 'individual') {
@@ -40,7 +39,7 @@ const { formatCurrency } = useCurrencyFormatter();
     return customer.company_name || 'غير محدد';
   };
 
-  const getRiskLevel = (agingData: CustomerAgingData) => {
+  const getRiskLevel = (agingData: CustomerAgingData): 'low' | 'medium' | 'high' => {
     const totalOverdue = agingData.days_1_30 + agingData.days_31_60 + agingData.days_61_90 + agingData.days_91_120 + agingData.days_over_120;
     const overduePercentage = agingData.total_outstanding > 0 ? (totalOverdue / agingData.total_outstanding) * 100 : 0;
     
@@ -49,7 +48,9 @@ const { formatCurrency } = useCurrencyFormatter();
     return 'low';
   };
 
-  const getRiskBadgeVariant = (riskLevel: string) => {
+  const getRiskBadgeVariant = (
+    riskLevel: 'low' | 'medium' | 'high'
+  ): React.ComponentProps<typeof Badge>['variant'] => {
     switch (riskLevel) {
       case 'low': return 'default';
       case 'medium': return 'secondary';
@@ -59,8 +60,39 @@ const { formatCurrency } = useCurrencyFormatter();
   };
 
   const handleExportReport = () => {
-    // Implementation for exporting the report
-    console.log('Exporting aging report...');
+    if (!agingData?.length) return;
+    const escapeCsv = (value: string | number) => {
+      const text = String(value);
+      return /[",\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
+    };
+    const rows = agingData.map((item) => [
+      getCustomerName(item.customers),
+      item.customers.phone,
+      item.current_amount,
+      item.days_1_30,
+      item.days_31_60,
+      item.days_61_90,
+      item.days_91_120,
+      item.days_over_120,
+      item.total_outstanding,
+      getRiskLevel(item),
+    ]);
+    const csv = [
+      ['اسم العميل', 'الهاتف', 'حالي', '1-30', '31-60', '61-90', '91-120', '+120', 'الإجمالي', 'المخاطر'],
+      ...rows,
+    ]
+      .map((row) => row.map(escapeCsv).join(','))
+      .join('\n');
+    const url = URL.createObjectURL(
+      new Blob([`\uFEFF${csv}`], { type: 'text/csv;charset=utf-8' })
+    );
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `customer-aging-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
   };
 
   const handleRefreshAll = () => {
@@ -112,11 +144,11 @@ const { formatCurrency } = useCurrencyFormatter();
               تقرير أعمار ذمم العملاء
             </CardTitle>
             <div className="flex items-center gap-2">
-              <Button onClick={handleRefreshAll} variant="outline" size="sm">
-                <RefreshCw className="h-4 w-4 ml-2" />
+              <Button onClick={handleRefreshAll} variant="outline" size="sm" disabled={isFetching}>
+                <RefreshCw className={`h-4 w-4 ml-2 ${isFetching ? 'animate-spin' : ''}`} />
                 تحديث
               </Button>
-              <Button onClick={handleExportReport} variant="outline" size="sm">
+              <Button onClick={handleExportReport} variant="outline" size="sm" disabled={!agingData?.length}>
                 <Download className="h-4 w-4 ml-2" />
                 تصدير
               </Button>

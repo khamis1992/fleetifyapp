@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useState, useEffect, useRef } from 'react';
+import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useModuleConfig } from '@/modules/core/hooks';
 import { useDashboardStats, DashboardStats } from '@/hooks/useDashboardStats';
@@ -10,7 +10,6 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAIChat } from '@/contexts/AIChatContext';
 import { UnifiedNotificationBell } from '@/components/notifications/UnifiedNotificationBell';
-import { SimpleContractWizard } from '@/components/contracts/SimpleContractWizard';
 import { DailyDecisionCenter } from '@/components/dashboard/DailyDecisionCenter';
 import {
   Car,
@@ -24,13 +23,7 @@ import {
   Clock,
   Calendar,
   Brain,
-  ArrowUp,
-  ArrowDown,
   Search,
-  Plus,
-  CreditCard,
-  FilePlus,
-  ShoppingCart,
   ChevronLeft,
   Activity,
   Target,
@@ -64,8 +57,10 @@ const DashboardLanding: React.FC = () => {
   const stats = dashboardData as DashboardStats | undefined;
   const { openChat: openAIChat } = useAIChat();
   const [mounted, setMounted] = useState(false);
-    const [showContractWizard, setShowContractWizard] = useState(false);
   const [activeFleetIndex, setActiveFleetIndex] = useState<number | null>(null);
+  const canManageTeam = user?.roles?.some((role) =>
+    ['super_admin', 'company_admin', 'manager', 'admin'].includes(role.toLowerCase())
+  ) ?? false;
 
   useEffect(() => {
     setMounted(true);
@@ -223,32 +218,6 @@ const DashboardLanding: React.FC = () => {
   };
   const weekDays = reservationsData ? getWeekDays() : [];
 
-  const triggerQuickSearch = useCallback(() => {
-    const event = new KeyboardEvent('keydown', {
-      key: 'k',
-      ctrlKey: true,
-      bubbles: true,
-    });
-    document.dispatchEvent(event);
-  }, []);
-
-  const handleActionSelect = useCallback((actionId: string) => {
-    switch (actionId) {
-      case 'payment':
-        navigate('/finance/payments/quick');
-        break;
-      case 'contract':
-        setShowContractWizard(true);
-        break;
-      case 'search':
-        triggerQuickSearch();
-        break;
-      case 'purchase':
-        navigate('/finance/purchase-orders');
-        break;
-    }
-  }, [navigate, triggerQuickSearch]);
-
   // FAB Menu Component
   // Animation variants
   const containerVariants = {
@@ -356,14 +325,7 @@ const DashboardLanding: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-teal-50/30" dir="rtl">
-      {/* Animated background elements */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-teal-400/5 rounded-full blur-[120px] animate-pulse" />
-        <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-blue-400/5 rounded-full blur-[100px]" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] bg-emerald-400/5 rounded-full blur-[80px]" />
-      </div>
-
+    <div className="dashboard-system-colors min-h-screen bg-[#F6F8FB]" dir="rtl">
       {/* Landing Page Header */}
       <header className="bg-white border-b border-slate-200 sticky top-0 z-20 shadow-sm">
         <div className="px-6 py-4">
@@ -411,8 +373,8 @@ const DashboardLanding: React.FC = () => {
                 <span>مساحة عملي</span>
               </motion.button>
 
-              {/* Team Management Button - Visible only to specific user */}
-              {(user?.email && (user.email.includes('khamis-1992@hotmail.com') || user.email === 'khamis-1992@hotmail.com')) && (
+              {/* Team Management Button */}
+              {canManageTeam && (
                 <motion.button
                   className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-indigo-500 to-indigo-600 text-white rounded-xl text-sm font-semibold hover:from-indigo-600 hover:to-indigo-700 hover:shadow-lg transition-all shadow-md shadow-indigo-500/20"
                   whileHover={{ scale: 1.02 }}
@@ -461,7 +423,7 @@ const DashboardLanding: React.FC = () => {
                   whileHover={{ y: -4 }}
                   whileTap={{ scale: 0.98 }}
                   onClick={() => stat.linkTo && navigate(stat.linkTo)}
-                  className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm hover:shadow-sm transition-all cursor-pointer"
+                  className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg shadow-sm transition-colors cursor-pointer"
                 >
                   <div className="p-4">
                     <div className="flex items-center justify-between mb-3">
@@ -565,7 +527,7 @@ const DashboardLanding: React.FC = () => {
               variants={itemVariants}
               whileHover={{ y: -4, scale: 1.01 }}
               whileTap={{ scale: 0.99 }}
-              className="col-span-5 bg-white border border-slate-200 rounded-xl p-6 shadow-sm hover:shadow-sm hover:border-teal-500/50 transition-all cursor-pointer"
+              className="col-span-5 bg-white border border-slate-200 rounded-lg p-6 shadow-sm hover:border-teal-500/50 transition-colors cursor-pointer"
               onClick={() => navigate('/finance')}
             >
               <div className="flex items-start justify-between mb-6">
@@ -646,7 +608,7 @@ const DashboardLanding: React.FC = () => {
               data-tour="fleet-status"
               variants={itemVariants}
               whileHover={{ y: -4 }}
-              className="col-span-3 bg-white border border-slate-200 rounded-xl p-6 shadow-sm hover:shadow-sm hover:border-teal-500/50 transition-all"
+              className="col-span-3 bg-white border border-slate-200 rounded-lg p-6 shadow-sm hover:border-teal-500/50 transition-colors"
             >
               <div className="flex items-center justify-between mb-4">
                 <div>
@@ -753,7 +715,7 @@ const DashboardLanding: React.FC = () => {
             <motion.div
               variants={itemVariants}
               whileHover={{ y: -4 }}
-              className="col-span-4 bg-white border border-slate-200 rounded-xl p-6 shadow-sm hover:shadow-sm hover:border-teal-500/50 transition-all"
+              className="col-span-4 bg-white border border-slate-200 rounded-lg p-6 shadow-sm hover:border-teal-500/50 transition-colors"
             >
               <div className="flex items-center justify-between mb-4">
                 <div>
@@ -831,7 +793,7 @@ const DashboardLanding: React.FC = () => {
               data-tour="calendar"
               variants={itemVariants}
               whileHover={{ y: -4 }}
-              className="col-span-4 bg-white border border-slate-200 rounded-xl p-6 shadow-sm hover:shadow-sm hover:border-teal-500/50 transition-all"
+              className="col-span-4 bg-white border border-slate-200 rounded-lg p-6 shadow-sm hover:border-teal-500/50 transition-colors"
             >
               <div className="flex items-center justify-between mb-5">
                 <div>
@@ -935,12 +897,12 @@ const DashboardLanding: React.FC = () => {
               data-tour="recent-activities"
               variants={itemVariants}
               whileHover={{ y: -4 }}
-              className="col-span-4 bg-white border border-slate-200 rounded-xl p-6 shadow-sm hover:shadow-sm hover:border-teal-500/50 transition-all"
+              className="col-span-4 bg-white border border-slate-200 rounded-lg p-6 shadow-sm hover:border-teal-500/50 transition-colors"
             >
               <div className="flex items-start justify-between mb-5">
                 <div>
-                  <h3 className="text-xl font-bold text-slate-900" style={{ fontFamily: 'Cairo, sans-serif' }}>توقعات الإيرادات</h3>
-                  <p className="text-sm text-slate-500">تحليل ذكي باستخدام AI</p>
+                  <h3 className="text-xl font-bold text-slate-900" style={{ fontFamily: 'Cairo, sans-serif' }}>مقارنة الإيرادات</h3>
+                  <p className="text-sm text-slate-500">مبنية على التحصيل الفعلي المسجل</p>
                 </div>
                 <motion.div
                   className="w-12 h-12 bg-teal-500 rounded-xl flex items-center justify-center shadow-lg shadow-teal-500/30"
@@ -964,35 +926,19 @@ const DashboardLanding: React.FC = () => {
                       {formatCurrency(stats?.monthlyRevenue || 0)}
                     </motion.span>
                   </div>
-                  <div className="h-2 bg-slate-200 rounded-full overflow-hidden">
-                    <motion.div
-                      className="h-full rounded-full bg-teal-500 shadow-inner"
-                      initial={{ width: 0 }}
-                      animate={{ width: '80%' }}
-                      transition={{ duration: 1.2, ease: [0.25, 0.1, 0.25, 1] }}
-                    />
-                  </div>
                 </div>
 
                 <div>
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm text-slate-600 font-semibold">توقع الشهر القادم</span>
+                    <span className="text-sm text-slate-600 font-semibold">التغير عن الشهر السابق</span>
                     <motion.span
                       className="text-sm font-bold text-emerald-600"
                       initial={{ opacity: 0, y: -5 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.2 }}
                     >
-                      {formatCurrency((stats?.monthlyRevenue || 0) * 1.22)}
+                      {stats?.revenueChange || '0%'}
                     </motion.span>
-                  </div>
-                  <div className="h-2 bg-slate-200 rounded-full overflow-hidden">
-                    <motion.div
-                      className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-teal-500 shadow-inner"
-                      initial={{ width: 0 }}
-                      animate={{ width: '97%' }}
-                      transition={{ duration: 1.4, ease: [0.25, 0.1, 0.25, 1], delay: 0.3 }}
-                    />
                   </div>
                 </div>
               </div>
@@ -1005,13 +951,13 @@ const DashboardLanding: React.FC = () => {
               >
                 <p className="text-sm font-bold text-slate-900 mb-3 flex items-center gap-2">
                   <Target className="w-4 h-4 text-teal-600" />
-                  العوامل المؤثرة
+                  مؤشرات مساندة
                 </p>
                 <div className="space-y-2">
                   {[
-                    { icon: ArrowUp, color: 'text-emerald-600', bg: 'bg-emerald-100', text: 'العامل الموسمي (+8%)' },
-                    { icon: ArrowUp, color: 'text-emerald-600', bg: 'bg-emerald-100', text: 'عقود جديدة (+12%)' },
-                    { icon: ArrowDown, color: 'text-red-600', bg: 'bg-red-100', text: 'تأثير الصيانة (-2%)' },
+                    { icon: FileText, color: 'text-teal-600', bg: 'bg-teal-100', text: `العقود النشطة: ${stats?.activeContracts || 0}` },
+                    { icon: Users, color: 'text-blue-600', bg: 'bg-blue-100', text: `تغير العملاء: ${stats?.customersChange || '0%'}` },
+                    { icon: Wallet, color: 'text-emerald-600', bg: 'bg-emerald-100', text: `تغير التحصيل: ${stats?.revenueChange || '0%'}` },
                   ].map((factor, index) => (
                     <motion.div
                       key={index}
@@ -1035,18 +981,6 @@ const DashboardLanding: React.FC = () => {
         </motion.div>
       </div>
 
-      {/* Contract Wizard Modal */}
-      <AnimatePresence>
-        {showContractWizard && (
-          <SimpleContractWizard
-            isOpen={showContractWizard}
-            onClose={() => setShowContractWizard(false)}
-            onSuccess={() => {
-              setShowContractWizard(false);
-            }}
-          />
-        )}
-      </AnimatePresence>
     </div>
   );
 };

@@ -18,6 +18,7 @@ import { chromium, Browser, Page, ConsoleMessage } from 'playwright';
 import * as fs from 'fs';
 import * as path from 'path';
 import { fileURLToPath } from 'url';
+import 'dotenv/config';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -149,8 +150,8 @@ const PUBLIC_ROUTES = [
 ];
 
 const BASE_URL = 'http://localhost:8080';
-const LOGIN_EMAIL = 'khamis-1992@hotmail.com';
-const LOGIN_PASSWORD = '123456789';
+const LOGIN_EMAIL = process.env.AUDIT_LOGIN_EMAIL || '';
+const LOGIN_PASSWORD = process.env.AUDIT_LOGIN_PASSWORD || '';
 const OUTPUT_DIR = path.join(__dirname);
 const SCREENSHOT_DIR = path.join(OUTPUT_DIR, 'audit-screenshots');
 
@@ -265,6 +266,10 @@ async function auditRoute(page: Page, route: string): Promise<RouteError> {
 }
 
 async function main() {
+  if (!LOGIN_EMAIL || !LOGIN_PASSWORD) {
+    throw new Error('AUDIT_LOGIN_EMAIL and AUDIT_LOGIN_PASSWORD must be configured');
+  }
+
   console.log('🚀 Starting runtime audit...');
   console.log(`   Base URL: ${BASE_URL}`);
   console.log(`   Protected routes: ${PROTECTED_ROUTES.length}`);

@@ -78,7 +78,7 @@ const mockEntry = {
 describe('RedesignedJournalEntryCard', () => {
   beforeEach(() => {
     (useCurrencyFormatter as any).mockReturnValue({
-      formatCurrency: (amount: number) => `${amount.toFixed(3)} د.ك`
+      formatCurrency: (amount: number) => `${amount.toFixed(3)} QAR`
     });
   });
 
@@ -87,9 +87,8 @@ describe('RedesignedJournalEntryCard', () => {
     
     expect(screen.getByText('سند قيد رقم: 000227')).toBeInTheDocument();
     expect(screen.getByText('مرحل')).toBeInTheDocument();
-    expect(screen.getByText('التاريخ: 1/3/2026')).toBeInTheDocument();
-    expect(screen.getByText('إجمالي المدين: 1500.000 د.ك')).toBeInTheDocument();
-    expect(screen.getByText('إجمالي الدائن: 1500.000 د.ك')).toBeInTheDocument();
+    expect(screen.getByText('التاريخ: 01/03/2026')).toBeInTheDocument();
+    expect(screen.getAllByText('1500.000 QAR')).toHaveLength(2);
   });
 
   it('toggles details when clicking on the header', () => {
@@ -100,19 +99,19 @@ describe('RedesignedJournalEntryCard', () => {
     
     if (header) {
       // Initially details should not be visible
-      expect(screen.queryByText('البيان: دفعة إيجار - إبراهيم حضر عبدالله')).not.toBeVisible();
+      expect(screen.queryByText('دفعة إيجار - إبراهيم حضر عبدالله')).not.toBeInTheDocument();
       
       // Click to expand
       fireEvent.click(header);
       
       // Now details should be visible
-      expect(screen.getByText('البيان: دفعة إيجار - إبراهيم حضر عبدالله')).toBeInTheDocument();
+      expect(screen.getByText('دفعة إيجار - إبراهيم حضر عبدالله')).toBeInTheDocument();
       
       // Click again to collapse
       fireEvent.click(header);
       
       // Details should not be visible again
-      expect(screen.queryByText('البيان: دفعة إيجار - إبراهيم حضر عبدالله')).not.toBeVisible();
+      expect(screen.queryByText('دفعة إيجار - إبراهيم حضر عبدالله')).not.toBeInTheDocument();
     }
   });
 
@@ -126,12 +125,11 @@ describe('RedesignedJournalEntryCard', () => {
       expect(screen.getByText('4510')).toBeInTheDocument();
       expect(screen.getByText('مصاريف إيجار')).toBeInTheDocument();
       expect(screen.getByText('إيجار شهر مارس')).toBeInTheDocument();
-      expect(screen.getByText('1500.000 د.ك')).toBeInTheDocument();
+      expect(screen.getAllByText('1500.000 QAR').length).toBeGreaterThanOrEqual(4);
       
       expect(screen.getByText('1110')).toBeInTheDocument();
       expect(screen.getByText('الصندوق')).toBeInTheDocument();
       expect(screen.getByText('دفع المبلغ نقداً')).toBeInTheDocument();
-      expect(screen.getByText('1500.000 د.ك')).toBeInTheDocument();
     }
   });
 });

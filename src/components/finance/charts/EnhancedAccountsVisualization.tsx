@@ -319,7 +319,9 @@ export const EnhancedAccountsVisualization: React.FC<EnhancedAccountsVisualizati
       setExpandedNodes(prev => new Set([...prev, targetParentId]));
     } catch (error: unknown) {
       // Display the actual database error message for dynamic response
-      const errorMessage = error?.message || error?.details || "حدث خطأ أثناء نقل الحساب";
+      const errorMessage = error instanceof Error
+        ? error.message
+        : "حدث خطأ أثناء نقل الحساب";
       toast({
         title: "خطأ في التحديث",
         description: errorMessage,

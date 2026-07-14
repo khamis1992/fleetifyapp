@@ -81,8 +81,8 @@
 4. اضغط **"متابعة"**
 
 #### الخطوة 1.2: نظام التوثيق الوطني
-1. أدخل **اسم المستخدم:** `29263400736`
-2. أدخل **كلمة المرور:** `Khamees1992#`
+1. أدخل اسم المستخدم المخزن في `QATAR_COURT_USERNAME`
+2. أدخل كلمة المرور المخزنة في `QATAR_COURT_PASSWORD`
 3. اضغط **"أنا لست روبوت"**
 4. ⚠️ **إذا ظهر تحقق:** أوقف العملية واطلب من موظف آخر حله
 5. اضغط **"استمر"**
@@ -259,8 +259,9 @@ npx playwright install chromium
 
 ```bash
 # إضافة بيانات الدخول لملف .env
-echo 'QATAR_COURT_USERNAME=29263400736' >> .env
-echo 'QATAR_COURT_PASSWORD=Khamees1992#' >> .env
+echo 'QATAR_COURT_USERNAME=<court-username>' >> .env
+echo 'QATAR_COURT_PASSWORD=<court-password>' >> .env
+echo 'LEGAL_CASE_CONTACT_EMAIL=<contact-email>' >> .env
 ```
 
 #### 3️⃣ إعداد مجلد العميل

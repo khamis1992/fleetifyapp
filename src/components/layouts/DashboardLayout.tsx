@@ -1,17 +1,15 @@
-import React, { useState } from 'react';
-import { Outlet, Navigate } from 'react-router-dom';
+import React from 'react';
+import { Navigate, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { EnhancedSidebar } from './EnhancedSidebar';
 import { HeaderAttendanceButton } from '@/components/hr/HeaderAttendanceButton';
 import { useOnboarding } from '@/hooks/useOnboarding';
-import { PlayCircle } from 'lucide-react';
+import { LogOut, PlayCircle, Settings, User, Users } from 'lucide-react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
-import { User, Settings, LogOut, Users } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
 import { QuickSearch } from '@/components/navigation/QuickSearch';
 import { KeyboardShortcuts } from '@/components/navigation/KeyboardShortcuts';
 import { CompanySelector } from '@/components/navigation/CompanySelector';
@@ -32,6 +30,9 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
   const { start: startOnboarding } = useOnboarding();
   const navigate = useNavigate();
   const [hasMounted, setHasMounted] = React.useState(false);
+  const canManageTeam = user?.roles?.some((role) =>
+    ['super_admin', 'company_admin', 'manager', 'admin'].includes(role.toLowerCase())
+  ) ?? false;
 
   // Track mount state to avoid unnecessary loading spinners during navigation
   React.useEffect(() => {
@@ -98,8 +99,8 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
                 <span className="hidden md:inline">جولة التعريف</span>
               </Button>
               
-              {/* Team Management Button - Only for khamis-1992@hotmail.com */}
-              {user?.email === 'khamis-1992@hotmail.com' && (
+              {/* Team Management Button */}
+              {canManageTeam && (
                 <Button
                   variant="outline"
                   size="sm"

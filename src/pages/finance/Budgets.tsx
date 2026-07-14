@@ -269,7 +269,7 @@ const Budgets = () => {
 
   if (isLoading) {
     return (
-      <div className="flex h-56 items-center justify-center rounded-2xl border border-slate-200 bg-white">
+      <div className="flex h-56 items-center justify-center rounded-lg border border-slate-200 bg-white">
         <LoadingSpinner />
       </div>
     );

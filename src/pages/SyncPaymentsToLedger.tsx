@@ -1,11 +1,17 @@
-import React, { useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { useState } from 'react';
+import { AlertCircle, CheckCircle2, Loader2, RefreshCw, XCircle } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
+import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
+import { usePaymentOperations } from '@/hooks/business/usePaymentOperations';
 import { supabase } from '@/integrations/supabase/client';
-import { Loader2, CheckCircle2, XCircle, AlertCircle } from 'lucide-react';
+import type { Database } from '@/integrations/supabase/types';
+
+type RentalReceipt = Database['public']['Tables']['rental_payment_receipts']['Row'];
+type PaymentMethod = 'cash' | 'bank_transfer' | 'check' | 'credit_card' | 'debit_card';
 
 interface SyncResult {
   total: number;
@@ -15,271 +21,194 @@ interface SyncResult {
   errors: Array<{ payment_id: string; error: string }>;
 }
 
-const SyncPaymentsToLedger: React.FC = () => {
+const getErrorMessage = (error: unknown): string => {
+  if (error instanceof Error) return error.message;
+  if (typeof error === 'object' && error !== null) {
+    const candidate = error as { message?: unknown; details?: unknown; hint?: unknown };
+    return [candidate.message, candidate.details, candidate.hint]
+      .filter((value): value is string => typeof value === 'string' && value.length > 0)
+      .join(' - ') || String(error);
+  }
+  return String(error);
+};
+
+const normalizePaymentMethod = (method: string | null): PaymentMethod => {
+  const supported: PaymentMethod[] = ['cash', 'bank_transfer', 'check', 'credit_card', 'debit_card'];
+  return supported.includes(method as PaymentMethod) ? method as PaymentMethod : 'cash';
+};
+
+const getMigrationKey = (receiptId: string): string => `legacy-rental-receipt:${receiptId}`;
+
+const SyncPaymentsToLedger = () => {
   const [isSyncing, setIsSyncing] = useState(false);
   const [progress, setProgress] = useState(0);
   const [result, setResult] = useState<SyncResult | null>(null);
   const [logs, setLogs] = useState<string[]>([]);
   const { toast } = useToast();
+  const { companyId } = useUnifiedCompanyAccess();
+  const { createPayment } = usePaymentOperations({
+    autoCreateJournalEntry: true,
+    autoUpdateBankBalance: true,
+    enableNotifications: false,
+  });
 
   const addLog = (message: string) => {
-    setLogs(prev => [...prev, `[${new Date().toLocaleTimeString('en-US')}] ${message}`]);
+    setLogs(previous => [...previous, `[${new Date().toLocaleTimeString('en-US')}] ${message}`]);
   };
 
-  const createJournalEntryForPayment = async (companyId: string, payment: any) => {
-    try {
-      // Get accounts
-      const { data: accounts, error: accountsError } = await supabase
-        .from('chart_of_accounts')
-        .select('id, account_code, account_name')
-        .eq('company_id', companyId)
-        .in('account_code', ['1010', '1200', '4110', '4200']);
+  const findExistingCanonicalPayment = async (receipt: RentalReceipt) => {
+    const migrationKey = getMigrationKey(receipt.id);
+    const { data: keyedPayment, error: keyedError } = await supabase
+      .from('payments')
+      .select('id,payment_number,journal_entry_id')
+      .eq('company_id', receipt.company_id)
+      .eq('reference_number', migrationKey)
+      .neq('payment_status', 'cancelled')
+      .limit(1)
+      .maybeSingle();
+    if (keyedError) throw keyedError;
+    if (keyedPayment) return { payment: keyedPayment, ambiguous: false };
 
-      if (accountsError) throw accountsError;
+    let matchingQuery = supabase
+      .from('payments')
+      .select('id,payment_number,journal_entry_id')
+      .eq('company_id', receipt.company_id)
+      .eq('customer_id', receipt.customer_id)
+      .eq('payment_date', receipt.payment_date)
+      .eq('amount', receipt.total_paid)
+      .neq('payment_status', 'cancelled');
 
-      if (!accounts || accounts.length < 4) {
-        throw new Error('Required accounts not found');
-      }
+    if (receipt.contract_id) matchingQuery = matchingQuery.eq('contract_id', receipt.contract_id);
+    const { data: matches, error: matchesError } = await matchingQuery.limit(2);
+    if (matchesError) throw matchesError;
+    return {
+      payment: matches?.length === 1 ? matches[0] : null,
+      ambiguous: (matches?.length || 0) > 1,
+    };
+  };
 
-      const cashAccount = accounts.find(a => a.account_code === '1010');
-      const arAccount = accounts.find(a => a.account_code === '1200');
-      const rentalRevenueAccount = accounts.find(a => a.account_code === '4110');
-      const fineRevenueAccount = accounts.find(a => a.account_code === '4200');
-
-      // Get next entry number
-      const { data: lastEntry } = await supabase
-        .from('journal_entries')
-        .select('entry_number')
-        .eq('company_id', companyId)
-        .order('entry_number', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      const nextNumber = lastEntry ? parseInt(lastEntry.entry_number.split('-')[1]) + 1 : 1;
-      const entryNumber = `JE-${String(nextNumber).padStart(6, '0')}`;
-
-      // Create journal entry
-      const { data: journalEntry, error: entryError } = await supabase
-        .from('journal_entries')
-        .insert({
-          company_id: companyId,
-          entry_number: entryNumber,
-          entry_date: payment.payment_date,
-          description: `قيد إيراد تأجير - ${payment.customer_name} - ${payment.month}`,
-          status: 'posted',
-          reference_type: 'rental_payment',
-          reference_id: payment.id
-        })
-        .select()
-        .single();
-
-      if (entryError) throw entryError;
-
-      // Create lines
-      const lines: Array<{
-        journal_entry_id: string;
-        account_id: string;
-        debit_amount: number;
-        credit_amount: number;
-        line_number: number;
-        line_description: string;
-      }> = [];
-
-      let lineNum = 1;
-
-      // Revenue recognition
-      lines.push({
-        journal_entry_id: journalEntry.id,
-        account_id: arAccount!.id,
-        debit_amount: payment.rent_amount,
-        credit_amount: 0,
-        line_number: lineNum++,
-        line_description: `إيراد إيجار - ${payment.customer_name}`
-      });
-
-      lines.push({
-        journal_entry_id: journalEntry.id,
-        account_id: rentalRevenueAccount!.id,
-        debit_amount: 0,
-        credit_amount: payment.rent_amount,
-        line_number: lineNum++,
-        line_description: `إيراد إيجار - ${payment.customer_name}`
-      });
-
-      // Fine (if any)
-      if (payment.fine && payment.fine > 0) {
-        lines.push({
-          journal_entry_id: journalEntry.id,
-          account_id: arAccount!.id,
-          debit_amount: payment.fine,
-          credit_amount: 0,
-          line_number: lineNum++,
-          line_description: `غرامة تأخير - ${payment.customer_name}`
-        });
-
-        lines.push({
-          journal_entry_id: journalEntry.id,
-          account_id: fineRevenueAccount!.id,
-          debit_amount: 0,
-          credit_amount: payment.fine,
-          line_number: lineNum++,
-          line_description: `غرامة تأخير - ${payment.customer_name}`
-        });
-      }
-
-      // Cash receipt
-      lines.push({
-        journal_entry_id: journalEntry.id,
-        account_id: cashAccount!.id,
-        debit_amount: payment.total_paid,
-        credit_amount: 0,
-        line_number: lineNum++,
-        line_description: `استلام دفعة - ${payment.customer_name}`
-      });
-
-      lines.push({
-        journal_entry_id: journalEntry.id,
-        account_id: arAccount!.id,
-        debit_amount: 0,
-        credit_amount: payment.total_paid,
-        line_number: lineNum++,
-        line_description: `استلام دفعة - ${payment.customer_name}`
-      });
-
-      const { error: linesError } = await supabase
-        .from('journal_entry_lines')
-        .insert(lines);
-
-      if (linesError) throw linesError;
-
-      return { success: true, entry_number: entryNumber };
-    } catch (error: unknown) {
-      return { success: false, error: error.message };
+  const migrateReceipt = async (receipt: RentalReceipt) => {
+    if (receipt.total_paid <= 0) {
+      return { status: 'skipped' as const, message: 'الإيصال لا يحتوي مبلغًا مدفوعًا موجبًا' };
     }
+
+    const existing = await findExistingCanonicalPayment(receipt);
+    if (existing.ambiguous) {
+      throw new Error('توجد عدة دفعات قانونية مطابقة؛ يلزم تدقيق يدوي قبل الربط');
+    }
+    if (existing.payment) {
+      if (!existing.payment.journal_entry_id) {
+        const { error } = await supabase.rpc('ensure_payment_journal_entry', {
+          p_company_id: receipt.company_id,
+          p_payment_id: existing.payment.id,
+        });
+        if (error) throw error;
+      }
+      return { status: 'skipped' as const, message: `مرتبطة بالدفعة ${existing.payment.payment_number}` };
+    }
+
+    const { data: legacyJournal, error: legacyError } = await supabase
+      .from('journal_entries')
+      .select('entry_number')
+      .eq('company_id', receipt.company_id)
+      .eq('reference_type', 'rental_payment')
+      .eq('reference_id', receipt.id)
+      .neq('status', 'reversed')
+      .limit(1)
+      .maybeSingle();
+    if (legacyError) throw legacyError;
+    if (legacyJournal) {
+      return {
+        status: 'skipped' as const,
+        message: `يوجد قيد قديم ${legacyJournal.entry_number}؛ أوقفت الهجرة لمنع تكرار الأثر المالي`,
+      };
+    }
+
+    await createPayment.mutateAsync({
+      contract_id: receipt.contract_id || undefined,
+      customer_id: receipt.customer_id,
+      invoice_id: receipt.invoice_id || undefined,
+      amount: receipt.total_paid,
+      payment_date: receipt.payment_date,
+      payment_method: normalizePaymentMethod(receipt.payment_method),
+      notes: [
+        `ترحيل إيصال إيجار قديم ${receipt.receipt_number || receipt.id}`,
+        receipt.notes,
+      ].filter(Boolean).join(' - '),
+      type: 'receipt',
+      transaction_type: 'customer_payment',
+      payment_status: 'completed',
+      currency: 'QAR',
+      idempotencyKey: getMigrationKey(receipt.id),
+      registrationMetadata: {
+        monthly_amount: receipt.rent_amount,
+        amount_paid: receipt.total_paid,
+        remaining_amount: receipt.pending_balance,
+        payment_month: receipt.month,
+        due_date: receipt.payment_date,
+        late_fee_amount: receipt.fine,
+      },
+    });
+
+    return { status: 'synced' as const, message: 'تم إنشاء دفعة قانونية وقيدها المحاسبي' };
   };
 
   const handleSync = async () => {
+    if (!companyId) {
+      toast({ title: 'تعذر البدء', description: 'لم يتم تحديد الشركة الحالية', variant: 'destructive' });
+      return;
+    }
+
     setIsSyncing(true);
     setProgress(0);
     setResult(null);
     setLogs([]);
 
-    const syncResult: SyncResult = {
-      total: 0,
-      synced: 0,
-      skipped: 0,
-      failed: 0,
-      errors: []
-    };
+    const syncResult: SyncResult = { total: 0, synced: 0, skipped: 0, failed: 0, errors: [] };
 
     try {
-      addLog('🔍 جاري البحث عن شركة العراف...');
-
-      // Get current company from localStorage or session
-      const companyData = localStorage.getItem('selectedCompany');
-      if (!companyData) {
-        throw new Error('لم يتم اختيار شركة. يرجى اختيار شركة العراف من القائمة أولاً.');
-      }
-
-      const company = JSON.parse(companyData);
-      const companyId = company.id;
-
-      addLog(`✅ تم العثور على الشركة: ${company.name}`);
-      addLog(`📊 معرف الشركة: ${companyId}`);
-      addLog('');
-
-      // Fetch all rental payment receipts
-      addLog('🔄 جاري جلب المدفوعات...');
-      const { data: payments, error: fetchError } = await supabase
+      addLog('جاري جلب إيصالات الإيجار القديمة للشركة الحالية');
+      const { data: receipts, error } = await supabase
         .from('rental_payment_receipts')
         .select('*')
         .eq('company_id', companyId)
         .order('payment_date', { ascending: true });
+      if (error) throw error;
 
-      if (fetchError) throw fetchError;
-
-      if (!payments || payments.length === 0) {
-        addLog('⚠️ لا توجد مدفوعات للمزامنة');
-        toast({
-          title: 'تنبيه',
-          description: 'لا توجد مدفوعات للمزامنة',
-          variant: 'default'
-        });
-        setIsSyncing(false);
+      const receiptList = receipts || [];
+      syncResult.total = receiptList.length;
+      if (syncResult.total === 0) {
+        addLog('لا توجد إيصالات قديمة تحتاج مراجعة');
+        setResult(syncResult);
         return;
       }
 
-      syncResult.total = payments.length;
-      addLog(`📊 تم العثور على ${syncResult.total} مدفوعات`);
-      addLog('');
-
-      // Process each payment
-      for (let i = 0; i < payments.length; i++) {
-        const payment = payments[i];
-        const currentProgress = ((i + 1) / payments.length) * 100;
-        setProgress(currentProgress);
-
+      for (let index = 0; index < receiptList.length; index += 1) {
+        const receipt = receiptList[index];
         try {
-          // Check if already synced
-          const { data: existingEntry } = await supabase
-            .from('journal_entries')
-            .select('id')
-            .eq('reference_type', 'rental_payment')
-            .eq('reference_id', payment.id)
-            .maybeSingle();
-
-          if (existingEntry) {
-            addLog(`⏭️ [${i+1}/${syncResult.total}] تم تخطي ${payment.customer_name} - تم المزامنة مسبقاً`);
-            syncResult.skipped++;
-            continue;
-          }
-
-          // Create journal entry
-          addLog(`🔄 [${i+1}/${syncResult.total}] جاري إنشاء قيد لـ ${payment.customer_name} - ${payment.month}...`);
-          const journalResult = await createJournalEntryForPayment(companyId, payment);
-
-          if (journalResult.success) {
-            addLog(`✅ [${i+1}/${syncResult.total}] تم إنشاء القيد ${journalResult.entry_number}`);
-            syncResult.synced++;
-          } else {
-            addLog(`❌ [${i+1}/${syncResult.total}] فشل: ${journalResult.error}`);
-            syncResult.failed++;
-            syncResult.errors.push({ payment_id: payment.id, error: journalResult.error || 'Unknown error' });
-          }
-
-          // Small delay
-          await new Promise(resolve => setTimeout(resolve, 100));
-
-        } catch (error: unknown) {
-          addLog(`❌ [${i+1}/${syncResult.total}] خطأ: ${error.message}`);
-          syncResult.failed++;
-          syncResult.errors.push({ payment_id: payment.id, error: error.message });
+          const migration = await migrateReceipt(receipt);
+          if (migration.status === 'synced') syncResult.synced += 1;
+          else syncResult.skipped += 1;
+          addLog(`[${index + 1}/${syncResult.total}] ${receipt.customer_name}: ${migration.message}`);
+        } catch (receiptError) {
+          const message = getErrorMessage(receiptError);
+          syncResult.failed += 1;
+          syncResult.errors.push({ payment_id: receipt.id, error: message });
+          addLog(`[${index + 1}/${syncResult.total}] فشل ${receipt.customer_name}: ${message}`);
         }
+        setProgress(((index + 1) / syncResult.total) * 100);
       }
 
-      addLog('');
-      addLog('📊 ملخص المزامنة:');
-      addLog(`   إجمالي المدفوعات: ${syncResult.total}`);
-      addLog(`   ✅ تمت المزامنة: ${syncResult.synced}`);
-      addLog(`   ⏭️ تم التخطي: ${syncResult.skipped}`);
-      addLog(`   ❌ فشلت: ${syncResult.failed}`);
-
       setResult(syncResult);
-      setProgress(100);
-
       toast({
-        title: 'اكتملت المزامنة',
-        description: `تمت مزامنة ${syncResult.synced} من ${syncResult.total} مدفوعات`,
-        variant: syncResult.failed > 0 ? 'destructive' : 'default'
+        title: 'اكتملت مراجعة المزامنة',
+        description: `أُنشئت ${syncResult.synced} دفعة، وتُخطيت ${syncResult.skipped}، وفشلت ${syncResult.failed}`,
+        variant: syncResult.failed > 0 ? 'destructive' : 'default',
       });
-
-    } catch (error: unknown) {
-      addLog(`❌ خطأ فادح: ${error.message}`);
-      toast({
-        title: 'خطأ',
-        description: error.message,
-        variant: 'destructive'
-      });
+    } catch (syncError) {
+      const message = getErrorMessage(syncError);
+      addLog(`توقفت المزامنة: ${message}`);
+      toast({ title: 'فشل المزامنة', description: message, variant: 'destructive' });
     } finally {
       setIsSyncing(false);
     }
@@ -289,110 +218,41 @@ const SyncPaymentsToLedger: React.FC = () => {
     <div className="container mx-auto p-6" dir="rtl">
       <Card>
         <CardHeader>
-          <CardTitle className="text-2xl">مزامنة المدفوعات مع دفتر الأستاذ</CardTitle>
+          <CardTitle className="text-2xl">مزامنة إيصالات الإيجار القديمة</CardTitle>
           <CardDescription>
-            هذه الأداة تقوم بنقل جميع المدفوعات الموجودة في نظام تتبع المدفوعات إلى دفتر الأستاذ المحاسبي
+            تحويل الإيصالات القديمة إلى دفعات قانونية مرتبطة بقيود محاسبية دون تكرار الأثر المالي.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           <Alert>
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>
-              <strong>ملاحظة مهمة:</strong> تأكد من اختيار شركة العراف من القائمة قبل بدء المزامنة.
-              <br />
-              يجب أن تكون الحسابات التالية موجودة في دليل الحسابات:
-              <ul className="list-disc mr-6 mt-2">
-                <li>1010 - النقدية/البنك</li>
-                <li>1200 - الذمم المدينة</li>
-                <li>4110 - إيرادات التأجير</li>
-                <li>4200 - إيرادات الغرامات</li>
-              </ul>
+              تتوقف الأداة تلقائيًا عند وجود قيد قديم أو أكثر من دفعة مطابقة. هذه الحالات تحتاج مراجعة قبل أي ترحيل جديد.
             </AlertDescription>
           </Alert>
 
-          <div className="flex gap-4">
-            <Button
-              onClick={handleSync}
-              disabled={isSyncing}
-              size="lg"
-              className="w-full"
-            >
-              {isSyncing ? (
-                <>
-                  <Loader2 className="ml-2 h-4 w-4 animate-spin" />
-                  جاري المزامنة...
-                </>
-              ) : (
-                '🔄 بدء المزامنة'
-              )}
-            </Button>
-          </div>
+          <Button onClick={handleSync} disabled={isSyncing || !companyId} size="lg" className="w-full">
+            {isSyncing ? <Loader2 className="ml-2 h-4 w-4 animate-spin" /> : <RefreshCw className="ml-2 h-4 w-4" />}
+            {isSyncing ? 'جاري المزامنة' : 'بدء المزامنة الآمنة'}
+          </Button>
 
-          {isSyncing && (
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm">
-                <span>التقدم</span>
-                <span>{Math.round(progress)}%</span>
-              </div>
-              <Progress value={progress} className="w-full" />
-            </div>
-          )}
+          {isSyncing && <Progress value={progress} className="w-full" />}
 
           {result && (
-            <div className="grid grid-cols-4 gap-4">
-              <Card>
-                <CardContent className="pt-6">
-                  <div className="text-center">
-                    <div className="text-2xl font-bold">{result.total}</div>
-                    <div className="text-sm text-muted-foreground">إجمالي</div>
-                  </div>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardContent className="pt-6">
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-green-600 flex items-center justify-center gap-1">
-                      <CheckCircle2 className="h-5 w-5" />
-                      {result.synced}
-                    </div>
-                    <div className="text-sm text-muted-foreground">تمت المزامنة</div>
-                  </div>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardContent className="pt-6">
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-blue-600">{result.skipped}</div>
-                    <div className="text-sm text-muted-foreground">تم التخطي</div>
-                  </div>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardContent className="pt-6">
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-red-600 flex items-center justify-center gap-1">
-                      <XCircle className="h-5 w-5" />
-                      {result.failed}
-                    </div>
-                    <div className="text-sm text-muted-foreground">فشلت</div>
-                  </div>
-                </CardContent>
-              </Card>
+            <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+              <Card><CardContent className="pt-6 text-center"><div className="text-2xl font-bold">{result.total}</div><div className="text-sm text-muted-foreground">الإجمالي</div></CardContent></Card>
+              <Card><CardContent className="pt-6 text-center"><div className="flex items-center justify-center gap-1 text-2xl font-bold text-green-600"><CheckCircle2 className="h-5 w-5" />{result.synced}</div><div className="text-sm text-muted-foreground">تمت مزامنتها</div></CardContent></Card>
+              <Card><CardContent className="pt-6 text-center"><div className="text-2xl font-bold text-blue-600">{result.skipped}</div><div className="text-sm text-muted-foreground">تم تخطيها بأمان</div></CardContent></Card>
+              <Card><CardContent className="pt-6 text-center"><div className="flex items-center justify-center gap-1 text-2xl font-bold text-red-600"><XCircle className="h-5 w-5" />{result.failed}</div><div className="text-sm text-muted-foreground">تحتاج مراجعة</div></CardContent></Card>
             </div>
           )}
 
           {logs.length > 0 && (
             <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">سجل العمليات</CardTitle>
-              </CardHeader>
+              <CardHeader><CardTitle className="text-lg">سجل العمليات</CardTitle></CardHeader>
               <CardContent>
-                <div className="bg-slate-950 text-slate-50 p-4 rounded-lg font-mono text-sm max-h-96 overflow-y-auto">
-                  {logs.map((log, index) => (
-                    <div key={index} className="mb-1">
-                      {log}
-                    </div>
-                  ))}
+                <div className="max-h-96 overflow-y-auto rounded bg-slate-950 p-4 font-mono text-sm text-slate-50">
+                  {logs.map((log, index) => <div key={`${index}-${log}`} className="mb-1">{log}</div>)}
                 </div>
               </CardContent>
             </Card>
@@ -402,13 +262,9 @@ const SyncPaymentsToLedger: React.FC = () => {
             <Alert variant="destructive">
               <XCircle className="h-4 w-4" />
               <AlertDescription>
-                <strong>حدثت أخطاء أثناء المزامنة:</strong>
-                <ul className="list-disc mr-6 mt-2">
-                  {result.errors.map((error, index) => (
-                    <li key={index}>
-                      {error.payment_id}: {error.error}
-                    </li>
-                  ))}
+                <strong>حالات تحتاج مراجعة:</strong>
+                <ul className="mt-2 list-disc pr-6">
+                  {result.errors.map(error => <li key={error.payment_id}>{error.payment_id}: {error.error}</li>)}
                 </ul>
               </AlertDescription>
             </Alert>
@@ -420,4 +276,3 @@ const SyncPaymentsToLedger: React.FC = () => {
 };
 
 export default SyncPaymentsToLedger;
-

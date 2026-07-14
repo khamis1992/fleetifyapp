@@ -1,16 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useCurrentCompanyId } from "@/hooks/useUnifiedCompanyAccess";
+import type { Database } from "@/integrations/supabase/types";
 
-export interface Company {
-  id: string;
-  name: string;
-  business_type: string;
-  industry?: string;
-  description?: string;
-  created_at?: string;
-  updated_at?: string;
-}
+export type Company = Database["public"]["Tables"]["companies"]["Row"];
 
 export const useCurrentCompany = () => {
   const companyId = useCurrentCompanyId();

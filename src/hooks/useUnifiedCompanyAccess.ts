@@ -1,7 +1,6 @@
-import { useMemo, useEffect, useRef } from 'react';
+import { useMemo, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCompanyContext } from '@/contexts/CompanyContext';
-import { useQueryClient } from '@tanstack/react-query';
 import { 
   getCompanyScopeContext, 
   getCompanyFilter, 
@@ -19,11 +18,6 @@ import {
 export const useUnifiedCompanyAccess = () => {
   const { user, session, loading } = useAuth();
   const { browsedCompany, isBrowsingMode, stableCompanyId: contextStableCompanyId } = useCompanyContext();
-  const queryClient = useQueryClient();
-  
-  // Track previous companyId to detect changes
-  const prevCompanyIdRef = useRef<string | null>(null);
-  
   // Extract company_id early for dependency tracking
   const userCompanyId = user?.company?.id || (user as any)?.company_id || null;
   
@@ -34,13 +28,12 @@ export const useUnifiedCompanyAccess = () => {
   const localStableRef = useRef<string | null>(null);
   if (userCompanyId) localStableRef.current = userCompanyId;
   
-  // When auth profile times out, companyId is null even though the user is authenticated.
-  // Use the known company ID as a fallback so queries don't filter for company_id = null.
-  const KNOWN_COMPANY_ID = '24bc0b21-4e2d-4413-9842-31719a3669f4';
+  // Resolve company identity only from authenticated context. Missing profile data must
+  // fail closed instead of silently assigning a tenant owned by another company.
   const stableUserCompanyId = userCompanyId
     || contextStableCompanyId
     || localStableRef.current
-    || (user?.id ? KNOWN_COMPANY_ID : null);
+    || null;
   
   // CRITICAL FIX: The side-effect for query invalidation has been moved to CompanyContext.tsx
   // This prevents excessive invalidations when this hook is used in multiple components
@@ -103,7 +96,7 @@ export const useUnifiedCompanyAccess = () => {
     
     // CRITICAL FIX: If context.companyId is null but we have a stable value from before
     // the auth flicker, use the stable value to prevent all queries from breaking
-    if (!context.companyId && stableUserCompanyId) {
+    if (!context.companyId) {
       context = { ...context, companyId: stableUserCompanyId };
     }
     
@@ -193,7 +186,7 @@ export const useUnifiedCompanyAccess = () => {
       isInitializing: false,
       authError: null
     };
-  }, [user?.id, stableUserCompanyId, loading, isBrowsingMode, browsedCompany?.id, session?.access_token]);
+  }, [user, stableUserCompanyId, loading, isBrowsingMode, browsedCompany, session]);
 
   return result;
 };

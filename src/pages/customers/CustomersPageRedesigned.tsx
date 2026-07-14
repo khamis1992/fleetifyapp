@@ -8,11 +8,11 @@
 
 import React, { useState, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
-import { useCustomers, useCustomerCount } from '@/hooks/useEnhancedCustomers';
+import { useCustomers, useCustomerCount, useDeleteCustomer } from '@/hooks/useEnhancedCustomers';
 import { useRolePermissions } from '@/hooks/useRolePermissions';
 import { Customer, CustomerFilters } from '@/types/customer';
 import { toast } from 'sonner';
@@ -95,7 +95,7 @@ const ProStatCard: React.FC<ProStatCardProps> = ({ value, label, description, ic
     initial={{ opacity: 0, y: 8 }}
     animate={{ opacity: 1, y: 0 }}
     transition={{ delay, duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-    className="relative overflow-hidden rounded-xl border border-[#DDE5EF] bg-white p-5 shadow-sm transition-colors hover:border-[#173A63]"
+    className="relative overflow-hidden rounded-lg border border-[#DDE5EF] bg-white p-5 shadow-sm transition-colors hover:border-[#173A63]"
   >
     <div className="flex items-start justify-between">
       <div className="flex-1">
@@ -179,7 +179,7 @@ const ProCustomerCard: React.FC<ProCustomerCardProps> = ({
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.02, duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
-      className="group relative cursor-pointer overflow-hidden rounded-xl border border-[#DDE5EF] bg-white p-5 shadow-sm transition-colors hover:border-[#173A63]"
+      className="group relative cursor-pointer overflow-hidden rounded-lg border border-[#DDE5EF] bg-white p-5 shadow-sm transition-colors hover:border-[#173A63]"
       onClick={onView}
     >
       {/* VIP Badge */}
@@ -639,7 +639,7 @@ const _exportCustomersToExcel = async (
 const CustomersPageRedesigned: React.FC = () => {
   const { t } = useFleetifyTranslation("ui");
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
+  const deleteCustomerMutation = useDeleteCustomer();
   const { companyId, isAuthenticating } = useUnifiedCompanyAccess();
   const { hasPermission } = useRolePermissions();
 
@@ -742,34 +742,14 @@ const CustomersPageRedesigned: React.FC = () => {
     setDeleteDialogOpen(true);
   }, []);
 
-  // Delete mutation
-  const deleteCustomerMutation = useMutation({
-    mutationFn: async (customerId: string) => {
-      const { data: contracts } = await supabase
-        .from('contracts')
-        .select('id')
-        .eq('customer_id', customerId)
-        .limit(1);
-      if (contracts && contracts.length > 0) {
-        throw new Error('لا يمكن حذف العميل لأنه مرتبط بعقود');
-      }
-      const { error } = await supabase.from('customers').delete().eq('id', customerId);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['customers', companyId] });
-      toast.success('تم حذف العميل بنجاح');
-      setDeleteDialogOpen(false);
-      setCustomerToDelete(null);
-    },
-    onError: (error: any) => {
-      toast.error(error.message || 'فشل حذف العميل');
-    }
-  });
-
   const confirmDelete = () => {
     if (customerToDelete) {
-      deleteCustomerMutation.mutate(customerToDelete.id);
+      deleteCustomerMutation.mutate(customerToDelete.id, {
+        onSuccess: () => {
+          setDeleteDialogOpen(false);
+          setCustomerToDelete(null);
+        },
+      });
     }
   };
 
@@ -910,7 +890,7 @@ const CustomersPageRedesigned: React.FC = () => {
         </div>
 
         {/* Search & Filters Bar */}
-        <div className="rounded-xl border border-[#DDE5EF] bg-white p-4 shadow-sm">
+        <div className="rounded-lg border border-[#DDE5EF] bg-white p-4 shadow-sm">
           <div className="flex flex-col gap-3 lg:flex-row">
             {/* Search */}
             <div className="flex-1 relative">
@@ -973,11 +953,11 @@ const CustomersPageRedesigned: React.FC = () => {
         ) : isLoading ? (
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
             {[...Array(8)].map((_, i) => (
-              <div key={i} className="h-56 animate-pulse rounded-xl border border-[#DDE5EF] bg-white" />
+              <div key={i} className="h-56 animate-pulse rounded-lg border border-[#DDE5EF] bg-white" />
             ))}
           </div>
         ) : error ? (
-          <div className="rounded-xl border border-[#DDE5EF] bg-white p-12 text-center shadow-sm">
+          <div className="rounded-lg border border-[#DDE5EF] bg-white p-12 text-center shadow-sm">
             <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-xl bg-red-50">
               <AlertCircle className="h-8 w-8 text-red-500" />
             </div>
@@ -995,7 +975,7 @@ const CustomersPageRedesigned: React.FC = () => {
             </Button>
           </div>
         ) : customers.length === 0 ? (
-          <div className="rounded-xl border border-[#DDE5EF] bg-white p-12 text-center shadow-sm">
+          <div className="rounded-lg border border-[#DDE5EF] bg-white p-12 text-center shadow-sm">
             <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-xl bg-[#EEF5FB]">
               <Users className="h-8 w-8 text-[#173A63]" />
             </div>
@@ -1014,7 +994,7 @@ const CustomersPageRedesigned: React.FC = () => {
         ) : (
           <>
             {/* Results Count */}
-            <div className="flex items-center justify-between rounded-xl border border-[#DDE5EF] bg-white px-4 py-3 shadow-sm">
+            <div className="flex items-center justify-between rounded-lg border border-[#DDE5EF] bg-white px-4 py-3 shadow-sm">
               <p className="text-sm text-[#6A7688]">
                 <span className="font-medium text-slate-900">{customers.length}</span> من{' '}
                 <span className="font-medium text-slate-900">{totalCustomersInDB}</span> عميل
@@ -1042,7 +1022,7 @@ const CustomersPageRedesigned: React.FC = () => {
 
             {/* Pagination */}
             {totalPages > 1 && (
-              <div className="flex flex-col gap-3 rounded-xl border border-[#DDE5EF] bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex flex-col gap-3 rounded-lg border border-[#DDE5EF] bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
                 <p className="text-sm text-[#6A7688]">
                   صفحة <span className="font-medium text-slate-900">{currentPage}</span> من{' '}
                   <span className="font-medium text-slate-900">{totalPages}</span>

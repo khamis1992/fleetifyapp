@@ -46,6 +46,7 @@ export function useCustomerDocuments(customerId?: string) {
         .from('customer_documents')
         .select('*')
         .eq('customer_id', customerId)
+        .eq('company_id', companyId!)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -118,7 +119,7 @@ export function useUploadCustomerDocument() {
         // Using 'documents' bucket which already exists, with customer-documents subfolder
         console.log('[useUploadCustomerDocument] Step 2: Uploading file to storage...');
         const fileExt = data.file.name.split('.').pop();
-        const fileName = `customer-documents/${data.customer_id}/${documentId}.${fileExt}`;
+        const fileName = `${companyId}/customer-documents/${data.customer_id}/${documentId}.${fileExt}`;
         console.log('[useUploadCustomerDocument] File path:', fileName);
         
         const { error: uploadError } = await supabase.storage
@@ -135,7 +136,8 @@ export function useUploadCustomerDocument() {
           await supabase
             .from('customer_documents')
             .delete()
-            .eq('id', documentId);
+            .eq('id', documentId)
+            .eq('company_id', companyId);
 
           throw new Error(`فشل رفع الملف: ${uploadError.message}`);
         }
@@ -151,7 +153,8 @@ export function useUploadCustomerDocument() {
             file_path: fileName,
             updated_at: new Date().toISOString()
           })
-          .eq('id', documentId);
+          .eq('id', documentId)
+          .eq('company_id', companyId);
 
         if (updateError) {
           console.error('[useUploadCustomerDocument] Database update failed:', updateError);
@@ -164,7 +167,8 @@ export function useUploadCustomerDocument() {
           await supabase
             .from('customer_documents')
             .delete()
-            .eq('id', documentId);
+            .eq('id', documentId)
+            .eq('company_id', companyId);
 
           throw new Error(`فشل تحديث قاعدة البيانات: ${updateError.message}`);
         }
@@ -192,36 +196,41 @@ export function useUploadCustomerDocument() {
  */
 export function useDeleteCustomerDocument() {
   const queryClient = useQueryClient();
+  const { companyId } = useUnifiedCompanyAccess();
 
   return useMutation({
     mutationFn: async (documentId: string) => {
+      if (!companyId) throw new Error('معرف الشركة مفقود');
       // First get the document to get the file path
       const { data: document, error: fetchError } = await supabase
         .from('customer_documents')
         .select('*')
         .eq('id', documentId)
+        .eq('company_id', companyId)
         .single();
 
       if (fetchError) throw fetchError;
 
-      // Delete file from storage if it exists
+      // Delete database record
+      const { error: deleteError } = await supabase
+        .from('customer_documents')
+        .delete()
+        .eq('id', documentId)
+        .eq('company_id', companyId)
+        .select('id')
+        .single();
+
+      if (deleteError) throw deleteError;
+
       if (document.file_path) {
         const { error: storageError } = await supabase.storage
           .from('documents')
           .remove([document.file_path]);
 
         if (storageError) {
-          console.error('Storage deletion failed:', storageError);
+          console.warn('[useDeleteCustomerDocument] orphaned storage file', storageError.message);
         }
       }
-
-      // Delete database record
-      const { error: deleteError } = await supabase
-        .from('customer_documents')
-        .delete()
-        .eq('id', documentId);
-
-      if (deleteError) throw deleteError;
 
       return document;
     },

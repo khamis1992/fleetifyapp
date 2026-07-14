@@ -3,6 +3,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { useUnifiedCompanyAccess } from "./useUnifiedCompanyAccess";
 import { useToast } from "./use-toast";
 
+const getErrorMessage = (error: unknown): string =>
+  error instanceof Error ? error.message : String(error);
+
 export interface DefaultAccountType {
   id: string;
   type_code: string;
@@ -113,7 +116,7 @@ export const useCreateAccountMapping = () => {
       toast({
         variant: "destructive",
         title: "خطأ في إنشاء الربط",
-        description: error.message,
+        description: getErrorMessage(error),
       });
     },
   });
@@ -153,7 +156,7 @@ export const useUpdateAccountMapping = () => {
       toast({
         variant: "destructive",
         title: "خطأ في تحديث الربط",
-        description: error.message,
+        description: getErrorMessage(error),
       });
     },
   });
@@ -184,7 +187,7 @@ export const useDeleteAccountMapping = () => {
       toast({
         variant: "destructive",
         title: "خطأ في حذف الربط",
-        description: error.message,
+        description: getErrorMessage(error),
       });
     },
   });

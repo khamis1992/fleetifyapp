@@ -11,8 +11,9 @@ Rules:
 import psycopg2
 from datetime import datetime, timedelta
 from dateutil.relativedelta import relativedelta
+from db_connection import get_database_url
 
-DB_URL = "postgresql://postgres.qwhunliohlkkahbspfiu:Khamees1992#@aws-0-eu-north-1.pooler.supabase.com:6543/postgres"
+DB_URL = get_database_url()
 
 def main():
     conn = psycopg2.connect(DB_URL)

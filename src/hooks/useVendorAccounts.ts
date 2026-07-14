@@ -134,13 +134,16 @@ export const useCreateVendorAccount = () => {
 
 export const useUpdateVendorAccount = () => {
   const queryClient = useQueryClient();
+  const { companyId } = useUnifiedCompanyAccess();
 
   return useMutation({
     mutationFn: async ({ id, data }: { id: string; data: Partial<CreateVendorAccountData> }) => {
+      if (!companyId) throw new Error('Company ID is required');
       const { error } = await supabase
         .from('vendor_accounts')
         .update(data)
-        .eq('id', id);
+        .eq('id', id)
+        .eq('company_id', companyId);
 
       if (error) throw error;
     },
@@ -157,13 +160,18 @@ export const useUpdateVendorAccount = () => {
 
 export const useDeleteVendorAccount = () => {
   const queryClient = useQueryClient();
+  const { companyId } = useUnifiedCompanyAccess();
 
   return useMutation({
     mutationFn: async (id: string) => {
+      if (!companyId) throw new Error('Company ID is required');
       const { error } = await supabase
         .from('vendor_accounts')
         .delete()
-        .eq('id', id);
+        .eq('id', id)
+        .eq('company_id', companyId)
+        .select('id')
+        .single();
 
       if (error) throw error;
     },

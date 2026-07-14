@@ -61,7 +61,7 @@ export function AdvancedFinancialReports() {
           <tr><th>وصف التقرير</th><td>${report?.description || '-'}</td></tr>
           <tr><th>إجمالي الإيرادات</th><td>${formatCurrency(financialOverview?.totalRevenue || 0)}</td></tr>
           <tr><th>إجمالي المصروفات</th><td>${formatCurrency(financialOverview?.totalExpenses || 0)}</td></tr>
-          <tr><th>صافي الربح</th><td>${formatCurrency(financialOverview?.netProfit || 0)}</td></tr>
+          <tr><th>صافي الربح</th><td>${formatCurrency(financialOverview?.netIncome || 0)}</td></tr>
           <tr><th>عدد العقود النشطة</th><td>${contracts?.length || 0}</td></tr>
           <tr><th>عدد حسابات التقارير</th><td>${reportingAccounts?.length || 0}</td></tr>
         </tbody>
@@ -311,19 +311,19 @@ export function AdvancedFinancialReports() {
                     <div className="space-y-2 text-sm">
                       <div className="flex justify-between">
                         <span>تكاليف الوقود</span>
-                        <span className="font-medium">15,000 د.ك</span>
+                        <span className="font-medium">15,000 ر.ق</span>
                       </div>
                       <div className="flex justify-between">
                         <span>تكاليف الصيانة</span>
-                        <span className="font-medium">8,500 د.ك</span>
+                        <span className="font-medium">8,500 ر.ق</span>
                       </div>
                       <div className="flex justify-between">
                         <span>التأمين</span>
-                        <span className="font-medium">3,200 د.ك</span>
+                        <span className="font-medium">3,200 ر.ق</span>
                       </div>
                       <div className="flex justify-between font-semibold border-t pt-2">
                         <span>الإجمالي</span>
-                        <span>26,700 د.ك</span>
+                        <span>26,700 ر.ق</span>
                       </div>
                     </div>
                   </div>
@@ -333,15 +333,15 @@ export function AdvancedFinancialReports() {
                     <div className="space-y-2 text-sm">
                       <div className="flex justify-between">
                         <span>إيرادات التأجير</span>
-                        <span className="font-medium">45,000 د.ك</span>
+                        <span className="font-medium">45,000 ر.ق</span>
                       </div>
                       <div className="flex justify-between">
                         <span>خدمات إضافية</span>
-                        <span className="font-medium">5,200 د.ك</span>
+                        <span className="font-medium">5,200 ر.ق</span>
                       </div>
                       <div className="flex justify-between font-semibold border-t pt-2">
                         <span>الإجمالي</span>
-                        <span>50,200 د.ك</span>
+                        <span>50,200 ر.ق</span>
                       </div>
                     </div>
                   </div>
@@ -350,7 +350,7 @@ export function AdvancedFinancialReports() {
                 <div className="p-4 bg-green-50 rounded-lg border border-green-200">
                   <div className="flex items-center justify-between">
                     <span className="font-semibold">صافي ربح الأسطول</span>
-                    <span className="text-xl font-bold text-green-600">23,500 د.ك</span>
+                    <span className="text-xl font-bold text-green-600">23,500 ر.ق</span>
                   </div>
                   <p className="text-sm text-green-700 mt-1">
                     معدل العائد: 46.8% من الإيرادات

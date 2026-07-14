@@ -1,7 +1,46 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import {
+  driverLicensesTable,
+  type DriverLicenseRow,
+} from '@/integrations/supabase/driverLicensesClient';
 import { useUnifiedCompanyAccess } from './useUnifiedCompanyAccess';
 import { DriverLicense, ExpiringLicense } from '@/types/customer';
+
+const toDriverLicense = (row: DriverLicenseRow): DriverLicense => ({
+  ...row,
+  issue_date: row.issue_date ?? undefined,
+  front_image_url: row.front_image_url ?? undefined,
+  back_image_url: row.back_image_url ?? undefined,
+  verified_by: row.verified_by ?? undefined,
+  verified_at: row.verified_at ?? undefined,
+  verification_notes: row.verification_notes ?? undefined,
+  notes: row.notes ?? undefined,
+  created_by: row.created_by ?? undefined,
+});
+
+const formatCustomerName = (customer: {
+  customer_type: string | null;
+  first_name: string | null;
+  last_name: string | null;
+  first_name_ar: string | null;
+  last_name_ar: string | null;
+  company_name: string | null;
+  company_name_ar: string | null;
+}) => {
+  const joinName = (...parts: Array<string | null>) =>
+    parts.filter(Boolean).join(' ').trim();
+
+  if (customer.customer_type === 'individual') {
+    return (
+      joinName(customer.first_name_ar, customer.last_name_ar) ||
+      joinName(customer.first_name, customer.last_name) ||
+      'غير معروف'
+    );
+  }
+
+  return customer.company_name_ar || customer.company_name || 'غير معروف';
+};
 
 /**
  * Hook to fetch driver licenses for a specific customer
@@ -13,36 +52,28 @@ export const useDriverLicenses = (
   customerId: string | undefined,
   options?: { enabled?: boolean }
 ) => {
-  const { companyId, filter } = useUnifiedCompanyAccess();
+  const { companyId } = useUnifiedCompanyAccess();
 
   return useQuery({
     queryKey: ['driver-licenses', customerId, companyId],
     queryFn: async () => {
-      if (!customerId) {
-        throw new Error('Customer ID is required');
-      }
+      if (!customerId) throw new Error('Customer ID is required');
+      if (!companyId) throw new Error('Company ID is required');
 
-      const query = supabase
-        .from('driver_licenses')
+      const { data, error } = await driverLicensesTable()
         .select('*')
         .eq('customer_id', customerId)
+        .eq('company_id', companyId)
         .order('created_at', { ascending: false });
-
-      // Apply company scoping
-      if (filter.company_id) {
-        query.eq('company_id', filter.company_id);
-      }
-
-      const { data, error } = await query;
 
       if (error) {
         console.error('Error fetching driver licenses:', error);
         throw error;
       }
 
-      return (data || []) as DriverLicense[];
+      return (data || []).map(toDriverLicense);
     },
-    enabled: options?.enabled !== false && !!customerId,
+    enabled: options?.enabled !== false && !!customerId && !!companyId,
   });
 };
 
@@ -56,36 +87,28 @@ export const useDriverLicense = (
   licenseId: string | undefined,
   options?: { enabled?: boolean }
 ) => {
-  const { companyId, filter } = useUnifiedCompanyAccess();
+  const { companyId } = useUnifiedCompanyAccess();
 
   return useQuery({
     queryKey: ['driver-license', licenseId, companyId],
     queryFn: async () => {
-      if (!licenseId) {
-        throw new Error('License ID is required');
-      }
+      if (!licenseId) throw new Error('License ID is required');
+      if (!companyId) throw new Error('Company ID is required');
 
-      const query = supabase
-        .from('driver_licenses')
+      const { data, error } = await driverLicensesTable()
         .select('*')
         .eq('id', licenseId)
+        .eq('company_id', companyId)
         .single();
-
-      // Apply company scoping
-      if (filter.company_id) {
-        query.eq('company_id', filter.company_id);
-      }
-
-      const { data, error } = await query;
 
       if (error) {
         console.error('Error fetching driver license:', error);
         throw error;
       }
 
-      return data as DriverLicense;
+      return toDriverLicense(data);
     },
-    enabled: options?.enabled !== false && !!licenseId,
+    enabled: options?.enabled !== false && !!licenseId && !!companyId,
   });
 };
 
@@ -104,18 +127,63 @@ export const useExpiringLicenses = (
   return useQuery({
     queryKey: ['expiring-licenses', daysThreshold, companyId],
     queryFn: async () => {
-      const { data, error } = await supabase.rpc('get_expiring_licenses', {
-        days_threshold: daysThreshold,
-      });
+      if (!companyId) throw new Error('Company ID is required');
+
+      const normalizedThreshold = Math.max(0, Math.floor(daysThreshold));
+      const today = new Date();
+      const endDate = new Date(today);
+      endDate.setDate(endDate.getDate() + normalizedThreshold);
+      const todayIso = today.toISOString().slice(0, 10);
+      const endDateIso = endDate.toISOString().slice(0, 10);
+
+      const { data: licenses, error } = await driverLicensesTable()
+        .select('*')
+        .eq('company_id', companyId)
+        .eq('verification_status', 'verified')
+        .gte('expiry_date', todayIso)
+        .lte('expiry_date', endDateIso)
+        .order('expiry_date', { ascending: true });
 
       if (error) {
         console.error('Error fetching expiring licenses:', error);
         throw error;
       }
 
-      return (data || []) as ExpiringLicense[];
+      if (!licenses?.length) return [];
+
+      const customerIds = [...new Set(licenses.map((license) => license.customer_id))];
+      const { data: customers, error: customersError } = await supabase
+        .from('customers')
+        .select(
+          'id, customer_type, first_name, last_name, first_name_ar, last_name_ar, company_name, company_name_ar'
+        )
+        .eq('company_id', companyId)
+        .in('id', customerIds);
+
+      if (customersError) throw customersError;
+
+      const customersById = new Map(
+        (customers || []).map((customer) => [customer.id, customer])
+      );
+      const dayMs = 24 * 60 * 60 * 1000;
+      const todayUtc = Date.parse(`${todayIso}T00:00:00Z`);
+
+      return licenses.map<ExpiringLicense>((license) => {
+        const customer = customersById.get(license.customer_id);
+        return {
+          license_id: license.id,
+          customer_id: license.customer_id,
+          customer_name: customer ? formatCustomerName(customer) : 'غير معروف',
+          license_number: license.license_number,
+          expiry_date: license.expiry_date,
+          days_until_expiry: Math.round(
+            (Date.parse(`${license.expiry_date}T00:00:00Z`) - todayUtc) / dayMs
+          ),
+          company_id: license.company_id,
+        };
+      });
     },
-    enabled: options?.enabled !== false,
+    enabled: options?.enabled !== false && !!companyId,
   });
 };
 
@@ -129,7 +197,7 @@ export const useDriverLicensesCount = (
   customerId: string | undefined,
   options?: { enabled?: boolean }
 ) => {
-  const { companyId, filter } = useUnifiedCompanyAccess();
+  const { companyId } = useUnifiedCompanyAccess();
 
   return useQuery({
     queryKey: ['driver-licenses-count', customerId, companyId],
@@ -137,18 +205,12 @@ export const useDriverLicensesCount = (
       if (!customerId) {
         return 0;
       }
+      if (!companyId) throw new Error('Company ID is required');
 
-      const query = supabase
-        .from('driver_licenses')
+      const { count, error } = await driverLicensesTable()
         .select('id', { count: 'exact', head: true })
-        .eq('customer_id', customerId);
-
-      // Apply company scoping
-      if (filter.company_id) {
-        query.eq('company_id', filter.company_id);
-      }
-
-      const { count, error } = await query;
+        .eq('customer_id', customerId)
+        .eq('company_id', companyId);
 
       if (error) {
         console.error('Error counting driver licenses:', error);
@@ -157,6 +219,6 @@ export const useDriverLicensesCount = (
 
       return count || 0;
     },
-    enabled: options?.enabled !== false && !!customerId,
+    enabled: options?.enabled !== false && !!customerId && !!companyId,
   });
 };

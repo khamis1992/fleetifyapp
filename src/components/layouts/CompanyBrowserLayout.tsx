@@ -19,7 +19,11 @@ import { UnifiedNotificationBell } from '@/components/notifications/UnifiedNotif
 import { LazyImage } from '@/components/common/LazyImage';
 
 
-export const CompanyBrowserLayout: React.FC = () => {
+interface CompanyBrowserLayoutProps {
+  children?: React.ReactNode;
+}
+
+export const CompanyBrowserLayout: React.FC<CompanyBrowserLayoutProps> = ({ children }) => {
   const { user, loading, signOut } = useAuth();
   const { browsedCompany, exitBrowseMode, isBrowsingMode } = useCompanyContext();
   const navigate = useNavigate();
@@ -45,7 +49,7 @@ export const CompanyBrowserLayout: React.FC = () => {
     console.log('🖥️ [COMPANY_BROWSER_LAYOUT] Exiting browse mode');
     try {
       exitBrowseMode();
-      navigate('/super-admin/companies');
+      navigate('/admin/companies');
     } catch (error) {
       console.error('🖥️ [COMPANY_BROWSER_LAYOUT] Error exiting browse mode:', error);
     }
@@ -75,7 +79,7 @@ export const CompanyBrowserLayout: React.FC = () => {
       isBrowsingMode,
       browsedCompany: browsedCompany?.id
     });
-    return <Navigate to="/super-admin/companies" replace />;
+    return <Navigate to="/admin/companies" replace />;
   }
 
   console.log('🖥️ [COMPANY_BROWSER_LAYOUT] All checks passed, rendering layout');
@@ -163,7 +167,7 @@ export const CompanyBrowserLayout: React.FC = () => {
                     <User className="mr-2 h-4 w-4" />
                     <span>الملف الشخصي</span>
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => navigate('/super-admin/settings')}>
+                  <DropdownMenuItem onClick={() => navigate('/admin/settings')}>
                     <Settings className="mr-2 h-4 w-4" />
                     <span>الإعدادات</span>
                   </DropdownMenuItem>
@@ -179,7 +183,7 @@ export const CompanyBrowserLayout: React.FC = () => {
 
           {/* Main Content */}
           <main className="flex-1 overflow-auto p-6">
-            <Outlet />
+            {children || <Outlet />}
           </main>
         </div>
         <KeyboardShortcuts />

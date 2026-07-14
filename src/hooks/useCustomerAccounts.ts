@@ -306,11 +306,15 @@ export const useUnlinkAccountFromCustomer = () => {
 
   return useMutation({
     mutationFn: async (data: { customerId: string; customerAccountId: string }) => {
+      if (!companyId) throw new Error('Company ID is required');
       const { error } = await supabase
         .from("customer_accounts")
         .delete()
         .eq("id", data.customerAccountId)
-        .eq("customer_id", data.customerId);
+        .eq("customer_id", data.customerId)
+        .eq("company_id", companyId)
+        .select("id")
+        .single();
 
       if (error) throw error;
     },

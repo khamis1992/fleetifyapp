@@ -10,6 +10,7 @@ import { InvoiceRepository } from './repositories/InvoiceRepository';
 import type {
   Invoice,
   InvoiceCreationData,
+  InvoiceInsert,
   InvoiceWithDetails
 } from '@/types/invoice';
 import { supabase } from '@/integrations/supabase/client';
@@ -49,22 +50,21 @@ export class InvoiceService extends BaseService<Invoice> {
       const totalAmount = data.amount + (data.tax_amount || 0) - (data.discount_amount || 0);
 
       // Prepare invoice data
-      const invoiceData: Omit<Invoice, 'id'> = {
+      const notes = [data.description, data.notes].filter(Boolean).join('\n') || null;
+      const invoiceData: InvoiceInsert = {
         company_id: companyId,
         customer_id: data.customer_id,
         contract_id: data.contract_id || null,
         invoice_number: invoiceNumber,
-        invoice_date: data.invoice_date || new Date().toISOString(),
+        invoice_date: (data.invoice_date || new Date().toISOString()).slice(0, 10),
         due_date: data.due_date,
-        amount: data.amount,
+        subtotal: data.amount,
         paid_amount: 0,
-        balance: totalAmount,
+        balance_due: totalAmount,
         status: 'pending',
         payment_status: 'unpaid',
         invoice_type: data.invoice_type || 'rental',
-        description: data.description || null,
-        notes: data.notes || null,
-        reference_number: null,
+        notes,
         tax_amount: data.tax_amount || 0,
         discount_amount: data.discount_amount || 0,
         total_amount: totalAmount,
@@ -171,11 +171,11 @@ export class InvoiceService extends BaseService<Invoice> {
         case 'pending':
         case 'partially_paid':
           acc.pending++;
-          acc.pendingAmount += invoice.balance || invoice.total_amount;
+          acc.pendingAmount += invoice.balance_due ?? invoice.total_amount;
           break;
         case 'overdue':
           acc.overdue++;
-          acc.pendingAmount += invoice.balance || invoice.total_amount;
+          acc.pendingAmount += invoice.balance_due ?? invoice.total_amount;
           break;
       }
 
@@ -214,6 +214,7 @@ export class InvoiceService extends BaseService<Invoice> {
     const { error } = await supabase
       .from('invoices')
       .update({ status: 'overdue', updated_at: new Date().toISOString() })
+      .eq('company_id', companyId)
       .in('id', overdueInvoices.map(i => i.id));
 
     if (error) {
@@ -264,8 +265,8 @@ export class InvoiceService extends BaseService<Invoice> {
   protected async validate(data: Partial<Invoice>): Promise<ValidationResult> {
     const errors: Record<string, string[]> = {};
 
-    if (data.amount !== undefined && data.amount <= 0) {
-      errors.amount = ['مبلغ الفاتورة يجب أن يكون أكبر من صفر'];
+    if (data.subtotal !== undefined && data.subtotal <= 0) {
+      errors.subtotal = ['مبلغ الفاتورة يجب أن يكون أكبر من صفر'];
     }
 
     if (data.total_amount !== undefined && data.total_amount <= 0) {

@@ -6,6 +6,11 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import { financialAuditService } from '@/services/auditService';
+import type { Database, Json } from '@/integrations/supabase/types';
+import type { CreateFinancialAuditLogParams, FinancialAuditEventType } from '@/types/auditLog';
+
+type AuditLogInsert = Database['public']['Tables']['audit_logs']['Insert'];
+type AuditLogRow = Database['public']['Tables']['audit_logs']['Row'];
 
 export type AuditEventType =
   | 'user_login'
@@ -57,7 +62,7 @@ class AuditLogger {
   private pendingLogs: AuditLogEntry[] = [];
   private batchSize = 10;
   private flushInterval = 5000; // 5 seconds
-  private flushTimer: NodeJS.Timeout | null = null;
+  private flushTimer: ReturnType<typeof setInterval> | null = null;
 
   constructor() {
     // Start periodic flush
@@ -82,7 +87,7 @@ class AuditLogger {
         ...entry,
         user_id: entry.user_id || user?.id,
         ip_address: await this.getClientIP(),
-        user_agent: navigator.userAgent,
+        user_agent: typeof navigator !== 'undefined' ? navigator.userAgent : undefined,
         created_at: new Date().toISOString(),
       };
 
@@ -119,13 +124,16 @@ class AuditLogger {
 
     try {
       // Map fields to match actual database schema
-      const mappedLogs = logsToFlush.map(log => ({
+      const mappedLogs: AuditLogInsert[] = logsToFlush.map(log => ({
         user_id: log.user_id,
         company_id: log.company_id,
         action: log.action || log.event_type, // Use action or event_type
-        resource_type: log.entity_type, // Map entity_type to resource_type
+        resource_type: log.entity_type || 'system', // Map entity_type to resource_type
         resource_id: log.entity_id, // Map entity_id to resource_id
-        metadata: log.details, // Map details to metadata
+        metadata: this.toJson({
+          ...(log.details || {}),
+          event_type: log.event_type,
+        }),
         severity: log.severity,
         ip_address: log.ip_address,
         user_agent: log.user_agent,
@@ -295,55 +303,8 @@ class AuditLogger {
   /**
    * Enhanced financial operation logging with comprehensive audit service integration
    */
-  async logFinancialOperation(params: {
-    event_type: any;
-    resource_type: 'payment' | 'invoice' | 'contract' | 'journal_entry' | 'account' | 'customer';
-    resource_id: string;
-    entity_name?: string;
-    old_values?: Record<string, any>;
-    new_values?: Record<string, any>;
-    changes_summary?: string;
-    metadata?: Record<string, any>;
-    notes?: string;
-    status?: 'success' | 'failed' | 'pending';
-    severity?: 'low' | 'medium' | 'high' | 'critical';
-    financial_data: {
-      amount?: number;
-      currency?: string;
-      account_code?: string;
-      reference_number?: string;
-      transaction_date?: string;
-      payment_method?: string;
-      invoice_number?: string;
-      contract_number?: string;
-      customer_id?: string;
-      vendor_id?: string;
-      tax_amount?: number;
-      discount_amount?: number;
-      balance?: number;
-    };
-  }): Promise<string | null> {
-    // Use the comprehensive financial audit service
-    const auditLogId = await financialAuditService.logFinancialOperation(params);
-
-    // Also log to the basic audit system for backward compatibility
-    await this.log({
-      event_type: params.event_type as any,
-      severity: params.severity || this.getSeverityFromEventType(params.event_type),
-      company_id: '', // Will be set by financialAuditService
-      action: this.mapEventTypeToAction(params.event_type),
-      entity_type: params.resource_type,
-      entity_id: params.resource_id,
-      entity_name: params.entity_name,
-      old_values: params.old_values,
-      new_values: params.new_values,
-      changes_summary: params.changes_summary,
-      details: params.metadata,
-      notes: params.notes,
-      success: params.status === 'success',
-    });
-
-    return auditLogId;
+  async logFinancialOperation(params: CreateFinancialAuditLogParams): Promise<string | null> {
+    return financialAuditService.logFinancialOperation(params);
   }
 
   /**
@@ -359,7 +320,7 @@ class AuditLogger {
     } = {}
   ): Promise<string | null> {
     return this.logFinancialOperation({
-      event_type: `payment_${action}` as any,
+      event_type: `payment_${action}` as FinancialAuditEventType,
       resource_type: 'payment',
       resource_id: paymentData.id || paymentData.payment_id,
       entity_name: paymentData.payment_number || paymentData.reference_number,
@@ -370,7 +331,7 @@ class AuditLogger {
       severity: options.severity,
       financial_data: {
         amount: paymentData.amount,
-        currency: paymentData.currency || 'USD',
+        currency: paymentData.currency || 'QAR',
         reference_number: paymentData.payment_number || paymentData.reference_number,
         transaction_date: paymentData.payment_date,
         payment_method: paymentData.payment_method,
@@ -390,7 +351,7 @@ class AuditLogger {
     } = {}
   ): Promise<string | null> {
     return this.logFinancialOperation({
-      event_type: `contract_${action}` as any,
+      event_type: `contract_${action}` as FinancialAuditEventType,
       resource_type: 'contract',
       resource_id: contractData.id || contractData.contract_id,
       entity_name: contractData.contract_number || contractData.reference_number,
@@ -401,7 +362,7 @@ class AuditLogger {
       severity: options.severity,
       financial_data: {
         amount: contractData.monthly_rent || contractData.total_amount,
-        currency: contractData.currency || 'USD',
+        currency: contractData.currency || 'QAR',
         reference_number: contractData.contract_number || contractData.reference_number,
         transaction_date: contractData.start_date,
         customer_id: contractData.customer_id
@@ -419,7 +380,7 @@ class AuditLogger {
     } = {}
   ): Promise<string | null> {
     return this.logFinancialOperation({
-      event_type: `invoice_${action}` as any,
+      event_type: `invoice_${action}` as FinancialAuditEventType,
       resource_type: 'invoice',
       resource_id: invoiceData.id || invoiceData.invoice_id,
       entity_name: invoiceData.invoice_number || invoiceData.reference_number,
@@ -430,7 +391,7 @@ class AuditLogger {
       severity: options.severity,
       financial_data: {
         amount: invoiceData.total_amount,
-        currency: invoiceData.currency || 'USD',
+        currency: invoiceData.currency || 'QAR',
         reference_number: invoiceData.invoice_number || invoiceData.reference_number,
         transaction_date: invoiceData.invoice_date || invoiceData.created_at,
         customer_id: invoiceData.customer_id,
@@ -450,7 +411,7 @@ class AuditLogger {
     } = {}
   ): Promise<string | null> {
     return this.logFinancialOperation({
-      event_type: `journal_entry_${action}` as any,
+      event_type: `journal_entry_${action}` as FinancialAuditEventType,
       resource_type: 'journal_entry',
       resource_id: entryData.id || entryData.journal_entry_id,
       entity_name: entryData.entry_number || entryData.reference_number,
@@ -550,12 +511,12 @@ class AuditLogger {
   private describeChanges(oldData?: any, newData?: any): string {
     if (!oldData || !newData) return 'No previous data available';
 
-    const changes = [];
+    const changes: string[] = [];
     const fields = ['amount', 'status', 'payment_method', 'due_date', 'customer_id', 'total_amount'];
 
     fields.forEach(field => {
       if (oldData[field] !== newData[field]) {
-        changes.push(`${field}: ${oldData[field]} → ${newData[field]}`);
+        changes.push(`${field}: ${oldData[field]} -> ${newData[field]}`);
       }
     });
 
@@ -588,7 +549,7 @@ class AuditLogger {
     }
 
     if (filters.eventType) {
-      query = query.eq('event_type', filters.eventType);
+      query = query.eq('metadata->>event_type', filters.eventType);
     }
 
     if (filters.severity) {
@@ -614,7 +575,45 @@ class AuditLogger {
       return [];
     }
 
-    return data || [];
+    return (data || []).map(row => this.fromDatabaseRow(row));
+  }
+
+  private toJson(value: unknown): Json | null {
+    try {
+      return JSON.parse(JSON.stringify(value)) as Json;
+    } catch {
+      return null;
+    }
+  }
+
+  private fromDatabaseRow(row: AuditLogRow): AuditLogEntry {
+    const metadata = row.metadata && typeof row.metadata === 'object' && !Array.isArray(row.metadata)
+      ? row.metadata
+      : {};
+    const storedEventType = typeof metadata.event_type === 'string'
+      ? metadata.event_type as AuditEventType
+      : 'settings_changed';
+    const severity: AuditSeverity =
+      row.severity === 'medium' || row.severity === 'high' || row.severity === 'critical'
+        ? row.severity
+        : 'low';
+
+    return {
+      id: row.id,
+      event_type: storedEventType,
+      severity,
+      user_id: row.user_id || undefined,
+      company_id: row.company_id || undefined,
+      entity_type: row.resource_type,
+      entity_id: row.resource_id || undefined,
+      action: row.action,
+      details: metadata,
+      ip_address: typeof row.ip_address === 'string' ? row.ip_address : undefined,
+      user_agent: row.user_agent || undefined,
+      success: row.status !== 'failed',
+      error_message: row.error_message || undefined,
+      created_at: row.created_at || undefined,
+    };
   }
 
   /**

@@ -120,8 +120,8 @@ if (!companyId) {
 3. **Navigate to**: https://fleetifyapp.vercel.app
 
 4. **Login with**:
-   - Email: khamis-1992@hotmail.com
-   - Password: 123456789
+   - Email: `<test-email>`
+   - Password: `<test-password>`
 
 5. **Watch the console logs** - you'll see:
    ```

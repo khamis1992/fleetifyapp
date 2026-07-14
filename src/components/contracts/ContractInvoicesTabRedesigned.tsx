@@ -7,7 +7,7 @@
  */
 
 import { useMemo } from 'react';
-import { motion } from 'framer-motion';
+import { motion, type Variants } from 'framer-motion';
 import {
   Receipt,
   FileText,
@@ -59,7 +59,7 @@ import { ar } from 'date-fns/locale';
 import type { Invoice } from '@/types/finance.types';
 
 // ===== Animation Variants =====
-const fadeInUp = {
+const fadeInUp: Variants = {
   hidden: { opacity: 0, y: 20 },
   visible: {
     opacity: 1,
@@ -68,7 +68,7 @@ const fadeInUp = {
   }
 };
 
-const scaleIn = {
+const scaleIn: Variants = {
   hidden: { opacity: 0, scale: 0.95 },
   visible: {
     opacity: 1,
@@ -80,18 +80,18 @@ const scaleIn = {
 // ===== Types =====
 interface CustomerInfo {
   name: string;
-  phone?: string;
-  email?: string;
-  nationalId?: string;
-  customerType?: string;
+  phone?: string | null;
+  email?: string | null;
+  nationalId?: string | null;
+  customerType?: string | null;
 }
 
 interface TrafficViolation {
   id: string;
-  violation_number: string;
-  violation_date: string;
-  violation_type: string;
-  fine_amount: number;
+  violation_number?: string | null;
+  violation_date: string | null;
+  violation_type: string | null;
+  fine_amount: number | null;
   status: string;
   location?: string | null;
 }
@@ -112,8 +112,11 @@ interface ContractInvoicesTabRedesignedProps {
 }
 
 // ===== Helper Functions =====
+const getInvoicePaymentStatus = (invoice: Invoice): string =>
+  String(invoice.payment_status || invoice.status || 'unpaid');
+
 const getInvoiceStatusInfo = (invoice: Invoice) => {
-  const status = invoice.payment_status || invoice.status;
+  const status = getInvoicePaymentStatus(invoice);
 
   if (status === 'paid' || status === 'completed') {
     return {
@@ -197,7 +200,8 @@ const InvoiceMetrics = ({
     const totalInvoiced = invoices.reduce((sum, inv) => sum + (inv.total_amount || 0), 0);
     const totalPaid = invoices.reduce((sum, inv) => sum + (inv.paid_amount || 0), 0);
     const totalPending = invoices.reduce((sum, inv) => {
-      if (inv.payment_status === 'paid' || inv.payment_status === 'cancelled') return sum;
+      const status = getInvoicePaymentStatus(inv);
+      if (status === 'paid' || status === 'cancelled') return sum;
       return sum + (inv.balance_due || inv.total_amount || 0);
     }, 0);
 
@@ -205,7 +209,8 @@ const InvoiceMetrics = ({
     const today = new Date();
     const totalOverdue = invoices.reduce((sum, inv) => {
       // Skip if paid or cancelled
-      if (inv.payment_status === 'paid' || inv.payment_status === 'cancelled') return sum;
+      const status = getInvoicePaymentStatus(inv);
+      if (status === 'paid' || status === 'cancelled') return sum;
 
       // Check if there's a balance due
       const balanceDue = inv.balance_due ?? (inv.total_amount || 0) - (inv.paid_amount || 0);
@@ -217,27 +222,28 @@ const InvoiceMetrics = ({
       }
 
       // Also include invoices explicitly marked as overdue
-      if (inv.payment_status === 'overdue') {
+      if (status === 'overdue') {
         return sum + balanceDue;
       }
 
       return sum;
     }, 0);
 
-    const paidCount = invoices.filter(inv => inv.payment_status === 'paid').length;
+    const paidCount = invoices.filter(inv => getInvoicePaymentStatus(inv) === 'paid').length;
     const pendingCount = invoices.filter(inv =>
-      inv.payment_status !== 'paid' && inv.payment_status !== 'cancelled'
+      !['paid', 'cancelled'].includes(getInvoicePaymentStatus(inv))
     ).length;
 
     // Fix overdue count: Include all invoices with balance > 0 and past due date
     const overdueCount = invoices.filter(inv => {
-      if (inv.payment_status === 'paid' || inv.payment_status === 'cancelled') return false;
+      const status = getInvoicePaymentStatus(inv);
+      if (status === 'paid' || status === 'cancelled') return false;
 
       const balanceDue = inv.balance_due ?? (inv.total_amount || 0) - (inv.paid_amount || 0);
       if (balanceDue <= 0) return false;
 
       if (inv.due_date && isAfter(today, new Date(inv.due_date))) return true;
-      if (inv.payment_status === 'overdue') return true;
+      if (status === 'overdue') return true;
 
       return false;
     }).length;
@@ -262,6 +268,7 @@ const InvoiceMetrics = ({
       icon: Receipt,
       color: 'from-teal-500 to-teal-600',
       bgColor: 'bg-teal-50',
+      textColor: 'text-teal-700',
       borderColor: 'border-teal-200/50',
     },
     {
@@ -271,6 +278,7 @@ const InvoiceMetrics = ({
       icon: Wallet,
       color: 'from-green-500 to-green-600',
       bgColor: 'bg-green-50',
+      textColor: 'text-green-700',
       borderColor: 'border-green-200/50',
     },
     {
@@ -280,6 +288,7 @@ const InvoiceMetrics = ({
       icon: Clock,
       color: 'from-blue-500 to-blue-600',
       bgColor: 'bg-blue-50',
+      textColor: 'text-blue-700',
       borderColor: 'border-blue-200/50',
     },
     {
@@ -289,6 +298,7 @@ const InvoiceMetrics = ({
       icon: AlertTriangle,
       color: 'from-red-500 to-red-600',
       bgColor: 'bg-red-50',
+      textColor: 'text-red-700',
       borderColor: 'border-red-200/50',
     },
   ];
@@ -762,7 +772,7 @@ export const ContractInvoicesTabRedesigned = ({
     // Apply status filter
     if (statusFilter !== 'all') {
       filtered = filtered.filter(inv => {
-        const status = inv.payment_status || inv.status;
+        const status = getInvoicePaymentStatus(inv);
         if (statusFilter === 'partial') {
           return status === 'partial' || status === 'partially_paid';
         }
@@ -1494,13 +1504,7 @@ export const ContractInvoicesTabRedesigned = ({
                   formatCurrency={formatCurrency}
                   onPay={() => onPayInvoice(invoice)}
                   onPreview={() => onPreviewInvoice(invoice)}
-                  onDownload={() => {
-                    if (invoice.pdf_url) {
-                      window.open(invoice.pdf_url, '_blank');
-                    } else {
-                      window.print();
-                    }
-                  }}
+                  onDownload={() => onPreviewInvoice(invoice)}
                   onPrint={() => window.print()}
                   onCancel={() => onCancelInvoice(invoice)}
                   isCancelling={isCancellingInvoice}
@@ -1529,13 +1533,7 @@ export const ContractInvoicesTabRedesigned = ({
                         formatCurrency={formatCurrency}
                         onPay={() => onPayInvoice(invoice)}
                         onPreview={() => onPreviewInvoice(invoice)}
-                        onDownload={() => {
-                          if (invoice.pdf_url) {
-                            window.open(invoice.pdf_url, '_blank');
-                          } else {
-                            window.print();
-                          }
-                        }}
+                        onDownload={() => onPreviewInvoice(invoice)}
                         onPrint={() => window.print()}
                         onCancel={() => onCancelInvoice(invoice)}
                         isCancelling={isCancellingInvoice}

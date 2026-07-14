@@ -5,7 +5,7 @@ import { useCurrentCompanyId } from './useUnifiedCompanyAccess';
 
 export interface VehicleStatusUpdate {
   vehicleId: string;
-  newStatus: 'available' | 'rented' | 'maintenance' | 'out_of_service' | 'reserved';
+  newStatus: 'available' | 'rented' | 'maintenance' | 'out_of_service' | 'reserved_employee';
   reason?: string;
   maintenanceId?: string;
 }
@@ -84,7 +84,7 @@ export const useVehicleStatusUpdate = () => {
       console.error('❌ Failed to update vehicle status:', error);
       toast({
         title: "خطأ في تحديث حالة المركبة",
-        description: error.message || "حدث خطأ أثناء تحديث حالة المركبة",
+        description: error instanceof Error ? error.message : "حدث خطأ أثناء تحديث حالة المركبة",
         variant: "destructive"
       });
     }
@@ -98,7 +98,6 @@ const getStatusLabel = (status: string): string => {
     rented: 'مؤجرة',
     maintenance: 'قيد الصيانة',
     out_of_service: 'خارج الخدمة',
-    reserved: 'محجوزة',
     reserved_employee: 'محجوزة لموظف'
   };
   return statusLabels[status] || status;

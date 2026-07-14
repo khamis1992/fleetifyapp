@@ -451,7 +451,7 @@ describe('Inventory-Sales Integration', () => {
 
     const today = new Date('2025-01-01');
     const purchaseDate = new Date(vehicle.purchase_date);
-    const yearsOwned = (today.getTime() - purchaseDate.getTime()) / (1000 * 60 * 60 * 24 * 365);
+    const yearsOwned = today.getFullYear() - purchaseDate.getFullYear();
 
     // Calculate straight-line depreciation
     const depreciableAmount = vehicle.purchase_price - vehicle.salvage_value;

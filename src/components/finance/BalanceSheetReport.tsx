@@ -239,7 +239,7 @@ export function BalanceSheetReport() {
         companyName: "Fleetify",
         asOfDate,
         currency: "QAR",
-        generatedAt: new Date().toISOString(),
+        exportedAt: new Date().toISOString(),
         status: isBalanced ? "published" : "draft",
         sourceFingerprint: sourceReport.sourceFingerprint,
         reportHash: sourceReport.sourceFingerprint,

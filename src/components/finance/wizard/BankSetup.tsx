@@ -60,7 +60,7 @@ export const BankSetup: React.FC<Props> = ({
       {
         name: '',
         accountNumber: '',
-        currency: 'KWD',
+        currency: 'QAR',
         openingBalance: 0
       }
     ]
@@ -82,7 +82,7 @@ export const BankSetup: React.FC<Props> = ({
       {
         name: '',
         accountNumber: '',
-        currency: 'KWD',
+        currency: 'QAR',
         openingBalance: 0
       }
     ]);
@@ -267,9 +267,9 @@ export const BankSetup: React.FC<Props> = ({
                     </div>
                     <div className="text-right">
                       <span className="font-medium">
-                        {bank.openingBalance.toLocaleString('ar-KW', { 
-                          minimumFractionDigits: 3, 
-                          maximumFractionDigits: 3 
+                        {bank.openingBalance.toLocaleString('ar-QA', {
+                          minimumFractionDigits: 3,
+                          maximumFractionDigits: 3
                         })}
                       </span>
                       <span className="text-muted-foreground ml-1">

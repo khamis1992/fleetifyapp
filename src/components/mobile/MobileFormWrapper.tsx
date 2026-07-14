@@ -133,8 +133,11 @@ export const MobileFormWrapper: React.FC<MobileFormWrapperProps> = ({
               <CardTitle className="text-xl md:text-2xl">{title}</CardTitle>
               {config.autoSave && autoSaveStatus !== 'idle' && (
                 <Badge
-                  variant={autoSaveStatus === 'saved' ? 'success' : autoSaveStatus === 'error' ? 'destructive' : 'secondary'}
-                  className="text-xs"
+                  variant={autoSaveStatus === 'error' ? 'destructive' : 'secondary'}
+                  className={cn(
+                    'text-xs',
+                    autoSaveStatus === 'saved' && 'border-green-200 bg-green-100 text-green-800'
+                  )}
                 >
                   {autoSaveStatus === 'saving' && (
                     <>

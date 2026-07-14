@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useUnifiedCompanyAccess } from './useUnifiedCompanyAccess';
 
 export interface HRSettings {
   id?: string;
@@ -28,6 +29,7 @@ export interface HRSettings {
 
 export const useHRSettings = () => {
   const queryClient = useQueryClient();
+  const { companyId } = useUnifiedCompanyAccess();
 
   // Fetch HR settings
   const {
@@ -35,11 +37,13 @@ export const useHRSettings = () => {
     isLoading,
     error
   } = useQuery({
-    queryKey: ['hr-settings'],
+    queryKey: ['hr-settings', companyId],
     queryFn: async () => {
+      if (!companyId) return null;
       const { data, error } = await supabase
         .from('hr_settings')
         .select('*')
+        .eq('company_id', companyId)
         .single();
 
       if (error && error.code !== 'PGRST116') {
@@ -47,36 +51,29 @@ export const useHRSettings = () => {
       }
 
       return data;
-    }
+    },
+    enabled: !!companyId,
   });
 
   // Update HR settings
   const updateSettingsMutation = useMutation({
     mutationFn: async (updates: Partial<HRSettings>) => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('User not authenticated');
-
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('company_id')
-        .eq('user_id', user.id)
-        .single();
-
-      if (!profile?.company_id) throw new Error('Company not found');
+      if (!companyId) throw new Error('Company not found');
+      const { company_id: _companyId, ...safeUpdates } = updates;
 
       // Check if settings exist
       const { data: existingSettings } = await supabase
         .from('hr_settings')
         .select('id')
-        .eq('company_id', profile.company_id)
+        .eq('company_id', companyId)
         .single();
 
       if (existingSettings) {
         // Update existing settings
         const { data, error } = await supabase
           .from('hr_settings')
-          .update(updates)
-          .eq('company_id', profile.company_id)
+          .update(safeUpdates)
+          .eq('company_id', companyId)
           .select()
           .single();
 
@@ -87,8 +84,8 @@ export const useHRSettings = () => {
         const { data, error } = await supabase
           .from('hr_settings')
           .insert({
-            company_id: profile.company_id,
-            ...updates
+            company_id: companyId,
+            ...safeUpdates
           })
           .select()
           .single();
@@ -98,7 +95,7 @@ export const useHRSettings = () => {
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['hr-settings'] });
+      queryClient.invalidateQueries({ queryKey: ['hr-settings', companyId] });
       toast.success('تم حفظ إعدادات الموارد البشرية بنجاح');
     },
     onError: (error) => {
@@ -112,16 +109,19 @@ export const useHRSettings = () => {
     data: leaveTypes,
     isLoading: leaveTypesLoading
   } = useQuery({
-    queryKey: ['leave-types'],
+    queryKey: ['leave-types', companyId],
     queryFn: async () => {
+      if (!companyId) return [];
       const { data, error } = await supabase
         .from('leave_types')
         .select('*')
+        .eq('company_id', companyId)
         .order('type_name');
 
       if (error) throw error;
       return data || [];
-    }
+    },
+    enabled: !!companyId,
   });
 
   // Create leave type
@@ -133,22 +133,13 @@ export const useHRSettings = () => {
       requires_approval?: boolean;
       description?: string;
     }) => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('User not authenticated');
-
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('company_id')
-        .eq('user_id', user.id)
-        .single();
-
-      if (!profile?.company_id) throw new Error('Company not found');
+      if (!companyId) throw new Error('Company not found');
 
       const { data, error } = await supabase
         .from('leave_types')
         .insert({
           ...leaveType,
-          company_id: profile.company_id
+          company_id: companyId
         })
         .select()
         .single();
@@ -157,7 +148,7 @@ export const useHRSettings = () => {
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['leave-types'] });
+      queryClient.invalidateQueries({ queryKey: ['leave-types', companyId] });
       toast.success('تم إنشاء نوع الإجازة بنجاح');
     },
     onError: (error) => {
@@ -179,10 +170,12 @@ export const useHRSettings = () => {
         is_active?: boolean;
       }
     }) => {
+      if (!companyId) throw new Error('Company not found');
       const { data, error } = await supabase
         .from('leave_types')
         .update(updates)
         .eq('id', id)
+        .eq('company_id', companyId)
         .select()
         .single();
 
@@ -190,7 +183,7 @@ export const useHRSettings = () => {
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['leave-types'] });
+      queryClient.invalidateQueries({ queryKey: ['leave-types', companyId] });
       toast.success('تم تحديث نوع الإجازة بنجاح');
     },
     onError: (error) => {
@@ -202,15 +195,19 @@ export const useHRSettings = () => {
   // Delete leave type
   const deleteLeaveTypeMutation = useMutation({
     mutationFn: async (id: string) => {
+      if (!companyId) throw new Error('Company not found');
       const { error } = await supabase
         .from('leave_types')
         .delete()
-        .eq('id', id);
+        .eq('id', id)
+        .eq('company_id', companyId)
+        .select('id')
+        .single();
 
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['leave-types'] });
+      queryClient.invalidateQueries({ queryKey: ['leave-types', companyId] });
       toast.success('تم حذف نوع الإجازة بنجاح');
     },
     onError: (error) => {

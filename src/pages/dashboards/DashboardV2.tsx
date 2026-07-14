@@ -130,7 +130,7 @@ const StatCard: React.FC<{
     transition={{ duration: 0.5, delay }}
     whileHover={{ scale: 1.02, y: -4 }}
     className={cn(
-      "relative overflow-hidden rounded-xl p-6",
+      "relative min-h-[164px] overflow-hidden rounded-lg p-6",
       "backdrop-blur-xl border",
       isDark 
         ? "bg-slate-900/60 border-slate-800/50" 
@@ -182,7 +182,7 @@ const StatCard: React.FC<{
         animate={{ opacity: 1 }}
         transition={{ delay: delay + 0.2 }}
         className={cn(
-          "text-3xl font-bold tracking-tight",
+          "text-3xl font-bold tracking-normal",
           isDark ? "text-white" : "text-slate-900"
         )}
       >
@@ -329,23 +329,68 @@ const DashboardV2: React.FC = () => {
     queryKey: ['revenue-chart-v2', companyId],
     queryFn: async () => {
       if (!companyId) return [];
-      const months = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
-      const currentMonth = new Date().getMonth();
-      
-      // Generate last 6 months of data
-      return Array.from({ length: 6 }, (_, i) => {
-        const monthIndex = (currentMonth - 5 + i + 12) % 12;
-        const baseRevenue = stats?.monthlyRevenue || 100000;
-        const variance = Math.random() * 0.4 - 0.2; // -20% to +20%
-        return {
-          month: months[monthIndex],
-          revenue: Math.round(baseRevenue * (0.7 + i * 0.1 + variance)),
-          contracts: Math.round(10 + Math.random() * 20),
-        };
+      const now = new Date();
+      const firstMonth = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 5, 1));
+      const monthFormatter = new Intl.DateTimeFormat('ar-QA', {
+        month: 'short',
+        year: '2-digit',
+        timeZone: 'UTC',
       });
+
+      const [paymentsResult, contractsResult] = await Promise.all([
+        supabase
+          .from('payments')
+          .select('amount, payment_date')
+          .eq('company_id', companyId)
+          .in('payment_status', ['completed', 'paid', 'confirmed'])
+          .gte('payment_date', firstMonth.toISOString().slice(0, 10)),
+        supabase
+          .from('contracts')
+          .select('contract_date')
+          .eq('company_id', companyId)
+          .gte('contract_date', firstMonth.toISOString().slice(0, 10)),
+      ]);
+
+      if (paymentsResult.error) throw paymentsResult.error;
+      if (contractsResult.error) throw contractsResult.error;
+
+      const buckets = new Map();
+      for (let index = 0; index < 6; index += 1) {
+        const date = new Date(Date.UTC(
+          firstMonth.getUTCFullYear(),
+          firstMonth.getUTCMonth() + index,
+          1
+        ));
+        const key = date.toISOString().slice(0, 7);
+        buckets.set(key, {
+          month: monthFormatter.format(date),
+          revenue: 0,
+          contracts: 0,
+        });
+      }
+
+      for (const payment of paymentsResult.data || []) {
+        const bucket = buckets.get(payment.payment_date.slice(0, 7));
+        if (bucket) bucket.revenue += Number(payment.amount || 0);
+      }
+
+      for (const contract of contractsResult.data || []) {
+        const bucket = buckets.get(contract.contract_date.slice(0, 7));
+        if (bucket) bucket.contracts += 1;
+      }
+
+      return Array.from(buckets.values());
     },
-    enabled: !!companyId && !!stats,
+    enabled: !!companyId,
   });
+
+  const revenueGrowth = useMemo(() => {
+    if (!revenueData || revenueData.length < 2) return null;
+    const current = revenueData[revenueData.length - 1].revenue;
+    const previous = revenueData[revenueData.length - 2].revenue;
+    if (previous <= 0) return null;
+    return ((current - previous) / previous) * 100;
+  }, [revenueData]);
 
   // Fleet pie chart data
   const fleetChartData = useMemo(() => [
@@ -571,7 +616,7 @@ const DashboardV2: React.FC = () => {
               title="التحصيلات"
               icon={<Target className="w-5 h-5 text-orange-500" />}
               color="bg-orange-500/10"
-              onClick={() => navigate('/collections')}
+              onClick={() => navigate('/finance/billing?tab=ai-collections')}
               isDark={isDark}
             />
             <QuickAction
@@ -606,10 +651,19 @@ const DashboardV2: React.FC = () => {
               )}>
                 تحليل الإيرادات
               </h3>
-              <Badge variant="outline" className="text-emerald-500 border-emerald-500/30">
-                <TrendingUp className="w-3 h-3 ml-1" />
-                نمو 12%
-              </Badge>
+              {revenueGrowth !== null && (
+                <Badge
+                  variant="outline"
+                  className={revenueGrowth >= 0
+                    ? "text-emerald-500 border-emerald-500/30"
+                    : "text-red-500 border-red-500/30"}
+                >
+                  {revenueGrowth >= 0
+                    ? <TrendingUp className="w-3 h-3 ml-1" />
+                    : <TrendingDown className="w-3 h-3 ml-1" />}
+                  {revenueGrowth >= 0 ? 'نمو' : 'انخفاض'} {Math.abs(revenueGrowth).toFixed(1)}%
+                </Badge>
+              )}
             </div>
             
             <ResponsiveContainer width="100%" height={280}>
@@ -962,13 +1016,19 @@ const DashboardV2: React.FC = () => {
                     "text-sm font-medium",
                     isDark ? "text-white" : "text-slate-900"
                   )}>
-                    أداء ممتاز هذا الشهر!
+                    {revenueGrowth === null
+                      ? 'بيانات الإيرادات محدثة'
+                      : revenueGrowth >= 0
+                        ? 'تحسن التحصيل هذا الشهر'
+                        : 'انخفاض التحصيل هذا الشهر'}
                   </p>
                   <p className={cn(
                     "text-xs",
                     isDark ? "text-slate-400" : "text-slate-600"
                   )}>
-                    نمو 12% في الإيرادات مقارنة بالشهر الماضي
+                    {revenueGrowth === null
+                      ? 'لا توجد بيانات كافية للمقارنة بالشهر السابق'
+                      : `${Math.abs(revenueGrowth).toFixed(1)}% مقارنة بالشهر السابق`}
                   </p>
                 </div>
               </div>
@@ -976,20 +1036,6 @@ const DashboardV2: React.FC = () => {
           </motion.div>
         </div>
 
-        {/* Footer Note */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 1 }}
-          className={cn(
-            "text-center mt-8 py-4",
-            isDark ? "text-slate-500" : "text-slate-400"
-          )}
-        >
-          <p className="text-sm">
-            Dashboard V2 • تصميم تجريبي احترافي
-          </p>
-        </motion.div>
       </div>
     </div>
   );

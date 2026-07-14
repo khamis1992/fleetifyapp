@@ -401,8 +401,8 @@ const VehicleInstallmentsDashboard = () => {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<string>('date_desc');
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [installmentToDelete, setInstallmentToDelete] = useState<string | null>(null);
+  const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
+  const [installmentToCancel, setInstallmentToCancel] = useState<string | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [installmentToEdit, setInstallmentToEdit] = useState<VehicleInstallmentWithDetails | null>(null);
   const [editForm, setEditForm] = useState({
@@ -423,15 +423,15 @@ const VehicleInstallmentsDashboard = () => {
   const updateInstallment = useUpdateVehicleInstallment();
 
   const handleDeleteClick = (id: string) => {
-    setInstallmentToDelete(id);
-    setDeleteDialogOpen(true);
+    setInstallmentToCancel(id);
+    setCancelDialogOpen(true);
   };
 
   const confirmDelete = async () => {
-    if (installmentToDelete) {
-      await deleteInstallment.mutateAsync(installmentToDelete);
-      setDeleteDialogOpen(false);
-      setInstallmentToDelete(null);
+    if (installmentToCancel) {
+      await deleteInstallment.mutateAsync(installmentToCancel);
+      setCancelDialogOpen(false);
+      setInstallmentToCancel(null);
     }
   };
 
@@ -792,14 +792,14 @@ const VehicleInstallmentsDashboard = () => {
         </AnimatePresence>
       </motion.section>
 
-      {/* Delete Confirmation Dialog */}
-      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+      {/* Cancellation Confirmation Dialog */}
+      <AlertDialog open={cancelDialogOpen} onOpenChange={setCancelDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>هل أنت متأكد من حذف هذه الاتفاقية؟</AlertDialogTitle>
+            <AlertDialogTitle>هل أنت متأكد من إلغاء هذه الاتفاقية؟</AlertDialogTitle>
             <AlertDialogDescription>
-              سيتم حذف الاتفاقية وجميع الأقساط المرتبطة بها نهائياً. 
-              هذا الإجراء لا يمكن التراجع عنه.
+              ستتوقف الاتفاقية غير المسددة مع الاحتفاظ بالأقساط والتخصيصات كسجل تدقيق.
+              الاتفاقيات التي لها دفعات أو قيود أو فواتير تتطلب إجراء عكس مالي معتمد.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="gap-2">
@@ -809,7 +809,7 @@ const VehicleInstallmentsDashboard = () => {
               className="bg-red-600 hover:bg-red-700"
               disabled={deleteInstallment.isPending}
             >
-              {deleteInstallment.isPending ? 'جاري الحذف...' : 'حذف الاتفاقية'}
+              {deleteInstallment.isPending ? 'جاري الإلغاء...' : 'إلغاء الاتفاقية'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

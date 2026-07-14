@@ -1,4 +1,5 @@
 import type { UnsignedContractPdfData } from '@/types/contractDocumentSaving'
+import { escapeHtml, sanitizeDocumentHtmlToFragment } from './htmlSanitizer'
 
 export const generateUnsignedContractPdf = async (contractData: UnsignedContractPdfData): Promise<Blob> => {
   // Lazy load jsPDF and html2canvas
@@ -9,7 +10,7 @@ export const generateUnsignedContractPdf = async (contractData: UnsignedContract
 
   // Create a temporary container
   const container = document.createElement('div');
-  container.innerHTML = contractHtml;
+  container.replaceChildren(sanitizeDocumentHtmlToFragment(contractHtml));
   container.style.position = 'absolute';
   container.style.left = '-9999px';
   document.body.appendChild(container);
@@ -19,8 +20,7 @@ export const generateUnsignedContractPdf = async (contractData: UnsignedContract
     const canvas = await html2canvas(container, {
       scale: 2,
       useCORS: true,
-      logging: false,
-      letterRendering: true
+      logging: false
     });
 
     // Get image data
@@ -62,13 +62,15 @@ export const generateUnsignedContractPdf = async (contractData: UnsignedContract
 }
 
 const generateUnsignedContractHtml = (data: UnsignedContractPdfData): string => {
+  const contractType = escapeHtml(getContractTypeInArabic(data.contract_type));
+
   return `
     <!DOCTYPE html>
     <html lang="ar" dir="rtl">
     <head>
       <meta charset="UTF-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>مسودة عقد رقم ${data.contract_number}</title>
+      <title>مسودة عقد رقم ${escapeHtml(data.contract_number)}</title>
       <style>
         * {
           box-sizing: border-box;
@@ -266,9 +268,9 @@ const generateUnsignedContractHtml = (data: UnsignedContractPdfData): string => 
         ` : ''}
         
         <div class="header">
-          <div class="company-name">${data.company_name}</div>
-          <div class="contract-title">عقد ${getContractTypeInArabic(data.contract_type)}</div>
-          <div class="contract-number">رقم العقد: ${data.contract_number}</div>
+          <div class="company-name">${escapeHtml(data.company_name)}</div>
+          <div class="contract-title">عقد ${contractType}</div>
+          <div class="contract-number">رقم العقد: ${escapeHtml(data.contract_number)}</div>
         </div>
 
         ${data.is_draft ? `
@@ -282,19 +284,19 @@ const generateUnsignedContractHtml = (data: UnsignedContractPdfData): string => 
           <div class="info-grid">
             <div class="info-item">
               <div class="info-label">نوع العقد</div>
-              <div class="info-value">${getContractTypeInArabic(data.contract_type)}</div>
+              <div class="info-value">${contractType}</div>
             </div>
             <div class="info-item">
               <div class="info-label">تاريخ الإنشاء</div>
-              <div class="info-value">${data.created_date}</div>
+              <div class="info-value">${escapeHtml(data.created_date)}</div>
             </div>
             <div class="info-item">
               <div class="info-label">تاريخ البداية</div>
-              <div class="info-value">${data.start_date}</div>
+              <div class="info-value">${escapeHtml(data.start_date)}</div>
             </div>
             <div class="info-item">
               <div class="info-label">تاريخ النهاية</div>
-              <div class="info-value">${data.end_date}</div>
+              <div class="info-value">${escapeHtml(data.end_date)}</div>
             </div>
           </div>
         </div>
@@ -303,7 +305,7 @@ const generateUnsignedContractHtml = (data: UnsignedContractPdfData): string => 
           <div class="section-title">معلومات العميل</div>
           <div class="info-item">
             <div class="info-label">اسم العميل</div>
-            <div class="info-value">${data.customer_name}</div>
+            <div class="info-value">${escapeHtml(data.customer_name)}</div>
           </div>
         </div>
 
@@ -312,7 +314,7 @@ const generateUnsignedContractHtml = (data: UnsignedContractPdfData): string => 
           <div class="section-title">معلومات المركبة</div>
           <div class="info-item">
             <div class="info-label">تفاصيل المركبة</div>
-            <div class="info-value">${data.vehicle_info}</div>
+            <div class="info-value">${escapeHtml(data.vehicle_info)}</div>
           </div>
         </div>
         ` : ''}
@@ -322,15 +324,15 @@ const generateUnsignedContractHtml = (data: UnsignedContractPdfData): string => 
           <div class="info-grid">
             <div class="info-item">
               <div class="info-label">المبلغ الإجمالي</div>
-              <div class="info-value">${data.contract_amount.toFixed(3)} د.ك</div>
+              <div class="info-value">${data.contract_amount.toFixed(2)} ر.ق</div>
             </div>
             <div class="info-item">
               <div class="info-label">المبلغ الشهري</div>
-              <div class="info-value">${data.monthly_amount.toFixed(3)} د.ك</div>
+              <div class="info-value">${data.monthly_amount.toFixed(2)} ر.ق</div>
             </div>
           </div>
           <div class="amount-highlight">
-            إجمالي قيمة العقد: ${data.contract_amount.toFixed(3)} د.ك
+            إجمالي قيمة العقد: ${data.contract_amount.toFixed(2)} ر.ق
           </div>
         </div>
 
@@ -338,7 +340,7 @@ const generateUnsignedContractHtml = (data: UnsignedContractPdfData): string => 
         <div class="section">
           <div class="section-title">الشروط والأحكام</div>
           <div class="terms-section">
-            ${data.terms.replace(/\n/g, '<br>')}
+            ${escapeHtml(data.terms).replace(/\n/g, '<br>')}
           </div>
         </div>
         ` : ''}
@@ -360,7 +362,7 @@ const generateUnsignedContractHtml = (data: UnsignedContractPdfData): string => 
         </div>
 
         <div class="footer">
-          تم إنشاء هذه المسودة بتاريخ ${data.created_date}<br>
+          تم إنشاء هذه المسودة بتاريخ ${escapeHtml(data.created_date)}<br>
           <strong>ملاحظة: هذه مسودة غير موقعة وليست ملزمة قانونياً</strong>
         </div>
       </div>

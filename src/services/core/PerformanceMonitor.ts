@@ -118,7 +118,12 @@ export class PerformanceMonitor {
   /**
    * Start timing a request
    */
-  startTimer(name: string, metadata?: Record<string, any>): () => PerformanceMetric {
+  startTimer(name: string, metadata?: Record<string, any>): (options?: {
+    success?: boolean;
+    statusCode?: number;
+    method?: string;
+    url?: string;
+  }) => PerformanceMetric {
     const startTime = performance.now();
 
     return (options?: {

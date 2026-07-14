@@ -45,7 +45,7 @@ const BudgetsAndCostCenters = () => {
         <motion.div
           initial={{ opacity: 0, y: -12 }}
           animate={{ opacity: 1, y: 0 }}
-          className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5"
+          className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm sm:p-5"
         >
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div className="flex items-start gap-3">
@@ -73,7 +73,7 @@ const BudgetsAndCostCenters = () => {
             <Button
               variant="outline"
               onClick={() => navigate("/finance/hub")}
-              className="h-11 gap-2 rounded-xl border-slate-200 text-[#020617] hover:bg-[#F6F8FB]"
+              className="h-11 gap-2 rounded-lg border-slate-200 text-[#020617] hover:bg-[#F6F8FB]"
             >
               <ArrowLeft className="h-4 w-4" />
               العودة للمركز المالي
@@ -93,7 +93,7 @@ const BudgetsAndCostCenters = () => {
                     key={tab.id}
                     onClick={() => handleTabChange(tab.id)}
                     className={cn(
-                      "cursor-pointer overflow-hidden rounded-2xl border bg-white shadow-sm transition",
+                      "cursor-pointer overflow-hidden rounded-lg border bg-white shadow-sm transition-colors",
                       isActive ? "border-[#22C7A1] ring-2 ring-[#22C7A1]/15" : "border-slate-200 hover:border-slate-300"
                     )}
                   >
@@ -123,14 +123,14 @@ const BudgetsAndCostCenters = () => {
               })}
             </div>
 
-            <TabsList className="h-auto rounded-2xl border border-slate-200 bg-white p-1 shadow-sm">
+            <TabsList className="h-auto rounded-lg border border-slate-200 bg-white p-1 shadow-sm">
               {tabs.map((tab) => {
                 const Icon = tab.icon;
                 return (
                   <TabsTrigger
                     key={tab.id}
                     value={tab.id}
-                    className="h-11 rounded-xl px-4 text-[#94A3B8] data-[state=active]:bg-[#22C7A1] data-[state=active]:text-white"
+                    className="h-11 rounded-lg px-4 text-[#94A3B8] data-[state=active]:bg-[#22C7A1] data-[state=active]:text-white"
                   >
                     <Icon className="ml-2 h-4 w-4" />
                     {tab.label}
@@ -158,17 +158,17 @@ const BudgetsAndCostCenters = () => {
         </Tabs>
 
         <div className="grid gap-3 md:grid-cols-3">
-          <div className="rounded-2xl border border-slate-200 bg-white p-4">
+          <div className="rounded-lg border border-slate-200 bg-white p-4">
             <Layers3 className="mb-3 h-5 w-5 text-[#38BDF8]" />
             <p className="text-sm font-black text-[#020617]">تخطيط مرتبط بالتنفيذ</p>
             <p className="mt-1 text-xs leading-5 text-[#94A3B8]">كل رقم ظاهر بصيغة QAR مع مساحة واضحة للمتابعة والقرار.</p>
           </div>
-          <div className="rounded-2xl border border-slate-200 bg-white p-4">
+          <div className="rounded-lg border border-slate-200 bg-white p-4">
             <Target className="mb-3 h-5 w-5 text-[#22C7A1]" />
             <p className="text-sm font-black text-[#020617]">مؤشرات قابلة للمسح</p>
             <p className="mt-1 text-xs leading-5 text-[#94A3B8]">الانحرافات والحالات تظهر كباجات ملونة بدل قراءة الجداول يدويًا.</p>
           </div>
-          <div className="rounded-2xl border border-slate-200 bg-white p-4">
+          <div className="rounded-lg border border-slate-200 bg-white p-4">
             <Building2 className="mb-3 h-5 w-5 text-[#7C83F6]" />
             <p className="text-sm font-black text-[#020617]">توزيع تكلفة أوضح</p>
             <p className="mt-1 text-xs leading-5 text-[#94A3B8]">مراكز التكلفة تعرض المخصص، الفعلي، والمتبقي بشكل مباشر.</p>

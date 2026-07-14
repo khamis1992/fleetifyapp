@@ -5,9 +5,8 @@ import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Zap, Code, Database, MessageSquare, CreditCard, Mail, Webhook } from 'lucide-react';
+import { Zap, Code, MessageSquare, CreditCard, Mail, Webhook } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 import { useFleetifyTranslation } from "@/hooks/useTranslation";
@@ -59,7 +58,7 @@ export const SystemIntegrations: React.FC = () => {
     enableCors: true,
     requireAuth: true,
     enableWebhooks: true,
-    webhookSecret: 'whsec_1234567890abcdef',
+    webhookSecret: '',
   });
 
   const [webhooks] = useState([
@@ -97,6 +96,7 @@ export const SystemIntegrations: React.FC = () => {
   };
 
   const testWebhook = (webhookId: string) => {
+    void webhookId;
     toast({
       title: t("webhookTestSent"),
       description: t("aTestPayloadHas"),

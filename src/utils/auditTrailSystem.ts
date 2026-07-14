@@ -79,7 +79,15 @@ class AuditTrailSystem {
   }
 
   async logPaymentAction(
-    action: 'created' | 'updated' | 'deleted' | 'linked' | 'allocated',
+    action:
+      | 'created'
+      | 'updated'
+      | 'deleted'
+      | 'linked'
+      | 'linked_manually'
+      | 'unlinked'
+      | 'allocated'
+      | `state_transition_${string}`,
     paymentId: string,
     userId: string,
     companyId: string,

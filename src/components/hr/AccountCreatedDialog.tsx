@@ -114,12 +114,9 @@ useEffect(() => {
     fetchCompany();
   }, [open, companyFilter?.company_id]);
 
-  // Add null check to prevent errors
-  if (!accountData) {
-    return null;
-  }
-
   const whatsappMessage = useMemo(() => {
+    if (!accountData) return '';
+
     const lines = [
       `مرحباً ${accountData.employee_name} 👋`,
       `تم إنشاء حسابك في نظام الشركة.`,
@@ -131,6 +128,8 @@ useEffect(() => {
     ];
     return encodeURIComponent(lines.join('\n'));
   }, [accountData]);
+
+  if (!accountData) return null;
 
 const handleSendWhatsApp = async () => {
   let phoneRaw = (resolvedPhone || '').trim();

@@ -44,7 +44,7 @@ interface Invoice {
   contract_id: string | null;
   contracts: {
     contract_number: string;
-    vehicle_number: string | null;
+    vehicle_id: string | null;
     vehicles: {
       plate_number: string;
     } | null;
@@ -106,10 +106,10 @@ export function QuickPaymentDialog({
 
   // Load invoices when dialog opens
   useEffect(() => {
-    if (open && customerId) {
+    if (open && customerId && companyId) {
       loadCustomerInvoices();
     }
-  }, [open, customerId]);
+  }, [open, customerId, companyId]);
 
   // Reset state when dialog closes
   useEffect(() => {
@@ -125,6 +125,8 @@ export function QuickPaymentDialog({
   }, [open]);
 
   const loadCustomerInvoices = async () => {
+    if (!companyId) return;
+
     setLoadingInvoices(true);
     try {
       const { data, error } = await supabase
@@ -147,6 +149,7 @@ export function QuickPaymentDialog({
             )
           )
         `)
+        .eq('company_id', companyId)
         .eq('customer_id', customerId)
         .in('payment_status', ['unpaid', 'partial', 'overdue', 'pending'])
         .lte('due_date', new Date().toISOString().split('T')[0])  // ✅ فواتير مستحقة حتى اليوم فقط
@@ -325,7 +328,6 @@ export function QuickPaymentDialog({
             payment_status: 'unpaid',
             status: 'draft',
             invoice_type: 'rental',
-            description: `فاتورة تلقائية للدفعة - عقد ${activeContract.contract_number}`,
             notes: 'تم إنشاء هذه الفاتورة تلقائياً عند تسجيل دفعة بدون فاتورة',
           })
           .select()
@@ -359,9 +361,8 @@ export function QuickPaymentDialog({
         if (amountToApply <= 0) continue;
 
         const paymentInsertData = {
-          company_id: companyId,
           customer_id: customerId,
-          contract_id: invoice.contract_id || null,
+          contract_id: invoice.contract_id || undefined,
           invoice_id: invoice.id,
           amount: amountToApply,
           payment_date: paymentDate,
@@ -395,6 +396,9 @@ export function QuickPaymentDialog({
 
       if (paymentsCreated === 0) {
         throw new Error('لم يتم تسجيل أي دفعة. قد تكون جميع الدفعات مسجلة بالفعل.');
+      }
+      if (!firstPaymentId) {
+        throw new Error('تعذر تحديد معرّف الدفعة المسجلة');
       }
 
       console.log(`Successfully created ${paymentsCreated} payment(s)`);

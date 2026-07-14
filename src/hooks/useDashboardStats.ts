@@ -1,5 +1,5 @@
 import { useRef } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useStableCompanyId } from '@/contexts/CompanyContext';
@@ -388,6 +388,6 @@ export const useDashboardStats = () => {
     retryDelay: 1000,
     refetchOnWindowFocus: false, // Don't refetch on window focus for dashboard stats
     refetchOnMount: true, // Refetch on mount if data is stale
-    keepPreviousData: true, // FIXED: Keep previous data visible during refetch (prevents showing 0s)
+    placeholderData: keepPreviousData,
   });
 };

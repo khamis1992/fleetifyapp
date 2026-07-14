@@ -107,7 +107,7 @@ export default function CustomerVerificationPage() {
 
   // جلب بيانات المهمة
   const { data: task, isLoading: taskLoading } = useQuery({
-    queryKey: ['verification-task', taskId],
+    queryKey: ['verification-task', taskId, companyId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('customer_verification_tasks')
@@ -143,17 +143,18 @@ export default function CustomerVerificationPage() {
           )
         `)
         .eq('id', taskId)
+        .eq('company_id', companyId)
         .single();
 
       if (error) throw error;
       return data;
     },
-    enabled: !!taskId,
+    enabled: !!taskId && !!companyId,
   });
 
   // جلب الفواتير غير المدفوعة
   const { data: invoices = [], isLoading: invoicesLoading } = useQuery({
-    queryKey: ['unpaid-invoices', task?.contract_id],
+    queryKey: ['unpaid-invoices', task?.contract_id, companyId],
     queryFn: async () => {
       if (!task?.contract_id) return [];
 
@@ -161,6 +162,7 @@ export default function CustomerVerificationPage() {
         .from('invoices')
         .select('*')
         .eq('contract_id', task.contract_id)
+        .eq('company_id', companyId)
         .neq('status', 'cancelled') // استثناء الفواتير الملغاة
         .order('due_date', { ascending: true });
 
@@ -171,7 +173,7 @@ export default function CustomerVerificationPage() {
         (inv.total_amount || 0) - (inv.paid_amount || 0) > 0
       );
     },
-    enabled: !!task?.contract_id,
+    enabled: !!task?.contract_id && !!companyId,
   });
 
   // جلب العقد الموقع إن وجد
@@ -184,6 +186,7 @@ export default function CustomerVerificationPage() {
         .from('contract_documents')
         .select('*')
         .eq('contract_id', task.contract_id)
+        .eq('company_id', companyId)
         .eq('document_type', 'signed_contract')
         .order('created_at', { ascending: false })
         .limit(1)
@@ -192,7 +195,7 @@ export default function CustomerVerificationPage() {
       if (error) throw error;
       return data;
     },
-    enabled: !!task?.contract_id,
+    enabled: !!task?.contract_id && !!companyId,
   });
 
   // جلب المخالفات المرورية للعقد
@@ -205,6 +208,7 @@ export default function CustomerVerificationPage() {
         .from('penalties')
         .select('id, penalty_number, violation_type, amount, status, payment_status')
         .eq('contract_id', task.contract_id)
+        .eq('company_id', companyId)
         .neq('payment_status', 'paid')
         .neq('status', 'cancelled');
 
@@ -215,7 +219,7 @@ export default function CustomerVerificationPage() {
         fine_amount: violation.amount,
       }));
     },
-    enabled: !!task?.contract_id,
+    enabled: !!task?.contract_id && !!companyId,
   });
 
   // رفع العقد الموقع
@@ -226,7 +230,7 @@ export default function CustomerVerificationPage() {
       }
 
       const fileExt = file.name.split('.').pop();
-      const fileName = `${task.contract_id}/signed_contract_${Date.now()}.${fileExt}`;
+      const fileName = `${companyId}/${task.contract_id}/signed_contract_${Date.now()}.${fileExt}`;
       
       // رفع الملف إلى التخزين
       const { error: uploadError } = await supabase.storage
@@ -299,7 +303,8 @@ export default function CustomerVerificationPage() {
           nationality: editedData.nationality,
           phone: editedData.phone,
         })
-        .eq('id', task.customer.id);
+        .eq('id', task.customer.id)
+        .eq('company_id', companyId);
 
       if (customerError) throw customerError;
 
@@ -309,7 +314,8 @@ export default function CustomerVerificationPage() {
         .update({
           monthly_amount: editedData.monthly_rent,
         })
-        .eq('id', task.contract.id);
+        .eq('id', task.contract.id)
+        .eq('company_id', companyId);
 
       if (contractError) throw contractError;
     },
@@ -362,8 +368,7 @@ export default function CustomerVerificationPage() {
     },
   });
 
-  // إلغاء المهمة
-  // حذف العقد نهائياً
+  // إلغاء العقد مع الاحتفاظ بالسجل المالي والقانوني
   const deleteContractMutation = useMutation({
     mutationFn: async () => {
       if (!task?.contract_id || !companyId) {
@@ -371,63 +376,76 @@ export default function CustomerVerificationPage() {
       }
 
       const contractId = task.contract_id;
+      const now = new Date().toISOString();
+      const [contractSnapshot, delinquentSnapshot, taskSnapshot] = await Promise.all([
+        supabase.from('contracts').select('status, updated_at').eq('id', contractId).eq('company_id', companyId).single(),
+        supabase.from('delinquent_customers').select('id, is_active, last_updated_at').eq('contract_id', contractId).eq('company_id', companyId),
+        supabase.from('customer_verification_tasks').select('status, updated_at').eq('id', taskId).eq('company_id', companyId).single(),
+      ]);
+      if (contractSnapshot.error) throw contractSnapshot.error;
+      if (delinquentSnapshot.error) throw delinquentSnapshot.error;
+      if (taskSnapshot.error) throw taskSnapshot.error;
 
-      const { count: existingPaymentsCount, error: paymentsCountError } = await supabase
-        .from('payments')
-        .select('id', { count: 'exact', head: true })
-        .eq('contract_id', contractId);
+      try {
+        const { error: contractError } = await supabase
+          .from('contracts')
+          .update({ status: 'cancelled', updated_at: now })
+          .eq('id', contractId)
+          .eq('company_id', companyId);
+        if (contractError) throw contractError;
 
-      if (paymentsCountError) throw paymentsCountError;
+        const { error: delinquentError } = await supabase
+          .from('delinquent_customers')
+          .update({ is_active: false, last_updated_at: now })
+          .eq('contract_id', contractId)
+          .eq('company_id', companyId);
+        if (delinquentError) throw delinquentError;
 
-      if ((existingPaymentsCount || 0) > 0) {
-        throw new Error('لا يمكن حذف عقد لديه مدفوعات مسجلة. قم بإلغاء العقد أو أرشفته للحفاظ على السجل المالي.');
+        const { error: taskError } = await supabase
+          .from('customer_verification_tasks')
+          .update({ status: 'cancelled', updated_at: now })
+          .eq('id', taskId)
+          .eq('company_id', companyId);
+        if (taskError) throw taskError;
+      } catch (error) {
+        await Promise.all([
+          supabase
+            .from('contracts')
+            .update({ status: contractSnapshot.data.status, updated_at: contractSnapshot.data.updated_at })
+            .eq('id', contractId)
+            .eq('company_id', companyId),
+          ...((delinquentSnapshot.data || []).map((record) =>
+            supabase
+              .from('delinquent_customers')
+              .update({ is_active: record.is_active, last_updated_at: record.last_updated_at })
+              .eq('id', record.id)
+              .eq('company_id', companyId)
+          )),
+          supabase
+            .from('customer_verification_tasks')
+            .update({ status: taskSnapshot.data.status, updated_at: taskSnapshot.data.updated_at })
+            .eq('id', taskId)
+            .eq('company_id', companyId),
+        ]);
+        throw error;
       }
-
-      // 1. حذف البيانات المرتبطة
-      await supabase.from('delinquent_customers').delete().eq('contract_id', contractId);
-      await supabase
-        .from('invoices')
-        .update({
-          status: 'cancelled',
-          payment_status: 'cancelled',
-          balance_due: 0,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('contract_id', contractId)
-        .or('paid_amount.eq.0,paid_amount.is.null');
-      await supabase.from('contract_payment_schedules').delete().eq('contract_id', contractId);
-      await supabase.from('penalties').update({ contract_id: null, customer_id: null }).eq('contract_id', contractId);
-      await supabase.from('contract_documents').delete().eq('contract_id', contractId);
-
-      // 2. حذف العقد
-      const { error: deleteError } = await supabase
-        .from('contracts')
-        .delete()
-        .eq('id', contractId);
-
-      if (deleteError) throw deleteError;
-
-      // 3. حذف مهمة التدقيق
-      await supabase
-        .from('customer_verification_tasks')
-        .delete()
-        .eq('id', taskId);
     },
     onSuccess: () => {
-      toast.success('تم حذف العقد نهائياً من النظام');
+      toast.success('تم إلغاء العقد مع الاحتفاظ بالسجل المالي والقانوني');
       queryClient.invalidateQueries({ queryKey: ['verification-task'] });
       queryClient.invalidateQueries({ queryKey: ['delinquent-customers'] });
       navigate('/legal/delinquency');
     },
     onError: (error: any) => {
-      console.error('Error deleting contract:', error);
-      toast.error('فشل حذف العقد: ' + (error.message || 'خطأ غير معروف'));
+      console.error('Error cancelling contract:', error);
+      toast.error('فشل إلغاء العقد: ' + (error.message || 'خطأ غير معروف'));
     },
+    onSettled: () => setIsDeleting(false),
   });
 
   const cancelTaskMutation = useMutation({
     mutationFn: async () => {
-      if (!taskId) throw new Error('معرف المهمة غير موجود');
+      if (!taskId || !companyId) throw new Error('معرف المهمة أو الشركة غير موجود');
 
       // تحديث حالة المهمة إلى ملغاة
       const { error } = await supabase
@@ -435,7 +453,8 @@ export default function CustomerVerificationPage() {
         .update({
           status: 'cancelled',
         })
-        .eq('id', taskId);
+        .eq('id', taskId)
+        .eq('company_id', companyId);
 
       if (error) throw error;
 
@@ -447,7 +466,8 @@ export default function CustomerVerificationPage() {
           read_at: new Date().toISOString(),
         })
         .eq('related_id', taskId)
-        .eq('related_type', 'verification_task');
+        .eq('related_type', 'verification_task')
+        .eq('user_id', user?.id);
     },
     onSuccess: () => {
       toast.success('تم إلغاء المهمة بنجاح - سيعود العميل لصفحة المتعثرات');
@@ -465,13 +485,14 @@ export default function CustomerVerificationPage() {
   // تأكيد جاهزية رفع الدعوى
   const confirmReadyMutation = useMutation({
     mutationFn: async () => {
-      if (!taskId || !user?.id) throw new Error('بيانات غير مكتملة');
+      if (!taskId || !user?.id || !companyId) throw new Error('بيانات غير مكتملة');
 
       // جلب بيانات البروفايل (id و الاسم)
       const { data: profile } = await supabase
         .from('profiles')
         .select('id, first_name_ar, last_name_ar')
         .eq('user_id', user.id)
+        .eq('company_id', companyId)
         .single();
 
       if (!profile) throw new Error('لم يتم العثور على بيانات المستخدم');
@@ -486,7 +507,8 @@ export default function CustomerVerificationPage() {
           verified_by: profile.id,
           verifier_name: verifierFullName,
         })
-        .eq('id', taskId);
+        .eq('id', taskId)
+        .eq('company_id', companyId);
 
       if (error) throw error;
 
@@ -498,7 +520,8 @@ export default function CustomerVerificationPage() {
           read_at: new Date().toISOString(),
         })
         .eq('related_id', taskId)
-        .eq('related_type', 'verification_task');
+        .eq('related_type', 'verification_task')
+        .eq('user_id', user.id);
 
       // إرسال رسالة واتساب لمنشئ المهمة
       if (task?.assigned_by) {
@@ -508,6 +531,7 @@ export default function CustomerVerificationPage() {
             .from('profiles')
             .select('first_name_ar, last_name_ar, phone, user_id')
             .eq('id', task.assigned_by)
+            .eq('company_id', companyId)
             .single();
 
           // جلب رقم الهاتف من جدول employees إذا لم يكن موجوداً في profiles
@@ -517,6 +541,7 @@ export default function CustomerVerificationPage() {
               .from('employees')
               .select('phone')
               .eq('user_id', assignerProfile.user_id)
+              .eq('company_id', companyId)
               .maybeSingle();
             assignerPhone = empData?.phone;
           }
@@ -1287,13 +1312,13 @@ export default function CustomerVerificationPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Dialog تأكيد حذف العقد */}
+      {/* Dialog تأكيد إلغاء العقد */}
       <Dialog open={showDeleteContractDialog} onOpenChange={setShowDeleteContractDialog}>
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-red-600">
-              <Trash2 className="h-5 w-5" />
-              تأكيد حذف العقد نهائياً
+              <XCircle className="h-5 w-5" />
+              تأكيد إلغاء العقد
             </DialogTitle>
           </DialogHeader>
 
@@ -1303,8 +1328,7 @@ export default function CustomerVerificationPage() {
               <Alert className="border-amber-300 bg-amber-50">
                 <AlertTriangle className="h-4 w-4 text-amber-600" />
                 <AlertDescription className="text-amber-800">
-                  <strong>تنبيه:</strong> يوجد {trafficViolations.length} مخالفة مرورية معلقة على هذا العقد.
-                  سيتم فك ارتباط المخالفات بالعقد (ستبقى في النظام مرتبطة بالمركبة فقط).
+                  <strong>تنبيه:</strong> يوجد {trafficViolations.length} مخالفة مرورية مرتبطة بالعقد وستبقى محفوظة للمراجعة.
                 </AlertDescription>
               </Alert>
             )}
@@ -1312,21 +1336,21 @@ export default function CustomerVerificationPage() {
             <Alert className="border-red-300 bg-red-50">
               <AlertCircle className="h-4 w-4 text-red-600" />
               <AlertDescription className="text-red-800">
-                <strong>تحذير:</strong> هذا الإجراء لا يمكن التراجع عنه!
+                <strong>مهم:</strong> سيتم تغيير حالة العقد ومهمة التدقيق إلى ملغاة فقط.
                 <br />
-                سيتم حذف:
+                ستبقى السجلات التالية محفوظة:
                 <ul className="list-disc list-inside mt-2 text-sm">
                   <li>العقد رقم: <strong>{task?.contract?.contract_number}</strong></li>
                   <li>جميع الفواتير المرتبطة ({invoices.length})</li>
                   <li>جميع الدفعات المسجلة</li>
-                  <li>مهمة التدقيق الحالية</li>
+                  <li>مهمة التدقيق الحالية بحالة ملغاة</li>
                   <li>المستندات المرفقة</li>
                 </ul>
               </AlertDescription>
             </Alert>
 
             <p className="text-sm text-slate-600">
-              استخدم هذا الخيار فقط للعقود التي تم تسويتها بالكامل وليس عليها أي مطالبات.
+              راجع المطالبات والفواتير المفتوحة بعد الإلغاء واتخذ إجراء التسوية المناسب لكل منها.
             </p>
           </div>
 
@@ -1350,12 +1374,12 @@ export default function CustomerVerificationPage() {
               {isDeleting ? (
                 <>
                   <LoadingSpinner className="h-4 w-4" />
-                  جاري الحذف...
+                  جاري الإلغاء...
                 </>
               ) : (
                 <>
-                  <Trash2 className="h-4 w-4" />
-                  تأكيد الحذف النهائي
+                  <XCircle className="h-4 w-4" />
+                  تأكيد إلغاء العقد
                 </>
               )}
             </Button>

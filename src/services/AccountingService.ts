@@ -195,7 +195,7 @@ class AccountingService {
             accountId: account.id,
             accountCode: account.account_code,
             accountName: account.account_name,
-            accountLevel: account.account_level,
+            accountLevel: account.account_level ?? 0,
             accountType: normalizeAccountType(account.account_type) as AccountBalance['accountType'],
             currentBalance: newBalance,
             debitTotal: currentBalanceResult.debitTotal,
@@ -332,7 +332,7 @@ class AccountingService {
             accountId: account.id,
             accountCode: account.account_code,
             accountName: account.account_name,
-            accountLevel: account.account_level,
+            accountLevel: account.account_level ?? 0,
             accountType: normalizeAccountType(account.account_type) as AccountBalance['accountType'],
             currentBalance: balanceResult.balance,
             debitTotal: balanceResult.debitTotal,
@@ -417,7 +417,6 @@ class AccountingService {
           paid_amount: totalPaid,
           balance_due: Math.max(0, balanceDue),
           payment_status: newStatus,
-          payment_date: newStatus === 'paid' ? new Date().toISOString() : invoice.payment_date,
           updated_at: new Date().toISOString()
         })
         .eq('id', invoiceId);
@@ -494,7 +493,7 @@ class AccountingService {
         .from('contracts')
         .update({
           total_paid: totalPaid,
-          remaining_balance: remainingBalance,
+          balance_due: remainingBalance,
           updated_at: new Date().toISOString()
         })
         .eq('id', contractId);
@@ -583,8 +582,8 @@ class AccountingService {
           accountId: account.id,
           accountCode: account.account_code,
           accountName: account.account_name,
-          accountLevel: account.account_level,
-          accountType: account.account_type,
+          accountLevel: account.account_level ?? 0,
+          accountType: normalizeAccountType(account.account_type) as AccountBalance['accountType'],
           currentBalance: balanceResult.balance,
           debitTotal: balanceResult.debitTotal,
           creditTotal: balanceResult.creditTotal,

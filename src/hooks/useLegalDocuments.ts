@@ -216,54 +216,53 @@ export const useCreateLegalDocument = () => {
 
 export const useDeleteLegalDocument = () => {
   const { user } = useAuth();
+  const companyFilter = useCompanyFilter();
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async (documentId: string) => {
       if (!user?.id) throw new Error('المستخدم غير مصرح له');
+      if (!companyFilter.company_id) throw new Error('تعذر تحديد الشركة');
 
       // Get document details for file deletion
-      const { data: document } = await supabase
+      const { data: document, error: documentError } = await supabase
         .from('legal_case_documents')
         .select('file_path, document_title, case_id')
         .eq('id', documentId)
+        .eq('company_id', companyFilter.company_id)
         .single();
-
-      // Delete file from storage if exists
-      if (document?.file_path) {
-        await supabase.storage
-          .from('documents')
-          .remove([document.file_path]);
-      }
+      if (documentError || !document) throw documentError || new Error('المستند غير موجود');
 
       // Delete document record
       const { error } = await supabase
         .from('legal_case_documents')
         .delete()
-        .eq('id', documentId);
+        .eq('id', documentId)
+        .eq('company_id', companyFilter.company_id)
+        .select('id')
+        .single();
 
       if (error) throw error;
 
+      if (document.file_path) {
+        const { error: storageError } = await supabase.storage
+          .from('documents')
+          .remove([document.file_path]);
+        if (storageError) console.warn('[useDeleteLegalDocument] orphaned storage file', storageError.message);
+      }
+
       // Create activity log
       if (document) {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('company_id')
-          .eq('user_id', user.id)
-          .single();
-
-        if (profile?.company_id) {
-          await supabase
+        await supabase
             .from('legal_case_activities')
             .insert({
               case_id: document.case_id,
-              company_id: profile.company_id,
+              company_id: companyFilter.company_id,
               activity_type: 'document_deleted',
               activity_title: 'تم حذف مستند',
               activity_description: `تم حذف المستند ${document.document_title}`,
               created_by: user.id,
             });
-        }
       }
 
       return documentId;

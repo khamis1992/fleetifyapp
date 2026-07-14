@@ -3,7 +3,7 @@
  * تصميم بسيط ومتوافق مع الداشبورد
  * يشمل: الفواتير + المدفوعات + الودائع + الإيجارات
  */
-import { type CSSProperties, useState, useMemo, Suspense, lazy } from "react";
+import { type CSSProperties, useEffect, useState, useMemo, Suspense, lazy } from "react";
 import { motion } from "framer-motion";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { PageSkeletonFallback } from "@/components/common/LazyPageWrapper";
@@ -13,7 +13,7 @@ const Deposits = lazy(() => import("./Deposits"));
 const MonthlyRentTracking = lazy(() => import("./MonthlyRentTracking"));
 const ExcelPaymentImport = lazy(() => import("../payments/ExcelPaymentImport"));
 const BillingAIAssistant = lazy(() => import("@/components/finance/BillingAIAssistant"));
-import { useInvoices } from "@/hooks/finance/useInvoices";
+import { useInvoice, useInvoices } from "@/hooks/finance/useInvoices";
 import { usePayments } from "@/hooks/useFinance";
 import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter";
 import { useTreasurySummary } from "@/hooks/useTreasury";
@@ -275,6 +275,16 @@ const BillingMetric = ({ title, value, helper, icon: Icon, accent }: BillingMetr
   </div>
 );
 
+const getPaymentMethodLabel = (method: string) => ({
+  cash: 'نقدي',
+  check: 'شيك',
+  cheque: 'شيك',
+  bank_transfer: 'تحويل بنكي',
+  credit_card: 'بطاقة',
+  card: 'بطاقة',
+  online_transfer: 'تحويل إلكتروني',
+}[method] || method);
+
 // ===== Main Component =====
 const BillingCenter = () => {
   const navigate = useNavigate();
@@ -311,6 +321,28 @@ const BillingCenter = () => {
   
   const [selectedInvoiceIds, setSelectedInvoiceIds] = useState<string[]>([]);
   const [activeFeatureTour, setActiveFeatureTour] = useState<FeatureTourContent | null>(null);
+  const requestedInvoiceId = searchParams.get("invoice") || "";
+  const { data: requestedInvoice } = useInvoice(requestedInvoiceId);
+
+  useEffect(() => {
+    if (searchParams.get("action") !== "new-invoice") return;
+
+    setIsCreateInvoiceOpen(true);
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.delete("action");
+    setSearchParams(nextParams, { replace: true });
+  }, [searchParams, setSearchParams]);
+
+  useEffect(() => {
+    if (!requestedInvoiceId || !requestedInvoice) return;
+
+    setSelectedInvoice(requestedInvoice);
+    setIsPreviewOpen(true);
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.set("tab", "invoices");
+    nextParams.delete("invoice");
+    setSearchParams(nextParams, { replace: true });
+  }, [requestedInvoice, requestedInvoiceId, searchParams, setSearchParams]);
 
   const handleExportCSV = () => {
     const headers = ["رقم الفاتورة", "العميل", "المبلغ", "الحالة", "التاريخ"];
@@ -606,11 +638,7 @@ const BillingCenter = () => {
       `${payment.customers?.first_name || ''} ${payment.customers?.last_name || ''}`.trim() || 'العميل';
 
     // Get payment method in Arabic
-    const paymentMethodAr = payment.payment_method === 'cash' ? 'نقدي' :
-      payment.payment_method === 'card' ? 'بطاقة' :
-      payment.payment_method === 'bank_transfer' ? 'تحويل بنكي' :
-      payment.payment_method === 'cheque' ? 'شيك' : 
-      payment.payment_method === 'received' ? 'مستلم' : payment.payment_method;
+    const paymentMethodAr = getPaymentMethodLabel(payment.payment_method);
 
     // Create clean message without emojis
     const message = `مرحباً ${customerName}،
@@ -1010,10 +1038,7 @@ const BillingCenter = () => {
                       </TableCell>
                       <TableCell>
                         <Badge variant="outline">
-                          {payment.payment_method === 'cash' ? 'نقدي' :
-                           payment.payment_method === 'card' ? 'بطاقة' :
-                           payment.payment_method === 'bank_transfer' ? 'تحويل' :
-                           payment.payment_method === 'cheque' ? 'شيك' : payment.payment_method}
+                          {getPaymentMethodLabel(payment.payment_method)}
                         </Badge>
                       </TableCell>
                       <TableCell>{getStatusBadge(payment.payment_status)}</TableCell>
@@ -1381,26 +1406,14 @@ const BillingCenter = () => {
 
       {/* Dialogs */}
       {/* Create Invoice Dialog */}
-      <Dialog open={isCreateInvoiceOpen} onOpenChange={setIsCreateInvoiceOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <div className="flex items-start justify-between gap-3">
-              <DialogTitle>إنشاء فاتورة جديدة</DialogTitle>
-              <FeatureTourButton tour={billingFeatureTours.createInvoice} onStart={setActiveFeatureTour} />
-            </div>
-          </DialogHeader>
-          <InvoiceFormWizard
-            open={isCreateInvoiceOpen}
-            onOpenChange={setIsCreateInvoiceOpen}
-            type="sales"
-            onSuccess={() => {
-              setIsCreateInvoiceOpen(false);
-              queryClient.invalidateQueries({ queryKey: ['invoices'] });
-            }}
-            onCancel={() => setIsCreateInvoiceOpen(false)}
-          />
-        </DialogContent>
-      </Dialog>
+      <InvoiceFormWizard
+        open={isCreateInvoiceOpen}
+        onOpenChange={setIsCreateInvoiceOpen}
+        type="sales"
+        onSuccess={() => {
+          queryClient.invalidateQueries({ queryKey: ['invoices'] });
+        }}
+      />
 
       {/* Bulk Actions Bar */}
       {selectedInvoiceIds.length > 0 && (
@@ -1439,7 +1452,7 @@ const BillingCenter = () => {
           invoice={editingInvoice}
           open={!!editingInvoice}
           onOpenChange={(open) => !open && setEditingInvoice(null)}
-          onSuccess={() => {
+          onSave={() => {
             setEditingInvoice(null);
             queryClient.invalidateQueries({ queryKey: ['invoices'] });
           }}
@@ -1452,7 +1465,7 @@ const BillingCenter = () => {
           invoice={selectedInvoice}
           open={showPayDialog}
           onOpenChange={setShowPayDialog}
-          onSuccess={() => {
+          onPaymentCreated={() => {
             setShowPayDialog(false);
             setSelectedInvoice(null);
             queryClient.invalidateQueries({ queryKey: ['invoices'] });

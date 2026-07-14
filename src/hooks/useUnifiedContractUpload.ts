@@ -7,6 +7,17 @@ import { generateErrorMessage, formatErrorForUser, ContractError } from '@/utils
 import { validateContractData, generateUserFriendlyMessage, TempContractData } from '@/utils/contract-upload-validator';
 import { processExcelFile, detectFileFormat, normalizeFileData } from '@/utils/excel-processor';
 import Papa from 'papaparse';
+import type { Database } from '@/integrations/supabase/types';
+
+type ContractInsert = Database['public']['Tables']['contracts']['Insert'];
+
+function errorMessage(error: unknown): string {
+  return error instanceof Error
+    ? error.message
+    : error && typeof error === 'object' && 'message' in error
+      ? String(error.message)
+      : 'حدث خطأ غير متوقع';
+}
 
 export interface ContractUploadResult {
   total: number;
@@ -197,7 +208,7 @@ export function useUnifiedContractUpload() {
           });
           
           if (csvParsed.errors && csvParsed.errors.length > 0) {
-            processingWarnings.push(...csvParsed.errors.map((err: unknown) => `تحذير CSV: ${err.message}`));
+            processingWarnings.push(...csvParsed.errors.map(err => `تحذير CSV: ${err.message}`));
           }
           
           rawData = (csvParsed.data as any[]) || [];
@@ -219,7 +230,7 @@ export function useUnifiedContractUpload() {
             const jsonData = JSON.parse(jsonText);
             rawData = Array.isArray(jsonData) ? jsonData : [jsonData];
           } catch (jsonError) {
-            throw new Error(`خطأ في قراءة JSON: ${jsonError.message}`);
+            throw new Error(`خطأ في قراءة JSON: ${errorMessage(jsonError)}`);
           }
           break;
           
@@ -391,14 +402,19 @@ export function useUnifiedContractUpload() {
             }
           }
           
+          const resolvedCustomerId = customerId || contract.customer_id;
+          if (!contract.contract_number || !contract.contract_date || !contract.start_date || !contract.end_date || !resolvedCustomerId) {
+            throw new Error('بيانات العقد الإلزامية غير مكتملة بعد التحقق');
+          }
+
           // إعداد بيانات العقد
-          const contractData = {
+          const contractData: ContractInsert = {
             company_id: companyId,
             contract_number: contract.contract_number,
             contract_date: contract.contract_date,
-            contract_type: contract.contract_type === 'تحت التدقيق' ? 'rental' : contract.contract_type,
+            contract_type: contract.contract_type === 'تحت التدقيق' ? 'rental' : contract.contract_type || 'rental',
             description: contract.description || contract.ai_notes || 'تم إنشاؤه من الرفع الذكي',
-            customer_id: customerId || contract.customer_id,
+            customer_id: resolvedCustomerId,
             vehicle_id: vehicleId, // إضافة vehicle_id إذا تم العثور عليه
             monthly_amount: Number(contract.monthly_amount) || SMART_DEFAULTS.monthly_amount,
             contract_amount: Number(contract.contract_amount) || 0,
@@ -476,7 +492,7 @@ export function useUnifiedContractUpload() {
       
     } catch (error: unknown) {
       console.error('Unified upload error:', error);
-      toast.error(`خطأ في الرفع: ${error.message}`);
+      toast.error(`خطأ في الرفع: ${errorMessage(error)}`);
       throw error;
     } finally {
       setIsUploading(false);

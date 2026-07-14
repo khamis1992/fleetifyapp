@@ -3,6 +3,12 @@ import { toast } from 'sonner';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 import { usePermissions } from '@/hooks/usePermissions';
 import { supabase } from '@/integrations/supabase/client';
+import type { Database } from '@/integrations/supabase/types';
+
+type Contract = Database['public']['Tables']['contracts']['Row'];
+type ContractInsert = Database['public']['Tables']['contracts']['Insert'];
+type ContractUpdate = Database['public']['Tables']['contracts']['Update'];
+type PaymentScheduleInsert = Database['public']['Tables']['contract_payment_schedules']['Insert'];
 
 export interface ContractOperationsOptions {
   autoGenerateSchedule?: boolean;
@@ -24,30 +30,6 @@ interface PaymentScheduleItem {
   description?: string;
   is_deposit?: boolean;
   late_fee?: number;
-}
-
-interface Contract {
-  id: string;
-  contract_number: string;
-  company_id: string;
-  customer_id: string;
-  vehicle_id?: string | null;
-  contract_type: string;
-  contract_date: string;
-  start_date: string;
-  end_date: string;
-  contract_amount: number;
-  monthly_amount: number;
-  description?: string | null;
-  terms?: string | null;
-  status: 'draft' | 'active' | 'expired' | 'suspended' | 'cancelled' | 'renewed';
-  total_paid?: number;
-  balance_due?: number;
-  created_at?: string;
-  updated_at?: string;
-  created_by?: string;
-  updated_by?: string;
-  cost_center_id?: string | null;
 }
 
 interface CreateContractData {
@@ -77,12 +59,6 @@ interface UpdateContractData extends CreateContractData {
   status?: 'draft' | 'active' | 'expired' | 'suspended' | 'cancelled' | 'renewed';
 }
 
-interface ContractPaymentCancellationResult {
-  cancelledCount: number;
-  invoiceIds: string[];
-  deletedScheduleCount?: number;
-}
-
 const normalizeDateOnly = (value?: string | Date | null): string | null => {
   if (!value) return null;
   return typeof value === 'string' ? value.split('T')[0] : value.toISOString().split('T')[0];
@@ -100,6 +76,11 @@ export const useContractOperations = (options: ContractOperationsOptions = {}) =
     createInvoices = false
   } = options;
 
+  const requireCompanyId = () => {
+    if (!companyId) throw new Error('Company ID is required');
+    return companyId;
+  };
+
   // Check permissions
   const { hasAccess: canCreateContracts } = usePermissions({
     permissions: ['contracts.create'],
@@ -114,6 +95,7 @@ export const useContractOperations = (options: ContractOperationsOptions = {}) =
   // Create contract operation
   const createContract = useMutation({
     mutationFn: async (data: CreateContractData) => {
+      const activeCompanyId = requireCompanyId();
       console.log('📄 [useContractOperations] Starting contract creation:', data);
 
       // Check permissions
@@ -128,9 +110,9 @@ export const useContractOperations = (options: ContractOperationsOptions = {}) =
       const contractNumber = data.contract_number || await generateContractNumber();
 
       // Prepare contract data
-      const contractData = {
+      const contractData: ContractInsert = {
         contract_number: contractNumber,
-        company_id: companyId,
+        company_id: activeCompanyId,
         customer_id: data.customer_id,
         vehicle_id: data.vehicle_id || null,
         contract_type: data.contract_type,
@@ -168,14 +150,16 @@ export const useContractOperations = (options: ContractOperationsOptions = {}) =
           await supabase
             .from('contracts')
             .update({ vehicle_id: firstVehicle.vehicle_id })
-            .eq('id', insertedContract.id);
+            .eq('id', insertedContract.id)
+            .eq('company_id', activeCompanyId);
           
           // Update vehicle status to rented if contract is active
           if (insertedContract.status === 'active') {
             await supabase
               .from('vehicles')
               .update({ status: 'rented', updated_at: new Date().toISOString() })
-              .eq('id', firstVehicle.vehicle_id);
+              .eq('id', firstVehicle.vehicle_id)
+              .eq('company_id', activeCompanyId);
           }
         }
       }
@@ -193,7 +177,8 @@ export const useContractOperations = (options: ContractOperationsOptions = {}) =
           await supabase
             .from('vehicles')
             .update({ status: 'rented', updated_at: new Date().toISOString() })
-            .eq('id', insertedContract.vehicle_id);
+            .eq('id', insertedContract.vehicle_id)
+            .eq('company_id', activeCompanyId);
           
           console.log(`✅ [useContractOperations] Updated vehicle ${insertedContract.vehicle_id} status to rented`)
         }
@@ -242,157 +227,10 @@ export const useContractOperations = (options: ContractOperationsOptions = {}) =
     }
   });
 
-  const recalculateInvoicePaymentTotals = async (invoiceIds: string[]) => {
-    const uniqueInvoiceIds = [...new Set(invoiceIds.filter(Boolean))];
-
-    for (const invoiceId of uniqueInvoiceIds) {
-      const { data: invoice, error: invoiceError } = await supabase
-        .from('invoices')
-        .select('id, total_amount')
-        .eq('id', invoiceId)
-        .eq('company_id', companyId)
-        .single();
-
-      if (invoiceError || !invoice) {
-        console.error('[useContractOperations] Failed to fetch invoice after cancelling early contract payments:', invoiceError);
-        throw new Error('تعذر تحديث الفاتورة بعد إلغاء الدفعات السابقة لتاريخ العقد الجديد');
-      }
-
-      const { data: activePayments, error: activePaymentsError } = await supabase
-        .from('payments')
-        .select('amount')
-        .eq('invoice_id', invoiceId)
-        .eq('company_id', companyId)
-        .eq('payment_status', 'completed');
-
-      if (activePaymentsError) {
-        console.error('[useContractOperations] Failed to fetch active invoice payments:', activePaymentsError);
-        throw new Error('تعذر إعادة حساب مدفوعات الفاتورة بعد إلغاء الدفعات القديمة');
-      }
-
-      const paidAmount = (activePayments || []).reduce(
-        (sum, payment) => sum + (Number(payment.amount) || 0),
-        0
-      );
-      const totalAmount = Number(invoice.total_amount) || 0;
-      const balanceDue = Math.max(totalAmount - paidAmount, 0);
-      const paymentStatus = paidAmount <= 0 ? 'unpaid' : balanceDue <= 0 ? 'paid' : 'partial';
-
-      const { error: updateInvoiceError } = await supabase
-        .from('invoices')
-        .update({
-          paid_amount: paidAmount,
-          balance_due: balanceDue,
-          payment_status: paymentStatus,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', invoiceId)
-        .eq('company_id', companyId);
-
-      if (updateInvoiceError) {
-        console.error('[useContractOperations] Failed to update invoice totals after cancelling early payments:', updateInvoiceError);
-        throw new Error('تم إلغاء الدفعات القديمة، لكن تعذر تحديث مبالغ الفاتورة المرتبطة');
-      }
-    }
-  };
-
-  const cancelPaymentsBeforeContractStart = async (
-    contract: Pick<Contract, 'id' | 'contract_number' | 'company_id'>,
-    newStartDate: string
-  ): Promise<ContractPaymentCancellationResult> => {
-    const { data: paymentsToCancel, error: paymentsError } = await supabase
-      .from('payments')
-      .select('id, payment_number, payment_date, invoice_id')
-      .eq('company_id', contract.company_id)
-      .eq('contract_id', contract.id)
-      .lt('payment_date', newStartDate)
-      .neq('payment_status', 'cancelled');
-
-    if (paymentsError) {
-      console.error('[useContractOperations] Failed to fetch payments before new contract start date:', paymentsError);
-      throw new Error('تعذر جلب الدفعات السابقة لتاريخ بداية العقد الجديد');
-    }
-
-    if (!paymentsToCancel || paymentsToCancel.length === 0) {
-      return { cancelledCount: 0, invoiceIds: [] };
-    }
-
-    const invoiceIds: string[] = [];
-
-    for (const payment of paymentsToCancel) {
-      const reason = [
-        `Contract ${contract.contract_number} start date changed to ${newStartDate}.`,
-        `Payment ${payment.payment_number} dated ${payment.payment_date} is before the new start date.`,
-      ].join(' ');
-
-      const { error: cancelError } = await (supabase as any)
-        .rpc('cancel_payment_with_reversal', {
-          p_payment_id: payment.id,
-          p_company_id: contract.company_id,
-          p_reason: reason,
-          p_actor_id: user?.id || null,
-        });
-
-      if (cancelError) {
-        console.error('[useContractOperations] Failed to cancel early contract payment:', {
-          paymentId: payment.id,
-          paymentNumber: payment.payment_number,
-          cancelError,
-        });
-        throw new Error(`تعذر إلغاء الدفعة ${payment.payment_number} السابقة لتاريخ بداية العقد الجديد`);
-      }
-
-      if (payment.invoice_id) {
-        invoiceIds.push(payment.invoice_id);
-      }
-    }
-
-    await recalculateInvoicePaymentTotals(invoiceIds);
-
-    return {
-      cancelledCount: paymentsToCancel.length,
-      invoiceIds,
-    };
-  };
-
-  const deletePaymentSchedulesBeforeContractStart = async (
-    contractId: string,
-    newStartDate: string
-  ): Promise<number> => {
-    const { data: schedulesToDelete, error: fetchSchedulesError } = await supabase
-      .from('contract_payment_schedules')
-      .select('id')
-      .eq('contract_id', contractId)
-      .eq('company_id', companyId)
-      .lt('due_date', newStartDate);
-
-    if (fetchSchedulesError) {
-      console.error('[useContractOperations] Failed to fetch payment schedules before contract start date:', fetchSchedulesError);
-      throw new Error('تعذر جلب الدفعات السابقة لتاريخ بداية العقد');
-    }
-
-    if (!schedulesToDelete || schedulesToDelete.length === 0) {
-      return 0;
-    }
-
-    const { error: deleteSchedulesError } = await supabase
-      .from('contract_payment_schedules')
-      .delete()
-      .eq('contract_id', contractId)
-      .eq('company_id', companyId)
-      .lt('due_date', newStartDate);
-
-    if (deleteSchedulesError) {
-      console.error('[useContractOperations] Failed to delete payment schedules before contract start date:', deleteSchedulesError);
-      throw new Error('تعذر حذف الدفعات السابقة لتاريخ بداية العقد');
-    }
-
-    return schedulesToDelete.length;
-  };
-
   // Update contract operation
   const updateContract = useMutation({
     mutationFn: async (data: UpdateContractData) => {
+      const activeCompanyId = requireCompanyId();
       console.log('🔄 [useContractOperations] Starting contract update:', data);
 
       // Check if contract exists and user has permission
@@ -400,7 +238,7 @@ export const useContractOperations = (options: ContractOperationsOptions = {}) =
         .from('contracts')
         .select('*')
         .eq('id', data.id)
-        .eq('company_id', companyId)
+        .eq('company_id', activeCompanyId)
         .single();
 
       if (fetchError || !existingContract) {
@@ -412,8 +250,35 @@ export const useContractOperations = (options: ContractOperationsOptions = {}) =
         throw new Error('لا يمكن تعديل عقد ملغى أو منتهي الصلاحية');
       }
 
+      const requestedStartDate = normalizeDateOnly(data.start_date);
+      const requestedEndDate = normalizeDateOnly(data.end_date);
+      const billingOrOwnershipChanged =
+        (requestedStartDate !== null && requestedStartDate !== normalizeDateOnly(existingContract.start_date)) ||
+        (requestedEndDate !== null && requestedEndDate !== normalizeDateOnly(existingContract.end_date)) ||
+        Number(data.total_amount ?? data.contract_amount) !== Number(existingContract.contract_amount) ||
+        (data.monthly_amount !== undefined && Number(data.monthly_amount) !== Number(existingContract.monthly_amount)) ||
+        data.customer_id !== existingContract.customer_id ||
+        (data.vehicle_id ?? null) !== (existingContract.vehicle_id ?? null);
+
+      if (billingOrOwnershipChanged && existingContract.status !== 'draft') {
+        throw new Error('لا يمكن تغيير مبلغ أو مدة أو عميل أو مركبة عقد قائم مباشرة. أنشئ تعديل عقد واعتمده لحفظ الفواتير والسجل المالي.');
+      }
+
+      if (billingOrOwnershipChanged) {
+        const relationChecks = await Promise.all([
+          supabase.from('invoices').select('id', { count: 'exact', head: true }).eq('company_id', activeCompanyId).eq('contract_id', data.id),
+          supabase.from('payments').select('id', { count: 'exact', head: true }).eq('company_id', activeCompanyId).eq('contract_id', data.id),
+          supabase.from('contract_payment_schedules').select('id', { count: 'exact', head: true }).eq('company_id', activeCompanyId).eq('contract_id', data.id),
+        ]);
+        const relationError = relationChecks.find((result) => result.error)?.error;
+        if (relationError) throw relationError;
+        if (relationChecks.some((result) => (result.count || 0) > 0)) {
+          throw new Error('لا يمكن تغيير شروط هذه المسودة لأن لها فواتير أو دفعات أو أقساطًا مرتبطة. أزل الربط بطريقة معتمدة أولًا.');
+        }
+      }
+
       // Prepare update data
-      const updateData = {
+      const updateData: ContractUpdate = {
         contract_date: data.contract_date || new Date().toISOString().split('T')[0],
         start_date: typeof data.start_date === 'string' ? data.start_date : data.start_date?.toISOString().split('T')[0],
         end_date: typeof data.end_date === 'string' ? data.end_date : data.end_date?.toISOString().split('T')[0],
@@ -427,7 +292,6 @@ export const useContractOperations = (options: ContractOperationsOptions = {}) =
         status: data.status,
         cost_center_id: data.cost_center_id,
         updated_at: new Date().toISOString(),
-        updated_by: user?.id,
       };
 
       // Remove undefined values
@@ -442,7 +306,7 @@ export const useContractOperations = (options: ContractOperationsOptions = {}) =
         .from('contracts')
         .update(updateData)
         .eq('id', data.id)
-        .eq('company_id', companyId)
+        .eq('company_id', activeCompanyId)
         .select()
         .single();
 
@@ -452,67 +316,6 @@ export const useContractOperations = (options: ContractOperationsOptions = {}) =
       }
 
       console.log('✅ [useContractOperations] Contract updated successfully:', updatedContract);
-
-      // التحقق مما إذا تغيرت القيمة الشهرية أو المدة - إعادة إنشاء الفواتير
-      let earlyPaymentCancellation: ContractPaymentCancellationResult = {
-        cancelledCount: 0,
-        invoiceIds: [],
-      };
-      const oldStartDate = normalizeDateOnly(existingContract.start_date);
-      const newStartDate = normalizeDateOnly(updatedContract.start_date);
-
-      if (oldStartDate && newStartDate && newStartDate > oldStartDate) {
-        earlyPaymentCancellation = await cancelPaymentsBeforeContractStart(
-          {
-            id: updatedContract.id,
-            contract_number: updatedContract.contract_number,
-            company_id: updatedContract.company_id,
-          },
-          newStartDate
-        );
-
-        if (earlyPaymentCancellation.cancelledCount > 0) {
-          console.log(
-            `✅ [useContractOperations] Cancelled ${earlyPaymentCancellation.cancelledCount} payments before new start date ${newStartDate}`
-          );
-        }
-      }
-
-      if (newStartDate) {
-        const deletedScheduleCount = await deletePaymentSchedulesBeforeContractStart(
-          updatedContract.id,
-          newStartDate
-        );
-        earlyPaymentCancellation.deletedScheduleCount = deletedScheduleCount;
-
-        if (deletedScheduleCount > 0) {
-          console.log(
-            `✅ [useContractOperations] Deleted ${deletedScheduleCount} payment schedules before contract start date ${newStartDate}`
-          );
-        }
-      }
-
-      const amountChanged = data.monthly_amount !== undefined && 
-        Number(data.monthly_amount) !== Number(existingContract.monthly_amount);
-      const datesChanged = (data.start_date && data.start_date !== existingContract.start_date) ||
-        (data.end_date && data.end_date !== existingContract.end_date);
-      
-      if (amountChanged || datesChanged) {
-        console.log('🔄 [useContractOperations] Contract amount or dates changed, regenerating invoices...');
-        try {
-          const invoiceCount = await regenerateContractInvoices(
-            updatedContract.id,
-            Number(updatedContract.monthly_amount),
-            updatedContract.start_date,
-            updatedContract.end_date,
-            updatedContract.customer_id
-          );
-          console.log(`✅ Regenerated ${invoiceCount} invoices for contract ${updatedContract.contract_number}`);
-        } catch (invoiceError) {
-          console.warn('⚠️ [useContractOperations] Invoice regeneration failed:', invoiceError);
-          // لا نفشل تحديث العقد إذا فشل إنشاء الفواتير
-        }
-      }
 
       // Update vehicle status based on contract status
       if (updatedContract.vehicle_id) {
@@ -527,39 +330,42 @@ export const useContractOperations = (options: ContractOperationsOptions = {}) =
         
         if (isActiveNow) {
           // Contract is active - set vehicle to rented
-          await supabase
+          const { error: vehicleStatusError } = await supabase
             .from('vehicles')
             .update({ status: 'rented', updated_at: new Date().toISOString() })
-            .eq('id', updatedContract.vehicle_id);
+            .eq('id', updatedContract.vehicle_id)
+            .eq('company_id', activeCompanyId);
+          if (vehicleStatusError) throw vehicleStatusError;
           
           console.log(`✅ [useContractOperations] Updated vehicle ${updatedContract.vehicle_id} status to rented`)
         } else if (updatedContract.status === 'cancelled' || updatedContract.status === 'closed' || updatedContract.status === 'expired') {
           // Contract is cancelled/closed/expired - check if there are other active contracts for this vehicle
-          const { data: otherActiveContracts } = await supabase
+          const { data: otherActiveContracts, error: activeContractsError } = await supabase
             .from('contracts')
             .select('id')
+            .eq('company_id', activeCompanyId)
             .eq('vehicle_id', updatedContract.vehicle_id)
             .eq('status', 'active')
             .neq('id', updatedContract.id)
             .lte('start_date', today.toISOString().split('T')[0])
             .or(`end_date.gte.${today.toISOString().split('T')[0]},end_date.is.null`)
+          if (activeContractsError) throw activeContractsError;
           
           // Only set to available if no other active contracts exist
           if (!otherActiveContracts || otherActiveContracts.length === 0) {
-            await supabase
+            const { error: vehicleStatusError } = await supabase
               .from('vehicles')
               .update({ status: 'available', updated_at: new Date().toISOString() })
-              .eq('id', updatedContract.vehicle_id);
+              .eq('id', updatedContract.vehicle_id)
+              .eq('company_id', activeCompanyId);
+            if (vehicleStatusError) throw vehicleStatusError;
             
             console.log(`✅ [useContractOperations] Updated vehicle ${updatedContract.vehicle_id} status to available`)
           }
         }
       }
 
-      return {
-        ...updatedContract,
-        cancelledEarlyPaymentsCount: earlyPaymentCancellation.cancelledCount,
-      };
+      return updatedContract;
     },
     onSuccess: (contract) => {
       queryClient.invalidateQueries({ queryKey: ['contracts'] });
@@ -567,11 +373,6 @@ export const useContractOperations = (options: ContractOperationsOptions = {}) =
       queryClient.invalidateQueries({ queryKey: ['vehicles'] });
       queryClient.invalidateQueries({ queryKey: ['payments'] });
       queryClient.invalidateQueries({ queryKey: ['invoices'] });
-
-      if ((contract as any).cancelledEarlyPaymentsCount > 0) {
-        toast.success(`تم تحديث العقد وإلغاء ${(contract as any).cancelledEarlyPaymentsCount} دفعات قبل تاريخ البداية الجديد`);
-        return;
-      }
 
       toast.success('تم تحديث العقد بنجاح');
     },
@@ -583,7 +384,7 @@ export const useContractOperations = (options: ContractOperationsOptions = {}) =
   });
 
   // Get contracts with related data
-  const getContracts = (filters?: { status?: string; customer_id?: string; vehicle_id?: string }) => useQuery({
+  const useContractsQuery = (filters?: { status?: string; customer_id?: string; vehicle_id?: string }) => useQuery({
     queryKey: ['contracts', companyId, filters],
     queryFn: async () => {
       console.log('📋 [useContractOperations] Fetching contracts for company:', companyId);
@@ -632,9 +433,10 @@ export const useContractOperations = (options: ContractOperationsOptions = {}) =
   });
 
   // Get single contract
-  const getContract = (contractId: string) => useQuery({
+  const useContractQuery = (contractId: string) => useQuery({
     queryKey: ['contract', contractId],
     queryFn: async () => {
+      const activeCompanyId = requireCompanyId();
       console.log('📄 [useContractOperations] Fetching contract:', contractId);
       
       const { data, error } = await supabase
@@ -652,7 +454,7 @@ export const useContractOperations = (options: ContractOperationsOptions = {}) =
           )
         `)
         .eq('id', contractId)
-        .eq('company_id', companyId)
+        .eq('company_id', activeCompanyId)
         .single();
 
       if (error) {
@@ -695,12 +497,13 @@ export const useContractOperations = (options: ContractOperationsOptions = {}) =
 
   // Helper functions
   const validateContractData = async (data: CreateContractData) => {
+    const activeCompanyId = requireCompanyId();
     // Validate customer exists and is not blacklisted
     const { data: customer } = await supabase
       .from('customers')
       .select('id, is_blacklisted')
       .eq('id', data.customer_id)
-      .eq('company_id', companyId)
+      .eq('company_id', activeCompanyId)
       .single();
 
     if (!customer) {
@@ -725,6 +528,7 @@ export const useContractOperations = (options: ContractOperationsOptions = {}) =
   };
 
   const generateContractNumber = async (): Promise<string> => {
+    const activeCompanyId = requireCompanyId();
     const prefix = 'CON';
     const year = new Date().getFullYear().toString().slice(-2);
     
@@ -733,7 +537,7 @@ export const useContractOperations = (options: ContractOperationsOptions = {}) =
       const { count, error } = await supabase
         .from('contracts')
         .select('id', { count: 'exact', head: true })
-        .eq('company_id', companyId)
+        .eq('company_id', activeCompanyId)
         .gte('contract_date', `${new Date().getFullYear()}-01-01`)
         .lte('contract_date', `${new Date().getFullYear()}-12-31`);
 
@@ -751,17 +555,15 @@ export const useContractOperations = (options: ContractOperationsOptions = {}) =
   };
 
   const createPaymentSchedule = async (contractId: string, schedule: PaymentScheduleItem[]) => {
-    const scheduleData = schedule.map(item => ({
+    const activeCompanyId = requireCompanyId();
+    const scheduleData: PaymentScheduleInsert[] = schedule.map(item => ({
       contract_id: contractId,
-      company_id: companyId,
+      company_id: activeCompanyId,
       amount: item.amount || 0,
       due_date: typeof item.due_date === 'string' ? item.due_date : item.due_date?.toISOString().split('T')[0],
       installment_number: item.installment_number || 1,
       description: item.description || '',
       status: 'pending',
-      is_paid: false,
-      is_deposit: item.is_deposit || false,
-      late_fee: item.late_fee || 0,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     }));
@@ -788,274 +590,60 @@ export const useContractOperations = (options: ContractOperationsOptions = {}) =
     // Invoice creation logic here
   };
 
-  /**
-   * إعادة إنشاء الفواتير وجدول الدفعات للعقد
-   * يتم استدعاء هذه الدالة عند تغيير قيمة العقد أو مدته
-   */
-  const regenerateContractInvoices = async (
-    contractId: string, 
-    monthlyAmount: number,
-    startDate: string,
-    endDate: string,
-    customerId: string
-  ) => {
-    console.log('🔄 [useContractOperations] Regenerating invoices and payment schedules for contract:', contractId);
-    
-    try {
-      // 1. حذف الفواتير غير المدفوعة
-      const { error: deleteInvoicesError } = await supabase
-        .from('invoices')
-        .update({
-          status: 'cancelled',
-          payment_status: 'cancelled',
-          balance_due: 0,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('contract_id', contractId)
-        .in('payment_status', ['unpaid', 'pending'])
-        .or('paid_amount.eq.0,paid_amount.is.null');
-      
-      if (deleteInvoicesError) {
-        console.warn('⚠️ Error deleting old invoices:', deleteInvoicesError);
-      }
-
-      // 2. حذف جدول الدفعات غير المدفوعة
-      const { error: deleteSchedulesError } = await supabase
-        .from('contract_payment_schedules')
-        .delete()
-        .eq('contract_id', contractId)
-        .neq('status', 'paid');
-      
-      if (deleteSchedulesError) {
-        console.warn('⚠️ Error deleting old payment schedules:', deleteSchedulesError);
-      }
-      
-      // 3. حساب الشهور بين تاريخ البداية والنهاية
-      const start = new Date(startDate);
-      const end = new Date(endDate);
-      
-      // البدء من أول شهر غير مدفوع (الشهر الحالي أو بعده)
-      const today = new Date();
-      const firstInvoiceDate = start > today ? start : new Date(today.getFullYear(), today.getMonth(), 1);
-      
-      // 4. إنشاء الفواتير وجدول الدفعات الجديدة
-      const invoices: any[] = [];
-      const paymentSchedules: any[] = [];
-      let currentDate = new Date(firstInvoiceDate);
-      let installmentNumber = 1;
-      
-      // جلب العقد للحصول على contract_number
-      const { data: contractData } = await supabase
-        .from('contracts')
-        .select('contract_number')
-        .eq('id', contractId)
-        .single();
-      
-      const contractNumber = contractData?.contract_number || contractId;
-      
-      while (currentDate <= end) {
-        const yearMonth = `${currentDate.getFullYear()}${String(currentDate.getMonth() + 1).padStart(2, '0')}`;
-        const dueDateStr = currentDate.toISOString().split('T')[0];
-        
-        // إضافة فاتورة
-        invoices.push({
-          contract_id: contractId,
-          customer_id: customerId,
-          company_id: companyId,
-          invoice_number: `INV-${contractNumber}-${yearMonth}`,
-          invoice_date: dueDateStr,
-          invoice_type: 'sales',
-          due_date: dueDateStr,
-          total_amount: monthlyAmount,
-          paid_amount: 0,
-          balance_due: monthlyAmount, // إضافة balance_due بشكل صحيح
-          payment_status: 'unpaid',
-          created_at: new Date().toISOString()
-        });
-
-        // إضافة جدول دفعات
-        paymentSchedules.push({
-          contract_id: contractId,
-          company_id: companyId,
-          amount: monthlyAmount,
-          due_date: dueDateStr,
-          installment_number: installmentNumber,
-          description: `قسط شهر ${currentDate.getMonth() + 1}/${currentDate.getFullYear()}`,
-          status: 'pending',
-          paid_amount: 0,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        });
-        
-        // الانتقال للشهر التالي
-        currentDate.setMonth(currentDate.getMonth() + 1);
-        installmentNumber++;
-      }
-      
-      // إدراج الفواتير
-      if (invoices.length > 0) {
-        const { error: insertInvoicesError } = await supabase
-          .from('invoices')
-          .insert(invoices);
-        
-        if (insertInvoicesError) {
-          console.error('❌ Error creating new invoices:', insertInvoicesError);
-          throw insertInvoicesError;
-        }
-        
-        console.log(`✅ Created ${invoices.length} new invoices with amount ${monthlyAmount}`);
-      }
-
-      // إدراج جدول الدفعات
-      if (paymentSchedules.length > 0) {
-        const { error: insertSchedulesError } = await supabase
-          .from('contract_payment_schedules')
-          .insert(paymentSchedules);
-        
-        if (insertSchedulesError) {
-          console.error('❌ Error creating new payment schedules:', insertSchedulesError);
-          throw insertSchedulesError;
-        }
-        
-        console.log(`✅ Created ${paymentSchedules.length} new payment schedules with amount ${monthlyAmount}`);
-      }
-      
-      return invoices.length;
-    } catch (error) {
-      console.error('❌ Error regenerating invoices and payment schedules:', error);
-      throw error;
-    }
-  };
-
   // Delete contract permanently with all dependencies
   const deleteContractPermanently = useMutation({
     mutationFn: async (contractId: string) => {
       console.log('🗑️ [useContractOperations] Starting permanent contract deletion:', contractId);
-
-      if (!companyId) {
-        throw new Error('معرف الشركة غير متوفر');
-      }
-
-      // 1. Get contract info first
+      const activeCompanyId = requireCompanyId();
       const { data: contract, error: contractFetchError } = await supabase
         .from('contracts')
-        .select('id, contract_number, vehicle_id, customer_id')
+        .select('id, contract_number, status')
         .eq('id', contractId)
-        .eq('company_id', companyId)
+        .eq('company_id', activeCompanyId)
         .single();
 
       if (contractFetchError || !contract) {
         throw new Error('العقد غير موجود');
       }
 
-
-      const { data: contractInvoices, error: contractInvoicesError } = await supabase
-        .from('invoices')
-        .select('id')
-        .eq('contract_id', contractId);
-
-      if (contractInvoicesError) {
-        throw contractInvoicesError;
+      if (contract.status !== 'draft') {
+        throw new Error('الحذف النهائي مسموح لمسودة عقد فقط. ألغِ العقد القائم بدل حذف سجله المالي والقانوني.');
       }
 
-      const invoiceIds = (contractInvoices || []).map(invoice => invoice.id);
-      let relatedPaymentsCount = 0;
-
-      if (invoiceIds.length > 0) {
-        const { count, error: invoicePaymentsCheckError } = await supabase
-          .from('payments')
-          .select('id', { count: 'exact', head: true })
-          .in('invoice_id', invoiceIds);
-
-        if (invoicePaymentsCheckError) {
-          throw invoicePaymentsCheckError;
-        }
-
-        relatedPaymentsCount += count || 0;
+      const relationChecks = await Promise.all([
+        supabase.from('invoices').select('id', { count: 'exact', head: true }).eq('company_id', activeCompanyId).eq('contract_id', contractId),
+        supabase.from('payments').select('id', { count: 'exact', head: true }).eq('company_id', activeCompanyId).eq('contract_id', contractId),
+        supabase.from('contract_payment_schedules').select('id', { count: 'exact', head: true }).eq('company_id', activeCompanyId).eq('contract_id', contractId),
+        supabase.from('contract_documents').select('id', { count: 'exact', head: true }).eq('company_id', activeCompanyId).eq('contract_id', contractId),
+        supabase.from('legal_cases').select('id', { count: 'exact', head: true }).eq('company_id', activeCompanyId).eq('contract_id', contractId),
+        supabase.from('traffic_violations').select('id', { count: 'exact', head: true }).eq('company_id', activeCompanyId).eq('contract_id', contractId),
+        supabase.from('contract_vehicle_returns').select('id', { count: 'exact', head: true }).eq('company_id', activeCompanyId).eq('contract_id', contractId),
+        supabase.from('contract_amendments').select('id', { count: 'exact', head: true }).eq('company_id', activeCompanyId).eq('contract_id', contractId),
+        supabase.from('lawsuit_preparations').select('id', { count: 'exact', head: true }).eq('company_id', activeCompanyId).eq('contract_id', contractId),
+        supabase.from('delinquent_customers').select('id', { count: 'exact', head: true }).eq('company_id', activeCompanyId).eq('contract_id', contractId),
+      ]);
+      const relationError = relationChecks.find((result) => result.error)?.error;
+      if (relationError) throw relationError;
+      if (relationChecks.some((result) => (result.count || 0) > 0)) {
+        throw new Error('لا يمكن حذف المسودة لأن لها فواتير أو دفعات أو أقساطًا أو مستندات أو روابط قانونية وتشغيلية.');
       }
 
-      const { count: contractPaymentsCount, error: contractPaymentsCheckError } = await supabase
-        .from('payments')
-        .select('id', { count: 'exact', head: true })
-        .eq('contract_id', contractId);
-
-      if (contractPaymentsCheckError) {
-        throw contractPaymentsCheckError;
-      }
-
-      relatedPaymentsCount += contractPaymentsCount || 0;
-
-      if (relatedPaymentsCount > 0) {
-        throw new Error('Cannot permanently delete a contract with recorded payments. Archive or cancel the contract to preserve the financial audit trail.');
-      }
-      // 2. Delete related records in order (due to foreign key constraints)
-      
-      // Delete delinquent_customers records
-      const { error: delinquentError } = await supabase
-        .from('delinquent_customers')
-        .delete()
-        .eq('contract_id', contractId);
-      
-      if (delinquentError) {
-        console.warn('Error deleting delinquent_customers:', delinquentError);
-      }
-
-      // Delete invoices
-      const { error: invoicesError } = await supabase
-        .from('invoices')
-        .delete()
-        .eq('contract_id', contractId);
-      
-      if (invoicesError) {
-        console.warn('Error deleting invoices:', invoicesError);
-      }
-
-      // Delete contract_payment_schedules
-      const { error: schedulesError } = await supabase
-        .from('contract_payment_schedules')
-        .delete()
-        .eq('contract_id', contractId);
-      
-      if (schedulesError) {
-        console.warn('Error deleting payment schedules:', schedulesError);
-      }
-
-      // Delete lawsuit_preparations
-      const { error: lawsuitPrepError } = await supabase
-        .from('lawsuit_preparations')
-        .delete()
-        .eq('contract_id', contractId);
-      
-      if (lawsuitPrepError) {
-        console.warn('Error deleting lawsuit_preparations:', lawsuitPrepError);
-      }
-
-      // 3. Update vehicle status to available if exists
-      if (contract.vehicle_id) {
-        const { error: vehicleError } = await supabase
-          .from('vehicles')
-          .update({ status: 'available' })
-          .eq('id', contract.vehicle_id);
-        
-        if (vehicleError) {
-          console.warn('Error updating vehicle status:', vehicleError);
-        }
-      }
-
-      // 4. Finally delete the contract
-      const { error: deleteError } = await supabase
+      const { data: deletedContract, error: deleteError } = await supabase
         .from('contracts')
         .delete()
         .eq('id', contractId)
-        .eq('company_id', companyId);
+        .eq('company_id', activeCompanyId)
+        .eq('status', 'draft')
+        .select('id, contract_number')
+        .single();
 
-      if (deleteError) {
+      if (deleteError || !deletedContract) {
         console.error('❌ [useContractOperations] Error deleting contract:', deleteError);
-        throw deleteError;
+        throw deleteError || new Error('لم يُحذف العقد؛ ربما تغيرت حالته أثناء العملية');
       }
 
-      console.log('✅ [useContractOperations] Contract deleted permanently:', contract.contract_number);
-      return contract;
+      console.log('✅ [useContractOperations] Contract draft deleted permanently:', deletedContract.contract_number);
+      return deletedContract;
     },
     onSuccess: (contract) => {
       queryClient.invalidateQueries({ queryKey: ['contracts'] });
@@ -1064,19 +652,19 @@ export const useContractOperations = (options: ContractOperationsOptions = {}) =
       queryClient.invalidateQueries({ queryKey: ['invoices'] });
       queryClient.invalidateQueries({ queryKey: ['payments'] });
       
-      toast.success(`تم حذف العقد #${contract.contract_number} نهائياً مع جميع البيانات المرتبطة`);
+      toast.success(`تم حذف مسودة العقد #${contract.contract_number}`);
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       console.error('❌ Delete contract error:', error);
-      toast.error(error.message || 'فشل حذف العقد');
+      toast.error(error instanceof Error ? error.message : 'فشل حذف العقد');
     }
   });
 
   return {
     createContract,
     updateContract,
-    getContracts,
-    getContract,
+    getContracts: useContractsQuery,
+    getContract: useContractQuery,
     deleteContractPermanently,
     calculateContractTotals,
     isContractOverdue,

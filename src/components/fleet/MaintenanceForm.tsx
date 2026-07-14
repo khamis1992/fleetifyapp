@@ -363,7 +363,7 @@ export function MaintenanceForm({ maintenance, vehicleId, open, onOpenChange }: 
                       <FormItem>
                         <FormLabel className="flex items-center gap-2 font-semibold">
                           <DollarSign className="w-5 h-5 text-red-600" />
-                          <span>التكلفة المقدرة (د.ك)</span>
+                          <span>التكلفة المقدرة (ر.ق)</span>
                         </FormLabel>
                         <FormControl>
                           <NumberInput {...field} step="0.001" placeholder="0.000" className="h-11" />
@@ -397,7 +397,7 @@ export function MaintenanceForm({ maintenance, vehicleId, open, onOpenChange }: 
                       <FormItem>
                         <FormLabel className="flex items-center gap-2 font-semibold">
                           <DollarSign className="w-5 h-5 text-red-600" />
-                          <span>مبلغ الضريبة (د.ك)</span>
+                          <span>مبلغ الضريبة (ر.ق)</span>
                         </FormLabel>
                         <FormControl>
                           <Input 

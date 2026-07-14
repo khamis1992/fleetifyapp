@@ -123,8 +123,8 @@ vercel --prod
 
 ## Login Credentials (for testing)
 ```
-Email: khamis-1992@hotmail.com
-Password: 123456789
+Email: `<test-email>`
+Password: `<test-password>`
 ```
 
 ---

@@ -196,7 +196,7 @@ export const MobileHome: React.FC = () => {
           <p className="text-sm text-slate-500 mt-1">مرحباً بك في فليتفاي</p>
         </div>
         <button
-          onClick={() => navigate('/mobile/notifications')}
+          onClick={() => navigate('/mobile/overdue')}
           className="relative p-2 rounded-xl bg-white border border-slate-200"
         >
           <Bell className="w-5 h-5 text-slate-600" />

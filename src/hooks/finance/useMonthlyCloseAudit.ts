@@ -1,10 +1,16 @@
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import type { Database } from "@/integrations/supabase/types";
 import { useAuth } from "@/contexts/AuthContext";
 
-const db = supabase as any;
 const MONEY_TOLERANCE = 0.05;
+
+type PaymentRow = Database["public"]["Tables"]["payments"]["Row"];
+type InvoiceRow = Database["public"]["Tables"]["invoices"]["Row"];
+type JournalEntryRow = Database["public"]["Tables"]["journal_entries"]["Row"];
+type JournalEntryLineRow = Database["public"]["Tables"]["journal_entry_lines"]["Row"];
+type ContractRow = Database["public"]["Tables"]["contracts"]["Row"];
 
 type Severity = "critical" | "high" | "medium";
 
@@ -101,12 +107,12 @@ const chunk = <T,>(items: T[], size = 200) => {
   return chunks;
 };
 
-const fetchByIds = async (table: string, column: string, ids: string[], select = "*") => {
+const fetchContractsByIds = async (ids: string[]) => {
   const uniqueIds = Array.from(new Set(ids.filter(Boolean)));
-  const rows: any[] = [];
+  const rows: ContractRow[] = [];
 
   for (const idChunk of chunk(uniqueIds)) {
-    const { data, error } = await db.from(table).select(select).in(column, idChunk);
+    const { data, error } = await supabase.from("contracts").select("*").in("id", idChunk);
     if (error) throw error;
     rows.push(...(data || []));
   }
@@ -114,25 +120,39 @@ const fetchByIds = async (table: string, column: string, ids: string[], select =
   return rows;
 };
 
-const getInvoiceTotal = (invoice: any) =>
-  toNumber(invoice.total_amount ?? invoice.invoice_amount ?? invoice.amount ?? invoice.subtotal);
+const fetchJournalLinesByEntryIds = async (ids: string[]) => {
+  const uniqueIds = Array.from(new Set(ids.filter(Boolean)));
+  const rows: JournalEntryLineRow[] = [];
 
-const getInvoicePaid = (invoice: any) =>
-  toNumber(invoice.paid_amount ?? invoice.amount_paid ?? invoice.total_paid);
+  for (const idChunk of chunk(uniqueIds)) {
+    const { data, error } = await supabase
+      .from("journal_entry_lines")
+      .select("*")
+      .in("journal_entry_id", idChunk);
+    if (error) throw error;
+    rows.push(...(data || []));
+  }
 
-const getInvoiceBalance = (invoice: any, total: number, paid: number) => {
-  const explicitBalance = invoice.balance_due ?? invoice.remaining_amount ?? invoice.outstanding_amount;
+  return rows;
+};
+
+const getInvoiceTotal = (invoice: InvoiceRow) => toNumber(invoice.total_amount);
+
+const getInvoicePaid = (invoice: InvoiceRow) => toNumber(invoice.paid_amount);
+
+const getInvoiceBalance = (invoice: InvoiceRow, total: number, paid: number) => {
+  const explicitBalance = invoice.balance_due;
   return explicitBalance === undefined || explicitBalance === null
     ? total - paid
     : toNumber(explicitBalance);
 };
 
-const isInvoicePaid = (invoice: any, total: number, paid: number, balance: number) => {
+const isInvoicePaid = (invoice: InvoiceRow, total: number, paid: number, balance: number) => {
   const status = normalizeText(invoice.status ?? invoice.payment_status);
   return ["paid", "completed", "settled"].includes(status) || paid >= total - MONEY_TOLERANCE || Math.abs(balance) <= MONEY_TOLERANCE;
 };
 
-const getPaymentAmount = (payment: any) => toNumber(payment.amount ?? payment.payment_amount);
+const getPaymentAmount = (payment: PaymentRow) => toNumber(payment.amount);
 
 const createCheck = (
   id: MonthlyCloseAuditCheckId,
@@ -189,19 +209,19 @@ export const useMonthlyCloseAudit = (month: string) => {
       const { startDate, endDate, monthLabel } = range;
 
       const [paymentsResult, invoicesResult, entriesResult] = await Promise.all([
-        db
+        supabase
           .from("payments")
           .select("*")
           .eq("company_id", companyId)
           .gte("payment_date", startDate)
           .lte("payment_date", endDate),
-        db
+        supabase
           .from("invoices")
           .select("*")
           .eq("company_id", companyId)
           .gte("invoice_date", startDate)
           .lte("invoice_date", endDate),
-        db
+        supabase
           .from("journal_entries")
           .select("*")
           .eq("company_id", companyId)
@@ -217,19 +237,21 @@ export const useMonthlyCloseAudit = (month: string) => {
       const invoices = invoicesResult.data || [];
       const journalEntries = entriesResult.data || [];
 
-      const completedPayments = payments.filter((payment: any) =>
-        ["completed", "paid", "success"].includes(normalizeText(payment.payment_status ?? payment.status))
+      const completedPayments = payments.filter((payment) =>
+        ["completed", "paid", "success"].includes(normalizeText(payment.payment_status))
       );
 
-      const paymentContractIds = completedPayments.map((payment: any) => payment.contract_id).filter(Boolean);
-      const contracts = await fetchByIds("contracts", "id", paymentContractIds, "*");
-      const contractsById = new Map(contracts.map((contract: any) => [contract.id, contract]));
+      const paymentContractIds = completedPayments
+        .map((payment) => payment.contract_id)
+        .filter((id): id is string => Boolean(id));
+      const contracts = await fetchContractsByIds(paymentContractIds);
+      const contractsById = new Map(contracts.map((contract) => [contract.id, contract]));
 
-      const journalEntryIds = journalEntries.map((entry: any) => entry.id).filter(Boolean);
-      const journalLines = await fetchByIds("journal_entry_lines", "journal_entry_id", journalEntryIds, "*");
+      const journalEntryIds = journalEntries.map((entry) => entry.id);
+      const journalLines = await fetchJournalLinesByEntryIds(journalEntryIds);
       const journalLineSums = new Map<string, { debit: number; credit: number }>();
 
-      journalLines.forEach((line: any) => {
+      journalLines.forEach((line) => {
         const entryId = line.journal_entry_id;
         const current = journalLineSums.get(entryId) || { debit: 0, credit: 0 };
         current.debit += toNumber(line.debit_amount);
@@ -238,8 +260,8 @@ export const useMonthlyCloseAudit = (month: string) => {
       });
 
       const paymentsWithoutJournal = completedPayments
-        .filter((payment: any) => !payment.journal_entry_id)
-        .map((payment: any): MonthlyCloseAuditBlocker => ({
+        .filter((payment) => !payment.journal_entry_id)
+        .map((payment): MonthlyCloseAuditBlocker => ({
           id: `payment-no-journal-${payment.id}`,
           checkId: "completed_payments_without_journal",
           severity: "critical",
@@ -254,7 +276,7 @@ export const useMonthlyCloseAudit = (month: string) => {
         }));
 
       const paidInvoicesWithWrongBalance = invoices
-        .map((invoice: any) => {
+        .map((invoice) => {
           const total = getInvoiceTotal(invoice);
           const paid = getInvoicePaid(invoice);
           const balance = getInvoiceBalance(invoice, total, paid);
@@ -281,13 +303,13 @@ export const useMonthlyCloseAudit = (month: string) => {
         }));
 
       const unbalancedJournalEntries = journalEntries
-        .filter((entry: any) => {
+        .filter((entry) => {
           const headerDifference = Math.abs(toNumber(entry.total_debit) - toNumber(entry.total_credit));
           const lineSums = journalLineSums.get(entry.id);
           const lineDifference = lineSums ? Math.abs(lineSums.debit - lineSums.credit) : 0;
           return headerDifference > MONEY_TOLERANCE || lineDifference > MONEY_TOLERANCE;
         })
-        .map((entry: any): MonthlyCloseAuditBlocker => {
+        .map((entry): MonthlyCloseAuditBlocker => {
           const lineSums = journalLineSums.get(entry.id);
           const debit = lineSums ? lineSums.debit : toNumber(entry.total_debit);
           const credit = lineSums ? lineSums.credit : toNumber(entry.total_credit);
@@ -306,8 +328,8 @@ export const useMonthlyCloseAudit = (month: string) => {
           };
         });
 
-      const duplicateGroups = new Map<string, any[]>();
-      invoices.forEach((invoice: any) => {
+      const duplicateGroups = new Map<string, InvoiceRow[]>();
+      invoices.forEach((invoice) => {
         const total = getInvoiceTotal(invoice).toFixed(2);
         const invoiceDate = normalizeDate(invoice.invoice_date ?? invoice.due_date) || "no-date";
         const strongKey = normalizeText(invoice.invoice_number)
@@ -341,13 +363,14 @@ export const useMonthlyCloseAudit = (month: string) => {
         });
 
       const paymentsBeforeContractStart = completedPayments
-        .filter((payment: any) => {
+        .filter((payment): payment is PaymentRow & { contract_id: string } => Boolean(payment.contract_id))
+        .filter((payment) => {
           const contract = contractsById.get(payment.contract_id);
           const paymentDate = normalizeDate(payment.payment_date);
           const contractStartDate = normalizeDate(contract?.start_date);
           return Boolean(paymentDate && contractStartDate && paymentDate < contractStartDate);
         })
-        .map((payment: any): MonthlyCloseAuditBlocker => {
+        .map((payment): MonthlyCloseAuditBlocker => {
           const contract = contractsById.get(payment.contract_id);
           return {
             id: `payment-before-contract-${payment.id}`,

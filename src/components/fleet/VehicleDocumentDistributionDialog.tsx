@@ -122,7 +122,7 @@ const buildMatchCandidates = (
   extractedNumbers: string[]
 ): MatchCandidate[] => {
   const candidates = new Map<string, MatchCandidate>();
-  const cleanText = text.replace(/[â€â€Ž]/g, '').replace(/\s+/g, ' ').trim();
+  const cleanText = text.replace(/[\u200e\u200f]/g, '').replace(/\s+/g, ' ').trim();
 
   addMatchCandidate(candidates, serverData.plateNumber, 96, 'server', 'تم استخراج رقم اللوحة من OCR الخادم');
   addMatchCandidate(candidates, localData.plateNumber, 90, 'labeled_text', 'تم العثور على رقم بجانب تسمية اللوحة');

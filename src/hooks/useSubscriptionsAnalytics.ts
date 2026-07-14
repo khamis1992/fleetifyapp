@@ -1,6 +1,9 @@
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/contexts/AuthContext";
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+import type { Database } from '@/integrations/supabase/types';
+
+type SubscriptionTransaction = Database['public']['Tables']['subscription_transactions']['Row'];
 
 export interface SubscriptionsAnalytics {
   monthlyRevenue: number;
@@ -11,146 +14,142 @@ export interface SubscriptionsAnalytics {
   subscriptionGrowth: number;
   avgValueGrowth: number;
   renewalRateChange: number;
-  revenueByPlan: Array<{
-    plan: string;
-    revenue: number;
-    count: number;
-  }>;
-  monthlyTrend: Array<{
-    month: string;
-    revenue: number;
-    subscriptions: number;
-  }>;
+  revenueByPlan: Array<{ plan: string; revenue: number; count: number }>;
+  monthlyTrend: Array<{ month: string; revenue: number; subscriptions: number }>;
 }
+
+const transactionTimestamp = (transaction: SubscriptionTransaction): number => {
+  const value = transaction.processed_at || transaction.created_at;
+  return value ? new Date(value).getTime() : 0;
+};
+
+const percentageChange = (current: number, previous: number) =>
+  previous > 0 ? ((current - previous) / previous) * 100 : current > 0 ? 100 : 0;
+
+const periodRanges = (period: 'month' | 'quarter' | 'year', now = new Date()) => {
+  if (period === 'year') {
+    return {
+      currentStart: new Date(now.getFullYear(), 0, 1),
+      previousStart: new Date(now.getFullYear() - 1, 0, 1),
+      previousEnd: new Date(now.getFullYear(), 0, 1),
+    };
+  }
+  if (period === 'quarter') {
+    const quarterStartMonth = Math.floor(now.getMonth() / 3) * 3;
+    return {
+      currentStart: new Date(now.getFullYear(), quarterStartMonth, 1),
+      previousStart: new Date(now.getFullYear(), quarterStartMonth - 3, 1),
+      previousEnd: new Date(now.getFullYear(), quarterStartMonth, 1),
+    };
+  }
+  return {
+    currentStart: new Date(now.getFullYear(), now.getMonth(), 1),
+    previousStart: new Date(now.getFullYear(), now.getMonth() - 1, 1),
+    previousEnd: new Date(now.getFullYear(), now.getMonth(), 1),
+  };
+};
+
+const completionRate = (transactions: SubscriptionTransaction[]) => {
+  const terminal = transactions.filter(transaction => ['completed', 'failed'].includes(transaction.status));
+  if (!terminal.length) return 0;
+  return terminal.filter(transaction => transaction.status === 'completed').length / terminal.length * 100;
+};
 
 export const useSubscriptionsAnalytics = (period: 'month' | 'quarter' | 'year' = 'month') => {
   const { user } = useAuth();
 
-  const query = useQuery({
+  return useQuery({
     queryKey: ['subscriptions-analytics', user?.id, period],
     queryFn: async (): Promise<SubscriptionsAnalytics> => {
-      console.log('🔍 [ANALYTICS] Starting subscription analytics fetch', { userId: user?.id, roles: user?.roles });
-      
-      if (!user?.id) {
-        console.error('🔍 [ANALYTICS] No user ID found');
-        throw new Error('المستخدم غير مصرح له');
-      }
+      if (!user?.id) throw new Error('المستخدم غير مصرح له');
+      if (!user.roles?.includes('super_admin')) throw new Error('صلاحيات غير كافية');
 
-      // Check if user is super admin
-      if (!user.roles?.includes('super_admin')) {
-        console.error('🔍 [ANALYTICS] User does not have super_admin role', { roles: user.roles });
-        throw new Error('صلاحيات غير كافية');
-      }
-      
-      console.log('🔍 [ANALYTICS] User authenticated as super_admin, fetching companies...');
+      const [transactionsResult, plansResult, companiesResult] = await Promise.all([
+        supabase.from('subscription_transactions').select('*').order('created_at', { ascending: true }),
+        supabase.from('subscription_plans').select('id,name,name_ar,plan_code'),
+        supabase.from('companies').select('id,subscription_status,created_at'),
+      ]);
+      if (transactionsResult.error) throw transactionsResult.error;
+      if (plansResult.error) throw plansResult.error;
+      if (companiesResult.error) throw companiesResult.error;
 
-      // Get companies data with subscription info
-      const { data: companies, error: companiesError } = await supabase
-        .from('companies')
-        .select(`
-          id,
-          name,
-          subscription_status,
-          subscription_plan,
-          subscription_expires_at,
-          created_at,
-          updated_at
-        `);
+      const transactions = transactionsResult.data || [];
+      const plans = plansResult.data || [];
+      const companies = companiesResult.data || [];
+      const now = new Date();
+      const ranges = periodRanges(period, now);
+      const currentStart = ranges.currentStart.getTime();
+      const previousStart = ranges.previousStart.getTime();
+      const previousEnd = ranges.previousEnd.getTime();
+      const nowTime = now.getTime();
 
-      console.log('🔍 [ANALYTICS] Companies query response:', { 
-        companiesCount: companies?.length || 0, 
-        error: companiesError,
-        sampleCompany: companies?.[0] 
+      const currentTransactions = transactions.filter(transaction => {
+        const time = transactionTimestamp(transaction);
+        return time >= currentStart && time <= nowTime;
+      });
+      const previousTransactions = transactions.filter(transaction => {
+        const time = transactionTimestamp(transaction);
+        return time >= previousStart && time < previousEnd;
+      });
+      const currentCompleted = currentTransactions.filter(transaction => transaction.status === 'completed');
+      const previousCompleted = previousTransactions.filter(transaction => transaction.status === 'completed');
+      const currentRevenue = currentCompleted.reduce((sum, transaction) => sum + Number(transaction.amount || 0), 0);
+      const previousRevenue = previousCompleted.reduce((sum, transaction) => sum + Number(transaction.amount || 0), 0);
+      const currentAverage = currentCompleted.length ? currentRevenue / currentCompleted.length : 0;
+      const previousAverage = previousCompleted.length ? previousRevenue / previousCompleted.length : 0;
+      const currentRenewalRate = completionRate(currentTransactions);
+      const previousRenewalRate = completionRate(previousTransactions);
+
+      const activeCompanies = companies.filter(company => company.subscription_status === 'active');
+      const currentNewSubscriptions = activeCompanies.filter(company => {
+        const created = company.created_at ? new Date(company.created_at).getTime() : 0;
+        return created >= currentStart && created <= nowTime;
+      }).length;
+      const previousNewSubscriptions = activeCompanies.filter(company => {
+        const created = company.created_at ? new Date(company.created_at).getTime() : 0;
+        return created >= previousStart && created < previousEnd;
+      }).length;
+
+      const planMap = new Map(plans.map(plan => [plan.id, plan.name_ar || plan.name || plan.plan_code || 'غير محدد']));
+      const planTotals = new Map<string, { revenue: number; count: number }>();
+      currentCompleted.forEach(transaction => {
+        const plan = planMap.get(transaction.subscription_plan_id) || 'خطة غير معروفة';
+        const current = planTotals.get(plan) || { revenue: 0, count: 0 };
+        current.revenue += Number(transaction.amount || 0);
+        current.count += 1;
+        planTotals.set(plan, current);
       });
 
-      if (companiesError) {
-        console.error('🔍 [ANALYTICS] Error fetching companies:', companiesError);
-        throw companiesError;
-      }
-
-      // Calculate analytics based on companies data
-      const now = new Date();
-      const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-      const currentMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-
-      const activeCompanies = companies?.filter(c => c.subscription_status === 'active') || [];
-      const lastMonthActive = companies?.filter(c => 
-        c.subscription_status === 'active' && 
-        new Date(c.created_at) < currentMonth
-      ) || [];
-
-      // Mock pricing data - in real app this would come from subscription_plans table
-      const planPricing = {
-        'basic': 25,
-        'premium': 50,
-        'enterprise': 100
-      };
-
-      const monthlyRevenue = activeCompanies.reduce((total, company) => {
-        const plan = company.subscription_plan || 'basic';
-        return total + (planPricing[plan as keyof typeof planPricing] || 25);
-      }, 0);
-
-      const lastMonthRevenue = lastMonthActive.reduce((total, company) => {
-        const plan = company.subscription_plan || 'basic';
-        return total + (planPricing[plan as keyof typeof planPricing] || 25);
-      }, 0);
-
-      const revenueByPlan = Object.entries(planPricing).map(([plan, price]) => {
-        const count = activeCompanies.filter(c => c.subscription_plan === plan).length;
+      const monthlyTrend = Array.from({ length: 6 }, (_, index) => {
+        const offset = 5 - index;
+        const start = new Date(now.getFullYear(), now.getMonth() - offset, 1);
+        const end = new Date(now.getFullYear(), now.getMonth() - offset + 1, 1);
+        const completed = transactions.filter(transaction => {
+          const time = transactionTimestamp(transaction);
+          return transaction.status === 'completed' && time >= start.getTime() && time < end.getTime();
+        });
         return {
-          plan,
-          revenue: count * price,
-          count
+          month: start.toLocaleDateString('ar-QA', { month: 'short', year: 'numeric' }),
+          revenue: completed.reduce((sum, transaction) => sum + Number(transaction.amount || 0), 0),
+          subscriptions: completed.length,
         };
       });
 
-      // Generate monthly trend data for the last 6 months
-      const monthlyTrend = [];
-      for (let i = 5; i >= 0; i--) {
-        const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
-        const monthName = date.toLocaleDateString('ar', { month: 'short', year: 'numeric' });
-        
-        // Mock data for trend - in real app this would be calculated from historical data
-        const subscriptions = Math.max(1, activeCompanies.length - i * 2);
-        const revenue = subscriptions * 40; // Average price
-        
-        monthlyTrend.push({
-          month: monthName,
-          revenue,
-          subscriptions
-        });
-      }
-
-      const result = {
-        monthlyRevenue,
+      return {
+        monthlyRevenue: currentRevenue,
         activeSubscriptions: activeCompanies.length,
-        averageSubscriptionValue: monthlyRevenue / Math.max(activeCompanies.length, 1),
-        renewalRate: 94.5, // Mock data
-        revenueGrowth: lastMonthRevenue > 0 ? ((monthlyRevenue - lastMonthRevenue) / lastMonthRevenue * 100) : 0,
-        subscriptionGrowth: lastMonthActive.length > 0 ? ((activeCompanies.length - lastMonthActive.length) / lastMonthActive.length * 100) : 0,
-        avgValueGrowth: 5.2, // Mock data
-        renewalRateChange: 2.1, // Mock data
-        revenueByPlan,
-        monthlyTrend
+        averageSubscriptionValue: currentAverage,
+        renewalRate: currentRenewalRate,
+        revenueGrowth: percentageChange(currentRevenue, previousRevenue),
+        subscriptionGrowth: percentageChange(currentNewSubscriptions, previousNewSubscriptions),
+        avgValueGrowth: percentageChange(currentAverage, previousAverage),
+        renewalRateChange: currentRenewalRate - previousRenewalRate,
+        revenueByPlan: [...planTotals.entries()].map(([plan, totals]) => ({ plan, ...totals })),
+        monthlyTrend,
       };
-      
-      console.log('🔍 [ANALYTICS] Final analytics result:', result);
-      return result;
     },
     enabled: !!user?.id && user.roles?.includes('super_admin'),
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    retry: 3,
+    staleTime: 5 * 60 * 1000,
+    retry: 2,
   });
-
-  // Log errors and success manually
-  if (query.error) {
-    console.error('🔍 [ANALYTICS] Query error:', query.error);
-  }
-  
-  if (query.data) {
-    console.log('🔍 [ANALYTICS] Query success:', query.data);
-  }
-
-  return query;
 };

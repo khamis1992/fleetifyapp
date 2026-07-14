@@ -569,7 +569,9 @@ export class QueryOptimizer {
     if (this.queryCache.size >= this.config.maxCacheSize) {
       // Remove oldest entry
       const firstKey = this.queryCache.keys().next().value;
-      this.queryCache.delete(firstKey);
+      if (firstKey !== undefined) {
+        this.queryCache.delete(firstKey);
+      }
     }
 
     this.queryCache.set(key, result);

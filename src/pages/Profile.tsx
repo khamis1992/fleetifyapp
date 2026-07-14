@@ -19,8 +19,17 @@ const profileSchema = z.object({
   first_name_ar: z.string().optional(),
   last_name_ar: z.string().optional(),
   position: z.string().optional(),
+  currentPassword: z.string().optional(),
   newPassword: z.string().optional(),
   confirmPassword: z.string().optional(),
+}).refine((data) => {
+  if (data.newPassword && data.newPassword.length > 0) {
+    return Boolean(data.currentPassword);
+  }
+  return true;
+}, {
+  message: "كلمة المرور الحالية مطلوبة",
+  path: ["currentPassword"]
 }).refine((data) => {
   // إذا تم ادخال كلمة مرور جديدة، يجب أن تكون على الأقل 6 أحرف
   if (data.newPassword && data.newPassword.length > 0) {
@@ -46,6 +55,7 @@ type ProfileFormValues = z.infer<typeof profileSchema>;
 const Profile: React.FC = () => {
   const { user, updateProfile, changePassword } = useAuth();
   const { toast } = useToast();
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -58,6 +68,7 @@ const Profile: React.FC = () => {
       first_name_ar: user?.profile?.first_name_ar || '',
       last_name_ar: user?.profile?.last_name_ar || '',
       position: user?.profile?.position || '',
+      currentPassword: '',
       newPassword: '',
       confirmPassword: '',
     },
@@ -90,7 +101,7 @@ const Profile: React.FC = () => {
 
       // إذا تم إدخال كلمة مرور جديدة، قم بتحديثها
       if (data.newPassword && data.newPassword.length > 0) {
-        const { error: passwordError } = await changePassword(data.newPassword);
+        const { error: passwordError } = await changePassword(data.currentPassword || '', data.newPassword);
         if (passwordError) {
           toast({
             title: "تم تحديث الملف الشخصي",
@@ -109,6 +120,7 @@ const Profile: React.FC = () => {
       });
 
       // إعادة تعيين حقول كلمة المرور
+      form.setValue('currentPassword', '');
       form.setValue('newPassword', '');
       form.setValue('confirmPassword', '');
       
@@ -117,7 +129,7 @@ const Profile: React.FC = () => {
         window.location.reload();
       }, 1000);
 
-    } catch (error) {
+    } catch {
       toast({
         title: "خطأ في التحديث",
         description: "حدث خطأ غير متوقع",
@@ -200,6 +212,41 @@ const Profile: React.FC = () => {
                   </div>
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="currentPassword"
+                      render={({ field }) => (
+                        <FormItem className="md:col-span-2">
+                          <FormLabel>كلمة المرور الحالية</FormLabel>
+                          <FormControl>
+                            <div className="relative">
+                              <Input
+                                type={showCurrentPassword ? "text" : "password"}
+                                placeholder="أدخل كلمة المرور الحالية"
+                                autoComplete="current-password"
+                                {...field}
+                              />
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                className="absolute left-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                                onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                                aria-label={showCurrentPassword ? "إخفاء كلمة المرور الحالية" : "إظهار كلمة المرور الحالية"}
+                              >
+                                {showCurrentPassword ? (
+                                  <EyeOff className="h-4 w-4" />
+                                ) : (
+                                  <Eye className="h-4 w-4" />
+                                )}
+                              </Button>
+                            </div>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
                     <FormField
                       control={form.control}
                       name="first_name"
@@ -296,6 +343,7 @@ const Profile: React.FC = () => {
                               <Input
                                 type={showPassword ? "text" : "password"}
                                 placeholder="أدخل كلمة المرور الجديدة"
+                                autoComplete="new-password"
                                 {...field}
                               />
                               <Button
@@ -304,6 +352,7 @@ const Profile: React.FC = () => {
                                 size="sm"
                                 className="absolute left-0 top-0 h-full px-3 py-2 hover:bg-transparent"
                                 onClick={() => setShowPassword(!showPassword)}
+                                aria-label={showPassword ? "إخفاء كلمة المرور الجديدة" : "إظهار كلمة المرور الجديدة"}
                               >
                                 {showPassword ? (
                                   <EyeOff className="h-4 w-4" />
@@ -329,6 +378,7 @@ const Profile: React.FC = () => {
                               <Input
                                 type={showConfirmPassword ? "text" : "password"}
                                 placeholder="أكد كلمة المرور الجديدة"
+                                autoComplete="new-password"
                                 {...field}
                               />
                               <Button
@@ -337,6 +387,7 @@ const Profile: React.FC = () => {
                                 size="sm"
                                 className="absolute left-0 top-0 h-full px-3 py-2 hover:bg-transparent"
                                 onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                aria-label={showConfirmPassword ? "إخفاء تأكيد كلمة المرور" : "إظهار تأكيد كلمة المرور"}
                               >
                                 {showConfirmPassword ? (
                                   <EyeOff className="h-4 w-4" />

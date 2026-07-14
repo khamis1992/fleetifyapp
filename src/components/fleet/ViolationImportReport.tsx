@@ -53,7 +53,7 @@ export const ViolationImportReport: React.FC<ViolationImportReportProps> = ({
       `المخالفات المطابقة للمركبات: ${stats.successful}`,
       `المخالفات غير المطابقة: ${stats.failed}`,
       `معدل النجاح: ${stats.total > 0 ? Math.round((stats.successful / stats.total) * 100) : 0}%`,
-      `إجمالي مبلغ الغرامات: ${stats.totalAmount.toFixed(2)} د.ك`,
+      `إجمالي مبلغ الغرامات: ${stats.totalAmount.toFixed(2)} ر.ق`,
       '',
       '📋 تفاصيل المخالفات:',
       '-'.repeat(30)
@@ -65,7 +65,7 @@ export const ViolationImportReport: React.FC<ViolationImportReportProps> = ({
       reportLines.push(`   رقم اللوحة: ${violation.plateNumber}`);
       reportLines.push(`   الموقع: ${violation.location}`);
       reportLines.push(`   نوع المخالفة: ${violation.violationType}`);
-      reportLines.push(`   مبلغ الغرامة: ${violation.fineAmount.toFixed(2)} د.ك`);
+      reportLines.push(`   مبلغ الغرامة: ${violation.fineAmount.toFixed(2)} ر.ق`);
       reportLines.push(`   الحالة: ${violation.status === 'matched' ? 'مطابقة' : violation.status === 'error' ? 'خطأ' : 'مستخرجة'}`);
       
       if (violation.errors.length > 0) {
@@ -173,7 +173,7 @@ export const ViolationImportReport: React.FC<ViolationImportReportProps> = ({
           <div className="text-center p-4 bg-orange-50 rounded-lg">
             <DollarSign className="h-8 w-8 mx-auto mb-2 text-orange-600" />
             <p className="text-2xl font-bold text-orange-600">{stats.totalAmount.toFixed(2)}</p>
-            <p className="text-sm text-orange-800">إجمالي الغرامات (د.ك)</p>
+            <p className="text-sm text-orange-800">إجمالي الغرامات (ر.ق)</p>
           </div>
         </div>
 

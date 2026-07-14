@@ -6,12 +6,35 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { customerCommunicationsClient } from '@/integrations/supabase/customerCommunicationsClient';
+import { useAuth } from '@/contexts/AuthContext';
 
 export const useEmployeeDetailedReport = (employeeId: string, period: number = 30) => {
+  const { user } = useAuth();
+  const companyId = user?.profile?.company_id || user?.company?.id;
+
+  const { data: employeeIdentity, isLoading: identityLoading } = useQuery({
+    queryKey: ['employee-report-identity', companyId, employeeId],
+    queryFn: async () => {
+      if (!companyId) throw new Error('Company ID is required');
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, user_id, company_id')
+        .eq('id', employeeId)
+        .eq('company_id', companyId)
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!companyId && !!employeeId,
+  });
+
   // Fetch unpaid invoices
   const { data: unpaidInvoices, isLoading: invoicesLoading } = useQuery({
-    queryKey: ['employee-unpaid-invoices', employeeId],
+    queryKey: ['employee-unpaid-invoices', companyId, employeeId],
     queryFn: async () => {
+      if (!companyId) throw new Error('Company ID is required');
       const { data, error } = await supabase
         .from('contracts')
         .select(`
@@ -29,6 +52,7 @@ export const useEmployeeDetailedReport = (employeeId: string, period: number = 3
           )
         `)
         .eq('assigned_to_profile_id', employeeId)
+        .eq('company_id', companyId)
         .in('status', ['active', 'under_legal_procedure'])
         .gt('balance_due', 0)
         .order('balance_due', { ascending: false });
@@ -53,13 +77,14 @@ export const useEmployeeDetailedReport = (employeeId: string, period: number = 3
         };
       });
     },
-    enabled: !!employeeId,
+    enabled: !!employeeIdentity && !!companyId,
   });
 
   // Fetch overdue tasks
   const { data: overdueTasks, isLoading: tasksLoading } = useQuery({
-    queryKey: ['employee-overdue-tasks', employeeId],
+    queryKey: ['employee-overdue-tasks', companyId, employeeId],
     queryFn: async () => {
+      if (!companyId) throw new Error('Company ID is required');
       const today = new Date().toISOString().split('T')[0];
       
       const { data, error } = await supabase
@@ -81,6 +106,7 @@ export const useEmployeeDetailedReport = (employeeId: string, period: number = 3
           )
         `)
         .eq('assigned_to', employeeId)
+        .eq('company_id', companyId)
         .eq('status', 'pending')
         .lt('scheduled_date', today)
         .order('scheduled_date', { ascending: true });
@@ -98,42 +124,71 @@ export const useEmployeeDetailedReport = (employeeId: string, period: number = 3
         };
       });
     },
-    enabled: !!employeeId,
+    enabled: !!employeeIdentity && !!companyId,
   });
 
   // Fetch communication stats
   const { data: communicationStats, isLoading: commStatsLoading } = useQuery({
-    queryKey: ['employee-communication-stats', employeeId, period],
+    queryKey: ['employee-communication-stats', companyId, employeeId, period],
     queryFn: async () => {
-      // Get total customers
-      const { count: totalCustomers } = await supabase
-        .from('contracts')
-        .select('customer_id', { count: 'exact', head: true })
-        .eq('assigned_to_profile_id', employeeId)
-        .in('status', ['active', 'under_legal_procedure']);
+      if (!companyId || !employeeIdentity?.user_id) {
+        throw new Error('Employee identity is required');
+      }
 
-      // Note: customer_communications table might not exist
-      // Using mock data for now
+      const periodStart = new Date();
+      periodStart.setUTCDate(periodStart.getUTCDate() - period);
+
+      const [contractsResult, communicationsResult] = await Promise.all([
+        supabase
+        .from('contracts')
+        .select('customer_id')
+        .eq('company_id', companyId)
+        .eq('assigned_to_profile_id', employeeId)
+        .in('status', ['active', 'under_legal_procedure']),
+        customerCommunicationsClient
+          .from('customer_communications')
+          .select('communication_type, customer_id, duration_minutes, notes')
+          .eq('company_id', companyId)
+          .eq('employee_id', employeeIdentity.user_id)
+          .gte('communication_date', periodStart.toISOString().slice(0, 10)),
+      ]);
+
+      if (contractsResult.error) throw contractsResult.error;
+      if (communicationsResult.error) throw communicationsResult.error;
+
+      const assignedCustomers = new Set(
+        (contractsResult.data || []).map(contract => contract.customer_id)
+      );
+      const communications = communicationsResult.data || [];
+      const calls = communications.filter(item => item.communication_type === 'phone');
+      const contactedCustomers = new Set(communications.map(item => item.customer_id));
+
       return {
-        total_calls: 0,
-        successful_calls: 0,
-        total_notes: 0,
-        customers_contacted: 0,
-        total_customers: totalCustomers || 0,
-        contact_coverage: 0,
+        total_calls: calls.length,
+        successful_calls: calls.filter(call =>
+          Number(call.duration_minutes || 0) > 0 || call.notes.includes(' - answered')
+        ).length,
+        total_notes: communications.filter(item => item.communication_type === 'note').length,
+        customers_contacted: contactedCustomers.size,
+        total_customers: assignedCustomers.size,
+        contact_coverage: assignedCustomers.size > 0
+          ? (contactedCustomers.size / assignedCustomers.size) * 100
+          : 0,
       };
     },
-    enabled: !!employeeId,
+    enabled: !!employeeIdentity?.user_id && !!companyId,
   });
 
   // Fetch collection analysis
   const { data: collectionAnalysis, isLoading: collectionLoading } = useQuery({
-    queryKey: ['employee-collection-analysis', employeeId],
+    queryKey: ['employee-collection-analysis', companyId, employeeId],
     queryFn: async () => {
+      if (!companyId) throw new Error('Company ID is required');
       const { data, error } = await supabase
         .from('contracts')
         .select('contract_amount, total_paid, balance_due')
         .eq('assigned_to_profile_id', employeeId)
+        .eq('company_id', companyId)
         .in('status', ['active', 'under_legal_procedure', 'completed']);
 
       if (error) throw error;
@@ -150,7 +205,7 @@ export const useEmployeeDetailedReport = (employeeId: string, period: number = 3
         collection_rate: collectionRate,
       };
     },
-    enabled: !!employeeId,
+    enabled: !!employeeIdentity && !!companyId,
   });
 
   // Calculate recommendations
@@ -190,7 +245,7 @@ export const useEmployeeDetailedReport = (employeeId: string, period: number = 3
     return recs;
   }, [unpaidInvoices, overdueTasks, collectionAnalysis]);
 
-  const isLoading = invoicesLoading || tasksLoading || commStatsLoading || collectionLoading;
+  const isLoading = identityLoading || invoicesLoading || tasksLoading || commStatsLoading || collectionLoading;
 
   return {
     unpaidInvoices,

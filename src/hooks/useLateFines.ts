@@ -58,7 +58,7 @@ export const useUpdateLateFineSettings = () => {
         p_fine_type: settings.fine_type,
         p_fine_rate: settings.fine_rate,
         p_grace_period_days: settings.grace_period_days,
-        p_max_fine_amount: settings.max_fine_amount,
+        p_max_fine_amount: settings.max_fine_amount ?? 0,
         p_is_active: settings.is_active
       });
       

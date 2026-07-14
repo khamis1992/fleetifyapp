@@ -1,98 +1,80 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { useUnifiedCompanyAccess } from './useUnifiedCompanyAccess';
-import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
-import { DriverLicenseFormData } from '@/types/customer';
 
-/**
- * Upload image file to Supabase storage
- * @param file - File to upload
- * @param bucket - Storage bucket name
- * @param folder - Folder path within bucket
- * @returns Public URL of uploaded file
- */
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
+import {
+  driverLicensesTable,
+  type DriverLicenseUpdate,
+} from '@/integrations/supabase/driverLicensesClient';
+import type { DriverLicenseFormData } from '@/types/customer';
+
+import { useUnifiedCompanyAccess } from './useUnifiedCompanyAccess';
+
+const DRIVER_LICENSES_BUCKET = 'driver-licenses';
+
+const getErrorMessage = (error: unknown, fallback: string) =>
+  error instanceof Error ? error.message : fallback;
+
 const uploadImageToStorage = async (
   file: File,
-  bucket: string = 'driver-licenses',
   folder: string
 ): Promise<string> => {
-  // Validate file type
-  const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'application/pdf'];
-  if (!allowedTypes.includes(file.type)) {
-    throw new Error('نوع الملف غير مدعوم. يرجى رفع صورة (JPG, PNG, WebP) أو ملف PDF');
+  const extensionsByType: Record<string, string> = {
+    'image/jpeg': 'jpg',
+    'image/jpg': 'jpg',
+    'image/png': 'png',
+    'image/webp': 'webp',
+    'application/pdf': 'pdf',
+  };
+  const fileExtension = extensionsByType[file.type];
+
+  if (!fileExtension) {
+    throw new Error('نوع الملف غير مدعوم. ارفع صورة JPG أو PNG أو WebP أو ملف PDF.');
   }
 
-  // Validate file size (max 10MB)
-  const maxSizeMB = 10;
-  const fileSizeMB = file.size / (1024 * 1024);
-  if (fileSizeMB > maxSizeMB) {
-    throw new Error(`حجم الملف كبير جداً. الحد الأقصى: ${maxSizeMB}MB`);
+  const maxSizeBytes = 10 * 1024 * 1024;
+  if (file.size <= 0 || file.size > maxSizeBytes) {
+    throw new Error('يجب أن يكون حجم الملف أكبر من صفر ولا يتجاوز 10MB.');
   }
 
-  // Generate unique file name
-  const fileExt = file.name.split('.').pop();
-  const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+  const fileName = `${crypto.randomUUID()}.${fileExtension}`;
   const filePath = `${folder}/${fileName}`;
+  const { error } = await supabase.storage
+    .from(DRIVER_LICENSES_BUCKET)
+    .upload(filePath, file, { cacheControl: '3600', upsert: false });
 
-  // Upload to Supabase storage
-  const { error: uploadError } = await supabase.storage
-    .from(bucket)
-    .upload(filePath, file, {
-      cacheControl: '3600',
-      upsert: false,
-    });
+  if (error) throw new Error(`فشل رفع الملف: ${error.message}`);
 
-  if (uploadError) {
-    console.error('Upload error:', uploadError);
-    throw new Error(`فشل رفع الملف: ${uploadError.message}`);
-  }
-
-  // Get public URL
-  const { data } = supabase.storage.from(bucket).getPublicUrl(filePath);
-
-  return data.publicUrl;
+  return supabase.storage.from(DRIVER_LICENSES_BUCKET).getPublicUrl(filePath).data
+    .publicUrl;
 };
 
-/**
- * Delete image from Supabase storage
- * @param url - Public URL of image to delete
- * @param bucket - Storage bucket name
- */
-const deleteImageFromStorage = async (
-  url: string | undefined,
-  bucket: string = 'driver-licenses'
-): Promise<void> => {
+const deleteImageFromStorage = async (url: string | null | undefined) => {
   if (!url) return;
 
   try {
-    // Extract file path from URL
-    const urlParts = url.split(`${bucket}/`);
-    if (urlParts.length < 2) return;
+    const marker = `${DRIVER_LICENSES_BUCKET}/`;
+    const markerIndex = url.indexOf(marker);
+    if (markerIndex < 0) return;
 
-    const filePath = urlParts[1];
+    const encodedPath = url.slice(markerIndex + marker.length).split('?')[0];
+    const filePath = decodeURIComponent(encodedPath);
+    const { error } = await supabase.storage
+      .from(DRIVER_LICENSES_BUCKET)
+      .remove([filePath]);
 
-    const { error } = await supabase.storage.from(bucket).remove([filePath]);
-
-    if (error) {
-      console.error('Error deleting file from storage:', error);
-    }
+    if (error) console.error('Error deleting driver license file:', error);
   } catch (error) {
-    console.error('Error in deleteImageFromStorage:', error);
+    console.error('Error deleting driver license file:', error);
   }
 };
 
-/**
- * Hook for driver license mutation actions
- */
 export const useDriverLicenseActions = () => {
   const queryClient = useQueryClient();
   const { companyId } = useUnifiedCompanyAccess();
   const { user } = useAuth();
 
-  /**
-   * Create new driver license with image uploads
-   */
   const createLicense = useMutation({
     mutationFn: async ({
       customerId,
@@ -101,80 +83,79 @@ export const useDriverLicenseActions = () => {
       customerId: string;
       formData: DriverLicenseFormData;
     }) => {
-      if (!companyId) {
-        throw new Error('Company ID is required');
+      if (!companyId) throw new Error('Company ID is required');
+
+      const licenseNumber = formData.license_number.trim();
+      const issuingCountry = formData.issuing_country.trim();
+      if (!licenseNumber || !issuingCountry || !formData.expiry_date) {
+        throw new Error('رقم الرخصة وتاريخ الانتهاء ودولة الإصدار حقول مطلوبة.');
+      }
+      if (formData.issue_date && formData.issue_date >= formData.expiry_date) {
+        throw new Error('يجب أن يكون تاريخ انتهاء الرخصة بعد تاريخ الإصدار.');
       }
 
-      // Upload images if provided
+      const { data: customer, error: customerError } = await supabase
+        .from('customers')
+        .select('id')
+        .eq('id', customerId)
+        .eq('company_id', companyId)
+        .maybeSingle();
+
+      if (customerError) throw customerError;
+      if (!customer) throw new Error('العميل غير موجود ضمن الشركة الحالية.');
+
       let frontImageUrl: string | undefined;
       let backImageUrl: string | undefined;
-
       const uploadFolder = `${companyId}/${customerId}`;
 
       try {
         if (formData.front_image) {
-          frontImageUrl = await uploadImageToStorage(
-            formData.front_image,
-            'driver-licenses',
-            uploadFolder
-          );
+          frontImageUrl = await uploadImageToStorage(formData.front_image, uploadFolder);
         }
-
         if (formData.back_image) {
-          backImageUrl = await uploadImageToStorage(
-            formData.back_image,
-            'driver-licenses',
-            uploadFolder
-          );
+          backImageUrl = await uploadImageToStorage(formData.back_image, uploadFolder);
         }
 
-        // Create license record
-        const { data, error } = await supabase
-          .from('driver_licenses')
+        const { data, error } = await driverLicensesTable()
           .insert({
             company_id: companyId,
             customer_id: customerId,
-            license_number: formData.license_number,
+            license_number: licenseNumber,
             issue_date: formData.issue_date || null,
             expiry_date: formData.expiry_date,
-            issuing_country: formData.issuing_country,
-            front_image_url: frontImageUrl,
-            back_image_url: backImageUrl,
-            notes: formData.notes || null,
+            issuing_country: issuingCountry,
+            front_image_url: frontImageUrl || null,
+            back_image_url: backImageUrl || null,
+            notes: formData.notes?.trim() || null,
             verification_status: 'pending',
           })
           .select()
           .single();
 
-        if (error) {
-          // Clean up uploaded images on error
-          if (frontImageUrl) await deleteImageFromStorage(frontImageUrl);
-          if (backImageUrl) await deleteImageFromStorage(backImageUrl);
-          throw error;
-        }
-
+        if (error) throw error;
         return data;
       } catch (error) {
-        // Clean up uploaded images on error
-        if (frontImageUrl) await deleteImageFromStorage(frontImageUrl);
-        if (backImageUrl) await deleteImageFromStorage(backImageUrl);
+        await Promise.all([
+          deleteImageFromStorage(frontImageUrl),
+          deleteImageFromStorage(backImageUrl),
+        ]);
         throw error;
       }
     },
-    onSuccess: (data, variables) => {
+    onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['driver-licenses', variables.customerId] });
-      queryClient.invalidateQueries({ queryKey: ['driver-licenses-count', variables.customerId] });
-      toast.success('تم إضافة رخصة القيادة بنجاح');
+      queryClient.invalidateQueries({
+        queryKey: ['driver-licenses-count', variables.customerId],
+      });
+      queryClient.invalidateQueries({ queryKey: ['expiring-licenses'] });
+      toast.success('تمت إضافة رخصة القيادة بنجاح');
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       console.error('Error creating driver license:', error);
-      toast.error(error.message || 'فشل إضافة رخصة القيادة');
+      toast.error(getErrorMessage(error, 'فشلت إضافة رخصة القيادة'));
     },
   });
 
-  /**
-   * Update verification status of a license
-   */
   const updateVerificationStatus = useMutation({
     mutationFn: async ({
       licenseId,
@@ -185,28 +166,42 @@ export const useDriverLicenseActions = () => {
       status: 'verified' | 'rejected' | 'pending';
       notes?: string;
     }) => {
-      const updateData: any = {
+      if (!companyId) throw new Error('Company ID is required');
+
+      const updateData: DriverLicenseUpdate = {
         verification_status: status,
-        verification_notes: notes || null,
+        verification_notes: notes?.trim() || null,
       };
 
       if (status === 'verified') {
-        updateData.verified_by = user?.id;
+        if (!user?.id) throw new Error('يجب تسجيل الدخول للتحقق من الرخصة.');
+
+        const { data: profile, error: profileError } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('user_id', user.id)
+          .eq('company_id', companyId)
+          .maybeSingle();
+
+        if (profileError) throw profileError;
+        const profileId = profile?.id || user.profile?.id;
+        if (!profileId) throw new Error('تعذر تحديد ملف الموظف الذي تحقق من الرخصة.');
+
+        updateData.verified_by = profileId;
         updateData.verified_at = new Date().toISOString();
       } else {
         updateData.verified_by = null;
         updateData.verified_at = null;
       }
 
-      const { data, error } = await supabase
-        .from('driver_licenses')
+      const { data, error } = await driverLicensesTable()
         .update(updateData)
         .eq('id', licenseId)
+        .eq('company_id', companyId)
         .select()
         .single();
 
       if (error) throw error;
-
       return data;
     },
     onSuccess: (data) => {
@@ -214,79 +209,71 @@ export const useDriverLicenseActions = () => {
       queryClient.invalidateQueries({ queryKey: ['driver-license', data.id] });
       queryClient.invalidateQueries({ queryKey: ['expiring-licenses'] });
 
-      const statusText = data.verification_status === 'verified' ? 'تم التحقق من' :
-                         data.verification_status === 'rejected' ? 'تم رفض' : 'تم تحديث';
+      const statusText =
+        data.verification_status === 'verified'
+          ? 'تم التحقق من'
+          : data.verification_status === 'rejected'
+            ? 'تم رفض'
+            : 'تم تحديث';
       toast.success(`${statusText} رخصة القيادة`);
     },
-    onError: (error: any) => {
-      console.error('Error updating verification status:', error);
-      toast.error(error.message || 'فشل تحديث حالة التحقق');
+    onError: (error: unknown) => {
+      console.error('Error updating driver license verification:', error);
+      toast.error(getErrorMessage(error, 'فشل تحديث حالة التحقق'));
     },
   });
 
-  /**
-   * Delete driver license and associated images
-   */
   const deleteLicense = useMutation({
     mutationFn: async ({ licenseId }: { licenseId: string }) => {
-      // First, get the license to retrieve image URLs
-      const { data: license, error: fetchError } = await supabase
-        .from('driver_licenses')
+      if (!companyId) throw new Error('Company ID is required');
+
+      const { data: license, error: fetchError } = await driverLicensesTable()
         .select('*')
         .eq('id', licenseId)
+        .eq('company_id', companyId)
         .single();
 
       if (fetchError) throw fetchError;
 
-      // Delete the license record
-      const { error: deleteError } = await supabase
-        .from('driver_licenses')
+      const { error: deleteError } = await driverLicensesTable()
         .delete()
-        .eq('id', licenseId);
+        .eq('id', licenseId)
+        .eq('company_id', companyId);
 
       if (deleteError) throw deleteError;
 
-      // Delete images from storage
-      if (license.front_image_url) {
-        await deleteImageFromStorage(license.front_image_url);
-      }
-      if (license.back_image_url) {
-        await deleteImageFromStorage(license.back_image_url);
-      }
-
+      await Promise.all([
+        deleteImageFromStorage(license.front_image_url),
+        deleteImageFromStorage(license.back_image_url),
+      ]);
       return license;
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['driver-licenses', data.customer_id] });
-      queryClient.invalidateQueries({ queryKey: ['driver-licenses-count', data.customer_id] });
+      queryClient.invalidateQueries({
+        queryKey: ['driver-licenses-count', data.customer_id],
+      });
+      queryClient.invalidateQueries({ queryKey: ['expiring-licenses'] });
       toast.success('تم حذف رخصة القيادة بنجاح');
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       console.error('Error deleting driver license:', error);
-      toast.error(error.message || 'فشل حذف رخصة القيادة');
+      toast.error(getErrorMessage(error, 'فشل حذف رخصة القيادة'));
     },
   });
 
-  /**
-   * Update license notes
-   */
   const updateNotes = useMutation({
-    mutationFn: async ({
-      licenseId,
-      notes,
-    }: {
-      licenseId: string;
-      notes: string;
-    }) => {
-      const { data, error } = await supabase
-        .from('driver_licenses')
-        .update({ notes })
+    mutationFn: async ({ licenseId, notes }: { licenseId: string; notes: string }) => {
+      if (!companyId) throw new Error('Company ID is required');
+
+      const { data, error } = await driverLicensesTable()
+        .update({ notes: notes.trim() || null })
         .eq('id', licenseId)
+        .eq('company_id', companyId)
         .select()
         .single();
 
       if (error) throw error;
-
       return data;
     },
     onSuccess: (data) => {
@@ -294,16 +281,11 @@ export const useDriverLicenseActions = () => {
       queryClient.invalidateQueries({ queryKey: ['driver-license', data.id] });
       toast.success('تم تحديث الملاحظات بنجاح');
     },
-    onError: (error: any) => {
-      console.error('Error updating notes:', error);
-      toast.error(error.message || 'فشل تحديث الملاحظات');
+    onError: (error: unknown) => {
+      console.error('Error updating driver license notes:', error);
+      toast.error(getErrorMessage(error, 'فشل تحديث الملاحظات'));
     },
   });
 
-  return {
-    createLicense,
-    updateVerificationStatus,
-    deleteLicense,
-    updateNotes,
-  };
+  return { createLicense, updateVerificationStatus, deleteLicense, updateNotes };
 };

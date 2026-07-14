@@ -6,6 +6,10 @@ import { useTemplateSystem } from './useTemplateSystem';
 import { WizardData } from '@/components/finance/AccountingSystemWizard';
 import { toast } from 'sonner';
 import { ConflictResolutionStrategy } from '@/components/finance/ConflictResolutionDialog';
+import type { Database } from '@/integrations/supabase/types';
+
+type ChartAccountInsert = Database['public']['Tables']['chart_of_accounts']['Insert'];
+type BankInsert = Database['public']['Tables']['banks']['Insert'];
 
 export const useAccountingWizard = () => {
   const [progress, setProgress] = useState(0);
@@ -102,9 +106,13 @@ export const useAccountingWizard = () => {
 // دالة للتعامل مع تضارب الحسابات
 async function handleAccountsConflictResolution(
   companyId: string, 
-  accountsToCreate: unknown[], 
+  accountsToCreate: ChartAccountInsert[],
   strategy?: ConflictResolutionStrategy
 ) {
+  if (strategy === ('replace' as ConflictResolutionStrategy)) {
+    throw new Error('الاستبدال الكامل لدليل الحسابات معطل لحماية القيود والأرصدة. استخدم الدمج أو التخطي.');
+  }
+
   if (!strategy || strategy === 'skip') {
     // استراتيجية التخطي - استخدام UPSERT
     for (const account of accountsToCreate) {
@@ -120,46 +128,42 @@ async function handleAccountsConflictResolution(
       }
     }
   } else if (strategy === 'merge') {
-    // استراتيجية الدمج الذكي
     for (const account of accountsToCreate) {
+      const { data: existing, error: lookupError } = await supabase
+        .from('chart_of_accounts')
+        .select('id')
+        .eq('company_id', companyId)
+        .eq('account_code', account.account_code)
+        .maybeSingle();
+      if (lookupError) throw lookupError;
+
+      if (!existing) {
+        const { error } = await supabase.from('chart_of_accounts').insert(account);
+        if (error) throw error;
+        continue;
+      }
+
+      const { current_balance: _currentBalance, company_id: _companyId, account_code: _accountCode, ...safeUpdate } = account;
       const { error } = await supabase
         .from('chart_of_accounts')
-        .upsert(account, { 
-          onConflict: 'company_id,account_code' 
-        });
-      
+        .update(safeUpdate)
+        .eq('id', existing.id)
+        .eq('company_id', companyId);
       if (error) throw error;
     }
-  } else if (strategy === 'replace' || strategy === 'backup_first') {
-    if (strategy === 'backup_first') {
-      // إنشاء نسخة احتياطية
-      await createAccountsBackup(companyId);
-    }
-    
-    // حذف الحسابات الموجودة
-    const { error: deleteError } = await supabase
-      .from('chart_of_accounts')
-      .delete()
-      .eq('company_id', companyId)
-      .eq('is_system', false);
-    
-    if (deleteError) throw deleteError;
-    
-    // إدراج الحسابات الجديدة
-    const { error: insertError } = await supabase
-      .from('chart_of_accounts')
-      .insert(accountsToCreate);
-    
-    if (insertError) throw insertError;
   }
 }
 
 // دالة للتعامل مع تضارب البنوك
 async function handleBanksConflictResolution(
   companyId: string, 
-  banksToCreate: unknown[], 
+  banksToCreate: BankInsert[],
   strategy?: ConflictResolutionStrategy
 ) {
+  if (strategy === ('replace' as ConflictResolutionStrategy)) {
+    throw new Error('الاستبدال الكامل للحسابات البنكية معطل لحماية الأرصدة والمعاملات. استخدم الدمج أو التخطي.');
+  }
+
   if (!strategy || strategy === 'skip') {
     // استراتيجية التخطي
     for (const bank of banksToCreate) {
@@ -175,67 +179,36 @@ async function handleBanksConflictResolution(
       }
     }
   } else if (strategy === 'merge') {
-    // استراتيجية الدمج
     for (const bank of banksToCreate) {
+      const { data: existing, error: lookupError } = await supabase
+        .from('banks')
+        .select('id')
+        .eq('company_id', companyId)
+        .eq('account_number', bank.account_number)
+        .maybeSingle();
+      if (lookupError) throw lookupError;
+
+      if (!existing) {
+        const { error } = await supabase.from('banks').insert(bank);
+        if (error) throw error;
+        continue;
+      }
+
+      const {
+        current_balance: _currentBalance,
+        opening_balance: _openingBalance,
+        company_id: _companyId,
+        account_number: _accountNumber,
+        ...safeUpdate
+      } = bank;
       const { error } = await supabase
         .from('banks')
-        .upsert(bank, { 
-          onConflict: 'company_id,account_number' 
-        });
-      
+        .update(safeUpdate)
+        .eq('id', existing.id)
+        .eq('company_id', companyId);
       if (error) throw error;
     }
-  } else if (strategy === 'replace' || strategy === 'backup_first') {
-    if (strategy === 'backup_first') {
-      await createBanksBackup(companyId);
-    }
-    
-    // حذف البنوك الموجودة
-    const { error: deleteError } = await supabase
-      .from('banks')
-      .delete()
-      .eq('company_id', companyId);
-    
-    if (deleteError) throw deleteError;
-    
-    // إدراج البنوك الجديدة
-    const { error: insertError } = await supabase
-      .from('banks')
-      .insert(banksToCreate);
-    
-    if (insertError) throw insertError;
   }
-}
-
-// دالة إنشاء نسخة احتياطية للحسابات
-async function createAccountsBackup(companyId: string) {
-  const { data: accounts, error: fetchError } = await supabase
-    .from('chart_of_accounts')
-    .select('*')
-    .eq('company_id', companyId);
-  
-  if (fetchError) throw fetchError;
-  if (!accounts || accounts.length === 0) return;
-  
-  // حفظ النسخة الاحتياطية في جدول منفصل أو كملف
-  console.log('Backup created for accounts:', accounts.length);
-  
-  // يمكن إضافة منطق حفظ النسخة الاحتياطية هنا
-}
-
-// دالة إنشاء نسخة احتياطية للبنوك
-async function createBanksBackup(companyId: string) {
-  const { data: banks, error: fetchError } = await supabase
-    .from('banks')
-    .select('*')
-    .eq('company_id', companyId);
-  
-  if (fetchError) throw fetchError;
-  if (!banks || banks.length === 0) return;
-  
-  console.log('Backup created for banks:', banks.length);
-  
-  // يمكن إضافة منطق حفظ النسخة الاحتياطية هنا
 }
 
 // Helper function to create detailed accounts (levels 5-6)

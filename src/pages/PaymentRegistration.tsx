@@ -36,7 +36,7 @@ import {
 import { PageHelp } from "@/components/help";
 import { PaymentRegistrationPageHelpContent } from "@/components/help/content";
 
-interface ActiveContract {
+export interface ActiveContract {
   contractId: string;
   contractNumber: string;
   customerId: string;
@@ -61,6 +61,62 @@ interface PaymentAnalysis {
   operationType: string;
   lateFee: number;
 }
+
+type PaymentStatusFilter =
+  | 'all'
+  | 'pending'
+  | 'completed'
+  | 'partial'
+  | 'late'
+  | 'partial_late'
+  | 'overpaid';
+
+interface PaymentFilterPreset {
+  name: string;
+  filters: {
+    statusFilter: PaymentStatusFilter;
+    paymentMethodFilter: string;
+    monthFilter: string;
+    sortField: string;
+    sortOrder: 'asc' | 'desc';
+  };
+}
+
+export const matchesStatusFilter = (contract: ActiveContract, filter: PaymentStatusFilter): boolean => {
+  if (filter === 'all') return true;
+  if (filter === 'pending') return contract.status === 'pending';
+
+  const isConfirmed = contract.status === 'paid';
+  const isPartial = contract.amountPaid > 0 && contract.amountPaid < contract.monthlyPayment;
+
+  if (filter === 'completed') {
+    return isConfirmed && Math.abs(contract.amountPaid - contract.monthlyPayment) <= 0.01;
+  }
+  if (filter === 'partial') return isConfirmed && isPartial;
+  if (filter === 'late') return contract.daysOverdue > 0;
+  if (filter === 'partial_late') return isConfirmed && isPartial && contract.daysOverdue > 0;
+  return isConfirmed && contract.amountPaid - contract.monthlyPayment > 0.01;
+};
+
+export const buildPaymentIdempotencyKey = (
+  companyId: string,
+  payment: Pick<ActiveContract, 'contractId' | 'paymentMonth' | 'amountPaid' | 'lateFeeAmount'>,
+  paymentDate: string
+): string => [
+  'payment-registration',
+  companyId,
+  payment.contractId,
+  payment.paymentMonth,
+  payment.amountPaid,
+  payment.lateFeeAmount,
+  paymentDate,
+].join(':');
+
+export const matchesPaymentMonth = (paymentMonth: string, monthFilter: string): boolean =>
+  monthFilter === 'all' || paymentMonth.endsWith(`-${monthFilter}`);
+
+const getErrorMessage = (error: unknown): string =>
+  error instanceof Error ? error.message : String(error);
 
 const PaymentRegistration = () => {
   const { companyId } = useUnifiedCompanyAccess();
@@ -134,7 +190,7 @@ const PaymentRegistration = () => {
         contract.paymentMethod === 'bank_transfer' ? 'تحويل بنكي' :
         contract.paymentMethod === 'check' ? 'شيك' :
         contract.paymentMethod === 'credit_card' ? 'بطاقة ائتمان' : 'أخرى',
-      contract.status === 'paid' ? 'مسددة' : 'معلقة',
+      contract.status === 'paid' ? 'مؤكدة للحفظ' : 'غير مؤكدة',
       contract.notes
     ]);
 
@@ -165,7 +221,7 @@ const PaymentRegistration = () => {
   const [itemsPerPage, setItemsPerPage] = useState(10);
 
   // Filtering state
-  const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'paid'>('all');
+  const [statusFilter, setStatusFilter] = useState<PaymentStatusFilter>('all');
   const [paymentMethodFilter, setPaymentMethodFilter] = useState<string>('all');
   const [monthFilter, setMonthFilter] = useState<string>('all');
 
@@ -183,7 +239,7 @@ const PaymentRegistration = () => {
   });
 
   // Filter presets
-  const filterPresets = [
+  const filterPresets: PaymentFilterPreset[] = [
     {
       name: 'المتأخرات فقط',
       filters: { statusFilter: 'late', paymentMethodFilter: 'all', monthFilter: 'all', sortField: 'daysOverdue', sortOrder: 'desc' as const }
@@ -198,13 +254,13 @@ const PaymentRegistration = () => {
     }
   ];
 
-  const applyPreset = (preset: typeof filterPresets[0]) => {
+  const applyPreset = (preset: PaymentFilterPreset) => {
     setStatusFilter(preset.filters.statusFilter);
     setPaymentMethodFilter(preset.filters.paymentMethodFilter);
     setMonthFilter(preset.filters.monthFilter);
     setSortField(preset.filters.sortField);
     setSortOrder(preset.filters.sortOrder);
-    setPage(1);
+    setCurrentPage(1);
     toast.success(`تم تطبيق فلتر: ${preset.name}`);
   };
 
@@ -259,6 +315,7 @@ const PaymentRegistration = () => {
       
       const formattedContracts: ActiveContract[] = (data || []).map((contract: any) => {
         const monthlyPayment = contract.monthly_amount || 0;
+        const { daysOverdue, lateFeeAmount } = calculateLateFee(currentMonth);
         
         return {
           contractId: contract.id,
@@ -273,8 +330,8 @@ const PaymentRegistration = () => {
           monthlyPayment: monthlyPayment,
           amountPaid: monthlyPayment, // Default to full amount
           remainingAmount: 0, // Will be calculated
-          daysOverdue: 0, // Will be calculated
-          lateFeeAmount: 0, // Will be calculated
+          daysOverdue,
+          lateFeeAmount,
           notes: '',
           status: 'pending',
           paymentMonth: currentMonth, // Default to current month
@@ -291,7 +348,7 @@ const PaymentRegistration = () => {
     }
   };
 
-  // Calculate late fee: 120 SAR/day, max 3000 SAR/month
+  // Calculate late fee: 120 QAR/day, max 3000 QAR/month
   const calculateLateFee = (paymentMonth: string): { daysOverdue: number; lateFeeAmount: number } => {
     const dueDate = new Date(`${paymentMonth}-01`);
     const today = new Date();
@@ -304,11 +361,11 @@ const PaymentRegistration = () => {
       return { daysOverdue: 0, lateFeeAmount: 0 };
     }
     
-    // 120 SAR per day
+    // 120 QAR per day
     const dailyFee = 120;
     let lateFeeAmount = daysOverdue * dailyFee;
     
-    // Max 3000 SAR per month
+    // Max 3000 QAR per month
     const maxFee = 3000;
     if (lateFeeAmount > maxFee) {
       lateFeeAmount = maxFee;
@@ -427,6 +484,10 @@ const PaymentRegistration = () => {
   const confirmPayment = (contractId: string) => {
     const contract = contracts.find(c => c.contractId === contractId);
     if (!contract || !contract.notes.trim()) return;
+    if (contract.amountPaid <= 0) {
+      toast.error('يجب أن يكون مبلغ الدفعة أكبر من صفر');
+      return;
+    }
 
     setContracts(prev =>
       prev.map(c =>
@@ -451,24 +512,18 @@ const PaymentRegistration = () => {
     toast.success(`تم حذف الملاحظة للعميل: ${contract.customerName}`);
   };
 
-  // حفظ جميع الدفعات
-  const saveAllPayments = async () => {
-    const paymentsToSave = contracts.filter(c => c.status === 'paid' && c.notes);
-
-    if (paymentsToSave.length === 0) {
-      toast.error('لا توجد دفعات لحفظها!');
-      return;
-    }
-
+  const persistPayments = async (paymentsToSave: ActiveContract[]) => {
     if (!companyId) {
       toast.error('لم يتم العثور على معرف الشركة');
-      return;
+      return { savedIds: new Set<string>(), failures: ['لم يتم العثور على معرف الشركة'] };
     }
 
-    try {
-      const today = new Date().toISOString().split('T')[0];
+    const today = new Date().toISOString().split('T')[0];
+    const savedIds = new Set<string>();
+    const failures: string[] = [];
 
-      for (const payment of paymentsToSave) {
+    for (const payment of paymentsToSave) {
+      try {
         await createPayment.mutateAsync({
           contract_id: payment.contractId,
           customer_id: payment.customerId,
@@ -480,6 +535,7 @@ const PaymentRegistration = () => {
           transaction_type: 'customer_payment',
           payment_status: 'completed',
           currency: 'QAR',
+          idempotencyKey: buildPaymentIdempotencyKey(companyId, payment, today),
           registrationMetadata: {
             monthly_amount: payment.monthlyPayment,
             amount_paid: payment.amountPaid,
@@ -490,19 +546,41 @@ const PaymentRegistration = () => {
             late_fee_amount: payment.lateFeeAmount,
           },
         });
+        savedIds.add(payment.contractId);
+      } catch (error) {
+        console.error('Error saving payment:', payment.contractId, error);
+        failures.push(`${payment.contractNumber}: ${getErrorMessage(error)}`);
       }
+    }
 
-      toast.success(`تم حفظ ${paymentsToSave.length} دفعة بنجاح!`);
-      
-      // Reset saved payments
+    if (savedIds.size > 0) {
       setContracts(prev =>
         prev.map(c =>
-          c.status === 'paid' ? { ...c, status: 'pending' as const, notes: '' } : c
+          savedIds.has(c.contractId) ? { ...c, status: 'pending' as const, notes: '' } : c
         )
       );
-    } catch (error) {
-      console.error('Error saving payments:', error);
-      toast.error('فشل في حفظ بعض الدفعات');
+    }
+
+    return { savedIds, failures };
+  };
+
+  // حفظ جميع الدفعات المؤكدة
+  const saveAllPayments = async () => {
+    const paymentsToSave = contracts.filter(c => c.status === 'paid' && c.notes.trim());
+
+    if (paymentsToSave.length === 0) {
+      toast.error('لا توجد دفعات مؤكدة لحفظها!');
+      return;
+    }
+
+    const { savedIds, failures } = await persistPayments(paymentsToSave);
+
+    if (savedIds.size > 0) {
+      toast.success(`تم حفظ ${savedIds.size} دفعة في قاعدة البيانات بنجاح`);
+    }
+    if (failures.length > 0) {
+      toast.error(`تعذر حفظ ${failures.length} دفعة. بقيت جاهزة لإعادة المحاولة.`);
+      console.error('Payment registration failures:', failures);
     }
   };
 
@@ -520,9 +598,7 @@ const PaymentRegistration = () => {
     }
 
     // 2. Status filtering
-    if (statusFilter !== 'all') {
-      filtered = filtered.filter(c => c.status === statusFilter);
-    }
+    filtered = filtered.filter(contract => matchesStatusFilter(contract, statusFilter));
 
     // 3. Payment method filtering
     if (paymentMethodFilter !== 'all') {
@@ -531,7 +607,7 @@ const PaymentRegistration = () => {
 
     // 4. Month filtering
     if (monthFilter !== 'all') {
-      filtered = filtered.filter(c => c.paymentMonth === monthFilter);
+      filtered = filtered.filter(c => matchesPaymentMonth(c.paymentMonth, monthFilter));
     }
 
     // 5. Sorting
@@ -539,6 +615,7 @@ const PaymentRegistration = () => {
       let comparison = 0;
       switch (sortField) {
         case 'name':
+        case 'customerName':
           comparison = a.customerName.localeCompare(b.customerName, 'ar');
           break;
         case 'amount':
@@ -575,7 +652,7 @@ const PaymentRegistration = () => {
     };
 
     // 7. Pagination
-    const pages = Math.ceil(sorted.length / itemsPerPage);
+    const pages = Math.max(1, Math.ceil(sorted.length / itemsPerPage));
     const startIndex = (currentPage - 1) * itemsPerPage;
     const paginated = sorted.slice(startIndex, startIndex + itemsPerPage);
 
@@ -587,8 +664,20 @@ const PaymentRegistration = () => {
     };
   }, [contracts, debouncedSearchTerm, statusFilter, paymentMethodFilter, monthFilter, sortField, sortOrder, currentPage, itemsPerPage]);
 
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [debouncedSearchTerm, statusFilter, paymentMethodFilter, monthFilter, itemsPerPage]);
+
+  useEffect(() => {
+    setCurrentPage(page => Math.min(page, totalPages));
+  }, [totalPages]);
+
   // For backward compatibility
   const filteredContracts = paginatedContracts;
+  const selectedContractData = useMemo(
+    () => contracts.filter(contract => selectedContracts.has(contract.contractId)),
+    [contracts, selectedContracts]
+  );
   const paidCount = statistics.paid;
   const pendingCount = statistics.pending;
 
@@ -597,7 +686,7 @@ const PaymentRegistration = () => {
     const handleKeyPress = (e: KeyboardEvent) => {
       if (e.ctrlKey && e.key === 's') {
         e.preventDefault();
-        toast.info('تم حفظ جميع التغييرات');
+        void saveAllPayments();
       }
       if (e.ctrlKey && e.key === 'a' && !['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement).tagName)) {
         e.preventDefault();
@@ -612,7 +701,7 @@ const PaymentRegistration = () => {
       if (e.ctrlKey && e.key === 'e') {
         e.preventDefault();
         if (selectedContracts.size > 0) {
-          const selectedData = paginatedContracts.filter(c => selectedContracts.has(c.contractId));
+          const selectedData = contracts.filter(c => selectedContracts.has(c.contractId));
           exportToCSV(selectedData, 'تسجيل_الدفعات_المختارة');
           toast.success(`تم تصدير ${selectedData.length} عقد`);
         } else {
@@ -630,7 +719,7 @@ const PaymentRegistration = () => {
     };
     window.addEventListener('keydown', handleKeyPress);
     return () => window.removeEventListener('keydown', handleKeyPress);
-  }, [paginatedContracts, selectedContracts]);
+  }, [contracts, paginatedContracts, selectedContracts]);
 
   if (loading) {
     return (
@@ -768,7 +857,7 @@ const PaymentRegistration = () => {
                 </div>
                 <div>
                   <div className="text-xl font-bold font-mono">{statistics.paid}</div>
-                  <div className="text-xs text-muted-foreground">مسددة</div>
+                  <div className="text-xs text-muted-foreground">مؤكدة للحفظ</div>
                 </div>
               </div>
             </CardContent>
@@ -782,7 +871,7 @@ const PaymentRegistration = () => {
                 </div>
                 <div>
                   <div className="text-xl font-bold font-mono">{statistics.pending}</div>
-                  <div className="text-xs text-muted-foreground">معلقة</div>
+                  <div className="text-xs text-muted-foreground">غير مؤكدة</div>
                 </div>
               </div>
             </CardContent>
@@ -873,13 +962,13 @@ const PaymentRegistration = () => {
                 <select
                   value={statusFilter}
                   onChange={(e) => {
-                    setStatusFilter(e.target.value);
-                    setPage(1);
+                    setStatusFilter(e.target.value as PaymentStatusFilter);
+                    setCurrentPage(1);
                   }}
                   className="px-3 py-2 border rounded-md text-sm bg-background"
                 >
                   <option value="all">جميع الحالات</option>
-                  <option value="pending">معلقة</option>
+                  <option value="pending">غير مؤكدة</option>
                   <option value="completed">مسددة كاملة</option>
                   <option value="partial">مسددة جزئياً</option>
                   <option value="late">متأخرة</option>
@@ -892,7 +981,7 @@ const PaymentRegistration = () => {
                   value={paymentMethodFilter}
                   onChange={(e) => {
                     setPaymentMethodFilter(e.target.value);
-                    setPage(1);
+                    setCurrentPage(1);
                   }}
                   className="px-3 py-2 border rounded-md text-sm bg-background"
                 >
@@ -908,7 +997,7 @@ const PaymentRegistration = () => {
                   value={monthFilter}
                   onChange={(e) => {
                     setMonthFilter(e.target.value);
-                    setPage(1);
+                    setCurrentPage(1);
                   }}
                   className="px-3 py-2 border rounded-md text-sm bg-background"
                 >
@@ -929,7 +1018,7 @@ const PaymentRegistration = () => {
 
                 {/* Results count */}
                 <div className="text-sm text-muted-foreground mr-auto">
-                  عرض {paginatedContracts.length} من {filteredContracts.length}
+                  عرض {paginatedContracts.length} من {filteredAndSortedContracts.length}
                 </div>
 
                 {/* Bulk actions */}
@@ -950,7 +1039,7 @@ const PaymentRegistration = () => {
                       variant="outline"
                       size="sm"
                       onClick={() => {
-                        const selectedData = paginatedContracts.filter(c => selectedContracts.has(c.contractId));
+                        const selectedData = contracts.filter(c => selectedContracts.has(c.contractId));
                         exportToCSV(selectedData, 'تسجيل_الدفعات_المختارة');
                         toast.success(`تم تصدير ${selectedData.length} عقد`);
                       }}
@@ -1016,12 +1105,12 @@ const PaymentRegistration = () => {
                           {contract.status === 'paid' ? (
                             <>
                               <CheckCircle className="w-3 h-3 mr-1" />
-                              مسددة
+                              مؤكدة للحفظ
                             </>
                           ) : (
                             <>
                               <Clock className="w-3 h-3 mr-1" />
-                              معلقة
+                              غير مؤكدة
                             </>
                           )}
                         </Badge>
@@ -1040,12 +1129,12 @@ const PaymentRegistration = () => {
                           <span className="text-sm text-muted-foreground">القسط المستحق</span>
                           <div className="text-left">
                             <div className="font-mono font-bold text-success">
-                              {contract.monthlyPayment.toLocaleString('en-US')} ر.س
+                              {contract.monthlyPayment.toLocaleString('en-US')} ر.ق
                             </div>
                             {contract.daysOverdue > 0 && (
                               <div className="text-xs text-destructive flex items-center gap-1 mt-1">
                                 <AlertCircle className="w-3 h-3" />
-                                غرامة {contract.daysOverdue} يوم: {contract.lateFeeAmount.toLocaleString('en-US')} ر.س
+                                غرامة {contract.daysOverdue} يوم: {contract.lateFeeAmount.toLocaleString('en-US')} ر.ق
                               </div>
                             )}
                           </div>
@@ -1066,7 +1155,7 @@ const PaymentRegistration = () => {
                           />
                           {contract.remainingAmount !== 0 && (
                             <div className="text-xs mt-1 text-muted-foreground">
-                              متبقي: {contract.remainingAmount.toLocaleString('en-US')} ر.س
+                              متبقي: {contract.remainingAmount.toLocaleString('en-US')} ر.ق
                             </div>
                           )}
                         </div>
@@ -1102,7 +1191,6 @@ const PaymentRegistration = () => {
                             <option value="bank_transfer">تحويل بنكي</option>
                             <option value="check">شيك</option>
                             <option value="credit_card">بطاقة ائتمان</option>
-                            <option value="other">أخرى</option>
                           </select>
                         </div>
 
@@ -1126,7 +1214,7 @@ const PaymentRegistration = () => {
                           <Button
                             size="sm"
                             onClick={() => confirmPayment(contract.contractId)}
-                            disabled={!contract.notes.trim() || contract.status === 'paid'}
+                            disabled={!contract.notes.trim() || contract.amountPaid <= 0 || contract.status === 'paid'}
                             className="flex-1 bg-success hover:bg-success/90"
                           >
                             <CheckCircle className="w-4 h-4 mr-1" />
@@ -1157,7 +1245,7 @@ const PaymentRegistration = () => {
                     <th className="p-4 w-12">
                       <input
                         type="checkbox"
-                        checked={selectedContracts.size === filteredContracts.length && filteredContracts.length > 0}
+                        checked={filteredContracts.length > 0 && filteredContracts.every(c => selectedContracts.has(c.contractId))}
                         onChange={(e) => {
                           if (e.target.checked) {
                             setSelectedContracts(new Set(filteredContracts.map(c => c.contractId)));
@@ -1377,7 +1465,6 @@ const PaymentRegistration = () => {
                             <option value="bank_transfer">تحويل بنكي</option>
                             <option value="check">شيك</option>
                             <option value="credit_card">بطاقة ائتمان</option>
-                            <option value="other">أخرى</option>
                           </select>
                         </td>
                         <td className="p-4">
@@ -1400,12 +1487,12 @@ const PaymentRegistration = () => {
                             {contract.status === 'paid' ? (
                               <>
                                 <CheckCircle className="w-3 h-3 mr-1" />
-                                مسددة
+                                مؤكدة للحفظ
                               </>
                             ) : (
                               <>
                                 <Clock className="w-3 h-3 mr-1" />
-                                في الانتظار
+                                غير مؤكدة
                               </>
                             )}
                           </Badge>
@@ -1415,7 +1502,7 @@ const PaymentRegistration = () => {
                             <Button
                               size="sm"
                               onClick={() => confirmPayment(contract.contractId)}
-                              disabled={!contract.notes.trim() || contract.status === 'paid'}
+                              disabled={!contract.notes.trim() || contract.amountPaid <= 0 || contract.status === 'paid'}
                               className="bg-success hover:bg-success/90"
                             >
                               <CheckCircle className="w-4 h-4 mr-1" />
@@ -1449,7 +1536,7 @@ const PaymentRegistration = () => {
                     value={itemsPerPage}
                     onChange={(e) => {
                       setItemsPerPage(Number(e.target.value));
-                      setPage(1);
+                      setCurrentPage(1);
                     }}
                     className="border rounded-md px-2 py-1 bg-background"
                   >
@@ -1458,14 +1545,14 @@ const PaymentRegistration = () => {
                     <option value={50}>50</option>
                     <option value={100}>100</option>
                   </select>
-                  <span>من {filteredContracts.length} عقد</span>
+                  <span>من {filteredAndSortedContracts.length} عقد</span>
                 </div>
 
                 <div className="flex items-center gap-2">
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => setPage(p => Math.max(1, p - 1))}
+                    onClick={() => setCurrentPage(page => Math.max(1, page - 1))}
                     disabled={currentPage === 1}
                   >
                     السابق
@@ -1476,7 +1563,7 @@ const PaymentRegistration = () => {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                    onClick={() => setCurrentPage(page => Math.min(totalPages, page + 1))}
                     disabled={currentPage === totalPages}
                   >
                     التالي
@@ -1583,24 +1670,20 @@ const PaymentRegistration = () => {
                 <div className="mb-6 p-4 bg-muted/50 rounded-lg">
                   <h4 className="font-semibold mb-3">العقود المختارة:</h4>
                   <div className="space-y-2 max-h-48 overflow-y-auto">
-                    {paginatedContracts
-                      .filter(c => selectedContracts.has(c.contractId))
-                      .map(contract => (
+                    {selectedContractData.map(contract => (
                         <div key={contract.contractId} className="flex justify-between items-center text-sm p-2 bg-background rounded">
                           <span className="font-semibold">{contract.customerName}</span>
                           <span className="text-muted-foreground">{contract.vehicleNumber}</span>
-                          <span className="font-mono">{contract.monthlyPayment.toLocaleString('en-US')} ر.س</span>
+                          <span className="font-mono">{contract.monthlyPayment.toLocaleString('en-US')} ر.ق</span>
                         </div>
-                      ))
-                    }
+                      ))}
                   </div>
                   <div className="mt-3 pt-3 border-t flex justify-between items-center font-bold">
                     <span>الإجمالي:</span>
                     <span className="text-lg text-success">
-                      {paginatedContracts
-                        .filter(c => selectedContracts.has(c.contractId))
+                      {selectedContractData
                         .reduce((sum, c) => sum + c.monthlyPayment, 0)
-                        .toLocaleString('en-US')} ر.س
+                        .toLocaleString('en-US')} ر.ق
                     </span>
                   </div>
                 </div>
@@ -1628,7 +1711,6 @@ const PaymentRegistration = () => {
                       <option value="bank_transfer">تحويل بنكي</option>
                       <option value="check">شيك</option>
                       <option value="credit_card">بطاقة ائتمان</option>
-                      <option value="other">أخرى</option>
                     </select>
                   </div>
 
@@ -1648,27 +1730,41 @@ const PaymentRegistration = () => {
                   <Button
                     className="flex-1 bg-success hover:bg-success/90"
                     onClick={async () => {
-                      try {
-                        const selectedData = paginatedContracts.filter(c => selectedContracts.has(c.contractId));
-                        
-                        for (const contract of selectedData) {
-                          await updatePaymentCalculations(contract.contractId, {
-                            amountPaid: contract.monthlyPayment,
-                            paymentMonth: bulkPaymentData.paymentMonth
-                          });
-                          
-                          setContracts(prev =>
-                            prev.map(c =>
-                              c.contractId === contract.contractId
-                                ? { ...c, paymentMethod: bulkPaymentData.paymentMethod, notes: bulkPaymentData.notes }
-                                : c
-                            )
-                          );
-                          
-                          await confirmPayment(contract.contractId);
-                        }
-                        
-                        toast.success(`تم تسجيل ${selectedData.length} دفعة بنجاح`);
+                      if (selectedContractData.some(contract => contract.monthlyPayment <= 0)) {
+                        toast.error('توجد عقود مختارة بقسط شهري صفري. صحح قيمة العقد قبل تسجيل الدفعة.');
+                        return;
+                      }
+
+                      const paymentsToSave = selectedContractData.map(contract => {
+                        const { daysOverdue, lateFeeAmount } = calculateLateFee(bulkPaymentData.paymentMonth);
+                        return {
+                          ...contract,
+                          amountPaid: contract.monthlyPayment,
+                          remainingAmount: 0,
+                          daysOverdue,
+                          lateFeeAmount,
+                          paymentMonth: bulkPaymentData.paymentMonth,
+                          paymentMethod: bulkPaymentData.paymentMethod,
+                          notes: bulkPaymentData.notes.trim(),
+                          status: 'paid' as const,
+                        };
+                      });
+
+                      setContracts(prev => prev.map(contract =>
+                        paymentsToSave.find(payment => payment.contractId === contract.contractId) ?? contract
+                      ));
+
+                      const { savedIds, failures } = await persistPayments(paymentsToSave);
+
+                      if (savedIds.size > 0) {
+                        toast.success(`تم حفظ ${savedIds.size} دفعة في قاعدة البيانات بنجاح`);
+                      }
+                      if (failures.length > 0) {
+                        toast.error(`تعذر حفظ ${failures.length} دفعة. بقيت جاهزة لإعادة المحاولة.`);
+                        console.error('Bulk payment registration failures:', failures);
+                      }
+
+                      if (failures.length === 0) {
                         setShowBulkPaymentModal(false);
                         setSelectedContracts(new Set());
                         setBulkPaymentData({
@@ -1676,12 +1772,9 @@ const PaymentRegistration = () => {
                           paymentMonth: new Date().toISOString().slice(0, 7),
                           notes: ''
                         });
-                      } catch (error) {
-                        console.error('Bulk payment error:', error);
-                        toast.error('حدث خطأ أثناء تسجيل الدفعات');
                       }
                     }}
-                    disabled={!bulkPaymentData.notes.trim()}
+                    disabled={!bulkPaymentData.notes.trim() || selectedContractData.length === 0 || createPayment.isPending}
                   >
                     <CheckCircle className="w-4 h-4 mr-2" />
                     تأكيد وتسجيل الدفعات

@@ -247,8 +247,8 @@ export function calculateDaysBetween(date1: Date, date2: Date): number {
 /**
  * Format currency amount
  */
-export function formatCurrency(amount: number, currency: string = 'KWD'): string {
-  return new Intl.NumberFormat('ar-KW', {
+export function formatCurrency(amount: number, currency: string = 'QAR'): string {
+  return new Intl.NumberFormat('ar-QA', {
     style: 'currency',
     currency: currency,
     minimumFractionDigits: 3,

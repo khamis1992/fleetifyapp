@@ -10,7 +10,7 @@
  */
 
 import React, { useEffect, useState, useCallback, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, type Variants } from 'framer-motion';
 import { Plus, ChevronUp } from 'lucide-react';
 import { useFAB } from '@/contexts/FABContext';
 import { useHapticFeedback } from '@/hooks/useHapticFeedback';
@@ -139,7 +139,7 @@ export function FloatingActionButton() {
   const Icon = config.primaryAction?.icon || Plus;
 
   // Animation variants
-  const fabVariants = {
+  const fabVariants: Variants = {
     visible: {
       scale: 1,
       opacity: 1,
@@ -160,7 +160,7 @@ export function FloatingActionButton() {
     },
   };
 
-  const iconVariants = {
+  const iconVariants: Variants = {
     normal: { rotate: 0 },
     pressed: { rotate: 45, scale: 0.9 },
   };

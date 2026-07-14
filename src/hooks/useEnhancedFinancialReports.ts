@@ -25,16 +25,24 @@ const calculateBalanceByType = (accountType: string | null | undefined, debit: n
 
 const getCashFlowCategory = (
   accountType: string | null | undefined,
-  accountCode: string | null | undefined
+  accountCode: string | null | undefined,
+  accountSubtype?: string | null,
 ): 'operating' | 'investing' | 'financing' => {
   const normalizedType = normalizeAccountType(accountType);
   const code = String(accountCode || '');
+  const subtype = String(accountSubtype || '').trim().toLowerCase();
 
-  if (normalizedType === 'asset' && /^(15|16|17|18)/.test(code)) {
+  if (
+    normalizedType === 'asset'
+    && (/^(15|16|17|18)/.test(code) || /fixed|non.?current|property|equipment|vehicle/.test(subtype))
+  ) {
     return 'investing';
   }
 
-  if (['liability', 'equity'].includes(normalizedType)) {
+  if (
+    normalizedType === 'equity'
+    || (normalizedType === 'liability' && /loan|borrow|debt|lease|long.?term|non.?current/.test(subtype))
+  ) {
     return 'financing';
   }
 
@@ -70,7 +78,7 @@ export const useEnhancedCustomerFinancialSummary = (customerId?: string) => {
   const { companyId, getQueryKey } = useUnifiedCompanyAccess();
 
   return useQuery({
-    queryKey: getQueryKey(['enhanced-customer-financial-summary', customerId]),
+    queryKey: getQueryKey(['enhanced-customer-financial-summary', customerId || 'none']),
     queryFn: async () => {
       if (!companyId || !customerId) return null;
 
@@ -79,6 +87,7 @@ export const useEnhancedCustomerFinancialSummary = (customerId?: string) => {
         .from('customers')
         .select('id, first_name, last_name, company_name, customer_type')
         .eq('id', customerId)
+        .eq('company_id', companyId)
         .single();
 
       if (customerError) throw customerError;
@@ -150,7 +159,7 @@ export const useCustomerFinancialSummary = (customerId?: string) => {
   const { companyId, getQueryKey } = useUnifiedCompanyAccess();
 
   return useQuery({
-    queryKey: getQueryKey(['customer-financial-summary', customerId]),
+    queryKey: getQueryKey(['customer-financial-summary', customerId || 'none']),
     queryFn: async () => {
       if (!companyId || !customerId) return null;
 
@@ -158,6 +167,7 @@ export const useCustomerFinancialSummary = (customerId?: string) => {
         .from('customers')
         .select('id, first_name, last_name, company_name, customer_type')
         .eq('id', customerId)
+        .eq('company_id', companyId)
         .single();
 
       if (error) throw error;
@@ -282,22 +292,19 @@ export const useFinancialObligationsWithDetails = (filters?: {
     queryFn: async () => {
       if (!companyId) return [];
 
-      // Fetch real payment installments / obligations
+      // Invoices are the canonical customer obligations in the live schema.
       let query = supabase
-        .from('payment_installments')
+        .from('invoices')
         .select(`
           id,
           company_id,
           contract_id,
           customer_id,
-          installment_amount,
-          original_amount,
+          total_amount,
           due_date,
           payment_status,
           paid_amount,
-          remaining_amount,
-          days_overdue,
-          installment_number,
+          balance_due,
           notes,
           created_at,
           updated_at,
@@ -327,7 +334,9 @@ export const useFinancialObligationsWithDetails = (filters?: {
         query = query.eq('payment_status', filters.status);
       }
       if (filters?.overdue) {
-        query = query.gt('days_overdue', 0);
+        query = query
+          .lt('due_date', new Date().toISOString().slice(0, 10))
+          .gt('balance_due', 0);
       }
 
       const { data, error } = await query.order('due_date', { ascending: false });
@@ -337,7 +346,21 @@ export const useFinancialObligationsWithDetails = (filters?: {
         return [];
       }
 
-      return data || [];
+      return (data || []).map((invoice) => {
+        const dueDate = invoice.due_date ? new Date(invoice.due_date) : null;
+        const daysOverdue = dueDate
+          ? Math.max(0, Math.floor((Date.now() - dueDate.getTime()) / 86_400_000))
+          : 0;
+
+        return {
+          ...invoice,
+          installment_amount: Number(invoice.total_amount || 0),
+          original_amount: Number(invoice.total_amount || 0),
+          remaining_amount: Number(invoice.balance_due || 0),
+          days_overdue: daysOverdue,
+          installment_number: 1,
+        };
+      });
     },
     enabled: !!companyId,
   });
@@ -352,7 +375,12 @@ export const useEnhancedFinancialReports = (
   const { companyId, getQueryKey } = useUnifiedCompanyAccess();
 
   return useQuery({
-    queryKey: getQueryKey(['enhanced-financial-reports', reportType, startDate, endDate]),
+    queryKey: getQueryKey([
+      'enhanced-financial-reports',
+      reportType,
+      startDate || 'unbounded-start',
+      endDate || 'unbounded-end',
+    ]),
     queryFn: async () => {
       Sentry.addBreadcrumb({ category: "enhancedfinancialreports", message: "Fetching data", level: "info" });
       if (!companyId) return null;
@@ -380,7 +408,9 @@ export const useEnhancedFinancialReports = (
           chart_of_accounts!account_id(
             account_code,
             account_name,
+            account_name_ar,
             account_type,
+            account_subtype,
             account_level,
             is_header
           )
@@ -637,6 +667,73 @@ export const useEnhancedFinancialReports = (
       }
 
       if (reportType === 'cash_flow') {
+        type CashFlowAccount = {
+          account_code: string;
+          account_name: string;
+          account_name_ar: string | null;
+          account_type: string;
+          account_subtype: string | null;
+        };
+        type CashFlowJournalLine = {
+          id: string;
+          journal_entry_id: string;
+          account_id: string;
+          debit_amount: number | null;
+          credit_amount: number | null;
+          chart_of_accounts: CashFlowAccount | null;
+        };
+
+        const typedJournalLines = (journalLines || []) as unknown as CashFlowJournalLine[];
+        const { data: cashMappingRows, error: cashMappingsError } = await supabase
+          .from('account_mappings')
+          .select(`
+            chart_of_accounts_id,
+            default_account_types!inner(type_code)
+          `)
+          .eq('company_id', companyId)
+          .eq('is_active', true)
+          .in('default_account_types.type_code', ['CASH', 'BANK', 'PETTY_CASH']);
+
+        if (cashMappingsError) throw cashMappingsError;
+
+        const cashAccountIds = new Set((cashMappingRows || []).map(mapping => mapping.chart_of_accounts_id));
+        if (cashAccountIds.size === 0) {
+          for (const account of accounts || []) {
+            const subtype = String(account.account_subtype || '').toLowerCase();
+            if (
+              isAccountType(account.account_type, 'asset')
+              && (/cash|bank|petty/.test(subtype) || /^(1010|1101|1102|1110|1120)$/.test(account.account_code))
+            ) {
+              cashAccountIds.add(account.id);
+            }
+          }
+        }
+
+        if (cashAccountIds.size === 0) {
+          throw new Error('Cash and bank account mappings are required to generate the cash flow statement');
+        }
+
+        let beginningCash = 0;
+        if (startDate) {
+          const { data: openingLines, error: openingLinesError } = await supabase
+            .from('journal_entry_lines')
+            .select(`
+              debit_amount,
+              credit_amount,
+              journal_entries!inner(entry_date, status, company_id)
+            `)
+            .in('account_id', Array.from(cashAccountIds))
+            .eq('journal_entries.company_id', companyId)
+            .eq('journal_entries.status', 'posted')
+            .lt('journal_entries.entry_date', startDate);
+
+          if (openingLinesError) throw openingLinesError;
+          beginningCash = (openingLines || []).reduce(
+            (sum, line) => sum + Number(line.debit_amount || 0) - Number(line.credit_amount || 0),
+            0,
+          );
+        }
+
         const cashFlowGroups = new Map<string, {
           accountCode: string;
           accountName: string;
@@ -646,29 +743,54 @@ export const useEnhancedFinancialReports = (
           amount: number;
         }>();
 
-        journalLines?.forEach((line: any) => {
-          const account = line.chart_of_accounts;
-          if (!account?.account_code) return;
+        const linesByEntry = new Map<string, CashFlowJournalLine[]>();
+        for (const line of typedJournalLines) {
+          const entryLines = linesByEntry.get(line.journal_entry_id) || [];
+          entryLines.push(line);
+          linesByEntry.set(line.journal_entry_id, entryLines);
+        }
 
-          const accountType = normalizeAccountType(account.account_type);
-          const category = getCashFlowCategory(accountType, account.account_code);
-          const debit = Number(line.debit_amount || 0);
-          const credit = Number(line.credit_amount || 0);
-          const amount = calculateBalanceByType(accountType, debit, credit);
-          const key = `${category}:${account.account_code}`;
+        for (const entryLines of linesByEntry.values()) {
+          const cashMovement = entryLines
+            .filter(line => cashAccountIds.has(line.account_id))
+            .reduce(
+              (sum, line) => sum + Number(line.debit_amount || 0) - Number(line.credit_amount || 0),
+              0,
+            );
 
-          const current = cashFlowGroups.get(key) || {
-            accountCode: account.account_code,
-            accountName: account.account_name,
-            accountNameAr: account.account_name,
-            accountType,
-            category,
-            amount: 0,
-          };
+          if (Math.abs(cashMovement) <= 0.01) continue;
 
-          current.amount += amount;
-          cashFlowGroups.set(key, current);
-        });
+          const counterpartLines = entryLines.filter(line => {
+            if (cashAccountIds.has(line.account_id) || !line.chart_of_accounts) return false;
+            return Math.abs(Number(line.debit_amount || 0) - Number(line.credit_amount || 0)) > 0.01;
+          });
+          const totalCounterpartWeight = counterpartLines.reduce(
+            (sum, line) => sum + Math.abs(Number(line.debit_amount || 0) - Number(line.credit_amount || 0)),
+            0,
+          );
+
+          if (totalCounterpartWeight <= 0.01) continue;
+
+          for (const line of counterpartLines) {
+            const account = line.chart_of_accounts!;
+            const accountType = normalizeAccountType(account.account_type);
+            const category = getCashFlowCategory(accountType, account.account_code, account.account_subtype);
+            const weight = Math.abs(Number(line.debit_amount || 0) - Number(line.credit_amount || 0));
+            const amount = cashMovement * (weight / totalCounterpartWeight);
+            const key = `${category}:${account.account_code}`;
+            const current = cashFlowGroups.get(key) || {
+              accountCode: account.account_code,
+              accountName: account.account_name,
+              accountNameAr: account.account_name_ar || account.account_name,
+              accountType,
+              category,
+              amount: 0,
+            };
+
+            current.amount += amount;
+            cashFlowGroups.set(key, current);
+          }
+        }
 
         const makeCashFlowSection = (
           category: 'operating' | 'investing' | 'financing',
@@ -722,6 +844,8 @@ export const useEnhancedFinancialReports = (
           totalDebits,
           totalCredits,
           netIncome: totalCredits - totalDebits,
+          beginningCash: Number(beginningCash.toFixed(2)),
+          endingCash: Number((beginningCash + totalCredits - totalDebits).toFixed(2)),
         };
       }
 
@@ -737,7 +861,7 @@ export const useDetailedCustomerEnhancedData = (customerId?: string) => {
   const { companyId, getQueryKey } = useUnifiedCompanyAccess();
 
   return useQuery({
-    queryKey: getQueryKey(['detailed-customer-enhanced-data', customerId]),
+    queryKey: getQueryKey(['detailed-customer-enhanced-data', customerId || 'none']),
     queryFn: async () => {
       if (!companyId || !customerId) return null;
 
@@ -745,6 +869,7 @@ export const useDetailedCustomerEnhancedData = (customerId?: string) => {
         .from('customers')
         .select('id, first_name, last_name, company_name, customer_type')
         .eq('id', customerId)
+        .eq('company_id', companyId)
         .single();
 
       if (error) throw error;

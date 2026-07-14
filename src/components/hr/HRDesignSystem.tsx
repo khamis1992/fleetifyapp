@@ -35,7 +35,7 @@ interface HRPageHeaderProps {
 
 export function HRPageHeader({ title, description, icon: Icon, badge = "الموارد البشرية", action }: HRPageHeaderProps) {
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+    <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex items-start gap-3">
           <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#E8FBF6] text-[#22C7A1]">
@@ -76,7 +76,7 @@ export function HRMetricCard({ title, value, subtitle, icon: Icon, tone = "neutr
   const colors = toneMap[tone];
 
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+    <div className="min-h-[112px] rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="text-xs font-bold text-[#94A3B8]">{title}</p>
@@ -92,7 +92,7 @@ export function HRMetricCard({ title, value, subtitle, icon: Icon, tone = "neutr
 }
 
 export function HRSectionCard({ children, className }: { children: ReactNode; className?: string }) {
-  return <div className={cn("rounded-2xl border border-slate-200 bg-white shadow-sm", className)}>{children}</div>;
+  return <div className={cn("rounded-lg border border-slate-200 bg-white shadow-sm", className)}>{children}</div>;
 }
 
 export const hrFieldClassName =

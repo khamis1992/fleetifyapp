@@ -482,13 +482,17 @@ export const SmartAccountWizardTab: React.FC = () => {
           {createSmartAccount.isError && (
             <div className="flex items-center gap-2 text-destructive text-sm">
               <AlertCircle className="h-4 w-4" />
-              {createSmartAccount.error?.message}
+              {createSmartAccount.error instanceof Error
+                ? createSmartAccount.error.message
+                : 'تعذر إنشاء الحساب الذكي'}
             </div>
           )}
           {createAccount.isError && (
             <div className="flex items-center gap-2 text-destructive text-sm">
               <AlertCircle className="h-4 w-4" />
-              {createAccount.error?.message}
+              {createAccount.error instanceof Error
+                ? createAccount.error.message
+                : 'تعذر إنشاء الحساب'}
             </div>
           )}
         </CardContent>

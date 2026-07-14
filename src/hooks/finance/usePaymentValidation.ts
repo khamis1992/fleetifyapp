@@ -5,8 +5,8 @@
  */
 
 import { useMemo } from 'react';
-import { createClient } from '@supabase/supabase-js';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
+import { supabase } from '@/integrations/supabase/client';
 
 export interface PaymentValidationResult {
   isValid: boolean;
@@ -91,47 +91,55 @@ export function usePaymentValidation({
       }
 
       try {
-        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-        const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-
-        if (!supabaseUrl || !supabaseKey) {
-          console.warn('Supabase credentials not found');
-          return validationResult;
+        if (!companyId) {
+          throw new Error('تعذر تحديد الشركة الحالية للتحقق من الدفعة');
         }
-
-        const supabase = createClient(supabaseUrl, supabaseKey);
 
         let contractAmount = 0;
         let totalPaid = 0;
         let monthlyAmount = 0;
-        let invoiceAmount = 0;
+        let invoiceBalance = 0;
 
-        // Get contract details if contract is linked
         if (contractId) {
-          const { data: contract } = await supabase
-            .from('contracts')
-            .select('contract_amount, total_paid, monthly_amount')
-            .eq('id', contractId)
-            .single();
-
-          if (contract) {
-            contractAmount = contract.contract_amount || 0;
-            totalPaid = contract.total_paid || 0;
-            monthlyAmount = contract.monthly_amount || 0;
-          }
+          const [contractResult, paymentsResult] = await Promise.all([
+            supabase
+              .from('contracts')
+              .select('contract_amount, monthly_amount')
+              .eq('id', contractId)
+              .eq('company_id', companyId)
+              .single(),
+            supabase
+              .from('payments')
+              .select('amount')
+              .eq('contract_id', contractId)
+              .eq('company_id', companyId)
+              .in('payment_status', ['completed', 'paid']),
+          ]);
+          if (contractResult.error) throw contractResult.error;
+          if (paymentsResult.error) throw paymentsResult.error;
+          contractAmount = Number(contractResult.data.contract_amount || 0);
+          monthlyAmount = Number(contractResult.data.monthly_amount || 0);
+          totalPaid = (paymentsResult.data || []).reduce((sum, payment) => sum + Number(payment.amount || 0), 0);
         }
 
-        // Get invoice details if invoice is linked
         if (invoiceId) {
-          const { data: invoice } = await supabase
+          const { data: invoice, error: invoiceError } = await supabase
             .from('invoices')
-            .select('total_amount')
+            .select('contract_id, total_amount, paid_amount, balance_due, status, payment_status')
             .eq('id', invoiceId)
+            .eq('company_id', companyId)
             .single();
-
-          if (invoice) {
-            invoiceAmount = invoice.total_amount || 0;
+          if (invoiceError) throw invoiceError;
+          if (contractId && invoice.contract_id && invoice.contract_id !== contractId) {
+            throw new Error('الفاتورة لا تتبع العقد المحدد');
           }
+          if (invoice.status === 'cancelled' || invoice.payment_status === 'cancelled') {
+            throw new Error('لا يمكن تسجيل دفعة على فاتورة ملغاة');
+          }
+          invoiceBalance = Math.max(
+            Number(invoice.balance_due ?? Number(invoice.total_amount || 0) - Number(invoice.paid_amount || 0)),
+            0
+          );
         }
 
         const newTotal = totalPaid + amount;
@@ -155,11 +163,20 @@ export function usePaymentValidation({
           };
         }
 
-        // Rule 2: Check for overpayment
-        if (contractAmount > 0) {
-          const overpaymentThreshold = contractAmount * 1.10; // 10% buffer
+        if (invoiceId && amount > invoiceBalance + 0.001) {
+          const overpaymentAmount = amount - invoiceBalance;
+          return {
+            isValid: false,
+            isWarning: false,
+            isBlocked: true,
+            message: `مبلغ الدفعة يتجاوز رصيد الفاتورة بمقدار ${currency} ${overpaymentAmount.toLocaleString()}`,
+            warningLevel: 'error',
+            details: { contractAmount, totalPaid, newTotal, monthlyAmount, maxPayment: maxPaymentThreshold, overpaymentAmount }
+          };
+        }
 
-          if (newTotal > overpaymentThreshold) {
+        if (contractAmount > 0) {
+          if (newTotal > contractAmount + 0.001) {
             const overpaymentAmount = newTotal - contractAmount;
             return {
               isValid: false,
@@ -179,17 +196,16 @@ export function usePaymentValidation({
           }
         }
 
-        // Rule 3: Warn if payment differs significantly from invoice amount
-        if (invoiceAmount > 0) {
-          const difference = Math.abs(amount - invoiceAmount);
-          const percentDifference = (difference / invoiceAmount) * 100;
+        if (invoiceBalance > 0) {
+          const difference = Math.abs(amount - invoiceBalance);
+          const percentDifference = (difference / invoiceBalance) * 100;
 
-          if (difference > (invoiceAmount * 0.20)) {
+          if (difference > (invoiceBalance * 0.20)) {
             return {
               isValid: true,
               isWarning: true,
               isBlocked: false,
-              message: `تنبيه: المبلغ (QAR ${amount.toLocaleString()}) يختلف عن مبلغ الفاتورة (QAR ${invoiceAmount.toLocaleString()}) بنسبة ${percentDifference.toFixed(0)}%. يرجى التحقق من صحة المبلغ.`,
+              message: `تنبيه: المبلغ (${currency} ${amount.toLocaleString()}) يختلف عن رصيد الفاتورة (${currency} ${invoiceBalance.toLocaleString()}) بنسبة ${percentDifference.toFixed(0)}%. يرجى التحقق من صحة المبلغ.`,
               warningLevel: 'warning',
               details: {
                 contractAmount,
@@ -221,11 +237,11 @@ export function usePaymentValidation({
       } catch (error) {
         console.error('Error validating payment:', error);
         return {
-          isValid: true,
+          isValid: false,
           isWarning: false,
-          isBlocked: false,
-          message: '',
-          warningLevel: 'info'
+          isBlocked: true,
+          message: error instanceof Error ? error.message : 'تعذر التحقق من الدفعة؛ تم إيقاف التسجيل لحماية البيانات المالية',
+          warningLevel: 'error'
         };
       }
     }

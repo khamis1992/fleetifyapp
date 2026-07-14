@@ -215,7 +215,7 @@ export const useAttendance = () => {
   });
 
   // Get today's attendance record
-  const getTodayAttendance = (employeeId: string) => {
+  const useTodayAttendanceQuery = (employeeId: string) => {
     const today = new Date().toISOString().split('T')[0];
     
     return useQuery({
@@ -239,6 +239,6 @@ export const useAttendance = () => {
     verifyLocation,
     clockIn,
     clockOut,
-    getTodayAttendance,
+    getTodayAttendance: useTodayAttendanceQuery,
   };
 };

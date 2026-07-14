@@ -1,13 +1,14 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import * as Sentry from "@sentry/react";
 import { supabase } from "@/integrations/supabase/client";
+import type { Database } from "@/integrations/supabase/types";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUnifiedCompanyAccess } from "@/hooks/useUnifiedCompanyAccess";
 import { toast } from "sonner";
 
 // Types - Import from centralized finance types file
 import type { ChartOfAccount } from './useChartOfAccounts';
-export type {
+import type {
   JournalEntry,
   JournalEntryLine,
   Invoice,
@@ -18,6 +19,21 @@ export type {
   Budget,
   BankTransaction
 } from '@/types/finance.types';
+export type {
+  JournalEntry,
+  JournalEntryLine,
+  Invoice,
+  Payment,
+  Vendor,
+  CostCenter,
+  FixedAsset,
+  Budget,
+  BankTransaction
+};
+
+type InvoiceUpdate = Database['public']['Tables']['invoices']['Update'];
+type FixedAssetUpdate = Database['public']['Tables']['fixed_assets']['Update'];
+type JournalEntryLineInsert = Database['public']['Tables']['journal_entry_lines']['Insert'];
 
 // =====================================================
 // VENDOR HOOKS RE-EXPORTS (for backward compatibility)
@@ -290,14 +306,18 @@ export const useDeleteAccount = () => {
 // Journal Entries Hooks
 export const useJournalEntries = (filters?: { status?: string; dateFrom?: string; dateTo?: string }) => {
   const { user } = useAuth()
+  const companyId = user?.profile?.company_id
   
   return useQuery({
-    queryKey: ["journalEntries", user?.profile?.company_id, filters],
+    queryKey: ["journalEntries", companyId, filters],
     queryFn: async () => {
       Sentry.addBreadcrumb({ category: "finance", message: "Fetching data", level: "info" });
+      if (!companyId) throw new Error("Company ID is required")
+
       let query = supabase
         .from("journal_entries")
         .select("*")
+        .eq("company_id", companyId)
         .order("entry_date", { ascending: false })
       
       if (filters?.status) {
@@ -313,9 +333,9 @@ export const useJournalEntries = (filters?: { status?: string; dateFrom?: string
       const { data, error } = await query
       
       if (error) throw error
-      return data as JournalEntry[]
+      return data
     },
-    enabled: !!user?.profile?.company_id
+    enabled: !!companyId
   })
 }
 
@@ -334,7 +354,7 @@ export const useJournalEntryLines = (journalEntryId: string) => {
         .order("line_number")
       
       if (error) throw error
-      return data as JournalEntryLine[]
+      return data
     },
     enabled: !!journalEntryId
   })
@@ -459,9 +479,14 @@ export const useCreateJournalEntry = () => {
           return trimmed
         }
         
-        const sanitizedLine = {
+        const accountId = sanitizeUuidBackend(line.account_id)
+        if (!accountId) {
+          throw new Error(`Invalid account for journal line ${index + 1}`)
+        }
+
+        const sanitizedLine: JournalEntryLineInsert = {
           journal_entry_id: entry.id,
-          account_id: sanitizeUuidBackend(line.account_id),
+          account_id: accountId,
           cost_center_id: sanitizeUuidBackend(line.cost_center_id),
           asset_id: sanitizeUuidBackend(line.asset_id),
           employee_id: sanitizeUuidBackend(line.employee_id),
@@ -532,14 +557,18 @@ export const useCreateJournalEntry = () => {
 // Invoices Hooks
 export const useInvoices = (filters?: { type?: string; status?: string }) => {
   const { user } = useAuth()
+  const companyId = user?.profile?.company_id
   
   return useQuery({
-    queryKey: ["invoices", user?.profile?.company_id, filters],
+    queryKey: ["invoices", companyId, filters],
     queryFn: async () => {
       Sentry.addBreadcrumb({ category: "finance", message: "Fetching data", level: "info" });
+      if (!companyId) throw new Error("Company ID is required")
+
       let query = supabase
         .from("invoices")
         .select("*")
+        .eq("company_id", companyId)
         .order("invoice_date", { ascending: false })
       
       if (filters?.type) {
@@ -554,7 +583,7 @@ export const useInvoices = (filters?: { type?: string; status?: string }) => {
       if (error) throw error
       return data as Invoice[]
     },
-    enabled: !!user?.profile?.company_id
+    enabled: !!companyId
   })
 }
 
@@ -580,6 +609,17 @@ export const useCreateInvoice = () => {
       notes?: string
       terms?: string
       contract_id?: string
+      cost_center_id?: string
+      fixed_asset_id?: string
+      items?: Array<{
+        description: string
+        description_ar?: string
+        quantity: number
+        unit_price: number
+        tax_rate: number
+        account_id?: string
+        cost_center_id?: string
+      }>
     }) => {
       Sentry.addBreadcrumb({ category: "finance", message: "Mutation started", level: "info" });
       if (!user?.profile?.company_id || !user?.id) throw new Error("User data is required")
@@ -605,6 +645,8 @@ export const useCreateInvoice = () => {
           notes: invoiceData.notes,
           terms: invoiceData.terms,
           contract_id: invoiceData.contract_id,
+          cost_center_id: invoiceData.cost_center_id || null,
+          fixed_asset_id: invoiceData.fixed_asset_id || null,
           company_id: user.profile.company_id,
           created_by: user.id
         })
@@ -612,6 +654,49 @@ export const useCreateInvoice = () => {
         .single()
       
       if (error) throw error
+
+      if (invoiceData.items && invoiceData.items.length > 0) {
+        const invoiceItems = invoiceData.items.map((item, index) => {
+          const lineTotal = item.quantity * item.unit_price
+          return {
+            invoice_id: data.id,
+            line_number: index + 1,
+            item_description: item.description,
+            item_description_ar: item.description_ar || null,
+            quantity: item.quantity,
+            unit_price: item.unit_price,
+            line_total: lineTotal,
+            tax_rate: item.tax_rate,
+            tax_amount: lineTotal * (item.tax_rate / 100),
+            account_id: item.account_id || null,
+            cost_center_id: item.cost_center_id || invoiceData.cost_center_id || null,
+          }
+        })
+
+        const { error: itemsError } = await supabase
+          .from('invoice_items')
+          .insert(invoiceItems)
+
+        if (itemsError) {
+          const cancellationNote = [
+            invoiceData.notes,
+            `ألغيت تلقائياً بسبب فشل حفظ بنود الفاتورة: ${itemsError.message}`,
+          ].filter(Boolean).join('\n')
+
+          const { error: cancellationError } = await supabase
+            .from('invoices')
+            .update({ status: 'cancelled', notes: cancellationNote })
+            .eq('id', data.id)
+            .eq('company_id', user.profile.company_id)
+            .eq('status', 'draft')
+
+          if (cancellationError) {
+            throw new Error(`فشل حفظ البنود وتعذر إلغاء الفاتورة ${data.invoice_number}: ${itemsError.message}`)
+          }
+          throw new Error(`فشل حفظ بنود الفاتورة؛ ألغيت المسودة ${data.invoice_number} تلقائياً`)
+        }
+      }
+
       return data
     },
     onSuccess: () => {
@@ -656,7 +741,7 @@ export const useUpdateInvoice = () => {
       Sentry.addBreadcrumb({ category: "finance", message: "Mutation started", level: "info" });
       if (!user?.profile?.company_id || !user?.id) throw new Error("User data is required")
 
-      const updateData: Record<string, unknown> = {
+      const updateData: InvoiceUpdate = {
         ...invoiceData,
         updated_at: new Date().toISOString()
       }
@@ -673,13 +758,6 @@ export const useUpdateInvoice = () => {
         const currentPaidAmount = currentInvoice?.paid_amount || 0
         updateData.balance_due = invoiceData.total_amount - currentPaidAmount
       }
-      
-      // Remove undefined values
-      Object.keys(updateData).forEach(key => {
-        if (updateData[key] === undefined) {
-          delete updateData[key]
-        }
-      })
       
       const { data, error } = await supabase
         .from("invoices")
@@ -715,11 +793,14 @@ export { usePayments } from './usePayments.unified'
 // Financial Summary Hook
 export const useFinancialSummary = () => {
   const { user } = useAuth()
+  const companyId = user?.profile?.company_id
   
   return useQuery({
-    queryKey: ["financialSummary", user?.profile?.company_id],
+    queryKey: ["financialSummary", companyId],
     queryFn: async () => {
       Sentry.addBreadcrumb({ category: "finance", message: "Fetching data", level: "info" });
+      if (!companyId) throw new Error("Company ID is required")
+
       // Get current month data
       const currentMonth = new Date().toISOString().slice(0, 7) + '-01'
       const nextMonth = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1).toISOString().slice(0, 10)
@@ -729,20 +810,20 @@ export const useFinancialSummary = () => {
         .from("chart_of_accounts")
         .select("current_balance")
         .eq("account_type", "revenue")
-        .eq("company_id", user?.profile?.company_id)
+        .eq("company_id", companyId)
       
       // Get expense accounts balance
       const { data: expenseAccounts } = await supabase
         .from("chart_of_accounts")
         .select("current_balance")
         .eq("account_type", "expenses")
-        .eq("company_id", user?.profile?.company_id)
+        .eq("company_id", companyId)
       
       // Get pending transactions count (المعاملات المعلقة أو قيد المعالجة)
       const { count: pendingTransactions } = await supabase
         .from("transactions")
         .select("*", { count: "exact", head: true })
-        .eq("company_id", user?.profile?.company_id)
+        .eq("company_id", companyId)
         .or("status.eq.pending,status.eq.processing,status.eq.in_progress")
       
       // حساب الإيرادات كرقم موجب (طبيعة الحساب Credit تكون سالبة في current_balance)
@@ -759,7 +840,7 @@ export const useFinancialSummary = () => {
         pendingTransactions: pendingTransactions || 0
       }
     },
-    enabled: !!user?.profile?.company_id
+    enabled: !!companyId
   })
 }
 
@@ -1056,7 +1137,7 @@ export const useUpdateFixedAsset = () => {
       notes?: string
     }) => {
       Sentry.addBreadcrumb({ category: "finance", message: "Mutation started", level: "info" });
-      const updateData: Record<string, unknown> = { ...assetData }
+      const updateData: FixedAssetUpdate = { ...assetData }
 
       // Recalculate book value if purchase cost or salvage value changed
       if (assetData.purchase_cost !== undefined || assetData.salvage_value !== undefined) {
@@ -1070,7 +1151,7 @@ export const useUpdateFixedAsset = () => {
         const newSalvageValue = assetData.salvage_value ?? currentAsset?.salvage_value ?? 0
         const accumulatedDepreciation = currentAsset?.accumulated_depreciation ?? 0
         
-        updateData.book_value = newPurchaseCost - accumulatedDepreciation
+        updateData.book_value = newPurchaseCost - newSalvageValue - accumulatedDepreciation
       }
       
       const { data, error } = await supabase
@@ -1121,20 +1202,24 @@ export const useDeleteFixedAsset = () => {
 // Budgets Hooks
 export const useBudgets = () => {
   const { user } = useAuth()
+  const companyId = user?.profile?.company_id
   
   return useQuery({
-    queryKey: ["budgets", user?.profile?.company_id],
+    queryKey: ["budgets", companyId],
     queryFn: async () => {
       Sentry.addBreadcrumb({ category: "finance", message: "Fetching data", level: "info" });
+      if (!companyId) throw new Error("Company ID is required")
+
       const { data, error } = await supabase
         .from("budgets")
         .select("*")
+        .eq("company_id", companyId)
         .order("budget_year", { ascending: false })
       
       if (error) throw error
       return data as Budget[]
     },
-    enabled: !!user?.profile?.company_id
+    enabled: !!companyId
   })
 }
 

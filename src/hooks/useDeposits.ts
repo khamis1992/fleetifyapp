@@ -122,13 +122,31 @@ export const useCreateDeposit = () => {
 export const useUpdateDeposit = () => {
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const { filter } = useUnifiedCompanyAccess();
+  const companyId = filter?.company_id;
 
   return useMutation({
     mutationFn: async ({ id, updates }: { id: string; updates: Partial<CreateDepositData> }) => {
+      if (!companyId) throw new Error('Company ID is required');
+      const { data: existing, error: existingError } = await supabase
+        .from('customer_deposits')
+        .select('id, journal_entry_id, returned_amount')
+        .eq('id', id)
+        .eq('company_id', companyId)
+        .single();
+      if (existingError || !existing) throw existingError || new Error('Deposit not found');
+
+      const financialFields = ['amount', 'customer_id', 'contract_id', 'deposit_type', 'received_date', 'account_id'];
+      const changesFinancialField = financialFields.some((field) => field in updates);
+      if (changesFinancialField && (existing.journal_entry_id || Number(existing.returned_amount || 0) > 0)) {
+        throw new Error('لا يمكن تغيير بيانات وديعة مرتبطة بقيد أو استرداد. استخدم إجراء تصحيح مالي معتمد.');
+      }
+
       const { data, error } = await supabase
         .from('customer_deposits')
         .update(updates)
         .eq('id', id)
+        .eq('company_id', companyId)
         .select()
         .single();
 
@@ -156,13 +174,31 @@ export const useUpdateDeposit = () => {
 export const useDeleteDeposit = () => {
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const { filter } = useUnifiedCompanyAccess();
+  const companyId = filter?.company_id;
 
   return useMutation({
     mutationFn: async (id: string) => {
+      if (!companyId) throw new Error('Company ID is required');
+      const { data: deposit, error: depositError } = await supabase
+        .from('customer_deposits')
+        .select('id, status, returned_amount, journal_entry_id')
+        .eq('id', id)
+        .eq('company_id', companyId)
+        .single();
+      if (depositError || !deposit) throw depositError || new Error('Deposit not found');
+      if (deposit.status !== 'pending' || deposit.journal_entry_id || Number(deposit.returned_amount || 0) > 0) {
+        throw new Error('لا يمكن حذف وديعة نشطة أو مرحّلة أو مستردة. احتفظ بالسجل واستخدم إجراء الاسترداد أو التصحيح.');
+      }
+
       const { error } = await supabase
         .from('customer_deposits')
         .delete()
-        .eq('id', id);
+        .eq('id', id)
+        .eq('company_id', companyId)
+        .eq('status', 'pending')
+        .select('id')
+        .single();
 
       if (error) throw error;
     },
@@ -187,20 +223,26 @@ export const useDeleteDeposit = () => {
 export const useReturnDeposit = () => {
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const { filter } = useUnifiedCompanyAccess();
+  const companyId = filter?.company_id;
 
   return useMutation({
     mutationFn: async ({ id, returnAmount, notes }: { id: string; returnAmount: number; notes?: string }) => {
-      const { data: deposit } = await supabase
+      if (!companyId) throw new Error('Company ID is required');
+      if (!Number.isFinite(returnAmount) || returnAmount <= 0) throw new Error('مبلغ الاسترداد يجب أن يكون أكبر من صفر');
+      const { data: deposit, error: depositError } = await supabase
         .from('customer_deposits')
         .select('amount, returned_amount, notes')
         .eq('id', id)
+        .eq('company_id', companyId)
         .single();
 
-      if (!deposit) throw new Error('Deposit not found');
+      if (depositError || !deposit) throw depositError || new Error('Deposit not found');
 
       const currentReturned = deposit.returned_amount || 0;
       const newReturnedAmount = currentReturned + returnAmount;
       const totalAmount = deposit.amount;
+      if (newReturnedAmount > totalAmount) throw new Error('مبلغ الاسترداد يتجاوز الرصيد المتبقي للوديعة');
 
       let newStatus = 'active';
       if (newReturnedAmount >= totalAmount) {
@@ -209,7 +251,7 @@ export const useReturnDeposit = () => {
         newStatus = 'partial';
       }
 
-      const { data, error } = await supabase
+      let updateQuery = supabase
         .from('customer_deposits')
         .update({
           returned_amount: newReturnedAmount,
@@ -217,6 +259,11 @@ export const useReturnDeposit = () => {
           notes: notes ? `${deposit.notes || ''}\n${notes}` : deposit.notes
         })
         .eq('id', id)
+        .eq('company_id', companyId);
+      updateQuery = deposit.returned_amount === null
+        ? updateQuery.is('returned_amount', null)
+        : updateQuery.eq('returned_amount', deposit.returned_amount);
+      const { data, error } = await updateQuery
         .select()
         .single();
 

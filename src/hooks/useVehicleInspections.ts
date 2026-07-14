@@ -1,68 +1,10 @@
-/**
- * useVehicleInspections Hook
- *
- * Purpose: Query vehicle inspections for a contract or vehicle
- * Features:
- * - Fetch all inspections for a contract
- * - Fetch all inspections for a vehicle
- * - Filter by inspection type (check_in, check_out)
- * - Include related customer and vehicle details
- *
- * @module hooks/useVehicleInspections
- */
-
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import type { Database } from '@/integrations/supabase/types';
 import { useUnifiedCompanyAccess } from './useUnifiedCompanyAccess';
 
-/**
- * Vehicle Inspection Interface
- */
-export interface VehicleInspection {
-  id: string;
-  company_id: string;
-  contract_id: string;
-  vehicle_id: string;
-  inspection_type: 'check_in' | 'check_out';
-  inspected_by: string | null;
-  inspection_date: string;
-  fuel_level: number | null;
-  odometer_reading: number | null;
-  cleanliness_rating: number | null;
-  exterior_condition: Array<DamageRecord> | string;
-  interior_condition: Array<DamageRecord> | string;
-  photo_urls: string[];
-  notes: string | null;
-  customer_signature: string | null;
-  created_at: string;
-  
-  // Visual inspection fields
-  vehicle_type?: string | null;
-  visual_inspection_zones?: Array<any>;
-  accessories?: Array<string>;
-  documents?: Array<string>;
-  status?: string | null;
+type ConditionReportRow = Database['public']['Tables']['vehicle_condition_reports']['Row'];
 
-  // Related data
-  contract?: {
-    id: string;
-    contract_number: string;
-  };
-  vehicle?: {
-    id: string;
-    plate_number: string;
-    make: string;
-    model: string;
-  };
-  inspector?: {
-    id: string;
-    full_name: string;
-  };
-}
-
-/**
- * Damage Record Interface
- */
 export interface DamageRecord {
   location: string;
   severity: 'minor' | 'moderate' | 'severe';
@@ -70,9 +12,33 @@ export interface DamageRecord {
   photo_url?: string;
 }
 
-/**
- * Hook Options
- */
+export interface VehicleInspection {
+  id: string;
+  company_id: string;
+  contract_id: string | null;
+  vehicle_id: string;
+  inspection_type: 'check_in' | 'check_out';
+  inspected_by: string | null;
+  inspection_date: string;
+  fuel_level: number | null;
+  odometer_reading: number | null;
+  cleanliness_rating: number | null;
+  exterior_condition: DamageRecord[];
+  interior_condition: DamageRecord[];
+  photo_urls: string[];
+  notes: string | null;
+  customer_signature: string | null;
+  created_at: string;
+  vehicle_type?: string | null;
+  visual_inspection_zones?: Record<string, unknown>[];
+  accessories?: string[];
+  documents?: string[];
+  status?: string | null;
+  contract?: { id: string; contract_number: string };
+  vehicle?: { id: string; plate_number: string; make: string; model: string };
+  inspector?: { id: string; full_name: string };
+}
+
 interface UseVehicleInspectionsOptions {
   contractId?: string;
   vehicleId?: string;
@@ -80,219 +46,181 @@ interface UseVehicleInspectionsOptions {
   enabled?: boolean;
 }
 
-/**
- * useVehicleInspections Hook
- *
- * @param options - Query options for filtering inspections
- * @returns React Query result with vehicle inspections data
- *
- * @example
- * // Get all inspections for a contract
- * const { data: inspections } = useVehicleInspections({ contractId: 'xxx' });
- *
- * @example
- * // Get only check-in inspections for a vehicle
- * const { data: checkIns } = useVehicleInspections({
- *   vehicleId: 'xxx',
- *   inspectionType: 'check_in'
- * });
- */
-export function useVehicleInspections(options: UseVehicleInspectionsOptions = {}) {
-  const { contractId, vehicleId, inspectionType, enabled = true } = options;
-  const { currentCompanyId } = useUnifiedCompanyAccess();
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
 
-  return useQuery({
-    queryKey: ['vehicle-inspections', currentCompanyId, contractId, vehicleId, inspectionType],
-    queryFn: async () => {
-      if (!currentCompanyId) {
-        throw new Error('No company context available');
-      }
+function stringArray(value: unknown): string[] {
+  return Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string') : [];
+}
 
-      // Build the query
-      let query = supabase
-        .from('vehicle_inspections')
-        .select(`
-          id,
-          company_id,
-          contract_id,
-          vehicle_id,
-          inspection_type,
-          inspected_by,
-          inspection_date,
-          fuel_level,
-          odometer_reading,
-          cleanliness_rating,
-          exterior_condition,
-          interior_condition,
-          photo_urls,
-          notes,
-          customer_signature,
-          created_at,
-          vehicle_type,
-          visual_inspection_zones,
-          accessories,
-          documents,
-          status,
-          contracts:contract_id (
-            id,
-            contract_number
-          ),
-          vehicles:vehicle_id (
-            id,
-            plate_number,
-            make,
-            model
-          ),
-          profiles:inspected_by (
-            id,
-            full_name
-          )
-        `)
-        .eq('company_id', currentCompanyId)
-        .order('inspection_date', { ascending: false });
+function recordArray(value: unknown): Record<string, unknown>[] {
+  return Array.isArray(value) ? value.filter(isRecord) : [];
+}
 
-      // Apply filters
-      if (contractId) {
-        query = query.eq('contract_id', contractId);
-      }
-
-      if (vehicleId) {
-        query = query.eq('vehicle_id', vehicleId);
-      }
-
-      if (inspectionType) {
-        query = query.eq('inspection_type', inspectionType);
-      }
-
-      const { data, error } = await query;
-
-      if (error) {
-        console.error('Error fetching vehicle inspections:', error);
-        throw error;
-      }
-
-      // Transform the data to match our interface
-      return (data || []).map((inspection: any) => ({
-        id: inspection.id,
-        company_id: inspection.company_id,
-        contract_id: inspection.contract_id,
-        vehicle_id: inspection.vehicle_id,
-        inspection_type: inspection.inspection_type,
-        inspected_by: inspection.inspected_by,
-        inspection_date: inspection.inspection_date,
-        fuel_level: inspection.fuel_level,
-        odometer_reading: inspection.odometer_reading,
-        cleanliness_rating: inspection.cleanliness_rating,
-        exterior_condition: inspection.exterior_condition || [],
-        interior_condition: inspection.interior_condition || [],
-        photo_urls: inspection.photo_urls || [],
-        notes: inspection.notes,
-        customer_signature: inspection.customer_signature,
-        created_at: inspection.created_at,
-        vehicle_type: inspection.vehicle_type,
-        visual_inspection_zones: inspection.visual_inspection_zones || [],
-        accessories: inspection.accessories || [],
-        documents: inspection.documents || [],
-        status: inspection.status,
-        contract: inspection.contracts ? {
-          id: inspection.contracts.id,
-          contract_number: inspection.contracts.contract_number,
-        } : undefined,
-        vehicle: inspection.vehicles ? {
-          id: inspection.vehicles.id,
-          plate_number: inspection.vehicles.plate_number,
-          make: inspection.vehicles.make,
-          model: inspection.vehicles.model,
-        } : undefined,
-        inspector: inspection.profiles ? {
-          id: inspection.profiles.id,
-          full_name: inspection.profiles.full_name,
-        } : undefined,
-      })) as VehicleInspection[];
-    },
-    enabled: enabled && !!currentCompanyId,
-    staleTime: 30000, // Cache for 30 seconds
-    gcTime: 300000, // Keep in cache for 5 minutes
+function parseDamageRecords(value: unknown): DamageRecord[] {
+  return recordArray(value).flatMap(item => {
+    const severity = item.severity;
+    if (severity !== 'minor' && severity !== 'moderate' && severity !== 'severe') return [];
+    return [{
+      location: typeof item.location === 'string' ? item.location : 'غير محدد',
+      severity,
+      description: typeof item.description === 'string' ? item.description : '',
+      photo_url: typeof item.photo_url === 'string' ? item.photo_url : undefined,
+    }];
   });
 }
 
-/**
- * useInspectionComparison Hook
- *
- * Compare check-in and check-out inspections for a contract
- *
- * @param contractId - The contract ID to compare inspections for
- * @returns Comparison data including new damages and fuel/odometer differences
- *
- * @example
- * const { data: comparison } = useInspectionComparison('contract-id');
- */
-export function useInspectionComparison(contractId: string) {
-  const { currentCompanyId } = useUnifiedCompanyAccess();
+function numberValue(value: unknown): number | null {
+  return typeof value === 'number' && Number.isFinite(value) ? value : null;
+}
 
+async function fetchInspections(
+  companyId: string,
+  filters: Omit<UseVehicleInspectionsOptions, 'enabled'>
+): Promise<VehicleInspection[]> {
+  let query = supabase
+    .from('vehicle_condition_reports')
+    .select('*')
+    .eq('company_id', companyId)
+    .in('inspection_type', ['check_in', 'check_out'])
+    .order('inspection_date', { ascending: false });
+
+  if (filters.contractId) query = query.eq('contract_id', filters.contractId);
+  if (filters.vehicleId) query = query.eq('vehicle_id', filters.vehicleId);
+  if (filters.inspectionType) query = query.eq('inspection_type', filters.inspectionType);
+
+  const { data, error } = await query;
+  if (error) throw error;
+  const reports = data || [];
+  if (reports.length === 0) return [];
+
+  const vehicleIds = [...new Set(reports.map(report => report.vehicle_id))];
+  const contractIds = [...new Set(reports.map(report => report.contract_id).filter((id): id is string => Boolean(id)))];
+  const inspectorIds = [...new Set(reports.map(report => report.inspector_id))];
+
+  const [vehiclesResult, contractsResult, profilesResult] = await Promise.all([
+    supabase
+      .from('vehicles')
+      .select('id, plate_number, make, model')
+      .eq('company_id', companyId)
+      .in('id', vehicleIds),
+    contractIds.length > 0
+      ? supabase
+          .from('contracts')
+          .select('id, contract_number')
+          .eq('company_id', companyId)
+          .in('id', contractIds)
+      : Promise.resolve({ data: [], error: null }),
+    supabase
+      .from('profiles')
+      .select('id, user_id, first_name, last_name')
+      .eq('company_id', companyId)
+      .in('user_id', inspectorIds),
+  ]);
+
+  if (vehiclesResult.error) throw vehiclesResult.error;
+  if (contractsResult.error) throw contractsResult.error;
+  if (profilesResult.error) throw profilesResult.error;
+
+  const vehicleById = new Map((vehiclesResult.data || []).map(vehicle => [vehicle.id, vehicle]));
+  const contractById = new Map((contractsResult.data || []).map(contract => [contract.id, contract]));
+  const profileByUserId = new Map((profilesResult.data || []).map(profile => [profile.user_id, profile]));
+
+  return reports.map(report => transformReport(
+    report,
+    vehicleById.get(report.vehicle_id),
+    report.contract_id ? contractById.get(report.contract_id) : undefined,
+    profileByUserId.get(report.inspector_id)
+  ));
+}
+
+function transformReport(
+  report: ConditionReportRow,
+  vehicle?: { id: string; plate_number: string; make: string; model: string },
+  contract?: { id: string; contract_number: string },
+  inspector?: { id: string; user_id: string; first_name: string | null; last_name: string | null }
+): VehicleInspection {
+  const conditionItems = isRecord(report.condition_items) ? report.condition_items : {};
+  const inspectionType = report.inspection_type === 'check_out' ? 'check_out' : 'check_in';
+  const inspectorName = inspector
+    ? [inspector.first_name, inspector.last_name].filter(Boolean).join(' ') || 'مستخدم'
+    : undefined;
+
+  return {
+    id: report.id,
+    company_id: report.company_id,
+    contract_id: report.contract_id,
+    vehicle_id: report.vehicle_id,
+    inspection_type: inspectionType,
+    inspected_by: report.inspector_id,
+    inspection_date: report.inspection_date,
+    fuel_level: report.fuel_level,
+    odometer_reading: report.mileage_reading,
+    cleanliness_rating: numberValue(conditionItems.cleanliness_rating),
+    exterior_condition: parseDamageRecords(report.damage_points),
+    interior_condition: parseDamageRecords(conditionItems.interior_condition),
+    photo_urls: stringArray(report.photos),
+    notes: report.notes,
+    customer_signature: report.customer_signature,
+    created_at: report.created_at,
+    vehicle_type: typeof conditionItems.vehicle_type === 'string' ? conditionItems.vehicle_type : null,
+    visual_inspection_zones: recordArray(conditionItems.visual_inspection_zones),
+    accessories: stringArray(conditionItems.accessories),
+    documents: stringArray(conditionItems.documents),
+    status: report.status,
+    contract,
+    vehicle,
+    inspector: inspector && inspectorName ? { id: inspector.id, full_name: inspectorName } : undefined,
+  };
+}
+
+export function useVehicleInspections(options: UseVehicleInspectionsOptions = {}) {
+  const { contractId, vehicleId, inspectionType, enabled = true } = options;
+  const { companyId } = useUnifiedCompanyAccess();
   return useQuery({
-    queryKey: ['inspection-comparison', currentCompanyId, contractId],
+    queryKey: ['vehicle-inspections', companyId, contractId, vehicleId, inspectionType],
+    queryFn: () => {
+      if (!companyId) throw new Error('Company context is unavailable');
+      return fetchInspections(companyId, { contractId, vehicleId, inspectionType });
+    },
+    enabled: enabled && Boolean(companyId),
+    staleTime: 30_000,
+    gcTime: 300_000,
+  });
+}
+
+export function useInspectionComparison(contractId: string) {
+  const { companyId } = useUnifiedCompanyAccess();
+  return useQuery({
+    queryKey: ['inspection-comparison', companyId, contractId],
     queryFn: async () => {
-      if (!currentCompanyId || !contractId) {
-        throw new Error('Missing required parameters');
-      }
+      if (!companyId || !contractId) throw new Error('Missing inspection comparison context');
+      const inspections = await fetchInspections(companyId, { contractId });
+      const checkIn = inspections.find(inspection => inspection.inspection_type === 'check_in');
+      const checkOut = inspections.find(inspection => inspection.inspection_type === 'check_out');
+      if (!checkIn || !checkOut) return null;
 
-      // Fetch both inspections
-      const { data: inspections, error } = await supabase
-        .from('vehicle_inspections')
-        .select('*')
-        .eq('company_id', currentCompanyId)
-        .eq('contract_id', contractId)
-        .order('inspection_date', { ascending: true });
-
-      if (error) {
-        console.error('Error fetching inspections for comparison:', error);
-        throw error;
-      }
-
-      const checkIn = inspections?.find((i) => i.inspection_type === 'check_in');
-      const checkOut = inspections?.find((i) => i.inspection_type === 'check_out');
-
-      if (!checkIn || !checkOut) {
-        return null;
-      }
-
-      // Calculate differences
-      const fuelDifference = (checkOut.fuel_level || 0) - (checkIn.fuel_level || 0);
-      const odometerDifference = (checkOut.odometer_reading || 0) - (checkIn.odometer_reading || 0);
-      const cleanlinessDifference = (checkOut.cleanliness_rating || 0) - (checkIn.cleanliness_rating || 0);
-
-      // Identify new damages (simple comparison - in production, you'd want more sophisticated logic)
-      const checkInDamages = [
-        ...(checkIn.exterior_condition || []),
-        ...(checkIn.interior_condition || []),
-      ];
-      const checkOutDamages = [
-        ...(checkOut.exterior_condition || []),
-        ...(checkOut.interior_condition || []),
-      ];
-
-      const newDamages = checkOutDamages.filter(
-        (outDamage: any) =>
-          !checkInDamages.some(
-            (inDamage: any) =>
-              inDamage.location === outDamage.location &&
-              inDamage.description === outDamage.description
-          )
+      const checkInDamages = [...checkIn.exterior_condition, ...checkIn.interior_condition];
+      const checkOutDamages = [...checkOut.exterior_condition, ...checkOut.interior_condition];
+      const newDamages = checkOutDamages.filter(outDamage =>
+        !checkInDamages.some(inDamage =>
+          inDamage.location === outDamage.location && inDamage.description === outDamage.description
+        )
       );
 
       return {
         checkIn,
         checkOut,
         differences: {
-          fuel: fuelDifference,
-          odometer: odometerDifference,
-          cleanliness: cleanlinessDifference,
+          fuel: (checkOut.fuel_level || 0) - (checkIn.fuel_level || 0),
+          odometer: (checkOut.odometer_reading || 0) - (checkIn.odometer_reading || 0),
+          cleanliness: (checkOut.cleanliness_rating || 0) - (checkIn.cleanliness_rating || 0),
         },
         newDamages,
         hasNewDamages: newDamages.length > 0,
       };
     },
-    enabled: !!currentCompanyId && !!contractId,
+    enabled: Boolean(companyId && contractId),
   });
 }

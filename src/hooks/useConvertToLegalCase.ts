@@ -79,16 +79,16 @@ export const useConvertToLegalCase = () => {
 
 تفاصيل المديونية:
 - عدد الأشهر المتأخرة: ${delinquentCustomer.months_unpaid} شهر
-- إجمالي الإيجارات المستحقة: ${delinquentCustomer.overdue_amount.toLocaleString('ar-KW')} د.ك
-- غرامات التأخير: ${delinquentCustomer.late_penalty.toLocaleString('ar-KW')} د.ك
-- المخالفات المرورية: ${delinquentCustomer.violations_amount.toLocaleString('ar-KW')} د.ك (${delinquentCustomer.violations_count} مخالفة)
-- الإجمالي الكلي: ${delinquentCustomer.total_debt.toLocaleString('ar-KW')} د.ك
+- إجمالي الإيجارات المستحقة: ${delinquentCustomer.overdue_amount.toLocaleString('ar-QA')} ر.ق
+- غرامات التأخير: ${delinquentCustomer.late_penalty.toLocaleString('ar-QA')} ر.ق
+- المخالفات المرورية: ${delinquentCustomer.violations_amount.toLocaleString('ar-QA')} ر.ق (${delinquentCustomer.violations_count} مخالفة)
+- الإجمالي الكلي: ${delinquentCustomer.total_debt.toLocaleString('ar-QA')} ر.ق
 
 معلومات التأخير:
 - عدد الأيام المتأخرة: ${delinquentCustomer.days_overdue} يوم
 - درجة المخاطر: ${delinquentCustomer.risk_score} (${delinquentCustomer.risk_level})
-- آخر دفعة: ${delinquentCustomer.last_payment_date ? new Date(delinquentCustomer.last_payment_date).toLocaleDateString('ar-KW') : 'لا يوجد'}
-- مبلغ آخر دفعة: ${delinquentCustomer.last_payment_amount.toLocaleString('ar-KW')} د.ك
+- آخر دفعة: ${delinquentCustomer.last_payment_date ? new Date(delinquentCustomer.last_payment_date).toLocaleDateString('ar-QA') : 'لا يوجد'}
+- مبلغ آخر دفعة: ${delinquentCustomer.last_payment_amount.toLocaleString('ar-QA')} ر.ق
 
 سجل قانوني:
 - قضايا سابقة: ${delinquentCustomer.has_previous_legal_cases ? `نعم (${delinquentCustomer.previous_legal_cases_count} قضية)` : 'لا'}
@@ -646,6 +646,7 @@ ${additionalNotes ? `\nملاحظات إضافية:\n${additionalNotes}` : ''}
 export const useBulkConvertToLegalCase = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const convertToLegalCase = useConvertToLegalCase();
 
   return useMutation({
     mutationFn: async (delinquentCustomers: DelinquentCustomer[]) => {
@@ -656,8 +657,7 @@ export const useBulkConvertToLegalCase = () => {
 
       for (const customer of delinquentCustomers) {
         try {
-          const convertHook = useConvertToLegalCase();
-          const result = await convertHook.mutateAsync({
+          const result = await convertToLegalCase.mutateAsync({
             delinquentCustomer: customer,
           });
           results.push(result);

@@ -89,7 +89,7 @@ export default function AccountsSettings() {
         </Card>
 
         <Card className="hover:shadow-md transition-shadow cursor-pointer" 
-              onClick={() => navigate("/settings/customer-account-settings")}>
+              onClick={() => navigate("/finance/accounting-wizard")}>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Settings className="h-5 w-5 text-primary" />

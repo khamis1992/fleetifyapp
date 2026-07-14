@@ -97,6 +97,8 @@ export const useRecentActivities = () => {
         .limit(3);
 
       recentMaintenance?.forEach(maintenance => {
+        if (!maintenance.created_at) return;
+
         const vehicle = maintenance.vehicles as any;
         activities.push({
           id: `maintenance-${maintenance.id}`,

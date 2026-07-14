@@ -51,7 +51,9 @@ export function DepositDetailsDialog({
       pending: { label: 'معلق', variant: 'destructive' as const }
     };
     
-    const config = statusConfig[status] || statusConfig.active;
+    const config = status in statusConfig
+      ? statusConfig[status as keyof typeof statusConfig]
+      : statusConfig.active;
     return <Badge variant={config.variant}>{config.label}</Badge>;
   };
 
@@ -145,14 +147,14 @@ export function DepositDetailsDialog({
                   <div>
                     <label className="text-sm font-medium text-muted-foreground">تاريخ الاستلام</label>
                     <p className="text-lg">
-                      {new Date(deposit.received_date).toLocaleDateString('ar-KW')}
+                      {new Date(deposit.received_date).toLocaleDateString('ar-QA')}
                     </p>
                   </div>
                   <div>
                     <label className="text-sm font-medium text-muted-foreground">تاريخ الاستحقاق</label>
                     <p className="text-lg">
                       {deposit.due_date 
-                        ? new Date(deposit.due_date).toLocaleDateString('ar-KW')
+                        ? new Date(deposit.due_date).toLocaleDateString('ar-QA')
                         : 'غير محدد'
                       }
                     </p>
@@ -160,13 +162,13 @@ export function DepositDetailsDialog({
                   <div>
                     <label className="text-sm font-medium text-muted-foreground">تاريخ الإنشاء</label>
                     <p className="text-lg">
-                      {new Date(deposit.created_at).toLocaleDateString('ar-KW')}
+                      {new Date(deposit.created_at).toLocaleDateString('ar-QA')}
                     </p>
                   </div>
                   <div>
                     <label className="text-sm font-medium text-muted-foreground">آخر تحديث</label>
                     <p className="text-lg">
-                      {new Date(deposit.updated_at).toLocaleDateString('ar-KW')}
+                      {new Date(deposit.updated_at).toLocaleDateString('ar-QA')}
                     </p>
                   </div>
                 </div>

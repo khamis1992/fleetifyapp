@@ -10,7 +10,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Plus, Trash2, TestTube } from "lucide-react";
 import { useCreateInvoice, useFixedAssets } from "@/hooks/useFinance";
 import { useCostCenters } from "@/hooks/useCostCenters";
-import { ChartOfAccount } from "@/hooks/useChartOfAccounts";
 import { useEntryAllowedAccounts } from "@/hooks/useEntryAllowedAccounts";
 import { useAuth } from "@/contexts/AuthContext";
 import { useActiveContracts } from "@/hooks/useContracts";
@@ -41,8 +40,8 @@ interface InvoiceFormProps {
 export function InvoiceForm({ open, onOpenChange, customerId, vendorId, type, contractId }: InvoiceFormProps) {
   const { user } = useAuth();
   const { data: accounts, isLoading: accountsLoading } = useEntryAllowedAccounts();
-  const { data: costCenters, isLoading: costCentersLoading } = useCostCenters();
-  const { data: fixedAssets, isLoading: assetsLoading } = useFixedAssets();
+  const { data: costCenters } = useCostCenters();
+  const { data: fixedAssets } = useFixedAssets();
   const createInvoice = useCreateInvoice();
   const { formatCurrency } = useCurrencyFormatter();
   
@@ -144,6 +143,15 @@ export function InvoiceForm({ open, onOpenChange, customerId, vendorId, type, co
         total_amount: total,
         status: 'draft',
         payment_status: 'unpaid',
+        items: items.map(item => ({
+          description: item.description,
+          description_ar: item.description_ar,
+          quantity: item.quantity,
+          unit_price: item.unit_price,
+          tax_rate: item.tax_rate,
+          account_id: item.account_id,
+          cost_center_id: item.cost_center_id,
+        })),
       });
 
       toast.success(`تم إنشاء ${type === 'sales' ? 'فاتورة المبيعات' : 'فاتورة المشتريات'} بنجاح`);
@@ -278,16 +286,18 @@ export function InvoiceForm({ open, onOpenChange, customerId, vendorId, type, co
                 }
               </DialogDescription>
             </div>
-            <Button 
-              type="button" 
-              variant="outline" 
-              size="sm"
-              onClick={fillSampleData}
-              className="gap-2"
-            >
-              <TestTube className="h-4 w-4" />
-              بيانات تجريبية
-            </Button>
+            {import.meta.env.DEV && (
+              <Button 
+                type="button" 
+                variant="outline" 
+                size="sm"
+                onClick={fillSampleData}
+                className="gap-2"
+              >
+                <TestTube className="h-4 w-4" />
+                بيانات تجريبية
+              </Button>
+            )}
           </div>
         </DialogHeader>
 

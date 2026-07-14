@@ -1,49 +1,8 @@
-/**
- * Payment Types
- * أنواع البيانات للمدفوعات
- */
+import type { Database } from '@/integrations/supabase/types';
 
-export interface Payment {
-  id: string;
-  company_id: string;
-  customer_id: string | null;
-  contract_id: string | null;
-  invoice_id: string | null;
-  payment_number: string;
-  payment_date: string;
-  amount: number;
-  payment_method: string;
-  payment_type: string;
-  payment_status: string;
-  transaction_type: 'income' | 'expense';
-  reference_number: string | null;
-  agreement_number: string | null;
-  check_number: string | null;
-  bank_id: string | null;
-  bank_account: string | null;
-  account_id: string | null;
-  cost_center_id: string | null;
-  journal_entry_id: string | null;
-  currency: string | null;
-  notes: string | null;
-  description_type: string | null;
-  allocation_status: string | null;
-  reconciliation_status: string | null;
-  processing_status: string | null;
-  processing_notes: string | null;
-  linking_confidence: number | null;
-  due_date: string | null;
-  original_due_date: string | null;
-  late_fine_amount: number | null;
-  late_fine_days_overdue: number | null;
-  late_fine_type: string | null;
-  late_fine_status: string | null;
-  late_fine_waiver_reason: string | null;
-  vendor_id: string | null;
-  created_by: string | null;
-  created_at: string;
-  updated_at: string;
-}
+export type Payment = Database['public']['Tables']['payments']['Row'];
+export type PaymentInsert = Database['public']['Tables']['payments']['Insert'];
+export type PaymentUpdate = Database['public']['Tables']['payments']['Update'];
 
 export interface PaymentCreationData {
   customer_id?: string;
@@ -53,7 +12,7 @@ export interface PaymentCreationData {
   amount: number;
   payment_method: string;
   payment_type?: string;
-  transaction_type?: 'income' | 'expense';
+  transaction_type?: 'income' | 'expense' | 'payment' | 'receipt';
   reference_number?: string;
   agreement_number?: string;
   check_number?: string;
@@ -62,7 +21,7 @@ export interface PaymentCreationData {
   created_by?: string;
 }
 
-export interface PaymentWithDetails extends Payment {
+export type PaymentWithDetails = Payment & {
   customer?: {
     id: string;
     first_name_ar?: string;
@@ -76,7 +35,7 @@ export interface PaymentWithDetails extends Payment {
     contract_type: string;
     status: string;
   } | null;
-}
+};
 
 export interface PaymentMatchSuggestion {
   invoice_id: string;

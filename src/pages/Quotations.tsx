@@ -677,7 +677,7 @@ ${approvalUrl ? `\n*للموافقة على العرض أو رفضه، يرجى 
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="rate_per_unit" className="text-slate-700 dark:text-slate-300">السعر لكل وحدة (د.ك) *</Label>
+                  <Label htmlFor="rate_per_unit" className="text-slate-700 dark:text-slate-300">السعر لكل وحدة (ر.ق) *</Label>
                   <Input
                     id="rate_per_unit"
                     type="number"
@@ -690,7 +690,7 @@ ${approvalUrl ? `\n*للموافقة على العرض أو رفضه، يرجى 
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="total_amount" className="text-slate-700 dark:text-slate-300">المبلغ الإجمالي (د.ك) *</Label>
+                  <Label htmlFor="total_amount" className="text-slate-700 dark:text-slate-300">المبلغ الإجمالي (ر.ق) *</Label>
                   <Input
                     id="total_amount"
                     type="number"
@@ -701,7 +701,7 @@ ${approvalUrl ? `\n*للموافقة على العرض أو رفضه، يرجى 
                     {...register('total_amount', { required: true, valueAsNumber: true })}
                   />
                   <p className="text-xs text-slate-500 dark:text-slate-400">
-                    محسوب تلقائياً: {calculatedAmount.toFixed(3)} د.ك
+                    محسوب تلقائياً: {calculatedAmount.toFixed(2)} ر.ق
                   </p>
                 </div>
               </div>

@@ -30,7 +30,7 @@ export function FinancePermissionsMatrixPanel() {
   const criticalCount = FINANCE_PERMISSION_MATRIX.filter((permission) => permission.risk === "critical").length;
 
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm" dir="rtl">
+    <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm" dir="rtl">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div className="flex items-start gap-3">
           <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#E8FBF6] text-[#22C7A1]">

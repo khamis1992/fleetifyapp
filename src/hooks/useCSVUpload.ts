@@ -1,9 +1,9 @@
 import { useState } from "react"
+import Papa from "papaparse"
 import { supabase } from "@/integrations/supabase/client"
+import type { Database } from "@/integrations/supabase/types"
 import { useAuth } from "@/contexts/AuthContext"
-import { CustomerFormData } from "@/types/customer"
 import { toast } from "sonner"
-import { useQueryClient } from "@tanstack/react-query"
 import { useCurrentCompanyId } from "@/hooks/useUnifiedCompanyAccess"
 
 interface CSVUploadResults {
@@ -13,9 +13,51 @@ interface CSVUploadResults {
   errors: Array<{ row: number; message: string }>
 }
 
+const customerCSVFields = [
+  'customer_type', 'first_name', 'last_name', 'first_name_ar', 'last_name_ar',
+  'company_name', 'company_name_ar', 'email', 'phone', 'alternative_phone',
+  'national_id', 'passport_number', 'license_number', 'license_expiry',
+  'address', 'address_ar', 'city', 'country', 'date_of_birth', 'credit_limit',
+  'emergency_contact_name', 'emergency_contact_phone', 'notes'
+] as const
+
+type CustomerCSVField = typeof customerCSVFields[number]
+type CustomerCSVRecord = Partial<Record<CustomerCSVField, string>> & { rowNumber: number }
+type CustomerInsert = Database['public']['Tables']['customers']['Insert']
+
+const getErrorMessage = (error: unknown): string =>
+  error instanceof Error ? error.message : String(error || 'Unexpected error')
+
+const normalizeCustomerRecord = (value: unknown, rowNumber: number): CustomerCSVRecord => {
+  const source = typeof value === 'object' && value !== null
+    ? value as Record<string, unknown>
+    : {}
+  const normalized = Object.fromEntries(
+    customerCSVFields.map((field) => [field, String(source[field] ?? '').trim()])
+  ) as Partial<Record<CustomerCSVField, string>>
+
+  const parsedRowNumber = Number(source.rowNumber)
+  return {
+    ...normalized,
+    rowNumber: Number.isFinite(parsedRowNumber) && parsedRowNumber > 0 ? parsedRowNumber : rowNumber
+  }
+}
+
+export const parseCustomerCSV = (csvText: string): CustomerCSVRecord[] => {
+  const parsed = Papa.parse<Record<string, string>>(csvText, {
+    header: true,
+    skipEmptyLines: 'greedy',
+    transformHeader: (header) => header.replace(/^\uFEFF/, '').trim()
+  })
+
+  const fatalError = parsed.errors.find((error) => error.type === 'Quotes' || error.type === 'Delimiter')
+  if (fatalError) throw new Error(`Invalid CSV: ${fatalError.message}`)
+
+  return parsed.data.map((row, index) => normalizeCustomerRecord(row, index + 2))
+}
+
 export function useCSVUpload() {
   const { user } = useAuth()
-  const queryClient = useQueryClient()
   const companyId = useCurrentCompanyId()
   const [isUploading, setIsUploading] = useState(false)
   const [progress, setProgress] = useState(0)
@@ -119,28 +161,7 @@ export function useCSVUpload() {
     document.body.removeChild(link)
   }
 
-  const parseCSV = (csvText: string): unknown[] => {
-    const lines = csvText.split('\n').map(line => line.trim()).filter(line => line)
-    if (lines.length < 2) return []
-
-    const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, ''))
-    const data = []
-
-    for (let i = 1; i < lines.length; i++) {
-      const values = lines[i].split(',').map(v => v.trim().replace(/^"|"$/g, ''))
-      const row: any = {}
-      
-      headers.forEach((header, index) => {
-        row[header] = values[index] || ''
-      })
-      
-      data.push({ ...row, rowNumber: i + 1 })
-    }
-
-    return data
-  }
-
-  const validateCustomerData = (data: unknown, rowNumber: number): { isValid: boolean; errors: string[] } => {
+  const validateCustomerData = (data: CustomerCSVRecord, rowNumber: number): { isValid: boolean; errors: string[] } => {
     const errors: string[] = []
 
     console.log(`🔍 [VALIDATE] Row ${rowNumber} validation data:`, data);
@@ -196,6 +217,38 @@ export function useCSVUpload() {
     return { isValid: errors.length === 0, errors }
   }
 
+  const createCustomerPayload = (
+    customerData: CustomerCSVRecord,
+    targetCompanyId: string
+  ): CustomerInsert => ({
+    customer_type: customerData.customer_type === 'corporate' ? 'corporate' : 'individual',
+    first_name: customerData.first_name || undefined,
+    last_name: customerData.last_name || undefined,
+    first_name_ar: customerData.first_name_ar || undefined,
+    last_name_ar: customerData.last_name_ar || undefined,
+    company_name: customerData.company_name || undefined,
+    company_name_ar: customerData.company_name_ar || undefined,
+    email: customerData.email || undefined,
+    phone: customerData.phone || '',
+    alternative_phone: customerData.alternative_phone || undefined,
+    national_id: customerData.national_id || undefined,
+    passport_number: customerData.passport_number || undefined,
+    license_number: customerData.license_number || undefined,
+    license_expiry: customerData.license_expiry || undefined,
+    address: customerData.address || undefined,
+    address_ar: customerData.address_ar || undefined,
+    city: customerData.city || undefined,
+    country: customerData.country || undefined,
+    date_of_birth: customerData.date_of_birth || undefined,
+    credit_limit: customerData.credit_limit ? Number(customerData.credit_limit) : undefined,
+    emergency_contact_name: customerData.emergency_contact_name || undefined,
+    emergency_contact_phone: customerData.emergency_contact_phone || undefined,
+    notes: customerData.notes || undefined,
+    company_id: targetCompanyId,
+    is_active: true,
+    created_by: user?.id
+  })
+
   const uploadCustomers = async (file: File) => {
     console.log('📝 [CSV] Starting CSV upload for user:', user?.id);
     console.log('📝 [CSV] User company info:', {
@@ -204,7 +257,7 @@ export function useCSVUpload() {
       has_company: !!user?.company?.id
     });
 
-    const targetCompanyId = companyId || user?.company?.id;
+    const targetCompanyId = companyId || user?.company?.id || user?.profile?.company_id;
 
     if (!targetCompanyId) {
       console.error('📝 [CSV] Company ID not available. User data:', {
@@ -222,7 +275,7 @@ export function useCSVUpload() {
 
     try {
       const text = await file.text()
-      const data = parseCSV(text)
+      const data = parseCustomerCSV(text)
 
       if (data.length === 0) {
         throw new Error('الملف فارغ أو غير صحيح')
@@ -236,7 +289,7 @@ export function useCSVUpload() {
       }
 
       // First pass: validate all records and prepare valid ones
-      const validRecords: Array<{ customerData: any; payload: any }> = []
+      const validRecords: Array<{ customerData: CustomerCSVRecord; payload: CustomerInsert }> = []
 
       for (let i = 0; i < data.length; i++) {
         const customerData = data[i]
@@ -251,34 +304,7 @@ export function useCSVUpload() {
           continue
         }
 
-        const customerPayload = {
-          customer_type: customerData.customer_type,
-          first_name: customerData.first_name || undefined,
-          last_name: customerData.last_name || undefined,
-          first_name_ar: customerData.first_name_ar || undefined,
-          last_name_ar: customerData.last_name_ar || undefined,
-          company_name: customerData.company_name || undefined,
-          company_name_ar: customerData.company_name_ar || undefined,
-          email: customerData.email || undefined,
-          phone: customerData.phone,
-          alternative_phone: customerData.alternative_phone || undefined,
-          national_id: customerData.national_id || undefined,
-          passport_number: customerData.passport_number || undefined,
-          license_number: customerData.license_number || undefined,
-          license_expiry: customerData.license_expiry || undefined,
-          address: customerData.address || undefined,
-          address_ar: customerData.address_ar || undefined,
-          city: customerData.city || undefined,
-          country: customerData.country || undefined,
-          date_of_birth: customerData.date_of_birth || undefined,
-          credit_limit: customerData.credit_limit ? Number(customerData.credit_limit) : undefined,
-          emergency_contact_name: customerData.emergency_contact_name || undefined,
-          emergency_contact_phone: customerData.emergency_contact_phone || undefined,
-          notes: customerData.notes || undefined,
-          company_id: targetCompanyId,
-          is_active: true,
-          created_by: user?.id
-        }
+        const customerPayload = createCustomerPayload(customerData, targetCompanyId)
 
         validRecords.push({ customerData, payload: customerPayload })
       }
@@ -329,13 +355,13 @@ export function useCSVUpload() {
                 results.failed++
                 results.errors.push({
                   row: record.customerData.rowNumber,
-                  message: `خطأ غير متوقع: ${err.message}`
+                  message: `خطأ غير متوقع: ${getErrorMessage(err)}`
                 })
               }
             }
           } else {
             // Batch successful
-            console.log(`✅ [CSV] Batch ${batchNum + 1} inserted successfully (${insertedData.length} records)`)
+            console.log(`✅ [CSV] Batch ${batchNum + 1} inserted successfully (${insertedData?.length ?? 0} records)`)
             results.successful += batch.length
           }
         } catch (error: unknown) {
@@ -360,7 +386,7 @@ export function useCSVUpload() {
               results.failed++
               results.errors.push({
                 row: record.customerData.rowNumber,
-                message: err.message || 'خطأ غير متوقع'
+                message: getErrorMessage(err)
               })
             }
           }
@@ -373,7 +399,7 @@ export function useCSVUpload() {
       setResults(results)
 
     } catch (error: unknown) {
-      toast.error(`خطأ في معالجة الملف: ${error.message}`)
+      toast.error(`خطأ في معالجة الملف: ${getErrorMessage(error)}`)
       throw error
     } finally {
       setIsUploading(false)
@@ -385,7 +411,11 @@ export function useCSVUpload() {
   const smartUploadCustomers = async (fixedData: unknown[]) => {
     console.log('Smart upload started with data:', fixedData);
 
-    const targetCompanyId = companyId || user?.company?.id || '24bc0b21-4e2d-4413-9842-31719a3669f4';
+    const targetCompanyId = companyId || user?.company?.id || user?.profile?.company_id;
+
+    if (!targetCompanyId) {
+      throw new Error('معرف الشركة غير متوفر. تأكد من تسجيل الدخول بحساب مرتبط بشركة.');
+    }
 
     setIsUploading(true);
     setProgress(0);
@@ -401,39 +431,11 @@ export function useCSVUpload() {
       console.log(`Processing ${fixedData.length} customers...`);
 
       // Prepare all records
-      const validRecords: Array<{ customerData: any; payload: any }> = []
+      const validRecords: Array<{ customerData: CustomerCSVRecord; payload: CustomerInsert }> = []
 
       for (let i = 0; i < fixedData.length; i++) {
-        const customerData = fixedData[i];
-
-        const customerPayload = {
-          customer_type: customerData.customer_type,
-          first_name: customerData.first_name || undefined,
-          last_name: customerData.last_name || undefined,
-          first_name_ar: customerData.first_name_ar || undefined,
-          last_name_ar: customerData.last_name_ar || undefined,
-          company_name: customerData.company_name || undefined,
-          company_name_ar: customerData.company_name_ar || undefined,
-          email: customerData.email || undefined,
-          phone: customerData.phone,
-          alternative_phone: customerData.alternative_phone || undefined,
-          national_id: customerData.national_id || undefined,
-          passport_number: customerData.passport_number || undefined,
-          license_number: customerData.license_number || undefined,
-          license_expiry: customerData.license_expiry || undefined,
-          address: customerData.address || undefined,
-          address_ar: customerData.address_ar || undefined,
-          city: customerData.city || undefined,
-          country: customerData.country || undefined,
-          date_of_birth: customerData.date_of_birth || undefined,
-          credit_limit: customerData.credit_limit ? Number(customerData.credit_limit) : undefined,
-          emergency_contact_name: customerData.emergency_contact_name || undefined,
-          emergency_contact_phone: customerData.emergency_contact_phone || undefined,
-          notes: customerData.notes || undefined,
-          company_id: targetCompanyId,
-          is_active: true,
-          created_by: user?.id
-        };
+        const customerData = normalizeCustomerRecord(fixedData[i], i + 1)
+        const customerPayload = createCustomerPayload(customerData, targetCompanyId)
 
         validRecords.push({ customerData, payload: customerPayload })
       }
@@ -480,13 +482,13 @@ export function useCSVUpload() {
                 uploadResults.failed++
                 uploadResults.errors.push({
                   row: record.customerData.rowNumber || validRecords.indexOf(record) + 1,
-                  message: err.message
+                  message: getErrorMessage(err)
                 })
               }
             }
           } else {
             // Batch successful
-            console.log(`Batch ${batchNum + 1} inserted successfully (${data.length} records)`)
+            console.log(`Batch ${batchNum + 1} inserted successfully (${data?.length ?? 0} records)`)
             uploadResults.successful += batch.length
           }
         } catch (error: unknown) {
@@ -511,7 +513,7 @@ export function useCSVUpload() {
               uploadResults.failed++
               uploadResults.errors.push({
                 row: record.customerData.rowNumber || validRecords.indexOf(record) + 1,
-                message: err.message || 'Unexpected error'
+                message: getErrorMessage(err)
               })
             }
           }

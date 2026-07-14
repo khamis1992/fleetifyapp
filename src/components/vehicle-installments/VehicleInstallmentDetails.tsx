@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ArrowRight, CreditCard, Calendar, AlertCircle, CheckCircle, Check, CalendarClock, X } from "lucide-react";
 import { useVehicleInstallmentSchedules, useProcessInstallmentPayment } from "@/hooks/useVehicleInstallments";
 import { useContractVehicles } from "@/hooks/useContractVehicles";
@@ -26,6 +27,7 @@ const VehicleInstallmentDetails = ({ installment, onBack }: VehicleInstallmentDe
   const [paymentReference, setPaymentReference] = useState('');
   const [paymentNotes, setPaymentNotes] = useState('');
   const [paymentDate, setPaymentDate] = useState(new Date().toISOString().split('T')[0]);
+  const [paymentMethod, setPaymentMethod] = useState<'cash' | 'bank_transfer' | 'check' | 'credit_card'>('bank_transfer');
   const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
 
   const { data: schedules, isLoading } = useVehicleInstallmentSchedules(installment.id);
@@ -121,6 +123,7 @@ const VehicleInstallmentDetails = ({ installment, onBack }: VehicleInstallmentDe
     const paymentData = {
       schedule_id: selectedSchedule.id,
       paid_amount: parseFloat(paymentAmount),
+      payment_method: paymentMethod,
       payment_reference: paymentReference || undefined,
       notes: paymentNotes || undefined,
       payment_date: paymentDate,
@@ -133,6 +136,7 @@ const VehicleInstallmentDetails = ({ installment, onBack }: VehicleInstallmentDe
     setPaymentReference('');
     setPaymentNotes('');
     setPaymentDate(new Date().toISOString().split('T')[0]);
+    setPaymentMethod('bank_transfer');
     setSelectedSchedule(null);
     setIsPaymentDialogOpen(false);
   };
@@ -521,6 +525,24 @@ const VehicleInstallmentDetails = ({ installment, onBack }: VehicleInstallmentDe
                 value={paymentDate}
                 onChange={(e) => setPaymentDate(e.target.value)}
               />
+            </div>
+
+            <div>
+              <Label htmlFor="payment_method">وسيلة الدفع</Label>
+              <Select
+                value={paymentMethod}
+                onValueChange={(value) => setPaymentMethod(value as typeof paymentMethod)}
+              >
+                <SelectTrigger id="payment_method">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="bank_transfer">تحويل بنكي</SelectItem>
+                  <SelectItem value="cash">نقدًا</SelectItem>
+                  <SelectItem value="check">شيك</SelectItem>
+                  <SelectItem value="credit_card">بطاقة</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             <div>

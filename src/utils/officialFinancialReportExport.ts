@@ -1,3 +1,5 @@
+import { sanitizeDocumentHtmlToFragment } from "./htmlSanitizer";
+
 export type OfficialReportStatus = "draft" | "published" | "approved" | "archived" | "voided";
 
 export type OfficialFinancialReportMetadata = {
@@ -42,11 +44,11 @@ const SOURCE_FINGERPRINT_REQUIRED_ERROR = "sourceFingerprint_required";
 
 export function normalizeOfficialReportMetadata(metadata: OfficialFinancialReportMetadata) {
   return {
+    ...metadata,
     companyName: metadata.companyName || "Fleetify",
     currency: String(metadata.currency || "QAR").toUpperCase(),
     status: metadata.status || "draft",
     exportedAt: metadata.exportedAt || new Date().toISOString(),
-    ...metadata,
   };
 }
 
@@ -592,7 +594,8 @@ export async function exportOfficialHtmlToPDF(html: string, fileName: string) {
   renderHost.style.background = "#ffffff";
   renderHost.style.zIndex = "-1";
   const logoDataUrl = await imageUrlToDataUrl("/receipts/logo.png");
-  renderHost.innerHTML = logoDataUrl ? html.replace('src="/receipts/logo.png"', `src="${logoDataUrl}"`) : html;
+  const printableHtml = logoDataUrl ? html.replace('src="/receipts/logo.png"', `src="${logoDataUrl}"`) : html;
+  renderHost.replaceChildren(sanitizeDocumentHtmlToFragment(printableHtml));
   document.body.appendChild(renderHost);
 
   try {

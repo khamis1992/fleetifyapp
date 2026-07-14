@@ -250,7 +250,7 @@ const FixedAssets = () => {
     setNewAsset(randomAsset);
   };
 
-  const getConditionBadge = (status: string) => {
+  const getConditionBadge = (status?: string) => {
     switch (status) {
       case 'excellent':
         return <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-100 gap-1"><CheckCircle className="w-3 h-3" />ممتازة</Badge>;
@@ -265,7 +265,7 @@ const FixedAssets = () => {
     }
   };
 
-  const getCategoryLabel = (category: string) => {
+  const getCategoryLabel = (category?: string) => {
     const labels: Record<string, string> = {
       buildings: 'المباني والإنشاءات',
       equipment: 'المعدات والآلات',
@@ -274,7 +274,7 @@ const FixedAssets = () => {
       software: 'البرمجيات',
       other: 'أخرى'
     };
-    return labels[category] || category;
+    return category ? labels[category] || category : '-';
   };
 
   if (isLoading) {
@@ -328,16 +328,18 @@ const FixedAssets = () => {
                   </DialogTitle>
                   <DialogDescription>
                     أدخل تفاصيل الأصل الثابت الجديد
-                    <Button 
-                      type="button"
-                      variant="outline" 
-                      size="sm" 
-                      onClick={fillSampleData}
-                      className="mt-2 text-xs"
-                    >
-                      <TestTube className="h-3 w-3 mr-1" />
-                      ملء بيانات تجريبية
-                    </Button>
+                    {import.meta.env.DEV && (
+                      <Button 
+                        type="button"
+                        variant="outline" 
+                        size="sm" 
+                        onClick={fillSampleData}
+                        className="mt-2 text-xs"
+                      >
+                        <TestTube className="h-3 w-3 mr-1" />
+                        ملء بيانات تجريبية
+                      </Button>
+                    )}
                   </DialogDescription>
                 </DialogHeader>
                 <div className="grid grid-cols-2 gap-4">

@@ -10,6 +10,12 @@
 import { supabase } from '@/integrations/supabase/client';
 import { logger } from '@/lib/logger';
 
+// This repository accepts a runtime table name, so generated table overloads
+// cannot be selected statically. Keep the dynamic boundary isolated here.
+const dynamicSupabase = supabase as unknown as {
+  from: (table: string) => any;
+};
+
 export interface QueryOptions {
   orderBy?: string;
   ascending?: boolean;
@@ -34,21 +40,34 @@ export abstract class BaseRepository<T extends { id?: string }> {
     this.tableName = tableName;
   }
 
+  protected async resolveCompanyId(requestedCompanyId?: string): Promise<string> {
+    const { data, error } = await supabase.rpc('get_user_company_id');
+    if (error || !data) {
+      throw error || new Error('Company scope is unavailable');
+    }
+    if (requestedCompanyId && requestedCompanyId !== data) {
+      throw new Error('Requested record is outside the active company scope');
+    }
+    return data;
+  }
+
   /**
    * Create a new record
    */
   async create(data: Omit<T, 'id'>): Promise<T> {
     try {
-      const { data: result, error } = await supabase
+      const input = data as Omit<T, 'id'> & { company_id?: string };
+      const companyId = await this.resolveCompanyId(input.company_id);
+      const { data: result, error } = await dynamicSupabase
         .from(this.tableName)
-        .insert(data as any)
+        .insert({ ...input, company_id: companyId } as any)
         .select()
         .single();
 
       if (error) throw error;
       if (!result) throw new Error('No data returned from insert');
 
-      return result as T;
+      return result as unknown as T;
     } catch (error) {
       logger.error(`[${this.tableName}] Create failed:`, error);
       throw error;
@@ -60,17 +79,22 @@ export abstract class BaseRepository<T extends { id?: string }> {
    */
   async update(id: string, data: Partial<T>): Promise<T> {
     try {
-      const { data: result, error } = await supabase
+      const input = data as Partial<T> & { company_id?: string };
+      const companyId = await this.resolveCompanyId(input.company_id);
+      const safeData = { ...input };
+      delete safeData.company_id;
+      const { data: result, error } = await dynamicSupabase
         .from(this.tableName)
-        .update(data as any)
+        .update(safeData as any)
         .eq('id', id)
+        .eq('company_id', companyId)
         .select()
         .single();
 
       if (error) throw error;
       if (!result) throw new Error(`Record with id ${id} not found`);
 
-      return result as T;
+      return result as unknown as T;
     } catch (error) {
       logger.error(`[${this.tableName}] Update failed:`, error);
       throw error;
@@ -82,12 +106,17 @@ export abstract class BaseRepository<T extends { id?: string }> {
    */
   async delete(id: string): Promise<void> {
     try {
-      const { error } = await supabase
+      const companyId = await this.resolveCompanyId();
+      const { data, error } = await dynamicSupabase
         .from(this.tableName)
         .delete()
-        .eq('id', id);
+        .eq('id', id)
+        .eq('company_id', companyId)
+        .select('id')
+        .single();
 
       if (error) throw error;
+      if (!data) throw new Error(`Record with id ${id} not found`);
     } catch (error) {
       logger.error(`[${this.tableName}] Delete failed:`, error);
       throw error;
@@ -99,10 +128,12 @@ export abstract class BaseRepository<T extends { id?: string }> {
    */
   async findById(id: string): Promise<T | null> {
     try {
-      const { data, error } = await supabase
+      const companyId = await this.resolveCompanyId();
+      const { data, error } = await dynamicSupabase
         .from(this.tableName)
         .select('*')
         .eq('id', id)
+        .eq('company_id', companyId)
         .single();
 
       if (error) {
@@ -111,7 +142,7 @@ export abstract class BaseRepository<T extends { id?: string }> {
         throw error;
       }
 
-      return data as T;
+      return data as unknown as T;
     } catch (error) {
       logger.error(`[${this.tableName}] FindById failed:`, error);
       throw error;
@@ -123,7 +154,8 @@ export abstract class BaseRepository<T extends { id?: string }> {
    */
   async findAll(options?: QueryOptions): Promise<T[]> {
     try {
-      let query = supabase.from(this.tableName).select('*');
+      const companyId = await this.resolveCompanyId();
+      let query = dynamicSupabase.from(this.tableName).select('*').eq('company_id', companyId);
 
       if (options?.orderBy) {
         query = query.order(options.orderBy, { ascending: options.ascending ?? true });
@@ -141,7 +173,7 @@ export abstract class BaseRepository<T extends { id?: string }> {
 
       if (error) throw error;
 
-      return (data || []) as T[];
+      return (data || []) as unknown as T[];
     } catch (error) {
       logger.error(`[${this.tableName}] FindAll failed:`, error);
       throw error;
@@ -153,12 +185,14 @@ export abstract class BaseRepository<T extends { id?: string }> {
    */
   async findPaginated(page: number = 1, limit: number = 10): Promise<PaginatedResult<T>> {
     try {
+      const companyId = await this.resolveCompanyId();
       const offset = (page - 1) * limit;
 
       // Get total count
-      const { count, error: countError } = await supabase
+      const { count, error: countError } = await dynamicSupabase
         .from(this.tableName)
-        .select('*', { count: 'exact', head: true });
+        .select('*', { count: 'exact', head: true })
+        .eq('company_id', companyId);
 
       if (countError) throw countError;
 
@@ -166,15 +200,16 @@ export abstract class BaseRepository<T extends { id?: string }> {
       const totalPages = Math.ceil(total / limit);
 
       // Get paginated data
-      const { data, error } = await supabase
+      const { data, error } = await dynamicSupabase
         .from(this.tableName)
         .select('*')
+        .eq('company_id', companyId)
         .range(offset, offset + limit - 1);
 
       if (error) throw error;
 
       return {
-        data: (data || []) as T[],
+        data: (data || []) as unknown as T[],
         total,
         page,
         totalPages
@@ -190,11 +225,13 @@ export abstract class BaseRepository<T extends { id?: string }> {
    */
   async findWhere(criteria: Partial<T>): Promise<T[]> {
     try {
-      let query = supabase.from(this.tableName).select('*');
+      const requestedCompanyId = (criteria as Partial<T> & { company_id?: string }).company_id;
+      const companyId = await this.resolveCompanyId(requestedCompanyId);
+      let query = dynamicSupabase.from(this.tableName).select('*').eq('company_id', companyId);
 
       // Apply each criterion
       Object.entries(criteria).forEach(([key, value]) => {
-        if (value !== undefined && value !== null) {
+        if (key !== 'company_id' && value !== undefined && value !== null) {
           query = query.eq(key, value);
         }
       });
@@ -203,7 +240,7 @@ export abstract class BaseRepository<T extends { id?: string }> {
 
       if (error) throw error;
 
-      return (data || []) as T[];
+      return (data || []) as unknown as T[];
     } catch (error) {
       logger.error(`[${this.tableName}] FindWhere failed:`, error);
       throw error;
@@ -228,11 +265,16 @@ export abstract class BaseRepository<T extends { id?: string }> {
    */
   async count(criteria?: Partial<T>): Promise<number> {
     try {
-      let query = supabase.from(this.tableName).select('*', { count: 'exact', head: true });
+      const requestedCompanyId = (criteria as (Partial<T> & { company_id?: string }) | undefined)?.company_id;
+      const companyId = await this.resolveCompanyId(requestedCompanyId);
+      let query = dynamicSupabase
+        .from(this.tableName)
+        .select('*', { count: 'exact', head: true })
+        .eq('company_id', companyId);
 
       if (criteria) {
         Object.entries(criteria).forEach(([key, value]) => {
-          if (value !== undefined && value !== null) {
+          if (key !== 'company_id' && value !== undefined && value !== null) {
             query = query.eq(key, value);
           }
         });
@@ -278,14 +320,18 @@ export abstract class BaseRepository<T extends { id?: string }> {
    */
   async createMany(data: Omit<T, 'id'>[]): Promise<T[]> {
     try {
-      const { data: result, error } = await supabase
+      const requestedCompanyIds = [...new Set(data.map((item) => (item as Omit<T, 'id'> & { company_id?: string }).company_id).filter(Boolean))];
+      if (requestedCompanyIds.length > 1) throw new Error('Bulk create cannot span multiple companies');
+      const companyId = await this.resolveCompanyId(requestedCompanyIds[0]);
+      const scopedData = data.map((item) => ({ ...item, company_id: companyId }));
+      const { data: result, error } = await dynamicSupabase
         .from(this.tableName)
-        .insert(data as any)
+        .insert(scopedData as any)
         .select();
 
       if (error) throw error;
 
-      return (result || []) as T[];
+      return (result || []) as unknown as T[];
     } catch (error) {
       logger.error(`[${this.tableName}] CreateMany failed:`, error);
       throw error;
@@ -297,12 +343,18 @@ export abstract class BaseRepository<T extends { id?: string }> {
    */
   async deleteMany(ids: string[]): Promise<void> {
     try {
-      const { error } = await supabase
+      const companyId = await this.resolveCompanyId();
+      const { data, error } = await dynamicSupabase
         .from(this.tableName)
         .delete()
-        .in('id', ids);
+        .in('id', ids)
+        .eq('company_id', companyId)
+        .select('id');
 
       if (error) throw error;
+      if ((data || []).length !== new Set(ids).size) {
+        throw new Error('One or more records were not deleted inside the active company scope');
+      }
     } catch (error) {
       logger.error(`[${this.tableName}] DeleteMany failed:`, error);
       throw error;

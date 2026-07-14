@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { DollarSign, Search, Plus, FileText, Check, Clock, Users, Calculator, CheckCircle, AlertCircle } from 'lucide-react';
+import { DollarSign, Search, Plus, FileText, Clock, Calculator, CheckCircle, AlertCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
@@ -25,18 +25,7 @@ import PayrollActionButtons from '@/components/hr/PayrollActionButtons';
 import { PageHelp } from "@/components/help";
 import { PayrollPageHelpContent } from "@/components/help/content";
 import { HRMetricCard, HRPageHeader, HRPageShell, HRSectionCard, hrButtonClassName, hrFieldClassName } from '@/components/hr/HRDesignSystem';
-
-interface PayrollReview {
-  id: string;
-  period_start: string;
-  period_end: string;
-  total_employees: number;
-  total_amount: number;
-  total_deductions: number;
-  net_amount: number;
-  status: 'draft' | 'pending_approval' | 'approved' | 'paid';
-  created_at: string;
-}
+import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 
 export default function Payroll() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -44,6 +33,7 @@ export default function Payroll() {
   const [showPayrollDetails, setShowPayrollDetails] = useState(false);
   const [showEditPayroll, setShowEditPayroll] = useState(false);
   const [selectedPayroll, setSelectedPayroll] = useState<PayrollRecord | null>(null);
+  const { companyId } = useUnifiedCompanyAccess();
 
   // Fetch data
   const { data: payrollRecords, isLoading: recordsLoading } = usePayrollRecords();
@@ -57,17 +47,28 @@ const deletePayrollMutation = useDeletePayroll();
 
   // Fetch employees for payroll creation
   const { data: employees } = useQuery({
-    queryKey: ['employees-for-payroll'],
+    queryKey: ['employees-for-payroll', companyId],
     queryFn: async () => {
+      if (!companyId) return [];
+
       const { data, error } = await supabase
         .from('employees')
         .select('id, employee_number, first_name, last_name, position, department, basic_salary, allowances, bank_account, iban')
+        .eq('company_id', companyId)
         .eq('is_active', true)
         .order('first_name');
       
       if (error) throw error;
-      return data;
+      return (data || []).map(employee => ({
+        ...employee,
+        position: employee.position ?? undefined,
+        department: employee.department ?? undefined,
+        allowances: Number(employee.allowances) || 0,
+        bank_account: employee.bank_account ?? undefined,
+        iban: employee.iban ?? undefined,
+      }));
     },
+    enabled: !!companyId,
   });
 
   const getStatusBadge = (status: string) => {
@@ -82,8 +83,9 @@ const deletePayrollMutation = useDeletePayroll();
   };
 
   const handleCreatePayroll = (data: CreatePayrollData) => {
-    createPayrollMutation.mutate(data);
-    setShowCreatePayroll(false);
+    createPayrollMutation.mutate(data, {
+      onSuccess: () => setShowCreatePayroll(false),
+    });
   };
 
   const handleViewPayroll = (payroll: PayrollRecord) => {
@@ -101,8 +103,9 @@ const deletePayrollMutation = useDeletePayroll();
       updatePayrollMutation.mutate({
         id: selectedPayroll.id,
         updates: data
+      }, {
+        onSuccess: () => setShowEditPayroll(false),
       });
-      setShowEditPayroll(false);
     }
   };
 
@@ -176,7 +179,7 @@ const deletePayrollMutation = useDeletePayroll();
       </div>
 
       <Tabs defaultValue="records" className="space-y-4">
-        <TabsList className="h-auto rounded-2xl border border-slate-200 bg-white p-1 shadow-sm">
+        <TabsList className="h-auto rounded-lg border border-slate-200 bg-white p-1 shadow-sm">
           <TabsTrigger value="records" className="h-11 rounded-xl px-4 text-[#94A3B8] data-[state=active]:bg-[#22C7A1] data-[state=active]:text-white">سجلات الرواتب</TabsTrigger>
           <TabsTrigger value="reviews" className="h-11 rounded-xl px-4 text-[#94A3B8] data-[state=active]:bg-[#22C7A1] data-[state=active]:text-white">مراجعات الرواتب</TabsTrigger>
         </TabsList>
@@ -376,7 +379,9 @@ const deletePayrollMutation = useDeletePayroll();
         employees={employees || []}
         isLoading={updatePayrollMutation.isPending}
       />
-    <PageHelp content={<PayrollPageHelpContent />} />
+    <PageHelp title="مساعدة إدارة الرواتب">
+      <PayrollPageHelpContent />
+    </PageHelp>
 
     </HRPageShell>
   );

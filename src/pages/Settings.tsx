@@ -101,7 +101,7 @@ const Settings: React.FC = () => {
           title: "إعدادات الحسابات المحاسبية",
           description: "إدارة إعدادات الحسابات المحاسبية للعملاء",
           icon: CreditCard,
-          action: () => navigate('/settings/customer-accounts'),
+          action: () => navigate('/finance/accounting-wizard'),
           available: true
         },
       ]
@@ -145,14 +145,14 @@ const Settings: React.FC = () => {
           title: "إدارة الاشتراك",
           description: "إدارة خطة الاشتراك والميزات",
           icon: Crown,
-          action: () => navigate('/subscription'),
+          action: () => navigate('/settings/subscription'),
           available: true
         },
         {
           title: "إعدادات التوقيع الإلكتروني",
           description: "تحكم في إعدادات التوقيع الإلكتروني للعقود والمستندات",
           icon: FileSignature,
-          action: () => navigate('/settings/electronic-signature'),
+          action: () => navigate('/settings/e-signature'),
           available: true
         },
       ]

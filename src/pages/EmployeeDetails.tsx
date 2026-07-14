@@ -73,7 +73,7 @@ export const EmployeeDetails: React.FC = () => {
   const [showUnassignDialog, setShowUnassignDialog] = useState(false);
   const [selectedContractId, setSelectedContractId] = useState<string | null>(null);
 
-  const { employee, performance, contracts, tasks, isLoading, stats } = useEmployeeDetails(employeeId || '');
+  const { employee, performance, performanceHistory, contracts, tasks, isLoading, stats } = useEmployeeDetails(employeeId || '');
   const [showAssignDialog, setShowAssignDialog] = useState(false);
 
   const getGradeColor = (grade: string) => {
@@ -149,15 +149,16 @@ export const EmployeeDetails: React.FC = () => {
     ? `${employee.first_name} ${employee.last_name}`
     : employee.email;
 
-  // Mock data for trend chart
-  const trendData = [
-    { month: 'يناير', performance_score: 75, collection_rate: 70, task_completion: 80 },
-    { month: 'فبراير', performance_score: 78, collection_rate: 75, task_completion: 82 },
-    { month: 'مارس', performance_score: 82, collection_rate: 80, task_completion: 85 },
-    { month: 'أبريل', performance_score: 85, collection_rate: 83, task_completion: 88 },
-    { month: 'مايو', performance_score: 87, collection_rate: 85, task_completion: 90 },
-    { month: 'يونيو', performance_score: performance?.performance_score || 90, collection_rate: performance?.collection_rate || 88, task_completion: 92 },
-  ];
+  const trendData = (performanceHistory || []).map(item => ({
+    month: new Intl.DateTimeFormat('ar-QA', {
+      month: 'short',
+      year: '2-digit',
+      timeZone: 'UTC',
+    }).format(new Date(`${item.period_start}T00:00:00Z`)),
+    performance_score: Number(item.performance_score || 0),
+    collection_rate: Number(item.collection_rate || 0),
+    task_completion: Number(item.followup_completion_rate || 0),
+  }));
 
   return (
     <div className="employee-details-system min-h-screen bg-[#F6F8FB] p-4 font-sans sm:p-6" dir="rtl">
@@ -272,7 +273,7 @@ export const EmployeeDetails: React.FC = () => {
         
         {/* Performance Chart */}
         <GlassCard className="employee-performance-panel col-span-12 p-5 xl:col-span-8" delay={0.5}>
-          <PerformanceTrendChart data={trendData} title="تطور الأداء (آخر 6 أشهر)" />
+          <PerformanceTrendChart data={trendData} title="تطور الأداء المسجل" />
           
           {/* Performance Metrics */}
           <div className="grid grid-cols-3 gap-4 mt-6 pt-6 border-t border-neutral-200">

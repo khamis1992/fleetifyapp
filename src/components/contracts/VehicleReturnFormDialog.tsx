@@ -6,7 +6,7 @@
  */
 
 import { useState, useCallback } from 'react';
-import { motion } from 'framer-motion';
+import { motion, type Variants } from 'framer-motion';
 import {
   Dialog,
   DialogContent,
@@ -27,7 +27,9 @@ import { CollapsibleSection } from '@/components/ui/collapsible-section';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/components/ui/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import type { Json } from '@/integrations/supabase/types';
 import { useQueryClient } from '@tanstack/react-query';
+import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 import {
   Calendar,
   Clock,
@@ -60,7 +62,7 @@ import { VehicleMarking } from './vehicle-inspection/VehicleMarking';
 import { VehicleMark } from './vehicle-inspection/types';
 
 // ===== Animation Variants =====
-const fadeInUp = {
+const fadeInUp: Variants = {
   hidden: { opacity: 0, y: 20 },
   visible: {
     opacity: 1,
@@ -69,7 +71,7 @@ const fadeInUp = {
   }
 };
 
-const scaleIn = {
+const scaleIn: Variants = {
   hidden: { opacity: 0, scale: 0.95 },
   visible: {
     opacity: 1,
@@ -84,6 +86,7 @@ interface VehicleReturnFormDialogProps {
   onOpenChange: (open: boolean) => void;
   contract: {
     id: string;
+    vehicle_id: string;
     contract_number: string;
     customer_name: string;
     customer_phone: string;
@@ -241,6 +244,7 @@ export const VehicleReturnFormDialog = ({
 }: VehicleReturnFormDialogProps) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { companyId } = useUnifiedCompanyAccess();
 
   // Form state
   const [returnDate, setReturnDate] = useState(format(new Date(), 'yyyy-MM-dd'));
@@ -460,31 +464,44 @@ export const VehicleReturnFormDialog = ({
     setIsSubmitting(true);
 
     try {
+      if (!companyId || !contract.vehicle_id) throw new Error('تعذر تحديد الشركة أو المركبة');
+
       // Get current user
       const { data: { user } } = await supabase.auth.getUser();
+      if (!user?.id) throw new Error('يجب تسجيل الدخول أولًا');
 
       // Upload photos to storage
       const photoUrls: string[] = [];
       for (const photo of photos) {
-        const fileName = `vehicle-return/${contract.id}/${Date.now()}-${photo.file.name}`;
+        if (!photo.file.type.startsWith('image/') || photo.file.size > 10 * 1024 * 1024) {
+          throw new Error('يجب أن تكون الصور من نوع صورة وبحجم لا يتجاوز 10 ميجابايت');
+        }
+        const extension = photo.file.type === 'image/png' ? 'png' : photo.file.type === 'image/webp' ? 'webp' : 'jpg';
+        const fileName = `inspections/${companyId}/${contract.id}/check_out/${crypto.randomUUID()}.${extension}`;
         const { data: uploadData, error: uploadError } = await supabase.storage
           .from('vehicle-documents')
           .upload(fileName, photo.file);
 
         if (uploadError) throw uploadError;
-        photoUrls.push(uploadData.path);
+        const { data: publicUrl } = supabase.storage.from('vehicle-documents').getPublicUrl(uploadData.path);
+        photoUrls.push(publicUrl.publicUrl);
       }
 
       // Upload inspection item photos
       for (const item of [...exteriorItems, ...interiorItems]) {
         if (item.photo) {
-          const fileName = `vehicle-return/${contract.id}/inspection-${item.id}-${Date.now()}-${item.photo.file.name}`;
+          if (!item.photo.file.type.startsWith('image/') || item.photo.file.size > 10 * 1024 * 1024) {
+            throw new Error('يجب أن تكون صور الفحص بحجم لا يتجاوز 10 ميجابايت');
+          }
+          const extension = item.photo.file.type === 'image/png' ? 'png' : item.photo.file.type === 'image/webp' ? 'webp' : 'jpg';
+          const fileName = `inspections/${companyId}/${contract.id}/check_out/${crypto.randomUUID()}.${extension}`;
           const { data: uploadData, error: uploadError } = await supabase.storage
             .from('vehicle-documents')
             .upload(fileName, item.photo.file);
 
           if (uploadError) throw uploadError;
-          photoUrls.push(uploadData.path);
+          const { data: publicUrl } = supabase.storage.from('vehicle-documents').getPublicUrl(uploadData.path);
+          photoUrls.push(publicUrl.publicUrl);
         }
       }
 
@@ -516,65 +533,103 @@ export const VehicleReturnFormDialog = ({
       };
 
       // Create return record
-      const { data: returnRecord, error: returnError } = await supabase
-        .from('vehicle_inspections')
+      const visualInspectionZones = vehicleMarks.map(mark => ({
+        zone_id: mark.id,
+        zone_name: 'Mark',
+        zone_name_ar: 'علامة',
+        category: 'exterior' as const,
+        condition: mark.condition || 'scratch',
+        severity: mark.severity || 'minor',
+        description: mark.description,
+        photo_urls: mark.photo_urls,
+        marked_by: user.id,
+        marked_at: mark.created_at,
+        x: mark.x,
+        y: mark.y,
+      }));
+
+      const overallCondition = [exteriorRating, interiorRating, mechanicalRating].includes('damaged')
+        ? 'poor'
+        : [exteriorRating, interiorRating, mechanicalRating].includes('fair') ? 'fair' : 'good';
+
+      const { error: returnError } = await supabase
+        .from('vehicle_condition_reports')
         .insert({
           contract_id: contract.id,
-          company_id: user?.user_metadata?.company_id,
+          vehicle_id: contract.vehicle_id,
+          company_id: companyId,
+          inspector_id: user.id,
           inspection_type: 'check_out',
-          inspection_date: returnDate,
-          inspection_time: returnTime,
-          mileage: parseInt(mileage),
+          inspection_date: `${returnDate}T${returnTime}:00`,
+          mileage_reading: parseInt(mileage, 10),
           fuel_level: fuelLevel,
-          exterior_condition: exteriorRating,
-          interior_condition: interiorRating,
-          mechanical_condition: mechanicalRating,
-          inspection_details: inspectionData,
-          accessories: Object.entries(accessories)
-            .filter(([_, present]) => present)
-            .map(([key]) => key),
-          documents: Object.entries(documents)
-            .filter(([_, present]) => present)
-            .map(([key]) => key),
-          photos: photoUrls,
-          damages: additionalCharges
-            .filter(c => c.type === 'damage')
-            .map(c => c.description)
-            .filter(Boolean),
-          additional_charges: additionalCharges,
-          notes: notes,
-          staff_notes: staffNotes,
-          customer_acknowledgment: customerAcknowledgment,
-          status: 'completed',
-          // Visual inspection data - using new marking system
-          visual_inspection_zones: vehicleMarks.map(mark => ({
-            zone_id: mark.id,
-            zone_name: 'Mark',
-            zone_name_ar: 'علامة',
-            category: 'exterior' as const,
-            condition: mark.condition || 'scratch',
-            severity: mark.severity || 'minor',
-            description: mark.description,
-            photo_urls: mark.photo_urls,
-            marked_by: user?.id || '',
-            marked_at: mark.created_at,
-          })),
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
+          overall_condition: overallCondition,
+          condition_items: JSON.parse(JSON.stringify({
+            ...inspectionData,
+            exterior_rating: exteriorRating,
+            interior_rating: interiorRating,
+            mechanical_rating: mechanicalRating,
+            accessories: Object.entries(accessories).filter(([, present]) => present).map(([key]) => key),
+            documents: Object.entries(documents).filter(([, present]) => present).map(([key]) => key),
+            staff_notes: staffNotes || null,
+            customer_acknowledgment: customerAcknowledgment,
+            visual_inspection_zones: visualInspectionZones,
+          })) as Json,
+          damage_points: JSON.parse(JSON.stringify(visualInspectionZones)) as Json,
+          damage_items: JSON.parse(JSON.stringify(additionalCharges)) as Json,
+          photos: photoUrls as Json,
+          notes: notes || null,
+          status: 'approved',
         })
-        .select()
+        .select('id')
         .single();
 
       if (returnError) throw returnError;
 
+      const now = new Date().toISOString();
+      const { data: otherActiveContracts, error: activeContractsError } = await supabase
+        .from('contracts')
+        .select('id')
+        .eq('company_id', companyId)
+        .eq('vehicle_id', contract.vehicle_id)
+        .eq('status', 'active')
+        .neq('id', contract.id)
+        .limit(1);
+
+      if (activeContractsError) throw activeContractsError;
+      const vehicleStatus = otherActiveContracts?.length ? 'rented' : 'available';
+      const [vehicleResult, contractResult] = await Promise.all([
+        supabase
+          .from('vehicles')
+          .update({
+            current_mileage: parseInt(mileage, 10),
+            odometer_reading: parseInt(mileage, 10),
+            status: vehicleStatus,
+            updated_at: now,
+          })
+          .eq('id', contract.vehicle_id)
+          .eq('company_id', companyId),
+        supabase
+          .from('contracts')
+          .update({ vehicle_returned: true, vehicle_status: 'available', updated_at: now })
+          .eq('id', contract.id)
+          .eq('company_id', companyId),
+      ]);
+      const integrationErrors = [vehicleResult.error, contractResult.error].filter(Boolean);
+
       toast({
-        title: 'تم تسجيل التسليم بنجاح',
-        description: `تم تسجيل تسليم المركبة ${contract.vehicle_plate} بنجاح`,
+        title: integrationErrors.length ? 'تم حفظ تقرير التسليم مع تنبيه' : 'تم تسجيل التسليم بنجاح',
+        description: integrationErrors.length
+          ? 'حُفظ تقرير الفحص، لكن تعذر تحديث حالة العقد أو المركبة. أعد المحاولة من صفحة العقد.'
+          : `تم تسجيل تسليم المركبة ${contract.vehicle_plate} بنجاح`,
+        variant: integrationErrors.length ? 'destructive' : 'default',
       });
 
       // Refresh data
       queryClient.invalidateQueries({ queryKey: ['vehicle-inspections'] });
       queryClient.invalidateQueries({ queryKey: ['contract-details'] });
+      queryClient.invalidateQueries({ queryKey: ['contract', contract.id] });
+      queryClient.invalidateQueries({ queryKey: ['vehicles'] });
 
       onOpenChange(false);
     } catch (error) {
@@ -589,6 +644,7 @@ export const VehicleReturnFormDialog = ({
     }
   }, [
     contract,
+    companyId,
     returnDate,
     returnTime,
     mileage,

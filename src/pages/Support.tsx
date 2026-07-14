@@ -290,7 +290,7 @@ const Support: React.FC = () => {
             <Card 
               key={ticket.id} 
               className="p-4 cursor-pointer hover:shadow-md transition-shadow"
-              onClick={() => navigate(`/support/ticket/${ticket.id}`)}
+              onClick={() => navigate(`/support/tickets/${ticket.id}`)}
             >
               <div className="flex items-start justify-between">
                 <div className="flex-1">

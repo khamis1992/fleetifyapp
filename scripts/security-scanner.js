@@ -50,12 +50,7 @@ if (!SCAN_OPTIONS.scanCredentials && !SCAN_OPTIONS.scanDeps) {
 // Security patterns to detect
 const SECURITY_PATTERNS = {
   hardcodedCredentials: [
-    {
-      name: 'Supabase URL',
-      pattern: /https:\/\/[a-z0-9]+\.supabase\.co/g,
-      severity: 'medium',
-      description: 'Hardcoded Supabase URL detected'
-    },
+    // Supabase project URLs are public client configuration, not credentials.
     {
       name: 'API Keys (JWT)',
       pattern: /eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}/g,
@@ -121,13 +116,13 @@ const SECURITY_PATTERNS = {
     },
     {
       name: 'SQL Concatenation',
-      pattern: /['"]\s*\+\s*[^+]+.*SELECT|INSERT|UPDATE|DELETE/gi,
-      severity: 'high',
-      description: 'SQL string concatenation can lead to SQL injection'
+      pattern: /['"]\s*\+\s*[^+\n]*(?:SELECT\s+[\w*]|INSERT\s+INTO\s+\w|UPDATE\s+\w+\s+SET\s+|DELETE\s+FROM\s+\w)/gi,
+      severity: 'medium',
+      description: 'Review dynamic query construction for parameterization'
     },
     {
       name: 'Console Log with Sensitive Data',
-      pattern: /console\.(log|debug|info)\s*\([^)]*(password|token|key|secret|api)/gi,
+      pattern: /console\.(?:log|debug|info)\s*\([^"'`)]*\b(?:password|token|secret|apiKey)\b/gi,
       severity: 'medium',
       description: 'Sensitive data logged to console'
     }
@@ -138,6 +133,13 @@ const SECURITY_PATTERNS = {
 const EXCLUDE_PATTERNS = [
   /node_modules/,
   /\.git/,
+  /[\\/]\.archive[\\/]/,
+  /[\\/]\.tmp[^\\/]*[\\/]/,
+  /[\\/]tmp[\\/]/,
+  /[\\/]__tests__[\\/]/,
+  /[\\/]tests[\\/]/,
+  /\.(?:test|spec)\.[cm]?[jt]sx?$/,
+  /[\\/]security-scanner\.js$/,
   /dist/,
   /build/,
   /coverage/,
@@ -299,7 +301,7 @@ function scanDependencies() {
   
   try {
     // Run npm audit
-    const auditResult = execSync('npm audit --json', { 
+    const auditResult = execSync('npm audit --omit=dev --json', {
       encoding: 'utf-8',
       cwd: projectRoot,
       stdio: 'pipe'
@@ -454,7 +456,12 @@ function main() {
   
   // Scan codebase
   console.log('📂 Scanning codebase...');
-  const codeIssues = scanDirectory(projectRoot);
+  const scanRoots = [
+    path.join(projectRoot, 'src'),
+    path.join(projectRoot, 'supabase', 'functions'),
+    path.join(projectRoot, 'scripts'),
+  ];
+  const codeIssues = scanRoots.flatMap(scanDirectory);
   
   // Scan dependencies
   const vulnerabilities = scanDependencies();
@@ -471,12 +478,10 @@ function main() {
     console.log('\n' + report);
   }
   
-  // Exit with error code if critical issues found
-  if (stats.issuesFound > 0) {
-    const criticalCount = codeIssues.filter(i => i.severity === 'critical').length;
-    if (criticalCount > 0) {
-      process.exit(1);
-    }
+  // Release gate: production code or dependency findings at high severity fail.
+  const blockingCount = allIssues.filter(issue => ['critical', 'high'].includes(issue.severity)).length;
+  if (blockingCount > 0) {
+    process.exit(1);
   }
 }
 

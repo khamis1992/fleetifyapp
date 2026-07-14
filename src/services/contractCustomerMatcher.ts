@@ -87,9 +87,9 @@ async function matchByQatariId(
 
     const { data, error } = await supabase
       .from('customers')
-      .select('id, first_name_ar, last_name_ar, first_name, last_name, qatari_id, phone, license_number, customer_type')
+      .select('id, first_name_ar, last_name_ar, first_name, last_name, national_id, phone, license_number, customer_type')
       .eq('company_id', companyId)
-      .eq('qatari_id', normalizedId)
+      .eq('national_id', normalizedId)
       .limit(1);
 
     if (error || !data || data.length === 0) {
@@ -104,10 +104,10 @@ async function matchByQatariId(
       customer: {
         id: customer.id,
         name: customer.first_name_ar || customer.first_name || '',
-        qatariId: customer.qatari_id || undefined,
+        qatariId: customer.national_id || undefined,
         phone: customer.phone || undefined,
         licenseNumber: customer.license_number || undefined,
-        type: customer.customer_type === 'company' ? 'company' : 'individual',
+        type: customer.customer_type === 'corporate' ? 'company' : 'individual',
       },
     };
   } catch (error) {
@@ -129,7 +129,7 @@ async function matchByName(
     // First try exact match
     const { data: exactMatches, error: exactError } = await supabase
       .from('customers')
-      .select('id, first_name_ar, last_name_ar, first_name, last_name, qatari_id, phone, license_number, customer_type')
+      .select('id, first_name_ar, last_name_ar, first_name, last_name, national_id, phone, license_number, customer_type')
       .eq('company_id', companyId)
       .or(`first_name_ar.ilike.${normalizedName},last_name_ar.ilike.${normalizedName},first_name.ilike.${name},last_name.ilike.${name}`)
       .limit(5);
@@ -160,10 +160,10 @@ async function matchByName(
             customer: {
               id: customer.id,
               name: fullNameAr || fullNameEn,
-              qatariId: customer.qatari_id || undefined,
+              qatariId: customer.national_id || undefined,
               phone: customer.phone || undefined,
               licenseNumber: customer.license_number || undefined,
-              type: customer.customer_type === 'company' ? 'company' : 'individual',
+              type: customer.customer_type === 'corporate' ? 'company' : 'individual',
             },
           });
         }
@@ -196,7 +196,7 @@ async function matchByPhoneNumbers(
     for (const phone of normalizedPhones) {
       const { data, error } = await supabase
         .from('customers')
-        .select('id, first_name_ar, last_name_ar, first_name, last_name, qatari_id, phone, license_number, customer_type')
+        .select('id, first_name_ar, last_name_ar, first_name, last_name, national_id, phone, license_number, customer_type')
         .eq('company_id', companyId)
         .eq('phone', phone)
         .limit(1);
@@ -216,10 +216,10 @@ async function matchByPhoneNumbers(
         customer: {
           id: customer.id,
           name: fullNameAr || fullNameEn,
-          qatariId: customer.qatari_id || undefined,
+          qatariId: customer.national_id || undefined,
           phone: customer.phone || undefined,
           licenseNumber: customer.license_number || undefined,
-          type: customer.customer_type === 'company' ? 'company' : 'individual',
+          type: customer.customer_type === 'corporate' ? 'company' : 'individual',
         },
       });
     }
@@ -243,7 +243,7 @@ async function matchByLicenseNumber(
 
     const { data, error } = await supabase
       .from('customers')
-      .select('id, first_name_ar, last_name_ar, first_name, last_name, qatari_id, phone, license_number, customer_type')
+      .select('id, first_name_ar, last_name_ar, first_name, last_name, national_id, phone, license_number, customer_type')
       .eq('company_id', companyId)
       .eq('license_number', normalizedLicense)
       .limit(1);
@@ -263,10 +263,10 @@ async function matchByLicenseNumber(
       customer: {
         id: customer.id,
         name: fullNameAr || fullNameEn,
-        qatariId: customer.qatari_id || undefined,
+        qatariId: customer.national_id || undefined,
         phone: customer.phone || undefined,
         licenseNumber: customer.license_number || undefined,
-        type: customer.customer_type === 'company' ? 'company' : 'individual',
+        type: customer.customer_type === 'corporate' ? 'company' : 'individual',
       },
     };
   } catch (error) {

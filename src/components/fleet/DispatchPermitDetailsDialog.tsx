@@ -388,7 +388,7 @@ export function DispatchPermitDetailsDialog({
                   {permit.fuel_allowance && (
                     <div>
                       <p className="font-medium mb-1">بدل الوقود</p>
-                      <p className="text-sm text-muted-foreground">{permit.fuel_allowance} د.ك</p>
+                      <p className="text-sm text-muted-foreground">{permit.fuel_allowance} ر.ق</p>
                     </div>
                   )}
                 </div>

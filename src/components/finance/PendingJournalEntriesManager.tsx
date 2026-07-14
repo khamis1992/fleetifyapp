@@ -163,7 +163,7 @@ export const PendingJournalEntriesManager: React.FC = () => {
                         {getStatusBadge(entry.status)}
                       </div>
                       <div className="text-sm text-muted-foreground">
-                        المبلغ: {entry.contract?.contract_amount?.toLocaleString('ar-KW')} د.ك
+                        المبلغ: {entry.contract?.contract_amount?.toLocaleString('ar-QA')} ر.ق
                       </div>
                     </div>
                     <div className="flex items-center gap-2">

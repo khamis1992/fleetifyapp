@@ -104,14 +104,6 @@ export function DispatchPermitsList({ onEditPermit }: { onEditPermit?: (permitId
   const deletePermit = useDeleteDispatchPermit();
   const { toast } = useToast();
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <LoadingSpinner size="lg" />
-      </div>
-    );
-  }
-
   const handleDelete = async () => {
     if (!permitToDelete) return;
 
@@ -164,6 +156,14 @@ export function DispatchPermitsList({ onEditPermit }: { onEditPermit?: (permitId
       return matchesSearch && matchesStatus && matchesPriority;
     });
   }, [permits, searchTerm, statusFilter, priorityFilter]);
+
+  if (isLoading) {
+    return (
+      <div className="flex min-h-[400px] items-center justify-center">
+        <LoadingSpinner size="lg" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6" dir="rtl">

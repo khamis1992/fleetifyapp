@@ -9,6 +9,14 @@ interface AutoConfigResult {
   errors?: string[]
 }
 
+const getErrorMessage = (error: unknown) => {
+  if (error instanceof Error) return error.message
+  if (typeof error === 'object' && error !== null && 'message' in error) {
+    return String(error.message || '')
+  }
+  return String(error || '')
+}
+
 // Manual account creation as fallback
 async function createEssentialAccountsManually(companyId: string): Promise<AutoConfigResult> {
   console.log('🔄 [ACCOUNT_MAPPINGS] Creating essential accounts manually for company:', companyId)
@@ -100,7 +108,7 @@ async function createEssentialAccountsManually(companyId: string): Promise<AutoC
     return result
   } catch (error: unknown) {
     console.error('❌ [ACCOUNT_MAPPINGS] Manual account creation failed:', error)
-    result.errors?.push(error.message || 'Failed to create essential accounts')
+    result.errors?.push(getErrorMessage(error) || 'Failed to create essential accounts')
     return result
   }
 }
@@ -152,7 +160,7 @@ async function checkAccountsManually(companyId: string): Promise<AutoConfigResul
     return result
   } catch (error: unknown) {
     console.error('❌ [ACCOUNT_MAPPINGS] Manual account check failed:', error)
-    result.errors?.push(error.message || 'Failed to check accounts')
+    result.errors?.push(getErrorMessage(error) || 'Failed to check accounts')
     return result
   }
 }
@@ -183,7 +191,8 @@ export const useEssentialAccountMappings = () => {
         console.error('Failed to check account mapping status:', error)
         
         // If functions don't exist, return manual check result
-        if (error.message?.includes('function') && error.message?.includes('does not exist')) {
+        const errorMessage = getErrorMessage(error)
+        if (errorMessage.includes('function') && errorMessage.includes('does not exist')) {
           return await checkAccountsManually(companyId)
         }
         
@@ -244,7 +253,7 @@ export const useEssentialAccountMappings = () => {
     },
     onError: (error: unknown) => {
       console.error('Auto-configuration error:', error)
-      toast.error(error.message || 'فشل في الإعداد التلقائي لربط الحسابات')
+      toast.error(getErrorMessage(error) || 'فشل في الإعداد التلقائي لربط الحسابات')
     }
   })
 

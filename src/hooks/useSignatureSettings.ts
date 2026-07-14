@@ -48,9 +48,10 @@ export const useUpdateSignatureSettings = () => {
     },
     onError: (error: unknown) => {
       console.error('Error updating signature settings:', error);
+      const message = error instanceof Error ? error.message : 'خطأ غير متوقع';
       toast({
         title: 'خطأ في التحديث',
-        description: `خطأ في تحديث إعدادات التوقيع: ${error.message}`,
+        description: `خطأ في تحديث إعدادات التوقيع: ${message}`,
         variant: 'destructive',
       });
     },
@@ -75,9 +76,10 @@ export const useCreateSignatureSettings = () => {
     },
     onError: (error: unknown) => {
       console.error('Error creating signature settings:', error);
+      const message = error instanceof Error ? error.message : 'خطأ غير متوقع';
       toast({
         title: 'خطأ في الإنشاء',
-        description: `خطأ في إنشاء إعدادات التوقيع: ${error.message}`,
+        description: `خطأ في إنشاء إعدادات التوقيع: ${message}`,
         variant: 'destructive',
       });
     },

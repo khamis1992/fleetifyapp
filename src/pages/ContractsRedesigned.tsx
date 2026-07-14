@@ -93,6 +93,7 @@ import { useUnifiedCompanyAccess } from "@/hooks/useUnifiedCompanyAccess";
 import { supabase, supabaseConfig } from "@/integrations/supabase/client";
 import { EmptyState } from '@/components/ui/EmptyState';
 import { systemColorPattern } from "@/lib/design-system/systemColorPattern";
+import { revertContractLegalProcedure } from '@/services/contractLegalProcedureService';
 
 // Types
 interface Contract {
@@ -1241,27 +1242,11 @@ function ContractsRedesigned() {
     if (!selectedContract || !companyId) return;
     setIsRemovingLegal(true);
     try {
-      const updateData: any = {
-        legal_status: null,
-        updated_at: new Date().toISOString()
-      };
-      if (selectedContract.status === 'under_legal_procedure') {
-        updateData.status = 'active';
-      }
-
-      const { error: contractError } = await supabase
-        .from('contracts')
-        .update(updateData)
-        .eq('id', selectedContract.id)
-        .eq('company_id', companyId);
-
-      if (contractError) throw contractError;
-
-      await supabase
-        .from('legal_cases')
-        .delete()
-        .eq('contract_id', selectedContract.id)
-        .eq('company_id', companyId);
+      await revertContractLegalProcedure({
+        contractId: selectedContract.id,
+        companyId,
+        reason: 'تمت إزالة الإجراء القانوني من صفحة العقود',
+      });
 
       toast({
         title: 'تم إزالة الإجراء القانوني',
@@ -1936,7 +1921,7 @@ function ContractsRedesigned() {
                   <Alert className="border-emerald-200 bg-emerald-50">
                     <CheckCircle className="h-4 w-4 text-emerald-600" />
                     <AlertDescription className="text-emerald-800 mr-2">
-                      سيتم إعادة العقد للحالة النشطة وحذف سجل العميل المتعثر إن وجد.
+                      سيتم إعادة العقد للحالة النشطة مع إغلاق القضايا وتعطيل سجل التعثر، مع الاحتفاظ بكامل السجل للمراجعة.
                     </AlertDescription>
                   </Alert>
                 </div>

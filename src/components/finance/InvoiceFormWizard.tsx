@@ -37,6 +37,7 @@ interface InvoiceFormWizardProps {
   vendorId?: string;
   type: 'sales' | 'purchase';
   contractId?: string;
+  onSuccess?: () => void;
 }
 
 const STEPS = [
@@ -57,7 +58,7 @@ const invoiceWizardTour = {
   ],
 } satisfies FeatureTourContent;
 
-export function InvoiceFormWizard({ open, onOpenChange, customerId, vendorId, type, contractId }: InvoiceFormWizardProps) {
+export function InvoiceFormWizard({ open, onOpenChange, customerId, vendorId, type, contractId, onSuccess }: InvoiceFormWizardProps) {
   const { user } = useAuth();
   const { data: accounts } = useEntryAllowedAccounts();
   const { data: costCenters } = useCostCenters();
@@ -211,6 +212,7 @@ export function InvoiceFormWizard({ open, onOpenChange, customerId, vendorId, ty
 
       toast.success(`تم إنشاء ${type === 'sales' ? 'فاتورة المبيعات' : 'فاتورة المشتريات'} بنجاح`);
       clearDraft();
+      onSuccess?.();
       onOpenChange(false);
       
       setInvoiceData({

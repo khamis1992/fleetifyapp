@@ -5,8 +5,8 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
-const BROWSERBASE_API_KEY = "bb_live_RqMcpDLo4ysMxVCU_RJjTbI5Z6E";
-const BROWSERBASE_PROJECT_ID = "01e67253-995a-456c-814c-ba30517bfba0";
+const BROWSERBASE_API_KEY = Deno.env.get("BROWSERBASE_API_KEY") || "";
+const BROWSERBASE_PROJECT_ID = Deno.env.get("BROWSERBASE_PROJECT_ID") || "";
 
 // تنفيذ CDP عبر WebSocket مع Promise متعدد الرسائل
 async function executeCDPCommands(connectUrl: string, commands: Array<{method: string, params?: any}>): Promise<void> {
@@ -596,7 +596,11 @@ async function fillCaseDetails() {
   const requestsIframe = document.querySelector('iframe[id*="caseDetails"]');
   if (requestsIframe) {
     const iframeDoc = requestsIframe.contentDocument || requestsIframe.contentWindow.document;
-    iframeDoc.body.innerHTML = LAWSUIT_DATA.claims.replace(/\\n/g, '<br>');
+    iframeDoc.body.replaceChildren();
+    LAWSUIT_DATA.claims.split(/\\n/g).forEach((line, index) => {
+      if (index > 0) iframeDoc.body.appendChild(iframeDoc.createElement('br'));
+      iframeDoc.body.appendChild(iframeDoc.createTextNode(line));
+    });
   }
   await sleep(500);
   
@@ -889,6 +893,10 @@ serve(async (req) => {
   }
 
   try {
+    if (!BROWSERBASE_API_KEY || !BROWSERBASE_PROJECT_ID) {
+      throw new Error("Browserbase credentials are not configured");
+    }
+
     const request: AutomationRequest = await req.json();
     console.log("[Taqadi] Received request:", JSON.stringify({ action: request.action, hasLawsuitData: !!request.lawsuitData }));
 

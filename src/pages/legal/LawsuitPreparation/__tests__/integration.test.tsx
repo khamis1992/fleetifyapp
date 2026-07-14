@@ -7,7 +7,7 @@ import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { BrowserRouter } from 'react-router-dom';
+import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import LawsuitPreparationPage from '../index';
 
 // Create a test query client
@@ -94,9 +94,14 @@ describe('LawsuitPreparation Integration', () => {
   const renderPage = () => {
     return render(
       <QueryClientProvider client={queryClient}>
-        <BrowserRouter>
-          <LawsuitPreparationPage />
-        </BrowserRouter>
+        <MemoryRouter initialEntries={['/legal/lawsuit-preparation/contract-1']}>
+          <Routes>
+            <Route
+              path="/legal/lawsuit-preparation/:contractId"
+              element={<LawsuitPreparationPage />}
+            />
+          </Routes>
+        </MemoryRouter>
       </QueryClientProvider>
     );
   };
@@ -104,41 +109,46 @@ describe('LawsuitPreparation Integration', () => {
   it('shows loading state initially', () => {
     renderPage();
     
-    expect(screen.getByText('جاري تحميل البيانات...')).toBeInTheDocument();
+    expect(screen.getByText('جاري تحميل بيانات القضية...')).toBeInTheDocument();
   });
   
   it('renders the main components after loading', async () => {
     renderPage();
     
     await waitFor(() => {
-      expect(screen.getByText('تجهيز الدعوى')).toBeInTheDocument();
+      expect(screen.getByText('تجهيز الدعوى القانونية')).toBeInTheDocument();
     });
     
     // Check for main components
-    expect(screen.getByText('المستندات الإلزامية')).toBeInTheDocument();
-    expect(screen.getByText('بيانات تقاضي (للنسخ)')).toBeInTheDocument();
+    expect(screen.getByText('حافظة المستندات')).toBeInTheDocument();
+    expect(screen.getByText('بيانات التقاضي')).toBeInTheDocument();
   });
   
   it('allows toggling Taqadi data section', async () => {
     renderPage();
     
     await waitFor(() => {
-      expect(screen.getByText('بيانات تقاضي (للنسخ)')).toBeInTheDocument();
+      expect(screen.getByText('بيانات التقاضي')).toBeInTheDocument();
     });
     
-    const taqadiHeader = screen.getByText('بيانات تقاضي (للنسخ)');
+    const taqadiHeader = screen.getByText('بيانات التقاضي');
     fireEvent.click(taqadiHeader);
     
     await waitFor(() => {
-      expect(screen.getByText('عنوان الدعوى')).toBeInTheDocument();
+      expect(screen.getByText('جاري تحميل بيانات التقاضي...')).toBeInTheDocument();
     });
   });
   
   it('displays generate buttons for mandatory documents', async () => {
     renderPage();
+
+    await waitFor(() => {
+      expect(screen.getByText('حافظة المستندات')).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByText('حافظة المستندات'));
     
     await waitFor(() => {
-      expect(screen.getByText('المذكرة الشارحة')).toBeInTheDocument();
+      expect(screen.getAllByText('المذكرة الشارحة').length).toBeGreaterThan(0);
     });
     
     const generateButtons = screen.getAllByText('توليد');
@@ -149,11 +159,10 @@ describe('LawsuitPreparation Integration', () => {
     renderPage();
     
     await waitFor(() => {
-      expect(screen.getByText('تجهيز الدعوى')).toBeInTheDocument();
+      expect(screen.getByText('الإغلاق والمتابعة')).toBeInTheDocument();
     });
-    
-    expect(screen.getByText('توليد جميع المستندات')).toBeInTheDocument();
+    fireEvent.click(screen.getByText('الإغلاق والمتابعة'));
+
     expect(screen.getByText('تسجيل القضية في النظام')).toBeInTheDocument();
-    expect(screen.getByText('تحميل الكل ZIP')).toBeInTheDocument();
   });
 });

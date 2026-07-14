@@ -143,7 +143,7 @@ const faqs: FAQ[] = [
   // المالية
   {
     question: 'متى تحتاج الفاتورة موافقة المدير؟',
-    answer: 'الفواتير أقل من 1000 د.ك تُعتمد تلقائياً. الفواتير 1000 د.ك أو أكثر تحتاج موافقة المدير.',
+    answer: 'الفواتير أقل من 1000 ر.ق تُعتمد تلقائياً. الفواتير 1000 ر.ق أو أكثر تحتاج موافقة المدير.',
     category: 'finance'
   },
   // الأسطول
@@ -690,11 +690,11 @@ export default function HelpHub() {
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div className="flex items-center gap-2">
                     <CheckCircle className="h-4 w-4 text-green-500" />
-                    <span><strong>أقل من 1000 د.ك:</strong> موافقة تلقائية</span>
+                    <span><strong>أقل من 1000 ر.ق:</strong> موافقة تلقائية</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <Clock className="h-4 w-4 text-orange-500" />
-                    <span><strong>1000+ د.ك:</strong> يتطلب موافقة المدير</span>
+                    <span><strong>1000+ ر.ق:</strong> يتطلب موافقة المدير</span>
                   </div>
                 </div>
               </div>
@@ -776,7 +776,7 @@ export default function HelpHub() {
                 ))}
               </div>
 
-              <Button onClick={() => navigate('/collections')} className="w-full">
+              <Button onClick={() => navigate('/finance/billing?tab=ai-collections')} className="w-full">
                 افتح نظام التحصيل <ArrowRight className="mr-2 h-4 w-4" />
               </Button>
             </CardContent>

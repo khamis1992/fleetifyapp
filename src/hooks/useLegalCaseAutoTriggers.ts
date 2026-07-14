@@ -60,6 +60,7 @@ export const useLegalCaseAutoTriggers = (companyId: string) => {
             updated_by: user.id,
           })
           .eq('id', existing.id)
+          .eq('company_id', companyId)
           .select()
           .single();
 
@@ -100,7 +101,10 @@ export const useLegalCaseAutoTriggers = (companyId: string) => {
       const { error } = await supabase
         .from('legal_case_auto_triggers')
         .delete()
-        .eq('id', config.id);
+        .eq('id', config.id)
+        .eq('company_id', companyId)
+        .select('id')
+        .single();
 
       if (error) throw error;
     },

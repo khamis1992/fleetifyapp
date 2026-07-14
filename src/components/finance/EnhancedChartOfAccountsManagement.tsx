@@ -102,14 +102,14 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
 
         if (error) throw error;
 
-        const isSystem = companyData?.name === 'System Company' || 
+        const isSystem = Boolean(companyData?.name === 'System Company' || 
                         companyData?.name_ar === 'شركة النظام' ||
                         companyData?.name === 'إدارة النظام' ||
                         companyData?.name_ar === 'System Administration' ||
                         companyData?.name?.toLowerCase().includes('system') ||
                         companyData?.name?.toLowerCase().includes('administration') ||
                         companyData?.name_ar?.includes('النظام') ||
-                        companyData?.name_ar?.includes('إدارة');
+                        companyData?.name_ar?.includes('إدارة'));
 
         setIsSystemCompany(isSystem);
       } catch (error) {
@@ -257,7 +257,7 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
       console.error('خطأ في إنشاء الحساب الفرعي:', error);
       toast({
         title: "خطأ في إنشاء الحساب الفرعي",
-        description: error.message || "حدث خطأ غير متوقع",
+        description: error instanceof Error ? error.message : "حدث خطأ غير متوقع",
         variant: "destructive"
       });
     }

@@ -83,7 +83,7 @@ export class TranslationValidator {
       checkCulturalAppropriateness: true,
       checkContextualAccuracy: true,
       checkInterpolationSyntax: true,
-      checkForPluralization: true,
+      checkPluralization: true,
       checkForHardcodedText: true,
       ...config
     };

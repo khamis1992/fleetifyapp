@@ -146,7 +146,7 @@ serve(async (req) => {
               total_amount: contract.monthly_rate,
               paid_amount: 0,
               balance_due: contract.monthly_rate,
-              currency: 'KWD',
+              currency: 'QAR',
               status: 'sent',
               payment_status: 'unpaid',
               notes: `Monthly rental invoice for ${invoiceMonth} (Historical backfill)`

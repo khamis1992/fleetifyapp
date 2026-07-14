@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { User, Session } from "@supabase/supabase-js";
 import { validateInput, loginSchema, registerSchema, changePasswordSchema, withRateLimit } from './validation';
 import { securityConfig } from './security';
+import type { Database } from '@/integrations/supabase/types';
 
 export interface AuthUser extends User {
   profile?: {
@@ -84,7 +85,7 @@ export const authService = {
     try {
       // Add timeout wrapper for signIn operation
       const signInWithTimeout = async () => {
-        const timeoutPromise = new Promise((_, reject) =>
+        const timeoutPromise = new Promise<never>((_, reject) =>
           setTimeout(() => reject(new Error('Authentication timeout - please try again')), 30000)
         );
 
@@ -259,11 +260,16 @@ export const authService = {
 
       // If still no profile, log warning but continue (don't block login)
       if (profileError) {
+        const errorDetails = profileError as Error & {
+          code?: string;
+          details?: string;
+          hint?: string;
+        };
         console.warn('📝 [AUTH] Profile fetch error (continuing anyway):', {
-          code: profileError.code,
-          message: profileError.message,
-          details: profileError.details,
-          hint: profileError.hint
+          code: errorDetails.code,
+          message: errorDetails.message,
+          details: errorDetails.details,
+          hint: errorDetails.hint
         });
       }
 
@@ -316,9 +322,10 @@ export const authService = {
   },
 
   async updateProfile(userId: string, updates: Record<string, unknown>) {
+    const profileUpdates = updates as Database['public']['Tables']['profiles']['Update'];
     const { error } = await supabase
       .from('profiles')
-      .update(updates)
+      .update(profileUpdates)
       .eq('user_id', userId);
 
     return { error };
@@ -339,6 +346,20 @@ export const authService = {
       if (!validationResult.success) {
         const errorMessage = Object.values(validationResult.errors || {}).join(', ');
         return { error: new Error(errorMessage) };
+      }
+
+      const { data: userData, error: userError } = await supabase.auth.getUser();
+      const email = userData.user?.email;
+      if (userError || !email) {
+        return { error: userError || new Error('Unable to verify the current user') };
+      }
+
+      const { error: verificationError } = await supabase.auth.signInWithPassword({
+        email,
+        password: validationResult.data!.currentPassword,
+      });
+      if (verificationError) {
+        return { error: new Error('Current password is incorrect') };
       }
 
       const { error } = await supabase.auth.updateUser({

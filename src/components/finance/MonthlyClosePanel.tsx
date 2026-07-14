@@ -98,6 +98,8 @@ export function MonthlyClosePanel() {
     queryKey: ["accounting-periods", companyId],
     enabled: Boolean(companyId),
     queryFn: async () => {
+      if (!companyId) throw new Error("No company access");
+
       const { data, error } = await supabase
         .from("accounting_periods")
         .select("id,company_id,period_name,start_date,end_date,status,is_adjustment_period")
@@ -114,6 +116,8 @@ export function MonthlyClosePanel() {
     queryKey: ["equity-accounts", companyId],
     enabled: Boolean(companyId),
     queryFn: async () => {
+      if (!companyId) throw new Error("No company access");
+
       const { data, error } = await supabase
         .from("chart_of_accounts")
         .select("id, account_name, account_code")
@@ -131,6 +135,8 @@ export function MonthlyClosePanel() {
     queryKey: ["annual-financial-close-runs", companyId],
     enabled: Boolean(companyId),
     queryFn: async () => {
+      if (!companyId) throw new Error("No company access");
+
       const { data, error } = await supabase
         .from("annual_financial_close_runs")
         .select("id, fiscal_year, period_start, period_end, revenue_total, expense_total, net_income, status, notes")

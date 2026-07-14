@@ -47,15 +47,14 @@ export const useFinancialOverview = (activityFilter?: 'car_rental' | 'real_estat
   const { companyId, getQueryKey } = useUnifiedCompanyAccess();
   
   return useQuery({
-    queryKey: getQueryKey(['financial-overview', activityFilter]),
+    queryKey: getQueryKey(['financial-overview', activityFilter ?? 'all']),
     queryFn: async (): Promise<FinancialOverview> => {
       if (!companyId) {
         return getEmptyFinancialOverview();
       }
       
       const currentDate = new Date();
-      const oneMonthAgo = new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1);
-      const threeMonthsAgo = new Date(currentDate.getFullYear(), currentDate.getMonth() - 3, 1);
+      const threeMonthsAgo = new Date(currentDate.getFullYear(), currentDate.getMonth() - 2, 1);
 
       // Optimized: Only fetch recent data (last 3 months instead of 6)
       // Use count() for aggregations instead of fetching all records
@@ -65,7 +64,7 @@ export const useFinancialOverview = (activityFilter?: 'car_rental' | 'real_estat
         .from('payments')
         .select('amount', { count: 'exact', head: false })
         .eq('company_id', companyId)
-        .eq('payment_method', 'received')
+        .eq('transaction_type', 'receipt')
         .eq('payment_status', 'completed')
         .gte('payment_date', threeMonthsAgo.toISOString().split('T')[0]);
 
@@ -82,7 +81,7 @@ export const useFinancialOverview = (activityFilter?: 'car_rental' | 'real_estat
         .from('payments')
         .select('amount', { count: 'exact', head: false })
         .eq('company_id', companyId)
-        .eq('payment_method', 'made')
+        .eq('transaction_type', 'payment')
         .eq('payment_status', 'completed')
         .gte('payment_date', threeMonthsAgo.toISOString().split('T')[0]);
 
@@ -173,7 +172,7 @@ async function generateRealMonthlyTrend(companyId: string, activityFilter?: 'car
         .from('payments')
         .select('amount')
         .eq('company_id', companyId)
-        .eq('payment_method', 'received')
+        .eq('transaction_type', 'receipt')
         .eq('payment_status', 'completed')
         .gte('payment_date', monthStart)
         .lte('payment_date', monthEnd);
@@ -198,7 +197,7 @@ async function generateRealMonthlyTrend(companyId: string, activityFilter?: 'car
       .from('payments')
       .select('amount')
       .eq('company_id', companyId)
-      .eq('payment_method', 'made')
+      .eq('transaction_type', 'payment')
       .eq('payment_status', 'completed')
       .gte('payment_date', monthStart)
       .lte('payment_date', monthEnd);

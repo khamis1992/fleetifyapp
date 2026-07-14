@@ -36,8 +36,9 @@ import {
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Textarea } from "@/components/ui/textarea";
-import { useCustomers, type Customer } from "@/hooks/useCustomers";
+import { useCustomers } from "@/hooks/useCustomers";
 import { useCreateDeposit, useUpdateDeposit } from "@/hooks/useDeposits";
+import type { Database } from "@/integrations/supabase/types";
 import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { cn } from "@/lib/utils";
@@ -53,9 +54,11 @@ const depositSchema = z.object({
 });
 
 type DepositFormData = z.infer<typeof depositSchema>;
+type CustomerRow = Database["public"]["Tables"]["customers"]["Row"];
+type DepositRow = Database["public"]["Tables"]["customer_deposits"]["Row"];
 
 interface DepositFormProps {
-  deposit?: any;
+  deposit?: DepositRow;
   onSuccess: () => void;
 }
 
@@ -97,7 +100,7 @@ const colors = {
   focus: systemColorPattern.colors.focus,
 };
 
-const getCustomerName = (customer?: Partial<Customer>) => {
+const getCustomerName = (customer?: Partial<CustomerRow>) => {
   if (!customer) return "";
   if (customer.customer_type === "corporate") {
     return customer.company_name_ar || customer.company_name || "شركة بدون اسم";
@@ -108,7 +111,7 @@ const getCustomerName = (customer?: Partial<Customer>) => {
   return arabicName || englishName || customer.company_name_ar || customer.company_name || "عميل بدون اسم";
 };
 
-const getCustomerSearchValue = (customer: Customer) =>
+const getCustomerSearchValue = (customer: CustomerRow) =>
   [
     getCustomerName(customer),
     customer.company_name,
@@ -356,7 +359,7 @@ export function DepositForm({ deposit, onSuccess }: DepositFormProps) {
                         onChange={(e) => field.onChange(Number(e.target.value) || 0)}
                         dir="ltr"
                       />
-                      <span>د.ك</span>
+                      <span>ر.ق</span>
                     </div>
                   </FormControl>
                   <FormMessage />

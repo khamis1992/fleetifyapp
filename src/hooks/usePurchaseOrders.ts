@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useUnifiedCompanyAccess } from './useUnifiedCompanyAccess';
+import type { Json } from '@/integrations/supabase/types';
 
 export interface PurchaseOrder {
   id: string;
@@ -39,6 +40,7 @@ export interface PurchaseOrder {
 export interface PurchaseOrderItem {
   id: string;
   purchase_order_id: string;
+  inventory_item_id?: string | null;
   item_code?: string;
   description: string;
   description_ar?: string;
@@ -63,6 +65,7 @@ export interface CreatePurchaseOrderData {
   phone?: string;
   email?: string;
   items: Array<{
+    inventory_item_id?: string;
     item_code?: string;
     description: string;
     description_ar?: string;
@@ -73,7 +76,7 @@ export interface CreatePurchaseOrderData {
   }>;
 }
 
-export interface UpdatePurchaseOrderData extends Partial<CreatePurchaseOrderData> {
+export interface UpdatePurchaseOrderData extends Omit<Partial<CreatePurchaseOrderData>, 'items'> {
   status?: PurchaseOrder['status'];
   delivery_date?: string;
 }
@@ -135,60 +138,24 @@ export const useCreatePurchaseOrder = () => {
   return useMutation({
     mutationFn: async (data: CreatePurchaseOrderData) => {
       if (!companyId) throw new Error('Company ID is required');
-
-      // Generate purchase order number
-      const { data: orderNumber, error: numberError } = await supabase
-        .rpc('generate_purchase_order_number', { company_id_param: companyId });
-
-      if (numberError) throw numberError;
-
-      // Calculate totals
-      const subtotal = data.items.reduce((sum, item) => sum + (item.quantity * item.unit_price), 0);
-      const total_amount = subtotal; // Add tax calculation if needed
-
-      // Create purchase order
-      const { data: purchaseOrder, error: orderError } = await supabase
-        .from('purchase_orders')
-        .insert({
-          company_id: companyId,
-          vendor_id: data.vendor_id,
-          order_number: orderNumber,
-          order_date: data.order_date,
-          expected_delivery_date: data.expected_delivery_date,
-          subtotal,
-          total_amount,
-          notes: data.notes,
-          terms_and_conditions: data.terms_and_conditions,
-          delivery_address: data.delivery_address,
-          contact_person: data.contact_person,
-          phone: data.phone,
-          email: data.email,
-          created_by: '00000000-0000-0000-0000-000000000000', // Will be replaced by auth trigger
-        })
-        .select()
-        .single();
-
-      if (orderError) throw orderError;
-
-      // Create purchase order items
-      const items = data.items.map(item => ({
-        purchase_order_id: purchaseOrder.id,
-        item_code: item.item_code,
-        description: item.description,
-        description_ar: item.description_ar,
-        quantity: item.quantity,
-        unit_price: item.unit_price,
-        total_price: item.quantity * item.unit_price,
-        unit_of_measure: item.unit_of_measure || 'PCS',
-        notes: item.notes,
-      }));
-
-      const { error: itemsError } = await supabase
-        .from('purchase_order_items')
-        .insert(items);
-
-      if (itemsError) throw itemsError;
-
+      const { data: purchaseOrder, error } = await supabase.rpc(
+        'create_purchase_order_v1',
+        {
+          p_company_id: companyId,
+          p_vendor_id: data.vendor_id,
+          p_order_date: data.order_date,
+          p_expected_delivery_date: data.expected_delivery_date || null,
+          p_notes: data.notes || null,
+          p_terms_and_conditions: data.terms_and_conditions || null,
+          p_delivery_address: data.delivery_address || null,
+          p_contact_person: data.contact_person || null,
+          p_phone: data.phone || null,
+          p_email: data.email || null,
+          p_items: data.items as unknown as Json,
+          p_actor_id: null,
+        }
+      );
+      if (error) throw error;
       return purchaseOrder;
     },
     onSuccess: () => {
@@ -204,13 +171,40 @@ export const useCreatePurchaseOrder = () => {
 
 export const useUpdatePurchaseOrder = () => {
   const queryClient = useQueryClient();
+  const { companyId } = useUnifiedCompanyAccess();
 
   return useMutation({
     mutationFn: async ({ id, data }: { id: string; data: UpdatePurchaseOrderData }) => {
+      if (!companyId) throw new Error('Company ID is required');
+      if (data.status) {
+        if (Object.keys(data).length !== 1) {
+          throw new Error('Status transitions cannot be combined with purchase order edits');
+        }
+        const { error } = await supabase.rpc('transition_purchase_order_status_v1', {
+          p_company_id: companyId,
+          p_purchase_order_id: id,
+          p_target_status: data.status,
+          p_actor_id: null,
+        });
+        if (error) throw error;
+        return;
+      }
+      const { data: existing, error: existingError } = await supabase
+        .from('purchase_orders')
+        .select('status')
+        .eq('id', id)
+        .eq('company_id', companyId)
+        .single();
+      if (existingError || !existing) throw existingError || new Error('Purchase order not found');
+      if (!['draft', 'pending_approval'].includes(existing.status)) {
+        throw new Error('لا يمكن تعديل أمر شراء معتمد أو مستلم');
+      }
       const { error } = await supabase
         .from('purchase_orders')
         .update(data)
-        .eq('id', id);
+        .eq('id', id)
+        .eq('company_id', companyId)
+        .eq('status', existing.status);
 
       if (error) throw error;
     },
@@ -227,32 +221,27 @@ export const useUpdatePurchaseOrder = () => {
 
 export const useDeletePurchaseOrder = () => {
   const queryClient = useQueryClient();
+  const { companyId } = useUnifiedCompanyAccess();
 
   return useMutation({
     mutationFn: async (id: string) => {
-      // First delete items
-      const { error: itemsError } = await supabase
-        .from('purchase_order_items')
-        .delete()
-        .eq('purchase_order_id', id);
-
-      if (itemsError) throw itemsError;
-
-      // Then delete the purchase order
-      const { error } = await supabase
-        .from('purchase_orders')
-        .delete()
-        .eq('id', id);
+      if (!companyId) throw new Error('Company ID is required');
+      const { error } = await supabase.rpc('transition_purchase_order_status_v1', {
+        p_company_id: companyId,
+        p_purchase_order_id: id,
+        p_target_status: 'cancelled',
+        p_actor_id: null,
+      });
 
       if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['purchase-orders'] });
-      toast.success('تم حذف أمر الشراء بنجاح');
+      toast.success('تم إلغاء أمر الشراء بنجاح');
     },
     onError: (error) => {
       console.error('Error deleting purchase order:', error);
-      toast.error('حدث خطأ أثناء حذف أمر الشراء');
+      toast.error('حدث خطأ أثناء إلغاء أمر الشراء');
     },
   });
 };

@@ -38,7 +38,7 @@ Demo accounts include ready-to-use sample data:
 ### 3. **No Email Required** ✅
 - Demo login bypasses email confirmation
 - Uses pre-created demo account: `demo@fleetify.app`
-- Password auto-managed: `FleetifyDemo2025!`
+- Password is managed by secure server-side session provisioning
 - One-click access to full system
 - User never sees credentials - all handled automatically
 
@@ -212,7 +212,7 @@ seedSampleContracts(companyId) → void
 ```typescript
 export const DEMO_CREDENTIALS = {
   email: 'demo@fleetify.app',
-  password: 'FleetifyDemo2025!',
+  password: process.env.DEMO_ACCOUNT_PASSWORD,
   companyName: 'شركة الأسطول التجريبية',
 };
 ```
@@ -371,5 +371,5 @@ All requirements met:
 
 **Demo Credentials** (for testing):
 - Email: demo@fleetify.app
-- Password: FleetifyDemo2025!
+- Password: managed outside the client application
 - (Auto-used when clicking "Try Demo" button)

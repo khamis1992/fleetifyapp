@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import type { Json } from '@/integrations/supabase/types';
 import { useToast } from '@/hooks/use-toast';
 
 export interface SystemStats {
@@ -8,7 +9,7 @@ export interface SystemStats {
   totalUsers: number;
   totalRevenue: number;
   pendingPayments: number;
-  systemUsage: number;
+  activeCompanyRate: number;
 }
 
 export interface CompanyOverview {
@@ -27,7 +28,7 @@ export interface SubscriptionPlan {
   name_ar?: string;
   price: number;
   billing_cycle: string;
-  features: any; // JSON type from database
+  features: Json;
   max_users?: number;
   is_active: boolean;
 }
@@ -39,14 +40,14 @@ export const useSuperAdminData = () => {
     totalUsers: 0,
     totalRevenue: 0,
     pendingPayments: 0,
-    systemUsage: 0
+    activeCompanyRate: 0
   });
   const [companies, setCompanies] = useState<CompanyOverview[]>([]);
   const [subscriptionPlans, setSubscriptionPlans] = useState<SubscriptionPlan[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
-  const fetchSystemStats = async () => {
+  const fetchSystemStats = useCallback(async () => {
     try {
       // Fetch company counts
       const { data: companiesData, error: companiesError } = await supabase
@@ -73,7 +74,7 @@ export const useSuperAdminData = () => {
 
       if (revenueError) throw revenueError;
 
-      const totalRevenue = revenueData?.reduce((sum, t) => sum + (t.amount || 0), 0) || 0;
+      const totalRevenue = revenueData?.reduce((sum, t) => sum + Number(t.amount || 0), 0) || 0;
 
       // Fetch pending payments
       const { count: pendingCount, error: pendingError } = await supabase
@@ -89,7 +90,9 @@ export const useSuperAdminData = () => {
         totalUsers: userCount || 0,
         totalRevenue,
         pendingPayments: pendingCount || 0,
-        systemUsage: 75 // Mock system usage percentage
+        activeCompanyRate: totalCompanies > 0
+          ? Math.round((activeCompanies / totalCompanies) * 100)
+          : 0
       });
     } catch (error) {
       console.error('Error fetching system stats:', error);
@@ -99,9 +102,9 @@ export const useSuperAdminData = () => {
         variant: "destructive"
       });
     }
-  };
+  }, [toast]);
 
-  const fetchCompanies = async () => {
+  const fetchCompanies = useCallback(async () => {
     try {
       const { data, error } = await supabase
         .from('companies')
@@ -118,25 +121,55 @@ export const useSuperAdminData = () => {
 
       if (error) throw error;
 
-      // Get user counts for each company
-      const companiesWithCounts = await Promise.all(
-        (data || []).map(async (company) => {
-          const { count } = await supabase
-            .from('profiles')
-            .select('*', { count: 'exact', head: true })
-            .eq('company_id', company.id);
+      const companyIds = (data || []).map(company => company.id);
+      if (companyIds.length === 0) {
+        setCompanies([]);
+        return;
+      }
 
-          return {
-            id: company.id,
-            name: company.name,
-            status: company.subscription_status || 'active',
-            subscriptionPlan: company.subscription_plan || 'Basic',
-            lastActive: company.updated_at,
-            userCount: count || 0,
-            monthlyRevenue: 100 // Mock data
-          };
-        })
-      );
+      const monthStart = new Date();
+      monthStart.setUTCDate(1);
+      monthStart.setUTCHours(0, 0, 0, 0);
+
+      const [profilesResult, transactionsResult] = await Promise.all([
+        supabase
+          .from('profiles')
+          .select('company_id')
+          .in('company_id', companyIds),
+        supabase
+          .from('subscription_transactions')
+          .select('company_id, amount')
+          .in('company_id', companyIds)
+          .eq('status', 'completed')
+          .gte('created_at', monthStart.toISOString())
+      ]);
+
+      if (profilesResult.error) throw profilesResult.error;
+      if (transactionsResult.error) throw transactionsResult.error;
+
+      const userCounts = new Map<string, number>();
+      for (const profile of profilesResult.data || []) {
+        if (!profile.company_id) continue;
+        userCounts.set(profile.company_id, (userCounts.get(profile.company_id) || 0) + 1);
+      }
+
+      const monthlyRevenueByCompany = new Map<string, number>();
+      for (const transaction of transactionsResult.data || []) {
+        monthlyRevenueByCompany.set(
+          transaction.company_id,
+          (monthlyRevenueByCompany.get(transaction.company_id) || 0) + Number(transaction.amount || 0)
+        );
+      }
+
+      const companiesWithCounts = (data || []).map(company => ({
+        id: company.id,
+        name: company.name,
+        status: company.subscription_status || 'active',
+        subscriptionPlan: company.subscription_plan || 'Basic',
+        lastActive: company.updated_at || company.created_at,
+        userCount: userCounts.get(company.id) || 0,
+        monthlyRevenue: monthlyRevenueByCompany.get(company.id) || 0
+      }));
 
       setCompanies(companiesWithCounts);
     } catch (error) {
@@ -150,9 +183,9 @@ export const useSuperAdminData = () => {
         variant: "destructive"
       });
     }
-  };
+  }, [toast]);
 
-  const fetchSubscriptionPlans = async () => {
+  const fetchSubscriptionPlans = useCallback(async () => {
     try {
       const { data, error } = await supabase
         .from('subscription_plans')
@@ -168,7 +201,7 @@ export const useSuperAdminData = () => {
         console.error('Error fetching subscription plans:', error);
       }
     }
-  };
+  }, []);
 
   useEffect(() => {
     const loadData = async () => {
@@ -182,13 +215,13 @@ export const useSuperAdminData = () => {
     };
 
     loadData();
-  }, []);
+  }, [fetchCompanies, fetchSubscriptionPlans, fetchSystemStats]);
 
-  const refreshData = () => {
+  const refreshData = useCallback(() => {
     fetchSystemStats();
     fetchCompanies();
     fetchSubscriptionPlans();
-  };
+  }, [fetchCompanies, fetchSubscriptionPlans, fetchSystemStats]);
 
   return {
     stats,

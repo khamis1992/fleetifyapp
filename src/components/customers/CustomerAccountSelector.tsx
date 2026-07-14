@@ -427,7 +427,7 @@ export function CustomerAccountSelector({
             تحديث
           </Button>
           <Badge variant="outline" className="text-xs">
-            آخر تحديث: {lastUpdate.toLocaleTimeString('ar-KW')}
+            آخر تحديث: {lastUpdate.toLocaleTimeString('ar-QA')}
           </Badge>
         </div>
       </CardHeader>

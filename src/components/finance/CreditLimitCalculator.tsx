@@ -186,7 +186,7 @@ export const CreditLimitCalculator: React.FC<CreditLimitCalculatorProps> = ({
           <div className="flex items-center justify-between">
             <span className="text-sm font-medium">حد الائتمان المحسوب:</span>
             <span className="text-lg font-bold text-primary">
-              {calculatedLimit.toLocaleString()} د.ك
+              {calculatedLimit.toLocaleString()} ر.ق
             </span>
           </div>
 
@@ -206,7 +206,7 @@ export const CreditLimitCalculator: React.FC<CreditLimitCalculatorProps> = ({
               </div>
               <div className="flex justify-between">
                 <span>الدخل الصافي الشهري:</span>
-                <span>{(monthlyIncome - existingDebts).toLocaleString()} د.ك</span>
+                <span>{(monthlyIncome - existingDebts).toLocaleString()} ر.ق</span>
               </div>
             </div>
           )}

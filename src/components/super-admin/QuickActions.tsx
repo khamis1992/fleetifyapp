@@ -50,17 +50,17 @@ export const QuickActions: React.FC = () => {
       description: 'إنشاء حساب شركة جديد',
       icon: Plus,
       color: 'from-blue-500 to-blue-600',
-      route: '/super-admin/companies',
+      route: '/admin/companies',
       badge: 'شائع',
-      action: () => handleAction('add_company', '/super-admin/companies')
+      action: () => handleAction('add_company', '/admin/companies')
     },
     {
       label: 'إعدادات النظام',
       description: 'تكوين معاملات النظام',
       icon: Settings,
       color: 'from-slate-500 to-slate-600',
-      route: '/super-admin/settings',
-      action: () => handleAction('system_settings', '/super-admin/settings')
+      route: '/admin/settings',
+      action: () => handleAction('system_settings', '/admin/settings')
     },
     {
       label: 'تقارير النظام',
@@ -75,17 +75,17 @@ export const QuickActions: React.FC = () => {
       description: 'إدارة مستخدمي النظام',
       icon: Users,
       color: 'from-purple-500 to-purple-600',
-      route: '/super-admin/users',
-      action: () => handleAction('user_management', '/super-admin/users')
+      route: '/admin/users',
+      action: () => handleAction('user_management', '/admin/users')
     },
     {
       label: 'الأمان والحماية',
       description: 'إعدادات الأمان والمراقبة',
       icon: Shield,
       color: 'from-red-500 to-red-600',
-      route: '/super-admin/security',
+      route: '/admin/settings',
       badge: 'مهم',
-      action: () => handleAction('security', '/super-admin/security')
+      action: () => handleAction('security', '/admin/settings')
     },
     {
       label: 'تنبيهات النظام',

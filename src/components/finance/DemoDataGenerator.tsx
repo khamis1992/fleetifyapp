@@ -18,6 +18,13 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
+import type { Database as AppDatabase } from '@/integrations/supabase/types';
+
+type ContractInsert = AppDatabase['public']['Tables']['contracts']['Insert'];
+type PaymentInsert = AppDatabase['public']['Tables']['payments']['Insert'];
+
+const getErrorMessage = (error: unknown): string =>
+  error instanceof Error ? error.message : 'Unknown error';
 
 interface DemoDataStats {
   customers: number;
@@ -56,14 +63,14 @@ export const DemoDataGenerator: React.FC = () => {
 
         if (error) throw error;
 
-        const isSystem = companyData?.name === 'System Company' || 
+        const isSystem = Boolean(companyData?.name === 'System Company' || 
                         companyData?.name_ar === 'شركة النظام' ||
                         companyData?.name === 'إدارة النظام' ||
                         companyData?.name_ar === 'System Administration' ||
                         companyData?.name?.toLowerCase().includes('system') ||
                         companyData?.name?.toLowerCase().includes('administration') ||
                         companyData?.name_ar?.includes('النظام') ||
-                        companyData?.name_ar?.includes('إدارة');
+                        companyData?.name_ar?.includes('إدارة'));
 
         setIsSystemCompany(isSystem);
         setCompanyName(companyData?.name_ar || companyData?.name || 'غير محدد');
@@ -112,9 +119,9 @@ export const DemoDataGenerator: React.FC = () => {
 
   // بيانات الحسابات البنكية الوهمية
   const demoBankAccounts = [
-    { bank_name: 'البنك الوطني الكويتي', account_number: '1234567890', currency: 'KWD', opening_balance: 50000 },
-    { bank_name: 'بنك الخليج', account_number: '0987654321', currency: 'KWD', opening_balance: 30000 },
-    { bank_name: 'بنك بوبيان', account_number: '1357924680', currency: 'KWD', opening_balance: 25000 },
+    { bank_name: 'بنك قطر الوطني', account_number: '1234567890', currency: 'QAR', opening_balance: 50000 },
+    { bank_name: 'مصرف قطر الإسلامي', account_number: '0987654321', currency: 'QAR', opening_balance: 30000 },
+    { bank_name: 'البنك التجاري القطري', account_number: '1357924680', currency: 'QAR', opening_balance: 25000 },
     { bank_name: 'البنك التجاري الكويتي', account_number: '2468013579', currency: 'USD', opening_balance: 15000 }
   ];
 
@@ -320,10 +327,10 @@ export const DemoDataGenerator: React.FC = () => {
             status: 'available',
             is_active: true,
             fuel_type: 'gasoline',
-            transmission: 'automatic',
-            daily_rate: Math.floor(Math.random() * 50) + 20, // 20-70 د.ك يومياً
-            weekly_rate: Math.floor(Math.random() * 300) + 120, // 120-420 د.ك أسبوعياً
-            monthly_rate: Math.floor(Math.random() * 1000) + 400 // 400-1400 د.ك شهرياً
+            transmission_type: 'automatic',
+            daily_rate: Math.floor(Math.random() * 50) + 20, // 20-70 QAR daily
+            weekly_rate: Math.floor(Math.random() * 300) + 120, // 120-420 QAR weekly
+            monthly_rate: Math.floor(Math.random() * 1000) + 400 // 400-1400 QAR monthly
           })
           .select('id')
           .single();
@@ -401,7 +408,7 @@ export const DemoDataGenerator: React.FC = () => {
       // الخطوة 5: إضافة العقود
       setCurrentStep('إضافة عقود الايجار...');
       
-      const contracts = [];
+      const contracts: ContractInsert[] = [];
       const contractIds: string[] = [];
       
       // إنشاء عقود للعملاء والمركبات
@@ -413,14 +420,15 @@ export const DemoDataGenerator: React.FC = () => {
         const endDate = new Date(startDate);
         endDate.setMonth(endDate.getMonth() + Math.floor(Math.random() * 12) + 1); // 1-12 شهر
         
-        const contractAmount = Math.floor(Math.random() * 8000) + 2000; // 2000-10000 د.ك
+        const contractAmount = Math.floor(Math.random() * 8000) + 2000; // 2000-10000 QAR
         const monthlyAmount = Math.floor(contractAmount / ((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24 * 30)));
         
-        const contract = {
+        const contract: ContractInsert = {
           company_id: companyId,
           customer_id: customerId,
           vehicle_id: vehicleId,
           contract_number: `RENT-${String(i + 1).padStart(4, '0')}`,
+          contract_date: startDate.toISOString().split('T')[0],
           contract_type: 'rental',
           start_date: startDate.toISOString().split('T')[0],
           end_date: endDate.toISOString().split('T')[0],
@@ -456,7 +464,7 @@ export const DemoDataGenerator: React.FC = () => {
       for (let i = 0; i < 15; i++) {
         const customerId = customerIds[Math.floor(Math.random() * customerIds.length)];
         const contractId = contractIds.length > 0 ? contractIds[Math.floor(Math.random() * contractIds.length)] : null;
-        const amount = Math.floor(Math.random() * 5000) + 1000; // 1000-6000 د.ك
+        const amount = Math.floor(Math.random() * 5000) + 1000; // 1000-6000 QAR
         const date = new Date();
         date.setDate(date.getDate() - Math.floor(Math.random() * 60)); // آخر 60 يوم
         
@@ -491,7 +499,7 @@ export const DemoDataGenerator: React.FC = () => {
       const purchaseInvoices = [];
       for (let i = 0; i < 12; i++) {
         const vendorId = vendorIds[Math.floor(Math.random() * vendorIds.length)];
-        const amount = Math.floor(Math.random() * 3000) + 500; // 500-3500 د.ك
+        const amount = Math.floor(Math.random() * 3000) + 500; // 500-3500 QAR
         const date = new Date();
         date.setDate(date.getDate() - Math.floor(Math.random() * 45));
         
@@ -651,7 +659,7 @@ export const DemoDataGenerator: React.FC = () => {
       // الخطوة 10: إضافة مدفوعات
       setCurrentStep('إضافة مدفوعات العملاء...');
       
-      const payments = [];
+      const payments: PaymentInsert[] = [];
       
       // مدفوعات نقدية
       for (let i = 0; i < 10; i++) {
@@ -667,7 +675,9 @@ export const DemoDataGenerator: React.FC = () => {
           payment_method: Math.random() > 0.5 ? 'cash' : 'bank_transfer',
           amount: amount,
           payment_date: date.toISOString().split('T')[0],
-          status: 'completed',
+          payment_status: 'completed',
+          payment_type: 'receipt',
+          transaction_type: 'receipt',
           notes: `[DEMO_DATA_GENERATOR] دفعة نقدية رقم ${i + 1}`,
           created_at: new Date().toISOString()
         });
@@ -711,7 +721,7 @@ export const DemoDataGenerator: React.FC = () => {
       console.error('خطأ في إنشاء البيانات التجريبية:', error);
       toast({
         title: "خطأ",
-        description: `فشل في إنشاء البيانات التجريبية: ${error.message}`,
+        description: `فشل في إنشاء البيانات التجريبية: ${getErrorMessage(error)}`,
         variant: "destructive"
       });
     } finally {
@@ -805,7 +815,7 @@ export const DemoDataGenerator: React.FC = () => {
     } catch (error: unknown) {
       toast({
         title: "خطأ",
-        description: `فشل في حذف البيانات: ${error.message}`,
+        description: `فشل في حذف البيانات: ${getErrorMessage(error)}`,
         variant: "destructive"
       });
     } finally {

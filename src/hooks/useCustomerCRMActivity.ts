@@ -1,20 +1,18 @@
-/**
- * Hook لجلب وإدارة سجل تفاعلات العميل في CRM
- * يدعم الملاحظات، المكالمات، الرسائل، والمتابعات
- */
-
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
+import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
+
+type ActivityType = 'phone' | 'whatsapp' | 'email' | 'note' | 'followup' | 'message';
+type CallStatus = 'answered' | 'no_answer' | 'busy';
 
 export interface CustomerActivity {
   id: string;
   customer_id: string;
-  note_type: 'phone' | 'whatsapp' | 'email' | 'note' | 'followup' | 'message';
+  note_type: ActivityType;
   title?: string;
   content: string;
   is_important: boolean;
-  call_status?: 'answered' | 'no_answer' | 'busy';
+  call_status?: CallStatus;
   created_at: string;
   created_by?: string;
 }
@@ -24,95 +22,102 @@ export interface AddActivityInput {
   title?: string;
   content: string;
   is_important?: boolean;
-  call_status?: 'answered' | 'no_answer' | 'busy';
+  call_status?: CallStatus;
+}
+
+const activityTitles: Record<AddActivityInput['note_type'], string> = {
+  phone: 'مكالمة هاتفية',
+  whatsapp: 'رسالة واتساب',
+  email: 'بريد إلكتروني',
+  note: 'ملاحظة',
+};
+
+function activityType(value: string): ActivityType {
+  return ['phone', 'whatsapp', 'email', 'note', 'followup', 'message'].includes(value)
+    ? value as ActivityType
+    : 'note';
+}
+
+function callStatus(value: string | null): CallStatus | undefined {
+  return value === 'answered' || value === 'no_answer' || value === 'busy' ? value : undefined;
 }
 
 export function useCustomerCRMActivity(customerId: string | null) {
-  const { user } = useAuth();
+  const { user, companyId } = useUnifiedCompanyAccess();
   const queryClient = useQueryClient();
 
-  // جلب سجل التفاعلات
-  const { 
-    data: activities = [], 
-    isLoading, 
+  const {
+    data: activities = [],
+    isLoading,
     error,
-    refetch 
+    refetch,
   } = useQuery({
-    queryKey: ['customer-crm-activities', customerId],
+    queryKey: ['customer-crm-activities', companyId, customerId],
     queryFn: async (): Promise<CustomerActivity[]> => {
-      if (!customerId) return [];
+      if (!customerId || !companyId) return [];
 
-      const { data, error } = await supabase
+      const { data, error: queryError } = await supabase
         .from('customer_notes')
         .select('*')
+        .eq('company_id', companyId)
         .eq('customer_id', customerId)
         .order('created_at', { ascending: false })
         .limit(100);
 
-      if (error) throw error;
-      
+      if (queryError) throw queryError;
       return (data || []).map(note => ({
         id: note.id,
         customer_id: note.customer_id,
-        note_type: note.note_type || 'note',
-        title: note.title,
-        content: note.content || '',
-        is_important: note.is_important || false,
-        call_status: note.call_status,
+        note_type: activityType(note.note_type),
+        title: note.title || undefined,
+        content: note.content,
+        is_important: note.is_important ?? false,
+        call_status: callStatus(note.call_status),
         created_at: note.created_at,
-        created_by: note.created_by,
+        created_by: note.created_by ?? undefined,
       }));
     },
-    enabled: !!customerId,
-    staleTime: 1000 * 60, // Cache for 1 minute
+    enabled: Boolean(companyId && customerId),
+    staleTime: 60_000,
   });
 
-  // إضافة تفاعل جديد
   const addActivityMutation = useMutation({
     mutationFn: async (input: AddActivityInput) => {
-      if (!customerId || !user?.company_id) {
-        throw new Error('Missing customer or company ID');
-      }
+      if (!customerId || !companyId || !user?.id) throw new Error('بيانات العميل أو الشركة غير مكتملة');
+      const content = input.content.trim();
+      if (!content) throw new Error('محتوى التفاعل مطلوب');
 
-      const { data, error } = await supabase
+      const { data, error: insertError } = await supabase
         .from('customer_notes')
         .insert({
           customer_id: customerId,
-          company_id: user.company_id,
+          company_id: companyId,
           note_type: input.note_type,
-          title: input.title || null,
-          content: input.content,
-          is_important: input.is_important || false,
-          call_status: input.call_status || null,
+          title: input.title?.trim() || activityTitles[input.note_type],
+          content,
+          is_important: input.is_important ?? false,
+          call_status: input.note_type === 'phone' ? input.call_status : null,
           created_by: user.id,
         })
         .select()
         .single();
 
-      if (error) throw error;
+      if (insertError) throw insertError;
       return data;
     },
     onSuccess: () => {
-      // تحديث القائمة
-      queryClient.invalidateQueries({ queryKey: ['customer-crm-activities', customerId] });
-      // تحديث بيانات CRM الرئيسية
-      queryClient.invalidateQueries({ queryKey: ['crm-customers-optimized'] });
+      void queryClient.invalidateQueries({ queryKey: ['customer-crm-activities', companyId, customerId] });
+      void queryClient.invalidateQueries({ queryKey: ['crm-customers-optimized'] });
     },
   });
 
-  // دالة مساعدة لإضافة تفاعل
-  const addActivity = async (input: AddActivityInput) => {
-    return addActivityMutation.mutateAsync(input);
-  };
-
-  // إحصائيات سريعة
   const stats = {
     total: activities.length,
-    calls: activities.filter(a => a.note_type === 'phone').length,
-    successfulCalls: activities.filter(a => a.note_type === 'phone' && a.call_status === 'answered').length,
-    missedCalls: activities.filter(a => a.note_type === 'phone' && a.call_status === 'no_answer').length,
-    messages: activities.filter(a => a.note_type === 'whatsapp' || a.note_type === 'message').length,
-    notes: activities.filter(a => a.note_type === 'note').length,
+    calls: activities.filter(activity => activity.note_type === 'phone').length,
+    successfulCalls: activities.filter(activity => activity.note_type === 'phone' && activity.call_status === 'answered').length,
+    missedCalls: activities.filter(activity => activity.note_type === 'phone' && activity.call_status === 'no_answer').length,
+    messages: activities.filter(activity => activity.note_type === 'whatsapp' || activity.note_type === 'message').length,
+    notes: activities.filter(activity => activity.note_type === 'note').length,
   };
 
   return {
@@ -120,9 +125,8 @@ export function useCustomerCRMActivity(customerId: string | null) {
     isLoading,
     error,
     refetch,
-    addActivity,
+    addActivity: addActivityMutation.mutateAsync,
     isAdding: addActivityMutation.isPending,
     stats,
   };
 }
-

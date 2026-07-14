@@ -28,7 +28,7 @@ const SuperAdmin: React.FC = () => {
     return <Navigate to="/dashboard" replace />;
   }
 
-  return <Navigate to="/super-admin/dashboard" replace />;
+  return <Navigate to="/admin/dashboard" replace />;
 };
 
 export default SuperAdmin;

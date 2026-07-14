@@ -37,7 +37,7 @@ import {
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
-import { FileText, Plus, Folder, Trash2, Check, ChevronsUpDown } from 'lucide-react';
+import { FileText, Plus, Folder, XCircle, Check, ChevronsUpDown } from 'lucide-react';
 import { cn, formatCurrency } from '@/lib/utils';
 import { useManualLegalCollections, ManualCollectionItem } from '@/hooks/useManualLegalCollections';
 import { useCustomerFinancialSummary } from '@/hooks/useCustomerFinancialSummary';
@@ -144,7 +144,7 @@ export const ManualLegalCollectionView: React.FC = () => {
   };
   
   const handleDelete = async (id: string) => {
-    if (confirm('هل أنت متأكد من حذف هذه الذمة؟')) {
+    if (confirm('هل أنت متأكد من إلغاء هذه الذمة مع الاحتفاظ بسجلها؟')) {
       await deleteCollection.mutateAsync(id);
     }
   };
@@ -251,8 +251,10 @@ export const ManualLegalCollectionView: React.FC = () => {
                               size="icon"
                               onClick={() => handleDelete(item.id)}
                               className="h-8 w-8 text-rose-500 hover:text-rose-700 hover:bg-rose-50"
+                              aria-label="إلغاء ذمة التحصيل"
+                              title="إلغاء ذمة التحصيل"
                             >
-                              <Trash2 size={16} />
+                              <XCircle size={16} />
                             </Button>
                           </div>
                         </TableCell>

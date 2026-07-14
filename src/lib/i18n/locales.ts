@@ -20,7 +20,7 @@ export interface LocaleConfig {
     locale: string;
     format: 'mdy' | 'dmy' | 'ymd';
     separator: '/' | '-' | '.';
-    firstDayOfWeek: 0 | 1; // 0 = Sunday, 1 = Monday
+    firstDayOfWeek: 0 | 1 | 2 | 3 | 4 | 5 | 6; // 0 = Sunday
   };
 
   time: {

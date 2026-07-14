@@ -12,6 +12,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ImagePreviewDialog } from '@/components/common/ImagePreviewDialog';
 import { cn } from "@/lib/utils";
@@ -72,10 +73,18 @@ const documentsTour = {
 
 // Hook لجلب وثائق المركبة
 function useVehicleDocumentFiles(vehicleId: string) {
+  const { companyId } = useUnifiedCompanyAccess();
   return useQuery({
-    queryKey: ['vehicle-document-files', vehicleId],
+    queryKey: ['vehicle-document-files', companyId, vehicleId],
     queryFn: async () => {
-      if (!vehicleId) return [];
+      if (!vehicleId || !companyId) return [];
+      const { error: vehicleError } = await supabase
+        .from('vehicles')
+        .select('id')
+        .eq('id', vehicleId)
+        .eq('company_id', companyId)
+        .single();
+      if (vehicleError) throw vehicleError;
       
       const { data, error } = await supabase
         .from('vehicle_documents')
@@ -90,7 +99,7 @@ function useVehicleDocumentFiles(vehicleId: string) {
       
       return data as VehicleDocumentFile[];
     },
-    enabled: !!vehicleId,
+    enabled: !!vehicleId && !!companyId,
   });
 }
 
@@ -98,16 +107,25 @@ function useVehicleDocumentFiles(vehicleId: string) {
 function useUploadVehicleDocument() {
   const queryClient = useQueryClient();
   const { user } = useAuth();
+  const { companyId } = useUnifiedCompanyAccess();
 
   return useMutation({
     mutationFn: async (data: { vehicleId: string; file: File; documentType?: string; notes?: string }) => {
-      if (!user) {
+      if (!user || !companyId) {
         throw new Error('المستخدم غير مصادق');
       }
 
+      const { error: vehicleError } = await supabase
+        .from('vehicles')
+        .select('id')
+        .eq('id', data.vehicleId)
+        .eq('company_id', companyId)
+        .single();
+      if (vehicleError) throw vehicleError;
+
       // رفع الملف إلى Storage
       const fileExt = data.file.name.split('.').pop();
-      const fileName = `vehicle-documents/${data.vehicleId}/${Date.now()}.${fileExt}`;
+      const fileName = `${companyId}/vehicle-documents/${data.vehicleId}/${Date.now()}.${fileExt}`;
 
       const { error: uploadError } = await supabase.storage
         .from('documents')
@@ -157,21 +175,37 @@ function useUploadVehicleDocument() {
 // Hook لحذف وثيقة المركبة
 function useDeleteVehicleDocument() {
   const queryClient = useQueryClient();
+  const { companyId } = useUnifiedCompanyAccess();
 
   return useMutation({
     mutationFn: async (document: VehicleDocumentFile) => {
-      // حذف الملف من Storage
-      if (document.document_url) {
-        await supabase.storage.from('documents').remove([document.document_url]);
-      }
+      if (!companyId) throw new Error('تعذر تحديد الشركة');
+      const { error: vehicleError } = await supabase
+        .from('vehicles')
+        .select('id')
+        .eq('id', document.vehicle_id)
+        .eq('company_id', companyId)
+        .single();
+      if (vehicleError) throw vehicleError;
 
-      // حذف السجل من قاعدة البيانات
       const { error } = await supabase
         .from('vehicle_documents')
         .delete()
-        .eq('id', document.id);
+        .eq('id', document.id)
+        .eq('vehicle_id', document.vehicle_id)
+        .select('id')
+        .single();
 
       if (error) throw error;
+
+      if (document.document_url) {
+        const { error: storageError } = await supabase.storage
+          .from('documents')
+          .remove([document.document_url]);
+        if (storageError) {
+          console.warn('[useDeleteVehicleDocument] orphaned storage file', storageError.message);
+        }
+      }
       return document;
     },
     onSuccess: (data) => {

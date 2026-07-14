@@ -10,7 +10,7 @@ import { type CSSProperties, type ElementType, type ReactNode, useState, useMemo
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, type Variants } from 'framer-motion';
 import {
   ArrowRight,
   FileText,
@@ -21,7 +21,6 @@ import {
   XCircle,
   DollarSign,
   Calendar,
-  Clock,
   CreditCard,
   Wallet,
   AlertTriangle,
@@ -114,6 +113,7 @@ import { format, differenceInDays } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import type { Contract } from '@/types/contracts';
 import type { Invoice } from '@/types/finance.types';
+import type { Database } from '@/integrations/supabase/types';
 
 import { useFleetifyTranslation } from "@/hooks/useTranslation";
 import { useToast } from '@/hooks/use-toast';
@@ -124,6 +124,7 @@ import { useCustomerCRMActivity, type CustomerActivity } from '@/hooks/useCustom
 import { systemColorPattern } from '@/lib/design-system/systemColorPattern';
 import type { PaymentSchedule } from '@/types/payment-schedules';
 import { useTourGuide } from '@/components/tour-guide';
+import { revertContractLegalProcedure } from '@/services/contractLegalProcedureService';
 
 const contractDetailsTheme = systemColorPattern.colors;
 const contractDetailsSystemStyle = {
@@ -150,7 +151,7 @@ type ContractAuditLog = {
 };
 
 // ===== Animation Variants =====
-const fadeInUp = {
+const fadeInUp: Variants = {
   hidden: { opacity: 0, y: 20 },
   visible: {
     opacity: 1,
@@ -159,7 +160,7 @@ const fadeInUp = {
   }
 };
 
-const scaleIn = {
+const scaleIn: Variants = {
   hidden: { opacity: 0, scale: 0.95 },
   visible: {
     opacity: 1,
@@ -465,10 +466,10 @@ const ContractCommandHeader = ({
       tone: violationsCount > 0 ? 'bg-rose-50 text-rose-700' : 'bg-emerald-50 text-emerald-700',
     },
     {
-      label: 'التأمين',
-      value: formatCurrency(contract.insurance_amount || 0),
-      icon: ShieldCheck,
-      tone: 'bg-slate-100 text-slate-700',
+      label: 'المدفوع',
+      value: formatCurrency(contract.total_paid || 0),
+      icon: CheckCircle2,
+      tone: 'bg-emerald-50 text-emerald-700',
     },
   ];
 
@@ -503,26 +504,6 @@ const ContractCommandHeader = ({
                 <h1 className="mt-1 truncate text-2xl font-black tracking-normal text-[#142033] sm:text-3xl" dir="ltr">
                   {contract.contract_number}
                 </h1>
-                <div className="mt-3 grid gap-2 sm:grid-cols-2">
-                  <div className="rounded-lg border border-[#E3EAF2] bg-white px-3 py-2">
-                    <div className="flex items-center gap-2 text-xs font-bold text-[#6A7688]">
-                      <Calendar className="h-3.5 w-3.5 text-[#173A63]" />
-                      تاريخ بداية العقد
-                    </div>
-                    <p className="mt-1 text-sm font-black text-[#142033]">
-                      {contract.start_date ? format(new Date(contract.start_date), 'dd MMMM yyyy', { locale: ar }) : '-'}
-                    </p>
-                  </div>
-                  <div className="rounded-lg border border-[#E3EAF2] bg-white px-3 py-2">
-                    <div className="flex items-center gap-2 text-xs font-bold text-[#6A7688]">
-                      <Clock className="h-3.5 w-3.5 text-[#173A63]" />
-                      تاريخ نهاية العقد
-                    </div>
-                    <p className="mt-1 text-sm font-black text-[#142033]">
-                      {contract.end_date ? format(new Date(contract.end_date), 'dd MMMM yyyy', { locale: ar }) : '-'}
-                    </p>
-                  </div>
-                </div>
               </div>
 
               <div className="grid gap-3 sm:grid-cols-2">
@@ -754,6 +735,10 @@ const QuickActionsBar = ({
   );
 };
 
+type ContractTrafficViolation = Database['public']['Tables']['traffic_violations']['Row'] & {
+  description?: string | null;
+};
+
 const ContractTopbarActions = ({
   contract,
   onRenew,
@@ -799,7 +784,7 @@ const ContractTopbarActions = ({
             إجراءات
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-56 text-right" dir="rtl">
+        <DropdownMenuContent align="end" className="w-56 text-right">
           {canConvertToLegal && (
             <DropdownMenuItem onClick={onConvertToLegal} className="gap-2 font-bold text-violet-700 focus:text-violet-700">
               <Scale className="h-4 w-4" />
@@ -1373,6 +1358,29 @@ const ContractCommandCenter = ({
         })}
       </div>
 
+      <div className="contract-embedded-workbench">
+        <Tabs value={activeTab} onValueChange={onTabChange} className="w-full">
+          <div className="contract-workbench-nav">
+            <div>
+              <p className="text-sm font-bold text-[#142033]">ملف العقد</p>
+              <p className="mt-1 text-xs text-[#6A7688]">انتقل مباشرة إلى البيانات والماليات والمستندات</p>
+            </div>
+            <TabsList className="contract-workbench-tabs">
+              {tabs.map((tab) => (
+                <TabsTrigger key={tab.value} value={tab.value} className="contract-workbench-tab">
+                  <tab.icon className="w-4 h-4" />
+                  {tab.label}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </div>
+
+          <section className="contract-workbench-content">
+            {children}
+          </section>
+        </Tabs>
+      </div>
+
       <div className="contract-activity-strip">
         <header>
           <strong>ملخص النشاط</strong>
@@ -1427,28 +1435,6 @@ const ContractCommandCenter = ({
         </div>
       </div>
 
-      <div className="contract-embedded-workbench">
-        <Tabs value={activeTab} onValueChange={onTabChange} className="w-full">
-          <div className="contract-workbench-nav">
-            <div>
-              <p className="text-sm font-bold text-[#142033]">ملف العقد</p>
-              <p className="mt-1 text-xs text-[#6A7688]">البيانات والماليات والمستندات ضمن نفس تدفق العقد</p>
-            </div>
-            <TabsList className="contract-workbench-tabs">
-              {tabs.map((tab) => (
-                <TabsTrigger key={tab.value} value={tab.value} className="contract-workbench-tab">
-                  <tab.icon className="w-4 h-4" />
-                  {tab.label}
-                </TabsTrigger>
-              ))}
-            </TabsList>
-          </div>
-
-          <section className="contract-workbench-content">
-            {children}
-          </section>
-        </Tabs>
-      </div>
     </motion.section>
   );
 };
@@ -1733,24 +1719,22 @@ const ContractOverviewTab = ({
             <p className="font-semibold text-teal-600">{formatCurrency(contract.monthly_amount || 0)}</p>
           </div>
           <div>
-            <p className="text-sm text-neutral-500 mb-2">التأمين</p>
-            <p className="font-semibold text-neutral-900">{formatCurrency(contract.insurance_amount || 0)}</p>
+            <p className="text-sm text-neutral-500 mb-2">إجمالي قيمة العقد</p>
+            <p className="font-semibold text-neutral-900">{formatCurrency(contract.contract_amount || 0)}</p>
           </div>
           <div>
-            <p className="text-sm text-neutral-500 mb-2">طريقة الدفع</p>
-            <p className="font-semibold text-neutral-900">
-              {contract.payment_method === 'cash' ? 'نقدي' : contract.payment_method === 'bank' ? 'تحويل بنكي' : contract.payment_method || '-'}
-            </p>
+            <p className="text-sm text-neutral-500 mb-2">إجمالي المدفوع</p>
+            <p className="font-semibold text-emerald-700">{formatCurrency(contract.total_paid || 0)}</p>
           </div>
           <div>
-            <p className="text-sm text-neutral-500 mb-2">الحد المسموح بالكيلومترات</p>
-            <p className="font-semibold text-neutral-900">{contract.allowed_km ? `${contract.allowed_km.toLocaleString()} كم` : 'غير محدود'}</p>
+            <p className="text-sm text-neutral-500 mb-2">الرصيد المتبقي</p>
+            <p className="font-semibold text-amber-700">{formatCurrency(contract.balance_due || 0)}</p>
           </div>
         </div>
-        {contract.notes && (
+        {contract.description && (
           <div className="mt-6 pt-6 border-t border-neutral-100">
             <p className="text-sm text-neutral-500 mb-2">ملاحظات</p>
-            <p className="text-neutral-700">{contract.notes}</p>
+            <p className="text-neutral-700">{contract.description}</p>
           </div>
         )}
       </CardContent>
@@ -1810,14 +1794,7 @@ const FinancialTab = ({
   contract: Contract;
   invoices: Invoice[];
   payments: ContractFinancialPayment[];
-  paymentSchedules: Array<{
-    id: string;
-    installment_number: number | null;
-    due_date: string | null;
-    amount: number | null;
-    status: string;
-    payment_date: string | null;
-  }>;
+  paymentSchedules: PaymentSchedule[];
   isLoadingPaymentSchedules: boolean;
   contractId: string;
   companyId: string;
@@ -1831,15 +1808,7 @@ const FinancialTab = ({
   onGenerateMissingInvoices?: () => void;
   isGeneratingMissingInvoices?: boolean;
   customerName: string;
-  trafficViolations: Array<{
-    id: string;
-    violation_number: string;
-    violation_date: string;
-    violation_type: string;
-    fine_amount: number;
-    status: string;
-    location?: string | null;
-  }>;
+  trafficViolations: ContractTrafficViolation[];
 }) => (
   <div className="space-y-5">
     <div className="rounded-xl border border-[#DDE5EF] bg-[#FCFDFE] p-4">
@@ -2055,6 +2024,7 @@ const VehicleTab = ({
       <VehiclePickupReturnTabRedesigned
         contract={{
           id: contract.id,
+          vehicle_id: contract.vehicle_id || contract.vehicle?.id || '',
           contract_number: contract.contract_number,
           customer_name: customerName,
           customer_phone: contract.customer?.phone || '',
@@ -2078,13 +2048,7 @@ const ViolationsTab = ({
   contractNumber,
   onAddViolation,
 }: {
-  trafficViolations: Array<{
-    id: string;
-    violation_date: string | null;
-    violation_type: string | null;
-    fine_amount: number | null;
-    status: string;
-  }>;
+  trafficViolations: ContractTrafficViolation[];
   formatCurrency: (amount: number) => string;
   contractNumber: string;
   onAddViolation?: (violation: Partial<any>) => Promise<void>;
@@ -2244,6 +2208,9 @@ const ContractDetailsPageRedesigned = () => {
             model,
             year,
             color,
+            fuel_type,
+            vin,
+            current_mileage,
             status
           )
         `)
@@ -2272,7 +2239,7 @@ const ContractDetailsPageRedesigned = () => {
   const { data: invoices = [] } = useQuery({
     queryKey: ['contract-invoices', contract?.id, contract?.start_date || null],
     queryFn: async () => {
-      if (!contract?.id) return [];
+      if (!contract?.id || !companyId) return [];
 
       const { data: scheduleInvoiceLinks, error: scheduleInvoiceLinksError } = await supabase
         .from('contract_payment_schedules')
@@ -2453,7 +2420,7 @@ const ContractDetailsPageRedesigned = () => {
     const progressPercentage = Math.max(0, Math.min(100, (daysElapsed / totalDays) * 100));
 
     const totalAmount = (contract.monthly_amount || 0) * totalMonths;
-    const paidAmount = contract.paid_amount || 0;
+    const paidAmount = contract.total_paid || 0;
 
     return {
       totalAmount,
@@ -2591,7 +2558,7 @@ const ContractDetailsPageRedesigned = () => {
         .from('invoices')
         .select('id, company_id, status, payment_status, notes, invoice_number, invoice_date, due_date, paid_amount, balance_due, total_amount, journal_entry_id')
         .eq('id', invoiceToCancel.id)
-        .eq('company_id', invoiceToCancel.company_id || companyId)
+        .eq('company_id', invoiceToCancel.company_id)
         .maybeSingle();
 
       if (invoiceError) throw invoiceError;
@@ -2819,7 +2786,7 @@ const ContractDetailsPageRedesigned = () => {
       const customerPhone = contract.customer?.phone;
       if (customerPhone) {
         const { generateViolationNotification } = await import('@/services/whatsapp/MessageTemplates');
-        const { default: whatsAppService } = await import('@/services/whatsapp/WhatsAppService');
+        const { whatsAppService } = await import('@/services/whatsapp/WhatsAppService');
         
         const message = generateViolationNotification({
           customerName: formatCustomerName(contract.customer),
@@ -2852,13 +2819,21 @@ const ContractDetailsPageRedesigned = () => {
   }, [contract, companyId, contractNumber, queryClient, toast]);
 
   const handleOpenDeletePermanent = useCallback(async () => {
-    if (!contract?.id) return;
+    if (!contract?.id || !companyId) return;
+    if (contract.status !== 'draft') {
+      toast({
+        title: 'الحذف غير مسموح',
+        description: 'يمكن حذف المسودات غير المستخدمة فقط. ألغِ العقد للحفاظ على الفواتير والمدفوعات والسجل القانوني.',
+        variant: 'destructive',
+      });
+      return;
+    }
 
     try {
       const [invoicesRes, paymentsRes, violationsRes] = await Promise.all([
-        supabase.from('invoices').select('id', { count: 'exact', head: true }).eq('contract_id', contract.id),
-        supabase.from('payments').select('id', { count: 'exact', head: true }).eq('contract_id', contract.id),
-        supabase.from('traffic_violations').select('id', { count: 'exact', head: true }).eq('contract_id', contract.id),
+        supabase.from('invoices').select('id', { count: 'exact', head: true }).eq('contract_id', contract.id).eq('company_id', companyId),
+        supabase.from('payments').select('id', { count: 'exact', head: true }).eq('contract_id', contract.id).eq('company_id', companyId),
+        supabase.from('traffic_violations').select('id', { count: 'exact', head: true }).eq('contract_id', contract.id).eq('company_id', companyId),
       ]);
 
       setRelatedDataCounts({
@@ -2872,7 +2847,7 @@ const ContractDetailsPageRedesigned = () => {
     }
 
     setIsDeletePermanentDialogOpen(true);
-  }, [contract?.id]);
+  }, [contract, companyId, toast]);
 
   const executeTerminateContract = useCallback(async () => {
     if (!contract?.id || !companyId) return;
@@ -2955,21 +2930,11 @@ const ContractDetailsPageRedesigned = () => {
 
     setIsRemovingLegal(true);
     try {
-      const { error: contractError } = await supabase
-        .from('contracts')
-        .update({
-          status: 'active',
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', contract.id)
-        .eq('company_id', companyId);
-
-      if (contractError) throw contractError;
-
-      await supabase
-        .from('delinquent_customers')
-        .delete()
-        .eq('contract_id', contract.id);
+      await revertContractLegalProcedure({
+        contractId: contract.id,
+        companyId,
+        reason: 'تمت إزالة الإجراء القانوني من صفحة تفاصيل العقد',
+      });
 
       queryClient.invalidateQueries({ queryKey: ['contract-details'] });
       queryClient.invalidateQueries({ queryKey: ['contracts'] });
@@ -2998,58 +2963,41 @@ const ContractDetailsPageRedesigned = () => {
 
     setIsDeleting(true);
     try {
-      const { count: existingPaymentsCount, error: paymentsCountError } = await supabase
-        .from('payments')
-        .select('id', { count: 'exact', head: true })
-        .eq('contract_id', contract.id);
-
-      if (paymentsCountError) throw paymentsCountError;
-
-      if ((existingPaymentsCount || 0) > 0) {
-        throw new Error('لا يمكن حذف عقد لديه مدفوعات مسجلة. قم بإلغاء العقد أو أرشفته للحفاظ على السجل المالي.');
+      if (contract.status !== 'draft') {
+        throw new Error('يمكن حذف مسودة عقد غير مستخدمة فقط. استخدم الإلغاء للعقود المعتمدة.');
       }
 
-      // 1. Unlink traffic violations (keep them in system, just remove contract link)
-      await supabase
-        .from('traffic_violations')
-        .update({ contract_id: null })
-        .eq('contract_id', contract.id);
-
-      // 2. Delete other related records that are specific to this contract
-      await supabase.from('delinquent_customers').delete().eq('contract_id', contract.id);
-      await supabase
-        .from('invoices')
-        .update({
-          status: 'cancelled',
-          payment_status: 'cancelled',
-          balance_due: 0,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('contract_id', contract.id)
-        .or('paid_amount.eq.0,paid_amount.is.null');
-      await supabase.from('contract_payment_schedules').delete().eq('contract_id', contract.id);
-      await supabase.from('lawsuit_preparations').delete().eq('contract_id', contract.id);
-
-      if (contract.vehicle_id) {
-        await supabase
-          .from('vehicles')
-          .update({ status: 'available' })
-          .eq('id', contract.vehicle_id);
+      const relatedChecks = await Promise.all([
+        supabase.from('payments').select('id', { count: 'exact', head: true }).eq('contract_id', contract.id).eq('company_id', companyId),
+        supabase.from('invoices').select('id', { count: 'exact', head: true }).eq('contract_id', contract.id).eq('company_id', companyId),
+        supabase.from('contract_payment_schedules').select('id', { count: 'exact', head: true }).eq('contract_id', contract.id).eq('company_id', companyId),
+        supabase.from('contract_documents').select('id', { count: 'exact', head: true }).eq('contract_id', contract.id).eq('company_id', companyId),
+        supabase.from('legal_cases').select('id', { count: 'exact', head: true }).eq('contract_id', contract.id).eq('company_id', companyId),
+        supabase.from('traffic_violations').select('id', { count: 'exact', head: true }).eq('contract_id', contract.id).eq('company_id', companyId),
+      ]);
+      const relatedError = relatedChecks.find((result) => result.error)?.error;
+      if (relatedError) throw relatedError;
+      const relatedCount = relatedChecks.reduce((sum, result) => sum + (result.count || 0), 0);
+      if (relatedCount > 0) {
+        throw new Error('لا يمكن حذف المسودة لأنها مرتبطة ببيانات أخرى. أزل الارتباطات غير المالية يدويًا أو ألغِ العقد.');
       }
 
       const { error: deleteError } = await supabase
         .from('contracts')
         .delete()
         .eq('id', contract.id)
-        .eq('company_id', companyId);
+        .eq('company_id', companyId)
+        .eq('status', 'draft')
+        .select('id')
+        .single();
 
       if (deleteError) throw deleteError;
 
       queryClient.invalidateQueries({ queryKey: ['contracts'] });
 
       toast({
-        title: 'تم الحذف النهائي',
-        description: `تم حذف العقد #${contract.contract_number} وجميع البيانات المرتبطة به نهائياً`,
+        title: 'تم حذف المسودة',
+        description: `تم حذف مسودة العقد #${contract.contract_number}`,
       });
 
       navigate('/contracts');
@@ -3128,7 +3076,7 @@ const ContractDetailsPageRedesigned = () => {
           paymentSchedules={paymentSchedules}
           isLoadingPaymentSchedules={isLoadingPaymentSchedules}
           contractId={contract.id}
-          companyId={companyId}
+          companyId={contract.company_id}
           formatCurrency={formatCurrency}
           onPayInvoice={handleInvoicePay}
           onPreviewInvoice={handleInvoicePreview}
@@ -3303,7 +3251,7 @@ const ContractDetailsPageRedesigned = () => {
               open={isPayDialogOpen}
               onOpenChange={setIsPayDialogOpen}
               invoice={selectedInvoice}
-              onSuccess={() => {
+              onPaymentCreated={() => {
                 queryClient.invalidateQueries({ queryKey: ['contract-invoices'] });
                 setIsPayDialogOpen(false);
               }}
@@ -3450,17 +3398,15 @@ const ContractDetailsPageRedesigned = () => {
       <AlertDialog open={isDeletePermanentDialogOpen} onOpenChange={setIsDeletePermanentDialogOpen}>
         <AlertDialogContent className="rounded-2xl" data-tour="contract-delete-dialog">
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-rose-600">الحذف النهائي</AlertDialogTitle>
+            <AlertDialogTitle className="text-rose-600">حذف مسودة العقد</AlertDialogTitle>
             <AlertDialogDescription asChild>
               <div className="space-y-4 text-sm text-muted-foreground" data-tour="contract-delete-warning">
-                <p>هل أنت متأكد من حذف العقد #{contract.contract_number} نهائياً؟</p>
+                <p>هل أنت متأكد من حذف مسودة العقد #{contract.contract_number}؟</p>
                 {relatedDataCounts && (
                   <Alert variant="destructive">
                     <AlertTriangle className="h-4 w-4" />
                     <AlertDescription>
-                      سيتم حذف {relatedDataCounts.invoices} فاتورة و {relatedDataCounts.payments} دفعة نهائياً.
-                      <br />
-                      <strong>تنبيه:</strong> سيتم فك ارتباط {relatedDataCounts.violations} مخالفة مرورية عن هذا العقد والاحتفاظ بها في النظام.
+                      لن يسمح النظام بالحذف إذا وُجدت أي فاتورة أو دفعة أو مخالفة أو مستند مرتبط بالمسودة.
                     </AlertDescription>
                   </Alert>
                 )}
@@ -3493,7 +3439,7 @@ const ContractDetailsPageRedesigned = () => {
                   جاري الحذف...
                 </>
               ) : (
-                'نعم، حذف نهائياً'
+                'نعم، حذف المسودة'
               )}
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -3511,7 +3457,7 @@ const ContractDetailsPageRedesigned = () => {
                 <Alert className="border-emerald-200 bg-emerald-50">
                   <CheckCircle className="h-4 w-4 text-emerald-600" />
                   <AlertDescription className="text-emerald-800">
-                    سيتم إعادة العقد للحالة النشطة وحذف سجل العميل المتعثر إن وجد.
+                    سيتم إعادة العقد للحالة النشطة مع إغلاق القضايا وتعطيل سجل التعثر، مع الاحتفاظ بكامل السجل للمراجعة.
                   </AlertDescription>
                 </Alert>
               </div>
@@ -3602,14 +3548,13 @@ const ContractDetailsPageRedesigned = () => {
       <style>{`
         .contract-details-system {
           color: var(--contract-details-text);
-          background:
-            linear-gradient(180deg, #eef4f8 0%, #f7fafc 44%, #eef3f7 100%) !important;
+          background: #F3F6F9 !important;
         }
 
         .contract-page-shell {
           position: relative;
-          width: min(100%, 1760px);
-          max-width: 1760px;
+          width: 100%;
+          max-width: 1680px;
           padding-bottom: 32px;
         }
 
@@ -3618,7 +3563,7 @@ const ContractDetailsPageRedesigned = () => {
           top: 0;
           z-index: 40;
           display: grid;
-          grid-template-columns: minmax(160px, auto) minmax(0, 1fr) auto;
+          grid-template-columns: auto minmax(110px, 1fr) auto auto;
           gap: 12px;
           align-items: center;
           margin: 0 -24px 16px;
@@ -3665,10 +3610,8 @@ const ContractDetailsPageRedesigned = () => {
         }
 
         .contract-topbar-dates {
-          position: absolute;
-          left: 50%;
-          top: 50%;
-          transform: translate(-50%, -50%);
+          position: static;
+          transform: none;
           display: flex;
           flex-wrap: wrap;
           justify-content: center;
@@ -3703,6 +3646,11 @@ const ContractDetailsPageRedesigned = () => {
           gap: 8px;
         }
 
+        .contract-topbar-actions button {
+          padding-inline: 10px !important;
+          font-size: 12px !important;
+        }
+
         .contract-topbar-actions .contract-primary-edit {
           background: #173A63;
           color: white;
@@ -3725,11 +3673,12 @@ const ContractDetailsPageRedesigned = () => {
 
         .contract-redesigned-layout {
           display: grid;
-          grid-template-columns: minmax(360px, 420px) minmax(0, 1fr);
+          grid-template-columns: minmax(0, 1fr);
           grid-template-areas:
-            "hero decision"
-            "operations decision";
-          gap: 16px;
+            "hero"
+            "decision"
+            "operations";
+          gap: 14px;
           align-items: start;
         }
 
@@ -3739,8 +3688,7 @@ const ContractDetailsPageRedesigned = () => {
 
         .contract-hero-zone {
           grid-area: hero;
-          position: sticky;
-          top: 76px;
+          position: static;
         }
 
         .contract-side-rail {
@@ -3760,6 +3708,7 @@ const ContractDetailsPageRedesigned = () => {
 
         .contract-profile-card {
           border-radius: 8px !important;
+          border-top: 3px solid #173A63 !important;
         }
 
         .contract-profile-body {
@@ -3767,83 +3716,78 @@ const ContractDetailsPageRedesigned = () => {
         }
 
         .contract-profile-main {
-          display: block !important;
+          display: grid !important;
+          grid-template-columns: minmax(420px, 1.35fr) minmax(270px, 0.65fr) !important;
+          gap: 16px !important;
+          align-items: stretch !important;
+          padding: 16px 16px 0;
         }
 
         .contract-profile-identity {
-          border: 0 !important;
-          border-radius: 0 !important;
-          background: #142033 !important;
-          padding: 20px !important;
-          color: white !important;
-        }
-
-        .contract-profile-identity button,
-        .contract-profile-identity span {
-          border-color: rgba(255, 255, 255, 0.18) !important;
-        }
-
-        .contract-profile-identity h1,
-        .contract-profile-identity p,
-        .contract-profile-identity span {
-          color: white !important;
+          border: 1px solid var(--contract-details-border) !important;
+          border-radius: 8px !important;
+          background: #FFFFFF !important;
+          padding: 18px !important;
+          box-shadow: inset -4px 0 0 #173A63;
         }
 
         .contract-profile-identity .contract-type-badge {
-          background: #ffffff !important;
-          color: #000000 !important;
+          background: #F7F9FC !important;
+          color: #142033 !important;
         }
 
         .contract-profile-identity h1 {
           white-space: normal !important;
           word-break: break-word;
-          font-size: 24px !important;
+          color: #142033 !important;
+          font-size: 26px !important;
           line-height: 1.2 !important;
         }
 
         .contract-profile-identity > .grid {
-          grid-template-columns: 1fr !important;
+          grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
         }
 
         .contract-profile-identity > .grid button {
-          background: rgba(255, 255, 255, 0.08) !important;
-          border-color: rgba(255, 255, 255, 0.14) !important;
+          background: #F8FAFC !important;
+          border-color: var(--contract-details-border) !important;
         }
 
         .contract-profile-identity > .grid button:hover {
-          background: rgba(255, 255, 255, 0.14) !important;
-        }
-
-        .contract-profile-identity > .grid button p,
-        .contract-profile-identity > .grid button div,
-        .contract-profile-identity > .grid button span {
-          color: white !important;
+          border-color: #173A63 !important;
+          background: #EEF5FB !important;
         }
 
         .contract-profile-identity > .grid button .contract-action-icon,
         .contract-profile-identity > .grid button .contract-action-icon svg {
-          color: #000000 !important;
+          color: #173A63 !important;
         }
 
         .contract-profile-progress {
-          grid-template-columns: 1fr !important;
-          padding: 16px !important;
+          grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+          gap: 10px !important;
+          padding: 0 !important;
         }
 
         .contract-profile-summary {
-          grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-          padding: 0 16px 16px !important;
+          grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+          padding: 14px 16px 16px !important;
         }
 
         .contract-profile-summary > div {
-          min-height: 88px;
-          align-items: flex-start !important;
-          flex-direction: column-reverse;
+          min-height: 72px;
+          align-items: center !important;
+          flex-direction: row;
+          background: #F8FAFC !important;
         }
 
         .contract-operations-zone .contract-operations-workspace {
-          grid-template-columns: 1fr !important;
+          grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
           align-items: stretch;
+        }
+
+        .contract-operations-zone .contract-crm-panel {
+          grid-column: 1 / -1;
         }
 
         .contract-operations-zone .contract-crm-actions {
@@ -3857,7 +3801,7 @@ const ContractDetailsPageRedesigned = () => {
         .contract-workbench-frame {
           border-color: var(--contract-details-border) !important;
           border-radius: 8px !important;
-          box-shadow: 0 10px 28px rgba(2, 6, 23, 0.07) !important;
+          box-shadow: 0 8px 22px rgba(15, 23, 42, 0.06) !important;
         }
 
         .contract-tabs-workbench,
@@ -3892,9 +3836,10 @@ const ContractDetailsPageRedesigned = () => {
           background:
             linear-gradient(180deg, var(--contract-details-surface) 0%, var(--contract-details-inner) 100%) !important;
           display: grid;
-          grid-template-columns: minmax(220px, 1fr) auto;
+          grid-template-columns: minmax(0, 1fr);
           gap: 16px;
           align-items: center;
+          padding: 12px 14px;
         }
 
         .contract-workbench-nav > div {
@@ -3903,16 +3848,15 @@ const ContractDetailsPageRedesigned = () => {
 
         .contract-workbench-tabs {
           margin-top: 0 !important;
-          display: flex !important;
-          flex-direction: row !important;
-          justify-content: flex-end;
-          overflow-x: auto !important;
+          display: grid !important;
+          grid-template-columns: repeat(6, minmax(90px, 1fr));
+          overflow: visible !important;
           background: transparent !important;
           position: relative;
           z-index: 2;
-          width: max-content;
-          max-width: 100%;
-          justify-self: end;
+          width: 100%;
+          max-width: none;
+          justify-self: stretch;
         }
 
         .contract-workbench-tab {
@@ -3930,15 +3874,13 @@ const ContractDetailsPageRedesigned = () => {
           border-radius: 0 !important;
           box-shadow: none !important;
           padding: 22px;
-          min-height: 560px;
+          min-height: 480px;
         }
 
         .contract-details-system {
           color: var(--contract-details-text);
           font-size: 16px;
-          background:
-            linear-gradient(180deg, rgba(246, 248, 251, 0.72), var(--contract-details-inner) 260px),
-            var(--contract-details-inner) !important;
+          background: #F3F6F9 !important;
         }
 
         .contract-details-system .text-\\[11px\\] {
@@ -3947,12 +3889,12 @@ const ContractDetailsPageRedesigned = () => {
         }
 
         .contract-details-system .text-xs {
-          font-size: 14px !important;
+          font-size: 12.5px !important;
           line-height: 1.65 !important;
         }
 
         .contract-details-system .text-sm {
-          font-size: 15.5px !important;
+          font-size: 14px !important;
           line-height: 1.7 !important;
         }
 
@@ -4194,12 +4136,13 @@ const ContractDetailsPageRedesigned = () => {
 
         .contract-command-center {
           display: grid;
-          grid-template-columns: minmax(0, 1.25fr) minmax(260px, 0.75fr);
+          grid-template-columns: repeat(12, minmax(0, 1fr));
           gap: 14px;
           align-items: stretch;
         }
 
         .contract-next-action {
+          grid-column: span 7;
           display: grid;
           grid-template-columns: minmax(0, 1fr) auto;
           gap: 16px;
@@ -4235,18 +4178,22 @@ const ContractDetailsPageRedesigned = () => {
         }
 
         .contract-next-action.is-money {
-          background: linear-gradient(90deg, color-mix(in srgb, var(--contract-details-alert) 10%, white), white);
+          border-inline-start: 4px solid var(--contract-details-alert);
+          background: color-mix(in srgb, var(--contract-details-alert) 6%, white);
         }
 
         .contract-next-action.is-legal {
-          background: linear-gradient(90deg, color-mix(in srgb, var(--contract-details-focus) 10%, white), white);
+          border-inline-start: 4px solid var(--contract-details-focus);
+          background: color-mix(in srgb, var(--contract-details-focus) 6%, white);
         }
 
         .contract-next-action.is-stable {
-          background: linear-gradient(90deg, color-mix(in srgb, var(--contract-details-success) 9%, white), white);
+          border-inline-start: 4px solid var(--contract-details-success);
+          background: color-mix(in srgb, var(--contract-details-success) 6%, white);
         }
 
         .contract-risk-board {
+          grid-column: span 5;
           display: grid;
           grid-template-columns: repeat(2, minmax(0, 1fr));
           gap: 8px;
@@ -4367,11 +4314,11 @@ const ContractDetailsPageRedesigned = () => {
         }
 
         .contract-intelligence-panel {
-          grid-column: span 1;
+          grid-column: span 6;
         }
 
         .contract-unified-timeline {
-          grid-column: span 1;
+          grid-column: span 6;
         }
 
         .contract-intelligence-panel > header,
@@ -4892,9 +4839,45 @@ const ContractDetailsPageRedesigned = () => {
           .contract-activity-strip {
             grid-template-columns: 1fr;
           }
+
+          .contract-next-action,
+          .contract-risk-board,
+          .contract-intelligence-panel,
+          .contract-unified-timeline {
+            grid-column: 1 / -1;
+          }
+
+          .contract-operations-zone .contract-operations-workspace {
+            grid-template-columns: 1fr !important;
+          }
+
+          .contract-operations-zone .contract-crm-panel {
+            grid-column: auto;
+          }
+        }
+
+        @media (max-width: 900px) {
+          .contract-profile-main {
+            grid-template-columns: 1fr !important;
+          }
+
+          .contract-profile-summary {
+            grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+          }
+
+          .contract-profile-progress {
+            grid-template-columns: 1fr !important;
+          }
         }
 
         @media (max-width: 640px) {
+          .contract-workbench-tabs {
+            display: flex !important;
+            width: max-content;
+            max-width: 100%;
+            overflow-x: auto !important;
+          }
+
           .contract-risk-board {
             grid-template-columns: 1fr;
           }
@@ -4909,6 +4892,10 @@ const ContractDetailsPageRedesigned = () => {
           .contract-crm-actions,
           .contract-smart-task {
             grid-template-columns: 1fr;
+          }
+
+          .contract-profile-identity > .grid {
+            grid-template-columns: 1fr !important;
           }
 
           .contract-smart-task b {

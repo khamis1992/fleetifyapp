@@ -178,7 +178,7 @@ export const MobileEmployeeContracts: React.FC = () => {
                   >
                     <MobileContractCard
                       contract={contract}
-                      onClick={() => navigate(`/mobile/employee/contracts/${contract.id}`)}
+                      onClick={() => navigate(`/contracts/${contract.contract_number}`)}
                       onCall={() => handleCall(contract.customer_phone)}
                       onPayment={() => handlePayment(contract.id)}
                       onNote={() => handleNote(contract.id)}

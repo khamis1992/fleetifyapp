@@ -1,323 +1,283 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { supabase } from '@/integrations/supabase/client'
-import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess'
-import { toast } from 'sonner'
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
+import type { Json } from '@/integrations/supabase/types';
+import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
+
+const MAX_FILE_SIZE = 100 * 1024 * 1024;
+const ALLOWED_MIME_TYPES = new Set([
+  'application/pdf',
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'image/jpeg',
+  'image/png',
+  'image/gif',
+  'image/webp',
+  'text/csv',
+  'application/vnd.ms-excel',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  'application/zip',
+  'application/x-rar-compressed',
+  'text/plain',
+  'application/json',
+]);
 
 export interface CreateDocumentData {
-  contract_id: string
-  document_type: string
-  document_name: string
-  file?: File
-  notes?: string
-  is_required?: boolean
-  condition_report_id?: string
+  contract_id: string;
+  document_type: string;
+  document_name: string;
+  file?: File;
+  notes?: string;
+  is_required?: boolean;
+  condition_report_id?: string;
 }
 
 export interface DocumentOperationResult {
-  success: boolean
-  document_id?: string
-  error?: string
-  warnings?: string[]
-}
-
-interface DocumentCreationProgress {
-  step: string
-  status: 'pending' | 'processing' | 'completed' | 'failed'
-  message: string
-  progress: number
+  success: boolean;
+  document_id?: string;
+  error?: string;
+  warnings?: string[];
 }
 
 export interface DocumentOperationLog {
-  id: string
-  operation_type: string
-  operation_status: string
-  error_message?: string
-  error_code?: string
-  retry_count: number
-  file_path?: string
-  metadata: Record<string, unknown>
-  created_at: string
-  completed_at?: string
+  id: string;
+  operation_type: string;
+  operation_status: string;
+  error_message?: string;
+  error_code?: string;
+  retry_count: number;
+  file_path?: string;
+  metadata: Record<string, unknown>;
+  created_at: string;
+  completed_at?: string;
 }
 
-/**
- * Enhanced contract document management with:
- * - Database-first approach (create record before file upload)
- * - Comprehensive rollback mechanisms
- * - Detailed logging and monitoring
- * - Smart retry logic with exponential backoff
- * - Orphaned file cleanup
- */
+type LogError = { message?: string; code?: string } | Error | null | undefined;
+
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) return error.message;
+  if (error && typeof error === 'object' && 'message' in error) return String(error.message);
+  return 'حدث خطأ غير متوقع';
+}
+
+function getErrorCode(error: LogError): string | undefined {
+  return error && typeof error === 'object' && 'code' in error && typeof error.code === 'string'
+    ? error.code
+    : undefined;
+}
+
+function getSafeExtension(file: File): string {
+  const fromName = file.name.split('.').pop()?.toLowerCase().replace(/[^a-z0-9]/g, '');
+  if (fromName) return fromName.slice(0, 10);
+  if (file.type === 'application/pdf') return 'pdf';
+  if (file.type.startsWith('image/')) return file.type.slice(6).replace('jpeg', 'jpg');
+  return 'bin';
+}
+
+function asMetadata(value: Json | null): Record<string, unknown> {
+  return value && typeof value === 'object' && !Array.isArray(value)
+    ? value as Record<string, unknown>
+    : {};
+}
+
 export function useEnhancedContractDocuments() {
-  const queryClient = useQueryClient()
-  const { user, companyId } = useUnifiedCompanyAccess()
+  const queryClient = useQueryClient();
+  const { user, companyId } = useUnifiedCompanyAccess();
 
   const logOperation = async (
     operationType: string,
     status: string,
-    metadata: any,
+    metadata: Record<string, Json | undefined>,
     contractId?: string,
     documentId?: string,
     filePath?: string,
-    error?: any
+    error?: LogError,
   ) => {
-    try {
-      await supabase.from('contract_document_operation_log').insert({
-        company_id: companyId,
-        operation_type: operationType,
-        operation_status: status,
-        contract_id: contractId,
-        document_id: documentId,
-        file_path: filePath,
-        error_message: error?.message,
-        error_code: error?.code,
-        metadata,
-        performed_by: user?.id
-      })
-    } catch (logError) {
-      console.error('Failed to log operation:', logError)
-    }
-  }
+    if (!companyId) return;
+
+    const cleanMetadata = Object.fromEntries(
+      Object.entries(metadata).filter((entry): entry is [string, Json] => entry[1] !== undefined),
+    ) as Record<string, Json>;
+
+    const { error: logError } = await supabase.from('contract_document_operation_log').insert({
+      company_id: companyId,
+      operation_type: operationType,
+      operation_status: status,
+      contract_id: contractId,
+      document_id: documentId,
+      file_path: filePath,
+      error_message: error?.message,
+      error_code: getErrorCode(error),
+      metadata: cleanMetadata,
+      performed_by: user?.id,
+      completed_at: status === 'completed' || status === 'failed' ? new Date().toISOString() : undefined,
+    });
+
+    if (logError) console.error('Failed to log contract document operation:', logError);
+  };
 
   const createDocumentWithRollback = useMutation({
     mutationFn: async (data: CreateDocumentData): Promise<DocumentOperationResult> => {
-      if (!user) {
-        throw new Error('User not authenticated')
+      if (!user?.id || !companyId) throw new Error('يجب تسجيل الدخول واختيار الشركة');
+      if (!data.contract_id || !data.document_name.trim() || !data.document_type.trim()) {
+        throw new Error('بيانات المستند غير مكتملة');
       }
+      if (data.file && data.file.size > MAX_FILE_SIZE) throw new Error('حجم الملف يتجاوز 100 ميجابايت');
+      if (data.file?.type && !ALLOWED_MIME_TYPES.has(data.file.type)) throw new Error('نوع الملف غير مسموح');
 
-      let documentId: string | undefined
-      let filePath: string | undefined
-      const operationId = crypto.randomUUID()
+      const operationId = crypto.randomUUID();
+      const filePath = data.file
+        ? `${companyId}/${data.contract_id}/${operationId}.${getSafeExtension(data.file)}`
+        : undefined;
+      let documentId: string | undefined;
 
       try {
-        // Step 1: Create database record FIRST using the secure function
-        console.log(`📝 [DOC_CREATE_${operationId}] Creating database record first...`)
-        
-        await logOperation('create_document_start', 'started', {
+        await logOperation('create_document', 'started', {
           operation_id: operationId,
           document_type: data.document_type,
           document_name: data.document_name,
+          notes: data.notes,
+          is_required: data.is_required,
+          condition_report_id: data.condition_report_id,
           file_size: data.file?.size,
-          has_file: !!data.file
-        }, data.contract_id)
+          mime_type: data.file?.type,
+        }, data.contract_id, undefined, filePath);
 
-        const { data: document, error: dbError } = await supabase
-          .rpc('create_contract_document_with_rollback', {
+        const { data: createdDocumentId, error: dbError } = await supabase.rpc(
+          'create_contract_document_with_rollback',
+          {
+            p_company_id: companyId,
             p_contract_id: data.contract_id,
             p_document_type: data.document_type,
-            p_document_name: data.document_name,
-            p_file_path: null, // Will be updated after successful upload
-            p_file_size: data.file?.size || null,
-            p_mime_type: data.file?.type || null,
+            p_document_name: data.document_name.trim(),
+            p_file_path: filePath,
+            p_file_size: data.file?.size,
+            p_mime_type: data.file?.type,
             p_notes: data.notes,
-            p_is_required: data.is_required || false,
-            p_condition_report_id: data.condition_report_id || null
-          })
+            p_is_required: data.is_required ?? false,
+            p_condition_report_id: data.condition_report_id,
+          },
+        );
 
-        if (dbError) {
-          await logOperation('create_document_db_failed', 'failed', {
-            operation_id: operationId,
-            error: dbError.message
-          }, data.contract_id, undefined, undefined, dbError)
-          throw new Error(`Database creation failed: ${dbError.message}`)
-        }
+        if (dbError) throw dbError;
+        documentId = createdDocumentId;
 
-        documentId = document
-        console.log(`✅ [DOC_CREATE_${operationId}] Database record created: ${documentId}`)
-
-        // Step 2: Upload file if provided (now that database record exists)
-        if (data.file) {
-          console.log(`📤 [DOC_CREATE_${operationId}] Uploading file...`)
-          
-          const fileExt = data.file.name.split('.').pop()
-          const fileName = `${data.contract_id}/${documentId}.${fileExt}`
-          
+        if (data.file && filePath) {
           const { error: uploadError } = await supabase.storage
             .from('contract-documents')
-            .upload(fileName, data.file, {
-              cacheControl: '3600',
-              upsert: false
-            })
+            .upload(filePath, data.file, { cacheControl: '3600', upsert: false });
 
           if (uploadError) {
-            console.error(`❌ [DOC_CREATE_${operationId}] File upload failed:`, uploadError)
-            
-            await logOperation('create_document_upload_failed', 'failed', {
-              operation_id: operationId,
-              upload_error: uploadError.message
-            }, data.contract_id, documentId, fileName, uploadError)
-
-            // Rollback: Delete the database record
-            await supabase
+            const { error: rollbackError } = await supabase
               .from('contract_documents')
               .delete()
               .eq('id', documentId)
+              .eq('company_id', companyId)
+              .eq('contract_id', data.contract_id);
 
-            await logOperation('create_document_rollback', 'completed', {
-              operation_id: operationId,
-              action: 'deleted_orphaned_db_record',
-              document_id: documentId
-            }, data.contract_id, documentId)
-
-            throw new Error(`File upload failed: ${uploadError.message}`)
-          }
-
-          filePath = fileName
-          console.log(`✅ [DOC_CREATE_${operationId}] File uploaded: ${fileName}`)
-
-          // Step 3: Update database record with file path
-          const { error: updateError } = await supabase
-            .from('contract_documents')
-            .update({ 
-              file_path: fileName,
-              updated_at: new Date().toISOString()
-            })
-            .eq('id', documentId)
-
-          if (updateError) {
-            console.error(`❌ [DOC_CREATE_${operationId}] Database update failed:`, updateError)
-            
-            await logOperation('create_document_update_failed', 'failed', {
-              operation_id: operationId,
-              update_error: updateError.message
-            }, data.contract_id, documentId, fileName, updateError)
-
-            // Rollback: Delete both file and database record
-            await supabase.storage
-              .from('contract-documents')
-              .remove([fileName])
-
-            await supabase
-              .from('contract_documents')
-              .delete()
-              .eq('id', documentId)
-
-            await logOperation('create_document_rollback', 'completed', {
-              operation_id: operationId,
-              action: 'deleted_file_and_db_record',
-              document_id: documentId,
-              file_path: fileName
-            }, data.contract_id, documentId)
-
-            throw new Error(`Database update failed: ${updateError.message}`)
+            if (rollbackError) {
+              await logOperation('create_document_rollback', 'failed', {
+                operation_id: operationId,
+                rollback_error: rollbackError.message,
+              }, data.contract_id, documentId, filePath, rollbackError);
+            }
+            throw uploadError;
           }
         }
 
-        // Success - log completion
-        await logOperation('create_document_completed', 'completed', {
+        await logOperation('create_document', 'completed', {
           operation_id: operationId,
-          document_id: documentId,
-          file_path: filePath,
-          final_step: data.file ? 'file_uploaded_and_linked' : 'database_record_only'
-        }, data.contract_id, documentId, filePath)
+          has_file: Boolean(data.file),
+        }, data.contract_id, documentId, filePath);
 
-        console.log(`🎉 [DOC_CREATE_${operationId}] Document creation completed successfully`)
-
-        return {
-          success: true,
-          document_id: documentId
-        }
-
+        return { success: true, document_id: documentId };
       } catch (error) {
-        console.error(`💥 [DOC_CREATE_${operationId}] Operation failed:`, error)
-        
-        await logOperation('create_document_failed', 'failed', {
+        await logOperation('create_document', 'failed', {
           operation_id: operationId,
-          final_error: error instanceof Error ? error.message : 'Unknown error',
           document_id: documentId,
-          file_path: filePath
-        }, data.contract_id, documentId, filePath, error)
-
-        return {
-          success: false,
-          error: error instanceof Error ? error.message : 'فشل في إنشاء المستند'
-        }
+        }, data.contract_id, documentId, filePath, error as LogError);
+        return { success: false, error: getErrorMessage(error) };
       }
     },
     onSuccess: (result) => {
       if (result.success) {
-        queryClient.invalidateQueries({ queryKey: ['contract-documents'] })
-        toast.success('تم إضافة المستند بنجاح')
+        void queryClient.invalidateQueries({ queryKey: ['contract-documents'] });
+        toast.success('تمت إضافة المستند بنجاح');
       } else {
-        toast.error(result.error || 'فشل في إضافة المستند')
+        toast.error(result.error || 'فشلت إضافة المستند');
       }
     },
-    onError: (error) => {
-      console.error('Document creation mutation error:', error)
-      toast.error('حدث خطأ غير متوقع أثناء إضافة المستند')
-    }
-  })
+    onError: (error) => toast.error(getErrorMessage(error)),
+  });
 
   const retryFailedOperation = useMutation({
     mutationFn: async (logId: string): Promise<DocumentOperationResult> => {
-      // Get the failed operation details
+      if (!companyId) throw new Error('لم يتم اختيار الشركة');
+
       const { data: log, error } = await supabase
         .from('contract_document_operation_log')
         .select('*')
         .eq('id', logId)
-        .single()
+        .eq('company_id', companyId)
+        .single();
 
-      if (error || !log) {
-        throw new Error('Failed operation not found')
+      if (error || !log) throw new Error('تعذر العثور على العملية الفاشلة');
+      const metadata = asMetadata(log.metadata);
+      if (!log.contract_id || !metadata.document_type || !metadata.document_name) {
+        throw new Error('لا تحتوي العملية على بيانات كافية لإعادة المحاولة');
       }
 
-      // Increment retry count
       await supabase
         .from('contract_document_operation_log')
-        .update({ retry_count: log.retry_count + 1 })
+        .update({ retry_count: (log.retry_count ?? 0) + 1 })
         .eq('id', logId)
+        .eq('company_id', companyId);
 
-      // Retry based on operation type
-      if (log.operation_type === 'create_document') {
-        const metadata = log.metadata as any
-        return createDocumentWithRollback.mutateAsync({
-          contract_id: log.contract_id!,
-          document_type: metadata.document_type,
-          document_name: metadata.document_name,
-          notes: metadata.notes,
-          is_required: metadata.is_required,
-          condition_report_id: metadata.condition_report_id
-        })
-      }
-
-      throw new Error('Unsupported retry operation type')
-    }
-  })
+      return createDocumentWithRollback.mutateAsync({
+        contract_id: log.contract_id,
+        document_type: String(metadata.document_type),
+        document_name: String(metadata.document_name),
+        notes: typeof metadata.notes === 'string' ? metadata.notes : undefined,
+        is_required: typeof metadata.is_required === 'boolean' ? metadata.is_required : undefined,
+        condition_report_id: typeof metadata.condition_report_id === 'string' ? metadata.condition_report_id : undefined,
+      });
+    },
+  });
 
   const cleanupOrphanedFiles = useMutation({
     mutationFn: async () => {
-      // This would typically be done by an edge function
-      // For now, we'll just call the database function
-      const { data, error } = await supabase.rpc('cleanup_orphaned_contract_files')
-      
-      if (error) {
-        throw error
-      }
-      
-      return data
-    }
-  })
+      const { data, error } = await supabase.rpc('cleanup_orphaned_contract_files');
+      if (error) throw error;
+      return data;
+    },
+  });
 
-  const getOperationLogs = async (contractId?: string, limit: number = 50): Promise<DocumentOperationLog[]> => {
+  const getOperationLogs = async (contractId?: string, limit = 50): Promise<DocumentOperationLog[]> => {
+    if (!companyId) return [];
     let query = supabase
       .from('contract_document_operation_log')
       .select('*')
+      .eq('company_id', companyId)
       .order('created_at', { ascending: false })
-      .limit(limit)
+      .limit(Math.min(Math.max(limit, 1), 200));
 
-    if (contractId) {
-      query = query.eq('contract_id', contractId)
-    }
+    if (contractId) query = query.eq('contract_id', contractId);
+    const { data, error } = await query;
+    if (error) throw error;
 
-    const { data, error } = await query
-
-    if (error) {
-      console.error('Failed to fetch operation logs:', error)
-      return []
-    }
-
-    return data || []
-  }
+    return (data || []).map((log) => ({
+      id: log.id,
+      operation_type: log.operation_type,
+      operation_status: log.operation_status,
+      error_message: log.error_message ?? undefined,
+      error_code: log.error_code ?? undefined,
+      retry_count: log.retry_count ?? 0,
+      file_path: log.file_path ?? undefined,
+      metadata: asMetadata(log.metadata),
+      created_at: log.created_at || '',
+      completed_at: log.completed_at ?? undefined,
+    }));
+  };
 
   return {
     createDocument: createDocumentWithRollback.mutateAsync,
@@ -326,6 +286,6 @@ export function useEnhancedContractDocuments() {
     isRetrying: retryFailedOperation.isPending,
     cleanupOrphanedFiles: cleanupOrphanedFiles.mutateAsync,
     isCleaningUp: cleanupOrphanedFiles.isPending,
-    getOperationLogs
-  }
+    getOperationLogs,
+  };
 }

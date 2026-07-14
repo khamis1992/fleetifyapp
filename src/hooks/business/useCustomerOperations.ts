@@ -4,12 +4,16 @@ import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 import { supabase } from '@/integrations/supabase/client';
 import { useCustomerDuplicateCheck } from '@/hooks/useCustomerDuplicateCheck';
 import { auditLogger } from '@/lib/auditLogger';
+import type { Database } from '@/integrations/supabase/types';
 import { 
   CreateCustomerData, 
   UpdateCustomerData,
   createCustomerSchema,
   updateCustomerSchema 
 } from '@/schemas/customer.schema';
+
+type CustomerInsert = Database['public']['Tables']['customers']['Insert'];
+type CustomerUpdate = Database['public']['Tables']['customers']['Update'];
 
 export interface CustomerOperationsOptions {
   enableDuplicateCheck?: boolean;
@@ -38,9 +42,15 @@ export const useCustomerOperations = (options: CustomerOperationsOptions = {}) =
     sendWelcomeEmail = false
   } = options;
 
+  const requireCompanyId = () => {
+    if (!companyId) throw new Error('Company ID is required');
+    return companyId;
+  };
+
   // Create customer operation
   const createCustomer = useMutation({
     mutationFn: async (data: CreateCustomerData) => {
+      const activeCompanyId = requireCompanyId();
       console.log('🚀 [useCustomerOperations] Starting customer creation:', data);
 
       // Validate input data
@@ -58,7 +68,7 @@ export const useCustomerOperations = (options: CustomerOperationsOptions = {}) =
       }
 
       // Prepare data for database insertion
-      const customerData = {
+      const customerData: CustomerInsert = {
         customer_type: validatedData.customer_type,
         first_name: validatedData.first_name,
         last_name: validatedData.last_name,
@@ -74,7 +84,7 @@ export const useCustomerOperations = (options: CustomerOperationsOptions = {}) =
         license_number: validatedData.license_number,
         credit_limit: validatedData.credit_limit,
         notes: validatedData.notes,
-        company_id: companyId,
+        company_id: activeCompanyId,
         created_by: user?.id,
         customer_code: validatedData.customer_code || await generateCustomerCode(),
         // IMPORTANT: Set is_active to true for new customers
@@ -153,6 +163,7 @@ export const useCustomerOperations = (options: CustomerOperationsOptions = {}) =
   // Update customer operation
   const updateCustomer = useMutation({
     mutationFn: async (data: UpdateCustomerData) => {
+      const activeCompanyId = requireCompanyId();
       console.log('🔄 [useCustomerOperations] Starting customer update:', data);
 
       // Validate input data
@@ -163,7 +174,7 @@ export const useCustomerOperations = (options: CustomerOperationsOptions = {}) =
         .from('customers')
         .select('*')
         .eq('id', validatedData.id)
-        .eq('company_id', companyId)
+        .eq('company_id', activeCompanyId)
         .single();
 
       if (fetchError || !existingCustomer) {
@@ -171,8 +182,9 @@ export const useCustomerOperations = (options: CustomerOperationsOptions = {}) =
       }
 
       // Prepare update data
-      const updateData = {
-        ...validatedData,
+      const { id: customerId, ...validatedFields } = validatedData;
+      const dataToUpdate: CustomerUpdate = {
+        ...validatedFields,
         updated_at: new Date().toISOString(),
         updated_by: user?.id,
         // Convert dates to ISO strings for database
@@ -181,15 +193,12 @@ export const useCustomerOperations = (options: CustomerOperationsOptions = {}) =
         national_id_expiry: validatedData.national_id_expiry ? validatedData.national_id_expiry.toISOString().split('T')[0] : undefined,
       };
 
-      // Remove ID from update data
-      const { id: customerId, ...dataToUpdate } = updateData;
-
       // Update customer
       const { data: updatedCustomer, error } = await supabase
         .from('customers')
         .update(dataToUpdate)
         .eq('id', customerId)
-        .eq('company_id', companyId)
+        .eq('company_id', activeCompanyId)
         .select()
         .single();
 
@@ -201,7 +210,7 @@ export const useCustomerOperations = (options: CustomerOperationsOptions = {}) =
       console.log('✅ [useCustomerOperations] Customer updated successfully:', updatedCustomer);
       
       // تسجيل التعديل في سجل النشاط
-      auditLogger.logCustomer('updated', customerId, companyId, {
+      auditLogger.logCustomer('updated', customerId, activeCompanyId, {
         old_values: existingCustomer,
         new_values: updatedCustomer,
         changes: dataToUpdate
@@ -289,6 +298,7 @@ export const useCustomerOperations = (options: CustomerOperationsOptions = {}) =
   // Delete customer operation using optimized function
   const deleteCustomer = useMutation({
     mutationFn: async (customerId: string) => {
+      const activeCompanyId = requireCompanyId();
       console.log('🗑️ [useCustomerOperations] Starting optimized customer deletion:', customerId);
 
       // Get customer data for the optimized delete function
@@ -296,7 +306,7 @@ export const useCustomerOperations = (options: CustomerOperationsOptions = {}) =
         .from('customers')
         .select('*')
         .eq('id', customerId)
-        .eq('company_id', companyId)
+        .eq('company_id', activeCompanyId)
         .single();
 
       if (customerError || !customer) {
@@ -307,7 +317,7 @@ export const useCustomerOperations = (options: CustomerOperationsOptions = {}) =
         .from('payments')
         .select('id', { count: 'exact', head: true })
         .eq('customer_id', customerId)
-        .eq('company_id', companyId);
+        .eq('company_id', activeCompanyId);
 
       if (paymentsCountError) {
         throw paymentsCountError;
@@ -320,7 +330,7 @@ export const useCustomerOperations = (options: CustomerOperationsOptions = {}) =
       // Use the enhanced database function for fast deletion
       const { data, error } = await supabase.rpc('enhanced_delete_customer_and_relations', {
         target_customer_id: customerId,
-        target_company_id: companyId
+        target_company_id: activeCompanyId
       });
 
       if (error) {
@@ -328,7 +338,7 @@ export const useCustomerOperations = (options: CustomerOperationsOptions = {}) =
         throw new Error(`خطأ في حذف العميل: ${error.message}`);
       }
 
-      const result = data as DeleteCustomerResult;
+      const result = data as unknown as DeleteCustomerResult;
       if (!result?.success) {
         console.error('❌ [useCustomerOperations] Function error:', result?.error);
         throw new Error(result?.error || 'فشل في حذف العميل');
@@ -357,6 +367,7 @@ export const useCustomerOperations = (options: CustomerOperationsOptions = {}) =
       isBlacklisted: boolean; 
       reason?: string; 
     }) => {
+      const activeCompanyId = requireCompanyId();
       console.log('🔒 [useCustomerOperations] Toggling blacklist:', { customerId, isBlacklisted, reason });
 
       const { error } = await supabase
@@ -364,11 +375,9 @@ export const useCustomerOperations = (options: CustomerOperationsOptions = {}) =
         .update({
           is_blacklisted: isBlacklisted,
           blacklist_reason: reason,
-          blacklisted_at: isBlacklisted ? new Date().toISOString() : null,
-          blacklisted_by: isBlacklisted ? user?.id : null,
         })
         .eq('id', customerId)
-        .eq('company_id', companyId);
+        .eq('company_id', activeCompanyId);
 
       if (error) {
         console.error('❌ [useCustomerOperations] Blacklist toggle error:', error);
@@ -392,11 +401,12 @@ export const useCustomerOperations = (options: CustomerOperationsOptions = {}) =
 
   // Helper functions
   const checkForDuplicates = async (customerData: CreateCustomerData) => {
+    const activeCompanyId = requireCompanyId();
     // Simple duplicate check using database query
     const duplicateQuery = supabase
       .from('customers')
       .select('id, first_name, last_name, company_name, customer_type')
-      .eq('company_id', companyId);
+      .eq('company_id', activeCompanyId);
 
     if (customerData.national_id) {
       duplicateQuery.eq('national_id', customerData.national_id);
@@ -422,6 +432,7 @@ export const useCustomerOperations = (options: CustomerOperationsOptions = {}) =
   };
 
   const generateCustomerCode = async (): Promise<string> => {
+    const activeCompanyId = requireCompanyId();
     const prefix = 'CUST';
     const year = new Date().getFullYear().toString().slice(-2);
     
@@ -429,7 +440,7 @@ export const useCustomerOperations = (options: CustomerOperationsOptions = {}) =
     const { count, error } = await supabase
       .from('customers')
       .select('*', { count: 'exact', head: true })
-      .eq('company_id', companyId);
+      .eq('company_id', activeCompanyId);
 
     if (error) {
       console.error('Error generating customer code:', error);
@@ -443,9 +454,10 @@ export const useCustomerOperations = (options: CustomerOperationsOptions = {}) =
 
   const createCustomerAccounts = async (customerId: string) => {
     try {
+      const activeCompanyId = requireCompanyId();
       // Create default accounts for the customer using the available function
       const { error } = await supabase.rpc('auto_create_customer_accounts', {
-        company_id_param: companyId,
+        company_id_param: activeCompanyId,
         customer_id_param: customerId
       });
 
@@ -473,7 +485,7 @@ export const useCustomerOperations = (options: CustomerOperationsOptions = {}) =
       .eq('customer_id', customerId)
       .neq('payment_status', 'paid');
 
-    return (contracts && contracts.length > 0) || (invoices && invoices.length > 0);
+    return Boolean((contracts && contracts.length > 0) || (invoices && invoices.length > 0));
   };
 
   const sendWelcomeEmailToCustomer = async (customer: Customer) => {

@@ -2,6 +2,33 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useUnifiedCompanyAccess } from "./useUnifiedCompanyAccess";
 import { useToast } from "./use-toast";
+import type { Database } from "@/integrations/supabase/types";
+
+type ChartOfAccountUpdate = Database["public"]["Tables"]["chart_of_accounts"]["Update"];
+
+type AccountDeletionResult = {
+  success?: boolean;
+  error?: string;
+  operation?: { message?: string };
+  total_deleted?: number;
+  deleted_accounts?: Array<{ deletion_type?: string }>;
+  summary?: {
+    total_processed?: number;
+    deleted_permanently?: number;
+    deleted_soft?: number;
+  };
+};
+
+function getErrorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : 'حدث خطأ غير متوقع';
+}
+
+function parseDeletionResult(data: unknown): AccountDeletionResult {
+  if (typeof data !== 'object' || data === null || Array.isArray(data)) {
+    throw new Error('استجابة عملية الحسابات غير صالحة');
+  }
+  return data as AccountDeletionResult;
+}
 
 export interface ChartOfAccount {
   id: string;
@@ -37,8 +64,6 @@ export const useChartOfAccounts = (includeInactive: boolean = false) => {
       try {
         validateCompanyAccess(companyId);
         
-        console.log('[CHART_OF_ACCOUNTS] Fetching accounts for company:', companyId, 'includeInactive:', includeInactive);
-        
         let query = supabase
           .from("chart_of_accounts")
           .select("*")
@@ -52,39 +77,11 @@ export const useChartOfAccounts = (includeInactive: boolean = false) => {
         const { data, error } = await query.order("account_code");
 
         if (error) {
-          console.error("Error fetching chart of accounts:", error);
           throw new Error(`فشل في تحميل دليل الحسابات: ${error.message}`);
         }
-
-        console.log('[CHART_OF_ACCOUNTS] Fetched accounts count:', data?.length || 0);
-        console.log('[CHART_OF_ACCOUNTS] Active accounts:', data?.filter(acc => acc.is_active)?.length || 0);
-        console.log('[CHART_OF_ACCOUNTS] Inactive accounts:', data?.filter(acc => !acc.is_active)?.length || 0);
-        
-        // تحليل المستويات
-        const levelDistribution = new Map<number, number>();
-        data?.forEach(acc => {
-          const level = acc.account_level || 1;
-          levelDistribution.set(level, (levelDistribution.get(level) || 0) + 1);
-        });
-        console.log('[CHART_OF_ACCOUNTS] Level distribution:', Object.fromEntries(levelDistribution));
-        
-        // عرض حسابات المستوى 4 المحملة
-        const level4Accounts = data?.filter(acc => acc.account_level === 4) || [];
-        console.log('[CHART_OF_ACCOUNTS] Level 4 accounts found:', level4Accounts.length);
-        if (level4Accounts.length > 0) {
-          console.log('[CHART_OF_ACCOUNTS] Level 4 accounts:', level4Accounts.map(acc => ({
-            code: acc.account_code,
-            name: acc.account_name,
-            parent_id: acc.parent_account_id,
-            active: acc.is_active
-          })));
-        }
-        
-        console.log('[CHART_OF_ACCOUNTS] Sample accounts:', data?.slice(0, 3)?.map(acc => ({ code: acc.account_code, name: acc.account_name, level: acc.account_level, active: acc.is_active })));
         
         return (data || []) as ChartOfAccount[];
       } catch (error) {
-        console.error("Chart of accounts access error:", error);
         throw error;
       }
     },
@@ -133,8 +130,6 @@ export const useCreateAccount = () => {
         company_id: companyId,
       };
 
-      console.log('🔧 [CREATE_ACCOUNT] البيانات المنظفة:', cleanedAccount);
-
       const { data, error } = await supabase
         .from("chart_of_accounts")
         .insert(cleanedAccount)
@@ -155,7 +150,7 @@ export const useCreateAccount = () => {
       toast({
         variant: "destructive",
         title: "خطأ في إنشاء الحساب",
-        description: error.message,
+        description: getErrorMessage(error),
       });
     },
   });
@@ -167,7 +162,7 @@ export const useUpdateAccount = () => {
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: async (data: { id: string; updates: Partial<ChartOfAccount> }) => {
+    mutationFn: async (data: { id: string; updates: ChartOfAccountUpdate }) => {
       const { data: result, error } = await supabase
         .from("chart_of_accounts")
         .update(data.updates)
@@ -189,7 +184,7 @@ export const useUpdateAccount = () => {
       toast({
         variant: "destructive",
         title: "خطأ في تحديث الحساب",
-        description: error.message,
+        description: getErrorMessage(error),
       });
     },
   });
@@ -202,26 +197,21 @@ export const useDeleteAccount = () => {
 
   return useMutation({
     mutationFn: async (accountId: string) => {
-      console.log('🗑️ [ACCOUNT_DELETE] بدء حذف الحساب (النمط القديم):', accountId);
-      
       // استخدام الدالة الجديدة المحسنة بدلاً من التحديث المباشر
-      const { data, error } = await supabase.rpc('comprehensive_delete_account' as any, {
+      const { data, error } = await supabase.rpc('comprehensive_delete_account', {
         account_id_param: accountId,
         deletion_mode: 'soft' // استخدام الحذف الآمن كافتراضي
       });
 
       if (error) {
-        console.error('❌ [ACCOUNT_DELETE] خطأ في الحذف:', error);
         throw error;
       }
 
-      const result = data as any;
+      const result = parseDeletionResult(data);
       if (!result.success) {
-        console.error('❌ [ACCOUNT_DELETE] فشل العملية:', result.error);
-        throw new Error(result.error);
+        throw new Error(result.error || 'فشل في حذف الحساب');
       }
 
-      console.log('✅ [ACCOUNT_DELETE] نجح الحذف:', result);
       return result;
     },
     onSuccess: (result) => {
@@ -230,15 +220,14 @@ export const useDeleteAccount = () => {
       
       toast({
         title: "تم حذف الحساب بنجاح",
-        description: (result as any).operation?.message || "تم إلغاء تفعيل الحساب من دليل الحسابات",
+        description: result.operation?.message || "تم إلغاء تفعيل الحساب من دليل الحسابات",
       });
     },
     onError: (error: unknown) => {
-      console.error('❌ [ACCOUNT_DELETE] فشل الحذف:', error);
       toast({
         variant: "destructive",
         title: "خطأ في حذف الحساب",
-        description: error.message,
+        description: getErrorMessage(error),
       });
     },
   });
@@ -258,17 +247,18 @@ export const useCascadeDeleteAccount = () => {
 
       if (error) throw new Error(`فشل في حذف الحساب: ${error.message}`);
       
-      const result = data as any;
+      const result = parseDeletionResult(data);
       if (!result?.success) throw new Error(result?.error || "فشل في حذف الحساب");
       
       return result;
     },
     onSuccess: (data: unknown) => {
       queryClient.invalidateQueries({ queryKey: ["chart-of-accounts", companyId] });
-      
-      const deletedCount = data.total_deleted || 0;
-      const permanentDeleted = data.deleted_accounts?.filter((acc: unknown) => acc.deletion_type === 'permanent')?.length || 0;
-      const softDeleted = data.deleted_accounts?.filter((acc: unknown) => acc.deletion_type === 'soft')?.length || 0;
+
+      const result = parseDeletionResult(data);
+      const deletedCount = result.total_deleted || 0;
+      const permanentDeleted = result.deleted_accounts?.filter((account) => account.deletion_type === 'permanent').length || 0;
+      const softDeleted = result.deleted_accounts?.filter((account) => account.deletion_type === 'soft').length || 0;
       
       let description = `تم حذف ${deletedCount} حساب`;
       if (permanentDeleted > 0 && softDeleted > 0) {
@@ -288,7 +278,7 @@ export const useCascadeDeleteAccount = () => {
       toast({
         variant: "destructive",
         title: "خطأ في حذف الحساب",
-        description: error.message,
+        description: getErrorMessage(error),
       });
     },
   });
@@ -303,7 +293,7 @@ export const useAccountDeletionPreview = () => {
 
       if (error) throw new Error(`فشل في جلب معاينة الحذف: ${error.message}`);
       
-      const result = data as any;
+      const result = parseDeletionResult(data);
       if (!result?.success) throw new Error(result?.error || "فشل في جلب معاينة الحذف");
       
       return result;
@@ -334,25 +324,25 @@ export const useDeleteAllAccounts = () => {
 
       if (error) throw new Error(`فشل في حذف جميع الحسابات: ${error.message}`);
       
-      const result = data as any;
+      const result = parseDeletionResult(data);
       if (!result?.success) throw new Error(result?.error || "فشل في حذف جميع الحسابات");
       
       return result;
     },
     onSuccess: (data: unknown) => {
       queryClient.invalidateQueries({ queryKey: ["chart-of-accounts", companyId] });
-      
-      const summary = data.summary;
+
+      const summary = parseDeletionResult(data).summary;
       toast({
         title: "تم حذف جميع الحسابات",
-        description: `تم حذف ${summary.total_processed} حساب (${summary.deleted_permanently} نهائي، ${summary.deleted_soft} مؤقت)`,
+        description: `تم حذف ${summary?.total_processed || 0} حساب (${summary?.deleted_permanently || 0} نهائي، ${summary?.deleted_soft || 0} مؤقت)`,
       });
     },
     onError: (error: unknown) => {
       toast({
         variant: "destructive",
         title: "خطأ في حذف جميع الحسابات",
-        description: error.message,
+        description: getErrorMessage(error),
       });
     },
   });
@@ -371,7 +361,7 @@ export const useAllAccountsDeletionPreview = () => {
 
       if (error) throw new Error(`فشل في جلب معاينة حذف جميع الحسابات: ${error.message}`);
       
-      const result = data as any;
+      const result = parseDeletionResult(data);
       if (!result?.success) throw new Error(result?.error || "فشل في جلب معاينة حذف جميع الحسابات");
       
       return result;
@@ -390,8 +380,6 @@ export const useCopyDefaultAccounts = () => {
       
       validateCompanyAccess(companyId);
 
-      console.log('📋 [OLD_COPY_DEFAULT] استخدام النسخ الافتراضي القديم (232 حساب)');
-      
       const { error } = await supabase.rpc("copy_default_accounts_to_company", {
         target_company_id: companyId,
       });
@@ -399,7 +387,6 @@ export const useCopyDefaultAccounts = () => {
       if (error) throw new Error(`فشل في نسخ الحسابات الافتراضية: ${error.message}`);
     },
     onMutate: () => {
-      console.log('⚠️ [OLD_COPY_DEFAULT] تم استدعاء النسخ الافتراضي القديم!');
       toast({
         title: "⚠️ النظام القديم",
         description: "يتم استخدام النظام القديم (232 حساب فقط)",
@@ -416,7 +403,7 @@ export const useCopyDefaultAccounts = () => {
       toast({
         variant: "destructive",
         title: "خطأ في نسخ الحسابات",
-        description: error.message,
+        description: getErrorMessage(error),
       });
     },
   });

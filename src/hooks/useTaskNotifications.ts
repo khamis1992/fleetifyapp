@@ -84,11 +84,13 @@ export function useMarkNotificationRead() {
 
   return useMutation({
     mutationFn: async (notificationId: string) => {
+      if (!user?.id) throw new Error('المستخدم غير مسجل');
+
       const { error } = await supabase
         .from('task_notifications')
         .update({ is_read: true })
         .eq('id', notificationId)
-        .eq('user_id', user?.id);
+        .eq('user_id', user.id);
 
       if (error) throw error;
       return notificationId;

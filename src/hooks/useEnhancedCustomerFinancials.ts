@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
+import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 
 // Enhanced Customer Balance Interface
 export interface CustomerBalance {
@@ -201,7 +202,7 @@ export const useUpdateCustomerAging = () => {
         description: "تم تحديث تحليل أعمار الذمم بنجاح",
       });
     },
-    onError: (error) => {
+    onError: () => {
       toast({
         title: "خطأ في تحديث التحليل",
         description: "حدث خطأ أثناء تحديث تحليل أعمار الذمم",
@@ -213,13 +214,18 @@ export const useUpdateCustomerAging = () => {
 
 // Hook to get all customers aging report
 export const useCustomersAgingReport = () => {
+  const { companyId, getQueryKey } = useUnifiedCompanyAccess();
+
   return useQuery({
-    queryKey: ['customers-aging-report'],
+    queryKey: getQueryKey(['customers-aging-report']),
     queryFn: async () => {
+      if (!companyId) throw new Error('Company ID is required');
+
       // First get aging analysis data
       const { data: agingData, error: agingError } = await supabase
         .from('customer_aging_analysis')
         .select('*')
+        .eq('company_id', companyId)
         .eq('analysis_date', new Date().toISOString().split('T')[0])
         .order('total_outstanding', { ascending: false });
 
@@ -232,6 +238,7 @@ export const useCustomersAgingReport = () => {
       const { data: customerData, error: customerError } = await supabase
         .from('customers')
         .select('id, first_name, last_name, company_name, customer_type, phone, email')
+        .eq('company_id', companyId)
         .in('id', customerIds);
 
       if (customerError) throw customerError;
@@ -241,6 +248,13 @@ export const useCustomersAgingReport = () => {
         const customer = customerData?.find(c => c.id === aging.customer_id);
         return {
           ...aging,
+          current_amount: Number(aging.current_amount || 0),
+          days_1_30: Number(aging.days_1_30 || 0),
+          days_31_60: Number(aging.days_31_60 || 0),
+          days_61_90: Number(aging.days_61_90 || 0),
+          days_91_120: Number(aging.days_91_120 || 0),
+          days_over_120: Number(aging.days_over_120 || 0),
+          total_outstanding: Number(aging.total_outstanding || 0),
           customers: customer || {
             id: aging.customer_id,
             first_name: '',
@@ -255,6 +269,7 @@ export const useCustomersAgingReport = () => {
 
       return combinedData;
     },
+    enabled: Boolean(companyId),
     refetchInterval: 600000, // Refetch every 10 minutes
   });
 };

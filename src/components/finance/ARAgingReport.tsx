@@ -371,7 +371,7 @@ export const ARAgingReport: React.FC = () => {
 
       // Customer aging sheet
       if (customerAging && customerAging.length > 0) {
-        const customerData = [
+        const customerData: Array<Array<string | number | null | undefined>> = [
           ['Customer Name (AR)', 'Customer Name (EN)', 'Phone', 'Email', 'Total Outstanding', 'Current', '1-30 Days', '31-60 Days', '61-90 Days', '90+ Days', 'Max Days Overdue', 'Total Invoices']
         ];
         
@@ -398,7 +398,7 @@ export const ARAgingReport: React.FC = () => {
 
       // Priority list sheet
       if (priorityList && priorityList.length > 0) {
-        const priorityData = [
+        const priorityData: Array<Array<string | number | null | undefined>> = [
           ['Customer Name (AR)', 'Phone', 'Email', 'Total Outstanding', 'Risk Category', 'Recommended Action', 'Critical (90+)', 'High Risk (61-90)', 'Max Days Overdue', 'Priority Score']
         ];
         

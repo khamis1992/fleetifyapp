@@ -175,9 +175,13 @@ export function useCreateGoal() {
 // Update goal
 export function useUpdateGoal() {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
+  const userId = user?.profile?.id;
+  const companyId = user?.profile?.company_id;
 
   return useMutation({
     mutationFn: async (input: UpdateGoalInput) => {
+      if (!userId || !companyId) throw new Error('المستخدم أو الشركة غير محددين');
       const { id, ...data } = input;
 
       const updateData: any = { ...data };
@@ -194,6 +198,8 @@ export function useUpdateGoal() {
         .from('user_goals')
         .update(updateData)
         .eq('id', id)
+        .eq('user_id', userId)
+        .eq('company_id', companyId)
         .select()
         .single();
 
@@ -214,22 +220,28 @@ export function useUpdateGoal() {
 // Increment goal progress
 export function useIncrementGoalProgress() {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
+  const userId = user?.profile?.id;
+  const companyId = user?.profile?.company_id;
 
   return useMutation({
     mutationFn: async ({ id, increment = 1 }: { id: string; increment?: number }) => {
+      if (!userId || !companyId) throw new Error('المستخدم أو الشركة غير محددين');
       // First get current goal
       const { data: goal, error: fetchError } = await supabase
         .from('user_goals')
         .select('*')
         .eq('id', id)
+        .eq('user_id', userId)
+        .eq('company_id', companyId)
         .single();
 
       if (fetchError) throw fetchError;
 
-      const newCount = Math.min(goal.current_count + increment, goal.target_count);
+      const newCount = Math.min((goal.current_count ?? 0) + increment, goal.target_count);
       const isCompleted = newCount >= goal.target_count;
 
-      const { data, error } = await supabase
+      let updateQuery = supabase
         .from('user_goals')
         .update({
           current_count: newCount,
@@ -237,6 +249,14 @@ export function useIncrementGoalProgress() {
           completed_at: isCompleted ? new Date().toISOString() : null,
         })
         .eq('id', id)
+        .eq('user_id', userId)
+        .eq('company_id', companyId);
+
+      updateQuery = goal.current_count === null
+        ? updateQuery.is('current_count', null)
+        : updateQuery.eq('current_count', goal.current_count);
+
+      const { data, error } = await updateQuery
         .select()
         .single();
 
@@ -259,13 +279,21 @@ export function useIncrementGoalProgress() {
 // Delete goal
 export function useDeleteGoal() {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
+  const userId = user?.profile?.id;
+  const companyId = user?.profile?.company_id;
 
   return useMutation({
     mutationFn: async (id: string) => {
+      if (!userId || !companyId) throw new Error('المستخدم أو الشركة غير محددين');
       const { error } = await supabase
         .from('user_goals')
         .delete()
-        .eq('id', id);
+        .eq('id', id)
+        .eq('user_id', userId)
+        .eq('company_id', companyId)
+        .select('id')
+        .single();
 
       if (error) throw error;
       return id;

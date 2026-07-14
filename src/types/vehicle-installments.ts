@@ -102,6 +102,7 @@ export interface ContractVehicle {
 export interface VehicleInstallmentPaymentData {
   schedule_id: string
   paid_amount: number
+  payment_method: 'cash' | 'bank_transfer' | 'check' | 'credit_card'
   payment_reference?: string
   notes?: string
   payment_date?: string

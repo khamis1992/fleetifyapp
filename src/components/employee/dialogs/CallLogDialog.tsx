@@ -9,6 +9,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { customerCommunicationsClient } from '@/integrations/supabase/customerCommunicationsClient';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 
@@ -97,32 +98,46 @@ export const CallLogDialog: React.FC<CallLogDialogProps> = ({
     },
   });
 
-  const selectedContract = contracts.find(
-    (c) => c.id === form.watch('contract_id')
-  );
-
   // Mutation to log call
   const logCallMutation = useMutation({
     mutationFn: async (data: CallLogFormData) => {
       const contract = contracts.find((c) => c.id === data.contract_id);
       if (!contract) throw new Error('Contract not found');
+      const companyId = user?.profile?.company_id || user?.company?.id;
+      if (!user?.id || !user.profile?.id || !companyId) {
+        throw new Error('تعذر تحديد المستخدم أو الشركة');
+      }
+
+      const now = new Date();
+      const actionRequiredByPurpose: Record<CallLogFormData['call_purpose'], 'payment' | 'renewal' | 'none'> = {
+        payment_reminder: 'payment',
+        contract_renewal: 'renewal',
+        complaint_resolution: 'none',
+        general_inquiry: 'none',
+        follow_up: 'none',
+        other: 'none',
+      };
 
       // 1. Insert communication record
-      const { data: communication, error: commError } = await supabase
+      const { data: communication, error: commError } = await customerCommunicationsClient
         .from('customer_communications')
         .insert({
           customer_id: contract.customer_id,
+          company_id: companyId,
           contract_id: data.contract_id,
-          communication_type: 'phone_call',
-          communication_date: new Date().toISOString(),
-          notes: `${data.call_purpose} - ${data.call_outcome}\n${data.notes}`,
-          contacted_by: user?.profile?.id,
-          metadata: {
-            call_type: data.call_type,
-            call_outcome: data.call_outcome,
-            call_purpose: data.call_purpose,
-            duration_minutes: data.duration_minutes,
-          },
+          communication_type: 'phone',
+          communication_date: now.toISOString().slice(0, 10),
+          communication_time: now.toISOString().slice(11, 19),
+          duration_minutes: data.duration_minutes || null,
+          employee_id: user.id,
+          notes: `${data.call_purpose} - ${data.call_outcome}\nنوع المكالمة: ${data.call_type}\n${data.notes}`,
+          action_required: actionRequiredByPurpose[data.call_purpose],
+          action_description: data.notes,
+          follow_up_scheduled: data.follow_up_required,
+          follow_up_date: data.follow_up_required ? data.follow_up_date || null : null,
+          follow_up_time: null,
+          follow_up_status: data.follow_up_required ? 'pending' : null,
+          attachments: [],
         })
         .select()
         .single();
@@ -131,14 +146,33 @@ export const CallLogDialog: React.FC<CallLogDialogProps> = ({
 
       // 2. If follow-up required, create scheduled follow-up
       if (data.follow_up_required && data.follow_up_date) {
-        await supabase.from('scheduled_followups').insert({
+        const { error: followUpError } = await supabase.from('scheduled_followups').insert({
+          company_id: companyId,
+          customer_id: contract.customer_id,
           contract_id: data.contract_id,
-          assigned_to: user?.profile?.id,
+          assigned_to: user.profile.id,
+          created_by: user.profile.id,
+          title: `متابعة مكالمة للعقد ${contract.contract_number}`,
           scheduled_date: data.follow_up_date,
-          followup_type: data.call_purpose,
+          followup_type: data.call_purpose === 'contract_renewal'
+            ? 'contract_renewal'
+            : data.call_purpose === 'payment_reminder'
+              ? 'payment_collection'
+              : 'call',
           status: 'pending',
           notes: `متابعة بعد مكالمة: ${data.notes}`,
+          source: 'contract',
+          source_reference: data.contract_id,
         });
+
+        if (followUpError) {
+          await customerCommunicationsClient
+            .from('customer_communications')
+            .delete()
+            .eq('id', communication.id)
+            .eq('company_id', companyId);
+          throw followUpError;
+        }
       }
 
       return communication;
@@ -155,9 +189,9 @@ export const CallLogDialog: React.FC<CallLogDialogProps> = ({
       form.reset();
       onOpenChange(false);
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       toast.error('فشل تسجيل المكالمة', {
-        description: error.message || 'حدث خطأ أثناء حفظ البيانات',
+        description: error instanceof Error ? error.message : 'حدث خطأ أثناء حفظ البيانات',
       });
     },
   });

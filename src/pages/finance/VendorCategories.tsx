@@ -11,7 +11,8 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { useVendorCategories, useCreateVendorCategory, useUpdateVendorCategory, useDeleteVendorCategory, useVendors, type VendorCategory } from "@/hooks/useFinance";
+import { useVendorCategories, useCreateVendorCategory, useUpdateVendorCategory, useDeleteVendorCategory, useVendors } from "@/hooks/useFinance";
+import type { VendorCategory } from "@/hooks/useVendors";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { FolderTree, Plus, Search, Edit, Trash2, Building } from "lucide-react";
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";

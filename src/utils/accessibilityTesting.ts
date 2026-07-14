@@ -280,7 +280,9 @@ export class AccessibilityTester {
    */
   private testAriaAttributes(component: HTMLElement): AccessibilityViolation[] {
     const violations: AccessibilityViolation[] = [];
-    const elementsWithAria = component.querySelectorAll('[aria-*]');
+    const elementsWithAria = Array.from(component.querySelectorAll('*')).filter((element) =>
+      Array.from(element.attributes).some((attribute) => attribute.name.startsWith('aria-'))
+    );
 
     elementsWithAria.forEach((element, index) => {
       // Check for invalid ARIA attributes

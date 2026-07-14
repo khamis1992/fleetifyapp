@@ -1,22 +1,48 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import type { Database } from '@/integrations/supabase/types';
 import { useUnifiedCompanyAccess } from './useUnifiedCompanyAccess';
 import { toast } from 'sonner';
-import { Customer, CustomerFilters } from '@/types/customer';
+import { Customer, CustomerFilters, type CustomerFormData } from '@/types/customer';
 import { useCustomerViewContext } from '@/contexts/CustomerViewContext';
 
 export type EnhancedCustomer = Customer;
 
+type CustomerInsert = Database['public']['Tables']['customers']['Insert'];
+
+interface CreateCustomerInput extends CustomerFormData {
+  force_create?: boolean;
+  commercial_register?: string;
+  base_currency?: string;
+  accounts?: unknown;
+}
+
+interface DuplicateCustomerMatch {
+  name?: string;
+  duplicate_field?: string;
+  duplicate_value?: string;
+}
+
+interface CustomerNoteInput {
+  title?: string;
+  content?: string;
+  note_type?: string;
+  is_important?: boolean;
+}
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null && !Array.isArray(value);
+
 // Optimized hook for fetching customer counts only (no data)
 export const useCustomerCount = (filters?: CustomerFilters, options?: { enabled?: boolean }) => {
-  const { companyId, getQueryKey, isSystemLevel, hasGlobalAccess, filter, getFilterForOwnCompany, getFilterForGlobalView } = useUnifiedCompanyAccess();
+  const { companyId, getQueryKey, isSystemLevel, hasGlobalAccess, getFilterForOwnCompany, getFilterForGlobalView } = useUnifiedCompanyAccess();
   
   // Use customer view context with fallback
   let viewAllCustomers = false;
   try {
     const context = useCustomerViewContext();
     viewAllCustomers = context.viewAllCustomers;
-  } catch (error) {
+  } catch {
     viewAllCustomers = false;
   }
 
@@ -87,7 +113,7 @@ export const useCustomerCount = (filters?: CustomerFilters, options?: { enabled?
       
       if (countError) {
         console.error('❌ [useCustomerCount] Error counting customers:', countError);
-        return 0;
+        throw countError;
       }
       
       return count || 0;
@@ -100,14 +126,14 @@ export const useCustomerCount = (filters?: CustomerFilters, options?: { enabled?
 };
 
 export const useCustomers = (filters?: CustomerFilters) => {
-  const { companyId, getQueryKey, validateCompanyAccess, browsedCompany, isBrowsingMode, isSystemLevel, hasGlobalAccess, filter, getFilterForOwnCompany, getFilterForGlobalView } = useUnifiedCompanyAccess();
+  const { companyId, getQueryKey, isSystemLevel, hasGlobalAccess, getFilterForOwnCompany, getFilterForGlobalView } = useUnifiedCompanyAccess();
   
   // Use customer view context with fallback
   let viewAllCustomers = false;
   try {
     const context = useCustomerViewContext();
     viewAllCustomers = context.viewAllCustomers;
-  } catch (error) {
+  } catch {
     // Context not available - use default value
     viewAllCustomers = false;
   }
@@ -341,7 +367,7 @@ export const useCustomerById = (customerId: string, options?: { enabled?: boolea
   try {
     const context = useCustomerViewContext();
     viewAllCustomers = context.viewAllCustomers;
-  } catch (error) {
+  } catch {
     // Context not available - use default value
     viewAllCustomers = false;
   }
@@ -404,13 +430,21 @@ export const useToggleCustomerBlacklist = () => {
       isBlacklisted: boolean; 
       reason?: string 
     }) => {
+      if (!companyId) throw new Error('No company access available');
+      if (isBlacklisted && !reason?.trim()) {
+        throw new Error('يجب إدخال سبب إضافة العميل إلى القائمة السوداء');
+      }
+
       const { error } = await supabase
         .from('customers')
         .update({ 
           is_blacklisted: isBlacklisted,
-          blacklist_reason: isBlacklisted ? reason : null
+          blacklist_reason: isBlacklisted ? reason?.trim() : null
         })
-        .eq('id', customerId);
+        .eq('id', customerId)
+        .eq('company_id', companyId)
+        .select('id')
+        .single();
 
       if (error) throw error;
     },
@@ -435,406 +469,237 @@ export const useDeleteCustomer = () => {
 
   return useMutation({
     mutationFn: async (customerId: string) => {
-      console.log('🗑️ Starting delete process for customer:', customerId);
-      
-      if (!companyId) {
-        throw new Error("No company access available");
+      if (!companyId) throw new Error('No company access available');
+
+      const relatedQueries = await Promise.all([
+        supabase.from('contracts').select('id', { count: 'exact', head: true }).eq('customer_id', customerId).eq('company_id', companyId),
+        supabase.from('invoices').select('id', { count: 'exact', head: true }).eq('customer_id', customerId).eq('company_id', companyId),
+        supabase.from('payments').select('id', { count: 'exact', head: true }).eq('customer_id', customerId).eq('company_id', companyId),
+        supabase.from('quotations').select('id', { count: 'exact', head: true }).eq('customer_id', customerId).eq('company_id', companyId),
+      ]);
+      const failedQuery = relatedQueries.find((result) => result.error);
+      if (failedQuery?.error) throw failedQuery.error;
+
+      const relatedCount = relatedQueries.reduce(
+        (sum, result) => sum + (result.count || 0),
+        0
+      );
+      if (relatedCount > 0) {
+        throw new Error(
+          'لا يمكن حذف عميل لديه عقود أو فواتير أو مدفوعات أو عروض أسعار. عطّل العميل بدلًا من ذلك للحفاظ على السجل المالي.'
+        );
       }
 
-      try {
-        // حذف البيانات المرتبطة بالعميل بالترتيب الصحيح
-        
-        // 1. أولاً احصل على معرفات العقود المرتبطة بالعميل
-        console.log('🗑️ Getting related contract IDs...');
-        const { data: contractIds, error: contractIdsError } = await supabase
-          .from('contracts')
-          .select('id')
-          .eq('customer_id', customerId)
-          .eq('company_id', companyId);
-        
-        if (contractIdsError) {
-          console.error('Error getting contract IDs:', contractIdsError);
-        }
+      const { error } = await supabase
+        .from('customers')
+        .delete()
+        .eq('id', customerId)
+        .eq('company_id', companyId)
+        .select('id')
+        .single();
+      if (error) throw error;
 
-        // 2. احصل على معرفات الفواتير المرتبطة بالعميل
-        console.log('🗑️ Getting related invoice IDs...');
-        const { data: invoiceIds, error: invoiceIdsError } = await supabase
-          .from('invoices')
-          .select('id')
-          .eq('customer_id', customerId)
-          .eq('company_id', companyId);
-        
-        if (invoiceIdsError) {
-          console.error('Error getting invoice IDs:', invoiceIdsError);
-        }
-
-        // 3. حذف جداول الدفع للعقود
-        if (contractIds && contractIds.length > 0) {
-          console.log('🗑️ Deleting payment schedules...');
-          const contractIdList = contractIds.map(c => c.id);
-          const { error: paymentSchedulesError } = await supabase
-            .from('contract_payment_schedules')
-            .delete()
-            .in('contract_id', contractIdList);
-          
-          if (paymentSchedulesError) {
-            console.error('Error deleting payment schedules:', paymentSchedulesError);
-          }
-        }
-
-        // 4. حذف عناصر الفواتير
-        if (invoiceIds && invoiceIds.length > 0) {
-          console.log('🗑️ Deleting invoice items...');
-          const invoiceIdList = invoiceIds.map(i => i.id);
-          const { error: invoiceItemsError } = await supabase
-            .from('invoice_items')
-            .delete()
-            .in('invoice_id', invoiceIdList);
-          
-          if (invoiceItemsError) {
-            console.error('Error deleting invoice items:', invoiceItemsError);
-          }
-        }
-
-        // 5. حذف المدفوعات المرتبطة بالعميل
-        const { count: relatedPaymentsCount, error: paymentsCheckError } = await supabase
-          .from('payments')
-          .select('id', { count: 'exact', head: true })
-          .eq('customer_id', customerId)
-          .eq('company_id', companyId);
-
-        if (paymentsCheckError) {
-          throw paymentsCheckError;
-        }
-
-        if ((relatedPaymentsCount || 0) > 0) {
-          throw new Error('Cannot permanently delete a customer with recorded payments. Archive or deactivate the customer to preserve the financial audit trail.');
-        }
-
-        console.log('🗑️ Deleting invoices...');
-        const { error: invoicesError } = await supabase
-          .from('invoices')
-          .delete()
-          .eq('customer_id', customerId)
-          .eq('company_id', companyId);
-        
-        if (invoicesError) {
-          console.error('Error deleting invoices:', invoicesError);
-        }
-
-        // 7. حذف عروض الأسعار المرتبطة بالعميل
-        console.log('🗑️ Deleting quotations...');
-        const { error: quotationsError } = await supabase
-          .from('quotations')
-          .delete()
-          .eq('customer_id', customerId)
-          .eq('company_id', companyId);
-        
-        if (quotationsError) {
-          console.error('Error deleting quotations:', quotationsError);
-        }
-
-        // 8. حذف العقود
-        console.log('🗑️ Deleting contracts...');
-        const { error: contractsError } = await supabase
-          .from('contracts')
-          .delete()
-          .eq('customer_id', customerId)
-          .eq('company_id', companyId);
-        
-        if (contractsError) {
-          console.error('Error deleting contracts:', contractsError);
-        }
-
-        // 9. حذف الملاحظات المرتبطة بالعميل
-        console.log('🗑️ Deleting customer notes...');
-        const { error: notesError } = await supabase
-          .from('customer_notes')
-          .delete()
-          .eq('customer_id', customerId)
-          .eq('company_id', companyId);
-
-        if (notesError) {
-          console.error('Error deleting notes:', notesError);
-        }
-
-        // 10. حذف العميل نفسه
-        console.log('🗑️ Deleting customer...');
-        const { error: customerError } = await supabase
-          .from('customers')
-          .delete()
-          .eq('id', customerId)
-          .eq('company_id', companyId);
-
-        if (customerError) {
-          console.error('Error deleting customer:', customerError);
-          throw customerError;
-        }
-
-        console.log('✅ Customer deleted successfully');
-        return { success: true };
-        
-      } catch (error) {
-        console.error('❌ Error in delete process:', error);
-        throw error;
-      }
+      return { success: true };
     },
     onSuccess: async () => {
-      console.log('✅ Customer deletion successful, updating cache');
-      
-      // استخدام invalidateQueries للحصول على تحديث فوري
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['customers'] }),
         queryClient.invalidateQueries({ queryKey: ['contracts'] }),
         queryClient.invalidateQueries({ queryKey: ['invoices'] }),
         queryClient.invalidateQueries({ queryKey: ['payments'] }),
-        queryClient.invalidateQueries({ queryKey: ['quotations'] })
+        queryClient.invalidateQueries({ queryKey: ['quotations'] }),
       ]);
-      
-      toast.success('تم حذف العميل وجميع البيانات المرتبطة به بنجاح');
+      toast.success('تم حذف العميل بنجاح');
     },
-    onError: (error) => {
+    onError: (error: unknown) => {
       console.error('Error deleting customer:', error);
-      toast.error('حدث خطأ أثناء حذف العميل: ' + error.message);
-    }
+      toast.error(error instanceof Error ? error.message : 'فشل حذف العميل');
+    },
   });
 };
-
 export const useCreateCustomer = () => {
   const queryClient = useQueryClient();
   const { companyId, validateCompanyAccess } = useUnifiedCompanyAccess();
 
   return useMutation({
-    mutationFn: async (data: unknown) => {
+    mutationFn: async (data: CreateCustomerInput) => {
       const targetCompanyId = data.selectedCompanyId || companyId;
-      
-      if (!targetCompanyId) {
-        throw new Error("No company access available");
-      }
-
+      if (!targetCompanyId) throw new Error('No company access available');
       validateCompanyAccess(targetCompanyId);
 
-      // إضافة التحقق من صلاحية الوثائق قبل الحفظ
       const today = new Date().toISOString().split('T')[0];
-      
       if (data.national_id_expiry && data.national_id_expiry < today) {
         throw new Error('البطاقة المدنية منتهية الصلاحية. يجب تجديدها قبل تسجيل العميل');
       }
-      
       if (data.license_expiry && data.license_expiry < today) {
         throw new Error('رخصة القيادة منتهية الصلاحية. يجب تجديدها قبل تسجيل العميل');
       }
 
-      // التحقق من تكرار العملاء قبل الإنشاء
-      const { data: duplicateCheck, error: duplicateError } = await supabase.rpc('check_duplicate_customer', {
-        p_company_id: targetCompanyId,
-        p_customer_type: data.customer_type,
-        p_national_id: data.national_id || null,
-        p_passport_number: data.passport_number || null,
-        p_phone: data.phone || null,
-        p_email: data.email || null,
-        p_company_name: data.company_name || null,
-        p_commercial_register: null
-      });
-
-      if (duplicateError) {
-        console.error('Error checking duplicates:', duplicateError);
-        throw duplicateError;
-      }
-
-      const typedDuplicateCheck = duplicateCheck as unknown as { has_duplicates: boolean; duplicates: any[] };
-      if (typedDuplicateCheck?.has_duplicates && !data.force_create) {
-        const duplicateInfo = typedDuplicateCheck.duplicates.map((dup: unknown) => 
-          `${dup.name} (${dup.duplicate_field}: ${dup.duplicate_value})`
-        ).join(', ');
-        throw new Error(`يوجد عميل مشابه في النظام: ${duplicateInfo}`);
-      }
-
-      // إزالة الحقول غير الموجودة في جدول customers
-      const cleanData = { ...data };
-      delete cleanData.commercial_register;
-      delete cleanData.base_currency;
-      delete cleanData.accounts;
-      delete cleanData.selectedCompanyId;
-      delete cleanData.force_create;
-
-      // توليد كود العميل إذا لم يكن موجوداً
-      if (!cleanData.customer_code) {
-        const { data: generatedCode, error: codeError } = await supabase.rpc('generate_customer_code', {
+      const { data: duplicateCheck, error: duplicateError } = await supabase.rpc(
+        'check_duplicate_customer',
+        {
           p_company_id: targetCompanyId,
-          p_customer_type: cleanData.customer_type
-        });
-
-        if (codeError) {
-          console.error('Error generating customer code:', codeError);
-          throw new Error('فشل في توليد كود العميل');
+          p_customer_type: data.customer_type,
+          p_national_id: data.national_id || undefined,
+          p_passport_number: data.passport_number || undefined,
+          p_phone: data.phone || undefined,
+          p_email: data.email || undefined,
+          p_company_name: data.company_name || undefined,
+          p_commercial_register: data.commercial_register || undefined,
         }
+      );
+      if (duplicateError) throw duplicateError;
 
+      const duplicateRecord = isRecord(duplicateCheck) ? duplicateCheck : null;
+      const duplicates = Array.isArray(duplicateRecord?.duplicates)
+        ? duplicateRecord.duplicates.filter(isRecord)
+        : [];
+      if (duplicateRecord?.has_duplicates === true && !data.force_create) {
+        const duplicateInfo = duplicates
+          .map((duplicate): DuplicateCustomerMatch => ({
+            name: typeof duplicate.name === 'string' ? duplicate.name : undefined,
+            duplicate_field:
+              typeof duplicate.duplicate_field === 'string'
+                ? duplicate.duplicate_field
+                : undefined,
+            duplicate_value:
+              typeof duplicate.duplicate_value === 'string'
+                ? duplicate.duplicate_value
+                : undefined,
+          }))
+          .map(
+            (duplicate) =>
+              `${duplicate.name || 'عميل'} (${duplicate.duplicate_field || 'حقل مطابق'}: ${duplicate.duplicate_value || '-'})`
+          )
+          .join('، ');
+        throw new Error(`يوجد عميل مشابه في النظام: ${duplicateInfo || 'راجع بيانات العميل'}`);
+      }
+
+      const controlFields = new Set([
+        'selectedCompanyId',
+        'force_create',
+        'commercial_register',
+        'base_currency',
+        'accounts',
+      ]);
+      const customerFields = Object.fromEntries(
+        Object.entries(data).filter(([key]) => !controlFields.has(key))
+      ) as Omit<CustomerInsert, 'company_id'>;
+      const cleanData: CustomerInsert = {
+        ...customerFields,
+        company_id: targetCompanyId,
+        phone: data.phone.trim(),
+        is_active: true,
+      };
+
+      if (!cleanData.customer_code) {
+        const { data: generatedCode, error: codeError } = await supabase.rpc(
+          'generate_customer_code',
+          {
+            p_company_id: targetCompanyId,
+            p_customer_type: cleanData.customer_type || data.customer_type,
+          }
+        );
+        if (codeError) throw codeError;
+        if (!generatedCode) throw new Error('فشل في توليد كود العميل');
         cleanData.customer_code = generatedCode;
       }
 
-      console.log('🔍 Creating customer with data:', cleanData);
-      
       const { data: insertData, error } = await supabase
         .from('customers')
-        .insert({
-          ...cleanData,
-          company_id: targetCompanyId,
-          is_active: true
-        })
+        .insert(cleanData)
         .select()
         .single();
-
       if (error) {
-        // التحقق من خطأ القيود الفريدة
         if (error.code === '23505') {
           if (error.message.includes('national_id')) {
             throw new Error('يوجد عميل آخر بنفس رقم البطاقة المدنية');
-          } else if (error.message.includes('passport')) {
-            throw new Error('يوجد عميل آخر بنفس رقم الجواز');
-          } else if (error.message.includes('phone')) {
-            throw new Error('يوجد عميل آخر بنفس رقم الهاتف');
-          } else if (error.message.includes('email')) {
-            throw new Error('يوجد عميل آخر بنفس البريد الإلكتروني');
-          } else if (error.message.includes('business')) {
-            throw new Error('يوجد شركة أخرى بنفس الاسم والسجل التجاري');
-          } else {
-            throw new Error('البيانات المدخلة موجودة مسبقاً في النظام');
           }
+          if (error.message.includes('passport')) {
+            throw new Error('يوجد عميل آخر بنفس رقم الجواز');
+          }
+          if (error.message.includes('phone')) {
+            throw new Error('يوجد عميل آخر بنفس رقم الهاتف');
+          }
+          if (error.message.includes('email')) {
+            throw new Error('يوجد عميل آخر بنفس البريد الإلكتروني');
+          }
+          throw new Error('البيانات المدخلة موجودة مسبقًا في النظام');
         }
         throw error;
       }
 
-      // التحقق من إعدادات إنشاء الحسابات التلقائية
       let autoAccountCreationError: string | null = null;
       try {
-        console.log('🔍 [useCreateCustomer] Checking company auto-account settings...');
-        
         const { data: companySettings, error: settingsError } = await supabase
           .from('companies')
           .select('customer_account_settings')
           .eq('id', targetCompanyId)
           .single();
+        if (settingsError) throw settingsError;
 
-        if (settingsError) {
-          console.warn('⚠️ [useCreateCustomer] Error fetching company settings:', settingsError);
-          autoAccountCreationError = 'فشل في جلب إعدادات الشركة';
-        } else if (companySettings?.customer_account_settings) {
-          const settings = companySettings.customer_account_settings as any;
-          console.log('⚙️ [useCreateCustomer] Company settings found:', settings);
-          
-          // إذا كان الإنشاء التلقائي مفعلاً، قم بإنشاء الحسابات
-          if (settings.auto_create_account) {
-            console.log('🔄 [useCreateCustomer] Auto-creating customer accounts...');
-            
-            const { data: accountsCreated, error: autoCreateError } = await supabase.rpc('auto_create_customer_accounts', {
+        const settings = isRecord(companySettings?.customer_account_settings)
+          ? companySettings.customer_account_settings
+          : null;
+        if (settings?.auto_create_account === true) {
+          const { data: accountsCreated, error: autoCreateError } = await supabase.rpc(
+            'auto_create_customer_accounts',
+            {
               company_id_param: targetCompanyId,
               customer_id_param: insertData.id,
-            });
-
-            if (autoCreateError) {
-              console.error('💥 [useCreateCustomer] Error auto-creating customer accounts:', autoCreateError);
-              autoAccountCreationError = `فشل في إنشاء الحسابات تلقائياً: ${autoCreateError.message || autoCreateError}`;
-              console.warn('⚠️ [useCreateCustomer] Customer created successfully but auto-account creation failed');
-            } else {
-              console.log(`✅ [useCreateCustomer] Auto-created ${accountsCreated || 0} customer accounts`);
-              if (accountsCreated === 0) {
-                autoAccountCreationError = 'لم يتم إنشاء أي حسابات تلقائياً - تحقق من إعدادات الحسابات';
-              }
             }
-          } else {
-            console.log('ℹ️ [useCreateCustomer] Auto-create account is disabled');
-            autoAccountCreationError = 'الإنشاء التلقائي للحسابات معطل في إعدادات الشركة';
+          );
+          if (autoCreateError) throw autoCreateError;
+          if (Number(accountsCreated || 0) === 0) {
+            autoAccountCreationError =
+              'لم يتم إنشاء أي حسابات تلقائيًا. تحقق من إعدادات ربط الحسابات.';
           }
-        } else {
-          console.log('ℹ️ [useCreateCustomer] No customer account settings found');
-          autoAccountCreationError = 'لم يتم العثور على إعدادات الحسابات للشركة';
         }
-      } catch (autoAccountError) {
-        console.error('💥 [useCreateCustomer] Error in auto-account creation process:', autoAccountError);
-        autoAccountCreationError = `خطأ في عملية إنشاء الحسابات: ${autoAccountError.message || autoAccountError}`;
+      } catch (accountError) {
+        autoAccountCreationError =
+          accountError instanceof Error
+            ? accountError.message
+            : 'فشل إنشاء الحسابات المحاسبية تلقائيًا';
       }
 
-      // إضافة معلومات عن حالة إنشاء الحسابات إلى البيانات المُرجعة
-      return {
-        ...insertData,
-        _autoAccountCreationError: autoAccountCreationError
-      };
+      return { ...insertData, _autoAccountCreationError: autoAccountCreationError };
     },
-    onSuccess: (customerData) => {
-      console.log('🎉 [useCreateCustomer] onSuccess called with:', customerData);
-      
-      // Get all customer queries to update them properly
-      const allCustomerQueries = queryClient.getQueriesData({ 
-        queryKey: ['customers'], 
-        exact: false 
-      });
-      
-      console.log('🔄 [useCreateCustomer] Found customer queries to update:', allCustomerQueries.length);
-      
-      // Update all matching customer query caches immediately
-      allCustomerQueries.forEach(([queryKey, oldData]) => {
-        if (Array.isArray(oldData)) {
-          const exists = oldData.some((customer: unknown) => customer.id === customerData.id);
-          if (!exists) {
-            console.log('🔄 [useCreateCustomer] Updating cache for query:', queryKey);
-            queryClient.setQueryData(queryKey, [customerData, ...oldData]);
-          }
-        }
-      });
-      
-      // Also update individual customer cache
+    onSuccess: async (customerData) => {
       queryClient.setQueryData(['customer', customerData.id], customerData);
-      
-      // Trigger immediate invalidation for all customer queries
-      queryClient.invalidateQueries({ 
-        queryKey: ['customers'], 
+      await queryClient.invalidateQueries({
+        queryKey: ['customers'],
         exact: false,
-        refetchType: 'active' 
+        refetchType: 'active',
       });
-      
-      // Mark that manual update happened to coordinate with real-time
-      (queryClient as any)._lastCustomerUpdate = Date.now();
-      
-      // إظهار رسالة نجاح مع تحذير إذا فشل إنشاء الحسابات
-      const hasAccountError = (customerData as any)?._autoAccountCreationError;
-      if (hasAccountError) {
+
+      if (customerData._autoAccountCreationError) {
         toast.success('تم إنشاء العميل بنجاح', {
-          description: `لكن حدث خطأ في إنشاء الحسابات: ${hasAccountError}`,
+          description: `تعذر إكمال الحسابات المحاسبية: ${customerData._autoAccountCreationError}`,
           duration: 8000,
         });
       } else {
-        toast.success('تم إنشاء العميل بنجاح مع الحسابات المحاسبية');
+        toast.success('تم إنشاء العميل بنجاح');
       }
-      
-      console.log('🔄 [useCreateCustomer] Cache updated and queries refreshed');
-      
-      return customerData;
     },
-    onError: (error) => {
-      console.error('💥 [useCreateCustomer] onError called with:', {
-        error,
-        message: error.message,
-        stack: error.stack
-      });
-      toast.error(error.message || 'حدث خطأ أثناء إنشاء العميل');
-    }
+    onError: (error: unknown) => {
+      console.error('Error creating customer:', error);
+      toast.error(error instanceof Error ? error.message : 'فشل إنشاء العميل');
+    },
   });
 };
-
 export const useUpdateCustomer = () => {
   const queryClient = useQueryClient();
-  const { companyId, validateCompanyAccess } = useUnifiedCompanyAccess();
+  const { companyId } = useUnifiedCompanyAccess();
 
   return useMutation({
-    mutationFn: async ({ id, data }: { id: string; data: unknown }) => {
+    mutationFn: async ({ id, data }: { id: string; data: Partial<CustomerFormData> }) => {
       if (!companyId) {
         throw new Error("No company access available");
       }
 
       // Clean data by removing undefined values
       const cleanData = Object.fromEntries(
-        Object.entries(data).filter(([_, value]) => value !== undefined)
+        Object.entries(data).filter(([, value]) => value !== undefined)
       );
 
       // إضافة التحقق من صلاحية الوثائق قبل التحديث
@@ -899,7 +764,7 @@ export const useCreateCustomerNote = () => {
     mutationFn: async ({ customerId, content, noteData }: { 
       customerId: string; 
       content?: string;
-      noteData?: any; 
+      noteData?: CustomerNoteInput; 
     }) => {
       if (!companyId) {
         throw new Error("No company access available");
@@ -944,21 +809,85 @@ export const useCustomerFinancialSummary = (customerId: string, options?: { enab
     queryFn: async () => {
       if (!companyId || !customerId) return null;
 
-      // Enhanced placeholder with required properties
+      const [customerResult, contractsResult, invoicesResult, paymentsResult] = await Promise.all([
+        supabase
+          .from('customers')
+          .select('credit_limit')
+          .eq('id', customerId)
+          .eq('company_id', companyId)
+          .single(),
+        supabase
+          .from('contracts')
+          .select('id, status')
+          .eq('customer_id', customerId)
+          .eq('company_id', companyId),
+        supabase
+          .from('invoices')
+          .select('total_amount, paid_amount, balance_due, payment_status, status')
+          .eq('customer_id', customerId)
+          .eq('company_id', companyId),
+        supabase
+          .from('payments')
+          .select('amount, amount_paid, payment_date, payment_status, transaction_type')
+          .eq('customer_id', customerId)
+          .eq('company_id', companyId),
+      ]);
+      const failed = [customerResult, contractsResult, invoicesResult, paymentsResult].find(
+        (result) => result.error
+      );
+      if (failed?.error) throw failed.error;
+
+      const contracts = contractsResult.data || [];
+      const invoices = (invoicesResult.data || []).filter(
+        (invoice) => invoice.status !== 'cancelled'
+      );
+      const completedReceipts = (paymentsResult.data || []).filter(
+        (payment) =>
+          payment.transaction_type === 'receipt' &&
+          ['completed', 'paid'].includes(payment.payment_status)
+      );
+      const totalPayments = completedReceipts.reduce(
+        (sum, payment) => sum + Number(payment.amount_paid ?? payment.amount ?? 0),
+        0
+      );
+      const totalInvoices = invoices.reduce(
+        (sum, invoice) => sum + Number(invoice.total_amount || 0),
+        0
+      );
+      const totalInvoicesPaid = invoices.reduce(
+        (sum, invoice) => sum + Number(invoice.paid_amount || 0),
+        0
+      );
+      const totalInvoicesOutstanding = invoices.reduce(
+        (sum, invoice) =>
+          sum +
+          Number(
+            invoice.balance_due ??
+              Math.max(0, Number(invoice.total_amount || 0) - Number(invoice.paid_amount || 0))
+          ),
+        0
+      );
+      const lastPaymentDate =
+        completedReceipts
+          .map((payment) => payment.payment_date)
+          .filter(Boolean)
+          .sort()
+          .at(-1) || null;
+
       return {
-        totalRevenue: 0,
-        outstandingBalance: 0,
-        creditLimit: 0,
-        lastPaymentDate: null,
-        currentBalance: 0,
-        totalContracts: 0,
-        totalPayments: 0,
-        totalInvoices: 0,
-        invoicesCount: 0,
-        totalInvoicesOutstanding: 0,
-        activeContracts: 0,
-        contractsCount: 0,
-        totalInvoicesPaid: 0
+        totalRevenue: totalPayments,
+        outstandingBalance: totalInvoicesOutstanding,
+        creditLimit: Number(customerResult.data?.credit_limit || 0),
+        lastPaymentDate,
+        currentBalance: totalInvoicesOutstanding,
+        totalContracts: contracts.length,
+        totalPayments,
+        totalInvoices,
+        invoicesCount: invoices.length,
+        totalInvoicesOutstanding,
+        activeContracts: contracts.filter((contract) => contract.status === 'active').length,
+        contractsCount: contracts.length,
+        totalInvoicesPaid,
       };
     },
     enabled: options?.enabled !== false && !!companyId && !!customerId,

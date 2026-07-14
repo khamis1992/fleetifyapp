@@ -3,6 +3,10 @@
  * Checks if all required environment variables are properly configured
  */
 
+import { config } from "dotenv";
+
+config({ quiet: true });
+
 // Required environment variables for the application
 const requiredEnvVars = ["VITE_SUPABASE_URL", "VITE_SUPABASE_ANON_KEY"];
 
@@ -19,7 +23,7 @@ console.log("📋 Required Variables:");
 console.log("─".repeat(50));
 
 requiredEnvVars.forEach((varName) => {
-  const value = process.env[varName] || import.meta?.env?.[varName];
+  const value = process.env[varName];
 
   if (!value) {
     console.log(`❌ ${varName}: MISSING (REQUIRED)`);
@@ -39,7 +43,7 @@ console.log("📋 Optional Variables:");
 console.log("─".repeat(50));
 
 optionalEnvVars.forEach((varName) => {
-  const value = process.env[varName] || import.meta?.env?.[varName];
+  const value = process.env[varName];
 
   if (!value) {
     console.log(`⚠️  ${varName}: Not set (optional)`);

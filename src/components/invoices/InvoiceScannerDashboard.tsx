@@ -149,7 +149,7 @@ export const InvoiceScannerDashboard = () => {
       });
 
       // Reset and navigate
-      navigate('/invoices');
+      navigate('/finance/billing?tab=invoices');
 
     } catch (error) {
       console.error('Error saving invoice:', error);
@@ -219,7 +219,7 @@ export const InvoiceScannerDashboard = () => {
       {!isProcessing && step === 'capture' && (
         <InvoiceCameraCapture
           onImageCapture={handleImageCapture}
-          onCancel={() => navigate('/invoices')}
+          onCancel={() => navigate('/finance/billing?tab=invoices')}
         />
       )}
 
@@ -273,7 +273,7 @@ export const InvoiceScannerDashboard = () => {
               </div>
               <div>
                 <span className="text-muted-foreground">المبلغ:</span>
-                <p className="font-medium">{extractedData.total_amount?.toFixed(3) || '0.000'} د.ك</p>
+                <p className="font-medium">{extractedData.total_amount?.toFixed(2) || '0.00'} ر.ق</p>
               </div>
               <div>
                 <span className="text-muted-foreground">درجة الثقة:</span>

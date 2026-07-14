@@ -5,7 +5,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Calendar, Clock, Check, AlertCircle } from 'lucide-react';
+import { X, Calendar, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -26,7 +26,7 @@ export const ScheduleFollowupModal: React.FC<ScheduleFollowupModalProps> = ({
 }) => {
   const { user } = useAuth();
   const { toast } = useToast();
-  const { contracts, refetch } = useEmployeeContracts();
+  const { contracts } = useEmployeeContracts();
 
   const [selectedContractId, setSelectedContractId] = useState(preselectedContractId || '');
   const [scheduledDate, setScheduledDate] = useState(new Date().toISOString().split('T')[0]);
@@ -71,35 +71,52 @@ export const ScheduleFollowupModal: React.FC<ScheduleFollowupModalProps> = ({
     setIsSubmitting(true);
 
     try {
-      const { data: profile } = await supabase
+      const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('id, company_id')
         .eq('user_id', user?.id)
         .single();
 
-      if (!profile) throw new Error('Profile not found');
+      if (profileError) throw profileError;
+      if (!profile || !selectedContract) throw new Error('Profile or contract not found');
+
+      const taskTypeMap: Record<TaskType, 'followup' | 'customer_visit' | 'payment_collection' | 'other'> = {
+        call: 'followup',
+        followup: 'followup',
+        visit: 'customer_visit',
+        payment: 'payment_collection',
+        other: 'other',
+      };
+      const priorityMap: Record<TaskPriority, 'low' | 'normal' | 'high' | 'urgent'> = {
+        low: 'low',
+        medium: 'normal',
+        high: 'high',
+        urgent: 'urgent',
+      };
+      const scheduledAt = new Date(`${scheduledDate}T${scheduledTime}:00`).toISOString();
 
       const { error } = await supabase
         .from('employee_tasks')
         .insert({
-          assigned_to_profile_id: profile.id,
-          created_by: user?.id,
+          company_id: profile.company_id,
+          assigned_to: profile.id,
+          assigned_by: profile.id,
           contract_id: selectedContractId,
-          customer_id: selectedContract?.customer_id,
+          customer_id: selectedContract.customer_id,
           title: `${taskTypes.find(t => t.value === taskType)?.label} - ${selectedContract?.customer_name}`,
           title_ar: `${taskTypes.find(t => t.value === taskType)?.label} - ${selectedContract?.customer_name}`,
-          type: taskType,
-          priority: priority,
+          task_type: taskTypeMap[taskType],
+          priority: priorityMap[priority],
           status: 'pending',
-          scheduled_date: scheduledDate,
-          scheduled_time: scheduledTime,
-          notes: notes || null,
+          scheduled_date: scheduledAt,
+          due_date: scheduledAt,
+          description: notes || null,
         });
 
       if (error) throw error;
 
       toast({
-        title: 'تم بنجاح! ✅',
+        title: 'تم بنجاح',
         description: 'تم جدولة المتابعة بنجاح',
       });
 

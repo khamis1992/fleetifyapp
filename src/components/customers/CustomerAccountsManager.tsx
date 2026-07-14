@@ -15,8 +15,8 @@ import {
 import { Customer } from '@/types/customer';
 import { CustomerAccount } from '@/types/customerAccount';
 // Utility function to format currency
-const formatCurrency = (amount: number, currency: string = 'KWD') => {
-  return new Intl.NumberFormat('ar-KW', {
+const formatCurrency = (amount: number, currency: string = 'QAR') => {
+  return new Intl.NumberFormat('ar-QA', {
     style: 'currency',
     currency: currency,
     minimumFractionDigits: 3,

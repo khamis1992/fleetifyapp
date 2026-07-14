@@ -169,9 +169,13 @@ export function useCreateReminder() {
 // Update reminder
 export function useUpdateReminder() {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
+  const userId = user?.profile?.id;
+  const companyId = user?.profile?.company_id;
 
   return useMutation({
     mutationFn: async (input: UpdateReminderInput) => {
+      if (!userId || !companyId) throw new Error('المستخدم أو الشركة غير محددين');
       const { id, ...data } = input;
 
       const updateData: any = { ...data };
@@ -183,6 +187,8 @@ export function useUpdateReminder() {
         .from('personal_reminders')
         .update(updateData)
         .eq('id', id)
+        .eq('user_id', userId)
+        .eq('company_id', companyId)
         .select()
         .single();
 
@@ -204,9 +210,13 @@ export function useUpdateReminder() {
 // Toggle reminder completion
 export function useToggleReminder() {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
+  const userId = user?.profile?.id;
+  const companyId = user?.profile?.company_id;
 
   return useMutation({
     mutationFn: async ({ id, is_completed }: { id: string; is_completed: boolean }) => {
+      if (!userId || !companyId) throw new Error('المستخدم أو الشركة غير محددين');
       const { data, error } = await supabase
         .from('personal_reminders')
         .update({
@@ -214,6 +224,8 @@ export function useToggleReminder() {
           completed_at: is_completed ? new Date().toISOString() : null,
         })
         .eq('id', id)
+        .eq('user_id', userId)
+        .eq('company_id', companyId)
         .select()
         .single();
 
@@ -234,13 +246,21 @@ export function useToggleReminder() {
 // Delete reminder
 export function useDeleteReminder() {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
+  const userId = user?.profile?.id;
+  const companyId = user?.profile?.company_id;
 
   return useMutation({
     mutationFn: async (id: string) => {
+      if (!userId || !companyId) throw new Error('المستخدم أو الشركة غير محددين');
       const { error } = await supabase
         .from('personal_reminders')
         .delete()
-        .eq('id', id);
+        .eq('id', id)
+        .eq('user_id', userId)
+        .eq('company_id', companyId)
+        .select('id')
+        .single();
 
       if (error) throw error;
       return id;

@@ -64,7 +64,7 @@ export const AccountingSummary: React.FC<AccountingSummaryProps> = ({
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">العملة الأساسية:</span>
-                <span>{customerData.base_currency || 'KWD'}</span>
+                <span>{customerData.base_currency || 'QAR'}</span>
               </div>
             </div>
           </div>
@@ -77,7 +77,7 @@ export const AccountingSummary: React.FC<AccountingSummaryProps> = ({
             <div className="space-y-2 text-sm">
               <div className="flex justify-between">
                 <span className="text-muted-foreground">حد الائتمان المبدئي:</span>
-                <span>{customerData.initial_credit_limit || '0.00'} {customerData.base_currency || 'KWD'}</span>
+                <span>{customerData.initial_credit_limit || '0.00'} {customerData.base_currency || 'QAR'}</span>
               </div>
             </div>
           </div>

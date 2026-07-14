@@ -6,7 +6,7 @@
  */
 
 import { useState, useMemo } from 'react';
-import { motion } from 'framer-motion';
+import { motion, type Variants } from 'framer-motion';
 import {
   Car,
   Calendar,
@@ -47,7 +47,7 @@ import { ZoneSelection, VehicleType } from './vehicle-inspection/types';
 import { useVehicleInspections, VehicleInspection } from '@/hooks/useVehicleInspections';
 
 // ===== Animation Variants =====
-const fadeInUp = {
+const fadeInUp: Variants = {
   hidden: { opacity: 0, y: 20 },
   visible: {
     opacity: 1,
@@ -56,7 +56,7 @@ const fadeInUp = {
   }
 };
 
-const scaleIn = {
+const scaleIn: Variants = {
   hidden: { opacity: 0, scale: 0.95 },
   visible: {
     opacity: 1,
@@ -69,6 +69,7 @@ const scaleIn = {
 interface VehiclePickupReturnTabRedesignedProps {
   contract?: {
     id: string;
+    vehicle_id: string;
     contract_number: string;
     customer_name: string;
     customer_phone: string;

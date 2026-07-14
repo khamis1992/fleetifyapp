@@ -98,7 +98,6 @@ const Profile = lazy(() => import('@/pages/Profile'));
 const Settings = lazy(() => import('@/pages/Settings'));
 const AdvancedSettings = lazy(() => import('@/pages/AdvancedSettings'));
 const AuditLogsPage = lazy(() => import('@/pages/AuditLogsPage'));
-const PermissionsManagement = lazy(() => import('@/pages/PermissionsManagement'));
 const SubscriptionPage = lazy(() => import('@/pages/SubscriptionPage'));
 const ElectronicSignatureSettings = lazy(() => import('@/pages/settings/ElectronicSignatureSettings'));
 const WhatsAppSettings = lazy(() => import('@/pages/settings/WhatsAppSettings'));
@@ -1131,7 +1130,7 @@ const routeConfigs: RouteConfig[] = [
   },
   {
     path: '/settings/permissions',
-    component: PermissionsManagement,
+    component: UserManagement,
     lazy: true,
     exact: true,
     title: 'Permissions',
@@ -1955,6 +1954,19 @@ const routeConfigs: RouteConfig[] = [
     exact: true,
     title: 'بيانات التقاضي',
     description: 'Lawsuit Data Management',
+    group: 'legal',
+    priority: 131,
+    protected: true,
+    layout: 'bento',
+    requiredRole: 'admin',
+  },
+  {
+    path: '/legal/lawsuits/:lawsuitId',
+    component: lazy(() => import('@/pages/legal/LawsuitDataPage')),
+    lazy: true,
+    exact: true,
+    title: 'تفاصيل بيانات التقاضي',
+    description: 'Lawsuit Data Details',
     group: 'legal',
     priority: 131,
     protected: true,

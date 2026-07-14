@@ -84,7 +84,7 @@ const AuditAndSettings = () => {
         <motion.div
           initial={{ opacity: 0, y: -12 }}
           animate={{ opacity: 1, y: 0 }}
-          className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5"
+          className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm sm:p-5"
         >
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div className="flex items-start gap-3">
@@ -110,7 +110,7 @@ const AuditAndSettings = () => {
             <Button
               variant="outline"
               onClick={() => navigate("/finance/hub")}
-              className="h-11 gap-2 rounded-xl border-slate-200 text-[#020617] hover:bg-[#F6F8FB]"
+              className="h-11 gap-2 rounded-lg border-slate-200 text-[#020617] hover:bg-[#F6F8FB]"
             >
               <ArrowLeft className="h-4 w-4" />
               العودة للمركز المالي
@@ -179,7 +179,7 @@ const AuditAndSettings = () => {
                     key={tab.id}
                     onClick={() => handleTopTabChange(tab.id)}
                     className={cn(
-                      "cursor-pointer rounded-2xl border bg-white shadow-sm transition",
+                      "cursor-pointer rounded-lg border bg-white shadow-sm transition-colors",
                       isActive ? "border-[#22C7A1] ring-2 ring-[#22C7A1]/15" : "border-slate-200 hover:border-slate-300"
                     )}
                   >
@@ -204,14 +204,14 @@ const AuditAndSettings = () => {
               })}
             </div>
 
-            <TabsList className="h-auto rounded-2xl border border-slate-200 bg-white p-1 shadow-sm">
+            <TabsList className="h-auto rounded-lg border border-slate-200 bg-white p-1 shadow-sm">
               {topTabs.map((tab) => {
                 const Icon = tab.icon;
                 return (
                   <TabsTrigger
                     key={tab.id}
                     value={tab.id}
-                    className="h-11 rounded-xl px-4 text-[#94A3B8] data-[state=active]:bg-[#22C7A1] data-[state=active]:text-white"
+                    className="h-11 rounded-lg px-4 text-[#94A3B8] data-[state=active]:bg-[#22C7A1] data-[state=active]:text-white"
                   >
                     <Icon className="ml-2 h-4 w-4" />
                     {tab.label}
@@ -232,7 +232,7 @@ const AuditAndSettings = () => {
                     type="button"
                     onClick={() => handleSettingsSectionChange(section.id === "settings" ? "mappings" : section.id)}
                     className={cn(
-                      "flex items-center gap-3 rounded-2xl border bg-white p-4 text-right shadow-sm transition",
+                      "flex items-center gap-3 rounded-lg border bg-white p-4 text-right shadow-sm transition-colors",
                       isActive ? "border-[#22C7A1] ring-2 ring-[#22C7A1]/15" : "border-slate-200 hover:border-slate-300"
                     )}
                   >
@@ -266,7 +266,7 @@ const AuditAndSettings = () => {
           </TabsContent>
         </Tabs>
 
-        <div className="rounded-2xl border border-slate-200 bg-white p-4">
+        <div className="rounded-lg border border-slate-200 bg-white p-4">
           <div className="flex items-start gap-3">
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-[#FFF0F2] text-[#FB6B7A]">
               <Clock className="h-5 w-5" />

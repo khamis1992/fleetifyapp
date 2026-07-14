@@ -170,7 +170,7 @@ const [periodEnd, setPeriodEnd] = useState('');
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{formatCurrency(summary?.totalNetAmount || 0)}</div>
-            <p className="text-xs text-muted-foreground">دينار كويتي</p>
+            <p className="text-xs text-muted-foreground">ريال قطري</p>
           </CardContent>
         </Card>
 
@@ -200,7 +200,7 @@ const [periodEnd, setPeriodEnd] = useState('');
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{formatCurrency(summary?.averageNetAmount || 0)}</div>
-            <p className="text-xs text-muted-foreground">دينار كويتي</p>
+            <p className="text-xs text-muted-foreground">ريال قطري</p>
           </CardContent>
         </Card>
       </div>

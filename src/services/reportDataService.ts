@@ -206,21 +206,40 @@ export const fetchDamageReportData = async (
   companyId: string
 ): Promise<ReportDataResult> => {
   if (options.conditionReportId) {
-    // Fetch specific condition report
-    const { data: conditionReport } = await supabase
+    const { data: conditionReport, error: reportError } = await supabase
       .from('vehicle_condition_reports')
-      .select(`
-        *,
-        vehicles (plate_number, make, model, year),
-        profiles:inspector_id (full_name)
-      `)
+      .select('*')
       .eq('id', options.conditionReportId)
       .eq('company_id', companyId)
-      .single();
+      .maybeSingle();
+
+    if (reportError) throw reportError;
 
     if (conditionReport) {
+      const [vehicleResult, inspectorResult] = await Promise.all([
+        supabase
+          .from('vehicles')
+          .select('plate_number, make, model, year')
+          .eq('id', conditionReport.vehicle_id)
+          .eq('company_id', companyId)
+          .maybeSingle(),
+        supabase
+          .from('profiles')
+          .select('first_name, last_name')
+          .eq('user_id', conditionReport.inspector_id)
+          .eq('company_id', companyId)
+          .maybeSingle(),
+      ]);
+
+      if (vehicleResult.error) throw vehicleResult.error;
+      if (inspectorResult.error) throw inspectorResult.error;
+
       return {
-        conditionReport,
+        conditionReport: {
+          ...conditionReport,
+          vehicles: vehicleResult.data,
+          profiles: inspectorResult.data,
+        },
         damagePoints: options.damagePoints || [],
         summary: {
           totalDamagePoints: options.damagePoints?.length || 0,

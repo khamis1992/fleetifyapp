@@ -3,6 +3,8 @@
  * أنواع البيانات لتطبيق مساحة عمل الموظف
  */
 
+import type { ComponentType } from 'react';
+
 // ============================================
 // Contract Types
 // ============================================
@@ -336,7 +338,7 @@ export interface NotificationFilters {
 
 export interface BottomNavTab {
   id: 'home' | 'collections' | 'contracts' | 'tasks' | 'performance';
-  icon: React.ComponentType;
+  icon: ComponentType;
   label: string;
   label_ar: string;
   path: string;
@@ -345,7 +347,7 @@ export interface BottomNavTab {
 
 export interface FABAction {
   id: string;
-  icon: React.ComponentType;
+  icon: ComponentType;
   label: string;
   label_ar: string;
   color: string;
@@ -354,7 +356,7 @@ export interface FABAction {
 
 export interface SwipeAction {
   direction: 'left' | 'right';
-  icon: React.ComponentType;
+  icon: ComponentType;
   label: string;
   label_ar: string;
   color: string;
@@ -393,11 +395,3 @@ export interface EmployeeError {
   details?: any;
 }
 
-// ============================================
-// Export all types
-// ============================================
-
-export type {
-  // Re-export for convenience
-  React,
-};

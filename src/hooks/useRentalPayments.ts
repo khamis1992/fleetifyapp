@@ -1,12 +1,100 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import type { Database } from '@/integrations/supabase/types';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 import { usePermissions } from '@/hooks/usePermissions';
 import { toast } from 'sonner';
 import * as Sentry from '@sentry/react';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
-import { createJournalEntryForRentalPayment, deleteJournalEntryForRentalPayment } from './useRentalPaymentJournalIntegration';
+import { usePaymentOperations } from '@/hooks/business/usePaymentOperations';
+
+type RentalReceiptUpdate = Database['public']['Tables']['rental_payment_receipts']['Update'];
+type OutstandingBalanceRow = Database['public']['Functions']['get_all_customers_outstanding_balance']['Returns'][number];
+type SupportedPaymentMethod = 'cash' | 'bank_transfer' | 'check' | 'credit_card' | 'debit_card';
+
+const normalizePaymentMethod = (method: string | null | undefined): SupportedPaymentMethod => {
+  const supported: SupportedPaymentMethod[] = ['cash', 'bank_transfer', 'check', 'credit_card', 'debit_card'];
+  return supported.includes(method as SupportedPaymentMethod) ? method as SupportedPaymentMethod : 'cash';
+};
+
+const getRentalReceiptPaymentKey = (receiptId: string): string => `legacy-rental-receipt:${receiptId}`;
+
+const assertRentalReceiptHasNoFinancialEffect = async (receiptId: string, companyId: string): Promise<void> => {
+  const [{ data: canonicalPayment, error: paymentError }, { data: legacyJournal, error: journalError }] = await Promise.all([
+    supabase
+      .from('payments')
+      .select('id')
+      .eq('company_id', companyId)
+      .eq('reference_number', getRentalReceiptPaymentKey(receiptId))
+      .neq('payment_status', 'cancelled')
+      .limit(1)
+      .maybeSingle(),
+    supabase
+      .from('journal_entries')
+      .select('id')
+      .eq('company_id', companyId)
+      .eq('reference_type', 'rental_payment')
+      .eq('reference_id', receiptId)
+      .neq('status', 'reversed')
+      .limit(1)
+      .maybeSingle(),
+  ]);
+
+  if (paymentError) throw paymentError;
+  if (journalError) throw journalError;
+  if (canonicalPayment || legacyJournal) {
+    throw new Error('لا يمكن تعديل أو حذف إيصال له أثر مالي. ألغِ الدفعة أو اعكس القيد من المسار المالي المعتمد.');
+  }
+};
+
+const getErrorMessage = (error: unknown): string => {
+  if (error instanceof Error) return error.message;
+  if (typeof error === 'object' && error !== null) {
+    const details = error as { message?: unknown; hint?: unknown; details?: unknown };
+    return [details.message, details.hint, details.details]
+      .filter((value): value is string => typeof value === 'string' && value.length > 0)
+      .join(' - ') || 'خطأ غير معروف';
+  }
+  return 'خطأ غير معروف';
+};
+
+export const toRentalReceiptUpdate = (updates: Partial<RentalPaymentReceipt>): RentalReceiptUpdate => ({
+  ...(updates.customer_id !== undefined && { customer_id: updates.customer_id }),
+  ...(updates.customer_name !== undefined && { customer_name: updates.customer_name }),
+  ...(updates.month !== undefined && { month: updates.month }),
+  ...(updates.rent_amount !== undefined && { rent_amount: updates.rent_amount }),
+  ...(updates.payment_date !== undefined && { payment_date: updates.payment_date }),
+  ...(updates.fine !== undefined && { fine: updates.fine }),
+  ...(updates.total_paid !== undefined && { total_paid: updates.total_paid }),
+  ...(updates.amount_due !== undefined && { amount_due: updates.amount_due }),
+  ...(updates.pending_balance !== undefined && { pending_balance: updates.pending_balance }),
+  ...(updates.payment_status !== undefined && { payment_status: updates.payment_status }),
+  ...(updates.notes !== undefined && { notes: updates.notes }),
+  ...(updates.vehicle_id !== undefined && { vehicle_id: updates.vehicle_id }),
+  ...(updates.contract_id !== undefined && { contract_id: updates.contract_id }),
+});
+
+export const mapOutstandingBalanceSummary = (row: OutstandingBalanceRow): CustomerBalanceSummary => {
+  const monthsPaid = row.monthly_rent > 0
+    ? Math.max(0, Math.floor(row.total_paid / row.monthly_rent))
+    : 0;
+  const unpaidMonthCount = Math.max(0, row.months_behind);
+
+  return {
+    customer_id: row.customer_id,
+    customer_name: row.customer_name,
+    expected_total: row.total_paid + row.outstanding_balance,
+    total_paid: row.total_paid,
+    outstanding_balance: row.outstanding_balance,
+    months_expected: monthsPaid + unpaidMonthCount,
+    months_paid: monthsPaid,
+    unpaid_month_count: unpaidMonthCount,
+    last_payment_date: row.last_payment_date || null,
+    monthly_rent: row.monthly_rent,
+    payment_status: unpaidMonthCount > 2 ? 'overdue' : unpaidMonthCount > 0 ? 'late' : 'current'
+  };
+};
 
 /**
  * Vehicle info for payment receipts
@@ -38,12 +126,18 @@ export interface RentalPaymentReceipt {
   amount_due: number;
   pending_balance: number;
   payment_status: 'paid' | 'partial' | 'pending';
+  payment_method?: string;
+  receipt_number?: string;
+  reference_number?: string;
+  month_number?: number;
+  fiscal_year?: number;
   notes?: string;
   created_by?: string;
   created_at: string;
   updated_at: string;
   vehicle_id?: string;
   contract_id?: string;
+  invoice_id?: string;
   vehicle?: VehicleInfo;
   customer?: {
     id: string;
@@ -426,10 +520,10 @@ export const useCustomersWithRental = (searchTerm?: string) => {
       }
 
       // Transform data to include name and monthly_rent
-      const customers: CustomerWithRental[] = (data || []).map((customer: unknown) => {
+      const customers: CustomerWithRental[] = (data || []).map((customer) => {
         const name = customer.customer_type === 'individual'
-          ? `${customer.first_name} ${customer.last_name}`
-          : customer.company_name;
+          ? `${customer.first_name || ''} ${customer.last_name || ''}`.trim()
+          : customer.company_name || '';
         
         // Get the first active contract's monthly amount
         const monthlyRent = customer.contracts?.[0]?.monthly_amount || 0;
@@ -514,6 +608,11 @@ export const useCreateRentalReceipt = () => {
   const queryClient = useQueryClient();
   const { companyId, user } = useUnifiedCompanyAccess();
   const { hasPermission } = usePermissions();
+  const { createPayment } = usePaymentOperations({
+    autoCreateJournalEntry: true,
+    autoUpdateBankBalance: true,
+    enableNotifications: false,
+  });
 
   return useMutation({
     mutationFn: async (receipt: Omit<RentalPaymentReceipt, 'id' | 'created_at' | 'updated_at' | 'company_id' | 'created_by'>) => {
@@ -546,8 +645,16 @@ export const useCreateRentalReceipt = () => {
         .insert({
           customer_id: receipt.customer_id,
           customer_name: receipt.customer_name,
+          contract_id: receipt.contract_id || null,
+          invoice_id: receipt.invoice_id || null,
+          vehicle_id: receipt.vehicle_id || null,
           month: receipt.month,
+          month_number: receipt.month_number || null,
+          fiscal_year: receipt.fiscal_year || null,
           payment_date: receipt.payment_date,
+          payment_method: receipt.payment_method || 'cash',
+          receipt_number: receipt.receipt_number || null,
+          reference_number: receipt.reference_number || null,
           rent_amount: receipt.rent_amount,
           fine: receipt.fine,
           total_paid: receipt.total_paid,
@@ -566,7 +673,59 @@ export const useCreateRentalReceipt = () => {
         throw error;
       }
 
-        console.log('✅ Receipt created successfully');
+        if (data.total_paid > 0) {
+          const idempotencyKey = getRentalReceiptPaymentKey(data.id);
+          try {
+            await createPayment.mutateAsync({
+              contract_id: data.contract_id || undefined,
+              customer_id: data.customer_id,
+              invoice_id: data.invoice_id || undefined,
+              amount: data.total_paid,
+              payment_date: data.payment_date,
+              payment_method: normalizePaymentMethod(data.payment_method),
+              notes: [
+                `إيصال إيجار ${data.receipt_number || data.id}`,
+                data.notes,
+              ].filter(Boolean).join(' - '),
+              type: 'receipt',
+              transaction_type: 'customer_payment',
+              payment_status: 'completed',
+              currency: 'QAR',
+              idempotencyKey,
+              registrationMetadata: {
+                monthly_amount: data.rent_amount,
+                amount_paid: data.total_paid,
+                remaining_amount: data.pending_balance,
+                payment_month: data.month,
+                due_date: data.payment_date,
+                late_fee_amount: data.fine,
+              },
+            });
+          } catch (paymentError) {
+            const { data: persistedPayment } = await supabase
+              .from('payments')
+              .select('id')
+              .eq('company_id', companyId)
+              .eq('reference_number', idempotencyKey)
+              .neq('payment_status', 'cancelled')
+              .limit(1)
+              .maybeSingle();
+
+            if (!persistedPayment) {
+              const { error: cleanupError } = await supabase
+                .from('rental_payment_receipts')
+                .delete()
+                .eq('id', data.id)
+                .eq('company_id', companyId);
+              if (cleanupError) {
+                console.error('Failed to rollback rental receipt after payment error:', cleanupError);
+              }
+              throw paymentError;
+            }
+          }
+        }
+
+        console.log('✅ Receipt and canonical payment created successfully');
         
         Sentry.addBreadcrumb({
           category: 'rental_payments',
@@ -593,40 +752,21 @@ export const useCreateRentalReceipt = () => {
       queryClient.invalidateQueries({ queryKey: ['customer-unpaid-months', companyId, data.customer_id] });
       queryClient.invalidateQueries({ queryKey: ['all-rental-receipts', companyId] });
       
-      // Create journal entry for this payment
-      if (companyId) {
-        const journalResult = await createJournalEntryForRentalPayment(companyId, {
-          payment_id: data.id,
-          customer_name: data.customer_name,
-          payment_date: data.payment_date,
-          rent_amount: data.rent_amount,
-          fine: data.fine,
-          total_paid: data.total_paid,
-          month: data.month
-        });
-        
-        if (journalResult.success) {
-          console.log('✅ Journal entry created for payment:', journalResult.entry_id);
-          // Invalidate general ledger queries
-          queryClient.invalidateQueries({ queryKey: ['enhancedJournalEntries', companyId] });
-          queryClient.invalidateQueries({ queryKey: ['accountBalances', companyId] });
-          queryClient.invalidateQueries({ queryKey: ['trialBalance', companyId] });
-          queryClient.invalidateQueries({ queryKey: ['financialSummary', companyId] });
-        } else {
-          console.error('❌ Failed to create journal entry:', journalResult.error);
-          toast.warning(`تم إضافة الإيصال لكن فشل إنشاء القيد المحاسبي: ${journalResult.error}`);
-        }
-      }
+      queryClient.invalidateQueries({ queryKey: ['payments', companyId] });
+      queryClient.invalidateQueries({ queryKey: ['enhancedJournalEntries', companyId] });
+      queryClient.invalidateQueries({ queryKey: ['accountBalances', companyId] });
+      queryClient.invalidateQueries({ queryKey: ['trialBalance', companyId] });
+      queryClient.invalidateQueries({ queryKey: ['financialSummary', companyId] });
       
       toast.success(
         data.fine > 0
-          ? `تم إضافة الإيصال بنجاح. غرامة تأخير: ${data.fine.toLocaleString('en-US')} ريال`
-          : 'تم إضافة الإيصال بنجاح'
+          ? `تم حفظ الإيصال والدفعة وقيدها. غرامة التأخير: ${data.fine.toLocaleString('en-US')} ر.ق`
+          : 'تم حفظ الإيصال والدفعة وقيدها المحاسبي بنجاح'
       );
     },
     onError: (error: unknown) => {
       console.error('❌ Error creating receipt:', error);
-      const errorMessage = error?.message || error?.hint || error?.details || 'خطأ غير معروف';
+      const errorMessage = getErrorMessage(error);
       toast.error(`فشل في إضافة الإيصال: ${errorMessage}`);
     }
   });
@@ -650,6 +790,7 @@ export const useUpdateRentalReceipt = () => {
         });
         throw error;
       }
+      if (!companyId) throw new Error('Company ID is required');
 
       try {
         Sentry.addBreadcrumb({
@@ -659,10 +800,12 @@ export const useUpdateRentalReceipt = () => {
           data: { companyId, receiptId: id },
         });
 
+      await assertRentalReceiptHasNoFinancialEffect(id, companyId);
       const { data, error } = await supabase
         .from('rental_payment_receipts')
-        .update(updates)
+        .update(toRentalReceiptUpdate(updates))
         .eq('id', id)
+        .eq('company_id', companyId)
         .select()
         .single();
 
@@ -694,7 +837,7 @@ export const useUpdateRentalReceipt = () => {
     },
     onError: (error: unknown) => {
       console.error('❌ Error updating receipt:', error);
-      toast.error(`فشل في تحديث الإيصال: ${error.message}`);
+      toast.error(`فشل في تحديث الإيصال: ${getErrorMessage(error)}`);
     }
   });
 };
@@ -717,6 +860,7 @@ export const useDeleteRentalReceipt = () => {
         });
         throw error;
       }
+      if (!companyId) throw new Error('Company ID is required');
 
       try {
         Sentry.addBreadcrumb({
@@ -726,10 +870,14 @@ export const useDeleteRentalReceipt = () => {
           data: { companyId, receiptId: id },
         });
 
+      await assertRentalReceiptHasNoFinancialEffect(id, companyId);
       const { error } = await supabase
         .from('rental_payment_receipts')
         .delete()
-        .eq('id', id);
+        .eq('id', id)
+        .eq('company_id', companyId)
+        .select('id')
+        .single();
 
       if (error) {
         console.error('❌ Error deleting rental receipt:', error);
@@ -751,31 +899,18 @@ export const useDeleteRentalReceipt = () => {
         throw error;
       }
     },
-    onSuccess: async (deletedId) => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['rental-receipts', companyId] });
       queryClient.invalidateQueries({ queryKey: ['customer-payment-totals', companyId] });
       queryClient.invalidateQueries({ queryKey: ['customer-outstanding-balance', companyId] });
       queryClient.invalidateQueries({ queryKey: ['customer-unpaid-months', companyId] });
       queryClient.invalidateQueries({ queryKey: ['all-rental-receipts', companyId] });
       
-      // Delete associated journal entry
-      const journalResult = await deleteJournalEntryForRentalPayment(deletedId);
-      if (journalResult.success) {
-        console.log('✅ Journal entry deleted for payment:', deletedId);
-        // Invalidate general ledger queries
-        queryClient.invalidateQueries({ queryKey: ['enhancedJournalEntries', companyId] });
-        queryClient.invalidateQueries({ queryKey: ['accountBalances', companyId] });
-        queryClient.invalidateQueries({ queryKey: ['trialBalance', companyId] });
-        queryClient.invalidateQueries({ queryKey: ['financialSummary', companyId] });
-      } else if (journalResult.error) {
-        console.error('❌ Failed to delete journal entry:', journalResult.error);
-      }
-      
       toast.success('تم حذف الإيصال بنجاح');
     },
     onError: (error: unknown) => {
       console.error('❌ Error deleting receipt:', error);
-      toast.error(`فشل في حذف الإيصال: ${error.message}`);
+      toast.error(`فشل في حذف الإيصال: ${getErrorMessage(error)}`);
     }
   });
 };
@@ -857,7 +992,7 @@ export const useAllCustomersOutstandingBalance = () => {
     queryFn: async () => {
       Sentry.addBreadcrumb({ category: 'rental_payments', message: 'Fetching all customers outstanding balance', level: 'info', data: { companyId } });
       if (!companyId) {
-        return [];Error('Company ID is required');
+        throw new Error('Company ID is required');
       }
 
       const { data, error } = await supabase
@@ -871,7 +1006,7 @@ export const useAllCustomersOutstandingBalance = () => {
         throw error;
       }
       Sentry.addBreadcrumb({ category: 'rental_payments', message: 'All customers outstanding balance fetched', level: 'info', data: { count: data?.length || 0 } });
-      return (data || []) as CustomerBalanceSummary[];
+      return (data || []).map(mapOutstandingBalanceSummary);
     },
     enabled: !!companyId,
     staleTime: 30 * 1000, // 30 seconds
@@ -923,8 +1058,8 @@ export const useCustomerVehicles = (customerId?: string) => {
 
       // Extract vehicle IDs
       const vehicleIds = contractsData
-        .map((c: any) => c.vehicle_id)
-        .filter((id: any) => id != null);
+        .map((contract) => contract.vehicle_id)
+        .filter((id): id is string => id !== null);
 
       if (vehicleIds.length === 0) {
         return [];
@@ -943,10 +1078,11 @@ export const useCustomerVehicles = (customerId?: string) => {
       }
 
       // Combine contracts and vehicles data
-      const vehiclesMap = new Map((vehiclesData || []).map((v: any) => [v.id, v]));
+      const vehiclesMap = new Map((vehiclesData || []).map((vehicle) => [vehicle.id, vehicle] as const));
       
       const vehicles: CustomerVehicle[] = contractsData
-        .map((contract: unknown) => {
+        .map((contract): CustomerVehicle | null => {
+          if (!contract.vehicle_id) return null;
           const vehicle = vehiclesMap.get(contract.vehicle_id);
           if (!vehicle) return null;
           
@@ -955,8 +1091,8 @@ export const useCustomerVehicles = (customerId?: string) => {
             plate_number: vehicle.plate_number || '',
             make: vehicle.make || '',
             model: vehicle.model || '',
-            year: vehicle.year,
-            color_ar: vehicle.color_ar,
+            year: vehicle.year ?? undefined,
+            color_ar: vehicle.color_ar ?? undefined,
             contract_id: contract.id,
             monthly_amount: contract.monthly_amount || 0,
             contract_start_date: contract.start_date,
@@ -964,7 +1100,7 @@ export const useCustomerVehicles = (customerId?: string) => {
             contract_status: contract.status
           };
         })
-        .filter((v: any) => v !== null) as CustomerVehicle[];
+        .filter((vehicle): vehicle is CustomerVehicle => vehicle !== null);
 
       Sentry.addBreadcrumb({ category: 'rental_payments', message: 'Customer vehicles fetched', level: 'info', data: { count: vehicles.length } });
       return vehicles;

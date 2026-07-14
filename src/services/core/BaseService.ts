@@ -10,7 +10,6 @@
 import { ErrorHandler } from '@/lib/errorHandler';
 import { logger } from '@/lib/logger';
 import type { BaseRepository } from './BaseRepository';
-import { createOptimizedQueryFn, createOptimizedMutationFn } from '@/lib/queryClient';
 import { getCacheByType } from './ApiCache';
 import { globalPerformanceMonitor } from './PerformanceMonitor';
 import { globalBatchProcessor } from './BatchProcessor';
@@ -79,7 +78,7 @@ export abstract class BaseService<T extends { id?: string }> {
       this.log('create', 'Starting create operation');
 
       // Validate before creating
-      const validation = await this.validate(data);
+      const validation = await this.validate(data as Partial<T>);
       if (!validation.isValid) {
         throw new Error(`Validation failed: ${JSON.stringify(validation.errors)}`);
       }
@@ -469,17 +468,15 @@ export abstract class BaseService<T extends { id?: string }> {
 
     try {
       const result = await operation();
-      const metric = endTimer({ success: true });
-      globalPerformanceMonitor.record(metric);
+      endTimer({ success: true });
 
       return result;
 
     } catch (error) {
-      const metric = endTimer({
+      endTimer({
         success: false,
         statusCode: (error as any)?.status
       });
-      globalPerformanceMonitor.record(metric);
 
       throw error;
     }
@@ -520,7 +517,9 @@ export abstract class BaseService<T extends { id?: string }> {
       serviceName: this.serviceName,
       totalRequests: serviceMetrics.length,
       errorCount: serviceMetrics.filter((m: any) => !m.success).length,
-      averageResponseTime: serviceMetrics.reduce((sum: number, m: any) => sum + m.duration, 0) / serviceMetrics.length,
+      averageResponseTime: serviceMetrics.length > 0
+        ? serviceMetrics.reduce((sum: number, m: any) => sum + m.duration, 0) / serviceMetrics.length
+        : 0,
       cacheStats: this.options.enableCaching ? getCacheByType(this.options.cacheType!)?.getStats() : null
     };
   }

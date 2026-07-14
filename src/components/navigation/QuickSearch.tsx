@@ -298,7 +298,7 @@ export const QuickSearch: React.FC = () => {
           id: i.id,
           title: `فاتورة ${i.invoice_number}`,
           subtitle: customerName,
-          path: `/finance/invoices/${i.id}`,
+          path: `/finance/billing?tab=invoices&invoice=${i.id}`,
           type: 'invoice',
         });
       });
@@ -316,7 +316,7 @@ export const QuickSearch: React.FC = () => {
           id: v.id,
           title: v.vendor_name_ar || v.vendor_name,
           subtitle: v.phone,
-          path: `/finance/vendors/${v.id}`,
+          path: '/finance/vendors',
           type: 'vendor',
         });
       });

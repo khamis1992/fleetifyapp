@@ -108,9 +108,9 @@ export const TrafficViolationStats: React.FC<ViolationStatsProps> = ({ violation
               <DollarSign className="h-5 w-5 text-orange-600" />
               <div>
                 <p className="text-2xl font-bold">{stats.totalFines.toFixed(2)}</p>
-                <p className="text-sm text-slate-600">إجمالي الغرامات (د.ك)</p>
+                <p className="text-sm text-slate-600">إجمالي الغرامات (ر.ق)</p>
                 <p className="text-xs text-slate-500">
-                  متوسط: {stats.avgFine.toFixed(2)} د.ك
+                  متوسط: {stats.avgFine.toFixed(2)} ر.ق
                 </p>
               </div>
             </div>
@@ -216,25 +216,25 @@ export const TrafficViolationStats: React.FC<ViolationStatsProps> = ({ violation
               <p className="text-2xl font-bold text-blue-600">
                 {violations.filter(v => v.fineAmount < 100).length}
               </p>
-              <p className="text-sm text-blue-800">أقل من 100 د.ك</p>
+              <p className="text-sm text-blue-800">أقل من 100 ر.ق</p>
             </div>
             <div className="text-center p-4 bg-green-50 rounded-lg">
               <p className="text-2xl font-bold text-green-600">
                 {violations.filter(v => v.fineAmount >= 100 && v.fineAmount < 300).length}
               </p>
-              <p className="text-sm text-green-800">100 - 300 د.ك</p>
+              <p className="text-sm text-green-800">100 - 300 ر.ق</p>
             </div>
             <div className="text-center p-4 bg-orange-50 rounded-lg">
               <p className="text-2xl font-bold text-orange-600">
                 {violations.filter(v => v.fineAmount >= 300 && v.fineAmount < 500).length}
               </p>
-              <p className="text-sm text-orange-800">300 - 500 د.ك</p>
+              <p className="text-sm text-orange-800">300 - 500 ر.ق</p>
             </div>
             <div className="text-center p-4 bg-red-50 rounded-lg">
               <p className="text-2xl font-bold text-red-600">
                 {violations.filter(v => v.fineAmount >= 500).length}
               </p>
-              <p className="text-sm text-red-800">500+ د.ك</p>
+              <p className="text-sm text-red-800">500+ ر.ق</p>
             </div>
           </div>
         </CardContent>

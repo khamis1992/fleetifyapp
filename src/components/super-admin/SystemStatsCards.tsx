@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { Card, CardContent } from '@/components/ui/card';
 import { Building2, Users, DollarSign, AlertTriangle, Activity, TrendingUp } from 'lucide-react';
 import { SystemStats } from '@/hooks/useSuperAdminData';
-import { StatCardNumber, StatCardPercentage } from '@/components/ui/NumberDisplay';
+import { StatCardNumber } from '@/components/ui/NumberDisplay';
 
 interface SystemStatsCardsProps {
   stats: SystemStats;
@@ -15,60 +15,40 @@ export const SystemStatsCards: React.FC<SystemStatsCardsProps> = ({ stats, loadi
     {
       title: 'إجمالي الشركات',
       value: loading ? '...' : stats.totalCompanies.toString(),
-      change: '+12%',
       icon: Building2,
-      trend: 'up' as const,
       description: 'شركة مسجلة'
     },
     {
-      title: 'المستخدمين النشطين',
+      title: 'إجمالي المستخدمين',
       value: loading ? '...' : stats.totalUsers.toString(),
-      change: '+23%',
       icon: Users,
-      trend: 'up' as const,
-      description: 'مستخدم نشط'
+      description: 'مستخدم مسجل'
     },
     {
       title: 'إجمالي الإيرادات',
-      value: loading ? '...' : `${stats.totalRevenue.toFixed(0)} د.ك`,
-      change: '+18%',
+      value: loading ? '...' : `${stats.totalRevenue.toFixed(0)} ر.ق`,
       icon: DollarSign,
-      trend: 'up' as const,
       description: 'إجمالي الإيرادات'
     },
     {
-      title: 'استخدام النظام',
-      value: loading ? '...' : `${stats.systemUsage}%`,
-      change: '+5%',
+      title: 'نسبة الشركات النشطة',
+      value: loading ? '...' : `${stats.activeCompanyRate}%`,
       icon: Activity,
-      trend: 'up' as const,
-      description: 'معدل الاستخدام'
+      description: 'من إجمالي الشركات'
     },
     {
       title: 'المدفوعات المعلقة',
       value: loading ? '...' : stats.pendingPayments.toString(),
-      change: '-8%',
       icon: AlertTriangle,
-      trend: 'down' as const,
       description: 'دفعة معلقة'
     },
     {
       title: 'الشركات النشطة',
       value: loading ? '...' : stats.activeCompanies.toString(),
-      change: '+15%',
       icon: TrendingUp,
-      trend: 'up' as const,
       description: 'شركة نشطة'
     }
   ];
-
-  const getTrendColor = (trend: 'up' | 'down' | 'neutral') => {
-    switch (trend) {
-      case 'up': return 'text-green-600 bg-green-50';
-      case 'down': return 'text-red-600 bg-red-50';
-      default: return 'text-slate-600 bg-slate-50';
-    }
-  };
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -103,22 +83,6 @@ export const SystemStatsCards: React.FC<SystemStatsCardsProps> = ({ stats, loadi
                   </div>
                 </div>
                 
-                <div className="text-left">
-                  <div className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${getTrendColor(stat.trend)}`}>
-                    <TrendingUp className={`h-3 w-3 ${stat.trend === 'down' ? 'rotate-180' : ''}`} />
-                    {stat.change}
-                  </div>
-                </div>
-              </div>
-
-              {/* Progress indicator */}
-              <div className="mt-4 h-1 bg-muted rounded-full overflow-hidden">
-                <motion.div
-                  className="h-full bg-primary rounded-full"
-                  initial={{ width: '0%' }}
-                  animate={{ width: '70%' }}
-                  transition={{ duration: 1, delay: index * 0.1 + 0.5 }}
-                />
               </div>
             </CardContent>
           </Card>

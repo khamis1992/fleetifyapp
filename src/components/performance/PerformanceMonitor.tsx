@@ -13,15 +13,8 @@ const PerformanceMonitor: React.FC<PerformanceMonitorProps> = ({ children }) => 
   // Monitor page load performance
   usePageLoadMonitor();
   
-  // Monitor memory usage every 60 seconds (only in dev)
-  if (isDevMode) {
-    useMemoryMonitor(60000);
-  }
-  
-  // Monitor overall app performance (only in dev)
-  if (isDevMode) {
-    usePerformanceMonitor('AppRoot');
-  }
+  useMemoryMonitor(60000, isDevMode);
+  usePerformanceMonitor('AppRoot', isDevMode);
 
   useEffect(() => {
     // Keep long-task logging opt-in to avoid noisy console output during normal development.

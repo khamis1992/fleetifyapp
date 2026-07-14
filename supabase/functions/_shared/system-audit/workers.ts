@@ -19,7 +19,9 @@ import {
   isInvoiceOutsideContractBillingPeriod,
   isReceiptPayment,
   invoiceConflictsWithMonth,
+  invoiceMatchesBillingMonth,
   invoiceMonthKey,
+  MONEY_SETTLEMENT_TOLERANCE,
   moneyDiffers,
   normalizeScheduleStatus,
   normalizeStatus,
@@ -334,6 +336,51 @@ async function auditContracts(
         invoice.total_amount,
         invoicePayments
       );
+      const legacyDirectReceipts = invoicePayments.filter(
+        (payment) =>
+          payment.allocation_source === "legacy_direct" &&
+          isReceiptPayment(payment)
+      );
+      if (
+        expectedInvoice.paid >
+          roundMoney(invoice.total_amount) + MONEY_SETTLEMENT_TOLERANCE &&
+        legacyDirectReceipts.length > 0 &&
+        legacyDirectReceipts.every(
+          (payment) => !customerAdvancePaymentIds.has(String(payment.id || ""))
+        )
+      ) {
+        findings.push(
+          repairFinding({
+            dedupeKey: `invoice:${invoice.id}:legacy-overpayment`,
+            code: "invoice.legacy_direct_overpayment",
+            severity: "critical",
+            entityType: "invoice",
+            entityId: invoice.id,
+            title: "Legacy direct receipts overpay the invoice",
+            details:
+              "The direct links can be migrated to capped canonical allocations while only the unapplied remainder is classified as a customer advance.",
+            evidence: {
+              invoiceTotal: roundMoney(invoice.total_amount),
+              calculatedPaid: expectedInvoice.paid,
+              excess: roundMoney(
+                expectedInvoice.paid - roundMoney(invoice.total_amount)
+              ),
+              legacyPaymentIds: legacyDirectReceipts.map(
+                (payment) => payment.id
+              ),
+            },
+            command: "invoice.normalize_legacy_overpayment",
+            expectedBefore: {
+              paid_amount: invoice.paid_amount,
+              balance_due: invoice.balance_due,
+              payment_status: invoice.payment_status,
+              status: invoice.status,
+            },
+            values: {},
+          })
+        );
+        continue;
+      }
       if (
         moneyDiffers(invoice.paid_amount, expectedInvoice.paid) ||
         moneyDiffers(invoice.balance_due, expectedInvoice.balance) ||
@@ -434,9 +481,36 @@ async function auditContracts(
         group.statuses.length === 1 &&
         group.canonicalInvoiceIds.length === 1
     );
+    const activeScheduleTotal = roundMoney(
+      activeSchedules.reduce(
+        (total, schedule) => total + Number(schedule.amount || 0),
+        0
+      )
+    );
+    const duplicateExtraAmount = roundMoney(
+      duplicateDueGroups.reduce(
+        (total, [, rows]) =>
+          total +
+          rows
+            .slice(1)
+            .reduce(
+              (groupTotal, schedule) =>
+                groupTotal + Number(schedule.amount || 0),
+              0
+            ),
+        0
+      )
+    );
+    const retainedScheduleTotal = roundMoney(
+      activeScheduleTotal - duplicateExtraAmount
+    );
+    const contractAmount = roundMoney(contract.contract_amount);
+    const retainedScheduleTotalMatchesContract =
+      contractAmount <= 0.01 ||
+      Math.abs(retainedScheduleTotal - contractAmount) <= 0.01;
 
     if (duplicateDueGroups.length > 0) {
-      if (duplicateGroupsAreSafe) {
+      if (duplicateGroupsAreSafe && retainedScheduleTotalMatchesContract) {
         findings.push(
           repairFinding({
             dedupeKey: `contract:${contract.id}:duplicate-schedule-rows`,
@@ -454,6 +528,9 @@ async function auditContracts(
                 (total, [, rows]) => total + rows.length - 1,
                 0
               ),
+              activeScheduleTotal,
+              retainedScheduleTotal,
+              contractAmount,
             },
             command: "schedule.consolidate_duplicate_rows",
             expectedBefore: {
@@ -472,8 +549,16 @@ async function auditContracts(
             "contract",
             contract.id,
             "Contract has conflicting duplicate payment schedules",
-            "At least one same-date group differs financially or points to multiple canonical invoices.",
-            { duplicateGroups: duplicateGroupEvidence }
+            retainedScheduleTotalMatchesContract
+              ? "At least one same-date group differs financially or points to multiple canonical invoices."
+              : "Consolidating the duplicate rows would leave a schedule total that differs from the contract amount.",
+            {
+              duplicateGroups: duplicateGroupEvidence,
+              activeScheduleTotal,
+              retainedScheduleTotal,
+              contractAmount,
+              retainedScheduleTotalMatchesContract,
+            }
           )
         );
       }
@@ -488,7 +573,8 @@ async function auditContracts(
     );
     const linkPlan = deriveOneToOneScheduleInvoicePlan(
       linkedSchedules,
-      activeInvoices
+      activeInvoices,
+      completeLinkPlan.billingDateMode
     );
     const currentInvoiceIds = linkedSchedules.map((schedule) =>
       String(schedule.invoice_id)
@@ -500,7 +586,11 @@ async function auditContracts(
           invoice &&
           invoice.contract_id === contract.id &&
           isActiveInvoice(invoice) &&
-          invoiceConflictsWithMonth(invoice, monthKey(schedule.due_date))
+          invoiceMatchesBillingMonth(
+            invoice,
+            monthKey(schedule.due_date),
+            completeLinkPlan.billingDateMode
+          )
         );
       })
       .map((schedule) => schedule.id);
@@ -522,10 +612,33 @@ async function auditContracts(
     const changedCompleteLinkAssignments = completeLinkPlan.assignments.filter(
       (assignment) => assignment.oldInvoiceId !== assignment.newInvoiceId
     );
+    const completeScheduleGraphIsGatewaySafe = activeSchedules.every(
+      (schedule) =>
+        Number(schedule.amount || 0) > 0.01 &&
+        canLinkInvoiceForSchedule({
+          scheduleStatus: schedule.status,
+          dueDate: schedule.due_date,
+          contractStatus: contract.status,
+          contractStartDate: contract.start_date,
+          contractEndDate: contract.end_date,
+        })
+    );
+    const linkedScheduleGraphIsGatewaySafe = linkedSchedules.every(
+      (schedule) =>
+        Number(schedule.amount || 0) > 0.01 &&
+        canLinkInvoiceForSchedule({
+          scheduleStatus: schedule.status,
+          dueDate: schedule.due_date,
+          contractStatus: contract.status,
+          contractStartDate: contract.start_date,
+          contractEndDate: contract.end_date,
+        })
+    );
     const canRebalanceScheduleLinks =
       duplicateDueGroups.length === 0 &&
       hasAnyScheduleLinkProblem &&
       completeLinkPlan.complete &&
+      completeScheduleGraphIsGatewaySafe &&
       changedCompleteLinkAssignments.length > 0 &&
       changedCompleteLinkAssignments.every((assignment) => {
         const schedule = activeSchedules.find(
@@ -546,6 +659,7 @@ async function auditContracts(
       duplicateDueGroups.length === 0 &&
       hasScheduleLinkProblem &&
       linkPlan.complete &&
+      linkedScheduleGraphIsGatewaySafe &&
       changedLinkAssignments.every((assignment) => {
         const schedule = linkedSchedules.find(
           (item) => item.id === assignment.scheduleId
@@ -561,11 +675,55 @@ async function auditContracts(
             })
         );
       });
+    const activeScheduleById = new Map(
+      activeSchedules.map((schedule) => [String(schedule.id), schedule])
+    );
+    const missingInvoiceAmount = roundMoney(
+      completeLinkPlan.assignments.reduce((total, assignment) => {
+        if (assignment.newInvoiceId) return total;
+        const schedule = activeScheduleById.get(assignment.scheduleId);
+        return total + Number(schedule?.amount || 0);
+      }, 0)
+    );
+    const activeInvoiceTotal = roundMoney(
+      activeInvoices.reduce(
+        (total, invoice) => total + Number(invoice.total_amount || 0),
+        0
+      )
+    );
+    const projectedInvoiceTotal = roundMoney(
+      activeInvoiceTotal + missingInvoiceAmount
+    );
+    const hasSafeInvoiceGenerationCapacity =
+      missingInvoiceAmount <= 0.01 ||
+      (contractAmount > 0.01 &&
+        projectedInvoiceTotal <= contractAmount + MONEY_SETTLEMENT_TOLERANCE);
+    const canRepairScheduleLinksIncrementally =
+      duplicateDueGroups.length === 0 &&
+      hasAnyScheduleLinkProblem &&
+      !canRebalanceScheduleLinks &&
+      !canRealignScheduleLinks &&
+      completeLinkPlan.billingDateMode === "invoice_date" &&
+      isActiveContractStatus(contract.status) &&
+      hasSafeInvoiceGenerationCapacity &&
+      completeLinkPlan.assignments.every(
+        (assignment) => assignment.candidateInvoiceIds.length <= 1
+      ) &&
+      activeSchedules.every((schedule) =>
+        canLinkInvoiceForSchedule({
+          scheduleStatus: schedule.status,
+          dueDate: schedule.due_date,
+          contractStatus: contract.status,
+          contractStartDate: contract.start_date,
+          contractEndDate: contract.end_date,
+        })
+      );
 
     if (duplicateDueGroups.length === 0 && hasAnyScheduleLinkProblem) {
       const evidence = {
         activeScheduleCount: activeSchedules.length,
         activeLinkedScheduleCount: linkedSchedules.length,
+        billingDateMode: completeLinkPlan.billingDateMode,
         invalidCurrentLinkIds,
         duplicateCurrentInvoiceLinks,
         unlinkedScheduleIdsWithCandidates,
@@ -578,6 +736,13 @@ async function auditContracts(
         assignments: canRebalanceScheduleLinks
           ? completeLinkPlan.assignments
           : linkPlan.assignments,
+        activeInvoiceTotal,
+        missingInvoiceAmount,
+        projectedInvoiceTotal,
+        contractAmount,
+        hasSafeInvoiceGenerationCapacity,
+        completeScheduleGraphIsGatewaySafe,
+        linkedScheduleGraphIsGatewaySafe,
       };
       if (canRebalanceScheduleLinks) {
         findings.push(
@@ -633,7 +798,7 @@ async function auditContracts(
             },
           })
         );
-      } else {
+      } else if (!canRepairScheduleLinksIncrementally) {
         findings.push(
           reviewFinding(
             `contract:${contract.id}:schedule-invoice-link-graph-review`,
@@ -649,17 +814,53 @@ async function auditContracts(
       }
     }
 
-    if (duplicateDueGroups.length === 0 && !hasAnyScheduleLinkProblem) {
-      for (const schedule of activeSchedules) {
+    if (
+      duplicateDueGroups.length === 0 &&
+      (!hasAnyScheduleLinkProblem || canRepairScheduleLinksIncrementally)
+    ) {
+      const assignmentByScheduleId = new Map(
+        completeLinkPlan.assignments.map((assignment) => [
+          assignment.scheduleId,
+          assignment,
+        ])
+      );
+      const orderedSchedules = [...activeSchedules].sort((left, right) => {
+        const priority = (schedule: Record<string, unknown>) => {
+          const assignment = assignmentByScheduleId.get(String(schedule.id));
+          const currentIsWrong =
+            Boolean(schedule.invoice_id) &&
+            assignment?.oldInvoiceId !== assignment?.newInvoiceId;
+          if (
+            currentIsWrong &&
+            assignment?.candidateInvoiceIds.length === 0
+          )
+            return 0;
+          if (currentIsWrong) return 1;
+          if (
+            !schedule.invoice_id &&
+            assignment?.candidateInvoiceIds.length === 1
+          )
+            return 2;
+          if (!schedule.invoice_id) return 3;
+          return 4;
+        };
+        return (
+          priority(left) - priority(right) ||
+          String(right.due_date || "").localeCompare(
+            String(left.due_date || "")
+          ) ||
+          String(left.id).localeCompare(String(right.id))
+        );
+      });
+      for (const schedule of orderedSchedules) {
         const scheduleMonth = monthKey(schedule.due_date);
-        const issueCandidates = activeInvoices.filter(
-          (invoice) => monthKey(invoice.invoice_date) === scheduleMonth
+        const candidates = activeInvoices.filter((invoice) =>
+          invoiceMatchesBillingMonth(
+            invoice,
+            scheduleMonth,
+            completeLinkPlan.billingDateMode
+          )
         );
-        const dueCandidates = activeInvoices.filter(
-          (invoice) => monthKey(invoice.due_date) === scheduleMonth
-        );
-        const candidates =
-          issueCandidates.length > 0 ? issueCandidates : dueCandidates;
         const constraintCandidates = contractInvoices.filter((invoice) =>
           invoiceConflictsWithMonth(invoice, scheduleMonth)
         );
@@ -672,12 +873,14 @@ async function auditContracts(
           isActiveInvoice(linkedInvoice);
         const linkedMatches = Boolean(
           linkedIsActive &&
-            invoiceConflictsWithMonth(linkedInvoice, scheduleMonth)
+            invoiceMatchesBillingMonth(
+              linkedInvoice,
+              scheduleMonth,
+              completeLinkPlan.billingDateMode
+            )
         );
         const candidate = candidates.length === 1 ? candidates[0] : null;
-        const candidateCanUseGenericLink = candidate
-          ? invoiceConflictsWithMonth(candidate, scheduleMonth)
-          : false;
+        const candidateCanUseGenericLink = Boolean(candidate);
         const canAutoLinkInvoice = canLinkInvoiceForSchedule({
           scheduleStatus: schedule.status,
           dueDate: schedule.due_date,
@@ -706,23 +909,43 @@ async function auditContracts(
             candidateInvoiceIds: candidates.map((candidate) => candidate.id),
           };
           if (canAutoLinkInvoice) {
-            findings.push(
-              repairFinding({
-                dedupeKey: `schedule:${schedule.id}:repair-existing-invoice-link`,
-                code: "schedule.stale_invoice_link",
-                severity: "high",
-                entityType: "contract_payment_schedule",
-                entityId: schedule.id,
-                title:
-                  "Schedule invoice link is stale or points to the wrong billing month",
-                details:
-                  "The canonical schedule gateway can swap the link or generate the missing due-month invoice atomically.",
-                evidence,
-                command: "schedule.repair_invoice_link",
-                expectedBefore: { invoice_id: schedule.invoice_id },
-                values: {},
-              })
-            );
+            if (
+              completeLinkPlan.billingDateMode === "invoice_date" ||
+              candidates.length === 1
+            ) {
+              findings.push(
+                repairFinding({
+                  dedupeKey: `schedule:${schedule.id}:repair-existing-invoice-link`,
+                  code: "schedule.stale_invoice_link",
+                  severity: "high",
+                  entityType: "contract_payment_schedule",
+                  entityId: schedule.id,
+                  title:
+                    "Schedule invoice link is stale or points to the wrong billing month",
+                  details:
+                    "The canonical schedule gateway can swap the link or generate the missing due-month invoice atomically.",
+                  evidence,
+                  command: "schedule.repair_invoice_link",
+                  expectedBefore: { invoice_id: schedule.invoice_id },
+                  values: {
+                    billing_date_mode: completeLinkPlan.billingDateMode,
+                  },
+                })
+              );
+            } else {
+              findings.push(
+                reviewFinding(
+                  `schedule:${schedule.id}:missing-due-month-invoice`,
+                  "schedule.due_month_invoice_missing",
+                  "high",
+                  "contract_payment_schedule",
+                  schedule.id,
+                  "Schedule has no due-month invoice candidate",
+                  "The contract uses due-month billing, but no existing invoice matches this schedule. A new issue date cannot be inferred safely.",
+                  evidence
+                )
+              );
+            }
           } else {
             findings.push(
               reviewFinding(
@@ -811,7 +1034,9 @@ async function auditContracts(
               },
               command: "schedule.link_invoice_by_billing_month",
               expectedBefore: { invoice_id: schedule.invoice_id },
-              values: {},
+              values: {
+                billing_date_mode: completeLinkPlan.billingDateMode,
+              },
             })
           );
         } else if (!linkedMatches && constraintCandidates.length > 0) {
@@ -840,7 +1065,8 @@ async function auditContracts(
             contractStatus: contract.status,
             contractStartDate: contract.start_date,
             contractEndDate: contract.end_date,
-          })
+          }) &&
+          completeLinkPlan.billingDateMode === "invoice_date"
         ) {
           findings.push(
             repairFinding({
@@ -859,8 +1085,36 @@ async function auditContracts(
               },
               command: "contract.generate_missing_invoice",
               expectedBefore: { invoice_id: schedule.invoice_id },
-              values: {},
+              values: { billing_date_mode: "invoice_date" },
             })
+          );
+        } else if (
+          !linkedMatches &&
+          !schedule.invoice_id &&
+          completeLinkPlan.billingDateMode === "due_date" &&
+          canLinkInvoiceForSchedule({
+            scheduleStatus: schedule.status,
+            dueDate: schedule.due_date,
+            contractStatus: contract.status,
+            contractStartDate: contract.start_date,
+            contractEndDate: contract.end_date,
+          })
+        ) {
+          findings.push(
+            reviewFinding(
+              `schedule:${schedule.id}:missing-due-month-invoice`,
+              "schedule.due_month_invoice_missing",
+              "high",
+              "contract_payment_schedule",
+              schedule.id,
+              "Schedule has no due-month invoice candidate",
+              "The contract uses due-month billing, but the invoice issue date cannot be inferred safely from the schedule alone.",
+              {
+                contractId: contract.id,
+                dueDate: schedule.due_date,
+                amount: roundMoney(schedule.amount),
+              }
+            )
           );
         }
 
@@ -1253,6 +1507,27 @@ async function auditAccounting(
   const cursor = context.job.cursor || {};
   const phase = String(cursor.phase || "journals");
 
+  if (phase === "bank_transactions") {
+    return await auditUnreconciledBankTransactions(
+      context,
+      String(cursor.lastId || "")
+    );
+  }
+
+  if (phase === "traffic_violation_payments") {
+    return await auditTrafficViolationPayments(
+      context,
+      String(cursor.lastId || "")
+    );
+  }
+
+  if (phase === "vehicle_installment_payments") {
+    return await auditVehicleInstallmentPayments(
+      context,
+      String(cursor.lastId || "")
+    );
+  }
+
   if (phase === "journals") {
     const page = await loadCompanyPage(
       context,
@@ -1392,7 +1667,7 @@ async function auditAccounting(
   const page = await loadCompanyPage(
     context,
     "payments",
-    "id,company_id,payment_number,payment_date,payment_status,amount,journal_entry_id,contract_id,invoice_id",
+    "id,company_id,payment_number,payment_date,payment_status,amount,journal_entry_id,contract_id,invoice_id,payment_method,bank_id,reconciliation_status,reconciled_at",
     String(cursor.lastId || "")
   );
   const journalIds = page.rows
@@ -1406,6 +1681,17 @@ async function auditAccounting(
     journalIds
   );
   const journalById = new Map(journals.map((journal) => [journal.id, journal]));
+  const bankTransactions = await loadByIds(
+    context,
+    "bank_transactions",
+    "id,company_id,payment_id,bank_id,amount,status,journal_entry_id,reconciled,reconciled_at,reversal_of_transaction_id",
+    "payment_id",
+    page.rows.map((payment) => payment.id)
+  );
+  const bankTransactionsByPayment = groupBy(
+    bankTransactions,
+    (transaction) => transaction.payment_id
+  );
   const findings: AuditFinding[] = [];
 
   for (const payment of page.rows) {
@@ -1440,13 +1726,392 @@ async function auditAccounting(
         )
       );
     }
+
+    if (
+      isBankLikePaymentMethod(payment.payment_method) &&
+      isPendingBankReconciliation(payment)
+    ) {
+      if (!payment.bank_id) {
+        findings.push(
+          reviewFinding(
+            `payment:${payment.id}:reconciliation-missing-bank`,
+            "accounting.bank_payment_missing_bank_for_reconciliation",
+            "high",
+            "payment",
+            payment.id,
+            "Bank payment cannot be reconciled without a bank account",
+            "Select the verified receiving bank before matching this payment to a bank statement. The agent will not guess the bank.",
+            {
+              amount: roundMoney(payment.amount),
+              paymentDate: payment.payment_date,
+              paymentMethod: payment.payment_method,
+              hasJournal: Boolean(payment.journal_entry_id),
+            }
+          )
+        );
+        continue;
+      }
+
+      const originalTransactions = (
+        bankTransactionsByPayment.get(payment.id) || []
+      ).filter((transaction) => !transaction.reversal_of_transaction_id);
+      if (originalTransactions.length === 0) {
+        findings.push(
+          reviewFinding(
+            `payment:${payment.id}:reconciliation-missing-transaction`,
+            "accounting.bank_payment_missing_transaction_for_reconciliation",
+            "high",
+            "payment",
+            payment.id,
+            "Bank payment has no linked bank transaction",
+            "A canonical bank movement must be created or linked through an approved accounting workflow before statement matching.",
+            {
+              amount: roundMoney(payment.amount),
+              paymentDate: payment.payment_date,
+              bankId: payment.bank_id,
+              journalEntryId: payment.journal_entry_id,
+            }
+          )
+        );
+        continue;
+      }
+
+      if (originalTransactions.length > 1) {
+        findings.push(
+          reviewFinding(
+            `payment:${payment.id}:reconciliation-duplicate-transactions`,
+            "accounting.bank_payment_duplicate_transactions",
+            "critical",
+            "payment",
+            payment.id,
+            "Bank payment has multiple original bank transactions",
+            "Duplicate bank movements must be reviewed and reversed through the approved accounting workflow.",
+            { transactionCount: originalTransactions.length }
+          )
+        );
+        continue;
+      }
+
+      const transaction = originalTransactions[0];
+      const transactionMatches =
+        normalizeStatus(transaction.status) === "completed" &&
+        transaction.bank_id === payment.bank_id &&
+        !moneyDiffers(transaction.amount, payment.amount) &&
+        Boolean(payment.journal_entry_id) &&
+        transaction.journal_entry_id === payment.journal_entry_id;
+      findings.push(
+        reviewFinding(
+          `payment:${payment.id}:reconciliation-${
+            transactionMatches ? "awaiting-statement" : "transaction-mismatch"
+          }`,
+          transactionMatches
+            ? "accounting.bank_payment_awaiting_statement_match"
+            : "accounting.bank_payment_transaction_mismatch",
+          transactionMatches ? "medium" : "critical",
+          "payment",
+          payment.id,
+          transactionMatches
+            ? "Bank payment is ready for statement matching"
+            : "Linked bank transaction does not match the payment",
+          transactionMatches
+            ? "Import and match the bank statement line. The approved matching command will reconcile the payment and movement atomically."
+            : "Company, bank, amount, status, and journal linkage must be reviewed before reconciliation.",
+          {
+            bankTransactionId: transaction.id,
+            bankTransactionStatus: transaction.status,
+            bankTransactionReconciled: Boolean(
+              transaction.reconciled || transaction.reconciled_at
+            ),
+          }
+        )
+      );
+    }
+  }
+
+  return {
+    findings,
+    cursor: page.hasMore
+      ? { phase: "payments", lastId: page.nextLastId }
+      : { phase: "traffic_violation_payments", lastId: "" },
+    hasMore: true,
+    scanned: page.rows.length,
+    stats: { paymentsScanned: page.rows.length },
+  };
+}
+
+async function auditTrafficViolationPayments(
+  context: WorkerContext,
+  lastId: string
+): Promise<WorkerBatchResult> {
+  const page = await loadCompanyPage(
+    context,
+    "traffic_violation_payments",
+    "id,company_id,traffic_violation_id,payment_number,payment_date,amount,payment_method,status,journal_entry_id",
+    lastId
+  );
+  const journalIds = page.rows.map((row) => row.journal_entry_id).filter(Boolean);
+  const journals = await loadByIds(
+    context,
+    "journal_entries",
+    "id,company_id,status,entry_date,reference_type,reference_id",
+    "id",
+    journalIds
+  );
+  const journalById = new Map(journals.map((journal) => [journal.id, journal]));
+  const findings: AuditFinding[] = [];
+
+  for (const payment of page.rows) {
+    if (normalizeStatus(payment.status) !== "completed") continue;
+
+    if (!payment.journal_entry_id) {
+      findings.push(
+        repairFinding({
+          dedupeKey: `traffic-violation-payment:${payment.id}:missing-journal`,
+          code: "accounting.traffic_violation_payment_missing_journal",
+          severity: "critical",
+          entityType: "traffic_violation_payment",
+          entityId: payment.id,
+          title: "Completed traffic violation payment has no journal entry",
+          details:
+            "The verified company payment can be posted through the traffic-violation accounting gateway.",
+          evidence: {
+            violationId: payment.traffic_violation_id,
+            amount: roundMoney(payment.amount),
+            paymentDate: payment.payment_date,
+            paymentMethod: payment.payment_method,
+          },
+          command: "traffic_violation_payment.post_missing_journal",
+          expectedBefore: {
+            status: payment.status,
+            journal_entry_id: null,
+          },
+          values: {},
+        })
+      );
+    } else if (!journalById.has(payment.journal_entry_id)) {
+      findings.push(
+        reviewFinding(
+          `traffic-violation-payment:${payment.id}:broken-journal-link`,
+          "accounting.traffic_violation_payment_broken_journal_link",
+          "critical",
+          "traffic_violation_payment",
+          payment.id,
+          "Traffic violation payment points to a missing journal entry",
+          "The missing posted entry must be reconstructed or the payment reversed with accounting approval.",
+          {
+            violationId: payment.traffic_violation_id,
+            journalEntryId: payment.journal_entry_id,
+            amount: roundMoney(payment.amount),
+          }
+        )
+      );
+    }
+  }
+
+  return {
+    findings,
+    cursor: page.hasMore
+      ? { phase: "traffic_violation_payments", lastId: page.nextLastId }
+      : { phase: "vehicle_installment_payments", lastId: "" },
+    hasMore: true,
+    scanned: page.rows.length,
+    stats: { trafficViolationPaymentsScanned: page.rows.length },
+  };
+}
+
+async function auditVehicleInstallmentPayments(
+  context: WorkerContext,
+  lastId: string
+): Promise<WorkerBatchResult> {
+  const page = await loadCompanyPage(
+    context,
+    "vehicle_installment_schedules",
+    "id,company_id,installment_id,installment_number,amount,paid_amount,paid_date,payment_reference,status,journal_entry_id",
+    lastId
+  );
+  const scheduleIds = page.rows.map((row) => row.id);
+  const payments = await loadByIds(
+    context,
+    "vehicle_installment_payments",
+    "id,company_id,installment_id,schedule_id,payment_date,amount,principal_amount,interest_amount,payment_method,status,journal_entry_id,reversal_journal_entry_id",
+    "schedule_id",
+    scheduleIds
+  );
+  const paymentsBySchedule = groupBy(payments, (payment) => payment.schedule_id);
+  const journalIds = payments
+    .flatMap((payment) => [payment.journal_entry_id, payment.reversal_journal_entry_id])
+    .filter(Boolean);
+  const journals = await loadByIds(
+    context,
+    "journal_entries",
+    "id,company_id,status,entry_date,reference_type,reference_id,reversal_entry_id",
+    "id",
+    journalIds
+  );
+  const journalById = new Map(journals.map((journal) => [journal.id, journal]));
+  const findings: AuditFinding[] = [];
+
+  for (const schedule of page.rows) {
+    const storedPaid = roundMoney(schedule.paid_amount);
+    const schedulePayments = paymentsBySchedule.get(schedule.id) || [];
+    const completedPayments = schedulePayments.filter(
+      (payment) => normalizeStatus(payment.status) === "completed"
+    );
+    const canonicalPaid = roundMoney(
+      completedPayments.reduce(
+        (sum, payment) => sum + Number(payment.amount || 0),
+        0
+      )
+    );
+
+    if (storedPaid > 0.01 && schedulePayments.length === 0) {
+      findings.push(
+        reviewFinding(
+          `vehicle-installment-schedule:${schedule.id}:legacy-payment-history`,
+          schedule.journal_entry_id
+            ? "accounting.vehicle_installment_legacy_payment_missing_ledger"
+            : "accounting.vehicle_installment_legacy_payment_missing_journal",
+          schedule.journal_entry_id ? "high" : "critical",
+          "vehicle_installment_schedule",
+          schedule.id,
+          schedule.journal_entry_id
+            ? "Legacy installment payment has no canonical payment ledger"
+            : "Legacy installment payment has no canonical ledger or journal",
+          "Verify the original payment method, date, source document, and account mapping before migration. The agent will not guess historical cash or bank facts.",
+          {
+            installmentId: schedule.installment_id,
+            installmentNumber: schedule.installment_number,
+            amount: roundMoney(schedule.amount),
+            paidAmount: storedPaid,
+            paidDate: schedule.paid_date,
+            paymentReference: schedule.payment_reference,
+            legacyJournalEntryId: schedule.journal_entry_id,
+          }
+        )
+      );
+      continue;
+    }
+
+    if (moneyDiffers(storedPaid, canonicalPaid)) {
+      findings.push(
+        reviewFinding(
+          `vehicle-installment-schedule:${schedule.id}:payment-total-mismatch`,
+          "accounting.vehicle_installment_payment_total_mismatch",
+          "critical",
+          "vehicle_installment_schedule",
+          schedule.id,
+          "Installment schedule paid amount differs from its payment ledger",
+          "Review payment reversals and source documents before changing the financial balance.",
+          {
+            installmentId: schedule.installment_id,
+            storedPaidAmount: storedPaid,
+            canonicalPaidAmount: canonicalPaid,
+            completedPaymentCount: completedPayments.length,
+          }
+        )
+      );
+    }
+
+    for (const payment of completedPayments) {
+      const journal = journalById.get(payment.journal_entry_id);
+      if (!journal) {
+        findings.push(
+          reviewFinding(
+            `vehicle-installment-payment:${payment.id}:broken-journal`,
+            "accounting.vehicle_installment_payment_broken_journal",
+            "critical",
+            "vehicle_installment_payment",
+            payment.id,
+            "Installment payment points to a missing journal entry",
+            "Reconstruct or reverse the payment through an approved accounting workflow.",
+            { journalEntryId: payment.journal_entry_id, amount: payment.amount }
+          )
+        );
+      } else if (
+        normalizeStatus(journal.status) !== "posted" ||
+        journal.reversal_entry_id
+      ) {
+        findings.push(
+          reviewFinding(
+            `vehicle-installment-payment:${payment.id}:journal-state`,
+            "accounting.vehicle_installment_payment_journal_state_mismatch",
+            "critical",
+            "vehicle_installment_payment",
+            payment.id,
+            "Completed installment payment is not backed by an active posted journal",
+            "Payment and journal state must be reconciled through an approved reversal or restoration workflow.",
+            {
+              journalEntryId: journal.id,
+              journalStatus: journal.status,
+              journalReversalEntryId: journal.reversal_entry_id,
+            }
+          )
+        );
+      }
+    }
+  }
+
+  return {
+    findings,
+    cursor: page.hasMore
+      ? { phase: "vehicle_installment_payments", lastId: page.nextLastId }
+      : { phase: "bank_transactions", lastId: "" },
+    hasMore: true,
+    scanned: page.rows.length,
+    stats: { vehicleInstallmentSchedulesScanned: page.rows.length },
+  };
+}
+
+async function auditUnreconciledBankTransactions(
+  context: WorkerContext,
+  lastId: string
+): Promise<WorkerBatchResult> {
+  const page = await loadCompanyPage(
+    context,
+    "bank_transactions",
+    "id,company_id,payment_id,bank_id,amount,status,journal_entry_id,reconciled,reconciled_at,reversal_of_transaction_id,transaction_date,transaction_type",
+    lastId
+  );
+  const findings: AuditFinding[] = [];
+
+  for (const transaction of page.rows) {
+    if (
+      transaction.reversal_of_transaction_id ||
+      normalizeStatus(transaction.status) !== "completed" ||
+      transaction.reconciled ||
+      transaction.reconciled_at ||
+      transaction.payment_id
+    ) {
+      continue;
+    }
+
+    findings.push(
+      reviewFinding(
+        `bank-transaction:${transaction.id}:unlinked-reconciliation`,
+        "accounting.bank_transaction_unlinked_for_reconciliation",
+        transaction.journal_entry_id ? "high" : "critical",
+        "bank_transaction",
+        transaction.id,
+        "Completed bank transaction has no linked payment",
+        transaction.journal_entry_id
+          ? "Match this movement to verified source documentation or a bank statement. The agent will not invent a payment link."
+          : "The movement also lacks a journal entry and requires accounting reconstruction before reconciliation.",
+        {
+          amount: roundMoney(transaction.amount),
+          transactionDate: transaction.transaction_date,
+          transactionType: transaction.transaction_type,
+          bankId: transaction.bank_id,
+          hasJournal: Boolean(transaction.journal_entry_id),
+        }
+      )
+    );
   }
 
   return pageResult(
     page,
     findings,
-    { phase: "payments", lastId: page.nextLastId },
-    { paymentsScanned: page.rows.length }
+    { phase: "bank_transactions", lastId: page.nextLastId },
+    { bankTransactionsScanned: page.rows.length }
   );
 }
 
@@ -1471,7 +2136,7 @@ async function auditFleet(context: WorkerContext): Promise<WorkerBatchResult> {
     loadByIds(
       context,
       "vehicle_maintenance",
-      "id,vehicle_id,status,started_date,completed_date",
+      "id,company_id,vehicle_id,status,started_date,completed_date,actual_cost,tax_amount,total_cost_with_tax,expense_recorded,journal_entry_id,payment_method",
       "vehicle_id",
       vehicleIds
     ),
@@ -1490,6 +2155,23 @@ async function auditFleet(context: WorkerContext): Promise<WorkerBatchResult> {
       vehicleIds
     ),
   ]);
+  const maintenanceIds = maintenance.map((row) => row.id);
+  const maintenanceJournals = await loadByIds(
+    context,
+    "journal_entries",
+    "id,company_id,status,entry_date,reference_type,reference_id,reversal_entry_id",
+    "reference_id",
+    maintenanceIds
+  );
+  const maintenanceJournalById = new Map(
+    maintenanceJournals.map((journal) => [journal.id, journal])
+  );
+  const maintenanceJournalsByReference = groupBy(
+    maintenanceJournals.filter(
+      (journal) => normalizeStatus(journal.reference_type) === "maintenance"
+    ),
+    (journal) => journal.reference_id
+  );
   const contractsByVehicle = groupBy(contracts, (row) => row.vehicle_id);
   const maintenanceByVehicle = groupBy(maintenance, (row) => row.vehicle_id);
   const reservationsByVehicle = groupBy(reservations, (row) => row.vehicle_id);
@@ -1497,6 +2179,101 @@ async function auditFleet(context: WorkerContext): Promise<WorkerBatchResult> {
   const findings: AuditFinding[] = [];
 
   for (const vehicle of page.rows) {
+    for (const item of maintenanceByVehicle.get(vehicle.id) || []) {
+      if (normalizeStatus(item.status) !== "completed") continue;
+      const amount = roundMoney(
+        Number(item.total_cost_with_tax || 0) > 0
+          ? Number(item.total_cost_with_tax)
+          : Number(item.actual_cost || 0) + Number(item.tax_amount || 0)
+      );
+      if (amount <= 0.01) continue;
+
+      const activeReferenceJournals = (
+        maintenanceJournalsByReference.get(item.id) || []
+      ).filter((journal) => normalizeStatus(journal.status) !== "reversed");
+      if (activeReferenceJournals.length > 1) {
+        findings.push(
+          reviewFinding(
+            `maintenance:${item.id}:duplicate-journals`,
+            "fleet.maintenance_duplicate_active_journals",
+            "critical",
+            "vehicle_maintenance",
+            item.id,
+            "Completed maintenance has duplicate active journals",
+            "Review and reverse duplicate maintenance journals before changing the maintenance link.",
+            {
+              amount,
+              journalEntryIds: activeReferenceJournals.map((journal) => journal.id),
+            }
+          )
+        );
+        continue;
+      }
+
+      if (!item.journal_entry_id) {
+        findings.push(
+          reviewFinding(
+            `maintenance:${item.id}:missing-journal`,
+            "fleet.completed_maintenance_missing_journal",
+            "critical",
+            "vehicle_maintenance",
+            item.id,
+            "Completed maintenance expense has no journal link",
+            activeReferenceJournals.length === 1
+              ? "One maintenance journal candidate exists and must be verified before relinking."
+              : "Post the verified actual cost through the canonical maintenance accounting gateway.",
+            {
+              amount,
+              paymentMethod: item.payment_method,
+              candidateJournalEntryId: activeReferenceJournals[0]?.id || null,
+            }
+          )
+        );
+        continue;
+      }
+
+      const linkedJournal = maintenanceJournalById.get(item.journal_entry_id);
+      if (
+        !linkedJournal ||
+        linkedJournal.company_id !== item.company_id ||
+        normalizeStatus(linkedJournal.reference_type) !== "maintenance" ||
+        linkedJournal.reference_id !== item.id ||
+        normalizeStatus(linkedJournal.status) !== "posted" ||
+        linkedJournal.reversal_entry_id
+      ) {
+        findings.push(
+          reviewFinding(
+            `maintenance:${item.id}:invalid-journal`,
+            "fleet.maintenance_journal_state_mismatch",
+            "critical",
+            "vehicle_maintenance",
+            item.id,
+            "Maintenance is not backed by an active posted journal",
+            "Verify the linked entry and use an approved reversal or restoration workflow.",
+            {
+              amount,
+              journalEntryId: item.journal_entry_id,
+              journalStatus: linkedJournal?.status || null,
+              reversalEntryId: linkedJournal?.reversal_entry_id || null,
+            }
+          )
+        );
+      } else if (!item.expense_recorded) {
+        findings.push(
+          reviewFinding(
+            `maintenance:${item.id}:expense-flag`,
+            "fleet.maintenance_expense_flag_stale",
+            "high",
+            "vehicle_maintenance",
+            item.id,
+            "Maintenance journal exists but its expense flag is stale",
+            "Verify the journal reference before restoring the derived expense flag.",
+            { amount, journalEntryId: item.journal_entry_id }
+          )
+        );
+      }
+    }
+
     const hasActiveContract = (contractsByVehicle.get(vehicle.id) || []).some(
       (contract) =>
         isActiveContractStatus(contract.status) &&
@@ -1920,6 +2697,10 @@ async function auditInventory(
   const cursor = context.job.cursor || {};
   const phase = String(cursor.phase || "levels");
 
+  if (phase === "purchase_orders") {
+    return auditPurchaseOrders(context);
+  }
+
   if (phase === "levels") {
     const page = await loadCompanyPage(
       context,
@@ -2121,11 +2902,308 @@ async function auditInventory(
     }
   }
 
+  if (page.hasMore) {
+    return pageResult(
+      page,
+      findings,
+      { phase: "missing", lastId: page.nextLastId },
+      { movementsScanned: page.rows.length }
+    );
+  }
+
+  return {
+    findings,
+    cursor: { phase: "purchase_orders", lastId: "" },
+    hasMore: true,
+    scanned: page.rows.length,
+    stats: { movementsScanned: page.rows.length },
+  };
+}
+
+async function auditPurchaseOrders(
+  context: WorkerContext
+): Promise<WorkerBatchResult> {
+  const page = await loadCompanyPage(
+    context,
+    "purchase_orders",
+    "id,company_id,order_number,status,subtotal,tax_amount,total_amount,delivery_date",
+    String(context.job.cursor?.lastId || "")
+  );
+  const orderIds = page.rows.map((row) => row.id);
+  const [items, receipts] = await Promise.all([
+    loadByIds(
+      context,
+      "purchase_order_items",
+      "id,purchase_order_id,inventory_item_id,item_code,quantity,unit_price,total_price,received_quantity",
+      "purchase_order_id",
+      orderIds,
+      false
+    ),
+    loadByIds(
+      context,
+      "goods_receipts",
+      "id,company_id,purchase_order_id,warehouse_id,journal_entry_id,status,receipt_date,receipt_number",
+      "purchase_order_id",
+      orderIds
+    ),
+  ]);
+  const receiptIds = receipts.map((receipt) => receipt.id);
+  const [receiptItems, movements, journals] = await Promise.all([
+    loadByIds(
+      context,
+      "goods_receipt_items",
+      "id,goods_receipt_id,purchase_order_item_id,received_quantity",
+      "goods_receipt_id",
+      receiptIds,
+      false
+    ),
+    loadByIds(
+      context,
+      "inventory_movements",
+      "id,company_id,item_id,warehouse_id,movement_type,quantity,reference_type,reference_id,total_cost",
+      "reference_id",
+      receiptIds
+    ),
+    loadByIds(
+      context,
+      "journal_entries",
+      "id,company_id,status,reference_type,reference_id,total_debit,total_credit,reversal_entry_id",
+      "reference_id",
+      receiptIds
+    ),
+  ]);
+  const itemsByOrder = groupBy(items, (item) => String(item.purchase_order_id || ""));
+  const receiptsByOrder = groupBy(
+    receipts,
+    (receipt) => String(receipt.purchase_order_id || "")
+  );
+  const receiptItemsByReceipt = groupBy(
+    receiptItems,
+    (item) => String(item.goods_receipt_id || "")
+  );
+  const movementsByReceipt = groupBy(
+    movements.filter(
+      (movement) => normalizeStatus(movement.reference_type) === "goods_receipt"
+    ),
+    (movement) => String(movement.reference_id || "")
+  );
+  const journalsByReceipt = groupBy(
+    journals.filter(
+      (journal) => normalizeStatus(journal.reference_type) === "goods_receipt"
+    ),
+    (journal) => String(journal.reference_id || "")
+  );
+  const findings: AuditFinding[] = [];
+
+  for (const order of page.rows) {
+    const orderItems = itemsByOrder.get(String(order.id)) || [];
+    const subtotal = roundMoney(
+      orderItems.reduce((sum, item) => sum + Number(item.total_price || 0), 0)
+    );
+    const total = roundMoney(subtotal + Number(order.tax_amount || 0));
+    if (
+      moneyDiffers(order.subtotal, subtotal) ||
+      moneyDiffers(order.total_amount, total)
+    ) {
+      findings.push(
+        repairFinding({
+          dedupeKey: `purchase-order:${order.id}:totals`,
+          code: "inventory.purchase_order_totals_mismatch",
+          severity: "high",
+          entityType: "purchase_order",
+          entityId: String(order.id),
+          title: "Purchase order totals do not match its items",
+          details: "The stored subtotal or total differs from the purchase-order item ledger.",
+          evidence: { calculatedSubtotal: subtotal, calculatedTotal: total },
+          command: "purchase_order.sync_totals",
+          expectedBefore: {
+            subtotal: order.subtotal,
+            total_amount: order.total_amount,
+          },
+          values: {},
+        })
+      );
+    }
+
+    const anyReceived = orderItems.some(
+      (item) => Number(item.received_quantity || 0) > 0
+    );
+    const allReceived =
+      orderItems.length > 0 &&
+      orderItems.every(
+        (item) => Number(item.received_quantity || 0) >= Number(item.quantity || 0)
+      );
+    const expectedStatus = allReceived
+      ? "received"
+      : anyReceived
+      ? "partially_received"
+      : null;
+    if (expectedStatus && normalizeStatus(order.status) !== expectedStatus) {
+      findings.push(
+        repairFinding({
+          dedupeKey: `purchase-order:${order.id}:receipt-status`,
+          code: "inventory.purchase_order_receipt_status_mismatch",
+          severity: "high",
+          entityType: "purchase_order",
+          entityId: String(order.id),
+          title: "Purchase order receipt status is stale",
+          details: "The order status does not match its stored received quantities.",
+          evidence: { expectedStatus, anyReceived, allReceived },
+          command: "purchase_order.sync_receipt_status",
+          expectedBefore: { status: order.status },
+          values: {},
+        })
+      );
+    } else if (
+      !anyReceived &&
+      ["received", "partially_received"].includes(normalizeStatus(order.status))
+    ) {
+      findings.push(
+        reviewFinding(
+          `purchase-order:${order.id}:unsupported-receipt-status`,
+          "inventory.purchase_order_status_without_received_quantities",
+          "critical",
+          "purchase_order",
+          String(order.id),
+          "Purchase order is marked received without received quantities",
+          "The prior lifecycle state cannot be inferred safely and requires review.",
+          { status: order.status, itemCount: orderItems.length }
+        )
+      );
+    }
+
+    const completedReceipts = (receiptsByOrder.get(String(order.id)) || []).filter(
+      (receipt) => normalizeStatus(receipt.status) === "completed"
+    );
+    const completedReceiptQuantityByItem = new Map<string, number>();
+    for (const receipt of completedReceipts) {
+      for (const receiptItem of receiptItemsByReceipt.get(String(receipt.id)) || []) {
+        const itemId = String(receiptItem.purchase_order_item_id || "");
+        completedReceiptQuantityByItem.set(
+          itemId,
+          roundMoney(
+            (completedReceiptQuantityByItem.get(itemId) || 0) +
+              Number(receiptItem.received_quantity || 0)
+          )
+        );
+      }
+    }
+    for (const item of orderItems) {
+      const receiptQuantity = completedReceiptQuantityByItem.get(String(item.id)) || 0;
+      if (moneyDiffers(item.received_quantity, receiptQuantity)) {
+        findings.push(
+          reviewFinding(
+            `purchase-order-item:${item.id}:receipt-ledger`,
+            "inventory.purchase_order_received_quantity_conflict",
+            "critical",
+            "purchase_order_item",
+            String(item.id),
+            "Purchase order item conflicts with completed goods receipts",
+            "The item quantity and receipt ledger disagree; the source document must be reviewed.",
+            {
+              storedReceivedQuantity: roundMoney(item.received_quantity),
+              completedReceiptQuantity: receiptQuantity,
+            }
+          )
+        );
+      }
+    }
+
+    for (const receipt of completedReceipts) {
+      const receiptLines = receiptItemsByReceipt.get(String(receipt.id)) || [];
+      const receiptMovements = movementsByReceipt.get(String(receipt.id)) || [];
+      const receiptJournals = journalsByReceipt.get(String(receipt.id)) || [];
+      const activePostedJournals = receiptJournals.filter(
+        (journal) =>
+          normalizeStatus(journal.status) === "posted" && !journal.reversal_entry_id
+      );
+      const linkedJournal = activePostedJournals.find(
+        (journal) => journal.id === receipt.journal_entry_id
+      );
+
+      if (!receipt.warehouse_id) {
+        findings.push(
+          reviewFinding(
+            `goods-receipt:${receipt.id}:warehouse`,
+            "inventory.goods_receipt_missing_warehouse",
+            "critical",
+            "goods_receipt",
+            String(receipt.id),
+            "Completed goods receipt has no warehouse",
+            "A warehouse must be selected before inventory movements can be reconstructed.",
+            { receiptNumber: receipt.receipt_number }
+          )
+        );
+      }
+      if (
+        activePostedJournals.length !== 1 ||
+        !linkedJournal ||
+        moneyDiffers(linkedJournal?.total_debit, linkedJournal?.total_credit) ||
+        Number(linkedJournal?.total_debit || 0) <= 0
+      ) {
+        findings.push(
+          reviewFinding(
+            `goods-receipt:${receipt.id}:journal`,
+            "inventory.goods_receipt_invalid_accounting",
+            "critical",
+            "goods_receipt",
+            String(receipt.id),
+            "Goods receipt accounting is missing or invalid",
+            "The receipt must have exactly one linked, posted, balanced journal entry.",
+            {
+              journalEntryId: receipt.journal_entry_id,
+              activePostedJournalIds: activePostedJournals.map((journal) => journal.id),
+            }
+          )
+        );
+      }
+
+      for (const receiptLine of receiptLines) {
+        const orderItem = orderItems.find(
+          (item) => item.id === receiptLine.purchase_order_item_id
+        );
+        const matchingQuantity = roundMoney(
+          receiptMovements
+            .filter(
+              (movement) =>
+                normalizeStatus(movement.movement_type) === "purchase" &&
+                movement.item_id === orderItem?.inventory_item_id &&
+                movement.warehouse_id === receipt.warehouse_id
+            )
+            .reduce((sum, movement) => sum + Number(movement.quantity || 0), 0)
+        );
+        if (
+          !orderItem?.inventory_item_id ||
+          !receipt.warehouse_id ||
+          moneyDiffers(receiptLine.received_quantity, matchingQuantity)
+        ) {
+          findings.push(
+            reviewFinding(
+              `goods-receipt-item:${receiptLine.id}:movement`,
+              "inventory.goods_receipt_movement_mismatch",
+              "critical",
+              "goods_receipt_item",
+              String(receiptLine.id),
+              "Goods receipt line does not match inventory movements",
+              "The receipt line, inventory item, warehouse and movement ledger must agree.",
+              {
+                inventoryItemId: orderItem?.inventory_item_id || null,
+                warehouseId: receipt.warehouse_id,
+                receivedQuantity: roundMoney(receiptLine.received_quantity),
+                movementQuantity: matchingQuantity,
+              }
+            )
+          );
+        }
+      }
+    }
+  }
+
   return pageResult(
     page,
     findings,
-    { phase: "missing", lastId: page.nextLastId },
-    { movementsScanned: page.rows.length }
+    { phase: "purchase_orders", lastId: page.nextLastId },
+    { purchaseOrdersScanned: page.rows.length }
   );
 }
 
@@ -2281,15 +3359,39 @@ async function auditEmployees(
       loadByIds(
         context,
         "payroll",
-        "id,employee_id,status,payroll_date,basic_salary,allowances,overtime_amount,deductions,tax_amount,net_amount,journal_entry_id",
+        "id,employee_id,payroll_number,status,payroll_date,payment_method,basic_salary,allowances,overtime_amount,deductions,tax_amount,net_amount,journal_entry_id",
         "employee_id",
         employeeIds
       ),
     ]);
+  const payrollIds = payrollRows.map((row) => row.id);
+  const payrollJournals = await loadByIds(
+    context,
+    "journal_entries",
+    "id,company_id,status,entry_date,reference_type,reference_id,total_debit,total_credit,reversal_entry_id,created_at",
+    "reference_id",
+    payrollIds
+  );
+  const payrollJournalLines = await loadByIds(
+    context,
+    "journal_entry_lines",
+    "id,journal_entry_id,debit_amount,credit_amount,line_number",
+    "journal_entry_id",
+    payrollJournals.map((row) => row.id),
+    false
+  );
   const attendanceByEmployee = groupBy(attendance, (row) => row.employee_id);
   const balancesByEmployee = groupBy(leaveBalances, (row) => row.employee_id);
   const requestsByEmployee = groupBy(leaveRequests, (row) => row.employee_id);
   const payrollByEmployee = groupBy(payrollRows, (row) => row.employee_id);
+  const journalsByPayroll = groupBy(
+    payrollJournals,
+    (row) => `${row.reference_type}:${row.reference_id}`
+  );
+  const linesByJournal = groupBy(
+    payrollJournalLines,
+    (row) => row.journal_entry_id
+  );
   const findings: AuditFinding[] = [];
   const today = context.now.toISOString().slice(0, 10);
 
@@ -2426,15 +3528,13 @@ async function auditEmployees(
     }
 
     for (const payroll of payrollByEmployee.get(employee.id) || []) {
-      if (
-        ["paid", "posted", "approved", "completed"].includes(
-          normalizeStatus(payroll.status)
-        )
-      )
-        continue;
+      const payrollStatus = normalizeStatus(payroll.status);
+      const isFinalized = ["paid", "posted", "approved", "completed"].includes(
+        payrollStatus
+      );
       const netAmount = derivePayrollNet(payroll);
       if (moneyDiffers(payroll.net_amount, netAmount)) {
-        if (netAmount < 0 || payroll.journal_entry_id) {
+        if (netAmount < 0 || payroll.journal_entry_id || isFinalized) {
           findings.push(
             reviewFinding(
               `payroll:${payroll.id}:net-review`,
@@ -2474,6 +3574,205 @@ async function auditEmployees(
             })
           );
         }
+      }
+
+      if (!isFinalized) continue;
+
+      const grossAmount = roundMoney(
+        Number(payroll.basic_salary || 0) +
+          Number(payroll.allowances || 0) +
+          Number(payroll.overtime_amount || 0)
+      );
+      const activeAccruals = (
+        journalsByPayroll.get(`payroll:${payroll.id}`) || []
+      ).filter(isActiveJournal);
+      const activePayments = (
+        journalsByPayroll.get(`payroll_payment:${payroll.id}`) || []
+      ).filter(isActiveJournal);
+      const linkedAccrual = activeAccruals.find(
+        (journal) => journal.id === payroll.journal_entry_id
+      );
+      const validLinkedAccrual = Boolean(
+        linkedAccrual &&
+          isPostedJournalForAmount(
+            linkedAccrual,
+            linesByJournal.get(linkedAccrual.id) || [],
+            grossAmount
+          )
+      );
+
+      if (activeAccruals.length > 1) {
+        findings.push(
+          reviewFinding(
+            `payroll:${payroll.id}:duplicate-accruals`,
+            "employee.payroll_duplicate_accrual_journals",
+            "critical",
+            "payroll",
+            payroll.id,
+            "Payroll has duplicate active accrual journals",
+            "The duplicate entries must be compared and reversed through the accounting workflow; the agent will not choose one by assumption.",
+            {
+              status: payroll.status,
+              journalIds: activeAccruals.map((journal) => journal.id),
+            }
+          )
+        );
+      } else if (!payroll.journal_entry_id || !linkedAccrual) {
+        const candidate = activeAccruals[0];
+        const candidateIsValid = Boolean(
+          candidate &&
+            isPostedJournalForAmount(
+              candidate,
+              linesByJournal.get(candidate.id) || [],
+              grossAmount
+            )
+        );
+        if (payrollStatus === "approved" && (!candidate || candidateIsValid)) {
+          findings.push(
+            repairFinding({
+              dedupeKey: `payroll:${payroll.id}:ensure-accrual`,
+              code: "employee.approved_payroll_missing_accrual",
+              severity: "critical",
+              entityType: "payroll",
+              entityId: payroll.id,
+              title: "Approved payroll is missing its posted accrual",
+              details:
+                "The canonical payroll gateway can create the missing accrual or relink the only verified posted candidate.",
+              evidence: {
+                status: payroll.status,
+                payrollDate: payroll.payroll_date,
+                grossAmount,
+                journalEntryId: payroll.journal_entry_id,
+                candidateJournalId: candidate?.id || null,
+              },
+              command: "payroll.ensure_accrual",
+              expectedBefore: {
+                status: payroll.status,
+                journal_entry_id: payroll.journal_entry_id,
+              },
+              values: {},
+            })
+          );
+        } else {
+          findings.push(
+            reviewFinding(
+              `payroll:${payroll.id}:invalid-accrual-link`,
+              "employee.finalized_payroll_invalid_accrual_link",
+              "critical",
+              "payroll",
+              payroll.id,
+              "Finalized payroll has no valid linked accrual",
+              "The payroll status or existing journal conflicts with the canonical accrual and requires accounting review.",
+              {
+                status: payroll.status,
+                journalEntryId: payroll.journal_entry_id,
+                candidateJournalId: candidate?.id || null,
+              }
+            )
+          );
+        }
+      } else if (!validLinkedAccrual) {
+        findings.push(
+          reviewFinding(
+            `payroll:${payroll.id}:invalid-accrual`,
+            "employee.payroll_accrual_not_posted_or_unbalanced",
+            "critical",
+            "payroll",
+            payroll.id,
+            "Payroll accrual is not a valid posted balanced journal",
+            "The linked accrual status, totals, or journal lines do not match the payroll gross amount.",
+            {
+              status: payroll.status,
+              grossAmount,
+              journalEntryId: payroll.journal_entry_id,
+              journalStatus: linkedAccrual.status,
+              journalDebit: linkedAccrual.total_debit,
+              journalCredit: linkedAccrual.total_credit,
+            }
+          )
+        );
+      }
+
+      if (activePayments.length > 1) {
+        findings.push(
+          reviewFinding(
+            `payroll:${payroll.id}:duplicate-payments`,
+            "employee.payroll_duplicate_payment_journals",
+            "critical",
+            "payroll",
+            payroll.id,
+            "Payroll has duplicate active payment journals",
+            "Duplicate salary payments must be verified and reversed through the accounting workflow.",
+            { journalIds: activePayments.map((journal) => journal.id) }
+          )
+        );
+      } else if (payrollStatus === "paid" && netAmount > 0) {
+        const paymentJournal = activePayments[0];
+        if (!paymentJournal && validLinkedAccrual && linkedAccrual) {
+          findings.push(
+            repairFinding({
+              dedupeKey: `payroll:${payroll.id}:ensure-payment`,
+              code: "employee.paid_payroll_missing_payment_journal",
+              severity: "critical",
+              entityType: "payroll",
+              entityId: payroll.id,
+              title: "Paid payroll is missing its payment journal",
+              details:
+                "The canonical payroll gateway can post the missing payment using the recorded method and mapped cash or bank account.",
+              evidence: {
+                payrollDate: payroll.payroll_date,
+                paymentMethod: payroll.payment_method,
+                netAmount,
+                accrualJournalId: linkedAccrual.id,
+              },
+              command: "payroll.ensure_payment",
+              expectedBefore: {
+                status: payroll.status,
+                journal_entry_id: payroll.journal_entry_id,
+              },
+              values: {},
+            })
+          );
+        } else if (
+          paymentJournal &&
+          !isPostedJournalForAmount(
+            paymentJournal,
+            linesByJournal.get(paymentJournal.id) || [],
+            netAmount
+          )
+        ) {
+          findings.push(
+            reviewFinding(
+              `payroll:${payroll.id}:invalid-payment`,
+              "employee.payroll_payment_not_posted_or_unbalanced",
+              "critical",
+              "payroll",
+              payroll.id,
+              "Payroll payment journal is not valid",
+              "The active payment journal is not posted and balanced for the payroll net amount.",
+              {
+                netAmount,
+                journalId: paymentJournal.id,
+                journalStatus: paymentJournal.status,
+                journalDebit: paymentJournal.total_debit,
+                journalCredit: paymentJournal.total_credit,
+              }
+            )
+          );
+        }
+      } else if (payrollStatus !== "paid" && activePayments.length > 0) {
+        findings.push(
+          reviewFinding(
+            `payroll:${payroll.id}:payment-before-paid`,
+            "employee.payroll_payment_journal_before_paid_status",
+            "critical",
+            "payroll",
+            payroll.id,
+            "Payroll has a payment journal before paid status",
+            "The payment and payroll status chronology must be verified before changing either record.",
+            { status: payroll.status, journalId: activePayments[0].id }
+          )
+        );
       }
     }
   }
@@ -2630,6 +3929,54 @@ function isActiveInvoice(invoice: Row): boolean {
     !["cancelled", "canceled", "void", "voided", "deleted"].includes(
       normalizeStatus(invoice.status)
     ) && !isInactivePaymentStatus(invoice.payment_status)
+  );
+}
+
+function isActiveJournal(journal: Row): boolean {
+  return (
+    normalizeStatus(journal.status) !== "reversed" &&
+    !journal.reversal_entry_id
+  );
+}
+
+function isPostedJournalForAmount(
+  journal: Row,
+  lines: Row[],
+  expectedAmount: number
+): boolean {
+  const lineDebit = roundMoney(
+    lines.reduce((sum, line) => sum + Number(line.debit_amount || 0), 0)
+  );
+  const lineCredit = roundMoney(
+    lines.reduce((sum, line) => sum + Number(line.credit_amount || 0), 0)
+  );
+  return (
+    normalizeStatus(journal.status) === "posted" &&
+    lines.length >= 2 &&
+    !moneyDiffers(journal.total_debit, expectedAmount) &&
+    !moneyDiffers(journal.total_credit, expectedAmount) &&
+    !moneyDiffers(lineDebit, expectedAmount) &&
+    !moneyDiffers(lineCredit, expectedAmount)
+  );
+}
+
+const BANK_LIKE_PAYMENT_METHODS = new Set([
+  "bank_transfer",
+  "check",
+  "cheque",
+  "credit_card",
+  "debit_card",
+  "card",
+]);
+
+function isBankLikePaymentMethod(value: unknown): boolean {
+  return BANK_LIKE_PAYMENT_METHODS.has(normalizeStatus(value));
+}
+
+function isPendingBankReconciliation(payment: Row): boolean {
+  return (
+    normalizeStatus(payment.reconciliation_status) !== "reconciled" &&
+    !payment.reconciled_at
   );
 }
 

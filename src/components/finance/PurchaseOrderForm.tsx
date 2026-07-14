@@ -397,7 +397,7 @@ export const PurchaseOrderForm: React.FC<PurchaseOrderFormProps> = ({ onSuccess 
                                 {calculateItemTotal(
                                   form.watch(`items.${index}.quantity`) || 0,
                                   form.watch(`items.${index}.unit_price`) || 0
-                                ).toFixed(3)} د.ك
+                                ).toFixed(2)} ر.ق
                               </p>
                             </div>
                             <Button
@@ -418,7 +418,7 @@ export const PurchaseOrderForm: React.FC<PurchaseOrderFormProps> = ({ onSuccess 
 
                 <div className="text-right">
                   <div className="text-lg font-semibold">
-                    الإجمالي الكلي: {calculateTotal().toFixed(3)} د.ك
+                    الإجمالي الكلي: {calculateTotal().toFixed(2)} ر.ق
                   </div>
                 </div>
               </div>

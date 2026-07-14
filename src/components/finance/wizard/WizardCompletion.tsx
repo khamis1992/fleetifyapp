@@ -193,9 +193,9 @@ export const WizardCompletion: React.FC<Props> = ({
                       </div>
                       <div className="text-right">
                         <div className="font-medium">
-                          {bank.openingBalance.toLocaleString('ar-KW', { 
+                          {bank.openingBalance.toLocaleString('ar-QA', {
                             minimumFractionDigits: 3,
-                            maximumFractionDigits: 3 
+                            maximumFractionDigits: 3
                           })} {bank.currency}
                         </div>
                         <div className="text-sm text-muted-foreground">رصيد افتتاحي</div>

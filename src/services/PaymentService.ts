@@ -55,7 +55,10 @@ export class PaymentService extends BaseService<Payment> {
         p_amount: data.amount,
         p_payment_method: data.payment_method,
         p_payment_type: data.payment_type || data.payment_method,
-        p_transaction_type: data.transaction_type === 'expense' ? 'payment' : 'receipt',
+        p_transaction_type:
+          data.transaction_type === 'expense' || data.transaction_type === 'payment'
+            ? 'payment'
+            : 'receipt',
         p_reference_number: data.reference_number || null,
         p_agreement_number: data.agreement_number || null,
         p_check_number: data.check_number || null,

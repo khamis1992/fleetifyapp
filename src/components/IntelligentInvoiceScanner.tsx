@@ -726,7 +726,7 @@ const IntelligentInvoiceScanner: React.FC<InvoiceScannerProps> = ({
                   <div className="flex items-center gap-2">
                     <DollarSign className="h-4 w-4 text-yellow-500" />
                     <span className="font-medium">المبلغ:</span>
-                    <span>{scanResult.data.total_amount} د.ك</span>
+                    <span>{scanResult.data.total_amount} ر.ق</span>
                   </div>
                 )}
                 {scanResult.data.invoice_date && (

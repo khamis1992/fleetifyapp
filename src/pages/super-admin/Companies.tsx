@@ -106,7 +106,7 @@ const Companies: React.FC = () => {
     try {
       setBrowsedCompany(company);
       console.log('🏢 [COMPANIES_PAGE] Successfully set browsed company, navigating to dashboard');
-      navigate('/browse-company/dashboard');
+      navigate('/dashboard');
     } catch (error) {
       console.error('🏢 [COMPANIES_PAGE] Error setting browsed company:', error);
     }
@@ -330,7 +330,7 @@ const Companies: React.FC = () => {
             </p>
             {!searchTerm && statusFilter === 'all' && (
               <Button 
-                onClick={() => navigate('/super-admin/companies/create')}
+                onClick={() => navigate('/admin/companies/create')}
                 className="gap-2"
               >
                 <Plus className="h-4 w-4" />

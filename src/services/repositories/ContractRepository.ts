@@ -32,6 +32,7 @@ export class ContractRepository extends BaseRepository<Contract> {
    */
   async findWithCustomer(id: string): Promise<ContractWithCustomer | null> {
     try {
+      const companyId = await this.resolveCompanyId();
       const { data, error } = await supabase
         .from('contracts')
         .select(`
@@ -45,6 +46,7 @@ export class ContractRepository extends BaseRepository<Contract> {
           )
         `)
         .eq('id', id)
+        .eq('company_id', companyId)
         .single();
 
       if (error) {
@@ -63,7 +65,8 @@ export class ContractRepository extends BaseRepository<Contract> {
    */
   async findAllWithCustomer(companyId?: string): Promise<ContractWithCustomer[]> {
     try {
-      let query = supabase
+      const effectiveCompanyId = await this.resolveCompanyId(companyId);
+      const query = supabase
         .from('contracts')
         .select(`
           *,
@@ -74,11 +77,8 @@ export class ContractRepository extends BaseRepository<Contract> {
             company_name_ar,
             customer_type
           )
-        `);
-
-      if (companyId) {
-        query = query.eq('company_id', companyId);
-      }
+        `)
+        .eq('company_id', effectiveCompanyId);
 
       const { data, error } = await query;
 
@@ -95,14 +95,12 @@ export class ContractRepository extends BaseRepository<Contract> {
    */
   async findByStatus(status: Contract['status'], companyId?: string): Promise<Contract[]> {
     try {
-      let query = supabase
+      const effectiveCompanyId = await this.resolveCompanyId(companyId);
+      const query = supabase
         .from('contracts')
         .select('*')
-        .eq('status', status);
-
-      if (companyId) {
-        query = query.eq('company_id', companyId);
-      }
+        .eq('status', status)
+        .eq('company_id', effectiveCompanyId);
 
       const { data, error } = await query;
 
@@ -133,36 +131,7 @@ export class ContractRepository extends BaseRepository<Contract> {
    * When cancelling a contract, automatically cancel all future unpaid invoices
    */
   async updateStatus(id: string, status: Contract['status']): Promise<Contract> {
-    // If cancelling the contract, cancel all future unpaid invoices
-    if (status === 'cancelled') {
-      try {
-        const today = new Date().toISOString().split('T')[0];
-        
-        // Cancel all future invoices that are not paid
-        const { error: cancelError } = await supabase
-          .from('invoices')
-          .update({ 
-            status: 'cancelled',
-            payment_status: 'cancelled',
-            notes: 'تم إلغاء الفاتورة بسبب إلغاء العقد'
-          })
-          .eq('contract_id', id)
-          .gte('due_date', today) // الفواتير المستقبلية فقط
-          .in('payment_status', ['unpaid', 'pending', 'sent']); // غير المدفوعة فقط
-
-        if (cancelError) {
-          console.error('Error cancelling future invoices:', cancelError);
-          // Continue with status update even if invoice cancellation fails
-        } else {
-          console.log(`Cancelled future invoices for contract ${id}`);
-        }
-      } catch (error) {
-        console.error('Error in invoice cleanup:', error);
-        // Continue with status update even if invoice cleanup fails
-      }
-    }
-
-    return this.update(id, { status } as Partial<Contract>);
+    throw new Error(`Direct contract status updates are disabled (${id} -> ${status}). Use an approved contract lifecycle operation.`);
   }
 
   /**
@@ -174,17 +143,7 @@ export class ContractRepository extends BaseRepository<Contract> {
     totalPaid?: number,
     balanceDue?: number
   ): Promise<Contract> {
-    const updateData: Partial<Contract> = { payment_status: paymentStatus };
-    
-    if (totalPaid !== undefined) {
-      updateData.total_paid = totalPaid;
-    }
-    
-    if (balanceDue !== undefined) {
-      updateData.balance_due = balanceDue;
-    }
-
-    return this.update(id, updateData);
+    throw new Error(`Direct contract payment totals are disabled (${id} -> ${paymentStatus}, ${totalPaid ?? 'unchanged'}, ${balanceDue ?? 'unchanged'}). Use canonical payment allocation.`);
   }
 
   /**
@@ -192,18 +151,16 @@ export class ContractRepository extends BaseRepository<Contract> {
    */
   async findExpiringSoon(days: number, companyId?: string): Promise<Contract[]> {
     try {
+      const effectiveCompanyId = await this.resolveCompanyId(companyId);
       const futureDate = new Date();
       futureDate.setDate(futureDate.getDate() + days);
 
-      let query = supabase
+      const query = supabase
         .from('contracts')
         .select('*')
+        .eq('company_id', effectiveCompanyId)
         .eq('status', 'active')
         .lte('end_date', futureDate.toISOString().split('T')[0]);
-
-      if (companyId) {
-        query = query.eq('company_id', companyId);
-      }
 
       const { data, error } = await query;
 
@@ -220,14 +177,12 @@ export class ContractRepository extends BaseRepository<Contract> {
    */
   async countByStatus(status: Contract['status'], companyId?: string): Promise<number> {
     try {
-      let query = supabase
+      const effectiveCompanyId = await this.resolveCompanyId(companyId);
+      const query = supabase
         .from('contracts')
         .select('*', { count: 'exact', head: true })
-        .eq('status', status);
-
-      if (companyId) {
-        query = query.eq('company_id', companyId);
-      }
+        .eq('status', status)
+        .eq('company_id', effectiveCompanyId);
 
       const { count, error } = await query;
 

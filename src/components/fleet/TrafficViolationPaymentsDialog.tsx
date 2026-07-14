@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Separator } from '@/components/ui/separator';
 import { TrafficViolation } from '@/hooks/useTrafficViolations';
@@ -61,6 +61,7 @@ export function TrafficViolationPaymentsDialog({ violation, open, onOpenChange }
           </DialogHeader>
           <TrafficViolationPaymentForm
             violation={violation}
+            remainingAmount={Math.max(remainingAmount, 0)}
             onSuccess={() => {
               setIsPaymentFormOpen(false);
             }}
@@ -94,16 +95,16 @@ export function TrafficViolationPaymentsDialog({ violation, open, onOpenChange }
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">المبلغ الإجمالي</p>
-                <p className="font-bold text-lg">{violation.amount?.toFixed(3)} د.ك</p>
+                <p className="font-bold text-lg">{violation.amount?.toFixed(2)} ر.ق</p>
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">المبلغ المدفوع</p>
-                <p className="font-medium text-green-600">{totalPaid.toFixed(3)} د.ك</p>
+                <p className="font-medium text-green-600">{totalPaid.toFixed(2)} ر.ق</p>
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">المبلغ المستحق</p>
                 <p className={`font-medium ${remainingAmount > 0 ? 'text-red-600' : 'text-green-600'}`}>
-                  {remainingAmount.toFixed(3)} د.ك
+                  {remainingAmount.toFixed(2)} ر.ق
                 </p>
               </div>
             </div>
@@ -167,7 +168,7 @@ export function TrafficViolationPaymentsDialog({ violation, open, onOpenChange }
                       <TableCell>
                         {format(new Date(payment.payment_date), 'dd/MM/yyyy', { locale: ar })}
                       </TableCell>
-                      <TableCell className="font-bold">{payment.amount.toFixed(3)} د.ك</TableCell>
+                      <TableCell className="font-bold">{payment.amount.toFixed(2)} ر.ق</TableCell>
                       <TableCell>{getPaymentMethodLabel(payment.payment_method)}</TableCell>
                       <TableCell>
                         <Badge variant={payment.payment_type === 'full' ? 'default' : 'secondary'}>
@@ -200,12 +201,12 @@ export function TrafficViolationPaymentsDialog({ violation, open, onOpenChange }
                 </div>
                 <div>
                   <p className="text-muted-foreground">إجمالي المدفوع</p>
-                  <p className="font-medium text-green-600">{totalPaid.toFixed(3)} د.ك</p>
+                  <p className="font-medium text-green-600">{totalPaid.toFixed(2)} ر.ق</p>
                 </div>
                 <div>
                   <p className="text-muted-foreground">المتبقي</p>
                   <p className={`font-medium ${remainingAmount > 0 ? 'text-red-600' : 'text-green-600'}`}>
-                    {remainingAmount.toFixed(3)} د.ك
+                    {remainingAmount.toFixed(2)} ر.ق
                   </p>
                 </div>
               </div>

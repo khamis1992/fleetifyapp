@@ -56,8 +56,7 @@ export const CustomerFormWithDuplicateCheck: React.FC<CustomerFormWithDuplicateC
         originalCount: duplicateCheck.duplicates?.length || 0,
         validCount: validDuplicates.length,
         hasValidDuplicates,
-        excludeCustomerId,
-        showInlineWarning
+        excludeCustomerId
       });
       
       // Only show warning if there are actual valid duplicates
@@ -66,13 +65,6 @@ export const CustomerFormWithDuplicateCheck: React.FC<CustomerFormWithDuplicateC
       
       if (onDuplicateDetected) {
         onDuplicateDetected(hasValidDuplicates);
-      }
-    } else if (!isLoading && duplicateCheck && !duplicateCheck.has_duplicates) {
-      // Clear warnings when no duplicates found
-      console.log('✅ [DUPLICATE_CHECK_UI] No duplicates found, clearing warnings');
-      setShowInlineWarning(false);
-      if (onDuplicateDetected) {
-        onDuplicateDetected(false);
       }
     }
   }, [duplicateCheck, onDuplicateDetected, debouncedCustomerData, excludeCustomerId, isLoading, enableRealTimeCheck]);

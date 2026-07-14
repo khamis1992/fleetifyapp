@@ -12,7 +12,7 @@ export interface BatchOperation<T = any, R = any> {
   id: string;
   items: T[];
   processor: (items: T[], batchIndex: number) => Promise<R[]>;
-  options?: BatchProcessorOptions;
+  options: ResolvedBatchProcessorOptions;
 }
 
 export interface BatchProcessorOptions {
@@ -27,6 +27,10 @@ export interface BatchProcessorOptions {
   onError?: (error: Error, item: any, batchIndex: number) => void;
   onSuccess?: (result: any, item: any, batchIndex: number) => void;
 }
+
+type ResolvedBatchProcessorOptions =
+  Required<Omit<BatchProcessorOptions, 'onProgress' | 'onError' | 'onSuccess'>> &
+  Pick<BatchProcessorOptions, 'onProgress' | 'onError' | 'onSuccess'>;
 
 export interface BatchProgress {
   total: number;
@@ -74,7 +78,7 @@ export interface ChunkedResult<T, R> {
  * Batch Processor for efficient bulk operations
  */
 export class BatchProcessor {
-  private config: Required<BatchProcessorOptions>;
+  private config: ResolvedBatchProcessorOptions;
   private activeOperations = new Map<string, BatchOperation>();
 
   constructor(config: Partial<BatchProcessorOptions> = {}) {
@@ -130,9 +134,12 @@ export class BatchProcessor {
 
       // Calculate final metrics
       result.metrics.totalProcessingTime = totalTime;
-      result.metrics.averageBatchTime = totalTime / Math.ceil(items.length / mergedOptions.batchSize);
-      result.metrics.itemsPerSecond = result.progress.processed / (totalTime / 1000);
-      result.metrics.successRate = result.progress.successful / result.progress.total;
+      const batchCount = Math.ceil(items.length / mergedOptions.batchSize);
+      result.metrics.averageBatchTime = batchCount > 0 ? totalTime / batchCount : 0;
+      result.metrics.itemsPerSecond = totalTime > 0 ? result.progress.processed / (totalTime / 1000) : 0;
+      result.metrics.successRate = result.progress.total > 0
+        ? result.progress.successful / result.progress.total
+        : 1;
 
       logger.info('Batch processing completed', {
         operationId,
@@ -176,6 +183,8 @@ export class BatchProcessor {
     // Process chunks with concurrency control
     const semaphore = new Semaphore(mergedOptions.maxConcurrency);
 
+    const chunkPromises: Promise<void>[] = [];
+
     for (let i = 0; i < chunks.length; i++) {
       const chunkIndex = i;
       const chunk = chunks[i];
@@ -198,7 +207,10 @@ export class BatchProcessor {
 
           for (const result of chunkResults) {
             if (result && typeof result === 'object' && 'error' in result) {
-              chunkErrors.push({ item: chunk[chunkResults.indexOf(result)], error: result.error });
+              const resultError = result.error instanceof Error
+                ? result.error
+                : new Error(String(result.error));
+              chunkErrors.push({ item: chunk[chunkResults.indexOf(result)], error: resultError });
             } else {
               validResults.push(result);
             }
@@ -233,19 +245,15 @@ export class BatchProcessor {
         }
       };
 
-      // Wait for all chunks to complete
       if (mergedOptions.maxConcurrency > 1) {
-        // Process in parallel with concurrency limit
-        const processPromise = processChunk();
-
-        if (i === chunks.length - 1) {
-          // Wait for the last chunk
-          await processPromise;
-        }
+        chunkPromises.push(processChunk());
       } else {
-        // Process sequentially
         await processChunk();
       }
+    }
+
+    if (chunkPromises.length > 0) {
+      await Promise.all(chunkPromises);
     }
 
     const totalTime = performance.now() - startTime;
@@ -256,9 +264,9 @@ export class BatchProcessor {
       totalErrors,
       metrics: {
         totalProcessingTime: totalTime,
-        averageBatchTime: totalTime / chunks.length,
-        itemsPerSecond: items.length / (totalTime / 1000),
-        successRate: allResults.length / items.length
+        averageBatchTime: chunks.length > 0 ? totalTime / chunks.length : 0,
+        itemsPerSecond: totalTime > 0 ? items.length / (totalTime / 1000) : 0,
+        successRate: items.length > 0 ? allResults.length / items.length : 1
       }
     };
 
@@ -335,7 +343,7 @@ export class BatchProcessor {
         processed,
         successful,
         failed,
-        percentage: (processed / total) * 100,
+        percentage: total > 0 ? (processed / total) * 100 : 100,
         currentBatch: Math.ceil(processed / this.config.batchSize),
         totalBatches: Math.ceil(total / this.config.batchSize),
         estimatedTimeRemaining,
@@ -452,7 +460,7 @@ export class BatchProcessor {
         totalProcessingTime: 0, // Will be set by caller
         averageBatchTime: 0,    // Will be set by caller
         itemsPerSecond: 0,      // Will be set by caller
-        successRate: successful / processed
+        successRate: processed > 0 ? successful / processed : 1
       }
     };
   }

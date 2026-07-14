@@ -9,31 +9,59 @@ import { useUnifiedCompanyAccess } from "@/hooks/useUnifiedCompanyAccess";
 import { Customer, CustomerFormData, CustomerFilters } from '@/types/customer';
 import { useMemo } from 'react';
 import { queryKeys } from "@/utils/queryKeys";
-import { useOptimisticUpdate, createOptimisticAdd, createOptimisticUpdate } from "@/hooks/useOptimisticUpdates";
+import type { Database } from '@/integrations/supabase/types';
+
+type CustomerInsert = Database['public']['Tables']['customers']['Insert'];
+type CustomerUpdate = Database['public']['Tables']['customers']['Update'];
 
 // Re-export types for compatibility
 export type { Customer, CustomerFormData, CustomerFilters };
 
 export const useCustomers = (filters?: CustomerFilters) => {
-  const { user } = useAuth();
   const { companyId, filter, isBrowsingMode, browsedCompany, hasGlobalAccess } = useUnifiedCompanyAccess();
 
   // Memoize filters to prevent unnecessary re-queries
-  const memoizedFilters = useMemo(() => filters, [
-    filters?.search,
-    filters?.searchTerm,
-    filters?.customer_type,
-    filters?.is_blacklisted,
-    filters?.includeInactive,
-    filters?.limit,
-    filters?.page,
-    filters?.pageSize
+  const search = filters?.search;
+  const searchTerm = filters?.searchTerm;
+  const customerType = filters?.customer_type;
+  const isBlacklisted = filters?.is_blacklisted;
+  const includeInactive = filters?.includeInactive;
+  const limit = filters?.limit;
+  const page = filters?.page;
+  const pageSize = filters?.pageSize;
+  const customerCode = filters?.customer_code;
+  const memoizedFilters = useMemo<CustomerFilters | undefined>(() => {
+    const normalized: CustomerFilters = {
+      search,
+      searchTerm,
+      customer_type: customerType,
+      is_blacklisted: isBlacklisted,
+      includeInactive,
+      limit,
+      page,
+      pageSize,
+      customer_code: customerCode,
+    };
+
+    return Object.values(normalized).some(value => value !== undefined)
+      ? normalized
+      : undefined;
+  }, [
+    search,
+    searchTerm,
+    customerType,
+    isBlacklisted,
+    includeInactive,
+    limit,
+    page,
+    pageSize,
+    customerCode,
   ]);
 
   return useQuery({
     queryKey: queryKeys.customers.list({
       ...memoizedFilters,
-      companyId,
+      companyId: companyId ?? undefined,
     }),
     queryFn: async ({ signal }) => {
       Sentry.addBreadcrumb({ category: "customers", message: "Fetching customers", level: "info" });
@@ -359,26 +387,26 @@ export const useCreateCustomer = () => {
 
       // تحديد الشركة
       const isSuperAdmin = user?.roles?.includes('super_admin');
-      let companyId: string;
+      const resolvedCompanyId = isSuperAdmin && customerData.selectedCompanyId
+        ? customerData.selectedCompanyId
+        : user?.profile?.company_id || user?.company?.id;
 
       if (isSuperAdmin && customerData.selectedCompanyId) {
-        companyId = customerData.selectedCompanyId;
-        console.log('🏢 Using selected company ID for super admin:', companyId);
+        console.log('🏢 Using selected company ID for super admin:', resolvedCompanyId);
       } else {
-        companyId = user?.profile?.company_id || user?.company?.id;
-        console.log('🏢 Using user company ID:', companyId);
+        console.log('🏢 Using user company ID:', resolvedCompanyId);
       }
 
-      if (!companyId) {
+      if (!resolvedCompanyId) {
         throw new Error('لا يمكن تحديد الشركة. يرجى التأكد من صحة البيانات.');
       }
 
       // إعداد البيانات للإرسال
       const { selectedCompanyId, ...customerDataToSend } = customerData;
       
-      const finalData = {
+      const finalData: CustomerInsert = {
         ...customerDataToSend,
-        company_id: companyId,
+        company_id: resolvedCompanyId,
         is_active: true,
         is_blacklisted: false,
         credit_limit: customerDataToSend.credit_limit || 0,
@@ -484,7 +512,7 @@ export const useUpdateCustomer = () => {
       const { selectedCompanyId, ...cleanData } = data;
       const updateData = Object.fromEntries(
         Object.entries(cleanData).filter(([_, value]) => value !== undefined)
-      );
+      ) as CustomerUpdate;
       
       console.log('📤 Sending update data to database:', updateData);
       
@@ -653,7 +681,7 @@ export const useCustomer = (customerId: string, options?: { enabled?: boolean })
         console.log('✅ Customer data fetched successfully:', customerData);
 
         // Try to fetch customer accounts separately (optional)
-        let customerAccounts = [];
+        let customerAccounts: Array<Record<string, unknown>> = [];
         try {
           const { data: accountsData, error: accountsError } = await supabase
             .from('customer_accounts')
@@ -693,135 +721,26 @@ export const useCustomer = (customerId: string, options?: { enabled?: boolean })
 };
 
 export const useCustomerNotes = (customerId: string, options?: { enabled?: boolean }) => {
+  const { companyId, getQueryKey } = useUnifiedCompanyAccess();
+
   return useQuery({
-    queryKey: queryKeys.customers.notes(customerId),
+    queryKey: getQueryKey(['customer-notes'], [customerId]),
     queryFn: async ({ signal }) => {
-      const companyId = user?.profile?.company_id || user?.company?.id;
+      if (!companyId || !customerId) return [];
 
-      console.log('🔍 Running customer diagnostics for user:', user?.id);
-      console.log('🏢 Company ID:', companyId);
+      const { data, error } = await supabase
+        .from('customer_notes')
+        .select('*')
+        .eq('customer_id', customerId)
+        .eq('company_id', companyId)
+        .order('created_at', { ascending: false })
+        .abortSignal(signal);
 
-      const diagnostics = {
-        userInfo: {
-          id: user?.id || 'غير متاح',
-          email: user?.email || 'غير متاح',
-          roles: user?.roles || [],
-          hasProfile: !!user?.profile,
-          profileCompanyId: user?.profile?.company_id || null,
-          userCompanyId: user?.company?.id || null
-        },
-        permissions: {
-          isSuperAdmin: user?.roles?.includes('super_admin') || false,
-          isCompanyAdmin: user?.roles?.includes('company_admin') || false,
-          isManager: user?.roles?.includes('manager') || false,
-          isSalesAgent: user?.roles?.includes('sales_agent') || false,
-          companyId: companyId || null,
-          canCreateCustomers: !!(
-            user?.roles?.includes('super_admin') ||
-            user?.roles?.includes('company_admin') ||
-            user?.roles?.includes('manager') ||
-            user?.roles?.includes('sales_agent')
-          )
-        },
-        database: {
-          companyExists: null as boolean | null,
-          canAccessCustomers: null as boolean | null,
-          canInsertCustomers: null as boolean | null,
-          error: null as string | null
-        }
-      };
-
-      // Test database access if we have a company ID
-      if (companyId) {
-        try {
-          console.log('🔍 Testing database access...');
-          
-          // Check if company exists
-          const { data: companyData, error: companyError } = await supabase
-            .from('companies')
-            .select('id')
-            .eq('id', companyId)
-            .abortSignal(signal)
-            .single();
-
-          if (companyError && companyError.code !== 'PGRST116') {
-            diagnostics.database.error = companyError.message;
-            console.error('❌ Company check error:', companyError);
-          } else {
-            diagnostics.database.companyExists = !!companyData;
-            console.log('✅ Company exists:', !!companyData);
-          }
-
-          // Test customer access
-          const { data: customerData, error: customerError } = await supabase
-            .from('customers')
-            .select('id')
-            .eq('company_id', companyId)
-            .limit(1)
-            .abortSignal(signal);
-
-          if (customerError) {
-            diagnostics.database.canAccessCustomers = false;
-            if (!diagnostics.database.error) {
-              diagnostics.database.error = customerError.message;
-            }
-            console.error('❌ Customer access error:', customerError);
-          } else {
-            diagnostics.database.canAccessCustomers = true;
-            console.log('✅ Can access customers');
-          }
-
-          // Test customer insertion (dry run)
-          const testCustomer = {
-            company_id: companyId,
-            customer_type: 'individual' as const,
-            first_name: 'Test',
-            last_name: 'User',
-            phone: '12345678',
-            is_active: true,
-            is_blacklisted: false,
-            credit_limit: 0,
-            city: 'Kuwait City',
-            country: 'Kuwait'
-          };
-
-          const { data: insertData, error: insertError } = await supabase
-            .from('customers')
-            .insert([testCustomer])
-            .select()
-            .abortSignal(signal)
-            .single();
-
-          if (insertError) {
-            diagnostics.database.canInsertCustomers = false;
-            if (!diagnostics.database.error) {
-              diagnostics.database.error = insertError.message;
-            }
-            console.error('❌ Customer insert test error:', insertError);
-          } else {
-            diagnostics.database.canInsertCustomers = true;
-            console.log('✅ Can insert customers');
-            
-            // Clean up test customer
-            await supabase
-              .from('customers')
-              .delete()
-              .eq('id', insertData.id)
-              .abortSignal(signal);
-            console.log('🧹 Test customer cleaned up');
-          }
-
-        } catch (error: unknown) {
-          diagnostics.database.error = error instanceof Error ? error.message : String(error);
-          console.error('❌ Database diagnostics error:', error);
-        }
-      }
-
-      console.log('📊 Diagnostics complete:', diagnostics);
-      return diagnostics;
+      if (error) throw error;
+      return data ?? [];
     },
-    enabled: !!user,
-    staleTime: 30 * 1000, // 30 seconds
-    gcTime: 60 * 1000, // 1 minute
+    enabled: options?.enabled !== false && !!companyId && !!customerId,
+    staleTime: 3 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
   });
 };

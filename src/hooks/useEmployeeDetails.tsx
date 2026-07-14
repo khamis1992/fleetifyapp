@@ -5,44 +5,71 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 
 export const useEmployeeDetails = (employeeId: string) => {
+  const { user } = useAuth();
+  const companyId = user?.profile?.company_id || user?.company?.id;
+
   // Fetch employee profile
   const { data: employee, isLoading: employeeLoading } = useQuery({
-    queryKey: ['employee-details', employeeId],
+    queryKey: ['employee-details', companyId, employeeId],
     queryFn: async () => {
+      if (!companyId) throw new Error('Company ID is required');
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', employeeId)
+        .eq('company_id', companyId)
         .single();
 
       if (error) throw error;
       return data;
     },
-    enabled: !!employeeId,
+    enabled: !!companyId && !!employeeId,
   });
 
   // Fetch employee performance
   const { data: performance, isLoading: performanceLoading } = useQuery({
-    queryKey: ['employee-performance-details', employeeId],
+    queryKey: ['employee-performance-details', companyId, employeeId],
     queryFn: async () => {
+      if (!companyId) throw new Error('Company ID is required');
       const { data, error } = await supabase
         .from('employee_performance_view')
         .select('*')
         .eq('employee_id', employeeId)
+        .eq('company_id', companyId)
         .single();
 
       if (error) throw error;
       return data;
     },
-    enabled: !!employeeId,
+    enabled: !!companyId && !!employeeId,
+  });
+
+  const { data: performanceHistory, isLoading: historyLoading } = useQuery({
+    queryKey: ['employee-performance-history', companyId, employeeId],
+    queryFn: async () => {
+      if (!companyId) throw new Error('Company ID is required');
+      const { data, error } = await supabase
+        .from('employee_performance')
+        .select('period_start, performance_score, collection_rate, followup_completion_rate')
+        .eq('employee_id', employeeId)
+        .eq('company_id', companyId)
+        .order('period_start', { ascending: true })
+        .limit(12);
+
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!companyId && !!employeeId,
   });
 
   // Fetch assigned contracts
   const { data: contracts, isLoading: contractsLoading } = useQuery({
-    queryKey: ['employee-contracts-details', employeeId],
+    queryKey: ['employee-contracts-details', companyId, employeeId],
     queryFn: async () => {
+      if (!companyId) throw new Error('Company ID is required');
       const { data, error } = await supabase
         .from('contracts')
         .select(`
@@ -62,19 +89,21 @@ export const useEmployeeDetails = (employeeId: string) => {
           )
         `)
         .eq('assigned_to_profile_id', employeeId)
+        .eq('company_id', companyId)
         .neq('status', 'cancelled')
         .order('assigned_at', { ascending: false });
 
       if (error) throw error;
       return data;
     },
-    enabled: !!employeeId,
+    enabled: !!companyId && !!employeeId,
   });
 
   // Fetch scheduled tasks
   const { data: tasks, isLoading: tasksLoading } = useQuery({
-    queryKey: ['employee-tasks-details', employeeId],
+    queryKey: ['employee-tasks-details', companyId, employeeId],
     queryFn: async () => {
+      if (!companyId) throw new Error('Company ID is required');
       const { data, error } = await supabase
         .from('scheduled_followups')
         .select(`
@@ -95,20 +124,22 @@ export const useEmployeeDetails = (employeeId: string) => {
           )
         `)
         .eq('assigned_to', employeeId)
+        .eq('company_id', companyId)
         .order('scheduled_date', { ascending: true })
         .limit(20);
 
       if (error) throw error;
       return data;
     },
-    enabled: !!employeeId,
+    enabled: !!companyId && !!employeeId,
   });
 
-  const isLoading = employeeLoading || performanceLoading || contractsLoading || tasksLoading;
+  const isLoading = employeeLoading || performanceLoading || historyLoading || contractsLoading || tasksLoading;
 
   return {
     employee,
     performance,
+    performanceHistory,
     contracts,
     tasks,
     isLoading,

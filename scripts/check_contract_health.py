@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """Check contract dates and health analysis expectations."""
 import psycopg2
+from db_connection import get_database_url
 
-conn = psycopg2.connect('postgresql://postgres.qwhunliohlkkahbspfiu:Khamees1992#@aws-0-eu-north-1.pooler.supabase.com:6543/postgres')
+conn = psycopg2.connect(get_database_url())
 conn.autocommit = True
 cur = conn.cursor()
 

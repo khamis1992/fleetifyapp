@@ -1,381 +1,231 @@
-import React, { useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import React, { useEffect, useMemo, useState } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { Car, Check, CreditCard, Edit, FileText, Plus, Star, Users } from 'lucide-react';
+import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
+import type { Database } from '@/integrations/supabase/types';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
-import { CreditCard, Plus, Edit, Trash2, Check, Users, Star, Car, FileText } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
+import { Textarea } from '@/components/ui/textarea';
 
-interface SubscriptionPlan {
-  id: string;
+type PlanRow = Database['public']['Tables']['subscription_plans']['Row'];
+type PlanInsert = Database['public']['Tables']['subscription_plans']['Insert'];
+type PlanUpdate = Database['public']['Tables']['subscription_plans']['Update'];
+
+interface PlanFormState {
   name: string;
   name_ar: string;
   description: string;
   price_monthly: number;
   price_yearly: number;
-  features: string[];
   max_users: number;
   max_vehicles: number;
   max_contracts: number;
-  max_companies?: number;
-  is_popular: boolean;
+  features: string;
+  is_default: boolean;
   is_active: boolean;
-  created_at: string;
 }
 
+const emptyForm: PlanFormState = {
+  name: '',
+  name_ar: '',
+  description: '',
+  price_monthly: 0,
+  price_yearly: 0,
+  max_users: 5,
+  max_vehicles: 10,
+  max_contracts: 20,
+  features: '',
+  is_default: false,
+  is_active: true,
+};
+
+const parseFeatures = (features: PlanRow['features']): string[] =>
+  Array.isArray(features) ? features.filter((feature): feature is string => typeof feature === 'string') : [];
+
+const toFormState = (plan: PlanRow | null): PlanFormState => plan ? {
+  name: plan.name,
+  name_ar: plan.name_ar || '',
+  description: plan.description || '',
+  price_monthly: Number(plan.price_monthly ?? plan.price ?? 0),
+  price_yearly: Number(plan.price_yearly || 0),
+  max_users: Number(plan.max_users ?? -1),
+  max_vehicles: Number(plan.max_vehicles ?? -1),
+  max_contracts: Number(plan.max_contracts ?? -1),
+  features: parseFeatures(plan.features).join('\n'),
+  is_default: Boolean(plan.is_default),
+  is_active: plan.is_active !== false,
+} : emptyForm;
+
+const numberField = (value: string) => Number.isFinite(Number(value)) ? Number(value) : 0;
+
 export const SubscriptionPlansManager: React.FC = () => {
-  const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editingPlan, setEditingPlan] = useState<SubscriptionPlan | null>(null);
+  const [editingPlan, setEditingPlan] = useState<PlanRow | null>(null);
+  const [formData, setFormData] = useState<PlanFormState>(emptyForm);
 
-  // Mock data - in real app this would come from useSubscriptionPlans hook
-  const [plans, setPlans] = useState<SubscriptionPlan[]>([
-    {
-      id: '1',
-      name: 'Basic Pack',
-      name_ar: 'باقة أساسية',
-      description: 'خطة مناسبة للشركات الصغيرة والناشئة',
-      price_monthly: 100,
-      price_yearly: 1000,
-      features: ['15 مستخدم', '30 مركبة', '50 عقد', 'تقارير أساسية', 'دعم فني'],
-      max_users: 15,
-      max_vehicles: 30,
-      max_contracts: 50,
-      is_popular: false,
-      is_active: true,
-      created_at: '2024-01-01'
+  const { data: plans = [], isLoading, error } = useQuery({
+    queryKey: ['subscription-plans-admin'],
+    queryFn: async () => {
+      const { data, error: queryError } = await supabase
+        .from('subscription_plans')
+        .select('*')
+        .order('price', { ascending: true });
+      if (queryError) throw queryError;
+      return data;
     },
-    {
-      id: '2',
-      name: 'Small Business',
-      name_ar: 'الأعمال الصغيرة',
-      description: 'خطة مناسبة للشركات المتوسطة',
-      price_monthly: 250,
-      price_yearly: 2500,
-      features: ['50 مستخدم', '100 مركبة', '200 عقد', 'تقارير متقدمة', 'دعم فني أولوية'],
-      max_users: 50,
-      max_vehicles: 100,
-      max_contracts: 200,
-      is_popular: true,
-      is_active: true,
-      created_at: '2024-01-01'
-    },
-    {
-      id: '3',
-      name: 'Enhanced',
-      name_ar: 'محسن',
-      description: 'خطة مناسبة للشركات الكبيرة والمؤسسات',
-      price_monthly: 500,
-      price_yearly: 5000,
-      features: ['100 مستخدم', '200 مركبة', '500 عقد', 'تقارير شاملة', 'دعم فني مخصص'],
-      max_users: 100,
-      max_vehicles: 200,
-      max_contracts: 500,
-      is_popular: false,
-      is_active: true,
-      created_at: '2024-01-01'
-    }
-  ]);
+  });
 
-  const handleSavePlan = (planData: Partial<SubscriptionPlan>) => {
-    if (editingPlan) {
-      setPlans(plans.map(p => p.id === editingPlan.id ? { ...p, ...planData } : p));
-      toast({
-        title: "تم تحديث الخطة",
-        description: "تم تحديث خطة الاشتراك بنجاح",
-      });
-    } else {
-      const newPlan: SubscriptionPlan = {
-        id: Date.now().toString(),
-        created_at: new Date().toISOString(),
-        is_active: true,
-        is_popular: false,
-        ...planData
-      } as SubscriptionPlan;
-      setPlans([...plans, newPlan]);
-      toast({
-        title: "تم إنشاء الخطة",
-        description: "تم إنشاء خطة اشتراك جديدة بنجاح",
-      });
-    }
-    setIsDialogOpen(false);
+  useEffect(() => {
+    if (isDialogOpen) setFormData(toFormState(editingPlan));
+  }, [editingPlan, isDialogOpen]);
+
+  const savePlan = useMutation({
+    mutationFn: async ({ plan, values }: { plan: PlanRow | null; values: PlanFormState }) => {
+      const name = values.name.trim();
+      if (!name) throw new Error('اسم الخطة مطلوب');
+      if (values.price_monthly < 0 || values.price_yearly < 0) throw new Error('أسعار الخطة لا يمكن أن تكون سالبة');
+
+      const features = values.features.split('\n').map(feature => feature.trim()).filter(Boolean);
+      const common: PlanUpdate = {
+        name,
+        name_ar: values.name_ar.trim() || null,
+        description: values.description.trim() || null,
+        price: values.price_monthly,
+        price_monthly: values.price_monthly,
+        price_yearly: values.price_yearly,
+        max_users: values.max_users,
+        max_vehicles: values.max_vehicles,
+        max_contracts: values.max_contracts,
+        features,
+        is_default: values.is_default,
+        is_active: values.is_active,
+        updated_at: new Date().toISOString(),
+      };
+
+      if (plan) {
+        const { data, error: updateError } = await supabase
+          .from('subscription_plans')
+          .update(common)
+          .eq('id', plan.id)
+          .select()
+          .single();
+        if (updateError) throw updateError;
+        return data;
+      }
+
+      const planCodeBase = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'plan';
+      const insert: PlanInsert = {
+        ...common,
+        name,
+        plan_code: `${planCodeBase}-${Date.now().toString().slice(-6)}`,
+        billing_cycle: 'monthly',
+      };
+      const { data, error: insertError } = await supabase
+        .from('subscription_plans')
+        .insert(insert)
+        .select()
+        .single();
+      if (insertError) throw insertError;
+      return data;
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['subscription-plans-admin'] });
+      queryClient.invalidateQueries({ queryKey: ['subscription-plans'] });
+      toast.success(variables.plan ? 'تم تحديث خطة الاشتراك' : 'تم إنشاء خطة الاشتراك');
+      setIsDialogOpen(false);
+      setEditingPlan(null);
+    },
+    onError: (mutationError: Error) => toast.error(mutationError.message),
+  });
+
+  const sortedPlans = useMemo(
+    () => [...plans].sort((left, right) => Number(left.price_monthly ?? left.price) - Number(right.price_monthly ?? right.price)),
+    [plans]
+  );
+
+  const openCreate = () => {
     setEditingPlan(null);
+    setIsDialogOpen(true);
   };
 
-  const PlanFormDialog = () => {
-    const [formData, setFormData] = useState<{
-      name: string;
-      name_ar: string;
-      description: string;
-      price_monthly: number;
-      price_yearly: number;
-      max_users: number;
-      max_vehicles: number;
-      max_contracts: number;
-      features: string;
-      is_popular: boolean;
-      is_active: boolean;
-    }>({
-      name: editingPlan?.name || '',
-      name_ar: editingPlan?.name_ar || '',
-      description: editingPlan?.description || '',
-      price_monthly: editingPlan?.price_monthly || 0,
-      price_yearly: editingPlan?.price_yearly || 0,
-      max_users: editingPlan?.max_users || 5,
-      max_vehicles: editingPlan?.max_vehicles || 10,
-      max_contracts: editingPlan?.max_contracts || 20,
-      features: editingPlan?.features?.join('\n') || '',
-      is_popular: editingPlan?.is_popular || false,
-      is_active: editingPlan?.is_active !== undefined ? editingPlan.is_active : true
-    });
-
-    return (
-      <DialogContent className="sm:max-w-[500px]">
-        <DialogHeader>
-          <DialogTitle>
-            {editingPlan ? 'تعديل خطة الاشتراك' : 'إضافة خطة اشتراك جديدة'}
-          </DialogTitle>
-          <DialogDescription>
-            قم بتعبئة بيانات خطة الاشتراك
-          </DialogDescription>
-        </DialogHeader>
-        
-        <div className="grid gap-4 py-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="name">الاسم (إنجليزي)</Label>
-              <Input
-                id="name"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="name_ar">الاسم (عربي)</Label>
-              <Input
-                id="name_ar"
-                value={formData.name_ar}
-                onChange={(e) => setFormData({ ...formData, name_ar: e.target.value })}
-              />
-            </div>
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="description">الوصف</Label>
-            <Textarea
-              id="description"
-              value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-            />
-          </div>
-          
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="price_monthly">السعر الشهري (د.ك)</Label>
-              <Input
-                id="price_monthly"
-                type="number"
-                value={formData.price_monthly}
-                onChange={(e) => setFormData({ ...formData, price_monthly: Number(e.target.value) })}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="price_yearly">السعر السنوي (د.ك)</Label>
-              <Input
-                id="price_yearly"
-                type="number"
-                value={formData.price_yearly}
-                onChange={(e) => setFormData({ ...formData, price_yearly: Number(e.target.value) })}
-              />
-            </div>
-          </div>
-          
-          <div className="grid grid-cols-3 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="max_users">عدد المستخدمين الأقصى</Label>
-              <Input
-                id="max_users"
-                type="number"
-                value={formData.max_users}
-                onChange={(e) => setFormData({ ...formData, max_users: Number(e.target.value) })}
-                placeholder="-1 للاستخدام غير المحدود"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="max_vehicles">عدد المركبات الأقصى</Label>
-              <Input
-                id="max_vehicles"
-                type="number"
-                value={formData.max_vehicles}
-                onChange={(e) => setFormData({ ...formData, max_vehicles: Number(e.target.value) })}
-                placeholder="-1 للاستخدام غير المحدود"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="max_contracts">عدد العقود الأقصى</Label>
-              <Input
-                id="max_contracts"
-                type="number"
-                value={formData.max_contracts}
-                onChange={(e) => setFormData({ ...formData, max_contracts: Number(e.target.value) })}
-                placeholder="-1 للاستخدام غير المحدود"
-              />
-            </div>
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="features">المميزات (سطر واحد لكل ميزة)</Label>
-            <Textarea
-              id="features"
-              value={formData.features}
-              onChange={(e) => setFormData({ ...formData, features: e.target.value })}
-              placeholder="ميزة 1&#10;ميزة 2&#10;ميزة 3"
-            />
-          </div>
-          
-          <div className="flex items-center space-x-2">
-            <Switch
-              id="is_popular"
-              checked={formData.is_popular}
-              onCheckedChange={(checked) => setFormData({ ...formData, is_popular: Boolean(checked) })}
-            />
-            <Label htmlFor="is_popular">خطة شائعة</Label>
-          </div>
-          
-          <div className="flex items-center space-x-2">
-            <Switch
-              id="is_active"
-              checked={formData.is_active}
-              onCheckedChange={(checked) => setFormData({ ...formData, is_active: Boolean(checked) })}
-            />
-            <Label htmlFor="is_active">نشطة</Label>
-          </div>
-        </div>
-        
-        <div className="flex justify-end gap-2">
-          <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
-            إلغاء
-          </Button>
-          <Button onClick={() => handleSavePlan({
-            ...formData,
-            features: formData.features.split('\n').filter(f => f.trim())
-          })}>
-            {editingPlan ? 'تحديث' : 'إنشاء'}
-          </Button>
-        </div>
-      </DialogContent>
-    );
+  const openEdit = (plan: PlanRow) => {
+    setEditingPlan(plan);
+    setIsDialogOpen(true);
   };
+
+  if (isLoading) return <div className="p-8 text-center text-muted-foreground">جاري تحميل الخطط...</div>;
+  if (error) return <div className="p-8 text-center text-destructive">تعذر تحميل خطط الاشتراك</div>;
 
   return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="flex items-center gap-2">
-                <CreditCard className="h-5 w-5 text-primary" />
-                إدارة خطط الاشتراك
-              </CardTitle>
-              <CardDescription>
-                إنشاء وتعديل خطط الاشتراك المتاحة للشركات
-              </CardDescription>
-            </div>
-            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-              <DialogTrigger asChild>
-                <Button onClick={() => setEditingPlan(null)}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  إضافة خطة جديدة
-                </Button>
-              </DialogTrigger>
-              <PlanFormDialog />
-            </Dialog>
+    <div className="space-y-5">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h2 className="flex items-center gap-2 text-xl font-semibold"><CreditCard className="h-5 w-5" />إدارة خطط الاشتراك</h2>
+          <p className="text-sm text-muted-foreground">الخطط المحفوظة فعليًا في قاعدة البيانات</p>
+        </div>
+        <Button onClick={openCreate}><Plus className="ml-2 h-4 w-4" />إضافة خطة</Button>
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        {sortedPlans.map(plan => {
+          const features = parseFeatures(plan.features);
+          const monthlyPrice = Number(plan.price_monthly ?? plan.price ?? 0);
+          return (
+            <Card key={plan.id} className={plan.is_default ? 'border-primary' : undefined}>
+              <CardHeader>
+                <div className="flex items-start justify-between gap-3">
+                  <div><CardTitle>{plan.name_ar || plan.name}</CardTitle><CardDescription>{plan.description || plan.name}</CardDescription></div>
+                  {plan.is_default && <Badge><Star className="ml-1 h-3 w-3" />افتراضية</Badge>}
+                </div>
+                <p className="text-2xl font-bold">{monthlyPrice.toLocaleString('ar-QA')} ر.ق <span className="text-sm font-normal text-muted-foreground">/ شهر</span></p>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-3 gap-2 text-sm">
+                  <span className="flex items-center gap-1"><Users className="h-4 w-4" />{plan.max_users ?? 'غير محدد'}</span>
+                  <span className="flex items-center gap-1"><Car className="h-4 w-4" />{plan.max_vehicles ?? 'غير محدد'}</span>
+                  <span className="flex items-center gap-1"><FileText className="h-4 w-4" />{plan.max_contracts ?? 'غير محدد'}</span>
+                </div>
+                <div className="space-y-1">
+                  {features.slice(0, 6).map(feature => <p key={feature} className="flex items-center gap-2 text-sm"><Check className="h-3 w-3 text-green-600" />{feature}</p>)}
+                  {!features.length && <p className="text-sm text-muted-foreground">لا توجد مزايا مسجلة</p>}
+                </div>
+                <div className="flex items-center justify-between border-t pt-3">
+                  <Badge variant={plan.is_active === false ? 'secondary' : 'default'}>{plan.is_active === false ? 'غير نشطة' : 'نشطة'}</Badge>
+                  <Button variant="ghost" size="icon" onClick={() => openEdit(plan)} title="تعديل الخطة"><Edit className="h-4 w-4" /></Button>
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })}
+        {!sortedPlans.length && <p className="py-10 text-center text-muted-foreground md:col-span-2 xl:col-span-3">لا توجد خطط اشتراك</p>}
+      </div>
+
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl" dir="rtl">
+          <DialogHeader><DialogTitle>{editingPlan ? 'تعديل خطة الاشتراك' : 'إضافة خطة اشتراك'}</DialogTitle><DialogDescription>تُحفظ التغييرات مباشرة في قاعدة البيانات.</DialogDescription></DialogHeader>
+          <div className="grid gap-4 py-3 sm:grid-cols-2">
+            <div className="space-y-2"><Label htmlFor="plan-name">الاسم الإنجليزي</Label><Input id="plan-name" value={formData.name} onChange={event => setFormData(current => ({ ...current, name: event.target.value }))} /></div>
+            <div className="space-y-2"><Label htmlFor="plan-name-ar">الاسم العربي</Label><Input id="plan-name-ar" value={formData.name_ar} onChange={event => setFormData(current => ({ ...current, name_ar: event.target.value }))} /></div>
+            <div className="space-y-2 sm:col-span-2"><Label htmlFor="plan-description">الوصف</Label><Textarea id="plan-description" value={formData.description} onChange={event => setFormData(current => ({ ...current, description: event.target.value }))} /></div>
+            <div className="space-y-2"><Label htmlFor="monthly-price">السعر الشهري</Label><Input id="monthly-price" type="number" min="0" value={formData.price_monthly} onChange={event => setFormData(current => ({ ...current, price_monthly: numberField(event.target.value) }))} /></div>
+            <div className="space-y-2"><Label htmlFor="yearly-price">السعر السنوي</Label><Input id="yearly-price" type="number" min="0" value={formData.price_yearly} onChange={event => setFormData(current => ({ ...current, price_yearly: numberField(event.target.value) }))} /></div>
+            <div className="space-y-2"><Label htmlFor="max-users">حد المستخدمين</Label><Input id="max-users" type="number" min="-1" value={formData.max_users} onChange={event => setFormData(current => ({ ...current, max_users: numberField(event.target.value) }))} /></div>
+            <div className="space-y-2"><Label htmlFor="max-vehicles">حد المركبات</Label><Input id="max-vehicles" type="number" min="-1" value={formData.max_vehicles} onChange={event => setFormData(current => ({ ...current, max_vehicles: numberField(event.target.value) }))} /></div>
+            <div className="space-y-2"><Label htmlFor="max-contracts">حد العقود</Label><Input id="max-contracts" type="number" min="-1" value={formData.max_contracts} onChange={event => setFormData(current => ({ ...current, max_contracts: numberField(event.target.value) }))} /></div>
+            <div className="space-y-2 sm:col-span-2"><Label htmlFor="plan-features">المزايا، ميزة في كل سطر</Label><Textarea id="plan-features" rows={5} value={formData.features} onChange={event => setFormData(current => ({ ...current, features: event.target.value }))} /></div>
+            <div className="flex items-center gap-2"><Switch id="plan-default" checked={formData.is_default} onCheckedChange={checked => setFormData(current => ({ ...current, is_default: checked }))} /><Label htmlFor="plan-default">الخطة الافتراضية</Label></div>
+            <div className="flex items-center gap-2"><Switch id="plan-active" checked={formData.is_active} onCheckedChange={checked => setFormData(current => ({ ...current, is_active: checked }))} /><Label htmlFor="plan-active">نشطة</Label></div>
           </div>
-        </CardHeader>
-        
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {plans.map((plan) => (
-              <Card key={plan.id} className={`relative ${plan.is_popular ? 'ring-2 ring-primary' : ''}`}>
-                {plan.is_popular && (
-                  <div className="absolute -top-2 left-1/2 transform -translate-x-1/2">
-                    <Badge className="bg-primary text-primary-foreground">
-                      <Star className="h-3 w-3 mr-1" />
-                      الأكثر شعبية
-                    </Badge>
-                  </div>
-                )}
-                
-                <CardHeader className="text-center">
-                  <CardTitle className="text-xl">{plan.name_ar}</CardTitle>
-                  <CardDescription>{plan.description}</CardDescription>
-                  <div className="mt-4">
-                    <div className="text-3xl font-bold">
-                      {plan.price_monthly} د.ك
-                      <span className="text-base font-normal text-muted-foreground">/شهر</span>
-                    </div>
-                    <div className="text-sm text-muted-foreground">
-                      أو {plan.price_yearly} د.ك سنوياً
-                    </div>
-                  </div>
-                </CardHeader>
-                
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-3 gap-2 text-sm">
-                    <div className="flex items-center gap-1">
-                      <Users className="h-4 w-4 text-muted-foreground" />
-                      <span>{plan.max_users === -1 ? 'غير محدود' : plan.max_users}</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <Car className="h-4 w-4 text-muted-foreground" />
-                      <span>{plan.max_vehicles === -1 ? 'غير محدود' : plan.max_vehicles}</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <FileText className="h-4 w-4 text-muted-foreground" />
-                      <span>{plan.max_contracts === -1 ? 'غير محدود' : plan.max_contracts}</span>
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    {plan.features.map((feature, index) => (
-                      <div key={index} className="flex items-center gap-2 text-sm">
-                        <Check className="h-3 w-3 text-green-600" />
-                        <span>{feature}</span>
-                      </div>
-                    ))}
-                  </div>
-                  
-                  <div className="flex items-center justify-between pt-4">
-                    <Badge variant={plan.is_active ? 'default' : 'secondary'}>
-                      {plan.is_active ? 'نشطة' : 'غير نشطة'}
-                    </Badge>
-                    
-                    <div className="flex items-center gap-2">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => {
-                          setEditingPlan(plan);
-                          setIsDialogOpen(true);
-                        }}
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button variant="ghost" size="sm">
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+          <div className="flex justify-end gap-2"><Button variant="outline" onClick={() => setIsDialogOpen(false)}>إلغاء</Button><Button disabled={savePlan.isPending} onClick={() => savePlan.mutate({ plan: editingPlan, values: formData })}>{savePlan.isPending ? 'جاري الحفظ...' : 'حفظ'}</Button></div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

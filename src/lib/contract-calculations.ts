@@ -253,12 +253,6 @@ export function calculateEnhancedPayment(
         breakdown = { ...usageResult.breakdown, usage_fees: usageResult.usageFees };
         break;
 
-      case 'custom':
-        const customResult = calculateCustomBilling(contract, billingPeriod);
-        baseAmount = customResult.baseAmount;
-        breakdown = { ...customResult.breakdown, custom_fees: customResult.customFees };
-        break;
-
       default: // 'fixed'
         baseAmount = calculateFixedRatePayment(contract, billingPeriod);
         breakdown = {
@@ -534,9 +528,11 @@ function validateContract(contract: Contract): void {
   if (!contract.id) throw new Error('Contract ID is required');
   if (!contract.monthly_rate || contract.monthly_rate < 0) throw new Error('Invalid monthly rate');
   if (!contract.currency) throw new Error('Currency is required');
-  if (!new Date(contract.start_date)) throw new Error('Invalid start date');
-  if (!new Date(contract.end_date)) throw new Error('Invalid end date');
-  if (new Date(contract.end_date) <= new Date(contract.start_date)) throw new Error('End date must be after start date');
+  const startDate = new Date(contract.start_date);
+  const endDate = new Date(contract.end_date);
+  if (Number.isNaN(startDate.getTime())) throw new Error('Invalid start date');
+  if (Number.isNaN(endDate.getTime())) throw new Error('Invalid end date');
+  if (endDate <= startDate) throw new Error('End date must be after start date');
 }
 
 /**
@@ -780,6 +776,8 @@ export function generateContractSummary(
     totalRevenue: totalRevenueResult.totalRevenue,
     depositRequired: contract.financial_terms.deposit_amount,
     currency: contract.currency,
+    billing_frequency: contract.billing_frequency,
+    pricing_model: contract.pricing_model,
     terms: {
       paymentTerms: 'Monthly payments due on the 1st of each month',
       cancellationPolicy: `Early termination fee: ${contract.financial_terms.early_termination_rate * 100}% of remaining contract value`,

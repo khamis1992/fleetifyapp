@@ -55,6 +55,7 @@ import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
+import { revertContractLegalProcedure } from '@/services/contractLegalProcedureService';
 import { calculateDelinquencyAmounts } from '@/utils/calculateDelinquencyAmounts';
 import { formatCustomerName } from '@/utils/formatCustomerName';
 import '@/styles/legal-system.css';
@@ -922,36 +923,11 @@ const FinancialDelinquencyPage: React.FC = () => {
 
     setIsRemovingLegal(true);
     try {
-      const now = new Date().toISOString();
-      const { error: contractError } = await supabase
-        .from('contracts')
-        .update({
-          status: 'active',
-          updated_at: now,
-        })
-        .eq('id', removingItem.contract.id)
-        .eq('company_id', companyId);
-
-      if (contractError) throw contractError;
-
-      const { error: legalCaseError } = await supabase
-        .from('legal_cases')
-        .update({
-          case_status: 'closed',
-          outcome_type: 'dismissed',
-          outcome_date: now.slice(0, 10),
-          outcome_notes: 'تمت إزالة الإجراء القانوني من صفحة الشؤون القانونية.',
-          updated_at: now,
-        })
-        .eq('id', removingItem.legalCaseId)
-        .eq('company_id', companyId);
-
-      if (legalCaseError) throw legalCaseError;
-
-      await supabase
-        .from('delinquent_customers')
-        .delete()
-        .eq('contract_id', removingItem.contract.id);
+      await revertContractLegalProcedure({
+        contractId: removingItem.contract.id,
+        companyId,
+        reason: 'تمت إزالة الإجراء القانوني من صفحة الشؤون القانونية.',
+      });
 
       toast.success('تمت إزالة الإجراء القانوني', {
         description: `تم إرجاع العقد ${removingItem.contract.contract_number} إلى الحالة النشطة وإغلاق القضية المرتبطة.`,
@@ -986,7 +962,7 @@ const FinancialDelinquencyPage: React.FC = () => {
   return (
     <div className="legal-system min-h-screen bg-[#F6F8FB] pb-8 text-right font-sans text-[#020617]" dir="rtl">
       <div className="mx-auto max-w-7xl space-y-5 px-4 py-5 md:px-6">
-        <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div className="flex items-start gap-3">
               <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#22C7A1]/10 text-[#22C7A1]">
@@ -1095,19 +1071,19 @@ const FinancialDelinquencyPage: React.FC = () => {
               </div>
 
               <div className="grid grid-cols-2 gap-2 text-sm md:grid-cols-4">
-                <div className="rounded-xl border border-rose-100 bg-white px-3 py-2">
+                <div className="rounded-lg border border-rose-100 bg-white px-3 py-2">
                   <span className="block text-xs font-bold text-[#94A3B8]">خطر عالي</span>
                   <strong className="text-lg text-rose-600">{aiStats.highRisk}</strong>
                 </div>
-                <div className="rounded-xl border border-[#7C83F6]/20 bg-white px-3 py-2">
+                <div className="rounded-lg border border-[#7C83F6]/20 bg-white px-3 py-2">
                   <span className="block text-xs font-bold text-[#94A3B8]">قابل للتسوية</span>
                   <strong className="text-lg text-[#5B5FE8]">{aiStats.settlement}</strong>
                 </div>
-                <div className="rounded-xl border border-rose-100 bg-white px-3 py-2">
+                <div className="rounded-lg border border-rose-100 bg-white px-3 py-2">
                   <span className="block text-xs font-bold text-[#94A3B8]">تصعيد قانوني</span>
                   <strong className="text-lg text-rose-700">{aiStats.legal}</strong>
                 </div>
-                <div className="rounded-xl border border-emerald-100 bg-white px-3 py-2">
+                <div className="rounded-lg border border-emerald-100 bg-white px-3 py-2">
                   <span className="block text-xs font-bold text-[#94A3B8]">احتمال السداد</span>
                   <strong className="text-lg text-emerald-600">{aiStats.avgProbability}%</strong>
                 </div>
@@ -1148,7 +1124,7 @@ const FinancialDelinquencyPage: React.FC = () => {
                       : MessageSquare;
 
                     return (
-                      <article key={insight.customer.contract_id} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                      <article key={insight.customer.contract_id} className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
                         <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                           <div className="min-w-0">
                             <div className="flex flex-wrap items-center gap-2">
@@ -1174,7 +1150,7 @@ const FinancialDelinquencyPage: React.FC = () => {
                           {insight.reason}
                         </p>
 
-                        <div className="mt-3 rounded-xl border border-slate-200 bg-white p-3">
+                        <div className="mt-3 rounded-lg border border-slate-200 bg-white p-3">
                           <div className="mb-2 flex items-center gap-2 text-sm font-bold text-[#020617]">
                             <MessageSquare className="h-4 w-4 text-[#22C7A1]" />
                             رسالة واتساب مقترحة
@@ -1214,7 +1190,7 @@ const FinancialDelinquencyPage: React.FC = () => {
                 </div>
               </>
             ) : (
-              <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-8 text-center">
+              <div className="rounded-lg border border-dashed border-slate-300 bg-white p-8 text-center">
                 <CheckCircle2 className="mx-auto h-10 w-10 text-[#22C7A1]" />
                 <h3 className="mt-3 text-lg font-black text-[#020617]">لا توجد متأخرات للتحليل</h3>
                 <p className="mt-1 text-sm text-[#94A3B8]">عند ظهور عملاء متأخرين سيعرض النظام أولوية التواصل والتوصية المناسبة هنا.</p>
@@ -1234,7 +1210,7 @@ const FinancialDelinquencyPage: React.FC = () => {
           </TabsList>
 
           <TabsContent value="queue" className="space-y-4">
-            <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+            <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
               <div className="relative">
                 <Search className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#94A3B8]" />
                 <Input
@@ -1247,7 +1223,7 @@ const FinancialDelinquencyPage: React.FC = () => {
             </div>
 
             {filteredQueue.length === 0 ? (
-              <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-10 text-center shadow-sm">
+              <div className="rounded-lg border border-dashed border-slate-300 bg-white p-10 text-center shadow-sm">
                 <ShieldCheck className="mx-auto h-12 w-12 text-[#22C7A1]" />
                 <h2 className="mt-4 text-xl font-bold text-[#020617]">لا توجد عقود محولة قانونيًا</h2>
                 <p className="mt-2 text-sm text-[#94A3B8]">
@@ -1257,7 +1233,7 @@ const FinancialDelinquencyPage: React.FC = () => {
             ) : (
               <div className="grid gap-3">
                 {filteredQueue.map((item) => (
-                  <article key={item.contract.id} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                  <article key={item.contract.id} className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
                     <div className="grid gap-4 lg:grid-cols-[1fr_auto] lg:items-center">
                       <div className="min-w-0 space-y-3">
                         <div className="flex flex-wrap items-center gap-2">
@@ -1338,7 +1314,7 @@ const FinancialDelinquencyPage: React.FC = () => {
           </TabsContent>
 
           <TabsContent value="search" className="space-y-4">
-            <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+            <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
               <div className="grid gap-3 xl:grid-cols-[1fr_auto_auto] xl:items-center">
                 <div className="relative">
                   <Search className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#94A3B8]" />
@@ -1392,12 +1368,12 @@ const FinancialDelinquencyPage: React.FC = () => {
             </section>
 
             {rentSearching || trafficSearching ? (
-              <div className="flex items-center justify-center rounded-2xl border border-slate-200 bg-white p-10 shadow-sm">
+              <div className="flex items-center justify-center rounded-lg border border-slate-200 bg-white p-10 shadow-sm">
                 <Loader2 className="h-6 w-6 animate-spin text-[#22C7A1]" />
                 <span className="mr-3 text-sm font-semibold text-[#94A3B8]">جاري البحث في المرشحين...</span>
               </div>
             ) : candidates.length === 0 ? (
-              <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-10 text-center shadow-sm">
+              <div className="rounded-lg border border-dashed border-slate-300 bg-white p-10 text-center shadow-sm">
                 <CheckCircle2 className="mx-auto h-12 w-12 text-[#22C7A1]" />
                 <h2 className="mt-4 text-xl font-bold text-[#020617]">لا توجد نتائج مطابقة</h2>
                 <p className="mt-2 text-sm text-[#94A3B8]">جرّب اسمًا آخر، رقم عقد، هاتف، أو لوحة مركبة.</p>
@@ -1415,7 +1391,7 @@ const FinancialDelinquencyPage: React.FC = () => {
                     : MessageSquare;
 
                   return (
-                  <article key={candidate.id} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                  <article key={candidate.id} className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
                     <div className="grid gap-4 lg:grid-cols-[1fr_auto] lg:items-center">
                       <div className="min-w-0 space-y-3">
                         <div className="flex flex-wrap items-center gap-2">

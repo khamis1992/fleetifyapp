@@ -36,7 +36,7 @@ export default function Properties() {
                 خريطة العقارات
               </Button>
             </Link>
-            <Link to="/owners">
+            <Link to="/properties/owners">
               <Button size="lg" variant="outline" className="gap-2">
                 <Users className="h-4 w-4" />
                 ملاك العقارات

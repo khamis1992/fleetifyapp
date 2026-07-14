@@ -6,14 +6,14 @@ import { ProfessionalInvoiceTemplate } from '../ProfessionalInvoiceTemplate';
 // Mock the useCurrencyFormatter hook
 vi.mock('@/hooks/useCurrencyFormatter', () => ({
   useCurrencyFormatter: () => ({
-    formatCurrency: (amount: number) => `${amount.toFixed(3)} KWD`
+    formatCurrency: (amount: number) => `${amount.toFixed(3)} QAR`
   })
 }));
 
 // Mock the useCompanyCurrency hook
 vi.mock('@/hooks/useCompanyCurrency', () => ({
   useCompanyCurrency: () => ({
-    currency: 'KWD'
+    currency: 'QAR'
   })
 }));
 
@@ -25,7 +25,7 @@ describe('ProfessionalInvoiceTemplate', () => {
     due_date: "2025-02-15",
     invoice_type: "sales",
     status: "paid",
-    currency: "KWD",
+    currency: "QAR",
     subtotal: 300.000,
     tax_amount: 15.000,
     discount_amount: 0,
@@ -65,8 +65,8 @@ describe('ProfessionalInvoiceTemplate', () => {
     expect(screen.getByText('2')).toBeInTheDocument();
     
     // Check totals
-    expect(screen.getByText('300.000 KWD')).toBeInTheDocument();
-    expect(screen.getByText('315.000 KWD')).toBeInTheDocument();
+    expect(screen.getByText('300.000 QAR')).toBeInTheDocument();
+    expect(screen.getAllByText('315.000 QAR').length).toBeGreaterThan(0);
   });
 
   it('renders status badges with correct colors', () => {
@@ -93,7 +93,7 @@ describe('ProfessionalInvoiceTemplate', () => {
     render(<ProfessionalInvoiceTemplate invoice={mockInvoice} />);
     
     expect(screen.getByText('الدفع خلال 30 يوماً من تاريخ الفاتورة')).toBeInTheDocument();
-    expect(screen.getByText('شكراً لثقتكم في خدماتنا')).toBeInTheDocument();
+    expect(screen.getAllByText('شكراً لثقتكم في خدماتنا').length).toBeGreaterThan(0);
   });
 
   it('handles missing invoice data gracefully', () => {

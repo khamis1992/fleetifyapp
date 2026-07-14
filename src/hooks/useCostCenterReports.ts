@@ -57,7 +57,8 @@ export const useCostCenterFinancialData = (costCenterId: string, period: string)
       const { data: costCenters, error: costCentersError } = await costCentersQuery
       if (costCentersError) throw costCentersError
       
-      // Get journal entry lines with cost center data for the selected period
+      // Use posted journal lines as the period source of truth. The cached
+      // actual_amount on cost_centers is not period-specific.
       const startDate = getStartDateForPeriod(period)
       const endDate = getEndDateForPeriod(period)
       
@@ -65,17 +66,14 @@ export const useCostCenterFinancialData = (costCenterId: string, period: string)
         .from('journal_entry_lines')
         .select(`
           *,
-          journal_entries(
+          journal_entries!inner(
             entry_date,
-            company_id
-          ),
-          cost_centers(
-            id,
-            center_code,
-            center_name
+            company_id,
+            status
           )
         `)
         .eq('journal_entries.company_id', user.profile.company_id)
+        .eq('journal_entries.status', 'posted')
         .gte('journal_entries.entry_date', startDate)
         .lte('journal_entries.entry_date', endDate)
         .not('cost_center_id', 'is', null)
@@ -83,28 +81,52 @@ export const useCostCenterFinancialData = (costCenterId: string, period: string)
       if (journalError) throw journalError
       
       // Calculate totals
+      const actualByCostCenter = new Map<string, number>()
+      const monthlyTotals = new Map<string, number>()
+
+      for (const line of journalLines || []) {
+        if (!line.cost_center_id) continue
+
+        const amount = Number(line.debit_amount || 0) - Number(line.credit_amount || 0)
+        actualByCostCenter.set(
+          line.cost_center_id,
+          (actualByCostCenter.get(line.cost_center_id) || 0) + amount
+        )
+
+        const entry = Array.isArray(line.journal_entries)
+          ? line.journal_entries[0]
+          : line.journal_entries
+        if (entry?.entry_date) {
+          const monthKey = entry.entry_date.slice(0, 7)
+          monthlyTotals.set(monthKey, (monthlyTotals.get(monthKey) || 0) + amount)
+        }
+      }
+
       const totalBudget = costCenters?.reduce((sum, cc) => sum + Number(cc.budget_amount || 0), 0) || 0
-      const totalActual = costCenters?.reduce((sum, cc) => sum + Number(cc.actual_amount || 0), 0) || 0
+      const totalActual = costCenters?.reduce(
+        (sum, cc) => sum + (actualByCostCenter.get(cc.id) || 0),
+        0
+      ) || 0
       const utilizationRate = totalBudget > 0 ? (totalActual / totalBudget) * 100 : 0
       const variance = totalBudget > 0 ? ((totalActual - totalBudget) / totalBudget) * 100 : 0
       
       // Cost center distribution
       const costCenterDistribution = costCenters?.map(cc => ({
         name: cc.center_name,
-        value: Number(cc.actual_amount || 0)
+        value: actualByCostCenter.get(cc.id) || 0
       })) || []
       
       // Budget vs Actual
       const budgetVsActual = costCenters?.map(cc => ({
         name: cc.center_name,
         budget: Number(cc.budget_amount || 0),
-        actual: Number(cc.actual_amount || 0)
+        actual: actualByCostCenter.get(cc.id) || 0
       })) || []
       
       // Performance data
       const performanceData = costCenters?.map(cc => {
         const budget = Number(cc.budget_amount || 0)
-        const actual = Number(cc.actual_amount || 0)
+        const actual = actualByCostCenter.get(cc.id) || 0
         const remaining = budget - actual
         const utilization = budget > 0 ? (actual / budget) * 100 : 0
         
@@ -122,7 +144,7 @@ export const useCostCenterFinancialData = (costCenterId: string, period: string)
       // Variance analysis
       const varianceAnalysis = costCenters?.map(cc => {
         const budget = Number(cc.budget_amount || 0)
-        const actual = Number(cc.actual_amount || 0)
+        const actual = actualByCostCenter.get(cc.id) || 0
         const variance = budget > 0 ? ((actual - budget) / budget) * 100 : 0
         
         return {
@@ -131,15 +153,17 @@ export const useCostCenterFinancialData = (costCenterId: string, period: string)
         }
       }) || []
       
-      // Monthly trends (mock data for now - would need more complex query)
-      const monthlyTrends = [
-        { month: 'يناير', amount: totalActual * 0.8 },
-        { month: 'فبراير', amount: totalActual * 0.9 },
-        { month: 'مارس', amount: totalActual * 1.1 },
-        { month: 'أبريل', amount: totalActual * 1.0 },
-        { month: 'مايو', amount: totalActual * 0.95 },
-        { month: 'يونيو', amount: totalActual * 1.05 }
-      ]
+      const monthFormatter = new Intl.DateTimeFormat('ar-QA', {
+        month: 'short',
+        year: 'numeric',
+        timeZone: 'UTC'
+      })
+      const monthlyTrends = Array.from(monthlyTotals.entries())
+        .sort(([left], [right]) => left.localeCompare(right))
+        .map(([monthKey, amount]) => ({
+          month: monthFormatter.format(new Date(`${monthKey}-01T00:00:00Z`)),
+          amount
+        }))
       
       return {
         totalBudget,
@@ -163,12 +187,14 @@ function getStartDateForPeriod(period: string): string {
   switch (period) {
     case 'current-month':
       return new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0]
-    case 'last-month':
+    case 'last-month': {
       const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1)
       return lastMonth.toISOString().split('T')[0]
-    case 'current-quarter':
+    }
+    case 'current-quarter': {
       const quarter = Math.floor(now.getMonth() / 3)
       return new Date(now.getFullYear(), quarter * 3, 1).toISOString().split('T')[0]
+    }
     case 'current-year':
       return new Date(now.getFullYear(), 0, 1).toISOString().split('T')[0]
     default:
@@ -184,9 +210,10 @@ function getEndDateForPeriod(period: string): string {
       return new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0]
     case 'last-month':
       return new Date(now.getFullYear(), now.getMonth(), 0).toISOString().split('T')[0]
-    case 'current-quarter':
+    case 'current-quarter': {
       const quarter = Math.floor(now.getMonth() / 3)
       return new Date(now.getFullYear(), (quarter + 1) * 3, 0).toISOString().split('T')[0]
+    }
     case 'current-year':
       return new Date(now.getFullYear(), 11, 31).toISOString().split('T')[0]
     default:
@@ -208,6 +235,7 @@ export const useCostCenterAnalysis = (costCenterId: string) => {
         .from('cost_centers')
         .select('*')
         .eq('id', costCenterId)
+        .eq('company_id', user.profile.company_id)
         .single()
       
       if (centerError) throw centerError
@@ -217,10 +245,11 @@ export const useCostCenterAnalysis = (costCenterId: string) => {
         .from('journal_entry_lines')
         .select(`
           *,
-          journal_entries(
+          journal_entries!inner(
             entry_date,
             description,
-            entry_number
+            entry_number,
+            company_id
           ),
           chart_of_accounts(
             account_name,
@@ -229,6 +258,7 @@ export const useCostCenterAnalysis = (costCenterId: string) => {
           )
         `)
         .eq('cost_center_id', costCenterId)
+        .eq('journal_entries.company_id', user.profile.company_id)
         .order('journal_entries.entry_date', { ascending: false })
       
       if (journalError) throw journalError
@@ -245,6 +275,7 @@ export const useCostCenterAnalysis = (costCenterId: string) => {
           )
         `)
         .eq('cost_center_id', costCenterId)
+        .eq('company_id', user.profile.company_id)
       
       if (contractsError) throw contractsError
       

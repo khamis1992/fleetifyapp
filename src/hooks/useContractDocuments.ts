@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 
 export interface ContractDocument {
   id: string;
@@ -9,16 +10,16 @@ export interface ContractDocument {
   contract_id: string;
   document_type: string;
   document_name: string;
-  file_path?: string;
-  file_size?: number;
-  mime_type?: string;
-  uploaded_by?: string;
-  uploaded_at: string;
-  notes?: string;
-  is_required: boolean;
-  condition_report_id?: string;
-  created_at: string;
-  updated_at: string;
+  file_path?: string | null;
+  file_size?: number | null;
+  mime_type?: string | null;
+  uploaded_by?: string | null;
+  uploaded_at: string | null;
+  notes?: string | null;
+  is_required: boolean | null;
+  condition_report_id?: string | null;
+  created_at: string | null;
+  updated_at: string | null;
   // Added field to distinguish document source bucket
   sourceBucket?: 'contract-documents' | 'documents';
 }
@@ -35,6 +36,7 @@ export interface CreateDocumentData {
 
 export function useContractDocuments(contractId?: string, customerId?: string, vehicleId?: string) {
   const { user } = useAuth();
+  const { companyId } = useUnifiedCompanyAccess();
 
   return useQuery({
     queryKey: ['contract-documents', contractId, customerId, vehicleId],
@@ -48,6 +50,7 @@ export function useContractDocuments(contractId?: string, customerId?: string, v
           .from('contract_documents')
           .select('id, company_id, contract_id, document_type, document_name, file_path, file_size, mime_type, uploaded_by, uploaded_at, notes, is_required, condition_report_id, created_at, updated_at')
           .eq('contract_id', contractId)
+          .eq('company_id', companyId!)
           .order('created_at', { ascending: false }),
         
         // Fetch customer documents (only if customerId provided)
@@ -56,6 +59,7 @@ export function useContractDocuments(contractId?: string, customerId?: string, v
               .from('customer_documents')
               .select('id, company_id, document_type, document_name, file_path, file_size, mime_type, uploaded_by, uploaded_at, notes, is_required, created_at, updated_at')
               .eq('customer_id', customerId)
+              .eq('company_id', companyId!)
               .order('created_at', { ascending: false })
           : Promise.resolve({ data: null, error: null }),
         
@@ -63,7 +67,7 @@ export function useContractDocuments(contractId?: string, customerId?: string, v
         vehicleId
           ? supabase
               .from('vehicle_documents')
-              .select('id, company_id, document_type, document_name, document_url, created_at, updated_at')
+              .select('id, document_type, document_name, document_url, created_at, updated_at')
               .eq('vehicle_id', vehicleId)
               .order('created_at', { ascending: false })
           : Promise.resolve({ data: null, error: null })
@@ -73,6 +77,7 @@ export function useContractDocuments(contractId?: string, customerId?: string, v
       if (contractResult.error) throw contractResult.error;
       const contractDocuments = (contractResult.data || []).map(doc => ({
         ...doc,
+        contract_id: doc.contract_id || contractId,
         sourceBucket: 'contract-documents' as const
       }));
 
@@ -106,7 +111,7 @@ export function useContractDocuments(contractId?: string, customerId?: string, v
       if (vehicleResult.data && !vehicleResult.error) {
         vehicleDocuments = vehicleResult.data.map(doc => ({
           id: doc.id,
-          company_id: doc.company_id || '',
+          company_id: companyId || '',
           contract_id: contractId,
           document_type: doc.document_type,
           document_name: doc.document_name || '',
@@ -128,12 +133,12 @@ export function useContractDocuments(contractId?: string, customerId?: string, v
 
       // Combine and sort by created_at
       const allDocuments = [...contractDocuments, ...customerDocuments, ...vehicleDocuments].sort(
-        (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        (a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime()
       );
 
       return allDocuments;
     },
-    enabled: !!contractId && !!user,
+    enabled: !!contractId && !!user && !!companyId,
     staleTime: 30000, // Cache for 30 seconds
     gcTime: 300000, // Keep in cache for 5 minutes
   });
@@ -141,6 +146,7 @@ export function useContractDocuments(contractId?: string, customerId?: string, v
 
 export function useExportConditionDiagram() {
   const { user } = useAuth();
+  const { companyId } = useUnifiedCompanyAccess();
 
   return useMutation({
     mutationFn: async ({ 
@@ -152,7 +158,7 @@ export function useExportConditionDiagram() {
       conditionReportId: string; 
       imageBlob: Blob; 
     }) => {
-      if (!user) throw new Error('User not authenticated');
+      if (!user || !companyId) throw new Error('User or company is not available');
 
       // Upload image to storage
       const fileName = `${contractId}/${conditionReportId}/vehicle-diagram-${Date.now()}.png`;
@@ -166,20 +172,11 @@ export function useExportConditionDiagram() {
 
       if (uploadError) throw uploadError;
 
-      // Get user's company
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('company_id')
-        .eq('user_id', user.id)
-        .single();
-
-      if (!profile) throw new Error('Profile not found');
-
       // Create document record
       const { data: document, error } = await supabase
         .from('contract_documents')
         .insert({
-          company_id: profile.company_id,
+          company_id: companyId,
           contract_id: contractId,
           document_type: 'condition_diagram',
           document_name: 'Vehicle Condition Diagram',
@@ -207,10 +204,11 @@ export function useExportConditionDiagram() {
 export function useCreateContractDocument() {
   const queryClient = useQueryClient();
   const { user } = useAuth();
+  const { companyId } = useUnifiedCompanyAccess();
 
   return useMutation({
     mutationFn: async (data: CreateDocumentData) => {
-      if (!user) throw new Error('User not authenticated');
+      if (!user || !companyId) throw new Error('User or company is not available');
 
       let filePath: string | undefined;
 
@@ -227,20 +225,11 @@ export function useCreateContractDocument() {
         filePath = fileName;
       }
 
-      // Get user's company
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('company_id')
-        .eq('user_id', user.id)
-        .single();
-
-      if (!profile) throw new Error('Profile not found');
-
       // Create document record
       const { data: document, error } = await supabase
         .from('contract_documents')
         .insert({
-          company_id: profile.company_id,
+          company_id: companyId,
           contract_id: data.contract_id,
           document_type: data.document_type,
           document_name: data.document_name,
@@ -271,30 +260,39 @@ export function useCreateContractDocument() {
 
 export function useDeleteContractDocument() {
   const queryClient = useQueryClient();
+  const { companyId } = useUnifiedCompanyAccess();
 
   return useMutation({
     mutationFn: async (documentId: string) => {
+      if (!companyId) throw new Error('تعذر تحديد الشركة');
       // Get document info first
-      const { data: document } = await supabase
+      const { data: document, error: documentError } = await supabase
         .from('contract_documents')
         .select('file_path, contract_id')
         .eq('id', documentId)
+        .eq('company_id', companyId)
         .single();
+      if (documentError || !document) throw documentError || new Error('المستند غير موجود');
 
-      // Delete file from storage if exists
-      if (document?.file_path) {
-        await supabase.storage
-          .from('contract-documents')
-          .remove([document.file_path]);
-      }
-
-      // Delete document record
       const { error } = await supabase
         .from('contract_documents')
         .delete()
-        .eq('id', documentId);
+        .eq('id', documentId)
+        .eq('company_id', companyId)
+        .select('id')
+        .single();
 
       if (error) throw error;
+
+      // Delete file from storage if exists
+      if (document.file_path) {
+        const { error: storageError } = await supabase.storage
+          .from('contract-documents')
+          .remove([document.file_path]);
+        if (storageError) {
+          console.warn('[useDeleteContractDocument] orphaned storage file', storageError.message);
+        }
+      }
       return document;
     },
     onSuccess: (document) => {

@@ -72,17 +72,13 @@ export function PageCustomizer({
       )}
 
       {/* Customizable dashboard wrapper */}
-      {pageWidgets.length > 0 ? (
+      {pageWidgets.length > 0 && (
         <CustomizableDashboard
           widgets={pageWidgets}
           dashboardId={pageId}
-        >
-          {children}
-        </CustomizableDashboard>
-      ) : (
-        // If no widgets defined, just render children without customization
-        children
+        />
       )}
+      {children}
     </div>
   )
 }

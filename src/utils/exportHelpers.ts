@@ -5,6 +5,7 @@
 
 import { toast } from 'sonner';
 import { exportOfficialReportDocumentToPDF } from '@/utils/officialFinancialReportExport';
+import { escapeHtml, sanitizeDocumentHtmlToFragment } from '@/utils/htmlSanitizer';
 
 interface ExportData {
   [key: string]: any;
@@ -155,10 +156,10 @@ export const exportAnalyticsSummaryToPDF = async (
     container.style.fontFamily = 'Arial, sans-serif';
     container.style.direction = 'rtl'; // RTL for Arabic
 
-    container.innerHTML = `
+    const reportHtml = `
       <div style="text-align: center; margin-bottom: 30px;">
         <h1 style="color: #333; font-size: 24px; margin-bottom: 10px;">تقرير تحليلات الصفحة المقصودة</h1>
-        <h2 style="color: #666; font-size: 18px; margin-bottom: 5px;">${companyName}</h2>
+        <h2 style="color: #666; font-size: 18px; margin-bottom: 5px;">${escapeHtml(companyName)}</h2>
         <p style="color: #999; font-size: 14px;">
           ${dateRange.from.toLocaleDateString('en-US')} - ${dateRange.to.toLocaleDateString('en-US')}
         </p>
@@ -181,7 +182,7 @@ export const exportAnalyticsSummaryToPDF = async (
           </tr>
           <tr>
             <td style="padding: 10px; border: 1px solid #ddd; font-weight: bold;">متوسط الوقت في الصفحة</td>
-            <td style="padding: 10px; border: 1px solid #ddd;">${metrics.averageTimeOnPage}</td>
+            <td style="padding: 10px; border: 1px solid #ddd;">${escapeHtml(metrics.averageTimeOnPage)}</td>
           </tr>
           <tr style="background-color: #f5f5f5;">
             <td style="padding: 10px; border: 1px solid #ddd; font-weight: bold;">معدل الارتداد</td>
@@ -204,8 +205,8 @@ export const exportAnalyticsSummaryToPDF = async (
           <tbody>
             ${metrics.topPages.map((page, index) => `
               <tr style="${index % 2 === 0 ? 'background-color: #f5f5f5;' : ''}">
-                <td style="padding: 10px; border: 1px solid #ddd;">${page.title}</td>
-                <td style="padding: 10px; border: 1px solid #ddd;">${page.path}</td>
+                <td style="padding: 10px; border: 1px solid #ddd;">${escapeHtml(page.title)}</td>
+                <td style="padding: 10px; border: 1px solid #ddd;">${escapeHtml(page.path)}</td>
                 <td style="padding: 10px; border: 1px solid #ddd;">${page.views.toLocaleString()}</td>
               </tr>
             `).join('')}
@@ -262,6 +263,7 @@ export const exportAnalyticsSummaryToPDF = async (
         <p>تم إنشاء هذا التقرير بواسطة FleetifyApp - ${new Date().toLocaleDateString('en-US')}</p>
       </div>
     `;
+    container.replaceChildren(sanitizeDocumentHtmlToFragment(reportHtml));
 
     document.body.appendChild(container);
 

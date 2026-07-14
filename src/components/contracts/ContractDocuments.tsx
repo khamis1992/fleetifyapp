@@ -20,7 +20,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { LazyImage } from '@/components/common/LazyImage';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, type Variants } from 'framer-motion';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { useTourGuide } from '@/components/tour-guide';
@@ -46,7 +46,7 @@ const documentTypes = [
   { value: 'other', label: 'أخرى' }
 ];
 
-const scaleIn = {
+const scaleIn: Variants = {
   hidden: { opacity: 0, scale: 0.95 },
   visible: {
     opacity: 1,
@@ -55,7 +55,7 @@ const scaleIn = {
   }
 };
 
-const fadeInUp = {
+const fadeInUp: Variants = {
   hidden: { opacity: 0, y: 20 },
   visible: {
     opacity: 1,
@@ -63,6 +63,11 @@ const fadeInUp = {
     transition: { duration: 0.4, ease: [0.25, 0.1, 0.25, 1] }
   }
 };
+
+const getContractDocumentPublicUrl = (bucket: string | undefined, filePath?: string | null) =>
+  filePath
+    ? supabase.storage.from(bucket || 'contract-documents').getPublicUrl(filePath).data.publicUrl
+    : '';
 
 export function ContractDocuments({ contractId, customerId, vehicleId }: ContractDocumentsProps) {
   const { startTour } = useTourGuide();
@@ -92,7 +97,7 @@ export function ContractDocuments({ contractId, customerId, vehicleId }: Contrac
   const { data: conditionReport } = useQuery({
     queryKey: ['condition-report', selectedReportId],
     queryFn: async () => {
-      if (!selectedReportId) return null;
+      if (!selectedReportId || !companyId) return null;
       
       // أولاً، احصل على تقرير الحالة
       const { data: reportData, error: reportError } = await supabase
@@ -125,7 +130,7 @@ export function ContractDocuments({ contractId, customerId, vehicleId }: Contrac
         vehicles: vehicleData
       };
     },
-    enabled: !!selectedReportId
+    enabled: !!selectedReportId && !!companyId
   });
 
   const handleDocumentUpload = async (data: DocumentUploadData) => {
@@ -144,8 +149,9 @@ export function ContractDocuments({ contractId, customerId, vehicleId }: Contrac
     }
   };
 
-  const handleDownload = async (filePath: string, fileName: string, sourceBucket: 'contract-documents' | 'documents' = 'contract-documents') => {
+  const handleDownload = async (filePath: string | null | undefined, fileName: string, sourceBucket: 'contract-documents' | 'documents' = 'contract-documents') => {
     try {
+      if (!filePath) throw new Error('Document file path is missing');
       // Use the correct bucket based on sourceBucket
       const { data, error } = await supabase.storage
         .from(sourceBucket)
@@ -192,6 +198,10 @@ export function ContractDocuments({ contractId, customerId, vehicleId }: Contrac
   };
 
   const handlePreviewDocument = async (document: any) => {
+    if (!companyId) {
+      toast.error('تعذر تحديد الشركة الحالية');
+      return;
+    }
     // تقرير حالة المركبة - نتعامل معه بشكل مختلف
     if (document.document_type === 'condition_report' && document.condition_report_id) {
       handleViewConditionReport(document.condition_report_id);
@@ -484,7 +494,7 @@ export function ContractDocuments({ contractId, customerId, vehicleId }: Contrac
                        document.file_path?.match(/\.(jpg|jpeg|png|gif|webp|bmp|svg)$/i) ||
                        document.document_name?.match(/\.(jpg|jpeg|png|gif|webp|bmp|svg)$/i)) ? (
                     <img
-                      src={`https://qwhunliohlkkahbspfiu.supabase.co/storage/v1/object/public/${document.sourceBucket || 'contract-documents'}/${document.file_path}`}
+                      src={getContractDocumentPublicUrl(document.sourceBucket, document.file_path)}
                       alt={document.document_name}
                       className="w-full h-full object-cover"
                       loading="lazy"
@@ -537,7 +547,7 @@ export function ContractDocuments({ contractId, customerId, vehicleId }: Contrac
                     </SelectContent>
                   </Select>
                   <p className="text-[10px] text-neutral-500 mb-3">
-                    {format(new Date(document.uploaded_at), 'dd/MM/yyyy')}
+                    {document.uploaded_at ? format(new Date(document.uploaded_at), 'dd/MM/yyyy') : '-'}
                   </p>
                   
                   {/* أزرار الإجراءات - دائماً مرئية */}
@@ -851,14 +861,14 @@ export function ContractDocuments({ contractId, customerId, vehicleId }: Contrac
                   <>
                     {selectedDocumentForPreview.mime_type?.includes('pdf') ? (
                       <iframe
-                        src={`https://qwhunliohlkkahbspfiu.supabase.co/storage/v1/object/public/${selectedDocumentForPreview.sourceBucket || 'contract-documents'}/${selectedDocumentForPreview.file_path}`}
+                        src={getContractDocumentPublicUrl(selectedDocumentForPreview.sourceBucket, selectedDocumentForPreview.file_path)}
                         className="w-full h-[600px]"
                         title="معاينة PDF"
                       />
                     ) : selectedDocumentForPreview.mime_type?.includes('image') ? (
                       <div className="flex justify-center p-4">
                         <LazyImage
-                          src={`https://qwhunliohlkkahbspfiu.supabase.co/storage/v1/object/public/${selectedDocumentForPreview.sourceBucket || 'contract-documents'}/${selectedDocumentForPreview.file_path}`}
+                          src={getContractDocumentPublicUrl(selectedDocumentForPreview.sourceBucket, selectedDocumentForPreview.file_path)}
                           alt={selectedDocumentForPreview.document_name}
                           className="max-w-full max-h-[600px] object-contain"
                         />

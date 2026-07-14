@@ -57,11 +57,15 @@ export interface ErrorRule {
 }
 
 class ErrorTrackingService {
+  private static readonly MAX_ERRORS = 1000;
+  private static readonly MAX_ALERTS = 1000;
+  private static readonly MAX_NOTIFICATION_QUEUE = 500;
   private errors: Map<string, ErrorEntry> = new Map();
   private alerts: ErrorAlert[] = [];
   private rules: Map<string, ErrorRule> = new Map();
   private notificationQueue: ErrorAlert[] = [];
   private isProcessingNotifications = false;
+  private lastAlertAt = new Map<string, number>();
 
   constructor() {
     this.initializeErrorTracking();
@@ -113,6 +117,11 @@ class ErrorTrackingService {
     };
 
     this.errors.set(errorId, errorEntry);
+    while (this.errors.size > ErrorTrackingService.MAX_ERRORS) {
+      const oldestId = this.errors.keys().next().value as string | undefined;
+      if (!oldestId) break;
+      this.errors.delete(oldestId);
+    }
 
     // Send to monitoring service
     monitoring.trackError(error, errorEntry.context);
@@ -494,6 +503,10 @@ class ErrorTrackingService {
       if (!rule.enabled) continue;
 
       if (this.evaluateRule(rule, error)) {
+        const cooldownKey = `${rule.id}:${error.id}`;
+        const lastAlert = this.lastAlertAt.get(cooldownKey) || 0;
+        if (Date.now() - lastAlert < rule.cooldown) continue;
+
         const alert: ErrorAlert = {
           id: this.generateAlertId(),
           errorId: error.id,
@@ -506,7 +519,17 @@ class ErrorTrackingService {
         };
 
         this.alerts.push(alert);
+        if (this.alerts.length > ErrorTrackingService.MAX_ALERTS) {
+          this.alerts.splice(0, this.alerts.length - ErrorTrackingService.MAX_ALERTS);
+        }
         this.notificationQueue.push(alert);
+        if (this.notificationQueue.length > ErrorTrackingService.MAX_NOTIFICATION_QUEUE) {
+          this.notificationQueue.splice(
+            0,
+            this.notificationQueue.length - ErrorTrackingService.MAX_NOTIFICATION_QUEUE
+          );
+        }
+        this.lastAlertAt.set(cooldownKey, Date.now());
       }
     }
   }

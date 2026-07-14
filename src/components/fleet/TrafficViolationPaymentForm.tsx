@@ -9,7 +9,6 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useCreateTrafficViolationPayment } from '@/hooks/useTrafficViolationPayments';
-import { toast } from 'sonner';
 import { TrafficViolation } from '@/hooks/useTrafficViolations';
 
 const paymentSchema = z.object({
@@ -29,17 +28,18 @@ type PaymentFormData = z.infer<typeof paymentSchema>;
 
 interface TrafficViolationPaymentFormProps {
   violation: TrafficViolation;
+  remainingAmount: number;
   onSuccess: () => void;
   onCancel: () => void;
 }
 
-export function TrafficViolationPaymentForm({ violation, onSuccess, onCancel }: TrafficViolationPaymentFormProps) {
+export function TrafficViolationPaymentForm({ violation, remainingAmount, onSuccess, onCancel }: TrafficViolationPaymentFormProps) {
   const createPaymentMutation = useCreateTrafficViolationPayment();
 
   const form = useForm<PaymentFormData>({
     resolver: zodResolver(paymentSchema),
     defaultValues: {
-      amount: violation.amount?.toString() || '0',
+      amount: remainingAmount.toString(),
       payment_method: 'cash',
       payment_type: 'full',
       payment_date: new Date().toISOString().split('T')[0]
@@ -62,25 +62,21 @@ export function TrafficViolationPaymentForm({ violation, onSuccess, onCancel }: 
         reference_number: data.reference_number,
         notes: data.notes
       });
-      toast.success('تم تسجيل الدفع بنجاح');
       onSuccess();
     } catch (error) {
       console.error('Error creating payment:', error);
-      toast.error('حدث خطأ أثناء تسجيل الدفع');
     }
   };
 
-  // حساب المبلغ المستحق
-  const remainingAmount = violation.amount || 0;
-  const maxPaymentAmount = selectedPaymentType === 'partial' ? remainingAmount : remainingAmount;
+  const maxPaymentAmount = remainingAmount;
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>تسجيل دفع للمخالفة رقم {violation.penalty_number}</CardTitle>
+        <CardTitle>تسجيل سداد الشركة للمخالفة رقم {violation.penalty_number}</CardTitle>
         <CardDescription>
-          المبلغ الإجمالي: {violation.amount?.toFixed(3)} د.ك | 
-          المبلغ المستحق: {remainingAmount.toFixed(3)} د.ك
+          المبلغ الإجمالي: {violation.amount?.toFixed(2)} ر.ق |
+          المتبقي للجهة المرورية: {remainingAmount.toFixed(2)} ر.ق. تحصيل العميل يسجل من شاشة المقبوضات.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -128,7 +124,7 @@ export function TrafficViolationPaymentForm({ violation, onSuccess, onCancel }: 
                 name="amount"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>مبلغ الدفع (د.ك) *</FormLabel>
+                    <FormLabel>مبلغ الدفع (ر.ق) *</FormLabel>
                     <FormControl>
                       <Input 
                         type="number" 
@@ -141,7 +137,7 @@ export function TrafficViolationPaymentForm({ violation, onSuccess, onCancel }: 
                     <FormMessage />
                     {selectedPaymentType === 'partial' && (
                       <p className="text-sm text-muted-foreground">
-                        الحد الأقصى: {maxPaymentAmount.toFixed(3)} د.ك
+                        الحد الأقصى: {maxPaymentAmount.toFixed(2)} ر.ق
                       </p>
                     )}
                   </FormItem>
@@ -246,7 +242,7 @@ export function TrafficViolationPaymentForm({ violation, onSuccess, onCancel }: 
                 disabled={createPaymentMutation.isPending}
                 className="px-8"
               >
-                {createPaymentMutation.isPending ? 'جاري التسجيل...' : 'تسجيل الدفع'}
+                {createPaymentMutation.isPending ? 'جاري التسجيل والترحيل...' : 'تسجيل السداد وترحيل القيد'}
               </Button>
             </div>
           </form>

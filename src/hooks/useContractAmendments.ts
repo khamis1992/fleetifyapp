@@ -369,7 +369,7 @@ export const useContractAmendments = (contractId?: string) => {
     fetchAmendmentWithChanges,
     
     // Mutations
-    createAmendment: createAmendmentMutation.mutate,
+    createAmendment: createAmendmentMutation.mutateAsync,
     isCreating: createAmendmentMutation.isPending,
     
     approveReject: approveRejectMutation.mutate,

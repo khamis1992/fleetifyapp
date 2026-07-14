@@ -12,7 +12,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
-import { TestTube, AlertTriangle, FileText, Eye, EyeOff, DollarSign, Brain, Check, ChevronsUpDown, Search, ReceiptText, WalletCards, UserRound, Building2 } from "lucide-react";
+import { TestTube, AlertTriangle, FileText, Eye, EyeOff, DollarSign, Brain, Check, ChevronsUpDown, Search, ReceiptText, WalletCards } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { AccountLevelBadge } from "@/components/finance/AccountLevelBadge";
 import { useBanks } from "@/hooks/useTreasury";
@@ -174,8 +174,12 @@ export const UnifiedPaymentForm: React.FC<UnifiedPaymentFormProps> = ({
   const watchedAmount = form.watch('amount');
   const watchedContractId = form.watch('contract_id');
   const watchedInvoiceId = form.watch('invoice_id');
-  const customerList = Array.isArray(customers) ? customers : customers?.data || [];
-  const vendorList = vendors || [];
+  const watchedAccountId = form.watch('account_id');
+  const customerList = useMemo(
+    () => (Array.isArray(customers) ? customers : customers?.data || []),
+    [customers],
+  );
+  const vendorList = useMemo(() => vendors || [], [vendors]);
 
   const selectedCustomer = useMemo(() => {
     if (!watchedCustomerId) return null;
@@ -216,7 +220,7 @@ export const UnifiedPaymentForm: React.FC<UnifiedPaymentFormProps> = ({
   } as React.CSSProperties;
 
   // Payment validation hook
-  const { validationResult, validatePayment } = usePaymentValidation({
+  const { validatePayment } = usePaymentValidation({
     contractId: watchedContractId || contractId,
     invoiceId: watchedInvoiceId || invoiceId,
     amount: watchedAmount || 0,
@@ -263,9 +267,8 @@ export const UnifiedPaymentForm: React.FC<UnifiedPaymentFormProps> = ({
 
   // Get selected account details
   const selectedAccount = useMemo(() => {
-    const accountId = form.watch('account_id');
-    return entryAllowedAccounts?.find(acc => acc.id === accountId);
-  }, [entryAllowedAccounts, form.watch('account_id')]);
+    return entryAllowedAccounts?.find(acc => acc.id === watchedAccountId);
+  }, [entryAllowedAccounts, watchedAccountId]);
 
   // Generate mock data for testing
   const fillMockData = () => {
@@ -482,16 +485,18 @@ export const UnifiedPaymentForm: React.FC<UnifiedPaymentFormProps> = ({
                           <p>ابدأ بالمبلغ، التاريخ، وطريقة الدفع ثم اربط العملية بالعميل أو المورد عند الحاجة.</p>
                         </div>
                       </div>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={fillMockData}
-                        className="voucher-ghost-button"
-                      >
-                        <TestTube className="h-4 w-4" />
-                        بيانات تجريبية
-                      </Button>
+                      {import.meta.env.DEV && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={fillMockData}
+                          className="voucher-ghost-button"
+                        >
+                          <TestTube className="h-4 w-4" />
+                          بيانات تجريبية
+                        </Button>
+                      )}
                     </div>
                   </CardHeader>
                   <CardContent className="voucher-card-content">

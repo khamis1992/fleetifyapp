@@ -4,7 +4,7 @@
  */
 
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import {
@@ -31,6 +31,13 @@ import {
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
@@ -45,6 +52,7 @@ import {
   generateClaimsStatementHtml,
 } from '@/utils/official-letter-generator';
 import '@/styles/legal-system.css';
+import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 
 interface LawsuitTemplate {
   id: number;
@@ -93,21 +101,26 @@ interface LawsuitTemplate {
 
 export default function LawsuitDataPage() {
   const navigate = useNavigate();
+  const { companyId } = useUnifiedCompanyAccess();
+  const { lawsuitId } = useParams<{ lawsuitId: string }>();
   const [searchTerm, setSearchTerm] = useState('');
   const [isGeneratingDocs, setIsGeneratingDocs] = useState(false);
 
   // جلب بيانات القضايا
   const { data: lawsuits, isLoading, refetch } = useQuery({
-    queryKey: ['lawsuit_templates'],
+    queryKey: ['lawsuit_templates', companyId],
     queryFn: async () => {
+      if (!companyId) return [];
       const { data, error } = await supabase
         .from('lawsuit_templates')
         .select('*')
+        .eq('company_id', companyId)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
       return data as LawsuitTemplate[];
     },
+    enabled: !!companyId,
   });
 
   // تصفية البيانات حسب البحث
@@ -125,14 +138,26 @@ export default function LawsuitDataPage() {
     );
   }, [lawsuits, searchTerm]);
 
+  const selectedLawsuit = React.useMemo(
+    () => lawsuits?.find((lawsuit) => String(lawsuit.id) === lawsuitId) || null,
+    [lawsuitId, lawsuits]
+  );
+
   // حذف قضية
   const handleDelete = async (id: number) => {
     if (!confirm('هل أنت متأكد من حذف هذه القضية؟')) return;
+    if (!companyId) {
+      toast.error('تعذر تحديد الشركة');
+      return;
+    }
 
     const { error } = await supabase
       .from('lawsuit_templates')
       .delete()
-      .eq('id', id);
+      .eq('id', id)
+      .eq('company_id', companyId)
+      .select('id')
+      .single();
 
     if (error) {
       toast.error('فشل حذف القضية');
@@ -797,6 +822,53 @@ export default function LawsuitDataPage() {
 </ResponsiveTable>
         </div>
       </Card>
+      <Dialog
+        open={Boolean(selectedLawsuit)}
+        onOpenChange={(open) => !open && navigate('/legal/lawsuit-data', { replace: true })}
+      >
+        <DialogContent className="max-h-[85vh] max-w-3xl overflow-y-auto" dir="rtl">
+          <DialogHeader>
+            <DialogTitle>{selectedLawsuit?.case_title}</DialogTitle>
+            <DialogDescription>
+              بيانات المطالبة والمدعى عليه والعقد المرتبط
+            </DialogDescription>
+          </DialogHeader>
+          {selectedLawsuit && (
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="rounded-lg border p-3">
+                <p className="text-xs text-muted-foreground">المدعى عليه</p>
+                <p className="mt-1 font-semibold">
+                  {selectedLawsuit.defendant_first_name} {selectedLawsuit.defendant_middle_name} {selectedLawsuit.defendant_last_name}
+                </p>
+                <p className="mt-1 text-sm text-muted-foreground">{selectedLawsuit.defendant_id_number}</p>
+              </div>
+              <div className="rounded-lg border p-3">
+                <p className="text-xs text-muted-foreground">قيمة المطالبة</p>
+                <p className="mt-1 text-lg font-bold text-teal-700">
+                  {Number(selectedLawsuit.claim_amount || 0).toLocaleString('ar-QA')} ر.ق
+                </p>
+                <p className="mt-1 text-sm text-muted-foreground">{selectedLawsuit.claim_amount_words || '-'}</p>
+              </div>
+              <div className="rounded-lg border p-3 sm:col-span-2">
+                <p className="text-xs text-muted-foreground">الوقائع</p>
+                <p className="mt-2 whitespace-pre-wrap text-sm leading-6">{selectedLawsuit.facts || '-'}</p>
+              </div>
+              <div className="rounded-lg border p-3 sm:col-span-2">
+                <p className="text-xs text-muted-foreground">الطلبات</p>
+                <p className="mt-2 whitespace-pre-wrap text-sm leading-6">{selectedLawsuit.requests || '-'}</p>
+              </div>
+              <div className="rounded-lg border p-3">
+                <p className="text-xs text-muted-foreground">العقد</p>
+                <p className="mt-1 font-semibold" dir="ltr">{selectedLawsuit.contract_number || '-'}</p>
+              </div>
+              <div className="rounded-lg border p-3">
+                <p className="text-xs text-muted-foreground">المركبة</p>
+                <p className="mt-1 font-semibold" dir="ltr">{selectedLawsuit.vehicle_plate_number || '-'}</p>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
       </div>
     </div>
   );

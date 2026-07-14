@@ -8,12 +8,19 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { useCreateTrafficViolation, useUpdateTrafficViolation, TrafficViolation } from '@/hooks/useTrafficViolations';
+import {
+  useCreateTrafficViolation,
+  useUpdateTrafficViolation,
+  type CreateTrafficViolationData,
+  type TrafficViolation,
+  type UpdateTrafficViolationData,
+} from '@/hooks/useTrafficViolations';
 import { useVehicles } from '@/hooks/useVehicles';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { FeatureTourButton, FeatureTourDialog, type FeatureTourContent } from '@/components/common/FeatureTourGuide';
+import { useStableCompanyId } from '@/contexts/CompanyContext';
 
 const violationSchema = z.object({
   penalty_number: z.string().optional(), // اجعله اختيارياً
@@ -26,8 +33,7 @@ const violationSchema = z.object({
   contract_id: z.string().optional(),
   reason: z.string().min(1, 'سبب المخالفة مطلوب'),
   notes: z.string().optional(),
-  status: z.string().default('pending'),
-  payment_status: z.string().default('unpaid')
+  status: z.enum(['pending', 'confirmed', 'cancelled']).default('pending')
 });
 
 type ViolationFormData = z.infer<typeof violationSchema>;
@@ -51,6 +57,7 @@ interface TrafficViolationFormProps {
 }
 
 export function TrafficViolationForm({ onSuccess, vehicleId, violation }: TrafficViolationFormProps) {
+  const companyId = useStableCompanyId();
   const createViolationMutation = useCreateTrafficViolation();
   const updateViolationMutation = useUpdateTrafficViolation();
   const isEditMode = !!violation;
@@ -63,26 +70,29 @@ export function TrafficViolationForm({ onSuccess, vehicleId, violation }: Traffi
   const { data: preselectedVehicle } = useQuery({
     queryKey: ['vehicle', vehicleId],
     queryFn: async () => {
-      if (!vehicleId) return null;
+      if (!vehicleId || !companyId) return null;
       const { data, error } = await supabase
         .from('vehicles')
         .select('id, plate_number, make, model')
         .eq('id', vehicleId)
+        .eq('company_id', companyId)
         .single();
       
       if (error) throw error;
       return data;
     },
-    enabled: !!vehicleId,
+    enabled: !!vehicleId && !!companyId,
   });
 
   // جلب قائمة العملاء - محدودة للأداء
   const { data: customers = [] } = useQuery({
-    queryKey: ['customers-limited'],
+    queryKey: ['customers-limited', companyId],
     queryFn: async () => {
+      if (!companyId) return [];
       const { data, error } = await supabase
         .from('customers')
         .select('id, first_name, last_name, company_name, phone')
+        .eq('company_id', companyId)
         .eq('is_active', true)
         .order('first_name')
         .limit(100); // Limit to 100 customers for performance
@@ -90,16 +100,19 @@ export function TrafficViolationForm({ onSuccess, vehicleId, violation }: Traffi
       if (error) throw error;
       return data || [];
     },
+    enabled: !!companyId,
     staleTime: 5 * 60 * 1000, // 5 minutes cache
   });
 
   // جلب قائمة العقود النشطة - مبسطة ومحدودة
   const { data: contracts = [] } = useQuery({
-    queryKey: ['active-contracts-limited'],
+    queryKey: ['active-contracts-limited', companyId],
     queryFn: async () => {
+      if (!companyId) return [];
       const { data, error } = await supabase
         .from('contracts')
         .select('id, contract_number, customer_id, vehicle_id, start_date, end_date')
+        .eq('company_id', companyId)
         .eq('status', 'active')
         .order('contract_number')
         .limit(50); // Limit to 50 contracts for performance
@@ -107,14 +120,14 @@ export function TrafficViolationForm({ onSuccess, vehicleId, violation }: Traffi
       if (error) throw error;
       return data || [];
     },
+    enabled: !!companyId,
     staleTime: 5 * 60 * 1000, // 5 minutes cache
   });
 
   const form = useForm<ViolationFormData>({
     resolver: zodResolver(violationSchema),
     defaultValues: {
-      status: 'pending',
-      payment_status: 'unpaid'
+      status: 'pending'
     }
   });
 
@@ -125,7 +138,7 @@ export function TrafficViolationForm({ onSuccess, vehicleId, violation }: Traffi
   // Automatically find and set contract and customer based on penalty date and vehicle
   useEffect(() => {
     const fetchContractForViolation = async () => {
-      if (!watchedPenaltyDate || (!watchedVehiclePlate && !vehicleId)) return;
+      if (!companyId || !watchedPenaltyDate || (!watchedVehiclePlate && !vehicleId)) return;
 
       try {
         const vehicleIdToUse = vehicleId || (watchedVehiclePlate ? vehicles.find(v => v.plate_number === watchedVehiclePlate)?.id : null);
@@ -138,6 +151,7 @@ export function TrafficViolationForm({ onSuccess, vehicleId, violation }: Traffi
         const { data: contract, error } = await supabase
           .from('contracts')
           .select('id, customer_id')
+          .eq('company_id', companyId)
           .eq('vehicle_id', vehicleIdToUse)
           .lte('start_date', date)
           .gte('end_date', date)
@@ -163,7 +177,7 @@ export function TrafficViolationForm({ onSuccess, vehicleId, violation }: Traffi
     };
 
     fetchContractForViolation();
-  }, [watchedPenaltyDate, watchedVehiclePlate, vehicleId, form, vehicles]);
+  }, [watchedPenaltyDate, watchedVehiclePlate, vehicleId, form, vehicles, companyId]);
 
   // ملء النموذج ببيانات المخالفة عند التعديل
   useEffect(() => {
@@ -179,8 +193,7 @@ export function TrafficViolationForm({ onSuccess, vehicleId, violation }: Traffi
         contract_id: violation.contract_id || '',
         reason: violation.reason || '',
         notes: violation.notes || '',
-        status: violation.status || 'pending',
-        payment_status: violation.payment_status || 'unpaid'
+        status: violation.status || 'pending'
       });
     }
   }, [violation, form]);
@@ -194,42 +207,41 @@ export function TrafficViolationForm({ onSuccess, vehicleId, violation }: Traffi
 
   const onSubmit = async (data: ViolationFormData) => {
     try {
+      const selectedVehicleId = vehicleId || vehicles.find((vehicle) => vehicle.plate_number === data.vehicle_plate)?.id;
       if (isEditMode && violation) {
         // تحديث المخالفة
-        const updateData: any = {
+        const updateData: UpdateTrafficViolationData = {
           id: violation.id,
           violation_type: data.violation_type,
           penalty_date: new Date(data.penalty_date).toISOString().split('T')[0],
           amount: parseFloat(data.amount),
           location: data.location,
           vehicle_plate: data.vehicle_plate,
-          vehicle_id: vehicleId || violation.vehicle_id,
-          customer_id: data.customer_id,
-          contract_id: data.contract_id,
+          vehicle_id: selectedVehicleId || violation.vehicle_id,
+          customer_id: data.customer_id || null,
+          contract_id: data.contract_id || null,
           reason: data.reason,
           notes: data.notes,
-          status: data.status,
-          payment_status: data.payment_status
+          status: data.status
         };
 
         await updateViolationMutation.mutateAsync(updateData);
         toast.success('تم تحديث المخالفة بنجاح');
       } else {
         // إنشاء مخالفة جديدة
-        const violationData: any = {
+        const violationData: CreateTrafficViolationData = {
           penalty_number: data.penalty_number,
           violation_type: data.violation_type,
           penalty_date: new Date(data.penalty_date).toISOString().split('T')[0],
           amount: parseFloat(data.amount),
           location: data.location,
           vehicle_plate: data.vehicle_plate,
-          vehicle_id: vehicleId,
-          customer_id: data.customer_id,
-          contract_id: data.contract_id,
+          vehicle_id: selectedVehicleId,
+          customer_id: data.customer_id || null,
+          contract_id: data.contract_id || null,
           reason: data.reason,
           notes: data.notes,
-          status: data.status,
-          payment_status: data.payment_status
+          status: data.status
         };
 
         await createViolationMutation.mutateAsync(violationData);
@@ -343,7 +355,7 @@ export function TrafficViolationForm({ onSuccess, vehicleId, violation }: Traffi
                 name="amount"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>مبلغ المخالفة (د.ك) *</FormLabel>
+                    <FormLabel>مبلغ المخالفة (ر.ق) *</FormLabel>
                     <FormControl>
                       <Input 
                         type="number" 

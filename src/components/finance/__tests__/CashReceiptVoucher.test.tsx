@@ -10,6 +10,16 @@ vi.mock('@/hooks/useCurrencyFormatter', () => ({
   })
 }));
 
+vi.mock('@/hooks/useTranslation', () => ({
+  useFleetifyTranslation: () => ({
+    t: (key: string) => ({
+      alArraf: 'AL ARRAF',
+      carRentalLlc: 'CAR RENTAL L.L.C',
+      receiptVoucher: 'Receipt Voucher',
+    }[key] || key),
+  }),
+}));
+
 describe('CashReceiptVoucher', () => {
   const mockPayment = {
     payment_number: "REC-2025-00144",
@@ -57,8 +67,8 @@ describe('CashReceiptVoucher', () => {
     
     // Check that cheque details are visible
     expect(screen.getByText('شيك | By Cheque')).toBeInTheDocument();
-    expect(screen.getByText('CHK-12345')).toBeInTheDocument();
-    expect(screen.getByText('Bank Account 123')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('CHK-12345')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('Bank Account 123')).toBeInTheDocument();
   });
 
   it('converts amount to words correctly', () => {

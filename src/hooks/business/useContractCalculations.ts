@@ -6,18 +6,18 @@
  * and contract validation with caching and error handling.
  */
 
-import { useState, useCallback, useMemo } from 'react';
-import { Contract, FinancialTerms } from '@/types/contract';
+import { useState, useCallback, useEffect, useMemo } from 'react';
+import type { Contract } from '@/types/contracts';
 import {
-  calculateMonthlyPayment,
-  calculateTotalRevenue,
-  calculateLateFees,
-  calculateEarlyTerminationFee,
-  calculateProRatedRevenue,
-  calculateContractProfitability,
-  calculateDiscountAmount,
-  generateContractSummary,
-  validateContractFinancials,
+  calculateMonthlyPayment as calculateMonthlyPaymentValue,
+  calculateTotalRevenue as calculateTotalRevenueValue,
+  calculateLateFees as calculateLateFeesValue,
+  calculateEarlyTerminationFee as calculateEarlyTerminationFeeValue,
+  calculateProRatedRevenue as calculateProRatedRevenueValue,
+  calculateContractProfitability as calculateContractProfitabilityValue,
+  calculateDiscountAmount as calculateDiscountAmountValue,
+  generateContractSummary as generateContractSummaryValue,
+  validateContractFinancials as validateContractFinancialsValue,
   MonthlyPaymentResult,
   TotalRevenueResult,
   LateFeesResult,
@@ -27,7 +27,33 @@ import {
   ProfitabilityResult,
   DiscountResult,
   ContractSummary,
+  type Contract as CalculationContract,
 } from '@/lib/contract-calculations';
+
+const toCalculationContract = (contract: Contract): CalculationContract => ({
+  id: contract.id,
+  agreement_number: contract.contract_number,
+  monthly_rate: Number(contract.monthly_amount || 0),
+  start_date: contract.start_date,
+  end_date: contract.end_date,
+  currency: 'QAR',
+  financial_terms: {
+    deposit_amount: 0,
+    insurance_fees: 0,
+    service_fees: 0,
+    tax_rate: 0,
+    late_fee_rate: 0,
+    early_termination_rate: 0,
+  },
+  billing_frequency: contract.contract_type === 'daily_rental'
+    ? 'daily'
+    : contract.contract_type === 'weekly_rental'
+      ? 'weekly'
+      : contract.contract_type === 'yearly_rental'
+        ? 'yearly'
+        : 'monthly',
+  pricing_model: 'fixed',
+});
 
 interface ContractCalculationState {
   monthlyPayment?: MonthlyPaymentResult;
@@ -77,6 +103,12 @@ export function useContractCalculations(
       errors: [],
     },
     loading: false,
+    error: !contract
+      ? 'Contract data is required'
+      : !Array.isArray(contract) &&
+        (!contract.id || Number(contract.monthly_amount || 0) < 0)
+      ? 'Contract data is invalid'
+      : undefined,
   });
 
   // Cache for calculation results
@@ -97,10 +129,9 @@ export function useContractCalculations(
   const getCacheKey = useCallback((contract: Contract, calculation: string, params: any = {}) => {
     const keyData = {
       id: contract.id,
-      monthly_rate: contract.monthly_rate,
+      monthly_amount: contract.monthly_amount,
       start_date: contract.start_date,
       end_date: contract.end_date,
-      financial_terms: contract.financial_terms,
       calculation,
       params,
     };
@@ -125,7 +156,7 @@ export function useContractCalculations(
         return cachedResult;
       }
 
-      const result = calculateMonthlyPayment(contract);
+      const result = calculateMonthlyPaymentValue(toCalculationContract(contract));
 
       if (enableCaching) {
         cache.set(cacheKey, result);
@@ -162,7 +193,7 @@ export function useContractCalculations(
         return cachedResult;
       }
 
-      const result = calculateTotalRevenue(contract);
+      const result = calculateTotalRevenueValue(toCalculationContract(contract));
 
       if (enableCaching) {
         cache.set(cacheKey, result);
@@ -199,7 +230,11 @@ export function useContractCalculations(
         return cachedResult;
       }
 
-      const result = calculateLateFees(overdueAmount, daysLate, contract.financial_terms.late_fee_rate);
+      const result = calculateLateFeesValue(
+        overdueAmount,
+        daysLate,
+        toCalculationContract(contract).financial_terms.late_fee_rate
+      );
 
       if (enableCaching) {
         cache.set(cacheKey, result);
@@ -236,7 +271,7 @@ export function useContractCalculations(
         return cachedResult;
       }
 
-      const result = calculateEarlyTerminationFee(contract, monthsCompleted);
+      const result = calculateEarlyTerminationFeeValue(toCalculationContract(contract), monthsCompleted);
 
       if (enableCaching) {
         cache.set(cacheKey, result);
@@ -273,7 +308,7 @@ export function useContractCalculations(
         return cachedResult;
       }
 
-      const result = calculateProRatedRevenue(contract, billingDays);
+      const result = calculateProRatedRevenueValue(toCalculationContract(contract), billingDays);
 
       if (enableCaching) {
         cache.set(cacheKey, result);
@@ -310,7 +345,7 @@ export function useContractCalculations(
         return cachedResult;
       }
 
-      const result = calculateContractProfitability(contract, operationalCosts);
+      const result = calculateContractProfitabilityValue(toCalculationContract(contract), operationalCosts);
 
       if (enableCaching) {
         cache.set(cacheKey, result);
@@ -349,7 +384,7 @@ export function useContractCalculations(
         return cachedResult;
       }
 
-      const result = calculateDiscountAmount(originalAmount, discountRate);
+      const result = calculateDiscountAmountValue(originalAmount, discountRate);
 
       if (enableCaching) {
         cache.set(cacheKey, result);
@@ -375,11 +410,14 @@ export function useContractCalculations(
     try {
       setState(prev => ({ ...prev, loading: true, error: undefined }));
 
-      const result = validateContractFinancials(contract);
+      const result = validateContractFinancialsValue(toCalculationContract(contract));
 
       setState(prev => ({
         ...prev,
-        validation: result,
+        validation:
+          result && typeof result.isValid === 'boolean'
+            ? result
+            : prev.validation,
         loading: false,
       }));
 
@@ -397,7 +435,7 @@ export function useContractCalculations(
     try {
       setState(prev => ({ ...prev, loading: true, error: undefined }));
 
-      const result = generateContractSummary(contract, operationalCosts);
+      const result = generateContractSummaryValue(toCalculationContract(contract), operationalCosts);
 
       setState(prev => ({
         ...prev,
@@ -414,7 +452,8 @@ export function useContractCalculations(
 
   // Batch calculations for multiple contracts
   const batchCalculate = useCallback(async (
-    contracts: Contract[]
+    contracts: Contract[],
+    operationalCosts?: OperationalCosts,
   ): Promise<BatchCalculationResult[]> => {
     if (!contracts.length) return [];
 
@@ -430,15 +469,16 @@ export function useContractCalculations(
         const batchResults = await Promise.all(
           batch.map(async (contract) => {
             try {
-              const monthlyPayment = calculateMonthlyPayment(contract);
-              const totalRevenue = calculateTotalRevenue(contract);
+              const calculationContract = toCalculationContract(contract);
+              const monthlyPayment = calculateMonthlyPaymentValue(calculationContract);
+              const totalRevenue = calculateTotalRevenueValue(calculationContract);
               const profitability = operationalCosts
-                ? calculateContractProfitability(contract, operationalCosts)
+                ? calculateContractProfitabilityValue(calculationContract, operationalCosts)
                 : undefined;
 
               return {
                 contractId: contract.id,
-                contractStatus: contract.status,
+                contractStatus: String(contract.status || '').toLowerCase(),
                 monthlyPayment,
                 totalRevenue,
                 profitability,
@@ -446,6 +486,7 @@ export function useContractCalculations(
             } catch (error) {
               return {
                 contractId: contract.id,
+                contractStatus: String(contract.status || '').toLowerCase(),
                 error: (error as Error).message,
               };
             }
@@ -470,11 +511,22 @@ export function useContractCalculations(
   }, [batchSize, handleError]);
 
   // Auto-validate on mount if enabled
-  React.useEffect(() => {
+  useEffect(() => {
     if (autoValidate && contract && !Array.isArray(contract)) {
-      validateContract();
+      if (!contract.id || Number(contract.monthly_amount || 0) < 0) return;
+      const monthlyPayment = calculateMonthlyPayment();
+      if (monthlyPayment !== null) {
+        calculateTotalRevenue();
+        validateContract();
+      }
     }
-  }, [autoValidate, contract, validateContract]);
+  }, [
+    autoValidate,
+    calculateMonthlyPayment,
+    calculateTotalRevenue,
+    contract,
+    validateContract,
+  ]);
 
   // Clear cache
   const clearCache = useCallback(() => {
@@ -516,7 +568,7 @@ export function useContractCalculations(
     // Computed values
     isCalculating: state.loading,
     hasErrors: !!state.error,
-    isValid: state.validation.isValid,
-    validationErrors: state.validation.errors,
+    isValid: state.validation?.isValid ?? false,
+    validationErrors: state.validation?.errors ?? [],
   };
 }

@@ -88,11 +88,24 @@ export const NoticeAutoFiller: React.FC<NoticeAutoFillerProps> = ({
 
   // Fetch unpaid invoices for selected customer
   const { data: unpaidInvoices, isLoading: isLoadingInvoices, error: invoicesError } = useQuery({
-    queryKey: ['unpaid-invoices', selectedCustomerId],
+    queryKey: ['unpaid-invoices', companyId, selectedCustomerId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('invoices')
-        .select('id, invoice_number, invoice_date, total_amount, payment_status, created_at')
+        .select(`
+          id,
+          invoice_number,
+          invoice_date,
+          due_date,
+          total_amount,
+          paid_amount,
+          balance_due,
+          payment_status,
+          created_at,
+          contract_id,
+          contracts:contract_id(contract_number, contract_date, terms)
+        `)
+        .eq('company_id', companyId)
         .eq('customer_id', selectedCustomerId)
         .in('payment_status', ['unpaid', 'overdue', 'partial', 'partially_paid', 'pending'])
         .order('invoice_date', { ascending: false });
@@ -134,36 +147,57 @@ export const NoticeAutoFiller: React.FC<NoticeAutoFillerProps> = ({
 
       // Calculate totals
       const invoicesForDocument = selectedInvoices || [];
-      const totalRent = invoicesForDocument.reduce((sum, inv) => sum + (inv.total_amount || 0), 0);
-      const firstInvoiceDate = invoicesForDocument[0]?.invoice_date;
-      const daysOverdue = firstInvoiceDate
-        ? Math.max(0, Math.floor((new Date().getTime() - new Date(firstInvoiceDate).getTime()) / (1000 * 60 * 60 * 24)))
+      const invoiceBalances = invoicesForDocument.map(inv =>
+        Math.max(0, Number(inv.balance_due ?? (Number(inv.total_amount || 0) - Number(inv.paid_amount || 0))))
+      );
+      const totalRent = invoiceBalances.reduce((sum, balance) => sum + balance, 0);
+      const earliestDueDate = invoicesForDocument
+        .map(inv => inv.due_date)
+        .filter((date): date is string => !!date)
+        .sort()[0];
+      const daysOverdue = earliestDueDate
+        ? Math.max(0, Math.floor((new Date().getTime() - new Date(earliestDueDate).getTime()) / (1000 * 60 * 60 * 24)))
         : 0;
-      const lateFees = totalRent * 0.001 * daysOverdue;
+      // Fees must come from posted records. This form must not invent legal charges.
+      const lateFees = 0;
       const violationsFees = 0;
       const totalDebt = totalRent + lateFees + violationsFees;
 
       setCompletionStatus((prev) => ({ ...prev, calculations: true }));
 
       // Generate document number
-      const docNumber = `NTF-${new Date().getFullYear()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
+      const docNumber = `NTF-${new Date().getFullYear()}-${crypto.randomUUID().slice(0, 8).toUpperCase()}`;
+      const parsedDeadlineDays = Number.parseInt(deadlineDays, 10);
+      if (!Number.isInteger(parsedDeadlineDays) || parsedDeadlineDays < 1 || parsedDeadlineDays > 365) {
+        throw new Error('مهلة السداد يجب أن تكون بين يوم واحد و365 يوماً');
+      }
       const deadlineDate = new Date();
-      deadlineDate.setDate(deadlineDate.getDate() + parseInt(deadlineDays, 10));
+      deadlineDate.setDate(deadlineDate.getDate() + parsedDeadlineDays);
 
       setCompletionStatus((prev) => ({ ...prev, formatting: true }));
 
       const customerName = getCustomerDisplayName(selectedCustomer);
-      const officialCompanyName = companyInfo?.name_ar || companyInfo?.name || 'شركة العراف لتأجير السيارات';
-      const officialCompanyAddress = companyInfo?.address_ar || companyInfo?.address || 'أم صلال محمد - الشارع التجاري - مبنى رقم 79 - الطابق الأول - مكتب 2';
+      const officialCompanyName = companyInfo?.name_ar || companyInfo?.name || 'الشركة';
+      const officialCompanyAddress = companyInfo?.address_ar || companyInfo?.address || '';
+      const firstContractRelation = invoicesForDocument[0]?.contracts;
+      const firstContract = Array.isArray(firstContractRelation)
+        ? firstContractRelation[0]
+        : firstContractRelation;
+      const contractNumbers = Array.from(new Set(
+        invoicesForDocument.flatMap(inv => {
+          const relation = Array.isArray(inv.contracts) ? inv.contracts[0] : inv.contracts;
+          return relation?.contract_number ? [relation.contract_number] : [];
+        })
+      ));
 
       const variables: NoticeVariables = {
         companyName: companyInfo?.name || officialCompanyName,
         companyNameAr: officialCompanyName,
         companyAddress: officialCompanyAddress,
-        companyPhone: companyInfo?.phone || '31411919',
-        companyEmail: companyInfo?.email || 'info@alaraf.qa',
-        commercialRegNo: companyInfo?.commercial_register || '146832',
-        companyLogoUrl: companyInfo?.logo_url || '/receipts/logo.png',
+        companyPhone: companyInfo?.phone || '',
+        companyEmail: companyInfo?.email || '',
+        commercialRegNo: companyInfo?.commercial_register || '',
+        companyLogoUrl: companyInfo?.logo_url || '',
         customerName,
         customerType: selectedCustomer.customer_type === 'corporate' ? 'company' : 'individual',
         customerAddress: selectedCustomer.address || '',
@@ -171,21 +205,21 @@ export const NoticeAutoFiller: React.FC<NoticeAutoFillerProps> = ({
         customerEmail: selectedCustomer.email || '',
         customerId: selectedCustomer.id,
         nationalId: selectedCustomer.national_id || '',
-        contractNumber: 'N/A',
-        contractDate: new Date().toISOString(),
-        contractTermsAr: 'عقد إيجار طويل الأجل',
+        contractNumber: contractNumbers.join('، '),
+        contractDate: firstContract?.contract_date || '',
+        contractTermsAr: firstContract?.terms || '',
         invoiceNumbers: invoicesForDocument.map((inv) => inv.invoice_number),
         invoiceDates: invoicesForDocument.map((inv) => inv.invoice_date),
-        invoiceAmounts: invoicesForDocument.map((inv) => inv.total_amount || 0),
+        invoiceAmounts: invoiceBalances,
         invoiceCurrency: 'QAR',
         invoiceCurrencyAr: 'ريال قطري',
         totalRent,
         lateFees: Math.round(lateFees),
-        courtFees: Math.round(totalDebt * 0.01),
+        courtFees: 0,
         violationsFees: Math.round(violationsFees),
         totalDebt: Math.round(totalDebt),
         daysOverdue,
-        deadlineDays: parseInt(deadlineDays, 10),
+        deadlineDays: parsedDeadlineDays,
         deadlineDate: deadlineDate.toISOString(),
         documentNumber: docNumber,
         dateIssued: new Date().toISOString(),
@@ -211,7 +245,9 @@ export const NoticeAutoFiller: React.FC<NoticeAutoFillerProps> = ({
 
   const stats = useMemo(() => {
     const selectedInvoices = unpaidInvoices?.filter((inv) => selectedInvoiceIds.includes(inv.id));
-    const totalAmount = selectedInvoices?.reduce((sum, inv) => sum + (inv.total_amount || 0), 0) || 0;
+    const totalAmount = selectedInvoices?.reduce((sum, inv) =>
+      sum + Math.max(0, Number(inv.balance_due ?? (Number(inv.total_amount || 0) - Number(inv.paid_amount || 0)))), 0
+    ) || 0;
     return {
       invoiceCount: selectedInvoiceIds.length,
       totalAmount,

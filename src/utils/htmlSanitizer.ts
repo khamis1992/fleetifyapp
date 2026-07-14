@@ -2,13 +2,10 @@
  * HTML Sanitization Utility
  *
  * SECURITY: This file provides HTML sanitization to prevent XSS attacks.
- * Uses browser-based sanitization that works reliably across all environments.
- * This approach avoids build-time dependency resolution issues with DOMPurify.
+ * Uses DOMPurify with a conservative browser fallback.
  */
 
-// We use browser-based sanitization which is sufficient for our use case
-// and avoids build issues with dynamic imports in Vite/Rollup
-const DOMPurify: any = null;
+import DOMPurify from 'dompurify';
 
 // DOMPurify configuration (when available)
 const SANITIZE_CONFIG = {
@@ -47,6 +44,22 @@ export function sanitizeHtml(html: string): string {
 
   // Fallback to browser-based sanitization
   return fallbackSanitizeHtml(html);
+}
+
+/** Build a safe DOM fragment for internally generated printable documents. */
+export function sanitizeDocumentHtmlToFragment(html: string): DocumentFragment {
+  return DOMPurify.sanitize(html, {
+    USE_PROFILES: { html: true },
+    ADD_TAGS: ['style', 'svg', 'rect', 'circle'],
+    ADD_ATTR: [
+      'style', 'class', 'dir', 'lang', 'src', 'alt', 'width', 'height', 'colspan', 'rowspan',
+      'viewBox', 'x', 'y', 'cx', 'cy', 'r', 'rx', 'fill', 'stroke', 'stroke-width', 'aria-label',
+    ],
+    FORBID_TAGS: ['script', 'iframe', 'object', 'embed', 'form', 'input', 'textarea', 'button'],
+    FORBID_ATTR: ['onclick', 'onload', 'onerror', 'onmouseover', 'onfocus'],
+    ALLOW_DATA_ATTR: false,
+    RETURN_DOM_FRAGMENT: true,
+  }) as DocumentFragment;
 }
 
 /**
@@ -112,8 +125,8 @@ function fallbackSanitizeWithFormatting(html: string): string {
   ];
 
   try {
-    const temp = document.createElement('div');
-    temp.innerHTML = html;
+    const parsedDocument = new DOMParser().parseFromString(html, 'text/html');
+    const temp = parsedDocument.body;
 
     // Remove dangerous elements
     const dangerousElements = temp.querySelectorAll('script, style, iframe, object, embed, form, input, textarea, button');

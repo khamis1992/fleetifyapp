@@ -34,7 +34,7 @@ const I18nProvider: React.FC<I18nProviderProps> = ({
   enableMixedContent = true
 }) => {
   const { t } = useFleetifyTranslation("ui");
-  const [isInitialized, setIsInitialized] = useState(false);
+  const [isInitialized, setIsInitialized] = useState(() => i18n.isInitialized);
   const [initError, setInitError] = useState<string | null>(null);
   const [currentLanguage, setCurrentLanguage] = useState<SupportedLanguage>(fallbackLanguage);
 
@@ -44,6 +44,9 @@ const I18nProvider: React.FC<I18nProviderProps> = ({
       try {
         await initializeI18n();
         const lang = language || getCurrentLanguage();
+        if (i18n.resolvedLanguage !== lang && i18n.language !== lang) {
+          await i18n.changeLanguage(lang);
+        }
         setCurrentLanguage(lang);
         setIsInitialized(true);
 

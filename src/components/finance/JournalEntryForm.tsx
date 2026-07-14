@@ -272,7 +272,7 @@ export const JournalEntryForm: React.FC<JournalEntryFormProps> = ({ open, onOpen
       console.log('Sanitized entry data:', sanitizedEntryData)
 
       await createJournalEntry.mutateAsync({
-        entry: sanitizedEntryData,
+        ...sanitizedEntryData,
         lines: sanitizedLines
       })
 
@@ -583,16 +583,16 @@ export const JournalEntryForm: React.FC<JournalEntryFormProps> = ({ open, onOpen
               <div className="mt-4 space-y-2">
                 <div className="flex justify-between items-center p-3 bg-muted rounded-lg">
                   <span className="font-medium">إجمالي المدين:</span>
-                  <span className="font-bold text-green-600">{totalDebits.toFixed(3)} د.ك</span>
+                  <span className="font-bold text-green-600">{totalDebits.toFixed(2)} ر.ق</span>
                 </div>
                 <div className="flex justify-between items-center p-3 bg-muted rounded-lg">
                   <span className="font-medium">إجمالي الدائن:</span>
-                  <span className="font-bold text-red-600">{totalCredits.toFixed(3)} د.ك</span>
+                  <span className="font-bold text-red-600">{totalCredits.toFixed(2)} ر.ق</span>
                 </div>
                 <div className="flex justify-between items-center p-3 bg-primary/10 rounded-lg">
                   <span className="font-medium">الفرق:</span>
                   <span className={`font-bold ${isBalanced ? 'text-green-600' : 'text-red-600'}`}>
-                    {Math.abs(totalDebits - totalCredits).toFixed(3)} د.ك
+                    {Math.abs(totalDebits - totalCredits).toFixed(2)} ر.ق
                   </span>
                 </div>
                 {!isBalanced && (

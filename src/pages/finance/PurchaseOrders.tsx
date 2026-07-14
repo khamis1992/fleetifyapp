@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { 
   Plus, 
   Search, 
@@ -13,23 +13,21 @@ import {
   History,
   FileText,
   Package,
-  ChevronDown,
   LayoutDashboard,
   Loader2,
-  X
+  type LucideIcon
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Breadcrumbs } from '@/components/navigation/Breadcrumbs';
-import { usePurchaseOrders, useDeletePurchaseOrder, useUpdatePurchaseOrder, useCreatePurchaseOrder, PurchaseOrder, CreatePurchaseOrderData } from '@/hooks/usePurchaseOrders';
-import { useVendors, Vendor } from '@/hooks/useVendors';
+import { usePurchaseOrders, useDeletePurchaseOrder, useUpdatePurchaseOrder, PurchaseOrder } from '@/hooks/usePurchaseOrders';
+import { useVendors } from '@/hooks/useVendors';
 import { PurchaseOrderForm } from '@/components/finance/PurchaseOrderForm';
+import { ReceivePurchaseOrderDialog } from '@/components/finance/ReceivePurchaseOrderDialog';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import { toast } from 'sonner';
@@ -48,7 +46,7 @@ const StatusBadge = ({ status }: { status: PurchaseOrder['status'] }) => {
     'cancelled': "bg-red-50 text-red-700 border-red-200",
   };
   
-  const icons: Record<string, React.ComponentType<{ size?: number }>> = {
+  const icons: Record<string, LucideIcon> = {
     'draft': FileText,
     'pending_approval': Clock,
     'approved': CheckCircle2,
@@ -92,10 +90,10 @@ const StatsCard = ({
   title: string; 
   value: string | number; 
   subtext?: string; 
-  icon: React.ComponentType<{ size?: number; className?: string }>; 
+  icon: LucideIcon;
   colorClass: string;
 }) => (
-  <div className="bg-white p-5 rounded-xl shadow-sm border border-slate-200 flex items-start justify-between hover:shadow-md transition-shadow">
+  <div className="bg-card p-5 rounded-lg shadow-sm border border-border flex items-start justify-between hover:shadow-md transition-shadow">
     <div>
       <p className="text-slate-500 text-sm font-medium mb-1">{title}</p>
       <h3 className="text-2xl font-bold text-slate-900">{value}</h3>
@@ -188,14 +186,18 @@ export default function PurchaseOrders() {
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState('الكل');
   const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [showReceiveDialog, setShowReceiveDialog] = useState(false);
 
   // Hooks
   const { data: purchaseOrders, isLoading, error } = usePurchaseOrders();
   const { data: vendors } = useVendors();
   const deletePurchaseOrder = useDeletePurchaseOrder();
   const updatePurchaseOrder = useUpdatePurchaseOrder();
-  const createPurchaseOrder = useCreatePurchaseOrder();
   const { formatCurrency } = useCurrencyFormatter();
+  const selectedPurchaseOrder = useMemo(
+    () => purchaseOrders?.find((order) => order.id === formData.dbId) || null,
+    [formData.dbId, purchaseOrders]
+  );
 
   // Generate a new PO number
   const generatePONumber = useCallback(() => {
@@ -320,16 +322,6 @@ export default function PurchaseOrders() {
 
   // --- List View Component ---
   const ListView = () => {
-    // Map status to tab labels
-    const statusToTab: Record<string, string> = {
-      'draft': 'مسودة',
-      'pending_approval': 'في انتظار الموافقة',
-      'approved': 'موافق عليه',
-      'sent_to_vendor': 'مرسل',
-      'received': 'مستلم',
-      'partially_received': 'مستلم جزئياً',
-      'cancelled': 'ملغي'
-    };
 
     const tabToStatuses: Record<string, PurchaseOrder['status'][]> = {
       'الكل': ['draft', 'pending_approval', 'approved', 'sent_to_vendor', 'received', 'partially_received', 'cancelled'],
@@ -414,7 +406,7 @@ export default function PurchaseOrders() {
         </div>
 
         {/* Main Content Card */}
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+        <div className="bg-card rounded-lg shadow-sm border border-border overflow-hidden">
           {/* Controls Bar */}
           <div className="p-4 border-b border-slate-100 flex flex-col sm:flex-row gap-4 justify-between items-center bg-slate-50/50">
             {/* Tabs */}
@@ -498,16 +490,16 @@ export default function PurchaseOrders() {
                         </AlertDialogTrigger>
                         <AlertDialogContent>
                           <AlertDialogHeader>
-                            <AlertDialogTitle>تأكيد الحذف</AlertDialogTitle>
+                            <AlertDialogTitle>تأكيد الإلغاء</AlertDialogTitle>
                             <AlertDialogDescription>
-                              هل أنت متأكد من حذف أمر الشراء رقم {order.order_number}؟ 
+                              هل أنت متأكد من إلغاء أمر الشراء رقم {order.order_number}؟
                               هذا الإجراء لا يمكن التراجع عنه.
                             </AlertDialogDescription>
                           </AlertDialogHeader>
                           <AlertDialogFooter>
                             <AlertDialogCancel>إلغاء</AlertDialogCancel>
                             <AlertDialogAction onClick={() => handleDelete(order.id)}>
-                              حذف
+                              إلغاء الطلب
                             </AlertDialogAction>
                           </AlertDialogFooter>
                         </AlertDialogContent>
@@ -633,9 +625,9 @@ export default function PurchaseOrders() {
                   <Send size={16} /> إرسال للمورد
                 </button>
               )}
-              {formData.dbId && formData.status === 'sent_to_vendor' && (
+              {formData.dbId && ['sent_to_vendor', 'partially_received'].includes(formData.status) && (
                 <button 
-                  onClick={() => handleStatusChange('received')}
+                  onClick={() => setShowReceiveDialog(true)}
                   className="flex items-center gap-2 bg-emerald-50 text-emerald-700 px-4 py-2 rounded-lg hover:bg-emerald-100 transition-colors text-sm font-semibold border border-emerald-200"
                 >
                   <CheckCircle2 size={16} /> استلام البضائع
@@ -935,6 +927,12 @@ export default function PurchaseOrders() {
           }} />
         </DialogContent>
       </Dialog>
+      <ReceivePurchaseOrderDialog
+        order={selectedPurchaseOrder}
+        open={showReceiveDialog}
+        onOpenChange={setShowReceiveDialog}
+        onReceived={() => setView('list')}
+      />
     </>
   );
 }

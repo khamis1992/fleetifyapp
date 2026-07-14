@@ -71,7 +71,7 @@ export const TouchOptimization: React.FC<TouchOptimizationProps> = ({
   style = {},
   disabled = false
 }) => {
-  const elementRef = useRef<HTMLElement>(null);
+  const elementRef = useRef<HTMLDivElement>(null);
   const gestureStateRef = useRef<GestureState>({
     touches: [],
     startTime: 0,

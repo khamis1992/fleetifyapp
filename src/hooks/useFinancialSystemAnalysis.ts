@@ -1,6 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import type { Database } from "@/integrations/supabase/types";
+
+type AccountRow = Database['public']['Tables']['chart_of_accounts']['Row'];
+type CostCenterRow = Database['public']['Tables']['cost_centers']['Row'];
+type JournalEntryRow = Database['public']['Tables']['journal_entries']['Row'];
 
 export interface FinancialSystemAnalysis {
   overallScore: number;
@@ -49,13 +54,12 @@ export interface FinancialMetrics {
 
 export const useFinancialSystemAnalysis = () => {
   const { user } = useAuth();
+  const companyId = user?.company?.id;
 
   return useQuery({
-    queryKey: ["financial-system-analysis"],
+    queryKey: ["financial-system-analysis", companyId],
     queryFn: async (): Promise<FinancialSystemAnalysis> => {
-      if (!user) throw new Error('User not authenticated');
-
-      console.log('[useFinancialSystemAnalysis] Starting comprehensive analysis...');
+      if (!companyId) throw new Error('Company is not available for financial analysis');
       
       // Get real data from multiple tables
       const [
@@ -67,20 +71,20 @@ export const useFinancialSystemAnalysis = () => {
         journalEntriesResponse,
         customerAccountsResponse
       ] = await Promise.all([
-        supabase.from('chart_of_accounts').select('*').eq('is_active', true).eq('company_id', user.company.id),
-        supabase.from('customers').select('id').eq('is_active', true).eq('company_id', user.company.id),
-        supabase.from('vehicles').select('id, cost_center_id').eq('is_active', true).eq('company_id', user.company.id),
-        supabase.from('contracts').select('id, account_id').eq('status', 'active').eq('company_id', user.company.id),
-        supabase.from('cost_centers').select('*').eq('is_active', true).eq('company_id', user.company.id),
+        supabase.from('chart_of_accounts').select('*').eq('is_active', true).eq('company_id', companyId),
+        supabase.from('customers').select('id').eq('is_active', true).eq('company_id', companyId),
+        supabase.from('vehicles').select('id, cost_center_id').eq('is_active', true).eq('company_id', companyId),
+        supabase.from('contracts').select('id, account_id').eq('status', 'active').eq('company_id', companyId),
+        supabase.from('cost_centers').select('*').eq('is_active', true).eq('company_id', companyId),
         supabase.from('journal_entries')
           .select('*')
-          .eq('company_id', user.company.id)
+          .eq('company_id', companyId)
           .gte('created_at', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()),
         // Get linked customers via customer_accounts table
         supabase.from('customer_accounts')
           .select('customer_id')
           .eq('is_active', true)
-          .eq('company_id', user.company.id)
+          .eq('company_id', companyId)
       ]);
 
       const accounts = accountsResponse.data || [];
@@ -128,14 +132,6 @@ export const useFinancialSystemAnalysis = () => {
       const issues = generateIssues(metrics, accounts, costCenters);
       const suggestions = generateSuggestions(metrics, accounts);
 
-      console.log('[useFinancialSystemAnalysis] Analysis complete:', {
-        overallScore,
-        chartOfAccountsScore,
-        linkageScore,
-        costCentersScore,
-        operationsScore
-      });
-
       return {
         overallScore,
         chartOfAccountsScore,
@@ -148,18 +144,24 @@ export const useFinancialSystemAnalysis = () => {
         metrics
       };
     },
-    enabled: !!user,
+    enabled: Boolean(companyId),
     staleTime: 5 * 60 * 1000, // 5 minutes
     retry: 2,
   });
 };
 
-function calculateChartOfAccountsScore(accounts: unknown[]): number {
+function calculateChartOfAccountsScore(accounts: AccountRow[]): number {
   if (accounts.length === 0) return 0;
   
   // Check for essential account types
-  const requiredTypes = ['assets', 'liabilities', 'equity', 'revenue', 'expenses'];
-  const presentTypes = new Set(accounts.map(acc => acc.account_type));
+  const requiredTypes = [
+    ['asset', 'assets'],
+    ['liability', 'liabilities'],
+    ['equity'],
+    ['revenue', 'income'],
+    ['expense', 'expenses'],
+  ];
+  const presentTypes = new Set(accounts.map((account) => account.account_type.toLowerCase()));
   
   let score = 0;
   
@@ -167,7 +169,10 @@ function calculateChartOfAccountsScore(accounts: unknown[]): number {
   score += Math.min(accounts.length * 2, 50);
   
   // Score for having all required types
-  const typeScore = (requiredTypes.filter(type => presentTypes.has(type)).length / requiredTypes.length) * 30;
+  const typeScore = (
+    requiredTypes.filter((aliases) => aliases.some((alias) => presentTypes.has(alias))).length
+    / requiredTypes.length
+  ) * 30;
   score += typeScore;
   
   // Score for proper hierarchy
@@ -189,7 +194,7 @@ function calculateLinkageScore(metrics: FinancialMetrics): number {
   return Math.round((linkedEntities / totalEntities) * 100);
 }
 
-function calculateCostCentersScore(costCenters: any[], accounts: unknown[]): number {
+function calculateCostCentersScore(costCenters: CostCenterRow[], accounts: AccountRow[]): number {
   if (costCenters.length === 0) return 0;
   
   // Basic score for having cost centers
@@ -197,7 +202,7 @@ function calculateCostCentersScore(costCenters: any[], accounts: unknown[]): num
   
   // Check if cost centers are properly structured
   const hasBusinessLogicCenters = costCenters.some(cc => 
-    cc.cost_center_code && cc.cost_center_code.includes('CC')
+    cc.center_code.includes('CC')
   );
   
   if (hasBusinessLogicCenters) score += 25;
@@ -209,7 +214,7 @@ function calculateCostCentersScore(costCenters: any[], accounts: unknown[]): num
   return Math.min(Math.round(score), 100);
 }
 
-function calculateOperationsScore(journalEntries: any[]): number {
+function calculateOperationsScore(journalEntries: JournalEntryRow[]): number {
   if (journalEntries.length === 0) return 50; // Neutral if no recent activity
   
   // Score based on recent activity and completeness
@@ -227,7 +232,7 @@ function calculateOperationsScore(journalEntries: any[]): number {
   return Math.min(Math.round(score), 100);
 }
 
-function generateIssues(metrics: FinancialMetrics, accounts: unknown[], costCenters: any[]): FinancialIssue[] {
+function generateIssues(metrics: FinancialMetrics, accounts: AccountRow[], costCenters: CostCenterRow[]): FinancialIssue[] {
   const issues: FinancialIssue[] = [];
   
   // Missing accounts issue
@@ -237,9 +242,9 @@ function generateIssues(metrics: FinancialMetrics, accounts: unknown[], costCent
       type: 'critical',
       category: 'accounts',
       title: 'دليل الحسابات غير مكتمل',
-      description: 'عدد الحسابات المحاسبية أقل من المطلوب لنظام محاسبي شامل',
-      impact: 'عدم القدرة على تتبع جميع المعاملات المالية بدقة',
-      resolution: 'إضافة الحسابات الأساسية المفقودة مثل حسابات الصيانة والتشغيل'
+      description: 'عدد الحسابات المحاسبية أقل من الحد المطلوب لنظام مالي متكامل',
+      impact: 'قد لا تُصنّف جميع المعاملات المالية بدقة',
+      resolution: 'إضافة الحسابات الأساسية المفقودة وربطها بالعمليات المعتمدة'
     });
   }
 
@@ -249,10 +254,10 @@ function generateIssues(metrics: FinancialMetrics, accounts: unknown[], costCent
       id: 'unlinked-customers',
       type: 'warning',
       category: 'linkage',
-      title: `${metrics.unlinkedEntities.customers} عميل غير مربوط بحسابات`,
-      description: 'يوجد عملاء لا يحتوون على ربط بالحسابات المحاسبية',
-      impact: 'صعوبة في تتبع الذمم المدينة وإعداد التقارير المالية',
-      resolution: 'ربط العملاء بحسابات الذمم المدينة المناسبة'
+      title: `${metrics.unlinkedEntities.customers} عميل غير مربوط بحساب محاسبي`,
+      description: 'توجد سجلات عملاء بلا ربط بحسابات الذمم المدينة',
+      impact: 'قد تتأثر دقة متابعة الذمم وتقارير العملاء',
+      resolution: 'إنشاء أو ربط حساب ذمم مناسب لكل عميل'
     });
   }
 
@@ -263,17 +268,17 @@ function generateIssues(metrics: FinancialMetrics, accounts: unknown[], costCent
       id: 'cc007-not-linked',
       type: 'warning',
       category: 'cost_centers',
-      title: 'مركز التكلفة CC007 غير مربوط',
-      description: 'مركز تكلفة عقود التمليك (CC007) غير مربوط بأي حساب في شجرة الحسابات',
-      impact: 'عدم القدرة على تتبع تكاليف عقود التمليك بدقة',
-      resolution: 'ربط CC007 بحساب "التزامات الإيجار التمويلي" تحت الخصوم طويلة الأجل'
+      title: 'مركز التكلفة CC007 يحتاج مراجعة ربط',
+      description: 'مركز تكلفة عقود التمليك CC007 موجود ويحتاج التحقق من ربطه المحاسبي',
+      impact: 'قد لا تظهر تكاليف عقود التمليك في التصنيف الصحيح',
+      resolution: 'مراجعة ربط المركز بحساب التزامات الإيجار التمويلي المعتمد'
     });
   }
 
   return issues;
 }
 
-function generateSuggestions(metrics: FinancialMetrics, accounts: unknown[]): FinancialSuggestion[] {
+function generateSuggestions(metrics: FinancialMetrics, accounts: AccountRow[]): FinancialSuggestion[] {
   const suggestions: FinancialSuggestion[] = [];
   
   // Vehicle account suggestions
@@ -289,10 +294,10 @@ function generateSuggestions(metrics: FinancialMetrics, accounts: unknown[]): Fi
     suggestions.push({
       id: 'vehicle-accounts',
       type: 'improvement',
-      title: 'إنشاء حسابات المركبات المتخصصة',
-      description: 'إنشاء حسابات فرعية منفصلة لصيانة المركبات، الوقود، التأمين، والإهلاك',
+      title: 'إنشاء حسابات تشغيل المركبات',
+      description: 'إنشاء حسابات فرعية منفصلة للصيانة والوقود والتأمين والإهلاك',
       priority: 'high',
-      estimatedImpact: 'تحسين تتبع تكاليف المركبات بنسبة 40%'
+      estimatedImpact: 'تحسين دقة تصنيف تكاليف الأسطول'
     });
   }
 
@@ -302,9 +307,9 @@ function generateSuggestions(metrics: FinancialMetrics, accounts: unknown[]): Fi
       id: 'expand-cost-centers',
       type: 'optimization',
       title: 'توسيع مراكز التكلفة',
-      description: 'إنشاء مراكز تكلفة إضافية لتغطية جميع أنشطة الشركة',
+      description: 'إنشاء مراكز تكلفة تغطي الأنشطة التشغيلية غير المصنفة',
       priority: 'medium',
-      estimatedImpact: 'تحسين دقة التقارير المالية بنسبة 30%'
+      estimatedImpact: 'تحسين دقة التقارير حسب النشاط'
     });
   }
 
@@ -313,9 +318,9 @@ function generateSuggestions(metrics: FinancialMetrics, accounts: unknown[]): Fi
     id: 'automate-linking',
     type: 'optimization',
     title: 'أتمتة ربط الحسابات',
-    description: 'تفعيل الربط التلقائي للعملاء والعقود الجديدة بالحسابات المناسبة',
+    description: 'تفعيل أوامر الربط المعتمدة للعملاء والعقود الجديدة',
     priority: 'medium',
-    estimatedImpact: 'توفير 60% من وقت الإدخال اليدوي'
+    estimatedImpact: 'تقليل الإدخال اليدوي وأخطاء التصنيف'
   });
 
   return suggestions;

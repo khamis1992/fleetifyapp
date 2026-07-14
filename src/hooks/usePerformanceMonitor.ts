@@ -5,10 +5,12 @@ import { useEffect, useRef } from 'react';
  * 
  * Tracks component render times and provides performance insights
  */
-export const usePerformanceMonitor = (componentName: string) => {
+export const usePerformanceMonitor = (componentName: string, enabled: boolean = true) => {
   const renderStartRef = useRef<number | null>(null);
 
   useEffect(() => {
+    if (!enabled) return;
+
     // Track component mount/render time
     renderStartRef.current = performance.now();
     
@@ -27,7 +29,7 @@ export const usePerformanceMonitor = (componentName: string) => {
         // performanceLogger?.logRender(componentName, renderTime);
       }
     };
-  }, [componentName]);
+  }, [componentName, enabled]);
 };
 
 /**
@@ -60,8 +62,10 @@ export const monitorNetworkRequest = async <T>(
 /**
  * Memory Usage Monitor
  */
-export const useMemoryMonitor = (intervalMs: number = 30000) => {
+export const useMemoryMonitor = (intervalMs: number = 30000, enabled: boolean = true) => {
   useEffect(() => {
+    if (!enabled) return;
+
     if ('memory' in performance) {
       const logMemoryUsage = () => {
         // @ts-ignore - memory property exists in some browsers
@@ -85,7 +89,7 @@ export const useMemoryMonitor = (intervalMs: number = 30000) => {
       
       return () => clearInterval(interval);
     }
-  }, [intervalMs]);
+  }, [enabled, intervalMs]);
 };
 
 /**

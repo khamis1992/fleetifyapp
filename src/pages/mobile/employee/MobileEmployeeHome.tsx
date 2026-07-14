@@ -165,7 +165,7 @@ export const MobileEmployeeHome: React.FC = () => {
                     initial={{ opacity: 0, x: -10 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: index * 0.1 }}
-                    onClick={() => navigate(`/mobile/employee/contracts/${contract.id}`)}
+                  onClick={() => navigate(`/contracts/${contract.contract_number}`)}
                     className="flex items-center gap-3 p-3 bg-amber-50/50 rounded-xl border border-amber-100 hover:bg-amber-50 active:scale-[0.98] transition-all cursor-pointer"
                   >
                     {/* Number Badge */}

@@ -7,27 +7,27 @@ import { queryKeys } from '@/utils/queryKeys';
 export interface Company {
   id: string;
   name: string;
-  name_ar?: string;
-  email?: string;
-  phone?: string;
-  subscription_status?: string;
-  subscription_plan?: string;
+  name_ar?: string | null;
+  email?: string | null;
+  phone?: string | null;
+  subscription_status?: string | null;
+  subscription_plan?: string | null;
   created_at?: string;
-  address?: string;
-  country?: string;
-  city?: string;
-  active_modules?: string[];
-  business_type?: string;
-  currency?: string;
-  commercial_register?: string;
-  license_number?: string;
-  address_ar?: string;
-  office_latitude?: number;
-  office_longitude?: number;
-  allowed_radius?: number;
-  work_start_time?: string;
-  work_end_time?: string;
-  auto_checkout_enabled?: boolean;
+  address?: string | null;
+  country?: string | null;
+  city?: string | null;
+  active_modules?: string[] | null;
+  business_type?: string | null;
+  currency?: string | null;
+  commercial_register?: string | null;
+  license_number?: string | null;
+  address_ar?: string | null;
+  office_latitude?: number | null;
+  office_longitude?: number | null;
+  allowed_radius?: number | null;
+  work_start_time?: string | null;
+  work_end_time?: string | null;
+  auto_checkout_enabled?: boolean | null;
 }
 
 export const useCompanies = () => {

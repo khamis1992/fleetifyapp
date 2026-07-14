@@ -37,7 +37,7 @@ import {
   FileText,
   Truck
 } from 'lucide-react';
-import type { ContractAmendment, AmendmentType } from '@/types/amendment';
+import type { ContractAmendment, AmendmentType, AmendmentWithChanges } from '@/types/amendment';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
@@ -61,7 +61,7 @@ export const ContractAmendmentsList: React.FC<ContractAmendmentsListProps> = ({
     fetchAmendmentWithChanges
   } = useContractAmendments(contractId);
 
-  const [selectedAmendment, setSelectedAmendment] = useState<ContractAmendment | null>(null);
+  const [selectedAmendment, setSelectedAmendment] = useState<ContractAmendment | AmendmentWithChanges | null>(null);
   const [showDetails, setShowDetails] = useState(false);
   const [showApprovalDialog, setShowApprovalDialog] = useState(false);
   const [approvalAction, setApprovalAction] = useState<'approve' | 'reject'>('approve');
@@ -256,7 +256,7 @@ export const ContractAmendmentsList: React.FC<ContractAmendmentsListProps> = ({
                     <div className="flex items-center gap-2">
                       <Badge variant={amendment.amount_difference > 0 ? 'default' : 'destructive'}>
                         {amendment.amount_difference > 0 ? '+' : ''}
-                        {amendment.amount_difference.toFixed(3)} د.ك
+                        {amendment.amount_difference.toFixed(2)} ر.ق
                       </Badge>
                       <span className="text-xs text-muted-foreground">فرق المبلغ</span>
                     </div>
@@ -340,7 +340,7 @@ export const ContractAmendmentsList: React.FC<ContractAmendmentsListProps> = ({
           <DialogHeader>
             <DialogTitle>تفاصيل التعديل</DialogTitle>
           </DialogHeader>
-          {selectedAmendment && 'change_logs' in selectedAmendment && (
+          {selectedAmendment && 'change_logs' in selectedAmendment && Array.isArray(selectedAmendment.change_logs) && (
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>

@@ -8,6 +8,9 @@ import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { CheckCircle, XCircle, Clock, Car, DollarSign } from "lucide-react"
 import { toast } from "sonner"
+import { getEnvConfig } from "@/lib/validateEnv"
+
+const QUOTATION_APPROVAL_URL = `${getEnvConfig().VITE_SUPABASE_URL}/functions/v1/quotation-approval`
 
 interface Quotation {
   id: string
@@ -70,7 +73,7 @@ export default function QuotationApproval() {
     const fetchQuotation = async () => {
       try {
         const response = await fetch(
-          `https://qwhunliohlkkahbspfiu.supabase.co/functions/v1/quotation-approval?token=${token}`
+          `${QUOTATION_APPROVAL_URL}?token=${encodeURIComponent(token)}`
         )
         
         const data = await response.json()
@@ -96,7 +99,7 @@ export default function QuotationApproval() {
     setProcessing(true)
     try {
       const response = await fetch(
-        'https://qwhunliohlkkahbspfiu.supabase.co/functions/v1/quotation-approval',
+        QUOTATION_APPROVAL_URL,
         {
           method: 'POST',
           headers: {
@@ -274,13 +277,13 @@ export default function QuotationApproval() {
               
               <div>
                 <Label className="text-sm font-medium text-muted-foreground">السعر لكل {durationType}</Label>
-                <p className="text-lg font-semibold">{quotation.rate_per_unit.toFixed(3)} د.ك</p>
+                <p className="text-lg font-semibold">{quotation.rate_per_unit.toFixed(2)} ر.ق</p>
               </div>
             </div>
 
             <div className="bg-primary/5 p-4 rounded-lg">
               <Label className="text-sm font-medium text-muted-foreground">المبلغ الإجمالي</Label>
-              <p className="text-3xl font-bold text-primary">{quotation.total_amount.toFixed(3)} د.ك</p>
+              <p className="text-3xl font-bold text-primary">{quotation.total_amount.toFixed(2)} ر.ق</p>
             </div>
 
             <div>

@@ -12,6 +12,7 @@ import {
   CheckCircle,
   Layers
 } from 'lucide-react';
+import type { ProcessedAccountData } from '@/hooks/useEnhancedChartOfAccountsCSVUpload';
 
 interface AccountNode {
   accountCode: string;
@@ -26,7 +27,7 @@ interface AccountNode {
 }
 
 interface AccountsTreeViewProps {
-  data: unknown[]; // البيانات المعالجة من الـ Hook
+  data: ProcessedAccountData[];
   hierarchyErrors?: Array<{ accountCode: string; message: string; rowNumber: number }>;
 }
 

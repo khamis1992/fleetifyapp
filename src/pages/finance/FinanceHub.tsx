@@ -4,6 +4,7 @@
  */
 
 import React, { useMemo } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -31,6 +32,8 @@ import { useTreasurySummary } from '@/hooks/useTreasury';
 import { useInvoices } from '@/hooks/finance/useInvoices';
 import { useVehicleInstallmentSummary } from '@/hooks/useVehicleInstallments';
 import { useMonthlyObligationSummary } from '@/hooks/useMonthlyObligations';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
 import {
   AreaChart,
@@ -46,6 +49,8 @@ import {
 
 const FinanceHub: React.FC = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const companyId = user?.profile?.company_id || user?.company?.id;
   const { formatCurrency } = useCurrencyFormatter();
   const { data: stats } = useDashboardStats();
   const { data: recentActivities } = useRecentActivities();
@@ -61,19 +66,118 @@ const FinanceHub: React.FC = () => {
     return new Date(inv.due_date) < new Date();
   });
 
+  const { data: financialAnalytics } = useQuery({
+    queryKey: ['finance-hub-analytics', companyId],
+    queryFn: async () => {
+      if (!companyId) throw new Error('Company ID is required');
+      const now = new Date();
+      const firstMonth = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 5, 1));
+
+      const [paymentsResult, invoicesResult] = await Promise.all([
+        supabase
+          .from('payments')
+          .select('amount, payment_date, customer_id')
+          .eq('company_id', companyId)
+          .eq('transaction_type', 'receipt')
+          .in('payment_status', ['completed', 'paid', 'confirmed'])
+          .gte('payment_date', firstMonth.toISOString().slice(0, 10)),
+        supabase
+          .from('invoices')
+          .select('total_amount, paid_amount, status')
+          .eq('company_id', companyId)
+          .not('status', 'in', '(cancelled,rejected,draft)'),
+      ]);
+
+      if (paymentsResult.error) throw paymentsResult.error;
+      if (invoicesResult.error) throw invoicesResult.error;
+
+      const monthFormatter = new Intl.DateTimeFormat('ar-QA', {
+        month: 'short',
+        year: '2-digit',
+        timeZone: 'UTC',
+      });
+      const monthlyBuckets = new Map<string, { name: string; revenue: number }>();
+      for (let index = 0; index < 6; index += 1) {
+        const date = new Date(Date.UTC(
+          firstMonth.getUTCFullYear(),
+          firstMonth.getUTCMonth() + index,
+          1
+        ));
+        monthlyBuckets.set(date.toISOString().slice(0, 7), {
+          name: monthFormatter.format(date),
+          revenue: 0,
+        });
+      }
+
+      const customerRevenue = new Map<string, number>();
+      for (const payment of paymentsResult.data || []) {
+        const bucket = monthlyBuckets.get(payment.payment_date.slice(0, 7));
+        if (bucket) bucket.revenue += Number(payment.amount || 0);
+        if (payment.customer_id) {
+          customerRevenue.set(
+            payment.customer_id,
+            (customerRevenue.get(payment.customer_id) || 0) + Number(payment.amount || 0)
+          );
+        }
+      }
+
+      const topCustomerIds = Array.from(customerRevenue.entries())
+        .sort((left, right) => right[1] - left[1])
+        .slice(0, 5)
+        .map(([customerId]) => customerId);
+      const customerNames = new Map<string, string>();
+      if (topCustomerIds.length > 0) {
+        const { data: customers, error: customersError } = await supabase
+          .from('customers')
+          .select('id, first_name, last_name, company_name')
+          .eq('company_id', companyId)
+          .in('id', topCustomerIds);
+        if (customersError) throw customersError;
+        for (const customer of customers || []) {
+          customerNames.set(
+            customer.id,
+            customer.company_name || `${customer.first_name || ''} ${customer.last_name || ''}`.trim() || 'عميل'
+          );
+        }
+      }
+
+      const totalInvoiced = (invoicesResult.data || []).reduce(
+        (sum, invoice) => sum + Number(invoice.total_amount || 0),
+        0
+      );
+      const totalPaid = (invoicesResult.data || []).reduce(
+        (sum, invoice) => sum + Number(invoice.paid_amount || 0),
+        0
+      );
+
+      return {
+        monthlyRevenue: Array.from(monthlyBuckets.values()),
+        collectionRate: totalInvoiced > 0 ? (totalPaid / totalInvoiced) * 100 : 0,
+        topCustomers: topCustomerIds.map(customerId => ({
+          name: customerNames.get(customerId) || 'عميل',
+          revenue: customerRevenue.get(customerId) || 0,
+        })),
+      };
+    },
+    enabled: !!companyId,
+  });
+
+  const revenueChange = Number.parseFloat(String(stats?.revenueChange || '0').replace('%', '')) || 0;
+
   const kpiCards = [
     {
       title: 'إيرادات الشهر',
-      value: (stats as any)?.monthlyRevenue || 0,
-      change: (stats as any)?.revenueChange || 0,
+      value: stats?.monthlyRevenue || 0,
+      format: 'currency' as const,
+      change: revenueChange,
       icon: TrendingUp,
       color: 'emerald' as const,
       path: '/finance/reports-analysis?tab=reports',
     },
     {
       title: 'نسبة التحصيل',
-      value: '85%',
-      change: 12,
+      value: financialAnalytics?.collectionRate || 0,
+      format: 'percentage' as const,
       icon: CreditCard,
       color: 'sky' as const,
       path: '/finance/billing',
@@ -81,7 +185,7 @@ const FinanceHub: React.FC = () => {
     {
       title: 'الفواتير المتأخرة',
       value: overdueInvoices.length,
-      change: -5,
+      format: 'number' as const,
       icon: AlertTriangle,
       color: 'coral' as const,
       path: '/finance/billing',
@@ -89,6 +193,7 @@ const FinanceHub: React.FC = () => {
     {
       title: 'رصيد الخزينة',
       value: treasurySummary?.totalBalance || 0,
+      format: 'currency' as const,
       icon: Building2,
       color: 'violet' as const,
       path: '/finance/treasury',
@@ -96,6 +201,7 @@ const FinanceHub: React.FC = () => {
     {
       title: 'التزامات هذا الشهر',
       value: obligationSummary?.dueThisMonthAmount || 0,
+      format: 'currency' as const,
       icon: Clock,
       color: 'sky' as const,
       path: '/finance/obligations',
@@ -145,28 +251,8 @@ const FinanceHub: React.FC = () => {
     }));
   }, [recentActivities]);
 
-  const revenueData = useMemo(() => {
-    const data = [];
-    const now = new Date();
-    for (let i = 5; i >= 0; i--) {
-      const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      const monthName = date.toLocaleDateString('ar-SA', { month: 'short' });
-      data.push({
-        name: monthName,
-        revenue: Math.floor(Math.random() * 50000) + 30000,
-        expenses: Math.floor(Math.random() * 30000) + 15000,
-      });
-    }
-    return data;
-  }, []);
-
-  const topCustomersData = [
-    { name: 'شركة الأمل', revenue: 120000 },
-    { name: 'شركة النور', revenue: 95000 },
-    { name: 'شركة الفجر', revenue: 87500 },
-    { name: 'شركة السلام', revenue: 72000 },
-    { name: 'شركة الوفاء', revenue: 65000 },
-  ];
+  const revenueData = financialAnalytics?.monthlyRevenue || [];
+  const topCustomersData = financialAnalytics?.topCustomers || [];
 
   return (
     <div className="min-h-screen bg-slate-50" dir="rtl">
@@ -222,7 +308,11 @@ const FinanceHub: React.FC = () => {
                   )}
                 </div>
                 <p className="text-3xl font-bold text-slate-900 mb-1">
-                  {typeof kpi.value === 'number' ? formatCurrency(kpi.value) : kpi.value}
+                  {kpi.format === 'currency'
+                    ? formatCurrency(kpi.value)
+                    : kpi.format === 'percentage'
+                      ? `${kpi.value.toFixed(1)}%`
+                      : kpi.value.toLocaleString('ar-QA')}
                 </p>
                 <p className="text-sm text-slate-500">{kpi.title}</p>
               </motion.div>

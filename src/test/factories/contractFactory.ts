@@ -2,7 +2,17 @@
 export const contractFactory = {
   create: (overrides?: any) => ({
     id: '1',
+    contract_number: 'TEST-1',
+    company_id: 'company-1',
+    customer_id: 'customer-1',
     status: 'active',
+    start_date: '2026-01-01',
+    end_date: '2026-12-31',
+    contract_amount: 12000,
+    monthly_amount: 1000,
+    contract_type: 'monthly_rental',
+    created_at: '2026-01-01T00:00:00.000Z',
+    updated_at: '2026-01-01T00:00:00.000Z',
     startDate: new Date().toISOString(),
     endDate: new Date().toISOString(),
     totalAmount: 1000,
@@ -14,7 +24,7 @@ export const contractFactory = {
   createActiveContracts: (count: number) => Array.from({ length: count }, (_, i) => contractFactory.create({ id: `a${i}` })),
   createExpiredContracts: (count: number) => Array.from({ length: count }, (_, i) => contractFactory.create({ id: `e${i}`, status: 'expired' })),
   createDraftContracts: (count: number) => Array.from({ length: count }, (_, i) => contractFactory.create({ id: `d${i}`, status: 'draft' })),
-  createInvalid: () => [contractFactory.create({ id: 'invalid', totalAmount: -1 })],
+  createInvalid: () => [contractFactory.create({ id: 'invalid', totalAmount: -1, contract_amount: -1 })],
   calculationTests: () => ({ monthlyPaymentModule: { calculate: () => 1000 } }),
 };
 export default contractFactory;

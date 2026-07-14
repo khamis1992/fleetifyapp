@@ -99,11 +99,11 @@ export const UserGoals: React.FC<UserGoalsProps> = ({ compact = false, limit }) 
   };
 
   const getProgressColor = (percentage: number) => {
-    if (percentage >= 100) return 'bg-green-500';
-    if (percentage >= 75) return 'bg-emerald-500';
-    if (percentage >= 50) return 'bg-blue-500';
-    if (percentage >= 25) return 'bg-orange-500';
-    return 'bg-slate-400';
+    if (percentage >= 100) return '[&>div]:bg-green-500';
+    if (percentage >= 75) return '[&>div]:bg-emerald-500';
+    if (percentage >= 50) return '[&>div]:bg-blue-500';
+    if (percentage >= 25) return '[&>div]:bg-orange-500';
+    return '[&>div]:bg-slate-400';
   };
 
   if (isLoading) {
@@ -363,8 +363,7 @@ export const UserGoals: React.FC<UserGoalsProps> = ({ compact = false, limit }) 
                       </div>
                       <Progress
                         value={Math.min(percentage, 100)}
-                        className="h-2"
-                        indicatorClassName={getProgressColor(percentage)}
+                        className={cn('h-2', getProgressColor(percentage))}
                       />
                     </div>
                   </motion.div>

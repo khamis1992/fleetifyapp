@@ -192,7 +192,7 @@ export const MobileEmployeeTasks: React.FC = () => {
                     <MobileTaskItem
                       task={task}
                       onComplete={() => handleCompleteTask(task.id)}
-                      onClick={() => navigate(`/mobile/employee/tasks/${task.id}`)}
+                      onClick={() => navigate('/tasks')}
                       showCheckbox
                     />
                   </motion.div>

@@ -8,7 +8,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { customerCommunicationsClient } from '@/integrations/supabase/customerCommunicationsClient';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 
@@ -89,29 +89,35 @@ export const AddNoteDialog: React.FC<AddNoteDialogProps> = ({
     },
   });
 
-  const selectedContract = contracts.find(
-    (c) => c.id === form.watch('contract_id')
-  );
-
   // Mutation to add note
   const addNoteMutation = useMutation({
     mutationFn: async (data: NoteFormData) => {
       const contract = contracts.find((c) => c.id === data.contract_id);
       if (!contract) throw new Error('Contract not found');
+      const companyId = user?.profile?.company_id || user?.company?.id;
+      if (!user?.id || !companyId) throw new Error('تعذر تحديد المستخدم أو الشركة');
 
-      const { data: note, error } = await supabase
+      const now = new Date();
+
+      const { data: note, error } = await customerCommunicationsClient
         .from('customer_communications')
         .insert({
           customer_id: contract.customer_id,
+          company_id: companyId,
           contract_id: data.contract_id,
           communication_type: 'note',
-          communication_date: new Date().toISOString(),
-          notes: data.note_content,
-          contacted_by: user?.profile?.id,
-          metadata: {
-            note_type: data.note_type,
-            is_important: data.is_important,
-          },
+          communication_date: now.toISOString().slice(0, 10),
+          communication_time: now.toISOString().slice(11, 19),
+          duration_minutes: null,
+          employee_id: user.id,
+          notes: `[${data.note_type}]${data.is_important ? ' [مهمة]' : ''} ${data.note_content}`,
+          action_required: 'none',
+          action_description: null,
+          follow_up_scheduled: false,
+          follow_up_date: null,
+          follow_up_time: null,
+          follow_up_status: null,
+          attachments: [],
         })
         .select()
         .single();
@@ -130,9 +136,9 @@ export const AddNoteDialog: React.FC<AddNoteDialogProps> = ({
       form.reset();
       onOpenChange(false);
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       toast.error('فشل إضافة الملاحظة', {
-        description: error.message || 'حدث خطأ أثناء حفظ البيانات',
+        description: error instanceof Error ? error.message : 'حدث خطأ أثناء حفظ البيانات',
       });
     },
   });

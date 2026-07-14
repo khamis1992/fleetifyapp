@@ -6,8 +6,8 @@ import {
 } from "../longcat.ts";
 import type { AuditFinding } from "./types.ts";
 
-const SYSTEM_AUDIT_WORKER_VERSION = "2026-07-12.26";
-const SYSTEM_AUDIT_WORKER_FUNCTION = "system-audit-worker-v11";
+const SYSTEM_AUDIT_WORKER_VERSION = "2026-07-13.44";
+const SYSTEM_AUDIT_WORKER_FUNCTION = "system-audit-worker-v12";
 
 export class SystemAuditRequestError extends Error {
   constructor(message: string, readonly status: number) {

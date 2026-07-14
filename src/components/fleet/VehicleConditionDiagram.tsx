@@ -239,17 +239,16 @@ export const VehicleConditionDiagram: React.FC<VehicleConditionDiagramProps> = (
                 // Show fallback content
                 const fallback = document.createElement('div');
                 fallback.className = 'w-full h-full flex items-center justify-center bg-slate-100 text-slate-500';
-                fallback.innerHTML = `
-                  <div class="text-center p-4">
-                    <div class="w-16 h-16 mx-auto mb-2 border-2 border-dashed border-slate-300 rounded-lg flex items-center justify-center">
-                      <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2"></path>
-                      </svg>
-                    </div>
-                    <p class="text-sm">مخطط المركبة غير متوفر</p>
-                    <p class="text-xs text-slate-400">يمكنك إضافة نقاط الضرر بالنقر على المنطقة</p>
-                  </div>
-                `;
+                const content = document.createElement('div');
+                content.className = 'text-center p-4';
+                const title = document.createElement('p');
+                title.className = 'text-sm';
+                title.textContent = 'مخطط المركبة غير متوفر';
+                const hint = document.createElement('p');
+                hint.className = 'text-xs text-slate-400';
+                hint.textContent = 'يمكنك إضافة نقاط الضرر بالنقر على المنطقة';
+                content.append(title, hint);
+                fallback.appendChild(content);
                 target.parentNode?.appendChild(fallback);
               }}
             />

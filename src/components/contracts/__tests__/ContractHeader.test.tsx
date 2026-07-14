@@ -3,7 +3,7 @@
  */
 
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { ContractHeader } from '../ContractHeader';
 import type { Contract } from '@/types/contracts';
@@ -29,6 +29,12 @@ vi.mock('react-router-dom', async () => {
   };
 });
 
+vi.mock('@/hooks/useCurrencyFormatter', () => ({
+  useCurrencyFormatter: () => ({
+    formatCurrency: (amount: number) => `${amount} QAR`,
+  }),
+}));
+
 describe('ContractHeader', () => {
   const mockContract: Contract = {
     id: 'test-contract-1',
@@ -37,11 +43,13 @@ describe('ContractHeader', () => {
     vehicle_id: 'vehicle-1',
     start_date: '2024-01-01',
     end_date: '2024-12-31',
-    daily_rate: 100,
-    total_amount: 36500,
+    monthly_amount: 100,
+    contract_amount: 36500,
+    total_paid: 500,
+    balance_due: 36000,
+    payment_status: 'partially_paid',
     status: 'active',
-    payment_method: 'cash',
-    notes: 'Test contract notes',
+    description: 'Test contract description',
     company_id: 'company-1',
     created_at: '2024-01-01T00:00:00Z',
     updated_at: '2024-01-01T00:00:00Z',
@@ -81,10 +89,9 @@ describe('ContractHeader', () => {
     );
 
     expect(screen.getByText('عقد رقم: TEST-123')).toBeInTheDocument();
-    expect(screen.getByDisplayValue('100 ريال')).toBeInTheDocument();
-    expect(screen.getByDisplayValue('36,500 ريال')).toBeInTheDocument();
-    expect(screen.getByText('نقدي')).toBeInTheDocument();
-    expect(screen.getByText('نقدي')).toBeInTheDocument();
+    expect(screen.getByText('100 QAR')).toBeInTheDocument();
+    expect(screen.getByText('36500 QAR')).toBeInTheDocument();
+    expect(screen.getByText('مدفوع جزئيًا')).toBeInTheDocument();
   });
 
   it('displays customer information when available', () => {
@@ -123,7 +130,7 @@ describe('ContractHeader', () => {
       />
     );
 
-    expect(screen.getByText('ينتهي قريباً')).toBeInTheDocument();
+    expect(screen.getByText('ينتهي قريبًا')).toBeInTheDocument();
   });
 
   it('does not display expiring soon badge when contract expires in more than 7 days', () => {
@@ -137,7 +144,7 @@ describe('ContractHeader', () => {
         contract={expiringSoonContract}
         onEdit={vi.fn()}
         onPrint={vi.fn()}
-        onExport={fn()}
+        onExport={vi.fn()}
         onRefresh={vi.fn()}
       />
     );
@@ -238,15 +245,15 @@ describe('ContractHeader', () => {
     expect(refreshButton).toBeDisabled();
   });
 
-  it('displays notes when provided', () => {
-    const contractWithNotes = {
+  it('displays description when provided', () => {
+    const contractWithDescription = {
       ...mockContract,
-      notes: 'Important contract notes',
+      description: 'Important contract description',
     };
 
     render(
       <ContractHeader
-        contract={contractWithNotes}
+        contract={contractWithDescription}
         onEdit={vi.fn()}
         onPrint={vi.fn()}
         onExport={vi.fn()}
@@ -254,79 +261,83 @@ describe('ContractHeader', () => {
       />
     );
 
-    expect(screen.getByText('ملاحظات')).toBeInTheDocument();
-    expect(screen.getByText('Important contract notes')).toBeInTheDocument();
+    expect(screen.getByText('الوصف')).toBeInTheDocument();
+    expect(screen.getByText('Important contract description')).toBeInTheDocument();
   });
 
-  it('does not display notes section when no notes provided', () => {
-    const contractWithoutNotes = {
+  it('does not display description section when no description is provided', () => {
+    const contractWithoutDescription = {
       ...mockContract,
-      notes: null,
+      description: null,
     };
 
     render(
       <ContractHeader
-        contract={contractWithoutNotes}
+        contract={contractWithoutDescription}
         onEdit={vi.fn()}
         onPrint={vi.fn()}
-        onExport={fn()}
+        onExport={vi.fn()}
         onRefresh={vi.fn()}
       />
     );
 
-    expect(screen.queryByText('ملاحظات')).not.toBeInTheDocument();
+    expect(screen.queryByText('الوصف')).not.toBeInTheDocument();
   });
 
-  it('displays correct payment method badge', () => {
+  it('displays the partial payment status', () => {
     render(
       <ContractHeader
         contract={mockContract}
         onEdit={vi.fn()}
         onPrint={vi.fn()}
-        onExport={fn()}
+        onExport={vi.fn()}
         onRefresh={vi.fn()}
       />
     );
 
-    expect(screen.getByText('نقدي')).toBeInTheDocument();
+    expect(screen.getByText('مدفوع جزئيًا')).toBeInTheDocument();
   });
 
-  it('displays card payment method', () => {
-    const contractWithCard = {
+  it('displays paid payment status', () => {
+    const paidContract = {
       ...mockContract,
-      payment_method: 'card',
+      payment_status: 'paid',
+      total_paid: 36500,
+      balance_due: 0,
     };
 
     render(
       <ContractHeader
-        contract={contractWithCard}
+        contract={paidContract}
         onEdit={vi.fn()}
         onPrint={vi.fn()}
-        onExport={fn()}
+        onExport={vi.fn()}
         onRefresh={vi.fn()}
       />
     );
 
-    expect(screen.getByText('بطاقة')).toBeInTheDocument();
+    expect(screen.getByText('مدفوع')).toBeInTheDocument();
   });
 
-  it('displays transfer payment method', () => {
-    const contractWithTransfer = {
+  it('derives unpaid status when no explicit status exists', () => {
+    const unpaidContract = {
       ...mockContract,
-      payment_method: 'transfer',
+      payment_status: null,
+      total_paid: 0,
+      balance_due: 36500,
     };
 
     render(
       <ContractHeader
-        contract={contractWithTransfer}
+        contract={unpaidContract}
         onEdit={vi.fn()}
         onPrint={vi.fn()}
-        onExport={fn()}
+        onExport={vi.fn()}
         onRefresh={vi.fn()}
       />
     );
 
-    expect(screen.getByText('تحويل بنكي')).toBeInTheDocument();
+    expect(screen.getByText('غير مدفوع')).toBeInTheDocument();
   });
 
   it('applies custom className', () => {
@@ -335,7 +346,7 @@ describe('ContractHeader', () => {
         contract={mockContract}
         onEdit={vi.fn()}
         onPrint={vi.fn()}
-        onExport={fn()}
+        onExport={vi.fn()}
         onRefresh={vi.fn()}
         className="custom-class"
       />
@@ -350,7 +361,7 @@ describe('ContractHeader', () => {
         contract={mockContract}
         onEdit={vi.fn()}
         onPrint={vi.fn()}
-        onExport={fn()}
+        onExport={vi.fn()}
         onRefresh={vi.fn()}
         isRefreshing={true}
       />

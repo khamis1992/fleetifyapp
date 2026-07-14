@@ -34,8 +34,8 @@ import { toast } from 'sonner';
 export interface Payment {
   id: string;
   company_id: string;
-  payment_type: 'cash' | 'check' | 'bank_transfer' | 'credit_card' | 'online_transfer';
-  payment_method: 'received' | 'made';
+  payment_type: string;
+  payment_method: string;
   payment_number: string;
   amount: number;
   payment_date: string;
@@ -97,6 +97,8 @@ export const paymentKeys = {
     [...paymentKeys.lists(), companyId, filters] as const,
   details: () => [...paymentKeys.all, 'detail'] as const,
   detail: (id: string) => [...paymentKeys.details(), id] as const,
+  unmatched: (companyId: string) => [...paymentKeys.lists(), companyId, 'unmatched'] as const,
+  matches: (paymentId: string) => [...paymentKeys.detail(paymentId), 'matches'] as const,
 };
 
 // ============================================================================
@@ -674,14 +676,12 @@ export const useBulkDeletePayments = () => {
         try {
           const { createAuditLog } = await import('@/hooks/useAuditLog');
           await createAuditLog(
-            'DELETE_BULK',
+            'CANCEL',
             'payment',
-            null,
-            `Bulk delete: ${deletedCount} payments`,
+            undefined,
+            `Bulk cancellation: ${deletedCount} payments`,
             {
-              new_values: null,
-              old_values: null,
-              changes_summary: `تم حذف ${deletedCount} دفع وتحديث ${processedInvoices} فاتورة`,
+              changes_summary: `تم إلغاء ${deletedCount} دفعة وتحديث ${processedInvoices} فاتورة`,
               metadata: {
                 deletedCount,
                 processedInvoices,

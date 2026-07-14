@@ -3,6 +3,7 @@ import { toast } from 'sonner';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 import { usePermissions } from '@/hooks/usePermissions';
 import { supabase } from '@/integrations/supabase/client';
+import type { Database } from '@/integrations/supabase/types';
 import { 
   EnhancedPaymentData,
   PaymentJournalPreview,
@@ -38,6 +39,8 @@ interface Payment {
   amount?: number;
   [key: string]: unknown;
 }
+
+type PaymentUpdate = Database['public']['Tables']['payments']['Update'];
 
 const getSupabaseErrorMessage = (error: unknown): string => {
   if (!error) return '';
@@ -657,6 +660,7 @@ export const usePaymentOperations = (options: PaymentOperationsOptions = {}) => 
   const updatePayment = useMutation({
     mutationFn: async ({ paymentId, data }: { paymentId: string; data: Partial<EnhancedPaymentData> }) => {
       console.log('🔄 [usePaymentOperations] Starting payment update:', { paymentId, data });
+      if (!companyId) throw new Error('لم يتم تحديد الشركة');
 
       // Check if payment exists and user has permission
       const { data: existingPayment, error: fetchError } = await supabase
@@ -697,7 +701,7 @@ export const usePaymentOperations = (options: PaymentOperationsOptions = {}) => 
       }
 
       // Prepare update data - only include valid database fields
-      const updateData = Object.fromEntries(Object.entries({
+      const updateData: PaymentUpdate = {
         amount: data.amount,
         payment_number: data.payment_number,
         payment_date: data.payment_date,
@@ -714,12 +718,12 @@ export const usePaymentOperations = (options: PaymentOperationsOptions = {}) => 
         bank_id: data.bank_id,
         account_id: data.account_id,
         updated_at: new Date().toISOString(),
-      }).filter(([, value]) => value !== undefined));
+      };
 
       // Update payment
       const { data: updatedPayment, error } = await supabase
         .from('payments')
-        .update(updateData as any)
+        .update(updateData)
         .eq('id', paymentId)
         .eq('company_id', companyId)
         .select()
@@ -972,6 +976,8 @@ export const usePaymentOperations = (options: PaymentOperationsOptions = {}) => 
 
   // Helper functions
   const validatePaymentData = async (data: EnhancedPaymentData) => {
+    if (!companyId) throw new Error('لم يتم تحديد الشركة');
+
     // Check if payment number is unique
     if (data.payment_number) {
       const { data: existingPayment } = await supabase
@@ -979,7 +985,7 @@ export const usePaymentOperations = (options: PaymentOperationsOptions = {}) => 
         .select('id')
         .eq('payment_number', data.payment_number)
         .eq('company_id', companyId)
-        .single();
+        .maybeSingle();
 
       if (existingPayment) {
         throw new Error('رقم الدفعة موجود مسبقاً');
@@ -1028,6 +1034,8 @@ export const usePaymentOperations = (options: PaymentOperationsOptions = {}) => 
     type: 'receipt' | 'payment' | 'invoice_payment',
     sequenceOffset = 0
   ): Promise<string> => {
+    if (!companyId) throw new Error('لم يتم تحديد الشركة');
+
     const prefix = type === 'receipt' ? 'REC' : type === 'payment' ? 'PAY' : 'INV';
     const year = new Date().getFullYear().toString().slice(-2);
     const transactionType = type === 'payment' ? 'payment' : 'receipt';

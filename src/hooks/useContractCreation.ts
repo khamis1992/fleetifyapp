@@ -45,6 +45,10 @@ interface ContractInputData {
   terms?: string | null
   cost_center_id?: string | null
   created_by?: string
+  vehicle_condition_report_id?: string
+  vehicle_info?: string | Record<string, unknown>
+  customer_signature?: string
+  company_signature?: string
   [key: string]: unknown
 }
 
@@ -107,7 +111,7 @@ export const useContractCreation = () => {
           : step
       ),
       canRetry: status === 'failed',
-      hasWarnings: prev.hasWarnings || status === 'warning' || (warnings && warnings.length > 0)
+      hasWarnings: prev.hasWarnings || status === 'warning' || Boolean(warnings?.length)
     }))
   }
 
@@ -126,13 +130,13 @@ export const useContractCreation = () => {
       // Use the existing RPC function with proper parameter names
       await supabase.rpc('log_contract_creation_step', {
         company_id_param: companyId as string,
-        contract_id_param: contractId,
+        contract_id_param: contractId || undefined,
         step_name: stepName,
         status_param: status,
         attempt_num: attemptNum,
-        error_msg: errorMsg || null,
-        exec_time: execTime || null,
-        meta: meta ? JSON.parse(JSON.stringify(meta)) : null
+        error_msg: errorMsg || undefined,
+        exec_time: execTime,
+        meta: JSON.parse(JSON.stringify(meta))
       })
     } catch (error) {
       console.warn('Failed to log contract creation step:', error)
@@ -187,16 +191,16 @@ export const useContractCreation = () => {
         const rpcParams = {
           p_company_id: companyId,
           p_customer_id: inputContractData.customer_id,
-          p_vehicle_id: inputContractData.vehicle_id === 'none' ? null : inputContractData.vehicle_id,
+          p_vehicle_id: inputContractData.vehicle_id === 'none' ? undefined : inputContractData.vehicle_id || undefined,
           p_contract_type: inputContractData.contract_type || 'rental',
           p_start_date: inputContractData.start_date,
           p_end_date: inputContractData.end_date,
           p_contract_amount: contractAmount,
           p_monthly_amount: Number(inputContractData.monthly_amount || contractAmount) || contractAmount,
-          p_description: inputContractData.description || null,
-          p_terms: inputContractData.terms || null,
-          p_cost_center_id: inputContractData.cost_center_id || null,
-          p_created_by: inputContractData.created_by || user?.id
+          p_description: inputContractData.description || undefined,
+          p_terms: inputContractData.terms || undefined,
+          p_cost_center_id: inputContractData.cost_center_id || undefined,
+          p_created_by: inputContractData.created_by || user?.id || undefined
         }
         
         console.log('📋 [CONTRACT_CREATION] معاملات RPC:', rpcParams)
@@ -265,7 +269,7 @@ export const useContractCreation = () => {
         }
 
         // معالجة عدم وجود استجابة
-        const typedResult = (contractRpcResult || {}) as ContractCreationResult
+        const typedResult = (contractRpcResult || {}) as unknown as ContractCreationResult
 
         if (!typedResult.success || !typedResult.contract_id) {
           const rpcError = typedResult.error || typedResult.errors?.join(', ')
@@ -313,6 +317,7 @@ export const useContractCreation = () => {
             .from('vehicles')
             .update({ status: 'rented' })
             .eq('id', vehicleId)
+            .eq('company_id', companyId)
           
           if (vehicleError) {
             console.warn('⚠️ [CONTRACT_CREATION] فشل في تحديث حالة المركبة:', vehicleError)
@@ -339,38 +344,30 @@ export const useContractCreation = () => {
               .from('vehicle_condition_reports')
               .update({ contract_id: contractId })
               .eq('id', inputContractData.vehicle_condition_report_id)
+              .eq('company_id', companyId)
             
             if (updateError) {
               console.error('❌ [CONTRACT_CREATION] فشل في ربط تقرير حالة المركبة:', updateError)
             } else {
               console.log('✅ [CONTRACT_CREATION] تم ربط تقرير حالة المركبة بنجاح')
               
-              // Create a document entry for the condition report
-              const { data: profile } = await supabase
-                .from('profiles')
-                .select('company_id')
-                .eq('user_id', user?.id)
-                .single()
-              
-              if (profile) {
-                const { error: docError } = await supabase
-                  .from('contract_documents')
-                  .insert({
-                    company_id: profile.company_id,
-                    contract_id: contractId,
-                    document_type: 'condition_report',
-                    document_name: `تقرير حالة المركبة - ${new Date().toLocaleDateString('en-GB')}`,
-                    notes: 'تقرير حالة المركبة المأخوذ عند بداية العقد',
-                    is_required: true,
-                    condition_report_id: inputContractData.vehicle_condition_report_id,
-                    uploaded_by: user?.id
-                  })
-                
-                if (docError) {
-                  console.error('❌ [CONTRACT_CREATION] فشل في إنشاء مستند تقرير الحالة:', docError)
-                } else {
-                  console.log('✅ [CONTRACT_CREATION] تم إنشاء مستند تقرير الحالة بنجاح')
-                }
+              const { error: docError } = await supabase
+                .from('contract_documents')
+                .insert({
+                  company_id: companyId,
+                  contract_id: contractId,
+                  document_type: 'condition_report',
+                  document_name: `تقرير حالة المركبة - ${new Date().toLocaleDateString('en-GB')}`,
+                  notes: 'تقرير حالة المركبة المأخوذ عند بداية العقد',
+                  is_required: true,
+                  condition_report_id: inputContractData.vehicle_condition_report_id,
+                  uploaded_by: user?.id
+                })
+
+              if (docError) {
+                console.error('❌ [CONTRACT_CREATION] فشل في إنشاء مستند تقرير الحالة:', docError)
+              } else {
+                console.log('✅ [CONTRACT_CREATION] تم إنشاء مستند تقرير الحالة بنجاح')
               }
             }
           } catch (error) {
@@ -404,14 +401,18 @@ export const useContractCreation = () => {
           const documentData = {
             contract_id: contractId,
             contract_number: typedResult.contract_number || contractId,
-            contract_type: inputContractData.contract_type,
+            contract_type: inputContractData.contract_type || 'rental',
             customer_name: customerName,
-            vehicle_info: inputContractData.vehicle_info,
+            vehicle_info: typeof inputContractData.vehicle_info === 'string'
+              ? inputContractData.vehicle_info
+              : inputContractData.vehicle_info
+                ? JSON.stringify(inputContractData.vehicle_info)
+                : undefined,
             start_date: inputContractData.start_date,
             end_date: inputContractData.end_date,
-            contract_amount: inputContractData.contract_amount,
-            monthly_amount: inputContractData.monthly_amount,
-            terms: inputContractData.terms,
+            contract_amount: contractAmount,
+            monthly_amount: monthlyAmount,
+            terms: inputContractData.terms || undefined,
             customer_signature: inputContractData.customer_signature,
             company_signature: inputContractData.company_signature,
             condition_report_id: inputContractData.vehicle_condition_report_id,
@@ -512,7 +513,7 @@ export const useContractCreation = () => {
                     payment_status: 'unpaid',
                     status: 'draft',
                     invoice_type: 'rental',
-                    description: `فاتورة إيجار شهرية - الشهر ${i + 1} من ${numberOfInvoices}`,
+                    notes: `فاتورة إيجار شهرية - الشهر ${i + 1} من ${numberOfInvoices}`,
                   })
                   
                   if (!insertError) {
@@ -582,7 +583,7 @@ export const useContractCreation = () => {
           healthStatus: journalEntryId ? 'good' : (requiresManualEntry ? 'warning' : 'good')
         }))
 
-        await logContractStep(contractId, 'enhanced_creation', 'completed', 1, null, Date.now() - startTime)
+        await logContractStep(contractId, 'enhanced_creation', 'completed', 1, undefined, Date.now() - startTime)
 
         console.log('🎉 [CONTRACT_CREATION] اكتملت العملية المحسنة:', {
           contractId,
@@ -682,30 +683,30 @@ export const useContractCreation = () => {
       // رسائل خطأ محسنة للمستخدمين
       let userMessage = 'فشل في إنشاء العقد'
       
-      if (error && error.message) {
+      if (errorMessage) {
         // فحص أنماط أخطاء محددة وتوفير رسائل مفيدة
-        if (error.message.includes('unique_violation')) {
+        if (errorMessage.includes('unique_violation')) {
           userMessage = 'رقم العقد موجود مسبقاً، يرجى استخدام رقم مختلف'
-        } else if (error.message.includes('foreign_key_violation')) {
+        } else if (errorMessage.includes('foreign_key_violation')) {
           userMessage = 'يرجى التأكد من صحة بيانات العميل والمركبة'
-        } else if (error.message.includes('check_violation')) {
+        } else if (errorMessage.includes('check_violation')) {
           userMessage = 'يرجى التأكد من صحة البيانات المدخلة'
-        } else if (error.message.includes('not_null_violation')) {
+        } else if (errorMessage.includes('not_null_violation')) {
           userMessage = 'يرجى ملء جميع الحقول المطلوبة'
-        } else if (error.message.includes('timeout')) {
+        } else if (errorMessage.includes('timeout')) {
           userMessage = 'انتهت مهلة الاتصال، يرجى المحاولة مرة أخرى'
-        } else if (error.message.includes('network') || error.message.includes('connection')) {
+        } else if (errorMessage.includes('network') || errorMessage.includes('connection')) {
           userMessage = 'خطأ في الاتصال، يرجى التحقق من الإنترنت والمحاولة مرة أخرى'
-        } else if (error.message.includes('Contract not found') || error.message.includes('العقد غير موجود')) {
+        } else if (errorMessage.includes('Contract not found') || errorMessage.includes('العقد غير موجود')) {
           userMessage = 'خطأ في إنشاء العقد - يرجى المحاولة مرة أخرى'
-        } else if (error.message.includes('Journal entry') || error.message.includes('القيد المحاسبي')) {
+        } else if (errorMessage.includes('Journal entry') || errorMessage.includes('القيد المحاسبي')) {
           userMessage = 'تم إنشاء العقد ولكن فشل في إنشاء القيد المحاسبي'
-        } else if (error.message.includes('المستخدم غير موجود')) {
+        } else if (errorMessage.includes('المستخدم غير موجود')) {
           userMessage = 'مشكلة في المصادقة، يرجى تسجيل الدخول مرة أخرى'
-        } else if (error.message.includes('ليس لديك صلاحية')) {
+        } else if (errorMessage.includes('ليس لديك صلاحية')) {
           userMessage = 'ليس لديك صلاحية لإنشاء العقود، يرجى التواصل مع الإدارة'
         } else {
-          userMessage = error.message
+          userMessage = errorMessage
         }
       }
       

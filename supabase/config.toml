@@ -98,6 +98,14 @@ entrypoint = "./functions/system-audit-worker/index.ts"
 verify_jwt = false
 entrypoint = "./functions/system-audit-orchestrator/index.ts"
 
+[functions.system-audit-worker-v12]
+verify_jwt = false
+entrypoint = "./functions/system-audit-worker/index.ts"
+
+[functions.system-audit-orchestrator-v14]
+verify_jwt = false
+entrypoint = "./functions/system-audit-orchestrator/index.ts"
+
 [functions.system-audit-dashboard]
 verify_jwt = true
 

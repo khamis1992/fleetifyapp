@@ -698,7 +698,7 @@ const FinancialTrackingInner: React.FC = () => {
           
           // Create invoice description
           const description = `إيصال دفع رقم ${receiptNumber} - ${month} - ${selectedCustomer.name}`;
-          const invoiceNotes = `مبلغ الإيجار: ${rent_amount.toFixed(3)} د.ك\nغرامة التأخير: ${fine.toFixed(3)} د.ك\nالإجمالي: ${paidAmount.toFixed(3)} د.ك`;
+          const invoiceNotes = `مبلغ الإيجار: ${rent_amount.toFixed(2)} ر.ق\nغرامة التأخير: ${fine.toFixed(2)} ر.ق\nالإجمالي: ${paidAmount.toFixed(2)} ر.ق`;
 
           // Create the invoice
           const { data: invoice, error: invoiceError } = await supabase
@@ -718,7 +718,7 @@ const FinancialTrackingInner: React.FC = () => {
               description: description,
               notes: invoiceNotes,
               payment_terms: 'مدفوع',
-              currency: 'KWD'
+              currency: 'QAR'
             })
             .select('id, invoice_number')
             .single();
@@ -729,6 +729,7 @@ const FinancialTrackingInner: React.FC = () => {
               .from('invoice_items')
               .insert({
                 invoice_id: invoice.id,
+                line_number: 1,
                 item_description: description,
                 quantity: 1,
                 unit_price: paidAmount,
@@ -1177,53 +1178,22 @@ const FinancialTrackingInner: React.FC = () => {
   const createCustomerManually = async (firstName: string, lastName: string, companyId: string, monthlyAmount: number) => {
     console.log('Manual creation - Step 1: Creating customer without select...');
     
-    // Generate a truly unique customer code with multiple retry attempts
-    let uniqueCustomerCode = '';
-    let searchPhone = '';
-    let customerData = null;
-    
-    // Try up to 5 times to generate a unique customer code
-    for (let attempt = 1; attempt <= 5; attempt++) {
-      const timestamp = Date.now();
-      const randomSuffix = Math.random().toString(36).substring(2, 12).toUpperCase();
-      const randomNum = Math.floor(Math.random() * 10000);
-      uniqueCustomerCode = `CUST-${timestamp}-${randomSuffix}-${randomNum}-${attempt}`;
-      
-      // Create a unique identifier to help us find the customer
-      searchPhone = `${timestamp.toString().slice(-8)}${randomNum}${attempt}`;
-      
-      console.log(`Attempt ${attempt}: Generated customer code:`, uniqueCustomerCode);
-      
-      const { data, error } = await supabase
-        .from('customers')
-        .insert({
-          first_name: firstName,
-          last_name: lastName,
-          customer_type: 'individual',
-          customer_code: uniqueCustomerCode,
-          phone: searchPhone, // Unique phone to help identify
-          company_id: companyId,
-          is_active: true
-        })
-        .select('id, first_name, last_name');
-        
-      if (!error && data && data.length > 0) {
-        customerData = data[0];
-        break;
-      } else if (error) {
-        console.error(`Attempt ${attempt} failed:`, error);
-        
-        // If it's not a duplicate key error, break immediately
-        if (error.code !== '23505') {
-          throw new Error(error.message || 'فشل إنشاء العميل');
-        }
-        
-        // Wait a bit before retrying
-        if (attempt < 5) {
-          await new Promise(resolve => setTimeout(resolve, 100 * attempt));
-        }
-      }
-    }
+    const uniqueCustomerCode = `CUST-${crypto.randomUUID().replaceAll('-', '').slice(0, 16).toUpperCase()}`;
+    const { data: createdCustomers, error: customerError } = await supabase
+      .from('customers')
+      .insert({
+        first_name: firstName,
+        last_name: lastName,
+        customer_type: 'individual',
+        customer_code: uniqueCustomerCode,
+        phone: null,
+        company_id: companyId,
+        is_active: true
+      })
+      .select('id, first_name, last_name');
+
+    if (customerError) throw customerError;
+    const customerData = createdCustomers?.[0] || null;
 
     // If we still don't have customer data, throw an error
     if (!customerData) {
@@ -1257,7 +1227,7 @@ const FinancialTrackingInner: React.FC = () => {
     if (contractError) {
       console.error('Manual creation - Contract error:', contractError);
       // Clean up customer
-      await supabase.from('customers').delete().eq('id', customerData.id);
+      await supabase.from('customers').delete().eq('id', customerData.id).eq('company_id', companyId);
       // Better error handling for contract errors
       const contractErrorMessage = contractError.message || contractError.details || 'فشل إنشاء العقد';
       throw new Error(contractErrorMessage);
@@ -1265,12 +1235,6 @@ const FinancialTrackingInner: React.FC = () => {
 
     console.log('Manual creation - Success!');
     
-    // Update the phone to normal value
-    await supabase
-      .from('customers')
-      .update({ phone: '000000000' })
-      .eq('id', customerData.id);
-
     // Create CustomerWithRental object for UI
     const customerWithRental: CustomerWithRental = {
       id: customerData.id,

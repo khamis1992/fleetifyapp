@@ -13,7 +13,7 @@ export default function CostCentersSettings() {
           <h1 className="text-3xl font-bold">إدارة مراكز التكلفة</h1>
           <p className="text-muted-foreground">إنشاء وإدارة مراكز التكلفة للمتابعة المالية</p>
         </div>
-        <Button onClick={() => navigate("/finance/cost-centers/new")} className="gap-2">
+        <Button onClick={() => navigate("/finance/budgets-centers?tab=cost-centers")} className="gap-2">
           <Plus className="h-4 w-4" />
           مركز تكلفة جديد
         </Button>
@@ -34,7 +34,7 @@ export default function CostCentersSettings() {
         </Card>
 
         <Card className="hover:shadow-md transition-shadow cursor-pointer" 
-              onClick={() => navigate("/finance/cost-centers/new")}>
+              onClick={() => navigate("/finance/budgets-centers?tab=cost-centers")}>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Plus className="h-5 w-5 text-primary" />
@@ -47,7 +47,7 @@ export default function CostCentersSettings() {
         </Card>
 
         <Card className="hover:shadow-md transition-shadow cursor-pointer" 
-              onClick={() => navigate("/finance/cost-centers/reports")}>
+              onClick={() => navigate("/finance/reports-analysis?tab=cost-centers")}>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <TrendingUp className="h-5 w-5 text-primary" />

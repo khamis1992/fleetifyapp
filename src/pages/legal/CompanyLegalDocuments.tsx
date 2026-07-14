@@ -253,7 +253,7 @@ export default function CompanyLegalDocuments() {
   return (
     <main className="min-h-screen bg-[#F6F8FB] px-4 py-5 text-[#020617]" dir="rtl">
       <div className="mx-auto w-full max-w-7xl space-y-5">
-        <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div className="flex items-start gap-3">
               <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#22C7A1]/10 text-[#22C7A1]">
@@ -337,7 +337,7 @@ export default function CompanyLegalDocuments() {
           </div>
         </section>
 
-        <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+        <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
             <div>
               <h2 className="text-lg font-bold text-[#020617]">قائمة المستندات المطلوبة</h2>
@@ -389,7 +389,7 @@ export default function CompanyLegalDocuments() {
         </section>
 
         {latestDocuments.length > 0 && (
-          <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+          <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
             <div className="flex items-center justify-between gap-3">
               <div>
                 <h2 className="text-lg font-bold text-[#020617]">سجل المستندات</h2>
@@ -610,7 +610,7 @@ function DocumentRequirementCard({
     <motion.div
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition hover:border-[#22C7A1]/40"
+      className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm transition hover:border-[#22C7A1]/40"
     >
       <div className="flex items-start justify-between gap-3">
         <div className="flex min-w-0 items-start gap-3">

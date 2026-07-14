@@ -223,11 +223,11 @@ const Deposits = () => {
                         {formatCurrency(deposit.amount)}
                       </TableCell>
                       <TableCell>
-                        {new Date(deposit.received_date).toLocaleDateString('ar-KW')}
+                        {new Date(deposit.received_date).toLocaleDateString('ar-QA')}
                       </TableCell>
                       <TableCell>
                         {deposit.due_date 
-                          ? new Date(deposit.due_date).toLocaleDateString('ar-KW')
+                          ? new Date(deposit.due_date).toLocaleDateString('ar-QA')
                           : 'غير محدد'
                         }
                       </TableCell>

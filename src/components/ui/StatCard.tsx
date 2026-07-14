@@ -20,17 +20,17 @@ export interface StatCardProps {
   className?: string;
 }
 
-const variantStyles: Record<string, { gradient: string; bg: string; textDark: string; textLight: string }> = {
-  default: { gradient: 'from-slate-500 to-slate-600', bg: 'bg-slate-100', textDark: 'text-slate-700', textLight: 'text-slate-500' },
-  success: { gradient: 'from-green-500 to-emerald-500', bg: 'bg-green-100', textDark: 'text-green-700', textLight: 'text-green-500' },
-  warning: { gradient: 'from-amber-500 to-yellow-500', bg: 'bg-amber-100', textDark: 'text-amber-700', textLight: 'text-amber-500' },
-  danger: { gradient: 'from-red-500 to-rose-500', bg: 'bg-red-100', textDark: 'text-red-700', textLight: 'text-red-500' },
-  coral: { gradient: 'from-rose-500 to-orange-500', bg: 'bg-rose-100', textDark: 'text-rose-700', textLight: 'text-rose-500' },
-  emerald: { gradient: 'from-emerald-500 to-teal-500', bg: 'bg-emerald-100', textDark: 'text-emerald-700', textLight: 'text-emerald-500' },
-  violet: { gradient: 'from-violet-500 to-purple-500', bg: 'bg-violet-100', textDark: 'text-violet-700', textLight: 'text-violet-500' },
-  amber: { gradient: 'from-amber-500 to-yellow-500', bg: 'bg-amber-100', textDark: 'text-amber-700', textLight: 'text-amber-500' },
-  sky: { gradient: 'from-sky-500 to-cyan-500', bg: 'bg-sky-100', textDark: 'text-sky-700', textLight: 'text-sky-500' },
-  slate: { gradient: 'from-slate-500 to-gray-500', bg: 'bg-slate-100', textDark: 'text-slate-700', textLight: 'text-slate-500' },
+const variantStyles: Record<string, { icon: string; bg: string; textDark: string; textLight: string }> = {
+  default: { icon: 'bg-[#64748B]', bg: 'bg-[#F1F5F9]', textDark: 'text-[#334155]', textLight: 'text-[#64748B]' },
+  success: { icon: 'bg-[#22C7A1]', bg: 'bg-[#E8FBF6]', textDark: 'text-[#16836D]', textLight: 'text-[#22C7A1]' },
+  warning: { icon: 'bg-[#F59E0B]', bg: 'bg-[#FFFBEB]', textDark: 'text-[#B45309]', textLight: 'text-[#F59E0B]' },
+  danger: { icon: 'bg-[#FB6B7A]', bg: 'bg-[#FFF0F2]', textDark: 'text-[#C53F51]', textLight: 'text-[#FB6B7A]' },
+  coral: { icon: 'bg-[#FB6B7A]', bg: 'bg-[#FFF0F2]', textDark: 'text-[#C53F51]', textLight: 'text-[#FB6B7A]' },
+  emerald: { icon: 'bg-[#22C7A1]', bg: 'bg-[#E8FBF6]', textDark: 'text-[#16836D]', textLight: 'text-[#22C7A1]' },
+  violet: { icon: 'bg-[#7C83F6]', bg: 'bg-[#ECEEFE]', textDark: 'text-[#555CCB]', textLight: 'text-[#7C83F6]' },
+  amber: { icon: 'bg-[#F59E0B]', bg: 'bg-[#FFFBEB]', textDark: 'text-[#B45309]', textLight: 'text-[#F59E0B]' },
+  sky: { icon: 'bg-[#38BDF8]', bg: 'bg-[#EAF8FE]', textDark: 'text-[#087EA4]', textLight: 'text-[#38BDF8]' },
+  slate: { icon: 'bg-[#64748B]', bg: 'bg-[#F1F5F9]', textDark: 'text-[#334155]', textLight: 'text-[#64748B]' },
 };
 
 export const StatCard: React.FC<StatCardProps> = ({
@@ -49,7 +49,7 @@ export const StatCard: React.FC<StatCardProps> = ({
   className,
 }) => {
   const style = variantStyles[variant] || variantStyles.default;
-  const iconBgClass = iconBg || `bg-gradient-to-br ${style.gradient}`;
+  const iconBgClass = iconBg || style.icon;
 
   const trendStyles = {
     up: 'bg-green-100 text-green-600',
@@ -61,7 +61,7 @@ export const StatCard: React.FC<StatCardProps> = ({
     return (
       <motion.div
         className={cn(
-          'bg-white rounded-2xl p-5 shadow-sm border border-slate-100',
+          'min-h-[148px] bg-white rounded-lg p-5 shadow-sm border border-slate-200',
           'animate-pulse',
           className
         )}
@@ -82,7 +82,7 @@ export const StatCard: React.FC<StatCardProps> = ({
   return (
     <motion.div
       className={cn(
-        'bg-white rounded-2xl p-5 shadow-sm hover:shadow-md transition-all border border-slate-100',
+        'min-h-[148px] bg-white rounded-lg p-5 shadow-sm hover:shadow-md transition-all border border-slate-200',
         onClick && 'cursor-pointer hover:border-primary/30',
         className
       )}
@@ -90,8 +90,12 @@ export const StatCard: React.FC<StatCardProps> = ({
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: animations.durationMs.normal / 1000, delay }}
       onClick={onClick}
-      whileHover={onClick ? { scale: 1.02, y: -4 } : undefined}
-      whileTap={onClick ? { scale: 0.98 } : undefined}
+      {...(onClick
+        ? {
+            whileHover: { scale: 1.02, y: -4 },
+            whileTap: { scale: 0.98 },
+          }
+        : {})}
       dir="rtl"
     >
       <div className="flex items-center justify-between mb-3">

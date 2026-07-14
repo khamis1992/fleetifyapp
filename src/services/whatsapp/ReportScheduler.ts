@@ -20,6 +20,51 @@ import type {
   MessageLog,
 } from './types';
 import { supabase } from '@/integrations/supabase/client';
+import type { Database, Json } from '@/integrations/supabase/types';
+
+type WhatsAppSettingsRow = Database['public']['Tables']['whatsapp_settings']['Row'];
+type WhatsAppSettingsUpdate = Database['public']['Tables']['whatsapp_settings']['Update'];
+
+const parseRecipients = (value: Json | null): WhatsAppRecipient[] =>
+  Array.isArray(value) ? value as unknown as WhatsAppRecipient[] : [];
+
+const mapSettingsRow = (row: WhatsAppSettingsRow): ReportScheduleSettings => ({
+  id: row.id,
+  companyId: row.company_id,
+  dailyReportEnabled: row.daily_report_enabled ?? true,
+  dailyReportTime: row.daily_report_time ?? '08:00',
+  dailyReportDays: row.daily_report_days ?? [0, 1, 2, 3, 4, 5, 6],
+  weeklyReportEnabled: row.weekly_report_enabled ?? true,
+  weeklyReportDay: row.weekly_report_day ?? 0,
+  weeklyReportTime: row.weekly_report_time ?? '09:00',
+  monthlyReportEnabled: row.monthly_report_enabled ?? false,
+  monthlyReportDay: row.monthly_report_day ?? 1,
+  monthlyReportTime: row.monthly_report_time ?? '10:00',
+  instantAlertsEnabled: row.instant_alerts_enabled ?? true,
+  alertThreshold: row.alert_threshold ?? 10000,
+  recipients: parseRecipients(row.recipients),
+  ultramsgInstanceId: row.ultramsg_instance_id ?? undefined,
+  ultramsgToken: row.ultramsg_token ?? undefined,
+  createdAt: row.created_at ?? new Date().toISOString(),
+  updatedAt: row.updated_at ?? new Date().toISOString(),
+});
+
+const mapSettingsUpdate = (settings: Partial<ReportScheduleSettings>): WhatsAppSettingsUpdate => ({
+  daily_report_enabled: settings.dailyReportEnabled,
+  daily_report_time: settings.dailyReportTime,
+  daily_report_days: settings.dailyReportDays,
+  weekly_report_enabled: settings.weeklyReportEnabled,
+  weekly_report_day: settings.weeklyReportDay,
+  weekly_report_time: settings.weeklyReportTime,
+  monthly_report_enabled: settings.monthlyReportEnabled,
+  monthly_report_day: settings.monthlyReportDay,
+  monthly_report_time: settings.monthlyReportTime,
+  instant_alerts_enabled: settings.instantAlertsEnabled,
+  alert_threshold: settings.alertThreshold,
+  recipients: settings.recipients as unknown as Json | undefined,
+  ultramsg_instance_id: settings.ultramsgInstanceId,
+  ultramsg_token: settings.ultramsgToken,
+});
 
 class ReportScheduler {
   private intervalId: NodeJS.Timeout | null = null;
@@ -53,7 +98,7 @@ class ReportScheduler {
       }
 
       if (data) {
-        this.settings = data as ReportScheduleSettings;
+        this.settings = mapSettingsRow(data);
         return this.settings;
       }
 
@@ -75,7 +120,7 @@ class ReportScheduler {
         .from('whatsapp_settings')
         .upsert({
           company_id: this.companyId,
-          ...settings,
+          ...mapSettingsUpdate(settings),
           updated_at: new Date().toISOString(),
         });
 
@@ -111,7 +156,7 @@ class ReportScheduler {
         available: vehicles?.filter(v => v.status === 'available').length || 0,
         rented: vehicles?.filter(v => v.status === 'rented').length || 0,
         maintenance: vehicles?.filter(v => v.status === 'maintenance').length || 0,
-        reserved: vehicles?.filter(v => v.status === 'reserved').length || 0,
+        reserved: vehicles?.filter(v => v.status === 'reserved_employee').length || 0,
         utilizationRate: 0,
       };
       
@@ -132,16 +177,16 @@ class ReportScheduler {
       // جلب الفواتير المستحقة
       const { data: invoices } = await supabase
         .from('invoices')
-        .select('total_amount, amount_paid, status, due_date')
+        .select('total_amount, paid_amount, balance_due, payment_status, due_date')
         .eq('company_id', this.companyId)
-        .in('status', ['pending', 'partially_paid', 'overdue']);
+        .in('payment_status', ['unpaid', 'pending', 'partial', 'partially_paid', 'overdue']);
 
       const totalOutstanding = invoices?.reduce((sum, i) => 
-        sum + ((i.total_amount || 0) - (i.amount_paid || 0)), 0) || 0;
+        sum + (i.balance_due ?? ((i.total_amount || 0) - (i.paid_amount || 0))), 0) || 0;
 
       const overdueAmount = invoices
-        ?.filter(i => new Date(i.due_date) < new Date())
-        .reduce((sum, i) => sum + ((i.total_amount || 0) - (i.amount_paid || 0)), 0) || 0;
+        ?.filter(i => i.due_date && new Date(i.due_date) < new Date())
+        .reduce((sum, i) => sum + (i.balance_due ?? ((i.total_amount || 0) - (i.paid_amount || 0))), 0) || 0;
 
       // جلب العقود الجديدة اليوم
       const { data: newContracts } = await supabase
@@ -170,7 +215,7 @@ class ReportScheduler {
 
       // جلب تنبيهات الصيانة
       const { data: maintenanceAlerts } = await supabase
-        .from('maintenance')
+        .from('vehicle_maintenance')
         .select('id')
         .eq('company_id', this.companyId)
         .eq('status', 'pending');
@@ -193,7 +238,7 @@ class ReportScheduler {
           maintenanceNeeded: maintenanceAlerts?.length || 0,
           licensesExpiring: 0, // يمكن إضافته لاحقاً
           insurancesExpiring: 0,
-          overduePayments: invoices?.filter(i => i.status === 'overdue').length || 0,
+          overduePayments: invoices?.filter(i => i.due_date && new Date(i.due_date) < new Date()).length || 0,
         },
       };
     } catch (error) {
@@ -232,7 +277,7 @@ class ReportScheduler {
 
       // جلب الصيانة هذا الأسبوع
       const { data: maintenance } = await supabase
-        .from('maintenance')
+        .from('vehicle_maintenance')
         .select('status, estimated_cost')
         .eq('company_id', this.companyId)
         .gte('scheduled_date', weekStart.toISOString().split('T')[0]);

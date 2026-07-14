@@ -19,36 +19,36 @@ export interface ContractForLegal {
   id: string;
   contract_number: string;
   customer_id: string;
-  vehicle_id?: string;
+  vehicle_id?: string | null;
   company_id: string;
   contract_amount: number;
-  total_paid: number;
-  balance_due: number;
-  late_fine_amount: number;
+  total_paid?: number | null;
+  balance_due?: number | null;
+  late_fine_amount?: number | null;
   monthly_amount: number;
   start_date: string;
   end_date: string;
   status: string;
   customer?: {
     id: string;
-    first_name?: string;
-    last_name?: string;
-    first_name_ar?: string;
-    last_name_ar?: string;
-    company_name?: string;
-    company_name_ar?: string;
-    phone?: string;
-    email?: string;
-    national_id?: string;
-    customer_type?: string;
-  };
+    first_name?: string | null;
+    last_name?: string | null;
+    first_name_ar?: string | null;
+    last_name_ar?: string | null;
+    company_name?: string | null;
+    company_name_ar?: string | null;
+    phone?: string | null;
+    email?: string | null;
+    national_id?: string | null;
+    customer_type?: string | null;
+  } | null;
   vehicle?: {
     id: string;
-    plate_number?: string;
-    make?: string;
-    model?: string;
-    year?: number;
-  };
+    plate_number?: string | null;
+    make?: string | null;
+    model?: string | null;
+    year?: number | null;
+  } | null;
 }
 
 /**

@@ -3,8 +3,9 @@
 Handles missing tables and existing objects gracefully."""
 import os
 import psycopg2
+from db_connection import get_database_url
 
-DB_URL = "postgresql://postgres.qwhunliohlkkahbspfiu:Khamees1992#@aws-0-eu-north-1.pooler.supabase.com:6543/postgres"
+DB_URL = get_database_url()
 MIGRATION_DIR = "supabase/migrations"
 
 MIGRATION_FILES = [

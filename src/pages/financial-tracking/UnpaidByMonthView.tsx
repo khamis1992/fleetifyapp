@@ -287,7 +287,7 @@ const UnpaidByMonthView: React.FC<UnpaidByMonthViewProps> = ({ allCustomers, all
                           <Button
                             size="sm"
                             variant="outline"
-                            onClick={() => navigate(`/financial-tracking?customer=${customer.id}`)}
+                            onClick={() => navigate(`/finance/payments/quick?customerId=${customer.id}`)}
                           >
                             <DollarSign className="h-4 w-4 ml-2" />
                             إضافة دفعة

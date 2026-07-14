@@ -76,6 +76,7 @@ const domainConfig: Record<
 
 const commandLabels: Record<string, string> = {
   "contract.recalculate_totals": "إعادة احتساب إجماليات العقد",
+  "invoice.normalize_legacy_overpayment": "تسوية الدفعة المباشرة القديمة",
   "invoice.recalculate_balance": "إعادة احتساب رصيد الفاتورة",
   "invoice.sync_zero_impact_amount": "مزامنة مبلغ فاتورة بلا أثر مالي",
   "invoice.cancel_zero_safe": "إلغاء فاتورة صفرية آمنة",
@@ -120,6 +121,8 @@ const entityLabels: Record<string, string> = {
   payments: "دفعة",
   journal_entry: "قيد محاسبي",
   journal_entries: "قيد محاسبي",
+  bank_transaction: "حركة بنكية",
+  bank_transactions: "حركة بنكية",
   vehicle: "مركبة",
   vehicles: "مركبة",
   customer: "عميل",
@@ -139,11 +142,16 @@ const entityLabels: Record<string, string> = {
 };
 
 const reviewLabels: Record<string, string> = {
+  "contract.financial_totals_mismatch": "إجماليات العقد المالية غير متطابقة",
   "contract.invalid_period": "فترة عقد غير صحيحة",
   "contract.overpayment": "دفعات أعلى من قيمة العقد",
   "invoice.active_on_cancelled_contract": "فاتورة نشطة لعقد ملغي",
   "invoice.duplicate_contract_month": "أكثر من فاتورة للشهر نفسه",
   "invoice.outside_contract_period": "فاتورة خارج فترة العقد",
+  "invoice.legacy_direct_overpayment":
+    "دفعة مباشرة قديمة تتجاوز رصيد الفاتورة",
+  "invoice.balance_mismatch": "رصيد الفاتورة غير متطابق",
+  "invoice.schedule_amount_mismatch": "مبلغ الفاتورة لا يطابق القسط",
   "invoice.schedule_amount_mismatch_with_financial_impact":
     "فرق مؤثر بين القسط والفاتورة",
   "invoice.zero_schedule_amount_requires_review": "فاتورة مرتبطة بقسط صفري",
@@ -161,6 +169,14 @@ const reviewLabels: Record<string, string> = {
   "schedule.existing_invoice_link_mismatch": "ربط القسط بفاتورة غير مطابقة",
   "schedule.invoice_link_mismatch": "الفاتورة لا تطابق القسط",
   "schedule.invoice_month_constraint_conflict": "تعارض فاتورة شهرية قائمة",
+  "schedule.ambiguous_invoice_link": "أكثر من فاتورة محتملة للقسط",
+  "schedule.due_month_invoice_missing": "فاتورة شهر استحقاق القسط مفقودة",
+  "schedule.invoice_exists_with_shifted_due_date":
+    "فاتورة القسط موجودة بتاريخ استحقاق مزاح",
+  "schedule.invoice_link_requires_active_contract":
+    "ربط الفاتورة يتطلب عقدًا نشطًا",
+  "schedule.missing_invoice": "قسط بلا فاتورة",
+  "schedule.payment_state_mismatch": "حالة سداد القسط غير متطابقة",
   "payment.completed_unlinked_requires_reversal":
     "دفعة مكتملة بلا ربط مالي واضح",
   "payment.completed_unlinked_ambiguous": "دفعة مكتملة بلا فاتورة وحيدة واضحة",
@@ -172,16 +188,30 @@ const reviewLabels: Record<string, string> = {
   "accounting.journal_insufficient_lines": "قيد محاسبي ناقص السطور",
   "accounting.completed_payment_missing_journal": "دفعة مكتملة بلا قيد محاسبي",
   "accounting.payment_broken_journal_link": "رابط قيد الدفعة غير صالح",
+  "accounting.draft_journal_totals_mismatch": "إجماليات قيد المسودة غير متطابقة",
+  "accounting.posted_journal_totals_mismatch":
+    "إجماليات قيد مرحّل غير متطابقة",
+  "accounting.bank_payment_missing_bank_for_reconciliation":
+    "دفعة بنكية بلا حساب بنك محدد",
+  "accounting.bank_payment_missing_transaction_for_reconciliation":
+    "دفعة بنكية بلا حركة بنكية مرتبطة",
+  "accounting.bank_payment_duplicate_transactions":
+    "دفعة مرتبطة بأكثر من حركة بنكية أصلية",
+  "accounting.bank_transaction_unlinked_for_reconciliation":
+    "حركة بنكية مكتملة بلا دفعة مرتبطة",
   "customer.duplicate_national_id": "رقم مدني مكرر للعميل",
   "customer.inactive_with_active_contract": "عميل غير نشط لديه عقد نشط",
   "customer.balance_summary_row_count": "ملخص رصيد العميل مفقود أو مكرر",
   "customer.balance_summary_missing": "ملخص رصيد العميل مفقود",
   "customer.balance_summary_duplicate": "ملخصات رصيد مكررة للعميل",
+  "customer.balance_summary_mismatch": "ملخص رصيد العميل غير متطابق",
   "inventory.negative_stock": "رصيد مخزون سالب",
   "inventory.missing_stock_level_negative_ledger":
     "رصيد مخزون مفقود وحركاته سالبة",
   "legal.broken_contract_link": "قضية مرتبطة بعقد غير صالح",
   "legal.closed_case_missing_outcome": "قضية مغلقة بلا نتيجة",
+  "legal.completed_payment_missing_financial_link":
+    "دفعة قضية مكتملة بلا ربط مالي",
   "employee.leave_balance_overused": "إجازات مستخدمة أعلى من الرصيد",
   "employee.payroll_negative_net": "صافي راتب سالب",
   "employee.payroll_journal_linked_mismatch": "فرق راتب مرتبط بقيد محاسبي",
@@ -250,9 +280,14 @@ export function SystemAuditAgentDashboard() {
   const updateTaskStatus = useUpdateTaskStatus();
   const updateTask = useUpdateTask();
   const syncedReviewTaskKeyRef = React.useRef<string | null>(null);
+  const syncingReviewTaskKeyRef = React.useRef<string | null>(null);
+  const failedReviewTaskSyncRef = React.useRef<{
+    key: string;
+    failedAt: number;
+  } | null>(null);
 
   const reviewTaskSyncKey = React.useMemo(() => {
-    if (!data?.latestRun || !data.overview.pendingReview) return null;
+    if (!data?.latestRun) return null;
     const detailedKey = (data.reviewFindings || [])
       .map((finding) => finding.id)
       .join("|");
@@ -260,15 +295,38 @@ export function SystemAuditAgentDashboard() {
       .map((item) => `${item.domain}:${item.code}:${item.count}`)
       .join("|");
     return `${data.latestRun.id}:${data.overview.pendingReview}:${
-      detailedKey || aggregateKey
+      detailedKey || aggregateKey || "none"
     }`;
   }, [data]);
 
   React.useEffect(() => {
     if (!data || !reviewTaskSyncKey || isSyncingReviewTasks) return;
     if (syncedReviewTaskKeyRef.current === reviewTaskSyncKey) return;
-    syncedReviewTaskKeyRef.current = reviewTaskSyncKey;
-    syncReviewTasks(data);
+    if (syncingReviewTaskKeyRef.current === reviewTaskSyncKey) return;
+
+    const failedSync = failedReviewTaskSyncRef.current;
+    if (
+      failedSync?.key === reviewTaskSyncKey &&
+      Date.now() - failedSync.failedAt < 30_000
+    ) {
+      return;
+    }
+
+    syncingReviewTaskKeyRef.current = reviewTaskSyncKey;
+    syncReviewTasks(data, {
+      onSuccess: () => {
+        syncedReviewTaskKeyRef.current = reviewTaskSyncKey;
+        syncingReviewTaskKeyRef.current = null;
+        failedReviewTaskSyncRef.current = null;
+      },
+      onError: () => {
+        syncingReviewTaskKeyRef.current = null;
+        failedReviewTaskSyncRef.current = {
+          key: reviewTaskSyncKey,
+          failedAt: Date.now(),
+        };
+      },
+    });
   }, [data, isSyncingReviewTasks, reviewTaskSyncKey, syncReviewTasks]);
 
   if (isLoading || isWaitingForCompany) return <DashboardSkeleton />;

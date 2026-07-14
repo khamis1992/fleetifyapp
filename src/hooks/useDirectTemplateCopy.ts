@@ -14,6 +14,26 @@ interface DirectCopyResult {
   errors: string[];
 }
 
+interface TemplateAccount {
+  code: string;
+  name_ar: string;
+  name_en: string;
+  account_type: string;
+  level: number;
+  balance_type: string;
+  parent_code: string | null;
+  is_header: boolean;
+  description?: string;
+  account_code?: string;
+  nameAr?: string;
+  nameEn?: string;
+  accountType?: string;
+  accountLevel?: number;
+  balanceType?: string;
+  parentCode?: string | null;
+  isHeader?: boolean;
+}
+
 /**
  * Hook لنسخ قوالب الحسابات مباشرة من JSON بدلاً من النظام القديم
  */
@@ -31,7 +51,7 @@ export const useDirectTemplateCopy = () => {
 
       console.log('🚀 [DIRECT_COPY] بدء نسخ قالب مباشر:', { businessType, companyId });
 
-      let allAccounts;
+      let allAccounts: TemplateAccount[];
       
       if (businessType === 'car_rental') {
         // ✅ استخدام القالب الكامل JSON حصرياً
@@ -44,7 +64,10 @@ export const useDirectTemplateCopy = () => {
             throw new Error(`فشل في تحميل القالب: ${response.status} ${response.statusText}`);
           }
           
-          const templateData = await response.json();
+          const templateData = await response.json() as {
+            template_metadata?: unknown;
+            chart_of_accounts?: TemplateAccount[];
+          };
           console.log('📊 [DIRECT_COPY] بيانات القالب المُحملة:', {
             hasMetadata: !!templateData.template_metadata,
             hasAccounts: !!templateData.chart_of_accounts,
@@ -65,7 +88,7 @@ export const useDirectTemplateCopy = () => {
               level: acc.level
             }))
           });
-        } catch (error) {
+        } catch (error: any) {
           console.error('❌ [DIRECT_COPY] خطأ في جلب القالب الكامل:', error);
           throw new Error(`فشل في تحميل القالب الكامل من JSON: ${error.message}`);
         }
@@ -110,10 +133,10 @@ export const useDirectTemplateCopy = () => {
 
       // ترتيب الحسابات حسب المستوى لضمان إنشاء الحسابات الأب أولاً
       const sortedAccounts = allAccounts.sort((a, b) => {
-        const levelA = a.level || a.accountLevel;
-        const levelB = b.level || b.accountLevel;
-        const codeA = a.code || a.account_code;
-        const codeB = b.code || b.account_code;
+        const levelA = a.level ?? a.accountLevel ?? 0;
+        const levelB = b.level ?? b.accountLevel ?? 0;
+        const codeA = a.code || a.account_code || '';
+        const codeB = b.code || b.account_code || '';
         
         if (levelA !== levelB) {
           return levelA - levelB;
@@ -125,15 +148,19 @@ export const useDirectTemplateCopy = () => {
       for (const account of sortedAccounts) {
         try {
           // التعامل مع تنسيق القالب الجديد والقديم
-          const accountCode = account.code || account.account_code;
-          const nameAr = account.name_ar || account.nameAr;
-          const nameEn = account.name_en || account.nameEn;
-          const accountType = account.account_type || account.accountType;
-          const level = account.level || account.accountLevel;
-          const balanceType = account.balance_type || account.balanceType;
-          const parentCode = account.parent_code || account.parentCode;
+          const accountCode = account.code || account.account_code || '';
+          const nameAr = account.name_ar || account.nameAr || '';
+          const nameEn = account.name_en || account.nameEn || '';
+          const accountType = account.account_type || account.accountType || '';
+          const level = account.level ?? account.accountLevel ?? 0;
+          const balanceType = account.balance_type || account.balanceType || '';
+          const parentCode = account.parent_code ?? account.parentCode;
           const isHeader = account.is_header ?? account.isHeader ?? false;
           const description = account.description || '';
+
+          if (!accountCode || !nameAr || !nameEn || !accountType || !balanceType) {
+            throw new Error('Invalid account template entry');
+          }
 
           // تحقق من وجود الحساب
           if (existingCodes.has(accountCode)) {
@@ -199,9 +226,9 @@ export const useDirectTemplateCopy = () => {
             console.log(`✅ تم إنشاء الحساب: ${accountCode} - ${nameAr} (مستوى محسوب: ${newAccount?.account_level || 'غير محدد'})`);
           }
 
-        } catch (error: unknown) {
+        } catch (error: any) {
           failed_accounts++;
-          const accountCode = account.code || account.account_code;
+          const accountCode = account.code || account.account_code || 'unknown';
           errors.push(`${accountCode}: ${error.message}`);
           console.error(`❌ خطأ في معالجة الحساب ${accountCode}:`, error);
         }
@@ -245,7 +272,7 @@ export const useDirectTemplateCopy = () => {
         variant: result.failed_accounts > 0 ? "destructive" : "default"
       });
     },
-    onError: (error: unknown) => {
+    onError: (error: any) => {
       console.error('❌ [DIRECT_COPY] فشل النسخ المباشر:', error);
       toast({
         variant: "destructive",

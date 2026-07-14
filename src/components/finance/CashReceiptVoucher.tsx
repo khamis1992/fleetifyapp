@@ -126,10 +126,14 @@ export const CashReceiptVoucher: React.FC<CashReceiptVoucherProps> = ({ payment,
   };
 
   useEffect(() => {
-    if (payment?.amount) {
+    if (payment?.amount != null) {
       setAmountInWords(convertAmountToWords(payment.amount));
     }
   }, [payment?.amount]);
+
+  useEffect(() => {
+    setIsCheque(payment?.payment_method === 'check');
+  }, [payment?.payment_method]);
 
   const togglePaymentMethod = (value: string) => {
     setIsCheque(value === 'check');
@@ -161,9 +165,10 @@ export const CashReceiptVoucher: React.FC<CashReceiptVoucherProps> = ({ payment,
         {/* Date Input */}
         <div className="flex justify-end mb-6">
           <div className="w-full sm:w-1/3">
-            <Label className="block text-sm font-medium text-slate-600 mb-1">التاريخ | Date</Label>
+            <Label htmlFor="receipt-date" className="block text-sm font-medium text-slate-600 mb-1">التاريخ | Date</Label>
             <div className="relative">
               <Input
+                id="receipt-date"
                 type="date"
                 value={payment?.payment_date || new Date().toISOString().split('T')[0]}
                 className="w-full border border-slate-300 rounded-lg p-2 text-base text-center font-medium"
@@ -191,8 +196,9 @@ export const CashReceiptVoucher: React.FC<CashReceiptVoucherProps> = ({ payment,
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-5 gap-4 items-center">
-            <Label className="md:col-span-2 text-base font-medium text-slate-700">مبلغ وقدره ( ريال قطري ) | The Sum of (Q.Rls.)</Label>
+            <Label htmlFor="receipt-amount-words" className="md:col-span-2 text-base font-medium text-slate-700">مبلغ وقدره ( ريال قطري ) | The Sum of (Q.Rls.)</Label>
             <Input
+              id="receipt-amount-words"
               type="text"
               value={amountInWords}
               placeholder="بالأحرف - مثال: ثلاثة آلاف ريال قطري فقط لا غير"
@@ -231,8 +237,9 @@ export const CashReceiptVoucher: React.FC<CashReceiptVoucherProps> = ({ payment,
           {/* Cheque Details (Hidden by default) */}
           <div className={"space-y-3 transition duration-300 " + (isCheque ? 'opacity-100' : 'opacity-50 pointer-events-none')}>
             <div>
-              <Label className="block text-xs font-medium text-slate-500 mb-1">شيك رقم | Cheque No.</Label>
+              <Label htmlFor="receipt-cheque-number" className="block text-xs font-medium text-slate-500 mb-1">شيك رقم | Cheque No.</Label>
               <Input
+                id="receipt-cheque-number"
                 type="text"
                 value={payment?.check_number || ""}
                 className="w-full border border-slate-300 rounded-lg p-2 text-sm text-center"
@@ -241,9 +248,10 @@ export const CashReceiptVoucher: React.FC<CashReceiptVoucherProps> = ({ payment,
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label className="block text-xs font-medium text-slate-500 mb-1">على بنك | On Bank</Label>
+                <Label htmlFor="receipt-bank-account" className="block text-xs font-medium text-slate-500 mb-1">على بنك | On Bank</Label>
                 <div className="relative">
                   <Input
+                    id="receipt-bank-account"
                     type="text"
                     value={payment?.bank_account || ""}
                     className="w-full border border-slate-300 rounded-lg p-2 text-sm text-center"

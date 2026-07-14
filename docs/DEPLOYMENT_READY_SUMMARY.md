@@ -122,7 +122,7 @@ npm run preview
    - Share it - we'll know exactly what to fix
 
 6. **If the app works**:
-   - Test login with: `khamis-1992@hotmail.com` / `123456789`
+   - Test login with credentials supplied through the secure test environment
    - Verify dashboard loads
    - Check all main pages
 

@@ -1,33 +1,63 @@
-// أنواع البيانات للعقود
-export interface Contract {
-  id: string
-  company_id: string
-  customer_id: string
-  vehicle_id?: string | null
-  contract_number: string
-  contract_type: ContractType
-  contract_date: string
-  start_date: string
-  end_date: string
-  contract_amount: number
-  monthly_amount: number
-  description?: string | null
-  terms?: string | null
-  status: ContractStatus
-  legal_status?: LegalStatus | null
-  created_by: string
-  cost_center_id?: string | null
-  journal_entry_id?: string | null
-  total_paid?: number
-  balance_due?: number
-  payment_status?: 'unpaid' | 'partial' | 'paid' | 'overdue'
-  last_payment_date?: string | null
-  late_fine_amount?: number
-  days_overdue?: number
-  created_via?: string
-  created_at: string
-  updated_at: string
-}
+import type { Database } from '@/integrations/supabase/types'
+
+type ContractRow = Database['public']['Tables']['contracts']['Row']
+type CustomerRow = Database['public']['Tables']['customers']['Row']
+type VehicleRow = Database['public']['Tables']['vehicles']['Row']
+
+export type ContractCustomer = Pick<
+  CustomerRow,
+  | 'id'
+  | 'customer_code'
+  | 'first_name'
+  | 'last_name'
+  | 'first_name_ar'
+  | 'last_name_ar'
+  | 'company_name'
+  | 'company_name_ar'
+  | 'customer_type'
+  | 'phone'
+  | 'email'
+  | 'national_id'
+>
+
+export type ContractVehicle = Pick<
+  VehicleRow,
+  | 'id'
+  | 'plate_number'
+  | 'make'
+  | 'model'
+  | 'year'
+  | 'color'
+  | 'fuel_type'
+  | 'vin'
+  | 'current_mileage'
+  | 'status'
+>
+
+type RequiredContractFields =
+  | 'id'
+  | 'company_id'
+  | 'customer_id'
+  | 'contract_number'
+  | 'contract_date'
+  | 'start_date'
+  | 'end_date'
+  | 'contract_amount'
+  | 'monthly_amount'
+  | 'created_at'
+  | 'updated_at'
+
+/**
+ * Application contract model. Core identifiers are always present, while
+ * nullable operational fields retain the generated Supabase definitions.
+ */
+export type Contract = Pick<ContractRow, RequiredContractFields> &
+  Partial<Omit<ContractRow, RequiredContractFields | 'contract_type' | 'status'>> & {
+    contract_type: ContractType
+    status: ContractStatus
+    customer?: ContractCustomer | null
+    vehicle?: ContractVehicle | null
+  }
 
 export type LegalStatus = 
   | 'under_legal_action'
@@ -49,13 +79,19 @@ export type ContractType =
 export type ContractStatus = 
   | 'draft'
   | 'under_review'
+  | 'pending'
+  | 'pending_completion'
   | 'active'
   | 'expired'
+  | 'expiring_soon'
   | 'suspended'
   | 'cancelled'
   | 'renewed'
+  | 'completed'
+  | 'closed'
+  | 'under_legal_procedure'
 
-export interface ContractWithCustomer extends Contract {
+export type ContractWithCustomer = Contract & {
   customers: {
     id: string
     first_name_ar?: string | null

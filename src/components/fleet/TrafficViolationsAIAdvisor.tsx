@@ -108,12 +108,12 @@ export const TrafficViolationsAIAdvisor: React.FC<{
     staleTime: 2 * 60 * 1000,
   });
 
-  if (violations.length === 0) return null;
-
   const advisor = data;
   const topItems = advisor?.ranked.slice(0, 6) || [];
   const duplicateGroups = useMemo(() => countDuplicateGroups(violations), [violations]);
   const unlinked = violations.filter((violation) => !violation.contract_id || !violation.customer_id).length;
+
+  if (violations.length === 0) return null;
 
   return (
     <section className="mx-auto max-w-[1600px] px-4 pt-5 print:hidden">

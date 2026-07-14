@@ -44,21 +44,29 @@ export const useBulkDeleteDuplicateContracts = () => {
 
   const deleteContractSafely = async (contract: DuplicateContract): Promise<{ success: boolean; error?: string }> => {
     try {
+      if (!companyId) return { success: false, error: 'معرف الشركة غير متوفر' };
       console.log(`Starting safe deletion for contract ${contract.contract_number} (${contract.id})`);
       
       // Double-check that contract is safe to delete
       if (!contract.is_safe_to_delete) {
         return { success: false, error: 'العقد غير آمن للحذف - يحتوي على بيانات مرتبطة' };
       }
+      if (contract.status !== 'draft') {
+        return { success: false, error: 'الحذف النهائي مسموح لمسودة عقد فقط' };
+      }
 
       // Verify no related data exists (extra safety check)
       const [paymentsCheck, invoicesCheck, documentsCheck, approvalStepsCheck, paymentSchedulesCheck] = await Promise.all([
-        supabase.from('payments').select('id').eq('contract_id', contract.id).limit(1),
-        supabase.from('invoices').select('id').eq('contract_id', contract.id).limit(1),
-        supabase.from('contract_documents').select('id').eq('contract_id', contract.id).limit(1),
-        supabase.from('contract_approval_steps').select('id').eq('contract_id', contract.id).limit(1),
-        supabase.from('contract_payment_schedules').select('id').eq('contract_id', contract.id).limit(1)
+        supabase.from('payments').select('id').eq('company_id', companyId).eq('contract_id', contract.id).limit(1),
+        supabase.from('invoices').select('id').eq('company_id', companyId).eq('contract_id', contract.id).limit(1),
+        supabase.from('contract_documents').select('id').eq('company_id', companyId).eq('contract_id', contract.id).limit(1),
+        supabase.from('contract_approval_steps').select('id').eq('company_id', companyId).eq('contract_id', contract.id).limit(1),
+        supabase.from('contract_payment_schedules').select('id').eq('company_id', companyId).eq('contract_id', contract.id).limit(1)
       ]);
+
+      const checkError = [paymentsCheck, invoicesCheck, documentsCheck, approvalStepsCheck, paymentSchedulesCheck]
+        .find((result) => result.error)?.error;
+      if (checkError) return { success: false, error: checkError.message };
 
       // If any related data found, abort deletion
       if (paymentsCheck.data?.length || invoicesCheck.data?.length || documentsCheck.data?.length || 
@@ -70,7 +78,11 @@ export const useBulkDeleteDuplicateContracts = () => {
       const { error: contractError } = await supabase
         .from('contracts')
         .delete()
-        .eq('id', contract.id);
+        .eq('id', contract.id)
+        .eq('company_id', companyId)
+        .eq('status', 'draft')
+        .select('id')
+        .single();
 
       if (contractError) {
         console.error(`Error deleting contract ${contract.id}:`, contractError);
@@ -98,7 +110,7 @@ export const useBulkDeleteDuplicateContracts = () => {
 
       try {
         validateCompanyAccess(companyId);
-      } catch (error: unknown) {
+      } catch {
         throw new Error('ليس لديك صلاحية للوصول إلى هذه الشركة');
       }
 
@@ -209,11 +221,12 @@ export const useBulkDeleteDuplicateContracts = () => {
     },
     onError: (error: unknown) => {
       console.error('Error in bulk delete duplicate contracts:', error);
-      toast.error('حدث خطأ في حذف العقود المكررة: ' + error.message);
+      const message = error instanceof Error ? error.message : 'خطأ غير متوقع';
+      toast.error('حدث خطأ في حذف العقود المكررة: ' + message);
       
       setProgress(prev => ({
         ...prev,
-        currentStep: 'فشلت العملية: ' + error.message,
+        currentStep: 'فشلت العملية: ' + message,
         currentContract: undefined
       }));
     }

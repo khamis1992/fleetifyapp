@@ -182,22 +182,23 @@ describe('Responsive Design Tests', () => {
       renderWithProviders(<ResponsiveNavigation />);
 
       const menuButton = screen.getByLabelText('Toggle mobile menu');
+      const getMobileMenu = () => document.querySelector('nav > div.md\\:hidden');
 
       // Menu should be closed initially
-      expect(screen.queryByText('Home')).not.toBeInTheDocument();
+      expect(getMobileMenu()).not.toBeInTheDocument();
 
       // Click to open
       await user.click(menuButton);
 
       // Menu should be open
-      expect(screen.getByText('Home')).toBeInTheDocument();
+      expect(getMobileMenu()).toBeInTheDocument();
       expect(menuButton).toHaveAttribute('aria-expanded', 'true');
 
       // Click to close
       await user.click(menuButton);
 
       // Menu should be closed again
-      expect(screen.queryByText('Home')).not.toBeInTheDocument();
+      expect(getMobileMenu()).not.toBeInTheDocument();
     });
 
     it('should hide desktop navigation on mobile', () => {

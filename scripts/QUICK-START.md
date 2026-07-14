@@ -60,8 +60,9 @@ Create `.env` file in project root:
 
 ```bash
 # Qatar Court Credentials
-QATAR_COURT_USERNAME=29263400736
-QATAR_COURT_PASSWORD=Khamees1992#
+QATAR_COURT_USERNAME=<court-username>
+QATAR_COURT_PASSWORD=<court-password>
+LEGAL_CASE_CONTACT_EMAIL=<contact-email>
 
 # Headless Mode
 HEADLESS=false
@@ -73,8 +74,8 @@ Edit `scripts/config/automation.config.ts`:
 
 ```typescript
 credentials: {
-  username: '29263400736',
-  password: 'Khamees1992#'
+  username: process.env.QATAR_COURT_USERNAME,
+  password: process.env.QATAR_COURT_PASSWORD
 }
 ```
 
@@ -300,8 +301,9 @@ mkdir -p "data/customers/Ahmed Al-Mohammed"
 # etc.
 
 # 4. Set credentials (one time)
-echo 'QATAR_COURT_USERNAME=29263400736' >> .env
-echo 'QATAR_COURT_PASSWORD=Khamees1992#' >> .env
+echo 'QATAR_COURT_USERNAME=<court-username>' >> .env
+echo 'QATAR_COURT_PASSWORD=<court-password>' >> .env
+echo 'LEGAL_CASE_CONTACT_EMAIL=<contact-email>' >> .env
 
 # 5. Run automation
 npm run automate:case:debug -- --customer="Ahmed Al-Mohammed"

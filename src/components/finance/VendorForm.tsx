@@ -336,7 +336,7 @@ export const VendorForm = ({ vendor, onSuccess }: VendorFormProps) => {
             name="credit_limit"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>حد الائتمان (د.ك)</FormLabel>
+                <FormLabel>حد الائتمان (ر.ق)</FormLabel>
                 <FormControl>
                   <Input 
                     {...field} 

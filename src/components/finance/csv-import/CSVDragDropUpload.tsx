@@ -44,7 +44,7 @@ export const CSVDragDropUpload: React.FC<CSVDragDropUploadProps> = ({
       const text = await file.text();
       
       // Parse CSV using Papa Parse
-      const parseResult = Papa.parse(text, {
+      const parseResult = Papa.parse<Record<string, string>>(text, {
         header: true,
         skipEmptyLines: true,
         transformHeader: (header: string) => header.trim(),
@@ -60,14 +60,16 @@ export const CSVDragDropUpload: React.FC<CSVDragDropUploadProps> = ({
       }
 
       // Add row numbers for tracking
-      const dataWithRowNumbers = parseResult.data.map((row: unknown, index: number) => ({
+      const dataWithRowNumbers = parseResult.data.map((row, index) => ({
         ...row,
         _rowNumber: index + 2 // Account for header row
       }));
 
       // Filter out completely empty rows
-      const validData = dataWithRowNumbers.filter((row: unknown) => {
-        const values = Object.values(row).filter(val => val !== '' && val !== null && val !== undefined);
+      const validData = dataWithRowNumbers.filter((row) => {
+        const values = Object.values(row).filter(
+          (value) => value !== null && value !== undefined && String(value).trim() !== ''
+        );
         return values.length > 1; // At least one non-empty value besides row number
       });
 
@@ -86,7 +88,7 @@ export const CSVDragDropUpload: React.FC<CSVDragDropUploadProps> = ({
 
     } catch (error: unknown) {
       console.error('File processing error:', error);
-      const errorMessage = error.message || 'خطأ في معالجة الملف';
+      const errorMessage = error instanceof Error ? error.message : 'خطأ في معالجة الملف';
       onError(errorMessage);
       toast.error(errorMessage);
     } finally {

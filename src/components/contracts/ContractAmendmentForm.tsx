@@ -19,8 +19,8 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useContractAmendments } from '@/hooks/useContractAmendments';
 import { AlertCircle, FileEdit, Calendar, DollarSign, FileText, Truck, Check, Loader2 } from 'lucide-react';
 import type { Contract } from '@/types/contracts';
 import type { AmendmentType, AmendmentFormData } from '@/types/amendment';
@@ -39,6 +39,7 @@ export const ContractAmendmentForm: React.FC<ContractAmendmentFormProps> = ({
   onSuccess
 }) => {
   const { toast } = useToast();
+  const { createAmendment } = useContractAmendments(contract.id);
   const [isUpdating, setIsUpdating] = useState(false);
 
   const [formData, setFormData] = useState<AmendmentFormData>({
@@ -120,53 +121,56 @@ export const ContractAmendmentForm: React.FC<ContractAmendmentFormProps> = ({
 
     setIsUpdating(true);
     try {
-      // Build update object with only changed fields
-      const updateData: Record<string, any> = {
-        updated_at: new Date().toISOString(),
-      };
+      const originalValues: Record<string, string | number | null> = {};
+      const newValues: Record<string, string | number | null> = {};
 
       if (changes.start_date) {
-        updateData.start_date = formData.start_date;
+        originalValues.start_date = contract.start_date;
+        newValues.start_date = formData.start_date || null;
       }
       if (changes.end_date) {
-        updateData.end_date = formData.end_date;
+        originalValues.end_date = contract.end_date;
+        newValues.end_date = formData.end_date || null;
       }
       if (changes.contract_amount) {
-        updateData.contract_amount = formData.contract_amount;
+        originalValues.contract_amount = contract.contract_amount;
+        newValues.contract_amount = formData.contract_amount ?? contract.contract_amount;
       }
       if (changes.monthly_amount) {
-        updateData.monthly_amount = formData.monthly_amount;
+        originalValues.monthly_amount = contract.monthly_amount;
+        newValues.monthly_amount = formData.monthly_amount ?? contract.monthly_amount;
       }
       if (changes.description) {
-        updateData.description = formData.description;
+        originalValues.description = contract.description ?? null;
+        newValues.description = formData.description || null;
       }
       if (changes.terms) {
-        updateData.terms = formData.terms;
+        originalValues.terms = contract.terms ?? null;
+        newValues.terms = formData.terms || null;
       }
 
-      // Update the contract directly
-      const { error } = await supabase
-        .from('contracts')
-        .update(updateData)
-        .eq('id', contract.id);
-
-      if (error) {
-        console.error('Contract update error:', error);
-        throw error;
-      }
+      await createAmendment({
+        contract_id: contract.id,
+        amendment_type: formData.amendment_type,
+        amendment_reason: formData.amendment_reason.trim(),
+        original_values: originalValues,
+        new_values: newValues,
+        requires_customer_signature: formData.requires_customer_signature,
+        effective_date: formData.effective_date,
+      });
 
       toast({
-        title: '✅ تم تعديل العقد',
-        description: `تم تحديث العقد ${contract.contract_number} بنجاح`,
+        title: 'تم إنشاء طلب التعديل',
+        description: `أُرسل تعديل العقد ${contract.contract_number} للموافقة قبل تطبيقه`,
       });
 
       onOpenChange(false);
       onSuccess?.();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error updating contract:', error);
       toast({
         title: '❌ فشل تعديل العقد',
-        description: error.message || 'حدث خطأ غير متوقع',
+        description: error instanceof Error ? error.message : 'حدث خطأ غير متوقع',
         variant: 'destructive',
       });
     } finally {
@@ -299,7 +303,7 @@ export const ContractAmendmentForm: React.FC<ContractAmendmentFormProps> = ({
                   />
                   {changes.contract_amount && (
                     <p className="text-xs text-muted-foreground">
-                      القيمة السابقة: {contract.contract_amount.toFixed(3)} د.ك
+                      القيمة السابقة: {contract.contract_amount.toFixed(2)} ر.ق
                     </p>
                   )}
                 </div>
@@ -321,7 +325,7 @@ export const ContractAmendmentForm: React.FC<ContractAmendmentFormProps> = ({
                   />
                   {changes.monthly_amount && (
                     <p className="text-xs text-muted-foreground">
-                      القيمة السابقة: {contract.monthly_amount.toFixed(3)} د.ك
+                      القيمة السابقة: {contract.monthly_amount.toFixed(2)} ر.ق
                     </p>
                   )}
                 </div>

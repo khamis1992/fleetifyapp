@@ -6,7 +6,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { HapticPattern, HapticConfig } from '@/types/mobile';
 
-const DEFAULT_PATTERNS: HapticConfig['patterns'] = {
+const DEFAULT_PATTERNS: NonNullable<HapticConfig['patterns']> = {
   light: [10],
   medium: [20],
   heavy: [30],

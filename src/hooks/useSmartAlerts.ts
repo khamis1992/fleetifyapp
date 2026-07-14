@@ -123,7 +123,7 @@ export const useSmartAlerts = (options?: { priority?: boolean; limit?: number })
               id: 'overdue-payments',
               type: 'error',
               title: 'مدفوعات متأخرة',
-              message: `${overduePayments.length} دفعة متأخرة بمبلغ ${totalOverdue.toFixed(0)} د.ك`,
+              message: `${overduePayments.length} دفعة متأخرة بمبلغ ${totalOverdue.toFixed(0)} ر.ق`,
               action: 'عرض المدفوعات',
               actionUrl: '/finance/payments',
               priority: 'high',

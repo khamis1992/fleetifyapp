@@ -1,0 +1,27 @@
+{
+  "extends": "./tsconfig.app.json",
+  "compilerOptions": {
+    "incremental": true,
+    "tsBuildInfoFile": "./node_modules/.cache/tsconfig.finance.tsbuildinfo"
+  },
+  "include": [
+    "src/vite-env.d.ts",
+    "src/components/finance/**/*.ts",
+    "src/components/finance/**/*.tsx",
+    "src/pages/finance/**/*.ts",
+    "src/pages/finance/**/*.tsx",
+    "src/hooks/finance/**/*.ts",
+    "src/hooks/finance/**/*.tsx",
+    "src/services/PaymentService.ts",
+    "src/services/PaymentStateMachine.ts",
+    "src/utils/financial*.ts",
+    "src/utils/*Financial*.ts",
+    "src/utils/bank*.ts",
+    "src/utils/payment*.ts"
+  ],
+  "exclude": [
+    "src/**/__tests__/**",
+    "src/**/*.test.ts",
+    "src/**/*.test.tsx"
+  ]
+}

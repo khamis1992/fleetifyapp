@@ -103,14 +103,16 @@ export function VehicleConditionDialog({
 
     setUploading(true);
     try {
-      const uploadPromises = Array.from(files).asyncMap(async (file) => {
-        const fileExt = file.name.split('.').pop();
-        const fileName = `${Math.random().toString(36).substring(7)}.${fileExt}`;
+      const uploadPromises = Array.from(files).map(async (file) => {
+        if (!file.type.startsWith('image/')) throw new Error('يُسمح بملفات الصور فقط');
+        if (file.size > 10 * 1024 * 1024) throw new Error('حجم الصورة يجب ألا يتجاوز 10 ميجابايت');
+        const fileExt = file.type === 'image/png' ? 'png' : file.type === 'image/webp' ? 'webp' : 'jpg';
+        const fileName = `${crypto.randomUUID()}.${fileExt}`;
         const filePath = `vehicle-zone-photos/${contractId}/${zone?.id}/${fileName}`;
 
         const { error: uploadError } = await supabase.storage
           .from('vehicle-documents')
-          .upload(filePath, file);
+          .upload(filePath, file, { contentType: file.type, upsert: false });
 
         if (uploadError) throw uploadError;
 

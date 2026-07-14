@@ -10,7 +10,7 @@ import { Rocket, ArrowLeft, CheckCircle2, Clock, Shield, Zap } from 'lucide-reac
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { signInToDemo } from '@/lib/demo';
+import { isDemoModeEnabled, signInToDemo } from '@/lib/demo';
 import { cn } from '@/lib/utils';
 
 interface Feature {
@@ -23,6 +23,7 @@ const DemoTrial: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
+  const demoEnabled = isDemoModeEnabled();
 
   const features: Feature[] = [
     {
@@ -123,7 +124,7 @@ const DemoTrial: React.FC = () => {
           <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
             <Button
               onClick={handleStartDemo}
-              disabled={isLoading}
+              disabled={isLoading || !demoEnabled}
               size="lg"
               className="gap-2 bg-primary hover:bg-primary/90"
             >
@@ -135,7 +136,7 @@ const DemoTrial: React.FC = () => {
               ) : (
                 <>
                   <Rocket className="h-5 w-5" />
-                  ابدأ التجربة الآن
+                  {demoEnabled ? 'ابدأ التجربة الآن' : 'النسخة التجريبية قيد التجهيز'}
                 </>
               )}
             </Button>
@@ -240,7 +241,7 @@ const DemoTrial: React.FC = () => {
 
           <Button
             onClick={handleStartDemo}
-            disabled={isLoading}
+            disabled={isLoading || !demoEnabled}
             size="lg"
             className="gap-2 bg-primary hover:bg-primary/90"
           >
@@ -252,7 +253,7 @@ const DemoTrial: React.FC = () => {
             ) : (
               <>
                 <Rocket className="h-5 w-5" />
-                ابدأ التجربة الآن - بدون بطاقة ائتمان
+                {demoEnabled ? 'ابدأ التجربة الآن - بدون بطاقة ائتمان' : 'النسخة التجريبية قيد التجهيز'}
               </>
             )}
           </Button>

@@ -905,11 +905,6 @@ const VehicleCard: React.FC<VehicleCardProps> = ({
   const handleCopyVin = (e: React.MouseEvent) => {
     e.stopPropagation();
     onCopyVin();
-    return;
-    if (vehicle.vin) {
-      navigator.clipboard.writeText(vehicle.vin);
-      toast.success('تم نسخ رقم الهيكل');
-    }
   };
 
   return (

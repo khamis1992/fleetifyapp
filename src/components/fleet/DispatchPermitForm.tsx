@@ -547,7 +547,7 @@ export function DispatchPermitForm({ open, onOpenChange, editingPermitId }: Disp
                       name="fuel_allowance"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>بدل الوقود (د.ك)</FormLabel>
+                          <FormLabel>بدل الوقود (ر.ق)</FormLabel>
                           <FormControl>
                             <Input 
                               type="number" 

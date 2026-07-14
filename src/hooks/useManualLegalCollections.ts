@@ -66,6 +66,7 @@ export const useManualLegalCollections = () => {
       const { data: plans, error: plansError } = await supabase
         .from('legal_repayment_plans')
         .select('*')
+        .eq('company_id', companyFilter.company_id)
         .in('case_id', caseIds);
 
       if (plansError) throw plansError;
@@ -156,8 +157,6 @@ export const useManualLegalCollections = () => {
        const { data: profile } = await supabase.from('profiles').select('company_id').eq('user_id', user.id).single();
        if (!profile?.company_id) throw new Error('Company not found');
 
-       const { case_id, ...plansData } = plans as any; // Handle array vs object properly if needed, but here we expect single call usually or array insert
-       
        // Actually let's assume we pass an array of plans to insert
        const plansToInsert = (Array.isArray(plans) ? plans : [plans]).map(p => ({
          case_id: p.case_id, // Ensure case_id is passed in each object or map it
@@ -186,10 +185,12 @@ export const useManualLegalCollections = () => {
 
   const updateRepaymentStatus = useMutation({
     mutationFn: async ({ id, status }: { id: string, status: string }) => {
+      if (!companyFilter.company_id) throw new Error('Company not found');
       const { error } = await supabase
         .from('legal_repayment_plans')
         .update({ status })
-        .eq('id', id);
+        .eq('id', id)
+        .eq('company_id', companyFilter.company_id);
 
       if (error) throw error;
     },
@@ -199,19 +200,31 @@ export const useManualLegalCollections = () => {
     }
   });
   
-  // Delete collection
+  // Preserve the legal audit trail by cancelling rather than deleting.
   const deleteCollection = useMutation({
     mutationFn: async (id: string) => {
+      if (!companyFilter.company_id) throw new Error('Company not found');
+      const { data: legalCase, error: caseError } = await supabase
+        .from('legal_cases')
+        .select('id, case_status')
+        .eq('id', id)
+        .eq('company_id', companyFilter.company_id)
+        .eq('case_type', 'manual_debt_collection')
+        .single();
+      if (caseError || !legalCase) throw caseError || new Error('Case not found');
+
       const { error } = await supabase
         .from('legal_cases')
-        .delete()
-        .eq('id', id);
+        .update({ case_status: 'cancelled', updated_at: new Date().toISOString() })
+        .eq('id', id)
+        .eq('company_id', companyFilter.company_id)
+        .eq('case_status', legalCase.case_status);
 
       if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['manual-legal-collections'] });
-      toast.success('تم حذف الذمة بنجاح');
+      toast.success('تم إلغاء ذمة التحصيل مع حفظ سجلها');
     },
     onError: (error) => {
       console.error(error);

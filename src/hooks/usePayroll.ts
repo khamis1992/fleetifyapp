@@ -3,7 +3,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { useSystemLogger } from "@/hooks/useSystemLogger";
-import { usePayrollJournalIntegration } from "@/hooks/usePayrollJournalIntegration";
+import type { Database } from "@/integrations/supabase/types";
+
+type PayrollRow = Database['public']['Tables']['payroll']['Row'];
+type PayrollUpdate = Database['public']['Tables']['payroll']['Update'];
+type PayrollStatus = 'draft' | 'approved' | 'paid';
 
 // Types
 export interface PayrollRecord {
@@ -78,6 +82,20 @@ export interface CreatePayrollData {
   notes?: string;
 }
 
+const normalizePayrollRecord = (payroll: PayrollRow): PayrollRecord => ({
+  ...payroll,
+  allowances: Number(payroll.allowances) || 0,
+  overtime_amount: Number(payroll.overtime_amount) || 0,
+  deductions: Number(payroll.deductions) || 0,
+  tax_amount: Number(payroll.tax_amount) || 0,
+  bank_account: payroll.bank_account ?? undefined,
+  notes: payroll.notes ?? undefined,
+  journal_entry_id: payroll.journal_entry_id ?? undefined,
+  created_by: payroll.created_by ?? undefined,
+  status: payroll.status as PayrollStatus,
+  payment_method: payroll.payment_method || 'bank_transfer',
+});
+
 // Custom hooks
 export function usePayrollRecords(filters?: {
   employee_id?: string;
@@ -149,12 +167,25 @@ export function usePayrollRecords(filters?: {
       );
 
       // Combine payroll and employee data
-      const combinedData = payrollData.map(payroll => ({
-        ...payroll,
-        employee: employeeMap.get(payroll.employee_id) || null
-      }));
+      return payrollData.map(payroll => {
+        const employee = employeeMap.get(payroll.employee_id);
 
-      return combinedData as PayrollRecord[];
+        return {
+          ...normalizePayrollRecord(payroll),
+          employee: employee
+            ? {
+                ...employee,
+                first_name_ar: employee.first_name_ar ?? undefined,
+                last_name_ar: employee.last_name_ar ?? undefined,
+                position: employee.position ?? undefined,
+                department: employee.department ?? undefined,
+                allowances: Number(employee.allowances) || 0,
+                bank_account: employee.bank_account ?? undefined,
+                iban: employee.iban ?? undefined,
+              }
+            : undefined,
+        };
+      });
     },
     enabled: !!user?.profile?.company_id,
   });
@@ -164,36 +195,43 @@ export function usePayrollReviews() {
   const { user } = useAuth();
 
   return useQuery({
-    queryKey: ['payroll-reviews'],
+    queryKey: ['payroll-reviews', user?.profile?.company_id],
     queryFn: async () => {
-      if (!user) throw new Error('User not authenticated');
+      const companyId = user?.profile?.company_id;
+      if (!companyId) throw new Error('Company not found');
 
       const { data, error } = await supabase
         .from('payroll_reviews')
         .select('*')
+        .eq('company_id', companyId)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
       return data as PayrollReview[];
     },
-    enabled: !!user,
+    enabled: !!user?.profile?.company_id,
   });
 }
 
 export function useEmployeePayrollHistory(employeeId: string) {
+  const { user } = useAuth();
+  const companyId = user?.profile?.company_id;
+
   return useQuery({
-    queryKey: ['employee-payroll-history', employeeId],
+    queryKey: ['employee-payroll-history', companyId, employeeId],
     queryFn: async () => {
+      if (!companyId) return [];
       const { data, error } = await supabase
         .from('payroll')
         .select('*')
+        .eq('company_id', companyId)
         .eq('employee_id', employeeId)
         .order('pay_period_start', { ascending: false });
 
       if (error) throw error;
-      return data as PayrollRecord[];
+      return (data || []).map(normalizePayrollRecord);
     },
-    enabled: !!employeeId,
+    enabled: !!companyId && !!employeeId,
   });
 }
 
@@ -201,7 +239,6 @@ export function useCreatePayroll() {
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const { log } = useSystemLogger();
-  const { accruePayroll } = usePayrollJournalIntegration();
 
   return useMutation({
     mutationFn: async (payrollData: CreatePayrollData) => {
@@ -274,27 +311,9 @@ export function useCreatePayroll() {
       
       return data;
     },
-    onSuccess: async (data) => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['payroll-records'] });
-      
-      // Create journal entry for payroll accrual
-      try {
-        await accruePayroll({
-          payrollId: data.id,
-          employeeId: data.employee_id,
-          basicSalary: data.basic_salary,
-          allowances: data.allowances || 0,
-          overtimeAmount: data.overtime_amount || 0,
-          deductions: data.deductions || 0,
-          taxAmount: data.tax_amount || 0,
-          netAmount: data.net_amount,
-          date: data.payroll_date
-        });
-      } catch (error) {
-        console.error('Failed to create payroll journal entry:', error);
-      }
-      
-      toast.success('تم إنشاء راتب الموظف بنجاح');
+      toast.success('تم إنشاء مسودة راتب الموظف بنجاح');
     },
     onError: (error: Error) => {
       toast.error(`خطأ في إنشاء الراتب: ${error.message}`);
@@ -307,21 +326,17 @@ export function useUpdatePayrollStatus() {
   const { user } = useAuth();
 
   return useMutation({
-    mutationFn: async ({ id, status }: { id: string; status: string }) => {
-      const updateData: any = { status };
-      
-      // Add updated timestamp and user info
-      if (user) {
-        updateData.updated_at = new Date().toISOString();
-      }
+    mutationFn: async ({ id, status }: { id: string; status: PayrollStatus }) => {
+      const companyId = user?.profile?.company_id;
+      if (!companyId) throw new Error('Company not found');
+      if (!user?.id) throw new Error('User not authenticated');
 
-      const { data, error } = await supabase
-        .from('payroll')
-        .update(updateData)
-        .eq('id', id)
-        .select()
-        .single();
-
+      const { data, error } = await supabase.rpc('transition_payroll_status_v1', {
+        p_company_id: companyId,
+        p_payroll_id: id,
+        p_target_status: status,
+        p_actor_id: user.id,
+      });
       if (error) throw error;
       return data;
     },
@@ -348,47 +363,58 @@ export function useUpdatePayroll() {
 
   return useMutation({
     mutationFn: async ({ id, updates }: { id: string; updates: Partial<CreatePayrollData> }) => {
-      if (!user) throw new Error('User not authenticated');
+      const companyId = user?.profile?.company_id;
+      if (!companyId) throw new Error('Company not found');
 
-      // Calculate updated amounts if needed
-      let updateData: any = { ...updates };
-      
-      if (updates.basic_salary !== undefined || updates.allowances !== undefined || 
-          updates.overtime_hours !== undefined || updates.overtime_rate !== undefined ||
-          updates.deductions !== undefined || updates.tax_amount !== undefined) {
-        
-        // Get current payroll data
-        const { data: currentPayroll } = await supabase
-          .from('payroll')
-          .select('*')
-          .eq('id', id)
-          .single();
-
-        if (currentPayroll) {
-          const basic_salary = updates.basic_salary ?? currentPayroll.basic_salary;
-          const allowances = updates.allowances ?? currentPayroll.allowances;
-          const overtime_hours = updates.overtime_hours ?? (currentPayroll.overtime_amount / (currentPayroll.overtime_amount > 0 ? (currentPayroll.overtime_amount / 10) : 1));
-          const overtime_rate = updates.overtime_rate ?? (currentPayroll.overtime_amount > 0 ? (currentPayroll.overtime_amount / overtime_hours) : 0);
-          const deductions = updates.deductions ?? currentPayroll.deductions;
-          const tax_amount = updates.tax_amount ?? currentPayroll.tax_amount;
-
-          const overtime_amount = (overtime_hours || 0) * (overtime_rate || 0);
-          const gross_amount = basic_salary + (allowances || 0) + overtime_amount;
-          const total_deductions = (deductions || 0) + (tax_amount || 0);
-          const net_amount = gross_amount - total_deductions;
-
-          updateData = {
-            ...updateData,
-            overtime_amount,
-            net_amount,
-          };
-        }
+      const { data: currentPayroll, error: currentError } = await supabase
+        .from('payroll')
+        .select('*')
+        .eq('id', id)
+        .eq('company_id', companyId)
+        .single();
+      if (currentError) throw currentError;
+      if (currentPayroll.status !== 'draft' || currentPayroll.journal_entry_id) {
+        throw new Error('لا يمكن تعديل الراتب بعد اعتماده أو ربطه بقيد محاسبي');
       }
+
+      const hasOvertimeInput = updates.overtime_hours !== undefined || updates.overtime_rate !== undefined;
+      if (hasOvertimeInput && (updates.overtime_hours === undefined || updates.overtime_rate === undefined)) {
+        throw new Error('يجب إرسال ساعات العمل الإضافي وسعر الساعة معًا');
+      }
+
+      const basicSalary = updates.basic_salary ?? currentPayroll.basic_salary;
+      const allowances = updates.allowances ?? Number(currentPayroll.allowances || 0);
+      const overtimeAmount = hasOvertimeInput
+        ? (updates.overtime_hours || 0) * (updates.overtime_rate || 0)
+        : Number(currentPayroll.overtime_amount || 0);
+      const deductions = updates.deductions ?? Number(currentPayroll.deductions || 0);
+      const taxAmount = updates.tax_amount ?? Number(currentPayroll.tax_amount || 0);
+      const netAmount = basicSalary + allowances + overtimeAmount - deductions - taxAmount;
+      if (netAmount < 0) throw new Error('صافي الراتب لا يمكن أن يكون سالبًا');
+
+      const updateData: PayrollUpdate = {
+        employee_id: updates.employee_id,
+        pay_period_start: updates.pay_period_start,
+        pay_period_end: updates.pay_period_end,
+        basic_salary: updates.basic_salary,
+        allowances: updates.allowances,
+        overtime_amount: overtimeAmount,
+        deductions: updates.deductions,
+        tax_amount: updates.tax_amount,
+        net_amount: netAmount,
+        payment_method: updates.payment_method,
+        bank_account: updates.bank_account,
+        notes: updates.notes,
+        updated_at: new Date().toISOString(),
+      };
 
       const { data, error } = await supabase
         .from('payroll')
         .update(updateData)
         .eq('id', id)
+        .eq('company_id', companyId)
+        .eq('status', 'draft')
+        .is('journal_entry_id', null)
         .select()
         .single();
 
@@ -407,13 +433,33 @@ export function useUpdatePayroll() {
 
 export function useDeletePayroll() {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
 
   return useMutation({
     mutationFn: async (payrollId: string) => {
+      const companyId = user?.profile?.company_id;
+      if (!companyId) throw new Error('Company not found');
+
+      const { data: payroll, error: payrollError } = await supabase
+        .from('payroll')
+        .select('status,journal_entry_id')
+        .eq('id', payrollId)
+        .eq('company_id', companyId)
+        .single();
+      if (payrollError) throw payrollError;
+      if (payroll.status !== 'draft' || payroll.journal_entry_id) {
+        throw new Error('لا يمكن حذف راتب معتمد أو مدفوع أو مرتبط بقيد محاسبي');
+      }
+
       const { error } = await supabase
         .from('payroll')
         .delete()
-        .eq('id', payrollId);
+        .eq('id', payrollId)
+        .eq('company_id', companyId)
+        .eq('status', 'draft')
+        .is('journal_entry_id', null)
+        .select('id')
+        .single();
 
       if (error) throw error;
     },
@@ -465,8 +511,14 @@ export function useCreatePayrollReview() {
       }
 
       const total_employees = payrolls.length;
-      const total_amount = payrolls.reduce((sum, p) => sum + (p.basic_salary + p.allowances + p.overtime_amount), 0);
-      const total_deductions = payrolls.reduce((sum, p) => sum + (p.deductions + p.tax_amount), 0);
+      const total_amount = payrolls.reduce(
+        (sum, p) => sum + p.basic_salary + Number(p.allowances || 0) + Number(p.overtime_amount || 0),
+        0
+      );
+      const total_deductions = payrolls.reduce(
+        (sum, p) => sum + Number(p.deductions || 0) + Number(p.tax_amount || 0),
+        0
+      );
       const net_amount = payrolls.reduce((sum, p) => sum + p.net_amount, 0);
 
       const { data, error } = await supabase

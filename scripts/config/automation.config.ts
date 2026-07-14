@@ -3,13 +3,14 @@
  * Qatar Court System
  */
 
+import 'dotenv/config';
 import path from 'path';
 import { AutomationConfig } from '../types/automation.types';
 
 export const config: AutomationConfig = {
   credentials: {
-    username: process.env.QATAR_COURT_USERNAME || '29263400736',
-    password: process.env.QATAR_COURT_PASSWORD || 'Khamees1992#'
+    username: process.env.QATAR_COURT_USERNAME || '',
+    password: process.env.QATAR_COURT_PASSWORD || ''
   },
 
   court: {
@@ -26,7 +27,7 @@ export const config: AutomationConfig = {
     title: 'مطالبة مالية-إيجار سيارة',
     claimType: 'قيمة المطالبة',
     address: 'الجوحة - قطر',
-    email: 'khamis-1992@hotmail.com'
+    email: process.env.LEGAL_CASE_CONTACT_EMAIL || ''
   },
 
   documents: {
@@ -50,6 +51,18 @@ export const config: AutomationConfig = {
     retryDelay: 2000 // 2 seconds
   }
 };
+
+export function assertAutomationConfig(): void {
+  const missing = [
+    ['QATAR_COURT_USERNAME', config.credentials.username],
+    ['QATAR_COURT_PASSWORD', config.credentials.password],
+    ['LEGAL_CASE_CONTACT_EMAIL', config.case.email],
+  ].filter(([, value]) => !value).map(([name]) => name);
+
+  if (missing.length > 0) {
+    throw new Error(`Missing required automation environment variables: ${missing.join(', ')}`);
+  }
+}
 
 /**
  * Get customer data path

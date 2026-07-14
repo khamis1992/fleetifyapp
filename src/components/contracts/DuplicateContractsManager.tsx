@@ -339,10 +339,10 @@ const DuplicateContractsManager = () => {
                                   {getContractStatusBadge(contract)}
                                 </div>
                                 <div className="text-sm text-muted-foreground">
-                                  العميل: {contract.customer_name} | المبلغ: {contract.contract_amount.toLocaleString()} د.ك
+                                  العميل: {contract.customer_name} | المبلغ: {contract.contract_amount.toLocaleString()} ر.ق
                                 </div>
                                 <div className="text-xs text-muted-foreground">
-                                  تاريخ الإنشاء: {new Date(contract.created_at).toLocaleDateString('ar-KW')}
+                                  تاريخ الإنشاء: {new Date(contract.created_at).toLocaleDateString('ar-QA')}
                                 </div>
                               </div>
                             </div>
@@ -356,7 +356,7 @@ const DuplicateContractsManager = () => {
                               </div>
                               {contract.total_paid > 0 && (
                                 <div className="mt-2 text-green-600 font-medium">
-                                  مدفوع: {contract.total_paid.toLocaleString()} د.ك
+                                  مدفوع: {contract.total_paid.toLocaleString()} ر.ق
                                 </div>
                               )}
                             </div>

@@ -373,7 +373,7 @@ export const WhatsAppMessagesReport = () => {
                   <div className="md:col-span-2">
                     <div className="flex items-center gap-1">
                       <DollarSign className="h-4 w-4 text-green-500" />
-                      <span className="font-bold text-green-600">{msg.amount.toFixed(3)} د.ك</span>
+                      <span className="font-bold text-green-600">{msg.amount.toFixed(2)} ر.ق</span>
                     </div>
                   </div>
 
@@ -444,7 +444,7 @@ export const WhatsAppMessagesReport = () => {
                   <div className="md:col-span-2">
                     <div className="flex items-center gap-1">
                       <DollarSign className="h-4 w-4 text-green-500" />
-                      <span className="font-bold text-green-600">{msg.amount.toFixed(3)} د.ك</span>
+                      <span className="font-bold text-green-600">{msg.amount.toFixed(2)} ر.ق</span>
                     </div>
                   </div>
 

@@ -19,6 +19,7 @@ import {
   useUploadCustomerDocument, 
 } from '@/hooks/useCustomerDocuments';
 import { useCustomerCRMActivity } from '@/hooks/useCustomerCRMActivity';
+import { useDeleteCustomer } from '@/hooks/useEnhancedCustomers';
 import { InvoicePreviewDialog } from '@/components/finance/InvoicePreviewDialog';
 import { motion } from 'framer-motion';
 import {
@@ -120,6 +121,8 @@ const customerDetailsSystemStyle = {
 } as CSSProperties;
 
 // ===== Main Component =====
+const SHOW_LEGACY_CUSTOMER_DETAILS = false;
+
 const CustomerDetailsPageNew = () => {
   const { t } = useFleetifyTranslation("ui");
   const { customerId } = useParams<{ customerId: string }>();
@@ -128,6 +131,7 @@ const CustomerDetailsPageNew = () => {
   const { companyId, isAuthenticating } = useUnifiedCompanyAccess();
   const { formatCurrency } = useCurrencyFormatter();
   const queryClient = useQueryClient();
+  const deleteCustomer = useDeleteCustomer();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   // State
@@ -340,63 +344,10 @@ const CustomerDetailsPageNew = () => {
     if (!customerId || !companyId) return;
 
     try {
-      const { data: activeContracts, error: contractsError } = await supabase
-        .from('contracts')
-        .select('id, contract_number, status')
-        .eq('customer_id', customerId)
-        .in('status', ['active', 'pending', 'under_legal_procedure']);
-
-      if (contractsError) throw contractsError;
-
-      if (activeContracts && activeContracts.length > 0) {
-        toast({
-          title: 'لا يمكن الحذف',
-          description: `العميل لديه ${activeContracts.length} عقود نشطة. يجب إلغاء أو إنهاء العقود أولاً.`,
-          variant: 'destructive',
-        });
-        setIsDeleteDialogOpen(false);
-        return;
-      }
-
-      const { data: unpaidInvoices, error: invoicesError } = await supabase
-        .from('invoices')
-        .select('id, invoice_number, total_amount, paid_amount')
-        .eq('customer_id', customerId)
-        .neq('payment_status', 'paid');
-
-      if (invoicesError) throw invoicesError;
-
-      if (unpaidInvoices && unpaidInvoices.length > 0) {
-        const totalDue = unpaidInvoices.reduce((sum, inv) => sum + (inv.total_amount - (inv.paid_amount || 0)), 0);
-        toast({
-          title: 'لا يمكن الحذف',
-          description: `العميل لديه ${unpaidInvoices.length} فواتير غير مدفوعة بقيمة ${formatCurrency(totalDue)}. يجب تسوية المديونيات أولاً.`,
-          variant: 'destructive',
-        });
-        setIsDeleteDialogOpen(false);
-        return;
-      }
-
-      const { error } = await supabase
-        .from('customers')
-        .delete()
-        .eq('id', customerId)
-        .eq('company_id', companyId);
-
-      if (error) throw error;
-
-      toast({
-        title: 'تم حذف العميل',
-        description: 'تم حذف العميل وجميع بياناته بنجاح',
-      });
+      await deleteCustomer.mutateAsync(customerId);
       navigate('/customers');
-    } catch (error: any) {
-      console.error('Error deleting customer:', error);
-      toast({
-        title: 'خطأ في الحذف',
-        description: error.message || 'حدث خطأ أثناء حذف العميل. قد يكون مرتبطاً ببيانات أخرى.',
-        variant: 'destructive',
-      });
+    } catch {
+      // The centralized mutation reports the actionable error to the user.
     } finally {
       setIsDeleteDialogOpen(false);
     }
@@ -1060,7 +1011,7 @@ const CustomerDetailsPageNew = () => {
           </div>
         </div>
 
-        {false && (
+        {SHOW_LEGACY_CUSTOMER_DETAILS && (
           <>
         {/* ─── Hero Profile Card ─── */}
         <motion.div

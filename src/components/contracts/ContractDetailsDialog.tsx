@@ -35,12 +35,66 @@ import { InvoicePreviewDialog } from '@/components/finance/InvoicePreviewDialog'
 import { LateFinesTab } from './LateFinesTab';
 import { VehicleCheckInOut } from '@/components/vehicles/VehicleCheckInOut';
 import { useVehicleInspections } from '@/hooks/useVehicleInspections';
-import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 import { OfficialContractView } from './OfficialContractView';
 import { toast } from 'sonner';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 import type { Contract } from '@/types/contracts';
 import type { Invoice } from '@/types/finance.types';
+import type { Database } from '@/integrations/supabase/types';
+
+type ContractUpdate = Database['public']['Tables']['contracts']['Update'];
+type InvoiceRow = Database['public']['Tables']['invoices']['Row'];
+
+const normalizeInvoice = (invoice: InvoiceRow): Invoice => {
+  const paymentStatus = invoice.payment_status === 'paid'
+    ? 'paid'
+    : ['partial', 'partially_paid'].includes(invoice.payment_status)
+      ? 'partial'
+      : 'unpaid';
+  const invoiceStatus = ['draft', 'sent', 'paid', 'overdue', 'cancelled'].includes(invoice.status)
+    ? invoice.status as Invoice['status']
+    : 'draft';
+  const invoiceType = ['sales', 'purchase', 'service'].includes(invoice.invoice_type)
+    ? invoice.invoice_type as Invoice['invoice_type']
+    : 'service';
+
+  return {
+    id: invoice.id,
+    company_id: invoice.company_id,
+    invoice_number: invoice.invoice_number,
+    invoice_date: invoice.invoice_date,
+    due_date: invoice.due_date ?? undefined,
+    customer_id: invoice.customer_id ?? undefined,
+    vendor_id: invoice.vendor_id ?? undefined,
+    cost_center_id: invoice.cost_center_id ?? undefined,
+    fixed_asset_id: invoice.fixed_asset_id ?? undefined,
+    invoice_type: invoiceType,
+    subtotal: invoice.subtotal,
+    tax_amount: invoice.tax_amount ?? 0,
+    discount_amount: invoice.discount_amount ?? 0,
+    total_amount: invoice.total_amount,
+    paid_amount: invoice.paid_amount ?? 0,
+    balance_due: invoice.balance_due ?? Math.max(0, invoice.total_amount - (invoice.paid_amount ?? 0)),
+    currency: invoice.currency ?? 'QAR',
+    status: invoiceStatus,
+    payment_status: paymentStatus,
+    notes: invoice.notes ?? undefined,
+    terms: invoice.terms ?? undefined,
+    journal_entry_id: invoice.journal_entry_id ?? undefined,
+    created_by: invoice.created_by ?? undefined,
+    created_at: invoice.created_at,
+    updated_at: invoice.updated_at,
+  };
+};
+
+const getContractTypeLabel = (type: Contract['contract_type']) => ({
+  rental: 'إيجار',
+  daily_rental: 'إيجار يومي',
+  weekly_rental: 'إيجار أسبوعي',
+  monthly_rental: 'إيجار شهري',
+  yearly_rental: 'إيجار سنوي',
+  rent_to_own: 'إيجار منتهي بالتملك',
+}[type] ?? type);
 
 // SECURITY FIX: Added proper types to replace 'any'
 interface VehicleConditionReportData {
@@ -50,15 +104,7 @@ interface VehicleConditionReportData {
 interface ContractDetailsDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  contract: Contract & {
-    vehicle?: Record<string, unknown>;
-    license_plate?: string;
-    make?: string;
-    model?: string;
-    year?: number;
-    vehicle_status?: string;
-    plate_number?: string;
-  };
+  contract: Contract;
   onEdit?: (contract: Contract) => void;
   onCreateInvoice?: (contract: Contract) => void;
   onAmendContract?: (contract: Contract) => void;
@@ -73,9 +119,8 @@ export const ContractDetailsDialog: React.FC<ContractDetailsDialogProps> = ({
   onAmendContract
 }) => {
   const [isEditing, setIsEditing] = React.useState(false);
-  const [editData, setEditData] = React.useState<Partial<Contract>>({});
+  const [editData, setEditData] = React.useState<ContractUpdate>({});
   const { formatCurrency, currency } = useCurrencyFormatter();
-  const { companyId } = useUnifiedCompanyAccess();
 
   // Payment and preview dialog state
   const [selectedInvoice, setSelectedInvoice] = React.useState<Invoice | null>(null);
@@ -89,14 +134,13 @@ export const ContractDetailsDialog: React.FC<ContractDetailsDialogProps> = ({
   React.useEffect(() => {
     if (contract) {
       setEditData({
-        contract_type: contract.contract_type || '',
-        start_date: contract.start_date || '',
-        end_date: contract.end_date || '',
-        contract_amount: contract.contract_amount || 0,
-        monthly_amount: contract.monthly_amount || 0,
-        description: contract.description || '',
-        terms: contract.terms || '',
-        ...contract
+        contract_type: contract.contract_type,
+        start_date: contract.start_date,
+        end_date: contract.end_date,
+        contract_amount: contract.contract_amount,
+        monthly_amount: contract.monthly_amount,
+        description: contract.description,
+        terms: contract.terms,
       });
     }
   }, [contract]);
@@ -110,7 +154,7 @@ export const ContractDetailsDialog: React.FC<ContractDetailsDialogProps> = ({
         .from('customers')
         .select('*')
         .eq('id', contract.customer_id)
-        .eq('company_id', companyId)
+        .eq('company_id', contract.company_id)
         .single();
       return data;
     },
@@ -136,7 +180,7 @@ export const ContractDetailsDialog: React.FC<ContractDetailsDialogProps> = ({
         .from('vehicles')
         .select('*')
         .eq('id', contract.vehicle_id)
-        .eq('company_id', companyId)
+        .eq('company_id', contract.company_id)
         .single();
       
       if (error) {
@@ -158,14 +202,14 @@ export const ContractDetailsDialog: React.FC<ContractDetailsDialogProps> = ({
         .from('chart_of_accounts')
         .select('*')
         .eq('id', contract.account_id)
-        .eq('company_id', companyId)
+        .eq('company_id', contract.company_id)
         .single();
       return data;
     },
     enabled: !!contract?.account_id
   });
 
-  const { data: invoices } = useQuery({
+  const { data: invoices, refetch: refetchInvoices } = useQuery({
     queryKey: ['contract-invoices', contract?.id],
     queryFn: async () => {
       if (!contract?.id) return [];
@@ -173,10 +217,10 @@ export const ContractDetailsDialog: React.FC<ContractDetailsDialogProps> = ({
         .from('invoices')
         .select('*')
         .eq('contract_id', contract.id)
-        .eq('company_id', companyId)
+        .eq('company_id', contract.company_id)
         .neq('status', 'cancelled')  // استبعاد الفواتير الملغاة
         .order('created_at', { ascending: false });
-      return data || [];
+      return (data || []).map(normalizeInvoice);
     },
     enabled: !!contract?.id
   });
@@ -236,13 +280,18 @@ export const ContractDetailsDialog: React.FC<ContractDetailsDialogProps> = ({
         .from('contracts')
         .update(editData)
         .eq('id', contract.id)
-        .eq('company_id', companyId);
+        .eq('company_id', contract.company_id);
 
       if (error) throw error;
 
       toast.success('تم تحديث العقد بنجاح');
       setIsEditing(false);
-      onEdit?.(editData);
+      onEdit?.({
+        ...contract,
+        ...editData,
+        contract_type: (editData.contract_type ?? contract.contract_type) as Contract['contract_type'],
+        status: contract.status,
+      });
     } catch (error) {
       console.error('Error updating contract:', error);
       toast.error('حدث خطأ في تحديث العقد');
@@ -300,7 +349,7 @@ export const ContractDetailsDialog: React.FC<ContractDetailsDialogProps> = ({
         }
         
         // Refresh invoices data
-        window.location.reload(); // Simple refresh to update invoices
+        await refetchInvoices();
       } else {
         toast.error('فشل في إنشاء الفواتير');
       }
@@ -340,7 +389,7 @@ export const ContractDetailsDialog: React.FC<ContractDetailsDialogProps> = ({
     if (contract?.vehicle_id) {
       return {
         id: contract.vehicle_id,
-        plate_number: contract.plate_number || contract.license_plate,
+        plate_number: contract.vehicle?.plate_number || contract.license_plate,
         make: contract.make,
         model: contract.model,
         year: contract.year,
@@ -501,9 +550,7 @@ export const ContractDetailsDialog: React.FC<ContractDetailsDialogProps> = ({
                       <div className="flex items-center justify-between" dir="rtl">
                         <span className="text-sm text-muted-foreground">نوع العقد</span>
                         <span className="font-medium">
-                          {contract.contract_type === 'rental' ? 'إيجار' :
-                           contract.contract_type === 'service' ? 'خدمة' :
-                           contract.contract_type === 'maintenance' ? 'صيانة' : 'مبيعات'}
+                          {getContractTypeLabel(contract.contract_type)}
                         </span>
                       </div>
                       
@@ -676,7 +723,7 @@ export const ContractDetailsDialog: React.FC<ContractDetailsDialogProps> = ({
                     <div className="flex items-center justify-between" dir="rtl">
                       <span className="text-sm text-muted-foreground">رقم اللوحة</span>
                       <span className="font-medium">
-                        {vehicleData?.plate_number || contract?.license_plate || contract?.plate_number || 'غير محدد'}
+                        {vehicleData?.plate_number || contract.license_plate || 'غير محدد'}
                       </span>
                     </div>
 
@@ -729,7 +776,7 @@ export const ContractDetailsDialog: React.FC<ContractDetailsDialogProps> = ({
                 <CardContent>
                   {isEditing ? (
                     <Textarea
-                      value={editData.description !== undefined ? editData.description : (contract?.description || '')}
+                      value={editData.description ?? contract.description ?? ''}
                       onChange={(e) => setEditData({...editData, description: e.target.value})}
                       rows={4}
                     />
@@ -748,7 +795,7 @@ export const ContractDetailsDialog: React.FC<ContractDetailsDialogProps> = ({
                 <CardContent>
                   {isEditing ? (
                     <Textarea
-                      value={editData.terms !== undefined ? editData.terms : (contract?.terms || '')}
+                      value={editData.terms ?? contract.terms ?? ''}
                       onChange={(e) => setEditData({...editData, terms: e.target.value})}
                       rows={4}
                     />
@@ -800,13 +847,13 @@ export const ContractDetailsDialog: React.FC<ContractDetailsDialogProps> = ({
             {invoices && invoices.length > 0 ? (
               <div className="space-y-4">
                 {invoices.map((invoice) => {
-                  const canPay = invoice.payment_status === 'unpaid' || invoice.payment_status === 'partially_paid';
+                  const canPay = invoice.payment_status === 'unpaid' || invoice.payment_status === 'partial';
                   
                   const getPaymentStatusBadge = (paymentStatus: string) => {
                     const statusConfig = {
                       paid: { label: 'مدفوعة', className: 'bg-green-100 text-green-800 hover:bg-green-100' },
                       unpaid: { label: 'غير مدفوعة', className: 'bg-red-100 text-red-800 hover:bg-red-100' },
-                      partially_paid: { label: 'مدفوعة جزئياً', className: 'bg-yellow-100 text-yellow-800 hover:bg-yellow-100' },
+                      partial: { label: 'مدفوعة جزئياً', className: 'bg-yellow-100 text-yellow-800 hover:bg-yellow-100' },
                       overdue: { label: 'متأخرة', className: 'bg-orange-100 text-orange-800 hover:bg-orange-100' }
                     };
                     
@@ -1013,10 +1060,10 @@ export const ContractDetailsDialog: React.FC<ContractDetailsDialogProps> = ({
                   <div className="grid grid-cols-3 gap-4">
                     <div>
                       <p className="text-sm text-muted-foreground">مستوى الوقود</p>
-                      <p className="text-2xl font-bold">{checkOutInspection.fuel_level}%</p>
-                      {checkInInspection && checkOutInspection.fuel_level < checkInInspection.fuel_level && (
+                      <p className="text-2xl font-bold">{checkOutInspection.fuel_level ?? 0}%</p>
+                      {checkInInspection && (checkOutInspection.fuel_level ?? 0) < (checkInInspection.fuel_level ?? 0) && (
                         <Badge variant="destructive" className="mt-1">
-                          نقص {checkInInspection.fuel_level - checkOutInspection.fuel_level}%
+                          نقص {(checkInInspection.fuel_level ?? 0) - (checkOutInspection.fuel_level ?? 0)}%
                         </Badge>
                       )}
                     </div>
@@ -1129,9 +1176,7 @@ export const ContractDetailsDialog: React.FC<ContractDetailsDialogProps> = ({
           {/* Official Contract Tab */}
           <TabsContent value="official-contract" className="space-y-4">
             <OfficialContractView
-              contract={contract}
-              customer={customer}
-              vehicle={vehicle}
+              contract={{ ...contract, customer, vehicle: vehicleData }}
             />
           </TabsContent>
         </Tabs>

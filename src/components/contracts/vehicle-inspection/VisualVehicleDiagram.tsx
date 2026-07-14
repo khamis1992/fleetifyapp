@@ -324,13 +324,12 @@ export function VisualVehicleDiagram({
 
                     {/* Zone Number Badge */}
                     <div
-                      style={getBadgeStyle(zone)}
+                      style={{ ...getBadgeStyle(zone), pointerEvents: 'auto' }}
                       onClick={(e) => handleZoneClick(zone, e)}
                       className={cn(
                         'cursor-pointer flex items-center justify-center',
                         mode === 'inspection' && 'hover:scale-110 transition-transform'
                       )}
-                      style={{ pointerEvents: 'auto' }}
                     >
                       <div
                         className={cn(

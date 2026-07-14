@@ -63,7 +63,7 @@ export function VehicleComparisonView({
       if (!pickupZone || pickupZone.condition === 'clean') {
         // Was clean, now damaged
         newDamages.push(returnZone);
-      } else if (pickupZone.condition !== 'clean') {
+      } else {
         // Was already damaged
         existingDamages.push(returnZone);
 
@@ -99,7 +99,7 @@ export function VehicleComparisonView({
     );
   }
 
-  const vehicleType = returnData.vehicle_type || 'sedan';
+  const vehicleType = comparison.return.vehicle_type || 'sedan';
 
   return (
     <div className={cn('space-y-6', className)}>

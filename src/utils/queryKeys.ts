@@ -106,6 +106,7 @@ export const queryKeys = {
     list: (filters?: InvoiceFilters) => [...queryKeys.invoices.lists(), filters] as const,
     details: () => [...queryKeys.invoices.all, 'detail'] as const,
     detail: (id: string) => [...queryKeys.invoices.details(), id] as const,
+    overdue: (companyId?: string) => [...queryKeys.invoices.all, 'overdue', companyId] as const,
   },
 
   // PAYMENTS
@@ -130,9 +131,9 @@ export const queryKeys = {
     pricing: (vehicleId: string) => [...queryKeys.vehicles.all, 'pricing', vehicleId] as const,
     insurance: (vehicleId: string) => [...queryKeys.vehicles.all, 'insurance', vehicleId] as const,
     maintenance: (vehicleId?: string) => [...queryKeys.vehicles.all, 'maintenance', vehicleId] as const,
-    odometerReadings: (vehicleId: string) => [...queryKeys.vehicles.all, 'odometer', vehicleId] as const,
-    inspections: (vehicleId: string) => [...queryKeys.vehicles.all, 'inspections', vehicleId] as const,
-    activityLog: (vehicleId: string) => [...queryKeys.vehicles.all, 'activity-log', vehicleId] as const,
+    odometerReadings: (vehicleId?: string) => [...queryKeys.vehicles.all, 'odometer', vehicleId] as const,
+    inspections: (vehicleId?: string) => [...queryKeys.vehicles.all, 'inspections', vehicleId] as const,
+    activityLog: (vehicleId?: string) => [...queryKeys.vehicles.all, 'activity-log', vehicleId] as const,
     fleetAnalytics: (companyId?: string) => ['fleet-analytics', companyId] as const,
     fleetStatus: () => ['fleet-status'] as const,
   },
@@ -168,7 +169,7 @@ export const queryKeys = {
   journalEntries: {
     all: ['journal-entries'] as const,
     lists: () => [...queryKeys.journalEntries.all, 'list'] as const,
-    list: (filters?: DateRangeFilters & CompanyFilters) => [...queryKeys.journalEntries.lists(), filters] as const,
+    list: (filters?: DateRangeFilters & CompanyFilters & StatusFilters) => [...queryKeys.journalEntries.lists(), filters] as const,
     details: () => [...queryKeys.journalEntries.all, 'detail'] as const,
     detail: (id: string) => [...queryKeys.journalEntries.details(), id] as const,
   },

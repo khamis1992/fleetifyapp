@@ -52,15 +52,10 @@ const BREADCRUMB_ROUTES: Record<string, BreadcrumbItem[]> = {
     { label: 'المالية', path: '/finance' },
     { label: 'الخزينة والبنوك', path: '/finance/treasury', isActive: true },
   ],
-  '/finance/ar-aging': [
+  '/finance/reports/ar-aging': [
     { label: 'لوحة التحكم', path: '/dashboard' },
     { label: 'المالية', path: '/finance' },
-    { label: 'الذمم المدينة', path: '/finance/ar-aging', isActive: true },
-  ],
-  '/finance/ap-aging': [
-    { label: 'لوحة التحكم', path: '/dashboard' },
-    { label: 'المالية', path: '/finance' },
-    { label: 'الذمم الدائنة', path: '/finance/ap-aging', isActive: true },
+    { label: 'الذمم المدينة', path: '/finance/reports/ar-aging', isActive: true },
   ],
 
   // Fleet
@@ -88,25 +83,20 @@ const BREADCRUMB_ROUTES: Record<string, BreadcrumbItem[]> = {
     { label: 'إدارة الأسطول', path: '/fleet' },
     { label: 'التقارير', path: '/fleet/reports', isActive: true },
   ],
-  '/fleet/traffic-violation-payments': [
+  '/fleet/traffic-violations/payments': [
     { label: 'لوحة التحكم', path: '/dashboard' },
     { label: 'إدارة الأسطول', path: '/fleet' },
-    { label: 'مدفوعات المخالفات', path: '/fleet/traffic-violation-payments', isActive: true },
+    { label: 'مدفوعات المخالفات', path: '/fleet/traffic-violations/payments', isActive: true },
   ],
   '/fleet/vehicle-installments': [
     { label: 'لوحة التحكم', path: '/dashboard' },
     { label: 'إدارة الأسطول', path: '/fleet' },
     { label: 'أقساط المركبات', path: '/fleet/vehicle-installments', isActive: true },
   ],
-  '/fleet/reservation-system': [
+  '/fleet/reservations': [
     { label: 'لوحة التحكم', path: '/dashboard' },
     { label: 'إدارة الأسطول', path: '/fleet' },
-    { label: 'نظام الحجوزات', path: '/fleet/reservation-system', isActive: true },
-  ],
-  '/fleet/financial-analysis': [
-    { label: 'لوحة التحكم', path: '/dashboard' },
-    { label: 'إدارة الأسطول', path: '/fleet' },
-    { label: 'التحليل المالي', path: '/fleet/financial-analysis', isActive: true },
+    { label: 'نظام الحجوزات', path: '/fleet/reservations', isActive: true },
   ],
 
   // Customers
@@ -182,10 +172,10 @@ const BREADCRUMB_ROUTES: Record<string, BreadcrumbItem[]> = {
     { label: 'لوحة التحكم', path: '/dashboard' },
     { label: 'الشؤون القانونية', path: '/legal/cases', isActive: true },
   ],
-  '/legal/invoice-disputes': [
+  '/legal/disputes': [
     { label: 'لوحة التحكم', path: '/dashboard' },
     { label: 'الشؤون القانونية', path: '/legal/cases' },
-    { label: 'نزاعات الفواتير', path: '/legal/invoice-disputes', isActive: true },
+    { label: 'نزاعات الفواتير', path: '/legal/disputes', isActive: true },
   ],
   '/legal/late-fees': [
     { label: 'لوحة التحكم', path: '/dashboard' },

@@ -4,20 +4,25 @@ import { paymentAllocationEngine, AllocationRule } from '../paymentAllocationEng
 // Mock Supabase client
 vi.mock('@/integrations/supabase/client', () => ({
   supabase: {
-    from: vi.fn((table: string) => ({
-      select: vi.fn(() => ({
-        eq: vi.fn(() => ({
-          eq: vi.fn(() => ({
-            limit: vi.fn(() => ({
-              single: vi.fn(() => Promise.resolve({
-                data: { id: 'test-account', account_name: 'Test Account' },
-                error: null
-              }))
-            }))
-          }))
-        }))
-      }))
-    }))
+    from: vi.fn(() => {
+      const chain: any = {};
+      const listResult = {
+        data: [{ id: 'cash-account', account_name: 'Cash Account' }],
+        error: null,
+      };
+      chain.select = vi.fn(() => chain);
+      chain.eq = vi.fn(() => chain);
+      chain.limit = vi.fn(() => chain);
+      chain.single = vi.fn(() =>
+        Promise.resolve({
+          data: { id: 'revenue-account', account_name: 'Revenue Account' },
+          error: null,
+        })
+      );
+      chain.then = (resolve: (value: unknown) => unknown) =>
+        Promise.resolve(listResult).then(resolve);
+      return chain;
+    }),
   }
 }));
 

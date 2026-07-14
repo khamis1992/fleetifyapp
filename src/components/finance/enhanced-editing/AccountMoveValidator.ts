@@ -98,7 +98,7 @@ export class AccountMoveValidator {
   }
 
   private wouldCreateCycle(accountId: string, newParentId: string): boolean {
-    let currentParentId = newParentId;
+    let currentParentId: string | null = newParentId;
     
     while (currentParentId) {
       if (currentParentId === accountId) {
@@ -132,7 +132,7 @@ export class AccountMoveValidator {
     if (!parentId) return 1;
     
     let level = 1;
-    let currentId = parentId;
+    let currentId: string | null = parentId;
     
     while (currentId) {
       level++;

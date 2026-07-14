@@ -27,37 +27,37 @@ import {
 const navigationItems = [
   { 
     name: 'لوحة التحكم الرئيسية', 
-    href: '/super-admin/dashboard', 
+    href: '/admin/dashboard',
     icon: BarChart3 
   },
   { 
     name: 'إدارة الشركات', 
-    href: '/super-admin/companies', 
+    href: '/admin/companies',
     icon: Building2 
   },
   { 
     name: 'إدارة المستخدمين', 
-    href: '/super-admin/users', 
+    href: '/admin/users',
     icon: Users 
   },
   { 
     name: 'المدفوعات والاشتراكات', 
-    href: '/super-admin/payments', 
+    href: '/admin/payments',
     icon: DollarSign 
   },
   { 
     name: 'إدارة الدعم الفني', 
-    href: '/super-admin/support', 
+    href: '/admin/support',
     icon: Headphones 
   },
   { 
     name: 'تقارير النظام', 
-    href: '/super-admin/reports', 
+    href: '/admin/reports',
     icon: BarChart3 
   },
   { 
     name: 'إدارة الصفحات المقصودة', 
-    href: '/super-admin/landing-management', 
+    href: '/admin/landing',
     icon: Layout 
   },
 ];
@@ -125,7 +125,7 @@ const Sidebar = ({ className = "" }: { className?: string }) => {
       {/* Footer Actions */}
       <div className="space-y-2 mt-8">
         <Link
-          to="/super-admin/settings"
+          to="/admin/settings"
           className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-primary/5 transition-all text-muted-foreground hover:text-foreground group"
         >
           <Settings className="h-5 w-5 group-hover:text-primary transition-colors" />
@@ -144,7 +144,11 @@ const Sidebar = ({ className = "" }: { className?: string }) => {
   );
 };
 
-export const SuperAdminLayout: React.FC = () => {
+interface SuperAdminLayoutProps {
+  children?: React.ReactNode;
+}
+
+export const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ children }) => {
   const { t } = useFleetifyTranslation("ui");
   const { user, loading } = useAuth();
   const [hasMounted, setHasMounted] = React.useState(false);
@@ -164,7 +168,7 @@ export const SuperAdminLayout: React.FC = () => {
   }
 
   if (!loading && !user) {
-    return <Navigate to="/super-admin" replace />;
+    return <Navigate to="/auth" replace />;
   }
 
   const isSuperAdmin = user?.roles?.includes('super_admin');
@@ -202,7 +206,7 @@ export const SuperAdminLayout: React.FC = () => {
       {/* Main Content */}
       <div className="lg:mr-80">
         <main className="min-h-screen p-6">
-          <Outlet />
+          {children || <Outlet />}
         </main>
       </div>
     </div>

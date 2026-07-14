@@ -160,7 +160,7 @@ const maintenanceTours = {
       'تبويب المركبة يعرض اللوحة ومعلومات المركبة وسجل الصيانة المرتبط بها.',
       'تبويب المورد يوضح بيانات مزود الخدمة إذا كانت مسجلة.',
       'تبويب التكاليف يقارن التكلفة المقدرة بالتكلفة الفعلية.',
-      'من أسفل اللوحة يمكنك تعديل الطلب أو بدءه أو إكماله أو حذفه حسب الحالة.',
+      'من أسفل اللوحة يمكنك تعديل الطلب أو بدءه أو إكماله أو إلغاؤه حسب الحالة.',
     ],
   },
   status: {
@@ -173,12 +173,12 @@ const maintenanceTours = {
     ],
   },
   delete: {
-    title: 'جولة حذف طلب الصيانة',
-    description: 'يوضح ما يحدث عند حذف طلب الصيانة وما يجب مراجعته قبل التأكيد.',
+    title: 'جولة إلغاء طلب الصيانة',
+    description: 'يوضح ما يحدث عند إلغاء طلب الصيانة وما يجب مراجعته قبل التأكيد.',
     steps: [
-      'الحذف يزيل سجل الصيانة من القائمة.',
+      'الإلغاء يوقف الطلب مع الاحتفاظ بسجله للتدقيق.',
       'إذا كانت المركبة في حالة صيانة بسبب هذا الطلب فقد تعود إلى متاحة.',
-      'راجع رقم الطلب والمركبة قبل الحذف، ولا تستخدم الحذف بدل إكمال الصيانة.',
+      'الطلبات المرتبطة بقيود تحتاج عكسًا محاسبيًا معتمدًا قبل الإلغاء.',
     ],
   },
   export: {
@@ -714,11 +714,10 @@ export default function MaintenanceRedesigned() {
         maintenanceId: recordToDelete.id,
         vehicleId: recordToDelete.vehicle_id || recordToDelete.vehicles?.id,
       });
-      toast.success('تم حذف السجل بنجاح');
       setRecordToDelete(null);
       refetch();
-    } catch (error) {
-      toast.error('فشل حذف السجل');
+    } catch {
+      // The mutation shows the precise accounting or validation reason.
     }
   };
 
@@ -1375,13 +1374,14 @@ export default function MaintenanceRedesigned() {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Delete Confirmation Dialog */}
+      {/* Cancellation Confirmation Dialog */}
       <AlertDialog open={!!recordToDelete} onOpenChange={(open) => !open && setRecordToDelete(null)}>
         <AlertDialogContent className="rounded-xl">
           <AlertDialogHeader>
-            <AlertDialogTitle>تأكيد الحذف</AlertDialogTitle>
+            <AlertDialogTitle>تأكيد الإلغاء</AlertDialogTitle>
             <AlertDialogDescription>
-              سيتم حذف طلب الصيانة <strong>{recordToDelete?.maintenance_number}</strong>. هذا الإجراء لا يمكن التراجع عنه.
+              سيتم إلغاء طلب الصيانة <strong>{recordToDelete?.maintenance_number}</strong> مع الاحتفاظ بسجله.
+              الطلب المرتبط بقيد محاسبي يتطلب عكسًا معتمدًا أولًا.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="gap-2 sm:justify-between">
@@ -1393,7 +1393,7 @@ export default function MaintenanceRedesigned() {
               className="bg-red-600 hover:bg-red-700 rounded-xl"
               disabled={deleteMaintenance.isPending}
             >
-              {deleteMaintenance.isPending ? 'جاري الحذف...' : 'حذف'}
+              {deleteMaintenance.isPending ? 'جاري الإلغاء...' : 'إلغاء الطلب'}
             </AlertDialogAction>
             </div>
           </AlertDialogFooter>

@@ -4,7 +4,7 @@ import { AlertTriangle } from "lucide-react";
 
 export default function AlertsPage() {
   return (
-    <PageCustomizer>
+    <PageCustomizer pageId="finance-alerts" title="" titleAr="">
       <div className="space-y-6">
         {/* Header */}
         <div>

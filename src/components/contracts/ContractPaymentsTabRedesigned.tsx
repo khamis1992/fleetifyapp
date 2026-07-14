@@ -8,7 +8,7 @@
 
 import { useState, useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { motion } from 'framer-motion';
+import { motion, type Variants } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
@@ -64,7 +64,7 @@ import { usePaymentOperations } from '@/hooks/business/usePaymentOperations';
 import { cn } from '@/lib/utils';
 
 // ===== Animation Variants =====
-const fadeInUp = {
+const fadeInUp: Variants = {
   hidden: { opacity: 0, y: 20 },
   visible: {
     opacity: 1,
@@ -73,7 +73,7 @@ const fadeInUp = {
   }
 };
 
-const scaleIn = {
+const scaleIn: Variants = {
   hidden: { opacity: 0, scale: 0.95 },
   visible: {
     opacity: 1,
@@ -103,8 +103,8 @@ interface Payment {
 
 interface CustomerInfo {
   name: string;
-  phone?: string;
-  nationalId?: string;
+  phone?: string | null;
+  nationalId?: string | null;
 }
 
 interface ContractPaymentsTabRedesignedProps {

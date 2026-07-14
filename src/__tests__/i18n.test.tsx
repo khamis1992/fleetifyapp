@@ -8,11 +8,12 @@
  */
 
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeAll, beforeEach } from 'vitest';
 import React from 'react';
 import { I18nProvider, LanguageSwitcher, MirroredIcon } from '../components/i18n';
 import { useFleetifyTranslation } from '../hooks/useTranslation';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { i18n, initializeI18n } from '../lib/i18n/config';
 
 // Mock i18n instance for testing
 const mockI18n = {
@@ -68,7 +69,9 @@ const mockTranslations = {
 
 // Mock fetch for translation loading
 global.fetch = vi.fn((url) => {
-  const [, language, namespace] = url.split('/');
+  const match = String(url).match(/\/locales\/([^/]+)\/([^/.]+)\.json/);
+  const language = match?.[1] as keyof typeof mockTranslations;
+  const namespace = match?.[2] as 'common' | 'fleet';
   return Promise.resolve({
     ok: true,
     json: () => Promise.resolve(mockTranslations[language]?.[namespace] || {})
@@ -87,10 +90,10 @@ const TestComponent: React.FC<{ namespace?: string }> = ({ namespace }) => {
       <p>{t('actions.cancel')}</p>
       {namespace === 'fleet' && (
         <>
-          <p>{t('fleet.title')}</p>
-          <p>{t('fleet.vehicles')}</p>
-          <p>{t('fleet.vehicle.make')}</p>
-          <p>{t('fleet.vehicle.model')}</p>
+          <p>{t('title')}</p>
+          <p>{t('vehicles')}</p>
+          <p>{t('vehicle.make')}</p>
+          <p>{t('vehicle.model')}</p>
         </>
       )}
       <p>Language: {currentLanguage}</p>
@@ -101,8 +104,18 @@ const TestComponent: React.FC<{ namespace?: string }> = ({ namespace }) => {
 };
 
 describe('I18n System', () => {
-  beforeEach(() => {
+  beforeAll(async () => {
+    await initializeI18n();
+    for (const language of ['en', 'ar'] as const) {
+      for (const namespace of ['common', 'fleet'] as const) {
+        i18n.addResourceBundle(language, namespace, mockTranslations[language][namespace], true, true);
+      }
+    }
+  });
+
+  beforeEach(async () => {
     vi.clearAllMocks();
+    await i18n.changeLanguage('en');
     // Reset document direction
     document.documentElement.dir = 'ltr';
     document.body.className = '';
@@ -150,7 +163,7 @@ describe('I18n System', () => {
       });
     });
 
-    it('should handle language change callback', () => {
+    it('should handle language change callback', async () => {
       const onLanguageChange = vi.fn();
 
       render(
@@ -163,7 +176,7 @@ describe('I18n System', () => {
       );
 
       // Initial language change should trigger callback
-      expect(onLanguageChange).toHaveBeenCalledWith('en');
+      await waitFor(() => expect(onLanguageChange).toHaveBeenCalledWith('en'));
     });
 
     it('should add language-specific font classes', async () => {
@@ -174,7 +187,7 @@ describe('I18n System', () => {
       );
 
       await waitFor(() => {
-        expect(document.body).toHaveClass('font-ar');
+        expect(document.body).toHaveClass('font-arabic');
       });
     });
   });
@@ -232,8 +245,7 @@ describe('I18n System', () => {
 
       const icon = screen.getByTestId('mirrored-icon');
       expect(icon).toBeInTheDocument();
-      // Should not have mirrored class in LTR
-      expect(icon.querySelector('.icon-mirrored')).not.toBeInTheDocument();
+      expect(icon).not.toHaveStyle('transform: scaleX(-1)');
     });
 
     it('should apply mirror styles in RTL language', async () => {
@@ -251,8 +263,7 @@ describe('I18n System', () => {
         const icon = screen.getByTestId('mirrored-icon');
         expect(icon).toBeInTheDocument();
         // Should have mirrored class or style in RTL
-        const iconElement = icon.querySelector('svg');
-        expect(iconElement).toHaveStyle('transform: scaleX(-1)');
+        expect(icon).toHaveStyle('transform: scaleX(-1)');
       });
     });
 
@@ -261,7 +272,7 @@ describe('I18n System', () => {
         <I18nProvider language="ar">
           <MirroredIcon
             icon={ChevronRight}
-            name="chevron-right" // This shouldn't be mirrored
+            name="calendar"
             data-testid="non-mirrored-icon"
           />
         </I18nProvider>
@@ -269,9 +280,7 @@ describe('I18n System', () => {
 
       await waitFor(() => {
         const icon = screen.getByTestId('non-mirrored-icon');
-        const iconElement = icon.querySelector('svg');
-        // Should not be mirrored
-        expect(iconElement).not.toHaveStyle('transform: scaleX(-1)');
+        expect(icon).not.toHaveStyle('transform: scaleX(-1)');
       });
     });
   });

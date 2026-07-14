@@ -5,10 +5,31 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { useSystemLogger } from "@/hooks/useSystemLogger";
 import { useCompanyIdWithInit, useCurrentCompanyId } from "./useUnifiedCompanyAccess";
-import { useMaintenanceJournalIntegration } from "@/hooks/useMaintenanceJournalIntegration";
 import { createAuditLog } from "@/hooks/useAuditLog";
-import { useVehicleStatusUpdate } from "@/hooks/useVehicleStatusIntegration";
 import { queryKeys } from "@/utils/queryKeys";
+import type { Database } from '@/integrations/supabase/types';
+import type {
+  Vehicle,
+  VehiclePricing,
+  VehicleInsurance,
+  VehicleMaintenance,
+  OdometerReading,
+  VehicleInspection,
+  TrafficViolation,
+  VehicleActivityLog
+} from '@/types/vehicle.types';
+
+type VehicleInsert = Database['public']['Tables']['vehicles']['Insert'];
+type VehicleUpdate = Database['public']['Tables']['vehicles']['Update'];
+type VehiclePricingInsert = Database['public']['Tables']['vehicle_pricing']['Insert'];
+type VehicleInsuranceInsert = Database['public']['Tables']['vehicle_insurance']['Insert'];
+type VehicleMaintenanceInsert = Database['public']['Tables']['vehicle_maintenance']['Insert'];
+type VehicleMaintenanceUpdate = Database['public']['Tables']['vehicle_maintenance']['Update'];
+type VehicleMaintenanceRow = Database['public']['Tables']['vehicle_maintenance']['Row'];
+type VehiclePricingRow = Database['public']['Tables']['vehicle_pricing']['Row'];
+type OdometerReadingInsert = Database['public']['Tables']['odometer_readings']['Insert'];
+type VehicleInspectionInsert = Database['public']['Tables']['vehicle_inspections']['Insert'];
+type VehicleActivityInsert = Database['public']['Tables']['vehicle_activity_log']['Insert'];
 
 // Types - Import from centralized vehicle types file
 export type {
@@ -20,7 +41,7 @@ export type {
   VehicleInspection,
   TrafficViolation,
   VehicleActivityLog
-} from '@/types/vehicle.types';
+};
 
 export const useVehicles = (options?: { limit?: number; status?: string }) => {
   const { companyId, isInitializing } = useCompanyIdWithInit()
@@ -28,7 +49,7 @@ export const useVehicles = (options?: { limit?: number; status?: string }) => {
   const { limit, status } = options || {}
 
   return useQuery({
-    queryKey: queryKeys.vehicles.list({ companyId, status, pageSize: limit }),
+    queryKey: queryKeys.vehicles.list({ companyId: companyId ?? undefined, status, pageSize: limit }),
     queryFn: async ({ signal }) => {
       Sentry.addBreadcrumb({ category: "vehicles", message: "Fetching vehicles data", level: "info" }); // ✅ Extract signal from query context
 
@@ -263,7 +284,7 @@ export const useVehicles = (options?: { limit?: number; status?: string }) => {
           console.log(`✅ [useVehicles] Successfully updated ${vehiclesToUpdate.length} vehicle statuses`)
           
           // إعادة جلب البيانات لضمان تحديث الواجهة
-          queryClient.invalidateQueries({ queryKey: queryKeys.vehicles.list({ companyId, status, pageSize: limit }) })
+          queryClient.invalidateQueries({ queryKey: queryKeys.vehicles.list({ companyId: companyId ?? undefined, status, pageSize: limit }) })
           queryClient.invalidateQueries({ queryKey: ['vehicles'] })
         } catch (err) {
           console.error("❌ [useVehicles] Error updating vehicle statuses:", err)
@@ -282,7 +303,7 @@ export const useAvailableVehicles = () => {
   const companyId = useCurrentCompanyId()
   
   return useQuery({
-    queryKey: queryKeys.vehicles.available(companyId),
+    queryKey: queryKeys.vehicles.available(companyId ?? undefined),
     queryFn: async ({ signal }) => {
       Sentry.addBreadcrumb({ category: "vehicles", message: "Fetching vehicles data", level: "info" }); // ✅ Extract signal from query context
       if (!companyId) return []
@@ -318,7 +339,7 @@ export const useCreateVehicle = () => {
   const companyId = useCurrentCompanyId()
   
   return useMutation({
-    mutationFn: async (vehicleData: Omit<Vehicle, 'id' | 'created_at' | 'updated_at'>) => {
+    mutationFn: async (vehicleData: VehicleInsert) => {
       Sentry.addBreadcrumb({ category: "vehicles", message: "Vehicle mutation started", level: "info" });
       console.log("🚗 [USE_CREATE_VEHICLE] Starting vehicle creation");
       console.log("📋 [USE_CREATE_VEHICLE] Input data:", vehicleData);
@@ -415,7 +436,7 @@ export const useCreateVehicle = () => {
             model: data.model,
             year: data.year,
             status: data.status,
-            vehicle_type: data.vehicle_type,
+            body_type: data.body_type,
           },
           changes_summary: `Created vehicle ${data.plate_number}`,
           metadata: {
@@ -469,7 +490,7 @@ export const useUpdateVehicle = () => {
   const { toast } = useToast()
   
   return useMutation({
-    mutationFn: async ({ id, ...updateData }: Partial<Vehicle> & { id: string }) => {
+    mutationFn: async ({ id, ...updateData }: VehicleUpdate & { id: string }) => {
       Sentry.addBreadcrumb({ category: "vehicles", message: "Vehicle mutation started", level: "info" });
       // Get old data before update
       const { data: oldData } = await supabase
@@ -634,7 +655,7 @@ export const useChangeVehiclePlateFromTrafficAuthority = () => {
 
       await createAuditLog(
         'UPDATE',
-        'vehicle_plate_change',
+        'vehicle',
         result.vehicleId,
         result.newPlate,
         {
@@ -664,24 +685,44 @@ export const useChangeVehiclePlateFromTrafficAuthority = () => {
 export const useDeleteVehicle = () => {
   const queryClient = useQueryClient()
   const { toast } = useToast()
+  const companyId = useCurrentCompanyId()
   
   return useMutation({
     mutationFn: async (vehicleId: string) => {
+      if (!companyId) throw new Error('Company ID not found')
       Sentry.addBreadcrumb({ category: "vehicles", message: "Vehicle deletion started", level: "info" });
-      // Get vehicle details before deletion for audit log
-      const { data: vehicleData } = await supabase
+      const { data: vehicleData, error: vehicleError } = await supabase
         .from("vehicles")
-        .select('plate_number, make, model, year, vin')
+        .select('plate_number, make, model, year, vin, fixed_asset_id')
         .eq("id", vehicleId)
+        .eq("company_id", companyId)
         .single()
-      
-      // Hard delete - permanently remove the vehicle
-      const { error } = await supabase
+      if (vehicleError) throw vehicleError
+
+      const relatedChecks = await Promise.all([
+        supabase.from('contracts').select('id', { count: 'exact', head: true }).eq('vehicle_id', vehicleId).eq('company_id', companyId),
+        supabase.from('contract_vehicles').select('id', { count: 'exact', head: true }).eq('vehicle_id', vehicleId).eq('company_id', companyId),
+        supabase.from('vehicle_maintenance').select('id', { count: 'exact', head: true }).eq('vehicle_id', vehicleId).eq('company_id', companyId),
+        supabase.from('traffic_violations').select('id', { count: 'exact', head: true }).eq('vehicle_id', vehicleId).eq('company_id', companyId),
+        supabase.from('vehicle_installments').select('id', { count: 'exact', head: true }).eq('vehicle_id', vehicleId).eq('company_id', companyId),
+      ])
+      const relatedError = relatedChecks.find((result) => result.error)?.error
+      if (relatedError) throw relatedError
+      const relatedCount = relatedChecks.reduce((sum, result) => sum + (result.count || 0), 0)
+      if (vehicleData.fixed_asset_id || relatedCount > 0) {
+        throw new Error('لا يمكن حذف مركبة مرتبطة بأصل ثابت أو عقود أو صيانة أو مخالفات أو أقساط. عطّل المركبة للحفاظ على السجل التشغيلي والمالي.')
+      }
+
+      const { data: deletedVehicle, error } = await supabase
         .from("vehicles")
         .delete()
         .eq("id", vehicleId)
+        .eq("company_id", companyId)
+        .select('id')
+        .single()
 
       if (error) throw error
+      if (!deletedVehicle) throw new Error('Vehicle not found in the current company')
       
       return { vehicleId, vehicleData }
     },
@@ -706,7 +747,7 @@ export const useDeleteVehicle = () => {
             year: result.vehicleData?.year,
             vin: result.vehicleData?.vin,
           },
-          new_values: null,
+          new_values: undefined,
           changes_summary: `Permanently deleted vehicle ${vehicleName}`,
           severity: 'critical',
         }
@@ -752,7 +793,7 @@ export const useCreateVehiclePricing = () => {
   const { toast } = useToast()
   
   return useMutation({
-    mutationFn: async (pricingData: Omit<VehiclePricing, 'id' | 'created_at' | 'updated_at'>) => {
+    mutationFn: async (pricingData: VehiclePricingInsert) => {
       Sentry.addBreadcrumb({ category: "vehicles", message: "Vehicle mutation started", level: "info" });
       const { data, error } = await supabase
         .from("vehicle_pricing")
@@ -799,7 +840,7 @@ export const useCreateVehicleInsurance = () => {
   const { toast } = useToast()
   
   return useMutation({
-    mutationFn: async (insuranceData: Omit<VehicleInsurance, 'id' | 'created_at' | 'updated_at'>) => {
+    mutationFn: async (insuranceData: VehicleInsuranceInsert) => {
       Sentry.addBreadcrumb({ category: "vehicles", message: "Vehicle mutation started", level: "info" });
       const { data, error } = await supabase
         .from("vehicle_insurance")
@@ -883,7 +924,6 @@ export const useCreateVehicleMaintenance = () => {
   const queryClient = useQueryClient()
   const { toast } = useToast()
   const { user } = useAuth()
-  const { createMaintenanceJournalEntry } = useMaintenanceJournalIntegration()
 
   const { data: profile } = useQuery({
     queryKey: ['profile', user?.id],
@@ -901,7 +941,7 @@ export const useCreateVehicleMaintenance = () => {
   });
   
   return useMutation({
-    mutationFn: async (maintenanceData: Omit<VehicleMaintenance, 'id' | 'created_at' | 'updated_at' | 'maintenance_number'>) => {
+    mutationFn: async (maintenanceData: Omit<VehicleMaintenanceInsert, 'maintenance_number'>) => {
       Sentry.addBreadcrumb({ category: "vehicles", message: "Vehicle mutation started", level: "info" });
       // Generate maintenance number
       const { data: maintenanceNumber, error: numberError } = await supabase
@@ -933,20 +973,6 @@ export const useCreateVehicleMaintenance = () => {
     },
     onSuccess: async (data) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.vehicles.maintenance() })
-      
-      // Create journal entry for maintenance
-      try {
-        await createMaintenanceJournalEntry({
-          maintenanceId: data.id,
-          amount: data.estimated_cost || 0,
-          taxAmount: data.tax_amount || 0,
-          isPaid: false,
-          description: data.description,
-          date: data.scheduled_date || new Date().toISOString()
-        });
-      } catch (error) {
-        console.error('Failed to create journal entry for maintenance:', error);
-      }
       
       // Log audit trail
       await createAuditLog(
@@ -984,21 +1010,25 @@ export const useCreateVehicleMaintenance = () => {
 export const useUpdateVehicleMaintenance = () => {
   const queryClient = useQueryClient()
   const { toast } = useToast()
+  const companyId = useCurrentCompanyId()
   
   return useMutation({
-    mutationFn: async ({ id, ...updateData }: Partial<VehicleMaintenance> & { id: string }) => {
+    mutationFn: async ({ id, ...updateData }: VehicleMaintenanceUpdate & { id: string }) => {
+      if (!companyId) throw new Error('Company ID not found')
       Sentry.addBreadcrumb({ category: "vehicles", message: "Vehicle mutation started", level: "info" });
       // Get old data before update
       const { data: oldData } = await supabase
         .from("vehicle_maintenance")
         .select('maintenance_number, status, estimated_cost, actual_cost')
         .eq("id", id)
+        .eq("company_id", companyId)
         .single()
       
       const { data, error } = await supabase
         .from("vehicle_maintenance")
         .update(updateData)
         .eq("id", id)
+        .eq("company_id", companyId)
         .select()
         .single()
 
@@ -1045,63 +1075,32 @@ export const useUpdateVehicleMaintenance = () => {
 export const useDeleteVehicleMaintenance = () => {
   const queryClient = useQueryClient()
   const { toast } = useToast()
-  const vehicleStatusUpdate = useVehicleStatusUpdate()
+  const companyId = useCurrentCompanyId()
   
   return useMutation({
-    mutationFn: async ({ maintenanceId, vehicleId }: { maintenanceId: string; vehicleId?: string }) => {
+    mutationFn: async ({ maintenanceId }: { maintenanceId: string; vehicleId?: string }) => {
+      if (!companyId) throw new Error('Company ID not found')
       Sentry.addBreadcrumb({ category: "vehicles", message: "Vehicle mutation started", level: "info" });
-      // Get maintenance record first to check vehicle status
       const { data: maintenance, error: fetchError } = await supabase
         .from("vehicle_maintenance")
-        .select("maintenance_number, vehicle_id, status, maintenance_type, estimated_cost")
+        .select("maintenance_number, vehicle_id, status, maintenance_type, estimated_cost, journal_entry_id, expense_recorded")
         .eq("id", maintenanceId)
+        .eq("company_id", companyId)
         .single()
 
       if (fetchError) throw fetchError
-
-      // Delete journal entry if exists
-      try {
-        const { data: journalEntry } = await supabase
-          .from("journal_entries")
-          .select("id")
-          .eq("source_type", "maintenance")
-          .eq("source_id", maintenanceId)
-          .single()
-
-        if (journalEntry) {
-          await supabase
-            .from("journal_entries")
-            .delete()
-            .eq("id", journalEntry.id)
-        }
-      } catch (error) {
-        console.warn('Could not delete journal entry:', error)
+      if (maintenance.journal_entry_id || maintenance.expense_recorded) {
+        throw new Error('لا يمكن إلغاء صيانة مرتبطة بقيد محاسبي دون إجراء عكس محاسبي معتمد.')
       }
 
-      // Delete maintenance record
       const { error } = await supabase
         .from("vehicle_maintenance")
-        .delete()
+        .update({ status: 'cancelled' })
         .eq("id", maintenanceId)
+        .eq("company_id", companyId)
+        .neq("status", 'cancelled')
 
       if (error) throw error
-
-      // If vehicle is in maintenance status, return it to available
-      if (maintenance.vehicle_id) {
-        const { data: vehicle } = await supabase
-          .from("vehicles")
-          .select("status")
-          .eq("id", maintenance.vehicle_id)
-          .single()
-
-        if (vehicle?.status === 'maintenance') {
-          await vehicleStatusUpdate.mutateAsync({
-            vehicleId: maintenance.vehicle_id,
-            newStatus: 'available',
-            reason: 'Maintenance record deleted'
-          })
-        }
-      }
 
       return { success: true, maintenanceId, maintenance }
     },
@@ -1112,7 +1111,7 @@ export const useDeleteVehicleMaintenance = () => {
       
       // Log audit trail
       await createAuditLog(
-        'DELETE',
+        'UPDATE',
         'maintenance',
         result.maintenanceId,
         result.maintenance.maintenance_number,
@@ -1124,7 +1123,8 @@ export const useDeleteVehicleMaintenance = () => {
             maintenance_type: result.maintenance.maintenance_type,
             estimated_cost: result.maintenance.estimated_cost,
           },
-          changes_summary: `Deleted maintenance ${result.maintenance.maintenance_number}`,
+          new_values: { status: 'cancelled' },
+          changes_summary: `Cancelled maintenance ${result.maintenance.maintenance_number}`,
           metadata: {
             maintenance_type: result.maintenance.maintenance_type,
           },
@@ -1134,14 +1134,14 @@ export const useDeleteVehicleMaintenance = () => {
       
       toast({
         title: "تم بنجاح",
-        description: "تم حذف طلب الصيانة بنجاح",
+        description: "تم إلغاء طلب الصيانة مع الاحتفاظ بسجله",
       })
     },
     onError: (error: any) => {
-      console.error("Error deleting maintenance:", error)
+      console.error("Error cancelling maintenance:", error)
       toast({
         title: "خطأ",
-        description: error.message || "فشل في حذف طلب الصيانة",
+        description: error.message || "فشل في إلغاء طلب الصيانة",
         variant: "destructive",
       })
     }
@@ -1230,9 +1230,7 @@ export const useAvailableVehiclesForContracts = (companyId?: string) => {
       try {
         // استخدام الدالة المحدثة الموحدة
         const { data: rpcData, error: rpcError } = await supabase.rpc('get_available_vehicles_for_contracts', {
-          company_id_param: companyId,
-          contract_start_date: null,
-          contract_end_date: null
+          company_id_param: companyId
         });
 
         if (!rpcError && rpcData) {
@@ -1273,7 +1271,7 @@ export const useAvailableVehiclesForContracts = (companyId?: string) => {
           `)
           .eq('company_id', companyId)
           .eq('is_active', true)
-          .in('status', ['available', 'reserved'])
+          .eq('status', 'available')
           .order('plate_number');
 
         if (fallbackError) {
@@ -1339,7 +1337,7 @@ export const useFleetAnalytics = (companyId?: string) => {
         console.log("Fetched vehicles:", vehicles?.length || 0)
 
         // Get vehicle pricing data separately
-        let vehiclePricing: VehiclePricing[] = []
+        let vehiclePricing: Pick<VehiclePricingRow, 'vehicle_id' | 'daily_rate' | 'weekly_rate' | 'monthly_rate'>[] = []
         if (vehicles && vehicles.length > 0) {
           const { data: pricingData, error: pricingError } = await supabase
             .from("vehicle_pricing")
@@ -1359,9 +1357,9 @@ export const useFleetAnalytics = (companyId?: string) => {
         // Get fixed assets data separately
         let fixedAssets: Array<{
           id: string
-          book_value?: number
-          accumulated_depreciation?: number
-          purchase_cost?: number
+          book_value: number | null
+          accumulated_depreciation: number | null
+          purchase_cost: number | null
         }> = []
         if (vehicles && vehicles.length > 0) {
           const { data: assetsData, error: assetsError } = await supabase
@@ -1380,7 +1378,7 @@ export const useFleetAnalytics = (companyId?: string) => {
         console.log("Fetched fixed assets:", fixedAssets.length)
 
         // Get maintenance statistics
-        let maintenance: Array<VehicleMaintenance & { vehicles?: { plate_number: string } }> = []
+        let maintenance: Array<VehicleMaintenanceRow & { vehicles: { plate_number: string } | null }> = []
         if (vehicles && vehicles.length > 0) {
           const { data: maintenanceData, error: maintenanceError } = await supabase
             .from("vehicle_maintenance")
@@ -1415,6 +1413,7 @@ export const useFleetAnalytics = (companyId?: string) => {
         // Calculate monthly maintenance cost
         const monthlyMaintenanceCost = maintenance
           ?.filter(m => {
+            if (!m.scheduled_date) return false
             const date = new Date(m.scheduled_date)
             const now = new Date()
             return date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear()
@@ -1499,7 +1498,7 @@ export const useCreateOdometerReading = () => {
   const { toast } = useToast()
   
   return useMutation({
-    mutationFn: async (readingData: Omit<OdometerReading, 'id' | 'created_at' | 'updated_at'>) => {
+    mutationFn: async (readingData: OdometerReadingInsert) => {
       Sentry.addBreadcrumb({ category: "vehicles", message: "Vehicle mutation started", level: "info" });
       const { data, error } = await supabase
         .from("odometer_readings")
@@ -1559,7 +1558,7 @@ export const useCreateVehicleInspection = () => {
   const { toast } = useToast()
   
   return useMutation({
-    mutationFn: async (inspectionData: Omit<VehicleInspection, 'id' | 'created_at' | 'updated_at'>) => {
+    mutationFn: async (inspectionData: VehicleInspectionInsert) => {
       Sentry.addBreadcrumb({ category: "vehicles", message: "Vehicle mutation started", level: "info" });
       const { data, error } = await supabase
         .from("vehicle_inspections")
@@ -1623,7 +1622,7 @@ export const useCreateVehicleActivity = () => {
   const { toast } = useToast()
   
   return useMutation({
-    mutationFn: async (activityData: Omit<VehicleActivityLog, 'id' | 'created_at' | 'updated_at'>) => {
+    mutationFn: async (activityData: VehicleActivityInsert) => {
       Sentry.addBreadcrumb({ category: "vehicles", message: "Vehicle mutation started", level: "info" });
       const { data, error } = await supabase
         .from("vehicle_activity_log")

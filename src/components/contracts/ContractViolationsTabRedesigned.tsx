@@ -6,21 +6,17 @@
  */
 
 import { useMemo, useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion, type Variants } from 'framer-motion';
 import {
   AlertTriangle,
   AlertCircle,
   CheckCircle,
   Clock,
   DollarSign,
-  Calendar,
   MapPin,
   FileText,
   Image,
-  Receipt,
   CreditCard,
-  TrendingUp,
-  Filter,
   Search,
   Plus,
   Eye,
@@ -29,9 +25,7 @@ import {
   XCircle,
   Ban,
   Gavel,
-  X,
   Loader2,
-  Trash2,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -56,7 +50,6 @@ import {
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
@@ -68,10 +61,10 @@ import { ar } from 'date-fns/locale';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useQueryClient } from '@tanstack/react-query';
+import { useCreateTrafficViolationPayment } from '@/hooks/useTrafficViolationPayments';
 
-import { useFleetifyTranslation } from "@/hooks/useTranslation";
 // ===== Animation Variants =====
-const fadeInUp = {
+const fadeInUp: Variants = {
   hidden: { opacity: 0, y: 20 },
   visible: {
     opacity: 1,
@@ -80,7 +73,7 @@ const fadeInUp = {
   }
 };
 
-const scaleIn = {
+const scaleIn: Variants = {
   hidden: { opacity: 0, scale: 0.95 },
   visible: {
     opacity: 1,
@@ -94,13 +87,14 @@ interface TrafficViolation {
   id: string;
   violation_date: string | null;
   violation_type: string | null;
-  violation_number?: string;
+  violation_number?: string | null;
   fine_amount: number | null;
-  status: 'pending' | 'paid' | 'appealed' | 'cancelled';
-  location?: string;
-  description?: string;
+  status: string;
+  location?: string | null;
+  description?: string | null;
+  notes?: string | null;
   evidence_urls?: string[];
-  payment_date?: string;
+  payment_date?: string | null;
   created_at: string;
 }
 
@@ -181,7 +175,6 @@ const ViolationsMetrics = ({
   violations: TrafficViolation[];
   formatCurrency: (amount: number) => string;
 }) => {
-  const { t } = useFleetifyTranslation("ui");
   const metrics = useMemo(() => {
     const totalViolations = violations.length;
     const totalFines = violations.reduce((sum, v) => sum + (v.fine_amount || 0), 0);
@@ -214,6 +207,7 @@ const ViolationsMetrics = ({
       icon: AlertTriangle,
       color: 'from-red-500 to-red-600',
       bgColor: 'bg-red-50',
+      textColor: 'text-red-700',
       borderColor: 'border-red-200/50',
     },
     {
@@ -223,6 +217,7 @@ const ViolationsMetrics = ({
       icon: DollarSign,
       color: 'from-teal-500 to-teal-600',
       bgColor: 'bg-teal-50',
+      textColor: 'text-teal-700',
       borderColor: 'border-teal-200/50',
     },
     {
@@ -232,6 +227,7 @@ const ViolationsMetrics = ({
       icon: Clock,
       color: 'from-amber-500 to-amber-600',
       bgColor: 'bg-amber-50',
+      textColor: 'text-amber-700',
       borderColor: 'border-amber-200/50',
     },
     {
@@ -241,6 +237,7 @@ const ViolationsMetrics = ({
       icon: CheckCircle,
       color: 'from-green-500 to-green-600',
       bgColor: 'bg-green-50',
+      textColor: 'text-green-700',
       borderColor: 'border-green-200/50',
     },
   ];
@@ -827,6 +824,8 @@ interface ViolationPaymentDialogProps {
   onPaymentComplete: (violationId: string) => void;
 }
 
+type ViolationPaymentMethod = 'cash' | 'bank_transfer' | 'check' | 'credit_card';
+
 const ViolationPaymentDialog = ({
   violation,
   open,
@@ -834,36 +833,34 @@ const ViolationPaymentDialog = ({
   formatCurrency,
   onPaymentComplete,
 }: ViolationPaymentDialogProps) => {
-  const [paymentMethod, setPaymentMethod] = useState<string>('cash');
-  const [isProcessing, setIsProcessing] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState<ViolationPaymentMethod>('cash');
   const { toast } = useToast();
+  const createPaymentMutation = useCreateTrafficViolationPayment();
 
   if (!violation) return null;
 
   const handlePayment = async () => {
-    setIsProcessing(true);
-
     try {
-      // Simulate payment processing
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      const amount = Number(violation.fine_amount || 0);
+      if (amount <= 0) throw new Error('مبلغ المخالفة غير صالح للدفع');
 
-      // Show success message
-      toast({
-        title: 'تم الدفع بنجاح',
-        description: `تم دفع غرامة المخالفة ${violation.violation_number || `#${violation.id.slice(0, 8)}`} بنجاح`,
+      await createPaymentMutation.mutateAsync({
+        traffic_violation_id: violation.id,
+        amount,
+        payment_method: paymentMethod,
+        payment_type: 'full',
+        payment_date: new Date().toISOString().split('T')[0],
+        notes: `دفع المخالفة ${violation.violation_number || violation.id}`,
       });
 
-      // Call payment complete callback
       onPaymentComplete(violation.id);
       onClose();
-    } catch (error) {
+    } catch (error: unknown) {
       toast({
         title: 'خطأ في الدفع',
-        description: 'حدث خطأ أثناء معالجة الدفع. يرجى المحاولة مرة أخرى.',
+        description: error instanceof Error ? error.message : 'حدث خطأ أثناء معالجة الدفع. يرجى المحاولة مرة أخرى.',
         variant: 'destructive',
       });
-    } finally {
-      setIsProcessing(false);
     }
   };
 
@@ -914,14 +911,17 @@ const ViolationPaymentDialog = ({
           {/* Payment Method */}
           <div className="space-y-2">
             <Label className="text-base">طريقة الدفع</Label>
-            <Select value={paymentMethod} onValueChange={setPaymentMethod}>
+            <Select
+              value={paymentMethod}
+              onValueChange={(value) => setPaymentMethod(value as ViolationPaymentMethod)}
+            >
               <SelectTrigger className="rounded-xl">
                 <SelectValue placeholder="اختر طريقة الدفع" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="cash">نقداً</SelectItem>
                 <SelectItem value="bank_transfer">تحويل بنكي</SelectItem>
-                <SelectItem value="card">بطاقة ائتمان</SelectItem>
+                <SelectItem value="credit_card">بطاقة ائتمان</SelectItem>
                 <SelectItem value="check">شيك</SelectItem>
               </SelectContent>
             </Select>
@@ -936,15 +936,15 @@ const ViolationPaymentDialog = ({
         </div>
 
         <DialogFooter className="gap-2">
-          <Button variant="outline" onClick={onClose} disabled={isProcessing}>
+          <Button variant="outline" onClick={onClose} disabled={createPaymentMutation.isPending}>
             إلغاء
           </Button>
           <Button
             onClick={handlePayment}
-            disabled={isProcessing}
+            disabled={createPaymentMutation.isPending || Number(violation.fine_amount || 0) <= 0}
             className="gap-2 rounded-xl bg-[#173A63] hover:bg-[#173A63]/90"
           >
-            {isProcessing ? (
+            {createPaymentMutation.isPending ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin" />
                 جاري المعالجة...
@@ -1215,13 +1215,9 @@ export const ContractViolationsTabRedesigned = ({
     window.print();
   };
 
-  const handlePaymentComplete = (violationId: string) => {
-    // In a real implementation, this would update the violation in the database
-    // For now, we'll just show a success message and close the dialog
-    toast({
-      title: 'تم التحديث',
-      description: 'تم تحديث حالة المخالفة بنجاح',
-    });
+  const handlePaymentComplete = () => {
+    queryClient.invalidateQueries({ queryKey: ['contract-violations'] });
+    queryClient.invalidateQueries({ queryKey: ['traffic-violations'] });
     setIsPaymentDialogOpen(false);
     setSelectedViolation(null);
   };
@@ -1300,10 +1296,10 @@ export const ContractViolationsTabRedesigned = ({
 
       setIsCancelDialogOpen(false);
       setSelectedViolation(null);
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: 'خطأ',
-        description: error.message || 'فشل إلغاء المخالفة',
+        description: error instanceof Error ? error.message : 'فشل إلغاء المخالفة',
         variant: 'destructive',
       });
     } finally {

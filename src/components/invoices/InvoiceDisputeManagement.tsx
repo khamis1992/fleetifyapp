@@ -215,7 +215,7 @@ export const InvoiceDisputeManagement: React.FC = () => {
             <div className="text-2xl font-bold text-orange-600">
               {(stats?.total_disputed_amount || 0).toFixed(3)}
             </div>
-            <p className="text-xs text-muted-foreground">د.ك</p>
+            <p className="text-xs text-muted-foreground">ر.ق</p>
           </CardContent>
         </Card>
       </div>
@@ -287,7 +287,7 @@ export const InvoiceDisputeManagement: React.FC = () => {
                         <div>
                           <p className="text-muted-foreground">المبلغ المتنازع عليه</p>
                           <p className="font-medium text-orange-600">
-                            {dispute.disputed_amount?.toFixed(3)} د.ك
+                            {dispute.disputed_amount?.toFixed(2)} ر.ق
                           </p>
                         </div>
                       </div>
@@ -477,7 +477,7 @@ const DisputeResolveDialog: React.FC<{
             <div className="text-sm space-y-1 text-muted-foreground">
               <p>العميل: {dispute?.customer_name_ar}</p>
               <p>الفاتورة: {dispute?.invoice_number}</p>
-              <p>المبلغ المتنازع عليه: {dispute?.disputed_amount?.toFixed(3)} د.ك</p>
+              <p>المبلغ المتنازع عليه: {dispute?.disputed_amount?.toFixed(2)} ر.ق</p>
             </div>
           </div>
         </div>

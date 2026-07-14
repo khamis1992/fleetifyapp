@@ -47,6 +47,7 @@ export async function createBankTransactionFromPayment(
       .from('banks')
       .select('id, current_balance, is_active, bank_name')
       .eq('id', payment.bank_id)
+      .eq('company_id', payment.company_id)
       .single();
 
     if (bankError || !bank) {
@@ -59,7 +60,7 @@ export async function createBankTransactionFromPayment(
     }
 
     // تحديد نوع الحركة البنكية والرصيد الجديد
-    const isInflow = payment.transaction_type === 'inflow' || payment.transaction_type === 'receipt';
+    const isInflow = payment.transaction_type === 'receipt' || payment.transaction_type === 'inflow';
     const bankTransactionType = isInflow ? 'deposit' : 'withdrawal';
     const balanceChange = isInflow ? payment.amount : -payment.amount;
     const balanceAfter = (bank.current_balance || 0) + balanceChange;
@@ -101,18 +102,31 @@ export async function createBankTransactionFromPayment(
     }
 
     // تحديث رصيد البنك
-    const { error: updateError } = await supabase
+    let balanceUpdate = supabase
       .from('banks')
       .update({
         current_balance: balanceAfter,
         updated_at: new Date().toISOString()
       })
-      .eq('id', payment.bank_id);
+      .eq('id', payment.bank_id)
+      .eq('company_id', payment.company_id);
 
-    if (updateError) {
+    balanceUpdate = bank.current_balance === null
+      ? balanceUpdate.is('current_balance', null)
+      : balanceUpdate.eq('current_balance', bank.current_balance);
+
+    const { data: updatedBank, error: updateError } = await balanceUpdate
+      .select('id')
+      .maybeSingle();
+
+    if (updateError || !updatedBank) {
       console.error('❌ Failed to update bank balance:', updateError);
       // حاول حذف الحركة التي تم إنشاؤها
-      await supabase.from('bank_transactions').delete().eq('id', transaction.id);
+      await supabase
+        .from('bank_transactions')
+        .delete()
+        .eq('id', transaction.id)
+        .eq('company_id', payment.company_id);
       return { success: false, error: 'فشل في تحديث رصيد البنك' };
     }
 
@@ -137,6 +151,7 @@ export async function createBankTransactionFromPayment(
  */
 export async function reverseBankTransactionForPayment(
   paymentId: string,
+  companyId: string,
   userId?: string
 ): Promise<BankTransactionResult> {
   try {
@@ -145,6 +160,7 @@ export async function reverseBankTransactionForPayment(
       .from('payments')
       .select('id, company_id, bank_id, amount, payment_number, transaction_type')
       .eq('id', paymentId)
+      .eq('company_id', companyId)
       .single();
 
     if (paymentError || !payment) {
@@ -162,6 +178,7 @@ export async function reverseBankTransactionForPayment(
       .from('banks')
       .select('id, current_balance')
       .eq('id', payment.bank_id)
+      .eq('company_id', companyId)
       .single();
 
     if (bankError || !bank) {
@@ -169,7 +186,7 @@ export async function reverseBankTransactionForPayment(
     }
 
     // عكس الحركة
-    const isInflow = payment.transaction_type === 'inflow' || payment.transaction_type === 'receipt';
+    const isInflow = payment.transaction_type === 'receipt' || payment.transaction_type === 'inflow';
     const reversalType = isInflow ? 'withdrawal' : 'deposit';
     const balanceChange = isInflow ? -payment.amount : payment.amount;
     const balanceAfter = (bank.current_balance || 0) + balanceChange;
@@ -202,16 +219,30 @@ export async function reverseBankTransactionForPayment(
     }
 
     // تحديث رصيد البنك
-    const { error: updateError } = await supabase
+    let reversalBalanceUpdate = supabase
       .from('banks')
       .update({
         current_balance: balanceAfter,
         updated_at: new Date().toISOString()
       })
-      .eq('id', payment.bank_id);
+      .eq('id', payment.bank_id)
+      .eq('company_id', companyId);
 
-    if (updateError) {
+    reversalBalanceUpdate = bank.current_balance === null
+      ? reversalBalanceUpdate.is('current_balance', null)
+      : reversalBalanceUpdate.eq('current_balance', bank.current_balance);
+
+    const { data: updatedBank, error: updateError } = await reversalBalanceUpdate
+      .select('id')
+      .maybeSingle();
+
+    if (updateError || !updatedBank) {
       console.error('❌ Failed to update bank balance after reversal:', updateError);
+      await supabase
+        .from('bank_transactions')
+        .delete()
+        .eq('id', reversalTransaction.id)
+        .eq('company_id', companyId);
       return { success: false, error: 'فشل في تحديث رصيد البنك' };
     }
 

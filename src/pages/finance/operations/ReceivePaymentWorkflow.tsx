@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -16,7 +16,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
-import { Separator } from '@/components/ui/separator';
 import { useFleetifyTranslation } from "@/hooks/useTranslation";
 import { usePaymentOperations } from '@/hooks/business/usePaymentOperations';
 import { 
@@ -37,7 +36,6 @@ import {
   Loader2,
   User,
   Car,
-  Calendar,
   DollarSign,
   Wallet,
   Banknote,
@@ -59,7 +57,7 @@ const ReceivePaymentWorkflow: React.FC = () => {
   const [searchParams] = useSearchParams();
   const queryClient = useQueryClient();
   const { user } = useAuth();
-  const { companyId, isLoading: authLoading } = useUnifiedCompanyAccess();
+  const { companyId, isAuthenticating: authLoading } = useUnifiedCompanyAccess();
   const { formatCurrency } = useCurrencyFormatter();
   const { createPayment } = usePaymentOperations({
     autoCreateJournalEntry: true,
@@ -130,20 +128,8 @@ const ReceivePaymentWorkflow: React.FC = () => {
     enabled: !!companyId,
   });
 
-  // عند تحميل العقود، ابحث عن العقد من URL
-  useEffect(() => {
-    if (contractNumberFromUrl && contracts.length > 0) {
-      const contract = contracts.find(
-        (c: any) => c.contract_number === contractNumberFromUrl
-      );
-      if (contract) {
-        handleContractSelect(contract.id);
-      }
-    }
-  }, [contractNumberFromUrl, contracts]);
-
   // دالة اختيار العقد
-  const handleContractSelect = (contractId: string) => {
+  const handleContractSelect = useCallback((contractId: string) => {
     const contract = contracts.find((c: any) => c.id === contractId);
     if (contract) {
       setSelectedContract(contract);
@@ -160,9 +146,21 @@ const ReceivePaymentWorkflow: React.FC = () => {
         amount: amountFromUrl ? parseFloat(amountFromUrl) : (contract.monthly_amount || 0),
       }));
     }
-  };
+  }, [amountFromUrl, contracts]);
 
-  // الحصول Ø¹Ù„Ù‰ الرصيد المستحق للعقد المختار
+  // عند تحميل العقود، ابحث عن العقد من URL
+  useEffect(() => {
+    if (contractNumberFromUrl && contracts.length > 0) {
+      const contract = contracts.find(
+        (c: any) => c.contract_number === contractNumberFromUrl
+      );
+      if (contract) {
+        handleContractSelect(contract.id);
+      }
+    }
+  }, [contractNumberFromUrl, contracts, handleContractSelect]);
+
+  // الحصول على الرصيد المستحق للعقد المختار
   const balanceDue = useMemo(() => {
     if (!selectedContract) return 0;
     const total = selectedContract.contract_amount || 0;
@@ -223,7 +221,7 @@ const ReceivePaymentWorkflow: React.FC = () => {
 
       return paymentData;
     },
-    onSuccess: (data) => {
+    onSuccess: () => {
       // تحديث البيانات
       queryClient.invalidateQueries({ queryKey: ['contract-payments'] });
       queryClient.invalidateQueries({ queryKey: ['contract-details'] });
@@ -284,9 +282,9 @@ const ReceivePaymentWorkflow: React.FC = () => {
   }
 
   const paymentMethods = [
-    { value: 'cash', label: 'Ù†Ù‚Ø¯Ø§Ù‹', icon: Banknote },
-    { value: 'bank_transfer', label: 'تحويل Ø¨Ù†Ùƒي', icon: Building2 },
-    { value: 'check', label: 'Ø´ÙŠÙƒ', icon: FileText },
+    { value: 'cash', label: 'نقداً', icon: Banknote },
+    { value: 'bank_transfer', label: 'تحويل بنكي', icon: Building2 },
+    { value: 'check', label: 'شيك', icon: FileText },
     { value: 'credit_card', label: 'بطاقة ائتمانية', icon: CreditCard },
     { value: 'debit_card', label: 'بطاقة مدين', icon: Wallet },
   ];
@@ -348,12 +346,12 @@ const ReceivePaymentWorkflow: React.FC = () => {
               </CardDescription>
             </CardHeader>
             <CardContent className="p-6 space-y-6">
-              {/* معلومات سريعة إذا Ùƒان العقد محدد من URL */}
+              {/* معلومات سريعة إذا كان العقد محدد من URL */}
               {contractNumberFromUrl && selectedContract && (
                 <div className="bg-green-50 border border-green-200 rounded-xl p-4 mb-4">
                   <div className="flex items-center gap-2 text-green-800 font-medium mb-2">
                     <CheckCircle className="h-5 w-5" />
-                    تم تحديد العقد ØªÙ„Ù‚Ø§Ø¦ÙŠØ§Ù‹
+                    تم تحديد العقد تلقائياً
                   </div>
                   <p className="text-sm text-green-700">
                     العقد رقم: {contractNumberFromUrl}
@@ -386,7 +384,7 @@ const ReceivePaymentWorkflow: React.FC = () => {
                             <div className="flex-1">
                               <div className="font-medium">عقد #{contract.contract_number}</div>
                               <div className="text-xs text-muted-foreground">
-                                {customerName} • {vehicle?.plate_number || 'لا توجد Ù…Ø±Ùƒبة'}
+                                {customerName} • {vehicle?.plate_number || 'لا توجد مركبة'}
                               </div>
                             </div>
                             <Badge variant={remaining > 0 ? 'destructive' : 'default'} className="text-xs">
@@ -418,7 +416,7 @@ const ReceivePaymentWorkflow: React.FC = () => {
                     </div>
                     
                     <div className="bg-white rounded-lg p-3 border">
-                      <div className="text-xs text-slate-500 mb-1">Ø§Ù„Ù…Ø±Ùƒبة</div>
+                      <div className="text-xs text-slate-500 mb-1">المركبة</div>
                       <div className="font-medium flex items-center gap-2">
                         <Car className="h-4 w-4 text-slate-400" />
                         {(selectedContract.vehicles as any)?.plate_number || '-'}
@@ -512,7 +510,7 @@ const ReceivePaymentWorkflow: React.FC = () => {
                       onClick={() => setFormData(prev => ({ ...prev, amount: balanceDue }))}
                       className="text-xs"
                     >
-                      Ùƒامل المتبقي ({formatCurrency(balanceDue)})
+                      كامل المتبقي ({formatCurrency(balanceDue)})
                     </Button>
                   </div>
                 )}
@@ -555,16 +553,16 @@ const ReceivePaymentWorkflow: React.FC = () => {
                 </div>
               </div>
 
-              {/* رقم المرجع (للتحويل Ø§Ù„Ø¨Ù†Ùƒي أو Ø§Ù„Ø´ÙŠÙƒ) */}
+              {/* رقم المرجع (للتحويل البنكي أو الشيك) */}
               {['bank_transfer', 'check'].includes(formData.paymentMethod) && (
                 <div className="space-y-2 animate-in fade-in-50">
                   <Label className="text-base font-medium">
-                    {formData.paymentMethod === 'check' ? 'رقم Ø§Ù„Ø´ÙŠÙƒ' : 'رقم المرجع'}
+                    {formData.paymentMethod === 'check' ? 'رقم الشيك' : 'رقم المرجع'}
                   </Label>
                   <Input
                     value={formData.referenceNumber}
                     onChange={(e) => setFormData(prev => ({ ...prev, referenceNumber: e.target.value }))}
-                    placeholder={formData.paymentMethod === 'check' ? 'أدخل رقم Ø§Ù„Ø´ÙŠÙƒ...' : 'أدخل رقم التحويل...'}
+                    placeholder={formData.paymentMethod === 'check' ? 'أدخل رقم الشيك...' : 'أدخل رقم التحويل...'}
                     className="h-12"
                   />
                 </div>
@@ -585,13 +583,13 @@ const ReceivePaymentWorkflow: React.FC = () => {
           </Card>
         )}
 
-        {/* الخطوة 3: المراجعة ÙˆØ§Ù„ØªØ£Ùƒيد */}
+        {/* الخطوة 3: المراجعة والتأكيد */}
         {currentStep === 3 && (
           <Card className="animate-in slide-in-from-right-5">
             <CardHeader className="border-b bg-gradient-to-r from-emerald-50 to-green-50">
               <CardTitle className="flex items-center gap-2 text-emerald-800">
                 <CheckCircle className="h-5 w-5" />
-                الخطوة 3: مراجعة ÙˆØªØ£Ùƒيد
+                الخطوة 3: مراجعة وتأكيد
               </CardTitle>
               <CardDescription>
                 راجع تفاصيل الدفعة قبل الحفظ
@@ -653,14 +651,14 @@ const ReceivePaymentWorkflow: React.FC = () => {
                 </div>
               </div>
 
-              {/* تحذير إذا Ùƒان المبلغ Ø£Ùƒبر من المتبقي */}
+              {/* تحذير إذا كان المبلغ أكبر من المتبقي */}
               {formData.amount > balanceDue && (
                 <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-start gap-3">
                   <AlertCircle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
                   <div>
                     <p className="text-amber-800 font-medium">تنبيه</p>
                     <p className="text-amber-700 text-sm">
-                      المبلغ المدخل Ø£Ùƒبر من الرصيد المتبقي. سيتم تسجيل المبلغ الإضافي Ùƒرصيد دائن للعميل.
+                      المبلغ المدخل أكبر من الرصيد المتبقي. سيتم تسجيل المبلغ الإضافي كرصيد دائن للعميل.
                     </p>
                   </div>
                 </div>
@@ -710,7 +708,7 @@ const ReceivePaymentWorkflow: React.FC = () => {
               ) : (
                 <>
                   <CheckCircle className="h-4 w-4" />
-                  ØªØ£Ùƒيد الدفعة
+                  تأكيد الدفعة
                 </>
               )}
             </Button>

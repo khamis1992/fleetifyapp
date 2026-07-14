@@ -567,7 +567,7 @@ export const ContractHeaderRedesigned = React.memo<ContractHeaderRedesignedProps
                   {contract.customer?.customer_type && (
                     <span className="text-sm text-slate-600 flex items-center gap-1 bg-slate-50 px-2 py-1 rounded">
                       <Building className="w-3 h-3" style={{ color: SYSTEM_COLORS.primary }} />
-                      {contract.customer.customer_type === 'company' ? 'شركة' : 'فرد'}
+                      {contract.customer.customer_type === 'corporate' ? 'شركة' : 'فرد'}
                     </span>
                   )}
                 </div>

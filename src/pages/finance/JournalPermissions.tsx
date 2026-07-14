@@ -4,7 +4,7 @@ import { Shield } from "lucide-react";
 
 export default function JournalPermissions() {
   return (
-    <PageCustomizer>
+    <PageCustomizer pageId="journal-permissions" title="" titleAr="">
       <div className="space-y-6">
         {/* Header */}
         <div>

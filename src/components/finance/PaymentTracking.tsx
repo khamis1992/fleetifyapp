@@ -52,6 +52,7 @@ import {
   ArrowRight
 } from 'lucide-react';
 import { format } from 'date-fns';
+import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 
 interface InvoiceTimeline {
   invoice_id: string;
@@ -124,79 +125,223 @@ interface ReconciliationSummary {
 export const PaymentTracking: React.FC = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { companyId, user } = useUnifiedCompanyAccess();
   const [selectedInvoice, setSelectedInvoice] = useState<string | null>(null);
   const [showPaymentDetails, setShowPaymentDetails] = useState(false);
   const [activeTab, setActiveTab] = useState('timeline');
 
   // Fetch invoice timeline
   const { data: invoiceTimeline, isLoading: timelineLoading } = useQuery({
-    queryKey: ['invoice-payment-timeline'],
+    queryKey: ['invoice-payment-timeline', companyId],
     queryFn: async () => {
+      if (!companyId) return [];
+
       const { data, error } = await supabase
-        .from('invoice_payment_timeline')
-        .select('*')
+        .from('invoices')
+        .select(`
+          id,
+          invoice_number,
+          invoice_date,
+          due_date,
+          total_amount,
+          paid_amount,
+          balance_due,
+          payment_status,
+          customers:customer_id(first_name, last_name, company_name),
+          payments(id, amount, payment_date, payment_method, payment_status, reconciliation_status)
+        `)
+        .eq('company_id', companyId)
+        .neq('status', 'cancelled')
         .order('invoice_date', { ascending: false })
         .limit(100);
       
       if (error) throw error;
-      return data as InvoiceTimeline[];
-    }
+      return (data || []).map((invoice): InvoiceTimeline => {
+        const payments = Array.isArray(invoice.payments)
+          ? invoice.payments
+          : invoice.payments
+            ? [invoice.payments]
+            : [];
+        const completed = payments.filter(payment => payment.payment_status === 'completed');
+        const pending = payments.filter(payment => payment.payment_status === 'pending');
+        const failed = payments.filter(payment => ['failed', 'rejected'].includes(payment.payment_status));
+        const reconciled = completed.filter(payment => ['matched', 'reconciled'].includes(payment.reconciliation_status || ''));
+        const customerName = invoice.customers?.company_name
+          || [invoice.customers?.first_name, invoice.customers?.last_name].filter(Boolean).join(' ')
+          || '-';
+        const totalAmount = Number(invoice.total_amount || 0);
+        const totalPaid = Number(invoice.paid_amount || 0);
+        const sortedDates = completed
+          .map(payment => payment.payment_date)
+          .filter((date): date is string => Boolean(date))
+          .sort();
+
+        return {
+          invoice_id: invoice.id,
+          invoice_number: invoice.invoice_number,
+          customer_name_ar: customerName,
+          customer_name_en: customerName,
+          invoice_date: invoice.invoice_date,
+          due_date: invoice.due_date || invoice.invoice_date,
+          total_amount: totalAmount,
+          payment_status: invoice.payment_status,
+          total_paid: totalPaid,
+          outstanding_balance: Number(invoice.balance_due || 0),
+          payment_progress_percentage: totalAmount > 0 ? Math.min(100, (totalPaid / totalAmount) * 100) : 0,
+          total_payment_attempts: payments.length,
+          successful_payments: completed.length,
+          pending_payments: pending.length,
+          failed_payments: failed.length,
+          first_payment_date: sortedDates[0] || null,
+          last_payment_date: sortedDates.at(-1) || null,
+          reconciled_payments: reconciled.length,
+          unreconciled_payments: completed.length - reconciled.length,
+          payment_methods_used: [...new Set(completed.map(payment => payment.payment_method))],
+        };
+      });
+    },
+    enabled: Boolean(companyId),
   });
 
   // Fetch payment details for selected invoice
   const { data: paymentDetails } = useQuery({
-    queryKey: ['payment-timeline-details', selectedInvoice],
+    queryKey: ['payment-timeline-details', companyId, selectedInvoice],
     queryFn: async () => {
-      if (!selectedInvoice) return [];
+      if (!companyId || !selectedInvoice) return [];
       
       const { data, error } = await supabase
-        .from('payment_timeline_details')
-        .select('*')
+        .from('payments')
+        .select('id, payment_number, payment_date, amount, payment_method, payment_status, reference_number, bank_account, reconciliation_status, reconciled_at, notes, invoices:invoice_id(total_amount)')
+        .eq('company_id', companyId)
         .eq('invoice_id', selectedInvoice)
         .order('payment_date', { ascending: true });
       
       if (error) throw error;
-      return data as PaymentDetail[];
+      let cumulativePaid = 0;
+      return (data || []).map((payment, index): PaymentDetail => {
+        if (payment.payment_status === 'completed') {
+          cumulativePaid += Number(payment.amount || 0);
+        }
+        const invoiceTotal = Number(payment.invoices?.total_amount || 0);
+        return {
+          payment_id: payment.id,
+          payment_number: payment.payment_number,
+          payment_date: payment.payment_date,
+          amount: Number(payment.amount || 0),
+          payment_method: payment.payment_method,
+          status: payment.payment_status,
+          transaction_reference: payment.reference_number || '',
+          bank_reference: payment.bank_account || '',
+          reconciled: ['matched', 'reconciled'].includes(payment.reconciliation_status || ''),
+          reconciled_at: payment.reconciled_at,
+          reconciled_by_name: null,
+          invoice_total: invoiceTotal,
+          cumulative_paid: cumulativePaid,
+          remaining_balance: Math.max(0, invoiceTotal - cumulativePaid),
+          payment_sequence: index + 1,
+          notes: payment.notes || '',
+        };
+      });
     },
-    enabled: !!selectedInvoice
+    enabled: Boolean(companyId && selectedInvoice),
   });
 
   // Fetch payment method statistics
   const { data: methodStats } = useQuery({
-    queryKey: ['payment-method-statistics'],
+    queryKey: ['payment-method-statistics', companyId],
     queryFn: async () => {
+      if (!companyId) return [];
+
       const { data, error } = await supabase
-        .from('payment_method_statistics')
-        .select('*')
-        .order('total_amount', { ascending: false });
+        .from('payments')
+        .select('payment_method, amount, payment_status, reconciliation_status')
+        .eq('company_id', companyId)
+        .neq('payment_status', 'cancelled');
       
       if (error) throw error;
-      return data as PaymentMethodStats[];
-    }
+      const groups = new Map<string, PaymentMethodStats>();
+      for (const payment of data || []) {
+        const method = payment.payment_method || 'other';
+        const current = groups.get(method) || {
+          payment_method: method,
+          total_transactions: 0,
+          successful_transactions: 0,
+          total_amount: 0,
+          average_transaction: 0,
+          success_rate: 0,
+          pending_reconciliation: 0,
+        };
+        current.total_transactions += 1;
+        current.total_amount += Number(payment.amount || 0);
+        if (payment.payment_status === 'completed') current.successful_transactions += 1;
+        if (payment.payment_status === 'completed' && !['matched', 'reconciled'].includes(payment.reconciliation_status || '')) {
+          current.pending_reconciliation += 1;
+        }
+        groups.set(method, current);
+      }
+
+      return Array.from(groups.values())
+        .map(group => ({
+          ...group,
+          average_transaction: group.total_transactions > 0 ? group.total_amount / group.total_transactions : 0,
+          success_rate: group.total_transactions > 0 ? (group.successful_transactions / group.total_transactions) * 100 : 0,
+        }))
+        .sort((left, right) => right.total_amount - left.total_amount);
+    },
+    enabled: Boolean(companyId),
   });
 
   // Fetch reconciliation summary
   const { data: reconciliationSummary } = useQuery({
-    queryKey: ['bank-reconciliation-summary'],
+    queryKey: ['bank-reconciliation-summary', companyId],
     queryFn: async () => {
+      if (!companyId) return null;
+
       const { data, error } = await supabase
-        .from('bank_reconciliation_summary')
-        .select('*')
-        .single();
+        .from('payments')
+        .select('amount, payment_date, payment_method, payment_status, reconciliation_status')
+        .eq('company_id', companyId)
+        .neq('payment_status', 'cancelled');
       
       if (error) throw error;
-      return data as ReconciliationSummary;
-    }
+      const completed = (data || []).filter(payment => payment.payment_status === 'completed');
+      const reconciled = completed.filter(payment => ['matched', 'reconciled'].includes(payment.reconciliation_status || ''));
+      const pending = completed.filter(payment => !['matched', 'reconciled'].includes(payment.reconciliation_status || ''));
+      const now = Date.now();
+      const pendingDays = (days: number) => pending.filter(payment => {
+        const timestamp = new Date(payment.payment_date).getTime();
+        return Number.isFinite(timestamp) && now - timestamp > days * 24 * 60 * 60 * 1000;
+      }).length;
+      const pendingForMethod = (method: string) => pending.filter(payment => payment.payment_method === method).length;
+      const totalAmount = completed.reduce((sum, payment) => sum + Number(payment.amount || 0), 0);
+      const reconciledAmount = reconciled.reduce((sum, payment) => sum + Number(payment.amount || 0), 0);
+
+      return {
+        total_completed_payments: completed.length,
+        reconciled_payments: reconciled.length,
+        pending_reconciliation: pending.length,
+        total_payments_amount: totalAmount,
+        reconciled_amount: reconciledAmount,
+        pending_reconciliation_amount: totalAmount - reconciledAmount,
+        reconciliation_percentage: completed.length > 0 ? (reconciled.length / completed.length) * 100 : 0,
+        cash_pending: pendingForMethod('cash'),
+        bank_transfer_pending: pendingForMethod('bank_transfer'),
+        check_pending: pendingForMethod('check'),
+        credit_card_pending: pendingForMethod('credit_card') + pendingForMethod('debit_card'),
+        unreconciled_over_7_days: pendingDays(7),
+        unreconciled_over_30_days: pendingDays(30),
+      } satisfies ReconciliationSummary;
+    },
+    enabled: Boolean(companyId),
   });
 
   // Reconcile payment mutation
   const reconcilePayment = useMutation({
     mutationFn: async (paymentId: string) => {
-      const { error } = await (supabase as any).rpc('reconcile_payment_with_bank_transaction', {
+      const { error } = await supabase.rpc('reconcile_payment_with_bank_transaction', {
         p_payment_id: paymentId,
         p_reason: 'تسوية يدوية من شاشة متابعة الدفعات',
-        p_bank_transaction_id: null,
-        p_actor_id: null,
+        p_actor_id: user?.id,
       });
       
       if (error) {

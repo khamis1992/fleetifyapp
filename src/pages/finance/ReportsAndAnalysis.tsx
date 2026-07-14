@@ -457,8 +457,8 @@ const ReportsWorkspace = () => {
 };
 
 const AnalysisWorkspace = ({ analysisData, formatCurrency }: { analysisData: any; formatCurrency: (value: number) => string }) => {
-  const revenue = Number(analysisData?.incomeStatement?.revenue || analysisData?.incomeStatement?.totalRevenue || 0);
-  const expenses = Number(analysisData?.incomeStatement?.expenses || analysisData?.incomeStatement?.totalExpenses || 0);
+  const revenue = Number(analysisData?.incomeStatement?.revenue || 0);
+  const expenses = Number(analysisData?.incomeStatement?.expenses || 0);
   const netIncome = Number(analysisData?.incomeStatement?.netIncome || revenue - expenses || 0);
   const totalAssets = Number(analysisData?.balanceSheet?.totalAssets || 0);
   const totalLiabilities = Number(analysisData?.balanceSheet?.totalLiabilities || 0);
@@ -798,8 +798,8 @@ const ReportsAndAnalysis = () => {
   const { data: analysisData, isLoading, refetch } = useFinancialAnalysis();
 
   const stats = useMemo(() => {
-    const revenue = Number(analysisData?.incomeStatement?.revenue || analysisData?.incomeStatement?.totalRevenue || 0);
-    const expenses = Number(analysisData?.incomeStatement?.expenses || analysisData?.incomeStatement?.totalExpenses || 0);
+    const revenue = Number(analysisData?.incomeStatement?.revenue || 0);
+    const expenses = Number(analysisData?.incomeStatement?.expenses || 0);
     const netIncome = Number(analysisData?.incomeStatement?.netIncome || revenue - expenses || 0);
     const ratios = analysisData?.ratios || [];
     const profitMargin = revenue > 0 ? (netIncome / revenue) * 100 : parseRatio(ratios, ["هامش", "profit"]);

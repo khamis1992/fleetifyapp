@@ -162,15 +162,21 @@ export function useCreateNote() {
 // Update note
 export function useUpdateNote() {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
+  const userId = user?.profile?.id;
+  const companyId = user?.profile?.company_id;
 
   return useMutation({
     mutationFn: async (input: UpdateNoteInput) => {
+      if (!userId || !companyId) throw new Error('المستخدم أو الشركة غير محددين');
       const { id, ...data } = input;
 
       const { data: note, error } = await supabase
         .from('quick_notes')
         .update(data)
         .eq('id', id)
+        .eq('user_id', userId)
+        .eq('company_id', companyId)
         .select()
         .single();
 
@@ -191,13 +197,19 @@ export function useUpdateNote() {
 // Toggle pin
 export function useToggleNotePin() {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
+  const userId = user?.profile?.id;
+  const companyId = user?.profile?.company_id;
 
   return useMutation({
     mutationFn: async ({ id, is_pinned }: { id: string; is_pinned: boolean }) => {
+      if (!userId || !companyId) throw new Error('المستخدم أو الشركة غير محددين');
       const { data, error } = await supabase
         .from('quick_notes')
         .update({ is_pinned })
         .eq('id', id)
+        .eq('user_id', userId)
+        .eq('company_id', companyId)
         .select()
         .single();
 
@@ -217,13 +229,19 @@ export function useToggleNotePin() {
 // Archive note
 export function useArchiveNote() {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
+  const userId = user?.profile?.id;
+  const companyId = user?.profile?.company_id;
 
   return useMutation({
     mutationFn: async ({ id, is_archived }: { id: string; is_archived: boolean }) => {
+      if (!userId || !companyId) throw new Error('المستخدم أو الشركة غير محددين');
       const { data, error } = await supabase
         .from('quick_notes')
         .update({ is_archived })
         .eq('id', id)
+        .eq('user_id', userId)
+        .eq('company_id', companyId)
         .select()
         .single();
 
@@ -244,13 +262,21 @@ export function useArchiveNote() {
 // Delete note
 export function useDeleteNote() {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
+  const userId = user?.profile?.id;
+  const companyId = user?.profile?.company_id;
 
   return useMutation({
     mutationFn: async (id: string) => {
+      if (!userId || !companyId) throw new Error('المستخدم أو الشركة غير محددين');
       const { error } = await supabase
         .from('quick_notes')
         .delete()
-        .eq('id', id);
+        .eq('id', id)
+        .eq('user_id', userId)
+        .eq('company_id', companyId)
+        .select('id')
+        .single();
 
       if (error) throw error;
       return id;

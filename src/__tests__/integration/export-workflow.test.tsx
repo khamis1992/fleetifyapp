@@ -14,6 +14,22 @@ import { renderHook, waitFor, act } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactNode } from 'react';
 
+const exportMocks = vi.hoisted(() => ({
+  chartPdf: vi.fn(),
+  dashboardPdf: vi.fn(),
+  tableExcel: vi.fn(),
+  tableCsv: vi.fn(),
+  csv: vi.fn(),
+}));
+
+vi.mock('@/utils/exports', () => ({
+  exportChartToPDF: exportMocks.chartPdf,
+  exportDashboardToPDF: exportMocks.dashboardPdf,
+  exportTableToExcel: exportMocks.tableExcel,
+  exportTableToCSV: exportMocks.tableCsv,
+  exportToCSV: exportMocks.csv,
+}));
+
 // Mock jsPDF and other export libraries
 vi.mock('jspdf', () => ({
   default: vi.fn().mockImplementation(() => ({
@@ -62,9 +78,6 @@ vi.mock('@/hooks/useUnifiedCompanyAccess', () => ({
 
 // Import after mocks
 import { useExport } from '@/hooks/useExport';
-import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
-import * as XLSX from 'xlsx';
 
 describe('Export Workflow Integration', () => {
   let queryClient: QueryClient;
@@ -83,6 +96,8 @@ describe('Export Workflow Integration', () => {
       }
     });
     vi.clearAllMocks();
+    exportMocks.chartPdf.mockResolvedValue(undefined);
+    exportMocks.dashboardPdf.mockResolvedValue(undefined);
   });
 
   afterEach(() => {
@@ -111,8 +126,11 @@ describe('Export Workflow Integration', () => {
     });
 
     // Verify PDF was generated
-    expect(html2canvas).toHaveBeenCalledWith(mockElement, expect.any(Object));
-    expect(jsPDF).toHaveBeenCalled();
+    expect(exportMocks.chartPdf).toHaveBeenCalledWith(
+      mockElement,
+      'contracts-report.pdf',
+      expect.objectContaining({ title: 'تقرير العقود - Contracts Report' })
+    );
     expect(result.current.state.error).toBeNull();
   });
 
@@ -169,8 +187,11 @@ describe('Export Workflow Integration', () => {
     });
 
     // Verify Excel was generated
-    expect(XLSX.utils.json_to_sheet).toHaveBeenCalled();
-    expect(XLSX.writeFile).toHaveBeenCalled();
+    expect(exportMocks.tableExcel).toHaveBeenCalledWith(
+      financialData,
+      columns,
+      'financial-report.xlsx'
+    );
     expect(result.current.state.error).toBeNull();
   });
 
@@ -230,8 +251,11 @@ describe('Export Workflow Integration', () => {
       expect(result.current.state.isExporting).toBe(false);
     });
 
-    // Verify CSV was generated (uses XLSX under the hood)
-    expect(XLSX.utils.json_to_sheet).toHaveBeenCalled();
+    expect(exportMocks.tableCsv).toHaveBeenCalledWith(
+      customerData,
+      columns,
+      'customers-list.csv'
+    );
     expect(result.current.state.error).toBeNull();
   });
 
@@ -242,8 +266,7 @@ describe('Export Workflow Integration', () => {
       wrapper: createWrapper()
     });
 
-    // Mock html2canvas to throw error
-    vi.mocked(html2canvas).mockRejectedValueOnce(new Error('Canvas rendering failed'));
+    exportMocks.chartPdf.mockRejectedValueOnce(new Error('Canvas rendering failed'));
 
     const mockElement = document.createElement('div');
 
@@ -310,8 +333,11 @@ describe('Export Workflow Integration', () => {
     });
 
     // Verify all charts were processed
-    expect(html2canvas).toHaveBeenCalledTimes(3);
-    expect(jsPDF).toHaveBeenCalled();
+    expect(exportMocks.dashboardPdf).toHaveBeenCalledWith(
+      charts,
+      'financial-dashboard.pdf',
+      expect.objectContaining({ tableOfContents: true })
+    );
     expect(result.current.state.error).toBeNull();
   });
 
@@ -397,7 +423,7 @@ describe('Export Workflow Integration', () => {
       expect(result.current.state.isExporting).toBe(false);
     });
 
-    expect(jsPDF).toHaveBeenCalled();
+    expect(exportMocks.chartPdf).toHaveBeenCalled();
   });
 
   it('should handle large dataset export to Excel', async () => {
@@ -425,7 +451,11 @@ describe('Export Workflow Integration', () => {
       expect(result.current.state.isExporting).toBe(false);
     });
 
-    expect(XLSX.utils.json_to_sheet).toHaveBeenCalledWith(largeData);
+    expect(exportMocks.tableExcel).toHaveBeenCalledWith(
+      largeData,
+      undefined,
+      'large-contracts-report.xlsx'
+    );
     expect(result.current.state.error).toBeNull();
   });
 
@@ -471,7 +501,11 @@ describe('Export Workflow Integration', () => {
       expect(result.current.state.isExporting).toBe(false);
     });
 
-    expect(XLSX.utils.json_to_sheet).toHaveBeenCalled();
+    expect(exportMocks.tableCsv).toHaveBeenCalledWith(
+      arabicData,
+      columns,
+      'arabic-contracts.csv'
+    );
     expect(result.current.state.error).toBeNull();
   });
 

@@ -26,7 +26,7 @@ export interface MaintenanceFinancialData {
   actual_cost: number;
   journal_entry_id: string | null;
   status: string;
-  completed_date: string;
+  completed_date: string | null;
 }
 
 export interface DepreciationResult {
@@ -52,6 +52,20 @@ export interface FleetFinancialSummary {
   profitMargin: number;
 }
 
+const requireCompanyId = (companyId: string | null | undefined): string => {
+  if (!companyId) throw new Error('Company ID is required');
+  return companyId;
+};
+
+export const normalizeVehicleOperatingCost = (
+  operatingCost: number | null | undefined,
+  maintenanceCost: number | null | undefined,
+  insuranceCost: number | null | undefined
+): number => Math.max(
+  operatingCost || 0,
+  (maintenanceCost || 0) + (insuranceCost || 0)
+);
+
 // Fleet Financial Overview
 export const useFleetFinancialOverview = () => {
   const { companyId } = useUnifiedCompanyAccess();
@@ -59,6 +73,7 @@ export const useFleetFinancialOverview = () => {
   return useQuery({
     queryKey: ["fleet-financial-overview", companyId],
     queryFn: async (): Promise<FleetFinancialData[]> => {
+      const scopedCompanyId = requireCompanyId(companyId);
       // Get vehicles with their contract revenue
       const { data: vehiclesData, error: vehiclesError } = await supabase
         .from("vehicles")
@@ -72,7 +87,7 @@ export const useFleetFinancialOverview = () => {
           accumulated_depreciation,
           purchase_cost
         `)
-        .eq("company_id", companyId)
+        .eq("company_id", scopedCompanyId)
         .eq("is_active", true);
 
       if (vehiclesError) throw vehiclesError;
@@ -81,7 +96,7 @@ export const useFleetFinancialOverview = () => {
       const { data: revenueData, error: revenueError } = await supabase
         .from("contracts")
         .select("vehicle_id, total_paid")
-        .eq("company_id", companyId);
+        .eq("company_id", scopedCompanyId);
 
       if (revenueError) throw revenueError;
 
@@ -96,24 +111,29 @@ export const useFleetFinancialOverview = () => {
 
       // Calculate book value and other financial metrics
       return vehiclesData.map(vehicle => {
-        const bookValue = (vehicle.purchase_cost || 0) - (vehicle.accumulated_depreciation || 0);
-        const totalOperatingCost = (vehicle.total_operating_cost || 0) + (vehicle.total_maintenance_cost || 0);
+        const purchasePrice = vehicle.purchase_cost || 0;
+        const bookValue = purchasePrice - (vehicle.accumulated_depreciation || 0);
+        const totalOperatingCost = normalizeVehicleOperatingCost(
+          vehicle.total_operating_cost,
+          vehicle.total_maintenance_cost,
+          vehicle.total_insurance_cost
+        );
         
         // Get actual revenue from contracts for this vehicle
         const revenueGenerated = revenueMap.get(vehicle.id) || 0;
         const netProfit = revenueGenerated - totalOperatingCost;
-        const roiPercentage = vehicle.purchase_cost > 0 ? (netProfit / vehicle.purchase_cost) * 100 : 0;
+        const roiPercentage = purchasePrice > 0 ? (netProfit / purchasePrice) * 100 : 0;
 
         return {
           vehicle_id: vehicle.id,
-          vehicle_number: vehicle.plate_number,
-          vehicle_status: vehicle.status,
+          vehicle_number: vehicle.plate_number || 'Unknown',
+          vehicle_status: vehicle.status || 'unknown',
           total_maintenance_cost: vehicle.total_maintenance_cost || 0,
           total_fuel_cost: 0,
           total_insurance_cost: vehicle.total_insurance_cost || 0,
           total_operating_cost: totalOperatingCost,
           accumulated_depreciation: vehicle.accumulated_depreciation || 0,
-          purchase_price: vehicle.purchase_cost || 0,
+          purchase_price: purchasePrice,
           book_value: bookValue,
           revenue_generated: revenueGenerated,
           net_profit: netProfit,
@@ -132,6 +152,7 @@ export const useMaintenanceFinancialData = () => {
   return useQuery({
     queryKey: ["maintenance-financial-data", companyId],
     queryFn: async (): Promise<MaintenanceFinancialData[]> => {
+      const scopedCompanyId = requireCompanyId(companyId);
       // First get maintenance records
       const { data: maintenanceData, error: maintenanceError } = await supabase
         .from("vehicle_maintenance")
@@ -145,7 +166,7 @@ export const useMaintenanceFinancialData = () => {
           completed_date,
           vehicle_id
         `)
-        .eq("company_id", companyId)
+        .eq("company_id", scopedCompanyId)
         .not("actual_cost", "is", null)
         .order("completed_date", { ascending: false });
 
@@ -164,12 +185,12 @@ export const useMaintenanceFinancialData = () => {
 
       return maintenanceData.map(maintenance => ({
         maintenance_id: maintenance.id,
-        maintenance_number: maintenance.maintenance_number,
+        maintenance_number: maintenance.maintenance_number || maintenance.id,
         vehicle_number: vehicleMap.get(maintenance.vehicle_id) || "Unknown",
-        maintenance_type: maintenance.maintenance_type,
+        maintenance_type: maintenance.maintenance_type || 'unknown',
         actual_cost: maintenance.actual_cost || 0,
         journal_entry_id: maintenance.journal_entry_id,
-        status: maintenance.status,
+        status: maintenance.status || 'unknown',
         completed_date: maintenance.completed_date
       }));
     },
@@ -184,13 +205,14 @@ export const useValidateDepreciationData = () => {
   return useQuery({
     queryKey: ["validate-depreciation", companyId],
     queryFn: async () => {
+      const scopedCompanyId = requireCompanyId(companyId);
       console.log("🔍 فحص بيانات الاستهلاك للشركة:", companyId);
       
       // Check active vehicles
       const { data: vehicles, error: vehiclesError } = await supabase
         .from("vehicles")
         .select("id, plate_number, purchase_cost, depreciation_rate, accumulated_depreciation")
-        .eq("company_id", companyId)
+        .eq("company_id", scopedCompanyId)
         .eq("is_active", true);
 
       if (vehiclesError) {
@@ -222,6 +244,7 @@ export const useProcessVehicleDepreciation = () => {
 
   return useMutation({
     mutationFn: async (depreciationDate?: string): Promise<DepreciationResult[]> => {
+      const scopedCompanyId = requireCompanyId(companyId);
       const dateParam = depreciationDate || new Date().toISOString().split('T')[0];
       
       console.log("🚀 بدء معالجة الاستهلاك...", {
@@ -233,7 +256,7 @@ export const useProcessVehicleDepreciation = () => {
       const { data: vehicles, error: validationError } = await supabase
         .from("vehicles")
         .select("id, plate_number, purchase_cost, depreciation_rate")
-        .eq("company_id", companyId)
+        .eq("company_id", scopedCompanyId)
         .eq("is_active", true);
 
       if (validationError) {
@@ -257,7 +280,7 @@ export const useProcessVehicleDepreciation = () => {
       // Process depreciation
       try {
         const { data, error } = await supabase.rpc("process_vehicle_depreciation_monthly", {
-          company_id_param: companyId,
+          company_id_param: scopedCompanyId,
           depreciation_date_param: dateParam
         });
 
@@ -268,7 +291,7 @@ export const useProcessVehicleDepreciation = () => {
           console.log("🔄 محاولة استخدام Edge Function كبديل...");
           const fallbackResult = await supabase.functions.invoke('process-monthly-depreciation', {
             body: { 
-              company_id: companyId, 
+              company_id: scopedCompanyId, 
               depreciation_date: dateParam 
             }
           });
@@ -285,9 +308,10 @@ export const useProcessVehicleDepreciation = () => {
         console.log("✅ تمت معالجة الاستهلاك بنجاح:", data);
         return data || [];
         
-      } catch (dbError: any) {
+      } catch (dbError: unknown) {
         console.error("❌ خطأ في قاعدة البيانات:", dbError);
-        throw new Error(`خطأ في معالجة الاستهلاك: ${dbError.message}`);
+        const errorMessage = dbError instanceof Error ? dbError.message : 'Unknown database error';
+        throw new Error(`خطأ في معالجة الاستهلاك: ${errorMessage}`);
       }
     },
     onSuccess: (data) => {
@@ -331,6 +355,7 @@ export const useFleetFinancialSummary = () => {
   return useQuery({
     queryKey: ["fleet-financial-summary", companyId],
     queryFn: async (): Promise<FleetFinancialSummary> => {
+      const scopedCompanyId = requireCompanyId(companyId);
       // Get vehicle data
       const { data: vehicleData, error: vehicleError } = await supabase
         .from("vehicles")
@@ -341,7 +366,7 @@ export const useFleetFinancialSummary = () => {
           accumulated_depreciation,
           purchase_cost
         `)
-        .eq("company_id", companyId)
+        .eq("company_id", scopedCompanyId)
         .eq("is_active", true);
 
       if (vehicleError) throw vehicleError;
@@ -350,7 +375,7 @@ export const useFleetFinancialSummary = () => {
       const { data: contractData, error: contractError } = await supabase
         .from("contracts")
         .select("total_paid, monthly_amount")
-        .eq("company_id", companyId)
+        .eq("company_id", scopedCompanyId)
         .eq("status", "active");
 
       if (contractError) throw contractError;
@@ -359,7 +384,11 @@ export const useFleetFinancialSummary = () => {
         acc.totalMaintenanceCost += vehicle.total_maintenance_cost || 0;
         acc.totalFuelCost += 0; // Will be calculated separately
         acc.totalInsuranceCost += vehicle.total_insurance_cost || 0;
-        acc.totalOperatingCost += vehicle.total_operating_cost || 0;
+        acc.totalOperatingCost += normalizeVehicleOperatingCost(
+          vehicle.total_operating_cost,
+          vehicle.total_maintenance_cost,
+          vehicle.total_insurance_cost
+        );
         acc.totalAccumulatedDepreciation += vehicle.accumulated_depreciation || 0;
         acc.totalPurchasePrice += vehicle.purchase_cost || 0;
         acc.vehicleCount += 1;
@@ -386,8 +415,7 @@ export const useFleetFinancialSummary = () => {
       summary.averageOperatingCost = summary.vehicleCount > 0 ? summary.totalOperatingCost / summary.vehicleCount : 0;
       
       // Calculate net profit and margin
-      const totalCosts = summary.totalOperatingCost + summary.totalMaintenanceCost;
-      summary.netProfit = summary.totalRevenue - totalCosts;
+      summary.netProfit = summary.totalRevenue - summary.totalOperatingCost;
       summary.profitMargin = summary.totalRevenue > 0 ? (summary.netProfit / summary.totalRevenue) * 100 : 0;
 
       return summary;
@@ -416,11 +444,12 @@ export const useMonthlyRevenueData = (year: string = "2024") => {
   return useQuery({
     queryKey: ["monthly-revenue-data", companyId, year],
     queryFn: async (): Promise<MonthlyRevenueData[]> => {
+      const scopedCompanyId = requireCompanyId(companyId);
       // Get monthly payments (revenue)
       const { data: paymentsData, error: paymentsError } = await supabase
         .from("payments")
         .select("payment_date, amount")
-        .eq("company_id", companyId)
+        .eq("company_id", scopedCompanyId)
         .gte("payment_date", `${year}-01-01`)
         .lte("payment_date", `${year}-12-31`);
 
@@ -475,11 +504,12 @@ export const useTopProfitableVehicles = (limit: number = 10) => {
   return useQuery({
     queryKey: ["top-profitable-vehicles", companyId, limit],
     queryFn: async (): Promise<VehicleProfitData[]> => {
+      const scopedCompanyId = requireCompanyId(companyId);
       // Directly use manual join (RPC function doesn't exist)
       const { data: vehiclesData, error: vehiclesError } = await supabase
         .from("vehicles")
         .select("id, plate_number")
-        .eq("company_id", companyId)
+        .eq("company_id", scopedCompanyId)
         .eq("is_active", true);
 
       if (vehiclesError) throw vehiclesError;
@@ -487,7 +517,7 @@ export const useTopProfitableVehicles = (limit: number = 10) => {
       const { data: contractsData, error: contractsError } = await supabase
         .from("contracts")
         .select("vehicle_id, total_paid")
-        .eq("company_id", companyId);
+        .eq("company_id", scopedCompanyId);
 
       if (contractsError) throw contractsError;
 

@@ -243,7 +243,7 @@ const App: React.FC = () => {
         // Preload critical routes
         if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
           window.requestIdleCallback(() => {
-            preloadCriticalRoutes(APP_CONFIG.CRITICAL_ROUTES);
+            preloadCriticalRoutes();
           }, { timeout: 5000 });
         }
 

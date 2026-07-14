@@ -6,6 +6,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import type { Json } from '@/integrations/supabase/types';
 import { useAuth } from '@/contexts/AuthContext';
 import { 
   whatsAppService, 
@@ -97,7 +98,7 @@ export const useWhatsAppSettings = () => {
             parsedRecipients = [];
           }
         } else if (Array.isArray(data.recipients)) {
-          parsedRecipients = data.recipients;
+          parsedRecipients = data.recipients as unknown as WhatsAppRecipient[];
         }
       }
       
@@ -233,7 +234,9 @@ export const useWhatsAppRecipients = () => {
         return [];
       }
     }
-    return Array.isArray(data.recipients) ? data.recipients : [];
+    return Array.isArray(data.recipients)
+      ? data.recipients as unknown as WhatsAppRecipient[]
+      : [];
   };
 
   // إضافة مستلم - يجلب البيانات الحالية أولاً ثم يضيف
@@ -258,7 +261,7 @@ export const useWhatsAppRecipients = () => {
         .from('whatsapp_settings')
         .upsert({ 
           company_id: companyId,
-          recipients: updatedRecipients,
+          recipients: updatedRecipients as unknown as Json,
           updated_at: new Date().toISOString()
         }, {
           onConflict: 'company_id',
@@ -295,7 +298,7 @@ export const useWhatsAppRecipients = () => {
         .from('whatsapp_settings')
         .upsert({ 
           company_id: companyId,
-          recipients: updatedRecipients,
+          recipients: updatedRecipients as unknown as Json,
           updated_at: new Date().toISOString()
         }, {
           onConflict: 'company_id',
@@ -324,7 +327,7 @@ export const useWhatsAppRecipients = () => {
         .from('whatsapp_settings')
         .upsert({ 
           company_id: companyId,
-          recipients: filteredRecipients,
+          recipients: filteredRecipients as unknown as Json,
           updated_at: new Date().toISOString()
         }, {
           onConflict: 'company_id',

@@ -65,7 +65,13 @@ export const useUnifiedAccountSelector = (options: UnifiedAccountSelectorOptions
       }
 
       // Get parent account names
-      const parentAccountIds = [...new Set(data.map(acc => acc.parent_account_id).filter(Boolean))];
+      const parentAccountIds = [
+        ...new Set(
+          data
+            .map((account) => account.parent_account_id)
+            .filter((id): id is string => Boolean(id)),
+        ),
+      ];
       const parentAccounts = parentAccountIds.length > 0 ? await supabase
         .from('chart_of_accounts')
         .select('id, account_name')
@@ -80,23 +86,26 @@ export const useUnifiedAccountSelector = (options: UnifiedAccountSelectorOptions
         .filter(account => {
           // Skip header accounts
           if (account.is_header) return false;
+          const accountLevel = account.account_level ?? 0;
 
           // Apply level filtering
           switch (filterLevel) {
             case 'level_4':
-              return account.account_level === 4;
+              return accountLevel === 4;
             case 'level_4_5':
-              return account.account_level >= 4 && account.account_level <= 5;
+              return accountLevel >= 4 && accountLevel <= 5;
             case 'level_5_6':
-              return account.account_level >= 5 && account.account_level <= 6;
+              return accountLevel >= 5 && accountLevel <= 6;
             case 'all_allowed':
-              return account.account_level >= 3;
+              return accountLevel >= 3;
             default:
-              return account.account_level >= 5 && account.account_level <= 6;
+              return accountLevel >= 5 && accountLevel <= 6;
           }
         })
         .map(account => ({
           ...account,
+          account_level: account.account_level ?? 0,
+          account_name_ar: account.account_name_ar ?? undefined,
           parent_account_name: account.parent_account_id 
             ? parentMap.get(account.parent_account_id) 
             : undefined,

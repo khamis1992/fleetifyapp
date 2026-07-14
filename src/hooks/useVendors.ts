@@ -446,6 +446,7 @@ export const useCreateVendorContact = () => {
 
 export const useUpdateVendorContact = () => {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
 
   return useMutation({
     mutationFn: async ({ id, vendor_id, ...contactData }: {
@@ -457,11 +458,14 @@ export const useUpdateVendorContact = () => {
       email?: string;
       is_primary?: boolean;
     }) => {
+      const companyId = user?.profile?.company_id;
+      if (!companyId) throw new Error('Company ID is required');
       Sentry.addBreadcrumb({ category: "vendors", message: "Updating vendor contact", level: "info" });
       const { data, error } = await supabase
         .from("vendor_contacts")
         .update(contactData)
         .eq("id", id)
+        .eq("company_id", companyId)
         .select()
         .single();
 
@@ -481,14 +485,21 @@ export const useUpdateVendorContact = () => {
 
 export const useDeleteVendorContact = () => {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
 
   return useMutation({
     mutationFn: async ({ id, vendor_id }: { id: string; vendor_id: string }) => {
+      const companyId = user?.profile?.company_id;
+      if (!companyId) throw new Error('Company ID is required');
       Sentry.addBreadcrumb({ category: "vendors", message: "Deleting vendor contact", level: "info" });
       const { error } = await supabase
         .from("vendor_contacts")
         .delete()
-        .eq("id", id);
+        .eq("id", id)
+        .eq("company_id", companyId)
+        .eq("vendor_id", vendor_id)
+        .select("id")
+        .single();
 
       if (error) { Sentry.captureException(error, { tags: { feature: "vendors" } }); throw error; }
       return vendor_id;
@@ -571,14 +582,21 @@ export const useUploadVendorDocument = () => {
 
 export const useDeleteVendorDocument = () => {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
 
   return useMutation({
     mutationFn: async ({ id, vendor_id }: { id: string; vendor_id: string }) => {
+      const companyId = user?.profile?.company_id;
+      if (!companyId) throw new Error('Company ID is required');
       Sentry.addBreadcrumb({ category: "vendors", message: "Deleting vendor document", level: "info" });
       const { error } = await supabase
         .from("vendor_documents")
         .delete()
-        .eq("id", id);
+        .eq("id", id)
+        .eq("company_id", companyId)
+        .eq("vendor_id", vendor_id)
+        .select("id")
+        .single();
 
       if (error) { Sentry.captureException(error, { tags: { feature: "vendors" } }); throw error; }
       return vendor_id;

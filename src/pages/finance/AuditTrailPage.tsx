@@ -3,7 +3,7 @@ import { AuditTrailViewer } from "@/components/finance/AuditTrailViewer";
 
 export default function AuditTrailPage() {
   return (
-    <PageCustomizer>
+    <PageCustomizer pageId="finance-audit-trail" title="" titleAr="">
       <AuditTrailViewer />
     </PageCustomizer>
   );

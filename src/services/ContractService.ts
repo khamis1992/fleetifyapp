@@ -266,14 +266,18 @@ export class ContractService extends BaseService<Contract> {
       }
     }
 
-    await supabase.from('notifications').insert({
-      company_id: contract.company_id,
-      title: 'عقد جديد',
-      message: `تم إنشاء عقد جديد برقم ${contract.contract_number} بمبلغ ${contract.contract_amount} ر.ق`,
-      type: 'contract_created',
-      reference_id: contract.id,
-      priority: 'medium'
-    });
+    if (contract.created_by) {
+      const { error: notificationError } = await supabase.from('contract_notifications').insert({
+        company_id: contract.company_id,
+        contract_id: contract.id,
+        title: 'عقد جديد',
+        message: `تم إنشاء عقد جديد برقم ${contract.contract_number} بمبلغ ${contract.contract_amount} ر.ق`,
+        notification_type: 'contract_created',
+        recipient_id: contract.created_by,
+        delivery_status: 'pending',
+      });
+      if (notificationError) logger.warn('Contract created, but notification creation failed', notificationError);
+    }
 
     this.log('verifyAndComplete', 'Verification completed successfully', { contractId: contract.id });
   }
@@ -341,6 +345,7 @@ export class ContractService extends BaseService<Contract> {
     const { data: activeContracts, error: contractError } = await supabase
       .from('contracts')
       .select('id, contract_number, status')
+      .eq('company_id', companyId)
       .eq('vehicle_id', vehicleId)
       .eq('status', 'active')
       .limit(1);
@@ -358,14 +363,16 @@ export class ContractService extends BaseService<Contract> {
   }
 
   private async checkAccountMapping(companyId: string): Promise<boolean> {
-    const { data } = await supabase
-      .from('company_account_mappings')
+    const { data, error } = await supabase
+      .from('account_mappings')
       .select('id')
       .eq('company_id', companyId)
+      .eq('is_active', true)
       .limit(1)
-      .single();
+      .maybeSingle();
 
-    return !!data;
+    if (error) throw error;
+    return Boolean(data);
   }
 
   private async generateContractNumber(companyId: string): Promise<string> {

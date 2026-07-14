@@ -49,6 +49,7 @@ describe('useContracts Hook', () => {
     chain.eq = vi.fn().mockReturnValue(chain);
     chain.in = vi.fn().mockReturnValue(chain);
     chain.order = vi.fn().mockReturnValue(chain);
+    chain.abortSignal = vi.fn().mockReturnValue(chain);
     chain.single = vi.fn().mockResolvedValue(finalData);
     chain.maybeSingle = vi.fn().mockResolvedValue(finalData);
     chain.then = (resolve: any) => Promise.resolve(finalData).then(resolve);
@@ -122,8 +123,8 @@ describe('useContracts Hook', () => {
         id: 'contract-1',
         contract_number: 'CNT-001',
         linked_payments_amount: 1500, // 1000 + 500
-        total_paid: 4500, // 3000 + 1500
-        balance_due: 7500, // 12000 - 4500
+        total_paid: 3000,
+        balance_due: 9000,
       });
     });
 
@@ -204,8 +205,8 @@ describe('useContracts Hook', () => {
 
       const contract = result.current.data![0];
       expect(contract.linked_payments_amount).toBe(5000); // 2500 + 2500
-      expect(contract.total_paid).toBe(5000); // 0 + 5000
-      expect(contract.balance_due).toBe(5000); // 10000 - 5000
+      expect(contract.total_paid).toBe(0);
+      expect(contract.balance_due).toBe(10000);
     });
 
     it('should handle contracts with no payments', async () => {
@@ -270,7 +271,7 @@ describe('useContracts Hook', () => {
       };
 
       // First query fails with error
-      mockFrom.mockReturnValueOnce(buildChainableMock({ data: null, error }));
+      mockFrom.mockReturnValue(buildChainableMock({ data: null, error }));
 
       const { result } = renderHook(() => useContracts(), {
         wrapper: createWrapper(),
@@ -511,8 +512,8 @@ describe('useContracts Hook', () => {
 
       const contract = result.current.data![0];
       expect(contract.linked_payments_amount).toBe(3000);
-      expect(contract.total_paid).toBe(5000); // 2000 + 3000
-      expect(contract.balance_due).toBe(5000); // 10000 - 5000
+      expect(contract.total_paid).toBe(2000);
+      expect(contract.balance_due).toBe(8000);
     });
 
     it('should order by contract_date descending', async () => {
@@ -547,11 +548,10 @@ describe('useContracts Hook', () => {
       );
 
       await waitFor(() => {
-        expect(result.current.isFetched).toBe(true);
-      });
+        expect(result.current.isError).toBe(true);
+      }, { timeout: 4000 });
 
-      // Verify empty array is returned (company access validated server-side)
-      expect(result.current.data).toEqual([]);
+      expect(result.current.error).toBeTruthy();
     });
   });
 

@@ -4,6 +4,9 @@ import { useUnifiedCompanyAccess } from "./useUnifiedCompanyAccess";
 import { useToast } from "./use-toast";
 import { AccountTemplate } from "./useTemplateSystem";
 
+const getErrorMessage = (error: unknown): string =>
+  error instanceof Error ? error.message : String(error);
+
 export const useCopySelectedAccounts = () => {
   const queryClient = useQueryClient();
   const { companyId, validateCompanyAccess } = useUnifiedCompanyAccess();
@@ -52,7 +55,7 @@ export const useCopySelectedAccounts = () => {
       toast({
         variant: "destructive", 
         title: "خطأ في نسخ الحسابات",
-        description: error.message,
+        description: getErrorMessage(error),
       });
     },
   });

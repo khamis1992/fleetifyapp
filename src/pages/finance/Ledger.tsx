@@ -472,10 +472,10 @@ const Ledger = () => {
                                       {line.line_description || entry.description || "-"}
                                     </TableCell>
                                     <TableCell className="text-center font-mono font-black text-[#22C7A1]">
-                                      {line.debit_amount > 0 ? formatCurrency(line.debit_amount) : "-"}
+                                      {Number(line.debit_amount || 0) > 0 ? formatCurrency(Number(line.debit_amount || 0)) : "-"}
                                     </TableCell>
                                     <TableCell className="text-center font-mono font-black text-[#FB6B7A]">
-                                      {line.credit_amount > 0 ? formatCurrency(line.credit_amount) : "-"}
+                                      {Number(line.credit_amount || 0) > 0 ? formatCurrency(Number(line.credit_amount || 0)) : "-"}
                                     </TableCell>
                                   </TableRow>
                                 ))}

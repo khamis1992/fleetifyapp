@@ -61,18 +61,18 @@ export function IncomeStatementReport() {
   }
   periods.reverse();
 
-  // Fetch data for each period
-  const periodsData = periods.map(period => {
-    const { data } = useEnhancedFinancialReports(
-      'income_statement',
-      period.startDate,
-      period.endDate
-    );
-    return {
-      ...period,
-      data
-    };
-  });
+  // The six hooks are intentionally explicit so their order is stable across renders.
+  const period0 = useEnhancedFinancialReports('income_statement', periods[0].startDate, periods[0].endDate);
+  const period1 = useEnhancedFinancialReports('income_statement', periods[1].startDate, periods[1].endDate);
+  const period2 = useEnhancedFinancialReports('income_statement', periods[2].startDate, periods[2].endDate);
+  const period3 = useEnhancedFinancialReports('income_statement', periods[3].startDate, periods[3].endDate);
+  const period4 = useEnhancedFinancialReports('income_statement', periods[4].startDate, periods[4].endDate);
+  const period5 = useEnhancedFinancialReports('income_statement', periods[5].startDate, periods[5].endDate);
+  const comparativeResults = [period0, period1, period2, period3, period4, period5];
+  const periodsData = periods.map((period, index) => ({
+    ...period,
+    data: comparativeResults[index].data,
+  }));
 
   // Calculate totals
   const totalRevenue = reportData?.totalCredits || 0;
@@ -213,7 +213,7 @@ export function IncomeStatementReport() {
         periodStart: startDate || undefined,
         periodEnd: endDate,
         currency: "QAR",
-        generatedAt: new Date().toISOString(),
+        exportedAt: new Date().toISOString(),
         status: "published",
         sourceFingerprint: sourceReport.sourceFingerprint,
         reportHash: sourceReport.sourceFingerprint,

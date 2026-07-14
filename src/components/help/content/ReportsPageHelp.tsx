@@ -1,7 +1,6 @@
 import React from 'react';
 import { HelpSection, HelpStep, HelpList, HelpNote } from '../HelpContent';
 
-import { useFleetifyTranslation } from "@/hooks/useTranslation";
 export const ReportsPageHelpContent = () => (
   <>
     {
@@ -164,7 +163,7 @@ export const ReportsPageHelpContent = () => (
         </div>
 
         <div>
-          <h5 className="font-semibold">{t("excelXlsx")}</h5>
+          <h5 className="font-semibold">Excel (XLSX)</h5>
           <p className="text-sm text-muted-foreground">
             مناسب للتحليل والتعديل. يمكنك إجراء حسابات إضافية ورسوم بيانية مخصصة.
           </p>

@@ -36,6 +36,7 @@ import { extractTextWithTesseract } from './tesseractOCR';
 import { preprocessForContract, preprocessForArabic } from './imagePreprocessor';
 import { getContractTemplateService } from './contractTemplateService';
 import { supabase } from '@/integrations/supabase/client';
+import { getEnvConfig } from '@/lib/validateEnv';
 
 export interface HybridOCRResult {
   success: boolean;
@@ -366,10 +367,7 @@ export async function hybridOCR(
     try {
       console.log('[Hybrid OCR] Tier 3: Trying Cloud OCR (LongCat Vision)...');
 
-      // Get Supabase config - use hardcoded values as fallback
-      const supabaseUrl = (supabase as any).supabaseUrl || 
-        import.meta.env.VITE_SUPABASE_URL || 
-        'https://qwhunliohlkkahbspfiu.supabase.co';
+      const supabaseUrl = getEnvConfig().VITE_SUPABASE_URL;
       
       console.log(`[Hybrid OCR] Supabase URL: ${supabaseUrl}`);
       

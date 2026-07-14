@@ -69,7 +69,7 @@ export function useSignedAgreementUpload() {
           const { data: profile } = await supabase
             .from('profiles')
             .select('company_id')
-            .eq('id', sessionData.session.user.id)
+            .eq('user_id', sessionData.session.user.id)
             .single();
           currentCompanyId = profile?.company_id || null;
         }
@@ -90,6 +90,9 @@ export function useSignedAgreementUpload() {
           success: false,
           error: 'يُسمح فقط بملفات PDF',
         };
+      }
+      if (file.size > 100 * 1024 * 1024) {
+        return { success: false, error: 'حجم الملف يتجاوز 100 ميجابايت' };
       }
 
       try {
@@ -330,7 +333,7 @@ export function useSignedAgreementUpload() {
               contractNumber: contract.contract_number,
               customerId: contract.customer_id,
               customerName: getCustomerName(contract.customer),
-              vehicleId: contract.vehicle_id,
+              vehicleId: contract.vehicle_id ?? undefined,
               vehiclePlate: contract.vehicle?.plate_number,
               confidence: filenameAnalysis.confidence,
             };
@@ -375,7 +378,7 @@ export function useSignedAgreementUpload() {
               contractNumber: contract.contract_number,
               customerId: contract.customer_id,
               customerName: getCustomerName(contract.customer),
-              vehicleId: contract.vehicle_id,
+              vehicleId: contract.vehicle_id ?? undefined,
               vehiclePlate: contract.vehicle?.plate_number,
               confidence: filenameAnalysis.confidence * 0.9,
             };
@@ -388,7 +391,7 @@ export function useSignedAgreementUpload() {
         if (!contractMatch && filenameAnalysis.customerName) {
           // Use PostgreSQL fuzzy matching function with Arabic normalization
           const { data: fuzzyResults } = await supabase.rpc('find_customer_by_name_fuzzy', {
-            p_company_id: companyId,
+            p_company_id: currentCompanyId,
             p_search_name: filenameAnalysis.customerName,
             p_min_similarity: 0.4, // 40% minimum similarity threshold
           });
@@ -411,6 +414,7 @@ export function useSignedAgreementUpload() {
                 vehicle_id,
                 vehicle:vehicles!inner(id, plate_number)
               `)
+              .eq('company_id', currentCompanyId)
               .eq('customer_id', bestMatch.id)
               .eq('status', 'active')
               .order('created_at', { ascending: false })
@@ -422,7 +426,7 @@ export function useSignedAgreementUpload() {
                 contractNumber: customerContracts[0].contract_number,
                 customerId: bestMatch.id,
                 customerName: bestMatch.name,
-                vehicleId: customerContracts[0].vehicle_id,
+                vehicleId: customerContracts[0].vehicle_id ?? undefined,
                 vehiclePlate: customerContracts[0].vehicle?.plate_number,
                 confidence: bestMatch.confidence, // Use actual AI similarity score
               };
@@ -471,7 +475,7 @@ export function useSignedAgreementUpload() {
               contractNumber: vehicleContracts[0].contract_number,
               customerId: vehicleContracts[0].customer_id,
               customerName: getCustomerName(vehicleContracts[0].customer),
-              vehicleId: vehicleContracts[0].vehicle_id,
+              vehicleId: vehicleContracts[0].vehicle_id ?? undefined,
               vehiclePlate: vehicleContracts[0].vehicle?.plate_number,
               confidence: 0.85,
             };
@@ -488,10 +492,11 @@ export function useSignedAgreementUpload() {
               contract_id: contractMatch.contractId,
               notes: `Matched via AI with confidence: ${contractMatch.confidence}`,
             })
-            .eq('id', documentId);
+            .eq('id', documentId)
+            .eq('company_id', currentCompanyId);
 
           if (updateError) {
-            console.error('Error updating document:', updateError);
+            throw updateError;
           }
         }
 
@@ -517,26 +522,33 @@ export function useSignedAgreementUpload() {
    */
   const deleteAgreement = useMutation({
     mutationFn: async (documentId: string): Promise<void> => {
+      if (!companyId) throw new Error('لم يتم اختيار الشركة');
       // Get document info
-      const { data: document } = await supabase
+      const { data: document, error: readError } = await supabase
         .from('contract_documents')
         .select('file_path')
         .eq('id', documentId)
+        .eq('company_id', companyId)
         .single();
+      if (readError) throw readError;
 
-      // Delete file from storage
-      if (document?.file_path) {
-        await supabase.storage.from('contract-documents').remove([document.file_path]);
-      }
-
-      // Delete database record
       const { error } = await supabase
         .from('contract_documents')
         .delete()
-        .eq('id', documentId);
+        .eq('id', documentId)
+        .eq('company_id', companyId)
+        .select('id')
+        .single();
 
-      if (error) {
-        throw error;
+      if (error) throw error;
+
+      if (document?.file_path) {
+        const { error: storageError } = await supabase.storage
+          .from('contract-documents')
+          .remove([document.file_path]);
+        if (storageError) {
+          console.warn('Contract document record deleted but storage cleanup failed:', storageError);
+        }
       }
 
       // Invalidate queries

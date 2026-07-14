@@ -1,33 +1,8 @@
-/**
- * Invoice Types
- * أنواع البيانات للفواتير
- */
+import type { Database } from '@/integrations/supabase/types';
 
-export interface Invoice {
-  id: string;
-  company_id: string;
-  customer_id: string;
-  contract_id: string | null;
-  invoice_number: string;
-  invoice_date: string;
-  due_date: string;
-  amount: number;
-  paid_amount: number | null;
-  balance: number | null;
-  status: 'pending' | 'paid' | 'partially_paid' | 'overdue' | 'cancelled';
-  payment_status: string | null;
-  invoice_type: string;
-  description: string | null;
-  notes: string | null;
-  reference_number: string | null;
-  tax_amount: number | null;
-  discount_amount: number | null;
-  total_amount: number;
-  currency: string | null;
-  created_by: string | null;
-  created_at: string;
-  updated_at: string;
-}
+export type Invoice = Database['public']['Tables']['invoices']['Row'];
+export type InvoiceInsert = Database['public']['Tables']['invoices']['Insert'];
+export type InvoiceUpdate = Database['public']['Tables']['invoices']['Update'];
 
 export interface InvoiceCreationData {
   customer_id: string;
@@ -43,7 +18,7 @@ export interface InvoiceCreationData {
   created_by?: string;
 }
 
-export interface InvoiceWithDetails extends Invoice {
+export type InvoiceWithDetails = Invoice & {
   customer?: {
     id: string;
     first_name_ar?: string;
@@ -57,7 +32,7 @@ export interface InvoiceWithDetails extends Invoice {
     contract_type: string;
     status: string;
   } | null;
-}
+};
 
 export type InvoiceStatus = 'pending' | 'paid' | 'partially_paid' | 'overdue' | 'cancelled';
 export type InvoiceType = 'rental' | 'service' | 'penalty' | 'other';

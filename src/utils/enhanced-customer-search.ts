@@ -116,7 +116,7 @@ export const findCustomerEnhanced = async (
         .from('customers')
         .select('id')
         .eq('company_id', companyId)
-        .eq('customer_code', customerCode)
+        .eq('customer_code', customerCode ?? '')
         .eq('is_active', true)
         .single();
 

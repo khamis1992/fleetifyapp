@@ -17,6 +17,7 @@ export const DuplicateContractsDiagnostic = () => {
   const { data: diagnosticData, isLoading, error } = useQuery({
     queryKey: ['duplicate-contracts-diagnostic', companyId, refreshKey],
     queryFn: async () => {
+      if (!companyId) throw new Error('تعذر تحديد الشركة');
       console.log('🔧 [Diagnostic] Starting comprehensive analysis...');
       
       const results: any = {};

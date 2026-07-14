@@ -181,7 +181,11 @@ export const usePayrollIntegrationStatus = () => {
 
       const recentUnintegrated = data
         .filter(p => p.integration_status !== 'integrated')
-        .sort((a, b) => new Date(b.payroll_date).getTime() - new Date(a.payroll_date).getTime())
+        .sort((a, b) => {
+          const bTime = b.payroll_date ? new Date(b.payroll_date).getTime() : 0;
+          const aTime = a.payroll_date ? new Date(a.payroll_date).getTime() : 0;
+          return bTime - aTime;
+        })
         .slice(0, 5);
 
       data.forEach(payroll => {

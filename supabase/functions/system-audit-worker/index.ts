@@ -14,7 +14,7 @@ import {
   triageFindingsWithLongCat,
 } from "../_shared/system-audit/runtime.ts";
 
-const WORKER_VERSION = "2026-07-12.26";
+const WORKER_VERSION = "2026-07-14.49";
 type SupabaseClient = ReturnType<typeof createClient>;
 
 const CANONICAL_FINANCE_COMMANDS = new Set([
@@ -62,6 +62,24 @@ const SCHEDULE_INVOICE_LINK_COMMANDS = new Set([
 const PAYMENT_CLASSIFICATION_COMMANDS = new Set([
   "payment.classify_customer_advance",
   "payment.link_clear_invoice",
+]);
+
+const LEGACY_OVERPAYMENT_COMMANDS = new Set([
+  "invoice.normalize_legacy_overpayment",
+]);
+
+const TRAFFIC_VIOLATION_PAYMENT_COMMANDS = new Set([
+  "traffic_violation_payment.post_missing_journal",
+]);
+
+const PAYROLL_ACCOUNTING_COMMANDS = new Set([
+  "payroll.ensure_accrual",
+  "payroll.ensure_payment",
+]);
+
+const PURCHASE_ORDER_COMMANDS = new Set([
+  "purchase_order.sync_totals",
+  "purchase_order.sync_receipt_status",
 ]);
 
 serve(async (req) => {
@@ -251,6 +269,12 @@ async function persistAndRepairFindings(
     const repairRpc =
       finding.repair.command === "customer.create_balance"
         ? "system_agent_apply_customer_balance_create_repair"
+        : [
+            "schedule.repair_invoice_link",
+            "schedule.link_invoice_by_billing_month",
+            "contract.generate_missing_invoice",
+          ].includes(finding.repair.command)
+        ? "system_agent_apply_contract_invoice_billing_month_repair_v9"
         : finding.repair.command === "schedule.consolidate_duplicate_rows"
         ? "system_agent_apply_schedule_duplicate_rows_repair_v2"
         : finding.repair.command === "schedule.realign_contract_invoice_links_v3"
@@ -265,10 +289,15 @@ async function persistAndRepairFindings(
         ? "system_agent_apply_contract_schedule_repair_v1"
         : PAYMENT_CLASSIFICATION_COMMANDS.has(finding.repair.command)
         ? "system_agent_apply_payment_classification_repair_v1"
-        : [
-            "schedule.link_invoice",
-            "contract.generate_missing_invoice",
-          ].includes(finding.repair.command)
+        : LEGACY_OVERPAYMENT_COMMANDS.has(finding.repair.command)
+        ? "system_agent_apply_legacy_overpayment_repair_v1"
+        : TRAFFIC_VIOLATION_PAYMENT_COMMANDS.has(finding.repair.command)
+        ? "system_agent_apply_traffic_violation_payment_repair_v1"
+        : PAYROLL_ACCOUNTING_COMMANDS.has(finding.repair.command)
+        ? "system_agent_apply_payroll_repair_v1"
+        : PURCHASE_ORDER_COMMANDS.has(finding.repair.command)
+        ? "system_agent_apply_purchase_order_repair_v1"
+        : finding.repair.command === "schedule.link_invoice"
         ? "system_agent_apply_contract_invoice_repair_v3"
         : CANONICAL_FINANCE_COMMANDS.has(finding.repair.command)
         ? "system_agent_apply_finance_repair"

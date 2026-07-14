@@ -7,13 +7,16 @@ import { useCurrentCompanyId } from "@/hooks/useUnifiedCompanyAccess"
 // @ts-ignore
 import Papa from "papaparse"
 
+const getErrorMessage = (error: unknown): string =>
+  error instanceof Error ? error.message : 'Unknown error';
+
 interface HierarchyError {
   accountCode: string;
   message: string;
   rowNumber: number;
 }
 
-interface ProcessedAccountData {
+export interface ProcessedAccountData {
   account_code: string;
   account_name: string;
   account_name_ar?: string;
@@ -167,7 +170,7 @@ export function useEnhancedChartOfAccountsCSVUpload() {
       console.log(`✅ [PROCESSED] Saved account ${accountCode} with level ${processedAccount.account_level}`);
       
       // تسجيل خاص لجميع المستويات لفهم التوزيع
-      if (processedAccount.account_level >= 4) {
+      if ((processedAccount.account_level ?? 1) >= 4) {
         console.log(`🔍 [LEVEL_ANALYSIS] Level ${processedAccount.account_level} account: ${accountCode}`);
       }
     });
@@ -325,7 +328,7 @@ export function useEnhancedChartOfAccountsCSVUpload() {
     }
 
     // Filter out empty rows
-    const validData = rawData.filter((row: unknown) => {
+    const validData = rawData.filter((row) => {
       const accountCode = (row['رقم الحساب'] || row['account_code'] || '').toString().trim();
       return accountCode !== '';
     });
@@ -377,7 +380,7 @@ export function useEnhancedChartOfAccountsCSVUpload() {
     const text = await file.text();
     
     // Parse CSV using Papa Parse
-    const parseResult = Papa.parse(text, {
+    const parseResult = Papa.parse<Record<string, string>>(text, {
       header: true,
       skipEmptyLines: true,
       transformHeader: (header: string) => header.trim(),
@@ -393,7 +396,7 @@ export function useEnhancedChartOfAccountsCSVUpload() {
     }
 
     // Add row numbers
-    const dataWithRowNumbers = parseResult.data.map((row: unknown, index: number) => ({
+    const dataWithRowNumbers = parseResult.data.map((row, index) => ({
       ...row,
       _rowNumber: index + 2 // Account for header row
     }));
@@ -701,7 +704,7 @@ export function useEnhancedChartOfAccountsCSVUpload() {
             results.failed++;
             results.errors.push({
               row: rowNumber,
-              message: `خطأ غير متوقع: ${error.message}`,
+              message: `خطأ غير متوقع: ${getErrorMessage(error)}`,
               account_code: accountData.account_code
             });
           }
@@ -758,14 +761,15 @@ export function useEnhancedChartOfAccountsCSVUpload() {
 
     } catch (error: unknown) {
       console.error('🔍 [UPLOAD] Fatal error:', error);
-      toast.error(`خطأ في رفع الملف: ${error.message}`);
+      const errorMessage = getErrorMessage(error);
+      toast.error(`خطأ في رفع الملف: ${errorMessage}`);
       setResults({
         total: 0,
         successful: 0,
         updated: 0,
         skipped: 0,
         failed: 1,
-        errors: [{ row: 1, message: error.message }],
+        errors: [{ row: 1, message: errorMessage }],
         hierarchyErrors: []
       });
     } finally {

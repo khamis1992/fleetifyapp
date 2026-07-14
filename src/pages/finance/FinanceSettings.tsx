@@ -102,7 +102,7 @@ const FinanceSettings = ({ initialTab = "mappings", onSectionChange }: FinanceSe
                     </p>
                   </div>
                 </div>
-                <div className="flex items-center gap-2 rounded-2xl bg-[#F6F8FB] px-3 py-2 text-xs font-black text-[#94A3B8]">
+                <div className="flex items-center gap-2 rounded-lg bg-[#F6F8FB] px-3 py-2 text-xs font-black text-[#94A3B8]">
                   <HelpCircle className="h-4 w-4 text-[#38BDF8]" />
                   تؤثر هذه الإعدادات على القيود والفواتير والتقارير
                 </div>
@@ -121,7 +121,7 @@ const FinanceSettings = ({ initialTab = "mappings", onSectionChange }: FinanceSe
                     type="button"
                     onClick={() => handleTabChange(section.id)}
                     className={cn(
-                      "rounded-2xl border bg-white p-4 text-right shadow-sm transition",
+                      "rounded-lg border bg-white p-4 text-right shadow-sm transition-colors",
                       isActive ? "border-[#22C7A1] ring-2 ring-[#22C7A1]/15" : "border-slate-200 hover:border-slate-300"
                     )}
                   >
@@ -139,14 +139,14 @@ const FinanceSettings = ({ initialTab = "mappings", onSectionChange }: FinanceSe
               })}
             </div>
 
-            <TabsList className="h-auto w-full justify-start overflow-x-auto rounded-2xl border border-slate-200 bg-white p-1 shadow-sm">
+            <TabsList className="h-auto w-full justify-start overflow-x-auto rounded-lg border border-slate-200 bg-white p-1 shadow-sm">
               {sections.map((section) => {
                 const Icon = section.icon;
                 return (
                   <TabsTrigger
                     key={section.id}
                     value={section.id}
-                    className="h-11 rounded-xl px-4 text-[#94A3B8] data-[state=active]:bg-[#22C7A1] data-[state=active]:text-white"
+                    className="h-11 rounded-lg px-4 text-[#94A3B8] data-[state=active]:bg-[#22C7A1] data-[state=active]:text-white"
                   >
                     <Icon className="ml-2 h-4 w-4" />
                     {section.label}
@@ -166,15 +166,15 @@ const FinanceSettings = ({ initialTab = "mappings", onSectionChange }: FinanceSe
                 </CardHeader>
                 <CardContent className="space-y-5">
                   <div className="grid gap-3 md:grid-cols-3">
-                    <div className="rounded-2xl bg-[#F6F8FB] p-4">
+                    <div className="rounded-lg bg-[#F6F8FB] p-4">
                       <p className="text-xs font-bold text-[#94A3B8]">الأولوية</p>
                       <p className="mt-1 font-black text-[#020617]">الحسابات الأساسية</p>
                     </div>
-                    <div className="rounded-2xl bg-[#E8FBF6] p-4">
+                    <div className="rounded-lg bg-[#E8FBF6] p-4">
                       <p className="text-xs font-bold text-[#0F9F82]">الأثر</p>
                       <p className="mt-1 font-black text-[#020617]">قيود تلقائية أدق</p>
                     </div>
-                    <div className="rounded-2xl bg-[#EAF8FE] p-4">
+                    <div className="rounded-lg bg-[#EAF8FE] p-4">
                       <p className="text-xs font-bold text-[#0284C7]">المراجعة</p>
                       <p className="mt-1 font-black text-[#020617]">تظهر في سجل التدقيق</p>
                     </div>
@@ -226,7 +226,7 @@ const FinanceSettings = ({ initialTab = "mappings", onSectionChange }: FinanceSe
                     <Button
                       type="button"
                       onClick={() => window.open("/hr/users", "_self")}
-                      className="h-11 rounded-xl bg-[#22C7A1] px-5 font-black text-white hover:bg-[#1DAE8D]"
+                      className="h-11 rounded-lg bg-[#22C7A1] px-5 font-black text-white hover:bg-[#1DAE8D]"
                     >
                       <Users className="ml-2 h-4 w-4" />
                       إدارة صلاحيات الموظفين

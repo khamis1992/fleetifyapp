@@ -69,11 +69,12 @@ export interface HistoricalComparison {
 
 export const useFinancialAnalysis = () => {
   const { user } = useAuth()
+  const companyId = user?.profile?.company_id
   
   return useQuery({
-    queryKey: ["financialAnalysis", user?.profile?.company_id],
+    queryKey: ["financialAnalysis", companyId],
     queryFn: async () => {
-      if (!user?.profile?.company_id) throw new Error("Company ID required")
+      if (!companyId) throw new Error("Company ID required")
 
       const currentYear = new Date().getFullYear()
       const previousYear = currentYear - 1
@@ -95,7 +96,7 @@ export const useFinancialAnalysis = () => {
             )
           )
         `)
-        .eq("company_id", user.profile.company_id)
+        .eq("company_id", companyId)
         .gte("entry_date", `${currentYear}-01-01`)
         .lte("entry_date", `${currentYear}-12-31`)
         .eq("status", "posted")
@@ -117,7 +118,7 @@ export const useFinancialAnalysis = () => {
             )
           )
         `)
-        .eq("company_id", user.profile.company_id)
+        .eq("company_id", companyId)
         .gte("entry_date", `${previousYear}-01-01`)
         .lte("entry_date", `${previousYear}-12-31`)
         .eq("status", "posted")
@@ -135,7 +136,7 @@ export const useFinancialAnalysis = () => {
             )
           )
         `)
-        .eq("company_id", user.profile.company_id)
+        .eq("company_id", companyId)
         .eq("budget_year", currentYear)
         .eq("status", "approved")
 
@@ -143,7 +144,7 @@ export const useFinancialAnalysis = () => {
       const { data: accounts, error: accountsError } = await supabase
         .from("chart_of_accounts")
         .select("*")
-        .eq("company_id", user.profile.company_id)
+        .eq("company_id", companyId)
         .eq("is_active", true)
 
       if (accountsError) throw accountsError
@@ -224,7 +225,7 @@ export const useFinancialAnalysis = () => {
         const { data: paidInvoices } = await supabase
           .from("invoices")
           .select("total_amount")
-          .eq("company_id", user.profile.company_id)
+          .eq("company_id", companyId)
           .eq("payment_status", "paid")
           .gte("invoice_date", `${currentYear}-01-01`)
           .lte("invoice_date", `${currentYear}-12-31`)
@@ -235,7 +236,7 @@ export const useFinancialAnalysis = () => {
         const { data: payments } = await supabase
           .from("payments")
           .select("amount")
-          .eq("company_id", user.profile.company_id)
+          .eq("company_id", companyId)
           .eq("payment_status", "completed")
           .gte("payment_date", `${currentYear}-01-01`)
           .lte("payment_date", `${currentYear}-12-31`)
@@ -250,19 +251,23 @@ export const useFinancialAnalysis = () => {
       if (totalExpenses === 0) {
         // Get maintenance expenses
         const { data: maintenanceExpenses } = await supabase
-          .from("maintenance_records")
-          .select("cost")
-          .eq("company_id", user.profile.company_id)
-          .gte("maintenance_date", `${currentYear}-01-01`)
-          .lte("maintenance_date", `${currentYear}-12-31`)
+          .from("vehicle_maintenance")
+          .select("actual_cost, total_cost_with_tax")
+          .eq("company_id", companyId)
+          .eq("status", "completed")
+          .gte("completed_date", `${currentYear}-01-01`)
+          .lte("completed_date", `${currentYear}-12-31`)
         
-        const maintenanceCost = maintenanceExpenses?.reduce((sum, exp) => sum + Number(exp.cost || 0), 0) || 0
+        const maintenanceCost = maintenanceExpenses?.reduce(
+          (sum, expense) => sum + Number(expense.total_cost_with_tax ?? expense.actual_cost ?? 0),
+          0,
+        ) || 0
         
         // Get vendor payments as expenses
         const { data: vendorPayments } = await supabase
           .from("vendor_payments")
           .select("amount")
-          .eq("company_id", user.profile.company_id)
+          .eq("company_id", companyId)
           .eq("status", "completed")
           .gte("payment_date", `${currentYear}-01-01`)
           .lte("payment_date", `${currentYear}-12-31`)
@@ -271,21 +276,21 @@ export const useFinancialAnalysis = () => {
         
         // Get payroll expenses
         const { data: payrollExpenses } = await supabase
-          .from("payroll_payments")
-          .select("net_salary, total_deductions")
-          .eq("company_id", user.profile.company_id)
-          .gte("payment_date", `${currentYear}-01-01`)
-          .lte("payment_date", `${currentYear}-12-31`)
+          .from("payroll")
+          .select("basic_salary, allowances, overtime_amount")
+          .eq("company_id", companyId)
+          .in("status", ["approved", "paid", "processed", "completed"])
+          .gte("payroll_date", `${currentYear}-01-01`)
+          .lte("payroll_date", `${currentYear}-12-31`)
         
         const payrollCost = payrollExpenses?.reduce((sum, pay) => 
-          sum + Number(pay.net_salary || 0) + Number(pay.total_deductions || 0), 0) || 0
+          sum
+            + Number(pay.basic_salary || 0)
+            + Number(pay.allowances || 0)
+            + Number(pay.overtime_amount || 0),
+        0) || 0
         
         totalExpenses = maintenanceCost + vendorCost + payrollCost
-        
-        // Add estimated 30% for other operational expenses if we have some revenue
-        if (totalRevenue > 0 && totalExpenses < totalRevenue * 0.3) {
-          totalExpenses = Math.max(totalExpenses, totalRevenue * 0.3)
-        }
       }
       
       const netIncome = totalRevenue - totalExpenses
@@ -426,7 +431,7 @@ export const useFinancialAnalysis = () => {
         forecast: generateForecast(totalRevenue, totalExpenses, netIncome, previousYearRevenue, previousYearExpenses)
       }
     },
-    enabled: !!user?.profile?.company_id
+    enabled: !!companyId
   })
 }
 
@@ -461,16 +466,17 @@ function generateForecast(
 
 export const useBalanceSheet = () => {
   const { user } = useAuth()
+  const companyId = user?.profile?.company_id
   
   return useQuery({
-    queryKey: ["balanceSheet", user?.profile?.company_id],
+    queryKey: ["balanceSheet", companyId],
     queryFn: async () => {
-      if (!user?.profile?.company_id) throw new Error("Company ID required")
+      if (!companyId) throw new Error("Company ID required")
 
       const { data: accounts, error } = await supabase
         .from("chart_of_accounts")
         .select("*")
-        .eq("company_id", user.profile.company_id)
+        .eq("company_id", companyId)
         .eq("is_active", true)
         .in("account_type", ["assets", "liabilities", "equity"])
         .order("account_type, account_code")
@@ -486,7 +492,7 @@ export const useBalanceSheet = () => {
           credit_amount,
           journal_entries!inner(status, company_id)
         `)
-        .eq("journal_entries.company_id", user.profile.company_id)
+        .eq("journal_entries.company_id", companyId)
         .eq("journal_entries.status", "posted")
 
       if (linesError) {
@@ -527,7 +533,7 @@ export const useBalanceSheet = () => {
         return acc
       }, {} as Record<string, any[]>)
     },
-    enabled: !!user?.profile?.company_id,
+    enabled: !!companyId,
     staleTime: 5 * 60 * 1000, // 5 minutes
   })
 }

@@ -1,26 +1,12 @@
-/**
- * useCreateInspection Hook
- *
- * Purpose: Create vehicle inspections with photo uploads
- * Features:
- * - Create check-in or check-out inspections
- * - Upload photos to Supabase Storage
- * - Upload signature image
- * - Toast notifications for success/error
- * - Cache invalidation
- *
- * @module hooks/useCreateInspection
- */
-
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import type { Database, Json } from '@/integrations/supabase/types';
 import { useUnifiedCompanyAccess } from './useUnifiedCompanyAccess';
 import { toast } from '@/hooks/use-toast';
 import type { DamageRecord } from './useVehicleInspections';
 
-/**
- * Inspection Input Data
- */
+type ConditionReportInsert = Database['public']['Tables']['vehicle_condition_reports']['Insert'];
+
 export interface CreateInspectionInput {
   contract_id: string;
   vehicle_id: string;
@@ -31,300 +17,207 @@ export interface CreateInspectionInput {
   exterior_condition?: DamageRecord[];
   interior_condition?: DamageRecord[];
   notes?: string;
-  customer_signature?: string; // Base64 encoded
-  photos?: File[]; // Files to upload
+  customer_signature?: string;
+  photos?: File[];
 }
 
-/**
- * Photo Upload Result
- */
-interface PhotoUploadResult {
-  url: string;
+interface UploadedFile {
   path: string;
+  url: string;
 }
 
-/**
- * useCreateInspection Hook
- *
- * @returns Mutation object for creating inspections
- *
- * @example
- * const createInspection = useCreateInspection();
- *
- * createInspection.mutate({
- *   contract_id: 'xxx',
- *   vehicle_id: 'yyy',
- *   inspection_type: 'check_in',
- *   fuel_level: 100,
- *   odometer_reading: 50000,
- *   cleanliness_rating: 5,
- *   photos: [file1, file2],
- * });
- */
+function toJson(value: unknown): Json {
+  return JSON.parse(JSON.stringify(value)) as Json;
+}
+
+function overallCondition(cleanliness: number): string {
+  if (cleanliness >= 5) return 'excellent';
+  if (cleanliness >= 4) return 'good';
+  if (cleanliness >= 2) return 'fair';
+  return 'poor';
+}
+
+function validateInput(input: CreateInspectionInput): void {
+  if (!input.contract_id || !input.vehicle_id) throw new Error('بيانات العقد والمركبة مطلوبة');
+  if (input.fuel_level < 0 || input.fuel_level > 100) throw new Error('مستوى الوقود يجب أن يكون بين 0 و100');
+  if (input.odometer_reading < 0) throw new Error('قراءة العداد غير صحيحة');
+  if (input.cleanliness_rating < 1 || input.cleanliness_rating > 5) throw new Error('تقييم النظافة يجب أن يكون بين 1 و5');
+  if ((input.photos?.length || 0) > 10) throw new Error('الحد الأقصى للصور هو 10');
+}
+
 export function useCreateInspection() {
-  const { currentCompanyId } = useUnifiedCompanyAccess();
+  const { companyId } = useUnifiedCompanyAccess();
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async (input: CreateInspectionInput) => {
-      if (!currentCompanyId) {
-        throw new Error('No company context available');
-      }
+      if (!companyId) throw new Error('تعذر تحديد الشركة');
+      validateInput(input);
 
-      // Get current user
       const { data: { user } } = await supabase.auth.getUser();
+      if (!user?.id) throw new Error('يجب تسجيل الدخول أولًا');
 
-      if (!user?.id) {
-        throw new Error('User not authenticated');
-      }
-
-      // Step 1: Upload photos to Supabase Storage (if any)
-      let photoUrls: string[] = [];
-
-      if (input.photos && input.photos.length > 0) {
-        try {
-          photoUrls = await uploadInspectionPhotos(
+      const uploadedFiles: UploadedFile[] = [];
+      try {
+        if (input.photos?.length) {
+          uploadedFiles.push(...await uploadInspectionPhotos(
             input.photos,
-            currentCompanyId,
+            companyId,
             input.contract_id,
             input.inspection_type
-          );
-        } catch (error) {
-          console.error('Error uploading photos:', error);
-          throw new Error('فشل تحميل الصور. يرجى المحاولة مرة أخرى.');
+          ));
         }
-      }
 
-      // Step 2: Upload signature (if provided)
-      let signatureUrl: string | null = null;
-
-      if (input.customer_signature) {
-        try {
-          signatureUrl = await uploadSignature(
+        let signature: UploadedFile | null = null;
+        if (input.customer_signature) {
+          signature = await uploadSignature(
             input.customer_signature,
-            currentCompanyId,
+            companyId,
             input.contract_id,
             input.inspection_type
           );
-        } catch (error) {
-          console.error('Error uploading signature:', error);
-          // Continue without signature if upload fails
+          uploadedFiles.push(signature);
         }
-      }
 
-      // Step 3: Create the inspection record
-      const inspectionData = {
-        company_id: currentCompanyId,
-        contract_id: input.contract_id,
-        vehicle_id: input.vehicle_id,
-        inspection_type: input.inspection_type,
-        inspected_by: user.id,
-        inspection_date: new Date().toISOString(),
-        fuel_level: input.fuel_level,
-        odometer_reading: input.odometer_reading,
-        cleanliness_rating: input.cleanliness_rating,
-        exterior_condition: input.exterior_condition || [],
-        interior_condition: input.interior_condition || [],
-        photo_urls: photoUrls,
-        notes: input.notes || null,
-        customer_signature: signatureUrl || input.customer_signature || null,
-      };
+        const insert: ConditionReportInsert = {
+          company_id: companyId,
+          contract_id: input.contract_id,
+          vehicle_id: input.vehicle_id,
+          inspector_id: user.id,
+          inspection_type: input.inspection_type,
+          inspection_date: new Date().toISOString(),
+          fuel_level: input.fuel_level,
+          mileage_reading: input.odometer_reading,
+          overall_condition: overallCondition(input.cleanliness_rating),
+          condition_items: toJson({
+            cleanliness_rating: input.cleanliness_rating,
+            interior_condition: input.interior_condition || [],
+          }),
+          damage_points: toJson(input.exterior_condition || []),
+          photos: toJson(uploadedFiles.filter(file => file !== signature).map(file => file.url)),
+          notes: input.notes?.trim() || null,
+          customer_signature: signature?.url || input.customer_signature || null,
+          status: 'approved',
+        };
 
-      const { data, error } = await supabase
-        .from('vehicle_inspections')
-        .insert(inspectionData)
-        .select()
-        .single();
+        const { data, error } = await supabase
+          .from('vehicle_condition_reports')
+          .insert(insert)
+          .select('*')
+          .single();
+        if (error) throw error;
 
-      if (error) {
-        console.error('Error creating inspection:', error);
+        const { error: mileageError } = await supabase
+          .from('vehicles')
+          .update({
+            current_mileage: input.odometer_reading,
+            odometer_reading: input.odometer_reading,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', input.vehicle_id)
+          .eq('company_id', companyId);
+        if (mileageError) console.error('Inspection saved, but vehicle mileage update failed:', mileageError);
+
+        return data;
+      } catch (error) {
+        if (uploadedFiles.length > 0) {
+          await supabase.storage.from('vehicle-documents').remove(uploadedFiles.map(file => file.path));
+        }
         throw error;
       }
-
-      return data;
     },
-    onSuccess: (data, variables) => {
-      // Invalidate relevant queries
-      queryClient.invalidateQueries({
-        queryKey: ['vehicle-inspections', currentCompanyId],
-      });
-
-      queryClient.invalidateQueries({
-        queryKey: ['vehicle-inspections', currentCompanyId, variables.contract_id],
-      });
-
-      queryClient.invalidateQueries({
-        queryKey: ['inspection-comparison', currentCompanyId, variables.contract_id],
-      });
-
-      // Show success toast
-      const inspectionTypeAr = variables.inspection_type === 'check_in' ? 'الاستلام' : 'التسليم';
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['vehicle-inspections', companyId] });
+      queryClient.invalidateQueries({ queryKey: ['inspection-comparison', companyId, variables.contract_id] });
       toast({
-        title: 'تم بنجاح',
-        description: `تم تسجيل ${inspectionTypeAr} بنجاح`,
-        variant: 'default',
+        title: 'تم الحفظ',
+        description: variables.inspection_type === 'check_in' ? 'تم تسجيل استلام المركبة.' : 'تم تسجيل تسليم المركبة.',
       });
     },
-    onError: (error: Error) => {
+    onError: error => {
       console.error('Inspection creation error:', error);
       toast({
-        title: 'خطأ',
-        description: error.message || 'فشل إنشاء سجل الفحص. يرجى المحاولة مرة أخرى.',
+        title: 'تعذر حفظ الفحص',
+        description: error instanceof Error ? error.message : 'حدث خطأ غير متوقع.',
         variant: 'destructive',
       });
     },
   });
 }
 
-/**
- * Upload inspection photos to Supabase Storage
- *
- * @param photos - Array of photo files
- * @param companyId - Company ID for folder organization
- * @param contractId - Contract ID for folder organization
- * @param inspectionType - check_in or check_out
- * @returns Array of public URLs for uploaded photos
- */
 async function uploadInspectionPhotos(
   photos: File[],
   companyId: string,
   contractId: string,
   inspectionType: string
-): Promise<string[]> {
-  const uploadPromises = photos.map(async (photo, index) => {
-    // Generate unique filename
-    const timestamp = Date.now();
-    const fileExt = photo.name.split('.').pop();
-    const fileName = `${timestamp}_${index}.${fileExt}`;
-    const filePath = `inspections/${companyId}/${contractId}/${inspectionType}/${fileName}`;
-
-    // Upload to Supabase Storage
+): Promise<UploadedFile[]> {
+  return Promise.all(photos.map(async photo => {
+    if (!photo.type.startsWith('image/')) throw new Error('ملفات الصور فقط مسموحة');
+    if (photo.size > 10 * 1024 * 1024) throw new Error('حجم الصورة يجب ألا يتجاوز 10 ميجابايت');
+    const extension = photo.type === 'image/png' ? 'png' : photo.type === 'image/webp' ? 'webp' : 'jpg';
+    const path = `inspections/${companyId}/${contractId}/${inspectionType}/${crypto.randomUUID()}.${extension}`;
     const { data, error } = await supabase.storage
       .from('vehicle-documents')
-      .upload(filePath, photo, {
-        cacheControl: '3600',
-        upsert: false,
-      });
-
-    if (error) {
-      console.error('Error uploading photo:', error);
-      throw error;
-    }
-
-    // Get public URL
-    const { data: urlData } = supabase.storage
-      .from('vehicle-documents')
-      .getPublicUrl(data.path);
-
-    return urlData.publicUrl;
-  });
-
-  return Promise.all(uploadPromises);
+      .upload(path, photo, { cacheControl: '3600', upsert: false, contentType: photo.type });
+    if (error) throw error;
+    const { data: publicUrl } = supabase.storage.from('vehicle-documents').getPublicUrl(data.path);
+    return { path: data.path, url: publicUrl.publicUrl };
+  }));
 }
 
-/**
- * Upload customer signature to Supabase Storage
- *
- * @param signatureBase64 - Base64 encoded signature image
- * @param companyId - Company ID for folder organization
- * @param contractId - Contract ID for folder organization
- * @param inspectionType - check_in or check_out
- * @returns Public URL of uploaded signature
- */
 async function uploadSignature(
   signatureBase64: string,
   companyId: string,
   contractId: string,
   inspectionType: string
-): Promise<string> {
-  // Convert base64 to blob
+): Promise<UploadedFile> {
   const base64Data = signatureBase64.split(',')[1] || signatureBase64;
-  const byteCharacters = atob(base64Data);
-  const byteNumbers = new Array(byteCharacters.length);
-
-  for (let i = 0; i < byteCharacters.length; i++) {
-    byteNumbers[i] = byteCharacters.charCodeAt(i);
-  }
-
-  const byteArray = new Uint8Array(byteNumbers);
-  const blob = new Blob([byteArray], { type: 'image/png' });
-
-  // Generate filename
-  const timestamp = Date.now();
-  const fileName = `signature_${timestamp}.png`;
-  const filePath = `inspections/${companyId}/${contractId}/${inspectionType}/${fileName}`;
-
-  // Upload to Supabase Storage
+  const bytes = Uint8Array.from(atob(base64Data), character => character.charCodeAt(0));
+  if (bytes.byteLength > 2 * 1024 * 1024) throw new Error('حجم التوقيع كبير جدًا');
+  const blob = new Blob([bytes], { type: 'image/png' });
+  const path = `inspections/${companyId}/${contractId}/${inspectionType}/signature-${crypto.randomUUID()}.png`;
   const { data, error } = await supabase.storage
     .from('vehicle-documents')
-    .upload(filePath, blob, {
-      contentType: 'image/png',
-      cacheControl: '3600',
-      upsert: false,
-    });
-
-  if (error) {
-    console.error('Error uploading signature:', error);
-    throw error;
-  }
-
-  // Get public URL
-  const { data: urlData } = supabase.storage
-    .from('vehicle-documents')
-    .getPublicUrl(data.path);
-
-  return urlData.publicUrl;
+    .upload(path, blob, { contentType: 'image/png', cacheControl: '3600', upsert: false });
+  if (error) throw error;
+  const { data: publicUrl } = supabase.storage.from('vehicle-documents').getPublicUrl(data.path);
+  return { path: data.path, url: publicUrl.publicUrl };
 }
 
-/**
- * useDeleteInspection Hook
- *
- * Delete a vehicle inspection (only within 24 hours of creation)
- *
- * @returns Mutation object for deleting inspections
- *
- * @example
- * const deleteInspection = useDeleteInspection();
- * deleteInspection.mutate('inspection-id');
- */
 export function useDeleteInspection() {
-  const { currentCompanyId } = useUnifiedCompanyAccess();
+  const { companyId } = useUnifiedCompanyAccess();
   const queryClient = useQueryClient();
-
   return useMutation({
     mutationFn: async (inspectionId: string) => {
-      if (!currentCompanyId) {
-        throw new Error('No company context available');
+      if (!companyId) throw new Error('تعذر تحديد الشركة');
+      const { data: inspection, error: readError } = await supabase
+        .from('vehicle_condition_reports')
+        .select('id, created_at')
+        .eq('id', inspectionId)
+        .eq('company_id', companyId)
+        .maybeSingle();
+      if (readError) throw readError;
+      if (!inspection) throw new Error('سجل الفحص غير موجود');
+      if (Date.now() - new Date(inspection.created_at).getTime() > 24 * 60 * 60 * 1000) {
+        throw new Error('لا يمكن حذف سجل فحص مضى عليه أكثر من 24 ساعة');
       }
-
       const { error } = await supabase
-        .from('vehicle_inspections')
+        .from('vehicle_condition_reports')
         .delete()
         .eq('id', inspectionId)
-        .eq('company_id', currentCompanyId);
-
-      if (error) {
-        console.error('Error deleting inspection:', error);
-        throw error;
-      }
+        .eq('company_id', companyId)
+        .select('id')
+        .single();
+      if (error) throw error;
     },
     onSuccess: () => {
-      // Invalidate queries
-      queryClient.invalidateQueries({
-        queryKey: ['vehicle-inspections', currentCompanyId],
-      });
-
-      toast({
-        title: 'تم بنجاح',
-        description: 'تم حذف سجل الفحص',
-        variant: 'default',
-      });
+      queryClient.invalidateQueries({ queryKey: ['vehicle-inspections', companyId] });
+      toast({ title: 'تم الحذف', description: 'تم حذف سجل الفحص.' });
     },
-    onError: (error: Error) => {
-      console.error('Inspection deletion error:', error);
+    onError: error => {
       toast({
-        title: 'خطأ',
-        description: 'فشل حذف سجل الفحص. يرجى المحاولة مرة أخرى.',
+        title: 'تعذر حذف الفحص',
+        description: error instanceof Error ? error.message : 'حدث خطأ غير متوقع.',
         variant: 'destructive',
       });
     },

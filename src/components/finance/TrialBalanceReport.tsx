@@ -60,7 +60,7 @@ export function TrialBalanceReport() {
       companyName: "Fleetify",
       asOfDate,
       currency: "QAR",
-      generatedAt: new Date().toISOString(),
+      exportedAt: new Date().toISOString(),
       status: isBalanced ? "published" : "draft",
       sourceFingerprint: auditReport.sourceFingerprint,
       reportHash: auditReport.sourceFingerprint,

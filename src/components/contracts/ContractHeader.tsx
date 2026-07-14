@@ -1,20 +1,16 @@
-/**
- * Contract Header Component
- * Displays contract basic information with status and actions
- */
-
 import React, { useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { ArrowRight, Printer, Download, FileEdit, RefreshCw } from 'lucide-react';
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { ContractStatusBadge } from './ContractStatusBadge';
-import { formatCustomerName } from '@/utils/formatCustomerName';
-import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
+import { useNavigate } from 'react-router-dom';
+import { ArrowRight, Download, FileEdit, Printer, RefreshCw } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
+import { cn } from '@/lib/utils';
 import type { Contract } from '@/types/contracts';
+import { formatCustomerName } from '@/utils/formatCustomerName';
+import { ContractStatusBadge } from './ContractStatusBadge';
 
 interface ContractHeaderProps {
   contract: Contract;
@@ -26,6 +22,20 @@ interface ContractHeaderProps {
   className?: string;
 }
 
+function formatDate(value: string): string {
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? value : format(date, 'dd MMMM yyyy', { locale: ar });
+}
+
+const paymentStatusLabels: Record<string, string> = {
+  paid: 'مدفوع',
+  partially_paid: 'مدفوع جزئيًا',
+  partial: 'مدفوع جزئيًا',
+  unpaid: 'غير مدفوع',
+  overdue: 'متأخر',
+  cancelled: 'ملغى',
+};
+
 export const ContractHeader = React.memo<ContractHeaderProps>(({
   contract,
   onEdit,
@@ -33,211 +43,143 @@ export const ContractHeader = React.memo<ContractHeaderProps>(({
   onExport,
   onRefresh,
   isRefreshing = false,
-  className
+  className,
 }) => {
   const navigate = useNavigate();
+  const { formatCurrency } = useCurrencyFormatter();
 
-  // Calculate contract duration
   const contractDuration = useMemo(() => {
-    if (!contract.start_date || !contract.end_date) return null;
     const start = new Date(contract.start_date);
     const end = new Date(contract.end_date);
-    const days = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
-    return days;
+    if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) return null;
+    return Math.max(0, Math.ceil((end.getTime() - start.getTime()) / 86_400_000));
   }, [contract.start_date, contract.end_date]);
 
-  // Check if contract is expiring soon
   const isExpiringSoon = useMemo(() => {
-    if (!contract.end_date) return false;
-    const today = new Date();
     const endDate = new Date(contract.end_date);
-    const daysUntilExpiry = Math.ceil((endDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-    return daysUntilExpiry <= 7 && daysUntilExpiry > 0;
+    if (Number.isNaN(endDate.getTime())) return false;
+    const daysUntilExpiry = Math.ceil((endDate.getTime() - Date.now()) / 86_400_000);
+    return daysUntilExpiry > 0 && daysUntilExpiry <= 7;
   }, [contract.end_date]);
 
+  const totalPaid = Number(contract.total_paid || 0);
+  const balanceDue = Number(contract.balance_due ?? Math.max(0, contract.contract_amount - totalPaid));
+  const paymentStatus = contract.payment_status || (balanceDue <= 0.01 ? 'paid' : totalPaid > 0 ? 'partially_paid' : 'unpaid');
+
   return (
-    <Card className={cn("w-full", className)}>
+    <Card className={cn('w-full', className)} dir="rtl">
       <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => navigate(-1)}
-              className="text-muted-foreground"
-            >
-              <ArrowRight className="h-4 w-4 ml-2" />
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <div className="flex min-w-0 items-start gap-2">
+            <Button variant="ghost" size="sm" onClick={() => navigate(-1)} className="shrink-0 text-muted-foreground">
+              <ArrowRight className="ml-2 h-4 w-4" />
               العودة
             </Button>
-            <div>
-              <h1 className="text-2xl font-bold text-right">
-                عقد رقم: {contract.contract_number}
-              </h1>
-              <div className="flex items-center gap-2 mt-1">
+            <div className="min-w-0">
+              <h1 className="break-words text-xl font-bold sm:text-2xl">عقد رقم: {contract.contract_number}</h1>
+              <div className="mt-2 flex flex-wrap items-center gap-2">
                 <ContractStatusBadge status={contract.status} legalStatus={contract.legal_status} />
-                {isExpiringSoon && (
-                  <Badge variant="outline" className="text-orange-600 border-orange-600">
-                    ينتهي قريباً
-                  </Badge>
-                )}
+                {isExpiringSoon && <Badge variant="outline" className="border-orange-600 text-orange-600">ينتهي قريبًا</Badge>}
               </div>
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={onRefresh}
-              disabled={isRefreshing}
-            >
-              <RefreshCw className={cn("h-4 w-4", isRefreshing && "animate-spin")} />
-              تحديث
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={onEdit}
-            >
-              <FileEdit className="h-4 w-4 ml-2" />
-              تعديل
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={onPrint}
-            >
-              <Printer className="h-4 w-4 ml-2" />
-              طباعة
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={onExport}
-            >
-              <Download className="h-4 w-4 ml-2" />
-              تصدير
-            </Button>
+          <div className="flex flex-wrap items-center justify-end gap-2">
+            {onRefresh && (
+              <Button variant="outline" size="sm" onClick={onRefresh} disabled={isRefreshing}>
+                <RefreshCw className={cn('ml-2 h-4 w-4', isRefreshing && 'animate-spin')} />
+                تحديث
+              </Button>
+            )}
+            {onEdit && (
+              <Button variant="outline" size="sm" onClick={onEdit}>
+                <FileEdit className="ml-2 h-4 w-4" />
+                تعديل
+              </Button>
+            )}
+            {onPrint && (
+              <Button variant="outline" size="sm" onClick={onPrint}>
+                <Printer className="ml-2 h-4 w-4" />
+                طباعة
+              </Button>
+            )}
+            {onExport && (
+              <Button variant="outline" size="sm" onClick={onExport}>
+                <Download className="ml-2 h-4 w-4" />
+                تصدير
+              </Button>
+            )}
           </div>
         </div>
       </CardHeader>
 
-      <CardContent>
-        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          {/* Contract Period */}
+      <CardContent className="space-y-4">
+        <div className="grid grid-cols-1 gap-x-5 gap-y-4 sm:grid-cols-2 xl:grid-cols-4">
           <div className="space-y-1">
-            <label className="text-sm font-medium text-muted-foreground">
-              فترة العقد
-            </label>
-            <div className="text-right">
-              <div className="font-medium">
-                {format(new Date(contract.start_date), 'dd MMMM yyyy', { locale: ar })}
-              </div>
-              <div className="text-sm text-muted-foreground">
-                إلى {format(new Date(contract.end_date), 'dd MMMM yyyy', { locale: ar })}
-              </div>
-              {contractDuration && (
-                <div className="text-xs text-muted-foreground mt-1">
-                  المدة: {contractDuration} يوم
-                </div>
-              )}
-            </div>
+            <p className="text-sm font-medium text-muted-foreground">فترة العقد</p>
+            <p className="font-medium">{formatDate(contract.start_date)}</p>
+            <p className="text-sm text-muted-foreground">إلى {formatDate(contract.end_date)}</p>
+            {contractDuration !== null && <p className="text-xs text-muted-foreground">المدة: {contractDuration} يوم</p>}
           </div>
 
-          {/* Daily Rate */}
           <div className="space-y-1">
-            <label className="text-sm font-medium text-muted-foreground">
-              سعر اليومي
-            </label>
-            <div className="text-right">
-              <div className="font-medium">
-                {contract.daily_rate?.toLocaleString('ar-SA')} ريال
-              </div>
-            </div>
+            <p className="text-sm font-medium text-muted-foreground">القسط الشهري</p>
+            <p className="font-semibold">{formatCurrency(Number(contract.monthly_amount || 0))}</p>
           </div>
 
-          {/* Total Amount */}
           <div className="space-y-1">
-            <label className="text-sm font-medium text-muted-foreground">
-              الإجمالي
-            </label>
-            <div className="text-right">
-              <div className="font-bold text-lg">
-                {contract.total_amount?.toLocaleString('ar-SA')} ريال
-              </div>
-            </div>
+            <p className="text-sm font-medium text-muted-foreground">قيمة العقد</p>
+            <p className="text-lg font-bold">{formatCurrency(Number(contract.contract_amount || 0))}</p>
           </div>
 
-          {/* Payment Method */}
           <div className="space-y-1">
-            <label className="text-sm font-medium text-muted-foreground">
-              طريقة الدفع
-            </label>
-            <div className="text-right">
-              <Badge variant="secondary">
-                {contract.payment_method === 'cash' ? 'نقدي' :
-                 contract.payment_method === 'card' ? 'بطاقة' :
-                 contract.payment_method === 'transfer' ? 'تحويل بنكي' :
-                 contract.payment_method || 'غير محدد'}
-              </Badge>
-            </div>
+            <p className="text-sm font-medium text-muted-foreground">حالة السداد</p>
+            <Badge variant={balanceDue <= 0.01 ? 'secondary' : 'outline'}>
+              {paymentStatusLabels[paymentStatus] || paymentStatus}
+            </Badge>
           </div>
 
-          {/* Customer Info */}
+          <div className="space-y-1">
+            <p className="text-sm font-medium text-muted-foreground">المدفوع</p>
+            <p className="font-medium">{formatCurrency(totalPaid)}</p>
+          </div>
+
+          <div className="space-y-1">
+            <p className="text-sm font-medium text-muted-foreground">الرصيد المستحق</p>
+            <p className={cn('font-semibold', balanceDue > 0.01 && 'text-destructive')}>{formatCurrency(balanceDue)}</p>
+          </div>
+
           {contract.customer && (
-            <div className="space-y-1 md:col-span-2">
-              <label className="text-sm font-medium text-muted-foreground">
-                العميل
-              </label>
-              <div className="text-right">
-                <div className="font-medium">
-                  {formatCustomerName(contract.customer)}
-                </div>
-                <div className="text-sm text-muted-foreground">
-                  {contract.customer.phone}
-                </div>
-              </div>
+            <div className="space-y-1">
+              <p className="text-sm font-medium text-muted-foreground">العميل</p>
+              <p className="font-medium">{formatCustomerName(contract.customer)}</p>
+              {contract.customer.phone && <p className="text-sm text-muted-foreground" dir="ltr">{contract.customer.phone}</p>}
             </div>
           )}
 
-          {/* Vehicle Info */}
           {contract.vehicle && (
             <div className="space-y-1">
-              <label className="text-sm font-medium text-muted-foreground">
-                المركبة
-              </label>
-              <div className="text-right">
-                <div className="font-medium">
-                  {contract.vehicle.make} {contract.vehicle.model}
-                </div>
-                <div className="text-sm text-muted-foreground">
-                  {contract.vehicle.plate_number}
-                </div>
-              </div>
+              <p className="text-sm font-medium text-muted-foreground">المركبة</p>
+              <p className="font-medium">{contract.vehicle.make} {contract.vehicle.model}</p>
+              <p className="text-sm text-muted-foreground">{contract.vehicle.plate_number}</p>
             </div>
           )}
 
-          {/* Created At */}
           <div className="space-y-1">
-            <label className="text-sm font-medium text-muted-foreground">
-              تاريخ الإنشاء
-            </label>
-            <div className="text-right text-sm">
-              {format(new Date(contract.created_at), 'dd MMMM yyyy HH:mm', { locale: ar })}
-            </div>
+            <p className="text-sm font-medium text-muted-foreground">تاريخ الإنشاء</p>
+            <p className="text-sm">{formatDate(contract.created_at)}</p>
           </div>
         </div>
 
-        {/* Notes */}
-        {contract.notes && (
-          <div className="mt-4 p-3 bg-muted/50 rounded-lg">
-            <label className="text-sm font-medium text-muted-foreground">
-              ملاحظات
-            </label>
-            <p className="text-sm mt-1 text-right">{contract.notes}</p>
+        {contract.description && (
+          <div className="border-t pt-4">
+            <p className="text-sm font-medium text-muted-foreground">الوصف</p>
+            <p className="mt-1 whitespace-pre-wrap text-sm">{contract.description}</p>
           </div>
         )}
       </CardContent>
     </Card>
   );
 });
+
+ContractHeader.displayName = 'ContractHeader';

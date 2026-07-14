@@ -8,8 +8,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   X,
   Phone,
-  Clock,
-  FileText,
   Check,
   PhoneIncoming,
   PhoneOutgoing,
@@ -35,7 +33,7 @@ export const CallLogModal: React.FC<CallLogModalProps> = ({
 }) => {
   const { user } = useAuth();
   const { toast } = useToast();
-  const { contracts, refetch } = useEmployeeContracts();
+  const { contracts } = useEmployeeContracts();
 
   const [selectedContractId, setSelectedContractId] = useState(preselectedContractId || '');
   const [callType, setCallType] = useState<CallType>('outgoing');
@@ -75,33 +73,53 @@ export const CallLogModal: React.FC<CallLogModalProps> = ({
 
     try {
       // Get profile
-      const { data: profile } = await supabase
+      const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('id, company_id')
         .eq('user_id', user?.id)
         .single();
 
-      if (!profile) throw new Error('Profile not found');
+      if (profileError) throw profileError;
+      if (!profile || !selectedContract) throw new Error('Profile or contract not found');
+      if (!selectedContract.customer_phone) throw new Error('لا يوجد رقم هاتف مسجل للعميل');
+
+      const outcomeMap: Record<string, {
+        value: 'payment_promised' | 'dispute_raised' | 'no_answer' | 'unavailable' | 'wrong_number';
+        answered: boolean;
+      }> = {
+        'تم الرد - موافق على الدفع': { value: 'payment_promised', answered: true },
+        'تم الرد - وعد بالدفع': { value: 'payment_promised', answered: true },
+        'تم الرد - رفض الدفع': { value: 'dispute_raised', answered: true },
+        'لم يرد': { value: 'no_answer', answered: false },
+        'رقم مغلق': { value: 'unavailable', answered: false },
+        'رقم خاطئ': { value: 'wrong_number', answered: false },
+      };
+      const mappedOutcome = outcomeMap[outcome] || { value: 'no_answer' as const, answered: false };
 
       // Create call log record
       const { error } = await supabase
         .from('call_logs')
         .insert({
-          profile_id: profile.id,
           company_id: profile.company_id,
           contract_id: selectedContractId,
-          customer_id: selectedContract?.customer_id,
+          customer_id: selectedContract.customer_id,
+          employee_id: profile.id,
+          created_by: profile.id,
           call_type: callType,
-          duration: duration ? parseInt(duration) : null,
-          outcome: outcome || null,
-          notes: notes || null,
+          phone_number: selectedContract.customer_phone,
+          contact_name_ar: selectedContract.customer_name,
+          duration_seconds: duration ? Number.parseInt(duration, 10) * 60 : null,
+          answered: mappedOutcome.answered,
+          call_purpose: 'payment_followup',
+          call_outcome: mappedOutcome.value,
+          notes: [outcome, notes].filter(Boolean).join('\n'),
           call_date: new Date().toISOString(),
         });
 
       if (error) throw error;
 
       toast({
-        title: 'تم بنجاح! ✅',
+        title: 'تم بنجاح',
         description: 'تم تسجيل المكالمة بنجاح',
       });
 

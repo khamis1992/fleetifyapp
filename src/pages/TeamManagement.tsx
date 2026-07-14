@@ -35,20 +35,6 @@ import { ExportButton } from '@/components/shared/ExportButton';
 import { exportTeamPerformance } from '@/utils/exportToExcel';
 import { NotificationBell } from '@/components/notifications/NotificationBell';
 
-// Types
-interface EmployeeStats {
-  employee_id: string;
-  employee_name: string;
-  employee_email: string;
-  total_contracts: number;
-  active_contracts: number;
-  performance_score: number;
-  collection_rate: number;
-  grade: string;
-  total_collected: number;
-  balance_due: number;
-}
-
 // Shared Components
 const GlassCard = ({ children, className, delay = 0 }: any) => (
   <motion.div
@@ -91,16 +77,19 @@ export const TeamManagement: React.FC = () => {
   const [showAssignDialog, setShowAssignDialog] = useState(false);
   const [showBulkAssignDialog, setShowBulkAssignDialog] = useState(false);
   const [showSmartDistribution, setShowSmartDistribution] = useState(false);
+  const hasAssignedManagementRole = user?.roles?.some((role) =>
+    ['super_admin', 'company_admin', 'manager', 'admin'].includes(role.toLowerCase())
+  ) ?? false;
 
-  // Check if user has permission (admin or manager)
-  const { data: userProfile } = useQuery({
+  // Keep the legacy profile role as a fallback while user_roles remains canonical.
+  const { data: userProfile, isLoading: isRoleLoading } = useQuery({
     queryKey: ['user-profile-role', user?.id],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('profiles')
         .select('role')
         .eq('user_id', user?.id)
-        .single();
+        .maybeSingle();
       
       if (error) throw error;
       return data;
@@ -108,21 +97,22 @@ export const TeamManagement: React.FC = () => {
     enabled: !!user?.id,
   });
 
+  const legacyProfileRole = userProfile?.role?.toLowerCase();
+  const canManageTeam = hasAssignedManagementRole ||
+    !!legacyProfileRole && ['super_admin', 'company_admin', 'manager', 'admin'].includes(legacyProfileRole);
+
   // Redirect if not authorized
   React.useEffect(() => {
-    if (userProfile) {
-      const role = userProfile.role?.toLowerCase();
-      if (!role || !['admin', 'manager'].includes(role)) {
-        navigate('/dashboard');
-      }
+    if (!isRoleLoading && user && !canManageTeam) {
+      navigate('/dashboard', { replace: true });
     }
-  }, [userProfile, navigate]);
+  }, [canManageTeam, isRoleLoading, navigate, user]);
 
   // Get company_id from user
   const companyId = user?.profile?.company_id || user?.company?.id;
 
   // Fetch team stats
-  const { data: teamStats, isLoading: statsLoading } = useQuery({
+  const { data: teamStats } = useQuery({
     queryKey: ['team-stats', companyId],
     queryFn: async () => {
       if (!companyId) return { totalEmployees: 0, activeEmployees: 0, totalContracts: 0, avgPerformance: 0 };
@@ -211,7 +201,7 @@ export const TeamManagement: React.FC = () => {
   };
 
   // Show loading while checking permissions
-  if (!userProfile) {
+  if (isRoleLoading && !hasAssignedManagementRole) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-neutral-50 via-neutral-100 to-neutral-200">
         <div className="text-center">
@@ -222,8 +212,7 @@ export const TeamManagement: React.FC = () => {
     );
   }
 
-  const role = userProfile.role?.toLowerCase();
-  if (!role || !['admin', 'manager'].includes(role)) {
+  if (!canManageTeam) {
     return null;
   }
 
@@ -513,7 +502,7 @@ export const TeamManagement: React.FC = () => {
             </p>
             {companyId && (
               <Button
-                onClick={() => navigate('/settings/team')}
+                onClick={() => navigate('/hr/employees')}
                 className="bg-teal-500 hover:bg-teal-600"
               >
                 <UserPlus className="ml-2 h-4 w-4" />

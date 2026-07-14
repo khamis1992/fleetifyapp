@@ -11,6 +11,13 @@ import { queryKeys } from "@/utils/queryKeys";
 import type { ChartOfAccount } from '../useChartOfAccounts';
 import { assertFinancialPeriodOpen } from "@/services/financialControls";
 import { useFinanceAccessGuard } from "@/hooks/finance/useFinanceAccessGuard";
+import type { Database } from "@/integrations/supabase/types";
+
+type JournalEntryInsert = Database["public"]["Tables"]["journal_entries"]["Insert"];
+type JournalEntryLineInsert = Database["public"]["Tables"]["journal_entry_lines"]["Insert"];
+type CreateJournalEntryInput = Omit<JournalEntryInsert, "company_id"> & {
+  lines: Omit<JournalEntryLineInsert, "journal_entry_id" | "line_number">[];
+};
 
 export interface JournalEntry {
   id: string;
@@ -51,8 +58,8 @@ export interface JournalEntryLine {
 
 interface JournalEntryFilters {
   status?: string;
-  dateFrom?: string;
-  dateTo?: string;
+  startDate?: string;
+  endDate?: string;
 }
 
 export const useJournalEntries = (filters?: JournalEntryFilters) => {
@@ -72,11 +79,11 @@ export const useJournalEntries = (filters?: JournalEntryFilters) => {
       if (filters?.status) {
         query = query.eq("status", filters.status);
       }
-      if (filters?.dateFrom) {
-        query = query.gte("entry_date", filters.dateFrom);
+      if (filters?.startDate) {
+        query = query.gte("entry_date", filters.startDate);
       }
-      if (filters?.dateTo) {
-        query = query.lte("entry_date", filters.dateTo);
+      if (filters?.endDate) {
+        query = query.lte("entry_date", filters.endDate);
       }
 
       const { data, error } = await query;
@@ -115,7 +122,7 @@ export const useCreateJournalEntry = () => {
   const financeAccess = useFinanceAccessGuard();
 
   return useMutation({
-    mutationFn: async (entry: Partial<JournalEntry> & { lines: Partial<JournalEntryLine>[] }) => {
+    mutationFn: async (entry: CreateJournalEntryInput) => {
       if (!companyId) throw new Error("No company access");
       if (!financeAccess.can('finance.journal.create_draft')) {
         throw new Error("ليس لديك صلاحية إنشاء قيد محاسبي");
@@ -138,11 +145,10 @@ export const useCreateJournalEntry = () => {
 
       // Create journal entry lines
       if (lines && lines.length > 0) {
-        const linesWithJournalId = lines.map((line: Record<string, unknown>, index: number) => {
+        const linesWithJournalId: JournalEntryLineInsert[] = lines.map((line, index) => {
           // Remove company_id — it doesn't exist on journal_entry_lines (it's on journal_entries parent)
-          const { company_id: _companyId, ...lineWithoutCompanyId } = line;
           return {
-            ...lineWithoutCompanyId,
+            ...line,
             journal_entry_id: journalEntry.id,
             line_number: index + 1,
           };
@@ -152,7 +158,19 @@ export const useCreateJournalEntry = () => {
           .from("journal_entry_lines")
           .insert(linesWithJournalId);
 
-        if (linesError) throw linesError;
+        if (linesError) {
+          const { error: cleanupError } = await supabase
+            .from("journal_entries")
+            .delete()
+            .eq("id", journalEntry.id)
+            .eq("company_id", companyId)
+            .eq("status", "draft");
+
+          if (cleanupError) {
+            throw new Error(`${linesError.message}; failed to remove incomplete journal entry: ${cleanupError.message}`);
+          }
+          throw linesError;
+        }
       }
 
       return journalEntry;
@@ -169,11 +187,15 @@ export const useCreateJournalEntry = () => {
 
 export const usePostJournalEntry = () => {
   const queryClient = useQueryClient();
-  const { user } = useUnifiedCompanyAccess();
+  const { companyId, user } = useUnifiedCompanyAccess();
   const financeAccess = useFinanceAccessGuard();
 
   return useMutation({
     mutationFn: async (entryId: string) => {
+      if (!companyId) {
+        throw new Error("No company access");
+      }
+
       if (!financeAccess.can('finance.journal.post')) {
         throw new Error("ليس لديك صلاحية ترحيل القيود المحاسبية");
       }
@@ -182,6 +204,7 @@ export const usePostJournalEntry = () => {
         .from("journal_entries")
         .select("id, company_id, entry_date, created_by, status")
         .eq("id", entryId)
+        .eq("company_id", companyId)
         .single();
 
       if (fetchError || !existingEntry) {
@@ -210,6 +233,7 @@ export const usePostJournalEntry = () => {
           posted_at: new Date().toISOString(),
         })
         .eq('id', entryId)
+        .eq('company_id', companyId)
         .select()
         .single();
 

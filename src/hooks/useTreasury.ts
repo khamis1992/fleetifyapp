@@ -160,26 +160,61 @@ export const useCreateBankTransaction = () => {
 
   return useMutation({
     mutationFn: async (transactionData: Omit<BankTransaction, 'id' | 'created_at' | 'updated_at'>) => {
-      // First, insert the transaction
+      const companyId = await getCurrentCompanyId();
+      if (transactionData.company_id !== companyId) {
+        throw new Error('لا يمكن إنشاء معاملة لشركة أخرى');
+      }
+      const amount = Number(transactionData.amount);
+      if (!Number.isFinite(amount) || amount <= 0) {
+        throw new Error('مبلغ المعاملة يجب أن يكون أكبر من صفر');
+      }
+
+      const { data: bank, error: bankError } = await supabase
+        .from('banks')
+        .select('id, current_balance')
+        .eq('id', transactionData.bank_id)
+        .eq('company_id', companyId)
+        .single();
+      if (bankError) throw bankError;
+
+      const balanceAfter = transactionData.transaction_type === 'deposit'
+        ? Number(bank.current_balance) + amount
+        : Number(bank.current_balance) - amount;
+      if (balanceAfter < 0) {
+        throw new Error('لا يمكن تنفيذ السحب لأن الرصيد المتاح غير كافٍ');
+      }
+
       const { data: transaction, error: transactionError } = await supabase
         .from('bank_transactions')
-        .insert([transactionData])
+        .insert([{ ...transactionData, company_id: companyId, amount, balance_after: balanceAfter }])
         .select()
         .single();
 
       if (transactionError) throw transactionError;
 
-      // Then, update the bank balance
       const { error: bankUpdateError } = await supabase
         .from('banks')
         .update({
-          current_balance: transactionData.balance_after,
+          current_balance: balanceAfter,
           updated_at: new Date().toISOString()
         })
         .eq('id', transactionData.bank_id)
-        .eq('company_id', transactionData.company_id);
+        .eq('company_id', companyId)
+        .eq('current_balance', bank.current_balance)
+        .select('id')
+        .single();
 
-      if (bankUpdateError) throw bankUpdateError;
+      if (bankUpdateError) {
+        const { error: cleanupError } = await supabase
+          .from('bank_transactions')
+          .delete()
+          .eq('id', transaction.id)
+          .eq('company_id', companyId);
+        if (cleanupError) {
+          throw new Error(`فشل تحديث الرصيد وفشل حذف المعاملة التعويضية: ${cleanupError.message}`);
+        }
+        throw bankUpdateError;
+      }
 
       return transaction;
     },
@@ -203,13 +238,75 @@ export const useDeleteBankTransaction = () => {
     mutationFn: async (transactionId: string) => {
       const companyId = await getCurrentCompanyId();
 
+      const { data: transaction, error: transactionError } = await supabase
+        .from('bank_transactions')
+        .select('id, bank_id, amount, balance_after, transaction_type, reconciled, journal_entry_id, payment_id, reversal_of_transaction_id')
+        .eq('id', transactionId)
+        .eq('company_id', companyId)
+        .single();
+      if (transactionError) throw transactionError;
+      if (transaction.reconciled || transaction.journal_entry_id || transaction.payment_id || transaction.reversal_of_transaction_id) {
+        throw new Error('لا يمكن حذف معاملة مسوّاة أو مرتبطة بدفعة أو قيد أو عملية عكس. استخدم معاملة عكسية معتمدة.');
+      }
+
+      const { data: latestTransaction, error: latestError } = await supabase
+        .from('bank_transactions')
+        .select('id')
+        .eq('bank_id', transaction.bank_id)
+        .eq('company_id', companyId)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (latestError) throw latestError;
+      if (latestTransaction?.id !== transaction.id) {
+        throw new Error('لا يمكن حذف معاملة قديمة لأنها ستفسد الرصيد الجاري. أنشئ معاملة عكسية بدلًا من ذلك.');
+      }
+
+      const { data: bank, error: bankError } = await supabase
+        .from('banks')
+        .select('id, current_balance')
+        .eq('id', transaction.bank_id)
+        .eq('company_id', companyId)
+        .single();
+      if (bankError) throw bankError;
+      if (Math.abs(Number(bank.current_balance) - Number(transaction.balance_after)) > 0.001) {
+        throw new Error('رصيد البنك تغير بعد هذه المعاملة؛ استخدم معاملة عكسية بدل الحذف.');
+      }
+
+      const restoredBalance = transaction.transaction_type === 'deposit'
+        ? Number(bank.current_balance) - Number(transaction.amount)
+        : Number(bank.current_balance) + Number(transaction.amount);
+
+      const { error: bankUpdateError } = await supabase
+        .from('banks')
+        .update({ current_balance: restoredBalance, updated_at: new Date().toISOString() })
+        .eq('id', transaction.bank_id)
+        .eq('company_id', companyId)
+        .eq('current_balance', bank.current_balance)
+        .select('id')
+        .single();
+      if (bankUpdateError) throw bankUpdateError;
+
       const { error } = await supabase
         .from('bank_transactions')
         .delete()
         .eq('id', transactionId)
-        .eq('company_id', companyId);
+        .eq('company_id', companyId)
+        .select('id')
+        .single();
 
-      if (error) throw error;
+      if (error) {
+        const { error: rollbackError } = await supabase
+          .from('banks')
+          .update({ current_balance: bank.current_balance, updated_at: new Date().toISOString() })
+          .eq('id', transaction.bank_id)
+          .eq('company_id', companyId)
+          .eq('current_balance', restoredBalance);
+        if (rollbackError) {
+          throw new Error(`فشل حذف المعاملة وفشل استرجاع رصيد البنك: ${rollbackError.message}`);
+        }
+        throw error;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['bank-transactions'] });

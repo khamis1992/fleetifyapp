@@ -3,6 +3,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { useUnifiedCompanyAccess } from "./useUnifiedCompanyAccess";
 import { useToast } from "./use-toast";
 
+const getErrorMessage = (error: unknown): string =>
+  error instanceof Error ? error.message : String(error);
+
 interface ValidationResult {
   is_valid: boolean;
   issues: {
@@ -133,7 +136,7 @@ export const useFixChartHierarchy = () => {
       toast({
         variant: "destructive",
         title: "خطأ في إصلاح دليل الحسابات",
-        description: error.message,
+        description: getErrorMessage(error),
       });
     },
   });
@@ -178,8 +181,8 @@ export const useSuggestAccountCode = () => {
 
       const { data, error } = await supabase.rpc("suggest_next_account_code", {
         company_id_param: companyId,
-        parent_account_id_param: parentAccountId || null,
-        account_type_param: accountType || null,
+        parent_account_id_param: parentAccountId,
+        account_type_param: accountType,
       });
 
       if (error) throw new Error(`فشل في اقتراح كود الحساب: ${error.message}`);
@@ -214,9 +217,9 @@ export const useCreateSmartAccount = () => {
       const { data, error } = await supabase.rpc("create_smart_account", {
         company_id_param: companyId,
         account_name_param: accountName,
-        account_name_ar_param: accountNameAr || null,
+        account_name_ar_param: accountNameAr,
         account_type_param: accountType,
-        parent_account_id_param: parentAccountId || null,
+        parent_account_id_param: parentAccountId,
         auto_generate_code: autoGenerateCode,
       });
 
@@ -235,7 +238,7 @@ export const useCreateSmartAccount = () => {
       toast({
         variant: "destructive",
         title: "خطأ في إنشاء الحساب",
-        description: error.message,
+        description: getErrorMessage(error),
       });
     },
   });

@@ -72,25 +72,7 @@ export function ProfessionalInvoiceTemplate({
     }
   };
 
-  // Sample items for preview (in real app, these would come from invoice_items table)
-  const invoiceItems = invoice.items || [
-    {
-      id: 1,
-      description: 'خدمة استشارية',
-      quantity: 2,
-      unit_price: 150.000,
-      tax_rate: 5,
-      total: 315.000
-    },
-    {
-      id: 2,
-      description: 'رسوم إدارية',
-      quantity: 1,
-      unit_price: 75.500,
-      tax_rate: 5,
-      total: 79.275
-    }
-  ];
+  const invoiceItems = Array.isArray(invoice.items) ? invoice.items : [];
 
   const handlePrint = () => {
     if (onPrint) {
@@ -206,16 +188,20 @@ export function ProfessionalInvoiceTemplate({
                 من
               </h3>
               <div className="space-y-1 text-sm">
-                <p className="font-medium">شركة النقل المتطورة</p>
-                <p className="text-muted-foreground">الكويت، حولي</p>
-                <p className="text-muted-foreground flex items-center gap-1">
-                  <Phone className="h-3 w-3" />
-                  <span dir="ltr">+965 12345678</span>
-                </p>
-                <p className="text-muted-foreground flex items-center gap-1">
-                  <Mail className="h-3 w-3" />
-                  info@transport.com
-                </p>
+                <p className="font-medium">{invoice.company_name || 'شركة العراف لتأجير السيارات'}</p>
+                <p className="text-muted-foreground">{invoice.company_address || 'الدوحة، قطر'}</p>
+                {invoice.company_phone && (
+                  <p className="text-muted-foreground flex items-center gap-1">
+                    <Phone className="h-3 w-3" />
+                    <span dir="ltr">{invoice.company_phone}</span>
+                  </p>
+                )}
+                {invoice.company_email && (
+                  <p className="text-muted-foreground flex items-center gap-1">
+                    <Mail className="h-3 w-3" />
+                    {invoice.company_email}
+                  </p>
+                )}
               </div>
             </div>
 

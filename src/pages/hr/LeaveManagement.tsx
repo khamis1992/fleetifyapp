@@ -55,7 +55,7 @@ export default function LeaveManagement() {
       </div>
 
       <Tabs defaultValue="my-requests" className="space-y-5">
-        <TabsList className="h-auto rounded-2xl border border-slate-200 bg-white p-1 shadow-sm">
+        <TabsList className="h-auto rounded-lg border border-slate-200 bg-white p-1 shadow-sm">
           <TabsTrigger value="my-requests" className="h-11 rounded-xl px-4 text-[#94A3B8] data-[state=active]:bg-[#22C7A1] data-[state=active]:text-white">
             طلباتي
           </TabsTrigger>

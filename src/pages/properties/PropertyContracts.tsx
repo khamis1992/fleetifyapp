@@ -178,7 +178,7 @@ export default function PropertyContracts() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                {contracts?.reduce((sum, c) => sum + (c.rental_amount || 0), 0).toLocaleString()} د.ك
+                {contracts?.reduce((sum, c) => sum + (c.rental_amount || 0), 0).toLocaleString()} ر.ق
               </div>
             </CardContent>
           </Card>
@@ -229,7 +229,7 @@ export default function PropertyContracts() {
                           </div>
                           <div className="flex items-center gap-1">
                             <DollarSign className="h-3 w-3" />
-                            <span>{contract.rental_amount?.toLocaleString()} د.ك شهرياً</span>
+                            <span>{contract.rental_amount?.toLocaleString()} ر.ق شهرياً</span>
                           </div>
                         </div>
                         

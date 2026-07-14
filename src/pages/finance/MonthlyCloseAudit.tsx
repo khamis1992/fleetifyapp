@@ -94,7 +94,7 @@ const MonthlyCloseAudit: React.FC = () => {
   return (
     <div className="min-h-screen bg-slate-50" dir="rtl">
       <div className="mx-auto max-w-7xl space-y-6 p-4 sm:p-6">
-        <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+        <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div className="flex items-start gap-3">
               <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-slate-900 text-white">
@@ -127,7 +127,7 @@ const MonthlyCloseAudit: React.FC = () => {
         </section>
 
         {auditQuery.isLoading && (
-          <div className="rounded-xl border border-slate-200 bg-white p-10 text-center text-slate-500">
+          <div className="rounded-lg border border-slate-200 bg-white p-10 text-center text-slate-500">
             جاري فحص بيانات الشهر...
           </div>
         )}
@@ -187,7 +187,7 @@ const MonthlyCloseAudit: React.FC = () => {
               {audit.checks.map((check) => {
                 const passed = check.status === "passed";
                 return (
-                  <div key={check.id} className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                  <div key={check.id} className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
                     <div className="flex items-center justify-between gap-3">
                       <div
                         className={cn(
@@ -209,7 +209,7 @@ const MonthlyCloseAudit: React.FC = () => {
               })}
             </section>
 
-            <section className="rounded-xl border border-slate-200 bg-white shadow-sm">
+            <section className="rounded-lg border border-slate-200 bg-white shadow-sm">
               <div className="flex items-center justify-between gap-3 border-b border-slate-100 p-5">
                 <div>
                   <h2 className="text-lg font-black text-slate-950">قائمة ما يمنع الإقفال</h2>
@@ -240,7 +240,7 @@ const MonthlyCloseAudit: React.FC = () => {
               )}
             </section>
 
-            <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+            <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
               <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <h2 className="text-lg font-black text-slate-950">تقرير التدقيق للإدارة</h2>

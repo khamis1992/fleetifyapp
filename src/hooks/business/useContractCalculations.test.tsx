@@ -45,13 +45,14 @@ vi.mock('@/lib/contract-calculations', () => ({
 
 describe('useContractCalculations', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    vi.resetAllMocks();
   });
 
   describe('Monthly Payment Calculations', () => {
     it('should calculate monthly payment correctly', async () => {
       const contract = contractFactory.create({
         monthly_rate: 1000,
+        monthly_amount: 1000,
         financial_terms: {
           deposit_amount: 2000,
           insurance_fees: 150,
@@ -84,12 +85,21 @@ describe('useContractCalculations', () => {
       );
 
       expect(result.current.monthlyPayment).toEqual(mockCalculation);
-      expect(calculateMonthlyPayment).toHaveBeenCalledWith(contract);
+      expect(calculateMonthlyPayment).toHaveBeenCalledWith(expect.objectContaining({
+        id: contract.id,
+        agreement_number: contract.contract_number,
+        monthly_rate: contract.monthly_amount,
+        start_date: contract.start_date,
+        end_date: contract.end_date,
+        billing_frequency: 'monthly',
+        pricing_model: 'fixed',
+      }));
     });
 
     it('should handle zero monthly rate', async () => {
       const contract = contractFactory.create({
         monthly_rate: 0,
+        monthly_amount: 0,
         financial_terms: {
           deposit_amount: 0,
           insurance_fees: 100,
@@ -306,11 +316,13 @@ describe('useContractCalculations', () => {
         { wrapper }
       );
 
-      expect(() => {
-        act(() => {
-          result.current.calculateDiscount(1000, 0.60); // 60% discount - invalid
-        });
-      }).toThrow();
+      let calculationResult: unknown;
+      act(() => {
+        calculationResult = result.current.calculateDiscount(1000, 0.60);
+      });
+
+      expect(calculationResult).toBeNull();
+      expect(result.current.error).toContain('Discount rate cannot exceed 50%');
     });
   });
 

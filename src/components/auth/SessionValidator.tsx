@@ -1,4 +1,3 @@
-// @ts-nocheck
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -20,7 +19,7 @@ export const SessionValidator: React.FC<SessionValidatorProps> = ({ children }) 
     if (!loading && session && sessionError && validateSession) {
       validateSession().catch(console.error);
     }
-  }, [sessionError]); // Simplified dependencies
+  }, [loading, session, sessionError, validateSession]);
 
   // Show loading while auth is initializing
   if (loading || isRefreshing) {

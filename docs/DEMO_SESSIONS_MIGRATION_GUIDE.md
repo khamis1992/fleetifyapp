@@ -78,7 +78,7 @@ Once the migration is applied:
 
 3. **Demo Login**
    - Email: `demo@fleetify.app`
-   - Password: `FleetifyDemo2025!`
+   - Password: managed by secure server-side session provisioning
    - One-click "Try Demo" button on login page
 
 ---

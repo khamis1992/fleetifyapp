@@ -4,6 +4,9 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useUnifiedCompanyAccess } from './useUnifiedCompanyAccess';
 import { toast } from 'sonner';
 import type { ContractDraft, ContractDraftInput, ContractDraftUpdateInput } from '@/types/contracts.types';
+import type { Database, Json } from '@/integrations/supabase/types';
+
+type ContractDraftInsert = Database['public']['Tables']['contract_drafts']['Insert'];
 
 /**
  * Custom hook for managing contract drafts
@@ -91,10 +94,10 @@ export function useContractDrafts() {
         throw new Error('Company ID or User ID not available');
       }
 
-      const draftPayload = {
+      const draftPayload: ContractDraftInsert = {
         company_id: companyId,
         created_by: user.id,
-        data: input.draft_data,
+        data: JSON.parse(JSON.stringify(input.draft_data)) as Json,
         last_saved_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       };
@@ -105,6 +108,7 @@ export function useContractDrafts() {
           .from('contract_drafts')
           .update(draftPayload)
           .eq('id', input.id)
+          .eq('company_id', companyId)
           .eq('created_by', user.id) // Security: only update own drafts
           .select()
           .single();
@@ -137,15 +141,18 @@ export function useContractDrafts() {
    */
   const deleteDraft = useMutation({
     mutationFn: async (draftId: string) => {
-      if (!user?.id) {
-        throw new Error('User ID not available');
+      if (!companyId || !user?.id) {
+        throw new Error('Company ID or User ID not available');
       }
 
       const { error } = await supabase
         .from('contract_drafts')
         .delete()
         .eq('id', draftId)
-        .eq('created_by', user.id); // Security: only delete own drafts
+        .eq('company_id', companyId)
+        .eq('created_by', user.id)
+        .select('id')
+        .single();
 
       if (error) throw error;
     },
@@ -162,16 +169,18 @@ export function useContractDrafts() {
   /**
    * Load a specific draft by ID
    */
-  const loadDraft = (draftId: string) => {
+  const useDraftQuery = (draftId: string) => {
     return useQuery({
-      queryKey: ['contract-draft', draftId],
+      queryKey: ['contract-draft', companyId, user?.id, draftId],
       queryFn: async (): Promise<ContractDraft | null> => {
-        if (!draftId) return null;
+        if (!companyId || !user?.id || !draftId) return null;
 
         const { data, error } = await supabase
           .from('contract_drafts')
           .select('*')
           .eq('id', draftId)
+          .eq('company_id', companyId)
+          .eq('created_by', user.id)
           .single();
 
         if (error) {
@@ -184,7 +193,7 @@ export function useContractDrafts() {
         // Map database fields to ContractDraft interface
         return mapDraftFromDb(data);
       },
-      enabled: !!draftId,
+      enabled: !!companyId && !!user?.id && !!draftId,
     });
   };
 
@@ -192,6 +201,6 @@ export function useContractDrafts() {
     loadDrafts,
     saveDraft,
     deleteDraft,
-    loadDraft,
+    loadDraft: useDraftQuery,
   };
 }

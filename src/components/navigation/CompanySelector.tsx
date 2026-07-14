@@ -36,7 +36,7 @@ export const CompanySelector: React.FC = () => {
   };
 
   const handleNavigateToSuperAdminDashboard = () => {
-    navigate('/super-admin/dashboard');
+    navigate('/admin/dashboard');
     setOpen(false);
   };
 

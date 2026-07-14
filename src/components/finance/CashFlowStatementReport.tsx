@@ -88,11 +88,21 @@ export function CashFlowStatementReport() {
 
     // Process each section from the real report data
     for (const section of reportData.sections) {
-      const sectionName = (section.sectionName || section.sectionNameAr || '').toLowerCase();
+      const sectionName = (
+        ('sectionName' in section ? section.sectionName : undefined)
+        || ('sectionNameAr' in section ? section.sectionNameAr : undefined)
+        || section.title
+        || section.titleAr
+        || ''
+      ).toLowerCase();
       const accounts = section.accounts || [];
 
       for (const acc of accounts) {
-        const balance = Number(acc.amount || 0);
+        const balance = Number(
+          ('amount' in acc ? acc.amount : undefined)
+          ?? ('balance' in acc ? acc.balance : undefined)
+          ?? 0
+        );
         if (balance === 0) continue;
 
         const item: CashFlowItem = {
@@ -136,7 +146,9 @@ export function CashFlowStatementReport() {
     const netCashFlow = netOperating + netInvesting + netFinancing;
 
     // Get beginning cash from the report's cash account balance if available
-    const beginningCash = reportData.totalAssets ? 0 : 0;
+    const beginningCash = 'beginningCash' in reportData
+      ? Number(reportData.beginningCash || 0)
+      : 0;
     const endingCash = beginningCash + netCashFlow;
 
     return {
@@ -287,7 +299,7 @@ export function CashFlowStatementReport() {
         periodStart: startDate,
         periodEnd: endDate,
         currency: "QAR",
-        generatedAt: new Date().toISOString(),
+        exportedAt: new Date().toISOString(),
         status: "published",
         sourceFingerprint: sourceReport.sourceFingerprint,
         reportHash: sourceReport.sourceFingerprint,

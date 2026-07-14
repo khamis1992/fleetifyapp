@@ -73,14 +73,12 @@ async function fetchPropertyAlerts(
   try {
     const alerts: PropertyAlert[] = [];
     const currentDate = new Date();
-    const next30Days = addDays(currentDate, 30);
     const next90Days = addDays(currentDate, 90);
 
     // Fetch data for alerts
     const [
       contractsResult,
       propertyPaymentsResult,
-      propertiesResult,
       documentsResult
     ] = await Promise.all([
       // Property contracts - use simpler query without nested relations that may not exist
@@ -97,12 +95,6 @@ async function fetchPropertyAlerts(
         .then((res: any) => res.error ? { data: null, error: res.error } : res)
         .catch(() => ({ data: null, error: { message: 'Table not found' } })),
       
-      // Properties
-      buildQuery(supabase.from('properties').select('*'))
-        .eq('is_active', true)
-        .then((res: any) => res.error ? { data: null, error: res.error } : res)
-        .catch(() => ({ data: null, error: { message: 'Table not found' } })),
-      
       // Document expiry alerts (from existing system)
       buildQuery(supabase.from('document_expiry_alerts').select('*'))
         .eq('is_acknowledged', false)
@@ -113,7 +105,6 @@ async function fetchPropertyAlerts(
     // Log errors for debugging (only in development)
     if (contractsResult.error) console.warn('[PropertyAlerts] property_contracts query failed:', contractsResult.error.message);
     if (propertyPaymentsResult.error) console.warn('[PropertyAlerts] property_payments query failed:', propertyPaymentsResult.error.message);
-    if (propertiesResult.error) console.warn('[PropertyAlerts] properties query failed:', propertiesResult.error.message);
     
     // Rename for consistent variable usage below
     const paymentsResult = propertyPaymentsResult;
@@ -182,36 +173,6 @@ async function fetchPropertyAlerts(
       });
     }
 
-    // Vacant Property Alerts
-    if (propertiesResult.data) {
-      for (const property of propertiesResult.data) {
-        if (property.property_status === 'available') {
-          // Check how long it's been vacant (mock calculation - in real system, track this)
-          const vacantDays = 45; // Mock value
-          
-          if (vacantDays >= 30) {
-            alerts.push({
-              id: `vacant_property_${property.id}`,
-              type: 'vacant_property',
-              priority: vacantDays >= 90 ? 'high' : vacantDays >= 60 ? 'medium' : 'low',
-              title: `عقار شاغر لفترة طويلة`,
-              description: `${property.property_name} شاغر منذ ${vacantDays} يوم`,
-              property: property.property_name || 'عقار غير معروف',
-              propertyId: property.id,
-              daysRemaining: vacantDays,
-              dueDate: addDays(currentDate, -vacantDays),
-              acknowledged: false,
-              createdAt: currentDate,
-              metadata: {
-                propertyType: property.property_type,
-                rentalPrice: property.rental_price
-              }
-            });
-          }
-        }
-      }
-    }
-
     // Contract Renewal Opportunities
     if (contractsResult.data && contractsResult.data.length > 0) {
       contractsResult.data.forEach((contract: any) => {
@@ -241,34 +202,6 @@ async function fetchPropertyAlerts(
               }
             });
           }
-        }
-      });
-    }
-
-    // Maintenance Due Alerts (mock - in real system, have maintenance schedules)
-    if (propertiesResult.data) {
-      propertiesResult.data.forEach((property: any) => {
-        // Mock quarterly maintenance check
-        const lastMaintenanceDate = addDays(currentDate, -90); // Mock last maintenance
-        const nextMaintenanceDate = addDays(lastMaintenanceDate, 90);
-        
-        if (nextMaintenanceDate <= next30Days) {
-          alerts.push({
-            id: `maintenance_due_${property.id}`,
-            type: 'maintenance_due',
-            priority: 'low',
-            title: `صيانة دورية مستحقة`,
-            description: `${property.property_name} يحتاج صيانة دورية`,
-            property: property.property_name || 'عقار غير معروف',
-            propertyId: property.id,
-            dueDate: nextMaintenanceDate,
-            acknowledged: false,
-            createdAt: currentDate,
-            metadata: {
-              maintenanceType: 'دورية',
-              propertyType: property.property_type
-            }
-          });
         }
       });
     }

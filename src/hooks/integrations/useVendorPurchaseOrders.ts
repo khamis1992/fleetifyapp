@@ -2,7 +2,6 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
-import type { PurchaseOrder } from '../usePurchaseOrders';
 
 /**
  * Integration Hook: Vendors <-> Purchase Orders
@@ -86,7 +85,7 @@ export const useVendorPurchaseHistory = (vendorId: string) => {
         if (error) throw error;
 
         // Transform data and calculate metrics
-        const history: VendorPurchaseHistory[] = (data || []).map((po: any) => {
+        const history: VendorPurchaseHistory[] = (data || []).map((po) => {
           const isOnTime = po.delivery_date && po.expected_delivery_date
             ? new Date(po.delivery_date) <= new Date(po.expected_delivery_date)
             : true;
@@ -99,8 +98,8 @@ export const useVendorPurchaseHistory = (vendorId: string) => {
             po_id: po.id,
             order_number: po.order_number,
             order_date: po.order_date,
-            expected_delivery_date: po.expected_delivery_date,
-            delivery_date: po.delivery_date,
+            expected_delivery_date: po.expected_delivery_date ?? undefined,
+            delivery_date: po.delivery_date ?? undefined,
             status: po.status,
             subtotal: po.subtotal,
             total_amount: po.total_amount,
@@ -141,6 +140,7 @@ export const useVendorPerformanceMetrics = (vendorId: string) => {
           .from('vendors')
           .select('vendor_name, vendor_name_ar')
           .eq('id', vendorId)
+          .eq('company_id', user.profile.company_id)
           .single();
 
         if (vendorError) throw vendorError;
@@ -158,7 +158,7 @@ export const useVendorPerformanceMetrics = (vendorId: string) => {
           return {
             vendor_id: vendorId,
             vendor_name: vendor.vendor_name,
-            vendor_name_ar: vendor.vendor_name_ar,
+            vendor_name_ar: vendor.vendor_name_ar ?? undefined,
             total_orders: 0,
             total_amount: 0,
             on_time_delivery_count: 0,
@@ -217,7 +217,7 @@ export const useVendorPerformanceMetrics = (vendorId: string) => {
         return {
           vendor_id: vendorId,
           vendor_name: vendor.vendor_name,
-          vendor_name_ar: vendor.vendor_name_ar,
+          vendor_name_ar: vendor.vendor_name_ar ?? undefined,
           total_orders: orders.length,
           total_amount: totalAmount,
           on_time_delivery_count: onTimeCount,
@@ -249,6 +249,9 @@ export const useUpdateVendorPerformanceFromPO = () => {
       if (!user?.profile?.company_id) {
         throw new Error('Company ID is required');
       }
+      if (data.quality_rating < 1 || data.quality_rating > 5) {
+        throw new Error('تقييم جودة المورد يجب أن يكون بين 1 و5');
+      }
 
       try {
         // Get PO details
@@ -261,41 +264,19 @@ export const useUpdateVendorPerformanceFromPO = () => {
 
         if (poError) throw poError;
 
-        // Check if vendor_performance table exists, if not, just update vendor record
         const { error: perfError } = await supabase
           .from('vendor_performance')
           .insert({
             company_id: user.profile.company_id,
             vendor_id: po.vendor_id,
-            purchase_order_id: data.po_id,
-            delivered_on_time: data.delivered_on_time,
-            quality_rating: data.quality_rating,
-            performance_date: new Date().toISOString(),
+            rating: data.quality_rating,
+            quality_score: (data.quality_rating / 5) * 100,
+            on_time_delivery_rate: data.delivered_on_time ? 100 : 0,
+            measured_at: new Date().toISOString(),
             notes: data.notes,
-            created_by: user.id,
           });
 
-        // If vendor_performance table doesn't exist, update vendor directly
-        if (perfError && perfError.code === '42P01') {
-          // Table doesn't exist, update vendor record instead
-          const metrics = await queryClient.fetchQuery({
-            queryKey: ['vendor-performance-metrics', po.vendor_id, user.profile.company_id],
-          });
-
-          if (metrics) {
-            const { error: vendorError } = await supabase
-              .from('vendors')
-              .update({
-                on_time_delivery_rate: (metrics as VendorPerformanceMetrics).on_time_delivery_rate,
-                quality_score: data.quality_rating,
-              })
-              .eq('id', po.vendor_id);
-
-            if (vendorError) throw vendorError;
-          }
-        } else if (perfError) {
-          throw perfError;
-        }
+        if (perfError) throw perfError;
 
         return { vendor_id: po.vendor_id };
       } catch (error) {
@@ -339,6 +320,7 @@ export const usePreferredVendorsForItem = (itemCode: string) => {
             quantity,
             received_quantity,
             purchase_order:purchase_orders!inner(
+              company_id,
               vendor_id,
               order_date,
               delivery_date,
@@ -355,6 +337,7 @@ export const usePreferredVendorsForItem = (itemCode: string) => {
             )
           `)
           .eq('item_code', itemCode)
+          .eq('purchase_order.company_id', user.profile.company_id)
           .order('created_at', { ascending: false });
 
         if (error) throw error;
@@ -379,7 +362,7 @@ export const usePreferredVendorsForItem = (itemCode: string) => {
           last_order_date: string;
         }>();
 
-        poItems.forEach((item: any) => {
+        poItems.forEach((item) => {
           const po = item.purchase_order;
           const vendor = po.vendor;
           const vendorId = vendor.id;
@@ -388,10 +371,10 @@ export const usePreferredVendorsForItem = (itemCode: string) => {
             vendorStats.set(vendorId, {
               vendor_id: vendorId,
               vendor_name: vendor.vendor_name,
-              vendor_name_ar: vendor.vendor_name_ar,
-              contact_person: vendor.contact_person,
-              email: vendor.email,
-              phone: vendor.phone,
+              vendor_name_ar: vendor.vendor_name_ar ?? undefined,
+              contact_person: vendor.contact_person ?? undefined,
+              email: vendor.email ?? undefined,
+              phone: vendor.phone ?? undefined,
               total_orders: 0,
               avg_price: 0,
               total_price: 0,
@@ -401,7 +384,8 @@ export const usePreferredVendorsForItem = (itemCode: string) => {
             });
           }
 
-          const stats = vendorStats.get(vendorId)!;
+          const stats = vendorStats.get(vendorId);
+          if (!stats) return;
           stats.total_orders++;
           stats.total_price += item.unit_price;
 
@@ -430,7 +414,7 @@ export const usePreferredVendorsForItem = (itemCode: string) => {
             avg_price: avgPrice,
             on_time_delivery_rate: onTimeRate,
             // Ranking score: 60% on-time + 40% price competitiveness
-            score: (onTimeRate * 0.6) + ((1 / avgPrice) * 1000 * 0.4),
+            score: (onTimeRate * 0.6) + (avgPrice > 0 ? (1 / avgPrice) * 1000 * 0.4 : 0),
           };
         });
 
@@ -457,7 +441,8 @@ export const useVendorsRankedByPerformance = () => {
   return useQuery({
     queryKey: ['vendors-ranked-by-performance', user?.profile?.company_id],
     queryFn: async () => {
-      if (!user?.profile?.company_id) {
+      const companyId = user?.profile?.company_id;
+      if (!companyId) {
         return [];
       }
 
@@ -466,7 +451,7 @@ export const useVendorsRankedByPerformance = () => {
         const { data: vendors, error: vendorsError } = await supabase
           .from('vendors')
           .select('id, vendor_name, vendor_name_ar')
-          .eq('company_id', user.profile.company_id)
+          .eq('company_id', companyId)
           .eq('is_active', true);
 
         if (vendorsError) throw vendorsError;
@@ -478,11 +463,13 @@ export const useVendorsRankedByPerformance = () => {
         // Get performance metrics for each vendor
         const vendorsWithMetrics = await Promise.all(
           vendors.map(async (vendor) => {
-            const { data: orders } = await supabase
+            const { data: orders, error: ordersError } = await supabase
               .from('purchase_orders')
               .select('*')
               .eq('vendor_id', vendor.id)
-              .eq('company_id', user.profile.company_id);
+              .eq('company_id', companyId);
+
+            if (ordersError) throw ordersError;
 
             if (!orders || orders.length === 0) {
               return {

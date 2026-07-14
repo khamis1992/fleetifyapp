@@ -5,12 +5,24 @@
  */
 
 import { BaseRepository } from '../core/BaseRepository';
-import type { Invoice, InvoiceWithDetails } from '@/types/invoice';
+import type { Invoice, InvoiceInsert, InvoiceWithDetails } from '@/types/invoice';
 import { supabase } from '@/integrations/supabase/client';
 
 export class InvoiceRepository extends BaseRepository<Invoice> {
   constructor() {
     super('invoices');
+  }
+
+  async create(data: InvoiceInsert | Omit<Invoice, 'id'>): Promise<Invoice> {
+    const { data: result, error } = await supabase
+      .from('invoices')
+      .insert(data as InvoiceInsert)
+      .select()
+      .single();
+
+    if (error) throw error;
+    if (!result) throw new Error('No invoice returned from insert');
+    return result;
   }
 
   /**
@@ -39,6 +51,7 @@ export class InvoiceRepository extends BaseRepository<Invoice> {
    */
   async findWithDetails(id: string): Promise<InvoiceWithDetails | null> {
     try {
+      const companyId = await this.resolveCompanyId();
       const { data, error } = await supabase
         .from('invoices')
         .select(`
@@ -58,6 +71,7 @@ export class InvoiceRepository extends BaseRepository<Invoice> {
           )
         `)
         .eq('id', id)
+        .eq('company_id', companyId)
         .single();
 
       if (error) {
@@ -76,7 +90,8 @@ export class InvoiceRepository extends BaseRepository<Invoice> {
    */
   async findAllWithDetails(companyId?: string): Promise<InvoiceWithDetails[]> {
     try {
-      let query = supabase
+      const effectiveCompanyId = await this.resolveCompanyId(companyId);
+      const query = supabase
         .from('invoices')
         .select(`
           *,
@@ -93,11 +108,8 @@ export class InvoiceRepository extends BaseRepository<Invoice> {
             contract_type,
             status
           )
-        `);
-
-      if (companyId) {
-        query = query.eq('company_id', companyId);
-      }
+        `)
+        .eq('company_id', effectiveCompanyId);
 
       const { data, error } = await query.order('invoice_date', { ascending: false });
 
@@ -114,14 +126,12 @@ export class InvoiceRepository extends BaseRepository<Invoice> {
    */
   async findByStatus(status: Invoice['status'], companyId?: string): Promise<Invoice[]> {
     try {
-      let query = supabase
+      const effectiveCompanyId = await this.resolveCompanyId(companyId);
+      const query = supabase
         .from('invoices')
         .select('*')
-        .eq('status', status);
-
-      if (companyId) {
-        query = query.eq('company_id', companyId);
-      }
+        .eq('status', status)
+        .eq('company_id', effectiveCompanyId);
 
       const { data, error } = await query;
 
@@ -145,14 +155,12 @@ export class InvoiceRepository extends BaseRepository<Invoice> {
    */
   async findOverdue(companyId?: string): Promise<Invoice[]> {
     try {
-      let query = supabase
+      const effectiveCompanyId = await this.resolveCompanyId(companyId);
+      const query = supabase
         .from('invoices')
         .select('*')
-        .eq('status', 'overdue');
-
-      if (companyId) {
-        query = query.eq('company_id', companyId);
-      }
+        .eq('status', 'overdue')
+        .eq('company_id', effectiveCompanyId);
 
       const { data, error } = await query;
 
@@ -175,6 +183,9 @@ export class InvoiceRepository extends BaseRepository<Invoice> {
    * Update invoice status
    */
   async updateStatus(id: string, status: Invoice['status']): Promise<Invoice> {
+    if (['paid', 'partially_paid', 'cancelled', 'void'].includes(status)) {
+      throw new Error(`Direct financial invoice status updates are disabled (${id} -> ${status}). Use the payment or cancellation workflow.`);
+    }
     return this.update(id, { status } as Partial<Invoice>);
   }
 
@@ -182,19 +193,7 @@ export class InvoiceRepository extends BaseRepository<Invoice> {
    * Mark invoice as paid
    */
   async markAsPaid(id: string, paidAmount: number): Promise<Invoice> {
-    const invoice = await this.findById(id);
-    if (!invoice) {
-      throw new Error('Invoice not found');
-    }
-
-    const balance = invoice.total_amount - paidAmount;
-
-    return this.update(id, {
-      paid_amount: paidAmount,
-      balance,
-      status: balance > 0 ? 'partially_paid' : 'paid',
-      updated_at: new Date().toISOString()
-    } as Partial<Invoice>);
+    throw new Error(`Direct mark-as-paid is disabled (${id}, ${paidAmount}). Record and allocate a payment through the canonical workflow.`);
   }
 }
 

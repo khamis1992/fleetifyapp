@@ -42,8 +42,8 @@ export const MODULE_REGISTRY: Record<ModuleName, ModuleConfig> = {
     description: 'Vehicle fleet management',
     description_ar: 'إدارة أسطول المركبات',
     routes: [
-      { path: '/vehicles', label: 'Fleet Management', label_ar: 'إدارة الأسطول', icon: 'Car' },
-      { path: '/maintenance', label: 'Maintenance', label_ar: 'الصيانة', icon: 'Wrench' }
+      { path: '/fleet', label: 'Fleet Management', label_ar: 'إدارة الأسطول', icon: 'Car' },
+      { path: '/fleet/maintenance', label: 'Maintenance', label_ar: 'الصيانة', icon: 'Wrench' }
     ],
     permissions: ['vehicles.view', 'vehicles.manage'],
     required_modules: ['core', 'finance'],
@@ -61,7 +61,7 @@ export const MODULE_REGISTRY: Record<ModuleName, ModuleConfig> = {
     routes: [
       { path: '/properties', label: 'Properties', label_ar: 'العقارات', icon: 'Building' },
       { path: '/properties/map', label: 'Property Map', label_ar: 'خريطة العقارات', icon: 'Map' },
-      { path: '/owners', label: 'Property Owners', label_ar: 'ملاك العقارات', icon: 'Users' }
+      { path: '/properties/owners', label: 'Property Owners', label_ar: 'ملاك العقارات', icon: 'Users' }
     ],
     permissions: ['properties.view', 'properties.manage'],
     required_modules: ['core', 'finance'],
@@ -77,8 +77,7 @@ export const MODULE_REGISTRY: Record<ModuleName, ModuleConfig> = {
     description: 'Contract management',
     description_ar: 'إدارة العقود',
     routes: [
-      { path: '/contracts', label: 'Contracts', label_ar: 'العقود', icon: 'FileText' },
-      { path: '/contract-templates', label: 'Templates', label_ar: 'القوالب', icon: 'Copy' }
+      { path: '/contracts', label: 'Contracts', label_ar: 'العقود', icon: 'FileText' }
     ],
     permissions: ['contracts.view', 'contracts.manage'],
     required_modules: ['core', 'finance'],
@@ -127,7 +126,7 @@ export const MODULE_REGISTRY: Record<ModuleName, ModuleConfig> = {
     description_ar: 'إدارة المخزون',
     routes: [
       { path: '/inventory', label: 'Inventory', label_ar: 'المخزون', icon: 'Package' },
-      { path: '/stock-movements', label: 'Stock Movements', label_ar: 'حركة المخزون', icon: 'ArrowUpDown' }
+      { path: '/inventory/movements', label: 'Stock Movements', label_ar: 'حركة المخزون', icon: 'ArrowUpDown' }
     ],
     permissions: ['inventory.view', 'inventory.manage'],
     required_modules: ['core', 'finance'],
@@ -143,8 +142,8 @@ export const MODULE_REGISTRY: Record<ModuleName, ModuleConfig> = {
     description: 'Sales management',
     description_ar: 'إدارة المبيعات',
     routes: [
-      { path: '/sales', label: 'Sales', label_ar: 'المبيعات', icon: 'ShoppingCart' },
-      { path: '/invoices', label: 'Invoices', label_ar: 'الفواتير', icon: 'Receipt' }
+      { path: '/sales/pipeline', label: 'Sales', label_ar: 'المبيعات', icon: 'ShoppingCart' },
+      { path: '/finance/billing?tab=invoices', label: 'Invoices', label_ar: 'الفواتير', icon: 'Receipt' }
     ],
     permissions: ['sales.view', 'sales.manage'],
     required_modules: ['core', 'finance', 'inventory'],
@@ -160,7 +159,7 @@ export const MODULE_REGISTRY: Record<ModuleName, ModuleConfig> = {
     description: 'Supplier management',
     description_ar: 'إدارة الموردين',
     routes: [
-      { path: '/suppliers', label: 'Suppliers', label_ar: 'الموردين', icon: 'Truck' }
+      { path: '/finance/vendors', label: 'Suppliers', label_ar: 'الموردين', icon: 'Truck' }
     ],
     permissions: ['suppliers.view', 'suppliers.manage'],
     required_modules: ['core', 'finance'],
@@ -175,9 +174,7 @@ export const MODULE_REGISTRY: Record<ModuleName, ModuleConfig> = {
     icon: 'Heart',
     description: 'Patient management',
     description_ar: 'إدارة المرضى',
-    routes: [
-      { path: '/patients', label: 'Patients', label_ar: 'المرضى', icon: 'Heart' }
-    ],
+    routes: [],
     permissions: ['patients.view', 'patients.manage'],
     required_modules: ['core'],
     version: '1.0.0'
@@ -191,9 +188,7 @@ export const MODULE_REGISTRY: Record<ModuleName, ModuleConfig> = {
     icon: 'Calendar',
     description: 'Appointment scheduling',
     description_ar: 'جدولة المواعيد',
-    routes: [
-      { path: '/appointments', label: 'Appointments', label_ar: 'المواعيد', icon: 'Calendar' }
-    ],
+    routes: [],
     permissions: ['appointments.view', 'appointments.manage'],
     required_modules: ['core', 'patients'],
     version: '1.0.0'
@@ -207,9 +202,7 @@ export const MODULE_REGISTRY: Record<ModuleName, ModuleConfig> = {
     icon: 'Clipboard',
     description: 'Medical records management',
     description_ar: 'إدارة السجلات الطبية',
-    routes: [
-      { path: '/medical-records', label: 'Medical Records', label_ar: 'السجلات الطبية', icon: 'Clipboard' }
-    ],
+    routes: [],
     permissions: ['medical_records.view', 'medical_records.manage'],
     required_modules: ['core', 'patients'],
     version: '1.0.0'
@@ -223,9 +216,7 @@ export const MODULE_REGISTRY: Record<ModuleName, ModuleConfig> = {
     icon: 'ChefHat',
     description: 'Menu management',
     description_ar: 'إدارة القوائم',
-    routes: [
-      { path: '/menu', label: 'Menu Items', label_ar: 'عناصر القائمة', icon: 'ChefHat' }
-    ],
+    routes: [],
     permissions: ['menu.view', 'menu.manage'],
     required_modules: ['core', 'inventory'],
     version: '1.0.0'
@@ -239,9 +230,7 @@ export const MODULE_REGISTRY: Record<ModuleName, ModuleConfig> = {
     icon: 'ClipboardList',
     description: 'Order management',
     description_ar: 'إدارة الطلبات',
-    routes: [
-      { path: '/orders', label: 'Orders', label_ar: 'الطلبات', icon: 'ClipboardList' }
-    ],
+    routes: [],
     permissions: ['orders.view', 'orders.manage'],
     required_modules: ['core', 'menu'],
     version: '1.0.0'

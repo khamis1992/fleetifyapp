@@ -11,6 +11,12 @@ import { toast } from "sonner";
 import { queryKeys } from "@/utils/queryKeys";
 import * as Sentry from '@sentry/react';
 import { useFinanceAccessGuard } from "@/hooks/finance/useFinanceAccessGuard";
+import type { Database } from "@/integrations/supabase/types";
+
+type InvoiceInsert = Database["public"]["Tables"]["invoices"]["Insert"];
+type InvoiceUpdate = Database["public"]["Tables"]["invoices"]["Update"];
+type CreateInvoiceInput = Omit<InvoiceInsert, "company_id">;
+type UpdateInvoiceInput = Omit<InvoiceUpdate, "company_id" | "id"> & { id: string };
 
 // Simple permission check helper - permissions are handled at route level
 const useSimplePermissions = () => {
@@ -26,6 +32,7 @@ export interface Invoice {
   invoice_date: string;
   due_date?: string;
   customer_id?: string;
+  contract_id?: string;
   vendor_id?: string;
   cost_center_id?: string;
   fixed_asset_id?: string;
@@ -227,11 +234,16 @@ export const useInvoices = (filters?: InvoiceFilters) => {
 };
 
 export const useInvoice = (invoiceId: string) => {
+  const { companyId, isInitializing } = useUnifiedCompanyAccess();
   const { hasPermission } = useSimplePermissions();
 
   return useQuery({
     queryKey: queryKeys.invoices.detail(invoiceId),
     queryFn: async () => {
+      if (!companyId) {
+        throw new Error("No company access");
+      }
+
       if (!hasPermission('invoices:read')) {
         const error = new Error('Permission denied: invoices:read');
         Sentry.captureException(error);
@@ -243,6 +255,7 @@ export const useInvoice = (invoiceId: string) => {
           .from("invoices")
           .select(INVOICE_SELECT_FIELDS)
           .eq("id", invoiceId)
+          .eq("company_id", companyId)
           .single();
 
         if (error) {
@@ -258,7 +271,7 @@ export const useInvoice = (invoiceId: string) => {
         throw error;
       }
     },
-    enabled: !!invoiceId && hasPermission('invoices:read'),
+    enabled: !!invoiceId && !!companyId && !isInitializing && hasPermission('invoices:read'),
     staleTime: 2 * 60 * 1000,
   });
 };
@@ -269,7 +282,7 @@ export const useCreateInvoice = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (invoice: Partial<Invoice>) => {
+    mutationFn: async (invoice: CreateInvoiceInput) => {
       if (!companyId) {
         const error = new Error("No company access");
         Sentry.captureException(error);
@@ -283,30 +296,52 @@ export const useCreateInvoice = () => {
       }
 
       try {
+        const invoiceDateMatch = /^(\d{4})-(\d{2})-\d{2}$/.exec(invoice.invoice_date);
+        if (!invoiceDateMatch) {
+          throw new Error("Invalid invoice date");
+        }
+
+        const year = Number(invoiceDateMatch[1]);
+        const month = Number(invoiceDateMatch[2]);
+        if (month < 1 || month > 12) {
+          throw new Error("Invalid invoice month");
+        }
+
+        const invoiceMonth = `${year}-${String(month).padStart(2, "0")}-01`;
+        const nextInvoiceMonth = month === 12
+          ? `${year + 1}-01-01`
+          : `${year}-${String(month + 1).padStart(2, "0")}-01`;
+
         // ✅ التحقق من وجود فاتورة مكررة لنفس العقد في نفس الشهر
-        if (invoice.contract_id && invoice.due_date) {
-          const invoiceMonth = invoice.due_date.substring(0, 7); // YYYY-MM
-          
-          const { data: existingInvoice } = await supabase
+        if (invoice.contract_id) {
+          const { data: existingInvoice, error: duplicateCheckError } = await supabase
             .from('invoices')
             .select('id, invoice_number')
+            .eq('company_id', companyId)
             .eq('contract_id', invoice.contract_id)
-            .gte('due_date', `${invoiceMonth}-01`)
-            .lte('due_date', `${invoiceMonth}-31`)
+            .gte('invoice_date', invoiceMonth)
+            .lt('invoice_date', nextInvoiceMonth)
             .neq('status', 'cancelled')
             .limit(1);
+
+          if (duplicateCheckError) {
+            throw duplicateCheckError;
+          }
 
           if (existingInvoice && existingInvoice.length > 0) {
             throw new Error(`توجد فاتورة مسجلة لهذا الشهر: ${existingInvoice[0].invoice_number}`);
           }
         }
 
+        const invoiceData: InvoiceInsert = {
+          ...invoice,
+          company_id: companyId,
+          invoice_month: invoice.invoice_month ?? invoiceMonth,
+        };
+
         const { data, error } = await supabase
           .from("invoices")
-          .insert({
-            ...invoice,
-            company_id: companyId,
-          })
+          .insert(invoiceData)
           .select(INVOICE_SELECT_FIELDS)
           .single();
 
@@ -334,11 +369,16 @@ export const useCreateInvoice = () => {
 };
 
 export const useUpdateInvoice = () => {
+  const { companyId } = useUnifiedCompanyAccess();
   const { hasPermission } = useSimplePermissions();
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ id, ...updates }: Partial<Invoice> & { id: string }) => {
+    mutationFn: async ({ id, ...updates }: UpdateInvoiceInput) => {
+      if (!companyId) {
+        throw new Error("No company access");
+      }
+
       if (!hasPermission('invoices:update')) {
         const error = new Error('Permission denied: invoices:update');
         Sentry.captureException(error);
@@ -350,6 +390,7 @@ export const useUpdateInvoice = () => {
           .from("invoices")
           .update(updates)
           .eq("id", id)
+          .eq("company_id", companyId)
           .select(INVOICE_SELECT_FIELDS)
           .single();
 
@@ -380,11 +421,15 @@ export const useUpdateInvoice = () => {
 export const useDeleteInvoice = () => {
   const { hasPermission } = useSimplePermissions();
   const queryClient = useQueryClient();
-  const { user } = useUnifiedCompanyAccess();
+  const { companyId, user } = useUnifiedCompanyAccess();
   const financeAccess = useFinanceAccessGuard();
 
   return useMutation({
     mutationFn: async (invoiceId: string) => {
+      if (!companyId) {
+        throw new Error("No company access");
+      }
+
       if (!hasPermission('invoices:delete')) {
         const error = new Error('Permission denied: invoices:delete');
         Sentry.captureException(error);
@@ -400,6 +445,7 @@ export const useDeleteInvoice = () => {
           .from("invoices")
           .select("id, company_id, created_by, status, payment_status, notes")
           .eq("id", invoiceId)
+          .eq("company_id", companyId)
           .maybeSingle();
 
         if (invoiceError || !invoice) {
@@ -432,20 +478,13 @@ export const useDeleteInvoice = () => {
           throw new Error("Cannot cancel invoice with completed payments. Cancel linked payments first.");
         }
 
-        const previousNotes = invoice.notes ? `${invoice.notes}\n` : "";
         const cancellationNote = `Invoice cancelled by ${user?.email || user?.id || "system"} at ${new Date().toISOString()}`;
 
-        const { error } = await supabase
-          .from("invoices")
-          .update({
-            status: "cancelled",
-            payment_status: "cancelled",
-            balance_due: 0,
-            notes: `${previousNotes}${cancellationNote}`,
-            updated_at: new Date().toISOString(),
-          })
-          .eq("id", invoiceId)
-          .eq("company_id", invoice.company_id);
+        const { error } = await supabase.rpc("cancel_invoice_with_reversal", {
+          p_invoice_id: invoiceId,
+          p_company_id: companyId,
+          p_reason: cancellationNote,
+        });
 
         if (error) {
           Sentry.captureException(error, {
@@ -469,11 +508,11 @@ export const useDeleteInvoice = () => {
 };
 
 export const useOverdueInvoices = () => {
-  const { companyId } = useUnifiedCompanyAccess();
+  const { companyId, isInitializing } = useUnifiedCompanyAccess();
   const { hasPermission } = useSimplePermissions();
 
   return useQuery({
-    queryKey: queryKeys.invoices.overdue(),
+    queryKey: queryKeys.invoices.overdue(companyId ?? undefined),
     queryFn: async () => {
       if (!companyId) {
         const error = new Error("No company access");

@@ -46,17 +46,17 @@ interface AdvancedFinancialAnalytics {
 }
 
 interface JournalEntryLine {
-  cost_center_id?: string;
-  debit_amount?: number;
-  credit_amount?: number;
+  cost_center_id?: string | null;
+  debit_amount?: number | null;
+  credit_amount?: number | null;
   chart_of_accounts?: {
     account_type?: string;
     account_name?: string;
-  };
+  } | null;
   cost_centers?: {
     center_name?: string;
     center_code?: string;
-  };
+  } | null;
 }
 
 interface JournalEntry {
@@ -78,7 +78,7 @@ interface CostCenter {
   id: string;
   center_name: string;
   center_code: string;
-  budget_amount?: number;
+  budget_amount?: number | null;
 }
 
 export const useAdvancedFinancialAnalytics = () => {
@@ -109,7 +109,7 @@ export const useAdvancedFinancialAnalytics = () => {
           *,
           journal_entry_lines (
             *,
-            chart_of_accounts (
+            chart_of_accounts!fk_journal_entry_lines_account (
               account_type,
               account_name
             ),
@@ -208,6 +208,7 @@ function calculateCostCenterPerformance(
 ): CostCenterPerformance[] {
   return costCenters.map(center => {
     let actualAmount = 0;
+    const budgetAmount = center.budget_amount ?? 0;
 
     journalEntries.forEach(entry => {
       entry.journal_entry_lines?.forEach((line) => {
@@ -217,15 +218,15 @@ function calculateCostCenterPerformance(
       });
     });
 
-    const variance = actualAmount - (center.budget_amount || 0);
-    const variancePercentage = center.budget_amount > 0 
-      ? (variance / center.budget_amount) * 100 
+    const variance = actualAmount - budgetAmount;
+    const variancePercentage = budgetAmount > 0 
+      ? (variance / budgetAmount) * 100 
       : 0;
 
     return {
       centerName: center.center_name,
       centerCode: center.center_code,
-      budgetAmount: center.budget_amount || 0,
+      budgetAmount,
       actualAmount,
       variance,
       variancePercentage,

@@ -941,7 +941,8 @@ class PaymentLinkingService extends BaseService<Payment> {
       throw new Error('الدفعة غير موجودة');
     }
 
-    return this.findLinkingSuggestions(payment).slice(0, maxSuggestions);
+    const suggestions = await this.findLinkingSuggestions(payment);
+    return suggestions.slice(0, maxSuggestions);
   }
 
   /**

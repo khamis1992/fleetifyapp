@@ -3,6 +3,31 @@ import { supabase } from "@/integrations/supabase/client";
 import { useUnifiedCompanyAccess } from "@/hooks/useUnifiedCompanyAccess";
 import { toast } from "sonner";
 
+type RpcMessage = { success?: boolean; message?: string };
+
+function isRpcMessage(value: unknown): value is RpcMessage {
+  return typeof value === 'object' && value !== null;
+}
+
+function getErrorDetails(error: unknown): { code?: string; message: string } {
+  if (error instanceof Error) {
+    return {
+      message: error.message,
+      code: 'code' in error && typeof error.code === 'string' ? error.code : undefined,
+    };
+  }
+
+  if (typeof error === 'object' && error !== null) {
+    const value = error as { code?: unknown; message?: unknown };
+    return {
+      code: typeof value.code === 'string' ? value.code : undefined,
+      message: typeof value.message === 'string' ? value.message : 'خطأ غير محدد',
+    };
+  }
+
+  return { message: typeof error === 'string' ? error : 'خطأ غير محدد' };
+}
+
 export const useFinancialFixes = () => {
   const { companyId } = useUnifiedCompanyAccess();
   const queryClient = useQueryClient();
@@ -20,7 +45,7 @@ export const useFinancialFixes = () => {
       return data;
     },
     onSuccess: (data: unknown) => {
-      if (data?.success && data?.message) {
+      if (isRpcMessage(data) && data.success && data.message) {
         toast.success(data.message);
       } else {
         toast.success('تم نسخ مراكز التكلفة الافتراضية بنجاح');
@@ -28,11 +53,12 @@ export const useFinancialFixes = () => {
       queryClient.invalidateQueries({ queryKey: ['financial-system-analysis'] });
     },
     onError: (error: unknown) => {
+      const details = getErrorDetails(error);
       // Handle duplicate key errors gracefully
-      if (error.code === '23505') {
+      if (details.code === '23505') {
         toast.info('مراكز التكلفة موجودة مسبقاً - تم تخطي المكررات');
       } else {
-        toast.error(`فشل في نسخ مراكز التكلفة: ${error.message}`);
+        toast.error(`فشل في نسخ مراكز التكلفة: ${details.message}`);
       }
     }
   });
@@ -54,7 +80,7 @@ export const useFinancialFixes = () => {
       queryClient.invalidateQueries({ queryKey: ['financial-system-analysis'] });
     },
     onError: (error: unknown) => {
-      toast.error(`فشل في إنشاء حسابات العملاء: ${error.message}`);
+      toast.error(`فشل في إنشاء حسابات العملاء: ${getErrorDetails(error).message}`);
     }
   });
 
@@ -76,12 +102,13 @@ export const useFinancialFixes = () => {
     },
     onError: (error: unknown) => {
       // Enhanced error handling for better UX
-      let errorMsg = error.message || 'خطأ غير محدد';
+      const details = getErrorDetails(error);
+      let errorMsg = details.message;
       
       // Handle common PostgreSQL errors
-      if (error.code === '42703' || errorMsg.includes('column') && errorMsg.includes('does not exist')) {
+      if (details.code === '42703' || errorMsg.includes('column') && errorMsg.includes('does not exist')) {
         errorMsg = 'خطأ في هيكل البيانات - يرجى التواصل مع فريق الدعم';
-      } else if (error.code === '23505' || errorMsg.includes('duplicate key')) {
+      } else if (details.code === '23505' || errorMsg.includes('duplicate key')) {
         errorMsg = 'يوجد ربط حسابات مكرر - سيتم تحديث البيانات الموجودة';
       } else if (errorMsg.includes('function') && errorMsg.includes('does not exist')) {
         errorMsg = 'الوظيفة غير متوفرة حالياً - يرجى المحاولة لاحقاً';
@@ -139,7 +166,7 @@ export const useFinancialFixes = () => {
       queryClient.invalidateQueries({ queryKey: ['financial-system-analysis'] });
     },
     onError: (error: unknown) => {
-      toast.error(`فشل في ربط العقود: ${error.message}`);
+      toast.error(`فشل في ربط العقود: ${getErrorDetails(error).message}`);
     }
   });
 
@@ -149,11 +176,9 @@ export const useFinancialFixes = () => {
       if (!companyId) throw new Error('Company ID required');
 
       const results: string[] = [];
-      console.log('[FinancialFixes] ▶️ Starting runAllFixes for company', companyId);
 
       try {
         // 1) Ensure essential account mappings
-        console.log('[FinancialFixes] Step 1: ensure_essential_account_mappings');
         const { error: mappingsError } = await supabase.rpc('ensure_essential_account_mappings', {
           company_id_param: companyId
         });
@@ -161,7 +186,6 @@ export const useFinancialFixes = () => {
         results.push('تم إعداد ربط الحسابات الأساسية');
 
         // 2) Copy default cost centers
-        console.log('[FinancialFixes] Step 2: copy_default_cost_centers_to_company');
         const { data: ccData, error: ccError } = await supabase.rpc('copy_default_cost_centers_to_company', {
           target_company_id: companyId
         });
@@ -169,14 +193,13 @@ export const useFinancialFixes = () => {
           throw ccError;
         }
         
-        if (ccData && typeof ccData === 'object' && 'success' in ccData && 'message' in ccData) {
-          results.push((ccData as any).message);
+        if (isRpcMessage(ccData) && ccData.message) {
+          results.push(ccData.message);
         } else {
           results.push('تم نسخ مراكز التكلفة الافتراضية');
         }
 
         // 3) Create default customer accounts
-        console.log('[FinancialFixes] Step 3: create_default_customer_accounts_fixed');
         const { error: custError } = await supabase.rpc('create_default_customer_accounts_fixed', {
           company_id_param: companyId
         });
@@ -184,7 +207,6 @@ export const useFinancialFixes = () => {
         results.push('تم إنشاء حسابات العملاء الافتراضية');
 
         // 4) Link unlinked contracts
-        console.log('[FinancialFixes] Step 4: Linking unlinked contracts');
         const { data: contracts, error: contractsError } = await supabase
           .from('contracts')
           .select('id')
@@ -216,10 +238,8 @@ export const useFinancialFixes = () => {
           results.push('لا توجد عقود غير مربوطة');
         }
 
-        console.log('[FinancialFixes] ✅ Completed runAllFixes', results);
         return { results, success: true };
       } catch (error) {
-        console.error('[FinancialFixes] ❌ runAllFixes failed:', error);
         throw error;
       }
     },
@@ -230,19 +250,19 @@ export const useFinancialFixes = () => {
     },
     onError: (error: unknown) => {
       // Enhanced error handling for Run All Fixes
-      let errorMsg = error.message || 'خطأ غير محدد';
+      const details = getErrorDetails(error);
+      let errorMsg = details.message;
       
       // Handle common PostgreSQL errors
-      if (error.code === '42703' || errorMsg.includes('column') && errorMsg.includes('does not exist')) {
-        errorMsg = 'خطأ في هيكل قاعدة البيانات - تم إصلاح الخطأ تلقائياً، يرجى المحاولة مرة أخرى';
-      } else if (error.code === '23505' || errorMsg.includes('duplicate key')) {
+      if (details.code === '42703' || errorMsg.includes('column') && errorMsg.includes('does not exist')) {
+        errorMsg = 'خطأ في هيكل قاعدة البيانات - لم يتم تنفيذ الإصلاح، يرجى تحديث النظام';
+      } else if (details.code === '23505' || errorMsg.includes('duplicate key')) {
         errorMsg = 'توجد بيانات مكررة - سيتم تجاهل البيانات المكررة والمتابعة';
       } else if (errorMsg.includes('function') && errorMsg.includes('does not exist')) {
         errorMsg = 'بعض الوظائف غير متوفرة - يرجى تحديث النظام';
       }
       
       toast.error(`فشل في تنفيذ بعض الإصلاحات: ${errorMsg}`);
-      console.error('[FinancialFixes] Full error details:', error);
     }
   });
 

@@ -170,7 +170,7 @@ export function PropertyContractDetails({
                 <DollarSign className="h-4 w-4 text-muted-foreground" />
                 <span className="text-muted-foreground">مبلغ الإيجار:</span>
                 <span className="font-medium text-lg">
-                  {contract.rental_amount?.toLocaleString()} د.ك
+                  {contract.rental_amount?.toLocaleString()} ر.ق
                 </span>
               </div>
               
@@ -179,7 +179,7 @@ export function PropertyContractDetails({
                   <DollarSign className="h-4 w-4 text-muted-foreground" />
                   <span className="text-muted-foreground">مبلغ الضمان:</span>
                   <span className="font-medium">
-                    {contract.deposit_amount.toLocaleString()} د.ك
+                    {contract.deposit_amount.toLocaleString()} ر.ق
                   </span>
                 </div>
               )}
@@ -189,7 +189,7 @@ export function PropertyContractDetails({
                   <DollarSign className="h-4 w-4 text-muted-foreground" />
                   <span className="text-muted-foreground">العمولة:</span>
                   <span className="font-medium">
-                    {contract.commission_amount.toLocaleString()} د.ك
+                    {contract.commission_amount.toLocaleString()} ر.ق
                   </span>
                 </div>
               )}

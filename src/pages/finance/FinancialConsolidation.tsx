@@ -108,6 +108,8 @@ export default function FinancialConsolidation() {
     queryKey: ["financial-consolidation-runs", companyId],
     enabled: Boolean(companyId),
     queryFn: async () => {
+      if (!companyId) return [];
+
       const { data, error } = await supabase
         .from("financial_consolidation_runs")
         .select("id,run_number,period_start,period_end,target_currency,status,total_debit,total_credit,imbalance,company_count,elimination_count,notes,created_at")
@@ -353,7 +355,7 @@ export default function FinancialConsolidation() {
         </div>
         <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
           <DialogTrigger asChild>
-            <Button className="gap-2 rounded-xl bg-[#020617] text-white hover:bg-[#020617]/90">
+            <Button className="gap-2 rounded-lg bg-[#020617] text-white hover:bg-[#020617]/90">
               <Plus className="h-4 w-4" />
               عملية توحيد جديدة
             </Button>
@@ -365,22 +367,22 @@ export default function FinancialConsolidation() {
             <div className="space-y-4 py-2">
               <div className="space-y-2">
                 <Label className="text-sm font-bold text-[#020617]">رقم العملية</Label>
-                <Input value={runNumber} onChange={(e) => setRunNumber(e.target.value)} placeholder="CON-2026-01" className="h-11 rounded-xl bg-[#F6F8FB]" />
+                <Input value={runNumber} onChange={(e) => setRunNumber(e.target.value)} placeholder="CON-2026-01" className="h-11 rounded-lg bg-[#F6F8FB]" />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-2">
                   <Label className="text-sm font-bold text-[#020617]">من تاريخ</Label>
-                  <Input type="date" value={periodStart} onChange={(e) => setPeriodStart(e.target.value)} className="h-11 rounded-xl bg-[#F6F8FB]" />
+                  <Input type="date" value={periodStart} onChange={(e) => setPeriodStart(e.target.value)} className="h-11 rounded-lg bg-[#F6F8FB]" />
                 </div>
                 <div className="space-y-2">
                   <Label className="text-sm font-bold text-[#020617]">إلى تاريخ</Label>
-                  <Input type="date" value={periodEnd} onChange={(e) => setPeriodEnd(e.target.value)} className="h-11 rounded-xl bg-[#F6F8FB]" />
+                  <Input type="date" value={periodEnd} onChange={(e) => setPeriodEnd(e.target.value)} className="h-11 rounded-lg bg-[#F6F8FB]" />
                 </div>
               </div>
               <div className="space-y-2">
                 <Label className="text-sm font-bold text-[#020617]">العملة المستهدفة</Label>
                 <Select value={targetCurrency} onValueChange={setTargetCurrency}>
-                  <SelectTrigger className="h-11 rounded-xl bg-[#F6F8FB]">
+                  <SelectTrigger className="h-11 rounded-lg bg-[#F6F8FB]">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -393,12 +395,12 @@ export default function FinancialConsolidation() {
               </div>
               <div className="space-y-2">
                 <Label className="text-sm font-bold text-[#020617]">ملاحظات (اختياري)</Label>
-                <Input value={consolidationNotes} onChange={(e) => setConsolidationNotes(e.target.value)} placeholder="ملاحظات حول عملية التوحيد..." className="h-11 rounded-xl bg-[#F6F8FB]" />
+                <Input value={consolidationNotes} onChange={(e) => setConsolidationNotes(e.target.value)} placeholder="ملاحظات حول عملية التوحيد..." className="h-11 rounded-lg bg-[#F6F8FB]" />
               </div>
               <Button
                 onClick={() => createRunMutation.mutate()}
                 disabled={createRunMutation.isPending || !companyId}
-                className="h-11 w-full gap-2 rounded-xl bg-[#020617] text-white hover:bg-[#020617]/90"
+                className="h-11 w-full gap-2 rounded-lg bg-[#020617] text-white hover:bg-[#020617]/90"
               >
                 {createRunMutation.isPending ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
                 إنشاء العملية
@@ -413,7 +415,7 @@ export default function FinancialConsolidation() {
           <CardTitle className="text-base font-black text-[#020617]">عمليات التوحيد</CardTitle>
         </CardHeader>
         <CardContent className="p-4">
-          <div className="overflow-hidden rounded-2xl border border-slate-200">
+          <div className="overflow-hidden rounded-lg border border-slate-200">
             <Table>
               <TableHeader>
                 <TableRow className="bg-[#F6F8FB]">
@@ -521,7 +523,7 @@ export default function FinancialConsolidation() {
                   {runCompaniesQuery.data.map((rc) => {
                     const company = companiesQuery.data?.find((c) => c.id === rc.company_id);
                     return (
-                      <div key={rc.id} className="flex items-center justify-between rounded-xl bg-[#F6F8FB] p-3">
+                      <div key={rc.id} className="flex items-center justify-between rounded-lg bg-[#F6F8FB] p-3">
                         <div>
                           <p className="text-sm font-bold text-[#020617]">{company?.name_ar || company?.name || rc.company_id.slice(0, 8)}</p>
                           <p className="text-xs text-[#94A3B8]">{rc.source_currency} × {rc.exchange_rate}</p>
@@ -544,7 +546,7 @@ export default function FinancialConsolidation() {
                       addCompanyMutation.mutate({ runId: selectedRunId!, companyToAddId: company.id, exchangeRate: 1 });
                     }
                   }}>
-                    <SelectTrigger className="h-10 rounded-xl bg-[#F6F8FB]">
+                    <SelectTrigger className="h-10 rounded-lg bg-[#F6F8FB]">
                       <SelectValue placeholder="اختر شركة للإضافة" />
                     </SelectTrigger>
                     <SelectContent>
@@ -569,7 +571,7 @@ export default function FinancialConsolidation() {
             </CardHeader>
             <CardContent className="space-y-3 p-4">
               {eliminationsQuery.data && eliminationsQuery.data.length > 0 ? (
-                <div className="overflow-hidden rounded-xl border border-slate-200">
+                <div className="overflow-hidden rounded-lg border border-slate-200">
                   <Table>
                     <TableHeader>
                       <TableRow className="bg-[#F6F8FB]">
@@ -610,7 +612,7 @@ export default function FinancialConsolidation() {
                     size="sm"
                     onClick={() => addEliminationMutation.mutate()}
                     disabled={addEliminationMutation.isPending}
-                    className="w-full gap-1 rounded-xl bg-[#020617] text-white hover:bg-[#020617]/90"
+                    className="w-full gap-1 rounded-lg bg-[#020617] text-white hover:bg-[#020617]/90"
                   >
                     {addEliminationMutation.isPending ? <RefreshCw className="h-3.5 w-3.5 animate-spin" /> : <Plus className="h-3.5 w-3.5" />}
                     إضافة
@@ -630,7 +632,7 @@ export default function FinancialConsolidation() {
             </CardTitle>
           </CardHeader>
           <CardContent className="p-4">
-            <div className="overflow-hidden rounded-2xl border border-slate-200">
+            <div className="overflow-hidden rounded-lg border border-slate-200">
               <Table>
                 <TableHeader>
                   <TableRow className="bg-[#F6F8FB]">
@@ -668,7 +670,7 @@ export default function FinancialConsolidation() {
         </Card>
       )}
 
-      <div className="flex items-start gap-3 rounded-2xl bg-[#ECEEFE] p-3 text-sm font-bold text-[#4F46E5]">
+      <div className="flex items-start gap-3 rounded-lg bg-[#ECEEFE] p-3 text-sm font-bold text-[#4F46E5]">
         <Globe2 className="mt-0.5 h-4 w-4 shrink-0" />
         <span>نظام التوحيد المالي يدعم: شركات متعددة بعملات مختلفة، إزالة المعاملات البينية، فصل المهام (المنشئ ≠ المعتمد)، قفل نهائي بعد الاعتماد.</span>
       </div>

@@ -26,7 +26,7 @@ export const AccountChangeHistory: React.FC<AccountChangeHistoryProps> = ({
 }) => {
   const formatValue = (value: unknown, fieldName: string) => {
     if (fieldName === 'current_balance' || fieldName === 'balance') {
-      return `${Number(value || 0).toFixed(3)} د.ك`;
+      return `${Number(value || 0).toFixed(2)} ر.ق`;
     }
     if (fieldName === 'is_active') {
       return value ? 'نشط' : 'غير نشط';
@@ -34,7 +34,7 @@ export const AccountChangeHistory: React.FC<AccountChangeHistoryProps> = ({
     if (fieldName === 'balance_type') {
       return value === 'debit' ? 'مدين' : 'دائن';
     }
-    return value || '-';
+    return value == null || value === '' ? '-' : String(value);
   };
 
   const getChangeTypeLabel = (type: string) => {

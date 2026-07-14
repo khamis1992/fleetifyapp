@@ -50,7 +50,7 @@ export interface LocaleBusinessRules {
 
   // HR rules
   hr: {
-    workingHours: { [key: string]: { start: string; end: string } };
+    workingHours: { [key: string]: { start: string; end: string } | string | number };
     overtimeRules: { [key: string]: any };
     leavePolicies: { [key: string]: any };
     minimumWage: number;

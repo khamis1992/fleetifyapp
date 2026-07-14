@@ -1,6 +1,5 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { DollarSign, TrendingUp, Users, CreditCard, ArrowUpRight, ArrowDownRight } from 'lucide-react';
 import { useSubscriptionsAnalytics } from '@/hooks/useSubscriptionsAnalytics';
 import { Skeleton } from '@/components/ui/skeleton';
