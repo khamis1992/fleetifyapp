@@ -965,12 +965,37 @@
   margin-top: 1rem;
 }
 
-.lawsuit-header-facts > div {
+.lawsuit-header-fact {
   min-width: 0;
   border: 1px solid #dce6f0;
   border-radius: 8px;
   background: #f8fbfd;
   padding: 0.75rem;
+  text-align: start;
+}
+
+.lawsuit-header-fact.is-clickable {
+  cursor: pointer;
+  transition: border-color 160ms ease, background-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+}
+
+.lawsuit-header-fact.is-clickable:hover {
+  border-color: #8db3d2;
+  background: #f1f7fb;
+  box-shadow: 0 8px 20px -16px rgba(23, 58, 99, 0.75);
+  transform: translateY(-1px);
+}
+
+.lawsuit-header-fact.is-clickable:focus-visible {
+  outline: 3px solid rgba(34, 182, 154, 0.28);
+  outline-offset: 2px;
+  border-color: #22b69a;
+}
+
+.lawsuit-header-fact.is-clickable:disabled {
+  cursor: default;
+  opacity: 0.65;
+  transform: none;
 }
 
 .lawsuit-header-facts svg {

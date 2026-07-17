@@ -68,22 +68,40 @@ export function LegalHeader() {
       </div>
 
       <div className="lawsuit-header-facts">
-        <div>
+        <button
+          type="button"
+          className="lawsuit-header-fact is-clickable"
+          onClick={() => customer?.id && navigate(`/customers/${customer.id}`)}
+          disabled={!customer?.id}
+          aria-label={`فتح ملف العميل ${customerName}`}
+        >
           <UserRound className="h-4 w-4" />
           <span>العميل</span>
           <strong>{customerName}</strong>
-        </div>
-        <div>
+        </button>
+        <button
+          type="button"
+          className="lawsuit-header-fact is-clickable"
+          onClick={() => contract?.contract_number && navigate(`/contracts/${encodeURIComponent(contract.contract_number)}`)}
+          disabled={!contract?.contract_number}
+          aria-label={`فتح العقد ${contract?.contract_number || ''}`}
+        >
           <FileText className="h-4 w-4" />
           <span>العقد</span>
           <strong>{contract?.contract_number || '-'}</strong>
-        </div>
-        <div>
+        </button>
+        <button
+          type="button"
+          className="lawsuit-header-fact is-clickable"
+          onClick={() => contract?.vehicle_id && navigate(`/fleet/vehicles/${contract.vehicle_id}`)}
+          disabled={!contract?.vehicle_id}
+          aria-label={`فتح ملف المركبة ${vehicleLabel || ''}`}
+        >
           <BriefcaseBusiness className="h-4 w-4" />
           <span>المركبة</span>
           <strong>{vehicleLabel || '-'}</strong>
-        </div>
-        <div>
+        </button>
+        <div className="lawsuit-header-fact">
           <CalendarDays className="h-4 w-4" />
           <span>مدة العقد</span>
           <strong>{formatDate(contract?.start_date)} - {formatDate(contract?.end_date)}</strong>

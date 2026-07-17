@@ -80,6 +80,10 @@ vi.mock('@/integrations/supabase/client', () => ({
     storage: {
       from: vi.fn(() => ({
         getPublicUrl: vi.fn(() => ({ data: { publicUrl: 'https://test.com/file.pdf' } })),
+        createSignedUrl: vi.fn(() => Promise.resolve({
+          data: { signedUrl: 'https://test.com/signed-file.pdf' },
+          error: null,
+        })),
       })),
     },
   },

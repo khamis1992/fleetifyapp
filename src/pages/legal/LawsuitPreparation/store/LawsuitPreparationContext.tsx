@@ -13,6 +13,7 @@ import { calculateDelinquencyAmounts } from '@/utils/calculateDelinquencyAmounts
 import { generateDocument as generateDocumentUtil } from '../utils/documentGenerators';
 import { registerLegalCase } from '../utils/caseRegistration';
 import { exportDocumentsAsZip } from '../utils/zipExport';
+import { selectLegalContractDocument } from '../utils/contractDocumentSelection';
 import { lawsuitService } from '@/services/LawsuitService';
 import { formatCustomerName } from '@/utils/formatCustomerName';
 import { renderOfficialInvoicePdfBlob } from '@/utils/renderOfficialInvoicePdf';
@@ -247,10 +248,7 @@ export function LawsuitPreparationProvider({
         .select('id, file_path, document_name, document_type, mime_type')
         .eq('contract_id', contractId)
         .eq('company_id', companyId)
-        .eq('document_type', 'signed_contract')
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
+        .order('created_at', { ascending: false });
       
       if (error) {
         console.error('[Contract Document] Query error:', error);
@@ -261,7 +259,9 @@ export function LawsuitPreparationProvider({
         return null;
       }
       
-      if (!data) {
+      const contractDocument = selectLegalContractDocument(data || []);
+
+      if (!contractDocument) {
         console.warn('[Contract Document] No contract document found');
         dispatch({
           type: 'UPLOAD_DOCUMENT_ERROR',
@@ -270,26 +270,21 @@ export function LawsuitPreparationProvider({
         return null;
       }
       
-      if (!data.file_path) {
-        console.error('[Contract Document] No file_path in document');
-        dispatch({
-          type: 'UPLOAD_DOCUMENT_ERROR',
-          payload: { docId: 'contract', error: 'مسار الملف غير موجود' }
-        });
-        return null;
-      }
-      
-      console.log('[Contract Document] Found document:', data.document_name, 'at path:', data.file_path);
-      
-      const { data: urlData } = supabase.storage
+      console.log('[Contract Document] Found document:', contractDocument.document_name, 'at path:', contractDocument.file_path);
+
+      const { data: signedUrlData, error: signedUrlError } = await supabase.storage
         .from('contract-documents')
-        .getPublicUrl(data.file_path);
-      
-      if (urlData?.publicUrl) {
-        console.log('[Contract Document] Public URL generated:', urlData.publicUrl);
+        .createSignedUrl(contractDocument.file_path!, 3600);
+
+      const publicUrl = signedUrlError
+        ? supabase.storage.from('contract-documents').getPublicUrl(contractDocument.file_path!).data.publicUrl
+        : null;
+      const documentUrl = signedUrlData?.signedUrl || publicUrl;
+
+      if (documentUrl) {
         dispatch({ 
           type: 'UPLOAD_DOCUMENT_SUCCESS', 
-          payload: { docId: 'contract', url: urlData.publicUrl } 
+          payload: { docId: 'contract', url: documentUrl }
         });
       } else {
         console.error('[Contract Document] Failed to generate public URL');
@@ -299,7 +294,7 @@ export function LawsuitPreparationProvider({
         });
       }
       
-      return data;
+      return contractDocument;
     },
     enabled: !!contractId && !!companyId,
   });
