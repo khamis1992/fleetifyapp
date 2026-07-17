@@ -40,6 +40,31 @@ import { supabase } from '@/integrations/supabase/client';
 import { FeatureTourButton, FeatureTourDialog, type FeatureTourContent } from '@/components/common/FeatureTourGuide';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 import { useFinanceAccessGuard } from '@/hooks/finance/useFinanceAccessGuard';
+import {
+  areNearMonthlyAmounts,
+  buildWorkbookContentId,
+  deduplicateWorkbookInputs,
+  EXCEL_PARSE_BATCH_SIZE,
+  getContractIdentityConflict,
+  getImportedDelayDays,
+  hasBlockingImportWarnings,
+  hasCompatibleIdentityName,
+  isAutomaticContractMatch,
+  mapInBatches,
+  parseImportedTrafficAmounts,
+  parseStructuredImportAmount,
+} from './excelImportSafety';
+import {
+  agentPlanReviewReasons,
+  applyAgentEffectiveRows,
+  completeExcelImportAgentPlan,
+  planExcelImportWithAgent,
+  type ExcelImportAgentPlan,
+} from './excelImportAgent';
+import {
+  planHistoricalPaymentAllocations,
+  resolveHistoricalInvoicePaidAmount,
+} from './excelImportAllocation';
 
 const excelImportTour = {
   title: 'جولة استيراد دفعات Excel',
@@ -76,6 +101,8 @@ type ParsedPaymentRow = {
   delayValue: number | null;
   trafficAmount: number | null;
   trafficAmounts: number[];
+  unclassifiedAmount: number;
+  sourceText: string;
   rowNumber: number;
 };
 
@@ -139,6 +166,7 @@ type ImportResult = {
   invoicesCreated: number;
   lateFees: number;
   trafficViolations: number;
+  maintenanceRecords: number;
   skipped: number;
   skippedReasons: string[];
   paymentReport: PaymentReportRow[];
@@ -284,6 +312,7 @@ type ApprovalCache = {
   paymentsByReference: Map<string, ImportPayment>;
   lateFeeInvoiceIds: Set<string>;
   penaltyNumbers: Set<string>;
+  maintenanceNumbers: Set<string>;
 };
 
 type PreparedApprovalRow = {
@@ -459,20 +488,20 @@ const columnCandidates = (header: CellValue[], index: number) => {
 
 const readNumberFromColumns = (row: CellValue[], columns: number[]) => {
   for (const column of columns) {
-    const value = parseOptionalNumber(row[column]);
+    const value = parseStructuredImportAmount(row[column]);
     if (value !== null) return value;
   }
   return null;
 };
 
-const readNumberPartsFromColumns = (row: CellValue[], columns: number[]) => {
+const readTrafficAmountsFromColumns = (row: CellValue[], columns: number[]) => {
   for (const column of columns) {
     const value = row[column];
     if (value === null || value === undefined || !/\d/.test(cellText(value))) continue;
-    const parts = parseNumberParts(value);
-    if (parts.length) return parts;
+    const parsed = parseImportedTrafficAmounts(value);
+    if (parsed.amounts.length || parsed.rejected) return parsed;
   }
-  return [];
+  return { amounts: [], rejected: false };
 };
 
 const calculateLateFee = (days: number | null) => {
@@ -524,17 +553,17 @@ const stableHash = (value: string) => {
 };
 
 const buildHistoricalPaymentReference = ({
-  fileName,
+  fileIdentity,
   contractId,
   invoiceId,
   month,
 }: {
-  fileName: string;
+  fileIdentity: string;
   contractId: string;
   invoiceId: string;
   month: string;
 }) => {
-  const source = `${fileName}|${contractId}|${invoiceId}|${month}`;
+  const source = `${fileIdentity}|${contractId}|${invoiceId}|${month}`;
   return `xls:${stableHash(source)}:${contractId.slice(0, 8)}:${invoiceId.slice(0, 8)}:${month}`;
 };
 
@@ -574,21 +603,6 @@ const inferRemainingAmount = (explicitRemaining: number | null, paymentAmount: n
   return Math.max(monthlyRent - paid, 0);
 };
 
-const calculateAutomaticDelayDays = (month: string, paymentAmount: number | null, remainingAmount: number | null) => {
-  if (paymentAmount && paymentAmount > 0) return 0;
-  if (!remainingAmount || remainingAmount <= 0) return 0;
-
-  const dueDateValue = parseMonthToDate(month);
-  if (!dueDateValue) return 0;
-
-  const dueDate = new Date(`${dueDateValue}T00:00:00`);
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
-  const diffDays = Math.floor((today.getTime() - dueDate.getTime()) / 86_400_000);
-  return Math.max(diffDays, 0);
-};
-
 const detectDelayColumn = (header: CellValue[], monthCol: number, paymentCol: number, remainingCol: number) => {
   const explicit = columnIndex(header, [/تاخير/, /غرام/]);
   if (explicit >= 0 && explicit !== monthCol && explicit !== paymentCol && explicit !== remainingCol) return explicit;
@@ -617,8 +631,11 @@ const extractPlateNumber = (rows: CellValue[][]) => {
   return raw.replace(/لوحه رقم:?|لوحة رقم:?/gi, '').trim();
 };
 
-const parseWorkbookFile = async (file: File): Promise<ParsedExcelFile> => {
-  const buffer = await file.arrayBuffer();
+const parseWorkbookFile = async (
+  file: File,
+  buffer: ArrayBuffer,
+  contentId: string,
+): Promise<ParsedExcelFile> => {
   const workbook = XLSX.read(buffer, { type: 'array', cellDates: true });
   const firstSheet = workbook.SheetNames[0];
   const worksheet = workbook.Sheets[firstSheet];
@@ -629,7 +646,7 @@ const parseWorkbookFile = async (file: File): Promise<ParsedExcelFile> => {
 
   if (headerRowIndex < 0) {
     return {
-      id: `${file.name}-${file.size}`,
+      id: contentId,
       fileName: file.name,
       customerName: findCustomerName(rows),
       idNumber: findIdNumberValue(rows),
@@ -658,6 +675,9 @@ const parseWorkbookFile = async (file: File): Promise<ParsedExcelFile> => {
   const maintenanceCols = columnCandidates(header, maintenanceCol);
   const delayCols = columnCandidates(header, delayCol);
   const trafficCols = columnCandidates(header, trafficCol);
+  const sharedCategoryCols = maintenanceCols.filter((column) => trafficCols.includes(column));
+  const unambiguousMaintenanceCols = maintenanceCols.filter((column) => !sharedCategoryCols.includes(column));
+  const unambiguousTrafficCols = trafficCols.filter((column) => !sharedCategoryCols.includes(column));
 
   if (monthCol < 0) warnings.push('لم يتم تحديد عمود الشهر.');
   if (paymentCol < 0) warnings.push('لم يتم تحديد عمود المدفوعات.');
@@ -673,14 +693,22 @@ const parseWorkbookFile = async (file: File): Promise<ParsedExcelFile> => {
     const paymentAmount = readNumberFromColumns(row, paymentCols) ?? 0;
     const explicitRemainingAmount = readNumberFromColumns(row, remainingCols);
     const remainingAmount = inferRemainingAmount(explicitRemainingAmount, paymentAmount, monthlyRent);
-    const maintenanceAmount = readNumberFromColumns(row, maintenanceCols) ?? 0;
-    const delayDaysFromFile = paymentAmount > 0 ? 0 : readNumberFromColumns(row, delayCols);
-    const delayDays = delayDaysFromFile && delayDaysFromFile > 0
-      ? delayDaysFromFile
-      : calculateAutomaticDelayDays(cellText(row[monthCol]), paymentAmount, remainingAmount);
+    const maintenanceAmount = readNumberFromColumns(row, unambiguousMaintenanceCols) ?? 0;
+    const delayDays = getImportedDelayDays({
+      delayColumnIndex: delayCol,
+      paymentAmount,
+      parsedDelayDays: readNumberFromColumns(row, delayCols),
+    });
     const delayValue = calculateLateFee(delayDays);
-    const trafficAmounts = readNumberPartsFromColumns(row, trafficCols);
+    const trafficResult = readTrafficAmountsFromColumns(row, unambiguousTrafficCols);
+    const trafficAmounts = trafficResult.amounts;
     const trafficAmount = trafficAmounts.reduce((sum, amount) => sum + amount, 0);
+    const unclassifiedAmount = readNumberFromColumns(row, sharedCategoryCols) ?? 0;
+    const sourceText = row.map((value) => cellText(value)).filter(Boolean).join(' | ');
+
+    if (trafficResult.rejected) {
+      warnings.push(`تم تجاهل قيمة مخالفة غير آمنة في الصف ${r + 1} لأنها تشبه تاريخًا أو رقم مرجع أو تتجاوز الحد المسموح.`);
+    }
 
     parsedRows.push({
       month: cellText(row[monthCol]),
@@ -691,6 +719,8 @@ const parseWorkbookFile = async (file: File): Promise<ParsedExcelFile> => {
       delayValue,
       trafficAmount,
       trafficAmounts,
+      unclassifiedAmount,
+      sourceText,
       rowNumber: r + 1,
     });
   }
@@ -718,7 +748,7 @@ const parseWorkbookFile = async (file: File): Promise<ParsedExcelFile> => {
   const totalRemaining = parsedRows.reduce((sum, row) => sum + (row.remainingAmount || 0), 0);
 
   return {
-    id: `${file.name}-${file.size}`,
+    id: contentId,
     fileName: file.name,
     customerName,
     idNumber,
@@ -731,7 +761,7 @@ const parseWorkbookFile = async (file: File): Promise<ParsedExcelFile> => {
     totalRemaining,
     confidence: Math.min(confidence, 100),
     warnings,
-    status: parsedRows.length === 0 ? 'empty' : warnings.length ? 'review_required' : 'ready',
+    status: parsedRows.length === 0 ? 'empty' : hasBlockingImportWarnings(warnings) ? 'review_required' : 'ready',
   };
 };
 
@@ -760,6 +790,18 @@ const buildContractCustomerName = (contract: MatchedContract) => compactText([
   contract.customers?.company_name_ar,
 ].filter(Boolean).join(' '));
 
+const buildContractCustomerNameAliases = (contract: MatchedContract) => {
+  const customer = contract.customers;
+  return [
+    [customer?.first_name, customer?.last_name],
+    [customer?.first_name_ar, customer?.last_name_ar],
+    [customer?.company_name],
+    [customer?.company_name_ar],
+  ]
+    .map((parts) => compactText(parts.filter(Boolean).join(' ')))
+    .filter(Boolean);
+};
+
 const getContractCustomerDisplayName = (contract: MatchedContract) => [
   contract.customers?.first_name_ar,
   contract.customers?.last_name_ar,
@@ -771,6 +813,17 @@ const getContractCustomerDisplayName = (contract: MatchedContract) => [
 
 const isCompatibleTextMatch = (source: string, target: string) =>
   Boolean(source && target && (source.includes(target) || target.includes(source)));
+
+const isContractStartAlignedWithFile = (contract: MatchedContract, file: ParsedExcelFile) => {
+  const firstMonth = file.rows
+    .map((row) => parseMonthToDate(row.month))
+    .filter((value): value is string => Boolean(value))
+    .sort()[0];
+  if (!firstMonth || !contract.start_date) return false;
+  const [fileYear, fileMonth] = firstMonth.slice(0, 7).split('-').map(Number);
+  const [contractYear, contractMonth] = contract.start_date.slice(0, 7).split('-').map(Number);
+  return Math.abs(((fileYear - contractYear) * 12) + fileMonth - contractMonth) <= 1;
+};
 
 const contractMatchWarning = (file: ParsedExcelFile) =>
   `لا يوجد عقد مطابق للملف "${file.customerName || file.fileName}". تأكد من تسجيل العميل والعقد أو صحح الاسم/اللوحة/الهاتف قبل الاعتماد.`;
@@ -786,6 +839,17 @@ const parseMonthToDate = (month: string) => {
   const monthNumber = first > 1000 ? second : first;
   if (!year || !monthNumber || monthNumber < 1 || monthNumber > 12) return null;
   return `${year}-${String(monthNumber).padStart(2, '0')}-01`;
+};
+
+const nextMonthKey = (monthKey: string) => {
+  const [year, month] = monthKey.split('-').map(Number);
+  const date = new Date(Date.UTC(year, month, 1));
+  return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, '0')}`;
+};
+
+const monthKeyToImportLabel = (monthKey: string) => {
+  const [year, month] = monthKey.split('-');
+  return `${Number(month)}-${year}`;
 };
 
 const sameInvoiceMonth = (invoiceDate: string | null | undefined, monthDate: string) => invoiceDate?.slice(0, 7) === monthDate.slice(0, 7);
@@ -824,7 +888,7 @@ const findCachedHistoricalPayment = (
   paymentDateOverride?: string | null,
 ) => {
   const stableReference = buildHistoricalPaymentReference({
-    fileName: file.fileName,
+    fileIdentity: file.id,
     contractId: contract.id,
     invoiceId: invoice.id,
     month: row.month,
@@ -842,9 +906,15 @@ const findCachedHistoricalPayment = (
 
 const calculateInvoiceBalanceFromCachedPayments = (cache: ApprovalCache, invoice: ImportInvoice) => {
   const totalAmount = Number(invoice.total_amount) || 0;
-  const paidAmount = (cache.paymentsByInvoiceId.get(invoice.id) || [])
+  const directPaymentTotal = (cache.paymentsByInvoiceId.get(invoice.id) || [])
     .filter((payment) => payment.payment_status === 'completed')
     .reduce((sum, payment) => sum + (Number(payment.amount) || 0), 0);
+  const paidAmount = resolveHistoricalInvoicePaidAmount({
+    totalAmount,
+    persistedPaidAmount: Number(invoice.paid_amount || 0),
+    persistedBalanceDue: invoice.balance_due === null ? null : Number(invoice.balance_due),
+    directPaymentTotal,
+  });
   const balanceDue = Math.max(0, totalAmount - paidAmount);
   const paymentStatus = paidAmount <= 0 ? 'unpaid' : balanceDue <= 0.01 ? 'paid' : 'partial';
 
@@ -1108,9 +1178,9 @@ const scoreContractMatch = (contract: MatchedContract, file: ParsedExcelFile) =>
   const contractPlate = compactText(contract.vehicles?.plate_number || contract.license_plate || '');
   const phone = digitsOnly(contract.customers?.phone || '');
   const nationalId = digitsOnly(contract.customers?.national_id || '');
-  const name = buildContractCustomerName(contract);
+  const nameAliases = buildContractCustomerNameAliases(contract);
   const hasNameInFile = Boolean(fileName);
-  const nameMatches = isCompatibleTextMatch(fileName, name);
+  const nameMatches = hasCompatibleIdentityName(fileName, nameAliases);
   const plateMatches = Boolean(filePlate && contractPlate && (
     filePlate === contractPlate ||
     contractPlate.includes(filePlate) ||
@@ -1122,12 +1192,26 @@ const scoreContractMatch = (contract: MatchedContract, file: ParsedExcelFile) =>
     filePhone.endsWith(phone)
   ));
   const idMatches = Boolean(fileId && nationalId && fileId === nationalId);
-  const hasIdentifierMatch = idMatches || phoneMatches || plateMatches;
+  const monthlyAmountMatches = areNearMonthlyAmounts(file.monthlyRent, Number(contract.monthly_amount || 0));
+  const contractStartMatches = isContractStartAlignedWithFile(contract, file);
+  const identityConflict = getContractIdentityConflict({
+    fileHasName: hasNameInFile,
+    namesMatch: nameMatches,
+    fileHasPlate: Boolean(filePlate),
+    contractHasPlate: Boolean(contractPlate),
+    platesMatch: plateMatches,
+    fileNationalId: fileId,
+    contractNationalId: nationalId,
+    nationalIdsMatch: idMatches,
+    phonesMatch: phoneMatches,
+    monthlyAmountsMatch: monthlyAmountMatches,
+    contractStartMatches,
+  });
 
-  if (hasNameInFile && !nameMatches && !hasIdentifierMatch) {
+  if (identityConflict) {
     return {
       score: -1,
-      reasons: ['تم استبعاد العقد لأن الاسم لا يطابق ولا يوجد تطابق في الهوية أو الجوال أو اللوحة.'],
+      reasons: [identityConflict],
     };
   }
 
@@ -1151,6 +1235,14 @@ const scoreContractMatch = (contract: MatchedContract, file: ParsedExcelFile) =>
     score += 20;
     reasons.push('اسم العميل قريب من الاسم الموجود في العقد.');
   }
+  if (monthlyAmountMatches && nameMatches && plateMatches) {
+    score += 10;
+    reasons.push('القسط الشهري في الملف قريب من القسط المسجل في العقد.');
+  }
+  if (contractStartMatches && nameMatches && plateMatches) {
+    score += 10;
+    reasons.push('أول شهر في الملف يطابق شهر بداية العقد.');
+  }
   if (contract.status === 'active') {
     score += 5;
     reasons.push('العقد نشط حاليًا.');
@@ -1169,12 +1261,35 @@ const analyzeContractMatch = async (
 ): Promise<ContractMatchAnalysis> => {
   const contracts = candidates || await fetchContractCandidates(companyId);
 
+  const { data: approvedFingerprintContractId, error: approvedFingerprintError } = await (supabase as any)
+    .rpc('resolve_excel_import_contract_by_hash_v1', {
+      p_company_id: companyId,
+      p_content_hash: file.id,
+    });
+  if (approvedFingerprintError) throw approvedFingerprintError;
+
+  const fingerprintContract = approvedFingerprintContractId
+    ? contracts.find((contract) => contract.id === approvedFingerprintContractId)
+    : null;
+  if (fingerprintContract) {
+    return {
+      contract: fingerprintContract,
+      confidence: 100,
+      reasons: ['تطابق بصمة الملف مع عقد سبق اعتماده أو تأكيده يدويًا.'],
+      alternatives: [{
+        contract: fingerprintContract,
+        confidence: 100,
+        reasons: ['تطابق بصمة الملف مع عقد سبق اعتماده أو تأكيده يدويًا.'],
+      }],
+    };
+  }
+
   const scored = contracts.map((contract) => {
     const result = scoreContractMatch(contract, file);
     return { contract, score: result.score, reasons: result.reasons };
   }).sort((a, b) => b.score - a.score);
 
-  const viableMatches = scored.filter((item) => item.score >= 45);
+  const viableMatches = scored.filter((item) => isAutomaticContractMatch(item.score));
   const best = viableMatches[0] || null;
   const alternatives = scored.filter((item) => item.score > 0).slice(0, 3).map((item) => ({
     contract: item.contract,
@@ -1385,6 +1500,7 @@ const buildApprovalSummary = (file: ParsedExcelFile | null) => {
       totalRemaining: 0,
       totalLateFees: 0,
       totalTraffic: 0,
+      totalMaintenance: 0,
       blockers: ['لم يتم اختيار ملف للمراجعة.'],
     };
   }
@@ -1400,6 +1516,7 @@ const buildApprovalSummary = (file: ParsedExcelFile | null) => {
     totalRemaining: file.rows.reduce((sum, row) => sum + (row.remainingAmount || 0), 0),
     totalLateFees: file.rows.reduce((sum, row) => sum + (row.delayValue || 0), 0),
     totalTraffic: file.rows.reduce((sum, row) => sum + (row.trafficAmount || 0), 0),
+    totalMaintenance: file.rows.reduce((sum, row) => sum + (row.maintenanceAmount || 0), 0),
     blockers,
   };
 };
@@ -1731,6 +1848,7 @@ export default function ExcelPaymentImport() {
   const [contractMatchAnalysis, setContractMatchAnalysis] = useState<ContractMatchAnalysis | null>(null);
   const [manualContractSearch, setManualContractSearch] = useState('');
   const [manualContractResults, setManualContractResults] = useState<ContractMatchAlternative[]>([]);
+  const [rememberingContractFileId, setRememberingContractFileId] = useState<string | null>(null);
   const [isManualContractSearchLoading, setIsManualContractSearchLoading] = useState(false);
   const [matchedContractsByFile, setMatchedContractsByFile] = useState<MatchedContractsByFile>({});
   const [isMatchingContract, setIsMatchingContract] = useState(false);
@@ -1748,6 +1866,8 @@ export default function ExcelPaymentImport() {
   const [hasLoadedStoredSession, setHasLoadedStoredSession] = useState(false);
   const [aiReview, setAiReview] = useState<ExcelImportAiReview | null>(null);
   const [isAiReviewLoading, setIsAiReviewLoading] = useState(false);
+  const [agentPlan, setAgentPlan] = useState<ExcelImportAgentPlan | null>(null);
+  const [isAgentPlanLoading, setIsAgentPlanLoading] = useState(false);
   const aiReviewRequestKeyRef = useRef<string>('');
 
   const selectedFile = files.find((file) => file.id === selectedId) || files[0] || null;
@@ -1845,39 +1965,79 @@ export default function ExcelPaymentImport() {
       setIsAiReviewLoading(false);
     }
   };
-  const applySuggestedContractMatch = (alternative: ContractMatchAlternative) => {
-    if (!selectedFile) return;
+  const prepareAgentPlan = async () => {
+    if (!companyId || !selectedFile || !matchedContract) return null;
+    setIsAgentPlanLoading(true);
+    try {
+      const plan = await planExcelImportWithAgent({
+        companyId,
+        contractId: matchedContract.id,
+        file: selectedFile,
+      });
+      setAgentPlan(plan);
+      return plan;
+    } catch (error) {
+      console.error('[ExcelPaymentImport] execution agent planning failed:', error);
+      toast.error('تعذر إنشاء خطة وكيل الاستيراد. لم يتم تنفيذ أي حركة مالية.');
+      return null;
+    } finally {
+      setIsAgentPlanLoading(false);
+    }
+  };
+  const applySuggestedContractMatch = async (alternative: ContractMatchAlternative) => {
+    if (!selectedFile || !companyId) return;
 
-    const cleanedSelectedFile: ParsedExcelFile = {
-      ...selectedFile,
-      warnings: selectedFile.warnings.filter((warning) => !isContractMatchWarning(warning)),
-      status: selectedFile.status === 'empty' || selectedFile.status === 'error' ? selectedFile.status : 'ready',
-    };
-    const reasons = [
-      'تم اختيار هذا العقد يدويًا من اقتراحات المساعد.',
-      ...alternative.reasons,
-    ];
+    setRememberingContractFileId(selectedFile.id);
+    try {
+      const { error: rememberError } = await (supabase as any).rpc(
+        'remember_excel_import_contract_match_v1',
+        {
+          p_company_id: companyId,
+          p_content_hash: selectedFile.id,
+          p_contract_id: alternative.contract.id,
+          p_file_name: selectedFile.fileName,
+          p_customer_name: selectedFile.customerName || null,
+          p_plate: selectedFile.plateNumber || null,
+        },
+      );
+      if (rememberError) throw rememberError;
 
-    manualMatchedFileIdsRef.current.add(selectedFile.id);
-    setMatchedContract(alternative.contract);
-    setContractMatchAnalysis({
-      contract: alternative.contract,
-      confidence: alternative.confidence,
-      reasons,
-      alternatives: contractMatchAnalysis?.alternatives || [alternative],
-    });
-    setMatchedContractsByFile((current) => ({ ...current, [selectedFile.id]: alternative.contract }));
-    setFileContractMatchState(selectedFile, true);
-    recordFileOutcome(selectedFile, {
-      status: 'pending',
-      message: `تم اختيار العقد ${alternative.contract.contract_number} يدويًا بنسبة ثقة ${alternative.confidence}%.`,
-      details: [
-        ...summarizeFileAnalysis(cleanedSelectedFile, alternative.contract),
-        ...reasons.map((reason) => `سبب المطابقة: ${reason}`),
-      ],
-      contractNumber: alternative.contract.contract_number,
-    });
-    toast.success(`تم ربط الملف بالعقد ${alternative.contract.contract_number}. راجع البيانات ثم نفذ الاعتماد.`);
+      const cleanedSelectedFile: ParsedExcelFile = {
+        ...selectedFile,
+        warnings: selectedFile.warnings.filter((warning) => !isContractMatchWarning(warning)),
+        status: selectedFile.status === 'empty' || selectedFile.status === 'error' ? selectedFile.status : 'ready',
+      };
+      const reasons = [
+        'تم اختيار هذا العقد يدويًا وحفظ القرار لاستخدامه عند رفع الملف نفسه لاحقًا.',
+        ...alternative.reasons,
+      ];
+
+      manualMatchedFileIdsRef.current.add(selectedFile.id);
+      setMatchedContract(alternative.contract);
+      setContractMatchAnalysis({
+        contract: alternative.contract,
+        confidence: alternative.confidence,
+        reasons,
+        alternatives: contractMatchAnalysis?.alternatives || [alternative],
+      });
+      setMatchedContractsByFile((current) => ({ ...current, [selectedFile.id]: alternative.contract }));
+      setFileContractMatchState(selectedFile, true);
+      recordFileOutcome(selectedFile, {
+        status: 'pending',
+        message: `تم اختيار العقد ${alternative.contract.contract_number} يدويًا وحفظ القرار للمستقبل.`,
+        details: [
+          ...summarizeFileAnalysis(cleanedSelectedFile, alternative.contract),
+          ...reasons.map((reason) => `سبب المطابقة: ${reason}`),
+        ],
+        contractNumber: alternative.contract.contract_number,
+      });
+      toast.success(`تم ربط الملف بالعقد ${alternative.contract.contract_number} وحفظ الاختيار. لن يطلب النظام تحديد العقد لهذا الملف مرة أخرى.`);
+    } catch (error) {
+      console.error('[ExcelPaymentImport] failed to remember manual contract match:', error);
+      toast.error(translateExcelImportError(error) || errorMessage(error) || 'تعذر حفظ اختيار العقد. لم يتم تغيير المطابقة.');
+    } finally {
+      setRememberingContractFileId(null);
+    }
   };
   const clearImportSession = () => {
     if (companyId) {
@@ -1889,6 +2049,7 @@ export default function ExcelPaymentImport() {
     setContractMatchAnalysis(null);
     setManualContractSearch('');
     setManualContractResults([]);
+    setRememberingContractFileId(null);
     contractCandidatesRef.current = null;
     closedAccountingPeriodsRef.current = null;
     approvalCacheByContractRef.current.clear();
@@ -1897,6 +2058,7 @@ export default function ExcelPaymentImport() {
     setImportResults({});
     setFileOutcomes({});
     setAiReview(null);
+    setAgentPlan(null);
     aiReviewRequestKeyRef.current = '';
     setApprovalProgress(null);
     setBulkApprovalProgress(null);
@@ -1922,7 +2084,7 @@ export default function ExcelPaymentImport() {
           warnings,
           status: currentFile.status === 'empty' || currentFile.status === 'error'
             ? currentFile.status
-            : warnings.length > 0
+            : hasBlockingImportWarnings(warnings)
               ? 'review_required'
               : 'ready',
         };
@@ -1960,6 +2122,9 @@ export default function ExcelPaymentImport() {
     }
   };
   const approvalSummary = useMemo(() => buildApprovalSummary(selectedFile), [selectedFile]);
+  useEffect(() => {
+    setAgentPlan(null);
+  }, [selectedFile?.id, matchedContract?.id]);
   const editChanges = useMemo(
     () => buildRowEditChanges(editBaselineRows, selectedFile?.rows || null),
     [editBaselineRows, selectedFile?.rows],
@@ -2213,13 +2378,28 @@ export default function ExcelPaymentImport() {
 
     setIsParsing(true);
     try {
-      const parsed = await Promise.all(
-        excelFiles.map(async (file) => {
+      const preparedFiles = await mapInBatches(
+        excelFiles,
+        EXCEL_PARSE_BATCH_SIZE,
+        async (file) => {
+          const buffer = await file.arrayBuffer();
+          return {
+            file,
+            buffer,
+            contentId: await buildWorkbookContentId(buffer),
+          };
+        },
+      );
+      const { unique: uniqueFiles, duplicates } = deduplicateWorkbookInputs(preparedFiles);
+      const parsed = await mapInBatches(
+        uniqueFiles,
+        EXCEL_PARSE_BATCH_SIZE,
+        async ({ file, buffer, contentId }) => {
           try {
-            return await parseWorkbookFile(file);
+            return await parseWorkbookFile(file, buffer, contentId);
           } catch (error) {
             return {
-              id: `${file.name}-${file.size}`,
+              id: contentId,
               fileName: file.name,
               customerName: '',
               idNumber: '',
@@ -2235,8 +2415,12 @@ export default function ExcelPaymentImport() {
               status: 'error' as const,
             };
           }
-        })
+        },
       );
+
+      if (duplicates.length > 0) {
+        toast.info(`تم تجاهل ${duplicates.length} ملف مكرر لأن محتواه موجود ضمن الدفعة الحالية.`);
+      }
 
       setSessionId(buildImportSessionId());
       setAiReview(null);
@@ -2317,11 +2501,6 @@ export default function ExcelPaymentImport() {
 
           if (field === 'paymentAmount') {
             updatedRow.remainingAmount = inferRemainingAmount(null, value, file.monthlyRent);
-          }
-
-          if ((field === 'paymentAmount' || field === 'remainingAmount') && normalizeEditableValue(updatedRow.remainingAmount) > 0 && normalizeEditableValue(updatedRow.delayDays) === 0) {
-            updatedRow.delayDays = calculateAutomaticDelayDays(updatedRow.month, updatedRow.paymentAmount, updatedRow.remainingAmount);
-            updatedRow.delayValue = calculateLateFee(updatedRow.delayDays);
           }
 
           if ((field === 'paymentAmount' || field === 'remainingAmount') && (normalizeEditableValue(updatedRow.remainingAmount) === 0 || normalizeEditableValue(updatedRow.paymentAmount) > 0) && normalizeEditableValue(updatedRow.delayDays) > 0) {
@@ -2509,6 +2688,40 @@ export default function ExcelPaymentImport() {
     return createdCount;
   };
 
+  const createMaintenanceIfNeeded = async (
+    row: ParsedPaymentRow,
+    contract: MatchedContract,
+    file: ParsedExcelFile,
+    approvalCache: ApprovalCache,
+  ) => {
+    const amount = Number(row.maintenanceAmount || 0);
+    const maintenanceDate = parseMonthToDate(row.month);
+    if (!companyId || amount <= 0 || !maintenanceDate || !contract.vehicle_id) return false;
+
+    const maintenanceNumber = `HIST-XLS-${contract.id.slice(0, 8)}-${row.month.replace('/', '-')}`;
+    if (approvalCache.maintenanceNumbers.has(maintenanceNumber)) return false;
+
+    const { error } = await supabase.from('vehicle_maintenance').insert({
+      company_id: companyId,
+      vehicle_id: contract.vehicle_id,
+      maintenance_number: maintenanceNumber,
+      maintenance_type: 'historical_excel_import',
+      description: `صيانة تاريخية مستوردة من ملف Excel للعقد ${contract.contract_number}`,
+      actual_cost: amount,
+      estimated_cost: amount,
+      scheduled_date: maintenanceDate,
+      completed_date: maintenanceDate,
+      status: 'completed',
+      priority: 'medium',
+      expense_recorded: false,
+      created_by: user?.id || null,
+      notes: `المصدر: ${file.fileName} - الفترة ${row.month}`,
+    });
+    if (error) throw error;
+    approvalCache.maintenanceNumbers.add(maintenanceNumber);
+    return true;
+  };
+
   const loadApprovalCache = async (contract: MatchedContract): Promise<ApprovalCache> => {
     if (!companyId) {
       return {
@@ -2517,10 +2730,11 @@ export default function ExcelPaymentImport() {
         paymentsByReference: new Map(),
         lateFeeInvoiceIds: new Set(),
         penaltyNumbers: new Set(),
+        maintenanceNumbers: new Set(),
       };
     }
 
-    const [invoicesResult, paymentsResult, lateFeesResult, penaltiesResult] = await Promise.all([
+    const [invoicesResult, paymentsResult, lateFeesResult, penaltiesResult, maintenanceResult] = await Promise.all([
       supabase
         .from('invoices')
         .select('id, invoice_number, invoice_date, due_date, total_amount, paid_amount, balance_due, payment_status')
@@ -2548,12 +2762,20 @@ export default function ExcelPaymentImport() {
         .eq('contract_id', contract.id)
         .like('penalty_number', `HIST-${contract.id.slice(0, 8)}-%`)
         .limit(2000),
+      supabase
+        .from('vehicle_maintenance')
+        .select('maintenance_number')
+        .eq('company_id', companyId)
+        .eq('vehicle_id', contract.vehicle_id || '')
+        .like('maintenance_number', `HIST-XLS-${contract.id.slice(0, 8)}-%`)
+        .limit(1000),
     ]);
 
     if (invoicesResult.error) throw invoicesResult.error;
     if (paymentsResult.error) throw paymentsResult.error;
     if (lateFeesResult.error) throw lateFeesResult.error;
     if (penaltiesResult.error) throw penaltiesResult.error;
+    if (maintenanceResult.error) throw maintenanceResult.error;
 
     const cache: ApprovalCache = {
       invoicesByMonth: new Map(),
@@ -2561,6 +2783,7 @@ export default function ExcelPaymentImport() {
       paymentsByReference: new Map(),
       lateFeeInvoiceIds: new Set(),
       penaltyNumbers: new Set(),
+      maintenanceNumbers: new Set(),
     };
 
     ((invoicesResult.data || []) as ImportInvoice[]).forEach((invoice) => cacheInvoice(cache, invoice));
@@ -2570,6 +2793,9 @@ export default function ExcelPaymentImport() {
     });
     ((penaltiesResult.data || []) as Array<{ penalty_number: string | null }>).forEach((penalty) => {
       if (penalty.penalty_number) cache.penaltyNumbers.add(penalty.penalty_number);
+    });
+    ((maintenanceResult.data || []) as Array<{ maintenance_number: string | null }>).forEach((maintenance) => {
+      if (maintenance.maintenance_number) cache.maintenanceNumbers.add(maintenance.maintenance_number);
     });
 
     return cache;
@@ -2600,9 +2826,11 @@ export default function ExcelPaymentImport() {
       let invoicesCreated = 0;
       let lateFees = 0;
       let trafficViolations = 0;
+      let maintenanceRecords = 0;
       let skipped = 0;
       let payableRows = 0;
       let missingInvoiceRows = 0;
+      let unallocatedPaymentTotal = 0;
       const skippedReasons: string[] = [];
       const paymentReport: PaymentReportRow[] = [];
       const pendingPaymentRows: Array<{
@@ -2612,6 +2840,7 @@ export default function ExcelPaymentImport() {
         paymentDate: string;
         stableReference: string;
       }> = [];
+      const plannedPaymentAmountsByInvoiceId = new Map<string, number>();
       const approvalCache = await getApprovalCacheForContract(contract);
       const preparedRows = prepareApprovalRows(file.rows);
 
@@ -2625,6 +2854,13 @@ export default function ExcelPaymentImport() {
           total: preparedRows.length,
           label: `معالجة ${file.customerName || file.fileName} - شهر ${row.month}: مطابقة الفاتورة وتسجيل الدفعات...`,
         });
+
+        if (await createMaintenanceIfNeeded(row, contract, file, approvalCache)) maintenanceRecords += 1;
+        trafficViolations += await createTrafficViolationsIfNeeded(row, contract, file, approvalCache);
+
+        if (paymentAmount <= 0 && Number(row.delayValue || 0) <= 0) {
+          continue;
+        }
 
         let invoice = monthKey ? approvalCache.invoicesByMonth.get(monthKey) || null : null;
         let created = false;
@@ -2657,64 +2893,133 @@ export default function ExcelPaymentImport() {
           : invoice;
         cacheInvoice(approvalCache, alignedInvoice);
 
-        if (paymentAmount > 0) {
-          const existingExcelPayment = findCachedHistoricalPayment(approvalCache, alignedInvoice, row, contract, file, paymentAmount, monthDate);
-          if (existingExcelPayment) {
-            paymentReport.push({
-              month: row.month,
-              amount: Number(existingExcelPayment.amount || paymentAmount),
-              customerName: getContractCustomerDisplayName(contract),
-              contractNumber: contract.contract_number,
-              contractPath: `/contracts/${encodeURIComponent(contract.contract_number)}`,
-              invoiceId: alignedInvoice.id,
-              invoiceNumber: alignedInvoice.invoice_number || '-',
-              paymentId: String(existingExcelPayment.id || ''),
-              paymentNumber: String(existingExcelPayment.payment_number || '-'),
-              paymentDate: String(existingExcelPayment.payment_date || monthDate || alignedInvoice.invoice_date || alignedInvoice.due_date || ''),
-              referenceNumber: String(existingExcelPayment.reference_number || '-'),
-              destination: `payments.customer_id=${contract.customer_id} / payments.contract_id=${contract.id} / payments.invoice_id=${alignedInvoice.id}`,
-            });
-            payments += 1;
-            continue;
-          }
+        const invoiceForPayment = calculateInvoiceBalanceFromCachedPayments(approvalCache, alignedInvoice);
+        if (await createLateFeeIfNeeded(invoiceForPayment, row, contract, file, approvalCache)) lateFees += 1;
+
+        if (paymentAmount <= 0) continue;
+
+        const existingExcelPayment = findCachedHistoricalPayment(
+          approvalCache,
+          alignedInvoice,
+          row,
+          contract,
+          file,
+          paymentAmount,
+          monthDate,
+        );
+        if (existingExcelPayment) {
+          paymentReport.push({
+            month: row.month,
+            amount: Number(existingExcelPayment.amount || paymentAmount),
+            customerName: getContractCustomerDisplayName(contract),
+            contractNumber: contract.contract_number,
+            contractPath: `/contracts/${encodeURIComponent(contract.contract_number)}`,
+            invoiceId: alignedInvoice.id,
+            invoiceNumber: alignedInvoice.invoice_number || '-',
+            paymentId: String(existingExcelPayment.id || ''),
+            paymentNumber: String(existingExcelPayment.payment_number || '-'),
+            paymentDate: String(existingExcelPayment.payment_date || monthDate || alignedInvoice.invoice_date || alignedInvoice.due_date || ''),
+            referenceNumber: String(existingExcelPayment.reference_number || '-'),
+            destination: `payments.customer_id=${contract.customer_id} / payments.contract_id=${contract.id} / payments.invoice_id=${alignedInvoice.id}`,
+          });
+          payments += 1;
+          continue;
         }
 
-        const invoiceForPayment = calculateInvoiceBalanceFromCachedPayments(approvalCache, alignedInvoice);
-
-        const invoiceBalance = Math.max(Number(invoiceForPayment.balance_due ?? invoiceForPayment.total_amount ?? 0), 0);
-        if (paymentAmount > invoiceBalance + 0.01) {
-          const paidAmount = Number(invoiceForPayment.paid_amount || 0);
-          skippedReasons.push(
-            `فاتورة شهر ${row.month} لديها دفعات سابقة بقيمة ${formatCurrency(paidAmount)} ورصيدها المتبقي ${formatCurrency(invoiceBalance)} أقل من مبلغ الملف ${formatCurrency(paymentAmount)}. لم يتم تسجيل دفعة بمبلغ مختلف عن ملف Excel؛ راجع الدفعات السابقة أو صحح الفاتورة.`
-          );
+        if (!monthKey) {
+          skippedReasons.push(`تعذر تحديد شهر الدفعة ${row.month} لتوزيعها على الفواتير.`);
           skipped += 1;
           continue;
         }
 
-        const amountToApply = paymentAmount;
+        const candidateInvoicesById = new Map<string, { monthKey: string; invoice: ImportInvoice }>();
+        const refreshCandidateInvoices = () => {
+          approvalCache.invoicesByMonth.forEach((candidateInvoice, cachedMonthKey) => {
+            const candidateMonthKey = candidateInvoice.invoice_date?.slice(0, 7) || cachedMonthKey;
+            if (candidateMonthKey < monthKey) return;
+            const existingCandidate = candidateInvoicesById.get(candidateInvoice.id);
+            if (!existingCandidate || candidateMonthKey < existingCandidate.monthKey) {
+              candidateInvoicesById.set(candidateInvoice.id, { monthKey: candidateMonthKey, invoice: candidateInvoice });
+            }
+          });
+          candidateInvoicesById.set(invoiceForPayment.id, { monthKey, invoice: invoiceForPayment });
+        };
+        const planAllocations = () => planHistoricalPaymentAllocations({
+          sourceAmount: paymentAmount,
+          sourceMonthKey: monthKey,
+          invoices: [...candidateInvoicesById.values()].map(({ monthKey: candidateMonthKey, invoice: candidateInvoice }) => {
+            const balancedInvoice = calculateInvoiceBalanceFromCachedPayments(approvalCache, candidateInvoice);
+            return {
+              invoiceId: candidateInvoice.id,
+              monthKey: candidateMonthKey,
+              totalAmount: Number(balancedInvoice.total_amount || 0),
+              paidAmount: Number(balancedInvoice.paid_amount || 0) +
+                Number(plannedPaymentAmountsByInvoiceId.get(candidateInvoice.id) || 0),
+            };
+          }),
+        });
 
-        if (amountToApply > 0) {
+        refreshCandidateInvoices();
+        let allocationPlan = planAllocations();
+        let futureMonthKey = monthKey;
+        const contractEndMonth = contract.end_date?.slice(0, 7) || monthKey;
+        while (allocationPlan.unallocatedAmount > 0.01) {
+          futureMonthKey = nextMonthKey(futureMonthKey);
+          if (futureMonthKey > contractEndMonth) break;
+
+          const hasFutureInvoice = [...candidateInvoicesById.values()]
+            .some((candidate) => candidate.monthKey === futureMonthKey);
+          if (!hasFutureInvoice) {
+            const futureInvoiceResult = await createOrFindMonthlyInvoice({
+              companyId,
+              contract,
+              row: { ...row, month: monthKeyToImportLabel(futureMonthKey), paymentAmount: 0 },
+              monthlyRent: file.monthlyRent || contract.monthly_amount,
+            });
+            if (!futureInvoiceResult.invoice) break;
+            if (futureInvoiceResult.created) invoicesCreated += 1;
+            cacheInvoice(approvalCache, futureInvoiceResult.invoice);
+          }
+
+          refreshCandidateInvoices();
+          allocationPlan = planAllocations();
+        }
+
+        for (const allocation of allocationPlan.allocations) {
+          const target = candidateInvoicesById.get(allocation.invoiceId);
+          if (!target) continue;
           const stableReference = buildHistoricalPaymentReference({
-            fileName: file.fileName,
+            fileIdentity: file.id,
             contractId: contract.id,
-            invoiceId: invoiceForPayment.id,
+            invoiceId: target.invoice.id,
             month: row.month,
           });
           pendingPaymentRows.push({
             row,
-            invoice: invoiceForPayment,
-            amount: amountToApply,
+            invoice: target.invoice,
+            amount: allocation.amount,
             paymentDate: monthDate || invoiceForPayment.invoice_date || invoiceForPayment.due_date || new Date().toISOString().slice(0, 10),
             stableReference,
           });
-        } else if (paymentAmount > 0) {
-          const reason = `فاتورة شهر ${row.month} لا يوجد عليها رصيد مستحق، لذلك لم يتم تسجيل دفعة جديدة.`;
-          skippedReasons.push(reason);
-          skipped += 1;
+          plannedPaymentAmountsByInvoiceId.set(
+            target.invoice.id,
+            Number(plannedPaymentAmountsByInvoiceId.get(target.invoice.id) || 0) + allocation.amount,
+          );
         }
 
-        if (await createLateFeeIfNeeded(invoiceForPayment, row, contract, file, approvalCache)) lateFees += 1;
-        trafficViolations += await createTrafficViolationsIfNeeded(row, contract, file, approvalCache);
+        if (allocationPlan.unallocatedAmount > 0.01) {
+          unallocatedPaymentTotal += allocationPlan.unallocatedAmount;
+          skippedReasons.push(
+            `تعذر توزيع ${formatCurrency(allocationPlan.unallocatedAmount)} من دفعة شهر ${row.month} لعدم وجود أرصدة فواتير لاحقة كافية.`
+          );
+          skipped += 1;
+        }
+      }
+
+      if (unallocatedPaymentTotal > 0.01) {
+        throw new Error(
+          `تعذر اعتماد الملف لأن ${formatCurrency(unallocatedPaymentTotal)} من الدفعات لا تملك أرصدة فواتير كافية للتوزيع. لم تُسجل دفعات الملف.`
+        );
       }
 
       if (pendingPaymentRows.length > 0) {
@@ -2788,7 +3093,7 @@ export default function ExcelPaymentImport() {
       }
 
       await closeReopenedPeriods(reopenedPeriods);
-      return { payments, invoicesCreated, lateFees, trafficViolations, skipped, skippedReasons, paymentReport };
+      return { payments, invoicesCreated, lateFees, trafficViolations, maintenanceRecords, skipped, skippedReasons, paymentReport };
     } catch (error) {
       await closeReopenedPeriods(reopenedPeriods);
       throw error;
@@ -2803,11 +3108,67 @@ export default function ExcelPaymentImport() {
       return;
     }
 
+    const executionPlan = agentPlan || await prepareAgentPlan();
+    if (!executionPlan) return;
+
+    const reviewReasons = agentPlanReviewReasons(executionPlan);
+    if (reviewReasons.length > 0) {
+      recordFileOutcome(selectedFile, {
+        status: 'review_required',
+        message: 'أوقف الوكيل التنفيذ لأن النسخة الجديدة تخفّض أو تحذف مبالغ سبق اعتمادها.',
+        details: reviewReasons,
+        contractNumber: matchedContract.contract_number,
+      });
+      toast.warning('توجد تخفيضات أو حركات محذوفة تحتاج موافقة على حركة عكسية. لم يتم تنفيذ أي تغيير.');
+      return;
+    }
+
+    const noChangeResult: ImportResult = {
+      payments: 0,
+      invoicesCreated: 0,
+      lateFees: 0,
+      trafficViolations: 0,
+      maintenanceRecords: 0,
+      skipped: selectedFile.rows.length,
+      skippedReasons: ['تحقق الوكيل من أن الملف أو جميع صفوفه سبق اعتمادها دون تغيير.'],
+      paymentReport: [],
+    };
+    if (executionPlan.exactDuplicate || executionPlan.effectiveRows.length === 0) {
+      setImportResults((current) => ({ ...current, [selectedFile.id]: noChangeResult }));
+      recordFileOutcome(selectedFile, {
+        status: 'skipped',
+        message: 'تحقق الوكيل من أن الملف سبق اعتماده دون تغيير، لذلك لم يكرر أي حركة.',
+        details: noChangeResult.skippedReasons,
+        contractNumber: matchedContract.contract_number,
+      });
+      if (!executionPlan.exactDuplicate) {
+        await completeExcelImportAgentPlan({
+          companyId,
+          versionId: executionPlan.versionId,
+          success: true,
+          result: { ...noChangeResult, agentDecision: 'verified_no_change' },
+        });
+      }
+      toast.info('لا توجد تغييرات جديدة. لم يتم إنشاء أي دفعة أو مخالفة أو غرامة.');
+      return;
+    }
+
+    const executableFile: ParsedExcelFile = {
+      ...selectedFile,
+      rows: applyAgentEffectiveRows(selectedFile.rows, executionPlan.effectiveRows),
+    };
+
     setIsApproving(true);
     setApprovalProgress({ current: 0, total: selectedFile.rows.length, label: 'تهيئة الاعتماد وفتح الفترات المالية عند الحاجة...' });
 
     try {
-      const result = await approveFile(selectedFile, matchedContract, setApprovalProgress);
+      const result = await approveFile(executableFile, matchedContract, setApprovalProgress);
+      await completeExcelImportAgentPlan({
+        companyId,
+        versionId: executionPlan.versionId,
+        success: true,
+        result: { ...result, agentActions: executionPlan.summary.actions },
+      });
       setImportResults((current) => ({ ...current, [selectedFile.id]: result }));
       setMatchedContractsByFile((current) => ({ ...current, [selectedFile.id]: matchedContract }));
       recordFileOutcome(selectedFile, {
@@ -2824,6 +3185,16 @@ export default function ExcelPaymentImport() {
       toast.success('تم اعتماد ملف Excel وربطه بالنظام المالي');
     } catch (error: unknown) {
       console.error('Excel approval failed:', error);
+      try {
+        await completeExcelImportAgentPlan({
+          companyId,
+          versionId: executionPlan.versionId,
+          success: false,
+          errorMessage: errorMessage(error),
+        });
+      } catch (completionError) {
+        console.error('Could not record Excel agent failure:', completionError);
+      }
       setApprovalProgress(null);
       recordFileOutcome(selectedFile, {
         status: 'failed',
@@ -2904,8 +3275,52 @@ export default function ExcelPaymentImport() {
           contractNumber: contract.contract_number,
         });
 
+        let bulkPlan: ExcelImportAgentPlan | null = null;
         try {
-          const result = await approveFile(file, contract, (progress) => {
+          bulkPlan = await planExcelImportWithAgent({ companyId, contractId: contract.id, file });
+          const reviewReasons = agentPlanReviewReasons(bulkPlan);
+          if (reviewReasons.length > 0) {
+            recordFileOutcome(file, {
+              status: 'review_required',
+              message: 'أوقف الوكيل التنفيذ لأن النسخة الجديدة تتضمن تخفيضًا أو حذفًا لحركة سابقة.',
+              details: reviewReasons,
+              contractNumber: contract.contract_number,
+            });
+            skippedCount += 1;
+            continue;
+          }
+
+          if (bulkPlan.exactDuplicate || bulkPlan.effectiveRows.length === 0) {
+            const noChangeResult: ImportResult = {
+              payments: 0, invoicesCreated: 0, lateFees: 0, trafficViolations: 0, maintenanceRecords: 0,
+              skipped: file.rows.length,
+              skippedReasons: ['تحقق الوكيل من عدم وجود أي تغيير جديد.'],
+              paymentReport: [],
+            };
+            setImportResults((current) => ({ ...current, [file.id]: noChangeResult }));
+            recordFileOutcome(file, {
+              status: 'skipped',
+              message: 'ملف مطابق أو دون تغييرات جديدة؛ لم ينشئ الوكيل أي حركة.',
+              details: noChangeResult.skippedReasons,
+              contractNumber: contract.contract_number,
+            });
+            if (!bulkPlan.exactDuplicate) {
+              await completeExcelImportAgentPlan({
+                companyId,
+                versionId: bulkPlan.versionId,
+                success: true,
+                result: { ...noChangeResult, agentDecision: 'verified_no_change' },
+              });
+            }
+            skippedCount += 1;
+            continue;
+          }
+
+          const executableFile: ParsedExcelFile = {
+            ...file,
+            rows: applyAgentEffectiveRows(file.rows, bulkPlan.effectiveRows),
+          };
+          const result = await approveFile(executableFile, contract, (progress) => {
             setBulkApprovalProgress({
               current: index + 1,
               total: pendingFiles.length,
@@ -2914,6 +3329,12 @@ export default function ExcelPaymentImport() {
               rowTotal: progress.total,
               rowLabel: progress.label,
             });
+          });
+          await completeExcelImportAgentPlan({
+            companyId,
+            versionId: bulkPlan.versionId,
+            success: true,
+            result: { ...result, agentActions: bulkPlan.summary.actions },
           });
           setImportResults((current) => ({ ...current, [file.id]: result }));
           recordFileOutcome(file, {
@@ -2924,6 +3345,18 @@ export default function ExcelPaymentImport() {
           });
           approvedCount += 1;
         } catch (error: unknown) {
+          if (bulkPlan && !bulkPlan.exactDuplicate) {
+            try {
+              await completeExcelImportAgentPlan({
+                companyId,
+                versionId: bulkPlan.versionId,
+                success: false,
+                errorMessage: errorMessage(error),
+              });
+            } catch (completionError) {
+              console.error('Could not record bulk Excel agent failure:', completionError);
+            }
+          }
           const message = translateExcelImportError(error) || errorMessage(error) || 'فشل اعتماد الملف';
           console.error('Bulk Excel approval skipped failed file:', {
             fileName: file.fileName,
@@ -3233,6 +3666,8 @@ export default function ExcelPaymentImport() {
                   return (
                     <button
                       key={file.id}
+                      data-testid="excel-import-file-card"
+                      data-file-id={file.id}
                       type="button"
                       onClick={() => {
                         if (fileResult && linkedContract) {
@@ -3340,6 +3775,7 @@ export default function ExcelPaymentImport() {
                       </Button>
                       <Button
                         type="button"
+                        disabled={!isEditMode && (isMatchingContract || approvalBlockers.length > 0 || Boolean(importResult))}
                         onClick={() => {
                           if (isEditMode) {
                             handleEditToggle();
@@ -3355,6 +3791,7 @@ export default function ExcelPaymentImport() {
                             return;
                           }
                           setApprovalDialogOpen(true);
+                          void prepareAgentPlan();
                         }}
                         className="gap-2 rounded-xl bg-[#22C7A1] text-white hover:bg-[#1BAA8A]"
                       >
@@ -3454,10 +3891,10 @@ export default function ExcelPaymentImport() {
                                     variant="outline"
                                     size="sm"
                                     className="mt-2 h-8 w-full rounded-lg border-slate-200 bg-white text-xs font-bold"
-                                    disabled={Boolean(importResult)}
+                                    disabled={Boolean(importResult) || rememberingContractFileId === selectedFile.id}
                                     onClick={() => applySuggestedContractMatch(alternative)}
                                   >
-                                    استخدام هذا العقد
+                                    {rememberingContractFileId === selectedFile.id ? 'جاري حفظ الاختيار...' : 'استخدام هذا العقد'}
                                   </Button>
                                 </div>
                               ))}
@@ -3478,10 +3915,10 @@ export default function ExcelPaymentImport() {
                                     variant="outline"
                                     size="sm"
                                     className="mt-2 h-8 w-full rounded-lg border-amber-200 bg-white text-xs font-bold text-amber-800"
-                                    disabled={Boolean(importResult)}
+                                    disabled={Boolean(importResult) || rememberingContractFileId === selectedFile.id}
                                     onClick={() => applySuggestedContractMatch(alternative)}
                                   >
-                                    استخدام هذا العقد
+                                    {rememberingContractFileId === selectedFile.id ? 'جاري حفظ الاختيار...' : 'استخدام هذا العقد'}
                                   </Button>
                                 </div>
                               ))}
@@ -3548,10 +3985,10 @@ export default function ExcelPaymentImport() {
                                 type="button"
                                 size="sm"
                                 className="mt-3 h-8 w-full rounded-lg bg-[#020617] text-xs font-bold text-white hover:bg-[#1E293B]"
-                                disabled={Boolean(importResult)}
+                                disabled={Boolean(importResult) || rememberingContractFileId === selectedFile.id}
                                 onClick={() => applySuggestedContractMatch(alternative)}
                               >
-                                استخدام هذا العقد
+                                {rememberingContractFileId === selectedFile.id ? 'جاري حفظ الاختيار...' : 'استخدام هذا العقد'}
                               </Button>
                             </div>
                           ))}
@@ -3802,7 +4239,44 @@ export default function ExcelPaymentImport() {
               <p className="text-xs font-semibold text-sky-700">المخالفات المرورية</p>
               <p className="mt-1 text-xl font-bold">{formatCurrency(approvalSummary.totalTraffic)}</p>
             </div>
+            <div className="rounded-xl border border-violet-200 bg-violet-50 p-4 sm:col-span-2">
+              <p className="text-xs font-semibold text-violet-700">سجلات الصيانة</p>
+              <p className="mt-1 text-xl font-bold">{formatCurrency(approvalSummary.totalMaintenance)}</p>
+            </div>
           </div>
+
+          {!importResult && (
+            <div className={`rounded-xl border p-4 text-sm ${
+              agentPlan?.summary.review
+                ? 'border-amber-300 bg-amber-50 text-amber-900'
+                : agentPlan?.exactDuplicate || agentPlan?.summary.unchanged
+                  ? 'border-slate-200 bg-slate-50 text-slate-700'
+                  : 'border-emerald-200 bg-emerald-50 text-emerald-900'
+            }`}>
+              <div className="flex items-center justify-between gap-3">
+                <p className="font-black">خطة وكيل الاستيراد</p>
+                <Badge variant="outline" className="bg-white">
+                  {isAgentPlanLoading ? 'يحلل الآن' : agentPlan ? `${agentPlan.summary.actions} إجراء` : 'غير جاهزة'}
+                </Badge>
+              </div>
+              {isAgentPlanLoading ? (
+                <p className="mt-2">يقارن الوكيل هذا الملف بآخر نسخة معتمدة ويصنف النصوص عبر LongCat...</p>
+              ) : agentPlan?.exactDuplicate ? (
+                <p className="mt-2 font-semibold">هذا الملف معتمد سابقًا بنفس المحتوى. لن تُنشأ أي حركة جديدة.</p>
+              ) : agentPlan ? (
+                <div className="mt-2 space-y-1">
+                  <p>إجراءات قابلة للتنفيذ: <strong>{agentPlan.summary.executable}</strong></p>
+                  <p>صفوف دون تغيير: <strong>{agentPlan.actions.filter((action) => action.command === 'excel_import.no_change').length}</strong></p>
+                  <p>إجراءات حساسة متوقفة للمراجعة: <strong>{agentPlan.summary.review}</strong></p>
+                  {agentPlanReviewReasons(agentPlan).slice(0, 3).map((reason) => (
+                    <p key={reason} className="font-semibold">- {reason}</p>
+                  ))}
+                </div>
+              ) : (
+                <p className="mt-2 text-red-700">تعذر تجهيز الخطة. أعد فتح النافذة للمحاولة مرة أخرى.</p>
+              )}
+            </div>
+          )}
 
           <div className={importResult ? 'hidden' : 'rounded-xl border border-slate-200 bg-white p-4 text-sm leading-7 text-[#475569]'}>
             <p className="font-bold text-[#020617]">عند التنفيذ النهائي سيقوم النظام بـ:</p>
@@ -3811,6 +4285,7 @@ export default function ExcelPaymentImport() {
             <p>- إبقاء الرصيد المتبقي على الفاتورة كذمة غير مدفوعة.</p>
             <p>- إنشاء غرامة التأخير كمستحق منفصل، وليس كجزء من دفعة الإيجار.</p>
             <p>- إنشاء المخالفات المرورية كمستحقات مستقلة عند وجودها.</p>
+            <p>- إنشاء سجل صيانة تاريخي مستقل عند وجود مبلغ صيانة صريح.</p>
           </div>
 
           <div className={`${importResult ? 'hidden' : ''} rounded-xl border p-4 text-sm leading-6 ${
@@ -3911,6 +4386,10 @@ export default function ExcelPaymentImport() {
                 <div className="rounded-xl border border-slate-200 bg-white p-4">
                   <p className="text-xs font-bold text-[#94A3B8]">المخالفات المرورية</p>
                   <p className="mt-1 text-2xl font-black text-[#020617]">{importResult.trafficViolations}</p>
+                </div>
+                <div className="rounded-xl border border-slate-200 bg-white p-4">
+                  <p className="text-xs font-bold text-[#94A3B8]">سجلات الصيانة</p>
+                  <p className="mt-1 text-2xl font-black text-[#020617]">{importResult.maintenanceRecords}</p>
                 </div>
                 <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
                   <p className="text-xs font-bold text-amber-700">تم تخطيها</p>
@@ -4025,10 +4504,10 @@ export default function ExcelPaymentImport() {
             <Button
               type="button"
               className="rounded-xl bg-[#22C7A1] text-white hover:bg-[#1BAA8A]"
-              disabled={isApproving || approvalBlockers.length > 0 || Boolean(importResult)}
+              disabled={isApproving || isAgentPlanLoading || !agentPlan || approvalBlockers.length > 0 || Boolean(importResult)}
               onClick={executeApproval}
             >
-              {importResult ? 'تم الاعتماد' : isApproving ? 'جاري الاعتماد...' : 'تنفيذ الاعتماد'}
+              {importResult ? 'تم الاعتماد' : isAgentPlanLoading ? 'الوكيل يحلل...' : isApproving ? 'جاري الاعتماد...' : 'تنفيذ خطة الوكيل'}
             </Button>
             <Button
               type="button"

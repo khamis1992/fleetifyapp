@@ -63,7 +63,7 @@ async function auditContracts(
     "contracts",
     "id,company_id,contract_number,status,contract_amount,total_paid,balance_due,payment_status,start_date,end_date,contract_date,customer_id,vehicle_id",
     String(context.job.cursor?.lastId || ""),
-    Math.min(context.job.batch_size, 10)
+    Math.min(context.job.batch_size, 100)
   );
   const contractIds = page.rows.map((row) => row.id);
   if (contractIds.length === 0) return pageResult(page, []);

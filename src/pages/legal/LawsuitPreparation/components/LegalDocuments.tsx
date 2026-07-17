@@ -24,7 +24,7 @@ import { Button } from '@/components/ui/button';
 import { useFleetifyTranslation } from '@/hooks/useTranslation';
 import { useLawsuitPreparationContext, type DocumentState, type DocumentsState } from '../store';
 
-const mandatoryDocIds: (keyof DocumentsState)[] = [
+const baseMandatoryDocIds: (keyof DocumentsState)[] = [
   'memo',
   'claims',
   'docsList',
@@ -45,6 +45,7 @@ const docIcons: Record<string, ReactNode> = {
   ibanCertificate: <FileText className="h-4 w-4" />,
   representativeId: <User className="h-4 w-4" />,
   violations: <AlertCircle className="h-4 w-4" />,
+  violationsEvidence: <Shield className="h-4 w-4" />,
   criminalComplaint: <ShieldAlert className="h-4 w-4" />,
   violationsTransfer: <ArrowRightLeft className="h-4 w-4" />,
 };
@@ -158,6 +159,9 @@ export function LegalDocuments() {
   const { state, actions } = useLawsuitPreparationContext();
   const { documents, overdueInvoices, trafficViolations, ui } = state;
 
+  const mandatoryDocIds = trafficViolations.length > 0
+    ? [...baseMandatoryDocIds, 'violationsEvidence' as const]
+    : baseMandatoryDocIds;
   const mandatoryDocs = mandatoryDocIds.map((docId) => documents[docId]);
   const supportingDocs = supportingDocIds
     .map((docId) => documents[docId])

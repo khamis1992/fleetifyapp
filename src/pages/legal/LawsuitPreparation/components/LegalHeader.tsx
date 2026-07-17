@@ -24,9 +24,12 @@ function formatDate(value?: string | null) {
 export function LegalHeader() {
   const navigate = useNavigate();
   const { state } = useLawsuitPreparationContext();
-  const { calculations, contract, customer, documents, vehicle } = state;
-  const readyCount = mandatoryDocIds.filter((docId) => documents[docId].status === 'ready').length;
-  const readiness = Math.round((readyCount / mandatoryDocIds.length) * 100);
+  const { calculations, contract, customer, documents, trafficViolations, vehicle } = state;
+  const requiredDocumentIds = trafficViolations.length > 0
+    ? [...mandatoryDocIds, 'violationsEvidence' as const]
+    : mandatoryDocIds;
+  const readyCount = requiredDocumentIds.filter((docId) => documents[docId].status === 'ready').length;
+  const readiness = Math.round((readyCount / requiredDocumentIds.length) * 100);
   const customerName = formatCustomerName(customer) || 'عميل غير محدد';
   const vehicleLabel = vehicle
     ? [vehicle.make, vehicle.model, vehicle.year].filter(Boolean).join(' ')

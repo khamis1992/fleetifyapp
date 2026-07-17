@@ -190,12 +190,20 @@ export interface DocumentsState {
   claims: DocumentState;
   docsList: DocumentState;
   violations: DocumentState;
+  violationsEvidence: DocumentState;
   criminalComplaint: DocumentState;
   violationsTransfer: DocumentState;
   contract: DocumentState;
   commercialRegister: DocumentState;
   ibanCertificate: DocumentState;
   representativeId: DocumentState;
+}
+
+export interface ViolationEvidenceDocument {
+  id: string;
+  name: string;
+  url: string;
+  mimeType: string | null;
 }
 
 // ==========================================
@@ -237,6 +245,7 @@ export interface LawsuitPreparationState {
   vehicle: Vehicle | null;
   overdueInvoices: OverdueInvoice[];
   trafficViolations: TrafficViolation[];
+  violationEvidenceDocuments: ViolationEvidenceDocument[];
   companyDocuments: CompanyLegalDocument[];
   
   // Derived Data
@@ -257,6 +266,7 @@ export type LawsuitPreparationAction =
   | { type: 'SET_CONTRACT_DATA'; payload: { contract: Contract; customer: Customer | null; vehicle: Vehicle | null } }
   | { type: 'SET_INVOICES'; payload: OverdueInvoice[] }
   | { type: 'SET_VIOLATIONS'; payload: TrafficViolation[] }
+  | { type: 'SET_VIOLATION_EVIDENCE_DOCUMENTS'; payload: ViolationEvidenceDocument[] }
   | { type: 'SET_COMPANY_DOCUMENTS'; payload: CompanyLegalDocument[] }
   | { type: 'SET_COMPANY_ID'; payload: string }
   
@@ -377,6 +387,12 @@ export const DOCUMENT_CONFIG: Record<keyof DocumentsState, {
     name: 'كشف المخالفات المرورية',
     description: 'كشف بالمخالفات المرورية',
     type: 'optional',
+    category: 'violations',
+  },
+  violationsEvidence: {
+    name: 'تقرير مخالفات وزارة الداخلية',
+    description: 'نسخة التقرير الرسمي الصادر للمركبة',
+    type: 'mandatory',
     category: 'violations',
   },
   criminalComplaint: {

@@ -12,6 +12,7 @@ import {
   MatchConfidence,
   MatchConfidenceInput
 } from '@/types/violations';
+import { normalizeViolationDate } from '@/utils/violationDate';
 
 // ----------------------------------------------------------------------------
 // Vehicle Matching
@@ -206,34 +207,39 @@ export async function matchToVehicle(
 /**
  * Fetch multiple vehicles at once for batch matching
  */
-export async function fetchVehiclesForMatching(companyId: string): Promise<Map<string, string>> {
+export async function fetchVehiclesForMatching(companyId: string): Promise<Map<string, Set<string>>> {
   // جلب جميع المركبات (نشطة وغير نشطة) لضمان مطابقة المخالفات
   const { data: vehicles, error } = await supabase
     .from('vehicles')
     .select('id, plate_number')
     .eq('company_id', companyId);
 
-  if (error || !vehicles) {
-    return new Map();
-  }
+  if (error) throw error;
+  if (!vehicles) return new Map();
 
-  const plateToVehicleId = new Map<string, string>();
+  const plateToVehicleIds = new Map<string, Set<string>>();
+
+  const addPlateMatch = (plate: string, vehicleId: string) => {
+    const vehicleIds = plateToVehicleIds.get(plate) || new Set<string>();
+    vehicleIds.add(vehicleId);
+    plateToVehicleIds.set(plate, vehicleIds);
+  };
 
   vehicles.forEach(vehicle => {
     if (vehicle.plate_number) {
       const variations = createPlateVariations(vehicle.plate_number);
       variations.forEach(plate => {
-        plateToVehicleId.set(plate, vehicle.id);
+        addPlateMatch(plate, vehicle.id);
       });
       // إضافة الأرقام فقط كمفتاح إضافي للبحث الجزئي
       const numericOnly = vehicle.plate_number.replace(/\D/g, '');
       if (numericOnly.length >= 3) {
-        plateToVehicleId.set(numericOnly, vehicle.id);
+        addPlateMatch(numericOnly, vehicle.id);
       }
     }
   });
 
-  return plateToVehicleId;
+  return plateToVehicleIds;
 }
 
 // ----------------------------------------------------------------------------
@@ -293,6 +299,50 @@ function daysBetween(date1: Date, date2: Date): number {
   return Math.abs(Math.floor((date1.getTime() - date2.getTime()) / (1000 * 60 * 60 * 24)));
 }
 
+function selectRecentlyEndedContract<T extends { start_date?: string | null; end_date?: string | null }>(
+  contracts: T[],
+  violationDate: Date,
+  graceDays = 7
+): { contract: T; daysSinceEnd: number } | null {
+  const previousContracts = contracts
+    .filter(contract => {
+      const startDate = contract.start_date ? new Date(contract.start_date) : null;
+      const endDate = contract.end_date ? new Date(contract.end_date) : null;
+      return (!startDate || startDate <= violationDate) && endDate && endDate < violationDate;
+    })
+    .sort((a, b) => new Date(b.end_date!).getTime() - new Date(a.end_date!).getTime());
+
+  if (previousContracts.length === 0) return null;
+
+  const contract = previousContracts[0];
+  const daysSinceEnd = daysBetween(violationDate, new Date(contract.end_date!));
+  return daysSinceEnd <= graceDays ? { contract, daysSinceEnd } : null;
+}
+
+function selectLatestStartedContract<T extends { start_date?: string | null; status?: string }>(
+  contracts: T[]
+): T | null {
+  if (contracts.length === 0) return null;
+  if (contracts.length === 1) return contracts[0];
+
+  const startTimestamp = (contract: T): number => {
+    if (!contract.start_date) return Number.NEGATIVE_INFINITY;
+    const timestamp = new Date(contract.start_date).getTime();
+    return Number.isNaN(timestamp) ? Number.NEGATIVE_INFINITY : timestamp;
+  };
+
+  const latestTimestamp = Math.max(...contracts.map(startTimestamp));
+  const latestContracts = contracts.filter(contract => startTimestamp(contract) === latestTimestamp);
+
+  if (latestContracts.length === 1) return latestContracts[0];
+
+  const nonCancelledLatestContracts = latestContracts.filter(contract => contract.status !== 'cancelled');
+  if (nonCancelledLatestContracts.length === 1) return nonCancelledLatestContracts[0];
+
+  const activeLatestContracts = nonCancelledLatestContracts.filter(contract => contract.status === 'active');
+  return activeLatestContracts.length === 1 ? activeLatestContracts[0] : null;
+}
+
 /**
  * Match violation to contract using 4-tier algorithm
  */
@@ -336,17 +386,27 @@ export async function matchToContract(
       };
     }
 
-    // Tier 1: Active contract with date range match
-    const activeContractsInRange = contracts.filter(contract => {
-      if (contract.status !== 'active') return false;
+    const contractsInRange = contracts.filter(contract => {
       const startDate = contract.start_date ? new Date(contract.start_date) : null;
       const endDate = contract.end_date ? new Date(contract.end_date) : null;
       return isDateInRange(vDate, startDate, endDate);
     });
 
-    if (activeContractsInRange.length > 0) {
-      // Most recent active contract
-      const contract = activeContractsInRange[0];
+    const selectedContract = selectLatestStartedContract(contractsInRange);
+
+    if (contractsInRange.length > 1 && !selectedContract) {
+      return {
+        contract_id: null,
+        customer_id: null,
+        customer_name: null,
+        contract_number: null,
+        confidence: 'none',
+        reason: `يوجد ${contractsInRange.length} عقود متداخلة في تاريخ المخالفة`
+      };
+    }
+
+    if (selectedContract) {
+      const contract = selectedContract;
       const customer = contract.customers as any;
       const customerName = customer?.company_name ||
         `${customer?.first_name_ar || ''} ${customer?.last_name_ar || ''}`.trim() ||
@@ -357,21 +417,15 @@ export async function matchToContract(
         customer_id: contract.customer_id,
         customer_name: customerName,
         contract_number: contract.contract_number,
-        confidence: 'high',
-        reason: `عقد نشط (${contract.contract_number})`
+        confidence: contract.status === 'active' ? 'high' : 'medium',
+        reason: `عقد (${contract.contract_number}) - ${contract.status === 'active' ? 'نشط' : contract.status}`
       };
     }
 
-    // Tier 2: Any contract with date range match
-    const contractsInRange = contracts.filter(contract => {
-      const startDate = contract.start_date ? new Date(contract.start_date) : null;
-      const endDate = contract.end_date ? new Date(contract.end_date) : null;
-      return isDateInRange(vDate, startDate, endDate);
-    });
+    const recentContract = selectRecentlyEndedContract(contracts, vDate);
 
-    if (contractsInRange.length > 0) {
-      // Prefer active, then most recent
-      const contract = contractsInRange[0];
+    if (recentContract) {
+      const { contract, daysSinceEnd } = recentContract;
       const customer = contract.customers as any;
       const customerName = customer?.company_name ||
         `${customer?.first_name_ar || ''} ${customer?.last_name_ar || ''}`.trim() ||
@@ -383,54 +437,17 @@ export async function matchToContract(
         customer_name: customerName,
         contract_number: contract.contract_number,
         confidence: 'medium',
-        reason: `عقد (${contract.contract_number}) - ${contract.status === 'active' ? 'نشط' : contract.status}`
+        reason: `أقرب عقد انتهى قبل المخالفة بـ ${daysSinceEnd} أيام`
       };
     }
-
-    // Tier 3: Most recent contract before violation
-    const contractsBefore = contracts
-      .filter(contract => {
-        const endDate = contract.end_date ? new Date(contract.end_date) : null;
-        return endDate && endDate < vDate;
-      })
-      .sort((a, b) => {
-        const dateA = new Date(a.end_date!);
-        const dateB = new Date(b.end_date!);
-        return dateB.getTime() - dateA.getTime();
-      });
-
-    if (contractsBefore.length > 0) {
-      const contract = contractsBefore[0];
-      const daysDiff = daysBetween(vDate, new Date(contract.end_date!));
-      const customer = contract.customers as any;
-      const customerName = customer?.company_name ||
-        `${customer?.first_name_ar || ''} ${customer?.last_name_ar || ''}`.trim() ||
-        `${customer?.first_name || ''} ${customer?.last_name || ''}`.trim();
-
-      return {
-        contract_id: contract.id,
-        customer_id: contract.customer_id,
-        customer_name: customerName,
-        contract_number: contract.contract_number,
-        confidence: daysDiff <= 7 ? 'medium' : 'low',
-        reason: `أقرب عقد (${daysDiff} أيام قبل المخالفة)`
-      };
-    }
-
-    // Tier 4: Last resort - most recent contract overall
-    const contract = contracts[0];
-    const customer = contract.customers as any;
-    const customerName = customer?.company_name ||
-      `${customer?.first_name_ar || ''} ${customer?.last_name_ar || ''}`.trim() ||
-      `${customer?.first_name || ''} ${customer?.last_name || ''}`.trim();
 
     return {
-      contract_id: contract.id,
-      customer_id: contract.customer_id,
-      customer_name: customerName,
-      contract_number: contract.contract_number,
-      confidence: 'low',
-      reason: 'أحدث عقد متوفر'
+      contract_id: null,
+      customer_id: null,
+      customer_name: null,
+      contract_number: null,
+      confidence: 'none',
+      reason: 'لا يوجد عقد يغطي تاريخ المخالفة'
     };
 
   } catch (error) {
@@ -457,7 +474,7 @@ export async function matchToContract(
 export async function matchViolation(
   violation: ExtractedViolation,
   companyId: string,
-  vehicleCache?: Map<string, string>
+  vehicleCache?: Map<string, Set<string>>
 ): Promise<MatchedViolation> {
   const id = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   const errors: string[] = [];
@@ -486,7 +503,7 @@ export async function matchViolation(
   // Step 3: Determine overall confidence
   const confidenceInput: MatchConfidenceInput = {
     has_active_contract: contractMatch.confidence === 'high',
-    date_range_match: contractMatch.confidence !== 'none',
+    date_range_match: contractMatch.confidence === 'high' || contractMatch.confidence === 'medium',
     vehicle_match: !!vehicleMatch.vehicle_id,
     customer_found: !!contractMatch.customer_id
   };
@@ -503,9 +520,11 @@ export async function matchViolation(
     customer_name: contractMatch.customer_name || undefined,
     contract_number: contractMatch.contract_number || undefined,
     match_confidence: overallConfidence,
-    status: overallConfidence === 'none' ? 'error' : 'matched',
+    status: overallConfidence === 'high' || overallConfidence === 'medium' ? 'matched' : 'partial',
     errors,
-    warnings
+    warnings: contractMatch.confidence === 'low' || contractMatch.confidence === 'none'
+      ? [contractMatch.reason]
+      : warnings
   };
 
   return result;
@@ -514,36 +533,59 @@ export async function matchViolation(
 /**
  * Match vehicle using cached plate-to-vehicle map
  */
-async function matchToVehicleFromCache(
+export async function matchToVehicleFromCache(
   plateNumber: string,
-  vehicleCache: Map<string, string>
+  vehicleCache: Map<string, Set<string>>,
+  violationDate?: string,
+  contractsCache?: Map<string, any[]>
 ): Promise<VehicleMatchResult> {
   const variations = createPlateVariations(plateNumber);
+  const candidateVehicleIds = new Set<string>();
 
   for (const plate of variations) {
-    const vehicleId = vehicleCache.get(plate);
-    if (vehicleId) {
-      return {
-        vehicle_id: vehicleId,
-        plate_number: plate,
-        confidence: 'high',
-        reason: `مطابقة للوحة ${plate}`
-      };
-    }
+    vehicleCache.get(plate)?.forEach(vehicleId => candidateVehicleIds.add(vehicleId));
   }
 
   // بحث بالأرقام فقط (إزالة الأحرف)
   const numericOnly = normalizePlateNumber(plateNumber).replace(/\D/g, '');
   if (numericOnly.length >= 3) {
-    const vehicleId = vehicleCache.get(numericOnly);
-    if (vehicleId) {
-      return {
-        vehicle_id: vehicleId,
-        plate_number: numericOnly,
-        confidence: 'medium',
-        reason: `مطابقة بالرقم ${numericOnly}`
-      };
+    vehicleCache.get(numericOnly)?.forEach(vehicleId => candidateVehicleIds.add(vehicleId));
+  }
+
+  if (candidateVehicleIds.size === 1) {
+    return {
+      vehicle_id: [...candidateVehicleIds][0],
+      plate_number: plateNumber,
+      confidence: 'high',
+      reason: `مطابقة للوحة ${plateNumber}`
+    };
+  }
+
+  if (candidateVehicleIds.size > 1) {
+    if (violationDate && contractsCache) {
+      const candidatesWithContract = [...candidateVehicleIds]
+        .map(vehicleId => ({
+          vehicleId,
+          contractMatch: matchToContractFromCache(vehicleId, violationDate, contractsCache),
+        }))
+        .filter(candidate => Boolean(candidate.contractMatch.contract_id));
+
+      if (candidatesWithContract.length === 1) {
+        return {
+          vehicle_id: candidatesWithContract[0].vehicleId,
+          plate_number: plateNumber,
+          confidence: 'high',
+          reason: `تم حسم تكرار اللوحة ${plateNumber} بالعقد المطابق لتاريخ المخالفة`
+        };
+      }
     }
+
+    return {
+      vehicle_id: null,
+      plate_number: plateNumber,
+      confidence: 'none',
+      reason: `اللوحة ${plateNumber} مرتبطة بأكثر من مركبة وتحتاج مراجعة`
+    };
   }
 
   return {
@@ -582,10 +624,11 @@ async function fetchContractsForMatching(companyId: string): Promise<Map<string,
     .eq('company_id', companyId)
     .order('end_date', { ascending: false });
 
-  if (error || !contracts) {
+  if (error) {
     console.error('Error fetching contracts:', error);
-    return new Map();
+    throw error;
   }
+  if (!contracts) return new Map();
 
   // Group contracts by vehicle_id
   const contractsByVehicle = new Map<string, any[]>();
@@ -604,7 +647,7 @@ async function fetchContractsForMatching(companyId: string): Promise<Map<string,
 /**
  * Match violation to contract using cached contracts (in-memory)
  */
-function matchToContractFromCache(
+export function matchToContractFromCache(
   vehicleId: string,
   violationDate: string,
   contractsCache: Map<string, any[]>
@@ -642,43 +685,51 @@ function matchToContractFromCache(
     return afterStart && beforeEnd;
   };
 
-  // Tier 1: Active contract with date range match
-  const activeInRange = contracts.find(c => 
-    c.status === 'active' && isInRange(c.start_date, c.end_date)
-  );
-  if (activeInRange) {
+  const inRange = contracts.filter(c => isInRange(c.start_date, c.end_date));
+  const selectedContract = selectLatestStartedContract(inRange);
+
+  if (inRange.length > 1 && !selectedContract) {
     return {
-      contract_id: activeInRange.id,
-      customer_id: activeInRange.customer_id,
-      customer_name: getCustomerName(activeInRange),
-      contract_number: activeInRange.contract_number,
-      confidence: 'high',
-      reason: `عقد نشط (${activeInRange.contract_number})`
+      contract_id: null,
+      customer_id: null,
+      customer_name: null,
+      contract_number: null,
+      confidence: 'none',
+      reason: `يوجد ${inRange.length} عقود متداخلة في تاريخ المخالفة`
+    };
+  }
+  if (selectedContract) {
+    const contract = selectedContract;
+    return {
+      contract_id: contract.id,
+      customer_id: contract.customer_id,
+      customer_name: getCustomerName(contract),
+      contract_number: contract.contract_number,
+      confidence: contract.status === 'active' ? 'high' : 'medium',
+      reason: `عقد (${contract.contract_number}) - ${contract.status === 'active' ? 'نشط' : contract.status}`
     };
   }
 
-  // Tier 2: Any contract with date range match
-  const inRange = contracts.find(c => isInRange(c.start_date, c.end_date));
-  if (inRange) {
+  const recentContract = selectRecentlyEndedContract(contracts, vDate);
+  if (recentContract) {
+    const { contract, daysSinceEnd } = recentContract;
     return {
-      contract_id: inRange.id,
-      customer_id: inRange.customer_id,
-      customer_name: getCustomerName(inRange),
-      contract_number: inRange.contract_number,
+      contract_id: contract.id,
+      customer_id: contract.customer_id,
+      customer_name: getCustomerName(contract),
+      contract_number: contract.contract_number,
       confidence: 'medium',
-      reason: `عقد (${inRange.contract_number}) - ${inRange.status === 'active' ? 'نشط' : inRange.status}`
+      reason: `أقرب عقد انتهى قبل المخالفة بـ ${daysSinceEnd} أيام`
     };
   }
 
-  // Tier 3: Most recent contract
-  const mostRecent = contracts[0];
   return {
-    contract_id: mostRecent.id,
-    customer_id: mostRecent.customer_id,
-    customer_name: getCustomerName(mostRecent),
-    contract_number: mostRecent.contract_number,
-    confidence: 'low',
-    reason: 'أحدث عقد متوفر'
+    contract_id: null,
+    customer_id: null,
+    customer_name: null,
+    contract_number: null,
+    confidence: 'none',
+    reason: 'لا يوجد عقد يغطي تاريخ المخالفة'
   };
 }
 
@@ -708,13 +759,33 @@ export async function matchViolationsBatch(
   for (let i = 0; i < violations.length; i++) {
     const violation = violations[i];
     const id = `temp_${Date.now()}_${i}`;
+    const normalizedDate = normalizeViolationDate(violation.date);
+
+    if (!normalizedDate) {
+      results.push({
+        ...violation,
+        id,
+        match_confidence: 'none',
+        status: 'error',
+        errors: [`تاريخ المخالفة غير صالح: ${violation.date || 'غير محدد'}`],
+        warnings: [],
+      });
+      continue;
+    }
+
+    const normalizedViolation = { ...violation, date: normalizedDate };
     
     // Match to vehicle
-    const vehicleMatch = await matchToVehicleFromCache(violation.plate_number, vehicleCache);
+    const vehicleMatch = await matchToVehicleFromCache(
+      normalizedViolation.plate_number,
+      vehicleCache,
+      normalizedViolation.date,
+      contractsCache
+    );
     
     if (!vehicleMatch.vehicle_id) {
       results.push({
-        ...violation,
+        ...normalizedViolation,
         id,
         match_confidence: 'none',
         status: 'error',
@@ -727,7 +798,7 @@ export async function matchViolationsBatch(
     // Match to contract (in-memory)
     const contractMatch = matchToContractFromCache(
       vehicleMatch.vehicle_id,
-      violation.date,
+      normalizedViolation.date,
       contractsCache
     );
 
@@ -738,7 +809,7 @@ export async function matchViolationsBatch(
       contractMatch.confidence === 'low' ? 'low' : 'none';
 
     results.push({
-      ...violation,
+      ...normalizedViolation,
       id,
       vehicle_id: vehicleMatch.vehicle_id,
       contract_id: contractMatch.contract_id,
@@ -746,9 +817,11 @@ export async function matchViolationsBatch(
       customer_name: contractMatch.customer_name || undefined,
       contract_number: contractMatch.contract_number || undefined,
       match_confidence: overallConfidence,
-      status: overallConfidence === 'none' ? 'error' : 'matched',
+      status: overallConfidence === 'high' || overallConfidence === 'medium' ? 'matched' : 'partial',
       errors: [],
-      warnings: []
+      warnings: contractMatch.confidence === 'low' || contractMatch.confidence === 'none'
+        ? [contractMatch.reason]
+        : []
     });
 
     // Log progress every 100 violations

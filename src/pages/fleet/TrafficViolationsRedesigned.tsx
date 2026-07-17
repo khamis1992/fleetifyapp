@@ -26,7 +26,9 @@ import {
   ReceiptText,
   Send,
   Filter,
-  ShieldAlert
+  ShieldAlert,
+  Sparkles,
+  FolderUp
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -43,7 +45,7 @@ import { TrafficViolationReminderDialog } from '@/components/fleet/TrafficViolat
 import { TrafficViolationsAIAdvisor } from '@/components/fleet/TrafficViolationsAIAdvisor';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
-import { useVehicles } from '@/hooks/useVehicles';
+import { useCurrentCompanyId } from '@/hooks/useUnifiedCompanyAccess';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { format } from 'date-fns';
@@ -60,10 +62,14 @@ const TrafficViolationPaymentsDialog = lazy(() =>
 const TrafficViolationPDFImport = lazy(() =>
   import('@/components/fleet/TrafficViolationPDFImport').then(m => ({ default: m.TrafficViolationPDFImport }))
 );
+const TrafficFilesImport = lazy(() =>
+  import('@/components/fleet/TrafficFilesImport').then(m => ({ default: m.TrafficFilesImport }))
+);
 
 export default function TrafficViolationsRedesigned() {
   const navigate = useNavigate();
   const violationTheme = systemColorPattern.colors;
+  const companyId = useCurrentCompanyId();
   
   // State Management
   const [searchTerm, setSearchTerm] = useState('');
@@ -107,7 +113,24 @@ export default function TrafficViolationsRedesigned() {
     enabled: !isServerFilteringActive
   });
   const { data: allViolationStats } = useTrafficViolationsStats();
-  const { data: vehicles = [] } = useVehicles({ limit: 500 });
+  const { data: vehicles = [] } = useQuery({
+    queryKey: ['traffic-violations-filter-vehicles', companyId],
+    enabled: Boolean(companyId),
+    queryFn: async () => {
+      if (!companyId) return [];
+      const { data, error } = await supabase
+        .from('vehicles')
+        .select('id, plate_number, make, model')
+        .eq('company_id', companyId)
+        .eq('is_active', true)
+        .order('plate_number')
+        .limit(500);
+
+      if (error) throw error;
+      return data || [];
+    },
+    staleTime: 5 * 60 * 1000,
+  });
 
   // When search/filters are active, fetch matching violations server-side
   const { data: serverFilteredViolations = [], isLoading: isLoadingServerFiltered } = useQuery({
@@ -958,12 +981,6 @@ export default function TrafficViolationsRedesigned() {
         </div>
       </header>
 
-      <TrafficViolationsAIAdvisor
-        violations={filteredViolations}
-        formatCurrency={formatCurrency}
-        onOpenViolation={handleOpenSidePanel}
-      />
-
       {/* Print Header */}
       <div className="hidden print:block p-8 border-b border-slate-200 text-center mb-6">
         <h1 className="text-2xl font-bold mb-2">تقرير المخالفات المرورية</h1>
@@ -1021,6 +1038,14 @@ export default function TrafficViolationsRedesigned() {
               <TabsTrigger value="import" className="gap-2 rounded-[8px] px-4 py-2.5 font-black data-[state=active]:bg-[#22C7A1] data-[state=active]:text-white">
                 <Upload className="h-4 w-4" />
                 استيراد ملف
+              </TabsTrigger>
+              <TabsTrigger value="traffic-files" className="gap-2 rounded-[8px] px-4 py-2.5 font-black data-[state=active]:bg-[#22C7A1] data-[state=active]:text-white">
+                <FolderUp className="h-4 w-4" />
+                ملف المرور
+              </TabsTrigger>
+              <TabsTrigger value="ai-analysis" className="gap-2 rounded-[8px] px-4 py-2.5 font-black data-[state=active]:bg-[#173A63] data-[state=active]:text-white">
+                <Sparkles className="h-4 w-4" />
+                تحليل AI
               </TabsTrigger>
             </TabsList>
 
@@ -1263,6 +1288,25 @@ export default function TrafficViolationsRedesigned() {
               </Suspense>
             </section>
           </TabsContent>
+
+          <TabsContent value="traffic-files" className="mt-0">
+            <section className="overflow-hidden rounded-[8px] border border-[#DDE5EF] bg-white shadow-[0_18px_42px_-34px_rgba(15,23,42,.58)]">
+              <div className="border-b border-[#DDE5EF] bg-[#F8FAFC] p-4">
+                <h2 className="text-lg font-black text-[#020617]">ملف المرور</h2>
+              </div>
+              <Suspense fallback={<LoadingSpinner size="lg" />}>
+                <TrafficFilesImport />
+              </Suspense>
+            </section>
+          </TabsContent>
+
+          <TabsContent value="ai-analysis" className="mt-0">
+            <TrafficViolationsAIAdvisor
+              violations={filteredViolations}
+              formatCurrency={formatCurrency}
+              onOpenViolation={handleOpenSidePanel}
+            />
+          </TabsContent>
         </Tabs>
       </main>
 
@@ -1289,6 +1333,10 @@ export default function TrafficViolationsRedesigned() {
                 <TabsTrigger value="import" className="flex items-center gap-2 px-4 py-2 rounded-lg data-[state=active]:bg-teal-500 data-[state=active]:text-white data-[state=active]:shadow-md transition-all">
                   <Upload className="w-4 h-4" />
                   استيراد ملف
+                </TabsTrigger>
+                <TabsTrigger value="traffic-files" className="flex items-center gap-2 px-4 py-2 rounded-lg data-[state=active]:bg-teal-500 data-[state=active]:text-white data-[state=active]:shadow-md transition-all">
+                  <FolderUp className="w-4 h-4" />
+                  ملف المرور
                 </TabsTrigger>
               </TabsList>
             </div>
@@ -1623,6 +1671,11 @@ export default function TrafficViolationsRedesigned() {
             <TabsContent value="import" className="p-0">
               <Suspense fallback={<LoadingSpinner size="lg" />}>
                 <TrafficViolationPDFImport />
+              </Suspense>
+            </TabsContent>
+            <TabsContent value="traffic-files" className="p-0">
+              <Suspense fallback={<LoadingSpinner size="lg" />}>
+                <TrafficFilesImport />
               </Suspense>
             </TabsContent>
           </Tabs>

@@ -14,7 +14,7 @@ import {
   triageFindingsWithLongCat,
 } from "../_shared/system-audit/runtime.ts";
 
-const WORKER_VERSION = "2026-07-14.53";
+const WORKER_VERSION = "2026-07-16.54";
 type SupabaseClient = ReturnType<typeof createClient>;
 
 const CANONICAL_FINANCE_COMMANDS = new Set([

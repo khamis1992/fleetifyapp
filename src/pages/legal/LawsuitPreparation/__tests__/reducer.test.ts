@@ -77,6 +77,30 @@ describe('lawsuitPreparationReducer', () => {
       expect(newState.documents.memo.url).toBeNull();
       expect(newState.documents.memo.htmlContent).toBeNull();
     });
+
+    it('invalidates the documents list when traffic evidence changes', () => {
+      const stateWithDocumentsList = lawsuitPreparationReducer(
+        initialState,
+        {
+          type: 'GENERATE_DOCUMENT_SUCCESS',
+          payload: { docId: 'docsList', url: 'blob:old-list', html: '<html>old</html>' },
+        }
+      );
+
+      const newState = lawsuitPreparationReducer(stateWithDocumentsList, {
+        type: 'SET_VIOLATION_EVIDENCE_DOCUMENTS',
+        payload: [{
+          id: 'traffic-report-1',
+          name: '2766.pdf',
+          url: 'https://example.test/2766.pdf',
+          mimeType: 'application/pdf',
+        }],
+      });
+
+      expect(newState.documents.docsList.status).toBe('pending');
+      expect(newState.documents.docsList.htmlContent).toBeNull();
+      expect(newState.documents.violationsEvidence.status).toBe('ready');
+    });
     
     it('should calculate progress correctly when document is generated', () => {
       const action = { 
@@ -220,6 +244,23 @@ describe('lawsuitPreparationReducer', () => {
       const newState = lawsuitPreparationReducer(initialState, action);
       
       expect(newState.trafficViolations).toEqual(violations);
+    });
+
+    it('should mark Ministry of Interior evidence ready and retain every report', () => {
+      const evidenceDocuments = [
+        { id: 'doc-1', name: '2766.pdf', url: 'https://example.test/2766-1', mimeType: 'application/pdf' },
+        { id: 'doc-2', name: '2766-new.pdf', url: 'https://example.test/2766-2', mimeType: 'application/pdf' },
+      ];
+
+      const newState = lawsuitPreparationReducer(initialState, {
+        type: 'SET_VIOLATION_EVIDENCE_DOCUMENTS',
+        payload: evidenceDocuments,
+      });
+
+      expect(newState.violationEvidenceDocuments).toEqual(evidenceDocuments);
+      expect(newState.documents.violationsEvidence.status).toBe('ready');
+      expect(newState.documents.violationsEvidence.url).toBe(evidenceDocuments[0].url);
+      expect(newState.documents.violationsEvidence.name).toContain('(2)');
     });
   });
   

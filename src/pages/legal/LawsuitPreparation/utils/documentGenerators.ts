@@ -12,7 +12,11 @@ import {
   generateViolationsTransferHtml,
 } from '@/utils/official-letter-generator';
 import { formatCustomerName } from '@/utils/formatCustomerName';
-import type { LawsuitPreparationState, DocumentsState } from '../store';
+import type {
+  LawsuitPreparationState,
+  DocumentsState,
+  ViolationEvidenceDocument,
+} from '../store';
 
 // ==========================================
 // Helper Functions
@@ -71,6 +75,19 @@ function getDocumentName(docType: keyof DocumentsState): string {
     violationsTransfer: 'طلب تحويل المخالفات',
   };
   return names[docType] || 'مستند';
+}
+
+export function buildViolationEvidenceDocumentEntries(
+  evidenceDocuments: ViolationEvidenceDocument[]
+) {
+  return evidenceDocuments.map((document, index) => ({
+    name: evidenceDocuments.length > 1
+      ? `تقرير مخالفات وزارة الداخلية (${index + 1} من ${evidenceDocuments.length})`
+      : 'تقرير مخالفات وزارة الداخلية',
+    status: 'مرفق' as const,
+    url: document.url,
+    type: document.mimeType?.includes('pdf') ? 'pdf' : 'file',
+  }));
 }
 
 // ==========================================
@@ -447,6 +464,9 @@ export async function generateDocumentsList(
           status: 'غير مرفق',
         }
   );
+
+  // 8) تقارير المخالفات الرسمية المرتبطة بالعقد، إن وجدت
+  docsList.push(...buildViolationEvidenceDocumentEntries(state.violationEvidenceDocuments));
   
   const html = generateDocumentsListHtml({
     caseTitle: taqadiData.caseTitle,

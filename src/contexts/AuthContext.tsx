@@ -1,6 +1,7 @@
 // SECURITY FIX: Removed @ts-nocheck and added proper TypeScript types
 import React, { createContext, useContext, useState, useMemo, ReactNode, useRef } from 'react';
 import { Session, AuthChangeEvent } from '@supabase/supabase-js';
+import { useQueryClient } from '@tanstack/react-query';
 import { Capacitor } from '@capacitor/core';
 import { supabase } from "@/integrations/supabase/client";
 import { AuthUser, AuthContextType, authService } from '@/lib/auth';
@@ -116,6 +117,7 @@ const clearCachedUser = () => {
 };
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
+  const queryClient = useQueryClient();
   const [user, setUser] = useState<AuthUser | null>(getCachedUser);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoadingState] = useState(true);
@@ -135,7 +137,102 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const mountedRef = useRef(true);
   const lastKnownUserRef = useRef<AuthUser | null>(null);
   const lastRecoveryAttemptRef = useRef<number>(0);
+  const recoveryPromiseRef = useRef<Promise<boolean> | null>(null);
   const isSigningOutRef = useRef(false);
+
+  const recoverSessionOnResume = React.useCallback((): Promise<boolean> => {
+    if (recoveryPromiseRef.current) return recoveryPromiseRef.current;
+
+    const recoveryPromise = (async () => {
+      if (!mountedRef.current || isSigningOutRef.current) return false;
+
+      const now = Date.now();
+      if (now - lastRecoveryAttemptRef.current < 3000) return false;
+      lastRecoveryAttemptRef.current = now;
+
+      if (import.meta.env.DEV) {
+        console.log('[AUTH_CONTEXT] Restoring session after app resume...');
+      }
+
+      try {
+        // Embedded browsers do not always emit the complete visibility lifecycle
+        // expected by supabase-js, so explicitly resume token refresh here.
+        supabase.auth.startAutoRefresh();
+
+        const { data: storedData, error: storedError } = await supabase.auth.getSession();
+        if (storedError) throw storedError;
+
+        let recoveredSession = storedData.session;
+        const expiresSoon = recoveredSession?.expires_at
+          ? recoveredSession.expires_at * 1000 - Date.now() < 90_000
+          : false;
+
+        if (!recoveredSession || expiresSoon) {
+          const { data: refreshedData, error: refreshError } = await supabase.auth.refreshSession();
+          if (!refreshError && refreshedData.session) {
+            recoveredSession = refreshedData.session;
+          } else if (!recoveredSession && refreshError) {
+            throw refreshError;
+          }
+        }
+
+        if (!recoveredSession?.user || !mountedRef.current) return false;
+
+        setSession(recoveredSession);
+        setSessionError(null);
+
+        const knownUser = lastKnownUserRef.current;
+        const cachedUser = getCachedUser();
+        const completeUser = knownUser?.id === recoveredSession.user.id
+          ? knownUser
+          : cachedUser?.id === recoveredSession.user.id
+            ? cachedUser
+            : null;
+
+        if (completeUser) {
+          setUser(completeUser);
+        } else {
+          setUser(recoveredSession.user as AuthUser);
+          authService.getCurrentUser().then((authUser) => {
+            if (mountedRef.current && authUser) {
+              setUser(authUser);
+              cacheUser(authUser);
+            }
+          }).catch((error) => {
+            console.warn('[AUTH_CONTEXT] Profile refresh after resume failed:', error);
+          });
+        }
+
+        // Let React propagate the restored session/company before retrying only
+        // the mounted queries. This restores blank pages without a hard refresh.
+        window.setTimeout(() => {
+          if (!mountedRef.current || document.visibilityState !== 'visible') return;
+          void queryClient.invalidateQueries({ refetchType: 'active' });
+        }, 100);
+
+        return true;
+      } catch (error) {
+        // A temporary resume/network failure must not erase the cached identity.
+        // Explicit sign-out paths still clear it immediately.
+        console.warn('[AUTH_CONTEXT] Session restore after app resume failed:', error);
+        const cachedUser = getCachedUser();
+        if (mountedRef.current && cachedUser && !lastKnownUserRef.current) {
+          lastKnownUserRef.current = cachedUser;
+          setUser(cachedUser);
+        }
+        return false;
+      }
+    })();
+
+    recoveryPromiseRef.current = recoveryPromise;
+    void recoveryPromise.finally(() => {
+      if (recoveryPromiseRef.current === recoveryPromise) {
+        recoveryPromiseRef.current = null;
+      }
+    });
+
+    return recoveryPromise;
+  }, [queryClient]);
 
   // CRITICAL FIX: When user object exists but is missing company/profile data
   // (happens when session.user is set as a "basic" user during token refresh or
@@ -394,47 +491,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                 return;
               }
               
-              // Unexpected signout (e.g. token refresh failure on tab restore) - try to recover
-              console.log('⚠️ [AUTH_CONTEXT] Unexpected SIGNED_OUT - attempting recovery...');
-              try {
-                // Try refreshSession first (more likely to work than getSession after Supabase cleared it)
-                const { data: refreshData } = await supabase.auth.refreshSession();
-                if (refreshData?.session?.user && mountedRef.current) {
-                  console.log('✅ [AUTH_CONTEXT] Session recovered via refreshSession after unexpected SIGNED_OUT');
-                  setSession(refreshData.session);
-                  const authUser = await authService.getCurrentUser();
-                  if (mountedRef.current && authUser) {
-                    setUser(authUser);
-                    cacheUser(authUser);
-                  } else if (mountedRef.current && lastKnownUserRef.current) {
-                    setUser(lastKnownUserRef.current);
-                  }
-                  return;
-                }
-                // Fallback: try getSession in case session is still in storage
-                const { data: { session: recoveredSession } } = await supabase.auth.getSession();
-                if (recoveredSession?.user && mountedRef.current) {
-                  console.log('✅ [AUTH_CONTEXT] Session recovered via getSession after unexpected SIGNED_OUT');
-                  setSession(recoveredSession);
-                  const authUser = await authService.getCurrentUser();
-                  if (mountedRef.current && authUser) {
-                    setUser(authUser);
-                    cacheUser(authUser);
-                  } else if (mountedRef.current && lastKnownUserRef.current) {
-                    setUser(lastKnownUserRef.current);
-                  }
-                  return;
-                }
-              } catch (error) {
-                console.warn('⚠️ [AUTH_CONTEXT] Session recovery failed:', error);
-              }
-              
-              // Recovery failed - clear state and stop future recovery attempts
-              lastKnownUserRef.current = null;
-              setUser(null);
+              // Do not call Supabase auth methods inside onAuthStateChange; they can
+              // wait on the same auth lock. Preserve the cached identity and retry
+              // after this callback returns or when the app becomes visible.
               setSession(null);
-              clearCachedUser();
               setIsSigningOut(false);
+              if (lastKnownUserRef.current) {
+                setUser(lastKnownUserRef.current);
+              }
+              if (document.visibilityState === 'visible') {
+                window.setTimeout(() => {
+                  void recoverSessionOnResume();
+                }, 0);
+              }
               return;
             }
 
@@ -445,7 +514,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
               // CRITICAL FIX: Set basic user IMMEDIATELY to unblock UI
               if (mountedRef.current) {
                 console.log('🔍 [AUTH_CONTEXT] Setting basic user IMMEDIATELY:', session.user.email);
-                setUser(session.user as AuthUser);
+                const cachedUser = getCachedUser();
+                setUser(cachedUser?.id === session.user.id ? cachedUser : session.user as AuthUser);
                 setSessionError(null);
               }
 
@@ -522,74 +592,40 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   }, [user]);
 
-  // CRITICAL FIX: Recover session when tab becomes visible after minimize/restore
+  // Recover the session and active page data when the browser/app is restored.
   React.useEffect(() => {
-    const attemptRecovery = async () => {
-      if (!mountedRef.current) return;
-      if (!lastKnownUserRef.current) return;
-      
-      const now = Date.now();
-      if (now - lastRecoveryAttemptRef.current < 5000) return;
-      lastRecoveryAttemptRef.current = now;
-      
-      console.log('🔄 [AUTH_CONTEXT] Attempting session recovery...');
-      
-      try {
-        // Try refreshSession first, then fallback to getSession
-        const { data: refreshData } = await supabase.auth.refreshSession();
-        const recoveredSession = refreshData?.session;
-        
-        if (!recoveredSession) {
-          const { data: { session: storedSession } } = await supabase.auth.getSession();
-          if (storedSession?.user && mountedRef.current) {
-            setSession(storedSession);
-            const authUser = await authService.getCurrentUser();
-            if (mountedRef.current && authUser) {
-              setUser(authUser);
-              cacheUser(authUser);
-              setSessionError(null);
-              console.log('✅ [AUTH_CONTEXT] Session recovered via getSession');
-            }
-            return;
-          }
-          console.log('⚠️ [AUTH_CONTEXT] No session found during recovery');
-          return;
-        }
-        
-        if (recoveredSession.user && mountedRef.current) {
-          console.log('✅ [AUTH_CONTEXT] Session recovered via refreshSession');
-          setSession(recoveredSession);
-          
-          const authUser = await authService.getCurrentUser();
-          if (mountedRef.current && authUser) {
-            setUser(authUser);
-            cacheUser(authUser);
-            setSessionError(null);
-          } else if (mountedRef.current && lastKnownUserRef.current) {
-            setUser(lastKnownUserRef.current);
-            setSessionError(null);
-          }
-        }
-      } catch (error) {
-        console.warn('⚠️ [AUTH_CONTEXT] Session recovery failed:', error);
-      }
+    let wasBackgrounded = document.visibilityState !== 'visible';
+
+    const handleBackground = () => {
+      wasBackgrounded = true;
+    };
+
+    const handleResume = () => {
+      if (document.visibilityState !== 'visible' || !wasBackgrounded) return;
+      wasBackgrounded = false;
+      void recoverSessionOnResume();
     };
 
     const handleVisibilityChange = () => {
-      if (document.visibilityState !== 'visible') return;
-      if (user) return;
-      attemptRecovery();
+      if (document.visibilityState === 'visible') {
+        handleResume();
+      } else {
+        handleBackground();
+      }
     };
-    
+
     document.addEventListener('visibilitychange', handleVisibilityChange);
-    
-    // Also attempt recovery immediately if user just became null while tab is visible
-    if (!user && lastKnownUserRef.current && document.visibilityState === 'visible') {
-      attemptRecovery();
-    }
-    
-    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-  }, [user]);
+    window.addEventListener('blur', handleBackground);
+    window.addEventListener('focus', handleResume);
+    window.addEventListener('pageshow', handleResume);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('blur', handleBackground);
+      window.removeEventListener('focus', handleResume);
+      window.removeEventListener('pageshow', handleResume);
+    };
+  }, [recoverSessionOnResume]);
 
   // Storage event listener for cross-tab sync
   React.useEffect(() => {

@@ -64,6 +64,22 @@ describe('useUnifiedCompanyAccess tenant isolation', () => {
     expect(result.current.canAccessCompany('another-company')).toBe(false);
   });
 
+  it('keeps pages initializing while a cached user session is being restored', () => {
+    state.auth.user = {
+      id: 'user-id',
+      roles: ['admin'],
+      company: { id: 'company-id' },
+    };
+    state.auth.session = null;
+
+    const { result } = renderHook(() => useUnifiedCompanyAccess());
+
+    expect(result.current.companyId).toBeNull();
+    expect(result.current.isAuthenticating).toBe(true);
+    expect(result.current.isInitializing).toBe(true);
+    expect(result.current.authError).toBeNull();
+  });
+
   it('scopes a super administrator to the company being browsed', () => {
     state.auth.user = {
       id: 'super-id',

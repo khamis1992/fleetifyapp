@@ -202,11 +202,11 @@ const routeConfigs: RouteConfig[] = [
   // === Public Routes ===
   {
     path: '/',
-    component: EnterpriseLanding,
+    redirectTo: '/auth',
     lazy: false,
     exact: true,
-    title: 'Home',
-    description: 'Fleetify - Enterprise Fleet Management',
+    title: 'Authentication Redirect',
+    description: 'Redirect the public home page to authentication',
     group: 'public',
     priority: 1,
   },

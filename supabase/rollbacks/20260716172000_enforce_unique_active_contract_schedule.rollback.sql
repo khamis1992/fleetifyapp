@@ -1,0 +1,1 @@
+DROP INDEX IF EXISTS public.idx_contract_payment_schedules_unique_active_due_date;

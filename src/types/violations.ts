@@ -52,6 +52,8 @@ export const IMPORT_SOURCE_LABELS: Record<ImportSource, string> = {
 
 export interface ExtractedViolation {
   violation_number: string;
+  source_file_key?: string;
+  source_file_name?: string;
   reference_number?: string;
   date: string; // YYYY-MM-DD
   time?: string; // HH:MM

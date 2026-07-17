@@ -47,19 +47,20 @@ export const supabase = createClient<Database>(supabaseConfig.url, supabaseConfi
     fetch: async (url, options, retries = 1, delay = 500) => {
       // Add timeout to prevent hanging requests with retry logic
       for (let attempt = 0; attempt <= retries; attempt++) {
+        let timeoutId: ReturnType<typeof setTimeout> | undefined;
         try {
-          // Reduced timeout for faster failure detection
-          const timeoutMs = 10000; // 10s timeout (reduced from 25s)
+          const requestUrl = String(url);
+          const timeoutMs = requestUrl.includes('/functions/v1/excel-import-ai-review')
+            ? 90000
+            : 10000;
           const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+          timeoutId = setTimeout(() => controller.abort(), timeoutMs);
           
           const response = await fetch(url, {
             ...options,
             signal: controller.signal,
           });
           
-          clearTimeout(timeoutId);
-
           // Return response if successful or if this is the last attempt
           if (response.ok || attempt === retries) {
             return response;
@@ -70,7 +71,7 @@ export const supabase = createClient<Database>(supabaseConfig.url, supabaseConfi
         } catch (error: any) {
           // Log timeout warnings only in dev mode
           if (import.meta.env.DEV && error?.name === 'AbortError') {
-            console.warn(`[SUPABASE] Attempt ${attempt + 1}: Request timed out after 10s:`, url);
+            console.warn(`[SUPABASE] Attempt ${attempt + 1}: Request timed out:`, url);
           }
           
           // If this is the last attempt, throw the error
@@ -84,6 +85,8 @@ export const supabase = createClient<Database>(supabaseConfig.url, supabaseConfi
           // Wait before retrying
           await new Promise(resolve => setTimeout(resolve, delay));
           delay *= 1.5; // Moderate exponential backoff
+        } finally {
+          if (timeoutId) clearTimeout(timeoutId);
         }
       }
       

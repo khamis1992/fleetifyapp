@@ -159,9 +159,6 @@ const RouteRenderer: React.FC<RouteRendererProps> = ({
             />
           ))}
 
-        {/* REMOVED: Redirect for root path - this was causing navigation loops
-             The root path is already handled by EnterpriseLanding component at index 0 */}
-
         {/* 404 fallback - should be last */}
         <Route
           path="*"

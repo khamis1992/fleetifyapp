@@ -78,6 +78,18 @@ export const useUnifiedCompanyAccess = () => {
       };
     }
 
+    // A cached user with a temporarily missing session means the app is restoring
+    // after backgrounding, not that data finished loading.
+    if (user && !session) {
+      return {
+        ...defaultReturn,
+        isAuthenticating: true,
+        isInitializing: true,
+        authError: null,
+        validateCompanyAccess: () => { throw new Error('Authentication session is being restored') }
+      };
+    }
+
     if (!user || !session) {
       return defaultReturn;
     }

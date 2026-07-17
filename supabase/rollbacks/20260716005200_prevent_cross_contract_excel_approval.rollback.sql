@@ -1,0 +1,1 @@
+DROP INDEX IF EXISTS public.idx_excel_import_versions_company_approved_content;

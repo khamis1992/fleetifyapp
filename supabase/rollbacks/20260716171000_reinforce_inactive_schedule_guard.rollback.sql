@@ -1,0 +1,2 @@
+-- The preceding migration reasserts the already deployed guard definition.
+-- Rolling it back must retain that prior guard, so no schema change is required.

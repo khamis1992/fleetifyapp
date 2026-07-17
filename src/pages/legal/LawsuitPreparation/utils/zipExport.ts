@@ -240,6 +240,19 @@ async function addExternalDocuments(
     }
   }
 
+  for (let index = 0; index < state.violationEvidenceDocuments.length; index++) {
+    const evidenceDocument = state.violationEvidenceDocuments[index];
+    const blob = await fetchFileAsBlob(evidenceDocument.url);
+    if (!blob) continue;
+
+    const suffix = state.violationEvidenceDocuments.length > 1 ? `_${index + 1}` : '';
+    zip.file(
+      `${folderName}/${String(fileIndex).padStart(2, '0')}_تقرير_مخالفات_وزارة_الداخلية${suffix}.${getBlobExtension(blob)}`,
+      blob
+    );
+    fileIndex++;
+  }
+
   return fileIndex;
 }
 

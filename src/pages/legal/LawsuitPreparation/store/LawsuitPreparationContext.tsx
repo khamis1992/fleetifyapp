@@ -303,6 +303,44 @@ export function LawsuitPreparationProvider({
     },
     enabled: !!contractId && !!companyId,
   });
+
+  const { isLoading: violationEvidenceLoading } = useQuery({
+    queryKey: ['contract-violation-evidence-documents', contractId, companyId],
+    queryFn: async () => {
+      if (!contractId || !companyId) return [];
+
+      const { data, error } = await supabase
+        .from('contract_documents')
+        .select('id, document_name, file_path, mime_type')
+        .eq('contract_id', contractId)
+        .eq('company_id', companyId)
+        .eq('document_type', 'violations_proof')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      const evidenceDocuments = (await Promise.all((data || []).map(async (document) => {
+        if (!document.file_path) return null;
+        const { data: signedUrl, error: signedUrlError } = await supabase.storage
+          .from('contract-documents')
+          .createSignedUrl(document.file_path, 3600);
+        if (signedUrlError || !signedUrl?.signedUrl) {
+          console.error('[Violation Evidence] Failed to create signed URL:', signedUrlError);
+          return null;
+        }
+        return {
+          id: document.id,
+          name: document.document_name,
+          url: signedUrl.signedUrl,
+          mimeType: document.mime_type,
+        };
+      }))).filter((document): document is NonNullable<typeof document> => Boolean(document));
+
+      dispatch({ type: 'SET_VIOLATION_EVIDENCE_DOCUMENTS', payload: evidenceDocuments });
+      return evidenceDocuments;
+    },
+    enabled: !!contractId && !!companyId,
+  });
   
   // ==========================================
   // Derived Data (Calculations & Taqadi Data)
@@ -428,9 +466,9 @@ export function LawsuitPreparationProvider({
   
   // Update loading state
   useEffect(() => {
-    const isLoading = companyLoading || contractLoading || invoicesLoading || violationsLoading || companyDocumentsLoading || contractDocumentLoading;
+    const isLoading = companyLoading || contractLoading || invoicesLoading || violationsLoading || companyDocumentsLoading || contractDocumentLoading || violationEvidenceLoading;
     dispatch({ type: 'SET_LOADING', payload: isLoading });
-  }, [companyLoading, contractLoading, invoicesLoading, violationsLoading, companyDocumentsLoading, contractDocumentLoading]);
+  }, [companyLoading, contractLoading, invoicesLoading, violationsLoading, companyDocumentsLoading, contractDocumentLoading, violationEvidenceLoading]);
   
   // ==========================================
   // Actions

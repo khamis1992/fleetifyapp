@@ -236,7 +236,7 @@ export function useViolationMatching(
         v => v.status === 'partial' && !v.is_duplicate
       ).length;
       const errors = matched.filter(
-        v => v.status === 'error' || v.is_duplicate
+        v => v.status === 'error' && !v.is_duplicate
       ).length;
       const totalAmount = matched.reduce((sum, v) => sum + v.fine_amount, 0);
 
@@ -252,15 +252,7 @@ export function useViolationMatching(
 
     } catch (err: any) {
       setError(err.message);
-      return {
-        total_extracted: 0,
-        successful_matches: 0,
-        partial_matches: 0,
-        errors: 0,
-        duplicates_found: 0,
-        violations: [],
-        total_amount: 0
-      };
+      throw err;
     } finally {
       setIsProcessing(false);
     }

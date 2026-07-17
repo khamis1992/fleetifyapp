@@ -184,6 +184,12 @@ export class TrafficViolationRegexParser {
   // --------------------------------------------------------------------------
 
   private extractViolations(): ExtractedViolation[] {
+    const englishTableRows = this.extractEnglishMoiTableRows();
+    if (englishTableRows.length > 0) {
+      console.log(`[RegexParser] Found ${englishTableRows.length} MOI English table rows`);
+      return englishTableRows;
+    }
+
     const violations: ExtractedViolation[] = [];
     const seenViolationNumbers = new Set<string>();
 
@@ -296,6 +302,61 @@ export class TrafficViolationRegexParser {
 
     // Deduplicate violations by violation_number
     return this.deduplicateViolations(violations);
+  }
+
+  private extractEnglishMoiTableRows(): ExtractedViolation[] {
+    const violations: ExtractedViolation[] = [];
+    const seenViolationNumbers = new Set<string>();
+    const rowPattern = /(?:^|\n)\s*\d{1,4}\s+([1-3]\d{9})\s+(\d{4}-\d{2}-\d{2})([\s\S]*?)(?=\n\s*\d{1,4}\s+[1-3]\d{9}\s+\d{4}-\d{2}-\d{2}|\n--- PAGE|$)/g;
+    let rowMatch: RegExpExecArray | null;
+
+    while ((rowMatch = rowPattern.exec(this.rawText)) !== null) {
+      const violationNumber = rowMatch[1];
+      if (seenViolationNumbers.has(violationNumber)) continue;
+
+      const body = rowMatch[3].replace(/\r/g, '');
+      const timeMatch = body.match(/\b([01]?\d|2[0-3]):([0-5]\d)\b/);
+      const plateMatch = body.match(
+        /\b(\d{5,6})\/(?:LIMOUSI\s*NE|PRIVATE\s*VEHICLE|PRIVATE\s*MOTORCYCLE)\b/i,
+      );
+      const amountMatches = Array.from(
+        body.matchAll(/(\d+(?:\.\d+)?)\s+(\d+)\s*(?=\n|$)/gm),
+      ).filter((candidate) => {
+        const amount = Number(candidate[1]);
+        const points = Number(candidate[2]);
+        return amount >= 0 && amount < 100000 && points >= 0 && points <= 100;
+      });
+      const amountMatch = amountMatches.at(-1);
+
+      if (!timeMatch || !plateMatch || !amountMatch || amountMatch.index === undefined) {
+        continue;
+      }
+
+      const detailStart = (plateMatch.index || 0) + plateMatch[0].length;
+      const detailEnd = amountMatch.index;
+      const details = body.slice(detailStart, detailEnd);
+      const locationMatch = details.match(/\bZone\s+\d+(?:\s+Street\s+\d+)?\b/i);
+      const violationType = details
+        .slice(locationMatch ? (locationMatch.index || 0) + locationMatch[0].length : 0)
+        .replace(/\s+/g, ' ')
+        .trim();
+
+      if (!violationType) continue;
+
+      violations.push({
+        violation_number: violationNumber,
+        plate_number: plateMatch[1],
+        date: rowMatch[2],
+        time: `${timeMatch[1].padStart(2, '0')}:${timeMatch[2]}`,
+        fine_amount: Math.round(Number(amountMatch[1])),
+        confidence_score: locationMatch ? 1 : 0.95,
+        violation_type: violationType,
+        location: locationMatch?.[0]?.replace(/\s+/g, ' ').trim() || '',
+      });
+      seenViolationNumbers.add(violationNumber);
+    }
+
+    return violations;
   }
 
   private extractViolationNumbers(): Array<{ number: string; index: number }> {

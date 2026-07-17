@@ -38,6 +38,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { PageSkeletonFallback } from '@/components/common/LazyPageWrapper';
 import { VehiclePricingPanel } from './VehiclePricingPanel';
 import { VehicleDocumentsPanel } from './VehicleDocumentsPanel';
+import { VehicleTrafficFilesCard } from './VehicleTrafficFilesCard';
 import { VehicleInsurancePanel } from './VehicleInsurancePanel';
 import { VehicleForm } from './VehicleForm';
 import { MaintenanceForm } from './MaintenanceForm';
@@ -1218,6 +1219,8 @@ const ViolationsTab = ({ violations, formatCurrency, onNewViolation, vehicleId }
 
   return (
     <div className="space-y-4">
+      {vehicleId && <VehicleTrafficFilesCard vehicleId={vehicleId} />}
+
       <div className="flex items-center justify-between gap-3">
         <h3 className="text-lg font-semibold">المخالفات المرورية</h3>
         <div className="flex flex-wrap justify-end gap-2">

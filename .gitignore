@@ -80,3 +80,10 @@ reports/
 
 # Supabase temp
 supabase/.temp/
+
+# Temp artifacts
+.tmp-*
+tmp/
+
+# Python cache
+scripts/__pycache__/

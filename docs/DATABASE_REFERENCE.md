@@ -1,5 +1,14 @@
 # Fleetify Database Reference
 
+## Excel Import Execution Agent (2026-07-15)
+
+- `excel_import_versions`: immutable file identity and approval history per company and contract.
+- `excel_import_version_rows`: normalized monthly row snapshots, LongCat classification, and row-level diff state.
+- `excel_import_agent_actions`: allow-listed agent commands with risk, approval, before/after, and execution result.
+- These tables are service-role only. The browser reaches them through the authenticated `excel-import-ai-review` Edge Function.
+- Exact duplicate identity is `(company_id, contract_id, content_hash)` where `content_hash` is SHA-256.
+- Migration `20260715210000` fixes the payment-to-contract last-payment-date trigger by copying `OLD`/`NEW` values into PL/pgSQL scalars before using them in SQL, preventing `missing FROM-clause entry for table "new"` during atomic payment creation.
+
 > **Generated**: 2026-01-12T13:30:37.587Z
 > **Total Tables in generated snapshot**: 285
 > **Database**: PostgreSQL 17.6 (Supabase)

@@ -13,6 +13,7 @@ import {
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import type { MatchedViolation } from '@/types/violations';
+import { formatViolationDate } from '@/utils/violationDate';
 
 interface ViolationImportReportProps {
   violations: MatchedViolation[];
@@ -52,7 +53,7 @@ export const ViolationImportReport: React.FC<ViolationImportReportProps> = ({
 
     violations.forEach((violation, index) => {
       reportLines.push(`${index + 1}. رقم المخالفة: ${violation.violation_number}`);
-      reportLines.push(`   التاريخ: ${format(new Date(violation.date), 'dd/MM/yyyy', { locale: ar })}`);
+      reportLines.push(`   التاريخ: ${formatViolationDate(violation.date)}`);
       reportLines.push(`   رقم اللوحة: ${violation.plate_number}`);
       reportLines.push(`   الموقع: ${violation.location || 'غير محدد'}`);
       reportLines.push(`   نوع المخالفة: ${violation.violation_type}`);

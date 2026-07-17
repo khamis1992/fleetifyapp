@@ -52,6 +52,15 @@ function createInitialDocumentState(): DocumentsState {
       error: null,
       generatedAt: null,
     },
+    violationsEvidence: {
+      id: 'violationsEvidence',
+      ...DOCUMENT_CONFIG.violationsEvidence,
+      status: 'missing',
+      url: null,
+      htmlContent: null,
+      error: null,
+      generatedAt: null,
+    },
     criminalComplaint: {
       id: 'criminalComplaint',
       ...DOCUMENT_CONFIG.criminalComplaint,
@@ -120,6 +129,7 @@ export function createInitialState(contractId: string | null = null): LawsuitPre
     vehicle: null,
     overdueInvoices: [],
     trafficViolations: [],
+    violationEvidenceDocuments: [],
     companyDocuments: [],
     calculations: null,
     taqadiData: null,
@@ -195,6 +205,37 @@ export function lawsuitPreparationReducer(
       return {
         ...state,
         trafficViolations: action.payload,
+      };
+    }
+
+    case 'SET_VIOLATION_EVIDENCE_DOCUMENTS': {
+      const evidenceDocuments = action.payload;
+      const evidenceChanged = state.violationEvidenceDocuments.map(document => document.id).join('|')
+        !== evidenceDocuments.map(document => document.id).join('|');
+      return {
+        ...state,
+        violationEvidenceDocuments: evidenceDocuments,
+        documents: {
+          ...state.documents,
+          docsList: evidenceChanged
+            ? {
+                ...state.documents.docsList,
+                status: 'pending',
+                url: null,
+                htmlContent: null,
+                error: null,
+                generatedAt: null,
+              }
+            : state.documents.docsList,
+          violationsEvidence: {
+            ...state.documents.violationsEvidence,
+            name: evidenceDocuments.length > 1
+              ? `تقارير مخالفات وزارة الداخلية (${evidenceDocuments.length})`
+              : DOCUMENT_CONFIG.violationsEvidence.name,
+            status: evidenceDocuments.length > 0 ? 'ready' : 'missing',
+            url: evidenceDocuments[0]?.url || null,
+          },
+        },
       };
     }
     
