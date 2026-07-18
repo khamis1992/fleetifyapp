@@ -430,10 +430,21 @@ async function recalculateInvoiceBalances(
     const total = roundMoney(Number(invoice.total_amount || 0));
     const balance = roundMoney(Math.max(0, total - paid));
     const paymentStatus = balance <= 1 ? "paid" : paid > 0 ? "partial" : "unpaid";
+    const dueDate = invoice.due_date ? new Date(`${String(invoice.due_date).slice(0, 10)}T00:00:00.000Z`) : null;
+    const today = new Date();
+    today.setUTCHours(0, 0, 0, 0);
+    const lifecycleStatus = balance <= 1
+      ? "paid"
+      : dueDate && !Number.isNaN(dueDate.getTime()) && dueDate < today
+        ? "overdue"
+        : String(invoice.status || "").toLowerCase() === "draft"
+          ? "draft"
+          : "sent";
     const changed =
       Math.abs(Number(invoice.paid_amount || 0) - paid) > 0.01 ||
       Math.abs(Number(invoice.balance_due || 0) - balance) > 0.01 ||
-      String(invoice.payment_status || "").toLowerCase() !== paymentStatus;
+      String(invoice.payment_status || "").toLowerCase() !== paymentStatus ||
+      String(invoice.status || "").toLowerCase() !== lifecycleStatus;
 
     if (!changed) continue;
 
@@ -444,6 +455,7 @@ async function recalculateInvoiceBalances(
           paid_amount: paid,
           balance_due: balance,
           payment_status: paymentStatus,
+          status: lifecycleStatus,
           updated_at: now,
         })
         .eq("id", invoice.id)
@@ -541,17 +553,22 @@ async function backfillContractInvoices(
     .select("id, contract_id, due_date")
     .eq("company_id", companyId)
     .is("invoice_id", null)
-    .not("status", "eq", "cancelled");
+    .not("status", "eq", "cancelled")
+    .order("due_date", { ascending: true });
 
   if (targetContractIds?.length) query = query.in("contract_id", targetContractIds);
-  query = query.limit(limit);
+  // A row-level limit starved contracts that appeared later in the table.
+  query = query.limit(Math.max(limit, limit * 60));
 
   const { data: missingRows, error: missingError } = await query;
   if (missingError) throw missingError;
 
   const rows = (missingRows || []).filter((row: any) => row.contract_id && row.due_date);
   const contractIds = Array.from(
-    new Set((missingRows || []).map((row: any) => row.contract_id).filter(Boolean))
+    new Set([
+      ...(targetContractIds || []),
+      ...(missingRows || []).map((row: any) => row.contract_id).filter(Boolean),
+    ])
   ).slice(0, limit);
 
   if (dryRun) {
@@ -562,38 +579,161 @@ async function backfillContractInvoices(
 
   for (const row of rows) {
     summary.runs += 1;
-    const invoiceMonth = toMonthStart(String(row.due_date));
-    const existingInvoiceId = await findExistingInvoiceForMonth(supabase, companyId, row.contract_id, invoiceMonth);
-    if (existingInvoiceId) {
-      await linkScheduleInvoice(supabase, companyId, row.id, existingInvoiceId);
-      summary.skipped += 1;
-      continue;
-    }
-
-    const { data: invoiceId, error } = await supabase.rpc("generate_invoice_for_contract_month", {
-      p_contract_id: row.contract_id,
-      p_invoice_month: invoiceMonth,
-    });
-
-    if (error) {
-      if (error.code === "23505") {
-        const duplicateInvoiceId = await findExistingInvoiceForMonth(supabase, companyId, row.contract_id, invoiceMonth);
-        if (duplicateInvoiceId) {
-          await linkScheduleInvoice(supabase, companyId, row.id, duplicateInvoiceId);
-        }
+    try {
+      const invoiceMonth = toMonthStart(String(row.due_date));
+      const existingInvoiceId = await findExistingInvoiceForMonth(supabase, companyId, row.contract_id, invoiceMonth);
+      if (existingInvoiceId) {
+        await linkScheduleInvoice(supabase, companyId, row.id, existingInvoiceId);
         summary.skipped += 1;
         continue;
       }
-      throw error;
-    }
 
-    if (!invoiceId) {
+      const { data: invoiceId, error } = await supabase.rpc("generate_invoice_for_contract_month", {
+        p_contract_id: row.contract_id,
+        p_invoice_month: invoiceMonth,
+      });
+
+      if (error) {
+        if (error.code === "23505") {
+          const duplicateInvoiceId = await findExistingInvoiceForMonth(supabase, companyId, row.contract_id, invoiceMonth);
+          if (duplicateInvoiceId) {
+            await linkScheduleInvoice(supabase, companyId, row.id, duplicateInvoiceId);
+          }
+          summary.skipped += 1;
+          continue;
+        }
+        throw error;
+      }
+
+      if (!invoiceId) {
+        summary.skipped += 1;
+        continue;
+      }
+
+      await linkScheduleInvoice(supabase, companyId, row.id, invoiceId);
+      summary.created += 1;
+    } catch (error) {
+      // One malformed contract must not block every contract behind it.
+      console.error("[daily-audit-agent] invoice backfill row failed", {
+        companyId,
+        contractId: row.contract_id,
+        scheduleId: row.id,
+        error: getErrorMessage(error),
+      });
+      summary.skipped += 1;
+    }
+  }
+
+  // A month can be absent from both invoices and schedules. Complete uniform
+  // monthly contracts before rebuilding their schedules so that this gap is
+  // not invisible to the daily agent.
+  const completedMonths = await completeUniformContractMonths(
+    supabase,
+    companyId,
+    contractIds,
+    Math.max(limit, limit * 60),
+  );
+  summary.runs += completedMonths.runs;
+  summary.created += completedMonths.created;
+  summary.skipped += completedMonths.skipped;
+
+  // New invoices can reveal payment schedules that were missing as well.
+  for (const contractId of contractIds) {
+    try {
+      const { error } = await supabase.rpc("generate_payment_schedules_for_contract", {
+        p_contract_id: contractId,
+        p_dry_run: false,
+      });
+      if (error) throw error;
+    } catch (error) {
+      console.error("[daily-audit-agent] payment schedule backfill failed", {
+        companyId,
+        contractId,
+        error: getErrorMessage(error),
+      });
+      summary.skipped += 1;
+    }
+  }
+
+  return summary;
+}
+
+async function completeUniformContractMonths(
+  supabase: any,
+  companyId: string,
+  contractIds: string[],
+  monthLimit: number,
+) {
+  const summary = { runs: 0, created: 0, skipped: 0 };
+  if (contractIds.length === 0) return summary;
+
+  const { data: contracts, error } = await supabase
+    .from("contracts")
+    .select("id, start_date, end_date, monthly_amount, contract_amount, status")
+    .eq("company_id", companyId)
+    .in("id", contractIds)
+    .in("status", ["active", "under_legal_procedure", "pending", "draft"]);
+
+  if (error) throw error;
+
+  let checkedMonths = 0;
+  for (const contract of contracts || []) {
+    const startMonth = toMonthStart(String(contract.start_date || ""));
+    const endMonth = toMonthStart(String(contract.end_date || ""));
+    const monthlyAmount = roundMoney(Number(contract.monthly_amount || 0));
+    if (!isIsoDate(startMonth) || !isIsoDate(endMonth) || endMonth < startMonth || monthlyAmount <= 0) {
       summary.skipped += 1;
       continue;
     }
 
-    await linkScheduleInvoice(supabase, companyId, row.id, invoiceId);
-    summary.created += 1;
+    const expectedMonths = monthCountInclusive(startMonth, endMonth);
+    const contractAmount = roundMoney(Number(contract.contract_amount || 0));
+    const expectedAmount = roundMoney(expectedMonths * monthlyAmount);
+
+    // Irregular contracts need an explicit schedule; do not invent equal
+    // installments when their total proves they use another payment model.
+    if (expectedMonths <= 0 || Math.abs(contractAmount - expectedAmount) > 1) {
+      summary.skipped += 1;
+      continue;
+    }
+
+    for (let offset = 0; offset < expectedMonths && checkedMonths < monthLimit; offset += 1) {
+      checkedMonths += 1;
+      summary.runs += 1;
+      const invoiceMonth = addMonths(startMonth, offset);
+
+      try {
+        const existingInvoiceId = await findExistingInvoiceForMonth(
+          supabase,
+          companyId,
+          contract.id,
+          invoiceMonth,
+        );
+        if (existingInvoiceId) {
+          summary.skipped += 1;
+          continue;
+        }
+
+        const { data: invoiceId, error: invoiceError } = await supabase.rpc(
+          "generate_invoice_for_contract_month",
+          { p_contract_id: contract.id, p_invoice_month: invoiceMonth },
+        );
+
+        if (invoiceError && invoiceError.code !== "23505") throw invoiceError;
+        if (invoiceId) summary.created += 1;
+        else summary.skipped += 1;
+      } catch (monthError) {
+        console.error("[daily-audit-agent] contract month completion failed", {
+          companyId,
+          contractId: contract.id,
+          invoiceMonth,
+          error: getErrorMessage(monthError),
+        });
+        summary.skipped += 1;
+      }
+    }
+
+    if (checkedMonths >= monthLimit) break;
   }
 
   return summary;
@@ -1116,7 +1256,7 @@ async function loadContractsForAudit(
 ) {
   let query = supabase
     .from("contracts")
-    .select("id, start_date, end_date, status")
+    .select("id, start_date, end_date, monthly_amount, contract_amount, status")
     .eq("company_id", companyId)
     .limit(limit);
 
@@ -1506,6 +1646,17 @@ function addMonths(value: string, months: number) {
   const date = new Date(`${value}T00:00:00.000Z`);
   date.setUTCMonth(date.getUTCMonth() + months);
   return date.toISOString().slice(0, 10);
+}
+
+function isIsoDate(value: string) {
+  return /^\d{4}-\d{2}-\d{2}$/.test(value) && !Number.isNaN(new Date(`${value}T00:00:00.000Z`).getTime());
+}
+
+function monthCountInclusive(startMonth: string, endMonth: string) {
+  const start = new Date(`${startMonth}T00:00:00.000Z`);
+  const end = new Date(`${endMonth}T00:00:00.000Z`);
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || end < start) return 0;
+  return ((end.getUTCFullYear() - start.getUTCFullYear()) * 12) + end.getUTCMonth() - start.getUTCMonth() + 1;
 }
 
 function clampInt(value: unknown, min: number, max: number, fallback: number) {
