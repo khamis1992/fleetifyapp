@@ -96,17 +96,17 @@ interface UseDelinquentCustomersFilters {
   amountRange?: AmountRangeFilter;
   hasViolations?: boolean;
   search?: string;
-  useCachedData?: boolean; // Default: true, use cached table data
+  useCachedData?: boolean; // Opt in to the daily cache when live accuracy is not required
 }
 
 /**
- * Hook to fetch delinquent customers from cached table (updated daily by cron job)
- * Falls back to dynamic calculation if table doesn't exist or useCachedData is false
+ * Calculates delinquency from current invoices by default.
+ * The daily cache is available as an explicit performance optimization.
  */
 export const useDelinquentCustomers = (filters?: UseDelinquentCustomersFilters) => {
   const { user } = useAuth();
   const companyFilter = useCompanyFilter();
-  const useCached = filters?.useCachedData !== false; // Default to true
+  const useCached = filters?.useCachedData === true;
 
   // Check if company is still loading
   const isCompanyLoading = !companyFilter?.company_id || companyFilter.company_id === '__loading__';

@@ -229,11 +229,10 @@ export const useUpdateContractStatus = () => {
       status: 'suspended' | 'cancelled' | 'active'; 
       reason?: string 
     }) => {
-      const updateData: any = { status };
-      
-      if (reason) {
-        updateData.description = reason;
-      }
+      const updateData: any = {
+        status,
+        suspension_reason: status === 'active' ? null : reason?.trim() || null,
+      };
       
       // Get contract details first to check if it has a vehicle
       const { data: contractData, error: contractError } = await supabase

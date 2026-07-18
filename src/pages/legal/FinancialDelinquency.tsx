@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
@@ -15,6 +15,7 @@ import {
   Handshake,
   Loader2,
   MessageSquare,
+  Printer,
   RefreshCw,
   Scale,
   Search,
@@ -38,6 +39,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import {
   Select,
@@ -58,6 +60,7 @@ import { cn } from '@/lib/utils';
 import { revertContractLegalProcedure } from '@/services/contractLegalProcedureService';
 import { calculateDelinquencyAmounts } from '@/utils/calculateDelinquencyAmounts';
 import { formatCustomerName } from '@/utils/formatCustomerName';
+import { escapeHtml } from '@/utils/htmlSanitizer';
 import '@/styles/legal-system.css';
 
 type QueueItem = {
@@ -282,9 +285,7 @@ const fetchLegalQueue = async (companyId: string): Promise<QueueItem[]> => {
       [],
       { includeDamagesFee: false }
     );
-    const overdueRent = invoiceCalculation.overdueRent > 0
-      ? invoiceCalculation.overdueRent
-      : Number(normalized.balance_due || 0);
+    const overdueRent = invoiceCalculation.overdueRent;
     const lateFees = invoiceCalculation.overdueInvoicesCount > 0
       ? invoiceCalculation.lateFees
       : Number(normalized.late_fine_amount || 0);
@@ -418,9 +419,7 @@ const fetchRentCandidates = async (companyId: string, searchTerm: string): Promi
         [],
         { includeDamagesFee: false }
       );
-      const overdueRent = calculation.overdueRent > 0
-        ? calculation.overdueRent
-        : Number(contract.balance_due || 0);
+      const overdueRent = calculation.overdueRent;
       const lateFees = calculation.overdueInvoicesCount > 0
         ? calculation.lateFees
         : Number(contract.late_fine_amount || 0);
@@ -445,7 +444,8 @@ const fetchRentCandidates = async (companyId: string, searchTerm: string): Promi
         vehicleLabel: vehicleLabel(contract),
         canConvert: true,
       };
-    });
+    })
+    .filter((candidate) => candidate.overdueRent > 0);
 };
 
 const fetchTrafficCandidates = async (companyId: string, searchTerm: string): Promise<CandidateItem[]> => {
@@ -758,6 +758,7 @@ const FinancialDelinquencyPage: React.FC = () => {
   const [candidateSearch, setCandidateSearch] = useState('');
   const [candidateType, setCandidateType] = useState<'all' | CandidateSource>('all');
   const [candidateSort, setCandidateSort] = useState<CandidateSort>('amount_desc');
+  const [selectedCandidateIds, setSelectedCandidateIds] = useState<Set<string>>(() => new Set());
   const [selectedContract, setSelectedContract] = useState<ContractForLegal | null>(null);
   const [convertDialogOpen, setConvertDialogOpen] = useState(false);
   const [removingItem, setRemovingItem] = useState<QueueItem | null>(null);
@@ -796,7 +797,7 @@ const FinancialDelinquencyPage: React.FC = () => {
   });
 
   const { data: delinquentCustomers = [], isFetching: aiFetching } = useDelinquentCustomers({
-    useCachedData: true,
+    useCachedData: false,
   });
 
   const filteredQueue = useMemo(() => {
@@ -840,6 +841,126 @@ const FinancialDelinquencyPage: React.FC = () => {
       }
     });
   }, [candidateSort, candidateType, rentCandidates, trafficCandidates]);
+
+  useEffect(() => {
+    const availableIds = new Set(candidates.map((candidate) => candidate.id));
+    setSelectedCandidateIds((current) => {
+      const next = new Set([...current].filter((id) => availableIds.has(id)));
+      if (next.size === current.size && [...next].every((id) => current.has(id))) return current;
+      return next;
+    });
+  }, [candidates]);
+
+  const selectedCandidates = useMemo(
+    () => candidates.filter((candidate) => selectedCandidateIds.has(candidate.id)),
+    [candidates, selectedCandidateIds]
+  );
+
+  const allCandidatesSelected = candidates.length > 0 && selectedCandidates.length === candidates.length;
+
+  const toggleCandidateSelection = (candidateId: string, checked: boolean) => {
+    setSelectedCandidateIds((current) => {
+      const next = new Set(current);
+      if (checked) next.add(candidateId);
+      else next.delete(candidateId);
+      return next;
+    });
+  };
+
+  const toggleAllCandidates = (checked: boolean) => {
+    setSelectedCandidateIds(checked ? new Set(candidates.map((candidate) => candidate.id)) : new Set());
+  };
+
+  const printSelectedCandidates = () => {
+    if (selectedCandidates.length === 0) {
+      toast.error('حدد اسمًا واحدًا على الأقل للطباعة');
+      return;
+    }
+
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      toast.error('تعذر فتح نافذة الطباعة. اسمح بالنوافذ المنبثقة ثم حاول مرة أخرى.');
+      return;
+    }
+
+    const rows = selectedCandidates.map((candidate, index) => `
+      <tr>
+        <td>${index + 1}</td>
+        <td class="name">${escapeHtml(candidate.customerName)}</td>
+        <td>${escapeHtml(candidate.contractNumber || '-')}</td>
+        <td>${escapeHtml(candidate.vehicleLabel || '-')}</td>
+        <td dir="ltr">${escapeHtml(candidate.phone || '-')}</td>
+        <td>${candidate.source === 'rent' ? 'إيجار متأخر' : 'مخالفات مرورية'}</td>
+        <td>${escapeHtml(formatCurrency(candidate.overdueRent))}</td>
+        <td>${escapeHtml(formatCurrency(candidate.lateFees))}</td>
+        <td>${escapeHtml(formatCurrency(candidate.trafficViolations))}</td>
+        <td class="total">${escapeHtml(formatCurrency(candidate.detailedClaimTotal))}</td>
+      </tr>
+    `).join('');
+    const printedTotal = selectedCandidates.reduce((sum, candidate) => sum + candidate.detailedClaimTotal, 0);
+    const printedAt = new Intl.DateTimeFormat('ar-QA', { dateStyle: 'long', timeStyle: 'short' }).format(new Date());
+
+    printWindow.document.open();
+    printWindow.document.write(`<!doctype html>
+      <html lang="ar" dir="rtl">
+        <head>
+          <meta charset="utf-8" />
+          <title>قائمة المطالبات المحددة</title>
+          <style>
+            @page { size: A4 landscape; margin: 12mm; }
+            * { box-sizing: border-box; }
+            body { margin: 0; color: #0f172a; font-family: Arial, Tahoma, sans-serif; font-size: 11px; }
+            header { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; margin-bottom: 18px; border-bottom: 2px solid #0f766e; padding-bottom: 12px; }
+            h1 { margin: 0 0 6px; font-size: 22px; }
+            p { margin: 0; color: #475569; }
+            .summary { text-align: left; white-space: nowrap; }
+            table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+            th, td { border: 1px solid #cbd5e1; padding: 7px 5px; text-align: center; vertical-align: middle; overflow-wrap: anywhere; }
+            th { background: #e2f5f1; color: #134e4a; font-weight: 700; }
+            tbody tr:nth-child(even) { background: #f8fafc; }
+            .name { font-weight: 700; }
+            .total { font-weight: 700; color: #0f766e; }
+            footer { display: flex; justify-content: space-between; margin-top: 12px; color: #64748b; }
+          </style>
+        </head>
+        <body>
+          <header>
+            <div>
+              <h1>قائمة المطالبات المحددة يدويًا</h1>
+              <p>قائمة الأسماء المختارة من صفحة المتعثرات المالية</p>
+            </div>
+            <div class="summary">
+              <p>عدد الأسماء: <strong>${selectedCandidates.length}</strong></p>
+              <p>إجمالي المطالبات: <strong>${escapeHtml(formatCurrency(printedTotal))}</strong></p>
+            </div>
+          </header>
+          <table>
+            <thead>
+              <tr>
+                <th style="width: 4%">#</th>
+                <th style="width: 13%">اسم العميل</th>
+                <th style="width: 10%">رقم العقد</th>
+                <th style="width: 13%">المركبة</th>
+                <th style="width: 10%">الهاتف</th>
+                <th style="width: 10%">نوع المطالبة</th>
+                <th style="width: 10%">الإيجار</th>
+                <th style="width: 10%">غرامات التأخير</th>
+                <th style="width: 10%">المخالفات</th>
+                <th style="width: 10%">الإجمالي</th>
+              </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>
+          <footer>
+            <span>تاريخ الطباعة: ${escapeHtml(printedAt)}</span>
+            <span>Fleetify</span>
+          </footer>
+        </body>
+      </html>`);
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.print();
+  };
 
   const queueStats = useMemo(() => {
     const totalRentalValue = legalQueue.reduce((sum, item) => sum + item.overdueRent, 0);
@@ -1367,6 +1488,35 @@ const FinancialDelinquencyPage: React.FC = () => {
               </p>
             </section>
 
+            {!rentSearching && !trafficSearching && candidates.length > 0 && (
+              <section className="flex flex-col gap-3 rounded-lg border border-slate-200 bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+                <label className="flex cursor-pointer items-center gap-3 text-sm font-bold text-[#020617]">
+                  <Checkbox
+                    checked={allCandidatesSelected ? true : selectedCandidates.length > 0 ? 'indeterminate' : false}
+                    onCheckedChange={(checked) => toggleAllCandidates(checked === true)}
+                    aria-label="تحديد جميع الأسماء الظاهرة"
+                    className="h-5 w-5 border-slate-300 data-[state=checked]:border-[#22C7A1] data-[state=checked]:bg-[#22C7A1] data-[state=indeterminate]:border-[#22C7A1] data-[state=indeterminate]:bg-[#22C7A1]"
+                  />
+                  <span>تحديد كل النتائج الظاهرة ({candidates.length})</span>
+                </label>
+
+                <div className="flex flex-wrap items-center gap-3">
+                  <span className="text-sm font-semibold text-[#64748B]">
+                    تم تحديد {selectedCandidates.length}
+                  </span>
+                  <Button
+                    type="button"
+                    onClick={printSelectedCandidates}
+                    disabled={selectedCandidates.length === 0}
+                    className="gap-2 rounded-xl bg-[#020617] text-white hover:bg-[#1E293B]"
+                  >
+                    <Printer className="h-4 w-4" />
+                    طباعة المحدد ({selectedCandidates.length})
+                  </Button>
+                </div>
+              </section>
+            )}
+
             {rentSearching || trafficSearching ? (
               <div className="flex items-center justify-center rounded-lg border border-slate-200 bg-white p-10 shadow-sm">
                 <Loader2 className="h-6 w-6 animate-spin text-[#22C7A1]" />
@@ -1396,31 +1546,47 @@ const FinancialDelinquencyPage: React.FC = () => {
                     : MessageSquare;
 
                   return (
-                  <article key={candidate.id} className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+                  <article
+                    key={candidate.id}
+                    className={cn(
+                      'rounded-lg border bg-white p-4 shadow-sm transition-colors',
+                      selectedCandidateIds.has(candidate.id)
+                        ? 'border-[#22C7A1] bg-[#F8FFFC]'
+                        : 'border-slate-200'
+                    )}
+                  >
                     <div className="grid gap-4 lg:grid-cols-[1fr_auto] lg:items-center">
                       <div className="min-w-0 space-y-3">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <CandidateBadge source={candidate.source} />
-                          <Badge variant="outline" className="border-slate-200 text-[#64748B]">
-                            {candidate.reason}
-                          </Badge>
-                          {!candidate.canConvert && (
-                            <Badge className="bg-amber-100 text-amber-700 hover:bg-amber-100">
-                              يحتاج ربط بعقد
+                        <div className="flex items-start gap-3">
+                          <Checkbox
+                            checked={selectedCandidateIds.has(candidate.id)}
+                            onCheckedChange={(checked) => toggleCandidateSelection(candidate.id, checked === true)}
+                            aria-label={`تحديد ${candidate.customerName} للطباعة`}
+                            className="mt-0.5 h-5 w-5 border-slate-300 data-[state=checked]:border-[#22C7A1] data-[state=checked]:bg-[#22C7A1]"
+                          />
+                          <div className="flex min-w-0 flex-wrap items-center gap-2">
+                            <CandidateBadge source={candidate.source} />
+                            <Badge variant="outline" className="border-slate-200 text-[#64748B]">
+                              {candidate.reason}
                             </Badge>
-                          )}
-                          {candidateAIInsight && (
-                            <>
-                              <Badge variant="outline">AI #{candidateAIInsight.rank}</Badge>
-                              <Badge variant="outline" className={candidateAIInsight.riskClassName}>
-                                {candidateAIInsight.riskLabel}
+                            {!candidate.canConvert && (
+                              <Badge className="bg-amber-100 text-amber-700 hover:bg-amber-100">
+                                يحتاج ربط بعقد
                               </Badge>
-                              <Badge variant="outline" className={candidateAIInsight.recommendationClassName}>
-                                <RecommendationIcon className="ml-1 h-3 w-3" />
-                                {candidateAIInsight.recommendationLabel}
-                              </Badge>
-                            </>
-                          )}
+                            )}
+                            {candidateAIInsight && (
+                              <>
+                                <Badge variant="outline">AI #{candidateAIInsight.rank}</Badge>
+                                <Badge variant="outline" className={candidateAIInsight.riskClassName}>
+                                  {candidateAIInsight.riskLabel}
+                                </Badge>
+                                <Badge variant="outline" className={candidateAIInsight.recommendationClassName}>
+                                  <RecommendationIcon className="ml-1 h-3 w-3" />
+                                  {candidateAIInsight.recommendationLabel}
+                                </Badge>
+                              </>
+                            )}
+                          </div>
                         </div>
 
                         <div>
