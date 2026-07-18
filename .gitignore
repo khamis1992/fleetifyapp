@@ -71,6 +71,7 @@ screenshots/
 .omo/
 .playwright-mcp/
 graphify-out/
+.codex-supabase-hotfix/
 
 # Generated reports
 reports/
