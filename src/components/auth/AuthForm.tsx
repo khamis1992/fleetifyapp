@@ -75,7 +75,7 @@ export const AuthForm: FC = () => {
     setIsLoading(true);
 
     try {
-      // Remember the email only. Supabase owns secure session persistence.
+      // Supabase securely persists the session; only the email is stored here.
       if (rememberMe) {
         try {
           localStorage.setItem(REMEMBER_ME_KEY, 'true');
@@ -381,7 +381,7 @@ export const AuthForm: FC = () => {
                 <p className="text-slate-500 dark:text-slate-400">قم بتسجيل الدخول للمتابعة</p>
               </motion.div>
 
-              <form onSubmit={handleSignIn} className="space-y-5">
+              <form onSubmit={handleSignIn} className="space-y-5" autoComplete="on">
                 <motion.div 
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
@@ -396,6 +396,7 @@ export const AuthForm: FC = () => {
                        id="email"
                        name="email"
                        type="email"
+                       autoComplete="username"
                        placeholder="example@domain.com"
                        value={formData.email}
                        onChange={handleInputChange}
@@ -421,6 +422,7 @@ export const AuthForm: FC = () => {
                        id="password"
                        name="password"
                        type={showPassword ? "text" : "password"}
+                       autoComplete="current-password"
                        placeholder="••••••••"
                        value={formData.password}
                        onChange={handleInputChange}
@@ -459,7 +461,7 @@ export const AuthForm: FC = () => {
                        htmlFor="remember"
                        className="text-sm text-slate-700 dark:text-slate-300 leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
                      >
-                       تذكر بريدي الإلكتروني
+                       تذكر تسجيل دخولي
                      </label>
                    </div>
                 </motion.div>

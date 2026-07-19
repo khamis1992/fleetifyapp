@@ -126,18 +126,23 @@ export const useCustomers = (filters?: CustomerFilters) => {
       // Apply search filters with minimum length check
       const searchTerm = memoizedFilters?.search || memoizedFilters?.searchTerm;
       if (searchTerm?.trim() && searchTerm.trim().length >= 2) {
-        const search = searchTerm.trim();
-        query = query.or(
-          `first_name.ilike.%${search}%,` +
-          `last_name.ilike.%${search}%,` +
-          `first_name_ar.ilike.%${search}%,` +
-          `last_name_ar.ilike.%${search}%,` +
-          `company_name.ilike.%${search}%,` +
-          `company_name_ar.ilike.%${search}%,` +
-          `phone.ilike.%${search}%,` +
-          `email.ilike.%${search}%,` +
-          `national_id.ilike.%${search}%`
-        );
+        const searchTokens = searchTerm.trim().split(/\s+/).slice(0, 6);
+        searchTokens.forEach((rawToken) => {
+          const token = rawToken.replace(/[,()%]/g, '');
+          if (!token) return;
+          query = query.or(
+            `first_name.ilike.%${token}%,` +
+            `last_name.ilike.%${token}%,` +
+            `first_name_ar.ilike.%${token}%,` +
+            `last_name_ar.ilike.%${token}%,` +
+            `company_name.ilike.%${token}%,` +
+            `company_name_ar.ilike.%${token}%,` +
+            `phone.ilike.%${token}%,` +
+            `email.ilike.%${token}%,` +
+            `national_id.ilike.%${token}%,` +
+            `customer_code.ilike.%${token}%`
+          );
+        });
       }
 
       // Apply pagination or limit
@@ -175,18 +180,23 @@ export const useCustomers = (filters?: CustomerFilters) => {
         }
         const searchTerm = memoizedFilters?.search || memoizedFilters?.searchTerm;
         if (searchTerm?.trim() && searchTerm.trim().length >= 2) {
-          const search = searchTerm.trim();
-          countQuery = countQuery.or(
-            `first_name.ilike.%${search}%,` +
-            `last_name.ilike.%${search}%,` +
-            `first_name_ar.ilike.%${search}%,` +
-            `last_name_ar.ilike.%${search}%,` +
-            `company_name.ilike.%${search}%,` +
-            `company_name_ar.ilike.%${search}%,` +
-            `phone.ilike.%${search}%,` +
-            `email.ilike.%${search}%,` +
-            `national_id.ilike.%${search}%`
-          );
+          const searchTokens = searchTerm.trim().split(/\s+/).slice(0, 6);
+          searchTokens.forEach((rawToken) => {
+            const token = rawToken.replace(/[,()%]/g, '');
+            if (!token) return;
+            countQuery = countQuery.or(
+              `first_name.ilike.%${token}%,` +
+              `last_name.ilike.%${token}%,` +
+              `first_name_ar.ilike.%${token}%,` +
+              `last_name_ar.ilike.%${token}%,` +
+              `company_name.ilike.%${token}%,` +
+              `company_name_ar.ilike.%${token}%,` +
+              `phone.ilike.%${token}%,` +
+              `email.ilike.%${token}%,` +
+              `national_id.ilike.%${token}%,` +
+              `customer_code.ilike.%${token}%`
+            );
+          });
         }
 
         const { count, error: countError } = await countQuery;
