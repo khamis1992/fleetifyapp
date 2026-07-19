@@ -1,0 +1,2 @@
+-- The previous implementation is restored by rolling back
+-- 20260719170000_legal_case_workflow as a unit.
