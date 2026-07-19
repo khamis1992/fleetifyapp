@@ -113,6 +113,36 @@ export default function TrafficViolationsRedesigned() {
     enabled: !isServerFilteringActive
   });
   const { data: allViolationStats } = useTrafficViolationsStats();
+  const { data: companyLiabilityViolations = [] } = useQuery({
+    queryKey: ['company-traffic-violation-liabilities', companyId],
+    enabled: Boolean(companyId),
+    queryFn: async () => {
+      if (!companyId) return [];
+      const { data, error } = await supabase
+        .from('traffic_violations')
+        .select(`
+          id,
+          violation_number,
+          violation_date,
+          fine_amount,
+          status,
+          liability_amount,
+          liability_recognized_at,
+          liability_journal_entry_id,
+          original_contract_number,
+          responsibility_reason,
+          vehicles (plate_number, make, model)
+        `)
+        .eq('company_id', companyId)
+        .eq('responsibility_party', 'company')
+        .order('liability_recognized_at', { ascending: false })
+        .limit(100);
+
+      if (error) throw error;
+      return data || [];
+    },
+    staleTime: 60 * 1000,
+  });
   const { data: vehicles = [] } = useQuery({
     queryKey: ['traffic-violations-filter-vehicles', companyId],
     enabled: Boolean(companyId),
@@ -1027,6 +1057,68 @@ export default function TrafficViolationsRedesigned() {
             );
           })}
         </section>
+
+        {companyLiabilityViolations.length > 0 && (
+          <section className="rounded-[8px] border border-emerald-200 bg-white p-4 shadow-[0_18px_42px_-34px_rgba(15,23,42,.58)] print:hidden">
+            <div className="flex flex-col gap-3 border-b border-[#E5EAF1] pb-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-start gap-3">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[8px] bg-emerald-50 text-emerald-600">
+                  <ShieldAlert className="h-5 w-5" />
+                </div>
+                <div>
+                  <h2 className="font-black text-[#142033]">التزامات مخالفات تتحملها الشركة</h2>
+                  <p className="mt-1 text-sm font-bold text-[#64748B]">
+                    مخالفات نُقلت من عقود محذوفة مع الاحتفاظ بمرجع العقد والقيد المحاسبي.
+                  </p>
+                </div>
+              </div>
+              <div className="rounded-[8px] bg-emerald-50 px-4 py-2 text-left">
+                <p className="text-xs font-black text-emerald-700">الرصيد المستحق</p>
+                <p className="text-lg font-black text-emerald-950">
+                  {formatCurrency(companyLiabilityViolations.reduce((sum, violation) => sum + Number(violation.liability_amount || 0), 0))}
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-4 grid gap-3 lg:grid-cols-2">
+              {companyLiabilityViolations.slice(0, 6).map((violation) => {
+                const vehicle = Array.isArray(violation.vehicles) ? violation.vehicles[0] : violation.vehicles;
+                return (
+                  <div key={violation.id} className="rounded-[8px] border border-[#DDE5EF] bg-[#F8FAFC] p-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <strong className="font-mono text-sm text-[#142033]" dir="ltr">{violation.violation_number}</strong>
+                          <Badge className="border-0 bg-emerald-100 text-emerald-800">على الشركة</Badge>
+                          <Badge variant="outline" className="border-amber-200 text-amber-800">
+                            {violation.status === 'paid' ? 'مسددة' : 'مستحقة'}
+                          </Badge>
+                        </div>
+                        <p className="mt-2 text-xs font-bold text-[#64748B]">
+                          العقد الأصلي: <span dir="ltr">{violation.original_contract_number || '-'}</span>
+                          {' · '}
+                          المركبة: {vehicle ? `${vehicle.make || ''} ${vehicle.model || ''} ${vehicle.plate_number || ''}`.trim() : '-'}
+                        </p>
+                      </div>
+                      <div className="text-left">
+                        <p className="text-xs font-bold text-[#94A3B8]">الالتزام المتبقي</p>
+                        <strong className="text-base text-[#142033]">{formatCurrency(Number(violation.liability_amount || 0))}</strong>
+                      </div>
+                    </div>
+                    {violation.responsibility_reason && (
+                      <p className="mt-3 border-t border-[#E5EAF1] pt-3 text-xs leading-5 text-[#64748B]">
+                        {violation.responsibility_reason}
+                      </p>
+                    )}
+                    <p className="mt-2 text-[11px] font-bold text-emerald-700">
+                      {violation.liability_journal_entry_id ? 'تم إثباتها بقيد محاسبي مرحّل' : 'تحتاج مراجعة القيد المحاسبي'}
+                    </p>
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+        )}
 
         <Tabs defaultValue="list" className="space-y-5">
           <div className="flex rounded-[8px] border border-[#DDE5EF] bg-white p-3 shadow-[0_18px_42px_-34px_rgba(15,23,42,.58)] print:hidden">

@@ -57,6 +57,9 @@ function getTrafficPaymentErrorMessage(error: unknown) {
       ? error.message
       : '';
 
+  if (message.includes('TRAFFIC_FINE_PAYABLE')) {
+    return 'يجب تعيين حساب المخالفات المرورية المستحقة من إعدادات ربط الحسابات قبل السداد';
+  }
   if (message.includes('TRAFFIC_FINE_EXPENSE')) {
     return 'يجب تعيين حساب مصروف المخالفات المرورية من إعدادات ربط الحسابات قبل سداد مخالفة تتحملها الشركة';
   }
@@ -300,7 +303,7 @@ export function useCreateTrafficViolationPayment() {
         }
 
         const { data: payment, error } = await supabase
-          .rpc('create_traffic_violation_payment_with_journal', {
+          .rpc('create_traffic_violation_payment_with_journal_v2', {
             p_company_id: companyId,
             p_violation_id: data.traffic_violation_id,
             p_amount: amount,
