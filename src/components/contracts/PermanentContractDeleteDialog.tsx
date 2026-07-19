@@ -20,6 +20,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { canPermanentlyDeleteContract } from '@/components/contracts/contractDeletionEligibility';
@@ -50,6 +51,21 @@ type DeletionResult = {
   violation_count?: number;
   liability_amount?: number;
   liability_journal_entry_id?: string | null;
+  cancelled_invoice_count?: number;
+  cancelled_payment_count?: number;
+};
+
+type RpcError = {
+  code?: string;
+  message?: string;
+};
+
+const isRpcAuthenticationError = (error: RpcError | null) => {
+  if (error?.code !== '42501') return false;
+
+  const message = error.message?.toLowerCase() || '';
+  return message.includes('authentication is required')
+    || message.includes('permission denied for function');
 };
 
 interface PermanentContractDeleteDialogProps {
@@ -91,6 +107,7 @@ export function PermanentContractDeleteDialog({
   const [deleteReason, setDeleteReason] = useState('');
   const [deleteConfirmation, setDeleteConfirmation] = useState('');
   const [violationResolution, setViolationResolution] = useState<'company' | 'review' | ''>('');
+  const [financialResolution, setFinancialResolution] = useState<'reverse_and_cancel' | ''>('');
   const [validationAttempted, setValidationAttempted] = useState(false);
 
   const inspectRelatedData = useCallback(async () => {
@@ -162,6 +179,7 @@ export function PermanentContractDeleteDialog({
     setDeleteReason('');
     setDeleteConfirmation('');
     setViolationResolution('');
+    setFinancialResolution('');
     setValidationAttempted(false);
     setDeletionError('');
     void inspectRelatedData();
@@ -172,12 +190,15 @@ export function PermanentContractDeleteDialog({
     contract &&
     summary &&
     !inspectionError &&
-    !hasFinancialRecords &&
+    (!hasFinancialRecords || financialResolution === 'reverse_and_cancel') &&
     deleteReason.trim().length >= 5 &&
     deleteConfirmation.trim() === contract.contract_number &&
     ((summary.violations || 0) === 0 || violationResolution === 'company')
   );
   const deletionRequirements = [
+    ...(hasFinancialRecords
+      ? [{ label: 'الموافقة على إلغاء الفواتير والدفعات بقيود عكسية', complete: financialResolution === 'reverse_and_cancel' }]
+      : []),
     ...((summary?.violations || 0) > 0
       ? [{ label: 'اختيار تحويل المخالفات إلى الشركة', complete: violationResolution === 'company' }]
       : []),
@@ -211,12 +232,40 @@ export function PermanentContractDeleteDialog({
     setIsDeleting(true);
     setDeletionError('');
     try {
-      const { data, error } = await supabase.rpc('delete_contract_with_company_violations_v1', {
+      const getAuthenticatedSession = async (forceRefresh = false) => {
+        if (forceRefresh) {
+          const { data, error } = await supabase.auth.refreshSession();
+          if (error || !data.session) {
+            throw new Error('انتهت جلسة تسجيل الدخول. سجّل الدخول مرة أخرى ثم أعد المحاولة.');
+          }
+          return data.session;
+        }
+
+        const { data, error } = await supabase.auth.getSession();
+        if (error || !data.session) {
+          throw new Error('انتهت جلسة تسجيل الدخول. سجّل الدخول مرة أخرى ثم أعد المحاولة.');
+        }
+
+        const expiresSoon = (data.session.expires_at || 0) <= Math.floor(Date.now() / 1000) + 60;
+        if (expiresSoon) return getAuthenticatedSession(true);
+        return data.session;
+      };
+
+      let session = await getAuthenticatedSession();
+      const runDeletion = (actorId: string) => supabase.rpc('delete_contract_with_financial_reversals_v2', {
         p_company_id: companyId,
         p_contract_id: contract.id,
         p_reason: deleteReason.trim(),
         p_violation_resolution: 'company',
+        p_financial_resolution: hasFinancialRecords ? 'reverse_and_cancel' : 'none',
+        p_actor_id: actorId,
       });
+
+      let { data, error } = await runDeletion(session.user.id);
+      if (isRpcAuthenticationError(error)) {
+        session = await getAuthenticatedSession(true);
+        ({ data, error } = await runDeletion(session.user.id));
+      }
       if (error || !data) throw error || new Error('لم يُحذف العقد؛ ربما تغيرت حالته أثناء العملية.');
 
       const result = data as DeletionResult;
@@ -228,19 +277,35 @@ export function PermanentContractDeleteDialog({
         queryClient.invalidateQueries({ queryKey: ['financial-reports'] }),
       ]);
 
+      const completionMessages: string[] = [];
+      if ((result.cancelled_payment_count || 0) > 0 || (result.cancelled_invoice_count || 0) > 0) {
+        completionMessages.push(
+          `تم إلغاء ${result.cancelled_payment_count || 0} دفعة و${result.cancelled_invoice_count || 0} فاتورة بقيود عكسية.`
+        );
+      }
+      if ((result.violation_count || 0) > 0) {
+        completionMessages.push(
+          `تم نقل ${result.violation_count} مخالفة إلى الشركة وإثبات التزام بقيمة ${formatCurrency(Number(result.liability_amount || 0))}.`
+        );
+      }
+
       toast({
         title: 'تم حذف العقد نهائيًا',
-        description: (result.violation_count || 0) > 0
-          ? `تم نقل ${result.violation_count} مخالفة إلى الشركة وإثبات التزام بقيمة ${formatCurrency(Number(result.liability_amount || 0))}.`
+        description: completionMessages.length > 0
+          ? completionMessages.join(' ')
           : `تم حذف العقد #${result.contract_number || contract.contract_number} وحفظ سجل التدقيق.`,
       });
       onOpenChange(false);
       await onDeleted(result);
     } catch (error) {
       console.error('[PermanentContractDeleteDialog] deletion failed:', error);
-      const errorDetails = error as { code?: string; message?: string } | null;
+      const errorDetails = error as RpcError | null;
       const message = errorDetails?.code === 'PGRST202'
         ? 'خدمة الحذف غير متاحة في قاعدة البيانات. أعد تحميل الصفحة ثم حاول مرة أخرى.'
+        : isRpcAuthenticationError(errorDetails)
+          ? 'انتهت جلسة تسجيل الدخول. سجّل الدخول مرة أخرى ثم أعد المحاولة.'
+          : errorDetails?.code === '42501'
+            ? 'الحذف النهائي متاح فقط لمدير الشركة أو مدير النظام.'
         : errorDetails?.message || (error instanceof Error ? error.message : 'حدث خطأ أثناء الحذف النهائي.');
       setDeletionError(message);
       toast({ title: 'تعذر حذف العقد', description: message, variant: 'destructive' });
@@ -301,14 +366,45 @@ export function PermanentContractDeleteDialog({
                     ))}
                   </div>
 
-                  {hasFinancialRecords ? (
-                    <Alert variant="destructive" className="rounded-[8px]">
-                      <AlertCircle className="h-4 w-4" />
-                      <AlertDescription>
-                        الحذف محظور لوجود فواتير أو دفعات. يجب تسوية السجلات المالية أولًا.
-                      </AlertDescription>
-                    </Alert>
-                  ) : displayedSummary.violations > 0 ? (
+                  {hasFinancialRecords && (
+                    <div className="space-y-3 rounded-[8px] border border-amber-200 bg-amber-50 p-4 text-amber-950">
+                      <div className="flex items-start gap-3">
+                        <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" />
+                        <div>
+                          <p className="font-black">يجب تسوية السجلات المالية قبل حذف العقد</p>
+                          <p className="mt-1 leading-6 text-amber-800">
+                            ستُلغى الدفعات أولًا ثم الفواتير، وتُنشأ قيود عكسية بدل تعديل أو حذف القيود المُرحّلة.
+                          </p>
+                        </div>
+                      </div>
+
+                      <label
+                        htmlFor="contract-financial-reversal-approval"
+                        className={cn(
+                          'flex cursor-pointer items-start gap-3 rounded-[8px] border bg-white p-3 transition-colors',
+                          financialResolution === 'reverse_and_cancel'
+                            ? 'border-emerald-500 ring-2 ring-emerald-200'
+                            : 'border-amber-200 hover:border-amber-400'
+                        )}
+                      >
+                        <Checkbox
+                          id="contract-financial-reversal-approval"
+                          checked={financialResolution === 'reverse_and_cancel'}
+                          onCheckedChange={(checked) => setFinancialResolution(checked === true ? 'reverse_and_cancel' : '')}
+                          disabled={isDeleting}
+                          className="mt-0.5"
+                        />
+                        <span>
+                          <strong className="block">أوافق على إلغاء الفواتير والدفعات بقيود عكسية</strong>
+                          <span className="mt-1 block text-xs leading-5 text-amber-800">
+                            ستبقى السجلات محفوظة بحالة ملغاة مع سبب الحذف وسجل تدقيق كامل.
+                          </span>
+                        </span>
+                      </label>
+                    </div>
+                  )}
+
+                  {displayedSummary.violations > 0 ? (
                     <div className="space-y-3 rounded-[8px] border border-sky-200 bg-sky-50 p-4 text-sky-950">
                       <div className="flex items-start gap-3">
                         <Scale className="mt-0.5 h-5 w-5 shrink-0 text-sky-600" />
@@ -425,7 +521,7 @@ export function PermanentContractDeleteDialog({
                 />
               </div>
 
-              {summary && !hasFinancialRecords && (
+              {summary && (
                 <div className="rounded-[8px] border border-[#DDE5EF] bg-[#F8FAFC] p-3">
                   <p className="mb-2 font-black text-[#334155]">المطلوب لتفعيل الحذف</p>
                   <div className="space-y-2">
@@ -466,7 +562,7 @@ export function PermanentContractDeleteDialog({
           <Button
             type="button"
             onClick={() => void executeDeletion()}
-            disabled={isDeleting || isInspecting || !summary || Boolean(inspectionError) || hasFinancialRecords}
+            disabled={isDeleting || isInspecting || !summary || Boolean(inspectionError)}
             className="rounded-[8px] bg-rose-600 text-white hover:bg-rose-700 disabled:bg-rose-300"
           >
             {isDeleting ? (
@@ -474,6 +570,8 @@ export function PermanentContractDeleteDialog({
                 <Loader2 className="h-4 w-4 animate-spin" />
                 جاري الحذف...
               </>
+            ) : hasFinancialRecords ? (
+              'عكس السجلات المالية وحذف العقد'
             ) : displayedSummary.violations > 0 ? (
               'إثبات الالتزام وحذف العقد'
             ) : (

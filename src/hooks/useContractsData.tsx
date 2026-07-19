@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import type { Tables } from '@/integrations/supabase/types';
@@ -54,9 +54,14 @@ interface ContractsDataFilters {
   min_amount?: string | number;
   max_amount?: string | number;
   applyLocalSearch?: boolean;
-  showDraftLike?: boolean;
   showIncomplete?: boolean;
+  showLegalAction?: boolean;
 }
+
+const legalActionFilter = 'status.eq.under_legal_procedure,legal_status.not.is.null';
+
+const getIncompleteFilter = () =>
+  `customer_id.is.null,vehicle_id.is.null,and(contract_amount.eq.0,monthly_amount.eq.0),and(status.eq.active,end_date.lt.${new Date().toISOString()})`;
 
 const normalizeSearchText = (value: unknown): string =>
   String(value || '')
@@ -89,8 +94,8 @@ export const useContractsData = (filters: ContractsDataFilters = {}) => {
   }
 
   // Fetch statistics separately (all contracts for accurate counts)
-  const { data: allContractsForStats } = useQuery({
-    queryKey: [...queryKeys.contracts.lists(), 'all-for-stats', filter?.company_id],
+  const { data: allContractsForStats, refetch: refetchStatistics } = useQuery({
+    queryKey: [...queryKeys.contracts.lists(), 'all-for-stats-v2', filter?.company_id],
     queryFn: async ({ signal }: { signal?: AbortSignal }) => {
       try {
         const companyId = filter?.company_id || null;
@@ -105,7 +110,16 @@ export const useContractsData = (filters: ContractsDataFilters = {}) => {
 
         let query = supabase
           .from('contracts')
-          .select('id, status, contract_amount, monthly_amount')
+          .select(`
+            id,
+            status,
+            legal_status,
+            customer_id,
+            vehicle_id,
+            end_date,
+            contract_amount,
+            monthly_amount
+          `)
           .abortSignal(signal!);
 
         if (companyId) {
@@ -127,13 +141,14 @@ export const useContractsData = (filters: ContractsDataFilters = {}) => {
       }
     },
     enabled: !!user?.id && !!filter?.company_id && filter?.company_id !== '__loading__',
-    staleTime: 2 * 60 * 1000, // Cache for 2 minutes
+    staleTime: 15 * 1000,
+    refetchOnMount: 'always',
     retry: 1,
   });
 
   // Fetch contracts with customer data (paginated)
   // استخدام getQueryKey مثل useCustomers لضمان إعادة الجلب عند تغير البحث
-  const { data: contractsResponse, isLoading, isFetching, refetch } = useQuery({
+  const { data: contractsResponse, isLoading, isFetching, refetch: refetchContracts } = useQuery({
     queryKey: getQueryKey(['contracts'], [
       filters?.page,
       filters?.pageSize,
@@ -142,6 +157,8 @@ export const useContractsData = (filters: ContractsDataFilters = {}) => {
       filters?.contract_type,
       filters?.customer_id,
       filters?.cost_center_id,
+      filters?.showIncomplete,
+      filters?.showLegalAction,
       filters?.search // البحث كجزء من queryKey
     ]),
     queryFn: async ({ signal }: { signal?: AbortSignal }) => {
@@ -237,9 +254,19 @@ export const useContractsData = (filters: ContractsDataFilters = {}) => {
 
         // Apply status filter to count query as well
         if (filters?.status && filters.status !== 'all' && filters.status !== '') {
-          if (filters.status !== 'expiring_soon') {
-            countQuery = countQuery.eq('status', filters.status);
-          }
+          countQuery = countQuery.eq('status', filters.status);
+        }
+
+        if (filters?.legal_status && filters.legal_status !== '') {
+          countQuery = countQuery.eq('legal_status', filters.legal_status);
+        }
+
+        if (filters?.showIncomplete) {
+          countQuery = countQuery.or(getIncompleteFilter());
+        }
+
+        if (filters?.showLegalAction) {
+          countQuery = countQuery.or(legalActionFilter);
         }
 
         // Apply search filter to count query
@@ -299,16 +326,20 @@ export const useContractsData = (filters: ContractsDataFilters = {}) => {
 
       // Apply status filter BEFORE pagination (at database level)
       if (filters?.status && filters.status !== 'all' && filters.status !== '') {
-        if (filters.status === 'expiring_soon') {
-          // Special handling for expiring_soon - handled in frontend filtering
-        } else {
-          query = query.eq('status', filters.status);
-        }
+        query = query.eq('status', filters.status);
       }
 
       // Apply legal_status filter at database level
       if (filters?.legal_status && filters.legal_status !== '') {
         query = query.eq('legal_status', filters.legal_status);
+      }
+
+      if (filters?.showIncomplete) {
+        query = query.or(getIncompleteFilter());
+      }
+
+      if (filters?.showLegalAction) {
+        query = query.or(legalActionFilter);
       }
 
       // Apply search filter at database level
@@ -436,12 +467,15 @@ export const useContractsData = (filters: ContractsDataFilters = {}) => {
     const statsContracts = allContractsForStats || [];
     
     if (!statsContracts || statsContracts.length === 0) return {
+      totalContracts: 0,
       activeContracts: [],
       draftContracts: [],
       underReviewContracts: [],
       expiredContracts: [],
       suspendedContracts: [],
       cancelledContracts: [],
+      pendingCompletionContracts: [],
+      expiringSoonContracts: [],
       legalProcedureContracts: [],
       totalRevenue: 0
     };
@@ -460,10 +494,12 @@ export const useContractsData = (filters: ContractsDataFilters = {}) => {
     // Active contracts should not be filtered by zero amounts
     const activeContracts = statsContracts.filter((c: any) => c.status === 'active');
     const underReviewContracts = statsContracts.filter((c: any) => c.status === 'under_review' && !isZeroAmount(c));
-    const draftContracts = statsContracts.filter((c: any) => c.status === 'draft' || (isZeroAmount(c) && !['cancelled','expired','suspended','under_review', 'active'].includes(c.status)));
+    const draftContracts = statsContracts.filter((c: any) => c.status === 'draft');
     const expiredContracts = statsContracts.filter((c: any) => c.status === 'expired');
     const suspendedContracts = statsContracts.filter((c: any) => c.status === 'suspended');
     const cancelledContracts = statsContracts.filter((c: any) => c.status === 'cancelled');
+    const pendingCompletionContracts = statsContracts.filter((c: any) => c.status === 'pending_completion');
+    const expiringSoonContracts = statsContracts.filter((c: any) => c.status === 'expiring_soon');
     
     // Incomplete contracts (missing data or zero amounts)
     const incompleteContracts = statsContracts.filter((c: any) => {
@@ -505,12 +541,15 @@ export const useContractsData = (filters: ContractsDataFilters = {}) => {
     });
 
     return {
+      totalContracts: statsContracts.length,
       activeContracts,
       draftContracts,
       underReviewContracts,
       expiredContracts,
       suspendedContracts,
       cancelledContracts,
+      pendingCompletionContracts,
+      expiringSoonContracts,
       incompleteContracts, // New: contracts with missing data
       legalProcedureContracts: legalStatusContracts, // Keep backward compatibility
       
@@ -597,19 +636,6 @@ export const useContractsData = (filters: ContractsDataFilters = {}) => {
         }
       }
 
-      // Special filter for draft-like contracts (matches statistics logic)
-      if (filters.showDraftLike) {
-        const isZeroAmount = (contract.contract_amount === 0 || contract.contract_amount === null) && 
-                             (contract.monthly_amount === 0 || contract.monthly_amount === null);
-        const isDraftStatus = contract.status === 'draft';
-        const isNotFinalStatus = !['cancelled', 'expired', 'suspended', 'under_review'].includes(contract.status);
-        
-        // Include: explicit draft status OR (zero amount AND not in final cancelled/expired/suspended status)
-        if (!(isDraftStatus || (isZeroAmount && isNotFinalStatus))) {
-          return false;
-        }
-      }
-      
       // Special filter for incomplete contracts (missing data or zero amounts)
       if (filters.showIncomplete) {
         const isZeroAmount = (contract.contract_amount === 0 || contract.contract_amount === null) && 
@@ -621,6 +647,12 @@ export const useContractsData = (filters: ContractsDataFilters = {}) => {
         if (!(isZeroAmount || missingCustomer || missingVehicle || isExpired)) {
           return false;
         }
+      }
+
+      if (filters.showLegalAction) {
+        const hasLegalAction = contract.status === 'under_legal_procedure'
+          || Boolean(contract.legal_status);
+        if (!hasLegalAction) return false;
       }
       
       // Status filter
@@ -707,6 +739,8 @@ export const useContractsData = (filters: ContractsDataFilters = {}) => {
     filters.search, 
     filters.status, 
     filters.legal_status,
+    filters.showIncomplete,
+    filters.showLegalAction,
     filters.contract_type, 
     filters.customer_id, 
     filters.cost_center_id, 
@@ -716,6 +750,10 @@ export const useContractsData = (filters: ContractsDataFilters = {}) => {
     filters.min_amount,
     filters.max_amount
   ]); // استخدام القيم الفردية بدلاً من الكائن الكامل
+
+  const refetch = useCallback(async () => {
+    await Promise.all([refetchContracts(), refetchStatistics()]);
+  }, [refetchContracts, refetchStatistics]);
 
   return {
     contracts,

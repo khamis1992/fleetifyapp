@@ -36,6 +36,8 @@ import {
   Bell,
   Settings,
   AlertCircle,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -65,6 +67,7 @@ import SendRemindersDialog from "@/components/contracts/SendRemindersDialog";
 import { ContractAmendmentForm } from "@/components/contracts";
 import { ContractPDFImportRedesigned } from "@/components/contracts/ContractPDFImportRedesigned";
 import { PermanentContractDeleteDialog } from "@/components/contracts/PermanentContractDeleteDialog";
+import { ConvertToLegalDialog } from "@/components/contracts/ConvertToLegalDialog";
 import { canPermanentlyDeleteContract } from "@/components/contracts/contractDeletionEligibility";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -989,6 +992,7 @@ function ContractsRedesigned() {
   const [showExportDialog, setShowExportDialog] = useState(false);
   const [showCreationProgress, setShowCreationProgress] = useState(false);
   const [showCancellationDialog, setShowCancellationDialog] = useState(false);
+  const [showConvertToLegalDialog, setShowConvertToLegalDialog] = useState(false);
   const [showRemoveLegalDialog, setShowRemoveLegalDialog] = useState(false);
   const [showPermanentDeleteDialog, setShowPermanentDeleteDialog] = useState(false);
   const [isRemovingLegal, setIsRemovingLegal] = useState(false);
@@ -1032,10 +1036,10 @@ function ContractsRedesigned() {
       newFilters.search = debouncedSearchTerm.trim();
     }
     if (activeTab === "active") newFilters.status = "active";
-    else if (activeTab === "draft") newFilters.showDraftLike = true;
+    else if (activeTab === "draft") newFilters.status = "draft";
     else if (activeTab === "incomplete") newFilters.showIncomplete = true;
     else if (activeTab === "cancelled") newFilters.status = "cancelled";
-    else if (activeTab === "legal_action") newFilters.legal_status = "under_legal_action";
+    else if (activeTab === "legal_action") newFilters.showLegalAction = true;
     else if (activeTab === "pending_completion") newFilters.status = "pending_completion";
     else if (activeTab === "alerts") newFilters.status = "expiring_soon";
     return newFilters;
@@ -1048,7 +1052,7 @@ function ContractsRedesigned() {
   }), [filters, page, pageSize]);
 
   // Data fetching
-  const { contracts, filteredContracts, isLoading, refetch, statistics } = 
+  const { contracts, filteredContracts, isLoading, refetch, statistics, pagination } =
     useContractsData(filtersWithPagination);
 
   const safeContracts = useMemo(() => Array.isArray(contracts) ? contracts : [], [contracts]);
@@ -1136,10 +1140,13 @@ function ContractsRedesigned() {
   const isInitialLoading = isLoading && safeFilteredContracts.length === 0;
 
   const safeStatistics = useMemo(() => statistics || {
+    totalContracts: 0,
     activeContracts: [],
     draftContracts: [],
     underReviewContracts: [],
     cancelledContracts: [],
+    pendingCompletionContracts: [],
+    expiringSoonContracts: [],
     legalProcedureContracts: [],
     activeWithLegalIssues: [],
     cancelledWithLegalIssues: [],
@@ -1149,16 +1156,16 @@ function ContractsRedesigned() {
 
   // Tab counts
   const tabCounts = useMemo(() => ({
-    all: safeContracts.length,
+    all: safeStatistics.totalContracts || 0,
     active: safeStatistics.activeContracts?.length || 0,
     draft: safeStatistics.draftContracts?.length || 0,
     incomplete: safeStatistics.incompleteContracts?.length || 0,
     cancelled: safeStatistics.cancelledContracts?.length || 0,
     legal_action: safeStatistics.totalLegalCases?.length || 0,
-    pending_completion: 0,
-    alerts: 0,
+    pending_completion: safeStatistics.pendingCompletionContracts?.length || 0,
+    alerts: safeStatistics.expiringSoonContracts?.length || 0,
     settings: 0,
-  }), [safeContracts, safeStatistics]);
+  }), [safeStatistics]);
 
   // Handle pre-selected parameters
   useEffect(() => {
@@ -1275,36 +1282,14 @@ function ContractsRedesigned() {
     setShowPermanentDeleteDialog(true);
   }, []);
 
-  const handleConvertToLegal = useCallback(async (contract: any) => {
-    if (!contract || !companyId) return;
-    try {
-      const { error } = await supabase
-        .from('contracts')
-        .update({ 
-          status: 'under_legal_procedure',
-          legal_status: 'under_legal_action',
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', contract.id)
-        .eq('company_id', companyId);
-
-      if (error) throw error;
-
-      toast({
-        title: 'تم التحويل للشؤون القانونية',
-        description: `تم تحويل العقد #${contract.contract_number} للإجراء القانوني`,
-      });
-
-      refetch();
-    } catch (error: any) {
-      console.error('خطأ في التحويل للشؤون القانونية:', error);
-      toast({
-        title: 'خطأ في التحويل',
-        description: error.message || 'حدث خطأ غير متوقع',
-        variant: 'destructive',
-      });
-    }
-  }, [companyId, toast, refetch]);
+  const handleConvertToLegal = useCallback((contract: any) => {
+    setSelectedContract({
+      ...contract,
+      customer: contract.customer || contract.customers || null,
+      vehicle: contract.vehicle || contract.vehicles || null,
+    });
+    setShowConvertToLegalDialog(true);
+  }, []);
 
   const executeRemoveLegalProcedure = useCallback(async () => {
     if (!selectedContract || !companyId) return;
@@ -1774,7 +1759,10 @@ function ContractsRedesigned() {
                     return (
                       <button
                         key={tab.id}
-                        onClick={() => setActiveTab(tab.id)}
+                        onClick={() => {
+                          setActiveTab(tab.id);
+                          setPage(1);
+                        }}
                         className={cn(
                           "flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200",
                           isActive
@@ -1845,32 +1833,69 @@ function ContractsRedesigned() {
                   )}
                 </div>
               ) : (
-                <motion.div
-                  variants={containerVariants}
-                  initial="hidden"
-                  animate="visible"
-                  className="space-y-4"
-                >
-                  {sortedContracts.map((contract) => (
-                    <ContractOperationsRow
-                      key={contract.id}
-                      contract={contract}
-                      onView={handleViewDetails}
-                      onEdit={(c) => {
-                        setContractToEdit(c);
-                        setShowContractWizard(true);
-                      }}
-                      onRenew={handleRenewContract}
-                      onCancel={handleCancelContract}
-                      onManageStatus={handleManageStatus}
-                      onConvertToLegal={handleConvertToLegal}
-                      onRemoveLegal={handleRemoveLegalProcedure}
-                      onReactivate={handleReactivateContract}
-                      onDeletePermanent={handleOpenPermanentDelete}
-                      isReactivating={isReactivating}
-                    />
-                  ))}
-                </motion.div>
+                <>
+                  <motion.div
+                    variants={containerVariants}
+                    initial="hidden"
+                    animate="visible"
+                    className="space-y-4"
+                  >
+                    {sortedContracts.map((contract) => (
+                      <ContractOperationsRow
+                        key={contract.id}
+                        contract={contract}
+                        onView={handleViewDetails}
+                        onEdit={(c) => {
+                          setContractToEdit(c);
+                          setShowContractWizard(true);
+                        }}
+                        onRenew={handleRenewContract}
+                        onCancel={handleCancelContract}
+                        onManageStatus={handleManageStatus}
+                        onConvertToLegal={handleConvertToLegal}
+                        onRemoveLegal={handleRemoveLegalProcedure}
+                        onReactivate={handleReactivateContract}
+                        onDeletePermanent={handleOpenPermanentDelete}
+                        isReactivating={isReactivating}
+                      />
+                    ))}
+                  </motion.div>
+
+                  {pagination && pagination.totalPages > 1 && (
+                    <div className="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 pt-4">
+                      <span className="text-sm font-medium text-slate-500">
+                        عرض {((pagination.page - 1) * pagination.pageSize) + 1} إلى {Math.min(pagination.page * pagination.pageSize, pagination.totalCount)} من {pagination.totalCount}
+                      </span>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="icon"
+                          disabled={pagination.page <= 1}
+                          onClick={() => setPage((current) => Math.max(1, current - 1))}
+                          aria-label="الصفحة السابقة"
+                          title="الصفحة السابقة"
+                        >
+                          <ChevronRight className="h-4 w-4" />
+                        </Button>
+                        <span className="min-w-24 text-center text-sm font-bold text-slate-700">
+                          الصفحة {pagination.page} من {pagination.totalPages}
+                        </span>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="icon"
+                          disabled={!pagination.hasMore}
+                          onClick={() => setPage((current) => Math.min(pagination.totalPages, current + 1))}
+                          aria-label="الصفحة التالية"
+                          title="الصفحة التالية"
+                        >
+                          <ChevronLeft className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </>
               )}
             </div>
           </div>
@@ -1967,6 +1992,15 @@ function ContractsRedesigned() {
           open={showCancellationDialog} 
           onOpenChange={setShowCancellationDialog} 
           contract={selectedContract} 
+        />
+        <ConvertToLegalDialog
+          open={showConvertToLegalDialog}
+          onOpenChange={setShowConvertToLegalDialog}
+          contract={selectedContract}
+          onSuccess={() => {
+            setShowConvertToLegalDialog(false);
+            refetch();
+          }}
         />
         <UnifiedContractUpload
           open={showCSVUpload}
