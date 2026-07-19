@@ -1,10 +1,11 @@
 import { CSSProperties } from 'react';
-import { AlertTriangle, ArrowUpLeft, Car, FileText, User } from 'lucide-react';
+import { AlertTriangle, ArrowUpLeft, Car, ChevronDown, FileText, User } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { systemColorPattern } from '@/lib/design-system/systemColorPattern';
 import { formatCustomerName } from '@/utils/formatCustomerName';
 
@@ -115,117 +116,129 @@ export const ContractsNeedingAttention = ({ contracts }: ContractsNeedingAttenti
   };
 
   return (
-    <Card
-      className="contracts-attention-card overflow-hidden border bg-white shadow-sm"
-      style={{
-        ...attentionStyle,
-        borderColor: 'rgba(251, 107, 122, 0.28)',
-      }}
-    >
-      <CardHeader className="border-b px-3 py-2.5 sm:px-4">
-        <CardTitle className="flex items-center justify-between gap-3 text-sm sm:text-base">
-          <span className="flex min-w-0 items-center gap-2">
-            <span className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg">
-              <AlertTriangle className="h-4 w-4" />
-            </span>
-            <span className="truncate">عقود تحتاج انتباهك</span>
-          </span>
-          <Badge variant="outline" className="h-7 rounded-lg px-2.5 text-xs font-bold">
-            {needsAttention.length}
-          </Badge>
-        </CardTitle>
-      </CardHeader>
+    <Collapsible className="w-full">
+      <Card
+        className="contracts-attention-card overflow-hidden border bg-white shadow-sm"
+        style={{
+          ...attentionStyle,
+          borderColor: 'rgba(251, 107, 122, 0.28)',
+        }}
+      >
+        <CardHeader className="border-b p-0">
+          <CollapsibleTrigger asChild>
+            <button
+              type="button"
+              className="group/attention-trigger flex min-h-12 w-full items-center justify-between gap-3 px-3 py-2.5 text-right text-sm transition-colors hover:bg-rose-50/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-300 focus-visible:ring-inset sm:px-4 sm:text-base"
+              title="فتح أو طي العقود التي تحتاج انتباهًا"
+            >
+              <span className="flex min-w-0 items-center gap-2 font-bold">
+                <span className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg">
+                  <AlertTriangle className="h-4 w-4" />
+                </span>
+                <span className="truncate">عقود تحتاج انتباهك</span>
+              </span>
+              <span className="flex shrink-0 items-center gap-2">
+                <Badge variant="outline" className="h-7 rounded-lg px-2.5 text-xs font-bold">
+                  {needsAttention.length}
+                </Badge>
+                <ChevronDown className="h-4 w-4 text-slate-500 transition-transform duration-200 group-data-[state=open]/attention-trigger:rotate-180" />
+              </span>
+            </button>
+          </CollapsibleTrigger>
+        </CardHeader>
 
-      <CardContent className="p-3">
-        <div className="space-y-2.5">
-          <div className="flex flex-wrap gap-2">
-            {categorized.zeroAmount.length > 0 && (
-              <div className="attention-summary attention-summary-info">
-                <div className="text-xs font-semibold">قيمة صفرية</div>
-                <div className="text-xl font-bold">{categorized.zeroAmount.length}</div>
-              </div>
-            )}
-            {categorized.missingCustomer.length > 0 && (
-              <div className="attention-summary attention-summary-alert">
-                <div className="text-xs font-semibold">بدون عميل</div>
-                <div className="text-xl font-bold">{categorized.missingCustomer.length}</div>
-              </div>
-            )}
-            {categorized.missingVehicle.length > 0 && (
-              <div className="attention-summary attention-summary-alert">
-                <div className="text-xs font-semibold">بدون مركبة</div>
-                <div className="text-xl font-bold">{categorized.missingVehicle.length}</div>
-              </div>
-            )}
-            {categorized.expired.length > 0 && (
-              <div className="attention-summary attention-summary-focus">
-                <div className="text-xs font-semibold">منتهي ونشط</div>
-                <div className="text-xl font-bold">{categorized.expired.length}</div>
-              </div>
-            )}
-          </div>
-
-          <div className="divide-y overflow-hidden rounded-lg border bg-white">
-            {needsAttention.slice(0, 3).map((contract) => {
-              const issues = getIssueType(contract);
-
-              return (
-                <button
-                  key={contract.id}
-                  type="button"
-                  className="attention-row grid w-full grid-cols-[1fr_auto] items-center gap-3 px-3 py-1.5 text-right transition-colors"
-                  onClick={() => navigate(`/contracts/${contract.id}`)}
-                >
-                  <div className="min-w-0">
-                    <div className="flex min-w-0 items-center gap-2">
-                      <FileText className="h-4 w-4 flex-shrink-0" />
-                      <span className="truncate text-sm font-bold">{contract.contract_number}</span>
-                    </div>
-                    <div className="mt-1 grid gap-1 text-xs sm:grid-cols-2">
-                      <span className="flex min-w-0 items-center gap-1.5">
-                        <User className="h-3.5 w-3.5 flex-shrink-0" />
-                        <span className="truncate">{formatCustomerName(contract.customers)}</span>
-                      </span>
-                      <span className="flex min-w-0 items-center gap-1.5">
-                        <Car className="h-3.5 w-3.5 flex-shrink-0" />
-                        <span className="truncate">{contract.vehicles?.plate_number || 'غير محدد'}</span>
-                      </span>
-                    </div>
+        <CollapsibleContent asChild>
+          <CardContent className="p-3">
+            <div className="space-y-2.5">
+              <div className="flex flex-wrap gap-2">
+                {categorized.zeroAmount.length > 0 && (
+                  <div className="attention-summary attention-summary-info">
+                    <div className="text-xs font-semibold">قيمة صفرية</div>
+                    <div className="text-xl font-bold">{categorized.zeroAmount.length}</div>
                   </div>
-
-                  <div className="flex items-center gap-2">
-                    <div className="flex flex-wrap justify-end gap-1">
-                      {issues.map((issue, index) => (
-                        <Badge
-                          key={`${issue.label}-${index}`}
-                          variant="outline"
-                          className={`attention-badge attention-badge-${issue.tone}`}
-                        >
-                          {issue.label}
-                        </Badge>
-                      ))}
-                    </div>
-                    <ArrowUpLeft className="hidden h-4 w-4 sm:block" />
+                )}
+                {categorized.missingCustomer.length > 0 && (
+                  <div className="attention-summary attention-summary-alert">
+                    <div className="text-xs font-semibold">بدون عميل</div>
+                    <div className="text-xl font-bold">{categorized.missingCustomer.length}</div>
                   </div>
-                </button>
-              );
-            })}
-          </div>
+                )}
+                {categorized.missingVehicle.length > 0 && (
+                  <div className="attention-summary attention-summary-alert">
+                    <div className="text-xs font-semibold">بدون مركبة</div>
+                    <div className="text-xl font-bold">{categorized.missingVehicle.length}</div>
+                  </div>
+                )}
+                {categorized.expired.length > 0 && (
+                  <div className="attention-summary attention-summary-focus">
+                    <div className="text-xs font-semibold">منتهي ونشط</div>
+                    <div className="text-xl font-bold">{categorized.expired.length}</div>
+                  </div>
+                )}
+              </div>
 
-          {needsAttention.length > 3 && (
-            <div className="flex justify-center">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => navigate('/contracts?filter=needs-attention')}
-                className="attention-view-all h-8 rounded-lg px-3 text-xs"
-              >
-                عرض جميع العقود ({needsAttention.length})
-              </Button>
+              <div className="divide-y overflow-hidden rounded-lg border bg-white">
+                {needsAttention.slice(0, 3).map((contract) => {
+                  const issues = getIssueType(contract);
+
+                  return (
+                    <button
+                      key={contract.id}
+                      type="button"
+                      className="attention-row grid w-full grid-cols-[1fr_auto] items-center gap-3 px-3 py-1.5 text-right transition-colors"
+                      onClick={() => navigate(`/contracts/${contract.id}`)}
+                    >
+                      <div className="min-w-0">
+                        <div className="flex min-w-0 items-center gap-2">
+                          <FileText className="h-4 w-4 flex-shrink-0" />
+                          <span className="truncate text-sm font-bold">{contract.contract_number}</span>
+                        </div>
+                        <div className="mt-1 grid gap-1 text-xs sm:grid-cols-2">
+                          <span className="flex min-w-0 items-center gap-1.5">
+                            <User className="h-3.5 w-3.5 flex-shrink-0" />
+                            <span className="truncate">{formatCustomerName(contract.customers)}</span>
+                          </span>
+                          <span className="flex min-w-0 items-center gap-1.5">
+                            <Car className="h-3.5 w-3.5 flex-shrink-0" />
+                            <span className="truncate">{contract.vehicles?.plate_number || 'غير محدد'}</span>
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <div className="flex flex-wrap justify-end gap-1">
+                          {issues.map((issue, index) => (
+                            <Badge
+                              key={`${issue.label}-${index}`}
+                              variant="outline"
+                              className={`attention-badge attention-badge-${issue.tone}`}
+                            >
+                              {issue.label}
+                            </Badge>
+                          ))}
+                        </div>
+                        <ArrowUpLeft className="hidden h-4 w-4 sm:block" />
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {needsAttention.length > 3 && (
+                <div className="flex justify-center">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => navigate('/contracts?filter=needs-attention')}
+                    className="attention-view-all h-8 rounded-lg px-3 text-xs"
+                  >
+                    عرض جميع العقود ({needsAttention.length})
+                  </Button>
+                </div>
+              )}
             </div>
-          )}
-        </div>
-      </CardContent>
+          </CardContent>
+        </CollapsibleContent>
 
       <style>{`
           .contracts-system .contracts-attention-card,
@@ -355,6 +368,7 @@ export const ContractsNeedingAttention = ({ contracts }: ContractsNeedingAttenti
           }
         }
       `}</style>
-    </Card>
+      </Card>
+    </Collapsible>
   );
 };

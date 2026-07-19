@@ -64,6 +64,8 @@ import { LateFinesSettings } from "@/components/contracts/LateFinesSettings";
 import SendRemindersDialog from "@/components/contracts/SendRemindersDialog";
 import { ContractAmendmentForm } from "@/components/contracts";
 import { ContractPDFImportRedesigned } from "@/components/contracts/ContractPDFImportRedesigned";
+import { PermanentContractDeleteDialog } from "@/components/contracts/PermanentContractDeleteDialog";
+import { canPermanentlyDeleteContract } from "@/components/contracts/contractDeletionEligibility";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   AlertDialog,
@@ -666,6 +668,34 @@ const getContractDaysLeft = (date?: string) => {
   return Number.isFinite(days) ? days : null;
 };
 
+const getContractIncompleteReasons = (contract: Contract) => {
+  const contractAmount = contract.contract_amount === undefined || contract.contract_amount === null
+    ? null
+    : Number(contract.contract_amount);
+  const monthlyAmount = contract.monthly_amount === undefined || contract.monthly_amount === null
+    ? null
+    : Number(contract.monthly_amount);
+  const reasons: string[] = [];
+
+  if (contractAmount === 0 && monthlyAmount === 0) {
+    reasons.push("قيمة العقد والإيجار الشهري غير مكتملة");
+  }
+
+  if (!contract.customer_id) {
+    reasons.push("لا يوجد عميل مرتبط بالعقد");
+  }
+
+  if (!contract.vehicle_id) {
+    reasons.push("لا توجد مركبة مرتبطة بالعقد");
+  }
+
+  if (contract.end_date && new Date(contract.end_date) < new Date() && contract.status === "active") {
+    reasons.push("العقد نشط رغم أن تاريخ النهاية منتهي");
+  }
+
+  return reasons;
+};
+
 const ModernStatusBadge = ({
   status,
   legalStatus,
@@ -738,6 +768,7 @@ const ContractOperationsRow = ({
   onConvertToLegal,
   onRemoveLegal,
   onReactivate,
+  onDeletePermanent,
   isReactivating,
 }: {
   contract: Contract;
@@ -749,6 +780,7 @@ const ContractOperationsRow = ({
   onConvertToLegal: (c: Contract) => void;
   onRemoveLegal: (c: Contract) => void;
   onReactivate: (c: Contract) => void;
+  onDeletePermanent: (c: Contract) => void;
   isReactivating: boolean;
 }) => {
   const { formatCurrency } = useCurrencyFormatter();
@@ -756,6 +788,7 @@ const ContractOperationsRow = ({
   const isCancelled = contract.status === "cancelled";
   const hasLegalStatus = Boolean(contract.legal_status || contract.status === "under_legal_procedure");
   const daysLeft = getContractDaysLeft(contract.end_date);
+  const incompleteReasons = getContractIncompleteReasons(contract);
   const progress = contract.contract_amount
     ? Math.min(100, Math.max(0, ((contract.total_paid || 0) / contract.contract_amount) * 100))
     : 0;
@@ -808,6 +841,21 @@ const ContractOperationsRow = ({
                   {getContractPlate(contract)}
                 </span>
               </div>
+              {incompleteReasons.length > 0 && (
+                <div className="mt-3 rounded-[8px] border border-[#FED7AA] bg-[#FFF7ED] px-3 py-2 text-xs font-bold leading-5 text-[#C2410C]">
+                  <div className="mb-1 flex items-center gap-1.5 font-black">
+                    <AlertCircle className="h-3.5 w-3.5" />
+                    سبب عدم الاكتمال
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {incompleteReasons.map((reason) => (
+                      <span key={reason} className="rounded-full bg-white/80 px-2 py-0.5">
+                        {reason}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -899,6 +947,18 @@ const ContractOperationsRow = ({
                   </DropdownMenuItem>
                 </>
               )}
+              {canPermanentlyDeleteContract(contract.status) && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onClick={() => onDeletePermanent(contract)}
+                    className="text-rose-600 focus:bg-rose-50 focus:text-rose-700"
+                  >
+                    <Trash2 className="ml-2 h-4 w-4" />
+                    حذف العقد نهائيًا
+                  </DropdownMenuItem>
+                </>
+              )}
               {hasLegalStatus && (
                 <DropdownMenuItem onClick={() => onRemoveLegal(contract)} className="text-[#22C7A1] focus:text-[#22C7A1]">
                   <CheckCircle className="ml-2 h-4 w-4" />
@@ -930,6 +990,7 @@ function ContractsRedesigned() {
   const [showCreationProgress, setShowCreationProgress] = useState(false);
   const [showCancellationDialog, setShowCancellationDialog] = useState(false);
   const [showRemoveLegalDialog, setShowRemoveLegalDialog] = useState(false);
+  const [showPermanentDeleteDialog, setShowPermanentDeleteDialog] = useState(false);
   const [isRemovingLegal, setIsRemovingLegal] = useState(false);
   const [showCSVUpload, setShowCSVUpload] = useState(false);
   const [showRemindersDialog, setShowRemindersDialog] = useState(false);
@@ -1207,6 +1268,11 @@ function ContractsRedesigned() {
   const handleRemoveLegalProcedure = useCallback((contract: any) => {
     setSelectedContract(contract);
     setShowRemoveLegalDialog(true);
+  }, []);
+
+  const handleOpenPermanentDelete = useCallback((contract: Contract) => {
+    setSelectedContract(contract);
+    setShowPermanentDeleteDialog(true);
   }, []);
 
   const handleConvertToLegal = useCallback(async (contract: any) => {
@@ -1800,6 +1866,7 @@ function ContractsRedesigned() {
                       onConvertToLegal={handleConvertToLegal}
                       onRemoveLegal={handleRemoveLegalProcedure}
                       onReactivate={handleReactivateContract}
+                      onDeletePermanent={handleOpenPermanentDelete}
                       isReactivating={isReactivating}
                     />
                   ))}
@@ -1948,6 +2015,18 @@ function ContractsRedesigned() {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+
+        <PermanentContractDeleteDialog
+          open={showPermanentDeleteDialog}
+          onOpenChange={setShowPermanentDeleteDialog}
+          contract={selectedContract}
+          companyId={companyId}
+          onDeleted={async () => {
+            setSelectedContract(null);
+            await refetch();
+          }}
+          onReviewViolations={(contract) => navigate(`/contracts/${contract.contract_number}`)}
+        />
 
         <SendRemindersDialog
           open={showRemindersDialog}

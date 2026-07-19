@@ -71,6 +71,8 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 
 import { Progress } from '@/components/ui/progress';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -138,6 +140,15 @@ const contractDetailsSystemStyle = {
   '--contract-details-focus': contractDetailsTheme.focus,
   '--contract-details-success': contractDetailsTheme.success,
 } as CSSProperties;
+
+const permanentlyDeletableContractStatuses = new Set([
+  'draft',
+  'cancelled',
+  'expired',
+  'completed',
+  'closed',
+  'terminated',
+]);
 
 type ContractAuditLog = {
   id: string;
@@ -2164,11 +2175,23 @@ const ContractDetailsPageRedesigned = () => {
   const [isTerminating, setIsTerminating] = useState(false);
   const [isDeletePermanentDialogOpen, setIsDeletePermanentDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteConfirmation, setDeleteConfirmation] = useState('');
+  const [deleteReason, setDeleteReason] = useState('');
+  const [violationDeleteResolution, setViolationDeleteResolution] = useState<'company' | 'review' | ''>('');
   const [isRemoveLegalDialogOpen, setIsRemoveLegalDialogOpen] = useState(false);
   const [isRemovingLegal, setIsRemovingLegal] = useState(false);
   const [isReactivateDialogOpen, setIsReactivateDialogOpen] = useState(false);
   const [isReactivating, setIsReactivating] = useState(false);
-  const [relatedDataCounts, setRelatedDataCounts] = useState<{invoices: number; payments: number; violations: number} | null>(null);
+  const [relatedDataCounts, setRelatedDataCounts] = useState<{
+    invoices: number;
+    payments: number;
+    schedules: number;
+    documents: number;
+    legalCases: number;
+    violations: number;
+    violationAmount: number;
+    unpaidViolationAmount: number;
+  } | null>(null);
   const [isCancellingInvoice, setIsCancellingInvoice] = useState(false);
   const [invoiceToCancel, setInvoiceToCancel] = useState<Invoice | null>(null);
   const [isCancelInvoiceDialogOpen, setIsCancelInvoiceDialogOpen] = useState(false);
@@ -2820,32 +2843,74 @@ const ContractDetailsPageRedesigned = () => {
 
   const handleOpenDeletePermanent = useCallback(async () => {
     if (!contract?.id || !companyId) return;
-    if (contract.status !== 'draft') {
+    if (!permanentlyDeletableContractStatuses.has(String(contract.status || '').toLowerCase())) {
       toast({
         title: 'الحذف غير مسموح',
-        description: 'يمكن حذف المسودات غير المستخدمة فقط. ألغِ العقد للحفاظ على الفواتير والمدفوعات والسجل القانوني.',
+        description: 'يجب إنهاء العقد أو إلغاؤه أولًا. لا يمكن حذف عقد نشط أو تحت إجراء قانوني.',
         variant: 'destructive',
       });
       return;
     }
 
     try {
-      const [invoicesRes, paymentsRes, violationsRes] = await Promise.all([
+      const [invoicesRes, paymentsRes, schedulesRes, documentsRes, legalCasesRes, violationsRes] = await Promise.all([
         supabase.from('invoices').select('id', { count: 'exact', head: true }).eq('contract_id', contract.id).eq('company_id', companyId),
         supabase.from('payments').select('id', { count: 'exact', head: true }).eq('contract_id', contract.id).eq('company_id', companyId),
-        supabase.from('traffic_violations').select('id', { count: 'exact', head: true }).eq('contract_id', contract.id).eq('company_id', companyId),
+        supabase.from('contract_payment_schedules').select('id', { count: 'exact', head: true }).eq('contract_id', contract.id).eq('company_id', companyId),
+        supabase.from('contract_documents').select('id', { count: 'exact', head: true }).eq('contract_id', contract.id).eq('company_id', companyId),
+        supabase.from('legal_cases').select('id', { count: 'exact', head: true }).eq('contract_id', contract.id).eq('company_id', companyId),
+        supabase.from('traffic_violations').select('id, fine_amount, status').eq('contract_id', contract.id).eq('company_id', companyId),
       ]);
+
+      const relatedError = [invoicesRes, paymentsRes, schedulesRes, documentsRes, legalCasesRes, violationsRes]
+        .find((result) => result.error)?.error;
+      if (relatedError) throw relatedError;
+
+      const activeViolations = (violationsRes.data || []).filter((violation) => violation.status !== 'cancelled');
+      const violationIds = activeViolations.map((violation) => violation.id);
+      const completedPaymentsRes = violationIds.length > 0
+        ? await supabase
+            .from('traffic_violation_payments')
+            .select('traffic_violation_id, amount')
+            .eq('company_id', companyId)
+            .eq('status', 'completed')
+            .in('traffic_violation_id', violationIds)
+        : { data: [], error: null };
+      if (completedPaymentsRes.error) throw completedPaymentsRes.error;
+
+      const paidByViolation = (completedPaymentsRes.data || []).reduce<Record<string, number>>((totals, payment) => {
+        totals[payment.traffic_violation_id] = (totals[payment.traffic_violation_id] || 0) + Number(payment.amount || 0);
+        return totals;
+      }, {});
+      const violationAmount = activeViolations.reduce((sum, violation) => sum + Number(violation.fine_amount || 0), 0);
+      const unpaidViolationAmount = activeViolations.reduce(
+        (sum, violation) => sum + Math.max(Number(violation.fine_amount || 0) - (paidByViolation[violation.id] || 0), 0),
+        0
+      );
 
       setRelatedDataCounts({
         invoices: invoicesRes.count || 0,
         payments: paymentsRes.count || 0,
-        violations: violationsRes.count || 0,
+        schedules: schedulesRes.count || 0,
+        documents: documentsRes.count || 0,
+        legalCases: legalCasesRes.count || 0,
+        violations: activeViolations.length,
+        violationAmount,
+        unpaidViolationAmount,
       });
     } catch (error) {
       console.error('Error fetching related data counts:', error);
-      setRelatedDataCounts({ invoices: 0, payments: 0, violations: 0 });
+      toast({
+        title: 'تعذر فحص ارتباطات العقد',
+        description: 'لم يتم فتح الحذف لأن النظام لم يستطع التحقق من البيانات المرتبطة.',
+        variant: 'destructive',
+      });
+      return;
     }
 
+    setDeleteConfirmation('');
+    setDeleteReason('');
+    setViolationDeleteResolution('');
     setIsDeletePermanentDialogOpen(true);
   }, [contract, companyId, toast]);
 
@@ -2963,43 +3028,68 @@ const ContractDetailsPageRedesigned = () => {
 
     setIsDeleting(true);
     try {
-      if (contract.status !== 'draft') {
-        throw new Error('يمكن حذف مسودة عقد غير مستخدمة فقط. استخدم الإلغاء للعقود المعتمدة.');
+      if (!permanentlyDeletableContractStatuses.has(String(contract.status || '').toLowerCase())) {
+        throw new Error('يجب إنهاء العقد أو إلغاؤه قبل الحذف النهائي.');
+      }
+      if (deleteConfirmation.trim() !== contract.contract_number) {
+        throw new Error('اكتب رقم العقد كما هو لتأكيد الحذف.');
+      }
+      if (deleteReason.trim().length < 5) {
+        throw new Error('اكتب سببًا واضحًا للحذف لا يقل عن 5 أحرف.');
+      }
+      if ((relatedDataCounts?.violations || 0) > 0 && violationDeleteResolution !== 'company') {
+        throw new Error('حدد معالجة المخالفات قبل حذف العقد.');
       }
 
-      const relatedChecks = await Promise.all([
+      const financialChecks = await Promise.all([
         supabase.from('payments').select('id', { count: 'exact', head: true }).eq('contract_id', contract.id).eq('company_id', companyId),
         supabase.from('invoices').select('id', { count: 'exact', head: true }).eq('contract_id', contract.id).eq('company_id', companyId),
-        supabase.from('contract_payment_schedules').select('id', { count: 'exact', head: true }).eq('contract_id', contract.id).eq('company_id', companyId),
-        supabase.from('contract_documents').select('id', { count: 'exact', head: true }).eq('contract_id', contract.id).eq('company_id', companyId),
-        supabase.from('legal_cases').select('id', { count: 'exact', head: true }).eq('contract_id', contract.id).eq('company_id', companyId),
-        supabase.from('traffic_violations').select('id', { count: 'exact', head: true }).eq('contract_id', contract.id).eq('company_id', companyId),
       ]);
-      const relatedError = relatedChecks.find((result) => result.error)?.error;
-      if (relatedError) throw relatedError;
-      const relatedCount = relatedChecks.reduce((sum, result) => sum + (result.count || 0), 0);
-      if (relatedCount > 0) {
-        throw new Error('لا يمكن حذف المسودة لأنها مرتبطة ببيانات أخرى. أزل الارتباطات غير المالية يدويًا أو ألغِ العقد.');
+      const financialError = financialChecks.find((result) => result.error)?.error;
+      if (financialError) throw financialError;
+      if (financialChecks.some((result) => (result.count || 0) > 0)) {
+        throw new Error('لا يمكن حذف العقد نهائيًا لوجود فواتير أو دفعات مرتبطة به. يجب تسوية السجلات المالية أولًا.');
       }
 
-      const { error: deleteError } = await supabase
-        .from('contracts')
-        .delete()
-        .eq('id', contract.id)
-        .eq('company_id', companyId)
-        .eq('status', 'draft')
-        .select('id')
-        .single();
+      const { data: deletionData, error: deleteError } = await supabase
+        .rpc('delete_contract_with_company_violations_v1', {
+          p_company_id: companyId,
+          p_contract_id: contract.id,
+          p_reason: deleteReason.trim(),
+          p_violation_resolution: 'company',
+        });
 
-      if (deleteError) throw deleteError;
+      if (deleteError || !deletionData) {
+        if (deleteError?.code === '23503') {
+          throw new Error('تعذر الحذف لأن هناك سجلًا محميًا مرتبطًا بالعقد. راجع المستندات أو العمليات القانونية المرتبطة.');
+        }
+        if (deleteError?.code === 'PGRST202') {
+          throw new Error('تحديث قاعدة البيانات الخاص بالحذف المالي لم يُنشر بعد.');
+        }
+        throw deleteError || new Error('لم يُحذف العقد؛ ربما تغيرت حالته أثناء العملية.');
+      }
+
+      const deletionResult = deletionData as {
+        contract_number?: string;
+        violation_count?: number;
+        liability_amount?: number;
+        liability_journal_entry_id?: string | null;
+      };
 
       queryClient.invalidateQueries({ queryKey: ['contracts'] });
+      queryClient.invalidateQueries({ queryKey: ['vehicles'] });
+      queryClient.invalidateQueries({ queryKey: ['traffic-violations'] });
+      queryClient.invalidateQueries({ queryKey: ['journal-entries'] });
+      queryClient.invalidateQueries({ queryKey: ['financial-reports'] });
 
       toast({
-        title: 'تم حذف المسودة',
-        description: `تم حذف مسودة العقد #${contract.contract_number}`,
+        title: 'تم حذف العقد نهائيًا',
+        description: (deletionResult.violation_count || 0) > 0
+          ? `تم نقل ${deletionResult.violation_count} مخالفة إلى الشركة وإثبات التزام بقيمة ${formatCurrency(Number(deletionResult.liability_amount || 0))} قبل حذف العقد #${deletionResult.contract_number || contract.contract_number}.`
+          : `تم حذف العقد #${deletionResult.contract_number || contract.contract_number} وحفظ سجل التدقيق.`,
       });
 
+      setIsDeletePermanentDialogOpen(false);
       navigate('/contracts');
     } catch (error) {
       console.error('خطأ في الحذف النهائي:', error);
@@ -3011,7 +3101,7 @@ const ContractDetailsPageRedesigned = () => {
     } finally {
       setIsDeleting(false);
     }
-  }, [contract, companyId, queryClient, toast, navigate]);
+  }, [contract, companyId, deleteConfirmation, deleteReason, relatedDataCounts, violationDeleteResolution, queryClient, toast, navigate, formatCurrency]);
 
   // Loading state
   if (isLoading || isInitializing) {
@@ -3396,41 +3486,181 @@ const ContractDetailsPageRedesigned = () => {
 
       {/* Delete Permanent Dialog */}
       <AlertDialog open={isDeletePermanentDialogOpen} onOpenChange={setIsDeletePermanentDialogOpen}>
-        <AlertDialogContent className="rounded-2xl" data-tour="contract-delete-dialog">
+        <AlertDialogContent className="max-w-2xl rounded-xl" data-tour="contract-delete-dialog">
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-rose-600">حذف مسودة العقد</AlertDialogTitle>
+            <AlertDialogTitle className="flex items-center gap-2 text-rose-700">
+              <Trash2 className="h-5 w-5" />
+              حذف العقد نهائيًا
+            </AlertDialogTitle>
             <AlertDialogDescription asChild>
-              <div className="space-y-4 text-sm text-muted-foreground" data-tour="contract-delete-warning">
-                <p>هل أنت متأكد من حذف مسودة العقد #{contract.contract_number}؟</p>
+              <div className="space-y-4 text-right text-sm text-muted-foreground" data-tour="contract-delete-warning">
+                <Alert variant="destructive" className="rounded-lg">
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertDescription className="leading-6">
+                    سيختفي العقد <strong>#{contract.contract_number}</strong> نهائيًا. لا يمكن التراجع عن هذا الإجراء من الواجهة.
+                  </AlertDescription>
+                </Alert>
+
                 {relatedDataCounts && (
-                  <Alert variant="destructive">
-                    <AlertTriangle className="h-4 w-4" />
+                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                    {[
+                      ['الفواتير', relatedDataCounts.invoices],
+                      ['الدفعات', relatedDataCounts.payments],
+                      ['جدول الدفعات', relatedDataCounts.schedules],
+                      ['المستندات', relatedDataCounts.documents],
+                      ['القضايا', relatedDataCounts.legalCases],
+                      ['المخالفات', relatedDataCounts.violations],
+                    ].map(([label, value]) => (
+                      <div key={String(label)} className="rounded-lg border border-[#DDE5EF] bg-[#F8FAFC] p-3">
+                        <span className="block text-xs font-bold text-[#64748B]">{label}</span>
+                        <strong className="mt-1 block text-lg text-[#142033]">{value}</strong>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {(relatedDataCounts?.invoices || 0) > 0 || (relatedDataCounts?.payments || 0) > 0 ? (
+                  <Alert variant="destructive" className="rounded-lg">
+                    <AlertCircle className="h-4 w-4" />
                     <AlertDescription>
-                      لن يسمح النظام بالحذف إذا وُجدت أي فاتورة أو دفعة أو مخالفة أو مستند مرتبط بالمسودة.
+                      الحذف محظور لوجود فواتير أو دفعات. يجب تسوية السجلات المالية أولًا.
                     </AlertDescription>
                   </Alert>
+                ) : (
+                  <div className="space-y-3">
+                    {(relatedDataCounts?.violations || 0) > 0 ? (
+                      <div className="space-y-3 rounded-lg border border-sky-200 bg-sky-50 p-4 text-sky-950">
+                        <div className="flex items-start gap-3">
+                          <Scale className="mt-0.5 h-5 w-5 shrink-0 text-sky-600" />
+                          <div>
+                            <p className="font-black">يجب تحديد مسؤولية المخالفات قبل الحذف</p>
+                            <p className="mt-1 leading-6 text-sky-800">
+                              المتبقي غير المسدد <strong>{formatCurrency(relatedDataCounts?.unpaidViolationAmount || 0)}</strong> من أصل{' '}
+                              {formatCurrency(relatedDataCounts?.violationAmount || 0)}.
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2" role="radiogroup" aria-label="معالجة مخالفات العقد">
+                          <button
+                            type="button"
+                            role="radio"
+                            aria-checked={violationDeleteResolution === 'company'}
+                            onClick={() => setViolationDeleteResolution('company')}
+                            disabled={isDeleting}
+                            className={cn(
+                              'min-h-20 rounded-lg border p-3 text-right transition-colors',
+                              violationDeleteResolution === 'company'
+                                ? 'border-emerald-500 bg-emerald-50 text-emerald-950 ring-2 ring-emerald-200'
+                                : 'border-[#D7E0EA] bg-white text-[#334155] hover:border-emerald-300'
+                            )}
+                          >
+                            <span className="block font-black">تحويلها إلى الشركة</span>
+                            <span className="mt-1 block text-xs leading-5 opacity-80">إثبات مصروف والتزام مستحق ثم حذف العقد</span>
+                          </button>
+                          <button
+                            type="button"
+                            role="radio"
+                            aria-checked={violationDeleteResolution === 'review'}
+                            onClick={() => setViolationDeleteResolution('review')}
+                            disabled={isDeleting}
+                            className={cn(
+                              'min-h-20 rounded-lg border p-3 text-right transition-colors',
+                              violationDeleteResolution === 'review'
+                                ? 'border-amber-500 bg-amber-50 text-amber-950 ring-2 ring-amber-200'
+                                : 'border-[#D7E0EA] bg-white text-[#334155] hover:border-amber-300'
+                            )}
+                          >
+                            <span className="block font-black">مراجعة المخالفات أولًا</span>
+                            <span className="mt-1 block text-xs leading-5 opacity-80">إيقاف الحذف وفتح قائمة المخالفات</span>
+                          </button>
+                        </div>
+
+                        {violationDeleteResolution === 'company' && (
+                          <Alert className="rounded-lg border-emerald-200 bg-emerald-50 text-emerald-950">
+                            <ShieldCheck className="h-4 w-4" />
+                            <AlertDescription className="leading-6">
+                              سينشأ قيد: مدين مصروف المخالفات، دائن مخالفات مستحقة الدفع. وعند السداد يُخفض حساب الالتزام دون تكرار المصروف.
+                            </AlertDescription>
+                          </Alert>
+                        )}
+
+                        {violationDeleteResolution === 'review' && (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            className="w-full border-amber-300 bg-white text-amber-900"
+                            onClick={() => {
+                              setIsDeletePermanentDialogOpen(false);
+                              setActiveTab('violations');
+                            }}
+                          >
+                            <AlertCircle className="h-4 w-4" />
+                            عرض المخالفات قبل اتخاذ القرار
+                          </Button>
+                        )}
+                      </div>
+                    ) : (
+                      <Alert className="rounded-lg border-emerald-200 bg-emerald-50 text-emerald-900">
+                        <ShieldCheck className="h-4 w-4" />
+                        <AlertDescription>لا توجد مخالفات تحتاج إلى نقل مسؤولية.</AlertDescription>
+                      </Alert>
+                    )}
+
+                    <Alert className="rounded-lg border-amber-200 bg-amber-50 text-amber-900">
+                      <AlertTriangle className="h-4 w-4" />
+                      <AlertDescription className="leading-6">
+                        ستحذف بيانات العقد التابعة مثل جدول الدفعات والمستندات، وستبقى القضايا كسجلات مستقلة ضمن الشركة.
+                      </AlertDescription>
+                    </Alert>
+                  </div>
                 )}
+
+                <div className="space-y-2">
+                  <label htmlFor="contract-delete-reason" className="block font-bold text-[#334155]">سبب الحذف</label>
+                  <Textarea
+                    id="contract-delete-reason"
+                    value={deleteReason}
+                    onChange={(event) => setDeleteReason(event.target.value)}
+                    placeholder="مثال: العقد منتهي والالتزامات تتحملها الشركة"
+                    className="min-h-20 rounded-lg bg-white"
+                    disabled={isDeleting}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label htmlFor="contract-delete-confirmation" className="block font-bold text-[#334155]">
+                    اكتب رقم العقد <span dir="ltr" className="font-black text-rose-700">{contract.contract_number}</span> للتأكيد
+                  </label>
+                  <Input
+                    id="contract-delete-confirmation"
+                    dir="ltr"
+                    value={deleteConfirmation}
+                    onChange={(event) => setDeleteConfirmation(event.target.value)}
+                    placeholder={contract.contract_number}
+                    className="h-11 rounded-lg bg-white text-left font-mono"
+                    autoComplete="off"
+                    disabled={isDeleting}
+                  />
+                </div>
               </div>
             </AlertDialogDescription>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => startTour('contract-delete-permanent')}
-              className="mt-2 h-9 w-fit gap-2 rounded-lg border-emerald-200 bg-emerald-50 font-bold text-emerald-700 hover:bg-emerald-100"
-              data-tour="contract-delete-tour-start"
-            >
-              <PlayCircle className="h-4 w-4" />
-              ابدأ الجولة التعريفية
-            </Button>
           </AlertDialogHeader>
           <AlertDialogFooter data-tour="contract-delete-actions">
-            <AlertDialogCancel className="rounded-xl" disabled={isDeleting}>
+            <AlertDialogCancel className="rounded-lg" disabled={isDeleting}>
               إلغاء
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={executeDeletePermanent}
-              disabled={isDeleting}
-              className="bg-rose-600 hover:bg-rose-700 rounded-xl"
+              disabled={
+                isDeleting ||
+                deleteConfirmation.trim() !== contract.contract_number ||
+                deleteReason.trim().length < 5 ||
+                (relatedDataCounts?.invoices || 0) > 0 ||
+                (relatedDataCounts?.payments || 0) > 0 ||
+                ((relatedDataCounts?.violations || 0) > 0 && violationDeleteResolution !== 'company')
+              }
+              className="rounded-lg bg-rose-600 hover:bg-rose-700"
               data-tour="contract-delete-submit"
             >
               {isDeleting ? (
@@ -3439,7 +3669,9 @@ const ContractDetailsPageRedesigned = () => {
                   جاري الحذف...
                 </>
               ) : (
-                'نعم، حذف المسودة'
+                (relatedDataCounts?.violations || 0) > 0
+                  ? 'إثبات الالتزام وحذف العقد'
+                  : 'حذف العقد نهائيًا'
               )}
             </AlertDialogAction>
           </AlertDialogFooter>

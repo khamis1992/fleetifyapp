@@ -95,6 +95,11 @@ interface TrafficViolation {
   notes?: string | null;
   evidence_urls?: string[];
   payment_date?: string | null;
+  responsibility_party?: 'customer' | 'company' | 'under_review' | 'cancelled' | string;
+  responsibility_reason?: string | null;
+  original_contract_number?: string | null;
+  liability_amount?: number | null;
+  liability_journal_entry_id?: string | null;
   created_at: string;
 }
 
@@ -317,6 +322,12 @@ const ViolationCard = ({
                 <StatusIcon className="w-3 h-3 ml-1" />
                 {statusInfo.label}
               </Badge>
+              {violation.responsibility_party === 'company' && (
+                <Badge className="border-0 bg-emerald-100 text-xs text-emerald-800">على الشركة</Badge>
+              )}
+              {violation.responsibility_party === 'under_review' && (
+                <Badge className="border-0 bg-amber-100 text-xs text-amber-800">المسؤولية تحت المراجعة</Badge>
+              )}
             </div>
             <p className="text-sm text-neutral-500">{getViolationTypeLabel(violation.violation_type)}</p>
           </div>
@@ -510,6 +521,9 @@ const ViolationTableRow = ({
           <StatusIcon className="w-3 h-3" />
           {statusInfo.label}
         </Badge>
+        {violation.responsibility_party === 'company' && (
+          <Badge className="mt-1 border-0 bg-emerald-100 text-emerald-800">على الشركة</Badge>
+        )}
       </td>
 
       {/* Actions */}
