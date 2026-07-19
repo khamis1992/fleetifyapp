@@ -645,6 +645,19 @@ async function backfillContractInvoices(
         p_dry_run: false,
       });
       if (error) throw error;
+
+      const graphRepair = await canonicalizeUniformContractScheduleGraph(
+        supabase,
+        companyId,
+        contractId,
+      );
+      if (graphRepair > 0) {
+        console.info("[daily-audit-agent] canonical schedule graph repaired", {
+          companyId,
+          contractId,
+          repaired: graphRepair,
+        });
+      }
     } catch (error) {
       console.error("[daily-audit-agent] payment schedule backfill failed", {
         companyId,
@@ -656,6 +669,153 @@ async function backfillContractInvoices(
   }
 
   return summary;
+}
+
+async function canonicalizeUniformContractScheduleGraph(
+  supabase: any,
+  companyId: string,
+  contractId: string,
+) {
+  const { data: contract, error: contractError } = await supabase
+    .from("contracts")
+    .select("id, start_date, end_date, monthly_amount, contract_amount")
+    .eq("id", contractId)
+    .eq("company_id", companyId)
+    .maybeSingle();
+  if (contractError) throw contractError;
+  if (!contract) return 0;
+
+  const startMonth = toMonthStart(String(contract.start_date || ""));
+  const endMonth = toMonthStart(String(contract.end_date || ""));
+  const monthlyAmount = roundMoney(Number(contract.monthly_amount || 0));
+  if (!isIsoDate(startMonth) || !isIsoDate(endMonth) || endMonth < startMonth || monthlyAmount <= 0) return 0;
+
+  const expectedMonthCount = monthCountInclusive(startMonth, endMonth);
+  if (
+    expectedMonthCount <= 0
+    || Math.abs(roundMoney(Number(contract.contract_amount || 0)) - roundMoney(expectedMonthCount * monthlyAmount)) > 1
+  ) return 0;
+
+  const [{ data: invoices, error: invoiceError }, { data: schedules, error: scheduleError }] = await Promise.all([
+    supabase
+      .from("invoices")
+      .select("id, invoice_date, due_date, total_amount, paid_amount, balance_due, status, payment_status")
+      .eq("company_id", companyId)
+      .eq("contract_id", contractId),
+    supabase
+      .from("contract_payment_schedules")
+      .select("id, installment_number, due_date, amount, status, paid_amount, paid_date, invoice_id")
+      .eq("company_id", companyId)
+      .eq("contract_id", contractId),
+  ]);
+  if (invoiceError) throw invoiceError;
+  if (scheduleError) throw scheduleError;
+
+  const activeInvoices = (invoices || []).filter((invoice: any) =>
+    !isCancelledStatus(invoice.status) && !isCancelledStatus(invoice.payment_status)
+  );
+  const invoiceByMonth = new Map<string, any>();
+  for (const invoice of activeInvoices) {
+    const key = toMonthStart(String(invoice.invoice_date || invoice.due_date || ""));
+    if (isIsoDate(key) && !invoiceByMonth.has(key)) invoiceByMonth.set(key, invoice);
+  }
+
+  const activeSchedules = (schedules || []).filter((schedule: any) => !isCancelledStatus(schedule.status));
+  const insideByMonth = new Map<string, any>();
+  for (const schedule of activeSchedules) {
+    const key = toMonthStart(String(schedule.due_date || ""));
+    if (key >= startMonth && key <= endMonth && !insideByMonth.has(key)) insideByMonth.set(key, schedule);
+  }
+
+  const expectedMonths = Array.from({ length: expectedMonthCount }, (_, offset) => ({
+    month: addMonths(startMonth, offset),
+    installmentNumber: offset + 1,
+  }));
+  const missingMonths = expectedMonths.filter((item) => !insideByMonth.has(item.month));
+  const safeOutside = activeSchedules.filter((schedule: any) => {
+    const key = toMonthStart(String(schedule.due_date || ""));
+    return (key < startMonth || key > endMonth)
+      && !schedule.invoice_id
+      && Math.abs(Number(schedule.paid_amount || 0)) <= 0.01
+      && String(schedule.status || "").toLowerCase() !== "paid";
+  });
+  const reusableOutside = safeOutside.slice(0, missingMonths.length);
+  const inPeriodSchedules = Array.from(insideByMonth.values());
+  const needsRenumbering = expectedMonths.some((item) => {
+    const schedule = insideByMonth.get(item.month);
+    return schedule && Number(schedule.installment_number) !== item.installmentNumber;
+  });
+  let repaired = 0;
+  const now = new Date().toISOString();
+
+  if (needsRenumbering || reusableOutside.length > 0) {
+    const temporary = [...inPeriodSchedules, ...reusableOutside];
+    for (let index = 0; index < temporary.length; index += 1) {
+      const { error } = await supabase
+        .from("contract_payment_schedules")
+        .update({ installment_number: 20000 + index, updated_at: now })
+        .eq("id", temporary[index].id)
+        .eq("company_id", companyId);
+      if (error) throw error;
+    }
+  }
+
+  for (const item of expectedMonths) {
+    const schedule = insideByMonth.get(item.month);
+    if (!schedule) continue;
+    if (!needsRenumbering && Number(schedule.installment_number) === item.installmentNumber) continue;
+    const { error } = await supabase
+      .from("contract_payment_schedules")
+      .update({ installment_number: item.installmentNumber, updated_at: now })
+      .eq("id", schedule.id)
+      .eq("company_id", companyId);
+    if (error) throw error;
+    repaired += 1;
+  }
+
+  for (let index = 0; index < missingMonths.length; index += 1) {
+    const item = missingMonths[index];
+    const invoice = invoiceByMonth.get(item.month);
+    if (!invoice) continue;
+    const paidAmount = roundMoney(Number(invoice.paid_amount || 0));
+    const totalAmount = roundMoney(Number(invoice.total_amount || monthlyAmount));
+    const balance = roundMoney(Math.max(0, totalAmount - paidAmount));
+    const dueDate = new Date(`${item.month}T00:00:00.000Z`);
+    const status = balance <= 1 ? "paid" : paidAmount > 0 ? "partially_paid" : dueDate < new Date() ? "overdue" : "pending";
+    const values = {
+      invoice_id: invoice.id,
+      amount: totalAmount,
+      due_date: item.month,
+      installment_number: item.installmentNumber,
+      status,
+      paid_amount: paidAmount,
+      paid_date: status === "paid" ? (invoice.invoice_date || item.month) : null,
+      description: `Installment ${item.installmentNumber} - ${item.month.slice(0, 7)}`,
+      notes: `Canonical schedule graph repaired by daily audit agent at ${now}`,
+      updated_at: now,
+    };
+
+    const reusable = reusableOutside[index];
+    const mutation = reusable
+      ? supabase.from("contract_payment_schedules").update(values).eq("id", reusable.id).eq("company_id", companyId)
+      : supabase.from("contract_payment_schedules").insert({ ...values, contract_id: contractId, company_id: companyId });
+    const { error } = await mutation;
+    if (error) throw error;
+    repaired += 1;
+  }
+
+  const unusedOutside = safeOutside.slice(reusableOutside.length);
+  if (unusedOutside.length > 0) {
+    const { error } = await supabase
+      .from("contract_payment_schedules")
+      .update({ status: "cancelled", invoice_id: null, updated_at: now })
+      .in("id", unusedOutside.map((schedule: any) => schedule.id))
+      .eq("company_id", companyId);
+    if (error) throw error;
+    repaired += unusedOutside.length;
+  }
+
+  return repaired;
 }
 
 async function completeUniformContractMonths(
