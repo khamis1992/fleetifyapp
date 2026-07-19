@@ -226,11 +226,11 @@ export const ManualLegalCollectionView: React.FC = () => {
                              <div className="w-full bg-slate-100 rounded-full h-2 w-24">
                                <div 
                                  className="bg-emerald-500 h-2 rounded-full" 
-                                 style={{ width: `${Math.min(100, (item.collected_amount / item.amount) * 100)}%` }} 
+                                 style={{ width: `${item.amount > 0 ? Math.min(100, (item.collected_amount / item.amount) * 100) : 0}%` }}
                                />
                              </div>
                              <span className="text-xs text-slate-500">
-                               {Math.round((item.collected_amount / item.amount) * 100)}%
+                               {item.amount > 0 ? Math.round((item.collected_amount / item.amount) * 100) : 0}%
                              </span>
                            </div>
                         </TableCell>
@@ -247,16 +247,18 @@ export const ManualLegalCollectionView: React.FC = () => {
                             >
                               خطة السداد
                             </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => handleDelete(item.id)}
+                             {item.source === 'manual' && (
+                             <Button
+                               variant="ghost"
+                               size="icon"
+                               onClick={() => handleDelete(item.id)}
                               className="h-8 w-8 text-rose-500 hover:text-rose-700 hover:bg-rose-50"
                               aria-label="إلغاء ذمة التحصيل"
                               title="إلغاء ذمة التحصيل"
                             >
-                              <XCircle size={16} />
-                            </Button>
+                               <XCircle size={16} />
+                             </Button>
+                             )}
                           </div>
                         </TableCell>
                       </TableRow>
