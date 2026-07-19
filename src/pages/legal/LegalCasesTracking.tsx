@@ -60,9 +60,8 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import { useLegalCases, useLegalCaseStats, useUpdateLegalCase, LegalCase } from '@/hooks/useLegalCases';
-import { useLegalCollectionReport, useLegalCollectionStats } from '@/hooks/useLegalCollectionReport';
-import { useManualLegalCollections, ManualCollectionItem, RepaymentPlan } from '@/hooks/useManualLegalCollections';
-import { ManualLegalCollectionView } from '@/components/legal/ManualLegalCollectionView';
+import { JudgmentSettlementsView } from '@/components/legal/JudgmentSettlementsView';
+import { LegalCaseWorkflowPanel } from '@/components/legal/LegalCaseWorkflowPanel';
 import { useLegalDocuments, useCreateLegalDocument, useDeleteLegalDocument, useDownloadLegalDocument } from '@/hooks/useLegalDocuments';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -121,6 +120,15 @@ import { ErrorBoundary } from '@/components/ErrorBoundary';
 import '@/styles/legal-system.css';
 // DelinquentCustomersTab removed - use /legal/delinquency instead
 
+const toDateTimeLocalValue = (value?: string | null) => {
+  if (!value) return '';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  return new Date(date.getTime() - date.getTimezoneOffset() * 60000)
+    .toISOString()
+    .slice(0, 16);
+};
+
 // --- Main Component ---
 export const LegalCasesTracking: React.FC = () => {
   const navigate = useNavigate();
@@ -130,7 +138,7 @@ export const LegalCasesTracking: React.FC = () => {
   const setActiveTab = (tab: string) => setSearchParams({ view: tab });
   
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [statusFilter, setStatusFilter] = useState<string>('current');
   const [typeFilter, setTypeFilter] = useState<string>('all');
   const [showCaseWizard, setShowCaseWizard] = useState(false);
   const [showTriggersConfig, setShowTriggersConfig] = useState(false);
@@ -155,6 +163,15 @@ export const LegalCasesTracking: React.FC = () => {
     description: '',
     case_value: 0,
     court_name: '',
+    case_reference: '',
+    judge_name: '',
+    filing_date: '',
+    hearing_date: '',
+    notes: '',
+    outcome_type: '' as LegalCase['outcome_type'] | '',
+    outcome_amount: 0,
+    outcome_date: '',
+    outcome_notes: '',
   });
 
   // Document upload states
@@ -202,9 +219,11 @@ export const LegalCasesTracking: React.FC = () => {
       });
       if (error) throw error;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['legal-cases'] });
-      queryClient.invalidateQueries({ queryKey: ['legal-case-stats'] });
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.refetchQueries({ queryKey: ['legal-cases'], type: 'active' }),
+        queryClient.refetchQueries({ queryKey: ['legal-case-stats'], type: 'active' }),
+      ]);
       toast.success('تم إلغاء القضية مع الاحتفاظ بسجلها');
       setShowDeleteDialog(false);
       setCaseToDelete(null);
@@ -228,9 +247,11 @@ export const LegalCasesTracking: React.FC = () => {
 
       if (error) throw error;
     },
-    onSuccess: (_data, caseIds) => {
-      queryClient.invalidateQueries({ queryKey: ['legal-cases'] });
-      queryClient.invalidateQueries({ queryKey: ['legal-case-stats'] });
+    onSuccess: async (_data, caseIds) => {
+      await Promise.all([
+        queryClient.refetchQueries({ queryKey: ['legal-cases'], type: 'active' }),
+        queryClient.refetchQueries({ queryKey: ['legal-case-stats'], type: 'active' }),
+      ]);
       toast.success(`تم إلغاء ${caseIds.length} قضية مع الاحتفاظ بسجلاتها`);
       setSelectedCaseIds([]);
       setShowBulkDeleteDialog(false);
@@ -270,6 +291,15 @@ export const LegalCasesTracking: React.FC = () => {
       description: legalCase.description || '',
       case_value: legalCase.case_value || 0,
       court_name: legalCase.court_name || '',
+      case_reference: legalCase.case_reference || '',
+      judge_name: legalCase.judge_name || '',
+      filing_date: legalCase.filing_date?.slice(0, 10) || '',
+      hearing_date: toDateTimeLocalValue(legalCase.hearing_date),
+      notes: legalCase.notes || '',
+      outcome_type: legalCase.outcome_type || '',
+      outcome_amount: legalCase.outcome_amount || 0,
+      outcome_date: legalCase.outcome_date?.slice(0, 10) || '',
+      outcome_notes: legalCase.outcome_notes || '',
     });
     setShowEditDialog(true);
   }, []);
@@ -278,18 +308,29 @@ export const LegalCasesTracking: React.FC = () => {
     if (!caseToEdit) return;
     
     try {
-      await updateCaseMutation.mutateAsync({
+      const updatedCase = await updateCaseMutation.mutateAsync({
         id: caseToEdit.id,
         data: {
           case_title: editFormData.case_title,
           case_type: editFormData.case_type,
-          case_status: editFormData.case_status,
           priority: editFormData.priority,
-          description: editFormData.description,
+          description: editFormData.description || null,
           case_value: editFormData.case_value,
-          court_name: editFormData.court_name,
+          court_name: editFormData.court_name || null,
+          case_reference: editFormData.case_reference || null,
+          judge_name: editFormData.judge_name || null,
+          filing_date: editFormData.filing_date || null,
+          hearing_date: editFormData.hearing_date
+            ? new Date(editFormData.hearing_date).toISOString()
+            : null,
+          notes: editFormData.notes || null,
+          outcome_type: editFormData.outcome_type || null,
+          outcome_amount: editFormData.outcome_amount,
+          outcome_date: editFormData.outcome_date || null,
+          outcome_notes: editFormData.outcome_notes || null,
         },
       });
+      setSelectedCase(updatedCase as LegalCase);
       toast.success('تم تحديث القضية بنجاح');
       setShowEditDialog(false);
       setCaseToEdit(null);
@@ -737,7 +778,8 @@ export const LegalCasesTracking: React.FC = () => {
 
   const { data: casesResponse, isLoading, error } = useLegalCases(
     {
-      case_status: statusFilter !== 'all' ? statusFilter : undefined,
+      case_status: !['all', 'current'].includes(statusFilter) ? statusFilter : undefined,
+      exclude_cancelled: statusFilter === 'current',
       case_type: typeFilter !== 'all' ? typeFilter : undefined,
       search: searchTerm || undefined,
       page: currentPage,
@@ -973,6 +1015,18 @@ export const LegalCasesTracking: React.FC = () => {
       other: 'أخرى',
     };
     return labels[type] || type;
+  };
+
+  const getOutcomeLabel = (outcome?: LegalCase['outcome_type']): string => {
+    const labels: Record<string, string> = {
+      pending: 'قيد الحكم',
+      won: 'ربح القضية',
+      lost: 'خسارة القضية',
+      settled: 'تسوية',
+      dismissed: 'رفض الدعوى',
+      withdrawn: 'سحب الدعوى',
+    };
+    return outcome ? labels[outcome] || outcome : 'غير محددة';
   };
 
   const getTypeColor = (type: string): string => {
@@ -1239,11 +1293,13 @@ export const LegalCasesTracking: React.FC = () => {
                   <SelectValue placeholder="تصفية حسب الحالة" />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="current">القضايا الجارية</SelectItem>
                   <SelectItem value="all">جميع الحالات</SelectItem>
                   <SelectItem value="active">نشطة</SelectItem>
                   <SelectItem value="closed">مغلقة</SelectItem>
                   <SelectItem value="suspended">معلقة</SelectItem>
                   <SelectItem value="on_hold">قيد الانتظار</SelectItem>
+                  <SelectItem value="cancelled">ملغاة</SelectItem>
                 </SelectContent>
               </Select>
               <Select value={typeFilter} onValueChange={setTypeFilter}>
@@ -1809,7 +1865,7 @@ export const LegalCasesTracking: React.FC = () => {
       case 'calendar':
         return <CalendarView />;
       case 'collection':
-        return <ManualLegalCollectionView />;
+        return <JudgmentSettlementsView />;
       case 'notices':
         return <NoticesView />;
       case 'settings':
@@ -1939,9 +1995,45 @@ export const LegalCasesTracking: React.FC = () => {
                 </div>
                 <div className="space-y-1">
                   <p className="text-sm text-slate-500">قيمة المطالبة</p>
-                  <p className="font-medium text-lg text-[#E55B5B]">{formatCurrency(selectedCase.total_costs)}</p>
+                  <p className="font-medium text-lg text-[#E55B5B]">{formatCurrency(selectedCase.case_value || 0)}</p>
                 </div>
               </div>
+
+              {(selectedCase.outcome_type || selectedCase.outcome_date || selectedCase.outcome_notes) && (
+                <div className="border-t pt-4">
+                  <h4 className="font-semibold mb-3 flex items-center gap-2">
+                    <Gavel className="w-4 h-4" />
+                    الحكم والنتيجة
+                  </h4>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                      <p className="text-sm text-slate-500">النتيجة</p>
+                      <p className="font-medium">{getOutcomeLabel(selectedCase.outcome_type)}</p>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-sm text-slate-500">مبلغ الحكم</p>
+                      <p className="font-medium">{formatCurrency(selectedCase.outcome_amount || 0)}</p>
+                    </div>
+                    {selectedCase.outcome_date && (
+                      <div className="space-y-1">
+                        <p className="text-sm text-slate-500">تاريخ الحكم</p>
+                        <p className="font-medium">{format(new Date(selectedCase.outcome_date), 'dd MMM yyyy', { locale: ar })}</p>
+                      </div>
+                    )}
+                    {selectedCase.outcome_notes && (
+                      <div className="col-span-2 space-y-1">
+                        <p className="text-sm text-slate-500">تفاصيل الحكم</p>
+                        <p className="text-sm whitespace-pre-wrap">{selectedCase.outcome_notes}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              <LegalCaseWorkflowPanel
+                caseId={selectedCase.id}
+                onChanged={(updatedCase) => setSelectedCase((current) => current ? { ...current, ...updatedCase } as LegalCase : current)}
+              />
 
               {/* Client Info */}
               <div className="border-t pt-4">
@@ -1977,7 +2069,7 @@ export const LegalCasesTracking: React.FC = () => {
                     {selectedCase.hearing_date ? (
                       <p className="font-medium text-[#E55B5B] flex items-center gap-2">
                         <Gavel className="w-4 h-4" />
-                        {format(new Date(selectedCase.hearing_date), 'dd MMM yyyy', { locale: ar })}
+                        {format(new Date(selectedCase.hearing_date), 'dd MMM yyyy - HH:mm', { locale: ar })}
                       </p>
                     ) : (
                       <p className="text-slate-400">لم يحدد بعد</p>
@@ -2005,8 +2097,27 @@ export const LegalCasesTracking: React.FC = () => {
                       <p className="font-medium">{selectedCase.court_name}</p>
                     </div>
                   )}
+                  {selectedCase.case_reference && (
+                    <div className="space-y-1">
+                      <p className="text-sm text-slate-500">رقم القضية في المحكمة</p>
+                      <p className="font-medium">{selectedCase.case_reference}</p>
+                    </div>
+                  )}
+                  {selectedCase.judge_name && (
+                    <div className="space-y-1">
+                      <p className="text-sm text-slate-500">القاضي أو الدائرة</p>
+                      <p className="font-medium">{selectedCase.judge_name}</p>
+                    </div>
+                  )}
                 </div>
               </div>
+
+              {selectedCase.notes && (
+                <div className="border-t pt-4">
+                  <h4 className="font-semibold mb-2">ملاحظات ومتابعة القضية</h4>
+                  <p className="text-sm text-slate-600 whitespace-pre-wrap">{selectedCase.notes}</p>
+                </div>
+              )}
 
               {/* Documents Section */}
               <div className="border-t pt-4">
@@ -2042,6 +2153,9 @@ export const LegalCasesTracking: React.FC = () => {
                             <p className="font-medium text-sm">{doc.document_title}</p>
                             <p className="text-xs text-slate-500">
                               {doc.document_type} • {formatFileSize(doc.file_size)}
+                              {doc.source === 'lawsuit_preparation' && (
+                                <Badge variant="secondary" className="mr-2 text-xs">ملف تجهيز الدعوى</Badge>
+                              )}
                               {doc.is_confidential && (
                                 <Badge variant="destructive" className="mr-2 text-xs">سري</Badge>
                               )}
@@ -2057,15 +2171,17 @@ export const LegalCasesTracking: React.FC = () => {
                           >
                             <Download className="w-4 h-4" />
                           </Button>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="text-red-500 hover:text-red-700"
-                            onClick={() => handleDeleteDocument(doc.id)}
-                            disabled={deleteDocumentMutation.isPending}
-                          >
-                            <XCircle className="w-4 h-4" />
-                          </Button>
+                          {doc.source !== 'lawsuit_preparation' && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="text-red-500 hover:text-red-700"
+                              onClick={() => handleDeleteDocument(doc.id)}
+                              disabled={deleteDocumentMutation.isPending}
+                            >
+                              <XCircle className="w-4 h-4" />
+                            </Button>
+                          )}
                         </div>
                       </div>
                     ))}
@@ -2082,6 +2198,18 @@ export const LegalCasesTracking: React.FC = () => {
           )}
 
           <DialogFooter className="gap-2">
+            {selectedCase?.contract_id && (
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowCaseDetails(false);
+                  navigate(`/legal/lawsuit/prepare/${selectedCase.contract_id}`);
+                }}
+              >
+                <FileText className="w-4 h-4 ml-2" />
+                تجهيز الدعوى
+              </Button>
+            )}
             <Button
               variant="outline"
               onClick={() => setShowCaseDetails(false)}
@@ -2098,22 +2226,8 @@ export const LegalCasesTracking: React.FC = () => {
               className="bg-[#E55B5B] hover:bg-[#d64545]"
             >
               <Edit className="w-4 h-4 ml-2" />
-              تعديل القضية
+              تحديث القضية والجلسات
             </Button>
-            {selectedCase?.case_status !== 'closed' && (
-              <Button
-                onClick={() => {
-                  if (selectedCase) {
-                    setShowCaseDetails(false);
-                    handleOpenCloseDialog(selectedCase);
-                  }
-                }}
-                className="bg-green-600 hover:bg-green-700"
-              >
-                <CheckCircle2 className="w-4 h-4 ml-2" />
-                إغلاق القضية
-              </Button>
-            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -2267,7 +2381,7 @@ export const LegalCasesTracking: React.FC = () => {
 
       {/* Edit Case Dialog */}
       <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Edit className="w-5 h-5 text-[#E55B5B]" />
@@ -2311,24 +2425,10 @@ export const LegalCasesTracking: React.FC = () => {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="edit-status">الحالة</Label>
-                <Select
-                  value={editFormData.case_status}
-                  onValueChange={(value) => setEditFormData(prev => ({ ...prev, case_status: value }))}
-                >
-                  <SelectTrigger id="edit-status">
-                    <SelectValue placeholder="اختر الحالة" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="active">نشطة</SelectItem>
-                    <SelectItem value="pending">معلقة</SelectItem>
-                    <SelectItem value="on_hold">قيد الانتظار</SelectItem>
-                    <SelectItem value="closed">مغلقة</SelectItem>
-                    <SelectItem value="won">تم الكسب</SelectItem>
-                    <SelectItem value="lost">تم الخسارة</SelectItem>
-                    <SelectItem value="settled">تم التسوية</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Label>الحالة</Label>
+                <div className="rounded-md border bg-slate-50 px-3 py-2 text-sm text-slate-600">
+                  يتم تغيير الحالة من لوحة سير العمل داخل تفاصيل القضية لضمان حفظ السجل والمتابعات.
+                </div>
               </div>
 
               <div className="space-y-2">
@@ -2369,6 +2469,46 @@ export const LegalCasesTracking: React.FC = () => {
                   placeholder="اسم المحكمة"
                 />
               </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="edit-reference">رقم القضية في المحكمة</Label>
+                <Input
+                  id="edit-reference"
+                  value={editFormData.case_reference}
+                  onChange={(e) => setEditFormData(prev => ({ ...prev, case_reference: e.target.value }))}
+                  placeholder="رقم الدعوى أو المرجع"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="edit-judge">اسم القاضي أو الدائرة</Label>
+                <Input
+                  id="edit-judge"
+                  value={editFormData.judge_name}
+                  onChange={(e) => setEditFormData(prev => ({ ...prev, judge_name: e.target.value }))}
+                  placeholder="اسم القاضي أو الدائرة"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="edit-filing-date">تاريخ رفع الدعوى</Label>
+                <Input
+                  id="edit-filing-date"
+                  type="date"
+                  value={editFormData.filing_date}
+                  onChange={(e) => setEditFormData(prev => ({ ...prev, filing_date: e.target.value }))}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="edit-hearing-date">موعد الجلسة القادمة</Label>
+                <Input
+                  id="edit-hearing-date"
+                  type="datetime-local"
+                  value={editFormData.hearing_date}
+                  onChange={(e) => setEditFormData(prev => ({ ...prev, hearing_date: e.target.value }))}
+                />
+              </div>
             </div>
 
             <div className="space-y-2">
@@ -2380,6 +2520,76 @@ export const LegalCasesTracking: React.FC = () => {
                 placeholder="وصف القضية..."
                 rows={4}
               />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="edit-notes">ملاحظات ومتابعة القضية</Label>
+              <Textarea
+                id="edit-notes"
+                value={editFormData.notes}
+                onChange={(e) => setEditFormData(prev => ({ ...prev, notes: e.target.value }))}
+                placeholder="آخر إجراء، طلبات المحكمة، المطلوب في الجلسة القادمة..."
+                rows={3}
+              />
+            </div>
+
+            <div className="border-t pt-4 space-y-4">
+              <div>
+                <h4 className="font-semibold">الحكم والنتيجة</h4>
+                <p className="text-sm text-slate-500">يُستخدم عند صدور حكم أو تسوية، ويمكن تحديثه لاحقًا.</p>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="edit-outcome-type">نتيجة القضية</Label>
+                  <Select
+                    value={editFormData.outcome_type || 'none'}
+                    onValueChange={(value) => setEditFormData(prev => ({
+                      ...prev,
+                      outcome_type: value === 'none' ? '' : value as LegalCase['outcome_type'],
+                    }))}
+                  >
+                    <SelectTrigger id="edit-outcome-type"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">لم يصدر حكم</SelectItem>
+                      <SelectItem value="pending">قيد الحكم</SelectItem>
+                      <SelectItem value="won">ربح القضية</SelectItem>
+                      <SelectItem value="lost">خسارة القضية</SelectItem>
+                      <SelectItem value="settled">تسوية</SelectItem>
+                      <SelectItem value="dismissed">رفض الدعوى</SelectItem>
+                      <SelectItem value="withdrawn">سحب الدعوى</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-outcome-amount">مبلغ الحكم (ر.ق)</Label>
+                  <Input
+                    id="edit-outcome-amount"
+                    type="number"
+                    min="0"
+                    value={editFormData.outcome_amount}
+                    onChange={(e) => setEditFormData(prev => ({ ...prev, outcome_amount: parseFloat(e.target.value) || 0 }))}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-outcome-date">تاريخ الحكم</Label>
+                  <Input
+                    id="edit-outcome-date"
+                    type="date"
+                    value={editFormData.outcome_date}
+                    onChange={(e) => setEditFormData(prev => ({ ...prev, outcome_date: e.target.value }))}
+                  />
+                </div>
+                <div className="col-span-2 space-y-2">
+                  <Label htmlFor="edit-outcome-notes">تفاصيل ومنطوق الحكم</Label>
+                  <Textarea
+                    id="edit-outcome-notes"
+                    value={editFormData.outcome_notes}
+                    onChange={(e) => setEditFormData(prev => ({ ...prev, outcome_notes: e.target.value }))}
+                    placeholder="منطوق الحكم، الالتزامات، مهلة الاستئناف، وأي تفاصيل أخرى..."
+                    rows={4}
+                  />
+                </div>
+              </div>
             </div>
           </div>
 

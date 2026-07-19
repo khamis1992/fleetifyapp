@@ -390,6 +390,20 @@ export async function registerLegalCase(
     throw new Error('The legal case command returned no case identifier');
   }
 
+  const { error: syncError } = await supabase.rpc('sync_lawsuit_preparation_to_legal_case_v1', {
+    p_actor_id: userId,
+    p_case_id: result.legal_case.id,
+    p_case_title: taqadiData?.caseTitle || null,
+    p_claim_amount: calculations.total,
+    p_claims: taqadiData?.claims || null,
+    p_company_id: companyId,
+    p_contract_id: contractId,
+    p_facts: taqadiData?.facts || null,
+  });
+  if (syncError) {
+    throw new Error(`The legal case was created but its preparation file could not be linked: ${syncError.message}`);
+  }
+
   return {
     caseId: result.legal_case.id,
     caseNumber: result.legal_case.case_number || result.case_number || '',
