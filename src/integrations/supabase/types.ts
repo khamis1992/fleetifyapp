@@ -22980,12 +22980,21 @@ export type Database = {
           id: string
           import_source: string | null
           issuing_authority: string | null
+          liability_amount: number
+          liability_journal_entry_id: string | null
+          liability_recognized_at: string | null
           location: string | null
           match_confidence: string | null
           notes: string | null
+          original_contract_number: string | null
           payment_date: string | null
           payment_method: string | null
           reference_number: string | null
+          responsibility_decided_at: string | null
+          responsibility_decided_by: string | null
+          responsibility_party: string
+          responsibility_reason: string | null
+          responsible_customer_id: string | null
           status: string
           total_amount: number
           updated_at: string
@@ -23005,12 +23014,21 @@ export type Database = {
           id?: string
           import_source?: string | null
           issuing_authority?: string | null
+          liability_amount?: number
+          liability_journal_entry_id?: string | null
+          liability_recognized_at?: string | null
           location?: string | null
           match_confidence?: string | null
           notes?: string | null
+          original_contract_number?: string | null
           payment_date?: string | null
           payment_method?: string | null
           reference_number?: string | null
+          responsibility_decided_at?: string | null
+          responsibility_decided_by?: string | null
+          responsibility_party?: string
+          responsibility_reason?: string | null
+          responsible_customer_id?: string | null
           status?: string
           total_amount?: number
           updated_at?: string
@@ -23030,12 +23048,21 @@ export type Database = {
           id?: string
           import_source?: string | null
           issuing_authority?: string | null
+          liability_amount?: number
+          liability_journal_entry_id?: string | null
+          liability_recognized_at?: string | null
           location?: string | null
           match_confidence?: string | null
           notes?: string | null
+          original_contract_number?: string | null
           payment_date?: string | null
           payment_method?: string | null
           reference_number?: string | null
+          responsibility_decided_at?: string | null
+          responsibility_decided_by?: string | null
+          responsibility_party?: string
+          responsibility_reason?: string | null
+          responsible_customer_id?: string | null
           status?: string
           total_amount?: number
           updated_at?: string
@@ -29446,6 +29473,22 @@ export type Database = {
         }
         Returns: Database["public"]["Tables"]["traffic_violation_payments"]["Row"]
       }
+      create_traffic_violation_payment_with_journal_v2: {
+        Args: {
+          p_actor_id?: string | null
+          p_amount: number
+          p_bank_account?: string | null
+          p_check_number?: string | null
+          p_company_id: string
+          p_notes?: string | null
+          p_payment_date: string
+          p_payment_method: string
+          p_payment_type: string
+          p_reference_number?: string | null
+          p_violation_id: string
+        }
+        Returns: Database["public"]["Tables"]["traffic_violation_payments"]["Row"]
+      }
       create_payroll_journal_entry: {
         Args: { payroll_id_param: string }
         Returns: string
@@ -29557,6 +29600,16 @@ export type Database = {
       decrypt_sensitive_data: {
         Args: { encrypted_data: string }
         Returns: string
+      }
+      delete_contract_with_company_violations_v1: {
+        Args: {
+          p_actor_id?: string | null
+          p_company_id: string
+          p_contract_id: string
+          p_reason: string
+          p_violation_resolution?: string
+        }
+        Returns: Json
       }
       delete_all_accounts_v2: {
         Args: { company_id: string; force_system: boolean; reason: string }
