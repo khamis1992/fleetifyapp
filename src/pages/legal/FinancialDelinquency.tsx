@@ -7,6 +7,7 @@ import {
   AlertTriangle,
   Brain,
   CheckCircle2,
+  ChevronDown,
   Clock,
   Copy,
   FileSearch,
@@ -40,6 +41,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Input } from '@/components/ui/input';
 import {
   Select,
@@ -448,10 +450,16 @@ const fetchRentCandidates = async (companyId: string, searchTerm: string): Promi
     .filter((candidate) => candidate.overdueRent > 0);
 };
 
-const fetchTrafficCandidates = async (companyId: string, searchTerm: string): Promise<CandidateItem[]> => {
-  const { data, error } = await supabase
-    .from('penalties')
-    .select(`
+const TRAFFIC_CANDIDATE_PAGE_SIZE = 500;
+
+const fetchTrafficCandidates = async (companyId: string): Promise<CandidateItem[]> => {
+  const penalties: any[] = [];
+  let pageStart = 0;
+
+  while (true) {
+    const { data, error } = await supabase
+      .from('penalties')
+      .select(`
       id,
       penalty_number,
       amount,
@@ -516,22 +524,27 @@ const fetchTrafficCandidates = async (companyId: string, searchTerm: string): Pr
           plate_number
         )
       )
-    `)
-    .eq('company_id', companyId)
-    .neq('payment_status', 'paid')
-    .neq('status', 'cancelled')
-    .order('penalty_date', { ascending: false })
-    .limit(120);
+      `)
+      .eq('company_id', companyId)
+      .or('payment_status.is.null,payment_status.neq.paid')
+      .or('status.is.null,status.neq.cancelled')
+      .order('penalty_date', { ascending: false })
+      .order('id', { ascending: false })
+      .range(pageStart, pageStart + TRAFFIC_CANDIDATE_PAGE_SIZE - 1);
 
-  if (error) throw error;
+    if (error) throw error;
+
+    const page = data || [];
+    penalties.push(...page);
+    if (page.length < TRAFFIC_CANDIDATE_PAGE_SIZE) break;
+    pageStart += TRAFFIC_CANDIDATE_PAGE_SIZE;
+  }
 
   const grouped = new Map<string, any[]>();
-  (data || []).forEach((penalty: any) => {
+  penalties.forEach((penalty: any) => {
     const key = penalty.contract_id || penalty.customer_id || penalty.vehicle_plate || penalty.id;
     grouped.set(key, [...(grouped.get(key) || []), penalty]);
   });
-
-  const needle = searchTerm.trim().toLowerCase();
 
   return Array.from(grouped.values())
     .map((penalties) => {
@@ -563,15 +576,6 @@ const fetchTrafficCandidates = async (companyId: string, searchTerm: string): Pr
         vehicleLabel: contract ? vehicleLabel(contract) : first.vehicle_plate,
         canConvert: !!normalizedContract,
       };
-    })
-    .filter((candidate) => {
-      if (!needle) return true;
-      return (
-        candidate.customerName.toLowerCase().includes(needle) ||
-        candidate.phone?.toLowerCase().includes(needle) ||
-        candidate.contractNumber?.toLowerCase().includes(needle) ||
-        candidate.vehicleLabel?.toLowerCase().includes(needle)
-      );
     });
 };
 
@@ -788,10 +792,10 @@ const FinancialDelinquencyPage: React.FC = () => {
   });
 
   const { data: trafficCandidates = [], isFetching: trafficSearching } = useQuery({
-    queryKey: ['legal-delinquency-traffic-candidates', companyId, candidateSearch],
+    queryKey: ['legal-delinquency-traffic-candidates', companyId],
     queryFn: () => {
       if (!companyId) throw new Error('Company not ready');
-      return fetchTrafficCandidates(companyId, candidateSearch);
+      return fetchTrafficCandidates(companyId);
     },
     enabled: shouldLoadCandidates && candidateType !== 'rent',
   });
@@ -813,11 +817,20 @@ const FinancialDelinquencyPage: React.FC = () => {
   }, [legalQueue, queueSearch]);
 
   const candidates = useMemo(() => {
+    const needle = candidateSearch.trim().toLowerCase();
+    const matchingTrafficCandidates = !needle
+      ? trafficCandidates
+      : trafficCandidates.filter((candidate) => (
+          candidate.customerName.toLowerCase().includes(needle) ||
+          candidate.phone?.toLowerCase().includes(needle) ||
+          candidate.contractNumber?.toLowerCase().includes(needle) ||
+          candidate.vehicleLabel?.toLowerCase().includes(needle)
+        ));
     const merged = candidateType === 'rent'
       ? rentCandidates
       : candidateType === 'traffic'
-        ? trafficCandidates
-        : [...rentCandidates, ...trafficCandidates];
+        ? matchingTrafficCandidates
+        : [...rentCandidates, ...matchingTrafficCandidates];
 
     const seen = new Set<string>();
     const uniqueCandidates = merged.filter((candidate) => {
@@ -840,7 +853,7 @@ const FinancialDelinquencyPage: React.FC = () => {
           return b.detailedClaimTotal - a.detailedClaimTotal;
       }
     });
-  }, [candidateSort, candidateType, rentCandidates, trafficCandidates]);
+  }, [candidateSearch, candidateSort, candidateType, rentCandidates, trafficCandidates]);
 
   useEffect(() => {
     const availableIds = new Set(candidates.map((candidate) => candidate.id));
@@ -1620,40 +1633,54 @@ const FinancialDelinquencyPage: React.FC = () => {
                         </div>
 
                         {candidateAIInsight && (
-                          <div className="grid gap-3 rounded-xl border border-[#22C7A1]/20 bg-[#F8FFFC] p-3 xl:grid-cols-[1fr_180px] xl:items-stretch">
-                            <div className="space-y-3">
-                              <div className="flex items-center gap-2 text-sm font-black text-[#020617]">
-                                <Brain className="h-4 w-4 text-[#22C7A1]" />
-                                توصية AI للتحصيل
-                              </div>
-                              <p className="rounded-lg bg-white/80 p-3 text-sm leading-7 text-[#334155]">
-                                {candidateAIInsight.reason}
-                              </p>
-                              <div className="rounded-lg border border-slate-200 bg-white p-3">
-                                <div className="mb-2 flex items-center gap-2 text-sm font-bold text-[#020617]">
-                                  <MessageSquare className="h-4 w-4 text-[#22C7A1]" />
-                                  رسالة واتساب مقترحة
+                          <Collapsible className="group rounded-xl border border-[#22C7A1]/20 bg-[#F8FFFC]">
+                            <CollapsibleTrigger asChild>
+                              <button
+                                type="button"
+                                className="flex min-h-16 w-full items-center justify-between gap-3 px-4 py-3 text-right transition-colors hover:bg-emerald-50/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#22C7A1] focus-visible:ring-offset-2"
+                                title="فتح أو طي توصية التحصيل"
+                              >
+                                <span className="flex min-w-0 items-center gap-2 text-sm font-black text-[#020617]">
+                                  <Brain className="h-4 w-4 shrink-0 text-[#22C7A1]" />
+                                  توصية AI للتحصيل
+                                </span>
+                                <span className="flex shrink-0 items-center gap-3">
+                                  <span className="text-left">
+                                    <span className="block text-[11px] font-bold text-emerald-700">سداد متوقع</span>
+                                    <strong className="text-lg leading-none text-emerald-700">{candidateAIInsight.paymentProbability}%</strong>
+                                  </span>
+                                  <ChevronDown className="h-5 w-5 text-[#64748B] transition-transform duration-200 group-data-[state=open]:rotate-180" />
+                                </span>
+                              </button>
+                            </CollapsibleTrigger>
+
+                            <CollapsibleContent>
+                              <div className="grid gap-3 border-t border-[#22C7A1]/15 p-3 xl:grid-cols-[1fr_180px] xl:items-stretch">
+                                <div className="space-y-3">
+                                  <p className="rounded-lg bg-white/80 p-3 text-sm leading-7 text-[#334155]">
+                                    {candidateAIInsight.reason}
+                                  </p>
+                                  <div className="rounded-lg border border-slate-200 bg-white p-3">
+                                    <div className="mb-2 flex items-center gap-2 text-sm font-bold text-[#020617]">
+                                      <MessageSquare className="h-4 w-4 text-[#22C7A1]" />
+                                      رسالة واتساب مقترحة
+                                    </div>
+                                    <p className="text-sm leading-7 text-[#475569]">{candidateAIInsight.whatsappMessage}</p>
+                                  </div>
                                 </div>
-                                <p className="text-sm leading-7 text-[#475569]">{candidateAIInsight.whatsappMessage}</p>
+                                <div className="grid content-end gap-2 rounded-xl border border-emerald-100 bg-emerald-50 p-3">
+                                  <Button type="button" size="sm" variant="outline" onClick={() => copyAIMessage(candidateAIInsight.whatsappMessage)} className="gap-2 rounded-xl border-slate-200 bg-white">
+                                    <Copy className="h-4 w-4" />
+                                    نسخ الرسالة
+                                  </Button>
+                                  <Button type="button" size="sm" onClick={() => openAIWhatsApp(candidateAIInsight)} className="gap-2 rounded-xl bg-[#22C7A1] text-white hover:bg-[#1BAA8A]">
+                                    <Send className="h-4 w-4" />
+                                    فتح واتساب
+                                  </Button>
+                                </div>
                               </div>
-                            </div>
-                            <div className="flex flex-col justify-between gap-3 rounded-xl border border-emerald-100 bg-emerald-50 p-3 text-center">
-                              <div>
-                                <span className="block text-xs font-bold text-emerald-700">سداد متوقع</span>
-                                <strong className="text-2xl text-emerald-700">{candidateAIInsight.paymentProbability}%</strong>
-                              </div>
-                              <div className="grid gap-2">
-                                <Button type="button" size="sm" variant="outline" onClick={() => copyAIMessage(candidateAIInsight.whatsappMessage)} className="gap-2 rounded-xl border-slate-200 bg-white">
-                                  <Copy className="h-4 w-4" />
-                                  نسخ الرسالة
-                                </Button>
-                                <Button type="button" size="sm" onClick={() => openAIWhatsApp(candidateAIInsight)} className="gap-2 rounded-xl bg-[#22C7A1] text-white hover:bg-[#1BAA8A]">
-                                  <Send className="h-4 w-4" />
-                                  فتح واتساب
-                                </Button>
-                              </div>
-                            </div>
-                          </div>
+                            </CollapsibleContent>
+                          </Collapsible>
                         )}
                       </div>
 
