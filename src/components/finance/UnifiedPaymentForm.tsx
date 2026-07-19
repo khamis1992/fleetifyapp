@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useDeferredValue, useState, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -12,22 +12,23 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
-import { TestTube, AlertTriangle, FileText, Eye, EyeOff, DollarSign, Brain, Check, ChevronsUpDown, Search, ReceiptText, WalletCards } from "lucide-react";
+import { TestTube, AlertTriangle, FileText, Eye, EyeOff, DollarSign, Brain, Check, ChevronsUpDown, Search, ReceiptText, WalletCards, Scale, UserRound, Car } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { AccountLevelBadge } from "@/components/finance/AccountLevelBadge";
 import { useBanks } from "@/hooks/useTreasury";
 import { useCostCenters } from "@/hooks/useCostCenters";
-import { useActiveContracts } from "@/hooks/useContracts";
+import { useActiveContracts, type Contract } from "@/hooks/useContracts";
 import { useEntryAllowedAccounts } from "@/hooks/useEntryAllowedAccounts";
 import { usePaymentOperations } from "@/hooks/business/usePaymentOperations";
 import { useCompanyCurrency } from "@/hooks/useCompanyCurrency";
-import { useCustomers } from "@/hooks/useCustomers";
+import { useCustomer, useCustomers, type Customer } from "@/hooks/useCustomers";
 import { useVendors } from "@/hooks/useFinance";
 import { enhancedPaymentSchema, PaymentJournalPreview } from "@/schemas/payment.schema";
 import { usePaymentValidation } from "@/hooks/finance/usePaymentValidation";
 import { toast } from 'sonner';
 import { systemColorPattern } from "@/lib/design-system/systemColorPattern";
 import { FeatureTourButton, FeatureTourDialog, type FeatureTourContent } from "@/components/common/FeatureTourGuide";
+import { useEligibleLegalJudgments } from '@/hooks/useJudgmentSettlements';
 
 const unifiedPaymentTour = {
   title: 'جولة تسجيل دفعة',
@@ -40,6 +41,36 @@ const unifiedPaymentTour = {
     'راجع المعاينة المحاسبية قبل الحفظ حتى تتأكد من أثر الدفعة على الخزينة والقيود.',
   ],
 } satisfies FeatureTourContent;
+
+const getCustomerDisplayName = (customer?: Customer | null) => {
+  if (!customer) return '';
+  return customer.company_name_ar
+    || customer.company_name
+    || `${customer.first_name_ar || customer.first_name || ''} ${customer.last_name_ar || customer.last_name || ''}`.trim()
+    || customer.customer_code
+    || 'عميل';
+};
+
+const getCustomerSearchValue = (customer: Customer) => [
+  getCustomerDisplayName(customer),
+  customer.customer_code,
+  customer.phone,
+  customer.alternative_phone,
+  customer.email,
+  customer.national_id,
+].filter(Boolean).join(' ').toLocaleLowerCase('ar');
+
+const getContractSearchValue = (contract: Contract) => [
+  contract.contract_number,
+  contract.vehicle?.plate_number,
+  contract.vehicle?.make,
+  contract.vehicle?.model,
+  contract.customer?.first_name,
+  contract.customer?.last_name,
+  contract.customer?.first_name_ar,
+  contract.customer?.last_name_ar,
+  contract.customer?.phone,
+].filter(Boolean).join(' ').toLocaleLowerCase('ar');
 
 interface UnifiedPaymentFormProps {
   open: boolean;
@@ -92,6 +123,10 @@ export const UnifiedPaymentForm: React.FC<UnifiedPaymentFormProps> = ({
   const [journalPreview, setJournalPreview] = useState<PaymentJournalPreview | null>(null);
   const [isPreviewLoading, setIsPreviewLoading] = useState(false);
   const [activeTour, setActiveTour] = useState<FeatureTourContent | null>(null);
+  const [customerSearchOpen, setCustomerSearchOpen] = useState(false);
+  const [customerSearchQuery, setCustomerSearchQuery] = useState('');
+  const [contractSearchOpen, setContractSearchOpen] = useState(false);
+  const [contractSearchQuery, setContractSearchQuery] = useState('');
   const [accountSearchOpen, setAccountSearchOpen] = useState(false);
   const [accountSearchQuery, setAccountSearchQuery] = useState('');
   // Double-submit protection: Track if form is currently being submitted
@@ -121,7 +156,11 @@ export const UnifiedPaymentForm: React.FC<UnifiedPaymentFormProps> = ({
   const { data: banks } = useBanks();
   const { data: entryAllowedAccounts } = useEntryAllowedAccounts();
   const { currency: companyCurrency } = useCompanyCurrency();
-  const { data: customers } = useCustomers();
+  const deferredCustomerSearch = useDeferredValue(customerSearchQuery.trim());
+  const { data: customers, isFetching: isFetchingCustomers } = useCustomers({
+    searchTerm: deferredCustomerSearch.length >= 2 ? deferredCustomerSearch : undefined,
+    pageSize: 50,
+  });
   const { data: vendors } = useVendors();
 
   // Determine payment subtype based on context
@@ -161,6 +200,7 @@ export const UnifiedPaymentForm: React.FC<UnifiedPaymentFormProps> = ({
       vendor_id: vendorId || '',
       invoice_id: invoiceId || '',
       contract_id: contractId || '',
+      legal_case_id: '',
       payment_status: 'completed',
       ...initialData,
     },
@@ -181,10 +221,16 @@ export const UnifiedPaymentForm: React.FC<UnifiedPaymentFormProps> = ({
   );
   const vendorList = useMemo(() => vendors || [], [vendors]);
 
+  const selectedCustomerId = watchedCustomerId || customerId || '';
+  const { data: selectedCustomerRecord } = useCustomer(selectedCustomerId, {
+    enabled: Boolean(selectedCustomerId),
+  });
   const selectedCustomer = useMemo(() => {
-    if (!watchedCustomerId) return null;
-    return customerList.find((customer: any) => customer.id === watchedCustomerId) || null;
-  }, [customerList, watchedCustomerId]);
+    if (!selectedCustomerId) return null;
+    return customerList.find((customer: Customer) => customer.id === selectedCustomerId)
+      || selectedCustomerRecord
+      || null;
+  }, [customerList, selectedCustomerId, selectedCustomerRecord]);
 
   const selectedVendor = useMemo(() => {
     if (!watchedVendorId) return null;
@@ -192,7 +238,7 @@ export const UnifiedPaymentForm: React.FC<UnifiedPaymentFormProps> = ({
   }, [vendorList, watchedVendorId]);
 
   const selectedEntityName = selectedCustomer
-    ? selectedCustomer.company_name_ar || selectedCustomer.company_name || `${selectedCustomer.first_name_ar || selectedCustomer.first_name || ''} ${selectedCustomer.last_name_ar || selectedCustomer.last_name || ''}`.trim() || 'عميل'
+    ? getCustomerDisplayName(selectedCustomer)
     : selectedVendor?.vendor_name || 'بدون ربط';
 
   const paymentMethodLabel = {
@@ -251,6 +297,26 @@ export const UnifiedPaymentForm: React.FC<UnifiedPaymentFormProps> = ({
     ? watchedVendorId : vendorId;
 
   const { data: contracts } = useActiveContracts(effectiveCustomerId, effectiveVendorId);
+  const contractList = useMemo(() => contracts || [], [contracts]);
+  const selectedContract = useMemo(
+    () => contractList.find((contract) => contract.id === watchedContractId) || null,
+    [contractList, watchedContractId],
+  );
+  const filteredCustomers = useMemo(() => {
+    const query = customerSearchQuery.trim().toLocaleLowerCase('ar');
+    if (!query || query.length >= 2) return customerList;
+    return customerList.filter((customer: Customer) => getCustomerSearchValue(customer).includes(query));
+  }, [customerList, customerSearchQuery]);
+  const filteredContracts = useMemo(() => {
+    const query = contractSearchQuery.trim().toLocaleLowerCase('ar');
+    if (!query) return contractList;
+    return contractList.filter((contract) => getContractSearchValue(contract).includes(query));
+  }, [contractList, contractSearchQuery]);
+  const { data: eligibleLegalJudgments = [] } = useEligibleLegalJudgments(
+    paymentSubtype === 'receipt' ? 'receive' : 'pay',
+    effectiveCustomerId,
+    watchedContractId || contractId,
+  );
 
   // Filter accounts based on search query
   const filteredAccounts = useMemo(() => {
@@ -633,24 +699,87 @@ export const UnifiedPaymentForm: React.FC<UnifiedPaymentFormProps> = ({
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel>العميل (اختياري)</FormLabel>
-                            <Select 
-                              onValueChange={(value) => field.onChange(value === 'none' ? '' : value)} 
-                              value={field.value || 'none'}
-                            >
-                              <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="اختر العميل" />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                <SelectItem value="none">بدون ربط بعميل</SelectItem>
-                                {customerList.map((customer: any) => (
-                                  <SelectItem key={customer.id} value={customer.id}>
-                                    {customer.company_name || `${customer.first_name || ''} ${customer.last_name || ''}`.trim() || customer.customer_name || 'عميل'}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
+                            <Popover open={customerSearchOpen} onOpenChange={setCustomerSearchOpen}>
+                              <PopoverTrigger asChild>
+                                <FormControl>
+                                  <Button
+                                    type="button"
+                                    variant="outline"
+                                    role="combobox"
+                                    aria-expanded={customerSearchOpen}
+                                    className="h-12 w-full justify-between px-3 font-normal"
+                                  >
+                                    <span className="flex min-w-0 items-center gap-2 text-right">
+                                      <UserRound className="h-4 w-4 shrink-0 text-[#64748B]" />
+                                      <span className="min-w-0">
+                                        <strong className="block truncate text-sm text-[#0F172A]">
+                                          {selectedCustomer ? getCustomerDisplayName(selectedCustomer) : 'ابحث واختر العميل'}
+                                        </strong>
+                                        <small className="block truncate text-xs text-[#64748B]" dir="ltr">
+                                          {selectedCustomer?.phone || selectedCustomer?.national_id || 'الاسم، الهاتف، الرقم الشخصي أو رمز العميل'}
+                                        </small>
+                                      </span>
+                                    </span>
+                                    <ChevronsUpDown className="h-4 w-4 shrink-0 text-[#94A3B8]" />
+                                  </Button>
+                                </FormControl>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-[var(--radix-popover-trigger-width)] min-w-[340px] p-0" align="start" dir="rtl">
+                                <Command shouldFilter={false}>
+                                  <CommandInput
+                                    placeholder="ابحث بالاسم، الهاتف، الرقم الشخصي أو رمز العميل..."
+                                    value={customerSearchQuery}
+                                    onValueChange={setCustomerSearchQuery}
+                                  />
+                                  <CommandList className="max-h-[320px]">
+                                    <CommandItem
+                                      value="no-customer"
+                                      onSelect={() => {
+                                        field.onChange('');
+                                        form.setValue('contract_id', '');
+                                        setCustomerSearchOpen(false);
+                                        setCustomerSearchQuery('');
+                                      }}
+                                    >
+                                      <span className="flex h-8 w-8 items-center justify-center rounded-md bg-slate-100 text-slate-500">
+                                        <UserRound className="h-4 w-4" />
+                                      </span>
+                                      <span>بدون ربط بعميل</span>
+                                      <Check className={cn('mr-auto h-4 w-4', !field.value ? 'opacity-100' : 'opacity-0')} />
+                                    </CommandItem>
+                                    <CommandEmpty>
+                                      {isFetchingCustomers ? 'جارٍ البحث عن العملاء...' : 'لا يوجد عميل مطابق للبحث'}
+                                    </CommandEmpty>
+                                    <CommandGroup heading={isFetchingCustomers ? 'جارٍ تحديث النتائج...' : `العملاء (${filteredCustomers.length})`}>
+                                      {filteredCustomers.map((customer: Customer) => (
+                                        <CommandItem
+                                          key={customer.id}
+                                          value={customer.id}
+                                          onSelect={() => {
+                                            field.onChange(customer.id);
+                                            form.setValue('contract_id', '');
+                                            setCustomerSearchQuery(getCustomerDisplayName(customer));
+                                            setCustomerSearchOpen(false);
+                                          }}
+                                          className="cursor-pointer gap-3 py-2.5"
+                                        >
+                                          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-emerald-50 font-semibold text-emerald-700">
+                                            {getCustomerDisplayName(customer).slice(0, 1)}
+                                          </span>
+                                          <span className="min-w-0 flex-1 text-right">
+                                            <strong className="block truncate text-sm">{getCustomerDisplayName(customer)}</strong>
+                                            <small className="block truncate text-xs text-muted-foreground" dir="ltr">
+                                              {[customer.customer_code, customer.phone, customer.national_id].filter(Boolean).join(' · ') || 'بدون بيانات تعريف إضافية'}
+                                            </small>
+                                          </span>
+                                          <Check className={cn('h-4 w-4', field.value === customer.id ? 'opacity-100' : 'opacity-0')} />
+                                        </CommandItem>
+                                      ))}
+                                    </CommandGroup>
+                                  </CommandList>
+                                </Command>
+                              </PopoverContent>
+                            </Popover>
                             <FormMessage />
                           </FormItem>
                         )}
@@ -690,31 +819,136 @@ export const UnifiedPaymentForm: React.FC<UnifiedPaymentFormProps> = ({
                     )}
 
                     {/* Contract Selection */}
-                    {!contractId && contracts && contracts.length > 0 && (
+                    {!contractId && (
                       <FormField
                         control={form.control}
                         name="contract_id"
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel>العقد (اختياري)</FormLabel>
-                            <Select 
-                              onValueChange={(value) => field.onChange(value === 'none' ? '' : value)} 
+                            <Popover open={contractSearchOpen} onOpenChange={setContractSearchOpen}>
+                              <PopoverTrigger asChild>
+                                <FormControl>
+                                  <Button
+                                    type="button"
+                                    variant="outline"
+                                    role="combobox"
+                                    aria-expanded={contractSearchOpen}
+                                    className="h-12 w-full justify-between px-3 font-normal"
+                                  >
+                                    <span className="flex min-w-0 items-center gap-2 text-right">
+                                      <Car className="h-4 w-4 shrink-0 text-[#64748B]" />
+                                      <span className="min-w-0">
+                                        <strong className="block truncate text-sm text-[#0F172A]">
+                                          {selectedContract?.contract_number || 'ابحث واختر العقد'}
+                                        </strong>
+                                        <small className="block truncate text-xs text-[#64748B]" dir="ltr">
+                                          {selectedContract?.vehicle?.plate_number
+                                            ? `${selectedContract.vehicle.plate_number} · ${selectedContract.vehicle.make || ''} ${selectedContract.vehicle.model || ''}`.trim()
+                                            : effectiveCustomerId ? 'عقود العميل النشطة' : 'رقم العقد، اللوحة أو المركبة'}
+                                        </small>
+                                      </span>
+                                    </span>
+                                    <ChevronsUpDown className="h-4 w-4 shrink-0 text-[#94A3B8]" />
+                                  </Button>
+                                </FormControl>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-[var(--radix-popover-trigger-width)] min-w-[340px] p-0" align="start" dir="rtl">
+                                <Command shouldFilter={false}>
+                                  <CommandInput
+                                    placeholder="ابحث برقم العقد، اللوحة أو المركبة..."
+                                    value={contractSearchQuery}
+                                    onValueChange={setContractSearchQuery}
+                                  />
+                                  <CommandList className="max-h-[320px]">
+                                    <CommandItem
+                                      value="no-contract"
+                                      onSelect={() => {
+                                        field.onChange('');
+                                        setContractSearchOpen(false);
+                                        setContractSearchQuery('');
+                                      }}
+                                    >
+                                      <span className="flex h-8 w-8 items-center justify-center rounded-md bg-slate-100 text-slate-500">
+                                        <Car className="h-4 w-4" />
+                                      </span>
+                                      <span>بدون ربط بعقد</span>
+                                      <Check className={cn('mr-auto h-4 w-4', !field.value ? 'opacity-100' : 'opacity-0')} />
+                                    </CommandItem>
+                                    <CommandEmpty>لا يوجد عقد نشط مطابق للبحث</CommandEmpty>
+                                    <CommandGroup heading={effectiveCustomerId ? `عقود العميل (${filteredContracts.length})` : `العقود النشطة (${filteredContracts.length})`}>
+                                      {filteredContracts.map((contract) => (
+                                        <CommandItem
+                                          key={contract.id}
+                                          value={contract.id}
+                                          onSelect={() => {
+                                            field.onChange(contract.id);
+                                            if (contract.customer_id && contract.customer_id !== watchedCustomerId) {
+                                              form.setValue('customer_id', contract.customer_id);
+                                            }
+                                            setContractSearchQuery(contract.contract_number || '');
+                                            setContractSearchOpen(false);
+                                          }}
+                                          className="cursor-pointer gap-3 py-2.5"
+                                        >
+                                          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-sky-50 text-sky-700">
+                                            <Car className="h-4 w-4" />
+                                          </span>
+                                          <span className="min-w-0 flex-1 text-right">
+                                            <strong className="block truncate text-sm">{contract.contract_number}</strong>
+                                            <small className="block truncate text-xs text-muted-foreground" dir="ltr">
+                                              {[contract.vehicle?.plate_number, contract.vehicle?.make, contract.vehicle?.model].filter(Boolean).join(' · ') || 'بدون بيانات مركبة'}
+                                            </small>
+                                          </span>
+                                          <Check className={cn('h-4 w-4', field.value === contract.id ? 'opacity-100' : 'opacity-0')} />
+                                        </CommandItem>
+                                      ))}
+                                    </CommandGroup>
+                                  </CommandList>
+                                </Command>
+                              </PopoverContent>
+                            </Popover>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    )}
+
+                    {eligibleLegalJudgments.length > 0 && (
+                      <FormField
+                        control={form.control}
+                        name="legal_case_id"
+                        render={({ field }) => (
+                          <FormItem className="rounded-md border border-indigo-200 bg-indigo-50/40 p-3">
+                            <FormLabel className="flex items-center gap-2 text-indigo-950">
+                              <Scale className="h-4 w-4" />
+                              حكم قضائي مالي (اختياري)
+                            </FormLabel>
+                            <Select
                               value={field.value || 'none'}
+                              onValueChange={(value) => {
+                                const caseId = value === 'none' ? '' : value;
+                                field.onChange(caseId);
+                                const judgment = eligibleLegalJudgments.find((item) => item.id === caseId);
+                                if (!judgment) return;
+                                if (Number(form.getValues('amount') || 0) <= 0) form.setValue('amount', judgment.remaining_amount);
+                                if (!form.getValues('customer_id') && judgment.client_id) form.setValue('customer_id', judgment.client_id);
+                                if (!form.getValues('contract_id') && judgment.contract_id) form.setValue('contract_id', judgment.contract_id);
+                              }}
                             >
-                              <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="اختر العقد" />
-                                </SelectTrigger>
-                              </FormControl>
+                              <FormControl><SelectTrigger><SelectValue placeholder="ربط السند بحكم قضائي" /></SelectTrigger></FormControl>
                               <SelectContent>
-                                <SelectItem value="none">بدون ربط بعقد</SelectItem>
-                                {contracts.map((contract: any) => (
-                                  <SelectItem key={contract.id} value={contract.id}>
-                                    {contract.contract_number}
+                                <SelectItem value="none">بدون ربط بحكم</SelectItem>
+                                {eligibleLegalJudgments.map((judgment) => (
+                                  <SelectItem key={judgment.id} value={judgment.id}>
+                                    {judgment.case_number} - المتبقي {judgment.remaining_amount.toLocaleString('en-US')} ر.ق
                                   </SelectItem>
                                 ))}
                               </SelectContent>
                             </Select>
+                            <p className="text-xs text-indigo-800">
+                              لن يحتسب المبلغ ضمن الحكم إلا بعد اكتمال السند وترحيل القيد المحاسبي.
+                            </p>
                             <FormMessage />
                           </FormItem>
                         )}

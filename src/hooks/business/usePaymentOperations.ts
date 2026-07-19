@@ -155,21 +155,51 @@ export const usePaymentOperations = (options: PaymentOperationsOptions = {}) => 
         return payment;
       };
 
+      const ensureLegalCaseLinkOrThrow = async (payment: any) => {
+        const finalizedPayment = payment?.payment_status === 'completed' && payment?.journal_entry_id
+          ? payment
+          : await ensurePaymentJournalOrThrow(payment);
+        if (!validatedData.legal_case_id) return finalizedPayment;
+
+        const { data: existingLink, error: existingLinkError } = await (supabase as any)
+          .from('legal_case_payment_allocations')
+          .select('id')
+          .eq('company_id', companyId)
+          .eq('case_id', validatedData.legal_case_id)
+          .eq('payment_id', finalizedPayment.id)
+          .eq('status', 'active')
+          .maybeSingle();
+        if (existingLinkError) throw existingLinkError;
+        if (!existingLink) {
+          const { error: linkError } = await (supabase as any).rpc('link_legal_case_payment_v1', {
+            p_company_id: companyId,
+            p_case_id: validatedData.legal_case_id,
+            p_payment_id: finalizedPayment.id,
+            p_allocated_amount: validatedData.amount,
+            p_link_source: 'finance_form',
+            p_reason: 'Linked while creating the financial voucher',
+          });
+          if (linkError) {
+            throw new Error(`تم إنشاء السند المالي ولكن تعذر ربطه بالحكم: ${linkError.message}`);
+          }
+        }
+        return finalizedPayment;
+      };
+
       // ========== DUPLICATE PREVENTION LAYER ==========
       // 1. Check for existing idempotency key (retry detection)
-      // Note: payments table doesn't have idempotency_key column — use reference_number as fallback
       if (data.idempotencyKey) {
         const { data: existingPayment, error: idempotencyError } = await supabase
           .from('payments')
           .select('*')
-          .eq('reference_number', data.idempotencyKey)
+          .eq('idempotency_key', data.idempotencyKey)
           .eq('company_id', companyId)
           .neq('payment_status', 'cancelled')
           .maybeSingle();
 
         if (existingPayment) {
           console.log('♻️ [usePaymentOperations] Idempotency key found, returning existing payment:', existingPayment.payment_number);
-          return await ensurePaymentJournalOrThrow(existingPayment);
+          return await ensureLegalCaseLinkOrThrow(existingPayment);
         }
         if (idempotencyError) {
           console.warn('⚠️ [usePaymentOperations] Idempotency check query failed (non-fatal):', idempotencyError.message);
@@ -203,12 +233,7 @@ export const usePaymentOperations = (options: PaymentOperationsOptions = {}) => 
 
       const { data: potentialDuplicates, error: duplicateCheckError } = await duplicateCheckQuery;
 
-      if (!duplicateCheckError && potentialDuplicates && potentialDuplicates.length > 0) {
-        if (data.idempotencyKey) {
-          const duplicate = potentialDuplicates[0];
-          return await ensurePaymentJournalOrThrow(duplicate);
-        }
-
+      if (!data.idempotencyKey && !duplicateCheckError && potentialDuplicates && potentialDuplicates.length > 0) {
         const duplicateInfo = potentialDuplicates.map((p: any) =>
           `رقم الدفعة: ${p.payment_number} (${new Date(p.created_at).toLocaleTimeString('ar-SA')})`
         ).join('، ');
@@ -475,35 +500,22 @@ export const usePaymentOperations = (options: PaymentOperationsOptions = {}) => 
       let insertedPayment: any = null;
       let error: any = null;
       const maxInsertAttempts = hasManualPaymentNumber ? 1 : 5;
-      const findExistingTransactionPayment = async () => {
-        // Match the database constraint unique_payment_per_invoice_date_amount
-        // which covers (invoice_id, payment_date, amount) — NOT transaction_type.
-        let existingPaymentQuery = supabase
+      const findIdempotentPayment = async () => {
+        if (!data.idempotencyKey) return null;
+
+        const { data: existingPayment, error: existingMatchError } = await supabase
           .from('payments')
           .select('*')
           .eq('company_id', companyId)
-          .eq('amount', paymentData.amount)
-          .eq('payment_date', paymentData.payment_date)
+          .eq('idempotency_key', data.idempotencyKey)
           .neq('payment_status', 'cancelled')
-          .limit(1);
-
-        if (paymentData.invoice_id) {
-          existingPaymentQuery = existingPaymentQuery.eq('invoice_id', paymentData.invoice_id);
-        }
-        if (paymentData.contract_id) {
-          existingPaymentQuery = existingPaymentQuery.eq('contract_id', paymentData.contract_id);
-        }
-        if (paymentData.customer_id) {
-          existingPaymentQuery = existingPaymentQuery.eq('customer_id', paymentData.customer_id);
-        }
-
-        const { data: existingMatches, error: existingMatchError } = await existingPaymentQuery;
+          .maybeSingle();
         if (existingMatchError) {
-          console.warn('⚠️ [usePaymentOperations] Existing transaction lookup failed:', existingMatchError.message);
+          console.warn('⚠️ [usePaymentOperations] Idempotent payment lookup failed:', existingMatchError.message);
           return null;
         }
 
-        return existingMatches?.[0] || null;
+        return existingPayment || null;
       };
 
       for (let attempt = 0; attempt < maxInsertAttempts; attempt += 1) {
@@ -561,11 +573,10 @@ export const usePaymentOperations = (options: PaymentOperationsOptions = {}) => 
         }
 
         if (error.code === '23505') {
-          // First try: find an active (non-cancelled) duplicate
-          const existingTransactionPayment = await findExistingTransactionPayment();
-          if (existingTransactionPayment) {
-            console.log('♻️ [usePaymentOperations] Duplicate transaction found, returning existing payment:', existingTransactionPayment.payment_number);
-            insertedPayment = await ensurePaymentJournalOrThrow(existingTransactionPayment);
+          const idempotentPayment = await findIdempotentPayment();
+          if (idempotentPayment) {
+            console.log('♻️ [usePaymentOperations] Idempotent payment found, returning existing payment:', idempotentPayment.payment_number);
+            insertedPayment = await ensureLegalCaseLinkOrThrow(idempotentPayment);
             error = null;
             break;
           }
@@ -624,6 +635,8 @@ export const usePaymentOperations = (options: PaymentOperationsOptions = {}) => 
         throw new Error('تم إيقاف العملية لأن قاعدة البيانات لم تُرجع القيد المحاسبي الذري للدفعة');
       }
 
+      insertedPayment = await ensureLegalCaseLinkOrThrow(insertedPayment);
+
       // Notifications are non-financial and can safely run after the atomic commit.
       try {
         if (enableNotifications) {
@@ -645,6 +658,8 @@ export const usePaymentOperations = (options: PaymentOperationsOptions = {}) => 
       queryClient.invalidateQueries({ queryKey: ['banks'] });
       queryClient.invalidateQueries({ queryKey: ['bank-transactions'] });
       queryClient.invalidateQueries({ queryKey: ['treasury-summary'] });
+      queryClient.invalidateQueries({ queryKey: ['legal-judgment-settlements'] });
+      queryClient.invalidateQueries({ queryKey: ['eligible-legal-judgments'] });
       
       const paymentType = payment.payment_type === 'receipt' ? 'إيصال القبض' : 'إيصال الصرف';
       toast.success(`تم إنشاء ${paymentType} بنجاح`);
