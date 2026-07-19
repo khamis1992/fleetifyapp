@@ -75,7 +75,7 @@ describe('AuthProvider app resume recovery', () => {
     });
   });
 
-  it('restores Supabase refresh and active queries after hidden to visible', async () => {
+  it('restores Supabase refresh without refetching active queries on a normal tab switch', async () => {
     const queryClient = new QueryClient({
       defaultOptions: { queries: { retry: false } },
     });
@@ -109,7 +109,41 @@ describe('AuthProvider app resume recovery', () => {
     await waitFor(() => {
       expect(testState.startAutoRefresh).toHaveBeenCalledTimes(1);
       expect(testState.getSession.mock.calls.length).toBeGreaterThan(initialSessionChecks);
-      expect(invalidateQueries).toHaveBeenCalledWith({ refetchType: 'active' });
     });
+
+    await new Promise((resolve) => window.setTimeout(resolve, 150));
+    expect(invalidateQueries).not.toHaveBeenCalled();
+  });
+
+  it('synchronizes a token refresh from another tab without refetching page data', async () => {
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    const invalidateQueries = vi.spyOn(queryClient, 'invalidateQueries');
+
+    render(
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>
+          <AuthProbe />
+        </AuthProvider>
+      </QueryClientProvider>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId('auth-state')).toHaveTextContent('resume-user:access-token');
+    });
+    const initialSessionChecks = testState.getSession.mock.calls.length;
+
+    window.dispatchEvent(new StorageEvent('storage', {
+      key: 'sb-test-auth-token',
+      oldValue: JSON.stringify({ access_token: 'old-token' }),
+      newValue: JSON.stringify(testState.session),
+    }));
+
+    await waitFor(() => {
+      expect(testState.getSession.mock.calls.length).toBeGreaterThan(initialSessionChecks);
+    });
+    await new Promise((resolve) => window.setTimeout(resolve, 150));
+    expect(invalidateQueries).not.toHaveBeenCalled();
   });
 });

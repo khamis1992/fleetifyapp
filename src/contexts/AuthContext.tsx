@@ -120,6 +120,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const queryClient = useQueryClient();
   const [user, setUser] = useState<AuthUser | null>(getCachedUser);
   const [session, setSession] = useState<Session | null>(null);
+  const sessionRef = useRef<Session | null>(null);
   const [loading, setLoadingState] = useState(true);
   const loadingRef = useRef(true);
   
@@ -178,6 +179,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
         if (!recoveredSession?.user || !mountedRef.current) return false;
 
+        const wasSessionMissing = !sessionRef.current?.access_token;
+        sessionRef.current = recoveredSession;
         setSession(recoveredSession);
         setSessionError(null);
 
@@ -203,12 +206,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           });
         }
 
-        // Let React propagate the restored session/company before retrying only
-        // the mounted queries. This restores blank pages without a hard refresh.
-        window.setTimeout(() => {
-          if (!mountedRef.current || document.visibilityState !== 'visible') return;
-          void queryClient.invalidateQueries({ refetchType: 'active' });
-        }, 100);
+        // A normal browser-tab switch must not refetch every mounted query. Only
+        // retry active data when the authenticated session was actually missing.
+        if (wasSessionMissing) {
+          window.setTimeout(() => {
+            if (!mountedRef.current || document.visibilityState !== 'visible') return;
+            void queryClient.invalidateQueries({ refetchType: 'active' });
+          }, 100);
+        }
 
         return true;
       } catch (error) {
@@ -592,6 +597,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   }, [user]);
 
+  React.useEffect(() => {
+    sessionRef.current = session;
+  }, [session]);
+
   // Recover the session and active page data when the browser/app is restored.
   React.useEffect(() => {
     let wasBackgrounded = document.visibilityState !== 'visible';
@@ -638,13 +647,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         console.log('🔄 [AUTH_CONTEXT] Auth state changed in another tab');
         
         if (e.newValue) {
-          // User signed in from another tab
-          console.log('🔄 [AUTH_CONTEXT] User signed in from another tab - reinitializing');
-          isInitialized.current = false;
-          initializeAuth();
+          // Token refreshes are normal while multiple tabs are open. Synchronize
+          // the session quietly instead of reinitializing the whole auth context.
+          console.log('🔄 [AUTH_CONTEXT] Synchronizing session from another tab');
+          void recoverSessionOnResume();
         } else {
           // User signed out from another tab
           console.log('🔄 [AUTH_CONTEXT] User signed out from another tab');
+          sessionRef.current = null;
           setUser(null);
           setSession(null);
           clearCachedUser();
@@ -669,7 +679,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     return () => {
       window.removeEventListener('storage', handleStorageChange);
     };
-  }, []);
+  }, [recoverSessionOnResume]);
 
   // Safety timeout to prevent infinite loading - FIXED: Ensure loading state is always cleared
   React.useEffect(() => {
