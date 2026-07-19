@@ -84,9 +84,9 @@ document.addEventListener('visibilitychange', () => {
 // CRITICAL FIX: Add page show/hide listeners to detect bfcache
 window.addEventListener('pageshow', (event) => {
   if (event.persisted) {
-    console.log('✅ [MAIN] Page restored from bfcache - forcing reload');
-    // Force reload if page was restored from back/forward cache
-    window.location.reload();
+    // bfcache already restores the exact UI state. AuthContext resumes the
+    // Supabase session without replacing the current page.
+    console.log('[MAIN] Page restored from bfcache without reloading');
   }
 });
 
