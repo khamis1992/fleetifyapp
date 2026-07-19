@@ -13,18 +13,25 @@ export interface LegalCase {
   case_title_ar?: string;
   case_type: string;
   case_status: string;
+  workflow_stage?: import('./useLegalCaseWorkflow').LegalWorkflowStage;
+  stage_updated_at?: string;
+  appeal_deadline?: string | null;
+  closed_at?: string | null;
+  closure_reason?: string | null;
+  reopened_at?: string | null;
+  reopen_reason?: string | null;
   priority: string;
   client_id?: string;
   client_name?: string;
   client_phone?: string;
   client_email?: string;
-  description?: string;
+  description?: string | null;
   case_value: number;
-  court_name?: string;
+  court_name?: string | null;
   court_name_ar?: string;
-  case_reference?: string;
-  filing_date?: string;
-  hearing_date?: string;
+  case_reference?: string | null;
+  filing_date?: string | null;
+  hearing_date?: string | null;
   statute_limitations?: string;
   primary_lawyer_id?: string;
   legal_team: any[];
@@ -34,21 +41,21 @@ export interface LegalCase {
   total_costs: number;
   billing_status: string;
   tags: string[];
-  notes?: string;
+  notes?: string | null;
   is_confidential: boolean;
   police_station?: string;
   police_report_number?: string;
   complaint_number?: string;  // رقم البلاغ
-  judge_name?: string;  // القاضي المسؤول
+  judge_name?: string | null;  // القاضي المسؤول
   // حقول اتجاه القضية والنتيجة
   case_direction?: 'filed_by_us' | 'filed_against_us';
-  outcome_type?: 'won' | 'lost' | 'settled' | 'dismissed' | 'pending' | null;
+  outcome_type?: 'won' | 'lost' | 'settled' | 'dismissed' | 'pending' | 'withdrawn' | null;
   outcome_amount?: number;
   outcome_amount_type?: 'fine' | 'compensation' | 'settlement' | 'court_fees' | 'other' | null;
   payment_direction?: 'receive' | 'pay' | null;
-  outcome_date?: string;
+  outcome_date?: string | null;
   outcome_journal_entry_id?: string;
-  outcome_notes?: string;
+  outcome_notes?: string | null;
   outcome_payment_status?: 'pending' | 'partial' | 'paid' | 'received' | null;
   created_by?: string;
   created_at: string;
@@ -65,13 +72,13 @@ export interface LegalCaseFormData {
   client_name?: string;
   client_phone?: string;
   client_email?: string;
-  description?: string;
+  description?: string | null;
   case_value: number;
-  court_name?: string;
+  court_name?: string | null;
   court_name_ar?: string;
-  case_reference?: string;
-  filing_date?: string;
-  hearing_date?: string;
+  case_reference?: string | null;
+  filing_date?: string | null;
+  hearing_date?: string | null;
   statute_limitations?: string;
   primary_lawyer_id?: string;
   legal_team: any[];
@@ -80,24 +87,25 @@ export interface LegalCaseFormData {
   other_expenses: number;
   billing_status: string;
   tags: string[];
-  notes?: string;
+  notes?: string | null;
   is_confidential: boolean;
   police_station?: string;
   police_report_number?: string;
   complaint_number?: string;  // رقم البلاغ
-  judge_name?: string;  // القاضي المسؤول
+  judge_name?: string | null;  // القاضي المسؤول
   // حقول اتجاه القضية والنتيجة
   case_direction?: 'filed_by_us' | 'filed_against_us';
-  outcome_type?: 'won' | 'lost' | 'settled' | 'dismissed' | 'pending' | null;
+  outcome_type?: 'won' | 'lost' | 'settled' | 'dismissed' | 'pending' | 'withdrawn' | null;
   outcome_amount?: number;
   outcome_amount_type?: 'fine' | 'compensation' | 'settlement' | 'court_fees' | 'other' | null;
   payment_direction?: 'receive' | 'pay' | null;
-  outcome_date?: string;
-  outcome_notes?: string;
+  outcome_date?: string | null;
+  outcome_notes?: string | null;
 }
 
 interface UseLegalCasesFilters {
   case_status?: string;
+  exclude_cancelled?: boolean;
   case_type?: string;
   priority?: string;
   client_id?: string;
@@ -123,7 +131,7 @@ export const useLegalCases = (filters?: UseLegalCasesFilters, enabled: boolean =
 
       let query = supabase
         .from('legal_cases')
-        .select('id, case_number, case_title, case_title_ar, case_type, case_status, priority, client_id, client_name, case_value, total_costs, created_at, updated_at, hearing_date, filing_date, court_name, case_reference, description, contract_id, case_direction, outcome_type, outcome_amount, outcome_amount_type, payment_direction, outcome_date, outcome_journal_entry_id, outcome_notes, outcome_payment_status', { count: 'exact' })
+        .select('id, case_number, case_title, case_title_ar, case_type, case_status, workflow_stage, stage_updated_at, appeal_deadline, closed_at, closure_reason, reopened_at, reopen_reason, priority, client_id, client_name, case_value, total_costs, created_at, updated_at, hearing_date, filing_date, court_name, case_reference, judge_name, notes, description, contract_id, case_direction, outcome_type, outcome_amount, outcome_amount_type, payment_direction, outcome_date, outcome_journal_entry_id, outcome_notes, outcome_payment_status', { count: 'exact' })
         .order('hearing_date', { ascending: true, nullsFirst: false })
         .range(from, to);
 
@@ -135,6 +143,9 @@ export const useLegalCases = (filters?: UseLegalCasesFilters, enabled: boolean =
       // Apply filters
       if (filters?.case_status) {
         query = query.eq('case_status', filters.case_status);
+      }
+      if (filters?.exclude_cancelled) {
+        query = query.or('case_status.is.null,case_status.neq.cancelled');
       }
       if (filters?.case_type) {
         query = query.eq('case_type', filters.case_type);
@@ -257,7 +268,9 @@ export const useUpdateLegalCase = () => {
       if (!user?.id) throw new Error('المستخدم غير مصرح له');
 
       // Calculate total costs if financial fields are updated
-      const updateData: any = { ...data };
+      // Workflow status is changed only through the audited workflow RPCs.
+      const { case_status: _ignoredStatus, ...editableData } = data;
+      const updateData: any = { ...editableData };
       if (data.legal_fees !== undefined || data.court_fees !== undefined || data.other_expenses !== undefined) {
         const { data: currentCase } = await supabase
           .from('legal_cases')

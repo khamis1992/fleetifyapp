@@ -26,6 +26,9 @@ export interface ManualCollectionItem {
   status: string; // case_status
   description?: string | null;
   created_at: string;
+  source: 'manual' | 'workflow';
+  workflow_stage?: string | null;
+  contract_id?: string | null;
   repayment_plans: RepaymentPlan[];
 }
 
@@ -41,7 +44,7 @@ export const useManualLegalCollections = () => {
       const companyId = companyFilter.company_id;
       if (!user?.id) throw new Error('المستخدم غير مصرح له');
 
-      // 1. Fetch cases of type 'manual_debt_collection'
+      // Include manual debts and every actionable receivable produced by the legal workflow.
       const { data: cases, error: casesError } = await supabase
         .from('legal_cases')
         .select(`
@@ -51,11 +54,18 @@ export const useManualLegalCollections = () => {
           client_id,
           case_value,
           case_status,
+          case_type,
+          workflow_stage,
+          outcome_amount,
+          outcome_payment_status,
+          payment_direction,
+          contract_id,
           description,
           created_at
         `)
         .eq('company_id', companyId)
-        .eq('case_type', 'manual_debt_collection')
+        .or('case_type.eq.manual_debt_collection,workflow_stage.eq.collection,and(workflow_stage.in.(judgment_issued,enforcement),payment_direction.eq.receive,outcome_amount.gt.0,outcome_payment_status.in.(pending,partial))')
+        .not('case_status', 'in', '(cancelled,closed)')
         .order('created_at', { ascending: false });
 
       if (casesError) throw casesError;
@@ -64,33 +74,52 @@ export const useManualLegalCollections = () => {
 
       const caseIds = cases.map(c => c.id);
 
-      // 2. Fetch repayment plans for these cases
-      const { data: plans, error: plansError } = await supabase
-        .from('legal_repayment_plans')
-        .select('*')
-        .eq('company_id', companyId)
-        .in('case_id', caseIds);
+      // Fetch scheduled plans and confirmed legal payments together.
+      const [plansResult, paymentsResult] = await Promise.all([
+        supabase
+          .from('legal_repayment_plans')
+          .select('*')
+          .eq('company_id', companyId)
+          .in('case_id', caseIds),
+        (supabase as any)
+          .from('legal_case_payments')
+          .select('case_id,amount,payment_status')
+          .eq('company_id', companyId)
+          .in('case_id', caseIds),
+      ]);
 
-      if (plansError) throw plansError;
+      if (plansResult.error) throw plansResult.error;
+      if (paymentsResult.error) throw paymentsResult.error;
+      const plans = plansResult.data;
+      const payments = paymentsResult.data ?? [];
 
       // 3. Combine data
       const items: ManualCollectionItem[] = cases.map(c => {
         const casePlans = plans?.filter(p => p.case_id === c.id) || [];
-        const collected = casePlans
-          .filter(p => p.status === 'paid')
-          .reduce((sum, p) => sum + Number(p.amount), 0);
+        const isManual = c.case_type === 'manual_debt_collection';
+        const amount = isManual ? Number(c.case_value || 0) : Number(c.outcome_amount || 0);
+        const collected = isManual
+          ? casePlans
+              .filter(p => p.status === 'paid')
+              .reduce((sum, p) => sum + Number(p.amount), 0)
+          : payments
+              .filter((payment: any) => payment.case_id === c.id && ['completed', 'paid', 'received'].includes(String(payment.payment_status || '').toLowerCase()))
+              .reduce((sum: number, payment: any) => sum + Number(payment.amount || 0), 0);
         
         return {
           id: c.id,
           case_number: c.case_number,
           customer_name: c.client_name || 'غير محدد',
           client_id: c.client_id,
-          amount: Number(c.case_value),
-          remaining_amount: Number(c.case_value) - collected,
+          amount,
+          remaining_amount: Math.max(0, amount - collected),
           collected_amount: collected,
           status: c.case_status,
           description: c.description,
           created_at: c.created_at,
+          source: isManual ? 'manual' : 'workflow',
+          workflow_stage: c.workflow_stage,
+          contract_id: c.contract_id,
           repayment_plans: casePlans
             .filter((plan) => Boolean(plan.case_id))
             .map((plan) => ({

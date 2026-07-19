@@ -25,6 +25,9 @@ export interface LegalDocument {
   created_by?: string;
   created_at: string;
   updated_at: string;
+  source?: 'case' | 'lawsuit_preparation';
+  html_content?: string | null;
+  file_url?: string | null;
 }
 
 export interface LegalDocumentFormData {
@@ -85,10 +88,59 @@ export const useLegalDocuments = (filters?: UseLegalDocumentsFilters, enabled: b
         query = query.or(`document_title.ilike.%${filters.search}%,description.ilike.%${filters.search}%`);
       }
 
-      const { data, error } = await query;
+      const preparationDocumentsPromise = filters?.case_id
+        ? supabase
+            .from('lawsuit_documents')
+            .select('*')
+            .eq('legal_case_id', filters.case_id)
+            .eq('company_id', companyFilter.company_id || '')
+            .order('created_at', { ascending: false })
+        : Promise.resolve({ data: [], error: null });
 
-      if (error) throw error;
-      return data as LegalDocument[];
+      const [caseResult, preparationResult] = await Promise.all([
+        query,
+        preparationDocumentsPromise,
+      ]);
+
+      if (caseResult.error) throw caseResult.error;
+      if (preparationResult.error) throw preparationResult.error;
+
+      const preparationDocuments = (preparationResult.data || [])
+        .filter((document) => !filters?.document_type || document.document_type === filters.document_type)
+        .filter((document) => {
+          if (!filters?.search) return true;
+          return document.document_name.toLocaleLowerCase().includes(filters.search.toLocaleLowerCase());
+        })
+        .map((document): LegalDocument => ({
+          id: `lawsuit:${document.id}`,
+          case_id: document.legal_case_id || filters?.case_id || '',
+          company_id: document.company_id,
+          document_type: document.document_type,
+          document_title: document.document_name,
+          file_name: `${document.document_name}.html`,
+          file_size: document.html_content
+            ? new TextEncoder().encode(document.html_content).length
+            : undefined,
+          file_type: document.html_content ? 'text/html' : undefined,
+          is_confidential: false,
+          is_original: true,
+          version_number: 1,
+          access_level: 'company',
+          created_by: document.created_by || undefined,
+          created_at: document.created_at || new Date(0).toISOString(),
+          updated_at: document.updated_at || document.created_at || new Date(0).toISOString(),
+          source: 'lawsuit_preparation',
+          html_content: document.html_content,
+          file_url: document.file_url,
+        }));
+
+      return [
+        ...((caseResult.data || []) as LegalDocument[]).map((document) => ({
+          ...document,
+          source: 'case' as const,
+        })),
+        ...preparationDocuments,
+      ];
     },
     enabled: !!user?.id && enabled,
   });
@@ -258,6 +310,27 @@ export const useDownloadLegalDocument = () => {
 
       if (!companyFilter.company_id) throw new Error('Company was not found');
 
+      if (documentId.startsWith('lawsuit:')) {
+        const lawsuitDocumentId = documentId.slice('lawsuit:'.length);
+        const { data: document, error } = await supabase
+          .from('lawsuit_documents')
+          .select('document_name, file_url, html_content')
+          .eq('id', lawsuitDocumentId)
+          .eq('company_id', companyFilter.company_id)
+          .single();
+
+        if (error) throw error;
+        if (document.file_url) {
+          return { url: document.file_url, fileName: document.document_name };
+        }
+        if (!document.html_content) throw new Error('The generated document is empty');
+
+        return {
+          htmlContent: document.html_content,
+          fileName: `${document.document_name}.html`,
+        };
+      }
+
       // Get document details
       const { data: document, error: documentError } = await supabase
         .from('legal_case_documents')
@@ -284,12 +357,16 @@ export const useDownloadLegalDocument = () => {
     },
     onSuccess: (data) => {
       // Trigger download
+      const blobUrl = data.htmlContent
+        ? URL.createObjectURL(new Blob([data.htmlContent], { type: 'text/html;charset=utf-8' }))
+        : null;
       const link = document.createElement('a');
-      link.href = data.url;
+      link.href = blobUrl || data.url || '';
       link.download = data.fileName;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
+      if (blobUrl) URL.revokeObjectURL(blobUrl);
     },
     onError: (error: unknown) => {
       console.error('Error downloading document:', error);
