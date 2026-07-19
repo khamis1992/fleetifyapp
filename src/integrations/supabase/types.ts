@@ -14267,6 +14267,7 @@ export type Database = {
           file_url: string | null
           html_content: string | null
           id: string
+          legal_case_id: string | null
           updated_at: string | null
         }
         Insert: {
@@ -14279,6 +14280,7 @@ export type Database = {
           file_url?: string | null
           html_content?: string | null
           id?: string
+          legal_case_id?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -14291,9 +14293,17 @@ export type Database = {
           file_url?: string | null
           html_content?: string | null
           id?: string
+          legal_case_id?: string | null
           updated_at?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "lawsuit_documents_legal_case_id_fkey"
+            columns: ["legal_case_id"]
+            isOneToOne: false
+            referencedRelation: "legal_cases"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "lawsuit_documents_company_id_fkey"
             columns: ["company_id"]
@@ -14356,6 +14366,7 @@ export type Database = {
           facts_text: string | null
           id: string
           late_fees: number | null
+          legal_case_id: string | null
           notes: string | null
           other_fees: number | null
           overdue_rent: number | null
@@ -14386,6 +14397,7 @@ export type Database = {
           facts_text?: string | null
           id?: string
           late_fees?: number | null
+          legal_case_id?: string | null
           notes?: string | null
           other_fees?: number | null
           overdue_rent?: number | null
@@ -14416,6 +14428,7 @@ export type Database = {
           facts_text?: string | null
           id?: string
           late_fees?: number | null
+          legal_case_id?: string | null
           notes?: string | null
           other_fees?: number | null
           overdue_rent?: number | null
@@ -14429,7 +14442,15 @@ export type Database = {
           total_amount?: number
           updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "lawsuit_preparations_legal_case_id_fkey"
+            columns: ["legal_case_id"]
+            isOneToOne: false
+            referencedRelation: "legal_cases"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       lawsuit_templates: {
         Row: {
@@ -14461,6 +14482,7 @@ export type Database = {
           id: number
           invoices_count: number | null
           late_penalty: number | null
+          legal_case_id: string | null
           monthly_rent: number | null
           months_unpaid: number | null
           overdue_amount: number | null
@@ -14506,6 +14528,7 @@ export type Database = {
           id?: number
           invoices_count?: number | null
           late_penalty?: number | null
+          legal_case_id?: string | null
           monthly_rent?: number | null
           months_unpaid?: number | null
           overdue_amount?: number | null
@@ -14551,6 +14574,7 @@ export type Database = {
           id?: number
           invoices_count?: number | null
           late_penalty?: number | null
+          legal_case_id?: string | null
           monthly_rent?: number | null
           months_unpaid?: number | null
           overdue_amount?: number | null
@@ -14568,6 +14592,13 @@ export type Database = {
           violations_count?: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "lawsuit_templates_legal_case_id_fkey"
+            columns: ["legal_case_id"]
+            isOneToOne: false
+            referencedRelation: "legal_cases"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "lawsuit_templates_company_id_fkey"
             columns: ["company_id"]
@@ -15652,6 +15683,8 @@ export type Database = {
           case_title_ar: string | null
           case_type: string
           case_value: number | null
+          closed_at: string | null
+          closure_reason: string | null
           client_email: string | null
           client_id: string | null
           client_name: string | null
@@ -15681,15 +15714,21 @@ export type Database = {
           outcome_notes: string | null
           outcome_payment_status: string | null
           outcome_type: string | null
+          appeal_deadline: string | null
           payment_direction: string | null
           police_report_number: string | null
           police_station: string | null
           primary_lawyer_id: string | null
           priority: string
+          reopened_at: string | null
+          reopened_by: string | null
+          reopen_reason: string | null
+          stage_updated_at: string
           statute_limitations: string | null
           tags: Json | null
           total_costs: number | null
           updated_at: string
+          workflow_stage: string
         }
         Insert: {
           billing_status?: string | null
@@ -15701,6 +15740,8 @@ export type Database = {
           case_title_ar?: string | null
           case_type?: string
           case_value?: number | null
+          closed_at?: string | null
+          closure_reason?: string | null
           client_email?: string | null
           client_id?: string | null
           client_name?: string | null
@@ -15730,15 +15771,21 @@ export type Database = {
           outcome_notes?: string | null
           outcome_payment_status?: string | null
           outcome_type?: string | null
+          appeal_deadline?: string | null
           payment_direction?: string | null
           police_report_number?: string | null
           police_station?: string | null
           primary_lawyer_id?: string | null
           priority?: string
+          reopened_at?: string | null
+          reopened_by?: string | null
+          reopen_reason?: string | null
+          stage_updated_at?: string
           statute_limitations?: string | null
           tags?: Json | null
           total_costs?: number | null
           updated_at?: string
+          workflow_stage?: string
         }
         Update: {
           billing_status?: string | null
@@ -15750,6 +15797,8 @@ export type Database = {
           case_title_ar?: string | null
           case_type?: string
           case_value?: number | null
+          closed_at?: string | null
+          closure_reason?: string | null
           client_email?: string | null
           client_id?: string | null
           client_name?: string | null
@@ -15779,15 +15828,21 @@ export type Database = {
           outcome_notes?: string | null
           outcome_payment_status?: string | null
           outcome_type?: string | null
+          appeal_deadline?: string | null
           payment_direction?: string | null
           police_report_number?: string | null
           police_station?: string | null
           primary_lawyer_id?: string | null
           priority?: string
+          reopened_at?: string | null
+          reopened_by?: string | null
+          reopen_reason?: string | null
+          stage_updated_at?: string
           statute_limitations?: string | null
           tags?: Json | null
           total_costs?: number | null
           updated_at?: string
+          workflow_stage?: string
         }
         Relationships: [
           {
@@ -28937,6 +28992,19 @@ export type Database = {
         Args: { p_actor_id?: string; p_case_type: string; p_company_id: string; p_contract_id: string; p_notes: string; p_priority: string }
         Returns: Json
       }
+      sync_lawsuit_preparation_to_legal_case_v1: {
+        Args: {
+          p_actor_id?: string
+          p_case_id: string
+          p_case_title?: string | null
+          p_claim_amount?: number
+          p_claims?: string | null
+          p_company_id: string
+          p_contract_id: string
+          p_facts?: string | null
+        }
+        Returns: Json
+      }
       cancel_vehicle_reservation_v1: {
         Args: { p_actor_id?: string; p_company_id: string; p_reservation_id: string }
         Returns: Database["public"]["Tables"]["vehicle_reservations"]["Row"]
@@ -29606,6 +29674,17 @@ export type Database = {
           p_actor_id?: string | null
           p_company_id: string
           p_contract_id: string
+          p_reason: string
+          p_violation_resolution?: string
+        }
+        Returns: Json
+      }
+      delete_contract_with_financial_reversals_v2: {
+        Args: {
+          p_actor_id?: string | null
+          p_company_id: string
+          p_contract_id: string
+          p_financial_resolution?: string
           p_reason: string
           p_violation_resolution?: string
         }

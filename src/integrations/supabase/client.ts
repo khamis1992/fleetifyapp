@@ -45,14 +45,21 @@ export const supabase = createClient<Database>(supabaseConfig.url, supabaseConfi
   global: {
     headers: { 'x-client-info': 'fleetify-web' },
     fetch: async (url, options, retries = 1, delay = 500) => {
+      const requestUrl = String(url);
+      const isAuthRequest = requestUrl.includes('/auth/v1/');
+      // Auth refresh tokens are single-use and rotated. Retrying the same auth
+      // request after an interrupted response can invalidate session recovery.
+      const maxRetries = isAuthRequest ? 0 : retries;
+
       // Add timeout to prevent hanging requests with retry logic
-      for (let attempt = 0; attempt <= retries; attempt++) {
+      for (let attempt = 0; attempt <= maxRetries; attempt++) {
         let timeoutId: ReturnType<typeof setTimeout> | undefined;
         try {
-          const requestUrl = String(url);
-          const timeoutMs = requestUrl.includes('/functions/v1/excel-import-ai-review')
-            ? 90000
-            : 10000;
+          const timeoutMs = isAuthRequest
+            ? 30000
+            : requestUrl.includes('/functions/v1/excel-import-ai-review')
+              ? 90000
+              : 10000;
           const controller = new AbortController();
           timeoutId = setTimeout(() => controller.abort(), timeoutMs);
           
@@ -62,7 +69,7 @@ export const supabase = createClient<Database>(supabaseConfig.url, supabaseConfi
           });
           
           // Return response if successful or if this is the last attempt
-          if (response.ok || attempt === retries) {
+          if (response.ok || attempt === maxRetries) {
             return response;
           }
           
@@ -75,9 +82,9 @@ export const supabase = createClient<Database>(supabaseConfig.url, supabaseConfi
           }
           
           // If this is the last attempt, throw the error
-          if (attempt === retries) {
+          if (attempt === maxRetries) {
             if (import.meta.env.DEV) {
-              console.error(`[SUPABASE] All ${retries + 1} attempts failed for:`, url);
+              console.error(`[SUPABASE] All ${maxRetries + 1} attempts failed for:`, url);
             }
             throw error;
           }

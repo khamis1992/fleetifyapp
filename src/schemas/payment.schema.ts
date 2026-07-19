@@ -61,6 +61,7 @@ export const enhancedPaymentSchema = basePaymentSchema.extend({
   vendor_id: optionalUuid,
   invoice_id: optionalUuid,
   contract_id: optionalUuid,
+  legal_case_id: optionalUuid,
   purchase_order_id: optionalUuid,
   type: z.enum(['receipt', 'payment', 'invoice_payment']),
   transaction_type: z.enum(['customer_payment', 'vendor_payment', 'invoice_payment']).optional(),
