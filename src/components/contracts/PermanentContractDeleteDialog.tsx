@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import {
   AlertCircle,
@@ -58,6 +58,8 @@ type DeletionResult = {
 type RpcError = {
   code?: string;
   message?: string;
+  details?: string;
+  hint?: string;
 };
 
 const isRpcAuthenticationError = (error: RpcError | null) => {
@@ -104,6 +106,7 @@ export function PermanentContractDeleteDialog({
   const [deletionError, setDeletionError] = useState('');
   const [isInspecting, setIsInspecting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const deletionInFlightRef = useRef(false);
   const [deleteReason, setDeleteReason] = useState('');
   const [deleteConfirmation, setDeleteConfirmation] = useState('');
   const [violationResolution, setViolationResolution] = useState<'company' | 'review' | ''>('');
@@ -209,6 +212,7 @@ export function PermanentContractDeleteDialog({
 
   const executeDeletion = async () => {
     if (!contract || !companyId) return;
+    if (deletionInFlightRef.current) return;
     if (!canDelete) {
       setValidationAttempted(true);
       toast({
@@ -229,6 +233,7 @@ export function PermanentContractDeleteDialog({
       return;
     }
 
+    deletionInFlightRef.current = true;
     setIsDeleting(true);
     setDeletionError('');
     try {
@@ -298,18 +303,46 @@ export function PermanentContractDeleteDialog({
       onOpenChange(false);
       await onDeleted(result);
     } catch (error) {
-      console.error('[PermanentContractDeleteDialog] deletion failed:', error);
       const errorDetails = error as RpcError | null;
+      console.error('[PermanentContractDeleteDialog] deletion failed:', {
+        code: errorDetails?.code,
+        message: errorDetails?.message,
+        details: errorDetails?.details,
+        hint: errorDetails?.hint,
+      });
+      const wasAlreadyDeleted = errorDetails?.code === 'P0001'
+        && errorDetails.message?.toLowerCase().includes('contract was not found');
+      if (wasAlreadyDeleted) {
+        await Promise.all([
+          queryClient.invalidateQueries({ queryKey: ['contracts'] }),
+          queryClient.invalidateQueries({ queryKey: ['vehicles'] }),
+          queryClient.invalidateQueries({ queryKey: ['traffic-violations'] }),
+          queryClient.invalidateQueries({ queryKey: ['journal-entries'] }),
+          queryClient.invalidateQueries({ queryKey: ['financial-reports'] }),
+        ]);
+        toast({
+          title: 'العقد محذوف بالفعل',
+          description: `العقد #${contract.contract_number} لم يعد موجودًا وتم تحديث القوائم.`,
+        });
+        onOpenChange(false);
+        await onDeleted({ contract_number: contract.contract_number });
+        return;
+      }
       const message = errorDetails?.code === 'PGRST202'
         ? 'خدمة الحذف غير متاحة في قاعدة البيانات. أعد تحميل الصفحة ثم حاول مرة أخرى.'
+        : errorDetails?.code === '57014'
+          ? 'استغرقت تسوية السجلات المالية وقتًا أطول من المهلة المسموحة. لم تُحذف أو تُعدّل أي بيانات؛ أعد المحاولة بعد قليل.'
         : isRpcAuthenticationError(errorDetails)
           ? 'انتهت جلسة تسجيل الدخول. سجّل الدخول مرة أخرى ثم أعد المحاولة.'
           : errorDetails?.code === '42501'
             ? 'الحذف النهائي متاح فقط لمدير الشركة أو مدير النظام.'
-        : errorDetails?.message || (error instanceof Error ? error.message : 'حدث خطأ أثناء الحذف النهائي.');
+        : [errorDetails?.message, errorDetails?.details, errorDetails?.hint]
+            .filter(Boolean)
+            .join(' - ') || (error instanceof Error ? error.message : 'حدث خطأ أثناء الحذف النهائي.');
       setDeletionError(message);
       toast({ title: 'تعذر حذف العقد', description: message, variant: 'destructive' });
     } finally {
+      deletionInFlightRef.current = false;
       setIsDeleting(false);
     }
   };
