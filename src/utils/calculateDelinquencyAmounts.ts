@@ -13,6 +13,7 @@ export interface OverdueInvoice {
   due_date: string;
   total_amount: number;
   paid_amount: number;
+  balance_due?: number | null;
 }
 
 export interface TrafficViolation {
@@ -112,7 +113,8 @@ export function calculateDelinquencyAmounts(
     if (dueDate >= today) continue;
     
     // حساب المبلغ المتبقي
-    const remainingAmount = Math.max(0, (invoice.total_amount || 0) - (invoice.paid_amount || 0));
+    const calculatedRemaining = (invoice.total_amount || 0) - (invoice.paid_amount || 0);
+    const remainingAmount = Math.max(0, Number(invoice.balance_due ?? calculatedRemaining));
     
     // تخطي الفواتير المسددة بالكامل
     if (remainingAmount <= 0) continue;

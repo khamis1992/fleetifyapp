@@ -119,7 +119,6 @@ const normalizeCustomerName = (customer: any, fallbackName?: string | null) => {
     customer_type: customer.customer_type,
     full_name: customer.full_name,
   }, {
-    preferArabic: true,
     fallbackName,
   });
 };
@@ -261,7 +260,7 @@ const fetchLegalQueue = async (companyId: string): Promise<QueueItem[]> => {
         .neq('status', 'cancelled'),
       supabase
         .from('invoices')
-        .select('id, invoice_number, contract_id, due_date, total_amount, paid_amount, status')
+        .select('id, invoice_number, contract_id, due_date, total_amount, paid_amount, balance_due, status')
         .eq('company_id', companyId)
         .in('contract_id', contractIds)
         .neq('status', 'cancelled'),
@@ -294,7 +293,7 @@ const fetchLegalQueue = async (companyId: string): Promise<QueueItem[]> => {
       [],
       { includeDamagesFee: false }
     );
-    const overdueRent = invoiceCalculation.overdueRent;
+    const overdueRent = invoiceCalculation.overdueRent || Math.max(0, Number(normalized.balance_due || 0));
     const lateFees = invoiceCalculation.overdueInvoicesCount > 0
       ? invoiceCalculation.lateFees
       : Number(normalized.late_fine_amount || 0);
@@ -380,7 +379,7 @@ const fetchRentCandidates = async (companyId: string, searchTerm: string): Promi
     const [{ data: invoices, error: invoicesError }, { data: penalties, error: penaltiesError }] = await Promise.all([
       supabase
         .from('invoices')
-        .select('id, invoice_number, contract_id, due_date, total_amount, paid_amount, status')
+        .select('id, invoice_number, contract_id, due_date, total_amount, paid_amount, balance_due, status')
         .eq('company_id', companyId)
         .in('contract_id', contractIds)
         .neq('status', 'cancelled'),
@@ -429,7 +428,7 @@ const fetchRentCandidates = async (companyId: string, searchTerm: string): Promi
         [],
         { includeDamagesFee: false }
       );
-      const overdueRent = calculation.overdueRent;
+      const overdueRent = calculation.overdueRent || Math.max(0, Number(contract.balance_due || 0));
       const lateFees = calculation.overdueInvoicesCount > 0
         ? calculation.lateFees
         : Number(contract.late_fine_amount || 0);
@@ -461,6 +460,7 @@ const fetchRentCandidates = async (companyId: string, searchTerm: string): Promi
 };
 
 const TRAFFIC_CANDIDATE_PAGE_SIZE = 500;
+const INVOICE_CONTRACT_CHUNK_SIZE = 75;
 
 const fetchTrafficCandidates = async (companyId: string): Promise<CandidateItem[]> => {
   const penalties: any[] = [];
@@ -537,6 +537,7 @@ const fetchTrafficCandidates = async (companyId: string): Promise<CandidateItem[
       )
       `)
       .eq('company_id', companyId)
+      .not('contract_id', 'is', null)
       .or('payment_status.is.null,payment_status.neq.paid')
       .or('status.is.null,status.neq.cancelled')
       .order('penalty_date', { ascending: false })
@@ -557,6 +558,35 @@ const fetchTrafficCandidates = async (companyId: string): Promise<CandidateItem[
     grouped.set(key, [...(grouped.get(key) || []), penalty]);
   });
 
+  const contractIds = Array.from(new Set(
+    penalties
+      .map((penalty: any) => penalty.contract_id)
+      .filter(Boolean)
+  ));
+  const invoicesByContract = new Map<string, any[]>();
+
+  if (contractIds.length > 0) {
+    for (let index = 0; index < contractIds.length; index += INVOICE_CONTRACT_CHUNK_SIZE) {
+      const contractIdChunk = contractIds.slice(index, index + INVOICE_CONTRACT_CHUNK_SIZE);
+      const { data: invoices, error: invoicesError } = await supabase
+        .from('invoices')
+        .select('id, invoice_number, contract_id, due_date, total_amount, paid_amount, balance_due, status')
+        .eq('company_id', companyId)
+        .in('contract_id', contractIdChunk)
+        .neq('status', 'cancelled');
+
+      if (invoicesError) throw invoicesError;
+
+      (invoices || []).forEach((invoice: any) => {
+        if (!invoice.contract_id) return;
+        invoicesByContract.set(invoice.contract_id, [
+          ...(invoicesByContract.get(invoice.contract_id) || []),
+          invoice,
+        ]);
+      });
+    }
+  }
+
   return Array.from(grouped.values())
     .map((penalties) => {
       const first = penalties[0];
@@ -565,18 +595,26 @@ const fetchTrafficCandidates = async (companyId: string): Promise<CandidateItem[
       const amount = penalties.reduce((sum, penalty) => sum + Number(penalty.amount || 0), 0);
       const name = normalizeCustomerName(customer);
       const normalizedContract = contract ? normalizeContractForLegal({ ...contract, customers: customer }) : null;
-      // This source owns traffic amounts only. Invoice-based rent amounts are
-      // supplied by the rent candidate when both sources refer to one contract.
-      const overdueRent = 0;
-      const lateFees = 0;
+      const invoiceCalculation = calculateDelinquencyAmounts(
+        first.contract_id ? invoicesByContract.get(first.contract_id) || [] : [],
+        [],
+        { includeDamagesFee: false }
+      );
+      const overdueRent = invoiceCalculation.overdueRent || Math.max(0, Number(normalizedContract?.balance_due || 0));
+      const lateFees = invoiceCalculation.overdueInvoicesCount > 0
+        ? invoiceCalculation.lateFees
+        : Number(normalizedContract?.late_fine_amount || 0);
       const trafficViolations = amount;
       const detailedClaimTotal = overdueRent + lateFees + trafficViolations;
+      const sources = overdueRent > 0
+        ? ['traffic', 'rent'] as CandidateSource[]
+        : ['traffic'] as CandidateSource[];
 
       return {
         id: `traffic-${first.contract_id || first.customer_id || first.vehicle_plate || first.id}`,
         customerId: first.customer_id || contract?.customer_id || customer?.id || null,
-        source: 'traffic' as const,
-        sources: ['traffic'] as CandidateSource[],
+        source: overdueRent > 0 ? 'rent' as const : 'traffic' as const,
+        sources,
         reason: `${penalties.length} مخالفة مرورية غير مسددة`,
         amount: detailedClaimTotal,
         violationsCount: penalties.length,
@@ -591,7 +629,8 @@ const fetchTrafficCandidates = async (companyId: string): Promise<CandidateItem[
         vehicleLabel: contract ? vehicleLabel(contract) : first.vehicle_plate,
         canConvert: !!normalizedContract,
       };
-    });
+    })
+    .filter((candidate) => candidate.canConvert && !!candidate.contract?.id);
 };
 
 const mergeCandidateSources = (items: CandidateItem[]): CandidateItem[] => {
@@ -628,7 +667,12 @@ const mergeCandidateSources = (items: CandidateItem[]): CandidateItem[] => {
       Number(existing.violationsCount || 0),
       Number(candidate.violationsCount || 0)
     );
-    const overdueRent = rentCandidate?.overdueRent || 0;
+    const overdueRent = rentCandidate?.overdueRent || Math.max(
+      Number(existing.overdueRent || 0),
+      Number(candidate.overdueRent || 0),
+      Number((existing.contract || candidate.contract)?.balance_due || 0),
+      0
+    );
     const lateFees = rentCandidate?.lateFees || 0;
     const trafficViolations = Math.max(
       Number(existing.trafficViolations || 0),
