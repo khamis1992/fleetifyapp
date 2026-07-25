@@ -6,7 +6,7 @@
  * @component ContractInvoicesTabRedesigned
  */
 
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { motion, type Variants } from 'framer-motion';
 import {
   Receipt,
@@ -33,11 +33,23 @@ import {
   ChevronDown,
   RefreshCw,
   Loader2,
+  Trash2,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
+import { Checkbox } from '@/components/ui/checkbox';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -104,6 +116,8 @@ interface ContractInvoicesTabRedesignedProps {
   onCreateInvoice: () => void;
   onCancelInvoice: (invoice: Invoice) => void;
   isCancellingInvoice?: boolean;
+  onBulkCancelInvoices?: (invoices: Invoice[]) => Promise<void>;
+  isBulkCancellingInvoices?: boolean;
   onGenerateMissingInvoices?: () => void;
   isGeneratingMissingInvoices?: boolean;
   contractNumber?: string;
@@ -114,6 +128,34 @@ interface ContractInvoicesTabRedesignedProps {
 // ===== Helper Functions =====
 const getInvoicePaymentStatus = (invoice: Invoice): string =>
   String(invoice.payment_status || invoice.status || 'unpaid');
+
+const isInvoiceCancelled = (invoice: Invoice): boolean => {
+  const status = String(invoice.status || '').toLowerCase();
+  const paymentStatus = String(invoice.payment_status || '').toLowerCase();
+  return ['cancelled', 'canceled', 'void', 'voided'].includes(status)
+    || ['cancelled', 'canceled', 'void', 'voided'].includes(paymentStatus);
+};
+
+const isInvoiceBulkCancellable = (invoice: Invoice): boolean => {
+  const status = String(invoice.status || '').toLowerCase();
+  const paymentStatus = String(invoice.payment_status || '').toLowerCase();
+  const protectedStatuses = new Set([
+    'paid',
+    'completed',
+    'partial',
+    'partially_paid',
+    'cancelled',
+    'canceled',
+    'void',
+    'voided',
+  ]);
+
+  return (
+    !protectedStatuses.has(status) &&
+    !protectedStatuses.has(paymentStatus) &&
+    Number(invoice.paid_amount || 0) <= 0
+  );
+};
 
 const getInvoiceStatusInfo = (invoice: Invoice) => {
   const status = getInvoicePaymentStatus(invoice);
@@ -197,11 +239,12 @@ const InvoiceMetrics = ({
   formatCurrency: (amount: number) => string;
 }) => {
   const metrics = useMemo(() => {
-    const totalInvoiced = invoices.reduce((sum, inv) => sum + (inv.total_amount || 0), 0);
-    const totalPaid = invoices.reduce((sum, inv) => sum + (inv.paid_amount || 0), 0);
+    const activeInvoices = invoices.filter((invoice) => !isInvoiceCancelled(invoice));
+    const totalInvoiced = activeInvoices.reduce((sum, inv) => sum + (inv.total_amount || 0), 0);
+    const totalPaid = activeInvoices.reduce((sum, inv) => sum + (inv.paid_amount || 0), 0);
     const totalPending = invoices.reduce((sum, inv) => {
       const status = getInvoicePaymentStatus(inv);
-      if (status === 'paid' || status === 'cancelled') return sum;
+      if (status === 'paid' || isInvoiceCancelled(inv)) return sum;
       return sum + (inv.balance_due || inv.total_amount || 0);
     }, 0);
 
@@ -210,7 +253,7 @@ const InvoiceMetrics = ({
     const totalOverdue = invoices.reduce((sum, inv) => {
       // Skip if paid or cancelled
       const status = getInvoicePaymentStatus(inv);
-      if (status === 'paid' || status === 'cancelled') return sum;
+      if (status === 'paid' || isInvoiceCancelled(inv)) return sum;
 
       // Check if there's a balance due
       const balanceDue = inv.balance_due ?? (inv.total_amount || 0) - (inv.paid_amount || 0);
@@ -231,13 +274,13 @@ const InvoiceMetrics = ({
 
     const paidCount = invoices.filter(inv => getInvoicePaymentStatus(inv) === 'paid').length;
     const pendingCount = invoices.filter(inv =>
-      !['paid', 'cancelled'].includes(getInvoicePaymentStatus(inv))
+      getInvoicePaymentStatus(inv) !== 'paid' && !isInvoiceCancelled(inv)
     ).length;
 
     // Fix overdue count: Include all invoices with balance > 0 and past due date
     const overdueCount = invoices.filter(inv => {
       const status = getInvoicePaymentStatus(inv);
-      if (status === 'paid' || status === 'cancelled') return false;
+      if (status === 'paid' || isInvoiceCancelled(inv)) return false;
 
       const balanceDue = inv.balance_due ?? (inv.total_amount || 0) - (inv.paid_amount || 0);
       if (balanceDue <= 0) return false;
@@ -340,6 +383,9 @@ const InvoiceCard = ({
   onDownload,
   onPrint,
   isCancelling,
+  selected,
+  selectable,
+  onSelect,
 }: {
   invoice: Invoice;
   formatCurrency: (amount: number) => string;
@@ -349,6 +395,9 @@ const InvoiceCard = ({
   onDownload?: () => void;
   onPrint?: () => void;
   isCancelling?: boolean;
+  selected?: boolean;
+  selectable?: boolean;
+  onSelect?: (selected: boolean) => void;
 }) => {
   const statusInfo = getInvoiceStatusInfo(invoice);
   const StatusIcon = statusInfo.icon;
@@ -362,12 +411,23 @@ const InvoiceCard = ({
       whileHover={{ y: -2 }}
       className={cn(
         "rounded-xl border bg-white p-5 shadow-sm transition-colors hover:border-[#173A63]",
-        statusInfo.borderColor
+        statusInfo.borderColor,
+        selected && 'border-[#173A63] ring-2 ring-[#173A63]/15'
       )}
     >
       {/* Header */}
       <div className="flex items-start justify-between mb-4">
         <div className="flex items-center gap-3">
+          {onSelect && (
+            <Checkbox
+              checked={selected}
+              disabled={!selectable}
+              onCheckedChange={(checked) => onSelect(checked === true)}
+              aria-label={`تحديد الفاتورة ${invoice.invoice_number}`}
+              title={selectable ? 'تحديد الفاتورة للإلغاء الجماعي' : 'الفاتورة المسددة أو الملغاة لا يمكن إلغاؤها جماعيًا'}
+              className="h-5 w-5"
+            />
+          )}
           <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-[#EEF5FB] text-[#173A63]">
             <Receipt className="h-6 w-6" />
           </div>
@@ -508,6 +568,9 @@ const InvoiceTableRow = ({
   onPrint,
   onCancel,
   isCancelling,
+  selected,
+  selectable,
+  onSelect,
 }: {
   invoice: Invoice;
   formatCurrency: (amount: number) => string;
@@ -517,6 +580,9 @@ const InvoiceTableRow = ({
   onPrint?: () => void;
   onCancel: () => void;
   isCancelling?: boolean;
+  selected?: boolean;
+  selectable?: boolean;
+  onSelect?: (selected: boolean) => void;
 }) => {
   const statusInfo = getInvoiceStatusInfo(invoice);
   const StatusIcon = statusInfo.icon;
@@ -524,7 +590,22 @@ const InvoiceTableRow = ({
   const isOverdue = invoice.due_date && isAfter(new Date(), new Date(invoice.due_date)) && invoice.payment_status !== 'paid';
 
   return (
-    <tr className="border-b border-[#E6EDF5] transition-colors hover:bg-[#F7FAFD]">
+    <tr className={cn(
+      'border-b border-[#E6EDF5] transition-colors hover:bg-[#F7FAFD]',
+      selected && 'bg-[#EEF5FB]'
+    )}>
+      <td className="w-12 px-4 py-4">
+        {onSelect && (
+          <Checkbox
+            checked={selected}
+            disabled={!selectable}
+            onCheckedChange={(checked) => onSelect(checked === true)}
+            aria-label={`تحديد الفاتورة ${invoice.invoice_number}`}
+            title={selectable ? 'تحديد الفاتورة للإلغاء الجماعي' : 'الفاتورة المسددة أو الملغاة لا يمكن إلغاؤها جماعيًا'}
+            className="h-5 w-5"
+          />
+        )}
+      </td>
       {/* Invoice Number */}
       <td className="py-4 px-4">
         <div className="flex items-center gap-3">
@@ -656,6 +737,7 @@ const InvoiceFilters = ({
           <SelectValue placeholder="الحالة" />
         </SelectTrigger>
         <SelectContent>
+          <SelectItem value="active">الفواتير الفعالة</SelectItem>
           <SelectItem value="all">جميع الحالات</SelectItem>
           <SelectItem value="paid">مسدد</SelectItem>
           <SelectItem value="pending">مستحق</SelectItem>
@@ -747,6 +829,8 @@ export const ContractInvoicesTabRedesigned = ({
   onCreateInvoice,
   onCancelInvoice,
   isCancellingInvoice,
+  onBulkCancelInvoices,
+  isBulkCancellingInvoices,
   onGenerateMissingInvoices,
   isGeneratingMissingInvoices,
   contractNumber,
@@ -754,9 +838,11 @@ export const ContractInvoicesTabRedesigned = ({
   trafficViolations = [],
 }: ContractInvoicesTabRedesignedProps) => {
   const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
+  const [statusFilter, setStatusFilter] = useState('active');
   const [sortOption, setSortOption] = useState('date-desc');
   const [viewMode, setViewMode] = useState<'grid' | 'table'>('table');
+  const [selectedInvoiceIds, setSelectedInvoiceIds] = useState<Set<string>>(new Set());
+  const [isBulkCancelDialogOpen, setIsBulkCancelDialogOpen] = useState(false);
 
   // Filter and sort invoices
   const filteredAndSortedInvoices = useMemo(() => {
@@ -770,7 +856,9 @@ export const ContractInvoicesTabRedesigned = ({
     }
 
     // Apply status filter
-    if (statusFilter !== 'all') {
+    if (statusFilter === 'active') {
+      filtered = filtered.filter((invoice) => !isInvoiceCancelled(invoice));
+    } else if (statusFilter !== 'all') {
       filtered = filtered.filter(inv => {
         const status = getInvoicePaymentStatus(inv);
         if (statusFilter === 'partial') {
@@ -804,6 +892,74 @@ export const ContractInvoicesTabRedesigned = ({
 
     return filtered;
   }, [invoices, searchQuery, statusFilter, sortOption]);
+
+  useEffect(() => {
+    const selectableIds = new Set(
+      invoices
+        .filter(isInvoiceBulkCancellable)
+        .map((invoice) => invoice.id)
+    );
+
+    setSelectedInvoiceIds((current) => {
+      const next = new Set([...current].filter((id) => selectableIds.has(id)));
+      if (next.size === current.size && [...next].every((id) => current.has(id))) {
+        return current;
+      }
+      return next;
+    });
+  }, [invoices]);
+
+  const selectedInvoices = useMemo(
+    () => invoices.filter((invoice) => selectedInvoiceIds.has(invoice.id)),
+    [invoices, selectedInvoiceIds]
+  );
+  const selectableFilteredInvoices = useMemo(
+    () => filteredAndSortedInvoices.filter(isInvoiceBulkCancellable),
+    [filteredAndSortedInvoices]
+  );
+  const areAllFilteredSelected =
+    selectableFilteredInvoices.length > 0 &&
+    selectableFilteredInvoices.every((invoice) => selectedInvoiceIds.has(invoice.id));
+  const selectedFilteredCount = selectableFilteredInvoices.filter(
+    (invoice) => selectedInvoiceIds.has(invoice.id)
+  ).length;
+  const selectedTotal = selectedInvoices.reduce(
+    (sum, invoice) => sum + Number(invoice.balance_due ?? invoice.total_amount ?? 0),
+    0
+  );
+
+  const toggleInvoiceSelection = (invoiceId: string, selected: boolean) => {
+    setSelectedInvoiceIds((current) => {
+      const next = new Set(current);
+      if (selected) next.add(invoiceId);
+      else next.delete(invoiceId);
+      return next;
+    });
+  };
+
+  const toggleAllFilteredInvoices = (selected: boolean) => {
+    setSelectedInvoiceIds((current) => {
+      const next = new Set(current);
+      selectableFilteredInvoices.forEach((invoice) => {
+        if (selected) next.add(invoice.id);
+        else next.delete(invoice.id);
+      });
+      return next;
+    });
+  };
+
+  const confirmBulkCancellation = async (event: React.MouseEvent) => {
+    event.preventDefault();
+    if (!onBulkCancelInvoices || selectedInvoices.length === 0) return;
+
+    try {
+      await onBulkCancelInvoices(selectedInvoices);
+      setSelectedInvoiceIds(new Set());
+      setIsBulkCancelDialogOpen(false);
+    } catch {
+      // The parent displays the actionable accounting error.
+    }
+  };
 
   return (
     <div className="space-y-5">
@@ -1450,6 +1606,43 @@ export const ContractInvoicesTabRedesigned = ({
             onSortChange={setSortOption}
           />
 
+          {onBulkCancelInvoices && selectedInvoices.length > 0 && (
+            <div className="flex flex-col gap-3 rounded-xl border border-red-200 bg-red-50 p-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="font-bold text-red-900">
+                  تم تحديد {selectedInvoices.length} فاتورة
+                </p>
+                <p className="mt-1 text-sm text-red-700">
+                  إجمالي الرصيد المحدد: {formatCurrency(selectedTotal)}
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={() => setSelectedInvoiceIds(new Set())}
+                  disabled={isBulkCancellingInvoices}
+                >
+                  إلغاء التحديد
+                </Button>
+                <Button
+                  type="button"
+                  variant="destructive"
+                  onClick={() => setIsBulkCancelDialogOpen(true)}
+                  disabled={isBulkCancellingInvoices}
+                  className="gap-2"
+                >
+                  {isBulkCancellingInvoices ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Trash2 className="h-4 w-4" />
+                  )}
+                  إلغاء الفواتير المحددة
+                </Button>
+              </div>
+            </div>
+          )}
+
           {/* View Mode Toggle & Results Count */}
           <div className="flex items-center justify-between">
             <p className="text-sm text-neutral-500">
@@ -1508,6 +1701,9 @@ export const ContractInvoicesTabRedesigned = ({
                   onPrint={() => window.print()}
                   onCancel={() => onCancelInvoice(invoice)}
                   isCancelling={isCancellingInvoice}
+                  selected={selectedInvoiceIds.has(invoice.id)}
+                  selectable={isInvoiceBulkCancellable(invoice)}
+                  onSelect={(selected) => toggleInvoiceSelection(invoice.id, selected)}
                 />
               ))}
             </motion.div>
@@ -1517,6 +1713,22 @@ export const ContractInvoicesTabRedesigned = ({
                 <table className="w-full">
                   <thead>
                     <tr className="border-b border-[#DDE5EF] bg-[#F7FAFD]">
+                      <th className="w-12 px-4 py-3 text-right">
+                        <Checkbox
+                          checked={
+                            areAllFilteredSelected
+                              ? true
+                              : selectedFilteredCount > 0
+                                ? 'indeterminate'
+                                : false
+                          }
+                          disabled={selectableFilteredInvoices.length === 0}
+                          onCheckedChange={(checked) => toggleAllFilteredInvoices(checked === true)}
+                          aria-label="تحديد جميع الفواتير القابلة للإلغاء"
+                          title="تحديد جميع الفواتير غير المسددة الظاهرة"
+                          className="h-5 w-5"
+                        />
+                      </th>
                       <th className="py-3 px-4 text-right text-sm font-semibold text-neutral-700">رقم الفاتورة</th>
                       <th className="py-3 px-4 text-right text-sm font-semibold text-neutral-700">التاريخ</th>
                       <th className="py-3 px-4 text-right text-sm font-semibold text-neutral-700">المبلغ</th>
@@ -1537,6 +1749,9 @@ export const ContractInvoicesTabRedesigned = ({
                         onPrint={() => window.print()}
                         onCancel={() => onCancelInvoice(invoice)}
                         isCancelling={isCancellingInvoice}
+                        selected={selectedInvoiceIds.has(invoice.id)}
+                        selectable={isInvoiceBulkCancellable(invoice)}
+                        onSelect={(selected) => toggleInvoiceSelection(invoice.id, selected)}
                       />
                     ))}
                   </tbody>
@@ -1546,9 +1761,40 @@ export const ContractInvoicesTabRedesigned = ({
           )}
         </>
       )}
+
+      <AlertDialog open={isBulkCancelDialogOpen} onOpenChange={setIsBulkCancelDialogOpen}>
+        <AlertDialogContent dir="rtl">
+          <AlertDialogHeader>
+            <AlertDialogTitle>إلغاء {selectedInvoices.length} فاتورة محددة؟</AlertDialogTitle>
+            <AlertDialogDescription className="space-y-2 text-right">
+              <span className="block">
+                سيصبح رصيد هذه الفواتير صفرًا وسيتم عكس القيود اليومية المرتبطة بها تلقائيًا.
+              </span>
+              <span className="block font-semibold text-foreground">
+                الإجمالي المحدد: {formatCurrency(selectedTotal)}
+              </span>
+              <span className="block">
+                لن تُحذف السجلات المحاسبية نهائيًا، وستبقى الفواتير بحالة ملغاة لأغراض التدقيق.
+              </span>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isBulkCancellingInvoices}>رجوع</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmBulkCancellation}
+              disabled={isBulkCancellingInvoices || selectedInvoices.length === 0}
+              className="gap-2 bg-red-600 text-white hover:bg-red-700"
+            >
+              {isBulkCancellingInvoices ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Trash2 className="h-4 w-4" />
+              )}
+              تأكيد الإلغاء الجماعي
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
-
-// Import useState
-import { useState } from 'react';

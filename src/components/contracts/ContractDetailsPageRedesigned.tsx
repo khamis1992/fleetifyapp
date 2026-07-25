@@ -1795,6 +1795,8 @@ const FinancialTab = ({
   onCreateInvoice,
   onCancelInvoice,
   isCancellingInvoice,
+  onBulkCancelInvoices,
+  isBulkCancellingInvoices,
   onGeneratePaymentSchedules,
   onGenerateMissingInvoices,
   isGeneratingMissingInvoices,
@@ -1814,6 +1816,8 @@ const FinancialTab = ({
   onCreateInvoice: () => void;
   onCancelInvoice: (invoice: Invoice) => void;
   isCancellingInvoice: boolean;
+  onBulkCancelInvoices: (invoices: Invoice[]) => Promise<void>;
+  isBulkCancellingInvoices: boolean;
   onGeneratePaymentSchedules: () => void;
   onGenerateMissingInvoices?: () => void;
   isGeneratingMissingInvoices?: boolean;
@@ -1877,6 +1881,8 @@ const FinancialTab = ({
         onCreateInvoice={onCreateInvoice}
         onCancelInvoice={onCancelInvoice}
         isCancellingInvoice={isCancellingInvoice}
+        onBulkCancelInvoices={onBulkCancelInvoices}
+        isBulkCancellingInvoices={isBulkCancellingInvoices}
         onGenerateMissingInvoices={onGenerateMissingInvoices}
         isGeneratingMissingInvoices={isGeneratingMissingInvoices}
         contractNumber={contract.contract_number}
@@ -2178,6 +2184,7 @@ const ContractDetailsPageRedesigned = () => {
   const [isReactivateDialogOpen, setIsReactivateDialogOpen] = useState(false);
   const [isReactivating, setIsReactivating] = useState(false);
   const [isCancellingInvoice, setIsCancellingInvoice] = useState(false);
+  const [isBulkCancellingInvoices, setIsBulkCancellingInvoices] = useState(false);
   const [invoiceToCancel, setInvoiceToCancel] = useState<Invoice | null>(null);
   const [isCancelInvoiceDialogOpen, setIsCancelInvoiceDialogOpen] = useState(false);
   const [quickCrmNote, setQuickCrmNote] = useState('');
@@ -2684,6 +2691,65 @@ const ContractDetailsPageRedesigned = () => {
     }
   }, [companyId, contract?.start_date, formatCurrency, invoiceToCancel, queryClient, toast]);
 
+  const handleBulkCancelInvoices = useCallback(async (selectedInvoices: Invoice[]) => {
+    if (!contract?.id || !companyId || selectedInvoices.length === 0) return;
+
+    setIsBulkCancellingInvoices(true);
+    try {
+      const { data, error } = await supabase.rpc('cancel_contract_invoices_bulk_v1', {
+        p_company_id: companyId,
+        p_contract_id: contract.id,
+        p_invoice_ids: selectedInvoices.map((invoice) => invoice.id),
+        p_reason: `إلغاء جماعي لفواتير غير صحيحة من صفحة العقد ${contract.contract_number}`,
+      });
+
+      if (error) throw error;
+
+      const result = data as {
+        cancelled_count?: number;
+      } | null;
+      const cancelledCount = Number(result?.cancelled_count || selectedInvoices.length);
+
+      toast({
+        title: 'تم إلغاء الفواتير المحددة',
+        description: `تم إلغاء ${cancelledCount} فاتورة وعكس القيود المرتبطة بها بنجاح.`,
+      });
+
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['contract-invoices'] }),
+        queryClient.invalidateQueries({ queryKey: ['invoices'] }),
+        queryClient.invalidateQueries({ queryKey: ['payment-schedules'] }),
+        queryClient.invalidateQueries({ queryKey: ['contract-details'] }),
+      ]);
+    } catch (error) {
+      console.error('[ContractDetails] bulk invoice cancellation failed:', error);
+      const rawMessage =
+        error instanceof Error
+          ? error.message
+          : typeof error === 'object' && error !== null && 'message' in error
+            ? String((error as { message?: unknown }).message || '')
+            : '';
+      const description =
+        rawMessage.includes('Paid or partially paid invoice')
+          ? 'تتضمن الفواتير المحددة فاتورة مسددة أو مسددة جزئيًا. أزلها من التحديد ثم أعد المحاولة.'
+          : rawMessage.includes('active payment')
+            ? 'إحدى الفواتير مرتبطة بدفعة نشطة. يجب إلغاء الدفعة أو إعادة توزيعها أولًا.'
+            : rawMessage.includes('cancel_contract_invoices_bulk_v1')
+                || rawMessage.includes('schema cache')
+              ? 'خدمة الإلغاء الجماعي تحتاج تطبيق تحديث قاعدة البيانات الجديد أولًا.'
+              : rawMessage || 'تعذر إلغاء الفواتير المحددة.';
+
+      toast({
+        title: 'لم يتم إلغاء الفواتير',
+        description,
+        variant: 'destructive',
+      });
+      throw error;
+    } finally {
+      setIsBulkCancellingInvoices(false);
+    }
+  }, [companyId, contract?.contract_number, contract?.id, queryClient, toast]);
+
   const handleRenew = useCallback(() => {
     setIsRenewalDialogOpen(true);
   }, []);
@@ -3018,6 +3084,8 @@ const ContractDetailsPageRedesigned = () => {
           onCreateInvoice={() => setIsInvoiceDialogOpen(true)}
           onCancelInvoice={handleCancelInvoice}
           isCancellingInvoice={isCancellingInvoice}
+          onBulkCancelInvoices={handleBulkCancelInvoices}
+          isBulkCancellingInvoices={isBulkCancellingInvoices}
           onGeneratePaymentSchedules={handleGeneratePaymentSchedules}
           onGenerateMissingInvoices={handleGenerateMissingInvoices}
           isGeneratingMissingInvoices={isGeneratingMissingInvoices}

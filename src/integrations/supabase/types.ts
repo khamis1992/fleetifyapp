@@ -28696,6 +28696,15 @@ export type Database = {
         Args: { _action?: string; _company_id?: string; _user_id: string }
         Returns: boolean
       }
+      cancel_contract_invoices_bulk_v1: {
+        Args: {
+          p_company_id: string
+          p_contract_id: string
+          p_invoice_ids: string[]
+          p_reason: string
+        }
+        Returns: Json
+      }
       cancel_invoice_with_reversal:
         | { Args: { "": Json }; Returns: Json }
         | {
