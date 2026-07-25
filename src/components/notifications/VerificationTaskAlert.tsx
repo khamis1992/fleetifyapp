@@ -96,20 +96,25 @@ export const VerificationTaskAlert: React.FC = () => {
           exit={{ scale: 0.9, opacity: 0, y: 20 }}
           transition={{ type: 'spring', duration: 0.5 }}
           onClick={(e) => e.stopPropagation()}
-          className="w-full max-w-lg mx-4"
+          className="w-full max-w-xl mx-4"
         >
-          <Card className="overflow-hidden border border-teal-500/20 shadow-2xl">
+          <Card className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl shadow-slate-950/20">
             {/* Header */}
-            <div className="bg-gradient-to-r from-teal-600 to-teal-500 p-4 text-white">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-white/20 rounded-xl">
+            <div className="relative overflow-hidden bg-[#0f766e] p-5 text-white" dir="rtl">
+              <div className="absolute inset-y-0 left-0 w-40 bg-white/10 blur-3xl" />
+              <div className="relative flex items-start justify-between gap-4">
+                <div className="flex min-w-0 items-start gap-3">
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/15 ring-1 ring-white/25">
                     <ClipboardCheck className="h-6 w-6" />
                   </div>
-                  <div>
-                    <h2 className="text-lg font-bold">مهام تدقيق تحتاج انتباهك</h2>
-                    <p className="text-sm text-white/80">
-                      لديك {tasks.length} مهمة تدقيق معلقة
+                  <div className="min-w-0">
+                    <div className="mb-2 inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1 text-xs font-semibold text-white/90 ring-1 ring-white/20">
+                      <AlertTriangle className="h-3.5 w-3.5" />
+                      تنبيه تدقيق
+                    </div>
+                    <h2 className="text-xl font-black leading-7 tracking-normal">مهام تحتاج انتباهك</h2>
+                    <p className="mt-1 text-sm text-teal-50">
+                      لديك <span className="font-bold text-white">{tasks.length}</span> مهمة معلقة تحتاج مراجعة قبل المتابعة القانونية
                     </p>
                   </div>
                 </div>
@@ -117,7 +122,7 @@ export const VerificationTaskAlert: React.FC = () => {
                   size="icon"
                   variant="ghost"
                   onClick={handleDismiss}
-                  className="text-white hover:bg-white/20 h-8 w-8"
+                  className="h-9 w-9 shrink-0 rounded-full text-white hover:bg-white/15 hover:text-white"
                 >
                   <X className="h-4 w-4" />
                 </Button>
@@ -125,8 +130,18 @@ export const VerificationTaskAlert: React.FC = () => {
             </div>
 
             {/* Content */}
-            <div className="p-4 max-h-[400px] overflow-y-auto" dir="rtl">
-              <div className="space-y-3">
+            <div className="bg-slate-50 p-4" dir="rtl">
+              <div className="mb-3 flex items-center justify-between rounded-2xl border border-slate-200 bg-white px-4 py-3">
+                <div>
+                  <p className="text-sm font-bold text-slate-900">قائمة مهام التدقيق</p>
+                  <p className="text-xs text-slate-500">اضغط على أي عميل لفتح مهمة التدقيق مباشرة</p>
+                </div>
+                <Badge className="rounded-full bg-teal-100 px-3 py-1 text-teal-800 hover:bg-teal-100">
+                  {tasks.length} معلقة
+                </Badge>
+              </div>
+
+              <div className="max-h-[380px] space-y-2 overflow-y-auto pr-1">
                 {tasks.slice(0, 5).map((task: any, index: number) => {
                   const customerName = task.customer
                     ? `${task.customer.first_name} ${task.customer.last_name}`
@@ -138,23 +153,23 @@ export const VerificationTaskAlert: React.FC = () => {
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: index * 0.1 }}
-                      className="flex items-center justify-between p-3 rounded-xl border border-teal-100 bg-teal-50/50 hover:bg-teal-50 hover:border-teal-500/30 transition-all cursor-pointer group"
+                      className="group flex cursor-pointer items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white p-3.5 shadow-sm transition-all hover:-translate-y-0.5 hover:border-teal-300 hover:shadow-md"
                       onClick={() => handleOpenTask(task.id)}
                     >
-                      <div className="flex items-center gap-3">
-                        <div className="p-2 bg-teal-100 rounded-lg">
-                          <User className="h-4 w-4 text-teal-700" />
+                      <div className="flex min-w-0 items-center gap-3">
+                        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-teal-50 text-teal-700 ring-1 ring-teal-100">
+                          <User className="h-5 w-5" />
                         </div>
-                        <div>
-                          <p className="font-medium text-gray-900">{customerName}</p>
-                          <div className="flex items-center gap-2 text-xs text-gray-500">
+                        <div className="min-w-0">
+                          <p className="truncate text-base font-extrabold text-slate-950">{customerName}</p>
+                          <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500">
                             {task.contract?.contract_number && (
-                              <span className="flex items-center gap-1">
+                              <span className="inline-flex items-center gap-1">
                                 <FileText className="h-3 w-3" />
                                 {task.contract.contract_number}
                               </span>
                             )}
-                            <span className="flex items-center gap-1">
+                            <span className="inline-flex items-center gap-1">
                               <Clock className="h-3 w-3" />
                               {format(new Date(task.created_at), 'd MMM', { locale: ar })}
                             </span>
@@ -162,31 +177,33 @@ export const VerificationTaskAlert: React.FC = () => {
                         </div>
                       </div>
                       
-                      <div className="flex items-center gap-2">
-                        <Badge className="bg-teal-600 text-white text-xs hover:bg-teal-700">
+                      <div className="flex shrink-0 items-center gap-2">
+                        <Badge className="rounded-full bg-amber-100 px-3 py-1 text-xs font-bold text-amber-800 hover:bg-amber-100">
                           معلقة
                         </Badge>
-                        <ArrowLeft className="h-4 w-4 text-teal-600 opacity-0 group-hover:opacity-100 transition-opacity" />
+                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-slate-400 transition-colors group-hover:bg-teal-600 group-hover:text-white">
+                          <ArrowLeft className="h-4 w-4" />
+                        </div>
                       </div>
                     </motion.div>
                   );
                 })}
 
                 {tasks.length > 5 && (
-                  <p className="text-center text-sm text-gray-500">
-                    +{tasks.length - 5} مهام أخرى
-                  </p>
+                  <div className="rounded-2xl border border-dashed border-slate-300 bg-white px-4 py-3 text-center text-sm font-semibold text-slate-500">
+                    +{tasks.length - 5} مهام أخرى في صفحة مهام التدقيق
+                  </div>
                 )}
               </div>
 
               {/* Warning */}
-              <div className="mt-4 p-3 rounded-xl bg-amber-50 border border-amber-200">
+              <div className="mt-3 rounded-2xl border border-amber-200 bg-amber-50 p-3">
                 <div className="flex items-start gap-2">
-                  <AlertTriangle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
-                  <div className="text-sm text-amber-800">
-                    <p className="font-medium">تنبيه هام</p>
-                    <p className="text-amber-700 mt-1">
-                      يرجى إكمال مهام التدقيق في أقرب وقت ممكن للتأكد من صحة بيانات العملاء قبل رفع الدعاوى.
+                  <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" />
+                  <div className="text-sm text-amber-900">
+                    <p className="font-bold">مهم قبل رفع الدعاوى</p>
+                    <p className="mt-1 text-amber-800">
+                      أكمل التدقيق للتأكد من صحة بيانات العميل والعقد قبل أي إجراء قانوني.
                     </p>
                   </div>
                 </div>
@@ -194,17 +211,17 @@ export const VerificationTaskAlert: React.FC = () => {
             </div>
 
             {/* Footer */}
-            <div className="p-4 bg-gray-50 border-t flex items-center justify-between gap-3" dir="rtl">
+            <div className="flex items-center justify-between gap-3 border-t bg-white p-4" dir="rtl">
               <Button
                 variant="outline"
                 onClick={handleDismiss}
-                className="flex-1 hover:bg-gray-100"
+                className="h-11 flex-1 rounded-xl border-slate-200 bg-slate-50 font-bold text-slate-700 hover:bg-slate-100"
               >
                 تذكيرني لاحقاً
               </Button>
               <Button
                 onClick={handleOpenAllTasks}
-                className="flex-1 bg-teal-600 hover:bg-teal-700 text-white gap-2"
+                className="h-11 flex-1 gap-2 rounded-xl bg-teal-600 font-bold text-white hover:bg-teal-700"
               >
                 <ClipboardCheck className="h-4 w-4" />
                 عرض مهام التدقيق
