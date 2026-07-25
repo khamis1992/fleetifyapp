@@ -22,10 +22,10 @@ export async function revertContractLegalProcedure({
   const [casesResult, delinquentResult, authResult] = await Promise.all([
     supabase
       .from('legal_cases')
-      .select('id, case_status, notes')
+      .select('id, case_status, notes, outcome_type, outcome_date, workflow_stage, closed_at, closure_reason')
       .eq('contract_id', contractId)
       .eq('company_id', companyId)
-      .not('case_status', 'in', '(closed,settled,withdrawn,dismissed)'),
+      .not('case_status', 'in', '(closed,settled,withdrawn,dismissed,cancelled)'),
     supabase
       .from('delinquent_customers')
       .select('id, is_active, last_updated_at')
@@ -45,7 +45,15 @@ export async function revertContractLegalProcedure({
       ...legalCases.map((legalCase) =>
         supabase
           .from('legal_cases')
-          .update({ case_status: legalCase.case_status, notes: legalCase.notes })
+          .update({
+            case_status: legalCase.case_status,
+            notes: legalCase.notes,
+            outcome_type: legalCase.outcome_type,
+            outcome_date: legalCase.outcome_date,
+            workflow_stage: legalCase.workflow_stage,
+            closed_at: legalCase.closed_at,
+            closure_reason: legalCase.closure_reason,
+          })
           .eq('id', legalCase.id)
           .eq('company_id', companyId)
       ),
@@ -67,9 +75,18 @@ export async function revertContractLegalProcedure({
   try {
     for (const legalCase of legalCases) {
       const notes = [legalCase.notes, `${reason} - ${now}`].filter(Boolean).join('\n\n');
+      // Mirror revert_contract_from_legal_v1: the normalize_legacy_legal_terminal_stage
+      // trigger rejects case_status='closed' unless an outcome is recorded, so closing
+      // without outcome_type fails with HTTP 400.
       const { error } = await supabase
         .from('legal_cases')
-        .update({ case_status: 'closed', notes, updated_at: now })
+        .update({
+          case_status: 'closed',
+          outcome_type: legalCase.outcome_type ?? 'withdrawn',
+          outcome_date: legalCase.outcome_date ?? now.slice(0, 10),
+          notes,
+          updated_at: now,
+        })
         .eq('id', legalCase.id)
         .eq('company_id', companyId);
       if (error) throw error;
