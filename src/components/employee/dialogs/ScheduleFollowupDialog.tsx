@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Schedule Follow-up Dialog
  * حوار جدولة متابعة مع العميل
  */
@@ -95,6 +95,12 @@ export const ScheduleFollowupDialog: React.FC<ScheduleFollowupDialogProps> = ({
     },
   });
 
+  React.useEffect(() => {
+    if (open && preselectedContractId) {
+      form.setValue('contract_id', preselectedContractId, { shouldValidate: true });
+    }
+  }, [form, open, preselectedContractId]);
+
   const selectedContract = contracts.find(
     (c) => c.id === form.watch('contract_id')
   );
@@ -189,7 +195,7 @@ export const ScheduleFollowupDialog: React.FC<ScheduleFollowupDialogProps> = ({
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>العقد / العميل *</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="اختر العقد" />
@@ -215,7 +221,7 @@ export const ScheduleFollowupDialog: React.FC<ScheduleFollowupDialogProps> = ({
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>نوع المتابعة *</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue />
@@ -332,7 +338,7 @@ export const ScheduleFollowupDialog: React.FC<ScheduleFollowupDialogProps> = ({
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>الأولوية *</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue />

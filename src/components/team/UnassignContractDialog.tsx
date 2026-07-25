@@ -132,9 +132,14 @@ export const UnassignContractDialog: React.FC<UnassignContractDialogProps> = ({
         icon: <CheckCircle className="h-5 w-5 text-green-600" />,
       });
 
+      queryClient.invalidateQueries({ queryKey: ['employee-contracts'] });
       queryClient.invalidateQueries({ queryKey: ['employee-contracts-details'] });
       queryClient.invalidateQueries({ queryKey: ['team-employees'] });
+      queryClient.invalidateQueries({ queryKey: ['team-active-contract-stats'] });
       queryClient.invalidateQueries({ queryKey: ['unassigned-contracts'] });
+      queryClient.invalidateQueries({ queryKey: ['unassigned-contracts-bulk'] });
+      queryClient.invalidateQueries({ queryKey: ['unassigned-contracts-smart'] });
+      queryClient.invalidateQueries({ queryKey: ['monthly-collections'] });
 
       form.reset();
       onOpenChange(false);

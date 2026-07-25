@@ -122,3 +122,7 @@ export const useTourGuide = () => {
   return context;
 };
 
+export const useOptionalTourGuide = () => {
+  return useContext(TourContext);
+};
+

@@ -903,6 +903,17 @@ const getUniqueActiveSchedulesByMonth = <T extends { status: string; due_date: s
   });
 };
 
+const BULK_INVOICE_CANCELLATION_BATCH_SIZE = 8;
+const billableContractStatuses = new Set(['active', 'under_legal_procedure']);
+
+const chunkInvoicesForCancellation = <T,>(items: T[], size = BULK_INVOICE_CANCELLATION_BATCH_SIZE) => {
+  const chunks: T[][] = [];
+  for (let index = 0; index < items.length; index += size) {
+    chunks.push(items.slice(index, index + size));
+  }
+  return chunks;
+};
+
 const isActiveFinancialPayment = (payment: ContractFinancialPayment) => {
   const status = String(payment.payment_status || '').toLowerCase();
   return !inactivePaymentStatuses.has(status);
@@ -2696,19 +2707,32 @@ const ContractDetailsPageRedesigned = () => {
 
     setIsBulkCancellingInvoices(true);
     try {
-      const { data, error } = await supabase.rpc('cancel_contract_invoices_bulk_v1', {
-        p_company_id: companyId,
-        p_contract_id: contract.id,
-        p_invoice_ids: selectedInvoices.map((invoice) => invoice.id),
-        p_reason: `إلغاء جماعي لفواتير غير صحيحة من صفحة العقد ${contract.contract_number}`,
-      });
+      const invoiceBatches = chunkInvoicesForCancellation(selectedInvoices);
+      let cancelledCount = 0;
 
-      if (error) throw error;
+      for (let index = 0; index < invoiceBatches.length; index += 1) {
+        const invoiceBatch = invoiceBatches[index];
+        const { data, error } = await supabase.rpc('cancel_contract_invoices_bulk_v1', {
+          p_company_id: companyId,
+          p_contract_id: contract.id,
+          p_invoice_ids: invoiceBatch.map((invoice) => invoice.id),
+          p_reason: `إلغاء جماعي لفواتير غير صحيحة من صفحة العقد ${contract.contract_number}`,
+        });
 
-      const result = data as {
-        cancelled_count?: number;
-      } | null;
-      const cancelledCount = Number(result?.cancelled_count || selectedInvoices.length);
+        if (error) throw error;
+
+        const result = data as {
+          cancelled_count?: number;
+        } | null;
+        cancelledCount += Number(result?.cancelled_count || invoiceBatch.length);
+
+        if (invoiceBatches.length > 1) {
+          toast({
+            title: 'جاري إلغاء الفواتير',
+            description: `تم إلغاء ${cancelledCount} من ${selectedInvoices.length} فاتورة.`,
+          });
+        }
+      }
 
       toast({
         title: 'تم إلغاء الفواتير المحددة',
@@ -2734,6 +2758,8 @@ const ContractDetailsPageRedesigned = () => {
           ? 'تتضمن الفواتير المحددة فاتورة مسددة أو مسددة جزئيًا. أزلها من التحديد ثم أعد المحاولة.'
           : rawMessage.includes('active payment')
             ? 'إحدى الفواتير مرتبطة بدفعة نشطة. يجب إلغاء الدفعة أو إعادة توزيعها أولًا.'
+            : rawMessage.includes('statement timeout') || rawMessage.includes('57014')
+              ? 'توقف الإلغاء بسبب طول العملية. تم تقسيم العملية إلى دفعات صغيرة، أعد المحاولة وسيكمل النظام من الفواتير المتبقية.'
             : rawMessage.includes('cancel_contract_invoices_bulk_v1')
                 || rawMessage.includes('schema cache')
               ? 'خدمة الإلغاء الجماعي تحتاج تطبيق تحديث قاعدة البيانات الجديد أولًا.'
@@ -2768,12 +2794,43 @@ const ContractDetailsPageRedesigned = () => {
 
   const handleGeneratePaymentSchedules = useCallback(() => {
     if (!contract?.id) return;
+    if (!billableContractStatuses.has(String(contract.status || '').toLowerCase())) {
+      toast({
+        title: 'لا يمكن إنشاء جدول دفعات',
+        description: 'لا يمكن إنشاء جداول دفعات جديدة لعقد ملغي أو منتهي.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     generatePaymentSchedulesFromInvoices.mutate(contract.id);
-  }, [contract?.id, generatePaymentSchedulesFromInvoices]);
+  }, [contract?.id, contract?.status, generatePaymentSchedulesFromInvoices, toast]);
+
+  const handleCreateInvoiceRequest = useCallback(() => {
+    if (!billableContractStatuses.has(String(contract?.status || '').toLowerCase())) {
+      toast({
+        title: 'لا يمكن إنشاء فاتورة',
+        description: 'لا يمكن إنشاء فواتير جديدة لعقد ملغي أو منتهي.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setIsInvoiceDialogOpen(true);
+  }, [contract?.status, toast]);
 
   const [isGeneratingMissingInvoices, setIsGeneratingMissingInvoices] = useState(false);
   const handleGenerateMissingInvoices = useCallback(async () => {
     if (!contract?.id) return;
+    if (!billableContractStatuses.has(String(contract.status || '').toLowerCase())) {
+      toast({
+        title: 'لا يمكن إنشاء فواتير',
+        description: 'لا يمكن إنشاء فواتير جديدة لعقد ملغي أو منتهي.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     setIsGeneratingMissingInvoices(true);
     try {
       console.log('Generating payment schedules for contract:', contract.id);
@@ -2824,7 +2881,7 @@ const ContractDetailsPageRedesigned = () => {
     } finally {
       setIsGeneratingMissingInvoices(false);
     }
-  }, [contract?.id, queryClient, toast]);
+  }, [contract?.id, contract?.status, queryClient, toast]);
 
   // Handle add violation
   const handleAddViolation = useCallback(async (violation: Partial<any>) => {
@@ -3081,13 +3138,17 @@ const ContractDetailsPageRedesigned = () => {
           formatCurrency={formatCurrency}
           onPayInvoice={handleInvoicePay}
           onPreviewInvoice={handleInvoicePreview}
-          onCreateInvoice={() => setIsInvoiceDialogOpen(true)}
+          onCreateInvoice={handleCreateInvoiceRequest}
           onCancelInvoice={handleCancelInvoice}
           isCancellingInvoice={isCancellingInvoice}
           onBulkCancelInvoices={handleBulkCancelInvoices}
           isBulkCancellingInvoices={isBulkCancellingInvoices}
           onGeneratePaymentSchedules={handleGeneratePaymentSchedules}
-          onGenerateMissingInvoices={handleGenerateMissingInvoices}
+          onGenerateMissingInvoices={
+            billableContractStatuses.has(String(contract.status || '').toLowerCase())
+              ? handleGenerateMissingInvoices
+              : undefined
+          }
           isGeneratingMissingInvoices={isGeneratingMissingInvoices}
           customerName={customerName}
           trafficViolations={trafficViolations}

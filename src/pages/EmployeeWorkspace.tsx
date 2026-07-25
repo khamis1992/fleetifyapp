@@ -3,9 +3,11 @@
  * صفحة مساحة عمل الموظف - تصميم احترافي
  */
 
-import React, { useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 import { 
   ArrowRight, 
   RefreshCw, 
@@ -19,7 +21,6 @@ import {
   Calendar,
   Search,
   Star,
-  MoreHorizontal,
   TrendingUp,
   Filter,
   XCircle,
@@ -27,15 +28,24 @@ import {
   Scale,
   PlayCircle,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  Loader2
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
@@ -55,6 +65,8 @@ import {
   AddNoteDialog,
 } from '@/components/employee/dialogs';
 import { QuickPaymentDialog } from '@/components/finance/QuickPaymentDialog';
+import { UnassignContractDialog } from '@/components/team';
+import { ConvertToLegalDialog } from '@/components/contracts/ConvertToLegalDialog';
 import { ExportButton } from '@/components/shared/ExportButton';
 import { exportEmployeeWorkspaceReport } from '@/utils/exports/employeeReport';
 import { NotificationBell } from '@/components/notifications/NotificationBell';
@@ -64,9 +76,11 @@ import {
   type EmployeePerformance as ReportEmployeePerformance,
   type EmployeeTask as ReportEmployeeTask,
 } from '@/types/employee-workspace.types';
+import type { ContractForLegal } from '@/hooks/useConvertToLegal';
 
 export const EmployeeWorkspace: React.FC = () => {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { user } = useAuth();
   const { toast } = useToast();
   const { formatCurrency } = useCurrencyFormatter();
@@ -79,7 +93,68 @@ export const EmployeeWorkspace: React.FC = () => {
   const [showCallDialog, setShowCallDialog] = useState(false);
   const [showFollowupDialog, setShowFollowupDialog] = useState(false);
   const [showNoteDialog, setShowNoteDialog] = useState(false);
+  const [showUnassignDialog, setShowUnassignDialog] = useState(false);
+  const [showBulkUnassignDialog, setShowBulkUnassignDialog] = useState(false);
+  const [showConvertToLegalDialog, setShowConvertToLegalDialog] = useState(false);
   const [selectedContractId, setSelectedContractId] = useState<string | undefined>();
+  const [selectedBulkContractIds, setSelectedBulkContractIds] = useState<string[]>([]);
+  const [completingTaskId, setCompletingTaskId] = useState<string | null>(null);
+  const [selectedPaymentCustomer, setSelectedPaymentCustomer] = useState<{
+    customerId: string;
+    customerName: string;
+    customerPhone: string | null;
+  } | null>(null);
+  // This page is the current employee's own workspace. Reassignment must happen
+  // from Team Management, even when the employee also has a management role.
+  const canUnassignContracts = false;
+
+  useEffect(() => {
+    const html = document.documentElement;
+    const body = document.body;
+    const previous = {
+      htmlOverflowY: html.style.overflowY,
+      htmlOverflowX: html.style.overflowX,
+      htmlHeight: html.style.height,
+      htmlPosition: html.style.position,
+      htmlTouchAction: html.style.touchAction,
+      bodyOverflowY: body.style.overflowY,
+      bodyOverflowX: body.style.overflowX,
+      bodyHeight: body.style.height,
+      bodyPosition: body.style.position,
+      bodyTouchAction: body.style.touchAction,
+      bodyScrollLocked: body.getAttribute('data-scroll-locked'),
+    };
+
+    body.removeAttribute('data-scroll-locked');
+    html.style.setProperty('overflow-y', 'auto', 'important');
+    html.style.setProperty('overflow-x', 'hidden', 'important');
+    html.style.setProperty('height', 'auto', 'important');
+    html.style.setProperty('position', 'relative', 'important');
+    html.style.setProperty('touch-action', 'pan-y', 'important');
+    body.style.setProperty('overflow-y', 'auto', 'important');
+    body.style.setProperty('overflow-x', 'hidden', 'important');
+    body.style.setProperty('height', 'auto', 'important');
+    body.style.setProperty('position', 'relative', 'important');
+    body.style.setProperty('touch-action', 'pan-y', 'important');
+
+    return () => {
+      html.style.overflowY = previous.htmlOverflowY;
+      html.style.overflowX = previous.htmlOverflowX;
+      html.style.height = previous.htmlHeight;
+      html.style.position = previous.htmlPosition;
+      html.style.touchAction = previous.htmlTouchAction;
+      body.style.overflowY = previous.bodyOverflowY;
+      body.style.overflowX = previous.bodyOverflowX;
+      body.style.height = previous.bodyHeight;
+      body.style.position = previous.bodyPosition;
+      body.style.touchAction = previous.bodyTouchAction;
+      if (previous.bodyScrollLocked) {
+        body.setAttribute('data-scroll-locked', previous.bodyScrollLocked);
+      } else {
+        body.removeAttribute('data-scroll-locked');
+      }
+    };
+  }, []);
 
   // Fetch data
   const {
@@ -95,7 +170,8 @@ export const EmployeeWorkspace: React.FC = () => {
     tasks,
     stats: taskStats,
     isLoading: isLoadingTasks,
-    refetch: refetchTasks
+    refetch: refetchTasks,
+    completeTask
   } = useEmployeeTasks();
 
   const {
@@ -121,6 +197,26 @@ export const EmployeeWorkspace: React.FC = () => {
     refetchCollections();
   };
 
+  const handleCompleteTask = async (taskId: string) => {
+    setCompletingTaskId(taskId);
+    try {
+      await completeTask(taskId);
+      refetchPerformance();
+      toast({
+        title: 'تم إنجاز المهمة',
+        description: 'تم تحديث حالة المهمة بنجاح',
+      });
+    } catch (error) {
+      toast({
+        title: 'فشل إنجاز المهمة',
+        description: error instanceof Error ? error.message : 'حدث خطأ أثناء تحديث المهمة',
+        variant: 'destructive',
+      });
+    } finally {
+      setCompletingTaskId(null);
+    }
+  };
+
   // Quick Actions Configuration
   const quickActions = [
     { 
@@ -128,28 +224,34 @@ export const EmployeeWorkspace: React.FC = () => {
       label: 'تسجيل مكالمة', 
       onClick: () => setShowCallDialog(true),
       variant: 'default',
-      className: 'bg-blue-600 hover:bg-blue-700'
+      className: 'bg-[#1D4F7A] text-white hover:bg-[#163F62]'
     },
     { 
       icon: DollarSign, 
       label: 'تسجيل دفعة', 
-      onClick: () => setShowPaymentDialog(true),
+      onClick: () => {
+        setActiveTab('collections');
+        toast({
+          title: 'اختر العميل',
+          description: 'اضغط تسجيل دفعة من بطاقة العميل أو العقد المطلوب',
+        });
+      },
       variant: 'default',
-      className: 'bg-emerald-600 hover:bg-emerald-700'
+      className: 'bg-[#11A37F] text-white hover:bg-[#0D876A]'
     },
     { 
       icon: Calendar, 
       label: 'جدولة موعد', 
       onClick: () => setShowFollowupDialog(true),
       variant: 'secondary',
-      className: 'bg-purple-100 text-purple-700 hover:bg-purple-200'
+      className: 'bg-[#EEF4FA] text-[#173A63] hover:bg-[#DDEAF5]'
     },
     { 
       icon: FileText, 
       label: 'ملاحظة جديدة', 
       onClick: () => setShowNoteDialog(true),
       variant: 'secondary',
-      className: 'bg-[#8f51d2] hover:bg-[#8f51d2]/90'
+      className: 'bg-[#FFF6E5] text-[#9A5B00] hover:bg-[#FFE9B8]'
     },
   ];
 
@@ -162,7 +264,27 @@ export const EmployeeWorkspace: React.FC = () => {
     balance_due: contract.balance_due || 0,
   }));
 
-  const selectedPaymentContract = contracts.find(contract => contract.id === selectedContractId);
+  const selectedWorkspaceContract = contracts.find(contract => contract.id === selectedContractId);
+  const selectedLegalContract: ContractForLegal | null = selectedWorkspaceContract
+    ? {
+        id: selectedWorkspaceContract.id,
+        contract_number: selectedWorkspaceContract.contract_number,
+        customer_id: selectedWorkspaceContract.customer_id,
+        vehicle_id: selectedWorkspaceContract.vehicle_id,
+        company_id: selectedWorkspaceContract.company_id,
+        contract_amount: selectedWorkspaceContract.contract_amount || selectedWorkspaceContract.monthly_amount || 0,
+        total_paid: selectedWorkspaceContract.total_paid,
+        balance_due: selectedWorkspaceContract.balance_due,
+        late_fine_amount: selectedWorkspaceContract.late_fine_amount,
+        monthly_amount: selectedWorkspaceContract.monthly_amount,
+        start_date: selectedWorkspaceContract.start_date,
+        end_date: selectedWorkspaceContract.end_date,
+        status: selectedWorkspaceContract.status,
+        vehicle_returned: selectedWorkspaceContract.vehicle_returned,
+        customer: selectedWorkspaceContract.customer,
+        vehicle: selectedWorkspaceContract.vehicle,
+      }
+    : null;
 
   const reportTasks = useMemo<ReportEmployeeTask[]>(() => tasks.map(task => {
     const contract = contracts.find(item => item.id === task.contract_id);
@@ -237,6 +359,78 @@ export const EmployeeWorkspace: React.FC = () => {
     c.contract_number?.toLowerCase().includes(searchQuery.toLowerCase()) ||
     c.customer_name?.toLowerCase().includes(searchQuery.toLowerCase())
   );
+  const filteredContractIds = filteredContracts.map(contract => contract.id);
+  const selectedFilteredContractIds = selectedBulkContractIds.filter(id => filteredContractIds.includes(id));
+  const allFilteredContractsSelected =
+    filteredContractIds.length > 0 && selectedFilteredContractIds.length === filteredContractIds.length;
+
+  const selectedBulkContracts = contracts.filter(contract => selectedBulkContractIds.includes(contract.id));
+
+  const toggleBulkContractSelection = (contractId: string) => {
+    setSelectedBulkContractIds(prev =>
+      prev.includes(contractId)
+        ? prev.filter(id => id !== contractId)
+        : [...prev, contractId]
+    );
+  };
+
+  const toggleAllFilteredContracts = () => {
+    setSelectedBulkContractIds(prev => {
+      if (allFilteredContractsSelected) {
+        return prev.filter(id => !filteredContractIds.includes(id));
+      }
+
+      return Array.from(new Set([...prev, ...filteredContractIds]));
+    });
+  };
+
+  const clearBulkSelection = () => {
+    setSelectedBulkContractIds([]);
+  };
+
+  const bulkUnassignMutation = useMutation({
+    mutationFn: async (contractIds: string[]) => {
+      if (contractIds.length === 0) {
+        throw new Error('No contracts selected');
+      }
+
+      const { error } = await supabase
+        .from('contracts')
+        .update({
+          assigned_to_profile_id: null,
+          assigned_at: null,
+          assignment_notes: `تم إلغاء التعيين جماعياً بواسطة ${user?.email || 'المستخدم'}`,
+        })
+        .in('id', contractIds);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast({
+        title: 'تم إلغاء التعيين الجماعي',
+        description: `تم إلغاء تعيين ${selectedBulkContractIds.length} عقود بنجاح`,
+      });
+
+      queryClient.invalidateQueries({ queryKey: ['employee-contracts'] });
+      queryClient.invalidateQueries({ queryKey: ['employee-contracts-details'] });
+      queryClient.invalidateQueries({ queryKey: ['team-employees'] });
+      queryClient.invalidateQueries({ queryKey: ['team-active-contract-stats'] });
+      queryClient.invalidateQueries({ queryKey: ['unassigned-contracts'] });
+      queryClient.invalidateQueries({ queryKey: ['unassigned-contracts-bulk'] });
+      queryClient.invalidateQueries({ queryKey: ['unassigned-contracts-smart'] });
+      queryClient.invalidateQueries({ queryKey: ['monthly-collections'] });
+
+      clearBulkSelection();
+      setShowBulkUnassignDialog(false);
+    },
+    onError: (error: unknown) => {
+      toast({
+        title: 'فشل إلغاء التعيين الجماعي',
+        description: error instanceof Error ? error.message : 'حدث خطأ أثناء إلغاء التعيين',
+        variant: 'destructive',
+      });
+    },
+  });
 
   // Group invoices by customer for monthly collections
   const groupedCollections = useMemo(() => {
@@ -342,24 +536,39 @@ export const EmployeeWorkspace: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50/50 p-4 md:p-8 font-sans" dir="rtl">
+    <div className="min-h-dvh bg-[#F4F7FA] p-3 text-[#142033] sm:p-4 md:p-6 lg:p-8" dir="rtl">
       
       {/* --- Header --- */}
-      <header className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
-        <div>
-          <div className="flex items-center gap-3 mb-1">
-            <div className="p-2 bg-teal-100 rounded-lg text-teal-700">
-              <Briefcase className="w-6 h-6" />
+      <header className="relative mb-4 overflow-hidden rounded-xl border border-[#DDE5EF] bg-[#142033] p-4 text-white shadow-[0_22px_55px_rgba(20,32,51,0.18)] sm:mb-5 sm:rounded-2xl sm:p-5 md:p-6">
+        <div className="absolute inset-y-0 left-0 w-1/2 bg-[radial-gradient(circle_at_20%_20%,rgba(27,191,154,0.28),transparent_34%),radial-gradient(circle_at_70%_70%,rgba(63,131,191,0.24),transparent_34%)]" />
+        <div className="relative flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+          <div>
+            <div className="mb-2 flex items-start gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/10 text-[#7FE5CB] ring-1 ring-white/15 sm:h-12 sm:w-12">
+              <Briefcase className="h-5 w-5 sm:h-6 sm:w-6" />
             </div>
-            <h1 className="text-2xl font-bold text-gray-900">مساحة عملي</h1>
+              <div className="min-w-0">
+                <h1 className="text-xl font-black tracking-normal sm:text-2xl md:text-3xl">مساحة عملي</h1>
+                <p className="mt-1 max-w-full text-xs font-medium leading-5 text-slate-300 sm:text-sm">
+                  أهلاً بك، {user?.email?.split('@')[0]} - لوحة متابعة التحصيل والعقود اليومية
+                </p>
+              </div>
           </div>
-          <p className="text-sm text-gray-500 mr-12">
-            أهلاً بك، {user?.email?.split('@')[0]} - إليك ملخص أعمالك اليوم
-          </p>
-        </div>
+            <div className="mt-4 grid grid-cols-1 gap-2 text-xs min-[390px]:grid-cols-2 sm:flex sm:flex-wrap">
+              <span className="rounded-full border border-white/10 bg-white/10 px-3 py-1.5 text-center text-slate-200 sm:text-start">
+                {contractStats.activeContracts} عقد نشط
+              </span>
+              <span className="rounded-full border border-white/10 bg-white/10 px-3 py-1.5 text-center text-slate-200 sm:text-start">
+                {taskStats.todayTasks} مهام اليوم
+              </span>
+              <span className="rounded-full border border-white/10 bg-white/10 px-3 py-1.5 text-center text-slate-200 min-[390px]:col-span-2 sm:col-span-1 sm:text-start">
+                {formatCurrency(contractStats.totalBalanceDue)} مستحق
+              </span>
+            </div>
+          </div>
 
-        <div className="flex items-center gap-3">
-          <NotificationBell />
+          <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
+            <NotificationBell />
           
           <ExportButton
             onExportExcel={async () => {
@@ -392,6 +601,7 @@ export const EmployeeWorkspace: React.FC = () => {
             }}
             label="تصدير تقرير شامل (Excel)"
             variant="outline"
+            className="h-10 w-full justify-center rounded-lg border-white/15 bg-white/10 text-white hover:bg-white/15 hover:text-white sm:h-9 sm:w-auto"
           />
           
           <Button
@@ -399,7 +609,7 @@ export const EmployeeWorkspace: React.FC = () => {
             size="sm"
             onClick={handleRefresh}
             disabled={isLoading}
-            className="h-9"
+              className="h-10 w-full justify-center rounded-lg border-white/15 bg-white/10 text-white hover:bg-white/15 sm:h-9 sm:w-auto"
           >
             <RefreshCw className={cn("ml-2 h-4 w-4", isLoading && "animate-spin")} />
             تحديث
@@ -409,81 +619,99 @@ export const EmployeeWorkspace: React.FC = () => {
             variant="outline"
             size="sm"
             onClick={() => navigate('/dashboard')}
-            className="h-9"
+              className="h-10 w-full justify-center rounded-lg border-white/15 bg-white/10 text-white hover:bg-white/15 sm:h-9 sm:w-auto"
           >
             <ArrowRight className="ml-2 h-4 w-4" />
             الرئيسية
           </Button>
+          </div>
         </div>
       </header>
 
+      <div className="mb-5 grid grid-cols-2 gap-2 sm:gap-3 md:grid-cols-4">
+        {quickActions.map((action) => {
+          const Icon = action.icon;
+          return (
+            <Button
+              key={action.label}
+              type="button"
+              onClick={action.onClick}
+              className={cn("min-h-12 justify-center rounded-xl px-3 py-3 text-xs font-bold leading-5 shadow-sm sm:justify-start sm:px-4 sm:text-sm", action.className)}
+            >
+              <Icon className="ml-2 h-4 w-4" />
+              {action.label}
+            </Button>
+          );
+        })}
+      </div>
+
       {/* --- Stats Overview --- */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <Card className="shadow-sm border-gray-200 hover:border-teal-200 transition-colors">
-          <CardContent className="p-6 flex justify-between items-start">
+      <div className="mb-5 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <Card className="rounded-xl border-[#DDE5EF] bg-white shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md">
+          <CardContent className="flex items-start justify-between gap-3 p-4 sm:p-6">
             <div>
-              <p className="text-sm font-medium text-gray-500 mb-1">إجمالي العقود</p>
-              <h3 className="text-2xl font-bold text-gray-900">{contractStats.totalContracts}</h3>
-              <p className="text-xs text-teal-600 mt-1 font-medium">{contractStats.activeContracts} عقد نشط</p>
+              <p className="text-sm font-bold text-[#6A7688] mb-1">إجمالي العقود</p>
+              <h3 className="text-2xl font-black text-[#142033] sm:text-3xl">{contractStats.totalContracts}</h3>
+              <p className="text-xs text-[#11A37F] mt-1 font-bold">{contractStats.activeContracts} عقد نشط</p>
             </div>
-            <div className="p-3 bg-blue-50 text-blue-600 rounded-xl">
+            <div className="p-3 bg-[#EEF4FA] text-[#1D4F7A] rounded-xl">
               <FileText className="w-5 h-5" />
             </div>
           </CardContent>
         </Card>
 
-        <Card className="shadow-sm border-gray-200 hover:border-teal-200 transition-colors">
-          <CardContent className="p-6 flex justify-between items-start">
+        <Card className="rounded-xl border-[#DDE5EF] bg-white shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md">
+          <CardContent className="flex items-start justify-between gap-3 p-4 sm:p-6">
             <div>
-              <p className="text-sm font-medium text-gray-500 mb-1">المبالغ المستحقة</p>
-              <h3 className="text-2xl font-bold text-gray-900">{formatCurrency(contractStats.totalBalanceDue)}</h3>
-              <p className="text-xs text-amber-600 mt-1 font-medium">تحصيل مطلوب</p>
+              <p className="text-sm font-bold text-[#6A7688] mb-1">المبالغ المستحقة</p>
+              <h3 className="break-words text-2xl font-black text-[#142033] sm:text-3xl">{formatCurrency(contractStats.totalBalanceDue)}</h3>
+              <p className="text-xs text-[#9A5B00] mt-1 font-bold">تحصيل مطلوب</p>
             </div>
-            <div className="p-3 bg-amber-50 text-amber-600 rounded-xl">
+            <div className="p-3 bg-[#FFF6E5] text-[#9A5B00] rounded-xl">
               <DollarSign className="w-5 h-5" />
             </div>
           </CardContent>
         </Card>
 
-        <Card className="shadow-sm border-gray-200 hover:border-teal-200 transition-colors">
-          <CardContent className="p-6 flex justify-between items-start">
+        <Card className="rounded-xl border-[#DDE5EF] bg-white shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md">
+          <CardContent className="flex items-start justify-between gap-3 p-4 sm:p-6">
             <div>
-              <p className="text-sm font-medium text-gray-500 mb-1">مهام اليوم</p>
-              <h3 className="text-2xl font-bold text-gray-900">{taskStats.todayTasks}</h3>
-              <p className="text-xs text-emerald-600 mt-1 font-medium">{taskStats.completionRate}% نسبة الإنجاز</p>
+              <p className="text-sm font-bold text-[#6A7688] mb-1">مهام اليوم</p>
+              <h3 className="text-2xl font-black text-[#142033] sm:text-3xl">{taskStats.todayTasks}</h3>
+              <p className="text-xs text-[#11A37F] mt-1 font-bold">{taskStats.completionRate}% نسبة الإنجاز</p>
             </div>
-            <div className="p-3 bg-emerald-50 text-emerald-600 rounded-xl">
+            <div className="p-3 bg-[#E9FBF6] text-[#11A37F] rounded-xl">
               <CheckCircle className="w-5 h-5" />
             </div>
           </CardContent>
         </Card>
 
-        <Card className="shadow-sm border-gray-200 hover:border-teal-200 transition-colors">
-          <CardContent className="p-6 flex justify-between items-start">
+        <Card className="rounded-xl border-[#DDE5EF] bg-white shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md">
+          <CardContent className="flex items-start justify-between gap-3 p-4 sm:p-6">
             <div>
-              <p className="text-sm font-medium text-gray-500 mb-1">نقاط الأداء</p>
-              <h3 className="text-2xl font-bold text-gray-900">{performance ? Math.round(performance.performance_score) : 0}</h3>
-              <p className="text-xs text-purple-600 mt-1 font-medium">{performanceGrade?.label_ar || 'جيد'}</p>
+              <p className="text-sm font-bold text-[#6A7688] mb-1">نقاط الأداء</p>
+              <h3 className="text-2xl font-black text-[#142033] sm:text-3xl">{performance ? Math.round(performance.performance_score) : 0}</h3>
+              <p className="text-xs text-[#1D4F7A] mt-1 font-bold">{performanceGrade?.label_ar || 'جيد'}</p>
             </div>
-            <div className="p-3 bg-purple-50 text-purple-600 rounded-xl">
+            <div className="p-3 bg-[#EEF4FA] text-[#1D4F7A] rounded-xl">
               <Star className="w-5 h-5" />
             </div>
           </CardContent>
         </Card>
       </div>
 
-      <div className="grid grid-cols-12 gap-6">
+      <div className="grid grid-cols-12 gap-5">
         
         {/* --- Main Content (Left) --- */}
-        <div className="col-span-12 lg:col-span-8 space-y-6">
+        <div className="col-span-12 space-y-5 lg:col-span-8">
           
-          <Tabs defaultValue="overview" className="w-full" onValueChange={setActiveTab}>
-            <div className="flex items-center justify-between mb-4">
-              <TabsList className="bg-white border p-1 h-auto">
-                <TabsTrigger value="overview" className="px-4 py-2 text-sm">نظرة عامة</TabsTrigger>
-                <TabsTrigger value="collections" className="px-4 py-2 text-sm">التحصيل الشهري</TabsTrigger>
-                <TabsTrigger value="contracts" className="px-4 py-2 text-sm">العقود ({contractStats.totalContracts})</TabsTrigger>
-                <TabsTrigger value="tasks" className="px-4 py-2 text-sm">المهام ({taskStats.totalTasks})</TabsTrigger>
+          <Tabs value={activeTab} className="w-full" onValueChange={setActiveTab}>
+            <div className="mb-4 -mx-1 overflow-x-auto rounded-xl border border-[#DDE5EF] bg-white p-1 shadow-sm sm:mx-0">
+              <TabsList className="h-auto min-w-max bg-transparent p-0">
+                <TabsTrigger value="overview" className="rounded-lg px-4 py-2.5 text-sm font-bold data-[state=active]:bg-[#142033] data-[state=active]:text-white">نظرة عامة</TabsTrigger>
+                <TabsTrigger value="collections" className="rounded-lg px-4 py-2.5 text-sm font-bold data-[state=active]:bg-[#142033] data-[state=active]:text-white">التحصيل الشهري</TabsTrigger>
+                <TabsTrigger value="contracts" className="rounded-lg px-4 py-2.5 text-sm font-bold data-[state=active]:bg-[#142033] data-[state=active]:text-white">العقود ({contractStats.totalContracts})</TabsTrigger>
+                <TabsTrigger value="tasks" className="rounded-lg px-4 py-2.5 text-sm font-bold data-[state=active]:bg-[#142033] data-[state=active]:text-white">المهام ({taskStats.totalTasks})</TabsTrigger>
               </TabsList>
             </div>
 
@@ -492,9 +720,9 @@ export const EmployeeWorkspace: React.FC = () => {
               
               {/* Priority Section */}
               {priorityContracts.length > 0 && (
-                <Card className="border-l-4 border-l-amber-500 shadow-sm overflow-hidden">
-                  <CardHeader className="bg-amber-50/30 pb-3 border-b border-amber-100/50">
-                    <CardTitle className="text-sm font-bold text-amber-800 flex items-center gap-2">
+                <Card className="overflow-hidden rounded-xl border-[#F2C56B] bg-white shadow-sm">
+                  <CardHeader className="border-b border-[#FBE7B5] bg-[#FFF8EA] pb-3">
+                    <CardTitle className="flex items-center gap-2 text-sm font-black text-[#8A5A00]">
                       <AlertCircle className="w-4 h-4" />
                       يحتاج اهتمامك الفوري
                     </CardTitle>
@@ -503,14 +731,14 @@ export const EmployeeWorkspace: React.FC = () => {
                     {priorityContracts.slice(0, 3).map((contract, idx) => (
                       <div 
                         key={contract.id} 
-                        className="flex items-center justify-between p-4 border-b last:border-0 hover:bg-amber-50/10 transition-colors cursor-pointer"
+                        className="flex cursor-pointer flex-col gap-3 border-b p-4 transition-colors last:border-0 hover:bg-[#FFF8EA] sm:flex-row sm:items-center sm:justify-between"
                         onClick={() => {
                            setSelectedContractId(contract.id);
                            // Optional: Open contract details or highlight
                         }}
                       >
                         <div className="flex items-center gap-4">
-                           <div className="flex flex-col items-center justify-center w-10 h-10 rounded-full bg-amber-100 text-amber-600 text-xs font-bold">
+                           <div className="flex h-10 w-10 flex-col items-center justify-center rounded-xl bg-[#FFF0C7] text-xs font-black text-[#9A5B00]">
                              {idx + 1}
                            </div>
                            <div>
@@ -518,7 +746,7 @@ export const EmployeeWorkspace: React.FC = () => {
                              <p className="text-xs text-gray-500">عقد #{contract.contract_number}</p>
                            </div>
                         </div>
-                        <div className="text-left">
+                        <div className="w-full text-right sm:w-auto sm:text-left">
                           <Badge variant="outline" className="bg-white border-amber-200 text-amber-700 mb-1">
                             {contract.priority_reason_ar}
                           </Badge>
@@ -537,10 +765,10 @@ export const EmployeeWorkspace: React.FC = () => {
               )}
 
               {/* Today's Tasks */}
-              <Card className="shadow-sm">
-                <CardHeader className="flex flex-row items-center justify-between pb-3">
-                  <CardTitle className="text-lg font-bold flex items-center gap-2">
-                    <Calendar className="w-5 h-5 text-teal-600" />
+              <Card className="rounded-xl border-[#DDE5EF] bg-white shadow-sm">
+                <CardHeader className="flex flex-row items-center justify-between border-b border-[#EEF2F6] pb-3">
+                  <CardTitle className="flex items-center gap-2 text-lg font-black text-[#142033]">
+                    <Calendar className="w-5 h-5 text-[#11A37F]" />
                     مهام اليوم
                   </CardTitle>
                   <Badge variant="secondary" className="font-normal">
@@ -554,16 +782,16 @@ export const EmployeeWorkspace: React.FC = () => {
                         <div 
                           key={task.id} 
                           className={cn(
-                            "flex items-center justify-between p-3 rounded-xl border transition-all",
+                            "flex flex-col gap-3 rounded-xl border p-3 transition-all sm:flex-row sm:items-center sm:justify-between",
                             task.status === 'completed' 
-                              ? "bg-gray-50 border-gray-100 opacity-70" 
-                              : "bg-white border-gray-100 hover:border-teal-200 hover:shadow-sm"
+                              ? "bg-[#F7F9FB] border-[#EEF2F6] opacity-70" 
+                              : "bg-white border-[#EEF2F6] hover:border-[#11A37F]/35 hover:shadow-sm"
                           )}
                         >
-                          <div className="flex items-center gap-3">
+                          <div className="flex min-w-0 items-start gap-3 sm:items-center">
                             <div className={cn(
                               "w-2 h-2 rounded-full",
-                              task.status === 'completed' ? "bg-gray-300" : "bg-teal-500"
+                              task.status === 'completed' ? "bg-gray-300" : "bg-[#11A37F]"
                             )} />
                             <div>
                               <p className={cn(
@@ -572,7 +800,7 @@ export const EmployeeWorkspace: React.FC = () => {
                               )}>
                                 {task.title_ar || task.title}
                               </p>
-                              <div className="flex items-center gap-3 mt-1">
+                              <div className="mt-1 flex flex-wrap items-center gap-2 sm:gap-3">
                                 <span className="text-xs text-gray-400 flex items-center gap-1">
                                   <Clock className="w-3 h-3" /> {task.scheduled_time || '09:00 ص'}
                                 </span>
@@ -584,15 +812,25 @@ export const EmployeeWorkspace: React.FC = () => {
                           </div>
                           
                           {task.status !== 'completed' && (
-                            <Button size="sm" variant="outline" className="h-8 text-xs hover:bg-teal-50 hover:text-teal-700 hover:border-teal-200">
-                              إنجاز
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-8 rounded-lg text-xs hover:border-[#11A37F]/30 hover:bg-[#E9FBF6] hover:text-[#0D876A]"
+                              onClick={() => handleCompleteTask(task.id)}
+                              disabled={completingTaskId === task.id}
+                            >
+                              {completingTaskId === task.id ? (
+                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                              ) : (
+                                'إنجاز'
+                              )}
                             </Button>
                           )}
                         </div>
                       ))}
                     </div>
                   ) : (
-                    <div className="text-center py-10 bg-gray-50/50 rounded-xl border border-dashed">
+                    <div className="rounded-xl border border-dashed border-[#DDE5EF] bg-[#F8FAFC] py-10 text-center">
                       <p className="text-gray-500 text-sm">لا توجد مهام مجدولة لهذا اليوم 🎉</p>
                       <Button variant="link" className="text-teal-600 text-xs mt-2" onClick={() => setShowFollowupDialog(true)}>
                         + إضافة مهمة جديدة
@@ -607,21 +845,21 @@ export const EmployeeWorkspace: React.FC = () => {
             {/* View: Monthly Collections */}
             <TabsContent value="collections" className="space-y-6 mt-0">
               {/* Stats Cards */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <Card className="bg-white border shadow-sm">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                <Card className="rounded-xl border-[#DDE5EF] bg-white shadow-sm">
                   <CardContent className="p-4">
                     <p className="text-sm text-gray-500 mb-1">المستهدف هذا الشهر</p>
                     <h3 className="text-xl font-bold text-gray-900">{formatCurrency(collectionStats.totalDue)}</h3>
                   </CardContent>
                 </Card>
-                <Card className="bg-white border shadow-sm">
+                <Card className="rounded-xl border-[#DDE5EF] bg-white shadow-sm">
                   <CardContent className="p-4">
                     <p className="text-sm text-gray-500 mb-1">تم تحصيله</p>
                     <h3 className="text-xl font-bold text-emerald-600">{formatCurrency(collectionStats.totalCollected)}</h3>
                     <Progress value={collectionStats.collectionRate} className="h-1.5 mt-2 bg-emerald-100" />
                   </CardContent>
                 </Card>
-                <Card className="bg-white border shadow-sm">
+                <Card className="rounded-xl border-[#DDE5EF] bg-white shadow-sm">
                   <CardContent className="p-4">
                     <p className="text-sm text-gray-500 mb-1">المتبقي</p>
                     <h3 className="text-xl font-bold text-amber-600">{formatCurrency(collectionStats.totalPending)}</h3>
@@ -630,11 +868,11 @@ export const EmployeeWorkspace: React.FC = () => {
               </div>
 
               {/* Collections List - Grouped by Customer */}
-              <Card className="shadow-sm">
-                <CardHeader className="pb-3">
+              <Card className="rounded-xl border-[#DDE5EF] bg-white shadow-sm">
+                <CardHeader className="border-b border-[#EEF2F6] pb-3">
                   <div className="flex flex-col sm:flex-row justify-between gap-4">
-                    <CardTitle className="text-lg font-bold flex items-center gap-2">
-                      <DollarSign className="w-5 h-5 text-emerald-600" />
+                    <CardTitle className="flex items-center gap-2 text-lg font-black text-[#142033]">
+                      <DollarSign className="w-5 h-5 text-[#11A37F]" />
                       قائمة التحصيل الشهري
                     </CardTitle>
                     <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
@@ -642,8 +880,8 @@ export const EmployeeWorkspace: React.FC = () => {
                     </Badge>
                   </div>
                 </CardHeader>
-                <CardContent>
-                  <ScrollArea className="h-[500px] pr-4">
+                <CardContent className="px-3 sm:px-6">
+                  <div className="pr-0 sm:pr-4">
                     {groupedCollections.length > 0 ? (
                       <div className="space-y-3">
                         {groupedCollections.map((group) => {
@@ -652,15 +890,15 @@ export const EmployeeWorkspace: React.FC = () => {
                           return (
                             <div 
                               key={group.customer_id}
-                              className="rounded-xl border-2 border-gray-200 bg-white overflow-hidden hover:border-emerald-300 transition-all"
+                              className="overflow-hidden rounded-xl border border-[#DDE5EF] bg-white transition-all hover:border-[#11A37F]/45 hover:shadow-sm"
                             >
                               {/* Customer Header */}
                               <div 
-                                className="flex items-center justify-between p-4 bg-gradient-to-r from-gray-50 to-white hover:from-emerald-50 hover:to-white transition-all"
+                                className="flex flex-col gap-3 bg-[#F8FAFC] p-3 transition-all hover:bg-[#E9FBF6] sm:flex-row sm:items-center sm:justify-between sm:p-4"
                               >
-                                <div className="flex items-center gap-4 flex-1">
+                                <div className="flex w-full min-w-0 flex-1 items-start gap-3 sm:items-center sm:gap-4">
                                   <Avatar 
-                                    className="h-12 w-12 border-2 border-emerald-200 shadow-sm cursor-pointer hover:border-emerald-400 transition-all"
+                                    className="h-11 w-11 shrink-0 cursor-pointer border-2 border-emerald-200 shadow-sm transition-all hover:border-emerald-400 sm:h-12 sm:w-12"
                                     onClick={() => {
                                       // الانتقال لأول عقد للعميل
                                       const firstInvoice = group.invoices[0];
@@ -673,9 +911,9 @@ export const EmployeeWorkspace: React.FC = () => {
                                       {group.customer_name.charAt(0)}
                                     </AvatarFallback>
                                   </Avatar>
-                                  <div className="flex-1">
+                                  <div className="min-w-0 flex-1">
                                     <h4 
-                                      className="font-bold text-gray-900 text-base mb-1 cursor-pointer hover:text-emerald-600 hover:underline transition-colors"
+                                      className="mb-1 cursor-pointer break-words text-sm font-bold text-gray-900 transition-colors hover:text-emerald-600 hover:underline sm:text-base"
                                       onClick={() => {
                                         // الانتقال لأول عقد للعميل
                                         const firstInvoice = group.invoices[0];
@@ -686,7 +924,7 @@ export const EmployeeWorkspace: React.FC = () => {
                                     >
                                       {group.customer_name}
                                     </h4>
-                                    <div className="flex items-center gap-3 text-xs text-gray-600">
+                                    <div className="flex flex-wrap items-center gap-2 text-xs text-gray-600 sm:gap-3">
                                       <span className="flex items-center gap-1">
                                         <FileText className="w-3 h-3" />
                                         {group.invoices.length} فاتورة
@@ -700,13 +938,20 @@ export const EmployeeWorkspace: React.FC = () => {
                                   </div>
                                 </div>
 
-                                <div className="flex items-center gap-2">
+                                <div className="grid w-full grid-cols-[1fr_auto] items-center gap-2 sm:flex sm:w-auto">
                                   <Button 
                                     size="sm" 
-                                    className="bg-emerald-600 hover:bg-emerald-700 text-white h-9"
+                                    className="h-10 bg-emerald-600 text-white hover:bg-emerald-700 sm:h-9"
                                     onClick={(e) => {
                                       e.stopPropagation();
-                                      navigate(`/finance/payments/quick?customerId=${group.customer_id}&customerName=${encodeURIComponent(group.customer_name)}`);
+                                      const relatedContract = contracts.find((contract) => contract.customer_id === group.customer_id);
+                                      setSelectedPaymentCustomer({
+                                        customerId: group.customer_id,
+                                        customerName: group.customer_name,
+                                        customerPhone: relatedContract?.customer_phone || group.customer_phone || null,
+                                      });
+                                      setSelectedContractId(relatedContract?.id);
+                                      setShowPaymentDialog(true);
                                     }}
                                   >
                                     <DollarSign className="w-4 h-4 ml-2" />
@@ -735,14 +980,14 @@ export const EmployeeWorkspace: React.FC = () => {
                                     {group.invoices.map((invoice) => (
                                       <div 
                                         key={invoice.invoice_id}
-                                        className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-100 hover:border-emerald-200 hover:shadow-sm transition-all cursor-pointer group/invoice"
+                                        className="group/invoice flex cursor-pointer flex-col gap-3 rounded-lg border border-gray-100 bg-white p-3 transition-all hover:border-emerald-200 hover:shadow-sm sm:flex-row sm:items-center sm:justify-between"
                                         onClick={() => navigate(`/contracts/${invoice.contract_number}`)}
                                       >
-                                        <div className="flex items-center gap-3 flex-1">
+                                        <div className="flex min-w-0 flex-1 items-start gap-3 sm:items-center">
                                           <div className="w-8 h-8 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center group-hover/invoice:bg-emerald-100 group-hover/invoice:text-emerald-600 transition-colors">
                                             <FileText className="w-4 h-4" />
                                           </div>
-                                          <div>
+                                          <div className="min-w-0">
                                             <p className="text-sm font-semibold text-gray-900 group-hover/invoice:text-emerald-600 transition-colors">
                                               فاتورة #{invoice.invoice_number}
                                             </p>
@@ -752,8 +997,8 @@ export const EmployeeWorkspace: React.FC = () => {
                                           </div>
                                         </div>
                                         
-                                        <div className="flex items-center gap-3">
-                                          <div className="text-left">
+                                        <div className="flex flex-wrap items-center justify-between gap-2 sm:gap-3">
+                                          <div className="text-right sm:text-left">
                                             <p className="text-sm font-bold text-gray-900">
                                               {formatCurrency(invoice.amount - invoice.paid_amount)}
                                             </p>
@@ -790,33 +1035,75 @@ export const EmployeeWorkspace: React.FC = () => {
                         <p className="text-xs text-gray-400 mt-2">جميع الفواتير مدفوعة 🎉</p>
                       </div>
                     )}
-                  </ScrollArea>
+                  </div>
                 </CardContent>
               </Card>
             </TabsContent>
 
             {/* View: Contracts */}
             <TabsContent value="contracts" className="mt-0">
-              <Card className="shadow-sm">
-                <CardHeader className="pb-3">
+              <Card className="rounded-xl border-[#DDE5EF] bg-white shadow-sm">
+                <CardHeader className="border-b border-[#EEF2F6] pb-3">
                   <div className="flex flex-col sm:flex-row justify-between gap-4">
-                    <CardTitle className="text-lg font-bold flex items-center gap-2">
-                      <FileText className="w-5 h-5 text-blue-600" />
+                    <CardTitle className="flex items-center gap-2 text-lg font-black text-[#142033]">
+                      <FileText className="w-5 h-5 text-[#1D4F7A]" />
                       سجل العقود
                     </CardTitle>
-                    <div className="relative w-full sm:w-64">
+                    <div className="relative w-full sm:w-72">
                       <Search className="absolute right-3 top-2.5 h-4 w-4 text-gray-400" />
                       <Input
                         placeholder="بحث برقم العقد أو الاسم..."
-                        className="pr-9"
+                        className="h-10 rounded-lg border-[#DDE5EF] bg-[#F8FAFC] pr-9"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                       />
                     </div>
                   </div>
+                  {canUnassignContracts && filteredContracts.length > 0 && (
+                    <div className="flex flex-col gap-3 rounded-xl border border-red-100 bg-red-50/70 p-3 sm:flex-row sm:items-center sm:justify-between">
+                      <div className="flex items-center gap-3">
+                        <Checkbox
+                          checked={allFilteredContractsSelected}
+                          onCheckedChange={toggleAllFilteredContracts}
+                          aria-label="تحديد كل العقود الظاهرة"
+                        />
+                        <div>
+                          <p className="text-sm font-black text-red-900">تحديد العقود لإلغاء التعيين الجماعي</p>
+                          <p className="text-xs text-red-700/75">
+                            {selectedBulkContractIds.length > 0
+                              ? `${selectedBulkContractIds.length} عقود محددة`
+                              : 'اختر عقداً أو أكثر ثم ألغ التعيين'}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {selectedBulkContractIds.length > 0 && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={clearBulkSelection}
+                          >
+                            مسح التحديد
+                          </Button>
+                        )}
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          size="sm"
+                          className="gap-2 rounded-lg"
+                          disabled={selectedBulkContractIds.length === 0}
+                          onClick={() => setShowBulkUnassignDialog(true)}
+                        >
+                          <XCircle className="h-4 w-4" />
+                          إلغاء تعيين المحدد
+                        </Button>
+                      </div>
+                    </div>
+                  )}
                 </CardHeader>
-                <CardContent>
-                  <ScrollArea className="h-[500px] pr-4">
+                <CardContent className="px-3 sm:px-6">
+                  <div className="pr-0 sm:pr-4">
                     <div className="space-y-3">
                       {filteredContracts.length > 0 ? filteredContracts.map((contract) => {
                         const statusStyle = getContractStatusStyle(contract.status);
@@ -826,29 +1113,42 @@ export const EmployeeWorkspace: React.FC = () => {
                         <div 
                           key={contract.id} 
                           className={cn(
-                            "flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-xl border-2 hover:shadow-md transition-all group relative overflow-hidden",
+                            "relative flex flex-col justify-between gap-3 overflow-hidden rounded-xl border bg-white p-3 transition-all hover:-translate-y-0.5 hover:shadow-md sm:flex-row sm:items-center sm:p-4",
                             statusStyle.border,
                             statusStyle.bg
                           )}
                         >
                           {/* Status indicator bar */}
                           <div className={cn(
-                            "absolute right-0 top-0 bottom-0 w-1",
+                            "absolute right-0 top-0 bottom-0 w-1.5",
                             statusStyle.badge.split(' ')[0].replace('bg-', 'bg-').replace('-100', '-500')
                           )} />
+
+                          {canUnassignContracts && (
+                            <div
+                              className="mb-3 sm:mb-0 sm:ml-3"
+                              onClick={(event) => event.stopPropagation()}
+                            >
+                              <Checkbox
+                                checked={selectedBulkContractIds.includes(contract.id)}
+                                onCheckedChange={() => toggleBulkContractSelection(contract.id)}
+                                aria-label={`تحديد العقد ${contract.contract_number || contract.id}`}
+                              />
+                            </div>
+                          )}
                           
                           <div 
-                            className="flex items-center gap-4 mb-3 sm:mb-0 cursor-pointer flex-1"
+                            className="mb-1 flex min-w-0 flex-1 cursor-pointer items-start gap-3 sm:mb-0 sm:items-center sm:gap-4"
                             onClick={() => navigate(`/contracts/${contract.contract_number || contract.id}`)}
                           >
-                            <Avatar className="h-12 w-12 border-2 shadow-sm">
+                            <Avatar className="h-11 w-11 shrink-0 border-2 border-white shadow-sm ring-1 ring-[#DDE5EF] sm:h-12 sm:w-12">
                               <AvatarFallback className={cn("font-bold text-lg", statusStyle.badge)}>
                                 {contract.customer_name?.[0] || 'C'}
                               </AvatarFallback>
                             </Avatar>
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2 mb-1">
-                                <h4 className="font-bold text-gray-900 group-hover:text-blue-700 transition-colors">
+                            <div className="min-w-0 flex-1">
+                              <div className="mb-1 flex flex-wrap items-center gap-2">
+                                <h4 className="min-w-0 break-words text-sm font-black text-[#142033] transition-colors group-hover:text-[#1D4F7A] sm:text-base">
                                   {contract.customer_name || 'غير محدد'}
                                 </h4>
                                 <Badge variant="outline" className={cn("text-xs font-bold border-2", statusStyle.badge)}>
@@ -856,7 +1156,7 @@ export const EmployeeWorkspace: React.FC = () => {
                                   {statusStyle.label}
                                 </Badge>
                               </div>
-                              <p className="text-xs text-gray-600 flex items-center gap-2 flex-wrap">
+                              <p className="flex flex-wrap items-center gap-2 text-xs text-[#6A7688]">
                                 <span className="font-semibold">#{contract.contract_number}</span>
                                 <span className="text-gray-300">•</span>
                                 {contract.customer_phone && (
@@ -882,13 +1182,13 @@ export const EmployeeWorkspace: React.FC = () => {
                             </div>
                           </div>
                           
-                          <div className="flex items-center gap-2 self-end sm:self-auto">
+                          <div className="grid w-full grid-cols-4 gap-2 sm:flex sm:w-auto sm:flex-wrap sm:items-center sm:self-auto">
                             {/* زر الاتصال - متاح لجميع العقود */}
                             {contract.customer_phone && (
                               <Button
                                 size="sm"
                                 variant="ghost"
-                                className="h-8 w-8 p-0 text-teal-600 bg-teal-50 hover:bg-teal-100 hover:text-teal-700 rounded-full"
+                                className="h-10 w-full rounded-lg bg-[#E9FBF6] p-0 text-[#0D876A] hover:bg-[#D8F7EE] hover:text-[#0D876A] sm:h-8 sm:w-8"
                                 onClick={() => window.location.href = `tel:${contract.customer_phone}`}
                                 title={`اتصال: ${contract.customer_phone}`}
                               >
@@ -902,12 +1202,15 @@ export const EmployeeWorkspace: React.FC = () => {
                                 <Button
                                   size="sm"
                                   variant="ghost"
-                                  className="h-8 w-8 p-0 text-emerald-600 bg-emerald-50 hover:bg-emerald-100 hover:text-emerald-700 rounded-full"
+                                  className="h-10 w-full rounded-lg bg-[#E9FBF6] p-0 text-[#0D876A] hover:bg-[#D8F7EE] hover:text-[#0D876A] sm:h-8 sm:w-8"
                                   onClick={() => {
-                                     const customerName = contract.customer_name || '';
-                                     const customerId = contract.customer_id;
-                                     const phone = contract.customer_phone || '';
-                                     navigate(`/finance/payments/quick?customerId=${customerId}&customerName=${encodeURIComponent(customerName)}&phone=${phone}`);
+                                     setSelectedPaymentCustomer({
+                                       customerId: contract.customer_id,
+                                       customerName: contract.customer_name || 'غير محدد',
+                                       customerPhone: contract.customer_phone || null,
+                                     });
+                                     setSelectedContractId(contract.id);
+                                     setShowPaymentDialog(true);
                                   }}
                                   title="تسجيل دفعة"
                                 >
@@ -916,7 +1219,7 @@ export const EmployeeWorkspace: React.FC = () => {
                                 <Button
                                   size="sm"
                                   variant="ghost"
-                                  className="h-8 w-8 p-0 text-purple-600 bg-purple-50 hover:bg-purple-100 hover:text-purple-700 rounded-full"
+                                  className="h-10 w-full rounded-lg bg-[#EEF4FA] p-0 text-[#1D4F7A] hover:bg-[#DDEAF5] hover:text-[#173A63] sm:h-8 sm:w-8"
                                   onClick={() => {
                                      setSelectedContractId(contract.id);
                                      setShowNoteDialog(true);
@@ -928,7 +1231,7 @@ export const EmployeeWorkspace: React.FC = () => {
                                 <Button
                                   size="sm"
                                   variant="ghost"
-                                  className="h-8 w-8 p-0 text-blue-600 bg-blue-50 hover:bg-blue-100 hover:text-blue-700 rounded-full"
+                                  className="h-10 w-full rounded-lg bg-[#EEF4FA] p-0 text-[#1D4F7A] hover:bg-[#DDEAF5] hover:text-[#173A63] sm:h-8 sm:w-8"
                                   onClick={() => {
                                      setSelectedContractId(contract.id);
                                      setShowFollowupDialog(true);
@@ -937,11 +1240,38 @@ export const EmployeeWorkspace: React.FC = () => {
                                 >
                                   <Calendar className="w-4 h-4" />
                                 </Button>
+                                {(contract.balance_due || 0) > 0 && (
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="col-span-2 h-10 gap-1 rounded-lg border-purple-200 bg-purple-50 px-2 text-xs text-purple-700 hover:bg-purple-100 hover:text-purple-800 sm:col-span-1 sm:h-8"
+                                    onClick={() => {
+                                      setSelectedContractId(contract.id);
+                                      setShowConvertToLegalDialog(true);
+                                    }}
+                                    title="تحويل للشؤون القانونية"
+                                  >
+                                    <Scale className="w-4 h-4" />
+                                    قانونية
+                                  </Button>
+                                )}
                               </>
                             )}
-                            <Button size="icon" variant="ghost" className="h-8 w-8 text-gray-400 hover:text-blue-600">
-                              <MoreHorizontal className="w-4 h-4" />
-                            </Button>
+                            {canUnassignContracts && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="col-span-2 h-10 gap-1 rounded-lg border-red-200 bg-red-50 px-2 text-xs text-red-700 hover:bg-red-100 hover:text-red-800 sm:col-span-1 sm:h-8"
+                                onClick={() => {
+                                  setSelectedContractId(contract.id);
+                                  setShowUnassignDialog(true);
+                                }}
+                                title="إلغاء التعيين"
+                              >
+                                <XCircle className="w-4 h-4" />
+                                إلغاء التعيين
+                              </Button>
+                            )}
                           </div>
                         </div>
                       )}) : (
@@ -950,39 +1280,56 @@ export const EmployeeWorkspace: React.FC = () => {
                         </div>
                       )}
                     </div>
-                  </ScrollArea>
+                  </div>
                 </CardContent>
               </Card>
             </TabsContent>
 
             {/* View: Tasks */}
             <TabsContent value="tasks" className="mt-0">
-               <Card className="shadow-sm">
-                 <CardHeader>
-                    <CardTitle className="text-lg font-bold">جميع المهام</CardTitle>
+               <Card className="rounded-xl border-[#DDE5EF] bg-white shadow-sm">
+                 <CardHeader className="border-b border-[#EEF2F6]">
+                    <CardTitle className="text-lg font-black text-[#142033]">جميع المهام</CardTitle>
                     <CardDescription>عرض وإدارة جميع المهام المجدولة والسابقة</CardDescription>
                  </CardHeader>
-                 <CardContent>
-                    <ScrollArea className="h-[500px]">
+                 <CardContent className="px-3 sm:px-6">
+                    <div>
                       <div className="space-y-2">
                         {tasks.map((task) => (
-                           <div key={task.id} className="p-4 border rounded-lg hover:bg-gray-50 transition-colors">
-                              <div className="flex justify-between items-start">
-                                 <div>
+                           <div key={task.id} className="rounded-xl border border-[#EEF2F6] p-4 transition-colors hover:bg-[#F8FAFC]">
+                              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                                 <div className="min-w-0">
                                     <h4 className="font-medium text-gray-900">{task.title_ar || task.title}</h4>
-                                    <div className="flex gap-4 mt-2 text-sm text-gray-500">
+                                    <div className="mt-2 flex flex-wrap gap-2 text-sm text-gray-500 sm:gap-4">
                                        <span className="flex items-center gap-1"><Calendar className="w-4 h-4" /> {task.scheduled_date}</span>
                                        <span className="flex items-center gap-1"><Clock className="w-4 h-4" /> {task.scheduled_time}</span>
                                     </div>
                                  </div>
-                                 <Badge variant={task.status === 'completed' ? 'secondary' : 'outline'}>
-                                    {task.status === 'completed' ? 'مكتمل' : 'قيد الانتظار'}
-                                 </Badge>
+                                 <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+                                   <Badge variant={task.status === 'completed' ? 'secondary' : 'outline'}>
+                                      {task.status === 'completed' ? 'مكتمل' : 'قيد الانتظار'}
+                                   </Badge>
+                                   {task.status !== 'completed' && (
+                                     <Button
+                                       size="sm"
+                                       variant="outline"
+                                       className="h-8 rounded-lg text-xs hover:border-[#11A37F]/30 hover:bg-[#E9FBF6] hover:text-[#0D876A]"
+                                       onClick={() => handleCompleteTask(task.id)}
+                                       disabled={completingTaskId === task.id}
+                                     >
+                                       {completingTaskId === task.id ? (
+                                         <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                       ) : (
+                                         'إنجاز'
+                                       )}
+                                     </Button>
+                                   )}
+                                 </div>
                               </div>
                            </div>
                         ))}
                       </div>
-                    </ScrollArea>
+                    </div>
                  </CardContent>
                </Card>
             </TabsContent>
@@ -991,30 +1338,30 @@ export const EmployeeWorkspace: React.FC = () => {
         </div>
 
         {/* --- Sidebar (Right) --- */}
-        <div className="col-span-12 lg:col-span-4 space-y-6">
+        <div className="col-span-12 space-y-5 lg:col-span-4">
           
           {/* Verification Tasks */}
           <VerificationTasksList limit={5} />
 
           {/* Performance Detailed */}
-          <Card className="shadow-sm">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base font-bold">تحليل الأداء</CardTitle>
+          <Card className="rounded-xl border-[#DDE5EF] bg-white shadow-sm">
+            <CardHeader className="border-b border-[#EEF2F6] pb-3">
+              <CardTitle className="text-base font-black text-[#142033]">تحليل الأداء</CardTitle>
             </CardHeader>
             <CardContent className="space-y-5 pt-2">
               
               <div className="space-y-1.5">
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-500">نسبة التحصيل</span>
-                  <span className="font-bold text-gray-900">{performance ? Math.round(performance.collection_rate) : 0}%</span>
+                  <span className="font-bold text-[#6A7688]">نسبة التحصيل</span>
+                  <span className="font-black text-[#142033]">{performance ? Math.round(performance.collection_rate) : 0}%</span>
                 </div>
                 <Progress value={performance?.collection_rate || 0} className="h-2" />
               </div>
 
               <div className="space-y-1.5">
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-500">إنجاز المهام</span>
-                  <span className="font-bold text-gray-900">{performance ? Math.round(performance.followup_completion_rate) : 0}%</span>
+                  <span className="font-bold text-[#6A7688]">إنجاز المهام</span>
+                  <span className="font-black text-[#142033]">{performance ? Math.round(performance.followup_completion_rate) : 0}%</span>
                 </div>
                 <Progress value={performance?.followup_completion_rate || 0} className="h-2" />
               </div>
@@ -1022,7 +1369,7 @@ export const EmployeeWorkspace: React.FC = () => {
               <Separator />
               
               <div className="pt-2">
-                <p className="text-xs text-gray-500 leading-relaxed">
+                <p className="rounded-lg bg-[#F8FAFC] p-3 text-xs leading-relaxed text-[#6A7688]">
                   أداؤك هذا الشهر {performanceGrade?.label_ar === 'ممتاز' ? 'رائع!' : 'جيد.'} استمر في متابعة العملاء المتأخرين لتحسين نسبة التحصيل لديك.
                 </p>
               </div>
@@ -1031,17 +1378,17 @@ export const EmployeeWorkspace: React.FC = () => {
           </Card>
 
           {/* Activity Log (Simplified) */}
-          <Card className="shadow-sm">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base font-bold">النشاط الأخير</CardTitle>
+          <Card className="rounded-xl border-[#DDE5EF] bg-white shadow-sm">
+            <CardHeader className="border-b border-[#EEF2F6] pb-3">
+              <CardTitle className="text-base font-black text-[#142033]">النشاط الأخير</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="relative border-r border-gray-200 mr-2 space-y-6">
+              <div className="relative mr-2 space-y-6 border-r border-[#DDE5EF]">
                 {[1, 2, 3].map((_, i) => (
                   <div key={i} className="relative pr-6">
-                    <div className="absolute -right-[5px] top-1 w-2.5 h-2.5 rounded-full bg-gray-200 ring-4 ring-white" />
-                    <p className="text-sm font-medium text-gray-900">تم تحديث حالة العقد #123{i}</p>
-                    <p className="text-xs text-gray-500 mt-1">منذ {i + 2} ساعات</p>
+                    <div className="absolute -right-[5px] top-1 h-2.5 w-2.5 rounded-full bg-[#11A37F] ring-4 ring-white" />
+                    <p className="text-sm font-bold text-[#142033]">تم تحديث حالة العقد #123{i}</p>
+                    <p className="mt-1 text-xs text-[#6A7688]">منذ {i + 2} ساعات</p>
                   </div>
                 ))}
               </div>
@@ -1054,10 +1401,18 @@ export const EmployeeWorkspace: React.FC = () => {
       {/* --- Dialogs --- */}
       <QuickPaymentDialog
         open={showPaymentDialog}
-        onOpenChange={setShowPaymentDialog}
-        customerId={selectedPaymentContract?.customer_id || ''}
-        customerName={selectedPaymentContract?.customer_name || ''}
-        customerPhone={selectedPaymentContract?.customer_phone || null}
+        onOpenChange={(open) => {
+          setShowPaymentDialog(open);
+          if (!open) setSelectedPaymentCustomer(null);
+        }}
+        customerId={selectedPaymentCustomer?.customerId || ''}
+        customerName={selectedPaymentCustomer?.customerName || ''}
+        customerPhone={selectedPaymentCustomer?.customerPhone || null}
+        onSuccess={() => {
+          refetchContracts();
+          refetchCollections();
+          refetchPerformance();
+        }}
       />
 
       <CallLogDialog
@@ -1079,6 +1434,84 @@ export const EmployeeWorkspace: React.FC = () => {
         onOpenChange={setShowNoteDialog}
         contracts={contractsForDialogs}
         preselectedContractId={selectedContractId}
+      />
+
+      <Dialog open={canUnassignContracts && showBulkUnassignDialog} onOpenChange={setShowBulkUnassignDialog}>
+        <DialogContent className="sm:max-w-[520px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <XCircle className="h-5 w-5 text-red-600" />
+              إلغاء تعيين جماعي
+            </DialogTitle>
+            <DialogDescription>
+              سيتم إزالة التعيين الحالي من {selectedBulkContractIds.length} عقود، وبعدها يمكن تعيينها من جديد من إدارة الفريق.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="rounded-lg border border-red-100 bg-red-50 p-3">
+            <p className="mb-2 text-sm font-semibold text-red-800">العقود المحددة</p>
+            <div className="max-h-40 space-y-2 overflow-y-auto">
+              {selectedBulkContracts.slice(0, 6).map(contract => (
+                <div key={contract.id} className="flex items-center justify-between rounded-md bg-white px-3 py-2 text-sm">
+                  <span className="font-medium text-slate-900">#{contract.contract_number || contract.id}</span>
+                  <span className="text-slate-500">{contract.customer_name || 'غير محدد'}</span>
+                </div>
+              ))}
+              {selectedBulkContracts.length > 6 && (
+                <p className="text-xs text-red-700">
+                  و {selectedBulkContracts.length - 6} عقود أخرى
+                </p>
+              )}
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setShowBulkUnassignDialog(false)}
+              disabled={bulkUnassignMutation.isPending}
+            >
+              إلغاء
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={() => bulkUnassignMutation.mutate(selectedBulkContractIds)}
+              disabled={bulkUnassignMutation.isPending || selectedBulkContractIds.length === 0}
+            >
+              {bulkUnassignMutation.isPending ? (
+                <>
+                  <Loader2 className="ml-2 h-4 w-4 animate-spin" />
+                  جاري الإلغاء...
+                </>
+              ) : (
+                'تأكيد إلغاء التعيين'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {canUnassignContracts && (
+        <UnassignContractDialog
+          open={showUnassignDialog}
+          onOpenChange={setShowUnassignDialog}
+          contractId={selectedContractId || null}
+          contractNumber={selectedWorkspaceContract?.contract_number}
+          employeeName={user?.email?.split('@')[0] || 'الموظف'}
+        />
+      )}
+
+      <ConvertToLegalDialog
+        open={showConvertToLegalDialog}
+        onOpenChange={setShowConvertToLegalDialog}
+        contract={selectedLegalContract}
+        onSuccess={() => {
+          refetchContracts();
+          refetchCollections();
+          refetchPerformance();
+        }}
       />
     </div>
   );

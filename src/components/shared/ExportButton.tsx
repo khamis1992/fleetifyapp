@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Download, FileSpreadsheet, FileText, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
 
 import { useFleetifyTranslation } from "@/hooks/useTranslation";
 interface ExportButtonProps {
@@ -24,6 +25,7 @@ interface ExportButtonProps {
   variant?: 'default' | 'outline' | 'ghost';
   size?: 'default' | 'sm' | 'lg';
   label?: string;
+  className?: string;
 }
 
 export const ExportButton: React.FC<ExportButtonProps> = ({ onExportExcel,
@@ -32,7 +34,9 @@ export const ExportButton: React.FC<ExportButtonProps> = ({ onExportExcel,
   disabled = false,
   variant = 'outline',
   size = 'sm',
-  label = 'تصدير', }) => {
+  label = 'تصدير',
+  className,
+}) => {
   const { t } = useFleetifyTranslation("ui");
   const [isExporting, setIsExporting] = useState(false);
 
@@ -78,7 +82,7 @@ export const ExportButton: React.FC<ExportButtonProps> = ({ onExportExcel,
         size={size}
         onClick={() => handleExport(option.type, option.handler)}
         disabled={disabled || isExporting}
-        className="gap-2"
+        className={cn("gap-2", className)}
       >
         {isExporting ? (
           <Loader2 className="h-4 w-4 animate-spin" />
@@ -97,7 +101,7 @@ export const ExportButton: React.FC<ExportButtonProps> = ({ onExportExcel,
           variant={variant}
           size={size}
           disabled={disabled || isExporting}
-          className="gap-2"
+          className={cn("gap-2", className)}
         >
           {isExporting ? (
             <Loader2 className="h-4 w-4 animate-spin" />

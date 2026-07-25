@@ -31,6 +31,7 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
+import { formatCustomerName } from '@/utils/formatCustomerName';
 
 // Shared Components
 const GlassCard = ({ children, className, delay = 0 }: any) => (
@@ -107,10 +108,7 @@ export const EmployeeDetailedReport: React.FC = () => {
     }
   };
 
-  const getCustomerName = (customer: any) => {
-    if (!customer) return 'غير محدد';
-    return customer.company_name_ar || `${customer.first_name_ar || ''} ${customer.last_name_ar || ''}`.trim() || 'غير محدد';
-  };
+  const getCustomerName = (customer: any) => formatCustomerName(customer);
 
   if (isLoading) {
     return (

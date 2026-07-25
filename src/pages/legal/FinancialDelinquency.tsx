@@ -63,6 +63,7 @@ import { revertContractLegalProcedure } from '@/services/contractLegalProcedureS
 import { calculateDelinquencyAmounts } from '@/utils/calculateDelinquencyAmounts';
 import { formatCustomerName } from '@/utils/formatCustomerName';
 import { escapeHtml } from '@/utils/htmlSanitizer';
+import { selectLegalContractDocument } from './LawsuitPreparation/utils/contractDocumentSelection';
 import '@/styles/legal-system.css';
 
 type QueueItem = {
@@ -79,6 +80,7 @@ type QueueItem = {
   trafficViolations: number;
   detailedClaimTotal: number;
   transferredAt?: string | null;
+  missingDocuments: string[];
 };
 
 type CandidateSource = 'rent' | 'traffic';
@@ -106,6 +108,23 @@ type CandidateItem = {
 };
 
 const activeLegalStatuses = ['open', 'pending', 'active', 'under_review', 'on_hold'];
+const delinquencyWorkflowStages = ['preparation', 'filed', 'hearings', 'reserved_for_judgment'];
+const activeWorkflowStages = [
+  'preparation',
+  'filed',
+  'hearings',
+  'reserved_for_judgment',
+  'judgment_issued',
+  'appeal',
+  'enforcement',
+  'collection',
+];
+
+const REQUIRED_COMPANY_LEGAL_DOCUMENTS = [
+  { type: 'commercial_register', name: 'السجل التجاري' },
+  { type: 'iban_certificate', name: 'شهادة IBAN' },
+  { type: 'representative_id', name: 'البطاقة الشخصية للممثل' },
+] as const;
 
 const normalizeCustomerName = (customer: any, fallbackName?: string | null) => {
   if (!customer) return 'عميل غير محدد';
@@ -213,6 +232,56 @@ const sumUnpaidTrafficViolationsByContract = async (
   return { totals, counts };
 };
 
+const fetchActiveLegalSubjectIds = async (
+  companyId: string,
+  contractIds: string[],
+  customerIds: string[] = []
+) => {
+  const excludedContractIds = new Set<string>();
+  const excludedCustomerIds = new Set<string>();
+
+  const addLegalCases = (legalCases: any[] | null) => {
+    (legalCases || []).forEach((legalCase) => {
+      if (legalCase.contract_id) excludedContractIds.add(legalCase.contract_id);
+      if (legalCase.client_id) excludedCustomerIds.add(legalCase.client_id);
+    });
+  };
+
+  for (let index = 0; index < contractIds.length; index += INVOICE_CONTRACT_CHUNK_SIZE) {
+    const contractIdChunk = contractIds.slice(index, index + INVOICE_CONTRACT_CHUNK_SIZE);
+    if (contractIdChunk.length === 0) continue;
+
+    const { data, error } = await supabase
+      .from('legal_cases')
+      .select('contract_id, client_id')
+      .eq('company_id', companyId)
+      .in('contract_id', contractIdChunk)
+      .in('workflow_stage', activeWorkflowStages)
+      .in('case_status', activeLegalStatuses);
+
+    if (error) throw error;
+    addLegalCases(data);
+  }
+
+  for (let index = 0; index < customerIds.length; index += INVOICE_CONTRACT_CHUNK_SIZE) {
+    const customerIdChunk = customerIds.slice(index, index + INVOICE_CONTRACT_CHUNK_SIZE);
+    if (customerIdChunk.length === 0) continue;
+
+    const { data, error } = await supabase
+      .from('legal_cases')
+      .select('contract_id, client_id')
+      .eq('company_id', companyId)
+      .in('client_id', customerIdChunk)
+      .in('workflow_stage', activeWorkflowStages)
+      .in('case_status', activeLegalStatuses);
+
+    if (error) throw error;
+    addLegalCases(data);
+  }
+
+  return { excludedContractIds, excludedCustomerIds };
+};
+
 const vehicleLabel = (contract: any) => {
   const vehicle = contract.vehicles || {};
   const make = vehicle.make || contract.make || '';
@@ -230,6 +299,7 @@ const fetchLegalQueue = async (companyId: string): Promise<QueueItem[]> => {
       contract_id,
       case_number,
       case_status,
+      workflow_stage,
       case_value,
       client_name,
       client_phone,
@@ -281,6 +351,7 @@ const fetchLegalQueue = async (companyId: string): Promise<QueueItem[]> => {
     .eq('company_id', companyId)
     .not('contract_id', 'is', null)
     .in('case_status', activeLegalStatuses)
+    .in('workflow_stage', delinquencyWorkflowStages)
     .order('created_at', { ascending: false });
 
   if (error) throw error;
@@ -289,9 +360,31 @@ const fetchLegalQueue = async (companyId: string): Promise<QueueItem[]> => {
   const contractIds = legalCases.map((legalCase: any) => legalCase.contract_id).filter(Boolean);
   let violationsByContract = new Map<string, number>();
   const invoicesByContract = new Map<string, any[]>();
+  const contractDocumentsByContract = new Map<string, any[]>();
+
+  const { data: companyLegalDocuments, error: companyDocumentsError } = await supabase
+    .from('company_legal_documents')
+    .select('document_type, file_url')
+    .eq('company_id', companyId)
+    .eq('is_active', true);
+
+  if (companyDocumentsError) throw companyDocumentsError;
+
+  const availableCompanyDocumentTypes = new Set(
+    (companyLegalDocuments || [])
+      .filter((document: any) => Boolean(document.file_url))
+      .map((document: any) => document.document_type)
+  );
+  const missingCompanyDocuments = REQUIRED_COMPANY_LEGAL_DOCUMENTS
+    .filter((document) => !availableCompanyDocumentTypes.has(document.type))
+    .map((document) => document.name);
 
   if (contractIds.length > 0) {
-    const [{ data: penalties, error: penaltiesError }, { data: invoices, error: invoicesError }] = await Promise.all([
+    const [
+      { data: penalties, error: penaltiesError },
+      { data: invoices, error: invoicesError },
+      { data: contractDocuments, error: contractDocumentsError },
+    ] = await Promise.all([
       supabase
         .from('penalties')
         .select('contract_id, amount')
@@ -305,10 +398,16 @@ const fetchLegalQueue = async (companyId: string): Promise<QueueItem[]> => {
         .eq('company_id', companyId)
         .in('contract_id', contractIds)
         .neq('status', 'cancelled'),
+      supabase
+        .from('contract_documents')
+        .select('id, contract_id, document_name, document_type, file_path, mime_type')
+        .eq('company_id', companyId)
+        .in('contract_id', contractIds),
     ]);
 
     if (penaltiesError) throw penaltiesError;
     if (invoicesError) throw invoicesError;
+    if (contractDocumentsError) throw contractDocumentsError;
 
     const fallbackPenalties = new Map<string, number>();
     (penalties || []).forEach((penalty: any) => {
@@ -328,6 +427,14 @@ const fetchLegalQueue = async (companyId: string): Promise<QueueItem[]> => {
       if (!invoice.contract_id) return;
       invoicesByContract.set(invoice.contract_id, [...(invoicesByContract.get(invoice.contract_id) || []), invoice]);
     });
+
+    (contractDocuments || []).forEach((document: any) => {
+      if (!document.contract_id) return;
+      contractDocumentsByContract.set(document.contract_id, [
+        ...(contractDocumentsByContract.get(document.contract_id) || []),
+        document,
+      ]);
+    });
   }
 
   return legalCases
@@ -340,12 +447,21 @@ const fetchLegalQueue = async (companyId: string): Promise<QueueItem[]> => {
       [],
       { includeDamagesFee: false }
     );
-    const overdueRent = invoiceCalculation.overdueRent || Math.max(0, Number(normalized.balance_due || 0));
+    // Contract balance includes future installments. Legal delinquency must only
+    // include invoices whose due date has actually passed.
+    const overdueRent = invoiceCalculation.overdueRent;
     const lateFees = invoiceCalculation.overdueInvoicesCount > 0
       ? invoiceCalculation.lateFees
       : Number(normalized.late_fine_amount || 0);
     const trafficViolations = violationsByContract.get(normalized.id) || 0;
     const detailedClaimTotal = overdueRent + lateFees + trafficViolations;
+    const hasSignedContract = Boolean(
+      selectLegalContractDocument(contractDocumentsByContract.get(normalized.id) || [])
+    );
+    const missingDocuments = [
+      ...(hasSignedContract ? [] : ['عقد الإيجار الموقع']),
+      ...missingCompanyDocuments,
+    ];
 
     return {
       legalCaseId: legalCase.id,
@@ -361,6 +477,7 @@ const fetchLegalQueue = async (companyId: string): Promise<QueueItem[]> => {
       trafficViolations,
       detailedClaimTotal,
       transferredAt: legalCase?.created_at,
+      missingDocuments,
     };
   });
 };
@@ -419,6 +536,12 @@ const fetchRentCandidates = async (companyId: string, searchTerm: string): Promi
   if (error) throw error;
 
   const contractIds = (data || []).map((contract: any) => contract.id).filter(Boolean);
+  const customerIds = Array.from(new Set((data || []).map((contract: any) => contract.customer_id).filter(Boolean)));
+  const { excludedContractIds, excludedCustomerIds } = await fetchActiveLegalSubjectIds(
+    companyId,
+    contractIds,
+    customerIds
+  );
   const invoicesByContract = new Map<string, any[]>();
   let violationsByContract = new Map<string, number>();
 
@@ -465,6 +588,13 @@ const fetchRentCandidates = async (companyId: string, searchTerm: string): Promi
   const needle = searchTerm.trim().toLowerCase();
   return (data || [])
     .filter((contract: any) => {
+      if (
+        excludedContractIds.has(contract.id) ||
+        (contract.customer_id && excludedCustomerIds.has(contract.customer_id))
+      ) {
+        return false;
+      }
+
       const name = normalizeCustomerName(contract.customers).toLowerCase();
       return (
         !needle ||
@@ -481,7 +611,7 @@ const fetchRentCandidates = async (companyId: string, searchTerm: string): Promi
         [],
         { includeDamagesFee: false }
       );
-      const overdueRent = calculation.overdueRent || Math.max(0, Number(contract.balance_due || 0));
+      const overdueRent = calculation.overdueRent;
       const lateFees = calculation.overdueInvoicesCount > 0
         ? calculation.lateFees
         : Number(contract.late_fine_amount || 0);
@@ -616,6 +746,16 @@ const fetchTrafficCandidates = async (companyId: string): Promise<CandidateItem[
       .map((penalty: any) => penalty.contract_id)
       .filter(Boolean)
   ));
+  const customerIds = Array.from(new Set(
+    penalties
+      .map((penalty: any) => penalty.customer_id || penalty.contracts?.customer_id || penalty.customers?.id)
+      .filter(Boolean)
+  ));
+  const { excludedContractIds, excludedCustomerIds } = await fetchActiveLegalSubjectIds(
+    companyId,
+    contractIds,
+    customerIds
+  );
   const invoicesByContract = new Map<string, any[]>();
   const fallbackPenalties = new Map<string, number>();
 
@@ -656,10 +796,22 @@ const fetchTrafficCandidates = async (companyId: string): Promise<CandidateItem[
   );
 
   return Array.from(grouped.values())
+    .filter((penalties) => {
+      const first = penalties[0];
+      const contract = first.contracts;
+      const customer = first.customers || contract?.customers;
+      const customerId = first.customer_id || contract?.customer_id || customer?.id || null;
+
+      return !(
+        (first.contract_id && excludedContractIds.has(first.contract_id)) ||
+        (customerId && excludedCustomerIds.has(customerId))
+      );
+    })
     .map((penalties) => {
       const first = penalties[0];
       const contract = first.contracts;
       const customer = first.customers || contract?.customers;
+      const customerId = first.customer_id || contract?.customer_id || customer?.id || null;
       const fallbackAmount = penalties.reduce((sum, penalty) => sum + Number(penalty.amount || 0), 0);
       const amount = first.contract_id
         ? trafficViolationSummary.totals.get(first.contract_id) ?? fallbackAmount
@@ -674,7 +826,7 @@ const fetchTrafficCandidates = async (companyId: string): Promise<CandidateItem[
         [],
         { includeDamagesFee: false }
       );
-      const overdueRent = invoiceCalculation.overdueRent || Math.max(0, Number(normalizedContract?.balance_due || 0));
+      const overdueRent = invoiceCalculation.overdueRent;
       const lateFees = invoiceCalculation.overdueInvoicesCount > 0
         ? invoiceCalculation.lateFees
         : Number(normalizedContract?.late_fine_amount || 0);
@@ -686,7 +838,7 @@ const fetchTrafficCandidates = async (companyId: string): Promise<CandidateItem[
 
       return {
         id: `traffic-${first.contract_id || first.customer_id || first.vehicle_plate || first.id}`,
-        customerId: first.customer_id || contract?.customer_id || customer?.id || null,
+        customerId,
         source: overdueRent > 0 ? 'rent' as const : 'traffic' as const,
         sources,
         reason: `${violationsCount} مخالفة مرورية غير مسددة`,
@@ -741,10 +893,9 @@ const mergeCandidateSources = (items: CandidateItem[]): CandidateItem[] => {
       Number(existing.violationsCount || 0),
       Number(candidate.violationsCount || 0)
     );
-    const overdueRent = rentCandidate?.overdueRent || Math.max(
+    const overdueRent = rentCandidate?.overdueRent ?? Math.max(
       Number(existing.overdueRent || 0),
       Number(candidate.overdueRent || 0),
-      Number((existing.contract || candidate.contract)?.balance_due || 0),
       0
     );
     const lateFees = rentCandidate?.lateFees || 0;
@@ -1637,6 +1788,21 @@ const FinancialDelinquencyPage: React.FC = () => {
                             <p className="mt-1 font-bold text-[#020617]" dir="ltr">{item.phone || '-'}</p>
                           </div>
                         </div>
+
+                        {item.missingDocuments.length > 0 && (
+                          <div
+                            role="alert"
+                            className="flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5 text-amber-950"
+                          >
+                            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
+                            <div className="min-w-0">
+                              <p className="text-sm font-bold">مستندات ناقصة قبل تجهيز الدعوى</p>
+                              <p className="mt-1 text-sm leading-6 text-amber-800">
+                                {item.missingDocuments.join('، ')}
+                              </p>
+                            </div>
+                          </div>
+                        )}
                       </div>
 
                       <div className="flex flex-col gap-2 sm:flex-row lg:flex-col">

@@ -17,6 +17,7 @@ import {
   Search,
   Filter,
   UserPlus,
+  UserMinus,
   RefreshCw,
   BarChart3,
   ArrowRight,
@@ -28,7 +29,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
-import { ContractAssignmentDialog, BulkAssignmentDialog } from '@/components/team';
+import { ContractAssignmentDialog, BulkAssignmentDialog, BulkUnassignDialog } from '@/components/team';
 import { AssignmentHistoryWidget } from '@/components/team/AssignmentHistoryWidget';
 import { SmartDistributionDialog } from '@/components/team/SmartDistributionDialog';
 import { ExportButton } from '@/components/shared/ExportButton';
@@ -76,6 +77,7 @@ export const TeamManagement: React.FC = () => {
   const [selectedFilter, setSelectedFilter] = useState<'all' | 'high' | 'medium' | 'low'>('all');
   const [showAssignDialog, setShowAssignDialog] = useState(false);
   const [showBulkAssignDialog, setShowBulkAssignDialog] = useState(false);
+  const [showBulkUnassignDialog, setShowBulkUnassignDialog] = useState(false);
   const [showSmartDistribution, setShowSmartDistribution] = useState(false);
   const hasAssignedManagementRole = user?.roles?.some((role) =>
     ['super_admin', 'company_admin', 'manager', 'admin'].includes(role.toLowerCase())
@@ -178,6 +180,35 @@ export const TeamManagement: React.FC = () => {
       }
 
       return data;
+    },
+    enabled: !!companyId,
+  });
+
+  const { data: activeContractStats } = useQuery({
+    queryKey: ['team-active-contract-stats', companyId],
+    queryFn: async () => {
+      if (!companyId) return { totalContracts: 0, activeEmployees: 0, countsByEmployee: {} as Record<string, number> };
+
+      const { data, error } = await supabase
+        .from('contracts')
+        .select('assigned_to_profile_id')
+        .eq('company_id', companyId)
+        .eq('status', 'active')
+        .not('assigned_to_profile_id', 'is', null);
+
+      if (error) throw error;
+
+      const countsByEmployee: Record<string, number> = {};
+      (data || []).forEach((contract) => {
+        if (!contract.assigned_to_profile_id) return;
+        countsByEmployee[contract.assigned_to_profile_id] = (countsByEmployee[contract.assigned_to_profile_id] || 0) + 1;
+      });
+
+      return {
+        totalContracts: data?.length || 0,
+        activeEmployees: Object.keys(countsByEmployee).length,
+        countsByEmployee,
+      };
     },
     enabled: !!companyId,
   });
@@ -295,6 +326,15 @@ export const TeamManagement: React.FC = () => {
           </Button>
           <Button
             size="sm"
+            variant="outline"
+            onClick={() => setShowBulkUnassignDialog(true)}
+            className="rounded-lg border-red-200 bg-red-50 text-red-700 shadow-sm hover:bg-red-100 hover:text-red-800"
+          >
+            <UserMinus className="ml-2 h-4 w-4" />
+            إلغاء تعيين جماعي
+          </Button>
+          <Button
+            size="sm"
             onClick={() => setShowSmartDistribution(true)}
             className="rounded-lg bg-[#EEF5FB] text-[#173A63] shadow-sm hover:bg-[#E3EEF8]"
           >
@@ -309,14 +349,14 @@ export const TeamManagement: React.FC = () => {
         <StatCard
           title="إجمالي الموظفين"
           value={teamStats?.totalEmployees || 0}
-          subtitle={`${teamStats?.activeEmployees || 0} نشط`}
+          subtitle={`${activeContractStats?.activeEmployees || 0} نشط`}
           icon={Users}
           color="bg-blue-500"
           delay={0.1}
         />
         <StatCard
-          title="العقود الموزعة"
-          value={teamStats?.totalContracts || 0}
+          title="العقود النشطة الموزعة"
+          value={activeContractStats?.totalContracts || 0}
           icon={Briefcase}
           color="bg-[#1BBF9A]"
           delay={0.2}
@@ -396,7 +436,10 @@ export const TeamManagement: React.FC = () => {
         ) : employees && employees.length > 0 ? (
           <ScrollArea className="h-[640px] pr-1">
             <div className="grid grid-cols-1 gap-3 2xl:grid-cols-2">
-              {employees.map((employee: any, index) => (
+              {employees.map((employee: any, index) => {
+                const activeContractsCount = activeContractStats?.countsByEmployee?.[employee.employee_id] || 0;
+
+                return (
                 <motion.div
                   key={employee.employee_id}
                   initial={{ opacity: 0, y: 20 }}
@@ -413,7 +456,7 @@ export const TeamManagement: React.FC = () => {
                           {employee.employee_name?.charAt(0) || '؟'}
                         </div>
                         {/* Active Indicator */}
-                        {employee.total_contracts > 0 && (
+                        {activeContractsCount > 0 && (
                           <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-emerald-500 border-2 border-white rounded-full" title="نشط" />
                         )}
                       </div>
@@ -450,8 +493,8 @@ export const TeamManagement: React.FC = () => {
                   {/* Stats Grid */}
                   <div className="grid grid-cols-2 gap-3 pt-3 border-t border-neutral-100">
                     <div className="text-center">
-                      <p className="text-lg font-bold text-neutral-900">{employee.total_contracts || 0}</p>
-                      <p className="text-xs text-neutral-500">عقود</p>
+                      <p className="text-lg font-bold text-neutral-900">{activeContractsCount}</p>
+                      <p className="text-xs text-neutral-500">عقود نشطة</p>
                     </div>
                     <div className="text-center">
                       <p className="text-lg font-bold text-neutral-900">{Math.round(employee.collection_rate || 0)}%</p>
@@ -485,7 +528,8 @@ export const TeamManagement: React.FC = () => {
                     </Button>
                   </div>
                 </motion.div>
-              ))}
+                );
+              })}
             </div>
           </ScrollArea>
         ) : (
@@ -529,6 +573,11 @@ export const TeamManagement: React.FC = () => {
       <BulkAssignmentDialog
         open={showBulkAssignDialog}
         onOpenChange={setShowBulkAssignDialog}
+      />
+
+      <BulkUnassignDialog
+        open={showBulkUnassignDialog}
+        onOpenChange={setShowBulkUnassignDialog}
       />
 
       <SmartDistributionDialog

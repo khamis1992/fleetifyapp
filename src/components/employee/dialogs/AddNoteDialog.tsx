@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Add Note Dialog
  * حوار إضافة ملاحظة على العقد
  */
@@ -93,6 +93,12 @@ export const AddNoteDialog: React.FC<AddNoteDialogProps> = ({
     },
   });
 
+  React.useEffect(() => {
+    if (open && preselectedContractId) {
+      form.setValue('contract_id', preselectedContractId, { shouldValidate: true });
+    }
+  }, [form, open, preselectedContractId]);
+
   // Mutation to add note
   const addNoteMutation = useMutation({
     mutationFn: async (data: NoteFormData) => {
@@ -182,7 +188,7 @@ export const AddNoteDialog: React.FC<AddNoteDialogProps> = ({
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>العقد / العميل *</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="اختر العقد" />
@@ -208,7 +214,7 @@ export const AddNoteDialog: React.FC<AddNoteDialogProps> = ({
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>نوع الملاحظة *</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue />

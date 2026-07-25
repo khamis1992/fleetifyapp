@@ -48,9 +48,13 @@ export const useEmployeeDetailedReport = (employeeId: string, period: number = 3
           last_payment_date,
           status,
           customers:customer_id (
+            first_name,
+            last_name,
             first_name_ar,
             last_name_ar,
+            company_name,
             company_name_ar,
+            customer_type,
             phone
           )
         `)
@@ -102,9 +106,13 @@ export const useEmployeeDetailedReport = (employeeId: string, period: number = 3
           contracts:contract_id (
             contract_number,
             customers:customer_id (
+              first_name,
+              last_name,
               first_name_ar,
               last_name_ar,
-              company_name_ar
+              company_name,
+              company_name_ar,
+              customer_type
             )
           )
         `)

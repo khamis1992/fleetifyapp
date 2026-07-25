@@ -99,7 +99,7 @@ export const ContractAssignmentDialog: React.FC<ContractAssignmentDialogProps> =
           assigned_to_profile_id
         `)
         .eq('company_id', companyId)
-        .in('status', ['active', 'pending', 'legal_proceedings', 'under_legal_procedure'])
+        .eq('status', 'active')
         .is('assigned_to_profile_id', null)
         .order('created_at', { ascending: false })
         .limit(1000);
@@ -122,15 +122,37 @@ export const ContractAssignmentDialog: React.FC<ContractAssignmentDialogProps> =
           id,
           first_name_ar,
           last_name_ar,
-          email,
-          contracts:contracts!assigned_to_profile_id(count)
+          email
         `)
         .eq('company_id', companyId)
         .not('role', 'eq', 'customer')
         .order('first_name_ar', { ascending: true });
 
       if (error) throw error;
-      return data;
+
+      const employeeIds = (data || []).map((employee) => employee.id).filter(Boolean);
+      const activeCounts = new Map<string, number>();
+
+      if (employeeIds.length > 0) {
+        const { data: activeContracts, error: activeContractsError } = await supabase
+          .from('contracts')
+          .select('assigned_to_profile_id')
+          .eq('company_id', companyId)
+          .eq('status', 'active')
+          .in('assigned_to_profile_id', employeeIds);
+
+        if (activeContractsError) throw activeContractsError;
+
+        (activeContracts || []).forEach((contract) => {
+          if (!contract.assigned_to_profile_id) return;
+          activeCounts.set(contract.assigned_to_profile_id, (activeCounts.get(contract.assigned_to_profile_id) || 0) + 1);
+        });
+      }
+
+      return (data || []).map((employee) => ({
+        ...employee,
+        contracts: [{ count: activeCounts.get(employee.id) || 0 }],
+      }));
     },
     enabled: open && !!companyId,
   });
@@ -174,6 +196,7 @@ export const ContractAssignmentDialog: React.FC<ContractAssignmentDialogProps> =
       });
 
       queryClient.invalidateQueries({ queryKey: ['unassigned-contracts'] });
+      queryClient.invalidateQueries({ queryKey: ['team-active-contract-stats'] });
       queryClient.invalidateQueries({ queryKey: ['team-employees'] });
       queryClient.invalidateQueries({ queryKey: ['employee-contracts'] });
 

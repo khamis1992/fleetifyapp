@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Call Log Dialog
  * حوار تسجيل مكالمة مع العميل
  */
@@ -101,6 +101,12 @@ export const CallLogDialog: React.FC<CallLogDialogProps> = ({
       follow_up_date: '',
     },
   });
+
+  React.useEffect(() => {
+    if (open && preselectedContractId) {
+      form.setValue('contract_id', preselectedContractId, { shouldValidate: true });
+    }
+  }, [form, open, preselectedContractId]);
 
   // Mutation to log call
   const logCallMutation = useMutation({
@@ -237,7 +243,7 @@ export const CallLogDialog: React.FC<CallLogDialogProps> = ({
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>العقد / العميل *</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="اختر العقد" />
@@ -264,7 +270,7 @@ export const CallLogDialog: React.FC<CallLogDialogProps> = ({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>نوع المكالمة *</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue />
@@ -287,7 +293,7 @@ export const CallLogDialog: React.FC<CallLogDialogProps> = ({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>نتيجة المكالمة *</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue />
@@ -314,7 +320,7 @@ export const CallLogDialog: React.FC<CallLogDialogProps> = ({
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>الغرض من المكالمة *</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue />

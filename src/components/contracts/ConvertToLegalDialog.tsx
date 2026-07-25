@@ -59,7 +59,7 @@ import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import { useNavigate } from 'react-router-dom';
-import { useTourGuide } from '@/components/tour-guide';
+import { useOptionalTourGuide } from '@/components/tour-guide';
 import { cn } from '@/lib/utils';
 
 type VehicleDisposition = 'keep_with_customer' | 'returned';
@@ -79,7 +79,7 @@ export const ConvertToLegalDialog: React.FC<ConvertToLegalDialogProps> = ({
 }) => {
   const navigate = useNavigate();
   const { formatCurrency } = useCurrencyFormatter();
-  const { startTour } = useTourGuide();
+  const tourGuide = useOptionalTourGuide();
   const [notes, setNotes] = useState('');
   const [priority, setPriority] = useState<'low' | 'medium' | 'high' | 'urgent'>('high');
   const [caseType, setCaseType] = useState<'payment_collection' | 'contract_breach' | 'vehicle_damage' | 'other'>('payment_collection');
@@ -206,16 +206,18 @@ export const ConvertToLegalDialog: React.FC<ConvertToLegalDialogProps> = ({
             <DialogDescription>
               سيتم إنشاء قضية قانونية جديدة وتحديث حالة العقد وفق قرارك بشأن المركبة
             </DialogDescription>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => startTour('contract-convert-legal')}
-              className="mt-2 h-9 w-fit gap-2 rounded-lg border-emerald-200 bg-emerald-50 font-bold text-emerald-700 hover:bg-emerald-100"
-              data-tour="contract-convert-legal-tour-start"
-            >
-              <PlayCircle className="h-4 w-4" />
-              ابدأ الجولة التعريفية
-            </Button>
+            {tourGuide && (
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => tourGuide.startTour('contract-convert-legal')}
+                className="mt-2 h-9 w-fit gap-2 rounded-lg border-emerald-200 bg-emerald-50 font-bold text-emerald-700 hover:bg-emerald-100"
+                data-tour="contract-convert-legal-tour-start"
+              >
+                <PlayCircle className="h-4 w-4" />
+                ابدأ الجولة التعريفية
+              </Button>
+            )}
           </DialogHeader>
 
           {isLoading ? (

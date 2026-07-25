@@ -69,9 +69,33 @@ export const SmartDistributionDialog: React.FC<SmartDistributionDialogProps> = (
         .order('capacity_score', { ascending: false });
 
       if (error) throw error;
-      return (data || []).filter(
+
+      const employees = (data || []).filter(
         (employee): employee is typeof employee & { employee_id: string } => Boolean(employee.employee_id)
       );
+      const employeeIds = employees.map((employee) => employee.employee_id);
+      const activeCounts = new Map<string, number>();
+
+      if (employeeIds.length > 0) {
+        const { data: activeContracts, error: activeContractsError } = await supabase
+          .from('contracts')
+          .select('assigned_to_profile_id')
+          .eq('company_id', companyId)
+          .eq('status', 'active')
+          .in('assigned_to_profile_id', employeeIds);
+
+        if (activeContractsError) throw activeContractsError;
+
+        (activeContracts || []).forEach((contract) => {
+          if (!contract.assigned_to_profile_id) return;
+          activeCounts.set(contract.assigned_to_profile_id, (activeCounts.get(contract.assigned_to_profile_id) || 0) + 1);
+        });
+      }
+
+      return employees.map((employee) => ({
+        ...employee,
+        current_contracts: activeCounts.get(employee.employee_id) || 0,
+      }));
     },
     enabled: open && !!companyId,
   });
@@ -95,7 +119,7 @@ export const SmartDistributionDialog: React.FC<SmartDistributionDialogProps> = (
           )
         `)
         .eq('company_id', companyId)
-        .in('status', ['active', 'pending', 'legal_proceedings', 'under_legal_procedure'])
+        .eq('status', 'active')
         .is('assigned_to_profile_id', null)
         .limit(1000);
 
@@ -241,6 +265,7 @@ export const SmartDistributionDialog: React.FC<SmartDistributionDialogProps> = (
       });
 
       queryClient.invalidateQueries({ queryKey: ['team-employees'] });
+      queryClient.invalidateQueries({ queryKey: ['team-active-contract-stats'] });
       queryClient.invalidateQueries({ queryKey: ['unassigned-contracts'] });
       queryClient.invalidateQueries({ queryKey: ['employee-contracts'] });
 
