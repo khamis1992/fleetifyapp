@@ -3,7 +3,7 @@
  * يعرض ملخص المبالغ المستحقة ويسمح بإضافة ملاحظات
  */
 
-import React, { useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -95,17 +95,26 @@ export const ConvertToLegalDialog: React.FC<ConvertToLegalDialogProps> = ({
   // حساب قيمة القضية
   const { data: caseValue, isLoading: isLoadingValue } = useCalculateCaseValue(
     contract?.id || '',
-    contract?.company_id
+    contract?.company_id,
+    vehicleDisposition === 'returned'
   );
+
+  useEffect(() => {
+    if (!open || !contract) return;
+    const returnedByContractState =
+      contract.vehicle_returned === true ||
+      ['cancelled', 'closed'].includes(contract.status);
+    setVehicleDisposition(returnedByContractState ? 'returned' : 'keep_with_customer');
+  }, [contract, open]);
 
   // حساب الإحصائيات
   const stats = useMemo(() => {
     if (!contract) return null;
-    
-    const balanceDue = contract.balance_due || 0;
-    const lateFines = contract.late_fine_amount || 0;
+
+    const balanceDue = caseValue?.breakdown?.balanceDue ?? contract.balance_due ?? 0;
+    const lateFines = caseValue?.breakdown?.lateFines ?? contract.late_fine_amount ?? 0;
     const trafficViolations = caseValue?.breakdown?.trafficViolations || 0;
-    const totalClaim = balanceDue + lateFines + trafficViolations;
+    const totalClaim = caseValue?.totalValue ?? balanceDue + lateFines;
 
     return {
       balanceDue,
@@ -419,7 +428,11 @@ export const ConvertToLegalDialog: React.FC<ConvertToLegalDialogProps> = ({
                 </CardHeader>
                 <CardContent className="space-y-3">
                   <div className="flex justify-between items-center py-2 border-b border-red-200">
-                    <span className="text-sm">المبلغ المتبقي من العقد</span>
+                    <span className="text-sm">
+                      {vehicleDisposition === 'returned'
+                        ? 'رصيد الفواتير القائمة بعد استلام المركبة'
+                        : 'المبلغ المتبقي من العقد'}
+                    </span>
                     <span className="font-semibold">{formatCurrency(stats?.balanceDue || 0)}</span>
                   </div>
                   <div className="flex justify-between items-center py-2 border-b border-red-200">
@@ -427,7 +440,7 @@ export const ConvertToLegalDialog: React.FC<ConvertToLegalDialogProps> = ({
                     <span className="font-semibold text-orange-600">{formatCurrency(stats?.lateFines || 0)}</span>
                   </div>
                   <div className="flex justify-between items-center py-2 border-b border-red-200">
-                    <span className="text-sm">المخالفات المرورية غير المدفوعة</span>
+                    <span className="text-sm">المخالفات المرورية (طلب تحويل منفصل)</span>
                     <span className="font-semibold text-red-600">{formatCurrency(stats?.trafficViolations || 0)}</span>
                   </div>
                   <div className="flex justify-between items-center py-3 bg-red-100 rounded-lg px-3 -mx-3">

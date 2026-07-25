@@ -86,7 +86,9 @@ type CandidateSort = 'amount_desc' | 'amount_asc' | 'traffic_desc' | 'traffic_as
 
 type CandidateItem = {
   id: string;
+  customerId?: string | null;
   source: CandidateSource;
+  sources: CandidateSource[];
   reason: string;
   amount: number;
   daysOverdue?: number;
@@ -103,9 +105,9 @@ type CandidateItem = {
   canConvert: boolean;
 };
 
-const activeLegalStatuses = ['pending', 'active', 'under_review', 'on_hold'];
+const activeLegalStatuses = ['open', 'pending', 'active', 'under_review', 'on_hold'];
 
-const normalizeCustomerName = (customer: any) => {
+const normalizeCustomerName = (customer: any, fallbackName?: string | null) => {
   if (!customer) return 'عميل غير محدد';
   return formatCustomerName({
     first_name: customer.first_name,
@@ -116,6 +118,9 @@ const normalizeCustomerName = (customer: any) => {
     company_name_ar: customer.company_name_ar,
     customer_type: customer.customer_type,
     full_name: customer.full_name,
+  }, {
+    preferArabic: true,
+    fallbackName,
   });
 };
 
@@ -133,6 +138,7 @@ const normalizeContractForLegal = (contract: any): ContractForLegal => ({
   start_date: contract.start_date,
   end_date: contract.end_date,
   status: contract.status || 'active',
+  vehicle_returned: contract.vehicle_returned ?? null,
   customer: contract.customers
     ? {
         id: contract.customers.id,
@@ -195,6 +201,7 @@ const fetchLegalQueue = async (companyId: string): Promise<QueueItem[]> => {
       customer_id,
       vehicle_id,
       status,
+      vehicle_returned,
       start_date,
       end_date,
       monthly_amount,
@@ -297,7 +304,7 @@ const fetchLegalQueue = async (companyId: string): Promise<QueueItem[]> => {
     return {
       legalCaseId: legalCase.id,
       contract: normalized,
-      customerName: legalCase.client_name || normalizeCustomerName(contract.customers),
+      customerName: normalizeCustomerName(contract.customers, legalCase.client_name),
       phone: legalCase.client_phone || contract.customers?.phone,
       vehicleLabel: vehicleLabel(contract),
       legalCaseNumber: legalCase?.case_number,
@@ -322,6 +329,7 @@ const fetchRentCandidates = async (companyId: string, searchTerm: string): Promi
       customer_id,
       vehicle_id,
       status,
+      vehicle_returned,
       start_date,
       end_date,
       monthly_amount,
@@ -430,7 +438,9 @@ const fetchRentCandidates = async (companyId: string, searchTerm: string): Promi
 
       return {
         id: `rent-${contract.id}`,
+        customerId: contract.customer_id,
         source: 'rent' as const,
+        sources: ['rent'] as CandidateSource[],
         reason: 'تأخير في سداد الإيجار',
         amount: detailedClaimTotal,
         daysOverdue: Number(contract.days_overdue || 0),
@@ -490,6 +500,7 @@ const fetchTrafficCandidates = async (companyId: string): Promise<CandidateItem[
         customer_id,
         vehicle_id,
         status,
+        vehicle_returned,
         start_date,
         end_date,
         monthly_amount,
@@ -554,14 +565,18 @@ const fetchTrafficCandidates = async (companyId: string): Promise<CandidateItem[
       const amount = penalties.reduce((sum, penalty) => sum + Number(penalty.amount || 0), 0);
       const name = normalizeCustomerName(customer);
       const normalizedContract = contract ? normalizeContractForLegal({ ...contract, customers: customer }) : null;
-      const overdueRent = normalizedContract?.balance_due || 0;
-      const lateFees = normalizedContract?.late_fine_amount || 0;
+      // This source owns traffic amounts only. Invoice-based rent amounts are
+      // supplied by the rent candidate when both sources refer to one contract.
+      const overdueRent = 0;
+      const lateFees = 0;
       const trafficViolations = amount;
       const detailedClaimTotal = overdueRent + lateFees + trafficViolations;
 
       return {
         id: `traffic-${first.contract_id || first.customer_id || first.vehicle_plate || first.id}`,
+        customerId: first.customer_id || contract?.customer_id || customer?.id || null,
         source: 'traffic' as const,
+        sources: ['traffic'] as CandidateSource[],
         reason: `${penalties.length} مخالفة مرورية غير مسددة`,
         amount: detailedClaimTotal,
         violationsCount: penalties.length,
@@ -577,6 +592,76 @@ const fetchTrafficCandidates = async (companyId: string): Promise<CandidateItem[
         canConvert: !!normalizedContract,
       };
     });
+};
+
+const mergeCandidateSources = (items: CandidateItem[]): CandidateItem[] => {
+  const mergedByContract = new Map<string, CandidateItem>();
+
+  items.forEach((candidate) => {
+    const contractId = candidate.contract?.id;
+    const key = contractId ? `contract:${contractId}` : `candidate:${candidate.id}`;
+    const existing = mergedByContract.get(key);
+
+    if (!existing) {
+      mergedByContract.set(key, {
+        ...candidate,
+        sources: [...new Set(candidate.sources || [candidate.source])],
+      });
+      return;
+    }
+
+    const sources = [...new Set([
+      ...(existing.sources || [existing.source]),
+      ...(candidate.sources || [candidate.source]),
+    ])];
+    const rentCandidate = candidate.source === 'rent'
+      ? candidate
+      : existing.source === 'rent'
+        ? existing
+        : null;
+    const trafficCandidate = candidate.source === 'traffic'
+      ? candidate
+      : existing.source === 'traffic'
+        ? existing
+        : null;
+    const violationsCount = Math.max(
+      Number(existing.violationsCount || 0),
+      Number(candidate.violationsCount || 0)
+    );
+    const overdueRent = rentCandidate?.overdueRent || 0;
+    const lateFees = rentCandidate?.lateFees || 0;
+    const trafficViolations = Math.max(
+      Number(existing.trafficViolations || 0),
+      Number(candidate.trafficViolations || 0)
+    );
+    const detailedClaimTotal = overdueRent + lateFees + trafficViolations;
+    const primary = rentCandidate || trafficCandidate || existing;
+    const reasons = [
+      sources.includes('rent') ? 'تأخير في سداد الإيجار' : null,
+      sources.includes('traffic')
+        ? `${violationsCount || 'وجود'} مخالفة مرورية غير مسددة`
+        : null,
+    ].filter(Boolean);
+
+    mergedByContract.set(key, {
+      ...primary,
+      id: contractId ? `contract-${contractId}` : primary.id,
+      source: sources.includes('rent') ? 'rent' : 'traffic',
+      sources,
+      reason: reasons.join(' + '),
+      violationsCount,
+      overdueRent,
+      lateFees,
+      trafficViolations,
+      detailedClaimTotal,
+      amount: detailedClaimTotal,
+      contract: existing.contract || candidate.contract,
+      customerId: existing.customerId || candidate.customerId,
+      canConvert: existing.canConvert || candidate.canConvert,
+    });
+  });
+
+  return Array.from(mergedByContract.values());
 };
 
 const statusLabel = (status?: string | null) => {
@@ -788,7 +873,7 @@ const FinancialDelinquencyPage: React.FC = () => {
       if (!companyId) throw new Error('Company not ready');
       return fetchRentCandidates(companyId, candidateSearch);
     },
-    enabled: shouldLoadCandidates && candidateType !== 'traffic',
+    enabled: shouldLoadCandidates,
   });
 
   const { data: trafficCandidates = [], isFetching: trafficSearching } = useQuery({
@@ -797,8 +882,17 @@ const FinancialDelinquencyPage: React.FC = () => {
       if (!companyId) throw new Error('Company not ready');
       return fetchTrafficCandidates(companyId);
     },
-    enabled: shouldLoadCandidates && candidateType !== 'rent',
+    enabled: shouldLoadCandidates,
   });
+
+  const convertedContractIds = useMemo(
+    () => new Set(legalQueue.map((item) => item.contract.id).filter(Boolean)),
+    [legalQueue]
+  );
+  const convertedCustomerIds = useMemo(
+    () => new Set(legalQueue.map((item) => item.contract.customer_id).filter(Boolean)),
+    [legalQueue]
+  );
 
   const { data: delinquentCustomers = [], isFetching: aiFetching } = useDelinquentCustomers({
     useCachedData: false,
@@ -818,26 +912,28 @@ const FinancialDelinquencyPage: React.FC = () => {
 
   const candidates = useMemo(() => {
     const needle = candidateSearch.trim().toLowerCase();
-    const matchingTrafficCandidates = !needle
-      ? trafficCandidates
-      : trafficCandidates.filter((candidate) => (
+    const mergedCandidates = mergeCandidateSources([
+      ...rentCandidates,
+      ...trafficCandidates,
+    ]);
+    const matchingCandidates = mergedCandidates.filter((candidate) => {
+      const matchesType =
+        candidateType === 'all' ||
+        candidate.sources.includes(candidateType);
+      const matchesSearch =
+        !needle ||
           candidate.customerName.toLowerCase().includes(needle) ||
           candidate.phone?.toLowerCase().includes(needle) ||
           candidate.contractNumber?.toLowerCase().includes(needle) ||
-          candidate.vehicleLabel?.toLowerCase().includes(needle)
-        ));
-    const merged = candidateType === 'rent'
-      ? rentCandidates
-      : candidateType === 'traffic'
-        ? matchingTrafficCandidates
-        : [...rentCandidates, ...matchingTrafficCandidates];
+          candidate.vehicleLabel?.toLowerCase().includes(needle);
 
-    const seen = new Set<string>();
-    const uniqueCandidates = merged.filter((candidate) => {
-      const key = `${candidate.source}-${candidate.contract?.id || candidate.id}`;
-      if (seen.has(key)) return false;
-      seen.add(key);
-      return true;
+      return matchesType && matchesSearch;
+    });
+    const uniqueCandidates = matchingCandidates.filter((candidate) => {
+      const alreadyConverted =
+        (candidate.contract?.id && convertedContractIds.has(candidate.contract.id)) ||
+        (candidate.customerId && convertedCustomerIds.has(candidate.customerId));
+      return !alreadyConverted;
     });
 
     return [...uniqueCandidates].sort((a, b) => {
@@ -853,7 +949,15 @@ const FinancialDelinquencyPage: React.FC = () => {
           return b.detailedClaimTotal - a.detailedClaimTotal;
       }
     });
-  }, [candidateSearch, candidateSort, candidateType, rentCandidates, trafficCandidates]);
+  }, [
+    candidateSearch,
+    candidateSort,
+    candidateType,
+    convertedContractIds,
+    convertedCustomerIds,
+    rentCandidates,
+    trafficCandidates,
+  ]);
 
   useEffect(() => {
     const availableIds = new Set(candidates.map((candidate) => candidate.id));
@@ -903,7 +1007,9 @@ const FinancialDelinquencyPage: React.FC = () => {
         <td>${escapeHtml(candidate.contractNumber || '-')}</td>
         <td>${escapeHtml(candidate.vehicleLabel || '-')}</td>
         <td dir="ltr">${escapeHtml(candidate.phone || '-')}</td>
-        <td>${candidate.source === 'rent' ? 'إيجار متأخر' : 'مخالفات مرورية'}</td>
+        <td>${candidate.sources
+          .map((source) => source === 'rent' ? 'إيجار متأخر' : 'مخالفات مرورية')
+          .join(' + ')}</td>
         <td>${escapeHtml(formatCurrency(candidate.overdueRent))}</td>
         <td>${escapeHtml(formatCurrency(candidate.lateFees))}</td>
         <td>${escapeHtml(formatCurrency(candidate.trafficViolations))}</td>
@@ -1578,7 +1684,9 @@ const FinancialDelinquencyPage: React.FC = () => {
                             className="mt-0.5 h-5 w-5 border-slate-300 data-[state=checked]:border-[#22C7A1] data-[state=checked]:bg-[#22C7A1]"
                           />
                           <div className="flex min-w-0 flex-wrap items-center gap-2">
-                            <CandidateBadge source={candidate.source} />
+                            {candidate.sources.map((source) => (
+                              <CandidateBadge key={source} source={source} />
+                            ))}
                             <Badge variant="outline" className="border-slate-200 text-[#64748B]">
                               {candidate.reason}
                             </Badge>

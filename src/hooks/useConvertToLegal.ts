@@ -30,6 +30,7 @@ export interface ContractForLegal {
   start_date: string;
   end_date: string;
   status: string;
+  vehicle_returned?: boolean | null;
   customer?: {
     id: string;
     first_name?: string | null;
@@ -79,9 +80,13 @@ export const useExistingLegalCase = (contractId: string) => {
 /**
  * Hook لحساب قيمة القضية التلقائية
  */
-export const useCalculateCaseValue = (contractId: string, companyId?: string) => {
+export const useCalculateCaseValue = (
+  contractId: string,
+  companyId?: string,
+  vehicleReturned = false
+) => {
   return useQuery({
-    queryKey: ['calculate-case-value', contractId],
+    queryKey: ['calculate-case-value', contractId, vehicleReturned],
     queryFn: async () => {
       if (!contractId || !companyId) return { totalValue: 0, breakdown: {} };
 
@@ -89,31 +94,58 @@ export const useCalculateCaseValue = (contractId: string, companyId?: string) =>
       const { data: contract, error: contractError } = await supabase
         .from('contracts')
         .select('balance_due, late_fine_amount, customer_id')
+        .eq('company_id', companyId)
         .eq('id', contractId)
         .single();
 
       if (contractError) throw contractError;
 
-      // جلب المخالفات المرورية غير المدفوعة
-      const { data: violations, error: violationsError } = await supabase
-        .from('penalties')
-        .select('amount')
-        .eq('contract_id', contractId)
-        .neq('payment_status', 'paid')
-        .neq('status', 'cancelled');
+      const [{ data: invoices, error: invoicesError }, { data: violations, error: violationsError }] =
+        await Promise.all([
+          supabase
+            .from('invoices')
+            .select('total_amount, paid_amount, balance_due, status')
+            .eq('company_id', companyId)
+            .eq('contract_id', contractId),
+          supabase
+            .from('penalties')
+            .select('amount')
+            .eq('company_id', companyId)
+            .eq('contract_id', contractId)
+            .neq('payment_status', 'paid')
+            .neq('status', 'cancelled'),
+        ]);
 
+      if (invoicesError) throw invoicesError;
       if (violationsError) {
         console.warn('Error fetching violations:', violationsError);
       }
 
-      const balanceDue = contract?.balance_due || 0;
+      const activeInvoices = (invoices || []).filter((invoice) =>
+        !['cancelled', 'canceled', 'void', 'reversed'].includes(
+          String(invoice.status || '').toLowerCase()
+        )
+      );
+      const invoiceBalance = activeInvoices.reduce((sum, invoice) => {
+        const calculatedBalance = Math.max(
+          Number(invoice.total_amount || 0) - Number(invoice.paid_amount || 0),
+          0
+        );
+        return sum + Math.max(Number(invoice.balance_due ?? calculatedBalance), 0);
+      }, 0);
+      const contractBalance = Number(contract?.balance_due || 0);
+      const balanceDue = vehicleReturned && activeInvoices.length > 0
+        ? invoiceBalance
+        : contractBalance;
       const lateFines = contract?.late_fine_amount || 0;
       const trafficViolations = violations?.reduce((sum, v) => sum + (Number(v.amount) || 0), 0) || 0;
 
       return {
-        totalValue: balanceDue + lateFines + trafficViolations,
+        totalValue: balanceDue + lateFines,
         breakdown: {
           balanceDue,
+          contractBalance,
+          invoiceBalance,
           lateFines,
           trafficViolations,
         },
