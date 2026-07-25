@@ -336,6 +336,7 @@ export interface CreatePaymentData {
   vendor_id?: string;
   invoice_id?: string;
   contract_id?: string;
+  late_fee_id?: string;
   late_fine_amount?: number;
   late_fine_status?: 'none' | 'paid' | 'waived' | 'pending';
   late_fine_type?: 'none' | 'separate_payment' | 'included_with_payment' | 'waived';
@@ -399,6 +400,47 @@ export const useCreatePayment = () => {
           ? 'bank_transfer'
           : paymentData.payment_type;
         const isReceipt = paymentData.payment_method === 'received' || !!paymentData.customer_id;
+        const lateFineAmount = Math.max(0, Number(paymentData.late_fine_amount) || 0);
+
+        if (isReceipt && paymentData.invoice_id && lateFineAmount > 0) {
+          if (!companyId) {
+            throw new Error('Company ID is required');
+          }
+
+          const { data: paymentId, error: paymentError } = await (supabase as any).rpc(
+            'create_invoice_payment_with_late_fee_v1',
+            {
+              p_company_id: companyId,
+              p_invoice_id: paymentData.invoice_id,
+              p_amount: paymentData.amount,
+              p_late_fee_amount: lateFineAmount,
+              p_late_fee_id: paymentData.late_fee_id ?? null,
+              p_payment_date: paymentData.payment_date,
+              p_payment_method: normalizedPaymentMethod,
+              p_reference_number: paymentData.reference_number ?? null,
+              p_notes: paymentData.notes ?? null,
+              p_idempotency_key: crypto.randomUUID(),
+              p_actor_id: user?.id ?? null,
+            }
+          );
+
+          if (paymentError) {
+            throw paymentError;
+          }
+
+          const { data: createdPayment, error: fetchError } = await supabase
+            .from('payments')
+            .select('*')
+            .eq('id', paymentId)
+            .eq('company_id', companyId)
+            .single();
+
+          if (fetchError) {
+            throw fetchError;
+          }
+
+          return createdPayment;
+        }
 
         return await createCentralPayment.mutateAsync({
           amount: paymentData.amount,

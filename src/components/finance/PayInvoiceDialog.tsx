@@ -5,7 +5,6 @@ import * as z from "zod";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { differenceInDays } from "date-fns";
 import {
-  AlertTriangle,
   Banknote,
   Building2,
   Calendar,
@@ -145,7 +144,34 @@ export function PayInvoiceDialog({ open, onOpenChange, invoice, onPaymentCreated
         return [];
       }
 
-      return data || [];
+      const feeRows = data || [];
+      if (feeRows.length === 0) {
+        return feeRows.map((fee) => ({ ...fee, paid_amount: 0 }));
+      }
+
+      const { data: allocations, error: allocationsError } = await supabase
+        .from("payment_allocations")
+        .select("target_id, amount")
+        .eq("allocation_type", "late_fee")
+        .eq("is_active", true)
+        .in("target_id", feeRows.map((fee) => fee.id));
+
+      if (allocationsError) {
+        console.error("Error fetching late fee allocations:", allocationsError);
+      }
+
+      const paidByFee = new Map<string, number>();
+      for (const allocation of allocations || []) {
+        paidByFee.set(
+          allocation.target_id,
+          roundMoney((paidByFee.get(allocation.target_id) || 0) + Number(allocation.amount || 0))
+        );
+      }
+
+      return feeRows.map((fee) => ({
+        ...fee,
+        paid_amount: paidByFee.get(fee.id) || 0,
+      }));
     },
     enabled: !!invoice.id && open,
   });
@@ -164,11 +190,14 @@ export function PayInvoiceDialog({ open, onOpenChange, invoice, onPaymentCreated
     if (daysOverdue <= 0 || calculatedLateFee <= 0 || lateFeeWaived) return [];
 
     const existingFee = lateFees.length > 0 ? lateFees[0] : null;
+    const remainingExistingFee = existingFee
+      ? Math.max(0, Number(existingFee.fee_amount || 0) - Number(existingFee.paid_amount || 0))
+      : calculatedLateFee;
     return [
       {
         id: existingFee?.id || `calculated-${invoice.id}`,
         days_overdue: daysOverdue,
-        fee_amount: calculatedLateFee,
+        fee_amount: roundMoney(Math.min(calculatedLateFee, remainingExistingFee)),
         status: existingFee?.status || "pending",
         calculated: !existingFee,
         late_fee_rule_id: existingFee?.late_fee_rule_id,
@@ -247,87 +276,13 @@ export function PayInvoiceDialog({ open, onOpenChange, invoice, onPaymentCreated
     }
   };
 
-  const generateInvoiceNumber = async (companyId: string): Promise<string> => {
-    const prefix = "INV";
-    const year = new Date().getFullYear();
-    const month = (new Date().getMonth() + 1).toString().padStart(2, "0");
-
-    const { data: lastInvoice } = await supabase
-      .from("invoices")
-      .select("invoice_number")
-      .eq("company_id", companyId)
-      .like("invoice_number", `${prefix}-${year}${month}%`)
-      .order("invoice_number", { ascending: false })
-      .limit(1)
-      .single();
-
-    let sequence = 1;
-    if (lastInvoice?.invoice_number) {
-      sequence = parseInt(lastInvoice.invoice_number.split("-").pop() || "0") + 1;
-    }
-
-    return `${prefix}-${year}${month}-${sequence.toString().padStart(4, "0")}`;
-  };
-
-  const createRemainingBalanceInvoice = async (balance: number) => {
-    if (!invoice.company_id || !invoice.contract_id || !user?.id) {
-      throw new Error("بيانات غير كافية لإنشاء الفاتورة");
-    }
-
-    const invoiceNumber = await generateInvoiceNumber(invoice.company_id);
-    const today = new Date().toISOString().split("T")[0];
-    const nextMonth = new Date();
-    nextMonth.setMonth(nextMonth.getMonth() + 1);
-    const dueDate = new Date(nextMonth.getFullYear(), nextMonth.getMonth(), 1).toISOString().split("T")[0];
-
-    const remainingLateFees = Math.max(0, balance - invoice.balance_due);
-
-    const { data: newInvoice, error } = await supabase
-      .from("invoices")
-      .insert({
-        company_id: invoice.company_id,
-        customer_id: invoice.customer_id,
-        contract_id: invoice.contract_id,
-        invoice_number: invoiceNumber,
-        invoice_date: today,
-        due_date: dueDate,
-        total_amount: balance,
-        subtotal: balance,
-        tax_amount: 0,
-        discount_amount: 0,
-        paid_amount: 0,
-        balance_due: balance,
-        status: "sent",
-        payment_status: "unpaid",
-        invoice_type: "service",
-        notes: `فاتورة متبقية من الفاتورة ${invoice.invoice_number}`,
-        created_by: user.id,
-      })
-      .select()
-      .single();
-
-    if (error) throw error;
-
-    if (remainingLateFees > 0 && lateFees.length > 0) {
-      const latestLateFee = lateFees[0];
-      await supabase.from("late_fees").insert({
-        company_id: invoice.company_id,
-        invoice_id: newInvoice.id,
-        contract_id: invoice.contract_id,
-        late_fee_rule_id: latestLateFee.late_fee_rule_id,
-        original_amount: balance,
-        days_overdue: latestLateFee.days_overdue,
-        fee_amount: remainingLateFees,
-        fee_type: latestLateFee.fee_type,
-        status: "pending",
-      });
-    }
-
-    return newInvoice;
-  };
-
   const onSubmit = async (data: PaymentFormData) => {
     try {
+      const lateFineAmount = roundMoney(
+        Math.min(totalLateFees, Math.max(0, data.amount - invoice.balance_due))
+      );
+      const persistedLateFee = allLateFees.find((fee) => !fee.calculated);
+
       await createPayment.mutateAsync({
         payment_type: data.payment_method,
         payment_method: invoice.customer_id ? "received" : "made",
@@ -339,19 +294,11 @@ export function PayInvoiceDialog({ open, onOpenChange, invoice, onPaymentCreated
         customer_id: invoice.customer_id,
         vendor_id: invoice.vendor_id,
         contract_id: invoice.contract_id,
+        late_fee_id: persistedLateFee?.id,
+        late_fine_amount: lateFineAmount,
+        late_fine_status: lateFineAmount > 0 ? "paid" : "none",
+        late_fine_type: lateFineAmount > 0 ? "included_with_payment" : "none",
       });
-
-      if (isAmountPartial && remainingBalance > 0) {
-        try {
-          const newInvoice = await createRemainingBalanceInvoice(remainingBalance);
-          toast({
-            title: "تم تسجيل الدفع",
-            description: `تم إنشاء فاتورة جديدة #${newInvoice.invoice_number} للمبلغ المتبقي`,
-          });
-        } catch (invoiceError) {
-          console.error("Error creating remaining balance invoice:", invoiceError);
-        }
-      }
 
       onPaymentCreated?.();
       onOpenChange(false);

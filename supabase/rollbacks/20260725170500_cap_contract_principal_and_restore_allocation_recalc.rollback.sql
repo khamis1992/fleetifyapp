@@ -1,0 +1,2 @@
+-- Reapply 20260712052300_atomic_payment_cancellation_and_contract_totals.sql
+-- to restore uncapped contract totals and its invoice-only allocation trigger.
