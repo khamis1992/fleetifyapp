@@ -28989,7 +28989,7 @@ export type Database = {
         Returns: Database["public"]["Tables"]["legal_cases"]["Row"]
       }
       convert_contract_to_legal_v1: {
-        Args: { p_actor_id?: string; p_case_type: string; p_company_id: string; p_contract_id: string; p_notes: string; p_priority: string }
+        Args: { p_actor_id?: string; p_case_type: string; p_company_id: string; p_contract_id: string; p_notes: string; p_priority: string; p_vehicle_returned: boolean }
         Returns: Json
       }
       sync_lawsuit_preparation_to_legal_case_v1: {

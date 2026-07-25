@@ -64,6 +64,7 @@ const convertDelinquentCustomer = async (
     p_notes: buildConversionNotes(input),
     p_priority: priorityForRisk(input.delinquentCustomer.risk_score),
     p_case_type: "payment_collection",
+    p_vehicle_returned: false,
     p_actor_id: actorId,
   });
 

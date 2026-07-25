@@ -13,6 +13,7 @@ export interface ConvertToLegalParams {
   notes?: string;
   priority?: 'low' | 'medium' | 'high' | 'urgent';
   caseType?: 'payment_collection' | 'contract_breach' | 'vehicle_damage' | 'other';
+  vehicleReturned?: boolean;
 }
 
 export interface ContractForLegal {
@@ -486,6 +487,7 @@ export const useConvertToLegal = () => {
         p_notes: params.notes || '',
         p_priority: params.priority || 'high',
         p_case_type: params.caseType || 'payment_collection',
+        p_vehicle_returned: params.vehicleReturned ?? false,
         p_actor_id: user.id,
       });
       if (error) throw error;

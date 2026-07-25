@@ -26,6 +26,7 @@ import { Button } from '@/components/ui/button';
 import { formatCustomerName } from '@/utils/formatCustomerName';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -59,6 +60,9 @@ import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import { useNavigate } from 'react-router-dom';
 import { useTourGuide } from '@/components/tour-guide';
+import { cn } from '@/lib/utils';
+
+type VehicleDisposition = 'keep_with_customer' | 'returned';
 
 interface ConvertToLegalDialogProps {
   open: boolean;
@@ -79,6 +83,7 @@ export const ConvertToLegalDialog: React.FC<ConvertToLegalDialogProps> = ({
   const [notes, setNotes] = useState('');
   const [priority, setPriority] = useState<'low' | 'medium' | 'high' | 'urgent'>('high');
   const [caseType, setCaseType] = useState<'payment_collection' | 'contract_breach' | 'vehicle_damage' | 'other'>('payment_collection');
+  const [vehicleDisposition, setVehicleDisposition] = useState<VehicleDisposition>('keep_with_customer');
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
 
   const convertMutation = useConvertToLegal();
@@ -141,11 +146,13 @@ export const ConvertToLegalDialog: React.FC<ConvertToLegalDialogProps> = ({
         notes,
         priority,
         caseType,
+        vehicleReturned: vehicleDisposition === 'returned',
       });
 
       setShowConfirmDialog(false);
       onOpenChange(false);
       setNotes('');
+      setVehicleDisposition('keep_with_customer');
       onSuccess?.();
     } catch (error) {
       console.error('Convert error:', error);
@@ -188,7 +195,7 @@ export const ConvertToLegalDialog: React.FC<ConvertToLegalDialogProps> = ({
               تحويل العقد للشؤون القانونية
             </DialogTitle>
             <DialogDescription>
-              سيتم إنشاء قضية قانونية جديدة وتحديث حالة العقد والمركبة
+              سيتم إنشاء قضية قانونية جديدة وتحديث حالة العقد وفق قرارك بشأن المركبة
             </DialogDescription>
             <Button
               type="button"
@@ -321,14 +328,83 @@ export const ConvertToLegalDialog: React.FC<ConvertToLegalDialogProps> = ({
                       <div>
                         <p className="text-xs text-muted-foreground">المركبة</p>
                         <p className="font-semibold">{vehicleInfo}</p>
-                        <Badge variant="secondary" className="text-xs mt-1">
-                          ستصبح متوفرة
+                        <Badge
+                          variant="secondary"
+                          className={cn(
+                            'mt-1 text-xs',
+                            vehicleDisposition === 'returned'
+                              ? 'bg-emerald-100 text-emerald-700'
+                              : 'bg-amber-100 text-amber-800',
+                          )}
+                        >
+                          {vehicleDisposition === 'returned'
+                            ? 'تم استلامها'
+                            : 'ما زالت لدى العميل'}
                         </Badge>
                       </div>
                     </div>
                   </CardContent>
                 </Card>
               </div>
+
+              {contract.vehicle_id && (
+                <div className="space-y-3" data-tour="contract-convert-legal-vehicle-status">
+                  <div>
+                    <Label className="text-sm font-semibold">وضع المركبة عند التحويل</Label>
+                    <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                      اختر الحالة الفعلية للمركبة. التحويل القانوني وحده لا يعني أنها عادت إلى الشركة.
+                    </p>
+                  </div>
+                  <RadioGroup
+                    value={vehicleDisposition}
+                    onValueChange={(value) => setVehicleDisposition(value as VehicleDisposition)}
+                    className="grid gap-3 sm:grid-cols-2"
+                  >
+                    <Label
+                      htmlFor="vehicle-with-customer"
+                      className={cn(
+                        'flex min-h-24 cursor-pointer items-start gap-3 rounded-lg border p-4 transition-colors',
+                        vehicleDisposition === 'keep_with_customer'
+                          ? 'border-amber-400 bg-amber-50'
+                          : 'border-border bg-background hover:bg-muted/40',
+                      )}
+                    >
+                      <RadioGroupItem
+                        id="vehicle-with-customer"
+                        value="keep_with_customer"
+                        className="mt-1"
+                      />
+                      <span>
+                        <span className="block font-semibold text-foreground">المركبة ما زالت لدى العميل</span>
+                        <span className="mt-1 block text-xs font-normal leading-5 text-muted-foreground">
+                          تبقى غير متاحة للتأجير وتُسجل كغير مستلمة.
+                        </span>
+                      </span>
+                    </Label>
+                    <Label
+                      htmlFor="vehicle-returned"
+                      className={cn(
+                        'flex min-h-24 cursor-pointer items-start gap-3 rounded-lg border p-4 transition-colors',
+                        vehicleDisposition === 'returned'
+                          ? 'border-emerald-400 bg-emerald-50'
+                          : 'border-border bg-background hover:bg-muted/40',
+                      )}
+                    >
+                      <RadioGroupItem
+                        id="vehicle-returned"
+                        value="returned"
+                        className="mt-1"
+                      />
+                      <span>
+                        <span className="block font-semibold text-foreground">تم استلام المركبة من العميل</span>
+                        <span className="mt-1 block text-xs font-normal leading-5 text-muted-foreground">
+                          تصبح متاحة إذا لم يوجد حجز أو صيانة أو مانع تشغيلي آخر.
+                        </span>
+                      </span>
+                    </Label>
+                  </RadioGroup>
+                </div>
+              )}
 
               {/* تفاصيل المطالبة المالية */}
               <Card className="border-red-200 bg-red-50/50" data-tour="contract-convert-legal-claim">
@@ -414,7 +490,13 @@ export const ConvertToLegalDialog: React.FC<ConvertToLegalDialogProps> = ({
                   <ul className="list-disc list-inside mt-2 space-y-1 text-sm">
                     <li>سيتم إنشاء قضية قانونية جديدة بحالة "تحت الإجراء"</li>
                     <li>ستتغير حالة العقد إلى "تحت الإجراء القانوني"</li>
-                    <li>ستصبح المركبة "متوفرة" للتأجير</li>
+                    {contract.vehicle_id && (
+                      <li>
+                        {vehicleDisposition === 'returned'
+                          ? 'ستُسجل المركبة كمستلمة ويُعاد احتساب توفرها تشغيليًا'
+                          : 'ستُسجل المركبة بأنها ما زالت لدى العميل وتبقى غير متاحة'}
+                      </li>
+                    )}
                     <li>سيتم تسجيل العملية في سجل العقد</li>
                     <li>يمكنك لاحقاً تغيير حالة القضية إلى "نشطة" عند فتحها في المحكمة</li>
                   </ul>
@@ -464,7 +546,13 @@ export const ConvertToLegalDialog: React.FC<ConvertToLegalDialogProps> = ({
               <ul className="list-disc list-inside mt-2 space-y-1">
                 <li>إنشاء قضية قانونية بقيمة <strong>{formatCurrency(stats?.totalClaim || 0)}</strong></li>
                 <li>تغيير حالة العقد إلى "تحت الإجراء القانوني"</li>
-                <li>تحرير المركبة وجعلها متوفرة</li>
+                {contract.vehicle_id && (
+                  <li>
+                    {vehicleDisposition === 'returned'
+                      ? 'تسجيل استلام المركبة وإعادة احتساب توفرها'
+                      : 'إبقاء المركبة غير متاحة لأنها ما زالت لدى العميل'}
+                  </li>
+                )}
               </ul>
               <br />
               <strong>هل أنت متأكد من المتابعة؟</strong>

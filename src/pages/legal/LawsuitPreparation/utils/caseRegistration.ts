@@ -377,6 +377,7 @@ export async function registerLegalCase(
     p_contract_id: contractId,
     p_notes: taqadiData ? `${taqadiData.caseTitle}\n${taqadiData.claims}` : '',
     p_priority: calculations.total > 10000 ? 'urgent' : 'high',
+    p_vehicle_returned: false,
   });
   if (error || !data) {
     throw new Error(`Failed to create the legal case: ${error?.message || 'Unknown error'}`);

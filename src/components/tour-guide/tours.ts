@@ -930,7 +930,13 @@ export const PREDEFINED_TOURS: Record<string, TourConfig> = {
       {
         target: '[data-tour="contract-convert-legal-parties"]',
         title: 'العميل والمركبة',
-        content: 'تأكد من العميل والمركبة المرتبطين بالعقد. عند التحويل قد تصبح المركبة متاحة، لذلك هذا التحقق مهم تشغيليا.',
+        content: 'تأكد من العميل والمركبة المرتبطين بالعقد قبل اتخاذ قرار التحويل.',
+        placement: 'bottom',
+      },
+      {
+        target: '[data-tour="contract-convert-legal-vehicle-status"]',
+        title: 'وضع المركبة',
+        content: 'حدد هل المركبة ما زالت لدى العميل فتظل غير متاحة، أم تم استلامها ليعيد النظام احتساب توفرها وفق الحجوزات والصيانة.',
         placement: 'bottom',
       },
       {
@@ -960,7 +966,7 @@ export const PREDEFINED_TOURS: Record<string, TourConfig> = {
       {
         target: '[data-tour="contract-convert-legal-effects"]',
         title: 'ما الذي سيحدث؟',
-        content: 'راجع الآثار قبل المتابعة: إنشاء قضية، تغيير حالة العقد، تحرير المركبة، وتسجيل العملية في سجل العقد.',
+        content: 'راجع الآثار قبل المتابعة: إنشاء القضية، تغيير حالة العقد، تطبيق قرار المركبة، وتسجيل العملية في سجل العقد.',
         placement: 'top',
       },
       {
