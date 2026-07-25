@@ -704,7 +704,7 @@ async function calculateDelinquentCustomersDynamically(
           company_name_ar: customer.company_name_ar,
           customer_type: customer.customer_type,
           full_name: null
-        }),
+        }, { preferArabic: true }),
         customer_code: customer.customer_code || '',
         customer_type: customer.customer_type || 'individual',
         phone: customer.phone,

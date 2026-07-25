@@ -18,41 +18,57 @@ export interface CustomerNameData {
   full_name?: string | null; // For cases where only full_name is available
 }
 
-export const formatCustomerName = (customer: CustomerNameData | null | undefined): string => {
+export interface CustomerNameFormatOptions {
+  preferArabic?: boolean;
+  fallbackName?: string | null;
+}
+
+const cleanName = (value?: string | null): string => value?.trim() || '';
+
+export const formatCustomerName = (
+  customer: CustomerNameData | null | undefined,
+  options: CustomerNameFormatOptions = {}
+): string => {
   if (!customer) return 'غير محدد';
 
   // التحقق من نوع العميل
   const isCorporate = customer.customer_type === 'corporate' || customer.customer_type === 'company';
+  const fallbackName = cleanName(options.fallbackName);
 
   if (isCorporate) {
     // للشركات: الاسم العربي أولاً، ثم الإنجليزي
-    if (customer.company_name_ar && customer.company_name_ar.trim()) {
-      return customer.company_name_ar.trim();
+    const companyNameAr = cleanName(customer.company_name_ar);
+    const companyName = cleanName(customer.company_name);
+
+    if (companyNameAr) {
+      return companyNameAr;
     }
-    if (customer.company_name && customer.company_name.trim()) {
-      return customer.company_name.trim();
+    if (fallbackName) {
+      return fallbackName;
+    }
+    if (companyName) {
+      return companyName;
     }
     // Fallback if no company name
     return customer.full_name || 'شركة بدون اسم';
   } else {
-    // للأفراد: الاسم الإنجليزي أولاً
-    const firstName = customer.first_name || '';
-    const lastName = customer.last_name || '';
+    const firstName = cleanName(customer.first_name);
+    const lastName = cleanName(customer.last_name);
     const fullNameEn = `${firstName} ${lastName}`.trim();
-
-    if (fullNameEn) {
-      return fullNameEn;
-    }
-
-    // ثم الاسم العربي
-    const firstNameAr = customer.first_name_ar || '';
-    const lastNameAr = customer.last_name_ar || '';
+    const firstNameAr = cleanName(customer.first_name_ar);
+    const lastNameAr = cleanName(customer.last_name_ar);
     const fullNameAr = `${firstNameAr} ${lastNameAr}`.trim();
 
-    if (fullNameAr) {
-      return fullNameAr;
+    if (options.preferArabic) {
+      if (fullNameAr) return fullNameAr;
+      if (fallbackName) return fallbackName;
+      if (fullNameEn) return fullNameEn;
+    } else {
+      if (fullNameEn) return fullNameEn;
+      if (fullNameAr) return fullNameAr;
+      if (fallbackName) return fallbackName;
     }
-    
+
     // Fallback
     return customer.full_name || 'عميل بدون اسم';
   }
