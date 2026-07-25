@@ -172,6 +172,47 @@ const normalizeContractForLegal = (contract: any): ContractForLegal => ({
       : undefined,
 });
 
+const sumUnpaidTrafficViolationsByContract = async (
+  companyId: string,
+  contractIds: string[],
+  fallbackPenalties: Map<string, number> = new Map()
+) => {
+  const totals = new Map<string, number>();
+  const counts = new Map<string, number>();
+
+  if (contractIds.length === 0) return { totals, counts };
+
+  for (let index = 0; index < contractIds.length; index += INVOICE_CONTRACT_CHUNK_SIZE) {
+    const contractIdChunk = contractIds.slice(index, index + INVOICE_CONTRACT_CHUNK_SIZE);
+    const { data, error } = await supabase
+      .from('traffic_violations')
+      .select('contract_id, fine_amount, status')
+      .eq('company_id', companyId)
+      .in('contract_id', contractIdChunk)
+      .not('contract_id', 'is', null)
+      .not('status', 'in', '("paid","cancelled","canceled","void","voided")');
+
+    if (error) throw error;
+
+    (data || []).forEach((violation: any) => {
+      if (!violation.contract_id) return;
+      totals.set(
+        violation.contract_id,
+        (totals.get(violation.contract_id) || 0) + Number(violation.fine_amount || 0)
+      );
+      counts.set(violation.contract_id, (counts.get(violation.contract_id) || 0) + 1);
+    });
+  }
+
+  fallbackPenalties.forEach((amount, contractId) => {
+    if (!totals.has(contractId)) {
+      totals.set(contractId, amount);
+    }
+  });
+
+  return { totals, counts };
+};
+
 const vehicleLabel = (contract: any) => {
   const vehicle = contract.vehicles || {};
   const make = vehicle.make || contract.make || '';
@@ -246,7 +287,7 @@ const fetchLegalQueue = async (companyId: string): Promise<QueueItem[]> => {
   if (!legalCases?.length) return [];
 
   const contractIds = legalCases.map((legalCase: any) => legalCase.contract_id).filter(Boolean);
-  const violationsByContract = new Map<string, number>();
+  let violationsByContract = new Map<string, number>();
   const invoicesByContract = new Map<string, any[]>();
 
   if (contractIds.length > 0) {
@@ -269,13 +310,19 @@ const fetchLegalQueue = async (companyId: string): Promise<QueueItem[]> => {
     if (penaltiesError) throw penaltiesError;
     if (invoicesError) throw invoicesError;
 
+    const fallbackPenalties = new Map<string, number>();
     (penalties || []).forEach((penalty: any) => {
       if (!penalty.contract_id) return;
-      violationsByContract.set(
+      fallbackPenalties.set(
         penalty.contract_id,
-        (violationsByContract.get(penalty.contract_id) || 0) + Number(penalty.amount || 0)
+        (fallbackPenalties.get(penalty.contract_id) || 0) + Number(penalty.amount || 0)
       );
     });
+    violationsByContract = (await sumUnpaidTrafficViolationsByContract(
+      companyId,
+      contractIds,
+      fallbackPenalties
+    )).totals;
 
     (invoices || []).forEach((invoice: any) => {
       if (!invoice.contract_id) return;
@@ -373,7 +420,7 @@ const fetchRentCandidates = async (companyId: string, searchTerm: string): Promi
 
   const contractIds = (data || []).map((contract: any) => contract.id).filter(Boolean);
   const invoicesByContract = new Map<string, any[]>();
-  const violationsByContract = new Map<string, number>();
+  let violationsByContract = new Map<string, number>();
 
   if (contractIds.length > 0) {
     const [{ data: invoices, error: invoicesError }, { data: penalties, error: penaltiesError }] = await Promise.all([
@@ -400,13 +447,19 @@ const fetchRentCandidates = async (companyId: string, searchTerm: string): Promi
       invoicesByContract.set(invoice.contract_id, [...(invoicesByContract.get(invoice.contract_id) || []), invoice]);
     });
 
+    const fallbackPenalties = new Map<string, number>();
     (penalties || []).forEach((penalty: any) => {
       if (!penalty.contract_id) return;
-      violationsByContract.set(
+      fallbackPenalties.set(
         penalty.contract_id,
-        (violationsByContract.get(penalty.contract_id) || 0) + Number(penalty.amount || 0)
+        (fallbackPenalties.get(penalty.contract_id) || 0) + Number(penalty.amount || 0)
       );
     });
+    violationsByContract = (await sumUnpaidTrafficViolationsByContract(
+      companyId,
+      contractIds,
+      fallbackPenalties
+    )).totals;
   }
 
   const needle = searchTerm.trim().toLowerCase();
@@ -564,6 +617,15 @@ const fetchTrafficCandidates = async (companyId: string): Promise<CandidateItem[
       .filter(Boolean)
   ));
   const invoicesByContract = new Map<string, any[]>();
+  const fallbackPenalties = new Map<string, number>();
+
+  penalties.forEach((penalty: any) => {
+    if (!penalty.contract_id) return;
+    fallbackPenalties.set(
+      penalty.contract_id,
+      (fallbackPenalties.get(penalty.contract_id) || 0) + Number(penalty.amount || 0)
+    );
+  });
 
   if (contractIds.length > 0) {
     for (let index = 0; index < contractIds.length; index += INVOICE_CONTRACT_CHUNK_SIZE) {
@@ -587,12 +649,24 @@ const fetchTrafficCandidates = async (companyId: string): Promise<CandidateItem[
     }
   }
 
+  const trafficViolationSummary = await sumUnpaidTrafficViolationsByContract(
+    companyId,
+    contractIds,
+    fallbackPenalties
+  );
+
   return Array.from(grouped.values())
     .map((penalties) => {
       const first = penalties[0];
       const contract = first.contracts;
       const customer = first.customers || contract?.customers;
-      const amount = penalties.reduce((sum, penalty) => sum + Number(penalty.amount || 0), 0);
+      const fallbackAmount = penalties.reduce((sum, penalty) => sum + Number(penalty.amount || 0), 0);
+      const amount = first.contract_id
+        ? trafficViolationSummary.totals.get(first.contract_id) ?? fallbackAmount
+        : fallbackAmount;
+      const violationsCount = first.contract_id
+        ? trafficViolationSummary.counts.get(first.contract_id) || penalties.length
+        : penalties.length;
       const name = normalizeCustomerName(customer);
       const normalizedContract = contract ? normalizeContractForLegal({ ...contract, customers: customer }) : null;
       const invoiceCalculation = calculateDelinquencyAmounts(
@@ -615,9 +689,9 @@ const fetchTrafficCandidates = async (companyId: string): Promise<CandidateItem[
         customerId: first.customer_id || contract?.customer_id || customer?.id || null,
         source: overdueRent > 0 ? 'rent' as const : 'traffic' as const,
         sources,
-        reason: `${penalties.length} مخالفة مرورية غير مسددة`,
+        reason: `${violationsCount} مخالفة مرورية غير مسددة`,
         amount: detailedClaimTotal,
-        violationsCount: penalties.length,
+        violationsCount,
         overdueRent,
         lateFees,
         trafficViolations,
