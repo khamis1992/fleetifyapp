@@ -49,7 +49,7 @@ const roleOptions = [
   { id: 'accountant', label: 'محاسب', description: 'صلاحيات مالية ومحاسبية' },
   { id: 'fleet_manager', label: 'مدير الأسطول', description: 'إدارة المركبات والصيانة' },
   { id: 'sales_agent', label: 'موظف مبيعات', description: 'صلاحيات المبيعات والعملاء' },
-  { id: 'employee', label: 'موظف', description: 'صلاحيات أساسية' },
+  { id: 'employee', label: 'مساحة العمل فقط', description: 'دخول مساحة العمل الخاصة بالموظف فقط بدون صلاحيات أقسام' },
 ];
 
 export const UserDetailsDialog: React.FC<UserDetailsDialogProps> = ({ open,

@@ -34,7 +34,7 @@ const availableRoles = [
   { value: 'accountant', label: 'محاسب', description: 'صلاحيات مالية ومحاسبية' },
   { value: 'fleet_manager', label: 'مدير الأسطول', description: 'إدارة المركبات والصيانة' },
   { value: 'sales_agent', label: 'مندوب مبيعات', description: 'إدارة العملاء والمبيعات' },
-  { value: 'employee', label: 'موظف', description: 'صلاحيات محدودة للاستعلام' },
+  { value: 'employee', label: 'مساحة العمل فقط', description: 'دخول مساحة العمل الخاصة بالموظف فقط بدون صلاحيات أقسام' },
 ];
 
 export default function UserAccountForm({ employee, open, onOpenChange, onSuccess }: UserAccountFormProps) {

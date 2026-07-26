@@ -70,7 +70,7 @@ const roleLabels: Record<UserRole, string> = {
   accountant: 'محاسب',
   fleet_manager: 'مدير الأسطول',
   sales_agent: 'مندوب مبيعات',
-  employee: 'موظف',
+  employee: 'مساحة العمل فقط',
 };
 
 const roleTone: Record<UserRole, string> = {
@@ -242,7 +242,7 @@ function UserManagementContent() {
     }
 
     setSelectedUser(employee);
-    setPendingRoleChanges(employee.user_roles);
+    setPendingRoleChanges(normalizeSingleRole(employee.user_roles));
     setPendingPermissionChanges([]);
   };
 
@@ -260,15 +260,13 @@ function UserManagementContent() {
   };
 
   const handleRoleChange = (role: UserRole, assigned: boolean) => {
-    setPendingRoleChanges((current) => {
-      if (assigned) return current.includes(role) ? current : [...current, role];
-      return current.filter((currentRole) => currentRole !== role);
-    });
+    if (!assigned) return;
+    setPendingRoleChanges([role]);
   };
 
   const resetPendingChanges = () => {
     setPendingPermissionChanges([]);
-    setPendingRoleChanges(selectedUser?.user_roles || []);
+    setPendingRoleChanges(normalizeSingleRole(selectedUser?.user_roles || []));
   };
 
   const handleSaveChanges = async () => {
@@ -299,7 +297,7 @@ function UserManagementContent() {
       const updatedUser = refreshed.data?.find((employee) => employee.user_id === selectedUser.user_id);
       if (updatedUser) {
         setSelectedUser(updatedUser);
-        setPendingRoleChanges(updatedUser.user_roles);
+        setPendingRoleChanges(normalizeSingleRole(updatedUser.user_roles));
       }
       setPendingPermissionChanges([]);
 
@@ -666,4 +664,10 @@ function rolesChanged(originalRoles: UserRole[], pendingRoles: UserRole[]) {
   const original = [...originalRoles].sort().join('|');
   const pending = [...pendingRoles].sort().join('|');
   return original !== pending;
+}
+
+function normalizeSingleRole(roles: UserRole[]) {
+  if (roles.length <= 1) return roles;
+  if (roles.includes('employee')) return ['employee'] as UserRole[];
+  return [roles[0]];
 }

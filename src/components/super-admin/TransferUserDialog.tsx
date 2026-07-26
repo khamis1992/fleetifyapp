@@ -54,7 +54,7 @@ const ROLE_OPTIONS = [
   { value: 'accountant', label: 'محاسب' },
   { value: 'fleet_manager', label: 'مدير الأسطول' },
   { value: 'sales_agent', label: 'مندوب مبيعات' },
-  { value: 'employee', label: 'موظف' }
+  { value: 'employee', label: 'مساحة العمل فقط' }
 ];
 
 const DATA_HANDLING_OPTIONS = [

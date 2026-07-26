@@ -42,6 +42,7 @@ import { cn } from '@/lib/utils';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { useTourGuide } from '@/components/tour-guide';
 import { systemColorPattern } from '@/lib/design-system/systemColorPattern';
+import { isWorkspaceOnlyEmployee } from '@/lib/workspaceAccess';
 
 import { useFleetifyTranslation } from "@/hooks/useTranslation";
 
@@ -176,6 +177,7 @@ const navigation: NavItem[] = [
     category: 'finance-admin',
     children: [
       { id: 'hr-employees', label: 'إدارة الموظفين', href: '/hr/employees', icon: UserCog },
+      { id: 'hr-user-permissions', label: 'إدارة المستخدمين والصلاحيات', href: '/settings/permissions', icon: Shield },
       { id: 'hr-attendance', label: 'الحضور والإجازات', href: '/hr/attendance', icon: Clock },
       { id: 'hr-payroll', label: 'الرواتب', href: '/hr/payroll', icon: Receipt },
       { id: 'hr-reports', label: 'التقارير', href: '/hr/reports', icon: BarChart3 },
@@ -227,6 +229,16 @@ const navigation: NavItem[] = [
   },
 ];
 
+const workspaceOnlyNavigation: NavItem[] = [
+  {
+    id: 'employee-workspace',
+    label: 'مساحة عملي',
+    icon: UserCheck,
+    href: '/employee-workspace',
+    category: 'main',
+  },
+];
+
 // === Category Labels ===
 const categoryLabels: Record<string, string> = {
   main: '',
@@ -236,19 +248,12 @@ const categoryLabels: Record<string, string> = {
   tools: 'الأدوات والنظام',
 };
 
-// === Group navigation by category ===
-const groupedNavigation = navigation.reduce((acc, item) => {
-  const category = item.category || 'main';
-  if (!acc[category]) acc[category] = [];
-  acc[category].push(item);
-  return acc;
-}, {} as Record<string, NavItem[]>);
-
 // === Main Component ===
 const BentoSidebar: React.FC<BentoSidebarProps> = ({
   isMobile = false, onCloseMobile }) => {
   const { t } = useFleetifyTranslation("ui");
   const { user, signOut } = useAuth();
+  const isWorkspaceLocked = isWorkspaceOnlyEmployee(user);
   const location = useLocation();
   const navigate = useNavigate();
   const [collapsed, setCollapsed] = useState(() => {
@@ -266,7 +271,15 @@ const BentoSidebar: React.FC<BentoSidebarProps> = ({
   const scrollStorageKey = isMobile ? 'fleetify:bento-sidebar-scroll:mobile' : 'fleetify:bento-sidebar-scroll:desktop';
   const scrollRestoreKey = `${scrollStorageKey}:restore`;
 
-  const allNavItems = navigation.flatMap(item =>
+  const visibleNavigation = isWorkspaceLocked ? workspaceOnlyNavigation : navigation;
+  const groupedVisibleNavigation = visibleNavigation.reduce((acc, item) => {
+    const category = item.category || 'main';
+    if (!acc[category]) acc[category] = [];
+    acc[category].push(item);
+    return acc;
+  }, {} as Record<string, NavItem[]>);
+
+  const allNavItems = visibleNavigation.flatMap(item =>
     item.children ? [item, ...item.children] : [item]
   );
 
@@ -527,7 +540,7 @@ const BentoSidebar: React.FC<BentoSidebarProps> = ({
     );
   };
 
-  const categoryEntries = Object.entries(groupedNavigation);
+  const categoryEntries = Object.entries(groupedVisibleNavigation);
 
   return (
     <motion.aside
@@ -596,7 +609,7 @@ const BentoSidebar: React.FC<BentoSidebarProps> = ({
       </div>
 
       {/* === Search Trigger === */}
-      {(!collapsed || isMobile) && (
+      {(!collapsed || isMobile) && !isWorkspaceLocked && (
         <div className="border-b px-3 py-3" style={{ borderColor: sidebarColors.border }}>
           <button
             onClick={() => document.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', metaKey: true }))}
@@ -612,7 +625,7 @@ const BentoSidebar: React.FC<BentoSidebarProps> = ({
       )}
 
       {/* === Recent Pages === */}
-      {(!collapsed || isMobile) && recentPages.length > 0 && (
+      {(!collapsed || isMobile) && !isWorkspaceLocked && recentPages.length > 0 && (
         <div className="border-b px-3 py-2" style={{ borderColor: sidebarColors.border }}>
           <div className="flex items-center justify-between mb-1.5 px-1">
             <span className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.15em]" style={{ color: sidebarColors.secondary }}>
@@ -647,7 +660,7 @@ const BentoSidebar: React.FC<BentoSidebarProps> = ({
       )}
 
       {/* === Start Tour Entry === */}
-      {(!collapsed || isMobile) && (
+      {(!collapsed || isMobile) && !isWorkspaceLocked && (
         <div className="border-b px-3 py-3" style={{ borderColor: sidebarColors.border }}>
           <button
             onClick={handleStartDashboardTour}
@@ -768,12 +781,13 @@ const BentoSidebar: React.FC<BentoSidebarProps> = ({
           {/* Avatar */}
           <button
             onClick={() => {
+              if (isWorkspaceLocked) return;
               handleLinkClick();
               navigate('/profile');
             }}
             className={cn(
-              'relative flex h-9 w-9 flex-shrink-0 cursor-pointer items-center justify-center rounded-lg text-xs font-black text-white transition-all',
-              'hover:scale-105'
+              'relative flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg text-xs font-black text-white transition-all',
+              isWorkspaceLocked ? 'cursor-default' : 'cursor-pointer hover:scale-105'
             )}
             style={{ backgroundColor: sidebarColors.text }}
             title="الملف الشخصي"
@@ -787,10 +801,14 @@ const BentoSidebar: React.FC<BentoSidebarProps> = ({
             <div className="flex-1 flex items-center justify-between min-w-0">
               <button
                 onClick={() => {
+                  if (isWorkspaceLocked) return;
                   handleLinkClick();
                   navigate('/profile');
                 }}
-                className="min-w-0 text-right transition-colors cursor-pointer"
+                className={cn(
+                  "min-w-0 text-right transition-colors",
+                  isWorkspaceLocked ? "cursor-default" : "cursor-pointer"
+                )}
                 title="الملف الشخصي"
               >
                 <p className="truncate text-xs font-bold" style={{ color: sidebarColors.text }}>{userName}</p>

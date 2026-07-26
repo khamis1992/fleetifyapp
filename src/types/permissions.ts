@@ -850,10 +850,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, RolePermissions> = {
   },
   employee: {
     role: 'employee',
-    permissions: PERMISSIONS.filter(p => 
-      (p.level === 'read' && !p.id.includes('admin.') && !p.isSystemLevel) ||
-      p.id === 'attendance.clock_in'
-    ).map(p => p.id),
+    permissions: [],
     canAssignRoles: []
   }
 };

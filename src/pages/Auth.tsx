@@ -5,6 +5,7 @@ import { AuthForm } from '@/components/auth/AuthForm';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { Button } from '@/components/ui/button';
 import { RefreshCw, AlertTriangle } from 'lucide-react';
+import { isWorkspaceOnlyEmployee } from '@/lib/workspaceAccess';
 
 const Auth: React.FC = () => {
   const { user, loading, sessionError } = useAuth();
@@ -97,7 +98,7 @@ const Auth: React.FC = () => {
   }
 
   if (user) {
-    return <Navigate to="/dashboard" replace />;
+    return <Navigate to={isWorkspaceOnlyEmployee(user) ? '/employee-workspace' : '/dashboard'} replace />;
   }
 
   return <AuthForm />;

@@ -459,7 +459,6 @@ const routeConfigs: RouteConfig[] = [
     group: 'mobile-employee',
     priority: 3,
     protected: true,
-    requiredRole: 'admin',
   },
   {
     path: '/mobile/employee/collections',
@@ -471,7 +470,6 @@ const routeConfigs: RouteConfig[] = [
     group: 'mobile-employee',
     priority: 4,
     protected: true,
-    requiredRole: 'admin',
   },
   {
     path: '/mobile/employee/contracts',
@@ -483,7 +481,6 @@ const routeConfigs: RouteConfig[] = [
     group: 'mobile-employee',
     priority: 5,
     protected: true,
-    requiredRole: 'admin',
   },
   {
     path: '/mobile/employee/tasks',
@@ -495,7 +492,6 @@ const routeConfigs: RouteConfig[] = [
     group: 'mobile-employee',
     priority: 6,
     protected: true,
-    requiredRole: 'admin',
   },
   {
     path: '/mobile/employee/performance',
@@ -507,7 +503,6 @@ const routeConfigs: RouteConfig[] = [
     group: 'mobile-employee',
     priority: 7,
     protected: true,
-    requiredRole: 'admin',
   },
   {
     path: '/mobile/employee/notifications',
@@ -519,7 +514,6 @@ const routeConfigs: RouteConfig[] = [
     group: 'mobile-employee',
     priority: 8,
     protected: true,
-    requiredRole: 'admin',
   },
 
   // === Main Application Routes ===
@@ -571,6 +565,7 @@ const routeConfigs: RouteConfig[] = [
     description: 'Employee workspace',
     group: 'team',
     priority: 12,
+    protected: true,
   },
   {
     path: '/team-management',
@@ -581,6 +576,9 @@ const routeConfigs: RouteConfig[] = [
     description: 'Team management',
     group: 'team',
     priority: 13,
+    protected: true,
+    layout: 'bento',
+    requiredRole: 'admin',
   },
   {
     path: '/team-reports',
@@ -591,6 +589,9 @@ const routeConfigs: RouteConfig[] = [
     description: 'Team reports',
     group: 'team',
     priority: 14,
+    protected: true,
+    layout: 'bento',
+    requiredRole: 'admin',
   },
   {
     path: '/employee/:employeeId',
@@ -601,6 +602,9 @@ const routeConfigs: RouteConfig[] = [
     description: 'Employee details',
     group: 'team',
     priority: 15,
+    protected: true,
+    layout: 'bento',
+    requiredRole: 'admin',
   },
   {
     path: '/employee/:employeeId/report',

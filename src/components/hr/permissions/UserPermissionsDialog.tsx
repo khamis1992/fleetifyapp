@@ -61,7 +61,7 @@ export default function UserPermissionsDialog({
   useEffect(() => {
     if (employee) {
       const currentRoles = employee.user_roles?.map(ur => ur.role) || [];
-      setSelectedRoles(currentRoles);
+      setSelectedRoles(normalizeSingleRole(currentRoles));
       setCustomPermissions([]);
       setReason('');
       
@@ -189,11 +189,8 @@ export default function UserPermissionsDialog({
   });
 
   const handleRoleChange = (role: UserRole, assigned: boolean) => {
-    if (assigned) {
-      setSelectedRoles(prev => [...prev, role]);
-    } else {
-      setSelectedRoles(prev => prev.filter(r => r !== role));
-    }
+    if (!assigned) return;
+    setSelectedRoles([role]);
   };
 
   const handlePermissionChange = (permission: string, granted: PermissionOverrideValue) => {
@@ -256,7 +253,7 @@ export default function UserPermissionsDialog({
     accountant: 'محاسب',
     fleet_manager: 'مدير الأسطول',
     sales_agent: 'مندوب مبيعات',
-    employee: 'موظف'
+    employee: 'مساحة العمل فقط'
   };
 
   return (
@@ -398,4 +395,10 @@ export default function UserPermissionsDialog({
       </DialogContent>
     </Dialog>
   );
+}
+
+function normalizeSingleRole(roles: UserRole[]) {
+  if (roles.length <= 1) return roles;
+  if (roles.includes('employee')) return ['employee'] as UserRole[];
+  return [roles[0]];
 }

@@ -6,7 +6,7 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { 
   ArrowRight, 
@@ -29,7 +29,10 @@ import {
   PlayCircle,
   ChevronDown,
   ChevronUp,
-  Loader2
+  Loader2,
+  ClipboardCheck,
+  Save,
+  FileDown
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -48,7 +51,9 @@ import {
 } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
+import { Textarea } from '@/components/ui/textarea';
 
 import { useEmployeeContracts } from '@/hooks/useEmployeeContracts';
 import { useEmployeeTasks } from '@/hooks/useEmployeeTasks';
@@ -78,6 +83,127 @@ import {
 } from '@/types/employee-workspace.types';
 import type { ContractForLegal } from '@/hooks/useConvertToLegal';
 
+type DailyLogChecklistKey =
+  | 'workspace_opened'
+  | 'page_refreshed'
+  | 'metrics_reviewed'
+  | 'priority_started'
+  | 'calls_documented'
+  | 'payments_verified'
+  | 'followups_scheduled'
+  | 'notes_added'
+  | 'tasks_completed'
+  | 'legal_reviewed'
+  | 'remaining_reviewed'
+  | 'report_exported';
+
+type DailyLogFormState = {
+  logDate: string;
+  employeeName: string;
+  team: string;
+  department: string;
+  startTime: string;
+  endTime: string;
+  assignedContracts: string;
+  totalDue: string;
+  priorityCases: string;
+  callsLogged: string;
+  answeredCalls: string;
+  noAnswerCalls: string;
+  paymentPromises: string;
+  paymentsRegistered: string;
+  totalCollected: string;
+  followupsScheduled: string;
+  notesAdded: string;
+  completedTasks: string;
+  delayedTasks: string;
+  legalReferrals: 'yes' | 'no';
+  reportExported: boolean;
+  keyCases: string;
+  legalReviewCases: string;
+  blockers: string;
+  status: 'completed' | 'incomplete';
+  incompleteReason: string;
+  checklist: Record<DailyLogChecklistKey, boolean>;
+};
+
+type DailyActivityMetrics = {
+  callsLogged: number;
+  answeredCalls: number;
+  noAnswerCalls: number;
+  paymentPromises: number;
+  paymentsRegistered: number;
+  totalCollected: number;
+  followupsScheduled: number;
+  notesAdded: number;
+  completedTasks: number;
+  delayedTasks: number;
+};
+
+const DAILY_LOG_CHECKLIST: Array<{ key: DailyLogChecklistKey; label: string }> = [
+  { key: 'workspace_opened', label: 'تم الدخول إلى مساحة عملي والتأكد من ظهور البيانات' },
+  { key: 'page_refreshed', label: 'تم الضغط على تحديث في بداية اليوم' },
+  { key: 'metrics_reviewed', label: 'تمت مراجعة بطاقات المؤشرات والمهام المطلوبة' },
+  { key: 'priority_started', label: 'تم البدء بالعقود والعملاء ذوي الأولوية الأعلى' },
+  { key: 'calls_documented', label: 'تم تنفيذ المكالمات وتوثيق نتائجها المؤثرة' },
+  { key: 'payments_verified', label: 'تمت مطابقة العميل والعقد قبل تسجيل أي دفعة' },
+  { key: 'followups_scheduled', label: 'تمت جدولة موعد لكل متابعة مؤجلة أو وعد بالدفع' },
+  { key: 'notes_added', label: 'تمت إضافة الملاحظات المهمة بوضوح واختصار' },
+  { key: 'tasks_completed', label: 'تم تحديد إنجاز المهام المنفذة فعليًا فقط' },
+  { key: 'legal_reviewed', label: 'تمت مراجعة الملاحظات والدفعات قبل أي تصعيد قانوني' },
+  { key: 'remaining_reviewed', label: 'تمت مراجعة المهام المتبقية في نهاية اليوم' },
+  { key: 'report_exported', label: 'تم تحديث الصفحة وتصدير التقرير عند الحاجة' },
+];
+
+const AUTO_DAILY_RESULT_FIELDS = new Set<keyof DailyLogFormState>([
+  'callsLogged',
+  'answeredCalls',
+  'noAnswerCalls',
+  'paymentsRegistered',
+  'totalCollected',
+  'followupsScheduled',
+  'notesAdded',
+  'completedTasks',
+  'delayedTasks',
+]);
+
+const emptyChecklist = (): Record<DailyLogChecklistKey, boolean> => DAILY_LOG_CHECKLIST.reduce(
+  (acc, item) => ({ ...acc, [item.key]: false }),
+  {} as Record<DailyLogChecklistKey, boolean>,
+);
+
+const todayISODate = () => new Date().toISOString().slice(0, 10);
+
+const currentTimeValue = () => {
+  const now = new Date();
+  return `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+};
+
+const numberValue = (value: string) => {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : 0;
+};
+
+const emptyDailyActivityMetrics: DailyActivityMetrics = {
+  callsLogged: 0,
+  answeredCalls: 0,
+  noAnswerCalls: 0,
+  paymentPromises: 0,
+  paymentsRegistered: 0,
+  totalCollected: 0,
+  followupsScheduled: 0,
+  notesAdded: 0,
+  completedTasks: 0,
+  delayedTasks: 0,
+};
+
+const escapeHtml = (value: string) => value
+  .replace(/&/g, '&amp;')
+  .replace(/</g, '&lt;')
+  .replace(/>/g, '&gt;')
+  .replace(/"/g, '&quot;')
+  .replace(/'/g, '&#039;');
+
 export const EmployeeWorkspace: React.FC = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -96,9 +222,11 @@ export const EmployeeWorkspace: React.FC = () => {
   const [showUnassignDialog, setShowUnassignDialog] = useState(false);
   const [showBulkUnassignDialog, setShowBulkUnassignDialog] = useState(false);
   const [showConvertToLegalDialog, setShowConvertToLegalDialog] = useState(false);
+  const [showDailyLogDialog, setShowDailyLogDialog] = useState(false);
   const [selectedContractId, setSelectedContractId] = useState<string | undefined>();
   const [selectedBulkContractIds, setSelectedBulkContractIds] = useState<string[]>([]);
   const [completingTaskId, setCompletingTaskId] = useState<string | null>(null);
+  const [dailyLogForm, setDailyLogForm] = useState<DailyLogFormState | null>(null);
   const [selectedPaymentCustomer, setSelectedPaymentCustomer] = useState<{
     customerId: string;
     customerName: string;
@@ -107,6 +235,8 @@ export const EmployeeWorkspace: React.FC = () => {
   // This page is the current employee's own workspace. Reassignment must happen
   // from Team Management, even when the employee also has a management role.
   const canUnassignContracts = false;
+  const companyId = user?.profile?.company_id || user?.company?.id || '';
+  const todayLogDate = todayISODate();
 
   useEffect(() => {
     const html = document.documentElement;
@@ -188,6 +318,823 @@ export const EmployeeWorkspace: React.FC = () => {
     refetch: refetchCollections
   } = useMonthlyCollections();
 
+  const {
+    data: workspaceProfile,
+  } = useQuery({
+    queryKey: ['employee-workspace-profile', companyId, user?.id],
+    queryFn: async () => {
+      if (!user?.id || !companyId) throw new Error('Employee identity is required');
+
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, first_name, last_name, company_id')
+        .eq('user_id', user.id)
+        .eq('company_id', companyId)
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user?.id && !!companyId,
+  });
+
+  const {
+    data: dailyLog,
+    refetch: refetchDailyLog,
+  } = useQuery({
+    queryKey: ['employee-daily-workspace-log', companyId, workspaceProfile?.id, todayLogDate],
+    queryFn: async () => {
+      if (!workspaceProfile?.id || !companyId) return null;
+
+      const { data, error } = await (supabase as any)
+        .from('employee_daily_workspace_logs')
+        .select('*')
+        .eq('company_id', companyId)
+        .eq('employee_profile_id', workspaceProfile.id)
+        .eq('log_date', todayLogDate)
+        .maybeSingle();
+
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!workspaceProfile?.id && !!companyId,
+  });
+
+  const {
+    data: dailyActivityMetrics = emptyDailyActivityMetrics,
+    refetch: refetchDailyActivityMetrics,
+  } = useQuery({
+    queryKey: ['employee-daily-activity-metrics', companyId, workspaceProfile?.id, user?.id, todayLogDate, contracts.map((contract) => contract.id).join(',')],
+    queryFn: async (): Promise<DailyActivityMetrics> => {
+      if (!workspaceProfile?.id || !companyId || !user?.id) return emptyDailyActivityMetrics;
+
+      const dayStart = `${todayLogDate}T00:00:00`;
+      const dayEnd = `${todayLogDate}T23:59:59`;
+      const assignedContractIds = contracts.map((contract) => contract.id).filter(Boolean);
+
+      const [communicationsResult, followupsResult, paymentsResult] = await Promise.all([
+        (supabase as any)
+          .from('customer_communications')
+          .select('communication_type, notes, follow_up_scheduled')
+          .eq('company_id', companyId)
+          .eq('employee_id', user.id)
+          .eq('communication_date', todayLogDate),
+        (supabase as any)
+          .from('scheduled_followups')
+          .select('id')
+          .eq('company_id', companyId)
+          .eq('created_by', workspaceProfile.id)
+          .gte('created_at', dayStart)
+          .lte('created_at', dayEnd),
+        assignedContractIds.length > 0
+          ? (supabase as any)
+              .from('payments')
+              .select('id, amount')
+              .eq('company_id', companyId)
+              .eq('payment_status', 'completed')
+              .eq('payment_date', todayLogDate)
+              .in('contract_id', assignedContractIds)
+          : Promise.resolve({ data: [], error: null }),
+      ]);
+
+      if (communicationsResult.error) throw communicationsResult.error;
+      if (followupsResult.error) throw followupsResult.error;
+      if (paymentsResult.error) throw paymentsResult.error;
+
+      const communications = communicationsResult.data || [];
+      const phoneCommunications = communications.filter((item: any) => item.communication_type === 'phone');
+      const noteCommunications = communications.filter((item: any) => item.communication_type === 'note');
+      const payments = paymentsResult.data || [];
+
+      const noAnswerCalls = phoneCommunications.filter((item: any) => {
+        const notes = String(item.notes || '').toLowerCase();
+        return notes.includes('no_answer') || notes.includes('لا رد') || notes.includes('لم يتم الرد');
+      }).length;
+
+      const paymentPromises = phoneCommunications.filter((item: any) => {
+        const notes = String(item.notes || '').toLowerCase();
+        return notes.includes('payment_promised') || notes.includes('وعد') || notes.includes('promise');
+      }).length;
+
+      return {
+        callsLogged: phoneCommunications.length,
+        answeredCalls: Math.max(0, phoneCommunications.length - noAnswerCalls),
+        noAnswerCalls,
+        paymentPromises,
+        paymentsRegistered: payments.length || collectionStats.paidCount || 0,
+        totalCollected: payments.reduce((sum: number, payment: any) => sum + Number(payment.amount || 0), 0) || performance?.total_collected || collectionStats.totalCollected || 0,
+        followupsScheduled: followupsResult.data?.length || phoneCommunications.filter((item: any) => item.follow_up_scheduled).length || 0,
+        notesAdded: noteCommunications.length || performance?.notes_added || 0,
+        completedTasks: todayTasks.filter((task) => task.status === 'completed').length || performance?.tasks_completed || taskStats.completedTasks || 0,
+        delayedTasks: taskStats.overdueTasks || 0,
+      };
+    },
+    enabled: !!workspaceProfile?.id && !!companyId && !!user?.id,
+  });
+
+  const employeeDisplayName = useMemo(() => {
+    const profileName = [workspaceProfile?.first_name, workspaceProfile?.last_name]
+      .filter(Boolean)
+      .join(' ')
+      .trim();
+    return profileName || user?.email?.split('@')[0] || 'الموظف';
+  }, [user?.email, workspaceProfile?.first_name, workspaceProfile?.last_name]);
+
+  const buildDefaultDailyLogForm = (): DailyLogFormState => ({
+    logDate: todayLogDate,
+    employeeName: employeeDisplayName,
+    team: 'فريق المتابعة والتحصيل',
+    department: 'التحصيل والمتابعة',
+    startTime: currentTimeValue(),
+    endTime: '',
+    assignedContracts: String(contractStats.totalContracts || 0),
+    totalDue: String(contractStats.totalBalanceDue || 0),
+    priorityCases: String(priorityContracts.length || 0),
+    callsLogged: String(dailyActivityMetrics.callsLogged),
+    answeredCalls: String(dailyActivityMetrics.answeredCalls),
+    noAnswerCalls: String(dailyActivityMetrics.noAnswerCalls),
+    paymentPromises: String(dailyActivityMetrics.paymentPromises),
+    paymentsRegistered: String(dailyActivityMetrics.paymentsRegistered),
+    totalCollected: String(dailyActivityMetrics.totalCollected),
+    followupsScheduled: String(dailyActivityMetrics.followupsScheduled),
+    notesAdded: String(dailyActivityMetrics.notesAdded),
+    completedTasks: String(dailyActivityMetrics.completedTasks),
+    delayedTasks: String(dailyActivityMetrics.delayedTasks),
+    legalReferrals: 'no',
+    reportExported: false,
+    keyCases: '',
+    legalReviewCases: '',
+    blockers: '',
+    status: 'completed',
+    incompleteReason: '',
+    checklist: emptyChecklist(),
+  });
+
+  const dailyLogToForm = (log: any): DailyLogFormState => {
+    const beginningMetrics = log?.beginning_metrics || {};
+    const summary = log?.summary || {};
+    return {
+      ...buildDefaultDailyLogForm(),
+      logDate: log?.log_date || todayLogDate,
+      employeeName: log?.employee_name || employeeDisplayName,
+      team: log?.team || 'فريق المتابعة والتحصيل',
+      department: log?.department || 'التحصيل والمتابعة',
+      startTime: (log?.start_time || '').slice(0, 5),
+      endTime: (log?.end_time || '').slice(0, 5),
+      assignedContracts: String(beginningMetrics.assigned_contracts ?? contractStats.totalContracts ?? 0),
+      totalDue: String(beginningMetrics.total_due ?? contractStats.totalBalanceDue ?? 0),
+      priorityCases: String(beginningMetrics.priority_cases ?? priorityContracts.length ?? 0),
+      callsLogged: String(summary.calls_logged ?? dailyActivityMetrics.callsLogged),
+      answeredCalls: String(summary.answered_calls ?? dailyActivityMetrics.answeredCalls),
+      noAnswerCalls: String(summary.no_answer_calls ?? dailyActivityMetrics.noAnswerCalls),
+      paymentPromises: String(summary.payment_promises ?? dailyActivityMetrics.paymentPromises),
+      paymentsRegistered: String(summary.payments_registered ?? dailyActivityMetrics.paymentsRegistered),
+      totalCollected: String(summary.total_collected ?? dailyActivityMetrics.totalCollected),
+      followupsScheduled: String(summary.followups_scheduled ?? dailyActivityMetrics.followupsScheduled),
+      notesAdded: String(summary.notes_added ?? dailyActivityMetrics.notesAdded),
+      completedTasks: String(summary.completed_tasks ?? dailyActivityMetrics.completedTasks),
+      delayedTasks: String(summary.delayed_tasks ?? dailyActivityMetrics.delayedTasks),
+      legalReferrals: summary.legal_referrals ? 'yes' : 'no',
+      reportExported: Boolean(summary.report_exported),
+      keyCases: log?.key_cases || '',
+      legalReviewCases: log?.legal_review_cases || '',
+      blockers: log?.blockers || '',
+      status: log?.completion_status === 'incomplete' ? 'incomplete' : 'completed',
+      incompleteReason: log?.incomplete_reason || '',
+      checklist: { ...emptyChecklist(), ...(log?.checklist || {}) },
+    };
+  };
+
+  useEffect(() => {
+    if (!showDailyLogDialog) return;
+    void refetchDailyActivityMetrics();
+    setDailyLogForm(dailyLog ? dailyLogToForm(dailyLog) : buildDefaultDailyLogForm());
+  }, [
+    showDailyLogDialog,
+    dailyLog,
+    employeeDisplayName,
+    todayLogDate,
+    contractStats.totalContracts,
+    contractStats.totalBalanceDue,
+    priorityContracts.length,
+    dailyActivityMetrics,
+  ]);
+
+  const checklistDoneCount = dailyLogForm
+    ? DAILY_LOG_CHECKLIST.filter((item) => dailyLogForm.checklist[item.key]).length
+    : DAILY_LOG_CHECKLIST.filter((item) => dailyLog?.checklist?.[item.key]).length;
+  const checklistPercent = Math.round((checklistDoneCount / DAILY_LOG_CHECKLIST.length) * 100);
+  const isDailyLogClosed = Boolean(dailyLog?.closed_at);
+
+  const updateDailyLogField = <K extends keyof DailyLogFormState>(
+    field: K,
+    value: DailyLogFormState[K],
+  ) => {
+    setDailyLogForm((current) => current ? { ...current, [field]: value } : current);
+  };
+
+  const toggleDailyChecklist = (key: DailyLogChecklistKey, checked: boolean) => {
+    setDailyLogForm((current) => current
+      ? { ...current, checklist: { ...current.checklist, [key]: checked } }
+      : current
+    );
+  };
+
+  const saveDailyLogMutation = useMutation({
+    mutationFn: async (form: DailyLogFormState) => {
+      if (!workspaceProfile?.id || !companyId) {
+        throw new Error('تعذر تحديد الموظف أو الشركة');
+      }
+
+      const payload = {
+        company_id: companyId,
+        employee_profile_id: workspaceProfile.id,
+        log_date: form.logDate,
+        employee_name: form.employeeName,
+        team: form.team || null,
+        department: form.department || null,
+        start_time: form.startTime || null,
+        end_time: form.endTime || null,
+        beginning_metrics: {
+          assigned_contracts: numberValue(form.assignedContracts),
+          total_due: numberValue(form.totalDue),
+          priority_cases: numberValue(form.priorityCases),
+          today_tasks: taskStats.todayTasks || 0,
+        },
+        checklist: form.checklist,
+        summary: {
+          calls_logged: numberValue(form.callsLogged),
+          answered_calls: numberValue(form.answeredCalls),
+          no_answer_calls: numberValue(form.noAnswerCalls),
+          payment_promises: numberValue(form.paymentPromises),
+          payments_registered: numberValue(form.paymentsRegistered),
+          total_collected: numberValue(form.totalCollected),
+          followups_scheduled: numberValue(form.followupsScheduled),
+          notes_added: numberValue(form.notesAdded),
+          completed_tasks: numberValue(form.completedTasks),
+          delayed_tasks: numberValue(form.delayedTasks),
+          legal_referrals: form.legalReferrals === 'yes',
+          report_exported: form.reportExported,
+        },
+        key_cases: form.keyCases || null,
+        legal_review_cases: form.legalReviewCases || null,
+        blockers: form.blockers || null,
+        completion_status: form.status,
+        incomplete_reason: form.status === 'incomplete' ? form.incompleteReason || null : null,
+        closed_at: new Date().toISOString(),
+      };
+
+      const { data, error } = await (supabase as any)
+        .from('employee_daily_workspace_logs')
+        .upsert(payload, { onConflict: 'employee_profile_id,log_date' })
+        .select('*')
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: async () => {
+      await refetchDailyLog();
+      toast({
+        title: 'تم حفظ إقفال اليوم',
+        description: 'تم حفظ سجل العمل اليومي داخل مساحة العمل.',
+      });
+      setShowDailyLogDialog(false);
+    },
+    onError: (error) => {
+      toast({
+        title: 'تعذر حفظ إقفال اليوم',
+        description: error instanceof Error ? error.message : 'حدث خطأ أثناء حفظ السجل اليومي',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const handlePrintDailyLog = () => {
+    const form = dailyLogForm || (dailyLog ? dailyLogToForm(dailyLog) : null);
+    if (!form) return;
+
+    const printable = window.open('', '_blank', 'width=900,height=1100');
+    if (!printable) {
+      toast({
+        title: 'تعذر فتح نافذة الطباعة',
+        description: 'يرجى السماح بالنوافذ المنبثقة ثم المحاولة مرة أخرى.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    const logDate = new Date(`${form.logDate}T00:00:00`);
+    const dayNumber = Number.isNaN(logDate.getTime())
+      ? form.logDate.slice(-2)
+      : String(logDate.getDate()).padStart(2, '0');
+    const checklistColumns = [DAILY_LOG_CHECKLIST.slice(0, 6), DAILY_LOG_CHECKLIST.slice(6)];
+    const checklistMarkup = checklistColumns.map((column) => `
+      <div class="check-column">
+        ${column.map((item) => `
+          <div class="check-row">
+            <span>${escapeHtml(item.label)}</span>
+            <span class="box-mark">${form.checklist[item.key] ? '✓' : ''}</span>
+          </div>
+        `).join('')}
+      </div>
+    `).join('');
+
+    const resultCells = [
+      ['وعود بالدفع', form.paymentPromises],
+      ['لم يتم الرد', form.noAnswerCalls],
+      ['تم الرد', form.answeredCalls],
+      ['المكالمات موثقة', form.callsLogged],
+      ['ملاحظات مضافة', form.notesAdded],
+      ['مواعيد متابعة', form.followupsScheduled],
+      ['إجمالي المحصل (QAR)', formatCurrency(numberValue(form.totalCollected))],
+      ['دفعات مسجلة', form.paymentsRegistered],
+      ['تقرير مصدر (نعم/لا)', form.reportExported ? 'نعم' : 'لا'],
+      ['إحالات قانونية', form.legalReferrals === 'yes' ? 'نعم' : 'لا'],
+      ['مهام مؤجلة', form.delayedTasks],
+      ['مهام منجزة', form.completedTasks],
+    ].map(([label, value]) => `
+      <div class="result-cell">
+        <span>${label}</span>
+        <strong>${value}</strong>
+      </div>
+    `).join('');
+
+    const keyCasesRows = Array.from({ length: 4 }).map((_, index) => `
+      <tr>
+        <td>${index === 0 ? escapeHtml(form.keyCases || '') : ''}</td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+      </tr>
+    `).join('');
+
+    printable.document.write(`
+      <html dir="rtl" lang="ar">
+        <head>
+          <title>سجل مساحة عمل الموظف اليومي - ${form.logDate}</title>
+          <style>
+            @page { size: A4; margin: 12mm; }
+            * { box-sizing: border-box; }
+            body {
+              margin: 0;
+              background: #f3f6fa;
+              color: #142033;
+              font-family: "Cairo", "Tahoma", Arial, sans-serif;
+              font-size: 11px;
+              line-height: 1.55;
+            }
+            .print-action {
+              position: fixed;
+              top: 16px;
+              left: 16px;
+              z-index: 10;
+              border: 0;
+              border-radius: 10px;
+              background: #142033;
+              color: #fff;
+              padding: 10px 18px;
+              font-weight: 800;
+              cursor: pointer;
+            }
+            .sheet {
+              width: 210mm;
+              min-height: 297mm;
+              margin: 18px auto;
+              background: #fff;
+              padding: 0 9mm 7mm;
+              position: relative;
+              overflow: hidden;
+            }
+            .sheet::before {
+              content: "";
+              display: block;
+              height: 8px;
+              margin: 0 -9mm 9mm;
+              background: #11a37f;
+            }
+            .topbar {
+              display: grid;
+              grid-template-columns: 1fr 2fr 1fr;
+              align-items: center;
+              gap: 12px;
+              border-bottom: 2px solid #cfd8e3;
+              padding-bottom: 10px;
+            }
+            .brand {
+              text-align: right;
+              font-weight: 900;
+              color: #11a37f;
+              font-size: 17px;
+            }
+            .brand small {
+              display: block;
+              margin-top: 12px;
+              color: #8a97aa;
+              font-size: 10px;
+              font-weight: 700;
+            }
+            .title { text-align: center; }
+            .title h1 {
+              margin: 0;
+              font-size: 20px;
+              font-weight: 900;
+              letter-spacing: 0;
+            }
+            .title p {
+              margin: 4px 0 0;
+              color: #6a7688;
+              font-size: 12px;
+              font-weight: 700;
+            }
+            .day-badge {
+              justify-self: end;
+              width: 75px;
+              height: 66px;
+              border-radius: 12px;
+              background: #142033;
+              color: #fff;
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+              justify-content: center;
+              text-align: center;
+              font-weight: 900;
+            }
+            .day-badge span {
+              color: #cfd8e3;
+              font-size: 9px;
+            }
+            .day-badge strong {
+              font-size: 22px;
+              line-height: 1;
+            }
+            .section {
+              margin-top: 9px;
+              break-inside: avoid;
+            }
+            .section-heading {
+              display: flex;
+              align-items: center;
+              justify-content: flex-end;
+              gap: 10px;
+              margin: 7px 0 5px;
+              border-top: 1px solid #cfd8e3;
+              padding-top: 5px;
+            }
+            .section-heading h2 {
+              margin: 0;
+              font-size: 14px;
+              font-weight: 900;
+            }
+            .section-pill {
+              min-width: 48px;
+              border-radius: 999px;
+              background: #142033;
+              color: #fff;
+              padding: 8px 10px;
+              text-align: center;
+              font-size: 10px;
+              font-weight: 900;
+            }
+            .field-grid {
+              display: grid;
+              grid-template-columns: repeat(3, 1fr);
+              gap: 6px;
+            }
+            .field {
+              min-height: 36px;
+              border: 1px solid #cfd8e3;
+              border-radius: 7px;
+              padding: 7px 9px 4px;
+              background: #fff;
+            }
+            .field label {
+              display: block;
+              color: #6a7688;
+              font-size: 10px;
+              font-weight: 900;
+              text-align: left;
+            }
+            .field div {
+              margin-top: 7px;
+              border-bottom: 1px solid #8a97aa;
+              min-height: 13px;
+              font-weight: 900;
+            }
+            .metric-grid {
+              display: grid;
+              grid-template-columns: repeat(4, 1fr);
+              gap: 8px;
+            }
+            .metric-card {
+              border: 1px solid #cfd8e3;
+              border-radius: 7px;
+              padding: 8px 10px 6px;
+              min-height: 46px;
+              background: #fff;
+              position: relative;
+            }
+            .metric-card::before {
+              content: "";
+              position: absolute;
+              inset: 0 0 auto 0;
+              height: 5px;
+              border-radius: 7px 7px 0 0;
+              background: var(--accent, #1d4f7a);
+            }
+            .metric-card label {
+              display: flex;
+              color: #6a7688;
+              font-size: 10px;
+              font-weight: 900;
+              justify-content: flex-start;
+            }
+            .metric-card div {
+              margin-top: 11px;
+              border-bottom: 1px solid #8a97aa;
+              min-height: 14px;
+              font-weight: 900;
+            }
+            table {
+              width: 100%;
+              border-collapse: collapse;
+              table-layout: fixed;
+            }
+            th, td {
+              border: 1px solid #cfd8e3;
+              padding: 6px 8px;
+              vertical-align: top;
+              text-align: right;
+            }
+            th {
+              background: #142033;
+              color: #fff;
+              font-weight: 900;
+              text-align: center;
+            }
+            td { height: 25px; font-weight: 800; }
+            .checklist {
+              display: grid;
+              grid-template-columns: 1fr 1fr;
+              gap: 8px;
+            }
+            .check-column {
+              display: flex;
+              flex-direction: column;
+              gap: 5px;
+            }
+            .check-row {
+              display: flex;
+              align-items: center;
+              justify-content: space-between;
+              gap: 8px;
+              min-height: 24px;
+              border: 1px solid #cfd8e3;
+              border-radius: 6px;
+              background: #f8fafc;
+              padding: 4px 8px;
+              font-weight: 700;
+            }
+            .box-mark {
+              width: 16px;
+              height: 16px;
+              border: 2px solid #8a97aa;
+              border-radius: 4px;
+              display: inline-flex;
+              align-items: center;
+              justify-content: center;
+              color: #11a37f;
+              font-weight: 900;
+              line-height: 1;
+            }
+            .results-grid {
+              display: grid;
+              grid-template-columns: repeat(4, 1fr);
+              border-top: 1px solid #cfd8e3;
+              border-right: 1px solid #cfd8e3;
+            }
+            .result-cell {
+              min-height: 37px;
+              border-left: 1px solid #cfd8e3;
+              border-bottom: 1px solid #cfd8e3;
+              padding: 5px 8px 3px;
+            }
+            .result-cell span {
+              display: block;
+              color: #6a7688;
+              font-size: 10px;
+              font-weight: 900;
+            }
+            .result-cell strong {
+              display: block;
+              margin-top: 8px;
+              border-bottom: 1px solid #8a97aa;
+              min-height: 12px;
+            }
+            .note-grid {
+              display: grid;
+              grid-template-columns: 1fr 1fr;
+              gap: 8px;
+            }
+            .note-box {
+              min-height: 62px;
+              border: 1px solid #cfd8e3;
+              border-radius: 7px;
+              padding: 8px;
+              white-space: pre-wrap;
+              font-weight: 700;
+            }
+            .note-box h3 {
+              margin: 0 0 18px;
+              font-size: 11px;
+              font-weight: 900;
+              text-align: left;
+            }
+            .note-line {
+              border-bottom: 1px solid #8a97aa;
+              min-height: 14px;
+            }
+            .approval {
+              margin-top: 8px;
+              border: 2px solid #a6c6db;
+              border-radius: 9px;
+              background: #eef7fd;
+              padding: 9px 10px;
+            }
+            .approval h2 {
+              margin: 0 0 8px;
+              text-align: right;
+              font-size: 14px;
+              font-weight: 900;
+            }
+            .approval-checks {
+              display: grid;
+              grid-template-columns: repeat(3, 1fr);
+              gap: 10px;
+              margin-bottom: 8px;
+              color: #6a7688;
+              font-size: 10px;
+              font-weight: 900;
+            }
+            .approval-checks div {
+              display: flex;
+              align-items: center;
+              justify-content: flex-end;
+              gap: 7px;
+            }
+            .status-line {
+              display: flex;
+              align-items: center;
+              gap: 12px;
+              margin: 6px 0;
+            }
+            .status-line strong { margin-left: auto; }
+            .status-line span {
+              display: inline-flex;
+              align-items: center;
+              gap: 5px;
+              font-weight: 900;
+            }
+            .long-line {
+              flex: 1;
+              border-bottom: 1px solid #8a97aa;
+              min-height: 14px;
+            }
+            .signature-row {
+              display: grid;
+              grid-template-columns: repeat(3, 1fr);
+              gap: 18px;
+              margin-top: 8px;
+            }
+            .signature-row div {
+              border-bottom: 1px solid #8a97aa;
+              min-height: 18px;
+              font-weight: 900;
+              color: #142033;
+            }
+            .footer {
+              margin-top: 72px;
+              display: flex;
+              justify-content: space-between;
+              border-top: 1px solid #cfd8e3;
+              padding-top: 8px;
+              color: #6a7688;
+              font-size: 10px;
+              font-weight: 700;
+            }
+            @media print {
+              body { background: #fff; }
+              .print-action { display: none; }
+              .sheet {
+                width: auto;
+                min-height: auto;
+                margin: 0;
+                box-shadow: none;
+              }
+            }
+          </style>
+        </head>
+        <body>
+          <button class="print-action" onclick="window.print()">طباعة السجل</button>
+          <main class="sheet">
+            <header class="topbar">
+              <div class="brand">Fleetify<small>العراف لتأجير السيارات</small></div>
+              <div class="title">
+                <h1>سجل العمل اليومي لمساحة عمل الموظف</h1>
+                <p>المهمة اليومية: الإقفال والتوثيق قبل نهاية الدوام</p>
+              </div>
+              <div class="day-badge"><span>اليوم</span><strong>${escapeHtml(dayNumber)}</strong></div>
+            </header>
+
+            <section class="section">
+              <div class="field-grid">
+                <div class="field"><label>اسم الموظف</label><div>${escapeHtml(form.employeeName)}</div></div>
+                <div class="field"><label>اليوم</label><div>${escapeHtml(dayNumber)}</div></div>
+                <div class="field"><label>التاريخ</label><div>${escapeHtml(form.logDate)}</div></div>
+                <div class="field"><label>وقت الانتهاء</label><div>${escapeHtml(form.endTime || '')}</div></div>
+                <div class="field"><label>وقت البدء</label><div>${escapeHtml(form.startTime || '')}</div></div>
+                <div class="field"><label>القسم / الفريق</label><div>${escapeHtml(form.department || form.team || '')}</div></div>
+              </div>
+            </section>
+
+            <section class="section">
+              <div class="section-heading"><span class="section-pill">أولاً</span><h2>مؤشرات بداية اليوم بعد تحديث الصفحة</h2></div>
+              <div class="metric-grid">
+                <div class="metric-card" style="--accent:#b94e52"><label>حالات ذات أولوية</label><div>${form.priorityCases}</div></div>
+                <div class="metric-card" style="--accent:#11a37f"><label>مهام اليوم</label><div>${taskStats.todayTasks || ''}</div></div>
+                <div class="metric-card" style="--accent:#d99b34"><label>إجمالي المستحقات (QAR)</label><div>${formatCurrency(numberValue(form.totalDue))}</div></div>
+                <div class="metric-card" style="--accent:#1d4f7a"><label>العقود المسندة</label><div>${form.assignedContracts}</div></div>
+              </div>
+            </section>
+
+            <section class="section">
+              <div class="section-heading"><span class="section-pill">ثانياً</span><h2>قائمة تنفيذ المهمة اليومية</h2></div>
+              <div class="checklist">${checklistMarkup}</div>
+            </section>
+
+            <section class="section">
+              <div class="section-heading"><span class="section-pill">ثالثاً</span><h2>ملخص نتائج العمل</h2></div>
+              <div class="results-grid">${resultCells}</div>
+            </section>
+
+            <section class="section">
+              <div class="section-heading"><span class="section-pill">رابعاً</span><h2>أهم الحالات والإجراءات المنفذة</h2></div>
+              <table>
+                <thead>
+                  <tr>
+                    <th>رقم العقد</th>
+                    <th>اسم العميل</th>
+                    <th>الإجراء المنفذ</th>
+                    <th>النتيجة / المبلغ</th>
+                    <th>المتابعة القادمة</th>
+                  </tr>
+                </thead>
+                <tbody>${keyCasesRows}</tbody>
+              </table>
+            </section>
+
+            <section class="section">
+              <div class="note-grid">
+                <div class="note-box"><h3>حالات تحتاج مراجعة المدير / القانونية</h3><div class="note-line">${escapeHtml(form.legalReviewCases || '')}</div></div>
+                <div class="note-box"><h3>معوقات أو أخطاء بالنظام</h3><div class="note-line">${escapeHtml(form.blockers || '')}</div></div>
+              </div>
+            </section>
+
+            <section class="approval">
+              <h2>اعتماد إقفال المهمة اليومية</h2>
+              <div class="approval-checks">
+                <div><span>وثقت الإجراءات المهمة داخل النظام</span><span class="box-mark">✓</span></div>
+                <div><span>حدثت مساحة العمل</span><span class="box-mark">${form.reportExported ? '✓' : ''}</span></div>
+                <div><span>راجعت المهام المتبقية</span><span class="box-mark">${form.checklist.remaining_reviewed ? '✓' : ''}</span></div>
+              </div>
+              <div class="status-line">
+                <strong>حالة المهمة:</strong>
+                <span><span class="box-mark">${form.status === 'completed' ? '✓' : ''}</span> مكتملة</span>
+                <span><span class="box-mark">${form.status === 'incomplete' ? '✓' : ''}</span> غير مكتملة</span>
+                <strong>سبب عدم الاكتمال:</strong>
+                <div class="long-line">${escapeHtml(form.incompleteReason || '')}</div>
+              </div>
+              <div class="signature-row">
+                <div>توقيع الموظف</div>
+                <div>اعتماد / أحرف المشرف</div>
+                <div>وقت الإقفال</div>
+              </div>
+            </section>
+
+            <footer class="footer">
+              <span>للاستخدام الداخلي</span>
+              <span>اليوم ${escapeHtml(dayNumber)} - صفحة 6 من 36</span>
+              <span>رمز النموذج: FLT-EMP-LOG-01</span>
+            </footer>
+          </main>
+        </body>
+      </html>
+    `);
+    printable.document.close();
+  };
+
   const isLoading = isLoadingContracts || isLoadingTasks || isLoadingPerformance || isLoadingCollections;
 
   const handleRefresh = () => {
@@ -195,6 +1142,7 @@ export const EmployeeWorkspace: React.FC = () => {
     refetchTasks();
     refetchPerformance();
     refetchCollections();
+    refetchDailyActivityMetrics();
   };
 
   const handleCompleteTask = async (taskId: string) => {
@@ -252,6 +1200,13 @@ export const EmployeeWorkspace: React.FC = () => {
       onClick: () => setShowNoteDialog(true),
       variant: 'secondary',
       className: 'bg-[#FFF6E5] text-[#9A5B00] hover:bg-[#FFE9B8]'
+    },
+    {
+      icon: ClipboardCheck,
+      label: 'إقفال اليوم',
+      onClick: () => setShowDailyLogDialog(true),
+      variant: 'default',
+      className: 'bg-[#142033] text-white hover:bg-[#1D4F7A]'
     },
   ];
 
@@ -628,7 +1583,7 @@ export const EmployeeWorkspace: React.FC = () => {
         </div>
       </header>
 
-      <div className="mb-5 grid grid-cols-2 gap-2 sm:gap-3 md:grid-cols-4">
+      <div className="mb-5 grid grid-cols-2 gap-2 sm:gap-3 md:grid-cols-5">
         {quickActions.map((action) => {
           const Icon = action.icon;
           return (
@@ -644,6 +1599,58 @@ export const EmployeeWorkspace: React.FC = () => {
           );
         })}
       </div>
+
+      <Card className={cn(
+        "mb-5 overflow-hidden rounded-xl border shadow-sm",
+        isDailyLogClosed ? "border-[#BFEBDD] bg-[#F4FFFB]" : "border-[#DDE5EF] bg-white"
+      )}>
+        <CardContent className="p-4 sm:p-5">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex items-start gap-3">
+              <div className={cn(
+                "flex h-11 w-11 shrink-0 items-center justify-center rounded-xl",
+                isDailyLogClosed ? "bg-[#E9FBF6] text-[#11A37F]" : "bg-[#EEF4FA] text-[#1D4F7A]"
+              )}>
+                <ClipboardCheck className="h-5 w-5" />
+              </div>
+              <div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <h2 className="text-base font-black text-[#142033]">إقفال يوم العمل</h2>
+                  <Badge className={cn(
+                    "rounded-full px-2.5 py-1 text-xs font-bold",
+                    isDailyLogClosed
+                      ? "bg-[#E9FBF6] text-[#0D876A] hover:bg-[#E9FBF6]"
+                      : "bg-[#FFF6E5] text-[#9A5B00] hover:bg-[#FFF6E5]"
+                  )}>
+                    {isDailyLogClosed ? 'تم الإقفال اليوم' : 'بانتظار الإقفال'}
+                  </Badge>
+                </div>
+                <p className="mt-1 text-sm font-medium leading-6 text-[#6A7688]">
+                  سجّل ملخص اليوم وقائمة التحقق اليومية بدل تعبئة الدفتر الورقي، مع حفظ السجل للمتابعة الإدارية.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+              <div className="min-w-[180px] rounded-xl border border-[#DDE5EF] bg-white px-4 py-3">
+                <div className="mb-2 flex items-center justify-between text-xs font-bold text-[#6A7688]">
+                  <span>اكتمال قائمة التحقق</span>
+                  <span>{checklistDoneCount}/{DAILY_LOG_CHECKLIST.length}</span>
+                </div>
+                <Progress value={checklistPercent} className="h-2" />
+              </div>
+              <Button
+                type="button"
+                onClick={() => setShowDailyLogDialog(true)}
+                className="h-11 rounded-xl bg-[#11A37F] px-5 font-bold text-white hover:bg-[#0D876A]"
+              >
+                <ClipboardCheck className="ml-2 h-4 w-4" />
+                {isDailyLogClosed ? 'عرض الإقفال' : 'إقفال اليوم'}
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* --- Stats Overview --- */}
       <div className="mb-5 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -1399,6 +2406,318 @@ export const EmployeeWorkspace: React.FC = () => {
       </div>
 
       {/* --- Dialogs --- */}
+      <Dialog open={showDailyLogDialog} onOpenChange={setShowDailyLogDialog}>
+        <DialogContent className="max-h-[92vh] overflow-y-auto sm:max-w-5xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-xl font-black text-[#142033]">
+              <ClipboardCheck className="h-5 w-5 text-[#11A37F]" />
+              إقفال يوم العمل
+            </DialogTitle>
+            <DialogDescription>
+              سجّل ملخص اليوم، قائمة التحقق، وأي عوائق أو حالات تحتاج مراجعة قبل نهاية الدوام.
+            </DialogDescription>
+          </DialogHeader>
+
+          {dailyLogForm && (
+            <div className="space-y-5">
+              <div className="grid grid-cols-1 gap-3 rounded-xl border border-[#DDE5EF] bg-[#F8FAFC] p-4 sm:grid-cols-2 lg:grid-cols-4">
+                <div className="space-y-2">
+                  <Label htmlFor="daily-log-date">التاريخ</Label>
+                  <Input
+                    id="daily-log-date"
+                    type="date"
+                    value={dailyLogForm.logDate}
+                    onChange={(event) => updateDailyLogField('logDate', event.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="daily-log-employee">اسم الموظف</Label>
+                  <Input
+                    id="daily-log-employee"
+                    value={dailyLogForm.employeeName}
+                    onChange={(event) => updateDailyLogField('employeeName', event.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="daily-log-team">الفريق</Label>
+                  <Input
+                    id="daily-log-team"
+                    value={dailyLogForm.team}
+                    onChange={(event) => updateDailyLogField('team', event.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="daily-log-department">القسم</Label>
+                  <Input
+                    id="daily-log-department"
+                    value={dailyLogForm.department}
+                    onChange={(event) => updateDailyLogField('department', event.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="daily-log-start">وقت البداية</Label>
+                  <Input
+                    id="daily-log-start"
+                    type="time"
+                    value={dailyLogForm.startTime}
+                    onChange={(event) => updateDailyLogField('startTime', event.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="daily-log-end">وقت النهاية</Label>
+                  <Input
+                    id="daily-log-end"
+                    type="time"
+                    value={dailyLogForm.endTime}
+                    onChange={(event) => updateDailyLogField('endTime', event.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>حالة اليوم</Label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button
+                      type="button"
+                      variant={dailyLogForm.status === 'completed' ? 'default' : 'outline'}
+                      className={cn(
+                        "rounded-lg font-bold",
+                        dailyLogForm.status === 'completed' && "bg-[#11A37F] text-white hover:bg-[#0D876A]"
+                      )}
+                      onClick={() => updateDailyLogField('status', 'completed')}
+                    >
+                      مكتمل
+                    </Button>
+                    <Button
+                      type="button"
+                      variant={dailyLogForm.status === 'incomplete' ? 'default' : 'outline'}
+                      className={cn(
+                        "rounded-lg font-bold",
+                        dailyLogForm.status === 'incomplete' && "bg-[#9A5B00] text-white hover:bg-[#7A4800]"
+                      )}
+                      onClick={() => updateDailyLogField('status', 'incomplete')}
+                    >
+                      غير مكتمل
+                    </Button>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label>تحويلات قانونية اليوم</Label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button
+                      type="button"
+                      variant={dailyLogForm.legalReferrals === 'no' ? 'default' : 'outline'}
+                      className={cn(
+                        "rounded-lg font-bold",
+                        dailyLogForm.legalReferrals === 'no' && "bg-[#1D4F7A] text-white hover:bg-[#163F62]"
+                      )}
+                      onClick={() => updateDailyLogField('legalReferrals', 'no')}
+                    >
+                      لا
+                    </Button>
+                    <Button
+                      type="button"
+                      variant={dailyLogForm.legalReferrals === 'yes' ? 'default' : 'outline'}
+                      className={cn(
+                        "rounded-lg font-bold",
+                        dailyLogForm.legalReferrals === 'yes' && "bg-[#11A37F] text-white hover:bg-[#0D876A]"
+                      )}
+                      onClick={() => updateDailyLogField('legalReferrals', 'yes')}
+                    >
+                      نعم
+                    </Button>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+                <div className="rounded-xl border border-[#DDE5EF] bg-white p-4">
+                  <h3 className="mb-3 text-sm font-black text-[#142033]">مؤشرات بداية اليوم</h3>
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                    <div className="space-y-2">
+                      <Label htmlFor="daily-log-contracts">العقود المسندة</Label>
+                      <Input
+                        id="daily-log-contracts"
+                        type="number"
+                        value={dailyLogForm.assignedContracts}
+                        onChange={(event) => updateDailyLogField('assignedContracts', event.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="daily-log-due">إجمالي المستحق</Label>
+                      <Input
+                        id="daily-log-due"
+                        type="number"
+                        value={dailyLogForm.totalDue}
+                        onChange={(event) => updateDailyLogField('totalDue', event.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="daily-log-priority">حالات أولوية</Label>
+                      <Input
+                        id="daily-log-priority"
+                        type="number"
+                        value={dailyLogForm.priorityCases}
+                        onChange={(event) => updateDailyLogField('priorityCases', event.target.value)}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="rounded-xl border border-[#DDE5EF] bg-white p-4">
+                  <div className="mb-3 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                    <h3 className="text-sm font-black text-[#142033]">نتائج مختصرة</h3>
+                    <span className="text-xs font-bold text-[#6A7688]">تُحتسب تلقائيًا من نشاط اليوم داخل النظام</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                    {[
+                      ['callsLogged', 'المكالمات'],
+                      ['answeredCalls', 'تم الرد'],
+                      ['noAnswerCalls', 'لا رد'],
+                      ['paymentPromises', 'وعود الدفع'],
+                      ['paymentsRegistered', 'دفعات'],
+                      ['totalCollected', 'المحصل'],
+                      ['followupsScheduled', 'متابعات'],
+                      ['notesAdded', 'ملاحظات'],
+                      ['completedTasks', 'مهام منجزة'],
+                      ['delayedTasks', 'مهام مؤجلة'],
+                    ].map(([field, label]) => {
+                      const fieldKey = field as keyof DailyLogFormState;
+                      const isAutoField = AUTO_DAILY_RESULT_FIELDS.has(fieldKey);
+                      return (
+                        <div key={field} className="space-y-2">
+                          <Label htmlFor={`daily-log-${field}`}>{label}</Label>
+                          <Input
+                            id={`daily-log-${field}`}
+                            type="number"
+                            readOnly={isAutoField}
+                            value={dailyLogForm[fieldKey] as string}
+                            onChange={(event) => updateDailyLogField(fieldKey, event.target.value as never)}
+                            className={cn(isAutoField && "bg-[#F8FAFC] font-black text-[#142033]")}
+                          />
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+
+              <div className="rounded-xl border border-[#DDE5EF] bg-white p-4">
+                <div className="mb-3 flex items-center justify-between gap-3">
+                  <h3 className="text-sm font-black text-[#142033]">قائمة التحقق اليومية</h3>
+                  <Badge className="bg-[#EEF4FA] text-[#1D4F7A] hover:bg-[#EEF4FA]">
+                    {checklistDoneCount}/{DAILY_LOG_CHECKLIST.length}
+                  </Badge>
+                </div>
+                <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
+                  {DAILY_LOG_CHECKLIST.map((item) => (
+                    <label
+                      key={item.key}
+                      className="flex cursor-pointer items-start gap-3 rounded-lg border border-[#EEF2F6] bg-[#F8FAFC] p-3 text-sm font-bold leading-6 text-[#142033]"
+                    >
+                      <Checkbox
+                        checked={dailyLogForm.checklist[item.key]}
+                        onCheckedChange={(checked) => toggleDailyChecklist(item.key, checked === true)}
+                        className="mt-1"
+                      />
+                      <span>{item.label}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
+                <div className="space-y-2">
+                  <Label htmlFor="daily-log-key-cases">أهم الحالات والإجراءات</Label>
+                  <Textarea
+                    id="daily-log-key-cases"
+                    value={dailyLogForm.keyCases}
+                    onChange={(event) => updateDailyLogField('keyCases', event.target.value)}
+                    className="min-h-28"
+                    placeholder="مثال: العميل، رقم العقد، الإجراء، النتيجة..."
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="daily-log-legal">حالات تحتاج مراجعة قانونية</Label>
+                  <Textarea
+                    id="daily-log-legal"
+                    value={dailyLogForm.legalReviewCases}
+                    onChange={(event) => updateDailyLogField('legalReviewCases', event.target.value)}
+                    className="min-h-28"
+                    placeholder="اكتب الحالات التي تحتاج تدقيقًا قبل أي إجراء قانوني."
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="daily-log-blockers">العوائق أو الملاحظات</Label>
+                  <Textarea
+                    id="daily-log-blockers"
+                    value={dailyLogForm.blockers}
+                    onChange={(event) => updateDailyLogField('blockers', event.target.value)}
+                    className="min-h-28"
+                    placeholder="أي عائق منع إكمال المتابعة أو التحصيل."
+                  />
+                </div>
+              </div>
+
+              {dailyLogForm.status === 'incomplete' && (
+                <div className="space-y-2 rounded-xl border border-[#F8D8A8] bg-[#FFF6E5] p-4">
+                  <Label htmlFor="daily-log-incomplete">سبب عدم إكمال اليوم</Label>
+                  <Textarea
+                    id="daily-log-incomplete"
+                    value={dailyLogForm.incompleteReason}
+                    onChange={(event) => updateDailyLogField('incompleteReason', event.target.value)}
+                    className="min-h-24 bg-white"
+                    placeholder="اكتب سبب عدم إكمال المهام أو ما يحتاج متابعة غدًا."
+                  />
+                </div>
+              )}
+
+              <label className="flex cursor-pointer items-center gap-3 rounded-xl border border-[#DDE5EF] bg-[#F8FAFC] p-4 text-sm font-bold text-[#142033]">
+                <Checkbox
+                  checked={dailyLogForm.reportExported}
+                  onCheckedChange={(checked) => updateDailyLogField('reportExported', checked === true)}
+                />
+                تم تحديث الصفحة وتصدير التقرير الشامل عند الحاجة
+              </label>
+            </div>
+          )}
+
+          <DialogFooter className="gap-2 sm:justify-between">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handlePrintDailyLog}
+              disabled={!dailyLogForm}
+              className="rounded-xl"
+            >
+              <FileDown className="ml-2 h-4 w-4" />
+              تصدير / طباعة
+            </Button>
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setShowDailyLogDialog(false)}
+                className="rounded-xl"
+              >
+                إلغاء
+              </Button>
+              <Button
+                type="button"
+                onClick={() => dailyLogForm && saveDailyLogMutation.mutate(dailyLogForm)}
+                disabled={!dailyLogForm || saveDailyLogMutation.isPending}
+                className="rounded-xl bg-[#11A37F] font-bold text-white hover:bg-[#0D876A]"
+              >
+                {saveDailyLogMutation.isPending ? (
+                  <Loader2 className="ml-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Save className="ml-2 h-4 w-4" />
+                )}
+                حفظ الإقفال
+              </Button>
+            </div>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <QuickPaymentDialog
         open={showPaymentDialog}
         onOpenChange={(open) => {

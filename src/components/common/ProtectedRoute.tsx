@@ -5,6 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useCompanyIdWithInit } from '@/hooks/useUnifiedCompanyAccess';
 import { Skeleton } from '@/components/ui/skeleton';
 import { LazyLoadErrorBoundary } from './LazyLoadErrorBoundary';
+import { canAccessWorkspaceOnlyPath, isWorkspaceOnlyEmployee } from '@/lib/workspaceAccess';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -54,6 +55,13 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     const isMobileRoute = location.pathname.startsWith('/mobile');
     const authPath = isMobileRoute ? '/mobile' : '/auth';
     return <Navigate to={authPath} state={{ from: location }} replace />;
+  }
+
+  if (
+    isWorkspaceOnlyEmployee(user)
+    && !canAccessWorkspaceOnlyPath(location.pathname)
+  ) {
+    return <Navigate to="/employee-workspace" replace />;
   }
 
   return (

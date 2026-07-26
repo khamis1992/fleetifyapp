@@ -4,7 +4,7 @@
  */
 
 import React, { Suspense, useCallback, useMemo } from 'react';
-import { Route, Routes, Navigate } from 'react-router-dom';
+import { Route, Routes, Navigate, useLocation } from 'react-router-dom';
 import { RouteConfig } from '@/routes/types';
 import { PageSkeletonFallback } from '@/components/common/LazyPageWrapper';
 import { LazyLoadErrorBoundary } from '@/components/common/LazyLoadErrorBoundary';
@@ -15,6 +15,8 @@ import { DashboardLayout } from '@/components/layouts/DashboardLayout';
 import { SuperAdminLayout } from '@/components/layouts/SuperAdminLayout';
 import { CompanyBrowserLayout } from '@/components/layouts/CompanyBrowserLayout';
 import { BentoLayout } from '@/components/layouts/BentoLayout';
+import { useAuth } from '@/contexts/AuthContext';
+import { canAccessWorkspaceOnlyPath, isWorkspaceOnlyEmployee } from '@/lib/workspaceAccess';
 
 
 import { useFleetifyTranslation } from "@/hooks/useTranslation";
@@ -32,6 +34,8 @@ const RouteRenderer: React.FC<RouteRendererProps> = ({
 
 
   const { t } = useFleetifyTranslation("ui");
+  const location = useLocation();
+  const { user } = useAuth();
   const renderRoute = useCallback((route: RouteConfig) => {
     if (route.redirectTo) {
       return <Navigate to={route.redirectTo} replace />;
@@ -141,6 +145,13 @@ const RouteRenderer: React.FC<RouteRendererProps> = ({
   const sortedRoutes = useMemo(() => {
     return [...routes].sort((a, b) => a.priority - b.priority);
   }, [routes]);
+
+  if (
+    isWorkspaceOnlyEmployee(user)
+    && !canAccessWorkspaceOnlyPath(location.pathname)
+  ) {
+    return <Navigate to="/employee-workspace" replace />;
+  }
 
 
   return (

@@ -52,7 +52,7 @@ const roleLabels: Record<UserRole, string> = {
   accountant: 'محاسب',
   fleet_manager: 'مدير الأسطول',
   sales_agent: 'مندوب مبيعات',
-  employee: 'موظف',
+  employee: 'مساحة العمل فقط',
 };
 
 const categoryIcons = {
@@ -187,7 +187,7 @@ export default function PermissionsMatrix({
                   key={role}
                   type="button"
                   disabled={disabled}
-                  onClick={() => onRoleChange?.(role, !active)}
+                  onClick={() => onRoleChange?.(role, true)}
                   className={cn(
                     'flex min-h-[74px] items-center justify-between rounded-xl border p-3 text-right transition',
                     active ? 'border-[#22C7A1] bg-[#E8FBF6]' : 'border-slate-200 bg-[#F8FAFC]',

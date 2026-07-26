@@ -113,7 +113,7 @@ const availableRoles = [
   { value: 'company_admin', label: 'مدير الشركة', description: 'صلاحيات كاملة لإدارة الشركة' },
   { value: 'manager', label: 'مدير', description: 'صلاحيات إدارية محدودة' },
   { value: 'sales_agent', label: 'مندوب مبيعات', description: 'إدارة العملاء والمبيعات' },
-  { value: 'employee', label: 'موظف', description: 'صلاحيات محدودة للاستعلام' },
+  { value: 'employee', label: 'مساحة العمل فقط', description: 'دخول مساحة العمل الخاصة بالموظف فقط بدون صلاحيات أقسام' },
 ];
 
 export default function EmployeeForm({ onSubmit, isLoading, initialData }: EmployeeFormProps) {

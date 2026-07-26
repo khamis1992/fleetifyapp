@@ -350,34 +350,8 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     Permission.VIEW_REPORTS,
   ],
   
-  // الموظف: صلاحيات محدودة جداً (قراءة فقط في معظم الحالات)
-  [UserRole.EMPLOYEE]: [
-    // المالية (قراءة فقط)
-    Permission.VIEW_FINANCE,
-    Permission.VIEW_REPORTS,
-    
-    // العقود (قراءة فقط)
-    Permission.VIEW_CONTRACTS,
-    
-    // المركبات (قراءة فقط)
-    Permission.VIEW_VEHICLES,
-    
-    // العملاء (قراءة فقط)
-    Permission.VIEW_CUSTOMERS,
-    
-    // الموظفين (قراءة فقط)
-    Permission.VIEW_EMPLOYEES,
-    
-    // القضايا القانونية (قراءة فقط)
-    Permission.VIEW_LEGAL_CASES,
-    
-    // الأصول (قراءة فقط)
-    Permission.VIEW_ASSETS,
-    
-    // المستندات (قراءة + تحميل)
-    Permission.VIEW_DOCUMENTS,
-    Permission.DOWNLOAD_DOCUMENT,
-  ],
+  // مساحة العمل فقط: لا يمنح أي صلاحيات أقسام. الوصول يتم عبر /employee-workspace فقط.
+  [UserRole.EMPLOYEE]: [],
 };
 
 /**
@@ -419,7 +393,7 @@ export function getRoleDisplayName(role: UserRole): string {
     [UserRole.ACCOUNTANT]: 'محاسب',
     [UserRole.FLEET_MANAGER]: 'مدير الأسطول',
     [UserRole.SALES_AGENT]: 'موظف مبيعات',
-    [UserRole.EMPLOYEE]: 'موظف',
+    [UserRole.EMPLOYEE]: 'مساحة العمل فقط',
   };
   return roleNames[role] ?? role;
 }
@@ -435,7 +409,7 @@ export function getRoleDescription(role: UserRole): string {
     [UserRole.ACCOUNTANT]: 'صلاحيات مالية كاملة',
     [UserRole.FLEET_MANAGER]: 'إدارة الأسطول والمركبات',
     [UserRole.SALES_AGENT]: 'إدارة العملاء والعقود',
-    [UserRole.EMPLOYEE]: 'صلاحيات قراءة فقط',
+    [UserRole.EMPLOYEE]: 'دخول مساحة العمل الخاصة بالموظف فقط بدون صلاحيات أقسام',
   };
   return roleDescriptions[role] ?? '';
 }
