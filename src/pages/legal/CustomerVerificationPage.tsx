@@ -66,6 +66,8 @@ import {
 } from 'lucide-react';
 import { sendWhatsAppMessage } from '@/utils/whatsappWebSender';
 import { ContractDocuments } from '@/components/contracts/ContractDocuments';
+import { VerificationFinancialReviewCard } from '@/components/legal/VerificationFinancialReviewCard';
+import { useVerificationFinancialReview } from '@/hooks/useContractFinancialReviews';
 import '@/styles/legal-system.css';
 
 export default function CustomerVerificationPage() {
@@ -122,6 +124,7 @@ export default function CustomerVerificationPage() {
     },
     enabled: !!user?.id && !!companyId,
   });
+  const { data: openFinancialReview } = useVerificationFinancialReview(taskId);
 
   // جلب بيانات المهمة
   const { data: task, isLoading: taskLoading } = useQuery({
@@ -529,6 +532,9 @@ export default function CustomerVerificationPage() {
   const confirmReadyMutation = useMutation({
     mutationFn: async () => {
       if (!taskId || !user?.id || !companyId) throw new Error('بيانات غير مكتملة');
+      if (openFinancialReview) {
+        throw new Error('يوجد طلب مراجعة مالية مفتوح. يجب انتظار قرار المدير قبل اعتماد التحويل القانوني.');
+      }
 
       // جلب بيانات البروفايل (id و الاسم)
       const { data: profile } = await supabase
@@ -1149,8 +1155,18 @@ export default function CustomerVerificationPage() {
         </Card>
       </motion.div>
 
+      <VerificationFinancialReviewCard
+        verificationTaskId={task.id}
+        contractId={task.contract_id}
+        contractNumber={task.contract?.contract_number || '-'}
+        customerId={task.customer_id}
+        customerName={`${task.customer?.first_name || ''} ${task.customer?.last_name || ''}`.trim() || 'عميل غير محدد'}
+        invoices={invoices}
+        disabled={isVerified || task.status === 'cancelled' || task.status === 'rejected'}
+      />
+
       {/* أزرار الإجراءات */}
-      {!isVerified && task.status !== 'cancelled' && (
+      {!isVerified && !['cancelled', 'rejected'].includes(task.status) && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -1177,7 +1193,11 @@ export default function CustomerVerificationPage() {
                 <Button
                   size="lg"
                   onClick={() => confirmReadyMutation.mutate()}
-                  disabled={confirmReadyMutation.isPending || cancelTaskMutation.isPending}
+                  disabled={
+                    confirmReadyMutation.isPending ||
+                    cancelTaskMutation.isPending ||
+                    Boolean(openFinancialReview)
+                  }
                   className="gap-2 bg-green-600 hover:bg-green-700 text-white min-w-[200px]"
                 >
                   {confirmReadyMutation.isPending ? (

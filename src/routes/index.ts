@@ -2111,7 +2111,7 @@ const routeConfigs: RouteConfig[] = [
     priority: 145,
     protected: true,
     layout: 'bento',
-    requiredRole: 'admin',
+    requiredRole: 'manager',
   },
 
   // === Help & Documentation Routes ===

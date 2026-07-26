@@ -61,6 +61,12 @@ const RouteRenderer: React.FC<RouteRendererProps> = ({
       protectedElement = <SuperAdminRoute>{componentElement}</SuperAdminRoute>;
     } else if (requiredRole === 'admin') {
       protectedElement = <AdminRoute>{componentElement}</AdminRoute>;
+    } else if (requiredRole === 'manager') {
+      protectedElement = (
+        <ProtectedRoute role={['manager', 'company_admin', 'super_admin']}>
+          {componentElement}
+        </ProtectedRoute>
+      );
     } else {
       protectedElement = (
         <ProtectedRoute

@@ -52,7 +52,7 @@ import {
 } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
-import { ConvertToLegalDialog } from '@/components/contracts/ConvertToLegalDialog';
+import { LegalTransferReadinessWizard as ConvertToLegalDialog } from '@/components/contracts/LegalTransferReadinessWizard';
 import type { ContractForLegal } from '@/hooks/useConvertToLegal';
 import { useDelinquentCustomers, type DelinquentCustomer } from '@/hooks/useDelinquentCustomers';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';

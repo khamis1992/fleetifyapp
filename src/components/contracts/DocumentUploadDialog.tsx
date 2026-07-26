@@ -48,6 +48,7 @@ const documentTypes = [
   { value: 'general', label: 'عام' },
   { value: 'contract', label: 'عقد' },
   { value: 'signed_contract', label: 'عقد موقع' },
+  { value: 'signed_contract_image', label: 'صورة عقد موقع' },
   { value: 'draft_contract', label: 'مسودة عقد' },
   { value: 'condition_report', label: 'تقرير حالة المركبة' },
   { value: 'signature', label: 'توقيع' },

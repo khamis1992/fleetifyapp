@@ -84,7 +84,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ContractStatusManagement } from './ContractStatusManagement';
-import { ConvertToLegalDialog } from './ConvertToLegalDialog';
+import { LegalTransferReadinessWizard as ConvertToLegalDialog } from './LegalTransferReadinessWizard';
 import { PermanentContractDeleteDialog } from './PermanentContractDeleteDialog';
 
 import { PayInvoiceDialog } from '@/components/finance/PayInvoiceDialog';

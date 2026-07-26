@@ -31661,6 +31661,15 @@ export type Database = {
         Args: { p_actor_id?: string; p_company_id: string; p_contract_id: string; p_reason: string }
         Returns: Json
       }
+      resolve_contract_financial_review_v1: {
+        Args: {
+          p_company_id: string
+          p_notes: string
+          p_resolution: string
+          p_task_id: string
+        }
+        Returns: Database["public"]["Tables"]["tasks"]["Row"]
+      }
       cancel_verified_contract_v1: {
         Args: { p_actor_id?: string; p_company_id: string; p_task_id: string }
         Returns: Json

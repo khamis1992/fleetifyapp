@@ -33,7 +33,10 @@ import {
   ClipboardCheck,
   Save,
   FileDown,
-  FilePlus2
+  FilePlus2,
+  FileCheck2,
+  ScanLine,
+  MoreHorizontal
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -55,6 +58,13 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 import { useEmployeeContracts } from '@/hooks/useEmployeeContracts';
 import { useEmployeeTasks } from '@/hooks/useEmployeeTasks';
@@ -72,8 +82,12 @@ import {
 } from '@/components/employee/dialogs';
 import { QuickPaymentDialog } from '@/components/finance/QuickPaymentDialog';
 import { UnassignContractDialog } from '@/components/team';
-import { ConvertToLegalDialog } from '@/components/contracts/ConvertToLegalDialog';
+import { LegalTransferReadinessWizard as ConvertToLegalDialog } from '@/components/contracts/LegalTransferReadinessWizard';
 import { SimpleContractWizard } from '@/components/contracts/SimpleContractWizard';
+import {
+  SignedContractScannerDialog,
+  type SignedContractScanFiles,
+} from '@/components/contracts/SignedContractScannerDialog';
 import { ExportButton } from '@/components/shared/ExportButton';
 import { exportEmployeeWorkspaceReport } from '@/utils/exports/employeeReport';
 import { NotificationBell } from '@/components/notifications/NotificationBell';
@@ -84,6 +98,7 @@ import {
   type EmployeeTask as ReportEmployeeTask,
 } from '@/types/employee-workspace.types';
 import type { ContractForLegal } from '@/hooks/useConvertToLegal';
+import { useCreateContractDocument } from '@/hooks/useContractDocuments';
 
 type DailyLogChecklistKey =
   | 'workspace_opened'
@@ -226,6 +241,10 @@ export const EmployeeWorkspace: React.FC = () => {
   const [showConvertToLegalDialog, setShowConvertToLegalDialog] = useState(false);
   const [showDailyLogDialog, setShowDailyLogDialog] = useState(false);
   const [showContractWizard, setShowContractWizard] = useState(false);
+  const [signedScanContract, setSignedScanContract] = useState<{
+    id: string;
+    contractNumber: string;
+  } | null>(null);
   const [selectedContractId, setSelectedContractId] = useState<string | undefined>();
   const [preselectedContractCustomerId, setPreselectedContractCustomerId] = useState<string | undefined>();
   const [selectedBulkContractIds, setSelectedBulkContractIds] = useState<string[]>([]);
@@ -241,6 +260,7 @@ export const EmployeeWorkspace: React.FC = () => {
   const canUnassignContracts = false;
   const companyId = user?.profile?.company_id || user?.company?.id || '';
   const todayLogDate = todayISODate();
+  const createContractDocument = useCreateContractDocument();
 
   useEffect(() => {
     const html = document.documentElement;
@@ -340,6 +360,35 @@ export const EmployeeWorkspace: React.FC = () => {
       return data;
     },
     enabled: !!user?.id && !!companyId,
+  });
+
+  const assignedContractIdsKey = contracts.map((contract) => contract.id).join(',');
+  const {
+    data: signedContractIds = [],
+    isLoading: isSignedContractStatusLoading,
+    isError: hasSignedContractStatusError,
+  } = useQuery({
+    queryKey: ['employee-signed-contract-documents', companyId, workspaceProfile?.id, assignedContractIdsKey],
+    queryFn: async (): Promise<string[]> => {
+      const assignedContractIds = contracts.map((contract) => contract.id).filter(Boolean);
+      if (!companyId || assignedContractIds.length === 0) return [];
+
+      const { data, error } = await supabase
+        .from('contract_documents')
+        .select('contract_id')
+        .eq('company_id', companyId)
+        .in('document_type', ['signed_contract', 'signed_contract_image'])
+        .in('contract_id', assignedContractIds);
+
+      if (error) throw error;
+      return Array.from(new Set(
+        (data || [])
+          .map((document) => document.contract_id)
+          .filter((contractId): contractId is string => Boolean(contractId)),
+      ));
+    },
+    enabled: !!companyId && !!workspaceProfile?.id && contracts.length > 0,
+    staleTime: 30_000,
   });
 
   const {
@@ -1239,6 +1288,56 @@ export const EmployeeWorkspace: React.FC = () => {
       }
     : null;
 
+  const handleEmployeeSignedContractScan = async ({
+    pdfFile,
+    pageImages,
+  }: SignedContractScanFiles) => {
+    if (!signedScanContract || !workspaceProfile?.id || !companyId) {
+      throw new Error('تعذر تحديد الموظف أو العقد');
+    }
+
+    const { data: assignedContract, error: assignmentError } = await supabase
+      .from('contracts')
+      .select('id, contract_number')
+      .eq('id', signedScanContract.id)
+      .eq('company_id', companyId)
+      .eq('assigned_to_profile_id', workspaceProfile.id)
+      .maybeSingle();
+
+    if (assignmentError) throw assignmentError;
+    if (!assignedContract) {
+      throw new Error('هذا العقد لم يعد مخصصًا لك، لذلك لم يتم رفع المستند');
+    }
+
+    const scannedAt = new Date().toISOString().slice(0, 16).replace('T', ' ');
+
+    await createContractDocument.mutateAsync({
+      contract_id: assignedContract.id,
+      document_type: 'signed_contract',
+      document_name: `نسخة العقد الموقع المجمعة - ${assignedContract.contract_number || signedScanContract.contractNumber}`,
+      file: pdfFile,
+      notes: `رفع بواسطة الموظف من مساحة العمل بتاريخ ${scannedAt}، ويتضمن ${pageImages.length} صفحة`,
+      is_required: true,
+      suppressSuccessToast: true,
+    });
+
+    for (let index = pageImages.length - 1; index >= 0; index -= 1) {
+      await createContractDocument.mutateAsync({
+        contract_id: assignedContract.id,
+        document_type: 'signed_contract_image',
+        document_name: `صورة العقد الموقع - صفحة ${index + 1}`,
+        file: pageImages[index],
+        notes: 'صورة ممسوحة بكاميرا الموظف مع قص A4 وتصحيح المنظور تلقائيًا',
+        is_required: false,
+        suppressSuccessToast: true,
+      });
+    }
+
+    await queryClient.invalidateQueries({
+      queryKey: ['employee-signed-contract-documents', companyId, workspaceProfile.id],
+    });
+  };
+
   const reportTasks = useMemo<ReportEmployeeTask[]>(() => tasks.map(task => {
     const contract = contracts.find(item => item.id === task.contract_id);
     const reportType: ReportEmployeeTask['type'] = ({
@@ -1516,15 +1615,15 @@ export const EmployeeWorkspace: React.FC = () => {
           <div>
             <div className="mb-2 flex items-start gap-3">
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/10 text-[#7FE5CB] ring-1 ring-white/15 sm:h-12 sm:w-12">
-              <Briefcase className="h-5 w-5 sm:h-6 sm:w-6" />
-            </div>
+                <Briefcase className="h-5 w-5 sm:h-6 sm:w-6" />
+              </div>
               <div className="min-w-0">
                 <h1 className="text-xl font-black tracking-normal sm:text-2xl md:text-3xl">مساحة عملي</h1>
                 <p className="mt-1 max-w-full text-xs font-medium leading-5 text-slate-300 sm:text-sm">
                   أهلاً بك، {user?.email?.split('@')[0]} - لوحة متابعة التحصيل والعقود اليومية
                 </p>
               </div>
-          </div>
+            </div>
             <div className="mt-4 grid grid-cols-1 gap-2 text-xs min-[390px]:grid-cols-2 sm:flex sm:flex-wrap">
               <span className="rounded-full border border-white/10 bg-white/10 px-3 py-1.5 text-center text-slate-200 sm:text-start">
                 {contractStats.activeContracts} عقد نشط
@@ -1533,68 +1632,68 @@ export const EmployeeWorkspace: React.FC = () => {
                 {taskStats.todayTasks} مهام اليوم
               </span>
               <span className="rounded-full border border-white/10 bg-white/10 px-3 py-1.5 text-center text-slate-200 min-[390px]:col-span-2 sm:col-span-1 sm:text-start">
-                {formatCurrency(contractStats.totalBalanceDue)} مستحق
+                {formatCurrency(collectionStats.totalPending)} مستحق هذا الشهر
               </span>
             </div>
           </div>
 
           <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
             <NotificationBell />
-          
-          <ExportButton
-            onExportExcel={async () => {
-              try {
-                await exportEmployeeWorkspaceReport({
-                  employeeName: user?.email?.split('@')[0] || 'موظف',
-                  contracts,
-                  tasks: reportTasks,
-                  performance: reportPerformance,
-                  performanceGrade: reportPerformanceGrade,
-                  collections,
-                  stats: {
-                    contractStats,
-                    taskStats,
-                    collectionStats
-                  }
-                });
-                toast({
-                  title: 'تم التصدير بنجاح',
-                  description: 'تم تصدير التقرير الشامل إلى Excel',
-                });
-              } catch (error) {
-                console.error('Export error:', error);
-                toast({
-                  title: 'خطأ في التصدير',
-                  description: error instanceof Error ? error.message : 'فشل تصدير التقرير',
-                  variant: 'destructive',
-                });
-              }
-            }}
-            label="تصدير تقرير شامل (Excel)"
-            variant="outline"
-            className="h-10 w-full justify-center rounded-lg border-white/15 bg-white/10 text-white hover:bg-white/15 hover:text-white sm:h-9 sm:w-auto"
-          />
-          
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleRefresh}
-            disabled={isLoading}
-              className="h-10 w-full justify-center rounded-lg border-white/15 bg-white/10 text-white hover:bg-white/15 sm:h-9 sm:w-auto"
-          >
-            <RefreshCw className={cn("ml-2 h-4 w-4", isLoading && "animate-spin")} />
-            تحديث
-          </Button>
 
-           <Button
-            variant="outline"
-            size="sm"
-            onClick={() => navigate('/dashboard')}
+            <ExportButton
+              onExportExcel={async () => {
+                try {
+                  await exportEmployeeWorkspaceReport({
+                    employeeName: user?.email?.split('@')[0] || 'موظف',
+                    contracts,
+                    tasks: reportTasks,
+                    performance: reportPerformance,
+                    performanceGrade: reportPerformanceGrade,
+                    collections,
+                    stats: {
+                      contractStats,
+                      taskStats,
+                      collectionStats
+                    }
+                  });
+                  toast({
+                    title: 'تم التصدير بنجاح',
+                    description: 'تم تصدير التقرير الشامل إلى Excel',
+                  });
+                } catch (error) {
+                  console.error('Export error:', error);
+                  toast({
+                    title: 'خطأ في التصدير',
+                    description: error instanceof Error ? error.message : 'فشل تصدير التقرير',
+                    variant: 'destructive',
+                  });
+                }
+              }}
+              label="تصدير تقرير شامل (Excel)"
+              variant="outline"
+              className="h-10 w-full justify-center rounded-lg border-white/15 bg-white/10 text-white hover:bg-white/15 hover:text-white sm:h-9 sm:w-auto"
+            />
+
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleRefresh}
+              disabled={isLoading}
               className="h-10 w-full justify-center rounded-lg border-white/15 bg-white/10 text-white hover:bg-white/15 sm:h-9 sm:w-auto"
-          >
-            <ArrowRight className="ml-2 h-4 w-4" />
-            الرئيسية
-          </Button>
+            >
+              <RefreshCw className={cn("ml-2 h-4 w-4", isLoading && "animate-spin")} />
+              تحديث
+            </Button>
+
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => navigate('/dashboard')}
+              className="h-10 w-full justify-center rounded-lg border-white/15 bg-white/10 text-white hover:bg-white/15 sm:h-9 sm:w-auto"
+            >
+              <ArrowRight className="ml-2 h-4 w-4" />
+              الرئيسية
+            </Button>
           </div>
         </div>
       </header>
@@ -1686,9 +1785,9 @@ export const EmployeeWorkspace: React.FC = () => {
         <Card className="rounded-xl border-[#DDE5EF] bg-white shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md">
           <CardContent className="flex items-start justify-between gap-3 p-4 sm:p-6">
             <div>
-              <p className="text-sm font-bold text-[#6A7688] mb-1">المبالغ المستحقة</p>
-              <h3 className="break-words text-2xl font-black text-[#142033] sm:text-3xl">{formatCurrency(contractStats.totalBalanceDue)}</h3>
-              <p className="text-xs text-[#9A5B00] mt-1 font-bold">تحصيل مطلوب</p>
+              <p className="text-sm font-bold text-[#6A7688] mb-1">المبالغ المستحقة لهذا الشهر</p>
+              <h3 className="break-words text-2xl font-black text-[#142033] sm:text-3xl">{formatCurrency(collectionStats.totalPending)}</h3>
+              <p className="text-xs text-[#9A5B00] mt-1 font-bold">تحصيل الشهر الحالي</p>
             </div>
             <div className="p-3 bg-[#FFF6E5] text-[#9A5B00] rounded-xl">
               <DollarSign className="w-5 h-5" />
@@ -2131,180 +2230,237 @@ export const EmployeeWorkspace: React.FC = () => {
                       {filteredContracts.length > 0 ? filteredContracts.map((contract) => {
                         const statusStyle = getContractStatusStyle(contract.status);
                         const StatusIcon = statusStyle.icon;
+                        const hasSignedContract = signedContractIds.includes(contract.id);
                         
                         return (
-                        <div 
-                          key={contract.id} 
-                          className={cn(
-                            "relative flex flex-col justify-between gap-3 overflow-hidden rounded-xl border bg-white p-3 transition-all hover:-translate-y-0.5 hover:shadow-md sm:flex-row sm:items-center sm:p-4",
-                            statusStyle.border,
-                            statusStyle.bg
-                          )}
+                        <div
+                          key={contract.id}
+                          className="group relative overflow-hidden rounded-lg border border-[#DDE5EF] bg-white transition-all duration-200 hover:border-[#A9DCCF] hover:shadow-[0_8px_24px_rgba(20,32,51,0.08)]"
                         >
-                          {/* Status indicator bar */}
-                          <div className={cn(
-                            "absolute right-0 top-0 bottom-0 w-1.5",
-                            statusStyle.badge.split(' ')[0].replace('bg-', 'bg-').replace('-100', '-500')
-                          )} />
+                          <div
+                            className={cn(
+                              "absolute inset-y-0 right-0 w-1",
+                              statusStyle.badge.split(' ')[0].replace('-100', '-500'),
+                            )}
+                          />
 
-                          {canUnassignContracts && (
-                            <div
-                              className="mb-3 sm:mb-0 sm:ml-3"
-                              onClick={(event) => event.stopPropagation()}
-                            >
-                              <Checkbox
-                                checked={selectedBulkContractIds.includes(contract.id)}
-                                onCheckedChange={() => toggleBulkContractSelection(contract.id)}
-                                aria-label={`تحديد العقد ${contract.contract_number || contract.id}`}
-                              />
-                            </div>
-                          )}
-                          
-                          <div 
-                            className="mb-1 flex min-w-0 flex-1 cursor-pointer items-start gap-3 sm:mb-0 sm:items-center sm:gap-4"
-                            onClick={() => navigate(`/contracts/${contract.contract_number || contract.id}`)}
-                          >
-                            <Avatar className="h-11 w-11 shrink-0 border-2 border-white shadow-sm ring-1 ring-[#DDE5EF] sm:h-12 sm:w-12">
-                              <AvatarFallback className={cn("font-bold text-lg", statusStyle.badge)}>
-                                {contract.customer_name?.[0] || 'C'}
-                              </AvatarFallback>
-                            </Avatar>
-                            <div className="min-w-0 flex-1">
-                              <div className="mb-1 flex flex-wrap items-center gap-2">
-                                <h4 className="min-w-0 break-words text-sm font-black text-[#142033] transition-colors group-hover:text-[#1D4F7A] sm:text-base">
-                                  {contract.customer_name || 'غير محدد'}
-                                </h4>
-                                <Badge variant="outline" className={cn("text-xs font-bold border-2", statusStyle.badge)}>
-                                  <StatusIcon className="w-3 h-3 ml-1" />
-                                  {statusStyle.label}
-                                </Badge>
-                              </div>
-                              <p className="flex flex-wrap items-center gap-2 text-xs text-[#6A7688]">
-                                <span className="font-semibold">#{contract.contract_number}</span>
-                                <span className="text-gray-300">â€¢</span>
-                                {contract.customer_phone && (
-                                  <>
-                                    <a 
-                                      href={`tel:${contract.customer_phone}`}
-                                      className="flex items-center gap-1 text-blue-600 hover:text-blue-700 font-medium hover:underline"
-                                      onClick={(e) => e.stopPropagation()}
-                                    >
-                                      <Phone className="w-3 h-3" />
-                                      {contract.customer_phone}
-                                    </a>
-                                    <span className="text-gray-300">â€¢</span>
-                                  </>
+                          <div className="p-4 pr-5 sm:p-5 sm:pr-6">
+                            <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                              <div className="flex min-w-0 items-start gap-3">
+                                {canUnassignContracts && (
+                                  <div
+                                    className="pt-3"
+                                    onClick={(event) => event.stopPropagation()}
+                                  >
+                                    <Checkbox
+                                      checked={selectedBulkContractIds.includes(contract.id)}
+                                      onCheckedChange={() => toggleBulkContractSelection(contract.id)}
+                                      aria-label={`تحديد العقد ${contract.contract_number || contract.id}`}
+                                    />
+                                  </div>
                                 )}
-                                <span className={cn(
-                                  "font-medium",
-                                  (contract.balance_due || 0) > 0 ? "text-amber-600" : "text-emerald-600"
-                                )}>
-                                  {(contract.balance_due || 0) > 0 ? `مستحق: ${formatCurrency(contract.balance_due || 0)}` : 'مدفوع بالكامل'}
-                                </span>
-                              </p>
+
+                                <Avatar className="h-11 w-11 shrink-0 border border-[#DDE5EF] bg-[#F4F8FB] sm:h-12 sm:w-12">
+                                  <AvatarFallback className="bg-[#E9FBF6] text-base font-black text-[#0D876A]">
+                                    {contract.customer_name?.[0] || 'C'}
+                                  </AvatarFallback>
+                                </Avatar>
+
+                                <button
+                                  type="button"
+                                  className="min-w-0 text-right"
+                                  onClick={() => navigate(`/contracts/${contract.contract_number || contract.id}`)}
+                                >
+                                  <div className="mb-1.5 flex flex-wrap items-center gap-2">
+                                    <h4 className="break-words text-base font-black text-[#142033] transition-colors group-hover:text-[#1D4F7A]">
+                                      {contract.customer_name || 'غير محدد'}
+                                    </h4>
+                                    <Badge
+                                      variant="outline"
+                                      className={cn("h-6 gap-1 border px-2 text-[11px] font-bold", statusStyle.badge)}
+                                    >
+                                      <StatusIcon className="h-3 w-3" />
+                                      {statusStyle.label}
+                                    </Badge>
+                                    {hasSignedContract ? (
+                                      <Badge className="h-6 gap-1 border border-[#BFEBDD] bg-[#E9FBF6] px-2 text-[11px] text-[#0D876A] hover:bg-[#E9FBF6]">
+                                        <FileCheck2 className="h-3 w-3" />
+                                        العقد موثق
+                                      </Badge>
+                                    ) : workspaceProfile?.id
+                                      && !isSignedContractStatusLoading
+                                      && !hasSignedContractStatusError ? (
+                                      <Badge
+                                        variant="outline"
+                                        className="h-6 gap-1 border-[#F4C96B] bg-[#FFF8E7] px-2 text-[11px] text-[#8A5700]"
+                                      >
+                                        <AlertCircle className="h-3 w-3" />
+                                        نسخة العقد ناقصة
+                                      </Badge>
+                                    ) : null}
+                                  </div>
+
+                                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-[#6A7688]">
+                                    <span className="flex items-center gap-1.5 font-bold text-[#40516A]">
+                                      <FileText className="h-3.5 w-3.5 text-[#8A9AAF]" />
+                                      {contract.contract_number || 'بدون رقم'}
+                                    </span>
+                                    {contract.customer_phone && (
+                                      <span className="flex items-center gap-1.5" dir="ltr">
+                                        <Phone className="h-3.5 w-3.5 text-[#8A9AAF]" />
+                                        {contract.customer_phone}
+                                      </span>
+                                    )}
+                                  </div>
+                                </button>
+                              </div>
+
+                              <div className="flex shrink-0 items-end justify-between gap-6 border-t border-[#EEF2F6] pt-3 lg:min-w-52 lg:justify-end lg:border-r lg:border-t-0 lg:pr-6 lg:pt-0">
+                                <div>
+                                  <p className="text-[11px] font-bold text-[#7B8798]">
+                                    {(contract.balance_due || 0) > 0 ? 'الرصيد المستحق' : 'حالة التحصيل'}
+                                  </p>
+                                  <p
+                                    className={cn(
+                                      "mt-1 text-base font-black",
+                                      (contract.balance_due || 0) > 0 ? "text-[#A56000]" : "text-[#0D876A]",
+                                    )}
+                                    dir={(contract.balance_due || 0) > 0 ? 'ltr' : undefined}
+                                  >
+                                    {(contract.balance_due || 0) > 0
+                                      ? formatCurrency(contract.balance_due || 0)
+                                      : 'مدفوع بالكامل'}
+                                  </p>
+                                </div>
+                              </div>
                             </div>
                           </div>
-                          
-                          <div className="grid w-full grid-cols-4 gap-2 sm:flex sm:w-auto sm:flex-wrap sm:items-center sm:self-auto">
-                            {/* زر الاتصال - متاح لجميع العقود */}
-                            {contract.customer_phone && (
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                className="h-10 w-full rounded-lg bg-[#E9FBF6] p-0 text-[#0D876A] hover:bg-[#D8F7EE] hover:text-[#0D876A] sm:h-8 sm:w-8"
-                                onClick={() => window.location.href = `tel:${contract.customer_phone}`}
-                                title={`اتصال: ${contract.customer_phone}`}
-                              >
-                                <Phone className="w-4 h-4" />
-                              </Button>
-                            )}
-                            
-                            {/* أزرار العمل - فقط للعقود النشطة */}
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="col-span-2 h-10 gap-1 rounded-lg border-[#BFD2E3] bg-white px-2 text-xs font-bold text-[#1D4F7A] hover:bg-[#EEF4FA] hover:text-[#173A63] sm:col-span-1 sm:h-8"
-                              onClick={() => openNewContractWizard(contract)}
-                              title="إنشاء عقد جديد لهذا العميل"
-                            >
-                              <FilePlus2 className="h-4 w-4" />
-                              عقد جديد
-                            </Button>
 
-                            {contract.status === 'active' && (
-                              <>
+                          <div className="flex flex-col gap-2 border-t border-[#EEF2F6] bg-[#F8FAFC] px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-5">
+                            <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center">
+                              {contract.status === 'active' && (
                                 <Button
                                   size="sm"
-                                  variant="ghost"
-                                  className="h-10 w-full rounded-lg bg-[#E9FBF6] p-0 text-[#0D876A] hover:bg-[#D8F7EE] hover:text-[#0D876A] sm:h-8 sm:w-8"
+                                  className="h-9 gap-2 rounded-md bg-[#173A63] px-4 text-xs font-bold text-white hover:bg-[#102B4C]"
                                   onClick={() => {
-                                     setSelectedPaymentCustomer({
-                                       customerId: contract.customer_id,
-                                       customerName: contract.customer_name || 'غير محدد',
-                                       customerPhone: contract.customer_phone || null,
-                                     });
-                                     setSelectedContractId(contract.id);
-                                     setShowPaymentDialog(true);
+                                    setSelectedContractId(contract.id);
+                                    setShowNoteDialog(true);
                                   }}
-                                  title="تسجيل دفعة"
                                 >
-                                  <DollarSign className="w-4 h-4" />
+                                  <FileText className="h-4 w-4" />
+                                  إضافة ملاحظة
                                 </Button>
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  className="h-10 w-full rounded-lg bg-[#EEF4FA] p-0 text-[#1D4F7A] hover:bg-[#DDEAF5] hover:text-[#173A63] sm:h-8 sm:w-8"
-                                  onClick={() => {
-                                     setSelectedContractId(contract.id);
-                                     setShowNoteDialog(true);
-                                  }}
-                                  title="إضافة ملاحظة"
-                                >
-                                  <FileText className="w-4 h-4" />
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  className="h-10 w-full rounded-lg bg-[#EEF4FA] p-0 text-[#1D4F7A] hover:bg-[#DDEAF5] hover:text-[#173A63] sm:h-8 sm:w-8"
-                                  onClick={() => {
-                                     setSelectedContractId(contract.id);
-                                     setShowFollowupDialog(true);
-                                  }}
-                                  title="جدولة متابعة"
-                                >
-                                  <Calendar className="w-4 h-4" />
-                                </Button>
-                                {(contract.balance_due || 0) > 0 && (
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    className="col-span-2 h-10 gap-1 rounded-lg border-purple-200 bg-purple-50 px-2 text-xs text-purple-700 hover:bg-purple-100 hover:text-purple-800 sm:col-span-1 sm:h-8"
-                                    onClick={() => {
-                                      setSelectedContractId(contract.id);
-                                      setShowConvertToLegalDialog(true);
-                                    }}
-                                    title="تحويل للشؤون القانونية"
-                                  >
-                                    <Scale className="w-4 h-4" />
-                                    قانونية
-                                  </Button>
-                                )}
-                              </>
-                            )}
-                            {canUnassignContracts && (
+                              )}
+
                               <Button
                                 size="sm"
-                                variant="outline"
-                                className="col-span-2 h-10 gap-1 rounded-lg border-red-200 bg-red-50 px-2 text-xs text-red-700 hover:bg-red-100 hover:text-red-800 sm:col-span-1 sm:h-8"
-                                onClick={() => {
-                                  setSelectedContractId(contract.id);
-                                  setShowUnassignDialog(true);
-                                }}
-                                title="إلغاء التعيين"
+                                variant={hasSignedContract ? 'outline' : 'default'}
+                                className={cn(
+                                  'h-9 gap-2 rounded-md px-4 text-xs font-bold',
+                                  hasSignedContract
+                                    ? 'border-[#C8D3E0] bg-white text-[#173A63] hover:bg-[#EEF5FB]'
+                                    : 'bg-[#11A37F] text-white hover:bg-[#0D876A]',
+                                )}
+                                onClick={() => setSignedScanContract({
+                                  id: contract.id,
+                                  contractNumber: contract.contract_number || contract.id,
+                                })}
                               >
-                                <XCircle className="w-4 h-4" />
-                                إلغاء التعيين
+                                <ScanLine className="h-4 w-4" />
+                                {hasSignedContract ? 'إضافة نسخة' : 'تصوير العقد'}
                               </Button>
+
+                              {contract.status === 'active' && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="h-9 gap-2 rounded-md border-[#BFEBDD] bg-white px-4 text-xs font-bold text-[#0D876A] hover:bg-[#E9FBF6]"
+                                  onClick={() => {
+                                    setSelectedPaymentCustomer({
+                                      customerId: contract.customer_id,
+                                      customerName: contract.customer_name || 'غير محدد',
+                                      customerPhone: contract.customer_phone || null,
+                                    });
+                                    setSelectedContractId(contract.id);
+                                    setShowPaymentDialog(true);
+                                  }}
+                                >
+                                  <DollarSign className="h-4 w-4" />
+                                  تسجيل دفعة
+                                </Button>
+                              )}
+
+                              {contract.status === 'active' && (contract.balance_due || 0) > 0 && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="h-9 gap-2 rounded-md border-[#C8D3E0] bg-white px-4 text-xs font-bold text-[#173A63] hover:bg-[#EEF5FB]"
+                                  onClick={() => {
+                                    setSelectedContractId(contract.id);
+                                    setShowConvertToLegalDialog(true);
+                                  }}
+                                >
+                                  <Scale className="h-4 w-4" />
+                                  تحويل للقانونية
+                                </Button>
+                              )}
+                            </div>
+
+                            {(contract.customer_phone || contract.status === 'active' || canUnassignContracts) && (
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button
+                                    size="icon"
+                                    variant="outline"
+                                    className="h-9 w-9 shrink-0 rounded-md border-[#C8D3E0] bg-white text-[#40516A] hover:bg-[#EEF5FB]"
+                                    aria-label="إجراءات إضافية"
+                                  >
+                                    <MoreHorizontal className="h-4 w-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end" className="w-48 text-right">
+                                  <div dir="rtl">
+                                  {contract.customer_phone && (
+                                    <DropdownMenuItem
+                                      className="gap-2"
+                                      onClick={() => { window.location.href = `tel:${contract.customer_phone}`; }}
+                                    >
+                                      <Phone className="h-4 w-4" />
+                                      اتصال بالعميل
+                                    </DropdownMenuItem>
+                                  )}
+                                  {contract.status === 'active' && (
+                                    <>
+                                      <DropdownMenuItem
+                                        className="gap-2"
+                                        onClick={() => {
+                                          setSelectedContractId(contract.id);
+                                          setShowFollowupDialog(true);
+                                        }}
+                                      >
+                                        <Calendar className="h-4 w-4" />
+                                        جدولة متابعة
+                                      </DropdownMenuItem>
+                                    </>
+                                  )}
+                                  {canUnassignContracts && (
+                                    <>
+                                      <DropdownMenuSeparator />
+                                      <DropdownMenuItem
+                                        className="gap-2 text-red-700 focus:bg-red-50 focus:text-red-800"
+                                        onClick={() => {
+                                          setSelectedContractId(contract.id);
+                                          setShowUnassignDialog(true);
+                                        }}
+                                      >
+                                        <XCircle className="h-4 w-4" />
+                                        إلغاء التعيين
+                                      </DropdownMenuItem>
+                                    </>
+                                  )}
+                                  </div>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
                             )}
                           </div>
                         </div>
@@ -2750,6 +2906,16 @@ export const EmployeeWorkspace: React.FC = () => {
         onOpenChange={handleContractWizardOpenChange}
         preselectedCustomerId={preselectedContractCustomerId}
       />
+
+      <SignedContractScannerDialog
+        open={Boolean(signedScanContract)}
+        onOpenChange={(open) => {
+          if (!open) setSignedScanContract(null);
+        }}
+        onSubmit={handleEmployeeSignedContractScan}
+        isSubmitting={createContractDocument.isPending}
+      />
+
       <QuickPaymentDialog
         open={showPaymentDialog}
         onOpenChange={(open) => {

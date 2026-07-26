@@ -11,7 +11,7 @@ interface PermissionGuardProps {
   children: React.ReactNode;
   permission?: string;
   feature?: string;
-  role?: 'super_admin' | 'company_admin' | 'employee';
+  role?: string | string[];
   requireCompanyAdmin?: boolean;
   requireGlobalAccess?: boolean;
   fallback?: React.ReactNode;
@@ -33,12 +33,9 @@ export const PermissionGuard: React.FC<PermissionGuardProps> = ({
   loading
 }) => {
   const { 
-    hasCompanyAdminAccess, 
     hasGlobalAccess, 
     hasFullCompanyControl,
-    isBrowsingAsCompanyAdmin,
-    user,
-    context 
+    user
   } = useUnifiedCompanyAccess();
 
   const { 
@@ -66,7 +63,11 @@ export const PermissionGuard: React.FC<PermissionGuardProps> = ({
   }
 
   // Check role-based access
-  if (role && (!user || !user.roles?.includes(role))) {
+  const requiredRoles = role ? (Array.isArray(role) ? role : [role]) : [];
+  const hasRequiredRole = requiredRoles.length === 0
+    || requiredRoles.some((requiredRole) => user?.roles?.includes(requiredRole));
+
+  if (!hasRequiredRole) {
     return hideIfNoAccess ? null : renderAccessDenied('insufficient_role');
   }
 

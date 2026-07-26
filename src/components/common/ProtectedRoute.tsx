@@ -11,7 +11,7 @@ interface ProtectedRouteProps {
   children: React.ReactNode;
   permission?: string;
   feature?: string;
-  role?: 'super_admin' | 'company_admin' | 'employee';
+  role?: string | string[];
   requireCompanyAdmin?: boolean;
   requireGlobalAccess?: boolean;
   redirectTo?: string;

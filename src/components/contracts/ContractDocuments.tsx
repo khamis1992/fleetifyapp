@@ -5,7 +5,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Download, Trash2, FileText, Upload, Eye, Car, CheckCircle, AlertCircle, AlertTriangle, FileImage, RefreshCw, Pencil, PlayCircle } from 'lucide-react';
+import { Plus, Download, Trash2, FileText, Upload, Eye, Car, CheckCircle, AlertCircle, AlertTriangle, FileImage, RefreshCw, Pencil, PlayCircle, ScanLine } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useContractDocuments, useCreateContractDocument, useDeleteContractDocument, useDownloadContractDocument } from '@/hooks/useContractDocuments';
 import { DocumentUploadDialog, DocumentUploadData } from './DocumentUploadDialog';
@@ -24,6 +24,10 @@ import { motion, AnimatePresence, type Variants } from 'framer-motion';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { useTourGuide } from '@/components/tour-guide';
+import {
+  SignedContractScannerDialog,
+  type SignedContractScanFiles,
+} from './SignedContractScannerDialog';
 
 interface ContractDocumentsProps {
   contractId: string;
@@ -35,6 +39,7 @@ const documentTypes = [
   { value: 'general', label: 'عام' },
   { value: 'contract', label: 'عقد' },
   { value: 'signed_contract', label: 'عقد موقع' },
+  { value: 'signed_contract_image', label: 'صورة عقد موقع' },
   { value: 'draft_contract', label: 'مسودة عقد' },
   { value: 'condition_report', label: 'تقرير حالة المركبة' },
   { value: 'signature', label: 'توقيع' },
@@ -72,6 +77,7 @@ const getContractDocumentPublicUrl = (bucket: string | undefined, filePath?: str
 export function ContractDocuments({ contractId, customerId, vehicleId }: ContractDocumentsProps) {
   const { startTour } = useTourGuide();
   const [isDialogOpen, setIsDialogOpen] = React.useState(false);
+  const [isScannerOpen, setIsScannerOpen] = React.useState(false);
   const [selectedReportId, setSelectedReportId] = React.useState<string | null>(null);
   const [isReportViewerOpen, setIsReportViewerOpen] = React.useState(false);
   const [selectedDocumentForPreview, setSelectedDocumentForPreview] = React.useState<any>(null);
@@ -146,6 +152,36 @@ export function ContractDocuments({ contractId, customerId, vehicleId }: Contrac
     } catch (error) {
       console.error('Error creating document:', error);
       throw error;
+    }
+  };
+
+  const handleSignedContractScan = async ({
+    pdfFile,
+    pageImages,
+  }: SignedContractScanFiles) => {
+    const scannedAt = format(new Date(), 'yyyy-MM-dd HH-mm');
+
+    await createDocument.mutateAsync({
+      contract_id: contractId,
+      document_type: 'signed_contract',
+      document_name: `نسخة العقد الموقع المجمعة - ${scannedAt}`,
+      file: pdfFile,
+      notes: `نسخة PDF مجمعة من ${pageImages.length} صفحة مصورة بالكاميرا`,
+      is_required: true,
+      suppressSuccessToast: true,
+    });
+
+    // Upload in reverse order so page one is the newest image and appears first.
+    for (let index = pageImages.length - 1; index >= 0; index -= 1) {
+      await createDocument.mutateAsync({
+        contract_id: contractId,
+        document_type: 'signed_contract_image',
+        document_name: `صورة العقد الموقع - صفحة ${index + 1}`,
+        file: pageImages[index],
+        notes: 'صورة ممسوحة بالكاميرا مع قص A4 وتصحيح المنظور تلقائيًا',
+        is_required: false,
+        suppressSuccessToast: true,
+      });
     }
   };
 
@@ -447,13 +483,23 @@ export function ContractDocuments({ contractId, customerId, vehicleId }: Contrac
             <h3 className="text-xl font-black text-[#142033]">مستندات العقد</h3>
             <p className="text-sm text-neutral-500">{documents.length} مستند</p>
           </div>
-          <Button
-            onClick={() => setIsDialogOpen(true)}
-            className="gap-2 rounded-xl bg-[#173A63] hover:bg-[#173A63]/90"
-          >
-            <Plus className="w-4 h-4" />
-            إضافة مستند
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setIsScannerOpen(true)}
+              className="gap-2 rounded-lg border-[#9FDCCB] text-[#0D876A] hover:bg-[#E9FBF6]"
+            >
+              <ScanLine className="h-4 w-4" />
+              مسح العقد بالكاميرا
+            </Button>
+            <Button
+              onClick={() => setIsDialogOpen(true)}
+              className="gap-2 rounded-lg bg-[#173A63] hover:bg-[#173A63]/90"
+            >
+              <Plus className="w-4 h-4" />
+              إضافة مستند
+            </Button>
+          </div>
         </div>
 
         {documents.length === 0 ? (
@@ -494,7 +540,7 @@ export function ContractDocuments({ contractId, customerId, vehicleId }: Contrac
                        document.file_path?.match(/\.(jpg|jpeg|png|gif|webp|bmp|svg)$/i) ||
                        document.document_name?.match(/\.(jpg|jpeg|png|gif|webp|bmp|svg)$/i)) ? (
                     <img
-                      src={getContractDocumentPublicUrl(document.sourceBucket, document.file_path)}
+                      src={document.preview_url || getContractDocumentPublicUrl(document.sourceBucket, document.file_path)}
                       alt={document.document_name}
                       className="w-full h-full object-cover"
                       loading="lazy"
@@ -868,7 +914,7 @@ export function ContractDocuments({ contractId, customerId, vehicleId }: Contrac
                     ) : selectedDocumentForPreview.mime_type?.includes('image') ? (
                       <div className="flex justify-center p-4">
                         <LazyImage
-                          src={getContractDocumentPublicUrl(selectedDocumentForPreview.sourceBucket, selectedDocumentForPreview.file_path)}
+                          src={selectedDocumentForPreview.preview_url || getContractDocumentPublicUrl(selectedDocumentForPreview.sourceBucket, selectedDocumentForPreview.file_path)}
                           alt={selectedDocumentForPreview.document_name}
                           className="max-w-full max-h-[600px] object-contain"
                         />
@@ -930,6 +976,12 @@ export function ContractDocuments({ contractId, customerId, vehicleId }: Contrac
         open={isDialogOpen}
         onOpenChange={setIsDialogOpen}
         onSubmit={handleDocumentUpload}
+        isSubmitting={createDocument.isPending}
+      />
+      <SignedContractScannerDialog
+        open={isScannerOpen}
+        onOpenChange={setIsScannerOpen}
+        onSubmit={handleSignedContractScan}
         isSubmitting={createDocument.isPending}
       />
     </div>

@@ -67,7 +67,7 @@ import SendRemindersDialog from "@/components/contracts/SendRemindersDialog";
 import { ContractAmendmentForm } from "@/components/contracts";
 import { ContractPDFImportRedesigned } from "@/components/contracts/ContractPDFImportRedesigned";
 import { PermanentContractDeleteDialog } from "@/components/contracts/PermanentContractDeleteDialog";
-import { ConvertToLegalDialog } from "@/components/contracts/ConvertToLegalDialog";
+import { LegalTransferReadinessWizard as ConvertToLegalDialog } from "@/components/contracts/LegalTransferReadinessWizard";
 import { canPermanentlyDeleteContract } from "@/components/contracts/contractDeletionEligibility";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {

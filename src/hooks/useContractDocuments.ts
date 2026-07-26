@@ -22,6 +22,7 @@ export interface ContractDocument {
   updated_at: string | null;
   // Added field to distinguish document source bucket
   sourceBucket?: 'contract-documents' | 'documents';
+  preview_url?: string | null;
 }
 
 export interface CreateDocumentData {
@@ -32,6 +33,7 @@ export interface CreateDocumentData {
   notes?: string;
   is_required?: boolean;
   condition_report_id?: string;
+  suppressSuccessToast?: boolean;
 }
 
 export function useContractDocuments(contractId?: string, customerId?: string, vehicleId?: string) {
@@ -75,11 +77,31 @@ export function useContractDocuments(contractId?: string, customerId?: string, v
 
       // Handle contract documents
       if (contractResult.error) throw contractResult.error;
-      const contractDocuments = (contractResult.data || []).map(doc => ({
-        ...doc,
-        contract_id: doc.contract_id || contractId,
-        sourceBucket: 'contract-documents' as const
-      }));
+      const contractDocuments = await Promise.all(
+        (contractResult.data || []).map(async (doc) => {
+          const isImage = Boolean(doc.mime_type?.startsWith('image/'));
+          let previewUrl: string | null = null;
+
+          if (isImage && doc.file_path) {
+            const { data: signedData, error: signedUrlError } = await supabase.storage
+              .from('contract-documents')
+              .createSignedUrl(doc.file_path, 3600);
+
+            if (signedUrlError) {
+              console.error('Error creating contract document preview URL:', signedUrlError);
+            } else {
+              previewUrl = signedData.signedUrl;
+            }
+          }
+
+          return {
+            ...doc,
+            contract_id: doc.contract_id || contractId,
+            sourceBucket: 'contract-documents' as const,
+            preview_url: previewUrl,
+          };
+        }),
+      );
 
       // Handle customer documents
       let customerDocuments: ContractDocument[] = [];
@@ -215,7 +237,7 @@ export function useCreateContractDocument() {
       // Upload file if provided
       if (data.file) {
         const fileExt = data.file.name.split('.').pop();
-        const fileName = `${data.contract_id}/${Date.now()}.${fileExt}`;
+        const fileName = `${data.contract_id}/${Date.now()}-${crypto.randomUUID()}.${fileExt}`;
         
         const { error: uploadError } = await supabase.storage
           .from('contract-documents')
@@ -247,9 +269,11 @@ export function useCreateContractDocument() {
       if (error) throw error;
       return document;
     },
-    onSuccess: (document) => {
+    onSuccess: (document, variables) => {
       queryClient.invalidateQueries({ queryKey: ['contract-documents', document.contract_id] });
-      toast.success('تم إضافة المستند بنجاح');
+      if (!variables.suppressSuccessToast) {
+        toast.success('تم إضافة المستند بنجاح');
+      }
     },
     onError: (error) => {
       console.error('Error creating document:', error);
