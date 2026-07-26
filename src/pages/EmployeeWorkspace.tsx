@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Employee Workspace Page - Redesigned
  * صفحة مساحة عمل الموظف - تصميم احترافي
  */
@@ -32,7 +32,8 @@ import {
   Loader2,
   ClipboardCheck,
   Save,
-  FileDown
+  FileDown,
+  FilePlus2
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -72,6 +73,7 @@ import {
 import { QuickPaymentDialog } from '@/components/finance/QuickPaymentDialog';
 import { UnassignContractDialog } from '@/components/team';
 import { ConvertToLegalDialog } from '@/components/contracts/ConvertToLegalDialog';
+import { SimpleContractWizard } from '@/components/contracts/SimpleContractWizard';
 import { ExportButton } from '@/components/shared/ExportButton';
 import { exportEmployeeWorkspaceReport } from '@/utils/exports/employeeReport';
 import { NotificationBell } from '@/components/notifications/NotificationBell';
@@ -223,7 +225,9 @@ export const EmployeeWorkspace: React.FC = () => {
   const [showBulkUnassignDialog, setShowBulkUnassignDialog] = useState(false);
   const [showConvertToLegalDialog, setShowConvertToLegalDialog] = useState(false);
   const [showDailyLogDialog, setShowDailyLogDialog] = useState(false);
+  const [showContractWizard, setShowContractWizard] = useState(false);
   const [selectedContractId, setSelectedContractId] = useState<string | undefined>();
+  const [preselectedContractCustomerId, setPreselectedContractCustomerId] = useState<string | undefined>();
   const [selectedBulkContractIds, setSelectedBulkContractIds] = useState<string[]>([]);
   const [completingTaskId, setCompletingTaskId] = useState<string | null>(null);
   const [dailyLogForm, setDailyLogForm] = useState<DailyLogFormState | null>(null);
@@ -1167,25 +1171,19 @@ export const EmployeeWorkspace: React.FC = () => {
 
   // Quick Actions Configuration
   const quickActions = [
+    {
+      icon: FilePlus2,
+      label: 'عقد جديد',
+      onClick: () => openNewContractWizard(),
+      variant: 'default',
+      className: 'bg-[#11A37F] text-white hover:bg-[#0D876A]'
+    },
     { 
       icon: Phone, 
       label: 'تسجيل مكالمة', 
       onClick: () => setShowCallDialog(true),
       variant: 'default',
       className: 'bg-[#1D4F7A] text-white hover:bg-[#163F62]'
-    },
-    { 
-      icon: DollarSign, 
-      label: 'تسجيل دفعة', 
-      onClick: () => {
-        setActiveTab('collections');
-        toast({
-          title: 'اختر العميل',
-          description: 'اضغط تسجيل دفعة من بطاقة العميل أو العقد المطلوب',
-        });
-      },
-      variant: 'default',
-      className: 'bg-[#11A37F] text-white hover:bg-[#0D876A]'
     },
     { 
       icon: Calendar, 
@@ -1387,6 +1385,24 @@ export const EmployeeWorkspace: React.FC = () => {
     },
   });
 
+  const openNewContractWizard = (contract?: any) => {
+    if (contract?.customer_id) {
+      setPreselectedContractCustomerId(contract.customer_id);
+    } else {
+      setPreselectedContractCustomerId(undefined);
+    }
+    setShowContractWizard(true);
+  };
+
+  const handleContractWizardOpenChange = (open: boolean) => {
+    setShowContractWizard(open);
+    if (!open) {
+      setPreselectedContractCustomerId(undefined);
+      refetchContracts();
+      refetchCollections();
+      refetchPerformance();
+    }
+  };
   // Group invoices by customer for monthly collections
   const groupedCollections = useMemo(() => {
     const groups = new Map<string, {
@@ -1657,9 +1673,9 @@ export const EmployeeWorkspace: React.FC = () => {
         <Card className="rounded-xl border-[#DDE5EF] bg-white shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md">
           <CardContent className="flex items-start justify-between gap-3 p-4 sm:p-6">
             <div>
-              <p className="text-sm font-bold text-[#6A7688] mb-1">إجمالي العقود</p>
+              <p className="text-sm font-bold text-[#6A7688] mb-1">العقود المخصصة حاليًا</p>
               <h3 className="text-2xl font-black text-[#142033] sm:text-3xl">{contractStats.totalContracts}</h3>
-              <p className="text-xs text-[#11A37F] mt-1 font-bold">{contractStats.activeContracts} عقد نشط</p>
+              <p className="text-xs text-[#11A37F] mt-1 font-bold">العقود النشطة فقط</p>
             </div>
             <div className="p-3 bg-[#EEF4FA] text-[#1D4F7A] rounded-xl">
               <FileText className="w-5 h-5" />
@@ -1838,7 +1854,7 @@ export const EmployeeWorkspace: React.FC = () => {
                     </div>
                   ) : (
                     <div className="rounded-xl border border-dashed border-[#DDE5EF] bg-[#F8FAFC] py-10 text-center">
-                      <p className="text-gray-500 text-sm">لا توجد مهام مجدولة لهذا اليوم 🎉</p>
+                      <p className="text-gray-500 text-sm">لا توجد مهام مجدولة لهذا اليوم</p>
                       <Button variant="link" className="text-teal-600 text-xs mt-2" onClick={() => setShowFollowupDialog(true)}>
                         + إضافة مهمة جديدة
                       </Button>
@@ -1936,7 +1952,7 @@ export const EmployeeWorkspace: React.FC = () => {
                                         <FileText className="w-3 h-3" />
                                         {group.invoices.length} فاتورة
                                       </span>
-                                      <span className="text-gray-300">•</span>
+                                      <span className="text-gray-300">â€¢</span>
                                       <span className="flex items-center gap-1 font-bold text-amber-600">
                                         <DollarSign className="w-3 h-3" />
                                         {formatCurrency(group.total_amount)} مستحق
@@ -2039,7 +2055,7 @@ export const EmployeeWorkspace: React.FC = () => {
                       <div className="text-center py-12">
                         <DollarSign className="w-16 h-16 text-gray-300 mx-auto mb-4" />
                         <p className="text-gray-500 font-medium">لا توجد مستحقات لهذا الشهر</p>
-                        <p className="text-xs text-gray-400 mt-2">جميع الفواتير مدفوعة 🎉</p>
+                        <p className="text-xs text-gray-400 mt-2">جميع الفواتير مدفوعة</p>
                       </div>
                     )}
                   </div>
@@ -2165,7 +2181,7 @@ export const EmployeeWorkspace: React.FC = () => {
                               </div>
                               <p className="flex flex-wrap items-center gap-2 text-xs text-[#6A7688]">
                                 <span className="font-semibold">#{contract.contract_number}</span>
-                                <span className="text-gray-300">•</span>
+                                <span className="text-gray-300">â€¢</span>
                                 {contract.customer_phone && (
                                   <>
                                     <a 
@@ -2176,14 +2192,14 @@ export const EmployeeWorkspace: React.FC = () => {
                                       <Phone className="w-3 h-3" />
                                       {contract.customer_phone}
                                     </a>
-                                    <span className="text-gray-300">•</span>
+                                    <span className="text-gray-300">â€¢</span>
                                   </>
                                 )}
                                 <span className={cn(
                                   "font-medium",
                                   (contract.balance_due || 0) > 0 ? "text-amber-600" : "text-emerald-600"
                                 )}>
-                                  {(contract.balance_due || 0) > 0 ? `مستحق: ${formatCurrency(contract.balance_due || 0)}` : '✓ مدفوع بالكامل'}
+                                  {(contract.balance_due || 0) > 0 ? `مستحق: ${formatCurrency(contract.balance_due || 0)}` : 'مدفوع بالكامل'}
                                 </span>
                               </p>
                             </div>
@@ -2204,6 +2220,17 @@ export const EmployeeWorkspace: React.FC = () => {
                             )}
                             
                             {/* أزرار العمل - فقط للعقود النشطة */}
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="col-span-2 h-10 gap-1 rounded-lg border-[#BFD2E3] bg-white px-2 text-xs font-bold text-[#1D4F7A] hover:bg-[#EEF4FA] hover:text-[#173A63] sm:col-span-1 sm:h-8"
+                              onClick={() => openNewContractWizard(contract)}
+                              title="إنشاء عقد جديد لهذا العميل"
+                            >
+                              <FilePlus2 className="h-4 w-4" />
+                              عقد جديد
+                            </Button>
+
                             {contract.status === 'active' && (
                               <>
                                 <Button
@@ -2718,6 +2745,11 @@ export const EmployeeWorkspace: React.FC = () => {
         </DialogContent>
       </Dialog>
 
+      <SimpleContractWizard
+        open={showContractWizard}
+        onOpenChange={handleContractWizardOpenChange}
+        preselectedCustomerId={preselectedContractCustomerId}
+      />
       <QuickPaymentDialog
         open={showPaymentDialog}
         onOpenChange={(open) => {

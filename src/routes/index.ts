@@ -2041,7 +2041,6 @@ const routeConfigs: RouteConfig[] = [
     priority: 132,
     protected: true,
     layout: 'bento',
-    requiredRole: 'admin',
   },
 
   // === Contract Management ===

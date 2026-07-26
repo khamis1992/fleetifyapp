@@ -40,6 +40,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Loader2, UserCheck, CheckCircle, AlertCircle } from 'lucide-react';
+import { getEligibleEmployeeProfileIds } from '@/services/employeeAssignmentEligibility';
 
 // Validation Schema
 const assignmentSchema = z.object({
@@ -116,6 +117,9 @@ export const ContractAssignmentDialog: React.FC<ContractAssignmentDialogProps> =
     queryFn: async () => {
       if (!companyId) return [];
 
+      const eligibleProfileIds = await getEligibleEmployeeProfileIds(companyId);
+      if (eligibleProfileIds.size === 0) return [];
+
       const { data, error } = await supabase
         .from('profiles')
         .select(`
@@ -125,7 +129,8 @@ export const ContractAssignmentDialog: React.FC<ContractAssignmentDialogProps> =
           email
         `)
         .eq('company_id', companyId)
-        .not('role', 'eq', 'customer')
+        .eq('is_active', true)
+        .in('id', [...eligibleProfileIds])
         .order('first_name_ar', { ascending: true });
 
       if (error) throw error;

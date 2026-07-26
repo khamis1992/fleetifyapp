@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { startOfMonth, endOfMonth, format } from 'date-fns';
+import { startOfMonth, format } from 'date-fns';
 import { formatCustomerName } from '@/utils/formatCustomerName';
 
 export interface MonthlyCollectionItem {
@@ -50,13 +50,12 @@ export const useMonthlyCollections = () => {
   });
 
   const { data: collections = [], isLoading, refetch } = useQuery({
-    queryKey: ['monthly-collections', profile?.id],
+    queryKey: ['monthly-collections', 'v2', profile?.id],
     queryFn: async () => {
       if (!profile?.id || !profile.company_id) return [];
 
       const today = new Date();
       const currentMonthStart = startOfMonth(today);
-      const currentMonthEnd = endOfMonth(today);
 
       // جلب جميع الفواتير للعقود المخصصة للموظف فقط
       // استخدام inner join للتأكد من جلب العقود المخصصة فقط
@@ -76,6 +75,7 @@ export const useMonthlyCollections = () => {
             id,
             contract_number,
             assigned_to_profile_id,
+            status,
             customers!inner (
               id,
               first_name,
@@ -90,6 +90,7 @@ export const useMonthlyCollections = () => {
         `)
         .eq('company_id', profile.company_id)
         .eq('contracts.assigned_to_profile_id', profile.id)
+        .eq('contracts.status', 'active')
         .neq('status', 'cancelled')
         .order('due_date', { ascending: true });
 
@@ -183,11 +184,9 @@ export const useMonthlyCollections = () => {
   // فلترة فواتير الشهر الحالي فقط للإحصائيات
   const currentMonthInvoices = collections.filter((c: any) => c.is_current_month);
 
-  // إذا لم توجد فواتير للشهر الحالي، استخدم جميع الفواتير غير المدفوعة
-  // (هذا يعني أن الموظف يجب أن يحصل الفواتير المتأخرة)
-  const invoicesForStats = currentMonthInvoices.length > 0 
-    ? currentMonthInvoices 
-    : unpaidCollections;
+  // Monthly cards must always represent the current month. Historical overdue
+  // invoices remain in the collection list, but must not inflate this metric.
+  const invoicesForStats = currentMonthInvoices;
 
   console.log('📊 Using invoices for stats:', {
     currentMonthCount: currentMonthInvoices.length,
@@ -195,9 +194,6 @@ export const useMonthlyCollections = () => {
     usingCurrentMonth: currentMonthInvoices.length > 0
   });
 
-  // حساب الإحصائيات
-  // إذا كان هناك فواتير للشهر الحالي: استخدمها
-  // إذا لم يكن: استخدم جميع الفواتير غير المدفوعة (المتأخرة)
   const stats: MonthlyCollectionStats = {
     totalDue: invoicesForStats.reduce((sum, item) => sum + item.amount, 0),
     totalCollected: invoicesForStats.reduce((sum, item) => sum + item.paid_amount, 0),
@@ -207,8 +203,10 @@ export const useMonthlyCollections = () => {
     pendingCount: invoicesForStats.filter(c => c.status !== 'paid').length
   };
 
-  // المتبقي = المستهدف - المحصل
-  stats.totalPending = stats.totalDue - stats.totalCollected;
+  stats.totalPending = invoicesForStats.reduce(
+    (sum, item) => sum + Math.max(0, item.amount - item.paid_amount),
+    0
+  );
   
   // نسبة التحصيل = (المحصل / المستهدف) × 100
   stats.collectionRate = stats.totalDue > 0 

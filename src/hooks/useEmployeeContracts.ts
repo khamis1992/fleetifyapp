@@ -6,6 +6,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { getEligibleEmployeeProfileIds } from '@/services/employeeAssignmentEligibility';
 import type { 
   EmployeeContract, 
   ContractStats, 
@@ -29,17 +30,22 @@ export const useEmployeeContracts = (
 
   // Get employee's profile
   const { data: profile } = useQuery({
-    queryKey: ['employee-profile-contracts', user?.id],
+    queryKey: ['employee-profile-contracts', 'v4', user?.id],
     queryFn: async () => {
       if (!user?.id) throw new Error('User is not authenticated');
       const { data, error } = await supabase
         .from('profiles')
-        .select('id, company_id')
+        .select('id, company_id, role, is_active')
         .eq('user_id', user.id)
         .single();
-      
+
       if (error) throw error;
-      return data;
+      if (!data.company_id) throw new Error('Employee profile is missing company_id');
+      const eligibleProfileIds = await getEligibleEmployeeProfileIds(data.company_id);
+      return {
+        ...data,
+        is_employee_workspace_eligible: eligibleProfileIds.has(data.id),
+      };
     },
     enabled: !!user?.id
   });
@@ -52,9 +58,10 @@ export const useEmployeeContracts = (
     error,
     refetch
   } = useQuery({
-    queryKey: ['employee-contracts', profile?.id, filters],
+    queryKey: ['employee-contracts', 'v4', profile?.id, profile?.is_employee_workspace_eligible, filters],
     queryFn: async () => {
       if (!profile?.id || !profile.company_id) return [];
+      if (!profile.is_active || !profile.is_employee_workspace_eligible) return [];
 
       let query = supabase
         .from('contracts')
@@ -107,6 +114,11 @@ export const useEmployeeContracts = (
       // Apply filters
       if (filters?.status && filters.status.length > 0) {
         query = query.in('status', filters.status);
+      } else {
+        // The employee workspace represents the current operational workload.
+        // Historical assignments remain available in reports, but must not inflate
+        // the employee's assigned-contract count.
+        query = query.eq('status', 'active');
       }
 
       if (filters?.search) {

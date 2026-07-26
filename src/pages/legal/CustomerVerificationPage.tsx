@@ -105,9 +105,27 @@ export default function CustomerVerificationPage() {
   const [showDeleteContractDialog, setShowDeleteContractDialog] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
+  const { data: currentProfile, isLoading: profileLoading } = useQuery({
+    queryKey: ['verification-current-profile', companyId, user?.id],
+    queryFn: async () => {
+      if (!user?.id || !companyId) throw new Error('بيانات المستخدم غير مكتملة');
+
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('company_id', companyId)
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user?.id && !!companyId,
+  });
+
   // جلب بيانات المهمة
   const { data: task, isLoading: taskLoading } = useQuery({
-    queryKey: ['verification-task', taskId, companyId],
+    queryKey: ['verification-task', taskId, companyId, currentProfile?.id],
     queryFn: async () => {
       if (!taskId || !companyId) throw new Error('معرف المهمة أو الشركة غير موجود');
       const { data, error } = await supabase
@@ -145,12 +163,13 @@ export default function CustomerVerificationPage() {
         `)
         .eq('id', taskId)
         .eq('company_id', companyId)
+        .eq('assigned_to', currentProfile?.id || '')
         .single();
 
       if (error) throw error;
       return data;
     },
-    enabled: !!taskId && !!companyId,
+    enabled: !!taskId && !!companyId && !!currentProfile?.id,
   });
 
   // جلب الفواتير غير المدفوعة
@@ -630,7 +649,7 @@ export default function CustomerVerificationPage() {
   // حساب الإجماليات
   const totalDue = invoices.reduce((sum, inv) => sum + ((inv.total_amount || 0) - (inv.paid_amount || 0)), 0);
 
-  if (taskLoading) {
+  if (profileLoading || taskLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <LoadingSpinner />

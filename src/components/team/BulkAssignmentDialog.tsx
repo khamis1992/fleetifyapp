@@ -41,6 +41,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Loader2, Users, CheckCircle, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { getEligibleEmployeeProfileIds } from '@/services/employeeAssignmentEligibility';
 
 // Validation Schema
 const bulkAssignmentSchema = z.object({
@@ -113,6 +114,9 @@ export const BulkAssignmentDialog: React.FC<BulkAssignmentDialogProps> = ({
     queryFn: async () => {
       if (!companyId) return [];
 
+      const eligibleProfileIds = await getEligibleEmployeeProfileIds(companyId);
+      if (eligibleProfileIds.size === 0) return [];
+
       const { data, error } = await supabase
         .from('profiles')
         .select(`
@@ -122,7 +126,8 @@ export const BulkAssignmentDialog: React.FC<BulkAssignmentDialogProps> = ({
           email
         `)
         .eq('company_id', companyId)
-        .not('role', 'eq', 'customer')
+        .eq('is_active', true)
+        .in('id', [...eligibleProfileIds])
         .order('first_name_ar', { ascending: true });
 
       if (error) throw error;

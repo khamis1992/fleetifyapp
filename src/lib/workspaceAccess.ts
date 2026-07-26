@@ -16,6 +16,7 @@ const ELEVATED_ROLES = new Set([
 const WORKSPACE_ONLY_PATHS = [
   '/employee-workspace',
   '/mobile/employee',
+  '/legal/verify',
 ];
 
 export function getUserRoles(user: AuthUser | null | undefined): string[] {
@@ -38,4 +39,3 @@ export function canAccessWorkspaceOnlyPath(pathname: string): boolean {
     pathname === path || pathname.startsWith(`${path}/`)
   ));
 }
-

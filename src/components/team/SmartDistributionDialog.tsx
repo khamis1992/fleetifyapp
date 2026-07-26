@@ -35,6 +35,7 @@ import {
   BarChart3
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { getEligibleEmployeeProfileIds } from '@/services/employeeAssignmentEligibility';
 
 interface SmartDistributionDialogProps {
   open: boolean;
@@ -62,6 +63,9 @@ export const SmartDistributionDialog: React.FC<SmartDistributionDialogProps> = (
     queryFn: async () => {
       if (!companyId) return [];
 
+      const eligibleProfileIds = await getEligibleEmployeeProfileIds(companyId);
+      if (eligibleProfileIds.size === 0) return [];
+
       const { data, error } = await supabase
         .from('employee_capacity_view')
         .select('*')
@@ -71,7 +75,8 @@ export const SmartDistributionDialog: React.FC<SmartDistributionDialogProps> = (
       if (error) throw error;
 
       const employees = (data || []).filter(
-        (employee): employee is typeof employee & { employee_id: string } => Boolean(employee.employee_id)
+        (employee): employee is typeof employee & { employee_id: string } =>
+          Boolean(employee.employee_id) && eligibleProfileIds.has(employee.employee_id || '')
       );
       const employeeIds = employees.map((employee) => employee.employee_id);
       const activeCounts = new Map<string, number>();
