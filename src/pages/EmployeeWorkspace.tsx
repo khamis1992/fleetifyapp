@@ -36,7 +36,6 @@ import {
   FilePlus2,
   FileCheck2,
   ScanLine,
-  MoreHorizontal
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -58,14 +57,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-
 import { useEmployeeContracts } from '@/hooks/useEmployeeContracts';
 import { useEmployeeTasks } from '@/hooks/useEmployeeTasks';
 import { useEmployeePerformance } from '@/hooks/useEmployeePerformance';
@@ -238,6 +229,7 @@ export const EmployeeWorkspace: React.FC = () => {
   const [showNoteDialog, setShowNoteDialog] = useState(false);
   const [showUnassignDialog, setShowUnassignDialog] = useState(false);
   const [showBulkUnassignDialog, setShowBulkUnassignDialog] = useState(false);
+  const [showCancelContractDialog, setShowCancelContractDialog] = useState(false);
   const [showConvertToLegalDialog, setShowConvertToLegalDialog] = useState(false);
   const [showDailyLogDialog, setShowDailyLogDialog] = useState(false);
   const [showContractWizard, setShowContractWizard] = useState(false);
@@ -250,6 +242,7 @@ export const EmployeeWorkspace: React.FC = () => {
   const [selectedBulkContractIds, setSelectedBulkContractIds] = useState<string[]>([]);
   const [completingTaskId, setCompletingTaskId] = useState<string | null>(null);
   const [dailyLogForm, setDailyLogForm] = useState<DailyLogFormState | null>(null);
+  const [contractCancellationReason, setContractCancellationReason] = useState('');
   const [selectedPaymentCustomer, setSelectedPaymentCustomer] = useState<{
     customerId: string;
     customerName: string;
@@ -1316,7 +1309,9 @@ export const EmployeeWorkspace: React.FC = () => {
       document_type: 'signed_contract',
       document_name: `نسخة العقد الموقع المجمعة - ${assignedContract.contract_number || signedScanContract.contractNumber}`,
       file: pdfFile,
-      notes: `رفع بواسطة الموظف من مساحة العمل بتاريخ ${scannedAt}، ويتضمن ${pageImages.length} صفحة`,
+      notes: pageImages.length > 0
+        ? `رفع بواسطة الموظف من مساحة العمل بتاريخ ${scannedAt}، ويتضمن ${pageImages.length} صفحة`
+        : `رفع ملف PDF جاهز بواسطة الموظف من مساحة العمل بتاريخ ${scannedAt}`,
       is_required: true,
       suppressSuccessToast: true,
     });
@@ -1479,6 +1474,116 @@ export const EmployeeWorkspace: React.FC = () => {
       toast({
         title: 'فشل إلغاء التعيين الجماعي',
         description: error instanceof Error ? error.message : 'حدث خطأ أثناء إلغاء التعيين',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const cancelContractMutation = useMutation({
+    mutationFn: async ({
+      contractId,
+      reason,
+    }: {
+      contractId: string;
+      reason: string;
+    }) => {
+      if (!workspaceProfile?.id || !companyId || !user?.id) {
+        throw new Error('تعذر تحديد الموظف أو الشركة');
+      }
+
+      const employeeName = [workspaceProfile.first_name, workspaceProfile.last_name]
+        .filter(Boolean)
+        .join(' ')
+        .trim() || user.email || 'موظف مساحة العمل';
+
+      const { data: contract, error: contractError } = await supabase
+        .from('contracts')
+        .select('id, contract_number, customer_id, balance_due, status, assigned_to_profile_id')
+        .eq('id', contractId)
+        .eq('company_id', companyId)
+        .eq('assigned_to_profile_id', workspaceProfile.id)
+        .single();
+
+      if (contractError) throw contractError;
+      if (!contract) {
+        throw new Error('هذا العقد لم يعد مخصصًا لك');
+      }
+      if (contract.status !== 'active') {
+        throw new Error('يمكن إلغاء العقود النشطة فقط من مساحة العمل');
+      }
+
+      const now = new Date().toISOString();
+      const finalReason = reason.trim() || 'إلغاء من مساحة عمل الموظف';
+
+      const { error: updateError } = await supabase
+        .from('contracts')
+        .update({
+          status: 'cancelled',
+          suspension_reason: finalReason,
+          assignment_notes: `تم إلغاء العقد من مساحة عمل الموظف بواسطة ${employeeName} (${user.email || user.id}) بتاريخ ${now}`,
+          updated_at: now,
+        })
+        .eq('id', contractId)
+        .eq('company_id', companyId)
+        .eq('assigned_to_profile_id', workspaceProfile.id);
+
+      if (updateError) throw updateError;
+
+      const { data: managers, error: managersError } = await supabase
+        .from('profiles')
+        .select('id, user_id, role')
+        .eq('company_id', companyId)
+        .eq('is_active', true)
+        .in('role', ['super_admin', 'company_admin', 'manager', 'admin']);
+
+      if (managersError) throw managersError;
+
+      const managerNotifications = (managers || [])
+        .filter((manager) => manager.user_id)
+        .map((manager) => ({
+          company_id: companyId,
+          user_id: manager.user_id,
+          title: 'تم إلغاء عقد من مساحة العمل',
+          message: `قام ${employeeName} بإلغاء العقد ${contract.contract_number || contract.id}. الرصيد المستحق: ${formatCurrency(Number(contract.balance_due || 0))}. السبب: ${finalReason}`,
+          notification_type: Number(contract.balance_due || 0) > 0 ? 'warning' : 'info',
+          is_read: false,
+          related_id: contract.id,
+          related_type: 'contract_cancelled_by_employee',
+          created_at: now,
+        }));
+
+      if (managerNotifications.length > 0) {
+        const { error: notificationError } = await supabase
+          .from('user_notifications')
+          .insert(managerNotifications);
+
+        if (notificationError) throw notificationError;
+      }
+
+      return contract;
+    },
+    onSuccess: () => {
+      toast({
+        title: 'تم إلغاء العقد',
+        description: 'تم إلغاء العقد وإرسال تنبيه للمدير، وسيختفي من مساحة العمل.',
+      });
+
+      setShowCancelContractDialog(false);
+      setContractCancellationReason('');
+      setSelectedContractId(undefined);
+
+      queryClient.invalidateQueries({ queryKey: ['employee-contracts'] });
+      queryClient.invalidateQueries({ queryKey: ['employee-signed-contract-documents'] });
+      queryClient.invalidateQueries({ queryKey: ['monthly-collections'] });
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      refetchContracts();
+      refetchCollections();
+      refetchPerformance();
+    },
+    onError: (error: unknown) => {
+      toast({
+        title: 'تعذر إلغاء العقد',
+        description: error instanceof Error ? error.message : 'حدث خطأ أثناء إلغاء العقد',
         variant: 'destructive',
       });
     },
@@ -2406,62 +2511,64 @@ export const EmployeeWorkspace: React.FC = () => {
                               )}
                             </div>
 
-                            {(contract.customer_phone || contract.status === 'active' || canUnassignContracts) && (
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
+                            <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center">
+                              {contract.customer_phone && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="h-9 gap-2 rounded-md border-[#C8D3E0] bg-white px-4 text-xs font-bold text-[#173A63] hover:bg-[#EEF5FB]"
+                                  onClick={() => { window.location.href = `tel:${contract.customer_phone}`; }}
+                                >
+                                  <Phone className="h-4 w-4" />
+                                  اتصال بالعميل
+                                </Button>
+                              )}
+
+                              {contract.status === 'active' && (
+                                <>
                                   <Button
-                                    size="icon"
+                                    size="sm"
                                     variant="outline"
-                                    className="h-9 w-9 shrink-0 rounded-md border-[#C8D3E0] bg-white text-[#40516A] hover:bg-[#EEF5FB]"
-                                    aria-label="إجراءات إضافية"
+                                    className="h-9 gap-2 rounded-md border-[#DDE5EF] bg-white px-4 text-xs font-bold text-[#40516A] hover:bg-[#F1F5F9]"
+                                    onClick={() => {
+                                      setSelectedContractId(contract.id);
+                                      setShowFollowupDialog(true);
+                                    }}
                                   >
-                                    <MoreHorizontal className="h-4 w-4" />
+                                    <Calendar className="h-4 w-4" />
+                                    جدولة متابعة
                                   </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end" className="w-48 text-right">
-                                  <div dir="rtl">
-                                  {contract.customer_phone && (
-                                    <DropdownMenuItem
-                                      className="gap-2"
-                                      onClick={() => { window.location.href = `tel:${contract.customer_phone}`; }}
-                                    >
-                                      <Phone className="h-4 w-4" />
-                                      اتصال بالعميل
-                                    </DropdownMenuItem>
-                                  )}
-                                  {contract.status === 'active' && (
-                                    <>
-                                      <DropdownMenuItem
-                                        className="gap-2"
-                                        onClick={() => {
-                                          setSelectedContractId(contract.id);
-                                          setShowFollowupDialog(true);
-                                        }}
-                                      >
-                                        <Calendar className="h-4 w-4" />
-                                        جدولة متابعة
-                                      </DropdownMenuItem>
-                                    </>
-                                  )}
-                                  {canUnassignContracts && (
-                                    <>
-                                      <DropdownMenuSeparator />
-                                      <DropdownMenuItem
-                                        className="gap-2 text-red-700 focus:bg-red-50 focus:text-red-800"
-                                        onClick={() => {
-                                          setSelectedContractId(contract.id);
-                                          setShowUnassignDialog(true);
-                                        }}
-                                      >
-                                        <XCircle className="h-4 w-4" />
-                                        إلغاء التعيين
-                                      </DropdownMenuItem>
-                                    </>
-                                  )}
-                                  </div>
-                                </DropdownMenuContent>
-                              </DropdownMenu>
-                            )}
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="h-9 gap-2 rounded-md border-red-200 bg-white px-4 text-xs font-bold text-red-700 hover:bg-red-50"
+                                    onClick={() => {
+                                      setSelectedContractId(contract.id);
+                                      setContractCancellationReason('');
+                                      setShowCancelContractDialog(true);
+                                    }}
+                                  >
+                                    <XCircle className="h-4 w-4" />
+                                    إلغاء العقد
+                                  </Button>
+                                </>
+                              )}
+
+                              {canUnassignContracts && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="h-9 gap-2 rounded-md border-red-200 bg-white px-4 text-xs font-bold text-red-700 hover:bg-red-50"
+                                  onClick={() => {
+                                    setSelectedContractId(contract.id);
+                                    setShowUnassignDialog(true);
+                                  }}
+                                >
+                                  <XCircle className="h-4 w-4" />
+                                  إلغاء التعيين
+                                </Button>
+                              )}
+                            </div>
                           </div>
                         </div>
                       )}) : (
@@ -2952,6 +3059,123 @@ export const EmployeeWorkspace: React.FC = () => {
         contracts={contractsForDialogs}
         preselectedContractId={selectedContractId}
       />
+
+      <Dialog
+        open={showCancelContractDialog}
+        onOpenChange={(open) => {
+          if (cancelContractMutation.isPending) return;
+          setShowCancelContractDialog(open);
+          if (!open) setContractCancellationReason('');
+        }}
+      >
+        <DialogContent dir="rtl" className="sm:max-w-[540px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-right">
+              <XCircle className="h-5 w-5 text-red-600" />
+              إلغاء العقد من مساحة العمل
+            </DialogTitle>
+            <DialogDescription className="text-right leading-6">
+              سيتم تغيير حالة العقد إلى ملغي، وسيتم إرسال تنبيه للمدير باسم الموظف الذي قام بالإلغاء.
+              بعد نجاح الإلغاء سيختفي العقد من مساحة العمل الخاصة بك.
+            </DialogDescription>
+          </DialogHeader>
+
+          {selectedWorkspaceContract && (
+            <div className="space-y-3">
+              <div className="rounded-lg border border-[#DDE5EF] bg-[#F8FAFC] p-3 text-sm">
+                <div className="flex items-center justify-between gap-3">
+                  <span className="font-bold text-[#142033]">
+                    {selectedWorkspaceContract.contract_number || selectedWorkspaceContract.id}
+                  </span>
+                  <span className="text-[#64748B]">{selectedWorkspaceContract.customer_name || 'عميل غير محدد'}</span>
+                </div>
+                <div className="mt-2 flex items-center justify-between gap-3">
+                  <span className="text-[#64748B]">الرصيد المستحق</span>
+                  <span
+                    className={cn(
+                      'font-black',
+                      (selectedWorkspaceContract.balance_due || 0) > 0 ? 'text-[#A56000]' : 'text-[#0D876A]',
+                    )}
+                    dir="ltr"
+                  >
+                    {formatCurrency(selectedWorkspaceContract.balance_due || 0)}
+                  </span>
+                </div>
+              </div>
+
+              {(selectedWorkspaceContract.balance_due || 0) > 0 && (
+                <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm leading-6 text-amber-900">
+                  <p className="font-black">نصيحة النظام</p>
+                  <p>
+                    يوجد التزام مالي على العميل. الأفضل تحويل العميل إلى الشؤون القانونية قبل إلغاء العقد
+                    حتى لا تضيع متابعة المطالبة.
+                  </p>
+                </div>
+              )}
+
+              <div className="space-y-2">
+                <Label htmlFor="employee-contract-cancel-reason">سبب الإلغاء</Label>
+                <Textarea
+                  id="employee-contract-cancel-reason"
+                  value={contractCancellationReason}
+                  onChange={(event) => setContractCancellationReason(event.target.value)}
+                  placeholder="اكتب سبب الإلغاء أو ملاحظة مختصرة للمدير..."
+                  className="min-h-24 resize-none"
+                />
+              </div>
+            </div>
+          )}
+
+          <DialogFooter className="gap-2 sm:justify-between">
+            {(selectedWorkspaceContract?.balance_due || 0) > 0 && (
+              <Button
+                type="button"
+                variant="outline"
+                className="gap-2 border-[#C8D3E0] text-[#173A63]"
+                disabled={cancelContractMutation.isPending}
+                onClick={() => {
+                  setShowCancelContractDialog(false);
+                  setShowConvertToLegalDialog(true);
+                }}
+              >
+                <Scale className="h-4 w-4" />
+                تحويل للقانونية
+              </Button>
+            )}
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                disabled={cancelContractMutation.isPending}
+                onClick={() => setShowCancelContractDialog(false)}
+              >
+                رجوع
+              </Button>
+              <Button
+                type="button"
+                variant="destructive"
+                disabled={cancelContractMutation.isPending || !selectedWorkspaceContract}
+                onClick={() => {
+                  if (!selectedWorkspaceContract) return;
+                  cancelContractMutation.mutate({
+                    contractId: selectedWorkspaceContract.id,
+                    reason: contractCancellationReason,
+                  });
+                }}
+              >
+                {cancelContractMutation.isPending ? (
+                  <>
+                    <Loader2 className="ml-2 h-4 w-4 animate-spin" />
+                    جاري الإلغاء...
+                  </>
+                ) : (
+                  'تأكيد إلغاء العقد'
+                )}
+              </Button>
+            </div>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={canUnassignContracts && showBulkUnassignDialog} onOpenChange={setShowBulkUnassignDialog}>
         <DialogContent className="sm:max-w-[520px]">

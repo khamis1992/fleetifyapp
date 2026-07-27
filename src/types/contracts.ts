@@ -3,6 +3,7 @@ import type { Database } from '@/integrations/supabase/types'
 type ContractRow = Database['public']['Tables']['contracts']['Row']
 type CustomerRow = Database['public']['Tables']['customers']['Row']
 type VehicleRow = Database['public']['Tables']['vehicles']['Row']
+type ProfileRow = Database['public']['Tables']['profiles']['Row']
 
 export type ContractCustomer = Pick<
   CustomerRow,
@@ -34,6 +35,16 @@ export type ContractVehicle = Pick<
   | 'status'
 >
 
+export type ContractAssignedEmployee = Pick<
+  ProfileRow,
+  | 'id'
+  | 'first_name'
+  | 'last_name'
+  | 'first_name_ar'
+  | 'last_name_ar'
+  | 'email'
+>
+
 type RequiredContractFields =
   | 'id'
   | 'company_id'
@@ -57,6 +68,7 @@ export type Contract = Pick<ContractRow, RequiredContractFields> &
     status: ContractStatus
     customer?: ContractCustomer | null
     vehicle?: ContractVehicle | null
+    assigned_employee?: ContractAssignedEmployee | null
   }
 
 export type LegalStatus = 

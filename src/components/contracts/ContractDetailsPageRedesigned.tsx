@@ -15,6 +15,7 @@ import {
   ArrowRight,
   FileText,
   User,
+  UserCheck,
   Car,
   RefreshCw,
   FileEdit,
@@ -387,6 +388,15 @@ const getContractStatusMeta = (status?: string) => {
   return map[status || ''] || map.draft;
 };
 
+const formatAssignedEmployeeName = (profile?: Contract['assigned_employee'] | null) => {
+  if (!profile) return 'غير معين';
+
+  const arabicName = [profile.first_name_ar, profile.last_name_ar].filter(Boolean).join(' ').trim();
+  const englishName = [profile.first_name, profile.last_name].filter(Boolean).join(' ').trim();
+
+  return arabicName || englishName || profile.email || 'غير محدد';
+};
+
 const ContractCommandHeader = ({
   contract,
   customerName,
@@ -431,6 +441,7 @@ const ContractCommandHeader = ({
   const balanceDue = contract.balance_due || 0;
   const paidAmount = Math.max(0, totalAmount - balanceDue);
   const paymentProgress = totalAmount > 0 ? Math.min(100, Math.round((paidAmount / totalAmount) * 100)) : 0;
+  const assignedEmployeeName = formatAssignedEmployeeName(contract.assigned_employee);
 
   const summaryItems = [
     {
@@ -516,7 +527,7 @@ const ContractCommandHeader = ({
                 </h1>
               </div>
 
-              <div className="grid gap-3 sm:grid-cols-2">
+              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
                 <button
                   type="button"
                   onClick={onCustomerClick}
@@ -537,6 +548,21 @@ const ContractCommandHeader = ({
                     </div>
                   </div>
                 </button>
+
+                <div className="rounded-xl border border-[#E3EAF2] bg-white p-4 text-right">
+                  <div className="flex items-center gap-3">
+                    <div className="contract-action-icon flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#F4F7FA] text-black">
+                      <UserCheck className="h-5 w-5" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-xs text-[#6A7688]">الموظف المسؤول</p>
+                      <p className="truncate text-sm font-bold text-[#142033]">{assignedEmployeeName}</p>
+                      <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs font-semibold text-[#8290A4]">
+                        <span>{contract.assigned_to_profile_id ? 'مسؤول متابعة العقد' : 'لم يتم تعيين موظف'}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
 
                 <button
                   type="button"
@@ -2238,6 +2264,14 @@ const ContractDetailsPageRedesigned = () => {
             vin,
             current_mileage,
             status
+          ),
+          assigned_employee:profiles!contracts_assigned_to_profile_id_fkey(
+            id,
+            first_name,
+            last_name,
+            first_name_ar,
+            last_name_ar,
+            email
           )
         `)
         .eq('company_id', companyId);

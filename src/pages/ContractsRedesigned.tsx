@@ -38,6 +38,7 @@ import {
   AlertCircle,
   ChevronLeft,
   ChevronRight,
+  UserRound,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -665,6 +666,16 @@ const getContractVehicleInfo = (contract: Contract) => {
 
 const getContractPlate = (contract: Contract) => contract.vehicle?.plate_number || "-";
 
+const getContractAssignedEmployeeName = (contract: Contract) => {
+  const profile = contract.assigned_employee;
+  if (!profile) return "غير معين";
+
+  const arabicName = [profile.first_name_ar, profile.last_name_ar].filter(Boolean).join(" ").trim();
+  const englishName = [profile.first_name, profile.last_name].filter(Boolean).join(" ").trim();
+
+  return arabicName || englishName || profile.email || "غير محدد";
+};
+
 const getContractDaysLeft = (date?: string) => {
   if (!date) return null;
   const days = Math.ceil((new Date(date).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
@@ -842,6 +853,11 @@ const ContractOperationsRow = ({
                 <span className="inline-flex items-center gap-1">
                   <FileSignature className="h-3.5 w-3.5" />
                   {getContractPlate(contract)}
+                </span>
+                <span className="inline-flex items-center gap-1" title="الموظف المسؤول عن العقد">
+                  <UserRound className="h-3.5 w-3.5" />
+                  <span className="text-[#94A3B8]">المسؤول:</span>
+                  {getContractAssignedEmployeeName(contract)}
                 </span>
               </div>
               {incompleteReasons.length > 0 && (

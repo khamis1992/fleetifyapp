@@ -166,23 +166,13 @@ export function ContractDocuments({ contractId, customerId, vehicleId }: Contrac
       document_type: 'signed_contract',
       document_name: `نسخة العقد الموقع المجمعة - ${scannedAt}`,
       file: pdfFile,
-      notes: `نسخة PDF مجمعة من ${pageImages.length} صفحة مصورة بالكاميرا`,
+      notes: pageImages.length > 0
+        ? `نسخة PDF مجمعة من ${pageImages.length} صفحة مصورة بالكاميرا`
+        : 'تم رفع ملف PDF جاهز كنسخة العقد الموقع',
       is_required: true,
       suppressSuccessToast: true,
     });
 
-    // Upload in reverse order so page one is the newest image and appears first.
-    for (let index = pageImages.length - 1; index >= 0; index -= 1) {
-      await createDocument.mutateAsync({
-        contract_id: contractId,
-        document_type: 'signed_contract_image',
-        document_name: `صورة العقد الموقع - صفحة ${index + 1}`,
-        file: pageImages[index],
-        notes: 'صورة ممسوحة بالكاميرا مع قص A4 وتصحيح المنظور تلقائيًا',
-        is_required: false,
-        suppressSuccessToast: true,
-      });
-    }
   };
 
   const handleDownload = async (filePath: string | null | undefined, fileName: string, sourceBucket: 'contract-documents' | 'documents' = 'contract-documents') => {

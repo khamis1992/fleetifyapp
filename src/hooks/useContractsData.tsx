@@ -29,11 +29,16 @@ type ContractCostCenter = Pick<
   Tables<'cost_centers'>,
   'id' | 'center_code' | 'center_name' | 'center_name_ar'
 >;
+type ContractAssignedEmployee = Pick<
+  Tables<'profiles'>,
+  'id' | 'first_name' | 'last_name' | 'first_name_ar' | 'last_name_ar' | 'email'
+>;
 
 export type ContractWithVehicle = ContractRow & {
   customers: ContractCustomer | null;
   vehicles: ContractVehicleRelation | null;
   cost_center: ContractCostCenter | null;
+  assigned_employee: ContractAssignedEmployee | null;
   vehicle: ContractVehicle | null;
   customer_name?: string | null;
   customer_phone?: string | null;
@@ -316,6 +321,14 @@ export const useContractsData = (filters: ContractsDataFilters = {}) => {
             center_code,
             center_name,
             center_name_ar
+          ),
+          assigned_employee:profiles!contracts_assigned_to_profile_id_fkey(
+            id,
+            first_name,
+            last_name,
+            first_name_ar,
+            last_name_ar,
+            email
           )
         `)
         .abortSignal(signal!);

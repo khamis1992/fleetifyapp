@@ -5,7 +5,7 @@ import {
   ArrowUp,
   Camera,
   CheckCircle2,
-  FileImage,
+  FileText,
   FilePlus2,
   Loader2,
   RotateCw,
@@ -74,6 +74,7 @@ export function SignedContractScannerDialog({
   const [isBuildingPdf, setIsBuildingPdf] = React.useState(false);
   const cameraInputRef = React.useRef<HTMLInputElement>(null);
   const galleryInputRef = React.useRef<HTMLInputElement>(null);
+  const pdfInputRef = React.useRef<HTMLInputElement>(null);
 
   const isBusy = processingCount > 0 || isBuildingPdf || isSubmitting;
   const warningCount = pages.filter((page) => page.quality.warnings.length > 0).length;
@@ -128,6 +129,37 @@ export function SignedContractScannerDialog({
     const files = Array.from(event.target.files || []);
     event.target.value = '';
     await processFiles(files);
+  };
+
+  const handlePdfInputChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+
+    if (!file) return;
+
+    const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+    if (!isPdf) {
+      toast.error('يرجى اختيار ملف PDF فقط');
+      return;
+    }
+
+    setIsBuildingPdf(true);
+    try {
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+      const pdfFile = new File([file], `signed-contract-upload-${timestamp}.pdf`, {
+        type: 'application/pdf',
+        lastModified: Date.now(),
+      });
+
+      await onSubmit({ pdfFile, pageImages: [] });
+      toast.success('تم حفظ ملف PDF كنسخة العقد الموقع');
+      onOpenChange(false);
+    } catch (error) {
+      console.error('[SignedContractScanner] PDF upload failed:', error);
+      toast.error(error instanceof Error ? error.message : 'تعذر حفظ ملف PDF');
+    } finally {
+      setIsBuildingPdf(false);
+    }
   };
 
   const movePage = (index: number, direction: -1 | 1) => {
@@ -240,6 +272,13 @@ export function SignedContractScannerDialog({
             className="hidden"
             onChange={handleInputChange}
           />
+          <input
+            ref={pdfInputRef}
+            type="file"
+            accept="application/pdf,.pdf"
+            className="hidden"
+            onChange={handlePdfInputChange}
+          />
 
           {pages.length === 0 && processingCount === 0 ? (
             <section className="flex min-h-[360px] flex-col items-center justify-center rounded-lg border border-dashed border-[#B8C6D8] bg-[#F8FAFC] px-5 text-center">
@@ -261,10 +300,10 @@ export function SignedContractScannerDialog({
                 <Button
                   variant="outline"
                   className="h-12 flex-1 gap-2 rounded-lg"
-                  onClick={() => galleryInputRef.current?.click()}
+                  onClick={() => pdfInputRef.current?.click()}
                 >
-                  <FileImage className="h-5 w-5" />
-                  اختيار صور
+                  <FileText className="h-5 w-5" />
+                  رفع PDF
                 </Button>
               </div>
             </section>

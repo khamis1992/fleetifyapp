@@ -319,7 +319,9 @@ export function LegalTransferReadinessWizard({
       pdfFile,
       'signed_contract',
       'نسخة العقد الموقعة الممسوحة',
-      `مسح بالجوال أثناء التجهيز القانوني، ${pageImages.length} صفحة`,
+      pageImages.length > 0
+        ? `مسح بالجوال أثناء التجهيز القانوني، ${pageImages.length} صفحة`
+        : 'رفع ملف PDF جاهز أثناء التجهيز القانوني',
     );
 
     for (let index = pageImages.length - 1; index >= 0; index -= 1) {
