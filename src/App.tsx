@@ -290,7 +290,7 @@ const App: React.FC = () => {
                         <PerformanceMonitor>
                           <RouteProvider routes={routeConfigs}>
                             <RouteErrorBoundary>
-                              <div className="min-h-screen bg-background">
+                              <div className="min-h-screen bg-background overflow-y-auto" style={{ WebkitOverflowScrolling: 'touch' }}>
                                 {/* Mobile Auto-Redirect for Native App */}
                                 <MobileRedirect />
 
