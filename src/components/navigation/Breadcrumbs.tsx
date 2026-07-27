@@ -154,6 +154,11 @@ const BREADCRUMB_ROUTES: Record<string, BreadcrumbItem[]> = {
     { label: 'لوحة التحكم', path: '/dashboard' },
     { label: 'الموارد البشرية', path: '/hr/payroll', isActive: true },
   ],
+  '/hr/daily-closeouts': [
+    { label: 'لوحة التحكم', path: '/dashboard' },
+    { label: 'الموارد البشرية', path: '/hr/employees' },
+    { label: 'إقفالات الموظفين', path: '/hr/daily-closeouts', isActive: true },
+  ],
 
   // Inventory
   '/inventory': [

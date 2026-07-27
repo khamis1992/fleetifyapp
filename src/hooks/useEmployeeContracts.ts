@@ -152,9 +152,38 @@ export const useEmployeeContracts = (
 
       if (error) throw error;
 
+      const contractIds = (data || [])
+        .map((contract) => contract.id)
+        .filter(Boolean);
+
+      const violationStatsByContract = new Map<string, { count: number; total: number }>();
+      if (contractIds.length > 0) {
+        const { data: violations, error: violationsError } = await supabase
+          .from('penalties')
+          .select('contract_id, amount, payment_status, status')
+          .eq('company_id', profile.company_id)
+          .in('contract_id', contractIds);
+
+        if (violationsError) throw violationsError;
+
+        (violations || []).forEach((violation) => {
+          if (!violation.contract_id) return;
+          const paymentStatus = String(violation.payment_status || '').toLowerCase();
+          const status = String(violation.status || '').toLowerCase();
+          if (paymentStatus === 'paid' || status === 'cancelled') return;
+
+          const current = violationStatsByContract.get(violation.contract_id) || { count: 0, total: 0 };
+          violationStatsByContract.set(violation.contract_id, {
+            count: current.count + 1,
+            total: current.total + Number(violation.amount || 0),
+          });
+        });
+      }
+
       // Transform data
       const transformedData: EmployeeContract[] = (data || []).map((contract: any) => {
         const customer = contract.customers;
+        const violationStats = violationStatsByContract.get(contract.id) || { count: 0, total: 0 };
         
         // Build customer name with priority: Arabic names > Company name > English names
         let customerName = 'غير محدد';
@@ -188,6 +217,8 @@ export const useEmployeeContracts = (
           monthly_amount: contract.monthly_amount || 0,
           balance_due: contract.balance_due || 0,
           total_paid: contract.total_paid || 0,
+          traffic_violation_count: violationStats.count,
+          traffic_violation_total: violationStats.total,
           late_fine_amount: contract.late_fine_amount,
           vehicle_returned: contract.vehicle_returned,
           days_overdue: contract.days_overdue,

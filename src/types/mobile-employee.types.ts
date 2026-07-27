@@ -38,6 +38,8 @@ export interface EmployeeContract {
   monthly_amount: number;
   balance_due: number;
   total_paid: number;
+  traffic_violation_count?: number;
+  traffic_violation_total?: number;
   late_fine_amount?: number | null;
   vehicle_returned?: boolean | null;
   days_overdue: number | null;

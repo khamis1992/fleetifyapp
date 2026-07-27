@@ -28,6 +28,7 @@ import {
   Building,
   Gavel,
   Package,
+  ClipboardCheck,
 } from 'lucide-react';
 import { useNavigationHistory } from '@/hooks/useNavigationHistory';
 import { supabase } from '@/integrations/supabase/client';
@@ -132,6 +133,15 @@ const pageSearchItems: SearchItem[] = [
     category: 'الصفحات',
     icon: Users,
     keywords: ['employees', 'موظفين']
+  },
+  {
+    id: 'daily-closeouts',
+    title: 'إقفالات الموظفين',
+    description: 'متابعة إقفال يوم العمل ونتائج التحصيل',
+    path: '/hr/daily-closeouts',
+    category: 'الصفحات',
+    icon: ClipboardCheck,
+    keywords: ['daily closeouts', 'إقفال اليوم', 'اقفال اليوم', 'إقفالات', 'موظفين']
   },
   // Settings
   {

@@ -181,6 +181,7 @@ const navigation: NavItem[] = [
       { id: 'hr-attendance', label: 'الحضور والإجازات', href: '/hr/attendance', icon: Clock },
       { id: 'hr-payroll', label: 'الرواتب', href: '/hr/payroll', icon: Receipt },
       { id: 'hr-reports', label: 'التقارير', href: '/hr/reports', icon: BarChart3 },
+      { id: 'hr-daily-closeouts', label: 'إقفالات الموظفين', href: '/hr/daily-closeouts', icon: ClipboardList },
     ],
   },
 

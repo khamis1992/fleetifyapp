@@ -3,7 +3,7 @@
  * صفحة مساحة عمل الموظف - تصميم احترافي
  */
 
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -37,6 +37,7 @@ import {
   FilePlus2,
   FileCheck2,
   ScanLine,
+  Upload,
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -149,6 +150,8 @@ type DailyActivityMetrics = {
   delayedTasks: number;
 };
 
+type ContractWorkFilter = 'all' | 'collection' | 'operational' | 'ready_to_close' | 'needs_completion';
+
 const DAILY_LOG_CHECKLIST: Array<{ key: DailyLogChecklistKey; label: string }> = [
   { key: 'workspace_opened', label: 'تم الدخول إلى مساحة عملي والتأكد من ظهور البيانات' },
   { key: 'page_refreshed', label: 'تم الضغط على تحديث في بداية اليوم' },
@@ -221,6 +224,7 @@ export const EmployeeWorkspace: React.FC = () => {
   const { formatCurrency } = useCurrencyFormatter();
   const [activeTab, setActiveTab] = useState<string>('overview');
   const [searchQuery, setSearchQuery] = useState('');
+  const [contractWorkFilter, setContractWorkFilter] = useState<ContractWorkFilter>('all');
   const [expandedCustomers, setExpandedCustomers] = useState<Set<string>>(new Set());
   
   // Dialog states
@@ -235,6 +239,10 @@ export const EmployeeWorkspace: React.FC = () => {
   const [showDailyLogDialog, setShowDailyLogDialog] = useState(false);
   const [showContractWizard, setShowContractWizard] = useState(false);
   const [signedScanContract, setSignedScanContract] = useState<{
+    id: string;
+    contractNumber: string;
+  } | null>(null);
+  const [violationProofContract, setViolationProofContract] = useState<{
     id: string;
     contractNumber: string;
   } | null>(null);
@@ -255,6 +263,7 @@ export const EmployeeWorkspace: React.FC = () => {
   const companyId = user?.profile?.company_id || user?.company?.id || '';
   const todayLogDate = todayISODate();
   const createContractDocument = useCreateContractDocument();
+  const violationProofInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const html = document.documentElement;
@@ -638,13 +647,47 @@ export const EmployeeWorkspace: React.FC = () => {
         .single();
 
       if (error) throw error;
+
+      const { data: managers, error: managersError } = await supabase
+        .from('profiles')
+        .select('id, user_id, role')
+        .eq('company_id', companyId)
+        .eq('is_active', true)
+        .in('role', ['super_admin', 'company_admin', 'manager', 'admin', 'owner']);
+
+      if (managersError) throw managersError;
+
+      const managerNotifications = (managers || [])
+        .filter((manager) => manager.user_id)
+        .map((manager) => ({
+          company_id: companyId,
+          user_id: manager.user_id,
+          title: 'تم إقفال يوم عمل موظف',
+          message: `قام ${form.employeeName || employeeDisplayName} بإقفال يوم العمل ${form.logDate}. التحصيل: ${formatCurrency(numberValue(form.totalCollected))}. الحالة: ${form.status === 'completed' ? 'مكتمل' : 'غير مكتمل'}.`,
+          notification_type: form.status === 'completed' ? 'success' : 'warning',
+          is_read: false,
+          related_id: data.id,
+          related_type: 'employee_daily_closeout',
+          created_at: payload.closed_at,
+        }));
+
+      if (managerNotifications.length > 0) {
+        const { error: notificationError } = await supabase
+          .from('user_notifications')
+          .insert(managerNotifications);
+
+        if (notificationError) throw notificationError;
+      }
+
       return data;
     },
     onSuccess: async () => {
       await refetchDailyLog();
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      queryClient.invalidateQueries({ queryKey: ['employee-daily-closeouts'] });
       toast({
         title: 'تم حفظ إقفال اليوم',
-        description: 'تم حفظ سجل العمل اليومي داخل مساحة العمل.',
+        description: 'تم حفظ سجل العمل اليومي وإرسال تنبيه للمدير.',
       });
       setShowDailyLogDialog(false);
     },
@@ -1334,6 +1377,61 @@ export const EmployeeWorkspace: React.FC = () => {
     });
   };
 
+  const handleViolationProofUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+
+    if (!file) return;
+
+    if (!violationProofContract || !workspaceProfile?.id || !companyId) {
+      toast({
+        title: 'تعذر تحديد العقد',
+        description: 'اختر العقد مرة أخرى ثم أعد رفع ملف المخالفات.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    try {
+      const { data: assignedContract, error: assignmentError } = await supabase
+        .from('contracts')
+        .select('id, contract_number')
+        .eq('id', violationProofContract.id)
+        .eq('company_id', companyId)
+        .eq('assigned_to_profile_id', workspaceProfile.id)
+        .maybeSingle();
+
+      if (assignmentError) throw assignmentError;
+      if (!assignedContract) {
+        throw new Error('هذا العقد لم يعد مخصصًا لك، لذلك لم يتم رفع ملف المخالفات');
+      }
+
+      const uploadedAt = new Date().toISOString().slice(0, 16).replace('T', ' ');
+
+      await createContractDocument.mutateAsync({
+        contract_id: assignedContract.id,
+        document_type: 'violations_proof',
+        document_name: `ملف المخالفات المرورية - وزارة الداخلية - ${assignedContract.contract_number || violationProofContract.contractNumber}`,
+        file,
+        notes: `رفع بواسطة الموظف من مساحة العمل بتاريخ ${uploadedAt}`,
+        is_required: true,
+        suppressSuccessToast: true,
+      });
+
+      toast({
+        title: 'تم رفع ملف المخالفات',
+        description: 'تم حفظ ملف وزارة الداخلية ضمن مستندات العقد.',
+      });
+      setViolationProofContract(null);
+    } catch (error) {
+      toast({
+        title: 'تعذر رفع ملف المخالفات',
+        description: error instanceof Error ? error.message : 'حدث خطأ أثناء رفع الملف',
+        variant: 'destructive',
+      });
+    }
+  };
+
   const reportTasks = useMemo<ReportEmployeeTask[]>(() => tasks.map(task => {
     const contract = contracts.find(item => item.id === task.contract_id);
     const reportType: ReportEmployeeTask['type'] = ({
@@ -1402,14 +1500,44 @@ export const EmployeeWorkspace: React.FC = () => {
     ? getReportPerformanceGrade(reportPerformance.performance_score)
     : null;
 
+  const getContractWorkStatus = (contract: typeof contracts[number]): ContractWorkFilter => {
+    const balanceDue = Number(contract.balance_due || 0);
+    const hasSignedContract = signedContractIds.includes(contract.id);
+    const hasOpenViolations = (contract.traffic_violation_count || 0) > 0;
+    const hasPendingTasks = tasks.some((task) =>
+      task.contract_id === contract.id && !['completed', 'cancelled'].includes(task.status)
+    );
+
+    if (balanceDue > 0) return 'collection';
+    if (hasOpenViolations || !hasSignedContract || hasPendingTasks) return 'needs_completion';
+    if (contract.vehicle_returned === true) return 'ready_to_close';
+    return 'operational';
+  };
+
+  const contractWorkSummary = contracts.reduce((summary, contract) => {
+    const status = getContractWorkStatus(contract);
+    summary[status] += 1;
+    return summary;
+  }, {
+    all: contracts.length,
+    collection: 0,
+    operational: 0,
+    ready_to_close: 0,
+    needs_completion: 0,
+  } as Record<ContractWorkFilter, number> & { all: number });
+
   // Filter contracts based on search
-  const filteredContracts = contracts.filter(c => 
-    c.contract_number?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    c.customer_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    c.vehicle_plate?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    c.vehicle_make?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    c.vehicle_model?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredContracts = contracts.filter((contract) => {
+    const matchesSearch =
+      contract.contract_number?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      contract.customer_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      contract.vehicle_plate?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      contract.vehicle_make?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      contract.vehicle_model?.toLowerCase().includes(searchQuery.toLowerCase());
+
+    const matchesWorkStatus = contractWorkFilter === 'all' || getContractWorkStatus(contract) === contractWorkFilter;
+    return matchesSearch && matchesWorkStatus;
+  });
   const filteredContractGroups = filteredContracts.reduce((groups, contract) => {
     const groupKey = contract.customer_id || `customer-${contract.customer_name || contract.id}`;
     const existing = groups.get(groupKey);
@@ -1618,6 +1746,83 @@ export const EmployeeWorkspace: React.FC = () => {
       toast({
         title: 'تعذر إلغاء العقد',
         description: error instanceof Error ? error.message : 'حدث خطأ أثناء إلغاء العقد',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const closeCompletedContractMutation = useMutation({
+    mutationFn: async (contractId: string) => {
+      if (!workspaceProfile?.id || !companyId || !user?.id) {
+        throw new Error('تعذر تحديد الموظف أو الشركة');
+      }
+
+      const contract = contracts.find((item) => item.id === contractId);
+      if (!contract) {
+        throw new Error('العقد غير موجود في مساحة العمل الحالية');
+      }
+
+      const balanceDue = Number(contract.balance_due || 0);
+      const hasSignedContract = signedContractIds.includes(contract.id);
+      const hasOpenViolations = (contract.traffic_violation_count || 0) > 0;
+      const hasPendingTasks = tasks.some((task) =>
+        task.contract_id === contract.id && !['completed', 'cancelled'].includes(task.status)
+      );
+
+      if (contract.status !== 'active') {
+        throw new Error('يمكن إغلاق العقود النشطة فقط');
+      }
+      if (balanceDue > 0) {
+        throw new Error('لا يمكن إغلاق العقد قبل تصفية الرصيد المستحق');
+      }
+      if (hasOpenViolations) {
+        throw new Error('لا يمكن إغلاق العقد قبل معالجة المخالفات المرورية المفتوحة');
+      }
+      if (!hasSignedContract) {
+        throw new Error('لا يمكن إغلاق العقد قبل رفع نسخة العقد');
+      }
+      if (hasPendingTasks) {
+        throw new Error('لا يمكن إغلاق العقد قبل إكمال المهام والمتابعات المفتوحة');
+      }
+      if (contract.vehicle_returned !== true) {
+        throw new Error('لا يمكن إغلاق العقد قبل تأكيد رجوع المركبة');
+      }
+
+      const now = new Date().toISOString();
+      const { data, error } = await supabase
+        .from('contracts')
+        .update({
+          status: 'expired',
+          assignment_notes: `تم إغلاق العقد المكتمل من مساحة الموظف بواسطة ${user.email || user.id} بتاريخ ${now}`,
+          updated_at: now,
+        })
+        .eq('id', contractId)
+        .eq('company_id', companyId)
+        .eq('assigned_to_profile_id', workspaceProfile.id)
+        .eq('status', 'active')
+        .select('id, contract_number')
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (contract) => {
+      toast({
+        title: 'تم إغلاق العقد المكتمل',
+        description: `تم إغلاق العقد ${contract.contract_number || ''} وسيختفي من مساحة العمل.`,
+      });
+
+      queryClient.invalidateQueries({ queryKey: ['employee-contracts'] });
+      queryClient.invalidateQueries({ queryKey: ['employee-contracts-details'] });
+      queryClient.invalidateQueries({ queryKey: ['monthly-collections'] });
+      refetchContracts();
+      refetchCollections();
+      refetchPerformance();
+    },
+    onError: (error: unknown) => {
+      toast({
+        title: 'تعذر إغلاق العقد',
+        description: error instanceof Error ? error.message : 'حدث خطأ أثناء إغلاق العقد',
         variant: 'destructive',
       });
     },
@@ -2320,6 +2525,39 @@ export const EmployeeWorkspace: React.FC = () => {
                       />
                     </div>
                   </div>
+                  <div className="grid grid-cols-2 gap-2 pt-1 sm:flex sm:flex-wrap">
+                    {([
+                      { key: 'all', label: 'كل العقود', count: contractWorkSummary.all },
+                      { key: 'collection', label: 'تحتاج تحصيل', count: contractWorkSummary.collection },
+                      { key: 'operational', label: 'مدفوعة وتحت التشغيل', count: contractWorkSummary.operational },
+                      { key: 'needs_completion', label: 'تحتاج استكمال', count: contractWorkSummary.needs_completion },
+                      { key: 'ready_to_close', label: 'جاهزة للإغلاق', count: contractWorkSummary.ready_to_close },
+                    ] as Array<{ key: ContractWorkFilter; label: string; count: number }>).map((item) => (
+                      <Button
+                        key={item.key}
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setContractWorkFilter(item.key)}
+                        className={cn(
+                          "h-9 justify-between gap-2 rounded-lg border-[#DDE5EF] bg-white px-3 text-xs font-bold text-[#40516A] hover:bg-[#F1F5F9]",
+                          contractWorkFilter === item.key && "border-[#142033] bg-[#142033] text-white hover:bg-[#142033] hover:text-white",
+                        )}
+                      >
+                        <span>{item.label}</span>
+                        <Badge
+                          className={cn(
+                            "h-5 rounded-full px-2 text-[11px]",
+                            contractWorkFilter === item.key
+                              ? "bg-white/15 text-white hover:bg-white/15"
+                              : "bg-[#EEF4FA] text-[#1D4F7A] hover:bg-[#EEF4FA]",
+                          )}
+                        >
+                          {item.count}
+                        </Badge>
+                      </Button>
+                    ))}
+                  </div>
                   {canUnassignContracts && filteredContracts.length > 0 && (
                     <div className="flex flex-col gap-3 rounded-xl border border-red-100 bg-red-50/70 p-3 sm:flex-row sm:items-center sm:justify-between">
                       <div className="flex items-center gap-3">
@@ -2391,24 +2629,30 @@ export const EmployeeWorkspace: React.FC = () => {
                                 </div>
                               </div>
                             </div>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="h-9 gap-2 rounded-md border-[#C8D3E0] bg-white px-4 text-xs font-bold text-[#173A63] hover:bg-[#EEF5FB]"
-                              onClick={() => {
-                                const firstContract = customerGroup.contracts[0];
-                                setSelectedPaymentCustomer({
-                                  customerId: customerGroup.customerId,
-                                  customerName: customerGroup.customerName,
-                                  customerPhone: customerGroup.customerPhone,
-                                });
-                                setSelectedContractId(firstContract?.id);
-                                setShowPaymentDialog(true);
-                              }}
-                            >
-                              <DollarSign className="h-4 w-4" />
-                              تسجيل دفعة للعميل
-                            </Button>
+                            {customerGroup.totalBalance > 0 ? (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-9 gap-2 rounded-md border-[#C8D3E0] bg-white px-4 text-xs font-bold text-[#173A63] hover:bg-[#EEF5FB]"
+                                onClick={() => {
+                                  const firstDueContract = customerGroup.contracts.find((contract) => (contract.balance_due || 0) > 0);
+                                  setSelectedPaymentCustomer({
+                                    customerId: customerGroup.customerId,
+                                    customerName: customerGroup.customerName,
+                                    customerPhone: customerGroup.customerPhone,
+                                  });
+                                  setSelectedContractId(firstDueContract?.id);
+                                  setShowPaymentDialog(true);
+                                }}
+                              >
+                                <DollarSign className="h-4 w-4" />
+                                تسجيل دفعة للعميل
+                              </Button>
+                            ) : (
+                              <Badge className="h-8 rounded-lg border border-[#BFEBDD] bg-[#E9FBF6] px-3 text-xs font-bold text-[#0D876A] hover:bg-[#E9FBF6]">
+                                مدفوع بالكامل
+                              </Badge>
+                            )}
                           </header>
 
                           <div className="space-y-3 p-3">
@@ -2416,6 +2660,8 @@ export const EmployeeWorkspace: React.FC = () => {
                         const statusStyle = getContractStatusStyle(contract.status);
                         const StatusIcon = statusStyle.icon;
                         const hasSignedContract = signedContractIds.includes(contract.id);
+                        const workStatus = getContractWorkStatus(contract);
+                        const canCloseCompletedContract = workStatus === 'ready_to_close';
                         
                         return (
                         <div
@@ -2477,10 +2723,40 @@ export const EmployeeWorkspace: React.FC = () => {
                                       && !hasSignedContractStatusError ? (
                                       <Badge
                                         variant="outline"
-                                        className="h-6 gap-1 border-[#F4C96B] bg-[#FFF8E7] px-2 text-[11px] text-[#8A5700]"
+                                        className="h-6 gap-1 border-[#FCA5A5] bg-[#FEF2F2] px-2 text-[11px] text-[#DC2626]"
                                       >
                                         <AlertCircle className="h-3 w-3" />
                                         نسخة العقد ناقصة
+                                      </Badge>
+                                    ) : null}
+                                    {(contract.traffic_violation_count || 0) > 0 ? (
+                                      <Badge
+                                        variant="outline"
+                                        className="h-6 gap-1 border-[#FDBA74] bg-[#FFF7ED] px-2 text-[11px] text-[#EA580C]"
+                                      >
+                                        <AlertCircle className="h-3 w-3" />
+                                        {contract.traffic_violation_count} مخالفات
+                                      </Badge>
+                                    ) : null}
+                                    {workStatus === 'operational' ? (
+                                      <Badge className="h-6 gap-1 border border-[#BFD7EE] bg-[#EEF5FB] px-2 text-[11px] text-[#173A63] hover:bg-[#EEF5FB]">
+                                        <PlayCircle className="h-3 w-3" />
+                                        مدفوع وتحت التشغيل
+                                      </Badge>
+                                    ) : null}
+                                    {workStatus === 'needs_completion' ? (
+                                      <Badge
+                                        variant="outline"
+                                        className="h-6 gap-1 border-[#F4C96B] bg-[#FFF8E7] px-2 text-[11px] text-[#8A5700]"
+                                      >
+                                        <AlertCircle className="h-3 w-3" />
+                                        يحتاج استكمال
+                                      </Badge>
+                                    ) : null}
+                                    {workStatus === 'ready_to_close' ? (
+                                      <Badge className="h-6 gap-1 border border-[#BFEBDD] bg-[#E9FBF6] px-2 text-[11px] text-[#0D876A] hover:bg-[#E9FBF6]">
+                                        <CheckCircle className="h-3 w-3" />
+                                        جاهز للإغلاق
                                       </Badge>
                                     ) : null}
                                   </div>
@@ -2563,7 +2839,7 @@ export const EmployeeWorkspace: React.FC = () => {
                                 {hasSignedContract ? 'إضافة نسخة' : 'تصوير العقد'}
                               </Button>
 
-                              {contract.status === 'active' && (
+                              {contract.status === 'active' && (contract.balance_due || 0) > 0 && (
                                 <Button
                                   size="sm"
                                   variant="outline"
@@ -2583,6 +2859,22 @@ export const EmployeeWorkspace: React.FC = () => {
                                 </Button>
                               )}
 
+                              {canCloseCompletedContract && (
+                                <Button
+                                  size="sm"
+                                  className="h-9 gap-2 rounded-md bg-[#11A37F] px-4 text-xs font-bold text-white hover:bg-[#0D876A]"
+                                  disabled={closeCompletedContractMutation.isPending}
+                                  onClick={() => closeCompletedContractMutation.mutate(contract.id)}
+                                >
+                                  {closeCompletedContractMutation.isPending ? (
+                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                  ) : (
+                                    <CheckCircle className="h-4 w-4" />
+                                  )}
+                                  إغلاق العقد المكتمل
+                                </Button>
+                              )}
+
                               {contract.status === 'active' && (contract.balance_due || 0) > 0 && (
                                 <Button
                                   size="sm"
@@ -2597,6 +2889,7 @@ export const EmployeeWorkspace: React.FC = () => {
                                   تحويل للقانونية
                                 </Button>
                               )}
+
                             </div>
 
                             <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center">
@@ -2639,6 +2932,28 @@ export const EmployeeWorkspace: React.FC = () => {
                                     <XCircle className="h-4 w-4" />
                                     إلغاء العقد
                                   </Button>
+                                  {(contract.traffic_violation_count || 0) > 0 && (
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      className="h-9 gap-2 rounded-md border-[#F4C96B] bg-white px-4 text-xs font-bold text-[#8A5700] hover:bg-[#FFF8E7]"
+                                      disabled={createContractDocument.isPending}
+                                      onClick={() => {
+                                        setViolationProofContract({
+                                          id: contract.id,
+                                          contractNumber: contract.contract_number || contract.id,
+                                        });
+                                        violationProofInputRef.current?.click();
+                                      }}
+                                    >
+                                      {createContractDocument.isPending && violationProofContract?.id === contract.id ? (
+                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                      ) : (
+                                        <Upload className="h-4 w-4" />
+                                      )}
+                                      رفع ملف المخالفات
+                                    </Button>
+                                  )}
                                 </>
                               )}
 
@@ -3112,6 +3427,14 @@ export const EmployeeWorkspace: React.FC = () => {
         }}
         onSubmit={handleEmployeeSignedContractScan}
         isSubmitting={createContractDocument.isPending}
+      />
+
+      <input
+        ref={violationProofInputRef}
+        type="file"
+        accept="application/pdf,image/*"
+        className="hidden"
+        onChange={handleViolationProofUpload}
       />
 
       <QuickPaymentDialog

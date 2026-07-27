@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   AlertTriangle, ArrowDownToLine, ArrowUpFromLine, Banknote,
+  MessageSquarePlus,
   Download, ExternalLink, Eye, Link2, Loader2, Printer, RefreshCw,
   Scale, Search, ShieldCheck, Unlink, WalletCards,
   Upload,
@@ -160,6 +161,8 @@ export function JudgmentSettlementsView({
   const [quickCollectionReference, setQuickCollectionReference] = useState('');
   const [quickCollectionNotes, setQuickCollectionNotes] = useState('');
   const [quickCollectionKey, setQuickCollectionKey] = useState('');
+  const [noteDialogOpen, setNoteDialogOpen] = useState(false);
+  const [caseNote, setCaseNote] = useState('');
 
   const detailsQuery = useLegalSettlementDetails(selected?.id);
   const candidatesQuery = useLegalPaymentCandidates(selected);
@@ -255,6 +258,18 @@ export function JudgmentSettlementsView({
       caseId: selected.id, paymentId: selectedPayment.id, amount: Number(allocationAmount), reason: linkReason,
     });
     setLinkOpen(false); setSelectedPayment(null);
+  };
+
+  const openNoteDialog = () => {
+    setCaseNote('');
+    setNoteDialogOpen(true);
+  };
+
+  const confirmCaseNote = async () => {
+    if (!selected || !caseNote.trim()) return;
+    await actions.addCaseNote.mutateAsync({ caseId: selected.id, note: caseNote });
+    setCaseNote('');
+    setNoteDialogOpen(false);
   };
 
   if (settlementsQuery.isLoading) return <div className="flex h-64 items-center justify-center"><Loader2 className="h-7 w-7 animate-spin text-slate-500" /></div>;
@@ -360,6 +375,7 @@ export function JudgmentSettlementsView({
               <div className="flex flex-wrap gap-2 print:hidden">
                 {selected.payment_direction === 'receive' && <Button size="sm" onClick={() => openQuickCollection(selected)} disabled={selected.remaining_amount <= 0 || !selected.client_id}><Banknote className="ml-2 h-4 w-4" />تسجيل تحصيل</Button>}
                 <Button size="sm" variant="outline" onClick={() => openLinkDialog(selected)} disabled={selected.remaining_amount <= 0}><Link2 className="ml-2 h-4 w-4" />ربط حركة مالية</Button>
+                <Button size="sm" variant="outline" onClick={openNoteDialog}><MessageSquarePlus className="ml-2 h-4 w-4" />إضافة ملاحظة</Button>
                 <Button size="sm" variant="outline" onClick={() => { setSelected(null); onViewCaseDetails?.(selected.id); }}><Eye className="ml-2 h-4 w-4" />تفاصيل القضية</Button>
                 <Button size="sm" variant="outline" onClick={() => { setSelected(null); onUploadCaseDocument?.(selected.id, selected.case_number); }}><Upload className="ml-2 h-4 w-4" />رفع نسخة الحكم</Button>
                 <Button size="sm" variant="outline" onClick={() => navigate('/finance/billing?tab=payments')}><ExternalLink className="ml-2 h-4 w-4" />السجل المالي</Button>
@@ -516,6 +532,36 @@ export function JudgmentSettlementsView({
             >
               {createPayment.isPending ? <Loader2 className="ml-2 h-4 w-4 animate-spin" /> : <Banknote className="ml-2 h-4 w-4" />}
               حفظ سند القبض
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={noteDialogOpen} onOpenChange={setNoteDialogOpen}>
+        <DialogContent className="max-w-lg" dir="rtl">
+          <DialogHeader>
+            <DialogTitle>إضافة ملاحظة على القضية</DialogTitle>
+            <DialogDescription>
+              سيتم حفظ الملاحظة في سجل نشاط القضية {selected?.case_number}.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Label htmlFor="legal-case-note">نص الملاحظة</Label>
+            <Textarea
+              id="legal-case-note"
+              value={caseNote}
+              onChange={(event) => setCaseNote(event.target.value)}
+              placeholder="مثال: تم التواصل مع العميل، تم تحديث موعد الجلسة، وصلت إفادة جديدة..."
+              className="min-h-32 resize-none"
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setNoteDialogOpen(false)} disabled={actions.addCaseNote.isPending}>
+              إلغاء
+            </Button>
+            <Button onClick={confirmCaseNote} disabled={!caseNote.trim() || actions.addCaseNote.isPending}>
+              {actions.addCaseNote.isPending && <Loader2 className="ml-2 h-4 w-4 animate-spin" />}
+              حفظ الملاحظة
             </Button>
           </DialogFooter>
         </DialogContent>

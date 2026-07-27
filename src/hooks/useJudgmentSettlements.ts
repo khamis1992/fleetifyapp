@@ -269,6 +269,37 @@ export const useLegalSettlementActions = () => {
     onSuccess: refresh,
   });
 
+  const addCaseNote = useMutation({
+    mutationFn: async ({ caseId, note }: { caseId: string; note: string }) => {
+      if (!companyId) throw new Error('تعذر تحديد الشركة');
+      const cleanNote = note.trim();
+      if (!cleanNote) throw new Error('اكتب الملاحظة أولاً');
+
+      const { data: authData } = await supabase.auth.getUser();
+      const { data, error } = await db
+        .from('legal_case_activities')
+        .insert({
+          case_id: caseId,
+          company_id: companyId,
+          activity_type: 'case_note',
+          activity_title: 'ملاحظة على القضية',
+          activity_description: cleanNote,
+          new_values: { note: cleanNote },
+          created_by: authData.user?.id || null,
+        })
+        .select('id')
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: async () => {
+      await refresh();
+      toast.success('تم إضافة الملاحظة على القضية');
+    },
+    onError: (error: any) => toast.error(error?.message || 'تعذر إضافة الملاحظة'),
+  });
+
   const runMatcher = useMutation({
     mutationFn: async () => {
       if (!companyId) throw new Error('تعذر تحديد الشركة');
@@ -283,5 +314,5 @@ export const useLegalSettlementActions = () => {
     onError: (error: any) => toast.error(error?.message || 'تعذر تشغيل المطابقة'),
   });
 
-  return { linkPayment, reverseLink, resolveReview, runMatcher };
+  return { linkPayment, reverseLink, resolveReview, addCaseNote, runMatcher };
 };

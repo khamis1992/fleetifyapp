@@ -52,6 +52,7 @@ const ROUTE_CONFIG: Record<string, RouteConfig> = {
   // الموارد البشرية
   '/hr': { label: 'الموارد البشرية', parent: '/dashboard' },
   '/hr/employees': { label: 'الموظفين', parent: '/hr' },
+  '/hr/daily-closeouts': { label: 'إقفالات الموظفين', parent: '/hr' },
   '/hr/recruitment': { label: 'التوظيف', parent: '/hr' },
   
   // العمليات

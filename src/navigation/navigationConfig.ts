@@ -280,6 +280,12 @@ export const PRIMARY_NAVIGATION: NavSection[] = [
         href: '/hr/reports',
         icon: BarChart3,
       },
+      {
+        id: 'hr-daily-closeouts',
+        name: 'إقفالات الموظفين',
+        href: '/hr/daily-closeouts',
+        icon: ClipboardList,
+      },
     ],
   },
 

@@ -131,6 +131,7 @@ const LocationSettings = lazy(() => import('@/pages/hr/LocationSettings'));
 const Payroll = lazy(() => import('@/pages/hr/Payroll'));
 const HRReports = lazy(() => import('@/pages/hr/Reports'));
 const HRSettings = lazy(() => import('@/pages/hr/Settings'));
+const DailyCloseouts = lazy(() => import('@/pages/hr/DailyCloseouts'));
 
 // Inventory Management
 const Inventory = lazy(() => import('@/pages/Inventory'));
@@ -1522,6 +1523,19 @@ const routeConfigs: RouteConfig[] = [
     exact: true,
     title: 'HR Reports',
     description: 'HR reports',
+    group: 'hr',
+    priority: 86,
+    protected: true,
+    layout: 'bento',
+    requiredRole: 'admin',
+  },
+  {
+    path: '/hr/daily-closeouts',
+    component: DailyCloseouts,
+    lazy: true,
+    exact: true,
+    title: 'Daily Closeouts',
+    description: 'Employee daily closeout reports',
     group: 'hr',
     priority: 86,
     protected: true,
