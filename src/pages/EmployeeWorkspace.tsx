@@ -12,6 +12,7 @@ import {
   ArrowRight, 
   RefreshCw, 
   Briefcase, 
+  Car,
   CheckCircle, 
   Clock, 
   AlertCircle,
@@ -1404,8 +1405,41 @@ export const EmployeeWorkspace: React.FC = () => {
   // Filter contracts based on search
   const filteredContracts = contracts.filter(c => 
     c.contract_number?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    c.customer_name?.toLowerCase().includes(searchQuery.toLowerCase())
+    c.customer_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    c.vehicle_plate?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    c.vehicle_make?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    c.vehicle_model?.toLowerCase().includes(searchQuery.toLowerCase())
   );
+  const filteredContractGroups = filteredContracts.reduce((groups, contract) => {
+    const groupKey = contract.customer_id || `customer-${contract.customer_name || contract.id}`;
+    const existing = groups.get(groupKey);
+
+    if (existing) {
+      existing.contracts.push(contract);
+      existing.totalBalance += contract.balance_due || 0;
+      existing.totalMonthly += contract.monthly_amount || 0;
+      return groups;
+    }
+
+    groups.set(groupKey, {
+      customerId: contract.customer_id,
+      customerName: contract.customer_name || 'غير محدد',
+      customerPhone: contract.customer_phone || null,
+      contracts: [contract],
+      totalBalance: contract.balance_due || 0,
+      totalMonthly: contract.monthly_amount || 0,
+    });
+
+    return groups;
+  }, new Map<string, {
+    customerId: string;
+    customerName: string;
+    customerPhone: string | null;
+    contracts: typeof filteredContracts;
+    totalBalance: number;
+    totalMonthly: number;
+  }>());
+  const filteredContractGroupsList = Array.from(filteredContractGroups.values());
   const filteredContractIds = filteredContracts.map(contract => contract.id);
   const selectedFilteredContractIds = selectedBulkContractIds.filter(id => filteredContractIds.includes(id));
   const allFilteredContractsSelected =
@@ -2331,8 +2365,54 @@ export const EmployeeWorkspace: React.FC = () => {
                 </CardHeader>
                 <CardContent className="px-3 sm:px-6">
                   <div className="pr-0 sm:pr-4">
-                    <div className="space-y-3">
-                      {filteredContracts.length > 0 ? filteredContracts.map((contract) => {
+                    <div className="space-y-4">
+                      {filteredContractGroupsList.length > 0 ? filteredContractGroupsList.map((customerGroup) => (
+                        <section
+                          key={customerGroup.customerId}
+                          className="overflow-hidden rounded-xl border border-[#DDE5EF] bg-[#F8FAFC]"
+                        >
+                          <header className="flex flex-col gap-3 border-b border-[#E6EDF5] bg-white px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+                            <div className="flex min-w-0 items-center gap-3">
+                              <Avatar className="h-10 w-10 shrink-0 border border-[#DDE5EF] bg-[#F4F8FB]">
+                                <AvatarFallback className="bg-[#EEF5FB] text-base font-black text-[#173A63]">
+                                  {customerGroup.customerName?.[0] || 'ع'}
+                                </AvatarFallback>
+                              </Avatar>
+                              <div className="min-w-0">
+                                <h4 className="truncate text-base font-black text-[#142033]">
+                                  {customerGroup.customerName}
+                                </h4>
+                                <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-semibold text-[#6A7688]">
+                                  <span>{customerGroup.contracts.length} عقد</span>
+                                  {customerGroup.customerPhone && <span dir="ltr">{customerGroup.customerPhone}</span>}
+                                  <span className="text-[#A56000]" dir="ltr">
+                                    {formatCurrency(customerGroup.totalBalance)} مستحق
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-9 gap-2 rounded-md border-[#C8D3E0] bg-white px-4 text-xs font-bold text-[#173A63] hover:bg-[#EEF5FB]"
+                              onClick={() => {
+                                const firstContract = customerGroup.contracts[0];
+                                setSelectedPaymentCustomer({
+                                  customerId: customerGroup.customerId,
+                                  customerName: customerGroup.customerName,
+                                  customerPhone: customerGroup.customerPhone,
+                                });
+                                setSelectedContractId(firstContract?.id);
+                                setShowPaymentDialog(true);
+                              }}
+                            >
+                              <DollarSign className="h-4 w-4" />
+                              تسجيل دفعة للعميل
+                            </Button>
+                          </header>
+
+                          <div className="space-y-3 p-3">
+                            {customerGroup.contracts.map((contract) => {
                         const statusStyle = getContractStatusStyle(contract.status);
                         const StatusIcon = statusStyle.icon;
                         const hasSignedContract = signedContractIds.includes(contract.id);
@@ -2367,7 +2447,7 @@ export const EmployeeWorkspace: React.FC = () => {
 
                                 <Avatar className="h-11 w-11 shrink-0 border border-[#DDE5EF] bg-[#F4F8FB] sm:h-12 sm:w-12">
                                   <AvatarFallback className="bg-[#E9FBF6] text-base font-black text-[#0D876A]">
-                                    {contract.customer_name?.[0] || 'C'}
+                                    <Car className="h-5 w-5" />
                                   </AvatarFallback>
                                 </Avatar>
 
@@ -2378,7 +2458,7 @@ export const EmployeeWorkspace: React.FC = () => {
                                 >
                                   <div className="mb-1.5 flex flex-wrap items-center gap-2">
                                     <h4 className="break-words text-base font-black text-[#142033] transition-colors group-hover:text-[#1D4F7A]">
-                                      {contract.customer_name || 'غير محدد'}
+                                      عقد {contract.contract_number || 'بدون رقم'}
                                     </h4>
                                     <Badge
                                       variant="outline"
@@ -2409,6 +2489,14 @@ export const EmployeeWorkspace: React.FC = () => {
                                     <span className="flex items-center gap-1.5 font-bold text-[#40516A]">
                                       <FileText className="h-3.5 w-3.5 text-[#8A9AAF]" />
                                       {contract.contract_number || 'بدون رقم'}
+                                    </span>
+                                    <span className="flex items-center gap-1.5 font-bold text-[#40516A]">
+                                      <Car className="h-3.5 w-3.5 text-[#8A9AAF]" />
+                                      {[
+                                        contract.vehicle_make,
+                                        contract.vehicle_model,
+                                        contract.vehicle_plate ? `لوحة ${contract.vehicle_plate}` : null,
+                                      ].filter(Boolean).join(' - ') || 'مركبة غير محددة'}
                                     </span>
                                     {contract.customer_phone && (
                                       <span className="flex items-center gap-1.5" dir="ltr">
@@ -2571,7 +2659,10 @@ export const EmployeeWorkspace: React.FC = () => {
                             </div>
                           </div>
                         </div>
-                      )}) : (
+                      )})}
+                          </div>
+                        </section>
+                      )) : (
                         <div className="text-center py-12">
                            <p className="text-gray-500">لا توجد عقود مطابقة للبحث</p>
                         </div>
