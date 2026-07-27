@@ -1920,7 +1920,7 @@ export const EmployeeWorkspace: React.FC = () => {
   };
 
   return (
-    <div className="min-h-dvh bg-[#F0F2F5] text-[#142033]" dir="rtl">
+    <div className="min-h-dvh bg-[#F0F2F5] text-[#142033] overflow-y-auto" dir="rtl" style={{ WebkitOverflowScrolling: 'touch', height: '100dvh' }}>
 
       {/* --- Compact Header --- */}
       <header className="sticky top-0 z-40 border-b border-[#E2E8F0] bg-white/95 backdrop-blur-md">
