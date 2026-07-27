@@ -196,10 +196,10 @@ export const useCreateLegalDocument = () => {
       if (formData.file) {
         const fileExt = formData.file.name.split('.').pop();
         const uniqueFileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
-        const bucketPath = `legal-documents/${profile.company_id}/${formData.case_id}/${uniqueFileName}`;
+        const bucketPath = `${profile.company_id}/${formData.case_id}/${uniqueFileName}`;
 
         const { error: uploadError } = await supabase.storage
-          .from('documents')
+          .from('legal-documents')
           .upload(bucketPath, formData.file);
 
         if (uploadError) throw uploadError;
@@ -343,12 +343,21 @@ export const useDownloadLegalDocument = () => {
       if (documentError) throw documentError;
       if (!document?.file_path) throw new Error('الملف غير موجود');
 
-      // Get signed URL for download from legal-documents bucket
-      const { data, error } = await supabase.storage
+      // Get signed URL for download. New uploads use legal-documents; older records may exist in documents.
+      let { data, error } = await supabase.storage
         .from('legal-documents')
         .createSignedUrl(document.file_path, 3600); // 1 hour expiry
 
+      if (error) {
+        const fallback = await supabase.storage
+          .from('documents')
+          .createSignedUrl(document.file_path, 3600);
+        data = fallback.data;
+        error = fallback.error;
+      }
+
       if (error) throw error;
+      if (!data?.signedUrl) throw new Error('تعذر إنشاء رابط تحميل المستند');
 
       return {
         url: data.signedUrl,

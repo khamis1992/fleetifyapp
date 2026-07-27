@@ -1,8 +1,26 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import type { Tables } from "@/integrations/supabase/types";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCompanyFilter } from "@/hooks/useCompanyScope";
 import { toast } from "sonner";
+
+type LegalCaseCustomer = Pick<
+  Tables<'customers'>,
+  | 'id'
+  | 'first_name'
+  | 'last_name'
+  | 'first_name_ar'
+  | 'last_name_ar'
+  | 'company_name'
+  | 'company_name_ar'
+  | 'customer_type'
+  | 'phone'
+>;
+
+type LegalCaseContract = Pick<Tables<'contracts'>, 'id' | 'contract_number' | 'customer_id'> & {
+  customer: LegalCaseCustomer | null;
+};
 
 export interface LegalCase {
   id: string;
@@ -57,6 +75,7 @@ export interface LegalCase {
   outcome_journal_entry_id?: string;
   outcome_notes?: string | null;
   outcome_payment_status?: 'pending' | 'partial' | 'paid' | 'received' | null;
+  contract?: LegalCaseContract | null;
   created_by?: string;
   created_at: string;
   updated_at: string;
@@ -131,7 +150,61 @@ export const useLegalCases = (filters?: UseLegalCasesFilters, enabled: boolean =
 
       let query = supabase
         .from('legal_cases')
-        .select('id, case_number, case_title, case_title_ar, case_type, case_status, workflow_stage, stage_updated_at, appeal_deadline, closed_at, closure_reason, reopened_at, reopen_reason, priority, client_id, client_name, case_value, total_costs, created_at, updated_at, hearing_date, filing_date, court_name, case_reference, judge_name, notes, description, contract_id, case_direction, outcome_type, outcome_amount, outcome_amount_type, payment_direction, outcome_date, outcome_journal_entry_id, outcome_notes, outcome_payment_status', { count: 'exact' })
+        .select(`
+          id,
+          case_number,
+          case_title,
+          case_title_ar,
+          case_type,
+          case_status,
+          workflow_stage,
+          stage_updated_at,
+          appeal_deadline,
+          closed_at,
+          closure_reason,
+          reopened_at,
+          reopen_reason,
+          priority,
+          client_id,
+          client_name,
+          case_value,
+          total_costs,
+          created_at,
+          updated_at,
+          hearing_date,
+          filing_date,
+          court_name,
+          case_reference,
+          judge_name,
+          notes,
+          description,
+          contract_id,
+          case_direction,
+          outcome_type,
+          outcome_amount,
+          outcome_amount_type,
+          payment_direction,
+          outcome_date,
+          outcome_journal_entry_id,
+          outcome_notes,
+          outcome_payment_status,
+          contract:contracts!legal_cases_contract_id_fkey(
+            id,
+            contract_number,
+            customer_id,
+            customer:customers!fk_contracts_customer_id(
+              id,
+              first_name,
+              last_name,
+              first_name_ar,
+              last_name_ar,
+              company_name,
+              company_name_ar,
+              customer_type,
+              phone
+            )
+          )
+        `, { count: 'exact' })
         .order('hearing_date', { ascending: true, nullsFirst: false })
         .range(from, to);
 

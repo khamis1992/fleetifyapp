@@ -2,8 +2,9 @@ import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   AlertTriangle, ArrowDownToLine, ArrowUpFromLine, Banknote,
-  Download, ExternalLink, Link2, Loader2, Printer, RefreshCw,
+  Download, ExternalLink, Eye, Link2, Loader2, Printer, RefreshCw,
   Scale, Search, ShieldCheck, Unlink, WalletCards,
+  Upload,
 } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
@@ -52,7 +53,86 @@ const formatDate = (value?: string | null) => value
   ? new Date(value).toLocaleDateString('ar-QA', { year: 'numeric', month: 'short', day: 'numeric' })
   : '-';
 
-export function JudgmentSettlementsView() {
+const mojibakeMarkers = ['Ø', 'Ù', 'Ã', 'Â', 'â', 'ð', '�'];
+
+const reviewIssueLabels: Record<string, string> = {
+  match_suggestion: 'حركة مالية محتملة لحكم قضائي',
+  legacy_payment_unlinked: 'دفعة قانونية قديمة غير مرتبطة بحركة مالية',
+  missing_journal: 'حركة مرتبطة بالحكم دون قيد مرحل',
+  direction_mismatch: 'اتجاه الحركة المالية لا يطابق الحكم',
+  closed_with_balance: 'قضية مغلقة ولها رصيد حكم غير مسدد',
+  over_allocation: 'تعذر الربط التلقائي لحركة تحمل رقم القضية',
+};
+
+const hasMojibake = (input: string) => mojibakeMarkers.some((marker) => input.includes(marker));
+const countArabicLetters = (input: string) => (input.match(/[\u0600-\u06FF]/g) || []).length;
+const countMojibakeMarkers = (input: string) => mojibakeMarkers.reduce(
+  (count, marker) => count + (input.match(new RegExp(marker, 'g')) || []).length,
+  0,
+);
+
+const decodeLatin1Utf8 = (input: string) => {
+  try {
+    const bytes = Uint8Array.from(input, (char) => char.charCodeAt(0) & 0xff);
+    return new TextDecoder('utf-8', { fatal: false }).decode(bytes).trim();
+  } catch {
+    return input;
+  }
+};
+
+const chooseBestDisplayText = (options: string[]) => options
+  .map((text) => text.trim())
+  .filter(Boolean)
+  .sort((a, b) => {
+    const arabicDelta = countArabicLetters(b) - countArabicLetters(a);
+    if (arabicDelta !== 0) return arabicDelta;
+    return countMojibakeMarkers(a) - countMojibakeMarkers(b);
+  })[0] || '';
+
+const decodePossiblyMojibake = (value: string) => {
+  const text = value.trim();
+  if (!text || !hasMojibake(text)) return text;
+
+  const firstPass = decodeLatin1Utf8(text);
+  const secondPass = hasMojibake(firstPass) ? decodeLatin1Utf8(firstPass) : firstPass;
+  return chooseBestDisplayText([text, firstPass, secondPass]);
+};
+
+const translateDetailKey = (key: string) => ({
+  amount: 'المبلغ',
+  allocation_id: 'معرف الربط',
+  error: 'السبب',
+  judgment_amount: 'مبلغ الحكم',
+  linked_amount: 'المبلغ المرتبط',
+  payment_date: 'تاريخ الدفعة',
+  reference_number: 'رقم المرجع',
+  score: 'درجة المطابقة',
+  settled_amount: 'المبلغ المسدد',
+}[key] || key);
+
+const decodeDisplayText = (value?: unknown): string => {
+  if (typeof value === 'string') return decodePossiblyMojibake(value);
+  if (!value || typeof value !== 'object') return '';
+
+  const record = value as Record<string, unknown>;
+  const preferredValue = record.message || record.reason || record.error || record.description || record.title;
+  if (preferredValue) return decodeDisplayText(preferredValue);
+
+  return Object.entries(record)
+    .filter(([, entryValue]) => entryValue !== null && entryValue !== undefined && entryValue !== '')
+    .map(([key, entryValue]) => `${translateDetailKey(key)}: ${decodeDisplayText(String(entryValue))}`)
+    .join('، ');
+};
+
+interface JudgmentSettlementsViewProps {
+  onViewCaseDetails?: (caseId: string) => void;
+  onUploadCaseDocument?: (caseId: string, caseNumber?: string) => void;
+}
+
+export function JudgmentSettlementsView({
+  onViewCaseDetails,
+  onUploadCaseDocument,
+}: JudgmentSettlementsViewProps) {
   const navigate = useNavigate();
   const settlementsQuery = useJudgmentSettlements();
   const actions = useLegalSettlementActions();
@@ -254,6 +334,14 @@ export function JudgmentSettlementsView() {
                       </Button>
                     )}
                     <Button size="sm" variant="outline" onClick={() => openLinkDialog(item)} disabled={item.remaining_amount <= 0}><Link2 className="ml-2 h-4 w-4" />ربط حركة</Button>
+                    <Button size="sm" variant="outline" onClick={() => { setSelected(null); onViewCaseDetails?.(item.id); }}>
+                      <Eye className="ml-2 h-4 w-4" />
+                      تفاصيل القضية
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={() => { setSelected(null); onUploadCaseDocument?.(item.id, item.case_number); }}>
+                      <Upload className="ml-2 h-4 w-4" />
+                      رفع ملف
+                    </Button>
                   </div>
                 </TableCell>
               </TableRow>
@@ -272,6 +360,8 @@ export function JudgmentSettlementsView() {
               <div className="flex flex-wrap gap-2 print:hidden">
                 {selected.payment_direction === 'receive' && <Button size="sm" onClick={() => openQuickCollection(selected)} disabled={selected.remaining_amount <= 0 || !selected.client_id}><Banknote className="ml-2 h-4 w-4" />تسجيل تحصيل</Button>}
                 <Button size="sm" variant="outline" onClick={() => openLinkDialog(selected)} disabled={selected.remaining_amount <= 0}><Link2 className="ml-2 h-4 w-4" />ربط حركة مالية</Button>
+                <Button size="sm" variant="outline" onClick={() => { setSelected(null); onViewCaseDetails?.(selected.id); }}><Eye className="ml-2 h-4 w-4" />تفاصيل القضية</Button>
+                <Button size="sm" variant="outline" onClick={() => { setSelected(null); onUploadCaseDocument?.(selected.id, selected.case_number); }}><Upload className="ml-2 h-4 w-4" />رفع نسخة الحكم</Button>
                 <Button size="sm" variant="outline" onClick={() => navigate('/finance/billing?tab=payments')}><ExternalLink className="ml-2 h-4 w-4" />السجل المالي</Button>
               </div>
 
@@ -284,7 +374,58 @@ export function JudgmentSettlementsView() {
                 })}</div>}
               </section>
 
-              {(detailsQuery.data?.reviews || []).length > 0 && <section><h3 className="mb-2 flex items-center gap-2 font-semibold text-amber-900"><AlertTriangle className="h-4 w-4" />عناصر تحتاج مراجعة</h3><div className="space-y-2">{detailsQuery.data?.reviews.map((review) => <div key={review.id} className="rounded-md border border-amber-200 bg-amber-50 p-3"><p className="font-medium text-amber-950">{review.title}</p><p className="mt-1 text-xs text-amber-800">الثقة: {review.confidence ?? '-'}%</p><div className="mt-2 flex gap-2">{review.payment_id && <Button size="sm" onClick={() => { const payment = candidatesQuery.data?.find((item) => item.id === review.payment_id); if (payment) { choosePayment(payment); setLinkOpen(true); } }} disabled={!candidatesQuery.data?.some((item) => item.id === review.payment_id)}>اعتماد الربط</Button>}<Button size="sm" variant="outline" onClick={() => actions.resolveReview.mutate({ reviewId: review.id, action: 'dismissed', reason: 'تمت المراجعة ولا تخص هذه القضية' })}>استبعاد</Button></div></div>)}</div></section>}
+              {(detailsQuery.data?.reviews || []).length > 0 && (
+                <section>
+                  <h3 className="mb-2 flex items-center gap-2 font-semibold text-amber-900">
+                    <AlertTriangle className="h-4 w-4" />
+                    عناصر تحتاج مراجعة
+                  </h3>
+                  <div className="space-y-2">
+                    {detailsQuery.data?.reviews.map((review) => {
+                      const decodedTitle = decodeDisplayText(review.title);
+                      const fallbackTitle = reviewIssueLabels[review.issue_type] || 'عنصر يحتاج مراجعة';
+                      const title = decodedTitle && !hasMojibake(decodedTitle) ? decodedTitle : fallbackTitle;
+                      const details = decodeDisplayText(review.details);
+
+                      return (
+                        <div key={review.id} className="rounded-md border border-amber-200 bg-amber-50 p-3">
+                          <p className="font-medium text-amber-950">{title || 'عنصر يحتاج مراجعة'}</p>
+                          {details && <p className="mt-1 text-sm text-amber-900">{details}</p>}
+                          <p className="mt-1 text-xs text-amber-800">الثقة: {review.confidence ?? '-'}%</p>
+                          <div className="mt-2 flex gap-2">
+                            {review.payment_id && (
+                              <Button
+                                size="sm"
+                                onClick={() => {
+                                  const payment = candidatesQuery.data?.find((item) => item.id === review.payment_id);
+                                  if (payment) {
+                                    choosePayment(payment);
+                                    setLinkOpen(true);
+                                  }
+                                }}
+                                disabled={!candidatesQuery.data?.some((item) => item.id === review.payment_id)}
+                              >
+                                اعتماد الربط
+                              </Button>
+                            )}
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => actions.resolveReview.mutate({
+                                reviewId: review.id,
+                                action: 'dismissed',
+                                reason: 'تمت المراجعة ولا تخص هذه القضية',
+                              })}
+                            >
+                              استبعاد
+                            </Button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </section>
+              )}
             </div>
           </>}
         </SheetContent>

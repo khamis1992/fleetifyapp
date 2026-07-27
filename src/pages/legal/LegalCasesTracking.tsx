@@ -117,8 +117,23 @@ import EnhancedLegalNoticeGenerator from '@/components/legal/EnhancedLegalNotice
 import { CHART_COLORS, StatusBadge, TabButton, KPICard } from './legal-cases';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { formatCustomerName } from '@/utils/formatCustomerName';
 import '@/styles/legal-system.css';
 // DelinquentCustomersTab removed - use /legal/delinquency instead
+
+const getLegalCaseCustomerName = (legalCase?: LegalCase | null) => {
+  if (!legalCase) return 'غير محدد';
+
+  const customer = legalCase.contract?.customer;
+  if (customer) {
+    return formatCustomerName(customer, {
+      preferArabic: true,
+      fallbackName: legalCase.client_name,
+    });
+  }
+
+  return legalCase.client_name || 'غير محدد';
+};
 
 const toDateTimeLocalValue = (value?: string | null) => {
   if (!value) return '';
@@ -281,6 +296,27 @@ export const LegalCasesTracking: React.FC = () => {
     setShowCaseDetails(true);
   }, []);
 
+  const handleViewCaseDetailsById = useCallback(async (caseId: string) => {
+    if (!companyId) {
+      toast.error('تعذر تحديد الشركة');
+      return;
+    }
+
+    const { data, error } = await supabase
+      .from('legal_cases')
+      .select('*')
+      .eq('id', caseId)
+      .eq('company_id', companyId)
+      .maybeSingle();
+
+    if (error || !data) {
+      toast.error('تعذر تحميل تفاصيل القضية');
+      return;
+    }
+
+    handleViewDetails(data as LegalCase);
+  }, [companyId, handleViewDetails]);
+
   const handleEditCase = useCallback((legalCase: LegalCase) => {
     setCaseToEdit(legalCase);
     setEditFormData({
@@ -354,6 +390,20 @@ export const LegalCasesTracking: React.FC = () => {
     setShowUploadDialog(true);
   }, []);
 
+  const handleOpenJudgmentUploadDialog = useCallback((caseId: string, caseNumber?: string) => {
+    setUploadCaseId(caseId);
+    setUploadFile(null);
+    setUploadFormData({
+      document_title: caseNumber ? `نسخة الحكم - ${caseNumber}` : 'نسخة الحكم',
+      document_type: 'court_judgment',
+      description: 'نسخة من حكم المحكمة مرفوعة من تبويب التحصيل القانوني',
+      is_confidential: false,
+      is_original: true,
+      access_level: 'company',
+    });
+    setShowUploadDialog(true);
+  }, []);
+
   const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -393,11 +443,11 @@ export const LegalCasesTracking: React.FC = () => {
       setUploadFile(null);
       setUploadFormData({
         document_title: '',
-        document_type: 'contract',
+        document_type: 'court_document',
         description: '',
         is_confidential: false,
         is_original: true,
-        access_level: 'private',
+        access_level: 'company',
       });
     } catch (error: any) {
       console.error('Upload error:', error);
@@ -1394,7 +1444,7 @@ export const LegalCasesTracking: React.FC = () => {
                   </TableCell>
                   <TableCell className="px-6 py-4 font-semibold text-[#020617]">{item.case_number}</TableCell>
                   <TableCell className="px-6 py-4">
-                    <div className="font-medium text-[#020617]">{item.client_name || 'غير محدد'}</div>
+                    <div className="font-medium text-[#020617]">{getLegalCaseCustomerName(item as LegalCase)}</div>
                     <div className="mt-0.5 text-xs text-[#94A3B8]">
                       {item.case_title_ar || item.case_title}
                     </div>
@@ -1865,7 +1915,12 @@ export const LegalCasesTracking: React.FC = () => {
       case 'calendar':
         return <CalendarView />;
       case 'collection':
-        return <JudgmentSettlementsView />;
+        return (
+          <JudgmentSettlementsView
+            onViewCaseDetails={handleViewCaseDetailsById}
+            onUploadCaseDocument={handleOpenJudgmentUploadDialog}
+          />
+        );
       case 'notices':
         return <NoticesView />;
       case 'settings':
@@ -2044,7 +2099,7 @@ export const LegalCasesTracking: React.FC = () => {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1">
                     <p className="text-sm text-slate-500">اسم العميل</p>
-                    <p className="font-medium">{selectedCase.client_name || 'غير محدد'}</p>
+                    <p className="font-medium">{getLegalCaseCustomerName(selectedCase)}</p>
                   </div>
                 </div>
               </div>
@@ -2238,14 +2293,14 @@ export const LegalCasesTracking: React.FC = () => {
         if (!open) {
           // إعادة تعيين الحالة عند إغلاق الحوار
           setUploadFile(null);
-          setUploadFormData({
-            document_title: '',
-            document_type: 'contract',
-            description: '',
-            is_confidential: false,
-            is_original: true,
-            access_level: 'private',
-          });
+      setUploadFormData({
+        document_title: '',
+        document_type: 'court_document',
+        description: '',
+        is_confidential: false,
+        is_original: true,
+        access_level: 'company',
+      });
         }
       }}>
         <DialogContent className="max-w-lg">
@@ -2317,6 +2372,7 @@ export const LegalCasesTracking: React.FC = () => {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="court_judgment">نسخة الحكم</SelectItem>
                   <SelectItem value="court_document">مستند محكمة</SelectItem>
                   <SelectItem value="contract">عقد</SelectItem>
                   <SelectItem value="invoice">فاتورة</SelectItem>
