@@ -1950,234 +1950,235 @@ export const EmployeeWorkspace: React.FC = () => {
   };
 
   return (
-    <div className="min-h-dvh bg-[#F4F7FA] p-3 text-[#142033] sm:p-4 md:p-6 lg:p-8" dir="rtl">
-      
-      {/* --- Header --- */}
-      <header className="relative mb-4 overflow-hidden rounded-xl border border-[#DDE5EF] bg-[#142033] p-4 text-white shadow-[0_22px_55px_rgba(20,32,51,0.18)] sm:mb-5 sm:rounded-2xl sm:p-5 md:p-6">
-        <div className="absolute inset-y-0 left-0 w-1/2 bg-[radial-gradient(circle_at_20%_20%,rgba(27,191,154,0.28),transparent_34%),radial-gradient(circle_at_70%_70%,rgba(63,131,191,0.24),transparent_34%)]" />
-        <div className="relative flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
-          <div>
-            <div className="mb-2 flex items-start gap-3">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/10 text-[#7FE5CB] ring-1 ring-white/15 sm:h-12 sm:w-12">
-                <Briefcase className="h-5 w-5 sm:h-6 sm:w-6" />
+    <div className="min-h-dvh bg-[#F0F2F5] text-[#142033]" dir="rtl">
+
+      {/* --- Compact Header --- */}
+      <header className="sticky top-0 z-40 border-b border-[#E2E8F0] bg-white/95 backdrop-blur-md">
+        <div className="mx-auto max-w-7xl px-3 sm:px-4 lg:px-6">
+          <div className="flex h-14 items-center justify-between gap-3 sm:h-16">
+            <div className="flex min-w-0 items-center gap-3">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#11A37F] to-[#0D876A] text-white shadow-sm sm:h-10 sm:w-10">
+                <Briefcase className="h-4 w-4 sm:h-5 sm:w-5" />
               </div>
               <div className="min-w-0">
-                <h1 className="text-xl font-black tracking-normal sm:text-2xl md:text-3xl">مساحة عملي</h1>
-                <p className="mt-1 max-w-full text-xs font-medium leading-5 text-slate-300 sm:text-sm">
-                  أهلاً بك، {user?.email?.split('@')[0]} - لوحة متابعة التحصيل والعقود اليومية
+                <h1 className="truncate text-base font-black sm:text-lg">مساحة عملي</h1>
+                <p className="hidden truncate text-xs text-[#6A7688] sm:block">
+                  {user?.email?.split('@')[0]}
                 </p>
               </div>
             </div>
-            <div className="mt-4 grid grid-cols-1 gap-2 text-xs min-[390px]:grid-cols-2 sm:flex sm:flex-wrap">
-              <span className="rounded-full border border-white/10 bg-white/10 px-3 py-1.5 text-center text-slate-200 sm:text-start">
-                {contractStats.activeContracts} عقد نشط
-              </span>
-              <span className="rounded-full border border-white/10 bg-white/10 px-3 py-1.5 text-center text-slate-200 sm:text-start">
-                {taskStats.todayTasks} مهام اليوم
-              </span>
-              <span className="rounded-full border border-white/10 bg-white/10 px-3 py-1.5 text-center text-slate-200 min-[390px]:col-span-2 sm:col-span-1 sm:text-start">
-                {formatCurrency(collectionStats.totalPending)} مستحق هذا الشهر
-              </span>
+
+            {/* Header Stats - Compact */}
+            <div className="hidden items-center gap-4 md:flex">
+              <div className="flex items-center gap-1.5 text-xs">
+                <span className="h-2 w-2 rounded-full bg-[#11A37F]" />
+                <span className="font-bold text-[#6A7688]">{contractStats.activeContracts}</span>
+                <span className="text-[#94A3B8]">عقد</span>
+              </div>
+              <div className="flex items-center gap-1.5 text-xs">
+                <span className="h-2 w-2 rounded-full bg-[#F59E0B]" />
+                <span className="font-bold text-[#6A7688]">{taskStats.todayTasks}</span>
+                <span className="text-[#94A3B8]">مهمة</span>
+              </div>
+              <div className="flex items-center gap-1.5 text-xs">
+                <span className="h-2 w-2 rounded-full bg-[#EF4444]" />
+                <span className="font-bold text-[#6A7688]">{formatCurrency(collectionStats.totalPending)}</span>
+                <span className="text-[#94A3B8]">مستحق</span>
+              </div>
             </div>
-          </div>
 
-          <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
-            <NotificationBell />
-
-            <ExportButton
-              onExportExcel={async () => {
-                try {
-                  await exportEmployeeWorkspaceReport({
-                    employeeName: user?.email?.split('@')[0] || 'موظف',
-                    contracts,
-                    tasks: reportTasks,
-                    performance: reportPerformance,
-                    performanceGrade: reportPerformanceGrade,
-                    collections,
-                    stats: {
-                      contractStats,
-                      taskStats,
-                      collectionStats
-                    }
-                  });
-                  toast({
-                    title: 'تم التصدير بنجاح',
-                    description: 'تم تصدير التقرير الشامل إلى Excel',
-                  });
-                } catch (error) {
-                  console.error('Export error:', error);
-                  toast({
-                    title: 'خطأ في التصدير',
-                    description: error instanceof Error ? error.message : 'فشل تصدير التقرير',
-                    variant: 'destructive',
-                  });
-                }
-              }}
-              label="تصدير تقرير شامل (Excel)"
-              variant="outline"
-              className="h-10 w-full justify-center rounded-lg border-white/15 bg-white/10 text-white hover:bg-white/15 hover:text-white sm:h-9 sm:w-auto"
-            />
-
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleRefresh}
-              disabled={isLoading}
-              className="h-10 w-full justify-center rounded-lg border-white/15 bg-white/10 text-white hover:bg-white/15 sm:h-9 sm:w-auto"
-            >
-              <RefreshCw className={cn("ml-2 h-4 w-4", isLoading && "animate-spin")} />
-              تحديث
-            </Button>
-
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => navigate('/dashboard')}
-              className="h-10 w-full justify-center rounded-lg border-white/15 bg-white/10 text-white hover:bg-white/15 sm:h-9 sm:w-auto"
-            >
-              <ArrowRight className="ml-2 h-4 w-4" />
-              الرئيسية
-            </Button>
+            <div className="flex items-center gap-1.5 sm:gap-2">
+              <NotificationBell />
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handleRefresh}
+                disabled={isLoading}
+                className="h-9 w-9 rounded-xl text-[#6A7688] hover:bg-[#F1F5F9] hover:text-[#142033]"
+              >
+                <RefreshCw className={cn("h-4 w-4", isLoading && "animate-spin")} />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => navigate('/dashboard')}
+                className="h-9 w-9 rounded-xl text-[#6A7688] hover:bg-[#F1F5F9] hover:text-[#142033]"
+              >
+                <ArrowRight className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
         </div>
       </header>
 
-      <div className="mb-5 grid grid-cols-2 gap-2 sm:gap-3 md:grid-cols-5">
-        {quickActions.map((action) => {
-          const Icon = action.icon;
-          return (
-            <Button
-              key={action.label}
-              type="button"
-              onClick={action.onClick}
-              className={cn("min-h-12 justify-center rounded-xl px-3 py-3 text-xs font-bold leading-5 shadow-sm sm:justify-start sm:px-4 sm:text-sm", action.className)}
-            >
-              <Icon className="ml-2 h-4 w-4" />
-              {action.label}
-            </Button>
-          );
-        })}
-      </div>
-
-      <Card className={cn(
-        "mb-5 overflow-hidden rounded-xl border shadow-sm",
-        isDailyLogClosed ? "border-[#BFEBDD] bg-[#F4FFFB]" : "border-[#DDE5EF] bg-white"
-      )}>
-        <CardContent className="p-4 sm:p-5">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-            <div className="flex items-start gap-3">
-              <div className={cn(
-                "flex h-11 w-11 shrink-0 items-center justify-center rounded-xl",
-                isDailyLogClosed ? "bg-[#E9FBF6] text-[#11A37F]" : "bg-[#EEF4FA] text-[#1D4F7A]"
-              )}>
-                <ClipboardCheck className="h-5 w-5" />
-              </div>
-              <div>
-                <div className="flex flex-wrap items-center gap-2">
-                  <h2 className="text-base font-black text-[#142033]">إقفال يوم العمل</h2>
-                  <Badge className={cn(
-                    "rounded-full px-2.5 py-1 text-xs font-bold",
-                    isDailyLogClosed
-                      ? "bg-[#E9FBF6] text-[#0D876A] hover:bg-[#E9FBF6]"
-                      : "bg-[#FFF6E5] text-[#9A5B00] hover:bg-[#FFF6E5]"
-                  )}>
-                    {isDailyLogClosed ? 'تم الإقفال اليوم' : 'بانتظار الإقفال'}
-                  </Badge>
-                </div>
-                <p className="mt-1 text-sm font-medium leading-6 text-[#6A7688]">
-                  سجّل ملخص اليوم وقائمة التحقق اليومية بدل تعبئة الدفتر الورقي، مع حفظ السجل للمتابعة الإدارية.
-                </p>
-              </div>
-            </div>
-
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-              <div className="min-w-[180px] rounded-xl border border-[#DDE5EF] bg-white px-4 py-3">
-                <div className="mb-2 flex items-center justify-between text-xs font-bold text-[#6A7688]">
-                  <span>اكتمال قائمة التحقق</span>
-                  <span>{checklistDoneCount}/{DAILY_LOG_CHECKLIST.length}</span>
-                </div>
-                <Progress value={checklistPercent} className="h-2" />
-              </div>
-              <Button
-                type="button"
-                onClick={() => setShowDailyLogDialog(true)}
-                className="h-11 rounded-xl bg-[#11A37F] px-5 font-bold text-white hover:bg-[#0D876A]"
-              >
-                <ClipboardCheck className="ml-2 h-4 w-4" />
-                {isDailyLogClosed ? 'عرض الإقفال' : 'إقفال اليوم'}
-              </Button>
-            </div>
+      {/* --- Quick Actions Bar --- */}
+      <div className="border-b border-[#E2E8F0] bg-white">
+        <div className="mx-auto max-w-7xl px-3 sm:px-4 lg:px-6">
+          <div className="flex gap-2 overflow-x-auto py-2.5 scrollbar-hide sm:gap-3 sm:py-3">
+            {quickActions.map((action) => {
+              const Icon = action.icon;
+              return (
+                <button
+                  key={action.label}
+                  type="button"
+                  onClick={action.onClick}
+                  className={cn(
+                    "flex shrink-0 items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-bold transition-all active:scale-95 sm:px-5 sm:py-3 sm:text-sm",
+                    action.className
+                  )}
+                >
+                  <Icon className="h-4 w-4" />
+                  <span className="whitespace-nowrap">{action.label}</span>
+                </button>
+              );
+            })}
           </div>
-        </CardContent>
-      </Card>
-
-      {/* --- Stats Overview --- */}
-      <div className="mb-5 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Card className="rounded-xl border-[#DDE5EF] bg-white shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md">
-          <CardContent className="flex items-start justify-between gap-3 p-4 sm:p-6">
-            <div>
-              <p className="text-sm font-bold text-[#6A7688] mb-1">العقود المخصصة حاليًا</p>
-              <h3 className="text-2xl font-black text-[#142033] sm:text-3xl">{contractStats.totalContracts}</h3>
-              <p className="text-xs text-[#11A37F] mt-1 font-bold">العقود النشطة فقط</p>
-            </div>
-            <div className="p-3 bg-[#EEF4FA] text-[#1D4F7A] rounded-xl">
-              <FileText className="w-5 h-5" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="rounded-xl border-[#DDE5EF] bg-white shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md">
-          <CardContent className="flex items-start justify-between gap-3 p-4 sm:p-6">
-            <div>
-              <p className="text-sm font-bold text-[#6A7688] mb-1">المبالغ المستحقة لهذا الشهر</p>
-              <h3 className="break-words text-2xl font-black text-[#142033] sm:text-3xl">{formatCurrency(collectionStats.totalPending)}</h3>
-              <p className="text-xs text-[#9A5B00] mt-1 font-bold">تحصيل الشهر الحالي</p>
-            </div>
-            <div className="p-3 bg-[#FFF6E5] text-[#9A5B00] rounded-xl">
-              <DollarSign className="w-5 h-5" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="rounded-xl border-[#DDE5EF] bg-white shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md">
-          <CardContent className="flex items-start justify-between gap-3 p-4 sm:p-6">
-            <div>
-              <p className="text-sm font-bold text-[#6A7688] mb-1">مهام اليوم</p>
-              <h3 className="text-2xl font-black text-[#142033] sm:text-3xl">{taskStats.todayTasks}</h3>
-              <p className="text-xs text-[#11A37F] mt-1 font-bold">{taskStats.completionRate}% نسبة الإنجاز</p>
-            </div>
-            <div className="p-3 bg-[#E9FBF6] text-[#11A37F] rounded-xl">
-              <CheckCircle className="w-5 h-5" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="rounded-xl border-[#DDE5EF] bg-white shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md">
-          <CardContent className="flex items-start justify-between gap-3 p-4 sm:p-6">
-            <div>
-              <p className="text-sm font-bold text-[#6A7688] mb-1">نقاط الأداء</p>
-              <h3 className="text-2xl font-black text-[#142033] sm:text-3xl">{performance ? Math.round(performance.performance_score) : 0}</h3>
-              <p className="text-xs text-[#1D4F7A] mt-1 font-bold">{performanceGrade?.label_ar || 'جيد'}</p>
-            </div>
-            <div className="p-3 bg-[#EEF4FA] text-[#1D4F7A] rounded-xl">
-              <Star className="w-5 h-5" />
-            </div>
-          </CardContent>
-        </Card>
+        </div>
       </div>
 
-      <div className="grid grid-cols-12 gap-5">
-        
-        {/* --- Main Content (Left) --- */}
-        <div className="col-span-12 space-y-5 lg:col-span-8">
-          
+      <div className="mx-auto max-w-7xl px-3 py-4 sm:px-4 sm:py-5 lg:px-6">
+
+        {/* --- Daily Log Card --- */}
+        <Card className={cn(
+          "mb-4 overflow-hidden rounded-2xl border shadow-sm sm:mb-5",
+          isDailyLogClosed ? "border-[#A7F3D0] bg-gradient-to-l from-[#ECFDF5] to-white" : "border-[#E2E8F0] bg-white"
+        )}>
+          <CardContent className="p-4 sm:p-5">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-start gap-3">
+                <div className={cn(
+                  "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl sm:h-12 sm:w-12",
+                  isDailyLogClosed ? "bg-[#D1FAE5] text-[#059669]" : "bg-[#FEF3C7] text-[#D97706]"
+                )}>
+                  <ClipboardCheck className="h-5 w-5 sm:h-6 sm:w-6" />
+                </div>
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h2 className="text-sm font-black sm:text-base">إقفال يوم العمل</h2>
+                    <Badge className={cn(
+                      "rounded-full px-2 py-0.5 text-[10px] font-bold sm:px-2.5 sm:py-1 sm:text-xs",
+                      isDailyLogClosed
+                        ? "bg-[#D1FAE5] text-[#059669] hover:bg-[#D1FAE5]"
+                        : "bg-[#FEF3C7] text-[#D97706] hover:bg-[#FEF3C7]"
+                    )}>
+                      {isDailyLogClosed ? 'تم الإقفال' : 'بانتظار الإقفال'}
+                    </Badge>
+                  </div>
+                  <p className="mt-0.5 text-xs leading-5 text-[#6A7688] sm:text-sm">
+                    سجّل ملخص اليوم وقائمة التحقق اليومية
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <div className="hidden min-w-[140px] rounded-xl border border-[#E2E8F0] bg-white px-3 py-2 sm:block">
+                  <div className="mb-1 flex items-center justify-between text-[10px] font-bold text-[#6A7688]">
+                    <span>اكتمال القائمة</span>
+                    <span>{checklistDoneCount}/{DAILY_LOG_CHECKLIST.length}</span>
+                  </div>
+                  <Progress value={checklistPercent} className="h-1.5" />
+                </div>
+                <Button
+                  type="button"
+                  onClick={() => setShowDailyLogDialog(true)}
+                  size="sm"
+                  className="h-10 rounded-xl bg-[#11A37F] px-4 text-xs font-bold text-white shadow-sm hover:bg-[#0D876A] sm:h-11 sm:px-5 sm:text-sm"
+                >
+                  <ClipboardCheck className="ml-1.5 h-4 w-4" />
+                  {isDailyLogClosed ? 'عرض الإقفال' : 'إقفال اليوم'}
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* --- Stats Cards --- */}
+        <div className="mb-4 grid grid-cols-2 gap-3 sm:mb-5 sm:gap-4 lg:grid-cols-4">
+          <Card className="group rounded-2xl border-[#E2E8F0] bg-white shadow-sm transition-all hover:shadow-md">
+            <CardContent className="p-4 sm:p-5">
+              <div className="flex items-start justify-between">
+                <div className="min-w-0">
+                  <p className="text-[11px] font-bold text-[#6A7688] sm:text-xs">العقود المخصصة</p>
+                  <h3 className="mt-1 text-xl font-black text-[#142033] sm:text-2xl">{contractStats.totalContracts}</h3>
+                  <p className="mt-1 text-[10px] font-bold text-[#11A37F] sm:text-xs">نشطة</p>
+                </div>
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#EEF4FA] text-[#1D4F7A] sm:h-12 sm:w-12">
+                  <FileText className="h-4 w-4 sm:h-5 sm:w-5" />
+                </div>
+              </div>
+              <div className="mt-3 h-1 w-full overflow-hidden rounded-full bg-[#EEF4FA]">
+                <div className="h-full rounded-full bg-[#1D4F7A] transition-all" style={{ width: `${Math.min(100, (contractStats.activeContracts / Math.max(1, contractStats.totalContracts)) * 100)}%` }} />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="group rounded-2xl border-[#E2E8F0] bg-white shadow-sm transition-all hover:shadow-md">
+            <CardContent className="p-4 sm:p-5">
+              <div className="flex items-start justify-between">
+                <div className="min-w-0">
+                  <p className="text-[11px] font-bold text-[#6A7688] sm:text-xs">المستحقات</p>
+                  <h3 className="mt-1 break-words text-lg font-black text-[#142033] sm:text-2xl">{formatCurrency(collectionStats.totalPending)}</h3>
+                  <p className="mt-1 text-[10px] font-bold text-[#D97706] sm:text-xs">هذا الشهر</p>
+                </div>
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#FEF3C7] text-[#D97706] sm:h-12 sm:w-12">
+                  <DollarSign className="h-4 w-4 sm:h-5 sm:w-5" />
+                </div>
+              </div>
+              <div className="mt-3 h-1 w-full overflow-hidden rounded-full bg-[#FEF3C7]">
+                <div className="h-full rounded-full bg-[#D97706] transition-all" style={{ width: `${Math.min(100, collectionStats.collectionRate)}%` }} />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="group rounded-2xl border-[#E2E8F0] bg-white shadow-sm transition-all hover:shadow-md">
+            <CardContent className="p-4 sm:p-5">
+              <div className="flex items-start justify-between">
+                <div className="min-w-0">
+                  <p className="text-[11px] font-bold text-[#6A7688] sm:text-xs">مهام اليوم</p>
+                  <h3 className="mt-1 text-xl font-black text-[#142033] sm:text-2xl">{taskStats.todayTasks}</h3>
+                  <p className="mt-1 text-[10px] font-bold text-[#11A37F] sm:text-xs">{taskStats.completionRate}% إنجاز</p>
+                </div>
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#D1FAE5] text-[#059669] sm:h-12 sm:w-12">
+                  <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5" />
+                </div>
+              </div>
+              <div className="mt-3 h-1 w-full overflow-hidden rounded-full bg-[#D1FAE5]">
+                <div className="h-full rounded-full bg-[#059669] transition-all" style={{ width: `${taskStats.completionRate}%` }} />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="group rounded-2xl border-[#E2E8F0] bg-white shadow-sm transition-all hover:shadow-md">
+            <CardContent className="p-4 sm:p-5">
+              <div className="flex items-start justify-between">
+                <div className="min-w-0">
+                  <p className="text-[11px] font-bold text-[#6A7688] sm:text-xs">نقاط الأداء</p>
+                  <h3 className="mt-1 text-xl font-black text-[#142033] sm:text-2xl">{performance ? Math.round(performance.performance_score) : 0}</h3>
+                  <p className="mt-1 text-[10px] font-bold text-[#1D4F7A] sm:text-xs">{performanceGrade?.label_ar || 'جيد'}</p>
+                </div>
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#EEF4FA] text-[#1D4F7A] sm:h-12 sm:w-12">
+                  <Star className="h-4 w-4 sm:h-5 sm:w-5" />
+                </div>
+              </div>
+              <div className="mt-3 h-1 w-full overflow-hidden rounded-full bg-[#EEF4FA]">
+                <div className="h-full rounded-full bg-[#1D4F7A] transition-all" style={{ width: `${performance ? Math.min(100, performance.performance_score) : 0}%` }} />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="grid grid-cols-12 gap-4 sm:gap-5">
+
+          {/* --- Main Content (Left) --- */}
+          <div className="col-span-12 space-y-4 sm:space-y-5 lg:col-span-8">
+
           <Tabs value={activeTab} className="w-full" onValueChange={setActiveTab}>
-            <div className="mb-4 -mx-1 overflow-x-auto rounded-xl border border-[#DDE5EF] bg-white p-1 shadow-sm sm:mx-0">
+            <div className="mb-3 -mx-1 overflow-x-auto rounded-xl border border-[#E2E8F0] bg-white p-1 shadow-sm sm:mx-0 sm:mb-4">
               <TabsList className="h-auto min-w-max bg-transparent p-0">
-                <TabsTrigger value="overview" className="rounded-lg px-4 py-2.5 text-sm font-bold data-[state=active]:bg-[#142033] data-[state=active]:text-white">نظرة عامة</TabsTrigger>
-                <TabsTrigger value="collections" className="rounded-lg px-4 py-2.5 text-sm font-bold data-[state=active]:bg-[#142033] data-[state=active]:text-white">التحصيل الشهري</TabsTrigger>
-                <TabsTrigger value="contracts" className="rounded-lg px-4 py-2.5 text-sm font-bold data-[state=active]:bg-[#142033] data-[state=active]:text-white">العقود ({contractStats.totalContracts})</TabsTrigger>
-                <TabsTrigger value="tasks" className="rounded-lg px-4 py-2.5 text-sm font-bold data-[state=active]:bg-[#142033] data-[state=active]:text-white">المهام ({taskStats.totalTasks})</TabsTrigger>
+                <TabsTrigger value="overview" className="rounded-lg px-3 py-2 text-xs font-bold data-[state=active]:bg-[#142033] data-[state=active]:text-white sm:px-4 sm:py-2.5 sm:text-sm">نظرة عامة</TabsTrigger>
+                <TabsTrigger value="collections" className="rounded-lg px-3 py-2 text-xs font-bold data-[state=active]:bg-[#142033] data-[state=active]:text-white sm:px-4 sm:py-2.5 sm:text-sm">التحصيل الشهري</TabsTrigger>
+                <TabsTrigger value="contracts" className="rounded-lg px-3 py-2 text-xs font-bold data-[state=active]:bg-[#142033] data-[state=active]:text-white sm:px-4 sm:py-2.5 sm:text-sm">العقود ({contractStats.totalContracts})</TabsTrigger>
+                <TabsTrigger value="tasks" className="rounded-lg px-3 py-2 text-xs font-bold data-[state=active]:bg-[#142033] data-[state=active]:text-white sm:px-4 sm:py-2.5 sm:text-sm">المهام ({taskStats.totalTasks})</TabsTrigger>
               </TabsList>
             </div>
 
@@ -2186,41 +2187,37 @@ export const EmployeeWorkspace: React.FC = () => {
               
               {/* Priority Section */}
               {priorityContracts.length > 0 && (
-                <Card className="overflow-hidden rounded-xl border-[#F2C56B] bg-white shadow-sm">
-                  <CardHeader className="border-b border-[#FBE7B5] bg-[#FFF8EA] pb-3">
-                    <CardTitle className="flex items-center gap-2 text-sm font-black text-[#8A5A00]">
-                      <AlertCircle className="w-4 h-4" />
+                <Card className="overflow-hidden rounded-2xl border-[#FDE68A] bg-gradient-to-l from-[#FFFBEB] to-white shadow-sm">
+                  <CardHeader className="border-b border-[#FDE68A] bg-[#FFFBEB] pb-2.5 sm:pb-3">
+                    <CardTitle className="flex items-center gap-2 text-sm font-black text-[#92400E]">
+                      <AlertCircle className="h-4 w-4" />
                       يحتاج اهتمامك الفوري
+                      <Badge className="mr-auto bg-[#FDE68A] text-[#92400E] hover:bg-[#FDE68A]">{priorityContracts.length}</Badge>
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="p-0">
                     {priorityContracts.slice(0, 3).map((contract, idx) => (
-                      <div 
-                        key={contract.id} 
-                        className="flex cursor-pointer flex-col gap-3 border-b p-4 transition-colors last:border-0 hover:bg-[#FFF8EA] sm:flex-row sm:items-center sm:justify-between"
-                        onClick={() => {
-                           setSelectedContractId(contract.id);
-                           // Optional: Open contract details or highlight
-                        }}
+                      <div
+                        key={contract.id}
+                        className="flex cursor-pointer items-center gap-3 border-b border-[#FDE68A]/50 p-3 transition-colors last:border-0 hover:bg-[#FFFBEB] sm:p-4"
+                        onClick={() => navigate(`/contracts/${contract.contract_number || contract.id}`)}
                       >
-                        <div className="flex items-center gap-4">
-                           <div className="flex h-10 w-10 flex-col items-center justify-center rounded-xl bg-[#FFF0C7] text-xs font-black text-[#9A5B00]">
-                             {idx + 1}
-                           </div>
-                           <div>
-                             <h4 className="font-semibold text-gray-900">{contract.customer_name}</h4>
-                             <p className="text-xs text-gray-500">عقد #{contract.contract_number}</p>
-                           </div>
+                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#FDE68A] text-xs font-black text-[#92400E] sm:h-10 sm:w-10">
+                          {idx + 1}
                         </div>
-                        <div className="w-full text-right sm:w-auto sm:text-left">
-                          <Badge variant="outline" className="bg-white border-amber-200 text-amber-700 mb-1">
+                        <div className="min-w-0 flex-1">
+                          <h4 className="truncate text-sm font-bold text-gray-900">{contract.customer_name}</h4>
+                          <p className="text-xs text-gray-500">عقد #{contract.contract_number}</p>
+                        </div>
+                        <div className="shrink-0 text-left">
+                          <Badge variant="outline" className="mb-1 border-[#FDE68A] bg-white text-[10px] text-[#92400E] sm:text-xs">
                             {contract.priority_reason_ar}
                           </Badge>
-                          <p className="text-xs text-red-600 font-bold flex items-center justify-end gap-1">
+                          <p className="text-[10px] font-bold text-red-600 sm:text-xs">
                             {contract.priority_reason === 'overdue_payment' ? (
-                               <>{formatCurrency(contract.balance_due)} مستحق</>
+                              <>{formatCurrency(contract.balance_due)}</>
                             ) : (
-                               <>متأخر {contract.days_overdue} يوم</>
+                              <>متأخر {contract.days_overdue} يوم</>
                             )}
                           </p>
                         </div>
@@ -2231,57 +2228,56 @@ export const EmployeeWorkspace: React.FC = () => {
               )}
 
               {/* Today's Tasks */}
-              <Card className="rounded-xl border-[#DDE5EF] bg-white shadow-sm">
-                <CardHeader className="flex flex-row items-center justify-between border-b border-[#EEF2F6] pb-3">
-                  <CardTitle className="flex items-center gap-2 text-lg font-black text-[#142033]">
-                    <Calendar className="w-5 h-5 text-[#11A37F]" />
+              <Card className="rounded-2xl border-[#E2E8F0] bg-white shadow-sm">
+                <CardHeader className="flex flex-row items-center justify-between border-b border-[#F1F5F9] pb-3">
+                  <CardTitle className="flex items-center gap-2 text-base font-black sm:text-lg">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#D1FAE5] text-[#059669]">
+                      <Calendar className="h-4 w-4" />
+                    </div>
                     مهام اليوم
                   </CardTitle>
-                  <Badge variant="secondary" className="font-normal">
-                    {todayTasks.length} مهام متبقية
+                  <Badge variant="secondary" className="rounded-full bg-[#F1F5F9] text-xs font-bold text-[#475569]">
+                    {todayTasks.length} مهام
                   </Badge>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="p-3 sm:p-4">
                   {todayTasks.length > 0 ? (
                     <div className="space-y-2">
                       {todayTasks.map((task) => (
-                        <div 
-                          key={task.id} 
+                        <div
+                          key={task.id}
                           className={cn(
-                            "flex flex-col gap-3 rounded-xl border p-3 transition-all sm:flex-row sm:items-center sm:justify-between",
-                            task.status === 'completed' 
-                              ? "bg-[#F7F9FB] border-[#EEF2F6] opacity-70" 
-                              : "bg-white border-[#EEF2F6] hover:border-[#11A37F]/35 hover:shadow-sm"
+                            "flex items-center gap-3 rounded-xl border p-3 transition-all",
+                            task.status === 'completed'
+                              ? "border-[#F1F5F9] bg-[#F8FAFC] opacity-60"
+                              : "border-[#E2E8F0] bg-white hover:border-[#11A37F]/40 hover:shadow-sm"
                           )}
                         >
-                          <div className="flex min-w-0 items-start gap-3 sm:items-center">
-                            <div className={cn(
-                              "w-2 h-2 rounded-full",
-                              task.status === 'completed' ? "bg-gray-300" : "bg-[#11A37F]"
-                            )} />
-                            <div>
-                              <p className={cn(
-                                "text-sm font-medium",
-                                task.status === 'completed' ? "text-gray-500 line-through" : "text-gray-900"
-                              )}>
-                                {task.title_ar || task.title}
-                              </p>
-                              <div className="mt-1 flex flex-wrap items-center gap-2 sm:gap-3">
-                                <span className="text-xs text-gray-400 flex items-center gap-1">
-                                  <Clock className="w-3 h-3" /> {task.scheduled_time || '09:00 ص'}
-                                </span>
-                                <span className="text-xs text-gray-400 flex items-center gap-1">
-                                  <Briefcase className="w-3 h-3" /> {task.customer_name}
-                                </span>
-                              </div>
+                          <div className={cn(
+                            "h-2.5 w-2.5 shrink-0 rounded-full",
+                            task.status === 'completed' ? "bg-gray-300" : "bg-[#11A37F]"
+                          )} />
+                          <div className="min-w-0 flex-1">
+                            <p className={cn(
+                              "text-sm font-medium",
+                              task.status === 'completed' ? "text-gray-400 line-through" : "text-gray-900"
+                            )}>
+                              {task.title_ar || task.title}
+                            </p>
+                            <div className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5">
+                              <span className="flex items-center gap-1 text-[10px] text-gray-400 sm:text-xs">
+                                <Clock className="h-3 w-3" /> {task.scheduled_time || '09:00 ص'}
+                              </span>
+                              <span className="flex items-center gap-1 text-[10px] text-gray-400 sm:text-xs">
+                                <Briefcase className="h-3 w-3" /> {task.customer_name}
+                              </span>
                             </div>
                           </div>
-                          
                           {task.status !== 'completed' && (
                             <Button
                               size="sm"
                               variant="outline"
-                              className="h-8 rounded-lg text-xs hover:border-[#11A37F]/30 hover:bg-[#E9FBF6] hover:text-[#0D876A]"
+                              className="h-8 shrink-0 rounded-lg border-[#E2E8F0] text-xs hover:border-[#11A37F]/30 hover:bg-[#ECFDF5] hover:text-[#059669]"
                               onClick={() => handleCompleteTask(task.id)}
                               disabled={completingTaskId === task.id}
                             >
@@ -2296,9 +2292,10 @@ export const EmployeeWorkspace: React.FC = () => {
                       ))}
                     </div>
                   ) : (
-                    <div className="rounded-xl border border-dashed border-[#DDE5EF] bg-[#F8FAFC] py-10 text-center">
-                      <p className="text-gray-500 text-sm">لا توجد مهام مجدولة لهذا اليوم</p>
-                      <Button variant="link" className="text-teal-600 text-xs mt-2" onClick={() => setShowFollowupDialog(true)}>
+                    <div className="rounded-xl border border-dashed border-[#E2E8F0] bg-[#F8FAFC] py-8 text-center">
+                      <CheckCircle className="mx-auto mb-2 h-8 w-8 text-[#D1FAE5]" />
+                      <p className="text-sm text-gray-400">لا توجد مهام مجدولة لهذا اليوم</p>
+                      <Button variant="link" className="mt-1 text-xs text-[#11A37F]" onClick={() => setShowFollowupDialog(true)}>
                         + إضافة مهمة جديدة
                       </Button>
                     </div>
@@ -2309,253 +2306,242 @@ export const EmployeeWorkspace: React.FC = () => {
             </TabsContent>
 
             {/* View: Monthly Collections */}
-            <TabsContent value="collections" className="space-y-6 mt-0">
+            <TabsContent value="collections" className="space-y-4 mt-0 sm:space-y-5">
               {/* Stats Cards */}
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-                <Card className="rounded-xl border-[#DDE5EF] bg-white shadow-sm">
-                  <CardContent className="p-4">
-                    <p className="text-sm text-gray-500 mb-1">المستهدف هذا الشهر</p>
-                    <h3 className="text-xl font-bold text-gray-900">{formatCurrency(collectionStats.totalDue)}</h3>
+              <div className="grid grid-cols-3 gap-3 sm:gap-4">
+                <Card className="rounded-2xl border-[#E2E8F0] bg-white shadow-sm">
+                  <CardContent className="p-3 sm:p-4">
+                    <p className="text-[10px] font-bold text-[#6A7688] sm:text-xs">المستهدف</p>
+                    <h3 className="mt-1 text-sm font-black text-[#142033] sm:text-xl">{formatCurrency(collectionStats.totalDue)}</h3>
                   </CardContent>
                 </Card>
-                <Card className="rounded-xl border-[#DDE5EF] bg-white shadow-sm">
-                  <CardContent className="p-4">
-                    <p className="text-sm text-gray-500 mb-1">تم تحصيله</p>
-                    <h3 className="text-xl font-bold text-emerald-600">{formatCurrency(collectionStats.totalCollected)}</h3>
-                    <Progress value={collectionStats.collectionRate} className="h-1.5 mt-2 bg-emerald-100" />
+                <Card className="rounded-2xl border-[#A7F3D0] bg-gradient-to-l from-[#ECFDF5] to-white shadow-sm">
+                  <CardContent className="p-3 sm:p-4">
+                    <p className="text-[10px] font-bold text-[#059669] sm:text-xs">تم تحصيله</p>
+                    <h3 className="mt-1 text-sm font-black text-[#059669] sm:text-xl">{formatCurrency(collectionStats.totalCollected)}</h3>
+                    <Progress value={collectionStats.collectionRate} className="mt-2 h-1 bg-[#D1FAE5]" />
                   </CardContent>
                 </Card>
-                <Card className="rounded-xl border-[#DDE5EF] bg-white shadow-sm">
-                  <CardContent className="p-4">
-                    <p className="text-sm text-gray-500 mb-1">المتبقي</p>
-                    <h3 className="text-xl font-bold text-amber-600">{formatCurrency(collectionStats.totalPending)}</h3>
+                <Card className="rounded-2xl border-[#FDE68A] bg-gradient-to-l from-[#FFFBEB] to-white shadow-sm">
+                  <CardContent className="p-3 sm:p-4">
+                    <p className="text-[10px] font-bold text-[#D97706] sm:text-xs">المتبقي</p>
+                    <h3 className="mt-1 text-sm font-black text-[#D97706] sm:text-xl">{formatCurrency(collectionStats.totalPending)}</h3>
                   </CardContent>
                 </Card>
               </div>
 
               {/* Collections List - Grouped by Customer */}
-              <Card className="rounded-xl border-[#DDE5EF] bg-white shadow-sm">
-                <CardHeader className="border-b border-[#EEF2F6] pb-3">
-                  <div className="flex flex-col sm:flex-row justify-between gap-4">
-                    <CardTitle className="flex items-center gap-2 text-lg font-black text-[#142033]">
-                      <DollarSign className="w-5 h-5 text-[#11A37F]" />
+              <Card className="rounded-2xl border-[#E2E8F0] bg-white shadow-sm">
+                <CardHeader className="border-b border-[#F1F5F9] pb-3">
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="flex items-center gap-2 text-base font-black sm:text-lg">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#D1FAE5] text-[#059669]">
+                        <DollarSign className="h-4 w-4" />
+                      </div>
                       قائمة التحصيل الشهري
                     </CardTitle>
-                    <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                    <Badge className="rounded-full bg-[#EEF4FA] text-xs font-bold text-[#1D4F7A] hover:bg-[#EEF4FA]">
                       {groupedCollections.length} عميل
                     </Badge>
                   </div>
                 </CardHeader>
-                <CardContent className="px-3 sm:px-6">
-                  <div className="pr-0 sm:pr-4">
-                    {groupedCollections.length > 0 ? (
-                      <div className="space-y-3">
-                        {groupedCollections.map((group) => {
-                          const isExpanded = expandedCustomers.has(group.customer_id);
-                          
-                          return (
-                            <div 
-                              key={group.customer_id}
-                              className="overflow-hidden rounded-xl border border-[#DDE5EF] bg-white transition-all hover:border-[#11A37F]/45 hover:shadow-sm"
-                            >
-                              {/* Customer Header */}
-                              <div 
-                                className="flex flex-col gap-3 bg-[#F8FAFC] p-3 transition-all hover:bg-[#E9FBF6] sm:flex-row sm:items-center sm:justify-between sm:p-4"
-                              >
-                                <div className="flex w-full min-w-0 flex-1 items-start gap-3 sm:items-center sm:gap-4">
-                                  <Avatar 
-                                    className="h-11 w-11 shrink-0 cursor-pointer border-2 border-emerald-200 shadow-sm transition-all hover:border-emerald-400 sm:h-12 sm:w-12"
-                                    onClick={() => {
-                                      // الانتقال لأول عقد للعميل
-                                      const firstInvoice = group.invoices[0];
-                                      if (firstInvoice?.contract_number) {
-                                        navigate(`/contracts/${firstInvoice.contract_number}`);
-                                      }
-                                    }}
-                                  >
-                                    <AvatarFallback className="bg-gradient-to-br from-emerald-500 to-emerald-600 text-white font-bold text-lg">
-                                      {group.customer_name.charAt(0)}
-                                    </AvatarFallback>
-                                  </Avatar>
-                                  <div className="min-w-0 flex-1">
-                                    <h4 
-                                      className="mb-1 cursor-pointer break-words text-sm font-bold text-gray-900 transition-colors hover:text-emerald-600 hover:underline sm:text-base"
-                                      onClick={() => {
-                                        // الانتقال لأول عقد للعميل
-                                        const firstInvoice = group.invoices[0];
-                                        if (firstInvoice?.contract_number) {
-                                          navigate(`/contracts/${firstInvoice.contract_number}`);
-                                        }
-                                      }}
-                                    >
-                                      {group.customer_name}
-                                    </h4>
-                                    <div className="flex flex-wrap items-center gap-2 text-xs text-gray-600 sm:gap-3">
-                                      <span className="flex items-center gap-1">
-                                        <FileText className="w-3 h-3" />
-                                        {group.invoices.length} فاتورة
-                                      </span>
-                                      <span className="text-gray-300">â€¢</span>
-                                      <span className="flex items-center gap-1 font-bold text-amber-600">
-                                        <DollarSign className="w-3 h-3" />
-                                        {formatCurrency(group.total_amount)} مستحق
-                                      </span>
-                                    </div>
-                                  </div>
-                                </div>
+                <CardContent className="p-3 sm:p-4">
+                  {groupedCollections.length > 0 ? (
+                    <div className="space-y-2.5">
+                      {groupedCollections.map((group) => {
+                        const isExpanded = expandedCustomers.has(group.customer_id);
 
-                                <div className="grid w-full grid-cols-[1fr_auto] items-center gap-2 sm:flex sm:w-auto">
-                                  <Button 
-                                    size="sm" 
-                                    className="h-10 bg-emerald-600 text-white hover:bg-emerald-700 sm:h-9"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      const relatedContract = contracts.find((contract) => contract.customer_id === group.customer_id);
-                                      setSelectedPaymentCustomer({
-                                        customerId: group.customer_id,
-                                        customerName: group.customer_name,
-                                        customerPhone: relatedContract?.customer_phone || group.customer_phone || null,
-                                      });
-                                      setSelectedContractId(relatedContract?.id);
-                                      setShowPaymentDialog(true);
-                                    }}
-                                  >
-                                    <DollarSign className="w-4 h-4 ml-2" />
-                                    تسجيل دفعة
-                                  </Button>
-                                  
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    className="h-9 w-9 p-0 border-gray-300 hover:border-emerald-400 hover:bg-emerald-50"
-                                    onClick={() => toggleCustomerExpanded(group.customer_id)}
-                                  >
-                                    {isExpanded ? (
-                                      <ChevronUp className="w-4 h-4 text-gray-600" />
-                                    ) : (
-                                      <ChevronDown className="w-4 h-4 text-gray-600" />
-                                    )}
-                                  </Button>
+                        return (
+                          <div
+                            key={group.customer_id}
+                            className="overflow-hidden rounded-xl border border-[#E2E8F0] bg-white transition-all hover:border-[#11A37F]/40 hover:shadow-sm"
+                          >
+                            {/* Customer Header */}
+                            <div className="flex items-center gap-3 p-3 sm:p-4">
+                              <Avatar
+                                className="h-10 w-10 shrink-0 cursor-pointer border-2 border-[#D1FAE5] shadow-sm transition-all hover:border-[#11A37F] sm:h-11 sm:w-11"
+                                onClick={() => {
+                                  const firstInvoice = group.invoices[0];
+                                  if (firstInvoice?.contract_number) {
+                                    navigate(`/contracts/${firstInvoice.contract_number}`);
+                                  }
+                                }}
+                              >
+                                <AvatarFallback className="bg-gradient-to-br from-[#11A37F] to-[#0D876A] text-sm font-bold text-white">
+                                  {group.customer_name.charAt(0)}
+                                </AvatarFallback>
+                              </Avatar>
+                              <div className="min-w-0 flex-1">
+                                <h4
+                                  className="cursor-pointer truncate text-sm font-bold text-gray-900 transition-colors hover:text-[#11A37F] sm:text-base"
+                                  onClick={() => {
+                                    const firstInvoice = group.invoices[0];
+                                    if (firstInvoice?.contract_number) {
+                                      navigate(`/contracts/${firstInvoice.contract_number}`);
+                                    }
+                                  }}
+                                >
+                                  {group.customer_name}
+                                </h4>
+                                <div className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[10px] text-gray-500 sm:text-xs">
+                                  <span className="flex items-center gap-1">
+                                    <FileText className="h-3 w-3" />
+                                    {group.invoices.length} فاتورة
+                                  </span>
+                                  <span className="flex items-center gap-1 font-bold text-[#D97706]">
+                                    <DollarSign className="h-3 w-3" />
+                                    {formatCurrency(group.total_amount)}
+                                  </span>
                                 </div>
                               </div>
 
-                              {/* Invoices List (Expandable) */}
-                              {isExpanded && (
-                                <div className="border-t border-gray-200 bg-gray-50/50">
-                                  <div className="p-3 space-y-2">
-                                    {group.invoices.map((invoice) => (
-                                      <div 
-                                        key={invoice.invoice_id}
-                                        className="group/invoice flex cursor-pointer flex-col gap-3 rounded-lg border border-gray-100 bg-white p-3 transition-all hover:border-emerald-200 hover:shadow-sm sm:flex-row sm:items-center sm:justify-between"
-                                        onClick={() => navigate(`/contracts/${invoice.contract_number}`)}
-                                      >
-                                        <div className="flex min-w-0 flex-1 items-start gap-3 sm:items-center">
-                                          <div className="w-8 h-8 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center group-hover/invoice:bg-emerald-100 group-hover/invoice:text-emerald-600 transition-colors">
-                                            <FileText className="w-4 h-4" />
-                                          </div>
-                                          <div className="min-w-0">
-                                            <p className="text-sm font-semibold text-gray-900 group-hover/invoice:text-emerald-600 transition-colors">
-                                              فاتورة #{invoice.invoice_number}
-                                            </p>
-                                            <p className="text-xs text-gray-500 group-hover/invoice:text-emerald-600 transition-colors">
-                                              عقد #{invoice.contract_number}
-                                            </p>
-                                          </div>
-                                        </div>
-                                        
-                                        <div className="flex flex-wrap items-center justify-between gap-2 sm:gap-3">
-                                          <div className="text-right sm:text-left">
-                                            <p className="text-sm font-bold text-gray-900">
-                                              {formatCurrency(invoice.amount - invoice.paid_amount)}
-                                            </p>
-                                            <p className="text-xs text-gray-500">
-                                              استحقاق: {new Date(invoice.due_date).toLocaleDateString('ar-EG', { day: 'numeric', month: 'short', year: 'numeric' })}
-                                            </p>
-                                          </div>
-                                          
-                                          <Badge 
-                                            variant="outline" 
-                                            className={cn(
-                                              "text-xs",
-                                              invoice.status === 'overdue' 
-                                                ? "bg-red-50 text-red-700 border-red-200" 
-                                                : "bg-amber-50 text-amber-700 border-amber-200"
-                                            )}
-                                          >
-                                            {invoice.status === 'overdue' ? 'متأخر' : 'مستحق'}
-                                          </Badge>
-                                        </div>
-                                      </div>
-                                    ))}
-                                  </div>
-                                </div>
-                              )}
+                              <div className="flex shrink-0 items-center gap-1.5">
+                                <Button
+                                  size="sm"
+                                  className="h-9 rounded-lg bg-[#11A37F] px-3 text-xs font-bold text-white hover:bg-[#0D876A] sm:px-4"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    const relatedContract = contracts.find((contract) => contract.customer_id === group.customer_id);
+                                    setSelectedPaymentCustomer({
+                                      customerId: group.customer_id,
+                                      customerName: group.customer_name,
+                                      customerPhone: relatedContract?.customer_phone || group.customer_phone || null,
+                                    });
+                                    setSelectedContractId(relatedContract?.id);
+                                    setShowPaymentDialog(true);
+                                  }}
+                                >
+                                  <DollarSign className="ml-1 h-3.5 w-3.5" />
+                                  تسجيل دفعة
+                                </Button>
+
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="h-9 w-9 rounded-lg p-0 text-gray-400 hover:bg-[#F1F5F9] hover:text-gray-600"
+                                  onClick={() => toggleCustomerExpanded(group.customer_id)}
+                                >
+                                  {isExpanded ? (
+                                    <ChevronUp className="h-4 w-4" />
+                                  ) : (
+                                    <ChevronDown className="h-4 w-4" />
+                                  )}
+                                </Button>
+                              </div>
                             </div>
-                          );
-                        })}
+
+                            {/* Invoices List (Expandable) */}
+                            {isExpanded && (
+                              <div className="border-t border-[#F1F5F9] bg-[#F8FAFC]">
+                                <div className="space-y-2 p-3">
+                                  {group.invoices.map((invoice) => (
+                                    <div
+                                      key={invoice.invoice_id}
+                                      className="group/invoice flex cursor-pointer items-center gap-3 rounded-lg border border-[#E2E8F0] bg-white p-3 transition-all hover:border-[#11A37F]/40 hover:shadow-sm"
+                                      onClick={() => navigate(`/contracts/${invoice.contract_number}`)}
+                                    >
+                                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#FEF3C7] text-[#D97706] transition-colors group-hover/invoice:bg-[#D1FAE5] group-hover/invoice:text-[#059669]">
+                                        <FileText className="h-4 w-4" />
+                                      </div>
+                                      <div className="min-w-0 flex-1">
+                                        <p className="truncate text-sm font-semibold text-gray-900 group-hover/invoice:text-[#11A37F]">
+                                          فاتورة #{invoice.invoice_number}
+                                        </p>
+                                        <p className="text-xs text-gray-400">
+                                          عقد #{invoice.contract_number}
+                                        </p>
+                                      </div>
+                                      <div className="shrink-0 text-left">
+                                        <p className="text-sm font-bold text-gray-900">
+                                          {formatCurrency(invoice.amount - invoice.paid_amount)}
+                                        </p>
+                                        <p className="text-[10px] text-gray-400">
+                                          {new Date(invoice.due_date).toLocaleDateString('ar-EG', { day: 'numeric', month: 'short' })}
+                                        </p>
+                                      </div>
+                                      <Badge
+                                        variant="outline"
+                                        className={cn(
+                                          "shrink-0 text-[10px] sm:text-xs",
+                                          invoice.status === 'overdue'
+                                            ? "border-red-200 bg-red-50 text-red-700"
+                                            : "border-[#FDE68A] bg-[#FFFBEB] text-[#92400E]"
+                                        )}
+                                      >
+                                        {invoice.status === 'overdue' ? 'متأخر' : 'مستحق'}
+                                      </Badge>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div className="py-12 text-center">
+                      <div className="mx-auto mb-3 flex h-16 w-16 items-center justify-center rounded-2xl bg-[#D1FAE5]">
+                        <DollarSign className="h-8 w-8 text-[#059669]" />
                       </div>
-                    ) : (
-                      <div className="text-center py-12">
-                        <DollarSign className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                        <p className="text-gray-500 font-medium">لا توجد مستحقات لهذا الشهر</p>
-                        <p className="text-xs text-gray-400 mt-2">جميع الفواتير مدفوعة</p>
-                      </div>
-                    )}
-                  </div>
+                      <p className="text-sm font-bold text-gray-400">لا توجد مستحقات لهذا الشهر</p>
+                      <p className="mt-1 text-xs text-gray-300">جميع الفواتير مدفوعة</p>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </TabsContent>
 
             {/* View: Contracts */}
             <TabsContent value="contracts" className="mt-0">
-              <Card className="rounded-xl border-[#DDE5EF] bg-white shadow-sm">
-                <CardHeader className="border-b border-[#EEF2F6] pb-3">
-                  <div className="flex flex-col sm:flex-row justify-between gap-4">
-                    <CardTitle className="flex items-center gap-2 text-lg font-black text-[#142033]">
-                      <FileText className="w-5 h-5 text-[#1D4F7A]" />
+              <Card className="rounded-2xl border-[#E2E8F0] bg-white shadow-sm">
+                <CardHeader className="border-b border-[#F1F5F9] pb-3">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <CardTitle className="flex items-center gap-2 text-base font-black sm:text-lg">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#EEF4FA] text-[#1D4F7A]">
+                        <FileText className="h-4 w-4" />
+                      </div>
                       سجل العقود
                     </CardTitle>
-                    <div className="relative w-full sm:w-72">
-                      <Search className="absolute right-3 top-2.5 h-4 w-4 text-gray-400" />
+                    <div className="relative w-full sm:w-64">
+                      <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
                       <Input
                         placeholder="بحث برقم العقد أو الاسم..."
-                        className="h-10 rounded-lg border-[#DDE5EF] bg-[#F8FAFC] pr-9"
+                        className="h-10 rounded-xl border-[#E2E8F0] bg-[#F8FAFC] pr-9 text-sm"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                       />
                     </div>
                   </div>
-                  <div className="grid grid-cols-2 gap-2 pt-1 sm:flex sm:flex-wrap">
+                  <div className="flex gap-1.5 overflow-x-auto pt-2 scrollbar-hide sm:gap-2">
                     {([
-                      { key: 'all', label: 'كل العقود', count: contractWorkSummary.all },
-                      { key: 'collection', label: 'تحتاج تحصيل', count: contractWorkSummary.collection },
-                      { key: 'operational', label: 'مدفوعة وتحت التشغيل', count: contractWorkSummary.operational },
-                      { key: 'needs_completion', label: 'تحتاج استكمال', count: contractWorkSummary.needs_completion },
-                      { key: 'ready_to_close', label: 'جاهزة للإغلاق', count: contractWorkSummary.ready_to_close },
+                      { key: 'all', label: 'الكل', count: contractWorkSummary.all },
+                      { key: 'collection', label: 'تحصيل', count: contractWorkSummary.collection },
+                      { key: 'operational', label: 'تشغيل', count: contractWorkSummary.operational },
+                      { key: 'needs_completion', label: 'استكمال', count: contractWorkSummary.needs_completion },
+                      { key: 'ready_to_close', label: 'إغلاق', count: contractWorkSummary.ready_to_close },
                     ] as Array<{ key: ContractWorkFilter; label: string; count: number }>).map((item) => (
-                      <Button
+                      <button
                         key={item.key}
                         type="button"
-                        variant="outline"
-                        size="sm"
                         onClick={() => setContractWorkFilter(item.key)}
                         className={cn(
-                          "h-9 justify-between gap-2 rounded-lg border-[#DDE5EF] bg-white px-3 text-xs font-bold text-[#40516A] hover:bg-[#F1F5F9]",
-                          contractWorkFilter === item.key && "border-[#142033] bg-[#142033] text-white hover:bg-[#142033] hover:text-white",
+                          "flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-bold transition-all",
+                          contractWorkFilter === item.key
+                            ? "bg-[#142033] text-white shadow-sm"
+                            : "bg-[#F1F5F9] text-[#475569] hover:bg-[#E2E8F0]",
                         )}
                       >
                         <span>{item.label}</span>
-                        <Badge
-                          className={cn(
-                            "h-5 rounded-full px-2 text-[11px]",
-                            contractWorkFilter === item.key
-                              ? "bg-white/15 text-white hover:bg-white/15"
-                              : "bg-[#EEF4FA] text-[#1D4F7A] hover:bg-[#EEF4FA]",
-                          )}
-                        >
+                        <span className={cn(
+                          "rounded-full px-1.5 py-0.5 text-[10px]",
+                          contractWorkFilter === item.key
+                            ? "bg-white/20 text-white"
+                            : "bg-white text-[#1D4F7A]",
+                        )}>
                           {item.count}
-                        </Badge>
-                      </Button>
+                        </span>
+                      </button>
                     ))}
                   </div>
                   {canUnassignContracts && filteredContracts.length > 0 && (
@@ -2601,388 +2587,366 @@ export const EmployeeWorkspace: React.FC = () => {
                     </div>
                   )}
                 </CardHeader>
-                <CardContent className="px-3 sm:px-6">
-                  <div className="pr-0 sm:pr-4">
-                    <div className="space-y-4">
-                      {filteredContractGroupsList.length > 0 ? filteredContractGroupsList.map((customerGroup) => (
-                        <section
-                          key={customerGroup.customerId}
-                          className="overflow-hidden rounded-xl border border-[#DDE5EF] bg-[#F8FAFC]"
-                        >
-                          <header className="flex flex-col gap-3 border-b border-[#E6EDF5] bg-white px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-                            <div className="flex min-w-0 items-center gap-3">
-                              <Avatar className="h-10 w-10 shrink-0 border border-[#DDE5EF] bg-[#F4F8FB]">
-                                <AvatarFallback className="bg-[#EEF5FB] text-base font-black text-[#173A63]">
-                                  {customerGroup.customerName?.[0] || 'ع'}
-                                </AvatarFallback>
-                              </Avatar>
-                              <div className="min-w-0">
-                                <h4 className="truncate text-base font-black text-[#142033]">
-                                  {customerGroup.customerName}
-                                </h4>
-                                <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-semibold text-[#6A7688]">
-                                  <span>{customerGroup.contracts.length} عقد</span>
-                                  {customerGroup.customerPhone && <span dir="ltr">{customerGroup.customerPhone}</span>}
-                                  <span className="text-[#A56000]" dir="ltr">
-                                    {formatCurrency(customerGroup.totalBalance)} مستحق
-                                  </span>
-                                </div>
-                              </div>
-                            </div>
-                            {customerGroup.totalBalance > 0 ? (
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="h-9 gap-2 rounded-md border-[#C8D3E0] bg-white px-4 text-xs font-bold text-[#173A63] hover:bg-[#EEF5FB]"
-                                onClick={() => {
-                                  const firstDueContract = customerGroup.contracts.find((contract) => (contract.balance_due || 0) > 0);
-                                  setSelectedPaymentCustomer({
-                                    customerId: customerGroup.customerId,
-                                    customerName: customerGroup.customerName,
-                                    customerPhone: customerGroup.customerPhone,
-                                  });
-                                  setSelectedContractId(firstDueContract?.id);
-                                  setShowPaymentDialog(true);
-                                }}
-                              >
-                                <DollarSign className="h-4 w-4" />
-                                تسجيل دفعة للعميل
-                              </Button>
-                            ) : (
-                              <Badge className="h-8 rounded-lg border border-[#BFEBDD] bg-[#E9FBF6] px-3 text-xs font-bold text-[#0D876A] hover:bg-[#E9FBF6]">
-                                مدفوع بالكامل
-                              </Badge>
-                            )}
-                          </header>
-
-                          <div className="space-y-3 p-3">
-                            {customerGroup.contracts.map((contract) => {
-                        const statusStyle = getContractStatusStyle(contract.status);
-                        const StatusIcon = statusStyle.icon;
-                        const hasSignedContract = signedContractIds.includes(contract.id);
-                        const workStatus = getContractWorkStatus(contract);
-                        const canCloseCompletedContract = workStatus === 'ready_to_close';
-                        
-                        return (
-                        <div
-                          key={contract.id}
-                          className="group relative overflow-hidden rounded-lg border border-[#DDE5EF] bg-white transition-all duration-200 hover:border-[#A9DCCF] hover:shadow-[0_8px_24px_rgba(20,32,51,0.08)]"
-                        >
-                          <div
-                            className={cn(
-                              "absolute inset-y-0 right-0 w-1",
-                              statusStyle.badge.split(' ')[0].replace('-100', '-500'),
-                            )}
-                          />
-
-                          <div className="p-4 pr-5 sm:p-5 sm:pr-6">
-                            <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                              <div className="flex min-w-0 items-start gap-3">
-                                {canUnassignContracts && (
-                                  <div
-                                    className="pt-3"
-                                    onClick={(event) => event.stopPropagation()}
-                                  >
-                                    <Checkbox
-                                      checked={selectedBulkContractIds.includes(contract.id)}
-                                      onCheckedChange={() => toggleBulkContractSelection(contract.id)}
-                                      aria-label={`تحديد العقد ${contract.contract_number || contract.id}`}
-                                    />
-                                  </div>
-                                )}
-
-                                <Avatar className="h-11 w-11 shrink-0 border border-[#DDE5EF] bg-[#F4F8FB] sm:h-12 sm:w-12">
-                                  <AvatarFallback className="bg-[#E9FBF6] text-base font-black text-[#0D876A]">
-                                    <Car className="h-5 w-5" />
-                                  </AvatarFallback>
-                                </Avatar>
-
-                                <button
-                                  type="button"
-                                  className="min-w-0 text-right"
-                                  onClick={() => navigate(`/contracts/${contract.contract_number || contract.id}`)}
-                                >
-                                  <div className="mb-1.5 flex flex-wrap items-center gap-2">
-                                    <h4 className="break-words text-base font-black text-[#142033] transition-colors group-hover:text-[#1D4F7A]">
-                                      عقد {contract.contract_number || 'بدون رقم'}
-                                    </h4>
-                                    <Badge
-                                      variant="outline"
-                                      className={cn("h-6 gap-1 border px-2 text-[11px] font-bold", statusStyle.badge)}
-                                    >
-                                      <StatusIcon className="h-3 w-3" />
-                                      {statusStyle.label}
-                                    </Badge>
-                                    {hasSignedContract ? (
-                                      <Badge className="h-6 gap-1 border border-[#BFEBDD] bg-[#E9FBF6] px-2 text-[11px] text-[#0D876A] hover:bg-[#E9FBF6]">
-                                        <FileCheck2 className="h-3 w-3" />
-                                        العقد موثق
-                                      </Badge>
-                                    ) : workspaceProfile?.id
-                                      && !isSignedContractStatusLoading
-                                      && !hasSignedContractStatusError ? (
-                                      <Badge
-                                        variant="outline"
-                                        className="h-6 gap-1 border-[#FCA5A5] bg-[#FEF2F2] px-2 text-[11px] text-[#DC2626]"
-                                      >
-                                        <AlertCircle className="h-3 w-3" />
-                                        نسخة العقد ناقصة
-                                      </Badge>
-                                    ) : null}
-                                    {(contract.traffic_violation_count || 0) > 0 ? (
-                                      <Badge
-                                        variant="outline"
-                                        className="h-6 gap-1 border-[#FDBA74] bg-[#FFF7ED] px-2 text-[11px] text-[#EA580C]"
-                                      >
-                                        <AlertCircle className="h-3 w-3" />
-                                        {contract.traffic_violation_count} مخالفات
-                                      </Badge>
-                                    ) : null}
-                                    {workStatus === 'operational' ? (
-                                      <Badge className="h-6 gap-1 border border-[#BFD7EE] bg-[#EEF5FB] px-2 text-[11px] text-[#173A63] hover:bg-[#EEF5FB]">
-                                        <PlayCircle className="h-3 w-3" />
-                                        مدفوع وتحت التشغيل
-                                      </Badge>
-                                    ) : null}
-                                    {workStatus === 'needs_completion' ? (
-                                      <Badge
-                                        variant="outline"
-                                        className="h-6 gap-1 border-[#F4C96B] bg-[#FFF8E7] px-2 text-[11px] text-[#8A5700]"
-                                      >
-                                        <AlertCircle className="h-3 w-3" />
-                                        يحتاج استكمال
-                                      </Badge>
-                                    ) : null}
-                                    {workStatus === 'ready_to_close' ? (
-                                      <Badge className="h-6 gap-1 border border-[#BFEBDD] bg-[#E9FBF6] px-2 text-[11px] text-[#0D876A] hover:bg-[#E9FBF6]">
-                                        <CheckCircle className="h-3 w-3" />
-                                        جاهز للإغلاق
-                                      </Badge>
-                                    ) : null}
-                                  </div>
-
-                                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-[#6A7688]">
-                                    <span className="flex items-center gap-1.5 font-bold text-[#40516A]">
-                                      <FileText className="h-3.5 w-3.5 text-[#8A9AAF]" />
-                                      {contract.contract_number || 'بدون رقم'}
-                                    </span>
-                                    <span className="flex items-center gap-1.5 font-bold text-[#40516A]">
-                                      <Car className="h-3.5 w-3.5 text-[#8A9AAF]" />
-                                      {[
-                                        contract.vehicle_make,
-                                        contract.vehicle_model,
-                                        contract.vehicle_plate ? `لوحة ${contract.vehicle_plate}` : null,
-                                      ].filter(Boolean).join(' - ') || 'مركبة غير محددة'}
-                                    </span>
-                                    {contract.customer_phone && (
-                                      <span className="flex items-center gap-1.5" dir="ltr">
-                                        <Phone className="h-3.5 w-3.5 text-[#8A9AAF]" />
-                                        {contract.customer_phone}
-                                      </span>
-                                    )}
-                                  </div>
-                                </button>
-                              </div>
-
-                              <div className="flex shrink-0 items-end justify-between gap-6 border-t border-[#EEF2F6] pt-3 lg:min-w-52 lg:justify-end lg:border-r lg:border-t-0 lg:pr-6 lg:pt-0">
-                                <div>
-                                  <p className="text-[11px] font-bold text-[#7B8798]">
-                                    {(contract.balance_due || 0) > 0 ? 'الرصيد المستحق' : 'حالة التحصيل'}
-                                  </p>
-                                  <p
-                                    className={cn(
-                                      "mt-1 text-base font-black",
-                                      (contract.balance_due || 0) > 0 ? "text-[#A56000]" : "text-[#0D876A]",
-                                    )}
-                                    dir={(contract.balance_due || 0) > 0 ? 'ltr' : undefined}
-                                  >
-                                    {(contract.balance_due || 0) > 0
-                                      ? formatCurrency(contract.balance_due || 0)
-                                      : 'مدفوع بالكامل'}
-                                  </p>
-                                </div>
-                              </div>
+                <CardContent className="p-3 sm:p-4">
+                  <div className="space-y-3">
+                    {filteredContractGroupsList.length > 0 ? filteredContractGroupsList.map((customerGroup) => (
+                      <section
+                        key={customerGroup.customerId}
+                        className="overflow-hidden rounded-xl border border-[#E2E8F0] bg-[#F8FAFC]"
+                      >
+                        <header className="flex items-center gap-3 border-b border-[#E2E8F0] bg-white px-3 py-2.5 sm:px-4 sm:py-3">
+                          <Avatar className="h-9 w-9 shrink-0 border border-[#E2E8F0] bg-[#F4F8FB] sm:h-10 sm:w-10">
+                            <AvatarFallback className="bg-[#EEF5FB] text-sm font-black text-[#173A63]">
+                              {customerGroup.customerName?.[0] || 'ع'}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="min-w-0 flex-1">
+                            <h4 className="truncate text-sm font-black text-[#142033] sm:text-base">
+                              {customerGroup.customerName}
+                            </h4>
+                            <div className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[10px] font-semibold text-[#6A7688] sm:text-xs">
+                              <span>{customerGroup.contracts.length} عقد</span>
+                              {customerGroup.customerPhone && <span dir="ltr">{customerGroup.customerPhone}</span>}
+                              <span className="text-[#D97706]" dir="ltr">
+                                {formatCurrency(customerGroup.totalBalance)}
+                              </span>
                             </div>
                           </div>
+                          {customerGroup.totalBalance > 0 ? (
+                            <Button
+                              size="sm"
+                              className="h-8 shrink-0 rounded-lg bg-[#11A37F] px-3 text-xs font-bold text-white hover:bg-[#0D876A] sm:px-4"
+                              onClick={() => {
+                                const firstDueContract = customerGroup.contracts.find((contract) => (contract.balance_due || 0) > 0);
+                                setSelectedPaymentCustomer({
+                                  customerId: customerGroup.customerId,
+                                  customerName: customerGroup.customerName,
+                                  customerPhone: customerGroup.customerPhone,
+                                });
+                                setSelectedContractId(firstDueContract?.id);
+                                setShowPaymentDialog(true);
+                              }}
+                            >
+                              <DollarSign className="ml-1 h-3.5 w-3.5" />
+                              دفعة
+                            </Button>
+                          ) : (
+                            <Badge className="h-7 shrink-0 rounded-lg border border-[#A7F3D0] bg-[#ECFDF5] px-2.5 text-[10px] font-bold text-[#059669] hover:bg-[#ECFDF5] sm:text-xs">
+                              مدفوع بالكامل
+                            </Badge>
+                          )}
+                        </header>
 
-                          <div className="flex flex-col gap-2 border-t border-[#EEF2F6] bg-[#F8FAFC] px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-5">
-                            <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center">
-                              {contract.status === 'active' && (
-                                <Button
-                                  size="sm"
-                                  className="h-9 gap-2 rounded-md bg-[#173A63] px-4 text-xs font-bold text-white hover:bg-[#102B4C]"
-                                  onClick={() => {
-                                    setSelectedContractId(contract.id);
-                                    setShowNoteDialog(true);
-                                  }}
-                                >
-                                  <FileText className="h-4 w-4" />
-                                  إضافة ملاحظة
-                                </Button>
-                              )}
+                        <div className="space-y-2.5 p-2.5 sm:p-3">
+                          {customerGroup.contracts.map((contract) => {
+                            const statusStyle = getContractStatusStyle(contract.status);
+                            const StatusIcon = statusStyle.icon;
+                            const hasSignedContract = signedContractIds.includes(contract.id);
+                            const workStatus = getContractWorkStatus(contract);
+                            const canCloseCompletedContract = workStatus === 'ready_to_close';
 
-                              <Button
-                                size="sm"
-                                variant={hasSignedContract ? 'outline' : 'default'}
-                                className={cn(
-                                  'h-9 gap-2 rounded-md px-4 text-xs font-bold',
-                                  hasSignedContract
-                                    ? 'border-[#C8D3E0] bg-white text-[#173A63] hover:bg-[#EEF5FB]'
-                                    : 'bg-[#11A37F] text-white hover:bg-[#0D876A]',
-                                )}
-                                onClick={() => setSignedScanContract({
-                                  id: contract.id,
-                                  contractNumber: contract.contract_number || contract.id,
-                                })}
+                            return (
+                              <div
+                                key={contract.id}
+                                className="group relative overflow-hidden rounded-xl border border-[#E2E8F0] bg-white transition-all hover:border-[#11A37F]/40 hover:shadow-md"
                               >
-                                <ScanLine className="h-4 w-4" />
-                                {hasSignedContract ? 'إضافة نسخة' : 'تصوير العقد'}
-                              </Button>
+                                <div className={cn(
+                                  "absolute inset-y-0 right-0 w-1",
+                                  statusStyle.badge.split(' ')[0].replace('-100', '-500'),
+                                )} />
 
-                              {contract.status === 'active' && (contract.balance_due || 0) > 0 && (
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  className="h-9 gap-2 rounded-md border-[#BFEBDD] bg-white px-4 text-xs font-bold text-[#0D876A] hover:bg-[#E9FBF6]"
-                                  onClick={() => {
-                                    setSelectedPaymentCustomer({
-                                      customerId: contract.customer_id,
-                                      customerName: contract.customer_name || 'غير محدد',
-                                      customerPhone: contract.customer_phone || null,
-                                    });
-                                    setSelectedContractId(contract.id);
-                                    setShowPaymentDialog(true);
-                                  }}
-                                >
-                                  <DollarSign className="h-4 w-4" />
-                                  تسجيل دفعة
-                                </Button>
-                              )}
+                                {/* Contract Info */}
+                                <div className="p-3 pr-4 sm:p-4 sm:pr-5">
+                                  <div className="flex items-start gap-3">
+                                    {canUnassignContracts && (
+                                      <div
+                                        className="pt-1"
+                                        onClick={(event) => event.stopPropagation()}
+                                      >
+                                        <Checkbox
+                                          checked={selectedBulkContractIds.includes(contract.id)}
+                                          onCheckedChange={() => toggleBulkContractSelection(contract.id)}
+                                          aria-label={`تحديد العقد ${contract.contract_number || contract.id}`}
+                                        />
+                                      </div>
+                                    )}
 
-                              {canCloseCompletedContract && (
-                                <Button
-                                  size="sm"
-                                  className="h-9 gap-2 rounded-md bg-[#11A37F] px-4 text-xs font-bold text-white hover:bg-[#0D876A]"
-                                  disabled={closeCompletedContractMutation.isPending}
-                                  onClick={() => closeCompletedContractMutation.mutate(contract.id)}
-                                >
-                                  {closeCompletedContractMutation.isPending ? (
-                                    <Loader2 className="h-4 w-4 animate-spin" />
-                                  ) : (
-                                    <CheckCircle className="h-4 w-4" />
-                                  )}
-                                  إغلاق العقد المكتمل
-                                </Button>
-                              )}
+                                    <div className="min-w-0 flex-1 cursor-pointer" onClick={() => navigate(`/contracts/${contract.contract_number || contract.id}`)}>
+                                      {/* Title & Badges */}
+                                      <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                                        <h4 className="text-sm font-black text-[#142033] transition-colors group-hover:text-[#11A37F] sm:text-base">
+                                          عقد {contract.contract_number || 'بدون رقم'}
+                                        </h4>
+                                        <Badge
+                                          variant="outline"
+                                          className={cn("h-5 gap-1 border px-1.5 text-[10px] font-bold sm:h-6 sm:px-2 sm:text-[11px]", statusStyle.badge)}
+                                        >
+                                          <StatusIcon className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+                                          {statusStyle.label}
+                                        </Badge>
+                                        {hasSignedContract ? (
+                                          <Badge className="h-5 gap-1 border border-[#A7F3D0] bg-[#ECFDF5] px-1.5 text-[10px] text-[#059669] hover:bg-[#ECFDF5] sm:h-6 sm:px-2 sm:text-[11px]">
+                                            <FileCheck2 className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+                                            موثق
+                                          </Badge>
+                                        ) : workspaceProfile?.id
+                                          && !isSignedContractStatusLoading
+                                          && !hasSignedContractStatusError ? (
+                                          <Badge
+                                            variant="outline"
+                                            className="h-5 gap-1 border-[#FCA5A5] bg-[#FEF2F2] px-1.5 text-[10px] text-[#DC2626] sm:h-6 sm:px-2 sm:text-[11px]"
+                                          >
+                                            <AlertCircle className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+                                            نسخة ناقصة
+                                          </Badge>
+                                        ) : null}
+                                        {(contract.traffic_violation_count || 0) > 0 ? (
+                                          <Badge
+                                            variant="outline"
+                                            className="h-5 gap-1 border-[#FDBA74] bg-[#FFF7ED] px-1.5 text-[10px] text-[#EA580C] sm:h-6 sm:px-2 sm:text-[11px]"
+                                          >
+                                            <AlertCircle className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+                                            {contract.traffic_violation_count} مخالفات
+                                          </Badge>
+                                        ) : null}
+                                        {workStatus === 'operational' ? (
+                                          <Badge className="h-5 gap-1 border border-[#BFDBFE] bg-[#EFF6FF] px-1.5 text-[10px] text-[#1D4ED8] hover:bg-[#EFF6FF] sm:h-6 sm:px-2 sm:text-[11px]">
+                                            <PlayCircle className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+                                            تشغيل
+                                          </Badge>
+                                        ) : null}
+                                        {workStatus === 'needs_completion' ? (
+                                          <Badge
+                                            variant="outline"
+                                            className="h-5 gap-1 border-[#FDE68A] bg-[#FFFBEB] px-1.5 text-[10px] text-[#92400E] sm:h-6 sm:px-2 sm:text-[11px]"
+                                          >
+                                            <AlertCircle className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+                                            استكمال
+                                          </Badge>
+                                        ) : null}
+                                        {workStatus === 'ready_to_close' ? (
+                                          <Badge className="h-5 gap-1 border border-[#A7F3D0] bg-[#ECFDF5] px-1.5 text-[10px] text-[#059669] hover:bg-[#ECFDF5] sm:h-6 sm:px-2 sm:text-[11px]">
+                                            <CheckCircle className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+                                            إغلاق
+                                          </Badge>
+                                        ) : null}
+                                      </div>
 
-                              {contract.status === 'active' && (contract.balance_due || 0) > 0 && (
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  className="h-9 gap-2 rounded-md border-[#C8D3E0] bg-white px-4 text-xs font-bold text-[#173A63] hover:bg-[#EEF5FB]"
-                                  onClick={() => {
-                                    setSelectedContractId(contract.id);
-                                    setShowConvertToLegalDialog(true);
-                                  }}
-                                >
-                                  <Scale className="h-4 w-4" />
-                                  تحويل للقانونية
-                                </Button>
-                              )}
+                                      {/* Contract Details */}
+                                      <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[10px] text-[#6A7688] sm:text-xs">
+                                        <span className="flex items-center gap-1 font-bold text-[#40516A]">
+                                          <Car className="h-3 w-3 text-[#8A9AAF]" />
+                                          {[
+                                            contract.vehicle_make,
+                                            contract.vehicle_model,
+                                            contract.vehicle_plate ? `${contract.vehicle_plate}` : null,
+                                          ].filter(Boolean).join(' ') || 'مركبة غير محددة'}
+                                        </span>
+                                        {contract.customer_phone && (
+                                          <span className="flex items-center gap-1" dir="ltr">
+                                            <Phone className="h-3 w-3 text-[#8A9AAF]" />
+                                            {contract.customer_phone}
+                                          </span>
+                                        )}
+                                      </div>
+                                    </div>
 
-                            </div>
+                                    {/* Balance */}
+                                    <div className="shrink-0 text-left">
+                                      <p className="text-[10px] font-bold text-[#7B8798]">
+                                        {(contract.balance_due || 0) > 0 ? 'المستحق' : 'الحالة'}
+                                      </p>
+                                      <p
+                                        className={cn(
+                                          "mt-0.5 text-sm font-black sm:text-base",
+                                          (contract.balance_due || 0) > 0 ? "text-[#D97706]" : "text-[#059669]",
+                                        )}
+                                        dir={(contract.balance_due || 0) > 0 ? 'ltr' : undefined}
+                                      >
+                                        {(contract.balance_due || 0) > 0
+                                          ? formatCurrency(contract.balance_due || 0)
+                                          : 'مدفوع'}
+                                      </p>
+                                    </div>
+                                  </div>
+                                </div>
 
-                            <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center">
-                              {contract.customer_phone && (
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  className="h-9 gap-2 rounded-md border-[#C8D3E0] bg-white px-4 text-xs font-bold text-[#173A63] hover:bg-[#EEF5FB]"
-                                  onClick={() => { window.location.href = `tel:${contract.customer_phone}`; }}
-                                >
-                                  <Phone className="h-4 w-4" />
-                                  اتصال بالعميل
-                                </Button>
-                              )}
-
-                              {contract.status === 'active' && (
-                                <>
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    className="h-9 gap-2 rounded-md border-[#DDE5EF] bg-white px-4 text-xs font-bold text-[#40516A] hover:bg-[#F1F5F9]"
-                                    onClick={() => {
-                                      setSelectedContractId(contract.id);
-                                      setShowFollowupDialog(true);
-                                    }}
-                                  >
-                                    <Calendar className="h-4 w-4" />
-                                    جدولة متابعة
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    className="h-9 gap-2 rounded-md border-red-200 bg-white px-4 text-xs font-bold text-red-700 hover:bg-red-50"
-                                    onClick={() => {
-                                      setSelectedContractId(contract.id);
-                                      setContractCancellationReason('');
-                                      setShowCancelContractDialog(true);
-                                    }}
-                                  >
-                                    <XCircle className="h-4 w-4" />
-                                    إلغاء العقد
-                                  </Button>
-                                  {(contract.traffic_violation_count || 0) > 0 && (
+                                {/* Action Buttons */}
+                                <div className="flex flex-wrap gap-1.5 border-t border-[#F1F5F9] bg-[#F8FAFC] px-3 py-2.5 sm:gap-2 sm:px-4">
+                                  {contract.status === 'active' && (
                                     <Button
                                       size="sm"
                                       variant="outline"
-                                      className="h-9 gap-2 rounded-md border-[#F4C96B] bg-white px-4 text-xs font-bold text-[#8A5700] hover:bg-[#FFF8E7]"
-                                      disabled={createContractDocument.isPending}
+                                      className="h-8 gap-1 rounded-lg border-[#E2E8F0] bg-white px-2.5 text-[10px] font-bold text-[#173A63] hover:bg-[#EEF5FB] sm:h-9 sm:px-3 sm:text-xs"
                                       onClick={() => {
-                                        setViolationProofContract({
-                                          id: contract.id,
-                                          contractNumber: contract.contract_number || contract.id,
-                                        });
-                                        violationProofInputRef.current?.click();
+                                        setSelectedContractId(contract.id);
+                                        setShowNoteDialog(true);
                                       }}
                                     >
-                                      {createContractDocument.isPending && violationProofContract?.id === contract.id ? (
-                                        <Loader2 className="h-4 w-4 animate-spin" />
-                                      ) : (
-                                        <Upload className="h-4 w-4" />
-                                      )}
-                                      رفع ملف المخالفات
+                                      <FileText className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                                      ملاحظة
                                     </Button>
                                   )}
-                                </>
-                              )}
 
-                              {canUnassignContracts && (
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  className="h-9 gap-2 rounded-md border-red-200 bg-white px-4 text-xs font-bold text-red-700 hover:bg-red-50"
-                                  onClick={() => {
-                                    setSelectedContractId(contract.id);
-                                    setShowUnassignDialog(true);
-                                  }}
-                                >
-                                  <XCircle className="h-4 w-4" />
-                                  إلغاء التعيين
-                                </Button>
-                              )}
-                            </div>
-                          </div>
+                                  <Button
+                                    size="sm"
+                                    variant={hasSignedContract ? 'outline' : 'default'}
+                                    className={cn(
+                                      'h-8 gap-1 rounded-lg px-2.5 text-[10px] font-bold sm:h-9 sm:px-3 sm:text-xs',
+                                      hasSignedContract
+                                        ? 'border-[#E2E8F0] bg-white text-[#173A63] hover:bg-[#EEF5FB]'
+                                        : 'bg-[#11A37F] text-white hover:bg-[#0D876A]',
+                                    )}
+                                    onClick={() => setSignedScanContract({
+                                      id: contract.id,
+                                      contractNumber: contract.contract_number || contract.id,
+                                    })}
+                                  >
+                                    <ScanLine className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                                    {hasSignedContract ? 'نسخة' : 'تصوير'}
+                                  </Button>
+
+                                  {contract.status === 'active' && (contract.balance_due || 0) > 0 && (
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      className="h-8 gap-1 rounded-lg border-[#A7F3D0] bg-white px-2.5 text-[10px] font-bold text-[#059669] hover:bg-[#ECFDF5] sm:h-9 sm:px-3 sm:text-xs"
+                                      onClick={() => {
+                                        setSelectedPaymentCustomer({
+                                          customerId: contract.customer_id,
+                                          customerName: contract.customer_name || 'غير محدد',
+                                          customerPhone: contract.customer_phone || null,
+                                        });
+                                        setSelectedContractId(contract.id);
+                                        setShowPaymentDialog(true);
+                                      }}
+                                    >
+                                      <DollarSign className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                                      دفعة
+                                    </Button>
+                                  )}
+
+                                  {canCloseCompletedContract && (
+                                    <Button
+                                      size="sm"
+                                      className="h-8 gap-1 rounded-lg bg-[#11A37F] px-2.5 text-[10px] font-bold text-white hover:bg-[#0D876A] sm:h-9 sm:px-3 sm:text-xs"
+                                      disabled={closeCompletedContractMutation.isPending}
+                                      onClick={() => closeCompletedContractMutation.mutate(contract.id)}
+                                    >
+                                      {closeCompletedContractMutation.isPending ? (
+                                        <Loader2 className="h-3 w-3 animate-spin sm:h-3.5 sm:w-3.5" />
+                                      ) : (
+                                        <CheckCircle className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                                      )}
+                                      إغلاق
+                                    </Button>
+                                  )}
+
+                                  {contract.status === 'active' && (contract.balance_due || 0) > 0 && (
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      className="h-8 gap-1 rounded-lg border-[#E2E8F0] bg-white px-2.5 text-[10px] font-bold text-[#173A63] hover:bg-[#EEF5FB] sm:h-9 sm:px-3 sm:text-xs"
+                                      onClick={() => {
+                                        setSelectedContractId(contract.id);
+                                        setShowConvertToLegalDialog(true);
+                                      }}
+                                    >
+                                      <Scale className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                                      قانونية
+                                    </Button>
+                                  )}
+
+                                  {contract.customer_phone && (
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      className="h-8 gap-1 rounded-lg border-[#E2E8F0] bg-white px-2.5 text-[10px] font-bold text-[#173A63] hover:bg-[#EEF5FB] sm:h-9 sm:px-3 sm:text-xs"
+                                      onClick={() => { window.location.href = `tel:${contract.customer_phone}`; }}
+                                    >
+                                      <Phone className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                                      اتصال
+                                    </Button>
+                                  )}
+
+                                  {contract.status === 'active' && (
+                                    <>
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        className="h-8 gap-1 rounded-lg border-[#E2E8F0] bg-white px-2.5 text-[10px] font-bold text-[#40516A] hover:bg-[#F1F5F9] sm:h-9 sm:px-3 sm:text-xs"
+                                        onClick={() => {
+                                          setSelectedContractId(contract.id);
+                                          setShowFollowupDialog(true);
+                                        }}
+                                      >
+                                        <Calendar className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                                        متابعة
+                                      </Button>
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        className="h-8 gap-1 rounded-lg border-red-200 bg-white px-2.5 text-[10px] font-bold text-red-600 hover:bg-red-50 sm:h-9 sm:px-3 sm:text-xs"
+                                        onClick={() => {
+                                          setSelectedContractId(contract.id);
+                                          setContractCancellationReason('');
+                                          setShowCancelContractDialog(true);
+                                        }}
+                                      >
+                                        <XCircle className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                                        إلغاء
+                                      </Button>
+                                      {(contract.traffic_violation_count || 0) > 0 && (
+                                        <Button
+                                          size="sm"
+                                          variant="outline"
+                                          className="h-8 gap-1 rounded-lg border-[#FDE68A] bg-white px-2.5 text-[10px] font-bold text-[#92400E] hover:bg-[#FFFBEB] sm:h-9 sm:px-3 sm:text-xs"
+                                          disabled={createContractDocument.isPending}
+                                          onClick={() => {
+                                            setViolationProofContract({
+                                              id: contract.id,
+                                              contractNumber: contract.contract_number || contract.id,
+                                            });
+                                            violationProofInputRef.current?.click();
+                                          }}
+                                        >
+                                          {createContractDocument.isPending && violationProofContract?.id === contract.id ? (
+                                            <Loader2 className="h-3 w-3 animate-spin sm:h-3.5 sm:w-3.5" />
+                                          ) : (
+                                            <Upload className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                                          )}
+                                          مخالفات
+                                        </Button>
+                                      )}
+                                    </>
+                                  )}
+
+                                  {canUnassignContracts && (
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      className="h-8 gap-1 rounded-lg border-red-200 bg-white px-2.5 text-[10px] font-bold text-red-600 hover:bg-red-50 sm:h-9 sm:px-3 sm:text-xs"
+                                      onClick={() => {
+                                        setSelectedContractId(contract.id);
+                                        setShowUnassignDialog(true);
+                                      }}
+                                    >
+                                      <XCircle className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                                      إلغاء تعيين
+                                    </Button>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })}
                         </div>
-                      )})}
-                          </div>
-                        </section>
-                      )) : (
-                        <div className="text-center py-12">
-                           <p className="text-gray-500">لا توجد عقود مطابقة للبحث</p>
-                        </div>
-                      )}
-                    </div>
+                      </section>
+                    )) : (
+                      <div className="py-12 text-center">
+                        <FileText className="mx-auto mb-3 h-12 w-12 text-[#E2E8F0]" />
+                        <p className="text-sm text-gray-400">لا توجد عقود مطابقة للبحث</p>
+                      </div>
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -2990,114 +2954,202 @@ export const EmployeeWorkspace: React.FC = () => {
 
             {/* View: Tasks */}
             <TabsContent value="tasks" className="mt-0">
-               <Card className="rounded-xl border-[#DDE5EF] bg-white shadow-sm">
-                 <CardHeader className="border-b border-[#EEF2F6]">
-                    <CardTitle className="text-lg font-black text-[#142033]">جميع المهام</CardTitle>
-                    <CardDescription>عرض وإدارة جميع المهام المجدولة والسابقة</CardDescription>
-                 </CardHeader>
-                 <CardContent className="px-3 sm:px-6">
+              <Card className="rounded-2xl border-[#E2E8F0] bg-white shadow-sm">
+                <CardHeader className="border-b border-[#F1F5F9] pb-3">
+                  <div className="flex items-center justify-between">
                     <div>
-                      <div className="space-y-2">
-                        {tasks.map((task) => (
-                           <div key={task.id} className="rounded-xl border border-[#EEF2F6] p-4 transition-colors hover:bg-[#F8FAFC]">
-                              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                                 <div className="min-w-0">
-                                    <h4 className="font-medium text-gray-900">{task.title_ar || task.title}</h4>
-                                    <div className="mt-2 flex flex-wrap gap-2 text-sm text-gray-500 sm:gap-4">
-                                       <span className="flex items-center gap-1"><Calendar className="w-4 h-4" /> {task.scheduled_date}</span>
-                                       <span className="flex items-center gap-1"><Clock className="w-4 h-4" /> {task.scheduled_time}</span>
-                                    </div>
-                                 </div>
-                                 <div className="flex flex-wrap items-center gap-2 sm:justify-end">
-                                   <Badge variant={task.status === 'completed' ? 'secondary' : 'outline'}>
-                                      {task.status === 'completed' ? 'مكتمل' : 'قيد الانتظار'}
-                                   </Badge>
-                                   {task.status !== 'completed' && (
-                                     <Button
-                                       size="sm"
-                                       variant="outline"
-                                       className="h-8 rounded-lg text-xs hover:border-[#11A37F]/30 hover:bg-[#E9FBF6] hover:text-[#0D876A]"
-                                       onClick={() => handleCompleteTask(task.id)}
-                                       disabled={completingTaskId === task.id}
-                                     >
-                                       {completingTaskId === task.id ? (
-                                         <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                                       ) : (
-                                         'إنجاز'
-                                       )}
-                                     </Button>
-                                   )}
-                                 </div>
-                              </div>
-                           </div>
-                        ))}
-                      </div>
+                      <CardTitle className="flex items-center gap-2 text-base font-black sm:text-lg">
+                        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#EEF4FA] text-[#1D4F7A]">
+                          <CheckCircle className="h-4 w-4" />
+                        </div>
+                        جميع المهام
+                      </CardTitle>
+                      <CardDescription className="mt-1 text-xs">عرض وإدارة جميع المهام المجدولة والسابقة</CardDescription>
                     </div>
-                 </CardContent>
-               </Card>
+                    <Badge className="rounded-full bg-[#F1F5F9] text-xs font-bold text-[#475569] hover:bg-[#F1F5F9]">
+                      {tasks.length} مهمة
+                    </Badge>
+                  </div>
+                </CardHeader>
+                <CardContent className="p-3 sm:p-4">
+                  <div className="space-y-2">
+                    {tasks.map((task) => (
+                      <div
+                        key={task.id}
+                        className={cn(
+                          "flex items-center gap-3 rounded-xl border p-3 transition-all",
+                          task.status === 'completed'
+                            ? "border-[#F1F5F9] bg-[#F8FAFC] opacity-60"
+                            : "border-[#E2E8F0] bg-white hover:border-[#11A37F]/40 hover:shadow-sm"
+                        )}
+                      >
+                        <div className={cn(
+                          "h-2.5 w-2.5 shrink-0 rounded-full",
+                          task.status === 'completed' ? "bg-gray-300" : "bg-[#11A37F]"
+                        )} />
+                        <div className="min-w-0 flex-1">
+                          <p className={cn(
+                            "text-sm font-medium",
+                            task.status === 'completed' ? "text-gray-400 line-through" : "text-gray-900"
+                          )}>
+                            {task.title_ar || task.title}
+                          </p>
+                          <div className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[10px] text-gray-400 sm:text-xs">
+                            <span className="flex items-center gap-1"><Calendar className="h-3 w-3" /> {task.scheduled_date}</span>
+                            <span className="flex items-center gap-1"><Clock className="h-3 w-3" /> {task.scheduled_time}</span>
+                          </div>
+                        </div>
+                        <div className="flex shrink-0 items-center gap-1.5">
+                          <Badge
+                            variant={task.status === 'completed' ? 'secondary' : 'outline'}
+                            className={cn(
+                              "text-[10px] sm:text-xs",
+                              task.status === 'completed'
+                                ? "bg-[#D1FAE5] text-[#059669] hover:bg-[#D1FAE5]"
+                                : "border-[#FDE68A] bg-[#FFFBEB] text-[#92400E]"
+                            )}
+                          >
+                            {task.status === 'completed' ? 'مكتمل' : 'قيد الانتظار'}
+                          </Badge>
+                          {task.status !== 'completed' && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-8 rounded-lg border-[#E2E8F0] text-[10px] hover:border-[#11A37F]/30 hover:bg-[#ECFDF5] hover:text-[#059669] sm:text-xs"
+                              onClick={() => handleCompleteTask(task.id)}
+                              disabled={completingTaskId === task.id}
+                            >
+                              {completingTaskId === task.id ? (
+                                <Loader2 className="h-3 w-3 animate-spin sm:h-3.5 sm:w-3.5" />
+                              ) : (
+                                'إنجاز'
+                              )}
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
             </TabsContent>
           </Tabs>
 
         </div>
 
         {/* --- Sidebar (Right) --- */}
-        <div className="col-span-12 space-y-5 lg:col-span-4">
-          
+        <div className="col-span-12 space-y-4 sm:space-y-5 lg:col-span-4">
+
           {/* Verification Tasks */}
           <VerificationTasksList limit={5} />
 
           {/* Performance Detailed */}
-          <Card className="rounded-xl border-[#DDE5EF] bg-white shadow-sm">
-            <CardHeader className="border-b border-[#EEF2F6] pb-3">
-              <CardTitle className="text-base font-black text-[#142033]">تحليل الأداء</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-5 pt-2">
-              
-              <div className="space-y-1.5">
-                <div className="flex justify-between text-sm">
-                  <span className="font-bold text-[#6A7688]">نسبة التحصيل</span>
-                  <span className="font-black text-[#142033]">{performance ? Math.round(performance.collection_rate) : 0}%</span>
+          <Card className="rounded-2xl border-[#E2E8F0] bg-white shadow-sm">
+            <CardHeader className="border-b border-[#F1F5F9] pb-3">
+              <CardTitle className="flex items-center gap-2 text-base font-black">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#EEF4FA] text-[#1D4F7A]">
+                  <TrendingUp className="h-4 w-4" />
                 </div>
-                <Progress value={performance?.collection_rate || 0} className="h-2" />
+                تحليل الأداء
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4 p-4">
+              {/* Performance Score Circle */}
+              <div className="flex items-center justify-center py-2">
+                <div className="relative flex h-28 w-28 items-center justify-center">
+                  <svg className="h-28 w-28 -rotate-90" viewBox="0 0 100 100">
+                    <circle cx="50" cy="50" r="42" fill="none" stroke="#E2E8F0" strokeWidth="8" />
+                    <circle
+                      cx="50" cy="50" r="42" fill="none"
+                      stroke={performance?.performance_score >= 80 ? '#059669' : performance?.performance_score >= 60 ? '#D97706' : '#DC2626'}
+                      strokeWidth="8"
+                      strokeLinecap="round"
+                      strokeDasharray={`${(performance?.performance_score || 0) * 2.64} 264`}
+                    />
+                  </svg>
+                  <div className="absolute inset-0 flex flex-col items-center justify-center">
+                    <span className="text-2xl font-black text-[#142033]">{performance ? Math.round(performance.performance_score) : 0}</span>
+                    <span className="text-[10px] font-bold text-[#6A7688]">نقطة</span>
+                  </div>
+                </div>
               </div>
 
-              <div className="space-y-1.5">
-                <div className="flex justify-between text-sm">
-                  <span className="font-bold text-[#6A7688]">إنجاز المهام</span>
-                  <span className="font-black text-[#142033]">{performance ? Math.round(performance.followup_completion_rate) : 0}%</span>
+              <div className="space-y-3">
+                <div className="space-y-1.5">
+                  <div className="flex justify-between text-xs">
+                    <span className="font-bold text-[#6A7688]">نسبة التحصيل</span>
+                    <span className="font-black text-[#142033]">{performance ? Math.round(performance.collection_rate) : 0}%</span>
+                  </div>
+                  <div className="h-2 w-full overflow-hidden rounded-full bg-[#F1F5F9]">
+                    <div
+                      className="h-full rounded-full bg-gradient-to-l from-[#11A37F] to-[#059669] transition-all"
+                      style={{ width: `${performance?.collection_rate || 0}%` }}
+                    />
+                  </div>
                 </div>
-                <Progress value={performance?.followup_completion_rate || 0} className="h-2" />
+
+                <div className="space-y-1.5">
+                  <div className="flex justify-between text-xs">
+                    <span className="font-bold text-[#6A7688]">إنجاز المهام</span>
+                    <span className="font-black text-[#142033]">{performance ? Math.round(performance.followup_completion_rate) : 0}%</span>
+                  </div>
+                  <div className="h-2 w-full overflow-hidden rounded-full bg-[#F1F5F9]">
+                    <div
+                      className="h-full rounded-full bg-gradient-to-l from-[#3B82F6] to-[#1D4ED8] transition-all"
+                      style={{ width: `${performance?.followup_completion_rate || 0}%` }}
+                    />
+                  </div>
+                </div>
               </div>
-              
-              <Separator />
-              
-              <div className="pt-2">
-                <p className="rounded-lg bg-[#F8FAFC] p-3 text-xs leading-relaxed text-[#6A7688]">
+
+              <div className="rounded-xl bg-[#F8FAFC] p-3">
+                <p className="text-xs leading-relaxed text-[#6A7688]">
                   أداؤك هذا الشهر {performanceGrade?.label_ar === 'ممتاز' ? 'رائع!' : 'جيد.'} استمر في متابعة العملاء المتأخرين لتحسين نسبة التحصيل لديك.
                 </p>
               </div>
-
             </CardContent>
           </Card>
 
-          {/* Activity Log (Simplified) */}
-          <Card className="rounded-xl border-[#DDE5EF] bg-white shadow-sm">
-            <CardHeader className="border-b border-[#EEF2F6] pb-3">
-              <CardTitle className="text-base font-black text-[#142033]">النشاط الأخير</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="relative mr-2 space-y-6 border-r border-[#DDE5EF]">
-                {[1, 2, 3].map((_, i) => (
-                  <div key={i} className="relative pr-6">
-                    <div className="absolute -right-[5px] top-1 h-2.5 w-2.5 rounded-full bg-[#11A37F] ring-4 ring-white" />
-                    <p className="text-sm font-bold text-[#142033]">تم تحديث حالة العقد #123{i}</p>
-                    <p className="mt-1 text-xs text-[#6A7688]">منذ {i + 2} ساعات</p>
-                  </div>
-                ))}
-              </div>
+          {/* Export Report */}
+          <Card className="rounded-2xl border-[#E2E8F0] bg-white shadow-sm">
+            <CardContent className="p-4">
+              <ExportButton
+                onExportExcel={async () => {
+                  try {
+                    await exportEmployeeWorkspaceReport({
+                      employeeName: user?.email?.split('@')[0] || 'موظف',
+                      contracts,
+                      tasks: reportTasks,
+                      performance: reportPerformance,
+                      performanceGrade: reportPerformanceGrade,
+                      collections,
+                      stats: {
+                        contractStats,
+                        taskStats,
+                        collectionStats
+                      }
+                    });
+                    toast({
+                      title: 'تم التصدير بنجاح',
+                      description: 'تم تصدير التقرير الشامل إلى Excel',
+                    });
+                  } catch (error) {
+                    console.error('Export error:', error);
+                    toast({
+                      title: 'خطأ في التصدير',
+                      description: error instanceof Error ? error.message : 'فشل تصدير التقرير',
+                      variant: 'destructive',
+                    });
+                  }
+                }}
+                label="تصدير تقرير شامل (Excel)"
+                variant="outline"
+                className="h-10 w-full justify-center rounded-xl border-[#E2E8F0] text-xs font-bold text-[#173A63] hover:bg-[#EEF5FB] hover:text-[#173A63]"
+              />
             </CardContent>
           </Card>
 
+        </div>
         </div>
       </div>
 
