@@ -266,49 +266,19 @@ export const EmployeeWorkspace: React.FC = () => {
   const violationProofInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    const html = document.documentElement;
+    // Remove scroll lock that might be set by Radix UI dialogs
     const body = document.body;
-    const previous = {
-      htmlOverflowY: html.style.overflowY,
-      htmlOverflowX: html.style.overflowX,
-      htmlHeight: html.style.height,
-      htmlPosition: html.style.position,
-      htmlTouchAction: html.style.touchAction,
-      bodyOverflowY: body.style.overflowY,
-      bodyOverflowX: body.style.overflowX,
-      bodyHeight: body.style.height,
-      bodyPosition: body.style.position,
-      bodyTouchAction: body.style.touchAction,
-      bodyScrollLocked: body.getAttribute('data-scroll-locked'),
-    };
-
-    body.removeAttribute('data-scroll-locked');
-    html.style.setProperty('overflow-y', 'auto', 'important');
-    html.style.setProperty('overflow-x', 'hidden', 'important');
-    html.style.setProperty('height', 'auto', 'important');
-    html.style.setProperty('position', 'relative', 'important');
-    html.style.setProperty('touch-action', 'pan-y', 'important');
-    body.style.setProperty('overflow-y', 'auto', 'important');
-    body.style.setProperty('overflow-x', 'hidden', 'important');
-    body.style.setProperty('height', 'auto', 'important');
-    body.style.setProperty('position', 'relative', 'important');
-    body.style.setProperty('touch-action', 'pan-y', 'important');
+    const wasLocked = body.hasAttribute('data-scroll-locked');
+    if (wasLocked) {
+      body.removeAttribute('data-scroll-locked');
+      body.style.overflow = '';
+      body.style.paddingRight = '';
+    }
 
     return () => {
-      html.style.overflowY = previous.htmlOverflowY;
-      html.style.overflowX = previous.htmlOverflowX;
-      html.style.height = previous.htmlHeight;
-      html.style.position = previous.htmlPosition;
-      html.style.touchAction = previous.htmlTouchAction;
-      body.style.overflowY = previous.bodyOverflowY;
-      body.style.overflowX = previous.bodyOverflowX;
-      body.style.height = previous.bodyHeight;
-      body.style.position = previous.bodyPosition;
-      body.style.touchAction = previous.bodyTouchAction;
-      if (previous.bodyScrollLocked) {
-        body.setAttribute('data-scroll-locked', previous.bodyScrollLocked);
-      } else {
-        body.removeAttribute('data-scroll-locked');
+      // Cleanup: restore scroll lock if it was present
+      if (wasLocked) {
+        body.setAttribute('data-scroll-locked', '');
       }
     };
   }, []);
