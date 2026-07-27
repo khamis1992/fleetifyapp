@@ -19,6 +19,7 @@ export interface PaymentOperationsOptions {
   requireApproval?: boolean;
   enableNotifications?: boolean;
   validateBalance?: boolean;
+  allowEmployeeWorkspacePayments?: boolean;
 }
 
 export interface PaymentRegistrationMetadata {
@@ -100,7 +101,8 @@ export const usePaymentOperations = (options: PaymentOperationsOptions = {}) => 
     autoCreateJournalEntry = true,
     requireApproval = false,
     enableNotifications = true,
-    validateBalance = true
+    validateBalance = true,
+    allowEmployeeWorkspacePayments = false
   } = options;
 
   // Check permissions
@@ -122,10 +124,6 @@ export const usePaymentOperations = (options: PaymentOperationsOptions = {}) => 
     }) => {
       console.log('💰 [usePaymentOperations] Starting payment creation:', data);
 
-      if (!financeAccess.can('finance.payment.create')) {
-        throw new Error('ليس لديك صلاحية تسجيل دفعة مالية');
-      }
-
       // Check company access
       if (!companyId) {
         throw new Error('لم يتم تحديد الشركة');
@@ -140,6 +138,54 @@ export const usePaymentOperations = (options: PaymentOperationsOptions = {}) => 
         console.error('❌ Schema validation failed:', zodError);
         const errorMessage = zodError.errors?.map((e: any) => e.message).join(', ') || 'خطأ في البيانات المدخلة';
         throw new Error(errorMessage);
+      }
+
+      const canCreateEmployeeWorkspacePayment = async () => {
+        if (!allowEmployeeWorkspacePayments || !user?.id || validatedData.type !== 'receipt') {
+          return false;
+        }
+
+        const { data: profile, error: profileError } = await supabase
+          .from('profiles')
+          .select('id, company_id, is_active')
+          .eq('user_id', user.id)
+          .eq('company_id', companyId)
+          .maybeSingle();
+
+        if (profileError || !profile?.id || profile.is_active === false) {
+          return false;
+        }
+
+        let contractId = validatedData.contract_id || null;
+
+        if (!contractId && validatedData.invoice_id) {
+          const { data: invoice, error: invoiceError } = await supabase
+            .from('invoices')
+            .select('contract_id')
+            .eq('company_id', companyId)
+            .eq('id', validatedData.invoice_id)
+            .maybeSingle();
+
+          if (invoiceError) return false;
+          contractId = invoice?.contract_id || null;
+        }
+
+        if (!contractId) return false;
+
+        const { data: assignedContract, error: contractError } = await supabase
+          .from('contracts')
+          .select('id')
+          .eq('company_id', companyId)
+          .eq('id', contractId)
+          .eq('assigned_to_profile_id', profile.id)
+          .eq('status', 'active')
+          .maybeSingle();
+
+        return !contractError && Boolean(assignedContract?.id);
+      };
+
+      if (!financeAccess.can('finance.payment.create') && !(await canCreateEmployeeWorkspacePayment())) {
+        throw new Error('ليس لديك صلاحية تسجيل دفعة مالية');
       }
 
       await assertFinancialPeriodOpen(companyId, validatedData.payment_date);

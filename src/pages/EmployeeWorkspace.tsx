@@ -3123,6 +3123,7 @@ export const EmployeeWorkspace: React.FC = () => {
         customerId={selectedPaymentCustomer?.customerId || ''}
         customerName={selectedPaymentCustomer?.customerName || ''}
         customerPhone={selectedPaymentCustomer?.customerPhone || null}
+        allowEmployeeWorkspacePayments
         onSuccess={() => {
           refetchContracts();
           refetchCollections();

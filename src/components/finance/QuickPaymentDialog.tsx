@@ -71,6 +71,7 @@ interface QuickPaymentDialogProps {
   customerName: string;
   customerPhone: string | null;
   onSuccess?: () => void;
+  allowEmployeeWorkspacePayments?: boolean;
 }
 
 export function QuickPaymentDialog({
@@ -80,6 +81,7 @@ export function QuickPaymentDialog({
   customerName,
   customerPhone,
   onSuccess,
+  allowEmployeeWorkspacePayments = false,
 }: QuickPaymentDialogProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -88,6 +90,7 @@ export function QuickPaymentDialog({
     autoCreateJournalEntry: true,
     autoUpdateBankBalance: true,
     enableNotifications: false,
+    allowEmployeeWorkspacePayments,
   });
   const receiptRef = useRef<HTMLDivElement>(null);
   
