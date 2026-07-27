@@ -70,6 +70,7 @@ interface QuickPaymentDialogProps {
   customerId: string;
   customerName: string;
   customerPhone: string | null;
+  contractId?: string | null;
   onSuccess?: () => void;
   allowEmployeeWorkspacePayments?: boolean;
 }
@@ -80,6 +81,7 @@ export function QuickPaymentDialog({
   customerId,
   customerName,
   customerPhone,
+  contractId,
   onSuccess,
   allowEmployeeWorkspacePayments = false,
 }: QuickPaymentDialogProps) {
@@ -112,7 +114,7 @@ export function QuickPaymentDialog({
     if (open && customerId && companyId) {
       loadCustomerInvoices();
     }
-  }, [open, customerId, companyId]);
+  }, [open, customerId, companyId, contractId]);
 
   // Reset state when dialog closes
   useEffect(() => {
@@ -132,7 +134,7 @@ export function QuickPaymentDialog({
 
     setLoadingInvoices(true);
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('invoices')
         .select(`
           id,
@@ -155,8 +157,13 @@ export function QuickPaymentDialog({
         .eq('company_id', companyId)
         .eq('customer_id', customerId)
         .in('payment_status', ['unpaid', 'partial', 'overdue', 'pending'])
-        .lte('due_date', new Date().toISOString().split('T')[0])  // ✅ فواتير مستحقة حتى اليوم فقط
-        .order('due_date', { ascending: true });
+        .lte('due_date', new Date().toISOString().split('T')[0]);  // ✅ فواتير مستحقة حتى اليوم فقط
+
+      if (contractId) {
+        query = query.eq('contract_id', contractId);
+      }
+
+      const { data, error } = await query.order('due_date', { ascending: true });
 
       if (error) throw error;
       setInvoices(data || []);
@@ -295,12 +302,18 @@ export function QuickPaymentDialog({
       // ✅ معالجة حالة عدم وجود فواتير - إنشاء فاتورة تلقائياً
       if (selectedInvoices.length === 0) {
         // البحث عن عقد نشط للعميل
-        const { data: activeContracts, error: contractError } = await supabase
+        let activeContractQuery = supabase
           .from('contracts')
           .select('id, contract_number, monthly_amount')
           .eq('customer_id', customerId)
           .eq('company_id', companyId)
-          .eq('status', 'active')
+          .eq('status', 'active');
+
+        if (contractId) {
+          activeContractQuery = activeContractQuery.eq('id', contractId);
+        }
+
+        const { data: activeContracts, error: contractError } = await activeContractQuery
           .order('created_at', { ascending: false })
           .limit(1);
 
@@ -365,7 +378,7 @@ export function QuickPaymentDialog({
 
         const paymentInsertData = {
           customer_id: customerId,
-          contract_id: invoice.contract_id || undefined,
+          contract_id: invoice.contract_id || contractId || undefined,
           invoice_id: invoice.id,
           amount: amountToApply,
           payment_date: paymentDate,
