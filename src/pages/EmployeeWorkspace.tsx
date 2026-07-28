@@ -13,6 +13,7 @@ import {
   RefreshCw, 
   Briefcase, 
   Car,
+  LogOut,
   CheckCircle, 
   Clock, 
   AlertCircle,
@@ -219,7 +220,7 @@ const escapeHtml = (value: string) => value
 export const EmployeeWorkspace: React.FC = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
   const { toast } = useToast();
   const { formatCurrency } = useCurrencyFormatter();
   const [activeTab, setActiveTab] = useState<string>('overview');
@@ -1205,6 +1206,11 @@ export const EmployeeWorkspace: React.FC = () => {
     refetchDailyActivityMetrics();
   };
 
+  const handleSignOut = async () => {
+    await signOut();
+    navigate('/auth');
+  };
+
   const handleCompleteTask = async (taskId: string) => {
     setCompletingTaskId(taskId);
     try {
@@ -1975,6 +1981,14 @@ export const EmployeeWorkspace: React.FC = () => {
                 className="h-9 w-9 rounded-xl text-[#6A7688] hover:bg-[#F1F5F9] hover:text-[#142033]"
               >
                 <ArrowRight className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handleSignOut}
+                className="h-9 w-9 rounded-xl text-[#EF4444] hover:bg-[#FEF2F2] hover:text-[#DC2626]"
+              >
+                <LogOut className="h-4 w-4" />
               </Button>
             </div>
           </div>

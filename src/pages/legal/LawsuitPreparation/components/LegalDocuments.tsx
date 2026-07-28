@@ -13,6 +13,7 @@ import {
   FolderDown,
   Loader2,
   Package,
+  Printer,
   RefreshCw,
   Shield,
   ShieldAlert,
@@ -23,6 +24,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useFleetifyTranslation } from '@/hooks/useTranslation';
 import { useLawsuitPreparationContext, type DocumentState, type DocumentsState } from '../store';
+import { printHtmlDocumentAsPdf } from '../utils/printHtmlDocument';
 
 const baseMandatoryDocIds: (keyof DocumentsState)[] = [
   'memo',
@@ -58,16 +60,15 @@ function statusLabel(status: DocumentState['status']) {
   return 'بانتظار الإجراء';
 }
 
-function openDocument(document: DocumentState) {
+function downloadDocument(document: DocumentState) {
+  if (document.htmlContent) {
+    printHtmlDocumentAsPdf(document.htmlContent, document.name);
+    return;
+  }
+
   if (!document.url) return;
   if (document.url.startsWith('blob:')) {
-    const a = window.document.createElement('a');
-    a.href = document.url;
-    a.download = `${document.name}.html`;
-    window.document.body.appendChild(a);
-    a.click();
-    window.document.body.removeChild(a);
-    return;
+    throw new Error('لا تتوفر نسخة PDF قابلة للتنزيل لهذا المستند');
   }
   window.open(document.url, '_blank');
 }
@@ -124,9 +125,20 @@ function DocumentLedgerRow({
           </Button>
         )}
         {isReady && document.url && document.id !== 'memo' && (
-          <Button type="button" variant="outline" size="sm" onClick={() => openDocument(document)}>
-            <Download className="h-4 w-4" />
-            تحميل
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              try {
+                downloadDocument(document);
+              } catch (error) {
+                console.error('[LegalDocuments] PDF download failed:', error);
+              }
+            }}
+          >
+            {document.htmlContent ? <Printer className="h-4 w-4" /> : <Download className="h-4 w-4" />}
+            {document.htmlContent ? 'حفظ PDF' : 'تحميل'}
           </Button>
         )}
         {onGenerate && (

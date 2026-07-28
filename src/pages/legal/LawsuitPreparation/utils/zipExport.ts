@@ -54,7 +54,7 @@ function getBlobExtension(blob: Blob): string {
   return 'file';
 }
 
-async function htmlToPdfBlob(html: string): Promise<Blob | null> {
+export async function htmlToPdfBlob(html: string): Promise<Blob | null> {
   try {
     const [{ default: html2canvas }, { jsPDF }] = await Promise.all([
       import('html2canvas'),

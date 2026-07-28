@@ -16,11 +16,13 @@ import {
   Upload,
   File,
   FileType,
+  Printer,
 } from 'lucide-react';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import type { DocumentState, DocumentsState } from '../../store';
+import type { DocumentState } from '../../store';
+import { printHtmlDocumentAsPdf } from '../../utils/printHtmlDocument';
 
 import { useFleetifyTranslation } from "@/hooks/useTranslation";
 interface DocumentItemProps {
@@ -77,16 +79,13 @@ export function DocumentItem({
     }
     
     try {
+      if (document.htmlContent) {
+        printHtmlDocumentAsPdf(document.htmlContent, document.name);
+        return;
+      }
+
       if (document.url.startsWith('blob:')) {
-        const a = window.document.createElement('a');
-        a.href = document.url;
-        a.download = `${document.name}.html`;
-        a.style.display = 'none';
-        window.document.body.appendChild(a);
-        a.click();
-        setTimeout(() => {
-          window.document.body.removeChild(a);
-        }, 100);
+        throw new Error('PDF content is unavailable for this generated document');
       } else {
         // فتح الرابط في نافذة جديدة
         const opened = window.open(document.url, '_blank');
@@ -177,7 +176,7 @@ export function DocumentItem({
             size="sm"
             onClick={handleDownload}
           >
-            <Download className="h-4 w-4" />
+            {document.htmlContent ? <Printer className="h-4 w-4" /> : <Download className="h-4 w-4" />}
           </Button>
         )}
         
