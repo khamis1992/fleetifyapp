@@ -4,7 +4,7 @@
  */
 
 import React, { createContext, useContext, useReducer, useCallback, useEffect, useRef } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -14,6 +14,12 @@ import { generateDocument as generateDocumentUtil } from '../utils/documentGener
 import { registerLegalCase } from '../utils/caseRegistration';
 import { exportDocumentsAsZip } from '../utils/zipExport';
 import { selectLegalContractDocument } from '../utils/contractDocumentSelection';
+import { getCurrentLegalCase } from '../utils/taqadiFiling';
+import {
+  buildTaqadiFilingPayload,
+  enqueueTaqadiFilingJob,
+  getActiveTaqadiWorker,
+} from '../utils/taqadiAutomation';
 import { lawsuitService } from '@/services/LawsuitService';
 import { formatCustomerName } from '@/utils/formatCustomerName';
 import { renderOfficialInvoicePdfBlob } from '@/utils/renderOfficialInvoicePdf';
@@ -68,6 +74,7 @@ export function LawsuitPreparationProvider({
 }: LawsuitPreparationProviderProps) {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { companyId, isAuthenticating, isInitializing } = useUnifiedCompanyAccess();
   const companyLoading = isAuthenticating || isInitializing;
   
@@ -652,18 +659,17 @@ export function LawsuitPreparationProvider({
       const result = await registerLegalCase(state, user.id);
       
       dispatch({ type: 'REGISTER_CASE_COMPLETE' });
-      
-      // Navigate to cases page
-      setTimeout(() => {
-        navigate('/legal/cases?view=cases');
-      }, 1500);
+      await queryClient.invalidateQueries({
+        queryKey: ['lawsuit-legal-case', companyId, contractId],
+      });
+      toast.success('تم تسجيل القضية وربطها بملف التجهيز');
       
       return result;
     } catch (error) {
       dispatch({ type: 'REGISTER_CASE_ERROR', payload: error as Error });
       throw error;
     }
-  }, [state, user, navigate]);
+  }, [state, user, queryClient, companyId, contractId]);
   
   /**
    * توليد HTML للفاتورة
@@ -945,72 +951,99 @@ export function LawsuitPreparationProvider({
     }
   }, [state.taqadiData, state.contract, state.customer, companyId, contractId]);
   
-  const taqadiAutomationBaseUrl = (import.meta.env.VITE_TAQADI_AUTOMATION_URL as string | undefined)?.replace(/\/$/, '');
-
   const startTaqadiAutomation = useCallback(async () => {
     dispatch({ type: 'TAQADI_AUTOMATION_START' });
-    
+
     try {
-      if (!taqadiAutomationBaseUrl) {
-        throw new Error('Taqadi automation service is not configured');
+      if (!companyId || !user?.id) {
+        throw new Error('تعذر تحديد الشركة أو المستخدم');
       }
-      const response = await fetch(`${taqadiAutomationBaseUrl}/health`);
-      const data = await response.json();
-      
-      if (data.status !== 'ok') {
-        throw new Error('سيرفر الأتمتة غير متاح');
+
+      let legalCase = await getCurrentLegalCase(companyId, contractId);
+      if (!legalCase) {
+        const registered = await registerLegalCase(state, user.id);
+        legalCase = {
+          id: registered.caseId,
+          case_number: registered.caseNumber,
+          case_status: 'pending',
+          workflow_stage: 'preparation',
+          case_reference: null,
+          court_fees: null,
+          filing_date: null,
+          created_at: null,
+        };
       }
-      
-      dispatch({ type: 'TAQADI_AUTOMATION_STATUS', payload: 'جاري رفع الدعوى...' });
-      
-      // Call automation API
-      const submitResponse = await fetch(`${taqadiAutomationBaseUrl}/api/taqadi/submit`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contractId,
-          prepareUrl: window.location.href,
+      const currentStage = legalCase.workflow_stage || 'preparation';
+      if (['closed', 'cancelled'].includes(currentStage)) {
+        throw new Error('القضية مغلقة أو ملغاة. أعد فتحها قبل إرسالها إلى تقاضي');
+      }
+      if (!['preparation', 'filed'].includes(currentStage)) {
+        throw new Error('القضية تجاوزت مرحلة الرفع ولا يمكن إرسالها إلى تقاضي مرة أخرى');
+      }
+      if (currentStage === 'filed' && legalCase.case_reference) {
+        throw new Error(`الدعوى مرفوعة مسبقًا في تقاضي بالمرجع ${legalCase.case_reference}`);
+      }
+
+      dispatch({
+        type: 'TAQADI_AUTOMATION_STATUS',
+        payload: 'جاري فحص الحزمة وإضافتها إلى طابور تقاضي...',
+      });
+      const payload = buildTaqadiFilingPayload(state, window.location.href);
+      const job = await enqueueTaqadiFilingJob({
+        companyId,
+        legalCaseId: legalCase.id,
+        payload,
+      });
+
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: ['taqadi-filing-job', companyId, legalCase.id],
         }),
+        queryClient.invalidateQueries({ queryKey: ['lawsuit-legal-case', companyId, contractId] }),
+        queryClient.invalidateQueries({ queryKey: ['legal-case-workflow', companyId, legalCase.id] }),
+        queryClient.invalidateQueries({ queryKey: ['legal-cases'] }),
+      ]);
+
+      dispatch({
+        type: 'TAQADI_AUTOMATION_STATUS',
+        payload: `تمت إضافة الدعوى إلى طابور الرفع. رقم العملية: ${job.id}`,
       });
-      
-      const result = await submitResponse.json();
-      
-      if (result.success) {
-        dispatch({ 
-          type: 'TAQADI_AUTOMATION_STATUS', 
-          payload: `تم رفع الدعوى بنجاح! رقم القضية: ${result.caseNumber}` 
-        });
-      } else {
-        throw new Error(result.error || 'فشلت الأتمتة');
-      }
+      toast.success('تمت إضافة الدعوى إلى طابور تقاضي');
     } catch (error: any) {
-      dispatch({ 
-        type: 'TAQADI_AUTOMATION_STATUS', 
-        payload: `خطأ: ${error.message}` 
+      dispatch({
+        type: 'TAQADI_AUTOMATION_STATUS',
+        payload: `خطأ: ${error?.message || 'تعذر إضافة الدعوى إلى الطابور'}`,
       });
+      toast.error(error?.message || 'تعذر إضافة الدعوى إلى الطابور');
+    } finally {
+      dispatch({ type: 'TAQADI_AUTOMATION_STOP' });
     }
-  }, [contractId, taqadiAutomationBaseUrl]);
+  }, [
+    companyId,
+    contractId,
+    queryClient,
+    state,
+    user?.id,
+  ]);
   
   const stopTaqadiAutomation = useCallback(() => {
     dispatch({ type: 'TAQADI_AUTOMATION_STOP' });
   }, []);
   
   const checkTaqadiServer = useCallback(async () => {
-    if (!taqadiAutomationBaseUrl) {
-      dispatch({ type: 'SET_TAQADI_SERVER_STATUS', payload: false });
-      return false;
-    }
     try {
-      const response = await fetch(`${taqadiAutomationBaseUrl}/health`);
-      const data = await response.json();
-      const isRunning = data.status === 'ok';
+      const worker = await getActiveTaqadiWorker();
+      const heartbeatAge = worker
+        ? Date.now() - new Date(worker.heartbeat_at).getTime()
+        : Number.POSITIVE_INFINITY;
+      const isRunning = heartbeatAge < 45_000 && worker?.status !== 'offline';
       dispatch({ type: 'SET_TAQADI_SERVER_STATUS', payload: isRunning });
       return isRunning;
     } catch {
       dispatch({ type: 'SET_TAQADI_SERVER_STATUS', payload: false });
       return false;
     }
-  }, [taqadiAutomationBaseUrl]);
+  }, []);
   
   const copyToClipboard = useCallback(async (text: string, field: string) => {
     try {

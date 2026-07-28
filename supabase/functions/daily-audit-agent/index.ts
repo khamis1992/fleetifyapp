@@ -413,6 +413,51 @@ async function recalculateInvoiceBalances(
   const { data: invoices, error } = await query;
   if (error) throw error;
   const invoiceRows = invoices || [];
+
+  if (!dryRun) {
+    let fixedBalances = 0;
+
+    for (const invoice of invoiceRows) {
+      const { data: canonicalPaid, error: recalcError } = await supabase.rpc("recalculate_invoice_financial_state", {
+        p_invoice_id: invoice.id,
+      });
+
+      if (recalcError) {
+        console.warn("daily-audit-agent canonical invoice recalculation skipped", {
+          invoiceId: invoice.id,
+          code: recalcError.code,
+          message: recalcError.message,
+        });
+        continue;
+      }
+
+      const paid = roundMoney(Number(canonicalPaid || 0));
+      const total = roundMoney(Number(invoice.total_amount || 0));
+      const balance = roundMoney(Math.max(0, total - paid));
+      const paymentStatus = balance <= 1 ? "paid" : paid > 0 ? "partial" : "unpaid";
+      const dueDate = invoice.due_date ? new Date(`${String(invoice.due_date).slice(0, 10)}T00:00:00.000Z`) : null;
+      const today = new Date();
+      today.setUTCHours(0, 0, 0, 0);
+      const lifecycleStatus = balance <= 1
+        ? "paid"
+        : dueDate && !Number.isNaN(dueDate.getTime()) && dueDate < today
+          ? "overdue"
+          : String(invoice.status || "").toLowerCase() === "draft"
+            ? "draft"
+            : "sent";
+
+      const changed =
+        Math.abs(Number(invoice.paid_amount || 0) - paid) > 0.01 ||
+        Math.abs(Number(invoice.balance_due || 0) - balance) > 0.01 ||
+        String(invoice.payment_status || "").toLowerCase() !== paymentStatus ||
+        String(invoice.status || "").toLowerCase() !== lifecycleStatus;
+
+      if (changed) fixedBalances += 1;
+    }
+
+    return { scanned: invoiceRows.length, fixedBalances };
+  }
+
   const invoiceIds = invoiceRows.map((invoice: any) => invoice.id);
   const payments = await fetchPaymentsForInvoices(supabase, companyId, invoiceIds);
   const paidByInvoice = new Map<string, number>();
@@ -497,6 +542,39 @@ async function recalculateContractTotals(
   const { data: contracts, error } = await query;
   if (error) throw error;
   const contractRows = contracts || [];
+
+  if (!dryRun) {
+    let fixedTotals = 0;
+
+    for (const contract of contractRows) {
+      const { data: canonicalPaid, error: recalcError } = await supabase.rpc("recalculate_contract_financial_state", {
+        p_contract_id: contract.id,
+      });
+
+      if (recalcError) {
+        console.warn("daily-audit-agent canonical contract recalculation skipped", {
+          contractId: contract.id,
+          code: recalcError.code,
+          message: recalcError.message,
+        });
+        continue;
+      }
+
+      const paid = roundMoney(Number(canonicalPaid || 0));
+      const amount = roundMoney(Number(contract.contract_amount || 0));
+      const balance = roundMoney(Math.max(0, amount - paid));
+      const paymentStatus = balance <= 1 ? "paid" : paid > 0 ? "partial" : "unpaid";
+      const changed =
+        Math.abs(Number(contract.total_paid || 0) - paid) > 0.01 ||
+        Math.abs(Number(contract.balance_due || 0) - balance) > 0.01 ||
+        String(contract.payment_status || "").toLowerCase() !== paymentStatus;
+
+      if (changed) fixedTotals += 1;
+    }
+
+    return { scanned: contractRows.length, fixedTotals };
+  }
+
   const contractIds = contractRows.map((contract: any) => contract.id);
   const payments = await fetchPaymentsForContracts(supabase, companyId, contractIds);
   const paidByContract = new Map<string, number>();
@@ -1529,26 +1607,9 @@ async function recalculateSingleInvoiceTotals(supabase: any, companyId: string, 
   if (invoiceError) throw invoiceError;
   if (!invoice || isCancelledStatus(invoice.status) || isCancelledStatus(invoice.payment_status)) return false;
 
-  const payments = await fetchPaymentsForInvoices(supabase, companyId, [invoiceId]);
-  const paid = roundMoney(
-    payments
-      .filter((payment: any) => isCompletedPayment(payment.payment_status))
-      .reduce((sum: number, payment: any) => sum + Number(payment.amount || 0), 0),
-  );
-  const total = roundMoney(Number(invoice.total_amount || 0));
-  const balance = roundMoney(Math.max(0, total - paid));
-  const paymentStatus = balance <= 1 ? "paid" : paid > 0 ? "partial" : "unpaid";
-
-  const { error } = await supabase
-    .from("invoices")
-    .update({
-      paid_amount: paid,
-      balance_due: balance,
-      payment_status: paymentStatus,
-      updated_at: now,
-    })
-    .eq("id", invoiceId)
-    .eq("company_id", companyId);
+  const { error } = await supabase.rpc("recalculate_invoice_financial_state", {
+    p_invoice_id: invoiceId,
+  });
 
   if (error) throw error;
   return true;

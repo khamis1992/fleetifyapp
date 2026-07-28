@@ -3,6 +3,8 @@ import { AlertCircle, CheckCircle2, Circle, Database, Download, FileStack, FileT
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useLawsuitPreparationContext } from '../store';
+import { LawsuitCaseWorkflowCard } from './LawsuitCaseWorkflowCard';
+import { TaqadiAutomationPanel } from './TaqadiAutomationPanel';
 
 const mandatoryDocIds = ['memo', 'claims', 'docsList', 'contract', 'commercialRegister', 'ibanCertificate', 'representativeId'] as const;
 
@@ -31,6 +33,9 @@ export function LegalActions() {
 
   return (
     <motion.div className="lawsuit-actions-redesign" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
+      <LawsuitCaseWorkflowCard />
+      <TaqadiAutomationPanel />
+
       <section className="lawsuit-section-panel">
         <div className="lawsuit-section-heading">
           <div>

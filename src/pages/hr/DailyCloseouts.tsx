@@ -1,7 +1,6 @@
-import { useMemo, useState } from 'react';
+import { type ReactNode, useMemo, useState } from 'react';
 import {
   AlertTriangle,
-  CalendarDays,
   CheckCircle2,
   ClipboardCheck,
   Clock,
@@ -39,6 +38,34 @@ type DailyLogSummary = {
   delayed_tasks?: number;
   legal_referrals?: boolean;
   report_exported?: boolean;
+  contract_activity?: DailyContractActivitySummary | null;
+};
+
+type DailyContractActivityItem = {
+  id?: string;
+  source?: string;
+  label?: string;
+  title?: string;
+  detail?: string;
+  contractNumber?: string | null;
+  contract_number?: string | null;
+  amount?: number | null;
+  occurredAt?: string | null;
+  occurred_at?: string | null;
+};
+
+type DailyContractActivitySummary = {
+  contract_updates?: number;
+  contractUpdates?: number;
+  status_changes?: number;
+  statusChanges?: number;
+  payments_registered?: number;
+  paymentsRegistered?: number;
+  documents_added?: number;
+  documentsAdded?: number;
+  total_payment_amount?: number;
+  totalPaymentAmount?: number;
+  items?: DailyContractActivityItem[];
 };
 
 type DailyLogRow = {
@@ -95,6 +122,72 @@ const formatClosedAt = (value?: string | null) => {
   return new Date(value).toLocaleTimeString('ar-QA', { hour: '2-digit', minute: '2-digit' });
 };
 
+const DAILY_CLOSEOUT_CHECKLIST = [
+  { key: 'workspace_opened', label: 'تم الدخول إلى مساحة عملي والتأكد من ظهور البيانات' },
+  { key: 'page_refreshed', label: 'تم الضغط على تحديث في بداية اليوم' },
+  { key: 'metrics_reviewed', label: 'تمت مراجعة بطاقات المؤشرات والمهام المطلوبة' },
+  { key: 'priority_started', label: 'تم البدء بالعقود والعملاء ذوي الأولوية الأعلى' },
+  { key: 'calls_documented', label: 'تم تنفيذ المكالمات وتوثيق نتائجها المؤثرة' },
+  { key: 'payments_verified', label: 'تمت مطابقة العميل والعقد قبل تسجيل أي دفعة' },
+  { key: 'followups_scheduled', label: 'تمت جدولة موعد لكل متابعة مؤجلة أو وعد بالدفع' },
+  { key: 'notes_added', label: 'تمت إضافة الملاحظات المهمة بوضوح واختصار' },
+  { key: 'tasks_completed', label: 'تم تحديد إنجاز المهام المنفذة فعلياً فقط' },
+  { key: 'legal_reviewed', label: 'تمت مراجعة الملاحظات والدفعات قبل أي تصعيد قانوني' },
+  { key: 'remaining_reviewed', label: 'تمت مراجعة المهام المتبقية في نهاية اليوم' },
+  { key: 'report_exported', label: 'تم تحديث الصفحة وتصدير التقرير عند الحاجة' },
+];
+
+const beginningMetricLabels = [
+  { key: 'priorityCases', fallbackKey: 'priority_cases', label: 'حالات ذات أولوية', tone: 'bg-[#B94E52]' },
+  { key: 'todayTasks', fallbackKey: 'today_tasks', label: 'مهام اليوم', tone: 'bg-[#11A37F]' },
+  { key: 'totalDue', fallbackKey: 'total_due', label: 'إجمالي المستحقات', tone: 'bg-[#D99B34]', currency: true },
+  { key: 'assignedContracts', fallbackKey: 'assigned_contracts', label: 'العقود المسندة', tone: 'bg-[#1D4F7A]' },
+];
+
+const emptyDailyContractActivity: Required<DailyContractActivitySummary> = {
+  contract_updates: 0,
+  contractUpdates: 0,
+  status_changes: 0,
+  statusChanges: 0,
+  payments_registered: 0,
+  paymentsRegistered: 0,
+  documents_added: 0,
+  documentsAdded: 0,
+  total_payment_amount: 0,
+  totalPaymentAmount: 0,
+  items: [],
+};
+
+const getRecordValue = (record: Record<string, unknown> | null | undefined, key: string, fallbackKey?: string) => {
+  if (!record) return undefined;
+  return record[key] ?? (fallbackKey ? record[fallbackKey] : undefined);
+};
+
+const formatActivityTime = (value?: string | null) => {
+  if (!value) return '-';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return formatTime(value);
+  return date.toLocaleTimeString('ar-QA', { hour: '2-digit', minute: '2-digit' });
+};
+
+const getActivityNumber = (
+  activity: DailyContractActivitySummary | null | undefined,
+  snakeKey: keyof DailyContractActivitySummary,
+  camelKey: keyof DailyContractActivitySummary,
+) => numberValue(activity?.[snakeKey] ?? activity?.[camelKey]);
+
+const humanizeContractOperation = (operationType?: string | null) => {
+  const type = String(operationType || '').toLowerCase();
+  if (type.includes('status')) return 'تغيير حالة العقد';
+  if (type.includes('payment')) return 'تعديل مالي';
+  if (type.includes('document')) return 'تحديث مستندات';
+  if (type.includes('assign')) return 'تغيير إسناد';
+  if (type.includes('update')) return 'تعديل بيانات العقد';
+  if (type.includes('create')) return 'إنشاء عقد';
+  if (type.includes('cancel')) return 'إلغاء عقد';
+  return 'تعديل عقد';
+};
+
 export default function DailyCloseouts() {
   const companyFilter = useCompanyFilter();
   const companyId = companyFilter.company_id;
@@ -140,6 +233,170 @@ export default function DailyCloseouts() {
 
   const logs = logsQuery.data || [];
   const employees = employeesQuery.data || [];
+  const selectedEmployee = selectedLog
+    ? employees.find((employee) => employee.id === selectedLog.employee_profile_id)
+    : null;
+
+  const selectedActivityQuery = useQuery({
+    queryKey: [
+      'daily-closeout-contract-activity-detail',
+      companyId,
+      selectedLog?.id,
+      selectedLog?.employee_profile_id,
+      selectedEmployee?.user_id,
+      selectedLog?.log_date,
+    ],
+    enabled: Boolean(companyId && selectedLog?.employee_profile_id && selectedLog?.log_date),
+    queryFn: async (): Promise<DailyContractActivitySummary> => {
+      if (!companyId || !selectedLog?.employee_profile_id || !selectedLog.log_date) return emptyDailyContractActivity;
+
+      let employeeUserId = selectedEmployee?.user_id || null;
+      if (!employeeUserId) {
+        const { data: profile, error: profileError } = await supabase
+          .from('profiles')
+          .select('user_id')
+          .eq('company_id', companyId)
+          .eq('id', selectedLog.employee_profile_id)
+          .maybeSingle();
+
+        if (profileError) throw profileError;
+        employeeUserId = profile?.user_id || null;
+      }
+
+      const dayStart = `${selectedLog.log_date}T00:00:00`;
+      const dayEnd = `${selectedLog.log_date}T23:59:59`;
+
+      const [operationsResult, documentsResult, paymentsResult] = await Promise.all([
+        (supabase as any)
+          .from('contract_operations_log')
+          .select('id, contract_id, operation_type, operation_details, old_values, new_values, notes, performed_at, performed_by')
+          .eq('company_id', companyId)
+          .eq('performed_by', selectedLog.employee_profile_id)
+          .gte('performed_at', dayStart)
+          .lte('performed_at', dayEnd),
+        employeeUserId
+          ? (supabase as any)
+            .from('contract_documents')
+            .select('id, contract_id, document_name, document_type, uploaded_at, created_at, uploaded_by')
+            .eq('company_id', companyId)
+            .eq('uploaded_by', employeeUserId)
+            .gte('created_at', dayStart)
+            .lte('created_at', dayEnd)
+          : Promise.resolve({ data: [], error: null }),
+        employeeUserId
+          ? (supabase as any)
+            .from('payments')
+            .select('id, contract_id, payment_number, amount, payment_status, payment_date, created_at, created_by')
+            .eq('company_id', companyId)
+            .eq('created_by', employeeUserId)
+            .gte('created_at', dayStart)
+            .lte('created_at', dayEnd)
+          : Promise.resolve({ data: [], error: null }),
+      ]);
+
+      if (operationsResult.error) throw operationsResult.error;
+      if (documentsResult.error) throw documentsResult.error;
+      if (paymentsResult.error) throw paymentsResult.error;
+
+      const operations = operationsResult.data || [];
+      const documents = documentsResult.data || [];
+      const payments = paymentsResult.data || [];
+      const activityContractIds = Array.from(new Set(
+        [...operations, ...documents, ...payments]
+          .map((item: any) => item.contract_id)
+          .filter(Boolean),
+      ));
+
+      const contractsById = new Map<string, string>();
+      if (activityContractIds.length > 0) {
+        const { data: activityContracts, error: contractsError } = await supabase
+          .from('contracts')
+          .select('id, contract_number')
+          .eq('company_id', companyId)
+          .in('id', activityContractIds);
+
+        if (contractsError) throw contractsError;
+        (activityContracts || []).forEach((contract) => {
+          contractsById.set(contract.id, contract.contract_number || contract.id);
+        });
+      }
+
+      const operationItems: DailyContractActivityItem[] = operations.map((operation: any) => {
+        const oldValues = operation.old_values || {};
+        const newValues = operation.new_values || {};
+        const changedFields = Object.keys(newValues).filter((key) => oldValues?.[key] !== newValues?.[key]);
+        const label = humanizeContractOperation(operation.operation_type);
+        const detail = changedFields.length > 0
+          ? `الحقول: ${changedFields.slice(0, 4).join('، ')}`
+          : operation.notes || operation.operation_details?.description || 'تم تسجيل تعديل على العقد';
+
+        return {
+          id: `operation-${operation.id}`,
+          source: 'contract_operation',
+          label,
+          title: `${label}${contractsById.get(operation.contract_id) ? ` - ${contractsById.get(operation.contract_id)}` : ''}`,
+          detail,
+          contractNumber: contractsById.get(operation.contract_id),
+          amount: null,
+          occurredAt: operation.performed_at,
+        };
+      });
+
+      const documentItems: DailyContractActivityItem[] = documents.map((document: any) => ({
+        id: `document-${document.id}`,
+        source: 'document',
+        label: 'إضافة مستند',
+        title: `إضافة مستند${contractsById.get(document.contract_id) ? ` - ${contractsById.get(document.contract_id)}` : ''}`,
+        detail: document.document_name || document.document_type || 'مستند عقد',
+        contractNumber: contractsById.get(document.contract_id),
+        amount: null,
+        occurredAt: document.uploaded_at || document.created_at,
+      }));
+
+      const paymentItems: DailyContractActivityItem[] = payments.map((payment: any) => ({
+        id: `payment-${payment.id}`,
+        source: 'payment',
+        label: 'تسجيل دفعة',
+        title: `تسجيل دفعة${contractsById.get(payment.contract_id) ? ` - ${contractsById.get(payment.contract_id)}` : ''}`,
+        detail: `${payment.payment_number || 'دفعة'} - ${payment.payment_status || 'بدون حالة'}`,
+        contractNumber: contractsById.get(payment.contract_id),
+        amount: Number(payment.amount || 0),
+        occurredAt: payment.created_at || payment.payment_date,
+      }));
+
+      const items = [...operationItems, ...documentItems, ...paymentItems]
+        .sort((a, b) => new Date(b.occurredAt || 0).getTime() - new Date(a.occurredAt || 0).getTime());
+
+      return {
+        contract_updates: operationItems.length,
+        contractUpdates: operationItems.length,
+        status_changes: operations.filter((operation: any) => {
+          const type = String(operation.operation_type || '').toLowerCase();
+          const oldStatus = operation.old_values?.status;
+          const newStatus = operation.new_values?.status;
+          return type.includes('status') || oldStatus !== newStatus;
+        }).length,
+        statusChanges: operations.filter((operation: any) => {
+          const type = String(operation.operation_type || '').toLowerCase();
+          const oldStatus = operation.old_values?.status;
+          const newStatus = operation.new_values?.status;
+          return type.includes('status') || oldStatus !== newStatus;
+        }).length,
+        payments_registered: paymentItems.length,
+        paymentsRegistered: paymentItems.length,
+        documents_added: documentItems.length,
+        documentsAdded: documentItems.length,
+        total_payment_amount: paymentItems.reduce((sum, item) => sum + Number(item.amount || 0), 0),
+        totalPaymentAmount: paymentItems.reduce((sum, item) => sum + Number(item.amount || 0), 0),
+        items,
+      };
+    },
+    staleTime: 15_000,
+  });
+
+  const selectedActivity = selectedActivityQuery.data
+    || selectedLog?.summary?.contract_activity
+    || emptyDailyContractActivity;
   const workspaceEmployees = employees.filter((employee) => !managerRoles.has(String(employee.role || '').toLowerCase()));
   const closedEmployeeIds = new Set(logs.filter((log) => log.closed_at).map((log) => log.employee_profile_id));
   const missingEmployees = workspaceEmployees.filter((employee) => !closedEmployeeIds.has(employee.id));
@@ -333,10 +590,10 @@ export default function DailyCloseouts() {
       )}
 
       <Dialog open={Boolean(selectedLog)} onOpenChange={(open) => !open && setSelectedLog(null)}>
-        <DialogContent className="max-w-3xl" dir="rtl">
+        <DialogContent className="max-h-[92vh] max-w-5xl overflow-hidden p-0" dir="rtl">
           {selectedLog && (
             <>
-              <DialogHeader>
+              <DialogHeader className="border-b border-slate-200 px-5 py-4">
                 <DialogTitle className="flex items-center gap-2">
                   <ClipboardCheck className="h-5 w-5 text-[#22C7A1]" />
                   إقفال يوم {selectedLog.employee_name}
@@ -345,39 +602,12 @@ export default function DailyCloseouts() {
                   {selectedLog.log_date}، من {formatTime(selectedLog.start_time)} إلى {formatTime(selectedLog.end_time)}
                 </DialogDescription>
               </DialogHeader>
-
-              <div className="grid gap-3 md:grid-cols-3">
-                <DetailMetric label="المحصل" value={formatCurrency(numberValue(selectedLog.summary?.total_collected))} />
-                <DetailMetric label="المكالمات" value={numberValue(selectedLog.summary?.calls_logged)} />
-                <DetailMetric label="المتابعات" value={numberValue(selectedLog.summary?.followups_scheduled)} />
-                <DetailMetric label="دفعات مسجلة" value={numberValue(selectedLog.summary?.payments_registered)} />
-                <DetailMetric label="مهام مكتملة" value={numberValue(selectedLog.summary?.completed_tasks)} />
-                <DetailMetric label="مهام متأخرة" value={numberValue(selectedLog.summary?.delayed_tasks)} />
-              </div>
-
-              <div className="grid gap-3 md:grid-cols-2">
-                <TextBlock title="حالات مهمة" value={selectedLog.key_cases} />
-                <TextBlock title="حالات تحتاج مراجعة قانونية" value={selectedLog.legal_review_cases} />
-                <TextBlock title="المعوقات" value={selectedLog.blockers} />
-                <TextBlock title="سبب عدم الاكتمال" value={selectedLog.incomplete_reason} />
-              </div>
-
-              <div className="rounded-lg border border-slate-200 bg-[#F6F8FB] p-4">
-                <h4 className="mb-3 flex items-center gap-2 font-black text-[#020617]">
-                  <CalendarDays className="h-4 w-4 text-[#38BDF8]" />
-                  قائمة التحقق اليومية
-                </h4>
-                <div className="grid gap-2 md:grid-cols-2">
-                  {Object.entries(selectedLog.checklist || {}).map(([key, checked]) => (
-                    <div key={key} className="flex items-center justify-between rounded-lg bg-white px-3 py-2 text-sm">
-                      <span className="text-[#64748B]">{key}</span>
-                      <Badge className={checked ? 'bg-[#E8FBF6] text-[#0D876A] hover:bg-[#E8FBF6]' : 'bg-slate-100 text-slate-500 hover:bg-slate-100'}>
-                        {checked ? 'تم' : 'لم يتم'}
-                      </Badge>
-                    </div>
-                  ))}
-                </div>
-              </div>
+              <DailyCloseoutReport
+                log={selectedLog}
+                activity={selectedActivity}
+                activityLoading={selectedActivityQuery.isFetching}
+                activityError={selectedActivityQuery.error}
+              />
             </>
           )}
         </DialogContent>
@@ -386,20 +616,263 @@ export default function DailyCloseouts() {
   );
 }
 
-function DetailMetric({ label, value }: { label: string; value: string | number }) {
+function DailyCloseoutReport({
+  log,
+  activity,
+  activityLoading,
+  activityError,
+}: {
+  log: DailyLogRow;
+  activity: DailyContractActivitySummary;
+  activityLoading: boolean;
+  activityError: unknown;
+}) {
+  const logDate = new Date(`${log.log_date}T00:00:00`);
+  const dayNumber = Number.isNaN(logDate.getTime())
+    ? log.log_date.slice(-2)
+    : String(logDate.getDate()).padStart(2, '0');
+  const checklist = log.checklist || {};
+  const summary = log.summary || {};
+  const activityItems = activity?.items || [];
+
+  const resultCells = [
+    ['وعود بالدفع', numberValue(summary.payment_promises)],
+    ['لم يتم الرد', numberValue(summary.no_answer_calls)],
+    ['تم الرد', numberValue(summary.answered_calls)],
+    ['المكالمات موثقة', numberValue(summary.calls_logged)],
+    ['ملاحظات مضافة', numberValue(summary.notes_added)],
+    ['مواعيد متابعة', numberValue(summary.followups_scheduled)],
+    ['إجمالي المحصل', formatCurrency(numberValue(summary.total_collected))],
+    ['دفعات مسجلة', numberValue(summary.payments_registered)],
+    ['تقرير مصدر', summary.report_exported ? 'نعم' : 'لا'],
+    ['إحالات قانونية', summary.legal_referrals ? 'نعم' : 'لا'],
+    ['مهام مؤجلة', numberValue(summary.delayed_tasks)],
+    ['مهام منجزة', numberValue(summary.completed_tasks)],
+  ];
+
+  const activityCells = [
+    ['تعديلات العقود', getActivityNumber(activity, 'contract_updates', 'contractUpdates')],
+    ['تغييرات الحالة', getActivityNumber(activity, 'status_changes', 'statusChanges')],
+    ['دفعات مسجلة', getActivityNumber(activity, 'payments_registered', 'paymentsRegistered')],
+    ['مستندات مضافة', getActivityNumber(activity, 'documents_added', 'documentsAdded')],
+    ['إجمالي دفعات النشاط', formatCurrency(getActivityNumber(activity, 'total_payment_amount', 'totalPaymentAmount'))],
+  ];
+
   return (
-    <div className="rounded-lg border border-slate-200 bg-white p-3">
-      <p className="text-xs font-bold text-[#94A3B8]">{label}</p>
-      <p className="mt-1 text-lg font-black text-[#020617]">{value}</p>
+    <div className="max-h-[78vh] overflow-y-auto bg-[#F3F6FA] px-4 py-5">
+      <article className="mx-auto min-h-[920px] max-w-[820px] overflow-hidden bg-white px-8 pb-8 text-[#142033] shadow-sm">
+        <div className="-mx-8 mb-5 h-2 bg-[#11A37F]" />
+
+        <header className="grid grid-cols-1 items-center gap-4 border-b-2 border-[#CFD8E3] pb-4 md:grid-cols-[1fr_2fr_1fr]">
+          <div className="text-right">
+            <p className="text-lg font-black text-[#11A37F]">Fleetify</p>
+            <p className="mt-2 text-xs font-bold text-[#8A97AA]">العراف لتأجير السيارات</p>
+          </div>
+          <div className="text-center">
+            <h3 className="text-xl font-black text-[#142033]">سجل العمل اليومي لمساحة عمل الموظف</h3>
+            <p className="mt-1 text-sm font-bold text-[#6A7688]">المهمة اليومية: الإقفال والتوثيق قبل نهاية الدوام</p>
+          </div>
+          <div className="justify-self-end rounded-xl bg-[#142033] px-5 py-4 text-center text-white">
+            <span className="block text-xs font-bold text-[#CFD8E3]">اليوم</span>
+            <strong className="block text-2xl leading-none">{dayNumber}</strong>
+          </div>
+        </header>
+
+        <section className="mt-4 grid grid-cols-1 gap-2 md:grid-cols-3">
+          <ReportField label="اسم الموظف" value={log.employee_name} />
+          <ReportField label="اليوم" value={dayNumber} />
+          <ReportField label="التاريخ" value={log.log_date} />
+          <ReportField label="وقت الانتهاء" value={formatTime(log.end_time)} />
+          <ReportField label="وقت البدء" value={formatTime(log.start_time)} />
+          <ReportField label="القسم / الفريق" value={log.department || log.team || '-'} />
+        </section>
+
+        <ReportSection ordinal="أولاً" title="مؤشرات بداية اليوم بعد تحديث الصفحة">
+          <div className="grid grid-cols-1 gap-2 md:grid-cols-4">
+            {beginningMetricLabels.map((item) => {
+              const value = getRecordValue(log.beginning_metrics, item.key, item.fallbackKey);
+              return (
+                <div key={item.key} className="relative rounded-lg border border-[#CFD8E3] bg-white px-3 pb-3 pt-4">
+                  <span className={cn('absolute inset-x-0 top-0 h-1 rounded-t-lg', item.tone)} />
+                  <p className="text-xs font-black text-[#6A7688]">{item.label}</p>
+                  <p className="mt-3 border-b border-[#8A97AA] pb-1 text-sm font-black">
+                    {item.currency ? formatCurrency(numberValue(value)) : String(value ?? '-')}
+                  </p>
+                </div>
+              );
+            })}
+          </div>
+        </ReportSection>
+
+        <ReportSection ordinal="ثانياً" title="قائمة تنفيذ المهمة اليومية">
+          <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
+            {DAILY_CLOSEOUT_CHECKLIST.map((item) => (
+              <div key={item.key} className="flex min-h-9 items-center justify-between gap-3 rounded-md border border-[#CFD8E3] bg-[#F8FAFC] px-3 py-2 text-sm font-bold">
+                <span>{item.label}</span>
+                <CheckMark checked={Boolean(checklist[item.key])} />
+              </div>
+            ))}
+          </div>
+        </ReportSection>
+
+        <ReportSection ordinal="ثالثاً" title="ملخص نتائج العمل">
+          <div className="grid grid-cols-2 border-r border-t border-[#CFD8E3] md:grid-cols-4">
+            {resultCells.map(([label, value]) => (
+              <div key={label} className="min-h-12 border-b border-l border-[#CFD8E3] px-3 py-2">
+                <p className="text-xs font-black text-[#6A7688]">{label}</p>
+                <p className="mt-2 border-b border-[#8A97AA] pb-1 text-sm font-black">{value}</p>
+              </div>
+            ))}
+          </div>
+        </ReportSection>
+
+        <ReportSection ordinal="رابعاً" title="أهم الحالات والإجراءات المنفذة">
+          <ReportTable headers={['رقم العقد', 'اسم العميل', 'الإجراء المنفذ', 'النتيجة / المبلغ', 'المتابعة القادمة']}>
+            {Array.from({ length: 4 }).map((_, index) => (
+              <TableRow key={index}>
+                <TableCell className="h-10 border border-[#CFD8E3] font-bold">{index === 0 ? log.key_cases || '' : ''}</TableCell>
+                <TableCell className="border border-[#CFD8E3]" />
+                <TableCell className="border border-[#CFD8E3]" />
+                <TableCell className="border border-[#CFD8E3]" />
+                <TableCell className="border border-[#CFD8E3]" />
+              </TableRow>
+            ))}
+          </ReportTable>
+        </ReportSection>
+
+        <ReportSection ordinal="خامساً" title="نشاط العقود والملفات المحتسب من النظام">
+          {activityLoading && (
+            <div className="mb-2 rounded-lg border border-sky-200 bg-sky-50 px-3 py-2 text-xs font-bold text-sky-800">
+              جارٍ تحديث تفاصيل تعديلات العقود والدفعات والمستندات من النظام...
+            </div>
+          )}
+          {Boolean(activityError) && (
+            <div className="mb-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-bold text-amber-900">
+              تعذر جلب النشاط المباشر، لذلك تم عرض النشاط المحفوظ داخل سجل الإقفال إن وجد.
+            </div>
+          )}
+          <div className="mb-2 grid grid-cols-1 border-r border-t border-[#CFD8E3] md:grid-cols-5">
+            {activityCells.map(([label, value]) => (
+              <div key={label} className="min-h-12 border-b border-l border-[#CFD8E3] px-3 py-2">
+                <p className="text-xs font-black text-[#6A7688]">{label}</p>
+                <p className="mt-2 border-b border-[#8A97AA] pb-1 text-sm font-black">{value}</p>
+              </div>
+            ))}
+          </div>
+          <ReportTable headers={['رقم العقد', 'نوع العملية', 'التفاصيل', 'المبلغ', 'الوقت']}>
+            {activityItems.length > 0 ? activityItems.slice(0, 10).map((item, index) => (
+              <TableRow key={item.id || index}>
+                <TableCell className="border border-[#CFD8E3] font-bold">{item.contractNumber || item.contract_number || '-'}</TableCell>
+                <TableCell className="border border-[#CFD8E3] font-bold">{item.label || item.title || '-'}</TableCell>
+                <TableCell className="border border-[#CFD8E3] font-bold">{item.detail || '-'}</TableCell>
+                <TableCell className="border border-[#CFD8E3] font-bold">{item.amount ? formatCurrency(item.amount) : '-'}</TableCell>
+                <TableCell className="border border-[#CFD8E3] font-bold">{formatActivityTime(item.occurredAt || item.occurred_at)}</TableCell>
+              </TableRow>
+            )) : (
+              <TableRow>
+                <TableCell colSpan={5} className="h-12 border border-[#CFD8E3] text-center font-black text-[#6A7688]">
+                  لا توجد تعديلات عقود أو دفعات أو مستندات مسجلة لهذا الموظف اليوم.
+                </TableCell>
+              </TableRow>
+            )}
+          </ReportTable>
+        </ReportSection>
+
+        <section className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2">
+          <ReportNote title="حالات تحتاج مراجعة المدير / القانونية" value={log.legal_review_cases} />
+          <ReportNote title="معوقات أو أخطاء بالنظام" value={log.blockers} />
+        </section>
+
+        <section className="mt-4 rounded-lg border-2 border-[#A6C6DB] bg-[#EEF7FD] p-4">
+          <h4 className="text-base font-black">اعتماد إقفال المهمة اليومية</h4>
+          <div className="mt-3 grid grid-cols-1 gap-3 text-xs font-black text-[#6A7688] md:grid-cols-3">
+            <ApprovalCheck label="وثقت الإجراءات المهمة داخل النظام" checked />
+            <ApprovalCheck label="حدثت مساحة العمل" checked={Boolean(summary.report_exported)} />
+            <ApprovalCheck label="راجعت المهام المتبقية" checked={Boolean(checklist.remaining_reviewed)} />
+          </div>
+          <div className="mt-4 flex flex-wrap items-center gap-3 text-sm font-black">
+            <span>حالة المهمة:</span>
+            <ApprovalCheck label="مكتملة" checked={log.completion_status === 'completed'} />
+            <ApprovalCheck label="غير مكتملة" checked={log.completion_status === 'incomplete'} />
+            <span>سبب عدم الاكتمال:</span>
+            <span className="min-w-40 flex-1 border-b border-[#8A97AA] pb-1">{log.incomplete_reason || ''}</span>
+          </div>
+          <div className="mt-5 grid grid-cols-1 gap-5 text-sm font-black text-[#142033] md:grid-cols-3">
+            <div className="border-b border-[#8A97AA] pb-1">توقيع الموظف</div>
+            <div className="border-b border-[#8A97AA] pb-1">اعتماد / أحرف المشرف</div>
+            <div className="border-b border-[#8A97AA] pb-1">وقت الاستلام: {formatClosedAt(log.closed_at)}</div>
+          </div>
+        </section>
+
+        <footer className="mt-16 flex justify-between border-t border-[#CFD8E3] pt-3 text-xs font-bold text-[#6A7688]">
+          <span>Fleetify ERP</span>
+          <span>سجل إقفال يومي محفوظ من النظام</span>
+        </footer>
+      </article>
     </div>
   );
 }
 
-function TextBlock({ title, value }: { title: string; value?: string | null }) {
+function ReportSection({ ordinal, title, children }: { ordinal: string; title: string; children: ReactNode }) {
   return (
-    <div className="rounded-lg border border-slate-200 bg-white p-3">
-      <p className="text-xs font-bold text-[#94A3B8]">{title}</p>
-      <p className="mt-2 min-h-10 whitespace-pre-wrap text-sm leading-6 text-[#334155]">{value || 'لا يوجد'}</p>
+    <section className="mt-4">
+      <div className="mb-2 flex items-center justify-end gap-3 border-t border-[#CFD8E3] pt-2">
+        <span className="rounded-full bg-[#142033] px-4 py-2 text-xs font-black text-white">{ordinal}</span>
+        <h4 className="text-base font-black text-[#142033]">{title}</h4>
+      </div>
+      {children}
+    </section>
+  );
+}
+
+function ReportField({ label, value }: { label: string; value: string | number }) {
+  return (
+    <div className="min-h-11 rounded-lg border border-[#CFD8E3] bg-white px-3 py-2">
+      <p className="text-left text-xs font-black text-[#6A7688]">{label}</p>
+      <p className="mt-2 border-b border-[#8A97AA] pb-1 text-sm font-black">{value}</p>
     </div>
+  );
+}
+
+function ReportTable({ headers, children }: { headers: string[]; children: ReactNode }) {
+  return (
+    <Table className="table-fixed border-collapse">
+      <TableHeader>
+        <TableRow>
+          {headers.map((header) => (
+            <TableHead key={header} className="border border-[#CFD8E3] bg-[#142033] text-center font-black text-white">
+              {header}
+            </TableHead>
+          ))}
+        </TableRow>
+      </TableHeader>
+      <TableBody>{children}</TableBody>
+    </Table>
+  );
+}
+
+function ReportNote({ title, value }: { title: string; value?: string | null }) {
+  return (
+    <div className="min-h-20 rounded-lg border border-[#CFD8E3] p-3">
+      <h4 className="text-left text-xs font-black text-[#142033]">{title}</h4>
+      <p className="mt-4 min-h-6 whitespace-pre-wrap border-b border-[#8A97AA] pb-1 text-sm font-bold text-[#334155]">{value || ''}</p>
+    </div>
+  );
+}
+
+function ApprovalCheck({ label, checked }: { label: string; checked: boolean }) {
+  return (
+    <span className="inline-flex items-center justify-end gap-2">
+      <span>{label}</span>
+      <CheckMark checked={checked} />
+    </span>
+  );
+}
+
+function CheckMark({ checked }: { checked: boolean }) {
+  return (
+    <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded border-2 border-[#8A97AA] text-sm font-black text-[#11A37F]">
+      {checked ? '✓' : ''}
+    </span>
   );
 }

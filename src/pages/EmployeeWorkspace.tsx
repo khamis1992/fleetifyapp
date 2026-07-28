@@ -39,6 +39,7 @@ import {
   FileCheck2,
   ScanLine,
   Upload,
+  Edit3,
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -151,6 +152,26 @@ type DailyActivityMetrics = {
   delayedTasks: number;
 };
 
+type DailyContractActivityItem = {
+  id: string;
+  source: 'contract_operation' | 'payment' | 'document';
+  label: string;
+  title: string;
+  detail: string;
+  contractNumber?: string | null;
+  amount?: number | null;
+  occurredAt?: string | null;
+};
+
+type DailyContractActivitySummary = {
+  contractUpdates: number;
+  statusChanges: number;
+  paymentsRegistered: number;
+  documentsAdded: number;
+  totalPaymentAmount: number;
+  items: DailyContractActivityItem[];
+};
+
 type ContractWorkFilter = 'all' | 'collection' | 'operational' | 'ready_to_close' | 'needs_completion';
 
 const DAILY_LOG_CHECKLIST: Array<{ key: DailyLogChecklistKey; label: string }> = [
@@ -208,6 +229,40 @@ const emptyDailyActivityMetrics: DailyActivityMetrics = {
   notesAdded: 0,
   completedTasks: 0,
   delayedTasks: 0,
+};
+
+const emptyDailyContractActivity: DailyContractActivitySummary = {
+  contractUpdates: 0,
+  statusChanges: 0,
+  paymentsRegistered: 0,
+  documentsAdded: 0,
+  totalPaymentAmount: 0,
+  items: [],
+};
+
+const contractOperationLabels: Record<string, string> = {
+  update: 'تعديل عقد',
+  contract_update: 'تعديل عقد',
+  status_change: 'تغيير حالة عقد',
+  close_contract: 'إغلاق عقد',
+  cancel_contract: 'إلغاء عقد',
+  convert_to_legal: 'تحويل قانوني',
+  revert_from_legal: 'إرجاع من القانوني',
+  legal_transfer_readiness_completed: 'اكتمال جاهزية التحويل',
+  signed_contract_uploaded: 'رفع عقد موقع',
+};
+
+const humanizeContractOperation = (operationType?: string | null) => {
+  const key = String(operationType || '').trim();
+  if (!key) return 'تعديل عقد';
+  return contractOperationLabels[key] || key.replace(/_/g, ' ');
+};
+
+const formatActivityTime = (value?: string | null) => {
+  if (!value) return '';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  return date.toLocaleTimeString('ar-QA', { hour: '2-digit', minute: '2-digit' });
 };
 
 const escapeHtml = (value: string) => value
@@ -459,6 +514,136 @@ export const EmployeeWorkspace: React.FC = () => {
     enabled: !!workspaceProfile?.id && !!companyId && !!user?.id,
   });
 
+  const {
+    data: dailyContractActivity = emptyDailyContractActivity,
+    refetch: refetchDailyContractActivity,
+  } = useQuery({
+    queryKey: ['employee-daily-contract-activity', companyId, workspaceProfile?.id, user?.id, todayLogDate, contracts.map((contract) => contract.id).join(',')],
+    queryFn: async (): Promise<DailyContractActivitySummary> => {
+      if (!workspaceProfile?.id || !companyId || !user?.id) return emptyDailyContractActivity;
+
+      const dayStart = `${todayLogDate}T00:00:00`;
+      const dayEnd = `${todayLogDate}T23:59:59`;
+      const assignedContractIds = contracts.map((contract) => contract.id).filter(Boolean);
+      const assignedContractIdSet = new Set(assignedContractIds);
+
+      const [operationsResult, documentsResult, paymentsResult] = await Promise.all([
+        (supabase as any)
+          .from('contract_operations_log')
+          .select('id, contract_id, operation_type, operation_details, old_values, new_values, notes, performed_at, performed_by')
+          .eq('company_id', companyId)
+          .eq('performed_by', workspaceProfile.id)
+          .gte('performed_at', dayStart)
+          .lte('performed_at', dayEnd),
+        (supabase as any)
+          .from('contract_documents')
+          .select('id, contract_id, document_name, document_type, uploaded_at, created_at, uploaded_by')
+          .eq('company_id', companyId)
+          .eq('uploaded_by', user.id)
+          .gte('created_at', dayStart)
+          .lte('created_at', dayEnd),
+        (supabase as any)
+          .from('payments')
+          .select('id, contract_id, payment_number, amount, payment_status, payment_date, created_at, created_by')
+          .eq('company_id', companyId)
+          .eq('created_by', user.id)
+          .gte('created_at', dayStart)
+          .lte('created_at', dayEnd),
+      ]);
+
+      if (operationsResult.error) throw operationsResult.error;
+      if (documentsResult.error) throw documentsResult.error;
+      if (paymentsResult.error) throw paymentsResult.error;
+
+      const operations = (operationsResult.data || []).filter((item: any) =>
+        !item.contract_id || assignedContractIdSet.size === 0 || assignedContractIdSet.has(item.contract_id)
+      );
+      const documents = (documentsResult.data || []).filter((item: any) =>
+        !item.contract_id || assignedContractIdSet.size === 0 || assignedContractIdSet.has(item.contract_id)
+      );
+      const payments = (paymentsResult.data || []).filter((item: any) =>
+        !item.contract_id || assignedContractIdSet.size === 0 || assignedContractIdSet.has(item.contract_id)
+      );
+
+      const activityContractIds = Array.from(new Set(
+        [...operations, ...documents, ...payments]
+          .map((item: any) => item.contract_id)
+          .filter(Boolean),
+      ));
+
+      const contractsById = new Map<string, string>();
+      if (activityContractIds.length > 0) {
+        const { data: activityContracts, error: contractsError } = await supabase
+          .from('contracts')
+          .select('id, contract_number')
+          .eq('company_id', companyId)
+          .in('id', activityContractIds);
+
+        if (contractsError) throw contractsError;
+        (activityContracts || []).forEach((contract) => {
+          contractsById.set(contract.id, contract.contract_number || contract.id);
+        });
+      }
+
+      const operationItems: DailyContractActivityItem[] = operations.map((operation: any) => {
+        const oldValues = operation.old_values || {};
+        const newValues = operation.new_values || {};
+        const changedFields = Object.keys(newValues).filter((key) => oldValues?.[key] !== newValues?.[key]);
+        const label = humanizeContractOperation(operation.operation_type);
+        const fieldText = changedFields.length > 0 ? `الحقول: ${changedFields.slice(0, 4).join('، ')}` : (operation.notes || 'تم تسجيل تعديل على العقد');
+
+        return {
+          id: `operation-${operation.id}`,
+          source: 'contract_operation',
+          label,
+          title: `${label}${contractsById.get(operation.contract_id) ? ` - ${contractsById.get(operation.contract_id)}` : ''}`,
+          detail: fieldText,
+          contractNumber: contractsById.get(operation.contract_id),
+          occurredAt: operation.performed_at,
+        };
+      });
+
+      const documentItems: DailyContractActivityItem[] = documents.map((document: any) => ({
+        id: `document-${document.id}`,
+        source: 'document',
+        label: 'إضافة مستند',
+        title: `إضافة مستند${contractsById.get(document.contract_id) ? ` - ${contractsById.get(document.contract_id)}` : ''}`,
+        detail: document.document_name || document.document_type || 'مستند عقد',
+        contractNumber: contractsById.get(document.contract_id),
+        occurredAt: document.uploaded_at || document.created_at,
+      }));
+
+      const paymentItems: DailyContractActivityItem[] = payments.map((payment: any) => ({
+        id: `payment-${payment.id}`,
+        source: 'payment',
+        label: 'تسجيل دفعة',
+        title: `تسجيل دفعة${contractsById.get(payment.contract_id) ? ` - ${contractsById.get(payment.contract_id)}` : ''}`,
+        detail: `${payment.payment_number || 'دفعة'} - ${payment.payment_status || 'بدون حالة'}`,
+        contractNumber: contractsById.get(payment.contract_id),
+        amount: Number(payment.amount || 0),
+        occurredAt: payment.created_at || payment.payment_date,
+      }));
+
+      const items = [...operationItems, ...documentItems, ...paymentItems]
+        .sort((a, b) => new Date(b.occurredAt || 0).getTime() - new Date(a.occurredAt || 0).getTime());
+
+      return {
+        contractUpdates: operationItems.length,
+        statusChanges: operations.filter((operation: any) => {
+          const type = String(operation.operation_type || '').toLowerCase();
+          const oldStatus = operation.old_values?.status;
+          const newStatus = operation.new_values?.status;
+          return type.includes('status') || oldStatus !== newStatus;
+        }).length,
+        paymentsRegistered: paymentItems.length,
+        documentsAdded: documentItems.length,
+        totalPaymentAmount: paymentItems.reduce((sum, item) => sum + Number(item.amount || 0), 0),
+        items,
+      };
+    },
+    enabled: !!workspaceProfile?.id && !!companyId && !!user?.id,
+  });
+
   const employeeDisplayName = useMemo(() => {
     const profileName = [workspaceProfile?.first_name, workspaceProfile?.last_name]
       .filter(Boolean)
@@ -535,6 +720,7 @@ export const EmployeeWorkspace: React.FC = () => {
   useEffect(() => {
     if (!showDailyLogDialog) return;
     void refetchDailyActivityMetrics();
+    void refetchDailyContractActivity();
     setDailyLogForm(dailyLog ? dailyLogToForm(dailyLog) : buildDefaultDailyLogForm());
   }, [
     showDailyLogDialog,
@@ -545,6 +731,7 @@ export const EmployeeWorkspace: React.FC = () => {
     contractStats.totalBalanceDue,
     priorityContracts.length,
     dailyActivityMetrics,
+    dailyContractActivity,
   ]);
 
   const checklistDoneCount = dailyLogForm
@@ -602,6 +789,14 @@ export const EmployeeWorkspace: React.FC = () => {
           delayed_tasks: numberValue(form.delayedTasks),
           legal_referrals: form.legalReferrals === 'yes',
           report_exported: form.reportExported,
+          contract_activity: {
+            contract_updates: dailyContractActivity.contractUpdates,
+            status_changes: dailyContractActivity.statusChanges,
+            payments_registered: dailyContractActivity.paymentsRegistered,
+            documents_added: dailyContractActivity.documentsAdded,
+            total_payment_amount: dailyContractActivity.totalPaymentAmount,
+            items: dailyContractActivity.items.slice(0, 50),
+          },
         },
         key_cases: form.keyCases || null,
         legal_review_cases: form.legalReviewCases || null,
@@ -634,7 +829,7 @@ export const EmployeeWorkspace: React.FC = () => {
           company_id: companyId,
           user_id: manager.user_id,
           title: 'تم إقفال يوم عمل موظف',
-          message: `قام ${form.employeeName || employeeDisplayName} بإقفال يوم العمل ${form.logDate}. التحصيل: ${formatCurrency(numberValue(form.totalCollected))}. الحالة: ${form.status === 'completed' ? 'مكتمل' : 'غير مكتمل'}.`,
+          message: `قام ${form.employeeName || employeeDisplayName} بإقفال يوم العمل ${form.logDate}. التحصيل: ${formatCurrency(numberValue(form.totalCollected))}. نشاط العقود: ${dailyContractActivity.items.length}. الحالة: ${form.status === 'completed' ? 'مكتمل' : 'غير مكتمل'}.`,
           notification_type: form.status === 'completed' ? 'success' : 'warning',
           is_read: false,
           related_id: data.id,
@@ -729,6 +924,35 @@ export const EmployeeWorkspace: React.FC = () => {
         <td></td>
         <td></td>
       </tr>
+    `).join('');
+
+    const contractActivityRows = dailyContractActivity.items.length > 0
+      ? dailyContractActivity.items.slice(0, 10).map((item) => `
+        <tr>
+          <td>${escapeHtml(item.contractNumber || '')}</td>
+          <td>${escapeHtml(item.label)}</td>
+          <td>${escapeHtml(item.detail || '')}</td>
+          <td>${item.amount ? escapeHtml(formatCurrency(item.amount)) : ''}</td>
+          <td>${escapeHtml(formatActivityTime(item.occurredAt))}</td>
+        </tr>
+      `).join('')
+      : `
+        <tr>
+          <td colspan="5" class="empty-activity">لا توجد تعديلات عقود أو دفعات أو مستندات مسجلة لهذا الموظف اليوم.</td>
+        </tr>
+      `;
+
+    const contractActivityCells = [
+      ['تعديلات العقود', dailyContractActivity.contractUpdates],
+      ['تغييرات الحالة', dailyContractActivity.statusChanges],
+      ['دفعات مسجلة', dailyContractActivity.paymentsRegistered],
+      ['مستندات مضافة', dailyContractActivity.documentsAdded],
+      ['إجمالي دفعات النشاط', formatCurrency(dailyContractActivity.totalPaymentAmount)],
+    ].map(([label, value]) => `
+      <div class="result-cell">
+        <span>${label}</span>
+        <strong>${value}</strong>
+      </div>
     `).join('');
 
     printable.document.write(`
@@ -999,6 +1223,19 @@ export const EmployeeWorkspace: React.FC = () => {
               grid-template-columns: 1fr 1fr;
               gap: 8px;
             }
+            .activity-summary {
+              display: grid;
+              grid-template-columns: repeat(5, 1fr);
+              border-top: 1px solid #cfd8e3;
+              border-right: 1px solid #cfd8e3;
+              margin-bottom: 7px;
+            }
+            .empty-activity {
+              height: 34px;
+              text-align: center;
+              color: #6a7688;
+              font-weight: 900;
+            }
             .note-box {
               min-height: 62px;
               border: 1px solid #cfd8e3;
@@ -1157,6 +1394,23 @@ export const EmployeeWorkspace: React.FC = () => {
             </section>
 
             <section class="section">
+              <div class="section-heading"><span class="section-pill">خامساً</span><h2>نشاط العقود والملفات المحتسب من النظام</h2></div>
+              <div class="activity-summary">${contractActivityCells}</div>
+              <table>
+                <thead>
+                  <tr>
+                    <th>رقم العقد</th>
+                    <th>نوع العملية</th>
+                    <th>التفاصيل</th>
+                    <th>المبلغ</th>
+                    <th>الوقت</th>
+                  </tr>
+                </thead>
+                <tbody>${contractActivityRows}</tbody>
+              </table>
+            </section>
+
+            <section class="section">
               <div class="note-grid">
                 <div class="note-box"><h3>حالات تحتاج مراجعة المدير / القانونية</h3><div class="note-line">${escapeHtml(form.legalReviewCases || '')}</div></div>
                 <div class="note-box"><h3>معوقات أو أخطاء بالنظام</h3><div class="note-line">${escapeHtml(form.blockers || '')}</div></div>
@@ -1204,6 +1458,7 @@ export const EmployeeWorkspace: React.FC = () => {
     refetchPerformance();
     refetchCollections();
     refetchDailyActivityMetrics();
+    refetchDailyContractActivity();
   };
 
   const handleSignOut = async () => {
@@ -3045,7 +3300,7 @@ export const EmployeeWorkspace: React.FC = () => {
                     <circle cx="50" cy="50" r="42" fill="none" stroke="#E2E8F0" strokeWidth="8" />
                     <circle
                       cx="50" cy="50" r="42" fill="none"
-                      stroke={performance?.performance_score >= 80 ? '#059669' : performance?.performance_score >= 60 ? '#D97706' : '#DC2626'}
+                      stroke={(performance?.performance_score ?? 0) >= 80 ? '#059669' : (performance?.performance_score ?? 0) >= 60 ? '#D97706' : '#DC2626'}
                       strokeWidth="8"
                       strokeLinecap="round"
                       strokeDasharray={`${(performance?.performance_score || 0) * 2.64} 264`}
@@ -3330,6 +3585,76 @@ export const EmployeeWorkspace: React.FC = () => {
                     })}
                   </div>
                 </div>
+              </div>
+
+              <div className="rounded-xl border border-[#DDE5EF] bg-white p-4">
+                <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <h3 className="flex items-center gap-2 text-sm font-black text-[#142033]">
+                      <Edit3 className="h-4 w-4 text-[#1D4F7A]" />
+                      نشاط العقود والملفات خلال اليوم
+                    </h3>
+                    <p className="mt-1 text-xs text-[#6A7688]">
+                      يتم احتسابه تلقائيًا من تعديلات العقود، الدفعات، وتحديثات المستندات التي نفذها الموظف.
+                    </p>
+                  </div>
+                  <Badge className="bg-[#EEF4FA] text-[#1D4F7A] hover:bg-[#EEF4FA]">
+                    {dailyContractActivity.items.length} عملية
+                  </Badge>
+                </div>
+
+                <div className="mb-3 grid grid-cols-2 gap-3 md:grid-cols-5">
+                  {[
+                    ['تعديلات العقود', dailyContractActivity.contractUpdates],
+                    ['تغيير الحالة', dailyContractActivity.statusChanges],
+                    ['دفعات مسجلة', dailyContractActivity.paymentsRegistered],
+                    ['مستندات مضافة', dailyContractActivity.documentsAdded],
+                    ['مبلغ الدفعات', formatCurrency(dailyContractActivity.totalPaymentAmount)],
+                  ].map(([label, value]) => (
+                    <div key={label} className="rounded-lg border border-[#EEF2F6] bg-[#F8FAFC] p-3">
+                      <p className="text-xs font-bold text-[#6A7688]">{label}</p>
+                      <p className="mt-1 text-sm font-black text-[#142033]">{value}</p>
+                    </div>
+                  ))}
+                </div>
+
+                {dailyContractActivity.items.length === 0 ? (
+                  <div className="rounded-lg border border-dashed border-[#DDE5EF] bg-[#F8FAFC] p-4 text-center text-sm text-[#6A7688]">
+                    لا توجد تعديلات عقود أو دفعات أو مستندات مسجلة لهذا الموظف اليوم.
+                  </div>
+                ) : (
+                  <div className="max-h-56 space-y-2 overflow-auto pr-1">
+                    {dailyContractActivity.items.slice(0, 12).map((item) => (
+                      <div
+                        key={item.id}
+                        className="flex flex-col gap-2 rounded-lg border border-[#EEF2F6] bg-[#FBFCFE] p-3 sm:flex-row sm:items-center sm:justify-between"
+                      >
+                        <div className="min-w-0">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <Badge variant="outline" className="rounded-md bg-white text-[#1D4F7A]">
+                              {item.label}
+                            </Badge>
+                            {item.contractNumber && (
+                              <span className="text-xs font-black text-[#142033]">{item.contractNumber}</span>
+                            )}
+                            {item.occurredAt && (
+                              <span className="text-xs text-[#8A96A8]">{formatActivityTime(item.occurredAt)}</span>
+                            )}
+                          </div>
+                          <p className="mt-1 truncate text-sm font-bold text-[#142033]">{item.detail}</p>
+                        </div>
+                        {item.amount ? (
+                          <span className="text-sm font-black text-[#0D876A]">{formatCurrency(item.amount)}</span>
+                        ) : null}
+                      </div>
+                    ))}
+                    {dailyContractActivity.items.length > 12 && (
+                      <p className="text-center text-xs font-bold text-[#6A7688]">
+                        +{dailyContractActivity.items.length - 12} عمليات أخرى محفوظة في الإقفال
+                      </p>
+                    )}
+                  </div>
+                )}
               </div>
 
               <div className="rounded-xl border border-[#DDE5EF] bg-white p-4">

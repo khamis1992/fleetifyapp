@@ -8,12 +8,15 @@ import {
   Brain,
   CheckCircle2,
   ChevronDown,
+  ClipboardCheck,
   Clock,
   Copy,
   FileSearch,
   FileText,
+  FolderOpen,
   Gavel,
   Handshake,
+  ListChecks,
   Loader2,
   MessageSquare,
   Printer,
@@ -74,6 +77,7 @@ type QueueItem = {
   vehicleLabel: string;
   legalCaseNumber?: string | null;
   legalCaseStatus?: string | null;
+  workflowStage?: string | null;
   legalCaseValue: number;
   overdueRent: number;
   lateFees: number;
@@ -471,6 +475,7 @@ const fetchLegalQueue = async (companyId: string): Promise<QueueItem[]> => {
       vehicleLabel: vehicleLabel(contract),
       legalCaseNumber: legalCase?.case_number,
       legalCaseStatus: legalCase?.case_status,
+      workflowStage: legalCase?.workflow_stage,
       legalCaseValue: Number(legalCase?.case_value || normalized.balance_due || 0),
       overdueRent,
       lateFees,
@@ -950,6 +955,76 @@ const statusLabel = (status?: string | null) => {
   }
 };
 
+const preparationStageLabel = (stage?: string | null) => {
+  switch (stage) {
+    case 'preparation':
+      return 'مرحلة تجهيز الملف';
+    case 'filed':
+      return 'تم فتحها رسميًا';
+    case 'hearings':
+      return 'جلسات';
+    case 'reserved_for_judgment':
+      return 'محجوزة للحكم';
+    default:
+      return 'مرحلة التحضير القانوني';
+  }
+};
+
+const getQueueReadiness = (item: QueueItem) => {
+  const missingCount = item.missingDocuments.length;
+  const hasClaim = item.detailedClaimTotal > 0;
+  const isFiled = item.workflowStage && item.workflowStage !== 'preparation';
+
+  if (isFiled) {
+    return {
+      label: preparationStageLabel(item.workflowStage),
+      description: 'هذه الدعوى خرجت من لوبي التجهيز وتحتاج متابعة في سجل القضايا.',
+      progress: 100,
+      tone: 'slate' as const,
+      nextAction: 'عرض المتابعة',
+    };
+  }
+
+  if (missingCount > 0) {
+    return {
+      label: 'تجهيز ناقص',
+      description: `${missingCount} مستند/متطلب ناقص قبل فتح الدعوى رسميًا.`,
+      progress: hasClaim ? 65 : 45,
+      tone: 'amber' as const,
+      nextAction: 'استكمال النواقص',
+    };
+  }
+
+  return {
+    label: item.legalCaseStatus === 'active' ? 'ملف تجهيز نشط' : 'جاهز للمراجعة',
+    description: 'الملف موجود في لوبي التجهيز ولم يتم اعتباره قضية مفتوحة رسميًا بعد.',
+    progress: hasClaim ? 90 : 75,
+    tone: 'emerald' as const,
+    nextAction: 'متابعة التجهيز',
+  };
+};
+
+const readinessToneClassName = {
+  amber: {
+    badge: 'border-amber-200 bg-amber-50 text-amber-700',
+    rail: 'bg-amber-500',
+    card: 'border-amber-200 bg-amber-50/70',
+    icon: 'bg-amber-100 text-amber-700',
+  },
+  emerald: {
+    badge: 'border-emerald-200 bg-emerald-50 text-emerald-700',
+    rail: 'bg-emerald-500',
+    card: 'border-emerald-200 bg-emerald-50/70',
+    icon: 'bg-emerald-100 text-emerald-700',
+  },
+  slate: {
+    badge: 'border-slate-200 bg-slate-50 text-slate-700',
+    rail: 'bg-slate-500',
+    card: 'border-slate-200 bg-slate-50',
+    icon: 'bg-slate-100 text-slate-700',
+  },
+};
+
 const CandidateBadge = ({ source }: { source: CandidateSource }) => (
   <Badge
     className={cn(
@@ -1352,9 +1427,12 @@ const FinancialDelinquencyPage: React.FC = () => {
 
   const queueStats = useMemo(() => {
     const totalRentalValue = legalQueue.reduce((sum, item) => sum + item.overdueRent, 0);
-    const activeCases = legalQueue.filter((item) => activeLegalStatuses.includes(item.legalCaseStatus || 'pending')).length;
-    const readyForCourt = legalQueue.filter((item) => item.legalCaseStatus === 'pending').length;
-    return { total: legalQueue.length, totalRentalValue, activeCases, readyForCourt };
+    const inPreparation = legalQueue.filter((item) => !item.workflowStage || item.workflowStage === 'preparation').length;
+    const missingRequirements = legalQueue.filter((item) => item.missingDocuments.length > 0).length;
+    const readyForCourt = legalQueue.filter(
+      (item) => (!item.workflowStage || item.workflowStage === 'preparation') && item.missingDocuments.length === 0
+    ).length;
+    return { total: legalQueue.length, totalRentalValue, inPreparation, missingRequirements, readyForCourt };
   }, [legalQueue]);
 
   const delinquencyAIInsights = useMemo(
@@ -1511,7 +1589,7 @@ const FinancialDelinquencyPage: React.FC = () => {
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-semibold text-[#94A3B8]">ملفات قانونية</p>
+                  <p className="text-sm font-semibold text-[#94A3B8]">ملفات في لوبي التجهيز</p>
                   <p className="mt-2 text-2xl font-bold text-[#020617]">{queueStats.total}</p>
                 </div>
                 <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#7C83F6]/10 text-[#7C83F6]">
@@ -1537,8 +1615,8 @@ const FinancialDelinquencyPage: React.FC = () => {
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-semibold text-[#94A3B8]">قضايا مفتوحة</p>
-                  <p className="mt-2 text-2xl font-bold text-[#020617]">{queueStats.activeCases}</p>
+                  <p className="text-sm font-semibold text-[#94A3B8]">قيد التجهيز</p>
+                  <p className="mt-2 text-2xl font-bold text-[#020617]">{queueStats.inPreparation}</p>
                 </div>
                 <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#FB6B7A]/10 text-[#FB6B7A]">
                   <AlertTriangle className="h-5 w-5" />
@@ -1550,7 +1628,7 @@ const FinancialDelinquencyPage: React.FC = () => {
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-semibold text-[#94A3B8]">بانتظار التجهيز</p>
+                  <p className="text-sm font-semibold text-[#94A3B8]">جاهزة للإيداع</p>
                   <p className="mt-2 text-2xl font-bold text-[#020617]">{queueStats.readyForCourt}</p>
                 </div>
                 <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#38BDF8]/10 text-[#38BDF8]">
@@ -1741,29 +1819,56 @@ const FinancialDelinquencyPage: React.FC = () => {
               </div>
             ) : (
               <div className="grid gap-3">
-                {filteredQueue.map((item) => (
-                  <article key={item.contract.id} className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-                    <div className="grid gap-4 lg:grid-cols-[1fr_auto] lg:items-center">
-                      <div className="min-w-0 space-y-3">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <Badge className="bg-[#22C7A1]/10 text-[#0F766E] hover:bg-[#22C7A1]/10">
-                            {statusLabel(item.legalCaseStatus)}
-                          </Badge>
-                          {item.legalCaseNumber && (
-                            <Badge variant="outline" className="border-slate-200 text-[#64748B]">
-                              {item.legalCaseNumber}
-                            </Badge>
-                          )}
-                          <span className="text-xs text-[#94A3B8]">
-                            تم التحويل يدويًا {item.transferredAt ? new Date(item.transferredAt).toLocaleDateString('ar-QA') : ''}
-                          </span>
-                        </div>
+                {filteredQueue.map((item) => {
+                  const readiness = getQueueReadiness(item);
+                  const tone = readinessToneClassName[readiness.tone];
 
-                        <div>
-                          <h3 className="text-lg font-bold text-[#020617]">{item.customerName}</h3>
-                          <p className="mt-1 text-sm text-[#94A3B8]">
-                            عقد {item.contract.contract_number} · {item.vehicleLabel}
-                          </p>
+                  return (
+                  <article key={item.contract.id} className={cn('overflow-hidden rounded-xl border bg-white shadow-sm', tone.card)}>
+                    <div className="grid min-h-1.5 grid-cols-1 bg-slate-100">
+                      <div className={cn('h-1.5', tone.rail)} style={{ width: `${readiness.progress}%` }} />
+                    </div>
+                    <div className="grid gap-4 p-4 lg:grid-cols-[1fr_auto] lg:items-center">
+                      <div className="min-w-0 space-y-3">
+                        <div className="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
+                          <div className="min-w-0">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <Badge variant="outline" className={cn('font-bold', tone.badge)}>
+                                <FolderOpen className="ml-1 h-3.5 w-3.5" />
+                                ملف تجهيز دعوى
+                              </Badge>
+                              <Badge variant="outline" className={cn('font-bold', tone.badge)}>
+                                {readiness.label}
+                              </Badge>
+                              {item.legalCaseNumber && (
+                                <Badge variant="outline" className="border-slate-200 bg-white text-[#64748B]">
+                                  {item.legalCaseNumber}
+                                </Badge>
+                              )}
+                              <Badge variant="outline" className="border-slate-200 bg-white text-[#64748B]">
+                                الحالة الداخلية: {statusLabel(item.legalCaseStatus)}
+                              </Badge>
+                            </div>
+
+                            <h3 className="mt-3 text-xl font-black text-[#020617]">{item.customerName}</h3>
+                            <p className="mt-1 text-sm text-[#64748B]">
+                              عقد {item.contract.contract_number} · {item.vehicleLabel}
+                            </p>
+                          </div>
+
+                          <div className="grid gap-2 rounded-xl border border-white/70 bg-white/80 p-3 text-sm shadow-sm sm:min-w-[260px]">
+                            <div className="flex items-center justify-between gap-3">
+                              <span className="font-semibold text-[#64748B]">جاهزية الملف</span>
+                              <strong className="text-[#020617]">{readiness.progress}%</strong>
+                            </div>
+                            <div className="h-2 rounded-full bg-slate-100">
+                              <div className={cn('h-2 rounded-full', tone.rail)} style={{ width: `${readiness.progress}%` }} />
+                            </div>
+                            <p className="leading-6 text-[#64748B]">{readiness.description}</p>
+                            <p className="text-xs font-semibold text-[#94A3B8]">
+                              تم التحويل {item.transferredAt ? new Date(item.transferredAt).toLocaleDateString('ar-QA') : 'بدون تاريخ'}
+                            </p>
+                          </div>
                         </div>
 
                         <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
@@ -1789,7 +1894,7 @@ const FinancialDelinquencyPage: React.FC = () => {
                           </div>
                         </div>
 
-                        {item.missingDocuments.length > 0 && (
+                        {item.missingDocuments.length > 0 ? (
                           <div
                             role="alert"
                             className="flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5 text-amber-950"
@@ -1802,10 +1907,24 @@ const FinancialDelinquencyPage: React.FC = () => {
                               </p>
                             </div>
                           </div>
+                        ) : (
+                          <div className="flex items-start gap-3 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2.5 text-emerald-950">
+                            <ClipboardCheck className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
+                            <div className="min-w-0">
+                              <p className="text-sm font-bold">المتطلبات الأساسية مكتملة</p>
+                              <p className="mt-1 text-sm leading-6 text-emerald-800">
+                                الملف جاهز للمراجعة النهائية قبل فتح الدعوى رسميًا.
+                              </p>
+                            </div>
+                          </div>
                         )}
                       </div>
 
-                      <div className="flex flex-col gap-2 sm:flex-row lg:flex-col">
+                      <div className="flex flex-col gap-2 sm:flex-row lg:flex-col lg:min-w-[176px]">
+                        <div className="hidden rounded-xl border border-slate-200 bg-white p-3 text-center text-xs font-bold text-[#64748B] lg:block">
+                          <ListChecks className="mx-auto mb-1 h-5 w-5 text-[#22C7A1]" />
+                          {readiness.nextAction}
+                        </div>
                         <Button
                           onClick={() => navigate(`/legal/lawsuit/prepare/${item.contract.id}`)}
                           className="gap-2 rounded-xl bg-[#22C7A1] text-white hover:bg-[#1BAA8A]"
@@ -1832,7 +1951,8 @@ const FinancialDelinquencyPage: React.FC = () => {
                       </div>
                     </div>
                   </article>
-                ))}
+                  );
+                })}
               </div>
             )}
           </TabsContent>

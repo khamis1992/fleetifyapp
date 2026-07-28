@@ -88,3 +88,5 @@ tmp/
 
 # Python cache
 scripts/__pycache__/
+.taqadi-agent/
+.env.taqadi-agent

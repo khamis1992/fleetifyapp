@@ -6,7 +6,7 @@
  * @component ContractDetailsPageRedesignedV2
  */
 
-import { type CSSProperties, type ElementType, type ReactNode, useState, useMemo, useCallback } from 'react';
+import { type CSSProperties, type ElementType, type ReactNode, useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -2200,6 +2200,7 @@ const ContractDetailsPageRedesigned = () => {
   const queryClient = useQueryClient();
   const { companyId, isInitializing } = useUnifiedCompanyAccess();
   const { formatCurrency } = useCurrencyFormatter();
+  const autoSyncedContractIds = useRef<Set<string>>(new Set());
 
   // State
   const [activeTab, setActiveTab] = useState('health');
@@ -2294,6 +2295,43 @@ const ContractDetailsPageRedesigned = () => {
     staleTime: 30000, // Cache for 30 seconds
     gcTime: 300000, // Keep in cache for 5 minutes
   });
+
+  useEffect(() => {
+    if (!contract?.id || !companyId) return;
+    if (autoSyncedContractIds.current.has(contract.id)) return;
+
+    autoSyncedContractIds.current.add(contract.id);
+    let isActive = true;
+
+    const syncContractFinancialState = async () => {
+      const { data, error: syncError } = await (supabase as any).rpc('refresh_contract_financial_state_v1', {
+        p_contract_id: contract.id,
+      });
+
+      if (!isActive) return;
+
+      if (syncError) {
+        console.warn('[ContractDetails] automatic financial refresh skipped:', syncError);
+        return;
+      }
+
+      if (data?.changed) {
+        await Promise.all([
+          queryClient.invalidateQueries({ queryKey: ['contract-details', contractNumber, companyId] }),
+          queryClient.invalidateQueries({ queryKey: ['contract-invoices', contract.id] }),
+          queryClient.invalidateQueries({ queryKey: ['contract-payments'] }),
+          queryClient.invalidateQueries({ queryKey: ['payment-schedules'] }),
+          queryClient.invalidateQueries({ queryKey: ['contracts'] }),
+        ]);
+      }
+    };
+
+    void syncContractFinancialState();
+
+    return () => {
+      isActive = false;
+    };
+  }, [contract?.id, companyId, contractNumber, queryClient]);
 
   // Fetch invoices with caching (including cancelled to show full history)
   const { data: invoices = [] } = useQuery({
