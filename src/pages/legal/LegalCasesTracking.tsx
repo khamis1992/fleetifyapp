@@ -99,6 +99,7 @@ import {
   ChevronRight,
   Eye,
   Edit,
+  PlayCircle,
   XCircle,
   Upload,
   File,
@@ -1495,6 +1496,13 @@ export const LegalCasesTracking: React.FC = () => {
                         >
                           <Edit size={14} />
                           تعديل
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          className="gap-2 cursor-pointer text-indigo-600"
+                          onClick={() => handleViewDetails(item as LegalCase)}
+                        >
+                          <PlayCircle size={14} />
+                          معالجة
                         </DropdownMenuItem>
                         <DropdownMenuItem
                           className="gap-2 cursor-pointer text-purple-600"
