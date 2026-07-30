@@ -90,3 +90,14 @@ tmp/
 scripts/__pycache__/
 .taqadi-agent/
 .env.taqadi-agent
+
+# opencode local config (contains MCP access token)
+opencode.json
+
+# local env files (secrets)
+.env
+.env.local
+# unrelated local tools/artifacts
+deliverables/
+tools/
+deno.lock
