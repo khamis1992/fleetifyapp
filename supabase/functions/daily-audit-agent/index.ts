@@ -39,6 +39,7 @@ type CompanyResult = {
     invoiceBackfillSkipped: number;
     cancelledZeroInvoicesCancelled: number;
     scheduleLinksRepaired: number;
+    scheduleStatesSynced: number;
     invoiceAmountsReconciled: number;
     duplicateInvoicesCancelled: number;
     outsideInvoicesCancelled: number;
@@ -71,6 +72,7 @@ type AgentResult = {
     invoiceBackfillCreated: number;
     cancelledZeroInvoicesCancelled: number;
     scheduleLinksRepaired: number;
+    scheduleStatesSynced: number;
     invoiceAmountsReconciled: number;
     duplicateInvoicesCancelled: number;
     outsideInvoicesCancelled: number;
@@ -250,6 +252,7 @@ async function auditCompany({
       invoiceBackfillSkipped: 0,
       cancelledZeroInvoicesCancelled: 0,
       scheduleLinksRepaired: 0,
+      scheduleStatesSynced: 0,
       invoiceAmountsReconciled: 0,
       duplicateInvoicesCancelled: 0,
       outsideInvoicesCancelled: 0,
@@ -349,6 +352,16 @@ async function auditCompany({
     );
   });
 
+  await safeStep(result, "sync_schedule_payment_states", async () => {
+    result.contracts.scheduleStatesSynced = await syncSchedulePaymentStates(
+      supabase,
+      company.id,
+      dryRun,
+      maxContractsPerCompany,
+      targetContractIds,
+    );
+  });
+
   await safeStep(result, "repair_out_of_period_payments", async () => {
     result.contracts.outOfPeriodPaymentsRepaired = await repairOutOfPeriodPayments(
       supabase,
@@ -390,7 +403,74 @@ async function auditCompany({
     }
   });
 
+  await safeStep(result, "surface_review_items_task", async () => {
+    if (!dryRun && result.reviewItems.length > 0) {
+      await upsertDailyAuditReviewTask(supabase, company.id, result.reviewItems);
+    }
+  });
+
   return result;
+}
+
+async function upsertDailyAuditReviewTask(supabase: any, companyId: string, reviewItems: string[]) {
+  // tasks.created_by references profiles.id, so pick an active privileged
+  // profile of this company directly.
+  const { data: profileRows, error: profileError } = await supabase
+    .from("profiles")
+    .select("id")
+    .eq("company_id", companyId)
+    .eq("is_active", true)
+    .in("role", ["admin", "manager", "accountant", "super_admin", "company_admin"])
+    .limit(1);
+  if (profileError) throw profileError;
+
+  const assignee = profileRows?.[0]?.id;
+  if (!assignee) return;
+
+  const now = new Date().toISOString();
+  const title = `مراجعة ${reviewItems.length} عنصرًا ماليًا رصده وكيل التدقيق اليومي`;
+  const shown = reviewItems.slice(0, 20).map((item) => `- ${item}`).join("\n");
+  const description = `وكيل التدقيق اليومي رصد ${reviewItems.length} عنصرًا يحتاج قرارًا بشريًا:\n${shown}${
+    reviewItems.length > 20 ? `\n- ... و ${reviewItems.length - 20} عنصرًا إضافيًا في سجل التدقيق` : ""
+  }`;
+
+  const { data: existing, error: existingError } = await supabase
+    .from("tasks")
+    .select("id")
+    .eq("company_id", companyId)
+    .eq("category", "system_audit_review")
+    .eq("status", "pending")
+    .eq("metadata->>source", "daily_audit_agent")
+    .limit(1);
+  if (existingError) throw existingError;
+
+  if (existing?.length) {
+    const { error: updateError } = await supabase
+      .from("tasks")
+      .update({ title, description, updated_at: now })
+      .eq("id", existing[0].id);
+    if (updateError) throw updateError;
+    return;
+  }
+
+  const { error: insertError } = await supabase.from("tasks").insert({
+    company_id: companyId,
+    created_by: assignee,
+    assigned_to: assignee,
+    title,
+    description,
+    status: "pending",
+    priority: "high",
+    due_date: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+    category: "system_audit_review",
+    tags: ["system-audit", "daily-audit-agent", "human-decision"],
+    metadata: {
+      source: "daily_audit_agent",
+      reviewItemCount: reviewItems.length,
+      syncedAt: now,
+    },
+  });
+  if (insertError) throw insertError;
 }
 
 async function recalculateInvoiceBalances(
@@ -400,126 +480,47 @@ async function recalculateInvoiceBalances(
   limit: number,
   targetContractIds: string[] | null,
 ) {
-  let query = supabase
+  // Allocation-aware canonical drift detection: one set-based report instead
+  // of a naive payment scan that cannot see payment_allocations.
+  const { data: driftRows, error: driftError } = await supabase.rpc("invoice_balance_drift_report", {
+    p_company_id: companyId,
+    p_contract_ids: targetContractIds?.length ? targetContractIds : null,
+  });
+  if (driftError) throw driftError;
+
+  const drift = (driftRows || []).slice(0, Math.max(1, limit));
+
+  let countQuery = supabase
     .from("invoices")
-    .select("id, total_amount, paid_amount, balance_due, due_date, status, payment_status")
+    .select("id", { count: "exact", head: true })
     .eq("company_id", companyId)
-    .not("status", "eq", "cancelled")
-    .order("updated_at", { ascending: true });
+    .not("status", "eq", "cancelled");
+  if (targetContractIds?.length) countQuery = countQuery.in("contract_id", targetContractIds);
+  const { count: scanned } = await countQuery;
 
-  if (targetContractIds?.length) query = query.in("contract_id", targetContractIds);
-  query = query.limit(limit);
-
-  const { data: invoices, error } = await query;
-  if (error) throw error;
-  const invoiceRows = invoices || [];
-
-  if (!dryRun) {
-    let fixedBalances = 0;
-
-    for (const invoice of invoiceRows) {
-      const { data: canonicalPaid, error: recalcError } = await supabase.rpc("recalculate_invoice_financial_state", {
-        p_invoice_id: invoice.id,
-      });
-
-      if (recalcError) {
-        console.warn("daily-audit-agent canonical invoice recalculation skipped", {
-          invoiceId: invoice.id,
-          code: recalcError.code,
-          message: recalcError.message,
-        });
-        continue;
-      }
-
-      const paid = roundMoney(Number(canonicalPaid || 0));
-      const total = roundMoney(Number(invoice.total_amount || 0));
-      const balance = roundMoney(Math.max(0, total - paid));
-      const paymentStatus = balance <= 1 ? "paid" : paid > 0 ? "partial" : "unpaid";
-      const dueDate = invoice.due_date ? new Date(`${String(invoice.due_date).slice(0, 10)}T00:00:00.000Z`) : null;
-      const today = new Date();
-      today.setUTCHours(0, 0, 0, 0);
-      const lifecycleStatus = balance <= 1
-        ? "paid"
-        : dueDate && !Number.isNaN(dueDate.getTime()) && dueDate < today
-          ? "overdue"
-          : String(invoice.status || "").toLowerCase() === "draft"
-            ? "draft"
-            : "sent";
-
-      const changed =
-        Math.abs(Number(invoice.paid_amount || 0) - paid) > 0.01 ||
-        Math.abs(Number(invoice.balance_due || 0) - balance) > 0.01 ||
-        String(invoice.payment_status || "").toLowerCase() !== paymentStatus ||
-        String(invoice.status || "").toLowerCase() !== lifecycleStatus;
-
-      if (changed) fixedBalances += 1;
-    }
-
-    return { scanned: invoiceRows.length, fixedBalances };
-  }
-
-  const invoiceIds = invoiceRows.map((invoice: any) => invoice.id);
-  const payments = await fetchPaymentsForInvoices(supabase, companyId, invoiceIds);
-  const paidByInvoice = new Map<string, number>();
-
-  for (const payment of payments) {
-    if (!isCompletedPayment(payment.payment_status)) continue;
-    paidByInvoice.set(payment.invoice_id, (paidByInvoice.get(payment.invoice_id) || 0) + Number(payment.amount || 0));
+  if (dryRun) {
+    return { scanned: scanned ?? drift.length, fixedBalances: drift.length };
   }
 
   let fixedBalances = 0;
-  const now = new Date().toISOString();
+  for (const row of drift) {
+    const { error: recalcError } = await supabase.rpc("recalculate_invoice_financial_state", {
+      p_invoice_id: row.invoice_id,
+    });
 
-  for (const invoice of invoiceRows) {
-    const paid = roundMoney(paidByInvoice.get(invoice.id) || 0);
-    const total = roundMoney(Number(invoice.total_amount || 0));
-    const balance = roundMoney(Math.max(0, total - paid));
-    const paymentStatus = balance <= 1 ? "paid" : paid > 0 ? "partial" : "unpaid";
-    const dueDate = invoice.due_date ? new Date(`${String(invoice.due_date).slice(0, 10)}T00:00:00.000Z`) : null;
-    const today = new Date();
-    today.setUTCHours(0, 0, 0, 0);
-    const lifecycleStatus = balance <= 1
-      ? "paid"
-      : dueDate && !Number.isNaN(dueDate.getTime()) && dueDate < today
-        ? "overdue"
-        : String(invoice.status || "").toLowerCase() === "draft"
-          ? "draft"
-          : "sent";
-    const changed =
-      Math.abs(Number(invoice.paid_amount || 0) - paid) > 0.01 ||
-      Math.abs(Number(invoice.balance_due || 0) - balance) > 0.01 ||
-      String(invoice.payment_status || "").toLowerCase() !== paymentStatus ||
-      String(invoice.status || "").toLowerCase() !== lifecycleStatus;
-
-    if (!changed) continue;
-
-    if (!dryRun) {
-      const { error: updateError } = await supabase
-        .from("invoices")
-        .update({
-          paid_amount: paid,
-          balance_due: balance,
-          payment_status: paymentStatus,
-          status: lifecycleStatus,
-          updated_at: now,
-        })
-        .eq("id", invoice.id)
-        .eq("company_id", companyId);
-
-      if (updateError) {
-        console.warn("daily-audit-agent invoice update skipped", {
-          invoiceId: invoice.id,
-          code: updateError.code,
-          message: updateError.message,
-        });
-        continue;
-      }
+    if (recalcError) {
+      console.warn("daily-audit-agent canonical invoice recalculation skipped", {
+        invoiceId: row.invoice_id,
+        code: recalcError.code,
+        message: recalcError.message,
+      });
+      continue;
     }
 
     fixedBalances += 1;
   }
 
-  return { scanned: invoiceRows.length, fixedBalances };
+  return { scanned: scanned ?? 0, fixedBalances };
 }
 
 async function recalculateContractTotals(
@@ -986,8 +987,8 @@ async function repairScheduleInvoiceLinks(
 ) {
   const schedules = await loadSchedules(supabase, companyId, limit, targetContractIds);
   const activeSchedules = schedules.filter((schedule: any) => !isCancelledStatus(schedule.status) && schedule.contract_id && schedule.due_date);
-  const invoiceIds = Array.from(new Set(activeSchedules.map((schedule: any) => schedule.invoice_id).filter(Boolean)));
-  const contractIds = Array.from(new Set(activeSchedules.map((schedule: any) => schedule.contract_id).filter(Boolean)));
+  const invoiceIds: string[] = Array.from(new Set<string>(activeSchedules.map((schedule: any) => String(schedule.invoice_id)).filter(Boolean)));
+  const contractIds: string[] = Array.from(new Set<string>(activeSchedules.map((schedule: any) => String(schedule.contract_id)).filter(Boolean)));
   const invoices = await loadInvoicesForContracts(supabase, companyId, contractIds, invoiceIds, limit * 60);
   const activeInvoices = invoices.filter((invoice: any) => !isCancelledStatus(invoice.status) && !isCancelledStatus(invoice.payment_status));
   const invoiceById = new Map(activeInvoices.map((invoice: any) => [invoice.id, invoice]));
@@ -995,7 +996,9 @@ async function repairScheduleInvoiceLinks(
   const scheduleCountByInvoiceId = new Map<string, number>();
 
   for (const invoice of activeInvoices) {
-    const key = contractMonthKey(invoice.contract_id, invoice.due_date || invoice.invoice_date);
+    // Key invoices by their actual billing month (invoice_date), not the due
+    // date: invoices dated in month M but due in M+1 belong to month M.
+    const key = contractMonthKey(invoice.contract_id, invoice.invoice_date || invoice.due_date);
     if (!key) continue;
     invoicesByContractMonth.set(key, [...(invoicesByContractMonth.get(key) || []), invoice]);
   }
@@ -1013,7 +1016,7 @@ async function repairScheduleInvoiceLinks(
     const expectedInvoices = invoicesByContractMonth.get(contractMonthKey(schedule.contract_id, scheduleMonth) || "") || [];
     const expectedInvoice = expectedInvoices.length === 1 ? expectedInvoices[0] : null;
     const linkedInvoice = schedule.invoice_id ? invoiceById.get(schedule.invoice_id) : null;
-    const linkedMonth = linkedInvoice ? toMonthStart(String(linkedInvoice.due_date || linkedInvoice.invoice_date)) : null;
+    const linkedMonth = linkedInvoice ? toMonthStart(String(linkedInvoice.invoice_date || linkedInvoice.due_date)) : null;
     const duplicateLink = schedule.invoice_id && (scheduleCountByInvoiceId.get(schedule.invoice_id) || 0) > 1;
     const wrongLink = Boolean(expectedInvoice && schedule.invoice_id && schedule.invoice_id !== expectedInvoice.id);
     const dateMismatch = Boolean(linkedInvoice && linkedMonth && linkedMonth !== scheduleMonth);
@@ -1132,7 +1135,10 @@ async function cleanupDuplicateContractMonthInvoices(
   const grouped = new Map<string, any[]>();
 
   for (const invoice of activeInvoices) {
-    const key = contractMonthKey(invoice.contract_id, invoice.due_date || invoice.invoice_date);
+    // Group by the actual billing month (invoice_date). Contracts that issue
+    // an invoice dated in month M with a due date in month M+1 must not be
+    // flagged as duplicates of the following month's invoice.
+    const key = contractMonthKey(invoice.contract_id, invoice.invoice_date || invoice.due_date);
     if (!key) continue;
     grouped.set(key, [...(grouped.get(key) || []), invoice]);
   }
@@ -1178,7 +1184,7 @@ async function cleanupOutsideContractInvoices(
 ) {
   const contracts = await loadContractsForAudit(supabase, companyId, limit, targetContractIds, false);
   const contractsById = new Map(contracts.map((contract: any) => [contract.id, contract]));
-  const contractIds = Array.from(contractsById.keys());
+  const contractIds: string[] = Array.from(contractsById.keys()) as string[];
   if (contractIds.length === 0) return 0;
 
   const invoices = await loadInvoicesForContracts(supabase, companyId, contractIds, [], limit * 80);
@@ -1199,8 +1205,13 @@ async function cleanupOutsideContractInvoices(
     const contract: any = contractsById.get(invoice.contract_id);
     if (!contract?.start_date || !contract?.end_date) continue;
 
-    const invoiceDate = String(invoice.due_date || invoice.invoice_date || "").slice(0, 10);
-    if (!invoiceDate || (invoiceDate >= contract.start_date && invoiceDate <= contract.end_date)) continue;
+    // Compare billing months, not raw due dates. An invoice issued for the
+    // final contract month often falls due a few days after the end date and
+    // is legitimately inside the contract period.
+    const invoiceMonth = toMonthStart(String(invoice.invoice_date || invoice.due_date || ""));
+    const startMonth = toMonthStart(String(contract.start_date));
+    const endMonth = toMonthStart(String(contract.end_date));
+    if (!isIsoDate(invoiceMonth) || (invoiceMonth >= startMonth && invoiceMonth <= endMonth)) continue;
 
     const safeToCancel =
       !invoice.journal_entry_id &&
@@ -1230,60 +1241,54 @@ async function linkUnlinkedPaymentsToClearInvoices(
   targetContractIds: string[] | null,
   reviewItems: string[],
 ) {
-  let query = supabase
-    .from("payments")
-    .select("id, contract_id, invoice_id, payment_date, amount, payment_status, reference_number, payment_number")
-    .eq("company_id", companyId)
-    .is("invoice_id", null)
-    .not("contract_id", "is", null)
-    .limit(limit * 10);
-
-  if (targetContractIds?.length) query = query.in("contract_id", targetContractIds);
-
-  const { data, error } = await query;
+  // Set-based FIFO allocation executed inside the database with allocation
+  // batch mode: one RPC instead of hundreds of round-trips and per-row
+  // trigger fan-out. Completed payments are never mutated; the allocation
+  // triggers sync payment state and recalculate invoice/contract totals.
+  const { data, error } = await supabase.rpc("allocate_contract_receipts_fifo", {
+    p_company_id: companyId,
+    p_contract_id: targetContractIds?.length === 1 ? targetContractIds[0] : null,
+    p_dry_run: dryRun,
+    p_max_payments: Math.max(1, limit * 10),
+  });
   if (error) throw error;
 
-  const payments = (data || []).filter((payment: any) => isCompletedPayment(payment.payment_status) && payment.contract_id && payment.payment_date);
-  const contractIds = Array.from(new Set(payments.map((payment: any) => payment.contract_id)));
-  const invoices = await loadInvoicesForContracts(supabase, companyId, contractIds, [], limit * 80);
-  const activeInvoices = invoices.filter((invoice: any) => !isCancelledStatus(invoice.status) && !isCancelledStatus(invoice.payment_status));
-  const invoicesByContractMonth = new Map<string, any[]>();
-
-  for (const invoice of activeInvoices) {
-    const key = contractMonthKey(invoice.contract_id, invoice.due_date || invoice.invoice_date);
-    if (!key) continue;
-    invoicesByContractMonth.set(key, [...(invoicesByContractMonth.get(key) || []), invoice]);
+  const warnings = Array.isArray(data?.warnings) ? data.warnings : [];
+  for (const warning of warnings) {
+    reviewItems.push(String(warning));
   }
 
-  let linked = 0;
-  const now = new Date().toISOString();
+  return Number(data?.payments_processed || 0);
+}
 
-  for (const payment of payments) {
-    const key = contractMonthKey(payment.contract_id, payment.payment_date);
-    const candidates = key ? invoicesByContractMonth.get(key) || [] : [];
-    const openCandidates = candidates.filter((invoice: any) => Number(invoice.balance_due ?? invoice.total_amount ?? 0) + 1 >= Number(payment.amount || 0));
+async function syncSchedulePaymentStates(
+  supabase: any,
+  companyId: string,
+  dryRun: boolean,
+  limit: number,
+  targetContractIds: string[] | null,
+) {
+  const contracts = await loadContractsForAudit(supabase, companyId, limit, targetContractIds, false);
+  let synced = 0;
 
-    if (openCandidates.length !== 1) {
-      reviewItems.push(`Unlinked payment ${payment.payment_number || payment.reference_number || payment.id} needs manual invoice matching.`);
+  for (const contract of contracts) {
+    const { data, error } = await supabase.rpc("sync_contract_schedule_payment_state", {
+      p_contract_id: contract.id,
+      p_dry_run: dryRun,
+    });
+
+    if (error) {
+      console.warn("[daily-audit-agent] schedule payment state sync skipped", {
+        contractId: contract.id,
+        message: error.message,
+      });
       continue;
     }
 
-    const invoice = openCandidates[0];
-    if (!dryRun) {
-      const { error: updateError } = await supabase
-        .from("payments")
-        .update({ invoice_id: invoice.id, updated_at: now })
-        .eq("id", payment.id)
-        .eq("company_id", companyId);
-
-      if (updateError) throw updateError;
-      await recalculateSingleInvoiceTotals(supabase, companyId, invoice.id, now);
-    }
-
-    linked += 1;
+    synced += Number(data || 0);
   }
 
-  return linked;
+  return synced;
 }
 
 async function detectDuplicatePayments(
@@ -1326,7 +1331,7 @@ async function repairOutOfPeriodPayments(
 ) {
   const contracts = await loadContractsForAudit(supabase, companyId, limit, targetContractIds, false);
   const contractsById = new Map(contracts.map((contract: any) => [contract.id, contract]));
-  const contractIds = Array.from(contractsById.keys());
+  const contractIds: string[] = Array.from(contractsById.keys()) as string[];
   if (contractIds.length === 0) return 0;
 
   const payments = await fetchPaymentsForContracts(supabase, companyId, contractIds);
@@ -1395,7 +1400,9 @@ async function findExistingInvoiceForMonth(supabase: any, companyId: string, con
     .select("id")
     .eq("company_id", companyId)
     .eq("contract_id", contractId)
-    .or(`and(due_date.gte.${monthStart},due_date.lt.${nextMonth}),and(due_date.is.null,invoice_date.gte.${monthStart},invoice_date.lt.${nextMonth})`)
+    // Match by due month OR by billing month (invoice_date): invoices dated
+    // in month M but due in M+1 still count as that month's invoice.
+    .or(`and(due_date.gte.${monthStart},due_date.lt.${nextMonth}),and(invoice_date.gte.${monthStart},invoice_date.lt.${nextMonth})`)
     .limit(1)
     .maybeSingle();
 
@@ -1778,6 +1785,7 @@ function summarizeTotals(results: CompanyResult[]): AgentResult["totals"] {
     totals.invoiceBackfillCreated += company.contracts.invoiceBackfillCreated;
     totals.cancelledZeroInvoicesCancelled += company.contracts.cancelledZeroInvoicesCancelled;
     totals.scheduleLinksRepaired += company.contracts.scheduleLinksRepaired;
+    totals.scheduleStatesSynced += company.contracts.scheduleStatesSynced;
     totals.invoiceAmountsReconciled += company.contracts.invoiceAmountsReconciled;
     totals.duplicateInvoicesCancelled += company.contracts.duplicateInvoicesCancelled;
     totals.outsideInvoicesCancelled += company.contracts.outsideInvoicesCancelled;
@@ -1795,6 +1803,7 @@ function summarizeTotals(results: CompanyResult[]): AgentResult["totals"] {
     invoiceBackfillCreated: 0,
     cancelledZeroInvoicesCancelled: 0,
     scheduleLinksRepaired: 0,
+    scheduleStatesSynced: 0,
     invoiceAmountsReconciled: 0,
     duplicateInvoicesCancelled: 0,
     outsideInvoicesCancelled: 0,
@@ -1810,7 +1819,7 @@ function summarizeTotals(results: CompanyResult[]): AgentResult["totals"] {
 
 function buildLocalSummary(dryRun: boolean, results: CompanyResult[], totals: AgentResult["totals"]) {
   const mode = dryRun ? "dry run" : "apply";
-  return `${mode}: reviewed ${results.length} companies. invoice balances: ${totals.invoicesFixed}, contract totals: ${totals.contractsFixed}, schedule links: ${totals.scheduleLinksRepaired}, missing invoices created: ${totals.invoiceBackfillCreated}, invoice amounts: ${totals.invoiceAmountsReconciled}, duplicate invoices cancelled: ${totals.duplicateInvoicesCancelled}, outside invoices cancelled: ${totals.outsideInvoicesCancelled}, cancelled zero invoices: ${totals.cancelledZeroInvoicesCancelled}, unlinked payments linked: ${totals.unlinkedPaymentsLinked}, out-of-period payments repaired: ${totals.outOfPeriodPaymentsRepaired}, payment journal fixes: ${totals.paymentJournalsCreated + totals.paymentJournalsRelinked}.`;
+  return `${mode}: reviewed ${results.length} companies. invoice balances: ${totals.invoicesFixed}, contract totals: ${totals.contractsFixed}, schedule links: ${totals.scheduleLinksRepaired}, schedule states synced: ${totals.scheduleStatesSynced}, missing invoices created: ${totals.invoiceBackfillCreated}, invoice amounts: ${totals.invoiceAmountsReconciled}, duplicate invoices cancelled: ${totals.duplicateInvoicesCancelled}, outside invoices cancelled: ${totals.outsideInvoicesCancelled}, cancelled zero invoices: ${totals.cancelledZeroInvoicesCancelled}, unlinked payments linked: ${totals.unlinkedPaymentsLinked}, out-of-period payments repaired: ${totals.outOfPeriodPaymentsRepaired}, payment journal fixes: ${totals.paymentJournalsCreated + totals.paymentJournalsRelinked}.`;
 }
 
 function getInvoiceStatus(balance: number, dueDate: string | null, currentStatus: string | null) {
