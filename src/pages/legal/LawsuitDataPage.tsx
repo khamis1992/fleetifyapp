@@ -53,6 +53,7 @@ import {
 } from '@/utils/official-letter-generator';
 import '@/styles/legal-system.css';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
+import { decodeDisplayText } from '@/utils/arabicDisplayText';
 
 interface LawsuitTemplate {
   id: number;
@@ -767,17 +768,17 @@ export default function LawsuitDataPage() {
                     </TableCell>
                     {/* المبلغ بالكلام */}
                     <TableCell className="max-w-xs">
-                      <div className="truncate" title={lawsuit.claim_amount_words || ''}>
-                        {lawsuit.claim_amount_words || '-'}
+                      <div className="truncate" title={decodeDisplayText(lawsuit.claim_amount_words) || ''}>
+                        {decodeDisplayText(lawsuit.claim_amount_words) || '-'}
                       </div>
                     </TableCell>
                     {/* الوقائع */}
                     <TableCell className="max-w-md">
-                      <div className="truncate" title={lawsuit.facts || ''}>{lawsuit.facts || '-'}</div>
+                      <div className="truncate" title={decodeDisplayText(lawsuit.facts) || ''}>{decodeDisplayText(lawsuit.facts) || '-'}</div>
                     </TableCell>
                     {/* الطلبات */}
                     <TableCell className="max-w-md">
-                      <div className="truncate" title={lawsuit.requests || ''}>{lawsuit.requests || '-'}</div>
+                      <div className="truncate" title={decodeDisplayText(lawsuit.requests) || ''}>{decodeDisplayText(lawsuit.requests) || '-'}</div>
                     </TableCell>
                     {/* الإجراءات */}
                     <TableCell>
@@ -829,7 +830,7 @@ export default function LawsuitDataPage() {
       >
         <DialogContent className="max-h-[85vh] max-w-3xl overflow-y-auto" dir="rtl">
           <DialogHeader>
-            <DialogTitle>{selectedLawsuit?.case_title}</DialogTitle>
+            <DialogTitle>{decodeDisplayText(selectedLawsuit?.case_title)}</DialogTitle>
             <DialogDescription>
               بيانات المطالبة والمدعى عليه والعقد المرتبط
             </DialogDescription>
@@ -848,15 +849,15 @@ export default function LawsuitDataPage() {
                 <p className="mt-1 text-lg font-bold text-teal-700">
                   {Number(selectedLawsuit.claim_amount || 0).toLocaleString('ar-QA')} ر.ق
                 </p>
-                <p className="mt-1 text-sm text-muted-foreground">{selectedLawsuit.claim_amount_words || '-'}</p>
+                <p className="mt-1 text-sm text-muted-foreground">{decodeDisplayText(selectedLawsuit.claim_amount_words) || '-'}</p>
               </div>
               <div className="rounded-lg border p-3 sm:col-span-2">
                 <p className="text-xs text-muted-foreground">الوقائع</p>
-                <p className="mt-2 whitespace-pre-wrap text-sm leading-6">{selectedLawsuit.facts || '-'}</p>
+                <p className="mt-2 whitespace-pre-wrap text-sm leading-6">{decodeDisplayText(selectedLawsuit.facts) || '-'}</p>
               </div>
               <div className="rounded-lg border p-3 sm:col-span-2">
                 <p className="text-xs text-muted-foreground">الطلبات</p>
-                <p className="mt-2 whitespace-pre-wrap text-sm leading-6">{selectedLawsuit.requests || '-'}</p>
+                <p className="mt-2 whitespace-pre-wrap text-sm leading-6">{decodeDisplayText(selectedLawsuit.requests) || '-'}</p>
               </div>
               <div className="rounded-lg border p-3">
                 <p className="text-xs text-muted-foreground">العقد</p>

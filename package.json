@@ -104,6 +104,11 @@
     "files:integrity": "node scripts/check-source-file-integrity.cjs",
     "db:doc": "node scripts/extract-schema-docs.cjs",
     "taqadi:agent": "tsx automation/taqadi-agent/index.ts",
+    "taqadi:agent:canary": "tsx automation/taqadi-agent/canary.ts",
+    "taqadi:agent:credentials": "powershell -NoProfile -ExecutionPolicy Bypass -File automation/taqadi-agent/windows/set-tawtheeq-credentials.ps1",
+    "taqadi:agent:autostart:install": "powershell -NoProfile -ExecutionPolicy Bypass -File automation/taqadi-agent/windows/install-autostart.ps1",
+    "taqadi:agent:autostart:status": "powershell -NoProfile -ExecutionPolicy Bypass -File automation/taqadi-agent/windows/status-autostart.ps1",
+    "taqadi:agent:autostart:uninstall": "powershell -NoProfile -ExecutionPolicy Bypass -File automation/taqadi-agent/windows/uninstall-autostart.ps1",
     "taqadi:inspect": "tsx automation/taqadi-agent/inspect-form.ts",
     "taqadi:inspect-details": "tsx automation/taqadi-agent/inspect-case-details.ts",
     "taqadi:inspect-parties": "tsx automation/taqadi-agent/inspect-parties.ts",
@@ -115,6 +120,7 @@
     "create:template": "tsx scripts/create-excel-template.ts"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.115.0",
     "@capacitor/app": "^6.0.3",
     "@capacitor/camera": "^6.1.3",
     "@capacitor/device": "^6.0.3",

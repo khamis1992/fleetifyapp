@@ -103,6 +103,7 @@
 - [`customer_credit_history`](#customer_credit_history)
 - [`customer_deposits`](#customer_deposits)
 - [`customer_documents`](#customer_documents)
+- [`customer_id_scan_proposals`](#customer_id_scan_proposals)
 - [`customer_notes`](#customer_notes)
 - [`customer_payment_scores`](#customer_payment_scores)
 - [`customers`](#customers)
@@ -2893,6 +2894,51 @@ Explicit, service-managed accounting classification for completed receipts that 
 | `updated_at` | string | Yes |
 | `uploaded_at` | string | Yes |
 | `uploaded_by` | string | Yes |
+
+---
+
+### `customer_id_scan_proposals`
+
+AI-generated proposals to update customer data, extracted from ID cards found
+inside contract documents (Vision OCR via the `contract-id-scanner` edge
+function). Every proposal requires human review — nothing is applied
+automatically.
+
+**Columns**: 18
+
+#### Required Columns
+
+| Column | Type |
+|--------|------|
+| `company_id` | string |
+| `id` | string |
+| `proposed_changes` | jsonb — `[{field, current_value, proposed_value, confidence, method}]` |
+| `status` | string — `pending` \| `accepted` \| `rejected` \| `partial` |
+
+#### Optional Columns
+
+| Column | Type | Nullable |
+|--------|------|----------|
+| `contract_id` | string | Yes |
+| `customer_id` | string | Yes |
+| `contract_document_id` | string | Yes |
+| `page_number` | number | Yes — which PDF page contained the ID card |
+| `extracted_data` | jsonb | Yes — raw OCR extraction |
+| `raw_text` | string | Yes |
+| `overall_confidence` | number | Yes |
+| `error` | string | Yes |
+| `reviewed_by` | string | Yes |
+| `reviewed_at` | string | Yes |
+| `created_at` | string | Yes |
+| `updated_at` | string | Yes |
+
+**Notes**:
+- RLS: company isolation via `get_user_company(auth.uid())`.
+- One pending proposal per document (partial unique index on `contract_document_id`).
+- Batch scan runs via pg_cron job `contract-id-scanner` every 15 minutes.
+- Scan state is tracked on `contract_documents.id_scan_status`
+  (`pending` | `proposal_created` | `no_id_card` | `no_changes` | `failed`) —
+  separate from `ai_match_status` which belongs to the AI document-matching feature.
 
 ---
 

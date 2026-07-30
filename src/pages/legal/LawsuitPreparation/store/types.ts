@@ -33,6 +33,7 @@ export interface Vehicle {
   plate_number: string | null;
   color: string | null;
   vin: string | null;
+  status: string | null;
 }
 
 export interface Contract {
@@ -44,6 +45,7 @@ export interface Contract {
   customer_id: string | null;
   vehicle_id: string | null;
   license_plate: string | null;
+  status: string | null;
   customers?: Customer | null;
   vehicles?: Vehicle | null;
 }
@@ -54,6 +56,13 @@ export interface OverdueInvoice {
   due_date: string;
   total_amount: number | null;
   paid_amount: number | null;
+}
+
+/** ملخص إشعارات السداد المرسلة للعميل (الإعذار القانوني) من reminder_history */
+export interface PaymentReminderSummary {
+  count: number;
+  lastSentDate: string | null;
+  sendMethods: string[];
 }
 
 export interface TrafficViolation {
@@ -244,6 +253,7 @@ export interface LawsuitPreparationState {
   customer: Customer | null;
   vehicle: Vehicle | null;
   overdueInvoices: OverdueInvoice[];
+  paymentReminders: PaymentReminderSummary;
   trafficViolations: TrafficViolation[];
   violationEvidenceDocuments: ViolationEvidenceDocument[];
   companyDocuments: CompanyLegalDocument[];
@@ -265,6 +275,7 @@ export type LawsuitPreparationAction =
   // Data Loading
   | { type: 'SET_CONTRACT_DATA'; payload: { contract: Contract; customer: Customer | null; vehicle: Vehicle | null } }
   | { type: 'SET_INVOICES'; payload: OverdueInvoice[] }
+  | { type: 'SET_PAYMENT_REMINDERS'; payload: PaymentReminderSummary }
   | { type: 'SET_VIOLATIONS'; payload: TrafficViolation[] }
   | { type: 'SET_VIOLATION_EVIDENCE_DOCUMENTS'; payload: ViolationEvidenceDocument[] }
   | { type: 'SET_COMPANY_DOCUMENTS'; payload: CompanyLegalDocument[] }

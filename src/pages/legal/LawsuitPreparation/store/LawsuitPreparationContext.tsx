@@ -20,6 +20,15 @@ import {
   enqueueTaqadiFilingJob,
   getActiveTaqadiWorker,
 } from '../utils/taqadiAutomation';
+import {
+  TAQADI_DEFAULT_DEFENDANT_ADDRESS,
+  TAQADI_DEFAULT_DEFENDANT_EMAIL,
+} from '../utils/taqadiDefaults';
+import {
+  buildFactsAdditions,
+  buildTaqadiClaims,
+  type TaqadiNarrativeInput,
+} from '../utils/taqadiNarrative';
 import { lawsuitService } from '@/services/LawsuitService';
 import { formatCustomerName } from '@/utils/formatCustomerName';
 import { renderOfficialInvoicePdfBlob } from '@/utils/renderOfficialInvoicePdf';
@@ -146,7 +155,7 @@ export function LawsuitPreparationProvider({
       if (contract.vehicle_id) {
         const { data: veh } = await supabase
           .from('vehicles')
-          .select('make, model, year, plate_number, color, vin')
+          .select('make, model, year, plate_number, color, vin, status')
           .eq('id', contract.vehicle_id)
           .eq('company_id', companyId)
           .single();
@@ -193,6 +202,34 @@ export function LawsuitPreparationProvider({
     enabled: !!contractId && !!companyId,
   });
   
+  // Fetch reminder history (سجل الإعذار القانوني) for this contract
+  useQuery({
+    queryKey: ['contract-reminder-history', contractId, companyId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('reminder_history')
+        .select('sent_at, reminder_type')
+        .eq('contract_id', contractId)
+        .eq('success', true)
+        .order('sent_at', { ascending: false });
+
+      if (error) throw error;
+
+      const summary = {
+        count: data?.length ?? 0,
+        lastSentDate: data?.[0]?.sent_at ?? null,
+        sendMethods: [...new Set(
+          (data ?? [])
+            .map((reminder) => reminder.reminder_type)
+            .filter((type): type is string => Boolean(type)),
+        )],
+      };
+      dispatch({ type: 'SET_PAYMENT_REMINDERS', payload: summary });
+      return summary;
+    },
+    enabled: !!companyId && !!contractId,
+  });
+
   // Fetch traffic violations
   const { isLoading: violationsLoading } = useQuery({
     queryKey: ['contract-traffic-violations', contractId, companyId],
@@ -389,16 +426,28 @@ export function LawsuitPreparationProvider({
         `${state.vehicle?.make || ''} ${state.vehicle?.model || ''} ${state.vehicle?.year || ''}`,
         claimAmount
       );
-      
-      if (state.calculations.violationsCount > 0) {
-        factsText += `\n\nبالإضافة إلى ذلك، ترتبت على المدعى عليه مخالفات مرورية بسبب استخدام السيارة المؤجرة بعدد (${state.calculations.violationsCount}) مخالفة بإجمالي مبلغ (${state.calculations.violationsFines.toLocaleString('en-US')}) ريال قطري.`;
+
+      // الفروع الحتمية: سداد جزئي، مخالفات، إعذار قانوني، حيازة المركبة، انتهاء العقد
+      const narrativeInput: TaqadiNarrativeInput = {
+        claimAmount,
+        violationsCount: state.calculations.violationsCount,
+        violationsFines: state.calculations.violationsFines,
+        paidTotal: state.overdueInvoices.reduce(
+          (sum, invoice) => sum + Number(invoice.paid_amount || 0),
+          0,
+        ),
+        reminders: state.paymentReminders,
+        vehicleStatus: state.vehicle?.status ?? null,
+        contractEndDate: state.contract.end_date,
+        contractStatus: state.contract.status ?? null,
+      };
+
+      const additions = buildFactsAdditions(narrativeInput);
+      if (additions.length > 0) {
+        factsText += `\n\n${additions.join('\n\n')}`;
       }
-      
-      let claimsText = `1. إلزام المدعى عليه بأن يؤدي للمدعية مبلغ (${claimAmount.toLocaleString('en-US')}) ريال قطري.\n2. الأمر بتحويل المخالفات المرورية المسجلة على المركبة إلى الرقم الشخصي للمدعى عليه.\n3. الحكم بفسخ عقد الإيجار.\n4. إلزام المدعى عليه بالرسوم والمصاريف ومقابل أتعاب المحاماة.`;
-      
-      if (state.calculations.violationsCount === 0) {
-        claimsText = `1. إلزام المدعى عليه بأن يؤدي للمدعية مبلغ (${claimAmount.toLocaleString('en-US')}) ريال قطري.\n2. الحكم بفسخ عقد الإيجار.\n3. إلزام المدعى عليه بالرسوم والمصاريف ومقابل أتعاب المحاماة.`;
-      }
+
+      const claimsText = buildTaqadiClaims(narrativeInput);
       
       // استخراج معلومات المدعى عليه
       const fullName = customerName;
@@ -411,8 +460,11 @@ export function LawsuitPreparationProvider({
       let idType = 'بطاقة شخصية';
       if (state.customer.nationality === 'Qatar' || state.customer.nationality === 'قطر') {
         idType = 'بطاقة قطرية';
-      } else if (state.customer.national_id && state.customer.national_id.length > 10) {
-        idType = 'جواز سفر';
+      } else if (
+        state.customer.national_id
+        && state.customer.national_id.replace(/\D/g, '').length === 11
+      ) {
+        idType = 'رخصة مقيم';
       }
       
       // معلومات السيارة
@@ -439,8 +491,8 @@ export function LawsuitPreparationProvider({
             idType: idType,
             nationality: state.customer.nationality || state.customer.country,
             phone: state.customer.phone,
-            email: state.customer.email,
-            address: state.customer.address,
+            email: TAQADI_DEFAULT_DEFENDANT_EMAIL,
+            address: TAQADI_DEFAULT_DEFENDANT_ADDRESS,
           },
           
           // بيانات العقد
@@ -464,7 +516,7 @@ export function LawsuitPreparationProvider({
         },
       });
     }
-  }, [state.contract, state.calculations, state.customer, state.vehicle]);
+  }, [state.contract, state.calculations, state.customer, state.vehicle, state.overdueInvoices, state.paymentReminders]);
   
   // Update loading state
   useEffect(() => {
@@ -933,9 +985,9 @@ export function LawsuitPreparationProvider({
         defendant_last_name: nameParts.length > 1 ? nameParts[nameParts.length - 1] : '',
         defendant_nationality: customer?.nationality || customer?.country || null,
         defendant_id_number: customer?.national_id || null,
-        defendant_address: customer?.address || null,
+        defendant_address: TAQADI_DEFAULT_DEFENDANT_ADDRESS,
         defendant_phone: customer?.phone || null,
-        defendant_email: customer?.email || null,
+        defendant_email: TAQADI_DEFAULT_DEFENDANT_EMAIL,
         contract_id: contractId,
         customer_id: customer?.id || null,
       };

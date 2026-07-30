@@ -133,7 +133,6 @@ function buildLawsuitAIInsight(state: LawsuitPreparationState, readiness: Return
 
   if (!customer?.national_id) issues.push('رقم الهوية للمدعى عليه غير مكتمل.');
   if (!customer?.phone) issues.push('رقم هاتف المدعى عليه غير موجود.');
-  if (!customer?.address) issues.push('عنوان المدعى عليه غير مسجل.');
   if (documents.contract.status !== 'ready') issues.push('عقد الإيجار الموقع غير جاهز ضمن الحافظة.');
   if (missingDocs.length > 0) issues.push(`يوجد ${missingDocs.length} مستند مطلوب غير جاهز.`);
   if (trafficViolations.length > 0 && documents.violations.status !== 'ready') issues.push('توجد مخالفات مرورية لكن كشف المخالفات غير جاهز.');

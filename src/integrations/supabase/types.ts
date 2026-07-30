@@ -4132,6 +4132,7 @@ export type Database = {
           file_path: string | null
           file_size: number | null
           id: string
+          id_scan_status: string
           is_required: boolean | null
           match_notes: string | null
           matched_at: string | null
@@ -4160,6 +4161,7 @@ export type Database = {
           file_path?: string | null
           file_size?: number | null
           id?: string
+          id_scan_status?: string
           is_required?: boolean | null
           match_notes?: string | null
           matched_at?: string | null
@@ -4188,6 +4190,7 @@ export type Database = {
           file_path?: string | null
           file_size?: number | null
           id?: string
+          id_scan_status?: string
           is_required?: boolean | null
           match_notes?: string | null
           matched_at?: string | null
@@ -6125,6 +6128,92 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      customer_id_scan_proposals: {
+        Row: {
+          company_id: string
+          contract_document_id: string | null
+          contract_id: string | null
+          created_at: string
+          customer_id: string | null
+          error: string | null
+          extracted_data: Json | null
+          id: string
+          overall_confidence: number | null
+          page_number: number | null
+          proposed_changes: Json
+          raw_text: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          contract_document_id?: string | null
+          contract_id?: string | null
+          created_at?: string
+          customer_id?: string | null
+          error?: string | null
+          extracted_data?: Json | null
+          id?: string
+          overall_confidence?: number | null
+          page_number?: number | null
+          proposed_changes?: Json
+          raw_text?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          contract_document_id?: string | null
+          contract_id?: string | null
+          created_at?: string
+          customer_id?: string | null
+          error?: string | null
+          extracted_data?: Json | null
+          id?: string
+          overall_confidence?: number | null
+          page_number?: number | null
+          proposed_changes?: Json
+          raw_text?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_id_scan_proposals_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_id_scan_proposals_contract_document_id_fkey"
+            columns: ["contract_document_id"]
+            isOneToOne: false
+            referencedRelation: "contract_documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_id_scan_proposals_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "contracts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_id_scan_proposals_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       customer_notes: {
         Row: {

@@ -6,6 +6,10 @@
 import { supabase } from '@/integrations/supabase/client';
 import type { LawsuitPreparationState } from '../store';
 import { formatCustomerName } from '@/utils/formatCustomerName';
+import {
+  TAQADI_DEFAULT_DEFENDANT_ADDRESS,
+  TAQADI_DEFAULT_DEFENDANT_EMAIL,
+} from './taqadiDefaults';
 
 interface RegisterCaseResult {
   caseId: string;
@@ -167,9 +171,9 @@ async function registerLegalCaseLegacy(
       defendant_last_name: nameParts.length > 1 ? nameParts[nameParts.length - 1] : '',
       defendant_nationality: customer?.nationality || customer?.country || null,
       defendant_id_number: customer?.national_id || null,
-      defendant_address: customer?.address || null,
+      defendant_address: TAQADI_DEFAULT_DEFENDANT_ADDRESS,
       defendant_phone: customer?.phone || null,
-      defendant_email: customer?.email || null,
+      defendant_email: TAQADI_DEFAULT_DEFENDANT_EMAIL,
       contract_id: contractId,
       customer_id: customer?.id || null,
       // Contract data

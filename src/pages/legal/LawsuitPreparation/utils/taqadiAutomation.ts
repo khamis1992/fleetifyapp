@@ -5,6 +5,10 @@ import type {
   LawsuitPreparationState,
   ViolationEvidenceDocument,
 } from '../store';
+import {
+  TAQADI_DEFAULT_DEFENDANT_ADDRESS,
+  TAQADI_DEFAULT_DEFENDANT_EMAIL,
+} from './taqadiDefaults';
 
 export type TaqadiFilingStatus =
   | 'queued'
@@ -110,6 +114,23 @@ export interface TaqadiFilingJobEvent {
   created_at: string;
 }
 
+export interface TaqadiFilingArtifact {
+  id: string;
+  job_id: string;
+  artifact_type:
+    | 'screenshot'
+    | 'receipt'
+    | 'submission_summary'
+    | 'error_snapshot'
+    | 'trace'
+    | 'heal_proposal';
+  storage_path: string;
+  file_name: string;
+  mime_type: string | null;
+  metadata: Record<string, unknown>;
+  created_at: string;
+}
+
 export interface TaqadiAutomationWorker {
   worker_id: string;
   status: 'idle' | 'busy' | 'waiting_login' | 'error' | 'offline';
@@ -120,8 +141,84 @@ export interface TaqadiAutomationWorker {
   last_error: string | null;
 }
 
-type UntypedSupabaseClient = SupabaseClient<Record<string, never>>;
-const automationClient = supabase as unknown as UntypedSupabaseClient;
+// The taqadi_* tables are not part of the generated Supabase types yet, so we
+// describe the schema we rely on here to keep column names and RPC signatures
+// checked at compile time instead of casting through `any`.
+type TaqadiAutomationDatabase = {
+  public: {
+    Tables: {
+      taqadi_filing_jobs: {
+        Row: TaqadiFilingJob & { payload: Record<string, unknown> };
+        Insert: never;
+        Update: never;
+        Relationships: [];
+      };
+      taqadi_filing_job_events: {
+        Row: TaqadiFilingJobEvent;
+        Insert: never;
+        Update: never;
+        Relationships: [];
+      };
+      taqadi_filing_artifacts: {
+        Row: TaqadiFilingArtifact & { company_id: string };
+        Insert: never;
+        Update: never;
+        Relationships: [];
+      };
+      taqadi_automation_workers: {
+        Row: TaqadiAutomationWorker & { started_at: string };
+        Insert: never;
+        Update: never;
+        Relationships: [];
+      };
+    };
+    Views: Record<string, never>;
+    Functions: {
+      enqueue_taqadi_filing_job_v1: {
+        Args: {
+          p_company_id: string;
+          p_legal_case_id: string;
+          p_payload: TaqadiFilingPayload;
+          p_idempotency_key: string;
+          p_final_approval: boolean;
+        };
+        Returns: TaqadiFilingJob;
+      };
+      retry_taqadi_filing_job_v1: {
+        Args: { p_company_id: string; p_job_id: string };
+        Returns: TaqadiFilingJob;
+      };
+      resume_taqadi_filing_job_v1: {
+        Args: { p_company_id: string; p_job_id: string };
+        Returns: TaqadiFilingJob;
+      };
+      cancel_taqadi_filing_job_v1: {
+        Args: { p_company_id: string; p_job_id: string; p_reason: string };
+        Returns: TaqadiFilingJob;
+      };
+    };
+    Enums: Record<string, never>;
+    CompositeTypes: Record<string, never>;
+  };
+};
+
+const automationClient =
+  supabase as unknown as SupabaseClient<TaqadiAutomationDatabase>;
+
+type AutomationRpcResult = PromiseLike<{
+  data: unknown;
+  error: { message: string } | null;
+}>;
+
+const callAutomationRpc = (
+  functionName: keyof TaqadiAutomationDatabase['public']['Functions'],
+  args: Record<string, unknown>,
+) => (
+  supabase.rpc as unknown as (
+    name: string,
+    parameters: Record<string, unknown>,
+  ) => AutomationRpcResult
+)(functionName, args);
 
 const serializeDocument = (
   document: DocumentState,
@@ -215,8 +312,8 @@ export function buildTaqadiFilingPayload(
       idType: taqadiData.defendant.idType,
       nationality: taqadiData.defendant.nationality,
       phone: taqadiData.defendant.phone,
-      email: taqadiData.defendant.email,
-      address: taqadiData.defendant.address,
+      email: TAQADI_DEFAULT_DEFENDANT_EMAIL,
+      address: TAQADI_DEFAULT_DEFENDANT_ADDRESS,
     },
     contract: {
       id: contract.id,
@@ -237,7 +334,7 @@ export async function enqueueTaqadiFilingJob(input: {
   legalCaseId: string;
   payload: TaqadiFilingPayload;
 }) {
-  const { data, error } = await (automationClient as any).rpc('enqueue_taqadi_filing_job_v1', {
+  const { data, error } = await callAutomationRpc('enqueue_taqadi_filing_job_v1', {
     p_company_id: input.companyId,
     p_legal_case_id: input.legalCaseId,
     p_payload: input.payload,
@@ -260,6 +357,9 @@ export async function getLatestTaqadiFilingJob(
     )
     .eq('company_id', companyId)
     .eq('legal_case_id', legalCaseId)
+    // Daily canary dry-runs share the case's queue; the panel must show the
+    // real filing job, not the diagnostics clone.
+    .or('payload->canary.is.null,payload->canary.neq.true')
     .order('created_at', { ascending: false })
     .limit(1)
     .maybeSingle();
@@ -283,8 +383,33 @@ export async function getTaqadiFilingJobEvents(
   return (data ?? []) as unknown as TaqadiFilingJobEvent[];
 }
 
-export async function getActiveTaqadiWorker() {
+export async function getTaqadiFilingJobArtifacts(
+  companyId: string,
+  jobId: string,
+) {
   const { data, error } = await automationClient
+    .from('taqadi_filing_artifacts')
+    .select('id,job_id,artifact_type,storage_path,file_name,mime_type,metadata,created_at')
+    .eq('company_id', companyId)
+    .eq('job_id', jobId)
+    .order('created_at', { ascending: false });
+
+  if (error) throw error;
+  return (data ?? []) as unknown as TaqadiFilingArtifact[];
+}
+
+const TAQADI_ARTIFACTS_BUCKET = 'taqadi-automation-artifacts';
+
+export async function getTaqadiArtifactDownloadUrl(storagePath: string) {
+  const { data, error } = await supabase.storage
+    .from(TAQADI_ARTIFACTS_BUCKET)
+    .createSignedUrl(storagePath, 3600);
+
+  if (error) throw error;
+  return data.signedUrl;
+}
+
+export async function getActiveTaqadiWorker() {  const { data, error } = await automationClient
     .from('taqadi_automation_workers')
     .select(
       'worker_id,status,version,current_job_id,hostname,heartbeat_at,last_error',
@@ -298,8 +423,20 @@ export async function getActiveTaqadiWorker() {
 }
 
 export async function retryTaqadiFilingJob(companyId: string, jobId: string) {
-  const { data, error } = await (automationClient as any).rpc(
+  const { data, error } = await callAutomationRpc(
     'retry_taqadi_filing_job_v1',
+    {
+      p_company_id: companyId,
+      p_job_id: jobId,
+    },
+  );
+  if (error) throw error;
+  return data as unknown as TaqadiFilingJob;
+}
+
+export async function resumeTaqadiFilingJob(companyId: string, jobId: string) {
+  const { data, error } = await callAutomationRpc(
+    'resume_taqadi_filing_job_v1',
     {
       p_company_id: companyId,
       p_job_id: jobId,
@@ -314,7 +451,7 @@ export async function cancelTaqadiFilingJob(
   jobId: string,
   reason: string,
 ) {
-  const { data, error } = await (automationClient as any).rpc(
+  const { data, error } = await callAutomationRpc(
     'cancel_taqadi_filing_job_v1',
     {
       p_company_id: companyId,
@@ -324,6 +461,48 @@ export async function cancelTaqadiFilingJob(
   );
   if (error) throw error;
   return data as unknown as TaqadiFilingJob;
+}
+
+// Realtime push replaces the panel's 3-second polling. The tables are added
+// to the `supabase_realtime` publication in migration
+// 20260729200000_taqadi_trace_artifacts_realtime.sql; existing RLS read
+// policies scope the events to the user's company.
+export function subscribeToTaqadiJobUpdates(input: {
+  companyId: string;
+  legalCaseId: string;
+  onChange: () => void;
+  onStatus?: (connected: boolean) => void;
+}) {
+  const channel = supabase
+    .channel(`taqadi-filing-${input.legalCaseId}`)
+    .on(
+      'postgres_changes',
+      {
+        event: '*',
+        schema: 'public',
+        table: 'taqadi_filing_jobs',
+        filter: `legal_case_id=eq.${input.legalCaseId}`,
+      },
+      () => input.onChange(),
+    )
+    .on(
+      'postgres_changes',
+      {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'taqadi_filing_job_events',
+        filter: `company_id=eq.${input.companyId}`,
+      },
+      () => input.onChange(),
+    )
+    .subscribe((status) => {
+      input.onStatus?.(status === 'SUBSCRIBED');
+    });
+
+  return () => {
+    input.onStatus?.(false);
+    void supabase.removeChannel(channel);
+  };
 }
 
 export const TERMINAL_TAQADI_STATUSES = new Set<TaqadiFilingStatus>([

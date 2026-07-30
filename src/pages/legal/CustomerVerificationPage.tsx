@@ -371,7 +371,7 @@ export default function CustomerVerificationPage() {
         amount,
         payment_date: new Date().toISOString().split('T')[0],
         payment_method: 'cash',
-        notes: paymentNote || `???? ????? ????? ??????? ?????? ${user.email}`,
+        notes: paymentNote || `دفعة مسجلة أثناء التدقيق بواسطة ${user.email}`,
         type: 'receipt',
         transaction_type: 'invoice_payment',
         payment_status: 'completed',

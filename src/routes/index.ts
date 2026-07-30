@@ -60,6 +60,7 @@ const Finance = lazy(() => import('@/pages/Finance'));
 const CustomersPageRedesigned = lazy(() => import('@/pages/customers/CustomersPageRedesigned'));
 const CustomerDetailsPageNew = lazy(() => import('@/components/customers/CustomerDetailsPageNew'));
 const CustomerCRM = lazy(() => import('@/pages/customers/CustomerCRMRedesigned'));
+const CustomerDataReview = lazy(() => import('@/pages/customers/CustomerDataReview'));
 const Contracts = lazy(() => import('@/pages/ContractsRedesigned'));
 const ContractDetailsPage = lazy(() => import('@/components/contracts/ContractDetailsPageRedesigned'));
 const FleetPageNew = lazy(() => import('@/pages/fleet/FleetPageRedesigned'));
@@ -180,6 +181,7 @@ const CompanyLegalDocuments = lazy(() => import('@/pages/legal/CompanyLegalDocum
 // OverdueContracts merged into FinancialDelinquency
 // LawsuitPreparation now uses the new folder-based architecture
 const LawsuitPreparation = lazy(() => import('@/pages/legal/LawsuitPreparation'));  
+const BatchLawsuitFiling = lazy(() => import('@/pages/legal/BatchLawsuitFiling'));
 const LawsuitDocumentsView = lazy(() => import('@/pages/legal/LawsuitDocumentsView'));
 const FinancialDelinquency = lazy(() => import('@/pages/legal/FinancialDelinquency'));
 const CustomerVerificationPage = lazy(() => import('@/pages/legal/CustomerVerificationPage'));
@@ -681,6 +683,19 @@ const routeConfigs: RouteConfig[] = [
     description: 'Customer relationship management',
     group: 'customers',
     priority: 14,
+    protected: true,
+    layout: 'bento',
+    requiredRole: 'admin',
+  },
+  {
+    path: '/customers/data-review',
+    component: CustomerDataReview,
+    lazy: true,
+    exact: true,
+    title: 'Customer Data Review',
+    description: 'Central review of AI-extracted customer data proposals from ID cards',
+    group: 'customers',
+    priority: 15,
     protected: true,
     layout: 'bento',
     requiredRole: 'admin',
@@ -1884,6 +1899,19 @@ const routeConfigs: RouteConfig[] = [
     description: 'Defaulters list',
     group: 'legal',
     priority: 123,
+    protected: true,
+    layout: 'bento',
+    requiredRole: 'admin',
+  },
+  {
+    path: '/legal/batch-filing',
+    component: BatchLawsuitFiling,
+    lazy: true,
+    exact: true,
+    title: 'الرفع الجماعي للدعاوى',
+    description: 'Batch lawsuit filing to Taqadi queue',
+    group: 'legal',
+    priority: 124,
     protected: true,
     layout: 'bento',
     requiredRole: 'admin',

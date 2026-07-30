@@ -119,8 +119,12 @@ import { CHART_COLORS, StatusBadge, TabButton, KPICard } from './legal-cases';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { formatCustomerName } from '@/utils/formatCustomerName';
+import { decodeDisplayText, decodeLegalTaskTitle } from '@/utils/arabicDisplayText';
 import '@/styles/legal-system.css';
 // DelinquentCustomersTab removed - use /legal/delinquency instead
+
+const getLegalCaseTitle = (legalCase?: { case_title_ar?: string | null; case_title?: string | null } | null) =>
+  decodeDisplayText(legalCase?.case_title_ar || legalCase?.case_title) || 'بدون عنوان';
 
 const getLegalCaseCustomerName = (legalCase?: LegalCase | null) => {
   if (!legalCase) return 'غير محدد';
@@ -1017,7 +1021,10 @@ export const LegalCasesTracking: React.FC = () => {
           displayDate: format(hearingDate, 'dd MMM yyyy', { locale: ar }),
           time: '09:00 ص',
           caseId: c.case_number,
-          title: c.case_title_ar || c.case_title || 'جلسة محكمة',
+          title: (() => {
+            const caseTitle = getLegalCaseTitle(c);
+            return caseTitle === 'بدون عنوان' ? 'جلسة محكمة' : caseTitle;
+          })(),
           location: c.court_name || 'غير محدد',
           daysUntil,
           status: c.case_status,
@@ -1447,7 +1454,7 @@ export const LegalCasesTracking: React.FC = () => {
                   <TableCell className="px-6 py-4">
                     <div className="font-medium text-[#020617]">{getLegalCaseCustomerName(item as LegalCase)}</div>
                     <div className="mt-0.5 text-xs text-[#94A3B8]">
-                      {item.case_title_ar || item.case_title}
+                      {getLegalCaseTitle(item)}
                     </div>
                   </TableCell>
                   <TableCell className="px-6 py-4">
@@ -1761,7 +1768,15 @@ export const LegalCasesTracking: React.FC = () => {
                       {task.daysUntil <= 1 && <AlertTriangle size={12} className="text-red-500" />}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <span className="text-sm text-slate-700 block truncate">{task.title}</span>
+                      <span className="text-sm text-slate-700 block truncate">
+                        {decodeLegalTaskTitle(
+                          {
+                            title: task.title,
+                            metadata: (task as { metadata?: { workflow_key?: string | null } }).metadata,
+                          },
+                          selectedCase?.case_number,
+                        )}
+                      </span>
                       <span className="text-xs text-slate-400">{task.dueDate}</span>
                     </div>
                   </div>
@@ -2036,7 +2051,7 @@ export const LegalCasesTracking: React.FC = () => {
               تفاصيل القضية: {selectedCase?.case_number}
             </DialogTitle>
             <DialogDescription>
-              {selectedCase?.case_title_ar || selectedCase?.case_title}
+              {getLegalCaseTitle(selectedCase)}
             </DialogDescription>
           </DialogHeader>
           
@@ -2116,7 +2131,7 @@ export const LegalCasesTracking: React.FC = () => {
               {selectedCase.description && (
                 <div className="border-t pt-4">
                   <h4 className="font-semibold mb-3">الوصف</h4>
-                  <p className="text-slate-600 text-sm">{selectedCase.description}</p>
+                  <p className="text-slate-600 text-sm">{decodeDisplayText(selectedCase.description)}</p>
                 </div>
               )}
 
@@ -2178,7 +2193,7 @@ export const LegalCasesTracking: React.FC = () => {
               {selectedCase.notes && (
                 <div className="border-t pt-4">
                   <h4 className="font-semibold mb-2">ملاحظات ومتابعة القضية</h4>
-                  <p className="text-sm text-slate-600 whitespace-pre-wrap">{selectedCase.notes}</p>
+                  <p className="text-sm text-slate-600 whitespace-pre-wrap">{decodeDisplayText(selectedCase.notes)}</p>
                 </div>
               )}
 

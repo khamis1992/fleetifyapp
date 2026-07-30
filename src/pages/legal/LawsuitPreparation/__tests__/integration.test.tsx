@@ -183,6 +183,8 @@ describe('LawsuitPreparation Integration', () => {
     });
     fireEvent.click(screen.getByText('الإغلاق والمتابعة'));
 
-    expect(screen.getByText('تسجيل القضية في النظام')).toBeInTheDocument();
+    // التصميم الجديد: زر رئيسي للإغلاق + الأفعال الثانوية في قائمة منسدلة
+    expect(screen.getByText('تأكيد فتح القضية')).toBeInTheDocument();
+    expect(screen.getAllByText('إجراءات إضافية').length).toBeGreaterThan(0);
   });
 });

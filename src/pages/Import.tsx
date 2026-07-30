@@ -256,7 +256,7 @@ const ImportInner: React.FC = () => {
                 : parseFloat(row.amount) || 0;
 
               if (importedAmount <= 0) {
-                throw new Error(`???? ??? ????: ${row.amount}`);
+                throw new Error(`مبلغ غير صحيح: ${row.amount}`);
               }
 
               const isReceipt = row.transaction_type === 'customer_payment' || row.transaction_type === 'receipt' || !!row.customer_id;

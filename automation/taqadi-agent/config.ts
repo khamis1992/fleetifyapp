@@ -21,6 +21,11 @@ const dataDir = path.resolve(
     || path.join(process.cwd(), '.taqadi-agent'),
 );
 
+export const FIXED_DEFENDANT_CONTACT = Object.freeze({
+  email: 'khamis-1992@hotmail.com',
+  address: 'الدوحة قطر',
+});
+
 export const agentConfig = {
   version: '1.0.0',
   workerId: process.env.TAQADI_WORKER_ID
@@ -38,11 +43,29 @@ export const agentConfig = {
   loginTimeoutMs: numberFromEnv('TAQADI_LOGIN_TIMEOUT_MS', 10 * 60_000),
   actionTimeoutMs: numberFromEnv('TAQADI_ACTION_TIMEOUT_MS', 30_000),
   finalApproval: booleanFromEnv('TAQADI_FINAL_APPROVAL', true),
+  stopAfterParties: booleanFromEnv('TAQADI_STOP_AFTER_PARTIES', false),
   headless: booleanFromEnv('TAQADI_HEADLESS', false),
   healthPort: numberFromEnv('TAQADI_HEALTH_PORT', 4317),
   dataDir,
   chromeProfileDir: path.join(dataDir, 'chrome-profile'),
   jobsDir: path.join(dataDir, 'jobs'),
+  tawtheeq: {
+    username: process.env.TAQADI_TAWTHEEQ_USERNAME || '',
+    password: process.env.TAQADI_TAWTHEEQ_PASSWORD || '',
+  },
+  // Optional LLM helpers (Level 2). The selector healer proposes updated
+  // selectors; suggestions are auto-applied in-session ONLY after deterministic
+  // verification against the live page (verified-healer.ts), otherwise they
+  // stay propose-only artifacts. The navigation advisor may click a verified
+  // safe button/link to recover from unknown pages, at most advisorMaxClicks
+  // times per job. Both are disabled unless an API key is configured.
+  healer: {
+    apiKey: process.env.TAQADI_HEALER_API_KEY
+      || process.env.ANTHROPIC_API_KEY
+      || '',
+    model: process.env.TAQADI_HEALER_MODEL || 'claude-opus-4-8',
+  },
+  advisorMaxClicks: numberFromEnv('TAQADI_ADVISOR_MAX_CLICKS', 2),
   representative: {
     name: process.env.TAQADI_REPRESENTATIVE_NAME || 'خميس الجبر',
     phone: process.env.TAQADI_REPRESENTATIVE_PHONE || '',
@@ -50,9 +73,13 @@ export const agentConfig = {
     address: process.env.TAQADI_REPRESENTATIVE_ADDRESS || 'الدوحة قطر',
     nationality: process.env.TAQADI_REPRESENTATIVE_NATIONALITY || 'تونسي',
   },
+  defendantDefaults: {
+    ...FIXED_DEFENDANT_CONTACT,
+  },
   company: {
     email: process.env.TAQADI_COMPANY_EMAIL || '',
     address: process.env.TAQADI_COMPANY_ADDRESS || '',
+    country: process.env.TAQADI_COMPANY_COUNTRY || 'قطر',
     bankNameAr: process.env.TAQADI_COMPANY_BANK_NAME_AR || '',
     bankNameEn: process.env.TAQADI_COMPANY_BANK_NAME_EN || '',
     iban: process.env.TAQADI_COMPANY_IBAN || '',
@@ -62,7 +89,41 @@ export const agentConfig = {
   },
 };
 
+/**
+ * كشف القيم تالفة الترميز في الإعدادات العربية الحرجة.
+ * عندما يُحفظ .env.taqadi-agent بترميز ANSI تتحول العربية إلى علامات
+ * استفهام حرفية، فيفشل الوكيل وسط دعوى حقيقية (مثل قائمة «بلد البنك»).
+ * يُستدعى عند الإقلاع فيفشل بسرعة وبرسالة واضحة بدل الفشل داخل البوابة.
+ */
+export function findCorruptedConfigValues(
+  config: Pick<typeof agentConfig, 'representative' | 'company' | 'defendantDefaults'>,
+): string[] {
+  const corrupted = (value: string) => value.includes('?') && /^[\s?]+$/.test(value);
+  const checks: Array<[string, string]> = [
+    ['TAQADI_REPRESENTATIVE_NAME', config.representative.name],
+    ['TAQADI_REPRESENTATIVE_ADDRESS', config.representative.address],
+    ['TAQADI_REPRESENTATIVE_NATIONALITY', config.representative.nationality],
+    ['TAQADI_DEFENDANT_ADDRESS', config.defendantDefaults.address],
+    ['TAQADI_COMPANY_ADDRESS', config.company.address],
+    ['TAQADI_COMPANY_COUNTRY', config.company.country],
+    ['TAQADI_COMPANY_BANK_NAME_AR', config.company.bankNameAr],
+    ['TAQADI_COMPANY_BANK_COUNTRY', config.company.bankCountry],
+  ];
+  return checks
+    .filter(([, value]) => corrupted(value))
+    .map(([name]) => name);
+}
+
 export function assertAgentConfig() {
+  const corrupted = findCorruptedConfigValues(agentConfig);
+  if (corrupted.length > 0) {
+    throw new Error(
+      'Corrupted (non-UTF-8) Arabic configuration values detected: '
+      + corrupted.join(', ')
+      + '. Re-save .env.taqadi-agent as UTF-8 with the proper Arabic text.',
+    );
+  }
+
   const missing: string[] = [];
   if (!agentConfig.supabaseUrl) missing.push('TAQADI_SUPABASE_URL');
   if (!agentConfig.supabaseServiceRoleKey) {

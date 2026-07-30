@@ -69,6 +69,9 @@ export interface FilingPayload {
   documents: FilingDocument[];
   finalApproval: boolean;
   sourceUrl: string;
+  // Canary jobs re-run the portal flow up to the parties page and never
+  // approve; they exist to detect Taqadi UI changes before real filings fail.
+  canary?: boolean;
 }
 
 export interface FilingJob {

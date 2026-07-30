@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { LEGAL_WORKFLOW_STAGES, LegalWorkflowStage, useLegalCaseWorkflow } from '@/hooks/useLegalCaseWorkflow';
 import { formatCurrency, cn } from '@/lib/utils';
+import { decodeLegalTaskTitle } from '@/utils/arabicDisplayText';
 
 type Action = 'hearing' | 'judgment' | 'appeal' | 'enforcement' | 'close' | 'reopen' | null;
 
@@ -27,38 +28,6 @@ const initialForm = () => ({
 const actionTitles: Record<Exclude<Action, null>, string> = {
   hearing: 'تسجيل جلسة', judgment: 'تسجيل الحكم', appeal: 'تسجيل الاستئناف',
   enforcement: 'بدء التنفيذ', close: 'الإغلاق النهائي', reopen: 'إعادة فتح القضية',
-};
-
-const mojibakeMarkers = ['Ø', 'Ù', 'Ã', 'Â', 'â', 'ð', '�'];
-
-const decodePossiblyMojibake = (value?: unknown) => {
-  const text = String(value || '').trim();
-  if (!text || !mojibakeMarkers.some((marker) => text.includes(marker))) return text;
-
-  const decodeLatin1Utf8 = (input: string) => {
-    try {
-      const bytes = Uint8Array.from(input, (char) => char.charCodeAt(0) & 0xff);
-      return new TextDecoder('utf-8', { fatal: false }).decode(bytes).trim();
-    } catch {
-      return input;
-    }
-  };
-
-  const firstPass = decodeLatin1Utf8(text);
-  const secondPass = mojibakeMarkers.some((marker) => firstPass.includes(marker))
-    ? decodeLatin1Utf8(firstPass)
-    : firstPass;
-  const candidates = [text, firstPass, secondPass].filter(Boolean);
-
-  return candidates.sort((a, b) => {
-    const arabicDelta = (b.match(/[\u0600-\u06FF]/g) || []).length - (a.match(/[\u0600-\u06FF]/g) || []).length;
-    if (arabicDelta !== 0) return arabicDelta;
-    const badCount = (input: string) => mojibakeMarkers.reduce(
-      (count, marker) => count + (input.match(new RegExp(marker, 'g')) || []).length,
-      0,
-    );
-    return badCount(a) - badCount(b);
-  })[0] || text;
 };
 
 interface Props { caseId: string; onChanged?: (legalCase: Record<string, any>) => void }
@@ -167,7 +136,25 @@ export function LegalCaseWorkflowPanel({ caseId, onChanged }: Props) {
         {['closed', 'cancelled'].includes(stage) && <Button size="sm" variant="outline" onClick={() => setAction('reopen')}><RotateCcw className="w-4 h-4 ml-1" />إعادة فتح</Button>}
       </div>
 
-      {pendingTasks.length > 0 && <div className="space-y-1"><p className="text-xs font-medium text-slate-600">المتابعات الحالية</p>{pendingTasks.slice(0, 3).map((task) => <div key={task.id} className="flex items-center justify-between rounded-md border px-3 py-2 text-xs"><span>{decodePossiblyMojibake(task.title)}</span><Badge variant="outline">{task.priority === 'urgent' ? 'عاجل' : 'متابعة'}</Badge></div>)}</div>}
+      {pendingTasks.length > 0 && (
+        <div className="space-y-1">
+          <p className="text-xs font-medium text-slate-600">المتابعات الحالية</p>
+          {pendingTasks.slice(0, 3).map((task) => (
+            <div key={task.id} className="flex items-center justify-between rounded-md border px-3 py-2 text-xs">
+              <span>
+                {decodeLegalTaskTitle(
+                  {
+                    title: task.title,
+                    metadata: task.metadata as { workflow_key?: string | null } | null,
+                  },
+                  legalCase.case_number,
+                )}
+              </span>
+              <Badge variant="outline">{task.priority === 'urgent' ? 'عاجل' : 'متابعة'}</Badge>
+            </div>
+          ))}
+        </div>
+      )}
 
       <Dialog open={Boolean(action)} onOpenChange={(open) => !open && setAction(null)}>
         <DialogContent className="max-w-lg" dir="rtl">

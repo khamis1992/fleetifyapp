@@ -141,3 +141,9 @@ verify_jwt = true
 
 [functions.olmocr]
 verify_jwt = true
+
+# Contract ID scanner: invoked by pg_cron (secret header) and by the app (user JWT).
+# JWT gateway check disabled like daily-audit-agent; the function enforces its own
+# authorization via CONTRACT_SCANNER_SECRET or an authenticated user token.
+[functions.contract-id-scanner]
+verify_jwt = false

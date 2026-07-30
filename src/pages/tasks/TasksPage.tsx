@@ -78,7 +78,9 @@ import {
   Sparkles,
   ShieldCheck,
   WalletCards,
+  IdCard,
 } from 'lucide-react';
+import { CustomerDataReviewCenter } from '@/components/customers/CustomerDataReviewCenter';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
 
@@ -91,6 +93,7 @@ type TabType =
   | 'notes'
   | 'verification'
   | 'financial-reviews'
+  | 'data-review'
   | 'system-audit';
 
 const taskTheme = systemColorPattern.colors;
@@ -219,6 +222,7 @@ export default function TasksPage() {
     { id: 'my-tasks' as TabType, label: 'مهامي', icon: User },
     { id: 'all' as TabType, label: 'كل المهام', icon: ListTodo },
     { id: 'verification' as TabType, label: 'مهام التدقيق', icon: ClipboardCheck },
+    { id: 'data-review' as TabType, label: 'مراجعة البيانات', icon: IdCard },
     ...(canReviewFinancialIssues
       ? [{ id: 'financial-reviews' as TabType, label: 'مراجعات مالية', icon: WalletCards }]
       : []),
@@ -285,7 +289,7 @@ export default function TasksPage() {
         </section>
 
         <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-          <TabsList className="grid h-auto w-full grid-cols-2 gap-2 rounded-lg border bg-white p-2 shadow-sm md:grid-cols-3 xl:grid-cols-8" style={{ borderColor: taskTheme.border }}>
+          <TabsList className="grid h-auto w-full grid-cols-2 gap-2 rounded-lg border bg-white p-2 shadow-sm md:grid-cols-3 xl:grid-cols-[repeat(auto-fit,minmax(130px,1fr))]" style={{ borderColor: taskTheme.border }}>
             {tabItems.map((tab) => {
               const Icon = tab.icon;
               return (
@@ -432,6 +436,11 @@ export default function TasksPage() {
           <TabsContent value="verification" className="mt-5">
             <VerificationTasksList />
           </TabsContent>
+
+          <TabsContent value="data-review" className="mt-5">
+            <CustomerDataReviewCenter />
+          </TabsContent>
+
 
           <TabsContent value="financial-reviews" className="mt-5">
             <FinancialReviewTasksPanel />

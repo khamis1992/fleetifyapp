@@ -128,6 +128,7 @@ export function createInitialState(contractId: string | null = null): LawsuitPre
     customer: null,
     vehicle: null,
     overdueInvoices: [],
+    paymentReminders: { count: 0, lastSentDate: null, sendMethods: [] },
     trafficViolations: [],
     violationEvidenceDocuments: [],
     companyDocuments: [],
@@ -198,6 +199,13 @@ export function lawsuitPreparationReducer(
       return {
         ...state,
         overdueInvoices: action.payload,
+      };
+    }
+
+    case 'SET_PAYMENT_REMINDERS': {
+      return {
+        ...state,
+        paymentReminders: action.payload,
       };
     }
     

@@ -5,7 +5,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Download, Trash2, FileText, Upload, Eye, Car, CheckCircle, AlertCircle, AlertTriangle, FileImage, RefreshCw, Pencil, PlayCircle, ScanLine } from 'lucide-react';
+import { Plus, Download, Trash2, FileText, Upload, Eye, Car, CheckCircle, AlertCircle, AlertTriangle, FileImage, RefreshCw, Pencil, PlayCircle, ScanLine, IdCard } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useContractDocuments, useCreateContractDocument, useDeleteContractDocument, useDownloadContractDocument } from '@/hooks/useContractDocuments';
 import { DocumentUploadDialog, DocumentUploadData } from './DocumentUploadDialog';
@@ -28,6 +28,12 @@ import {
   SignedContractScannerDialog,
   type SignedContractScanFiles,
 } from './SignedContractScannerDialog';
+import { CustomerIdProposalsDialog } from './CustomerIdProposalsDialog';
+import {
+  useCustomerIdProposals,
+  usePendingIdScanCount,
+  useScanContractDocumentsForId,
+} from '@/hooks/useCustomerIdProposals';
 
 interface ContractDocumentsProps {
   contractId: string;
@@ -89,6 +95,25 @@ export function ContractDocuments({ contractId, customerId, vehicleId }: Contrac
   const deleteDocument = useDeleteContractDocument();
   const downloadDocument = useDownloadContractDocument();
   const { companyId } = useUnifiedCompanyAccess();
+
+  // Vision OCR: ID card scan proposals
+  const [isProposalsOpen, setIsProposalsOpen] = React.useState(false);
+  const { data: idProposals = [] } = useCustomerIdProposals(contractId);
+  const { data: pendingScanCount = 0 } = usePendingIdScanCount(contractId);
+  const scanDocumentsForId = useScanContractDocumentsForId(contractId);
+  const autoScanTriggeredRef = React.useRef(false);
+
+  // Auto-scan unprocessed documents once when the panel loads.
+  // (Cron also scans image documents every 15 minutes; PDFs are rasterized
+  //  client-side here because servers cannot rasterize PDFs.)
+  React.useEffect(() => {
+    if (autoScanTriggeredRef.current || isLoading) return;
+    if (pendingScanCount > 0) {
+      autoScanTriggeredRef.current = true;
+      scanDocumentsForId.mutate();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingScanCount, isLoading]);
   
   // Enhanced document saving with progress tracking
   const { 
@@ -474,6 +499,32 @@ export function ContractDocuments({ contractId, customerId, vehicleId }: Contrac
             <p className="text-sm text-neutral-500">{documents.length} مستند</p>
           </div>
           <div className="flex flex-wrap gap-2">
+            {idProposals.length > 0 && (
+              <Button
+                variant="outline"
+                onClick={() => setIsProposalsOpen(true)}
+                className="gap-2 rounded-lg border-[#F5C98A] text-[#B5791F] hover:bg-[#FDF6EA]"
+              >
+                <IdCard className="h-4 w-4" />
+                مقترحات البطاقة
+                <Badge className="bg-[#B5791F] text-white hover:bg-[#B5791F]">
+                  {idProposals.length}
+                </Badge>
+              </Button>
+            )}
+            <Button
+              variant="outline"
+              onClick={() => scanDocumentsForId.mutate()}
+              disabled={scanDocumentsForId.isPending}
+              className="gap-2 rounded-lg border-[#9FDCCB] text-[#0D876A] hover:bg-[#E9FBF6]"
+            >
+              {scanDocumentsForId.isPending ? (
+                <RefreshCw className="h-4 w-4 animate-spin" />
+              ) : (
+                <IdCard className="h-4 w-4" />
+              )}
+              فحص البطاقات
+            </Button>
             <Button
               variant="outline"
               onClick={() => setIsScannerOpen(true)}
@@ -973,6 +1024,11 @@ export function ContractDocuments({ contractId, customerId, vehicleId }: Contrac
         onOpenChange={setIsScannerOpen}
         onSubmit={handleSignedContractScan}
         isSubmitting={createDocument.isPending}
+      />
+      <CustomerIdProposalsDialog
+        contractId={contractId}
+        open={isProposalsOpen}
+        onOpenChange={setIsProposalsOpen}
       />
     </div>
   );

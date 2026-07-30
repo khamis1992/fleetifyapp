@@ -20,6 +20,19 @@ const healthServer = http.createServer((request, response) => {
     status: 'ok',
     workerId: agentConfig.workerId,
     version: agentConfig.version,
+    process: {
+      pid: process.pid,
+      platform: process.platform,
+    },
+    mode: {
+      stopAfterParties: agentConfig.stopAfterParties,
+      finalApproval: agentConfig.finalApproval,
+      headless: agentConfig.headless,
+      tawtheeqAutoLogin: Boolean(
+        agentConfig.tawtheeq.username
+        && agentConfig.tawtheeq.password,
+      ),
+    },
     runtime: worker.runtime,
   }));
 });

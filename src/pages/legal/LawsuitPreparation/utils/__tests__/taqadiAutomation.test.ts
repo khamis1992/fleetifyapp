@@ -88,8 +88,8 @@ function createState(withViolations = false): LawsuitPreparationState {
         idType: 'بطاقة شخصية',
         nationality: 'تونسي',
         phone: '55555555',
-        email: null,
-        address: 'الدوحة',
+        email: 'customer@example.com',
+        address: 'عنوان العميل المسجل',
       },
       contract: {
         contractNumber: 'C-100',
@@ -152,6 +152,8 @@ describe('buildTaqadiFilingPayload', () => {
     });
     expect(payload.plaintiff.partyOrder).toBe(1);
     expect(payload.representative.partyOrder).toBe(2);
+    expect(payload.defendant.email).toBe('khamis-1992@hotmail.com');
+    expect(payload.defendant.address).toBe('الدوحة قطر');
     expect(payload.finalApproval).toBe(true);
   });
 

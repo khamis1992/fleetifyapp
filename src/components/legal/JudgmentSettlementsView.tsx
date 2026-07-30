@@ -26,6 +26,11 @@ import {
   useLegalSettlementDetails,
 } from '@/hooks/useJudgmentSettlements';
 import { usePaymentOperations } from '@/hooks/business/usePaymentOperations';
+import {
+  decodeDisplayText,
+  decodePossiblyMojibake,
+  hasCorruptedArabic,
+} from '@/utils/arabicDisplayText';
 
 type QuickCollectionMethod = 'cash' | 'bank_transfer' | 'check' | 'credit_card' | 'debit_card';
 
@@ -54,8 +59,6 @@ const formatDate = (value?: string | null) => value
   ? new Date(value).toLocaleDateString('ar-QA', { year: 'numeric', month: 'short', day: 'numeric' })
   : '-';
 
-const mojibakeMarkers = ['Ø', 'Ù', 'Ã', 'Â', 'â', 'ð', '�'];
-
 const reviewIssueLabels: Record<string, string> = {
   match_suggestion: 'حركة مالية محتملة لحكم قضائي',
   legacy_payment_unlinked: 'دفعة قانونية قديمة غير مرتبطة بحركة مالية',
@@ -63,40 +66,6 @@ const reviewIssueLabels: Record<string, string> = {
   direction_mismatch: 'اتجاه الحركة المالية لا يطابق الحكم',
   closed_with_balance: 'قضية مغلقة ولها رصيد حكم غير مسدد',
   over_allocation: 'تعذر الربط التلقائي لحركة تحمل رقم القضية',
-};
-
-const hasMojibake = (input: string) => mojibakeMarkers.some((marker) => input.includes(marker));
-const countArabicLetters = (input: string) => (input.match(/[\u0600-\u06FF]/g) || []).length;
-const countMojibakeMarkers = (input: string) => mojibakeMarkers.reduce(
-  (count, marker) => count + (input.match(new RegExp(marker, 'g')) || []).length,
-  0,
-);
-
-const decodeLatin1Utf8 = (input: string) => {
-  try {
-    const bytes = Uint8Array.from(input, (char) => char.charCodeAt(0) & 0xff);
-    return new TextDecoder('utf-8', { fatal: false }).decode(bytes).trim();
-  } catch {
-    return input;
-  }
-};
-
-const chooseBestDisplayText = (options: string[]) => options
-  .map((text) => text.trim())
-  .filter(Boolean)
-  .sort((a, b) => {
-    const arabicDelta = countArabicLetters(b) - countArabicLetters(a);
-    if (arabicDelta !== 0) return arabicDelta;
-    return countMojibakeMarkers(a) - countMojibakeMarkers(b);
-  })[0] || '';
-
-const decodePossiblyMojibake = (value: string) => {
-  const text = value.trim();
-  if (!text || !hasMojibake(text)) return text;
-
-  const firstPass = decodeLatin1Utf8(text);
-  const secondPass = hasMojibake(firstPass) ? decodeLatin1Utf8(firstPass) : firstPass;
-  return chooseBestDisplayText([text, firstPass, secondPass]);
 };
 
 const translateDetailKey = (key: string) => ({
@@ -111,14 +80,12 @@ const translateDetailKey = (key: string) => ({
   settled_amount: 'المبلغ المسدد',
 }[key] || key);
 
-const decodeDisplayText = (value?: unknown): string => {
+const formatReviewDetails = (value?: unknown): string => {
   if (typeof value === 'string') return decodePossiblyMojibake(value);
-  if (!value || typeof value !== 'object') return '';
-
+  if (!value || typeof value !== 'object') return decodeDisplayText(value);
   const record = value as Record<string, unknown>;
-  const preferredValue = record.message || record.reason || record.error || record.description || record.title;
-  if (preferredValue) return decodeDisplayText(preferredValue);
-
+  const preferred = record.message || record.reason || record.error || record.description || record.title;
+  if (preferred) return formatReviewDetails(preferred);
   return Object.entries(record)
     .filter(([, entryValue]) => entryValue !== null && entryValue !== undefined && entryValue !== '')
     .map(([key, entryValue]) => `${translateDetailKey(key)}: ${decodeDisplayText(String(entryValue))}`)
@@ -400,8 +367,8 @@ export function JudgmentSettlementsView({
                     {detailsQuery.data?.reviews.map((review) => {
                       const decodedTitle = decodeDisplayText(review.title);
                       const fallbackTitle = reviewIssueLabels[review.issue_type] || 'عنصر يحتاج مراجعة';
-                      const title = decodedTitle && !hasMojibake(decodedTitle) ? decodedTitle : fallbackTitle;
-                      const details = decodeDisplayText(review.details);
+                      const title = decodedTitle && !hasCorruptedArabic(decodedTitle) ? decodedTitle : fallbackTitle;
+                      const details = formatReviewDetails(review.details);
 
                       return (
                         <div key={review.id} className="rounded-md border border-amber-200 bg-amber-50 p-3">
