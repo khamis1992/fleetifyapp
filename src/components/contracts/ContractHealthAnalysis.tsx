@@ -1760,7 +1760,6 @@ async function reconcileScheduleInvoicesForContract({
   const invoiceById = new Map(activeInvoices.map((invoice) => [invoice.id, invoice]));
   let activeSchedulesForLinks = getActivePaymentSchedulesForPeriod(schedules, startDate, endDate);
   let relinkedSchedules = 0;
-  const invoiceDateCorrections: Array<{ invoice: Invoice; dueDate: string }> = [];
   for (const schedule of activeSchedulesForLinks) {
     if (isCancelled(schedule.status) || !schedule.due_date) continue;
 
@@ -1768,18 +1767,6 @@ async function reconcileScheduleInvoicesForContract({
     let expectedInvoice = invoiceByMonth.get(scheduleMonthKey) || null;
     const linkedInvoice = schedule.invoice_id ? invoiceById.get(schedule.invoice_id) : null;
     const linkedInvoiceMonthKey = linkedInvoice ? getInvoiceMonthKey(linkedInvoice) : null;
-    const linkedInvoiceDueMonthKey = linkedInvoice ? getMonthKey(linkedInvoice.due_date) : null;
-
-    if (
-      linkedInvoice
-      && linkedInvoiceMonthKey === scheduleMonthKey
-      && linkedInvoiceDueMonthKey !== scheduleMonthKey
-    ) {
-      invoiceDateCorrections.push({
-        invoice: linkedInvoice,
-        dueDate: schedule.due_date,
-      });
-    }
 
     if (expectedInvoice && schedule.invoice_id !== expectedInvoice.id) {
       const { error } = await supabase
@@ -1810,26 +1797,6 @@ async function reconcileScheduleInvoicesForContract({
 
       if (error) throw error;
       relinkedSchedules += 1;
-    }
-  }
-
-  if (invoiceDateCorrections.length > 0) {
-    const correctedInvoiceDates = await applyInvoiceDueDateCorrections({
-      contract,
-      corrections: invoiceDateCorrections,
-      now,
-    });
-
-    fixedCount += correctedInvoiceDates;
-    actions.push(`تصحيح تواريخ استحقاق الفواتير: ${correctedInvoiceDates}`);
-    invoices = await getCurrentContractInvoices(contract, schedules);
-    activeInvoices = getActiveContractInvoicesForPeriod(contract, invoices);
-    invoiceByMonth = new Map<string, Invoice>();
-    for (const invoice of activeInvoices) {
-      const monthKey = getInvoiceMonthKey(invoice);
-      if (monthKey !== 'unknown' && !invoiceByMonth.has(monthKey)) {
-        invoiceByMonth.set(monthKey, invoice);
-      }
     }
   }
 
@@ -2064,74 +2031,6 @@ async function repairUniformScheduleMonthGraph({
 
   if (fixedCount > 0) actions.push(`إعادة بناء تسلسل الأقساط الشهرية: ${fixedCount}`);
   return { fixedCount, actions, reviewItems };
-}
-
-async function applyInvoiceDueDateCorrections({
-  contract,
-  corrections,
-  now,
-}: {
-  contract: Contract;
-  corrections: Array<{ invoice: Invoice; dueDate: string }>;
-  now: string;
-}) {
-  const uniqueCorrections = Array.from(
-    corrections.reduce((map, correction) => {
-      map.set(correction.invoice.id, correction);
-      return map;
-    }, new Map<string, { invoice: Invoice; dueDate: string }>()).values(),
-  ).sort((left, right) => {
-    const leftTime = normalizeDate(left.invoice.invoice_date || left.invoice.due_date)?.getTime() || 0;
-    const rightTime = normalizeDate(right.invoice.invoice_date || right.invoice.due_date)?.getTime() || 0;
-    return leftTime - rightTime;
-  });
-
-  try {
-    for (const correction of uniqueCorrections) {
-      const { error } = await supabase
-        .from('invoices')
-        .update({
-          due_date: correction.dueDate,
-          updated_at: now,
-        })
-        .eq('id', correction.invoice.id)
-        .eq('company_id', contract.company_id);
-
-      if (error) throw error;
-    }
-
-    return uniqueCorrections.length;
-  } catch (error) {
-    if (!isConflictError(error)) throw error;
-  }
-
-  for (const correction of uniqueCorrections) {
-    const { error } = await supabase
-      .from('invoices')
-      .update({
-        due_date: null,
-        updated_at: now,
-      })
-      .eq('id', correction.invoice.id)
-      .eq('company_id', contract.company_id);
-
-    if (error) throw error;
-  }
-
-  for (const correction of uniqueCorrections) {
-    const { error } = await supabase
-      .from('invoices')
-      .update({
-        due_date: correction.dueDate,
-        updated_at: now,
-      })
-      .eq('id', correction.invoice.id)
-      .eq('company_id', contract.company_id);
-
-    if (error) throw error;
-  }
-
-  return uniqueCorrections.length;
 }
 
 async function updateInvoiceAmountToSchedule({

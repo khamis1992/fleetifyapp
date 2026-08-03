@@ -9,6 +9,15 @@ const INACTIVE_PAYMENT_STATUSES = new Set([
   "refunded",
 ]);
 
+const INACTIVE_INVOICE_STATUSES = new Set([
+  "cancelled",
+  "canceled",
+  "void",
+  "voided",
+  "deleted",
+  "inactive",
+]);
+
 const COMPLETED_PAYMENT_STATUSES = new Set([
   "completed",
   "paid",
@@ -22,6 +31,7 @@ const INACTIVE_SCHEDULE_STATUSES = new Set([
   "void",
   "voided",
   "deleted",
+  "inactive",
 ]);
 const PROTECTED_VEHICLE_STATUSES = new Set([
   "maintenance",
@@ -94,23 +104,14 @@ export function isInvoiceOutsideContractBillingPeriod(
   const endMonth = monthKey(endDate);
   if (!startDate || !endDate || !startMonth || !endMonth) return false;
 
-  const dates = [dateOnly(invoice.invoice_date), dateOnly(invoice.due_date)]
-    .filter(Boolean);
-  const months = [
-    monthKey(invoice.invoice_date),
-    monthKey(invoice.due_date),
-  ].filter(Boolean);
-  if (dates.some((date) => date >= startDate && date <= endDate)) {
-    return false;
-  }
-  if (months.some((month) => month >= startMonth && month <= endMonth)) {
-    return false;
-  }
-  return dates.length > 0 || months.length > 0;
+  const invoiceMonth = invoiceMonthKey(invoice);
+  return Boolean(
+    invoiceMonth && (invoiceMonth < startMonth || invoiceMonth > endMonth)
+  );
 }
 
 export function invoiceMonthKey(invoice: Record<string, unknown>): string {
-  return monthKey(invoice.invoice_date || invoice.due_date);
+  return monthKey(invoice.invoice_month || invoice.invoice_date);
 }
 
 export function invoiceConflictsWithMonth(
@@ -127,7 +128,11 @@ export type ScheduleInvoiceLinkAssignment = {
   candidateInvoiceIds: string[];
 };
 
-export type BillingDateMode = "invoice_date" | "due_date";
+/**
+ * Kept as `invoice_date` for compatibility with existing repair payloads.
+ * Matching itself is canonical: invoice_month, then legacy invoice_date.
+ */
+export type BillingDateMode = "invoice_date";
 
 export type ScheduleInvoiceLinkPlan = {
   complete: boolean;
@@ -139,13 +144,9 @@ export type ScheduleInvoiceLinkPlan = {
 export function invoiceMatchesBillingMonth(
   invoice: Record<string, unknown>,
   month: string,
-  mode: BillingDateMode
+  _mode: BillingDateMode
 ): boolean {
-  const value =
-    mode === "invoice_date"
-      ? invoice.invoice_date || invoice.due_date
-      : invoice.due_date || invoice.invoice_date;
-  return monthKey(value) === month;
+  return invoiceMonthKey(invoice) === month;
 }
 
 export function deriveOneToOneScheduleInvoicePlan(
@@ -153,23 +154,11 @@ export function deriveOneToOneScheduleInvoicePlan(
   invoices: Record<string, unknown>[],
   preferredMode?: BillingDateMode
 ): ScheduleInvoiceLinkPlan {
-  if (preferredMode) {
-    return derivePlanForBillingDateMode(schedules, invoices, preferredMode);
-  }
-
-  const issueDatePlan = derivePlanForBillingDateMode(
+  return derivePlanForBillingDateMode(
     schedules,
     invoices,
-    "invoice_date"
+    preferredMode || "invoice_date"
   );
-  const dueDatePlan = derivePlanForBillingDateMode(
-    schedules,
-    invoices,
-    "due_date"
-  );
-  return compareScheduleInvoicePlans(issueDatePlan, dueDatePlan) >= 0
-    ? issueDatePlan
-    : dueDatePlan;
 }
 
 function derivePlanForBillingDateMode(
@@ -268,40 +257,12 @@ function derivePlanForBillingDateMode(
   };
 }
 
-function compareScheduleInvoicePlans(
-  left: ScheduleInvoiceLinkPlan,
-  right: ScheduleInvoiceLinkPlan
-): number {
-  const quality = (plan: ScheduleInvoiceLinkPlan) => {
-    const matched = plan.assignments.filter((item) => item.newInvoiceId).length;
-    const preserved = plan.assignments.filter(
-      (item) => item.oldInvoiceId && item.oldInvoiceId === item.newInvoiceId
-    ).length;
-    const ambiguity = plan.assignments.reduce(
-      (total, item) => total + Math.max(0, item.candidateInvoiceIds.length - 1),
-      0
-    );
-    return [
-      plan.complete ? 1 : 0,
-      !plan.complete && plan.billingDateMode === "invoice_date" ? 1 : 0,
-      preserved,
-      matched,
-      -ambiguity,
-      plan.billingDateMode === "invoice_date" ? 1 : 0,
-    ];
-  };
-  const leftQuality = quality(left);
-  const rightQuality = quality(right);
-  for (let index = 0; index < leftQuality.length; index += 1) {
-    if (leftQuality[index] !== rightQuality[index]) {
-      return leftQuality[index] - rightQuality[index];
-    }
-  }
-  return 0;
-}
-
 export function isInactivePaymentStatus(value: unknown): boolean {
   return INACTIVE_PAYMENT_STATUSES.has(normalizeStatus(value));
+}
+
+export function isInactiveInvoiceStatus(value: unknown): boolean {
+  return INACTIVE_INVOICE_STATUSES.has(normalizeStatus(value));
 }
 
 export function isCompletedPayment(value: unknown): boolean {
@@ -396,19 +357,13 @@ export function buildCanonicalContractReceiptContributions(
   allocations: Array<Record<string, unknown>>
 ): Array<Record<string, unknown>> {
   const normalizedContractId = String(contractId || "");
-  const inactiveInvoiceStatuses = new Set([
-    "cancelled",
-    "canceled",
-    "void",
-    "voided",
-    "deleted",
-  ]);
   const activeInvoiceIds = new Set(
     invoices
       .filter(
         (invoice) =>
           String(invoice.contract_id || "") === normalizedContractId &&
-          !inactiveInvoiceStatuses.has(normalizeStatus(invoice.status))
+          !isInactiveInvoiceStatus(invoice.status) &&
+          !isInactiveInvoiceStatus(invoice.payment_status)
       )
       .map((invoice) => String(invoice.id || ""))
   );

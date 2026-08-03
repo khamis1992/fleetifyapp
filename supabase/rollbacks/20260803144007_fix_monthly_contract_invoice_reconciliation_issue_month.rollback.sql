@@ -15,7 +15,12 @@ BEGIN
       AND lower(COALESCE(invoice.status, '')) NOT IN (
         'cancelled', 'canceled', 'void', 'voided', 'deleted'
       )
-    GROUP BY invoice.contract_id, date_trunc('month', invoice.invoice_date)
+    GROUP BY
+      invoice.contract_id,
+      date_trunc(
+        'month',
+        invoice.invoice_date::timestamp without time zone
+      )::date
     HAVING count(*) > 1
   ) THEN
     RAISE EXCEPTION
@@ -319,6 +324,320 @@ BEGIN
 END;
 $$;
 
+CREATE OR REPLACE FUNCTION public.system_agent_apply_contract_invoice_billing_month_repair_v9(
+  p_run_id uuid,
+  p_job_id uuid,
+  p_finding_id uuid,
+  p_command text,
+  p_company_id uuid,
+  p_entity_id text,
+  p_expected_before jsonb DEFAULT '{}'::jsonb,
+  p_values jsonb DEFAULT '{}'::jsonb,
+  p_metadata jsonb DEFAULT '{}'::jsonb
+)
+RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+DECLARE
+  v_job public.system_agent_jobs%ROWTYPE;
+  v_finding public.system_agent_findings%ROWTYPE;
+  v_registry public.system_agent_command_registry%ROWTYPE;
+  v_contract public.contracts%ROWTYPE;
+  v_schedule public.contract_payment_schedules%ROWTYPE;
+  v_invoice public.invoices%ROWTYPE;
+  v_before jsonb;
+  v_after jsonb;
+  v_expected_matches boolean := false;
+  v_candidate_count integer := 0;
+  v_candidate_id uuid;
+  v_created_invoice_id uuid;
+  v_month date;
+  v_billing_date_mode text;
+  v_preexisting_month_schedules jsonb := '[]'::jsonb;
+  v_repair_id uuid := gen_random_uuid();
+  v_repair_metadata jsonb := COALESCE(p_metadata, '{}'::jsonb);
+BEGIN
+  IF p_command NOT IN (
+    'schedule.repair_invoice_link',
+    'schedule.link_invoice_by_billing_month',
+    'contract.generate_missing_invoice'
+  ) THEN
+    RAISE EXCEPTION 'Billing-month invoice gateway received an unsupported command';
+  END IF;
+  v_billing_date_mode := COALESCE(p_values ->> 'billing_date_mode', '');
+  IF v_billing_date_mode NOT IN ('invoice_date', 'due_date')
+     OR (COALESCE(p_values, '{}'::jsonb) - 'billing_date_mode') <> '{}'::jsonb
+  THEN
+    RAISE EXCEPTION 'Billing-month repairs require only a valid billing_date_mode';
+  END IF;
+
+  SELECT * INTO v_job
+  FROM public.system_agent_jobs job
+  WHERE job.id = p_job_id
+    AND job.run_id = p_run_id
+    AND job.company_id = p_company_id
+  FOR UPDATE;
+  IF v_job.id IS NULL OR v_job.status <> 'running' OR v_job.mode <> 'apply' OR v_job.domain <> 'contracts' THEN
+    RAISE EXCEPTION 'System agent job is not an active contract apply job';
+  END IF;
+
+  SELECT * INTO v_finding
+  FROM public.system_agent_findings finding
+  WHERE finding.id = p_finding_id
+    AND finding.run_id = p_run_id
+    AND finding.job_id = p_job_id
+    AND finding.company_id = p_company_id
+  FOR UPDATE;
+  IF v_finding.id IS NULL
+     OR v_finding.repair_command IS DISTINCT FROM p_command
+     OR v_finding.entity_type <> 'contract_payment_schedule'
+     OR v_finding.entity_id <> p_entity_id
+  THEN
+    RAISE EXCEPTION 'Finding does not authorize this billing-month repair';
+  END IF;
+
+  SELECT * INTO v_registry
+  FROM public.system_agent_command_registry registry
+  WHERE registry.command = p_command AND registry.enabled = true;
+  IF v_registry.command IS NULL OR v_registry.entity_table <> 'contract_payment_schedules' THEN
+    RAISE EXCEPTION 'Billing-month repair command is not enabled for contract schedules';
+  END IF;
+
+  SELECT * INTO v_schedule
+  FROM public.contract_payment_schedules schedule
+  WHERE schedule.id = p_entity_id::uuid
+    AND schedule.company_id = p_company_id
+  FOR UPDATE;
+  IF NOT FOUND THEN RAISE EXCEPTION 'Schedule is outside the active company'; END IF;
+
+  SELECT * INTO v_contract
+  FROM public.contracts contract
+  WHERE contract.id = v_schedule.contract_id
+    AND contract.company_id = p_company_id
+  FOR UPDATE;
+  IF NOT FOUND THEN RAISE EXCEPTION 'Schedule contract is outside the active company'; END IF;
+
+  IF lower(COALESCE(v_schedule.status, '')) IN ('cancelled', 'canceled', 'void', 'voided', 'deleted')
+     OR lower(COALESCE(v_contract.status::text, '')) NOT IN (
+       'active',
+       'under_legal_procedure'
+     )
+     OR v_contract.start_date IS NULL
+     OR v_contract.end_date IS NULL
+     OR v_schedule.due_date < v_contract.start_date
+     OR v_schedule.due_date > v_contract.end_date
+     OR COALESCE(v_schedule.amount, 0) <= 0.01
+  THEN
+    RAISE EXCEPTION 'Schedule and billable contract lifecycle do not permit billing-month invoice repair';
+  END IF;
+
+  v_before := public.system_agent_pick_fields(to_jsonb(v_schedule), v_registry.allowed_fields);
+  v_expected_matches := COALESCE(p_expected_before, '{}'::jsonb) = '{}'::jsonb
+    OR v_before @> p_expected_before;
+  IF NOT v_expected_matches THEN
+    RAISE EXCEPTION 'Schedule changed after billing-month detection';
+  END IF;
+
+  v_month := date_trunc('month', v_schedule.due_date)::date;
+  SELECT count(*), (array_agg(invoice.id ORDER BY invoice.id))[1]
+  INTO v_candidate_count, v_candidate_id
+  FROM public.invoices invoice
+  WHERE invoice.company_id = p_company_id
+    AND invoice.contract_id = v_contract.id
+    AND date_trunc(
+      'month',
+      CASE
+        WHEN v_billing_date_mode = 'due_date' THEN COALESCE(invoice.due_date, invoice.invoice_date)
+        ELSE COALESCE(invoice.invoice_date, invoice.due_date)
+      END
+    )::date = v_month
+    AND lower(COALESCE(invoice.status, '')) NOT IN ('cancelled', 'canceled', 'void', 'voided', 'deleted')
+    AND lower(COALESCE(invoice.payment_status, '')) NOT IN ('cancelled', 'canceled', 'void', 'voided');
+
+  IF v_candidate_count > 1 THEN
+    RAISE EXCEPTION 'Schedule has multiple active billing-month invoice candidates';
+  ELSIF v_candidate_count = 0 THEN
+    IF v_billing_date_mode = 'due_date'
+       OR p_command = 'schedule.link_invoice_by_billing_month'
+    THEN
+      RAISE EXCEPTION 'Billing-month repair has no existing unambiguous invoice candidate';
+    END IF;
+    IF v_registry.closed_period_policy = 'block'
+       AND public.system_agent_date_in_closed_period(p_company_id, v_schedule.due_date)
+    THEN
+      RAISE EXCEPTION 'Issue-month invoice generation is blocked by a closed accounting period';
+    END IF;
+
+    PERFORM pg_advisory_xact_lock(
+      hashtextextended(p_company_id::text || ':' || v_contract.id::text || ':' || to_char(v_month, 'YYYY-MM'), 0)
+    );
+    SELECT COALESCE(
+      jsonb_agg(jsonb_build_object(
+        'id', schedule.id,
+        'invoice_id', schedule.invoice_id,
+        'status', schedule.status,
+        'paid_amount', schedule.paid_amount,
+        'paid_date', schedule.paid_date
+      )),
+      '[]'::jsonb
+    )
+    INTO v_preexisting_month_schedules
+    FROM public.contract_payment_schedules schedule
+    WHERE schedule.company_id = p_company_id
+      AND schedule.contract_id = v_contract.id
+      AND date_trunc('month', schedule.due_date)::date = v_month;
+    v_created_invoice_id := public.generate_invoice_for_contract_month(v_contract.id, v_month);
+    IF v_created_invoice_id IS NULL THEN
+      SELECT invoice.id INTO v_created_invoice_id
+      FROM public.invoices invoice
+      WHERE invoice.company_id = p_company_id
+        AND invoice.contract_id = v_contract.id
+        AND date_trunc('month', COALESCE(invoice.invoice_date, invoice.due_date))::date = v_month
+        AND lower(COALESCE(invoice.status, '')) NOT IN ('cancelled', 'canceled', 'void', 'voided', 'deleted')
+      ORDER BY invoice.id
+      LIMIT 1;
+    END IF;
+    IF v_created_invoice_id IS NULL THEN
+      RAISE EXCEPTION 'Invoice generator did not create or return the issue-month invoice';
+    END IF;
+    v_candidate_id := v_created_invoice_id;
+  END IF;
+
+  SELECT * INTO v_invoice
+  FROM public.invoices invoice
+  WHERE invoice.id = v_candidate_id
+    AND invoice.company_id = p_company_id
+    AND invoice.contract_id = v_contract.id
+  FOR UPDATE;
+  IF NOT FOUND
+     OR date_trunc(
+       'month',
+       CASE
+         WHEN v_billing_date_mode = 'due_date' THEN COALESCE(v_invoice.due_date, v_invoice.invoice_date)
+         ELSE COALESCE(v_invoice.invoice_date, v_invoice.due_date)
+       END
+     )::date <> v_month
+     OR lower(COALESCE(v_invoice.status, '')) IN ('cancelled', 'canceled', 'void', 'voided', 'deleted')
+  THEN
+    RAISE EXCEPTION 'Billing-month invoice candidate failed company, contract, month, or lifecycle verification';
+  END IF;
+  IF abs(COALESCE(v_invoice.total_amount, 0) - COALESCE(v_schedule.amount, 0)) > 0.01 THEN
+    RAISE EXCEPTION 'Billing-month invoice amount does not match the schedule amount';
+  END IF;
+
+  IF v_created_invoice_id IS NOT NULL THEN
+    UPDATE public.contract_payment_schedules generated_schedule
+    SET
+      invoice_id = previous.invoice_id,
+      status = previous.status,
+      paid_amount = previous.paid_amount,
+      paid_date = previous.paid_date,
+      updated_at = now()
+    FROM jsonb_to_recordset(v_preexisting_month_schedules) AS previous(
+      id uuid,
+      invoice_id uuid,
+      status text,
+      paid_amount numeric,
+      paid_date date
+    )
+    WHERE generated_schedule.id = previous.id
+      AND generated_schedule.company_id = p_company_id
+      AND generated_schedule.contract_id = v_contract.id
+      AND generated_schedule.id <> v_schedule.id
+      AND generated_schedule.invoice_id = v_created_invoice_id
+      AND lower(COALESCE(previous.status, '')) IN (
+        'cancelled', 'canceled', 'void', 'voided', 'deleted', 'inactive'
+      );
+
+    DELETE FROM public.contract_payment_schedules generated_schedule
+    WHERE generated_schedule.company_id = p_company_id
+      AND generated_schedule.contract_id = v_contract.id
+      AND generated_schedule.invoice_id = v_created_invoice_id
+      AND generated_schedule.id <> v_schedule.id
+      AND NOT EXISTS (
+        SELECT 1
+        FROM jsonb_to_recordset(v_preexisting_month_schedules) AS previous(id uuid)
+        WHERE previous.id = generated_schedule.id
+      );
+  END IF;
+
+  IF EXISTS (
+    SELECT 1
+    FROM public.contract_payment_schedules other_schedule
+    WHERE other_schedule.company_id = p_company_id
+      AND other_schedule.id <> v_schedule.id
+      AND other_schedule.invoice_id = v_candidate_id
+      AND lower(COALESCE(other_schedule.status, '')) NOT IN ('cancelled', 'canceled', 'void', 'voided', 'deleted')
+  ) THEN
+    RAISE EXCEPTION 'Billing-month invoice candidate is still linked to another active schedule';
+  END IF;
+
+  IF v_schedule.invoice_id IS NOT DISTINCT FROM v_candidate_id THEN
+    v_after := v_before;
+  ELSE
+    UPDATE public.contract_payment_schedules schedule
+    SET invoice_id = v_candidate_id, updated_at = now()
+    WHERE schedule.id = v_schedule.id AND schedule.company_id = p_company_id;
+
+    SELECT * INTO v_schedule
+    FROM public.contract_payment_schedules schedule
+    WHERE schedule.id = p_entity_id::uuid;
+    v_after := public.system_agent_pick_fields(to_jsonb(v_schedule), v_registry.allowed_fields);
+    IF v_schedule.invoice_id IS DISTINCT FROM v_candidate_id THEN
+      RAISE EXCEPTION 'Billing-month schedule link failed postcondition verification';
+    END IF;
+  END IF;
+
+  IF v_before IS NOT DISTINCT FROM v_after THEN
+    UPDATE public.system_agent_findings finding
+    SET status = 'ignored', repair_id = null, error = null, updated_at = now()
+    WHERE finding.id = p_finding_id;
+    RETURN jsonb_build_object(
+      'status', 'verified_no_change',
+      'command', p_command,
+      'entity_id', p_entity_id,
+      'state', v_after
+    );
+  END IF;
+
+  v_repair_metadata := v_repair_metadata || jsonb_build_object(
+    'handler_version', CASE
+      WHEN p_command IN (
+        'schedule.repair_invoice_link',
+        'schedule.link_invoice_by_billing_month'
+      ) THEN 'contract_schedule_v1'
+      ELSE 'contract_invoice_v3'
+    END,
+    'created_invoice_id', v_created_invoice_id,
+    'invoice_month', v_month,
+    'billing_date_mode', v_billing_date_mode
+  );
+
+  INSERT INTO public.system_agent_repairs (
+    id, run_id, job_id, finding_id, company_id, domain, command,
+    entity_table, entity_id, before_state, after_state, rollback_metadata
+  ) VALUES (
+    v_repair_id, p_run_id, p_job_id, p_finding_id, p_company_id, 'contracts', p_command,
+    v_registry.entity_table, p_entity_id, v_before, v_after, v_repair_metadata
+  );
+
+  UPDATE public.system_agent_findings finding
+  SET status = 'repaired', repair_id = v_repair_id, error = null, updated_at = now()
+  WHERE finding.id = p_finding_id;
+
+  RETURN jsonb_build_object(
+    'status', 'repaired',
+    'repair_id', v_repair_id,
+    'command', p_command,
+    'entity_id', p_entity_id,
+    'before', v_before,
+    'after', v_after
+  );
+END;
+$$;
+
 REVOKE ALL ON FUNCTION public.generate_invoice_for_contract_month(uuid, date)
   FROM PUBLIC, anon, authenticated, service_role;
 GRANT EXECUTE ON FUNCTION public.generate_invoice_for_contract_month(uuid, date)
@@ -329,6 +648,16 @@ REVOKE EXECUTE ON FUNCTION public.monthly_contract_invoice_reconciliation(date)
 GRANT EXECUTE ON FUNCTION public.monthly_contract_invoice_reconciliation(date)
   TO service_role;
 
+REVOKE ALL ON FUNCTION public.system_agent_apply_contract_invoice_billing_month_repair_v9(
+  uuid, uuid, uuid, text, uuid, text, jsonb, jsonb, jsonb
+) FROM PUBLIC, anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.system_agent_apply_contract_invoice_billing_month_repair_v9(
+  uuid, uuid, uuid, text, uuid, text, jsonb, jsonb, jsonb
+) TO service_role;
+
+COMMENT ON INDEX public.idx_invoices_unique_contract_month IS
+  'Canonical uniqueness for active contract invoices by invoice_date month. Legacy due-date uniqueness was removed.';
+
 COMMENT ON FUNCTION public.check_duplicate_monthly_invoice() IS
   'Prevents duplicate active contract invoices by invoice_date month; due_date is a payment deadline only.';
 
@@ -337,5 +666,10 @@ COMMENT ON FUNCTION public.generate_invoice_for_contract_month(uuid, date) IS
 
 COMMENT ON FUNCTION public.monthly_contract_invoice_reconciliation(date) IS
 'Creates missing contract invoices for one month, intended for pg_cron on the 28th to generate next month only.';
+
+COMMENT ON FUNCTION public.system_agent_apply_contract_invoice_billing_month_repair_v9(
+  uuid, uuid, uuid, text, uuid, text, jsonb, jsonb, jsonb
+) IS
+  'Canonical reversible billing-mode repair for active and under-legal contracts that restores preexisting inactive schedules and removes only schedules created inside the invoice transaction.';
 
 COMMIT;

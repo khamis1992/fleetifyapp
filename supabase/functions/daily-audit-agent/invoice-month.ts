@@ -4,6 +4,7 @@ const INACTIVE_INVOICE_STATUSES = new Set([
   "void",
   "voided",
   "deleted",
+  "inactive",
 ]);
 
 export type InvoiceMonthCandidate = {

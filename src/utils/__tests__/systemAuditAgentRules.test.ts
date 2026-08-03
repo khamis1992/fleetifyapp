@@ -14,6 +14,7 @@ import {
   deriveSchedulePaymentState,
   deriveVehicleStatus,
   isInactiveScheduleStatus,
+  isInactiveInvoiceStatus,
   isDateOutsidePeriod,
   isInvoiceOutsideContractBillingPeriod,
   invoiceConflictsWithMonth,
@@ -138,7 +139,8 @@ describe("system audit agent rules", () => {
     expect(
       isInvoiceOutsideContractBillingPeriod(
         {
-          invoice_date: "2026-12-01",
+          invoice_month: "2026-12-01",
+          invoice_date: "2027-01-01",
           due_date: "2027-01-01",
         },
         "2025-11-09",
@@ -470,6 +472,7 @@ describe("system audit agent rules", () => {
   it("never treats cancelled schedules as repairable billing periods", () => {
     expect(isInactiveScheduleStatus("cancelled")).toBe(true);
     expect(isInactiveScheduleStatus("VOID")).toBe(true);
+    expect(isInactiveScheduleStatus("inactive")).toBe(true);
     expect(isInactiveScheduleStatus("pending")).toBe(false);
     expect(isInactiveScheduleStatus("overdue")).toBe(false);
   });
@@ -540,12 +543,17 @@ describe("system audit agent rules", () => {
     expect(normalizeScheduleStatus("PAID")).toBe("paid");
   });
 
-  it("uses invoice_date as the canonical monthly uniqueness key", () => {
-    const invoice = { invoice_date: "2026-02-01", due_date: "2026-03-01" };
+  it("uses invoice_month first, then invoice_date, and never due_date", () => {
+    const invoice = {
+      invoice_month: "2026-02-01",
+      invoice_date: "2026-03-01",
+      due_date: "2026-04-01",
+    };
     expect(invoiceMonthKey(invoice)).toBe("2026-02");
     expect(invoiceConflictsWithMonth(invoice, "2026-02")).toBe(true);
     expect(invoiceConflictsWithMonth(invoice, "2026-03")).toBe(false);
     expect(invoiceConflictsWithMonth(invoice, "2026-04")).toBe(false);
+    expect(invoiceMonthKey({ invoice_month: null, invoice_date: "2026-03-15", due_date: "2026-04-01" })).toBe("2026-03");
   });
 
   it("derives a complete one-to-one schedule invoice matching across month boundaries", () => {
@@ -565,11 +573,13 @@ describe("system audit agent rules", () => {
       [
         {
           id: "invoice-april",
+          invoice_month: "2026-04-01",
           invoice_date: "2026-04-01",
           due_date: "2026-05-01",
         },
         {
           id: "invoice-may",
+          invoice_month: "2026-05-01",
           invoice_date: "2026-05-01",
           due_date: "2026-06-01",
         },
@@ -594,7 +604,7 @@ describe("system audit agent rules", () => {
     ]);
   });
 
-  it("preserves a complete due-month convention when boundary dates require it", () => {
+  it("uses explicit invoice months even when issue and due dates cross boundaries", () => {
     const plan = deriveOneToOneScheduleInvoicePlan(
       [
         {
@@ -611,25 +621,27 @@ describe("system audit agent rules", () => {
       [
         {
           id: "invoice-may",
+          invoice_month: "2027-06-01",
           invoice_date: "2027-05-01",
-          due_date: "2027-06-01",
+          due_date: "2027-07-01",
         },
         {
           id: "invoice-june",
+          invoice_month: "2027-07-01",
           invoice_date: "2027-06-01",
-          due_date: "2027-07-01",
+          due_date: "2027-08-01",
         },
       ]
     );
 
     expect(plan.complete).toBe(true);
-    expect(plan.billingDateMode).toBe("due_date");
+    expect(plan.billingDateMode).toBe("invoice_date");
     expect(
       plan.assignments.map((assignment) => assignment.newInvoiceId)
     ).toEqual(["invoice-may", "invoice-june"]);
   });
 
-  it("does not mix invoice and due date conventions inside one contract", () => {
+  it("does not use invoice due dates to fill a missing billing month", () => {
     const plan = deriveOneToOneScheduleInvoicePlan(
       [
         {
@@ -894,7 +906,7 @@ describe("system audit agent rules", () => {
     );
   });
 
-  it("trusts an existing invoice link when the schedule matches its due month", async () => {
+  it("trusts an existing link when invoice_month matches despite shifted issue and due dates", async () => {
     const result = await runDomainWorker(
       createWorkerContext("contracts", {
         contracts: [
@@ -921,8 +933,9 @@ describe("system audit agent rules", () => {
             contract_id: "contract-1",
             customer_id: "customer-1",
             invoice_number: "INV-1",
+            invoice_month: "2026-08-01",
             invoice_date: "2026-07-01",
-            due_date: "2026-08-01",
+            due_date: "2026-09-01",
             subtotal: 1_000,
             total_amount: 1_000,
             paid_amount: 0,
@@ -957,6 +970,101 @@ describe("system audit agent rules", () => {
     );
     expect(result.findings.map((finding) => finding.code)).not.toContain(
       "schedule.stale_invoice_link"
+    );
+  });
+
+  it("uses the same inactive invoice lifecycle values as the database guard", () => {
+    expect(isInactiveInvoiceStatus("cancelled")).toBe(true);
+    expect(isInactiveInvoiceStatus("VOIDED")).toBe(true);
+    expect(isInactiveInvoiceStatus("deleted")).toBe(true);
+    expect(isInactiveInvoiceStatus("inactive")).toBe(true);
+    expect(isInactiveInvoiceStatus("failed")).toBe(false);
+    expect(isInactiveInvoiceStatus("refunded")).toBe(false);
+  });
+
+  it("does not let an August invoice reserve the September schedule month", async () => {
+    const result = await runDomainWorker(
+      createWorkerContext("contracts", {
+        contracts: [
+          {
+            id: "contract-1",
+            company_id: "company-1",
+            contract_number: "C-1",
+            status: "active",
+            contract_amount: 2_000,
+            total_paid: 0,
+            balance_due: 2_000,
+            payment_status: "unpaid",
+            start_date: "2026-01-01",
+            end_date: "2026-12-31",
+            contract_date: "2026-01-01",
+            customer_id: "customer-1",
+            vehicle_id: "vehicle-1",
+          },
+        ],
+        invoices: [
+          {
+            id: "invoice-august",
+            company_id: "company-1",
+            contract_id: "contract-1",
+            customer_id: "customer-1",
+            invoice_number: "INV-AUG",
+            invoice_month: "2026-08-01",
+            invoice_date: "2026-09-01",
+            due_date: "2026-09-15",
+            subtotal: 1_000,
+            total_amount: 1_000,
+            paid_amount: 0,
+            balance_due: 1_000,
+            status: "sent",
+            payment_status: "unpaid",
+            journal_entry_id: null,
+          },
+        ],
+        payments: [],
+        contract_payment_schedules: [
+          {
+            id: "schedule-august",
+            company_id: "company-1",
+            contract_id: "contract-1",
+            invoice_id: "invoice-august",
+            amount: 1_000,
+            paid_amount: 0,
+            status: "pending",
+            paid_date: null,
+            due_date: "2026-08-01",
+            installment_number: 1,
+          },
+          {
+            id: "schedule-september",
+            company_id: "company-1",
+            contract_id: "contract-1",
+            invoice_id: null,
+            amount: 1_000,
+            paid_amount: 0,
+            status: "pending",
+            paid_date: null,
+            due_date: "2026-09-01",
+            installment_number: 2,
+          },
+        ],
+        payment_allocations: [],
+        payment_accounting_classifications: [],
+      })
+    );
+
+    const septemberFinding = result.findings.find(
+      (finding) => finding.entityId === "schedule-september"
+    );
+    expect(septemberFinding?.code).toBe("schedule.missing_invoice");
+    expect(septemberFinding?.repair?.command).toBe(
+      "contract.generate_missing_invoice"
+    );
+    expect(result.findings.map((finding) => finding.code)).not.toContain(
+      "schedule.invoice_month_constraint_conflict"
+    );
+    expect(result.findings.map((finding) => finding.code)).not.toContain(
+      "schedule.due_month_invoice_missing"
     );
   });
 

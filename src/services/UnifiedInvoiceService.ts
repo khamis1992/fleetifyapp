@@ -11,7 +11,11 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import { logger } from '@/lib/logger';
-import { getInvoiceBillingMonthKey } from '@/utils/invoiceBillingMonth';
+import {
+  buildInvoiceMonthRangeFilter,
+  getInvoiceBillingMonthKey,
+  isActiveInvoice,
+} from '@/utils/invoiceBillingMonth';
 
 // =====================================================
 // Types & Interfaces
@@ -131,26 +135,26 @@ class UnifiedInvoiceServiceClass {
     due_date: string;
   } | null> {
     const monthStart = `${invoiceMonth}-01`;
-    const monthEnd = `${invoiceMonth}-31`;
+    const monthDate = new Date(`${monthStart}T00:00:00`);
+    const nextMonthStart = getFirstDayOfMonth(
+      new Date(monthDate.getFullYear(), monthDate.getMonth() + 1, 1),
+    );
 
-    const { data: existingInvoice, error } = await supabase
+    const { data: existingInvoices, error } = await supabase
       .from('invoices')
-      .select('id, invoice_number, total_amount, balance_due, payment_status, invoice_date, due_date')
+      .select('id, invoice_number, total_amount, balance_due, status, payment_status, invoice_month, invoice_date, due_date')
       .eq('contract_id', contractId)
-      .gte('due_date', monthStart)
-      .lte('due_date', monthEnd)
-      .neq('status', 'cancelled')
-      .order('created_at', { ascending: false })
-      .limit(1);
+      .or(buildInvoiceMonthRangeFilter(monthStart, nextMonthStart))
+      .order('created_at', { ascending: true });
 
     if (error) {
       logger.error('Error finding existing invoice', { error, contractId, invoiceMonth });
       return null;
     }
 
-    if (!existingInvoice || existingInvoice.length === 0) return null;
+    const invoice = existingInvoices?.find(isActiveInvoice);
+    if (!invoice) return null;
 
-    const invoice = existingInvoice[0];
     return {
       ...invoice,
       balance_due: invoice.balance_due ?? invoice.total_amount,
@@ -175,23 +179,21 @@ class UnifiedInvoiceServiceClass {
     invoice_date: string;
     due_date: string;
   } | null> {
-    const { data: unpaidInvoice, error } = await supabase
+    const { data: unpaidInvoices, error } = await supabase
       .from('invoices')
-      .select('id, invoice_number, total_amount, balance_due, payment_status, invoice_date, due_date')
+      .select('id, invoice_number, total_amount, balance_due, status, payment_status, invoice_month, invoice_date, due_date')
       .eq('contract_id', contractId)
       .in('payment_status', ['unpaid', 'pending', 'partial', 'partially_paid', 'overdue'])
-      .neq('status', 'cancelled')
-      .order('due_date', { ascending: true })
-      .limit(1);
+      .order('due_date', { ascending: true });
 
     if (error) {
       logger.error('Error finding unpaid invoice', { error, contractId });
       return null;
     }
 
-    if (!unpaidInvoice || unpaidInvoice.length === 0) return null;
+    const invoice = unpaidInvoices?.find(isActiveInvoice);
+    if (!invoice) return null;
 
-    const invoice = unpaidInvoice[0];
     return {
       ...invoice,
       balance_due: invoice.balance_due ?? invoice.total_amount,
@@ -263,6 +265,7 @@ class UnifiedInvoiceServiceClass {
           contract_id: contractId,
           invoice_number: invoiceNumber,
           invoice_date: invoiceDate,
+          invoice_month: invoiceDate,
           due_date: dueDate,
           total_amount: monthlyAmount,
           subtotal: monthlyAmount,

@@ -5,6 +5,20 @@ export interface InvoiceBillingMonthFields {
   due_date?: string | null;
 }
 
+export interface InvoiceLifecycleFields {
+  status?: string | null;
+  payment_status?: string | null;
+}
+
+const INACTIVE_INVOICE_STATES = new Set([
+  'cancelled',
+  'canceled',
+  'void',
+  'voided',
+  'deleted',
+  'inactive',
+]);
+
 const ISO_DATE_PREFIX = /^(\d{4})-(\d{2})-(\d{2})/;
 
 const normalizeDateOnly = (value?: string | null): string | null => {
@@ -42,6 +56,24 @@ export const getNextLocalMonthStart = (date: Date): string =>
 export const buildInvoiceMonthCutoffFilter = (date: Date): string => {
   const nextMonthStart = getNextLocalMonthStart(date);
   return `invoice_month.lt.${nextMonthStart},and(invoice_month.is.null,invoice_date.lt.${nextMonthStart})`;
+};
+
+/** PostgREST filter for one canonical billing month. */
+export const buildInvoiceMonthRangeFilter = (
+  monthStart: string,
+  nextMonthStart: string,
+): string =>
+  `and(invoice_month.gte.${monthStart},invoice_month.lt.${nextMonthStart}),` +
+  `and(invoice_month.is.null,invoice_date.gte.${monthStart},invoice_date.lt.${nextMonthStart})`;
+
+/**
+ * Cancelled/voided invoices are not valid monthly obligations. Check both
+ * lifecycle fields because legacy data used either one to deactivate a row.
+ */
+export const isActiveInvoice = (invoice: InvoiceLifecycleFields): boolean => {
+  const status = invoice.status?.trim().toLowerCase() ?? '';
+  const paymentStatus = invoice.payment_status?.trim().toLowerCase() ?? '';
+  return !INACTIVE_INVOICE_STATES.has(status) && !INACTIVE_INVOICE_STATES.has(paymentStatus);
 };
 
 export const isInvoiceInCurrentOrPastMonth = (

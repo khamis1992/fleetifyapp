@@ -15,6 +15,7 @@ import {
   isActiveContractStatus,
   isCompletedPayment,
   isInactivePaymentStatus,
+  isInactiveInvoiceStatus,
   isInactiveScheduleStatus,
   isInvoiceOutsideContractBillingPeriod,
   isReceiptPayment,
@@ -72,7 +73,7 @@ async function auditContracts(
     loadByIds(
       context,
       "invoices",
-      "id,company_id,contract_id,customer_id,invoice_number,invoice_date,due_date,subtotal,total_amount,paid_amount,balance_due,status,payment_status,journal_entry_id",
+      "id,company_id,contract_id,customer_id,invoice_number,invoice_month,invoice_date,due_date,subtotal,total_amount,paid_amount,balance_due,status,payment_status,journal_entry_id",
       "contract_id",
       contractIds
     ),
@@ -318,8 +319,9 @@ async function auditContracts(
           invoice,
           invoicePayments: paymentsByInvoice.get(invoice.id) || [],
           code: "invoice.outside_contract_period",
-          details: "The invoice date is outside the contract period.",
+          details: "The canonical invoice billing month is outside the contract period.",
           evidence: {
+            invoiceMonth: dateOnly(invoice.invoice_month),
             invoiceDate: dateOnly(invoice.invoice_date),
             invoiceDueDate: dateOnly(invoice.due_date),
             contractStart: contract.start_date,
@@ -703,7 +705,6 @@ async function auditContracts(
       hasAnyScheduleLinkProblem &&
       !canRebalanceScheduleLinks &&
       !canRealignScheduleLinks &&
-      completeLinkPlan.billingDateMode === "invoice_date" &&
       isActiveContractStatus(contract.status) &&
       hasSafeInvoiceGenerationCapacity &&
       completeLinkPlan.assignments.every(
@@ -858,9 +859,6 @@ async function auditContracts(
             completeLinkPlan.billingDateMode
           )
         );
-        const constraintCandidates = contractInvoices.filter((invoice) =>
-          invoiceConflictsWithMonth(invoice, scheduleMonth)
-        );
         const linkedInvoice = schedule.invoice_id
           ? invoiceById.get(schedule.invoice_id)
           : null;
@@ -906,43 +904,25 @@ async function auditContracts(
             candidateInvoiceIds: candidates.map((candidate) => candidate.id),
           };
           if (canAutoLinkInvoice) {
-            if (
-              completeLinkPlan.billingDateMode === "invoice_date" ||
-              candidates.length === 1
-            ) {
-              findings.push(
-                repairFinding({
-                  dedupeKey: `schedule:${schedule.id}:repair-existing-invoice-link`,
-                  code: "schedule.stale_invoice_link",
-                  severity: "high",
-                  entityType: "contract_payment_schedule",
-                  entityId: schedule.id,
-                  title:
-                    "Schedule invoice link is stale or points to the wrong billing month",
-                  details:
-                    "The canonical schedule gateway can swap the link or generate the missing due-month invoice atomically.",
-                  evidence,
-                  command: "schedule.repair_invoice_link",
-                  expectedBefore: { invoice_id: schedule.invoice_id },
-                  values: {
-                    billing_date_mode: completeLinkPlan.billingDateMode,
-                  },
-                })
-              );
-            } else {
-              findings.push(
-                reviewFinding(
-                  `schedule:${schedule.id}:missing-due-month-invoice`,
-                  "schedule.due_month_invoice_missing",
-                  "high",
-                  "contract_payment_schedule",
-                  schedule.id,
-                  "Schedule has no due-month invoice candidate",
-                  "The contract uses due-month billing, but no existing invoice matches this schedule. A new issue date cannot be inferred safely.",
-                  evidence
-                )
-              );
-            }
+            findings.push(
+              repairFinding({
+                dedupeKey: `schedule:${schedule.id}:repair-existing-invoice-link`,
+                code: "schedule.stale_invoice_link",
+                severity: "high",
+                entityType: "contract_payment_schedule",
+                entityId: schedule.id,
+                title:
+                  "Schedule invoice link is stale or points to the wrong billing month",
+                details:
+                  "The canonical schedule gateway can swap the link or generate the missing billing-month invoice atomically.",
+                evidence,
+                command: "schedule.repair_invoice_link",
+                expectedBefore: { invoice_id: schedule.invoice_id },
+                values: {
+                  billing_date_mode: completeLinkPlan.billingDateMode,
+                },
+              })
+            );
           } else {
             findings.push(
               reviewFinding(
@@ -972,24 +952,6 @@ async function auditContracts(
                   (candidate) => candidate.id
                 ),
                 month: scheduleMonth,
-              }
-            )
-          );
-        } else if (!linkedMatches && candidate && !candidateCanUseGenericLink) {
-          findings.push(
-            reviewFinding(
-              `schedule:${schedule.id}:shifted-invoice-due-date`,
-              "schedule.invoice_exists_with_shifted_due_date",
-              "high",
-              "contract_payment_schedule",
-              schedule.id,
-              "Schedule invoice exists with a shifted due date",
-              "The invoice month matches invoice_date, but due_date is in another month; linking requires a dedicated date review.",
-              {
-                invoiceId: candidate.id,
-                scheduleMonth,
-                invoiceDate: candidate.invoice_date,
-                invoiceDueDate: candidate.due_date,
               }
             )
           );
@@ -1036,22 +998,6 @@ async function auditContracts(
               },
             })
           );
-        } else if (!linkedMatches && constraintCandidates.length > 0) {
-          findings.push(
-            reviewFinding(
-              `schedule:${schedule.id}:invoice-month-constraint-conflict`,
-              "schedule.invoice_month_constraint_conflict",
-              "high",
-              "contract_payment_schedule",
-              schedule.id,
-              "Invoice month is occupied by another due-date interpretation",
-              "An existing invoice touches this month through due_date, so a new invoice would violate a database uniqueness rule.",
-              {
-                scheduleMonth,
-                invoiceIds: constraintCandidates.map((item) => item.id),
-              }
-            )
-          );
         } else if (
           !linkedMatches &&
           canGenerateInvoiceForSchedule({
@@ -1062,8 +1008,7 @@ async function auditContracts(
             contractStatus: contract.status,
             contractStartDate: contract.start_date,
             contractEndDate: contract.end_date,
-          }) &&
-          completeLinkPlan.billingDateMode === "invoice_date"
+          })
         ) {
           findings.push(
             repairFinding({
@@ -1084,34 +1029,6 @@ async function auditContracts(
               expectedBefore: { invoice_id: schedule.invoice_id },
               values: { billing_date_mode: "invoice_date" },
             })
-          );
-        } else if (
-          !linkedMatches &&
-          !schedule.invoice_id &&
-          completeLinkPlan.billingDateMode === "due_date" &&
-          canLinkInvoiceForSchedule({
-            scheduleStatus: schedule.status,
-            dueDate: schedule.due_date,
-            contractStatus: contract.status,
-            contractStartDate: contract.start_date,
-            contractEndDate: contract.end_date,
-          })
-        ) {
-          findings.push(
-            reviewFinding(
-              `schedule:${schedule.id}:missing-due-month-invoice`,
-              "schedule.due_month_invoice_missing",
-              "high",
-              "contract_payment_schedule",
-              schedule.id,
-              "Schedule has no due-month invoice candidate",
-              "The contract uses due-month billing, but the invoice issue date cannot be inferred safely from the schedule alone.",
-              {
-                contractId: contract.id,
-                dueDate: schedule.due_date,
-                amount: roundMoney(schedule.amount),
-              }
-            )
           );
         }
 
@@ -1343,8 +1260,7 @@ async function auditContracts(
             roundMoney(invoice.total_amount) - paid
           );
           return (
-            monthKey(invoice.invoice_date || invoice.due_date) ===
-              paymentMonth &&
+            invoiceMonthKey(invoice) === paymentMonth &&
             (!invoice.customer_id ||
               invoice.customer_id === payment.customer_id) &&
             remaining > 0.01 &&
@@ -4448,9 +4364,8 @@ function groupBy(
 
 function isActiveInvoice(invoice: Row): boolean {
   return (
-    !["cancelled", "canceled", "void", "voided", "deleted"].includes(
-      normalizeStatus(invoice.status)
-    ) && !isInactivePaymentStatus(invoice.payment_status)
+    !isInactiveInvoiceStatus(invoice.status) &&
+    !isInactiveInvoiceStatus(invoice.payment_status)
   );
 }
 

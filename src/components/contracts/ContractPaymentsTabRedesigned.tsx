@@ -92,11 +92,14 @@ interface Payment {
   payment_number?: string | null;
   reference_number: string | null;
   notes: string | null;
+  created_by: string | null;
   created_at: string;
   invoice_id: string;
   contract_id?: string;
+  created_by_name?: string | null;
   invoice?: {
     invoice_number: string;
+    invoice_month?: string | null;
     invoice_date?: string | null;
     due_date: string | null;
   };
@@ -196,9 +199,33 @@ const getPaymentMethodInfo = (method: string) => {
   return methods[method] || methods.other;
 };
 
+type PaymentCreatorProfile = {
+  id: string;
+  user_id: string | null;
+  first_name: string | null;
+  last_name: string | null;
+  first_name_ar: string | null;
+  last_name_ar: string | null;
+  email: string | null;
+};
+
+const formatProfileName = (profile?: PaymentCreatorProfile | null) => {
+  if (!profile) return null;
+  const arabicName = [profile.first_name_ar, profile.last_name_ar].filter(Boolean).join(' ').trim();
+  if (arabicName) return arabicName;
+  const englishName = [profile.first_name, profile.last_name].filter(Boolean).join(' ').trim();
+  if (englishName) return englishName;
+  return profile.email || null;
+};
+
+const getPaymentCreatorName = (payment: Payment) => (
+  payment.created_by_name
+  || (payment.created_by ? 'مستخدم غير معروف' : 'غير محدد')
+);
+
 const getInvoiceMonthDate = (payment: Payment) => (
-  payment.invoice?.invoice_date
-  || payment.invoice?.due_date
+  payment.invoice?.invoice_month
+  || payment.invoice?.invoice_date
   || payment.payment_date
   || null
 );
@@ -571,6 +598,13 @@ const PaymentCard = ({
           </span>
         </div>
 
+        <div className="flex items-center justify-between text-sm">
+          <span className="text-neutral-600">سجلها</span>
+          <span className="font-medium text-neutral-900">
+            {getPaymentCreatorName(payment)}
+          </span>
+        </div>
+
         {payment.notes && (
           <div className="flex items-start gap-2 text-sm p-3 bg-slate-50 rounded-lg">
             <AlertTriangle className="w-4 h-4 text-neutral-500 flex-shrink-0 mt-0.5" />
@@ -696,6 +730,13 @@ const PaymentTableRow = ({
         </Badge>
       </td>
 
+      {/* Created By */}
+      <td className="py-4 px-4">
+        <p className="text-sm font-semibold text-[#142033]">
+          {getPaymentCreatorName(payment)}
+        </p>
+      </td>
+
       {/* Notes */}
       <td className="py-4 px-4">
         {payment.notes ? (
@@ -729,7 +770,7 @@ const PaymentBatchTableRow = ({
 
   return (
     <tr className="border-b border-[#DDE5EF] bg-[#F8FBFE]">
-      <td colSpan={7} className="p-4">
+      <td colSpan={8} className="p-4">
         <div className="rounded-xl border border-[#B8D3EA] bg-white shadow-sm">
           <div className="grid gap-3 border-b border-[#E6EDF5] bg-[#EEF5FB] p-4 lg:grid-cols-[1fr_auto] lg:items-center">
             <div className="flex items-start gap-3">
@@ -761,7 +802,7 @@ const PaymentBatchTableRow = ({
 
           <div className="divide-y divide-[#EEF2F6]">
             {group.payments.map((payment) => (
-              <div key={payment.id} className="grid gap-3 px-4 py-3 md:grid-cols-[1.3fr_1fr_1fr_auto] md:items-center">
+              <div key={payment.id} className="grid gap-3 px-4 py-3 md:grid-cols-[1.3fr_1fr_1fr_1fr_auto] md:items-center">
                 <div>
                   <p className="font-bold text-[#142033]">{payment.invoice?.invoice_number || '-'}</p>
                   <p className="mt-1 text-xs text-[#5B6B7E]">
@@ -779,6 +820,13 @@ const PaymentBatchTableRow = ({
                   <p className="text-xs font-semibold text-[#8091A5]">تاريخ الاستحقاق</p>
                   <p className="text-sm font-semibold text-[#142033]" dir="ltr">
                     {getPaymentDueDate(payment) ? format(new Date(getPaymentDueDate(payment) as string), 'dd/MM/yyyy') : '-'}
+                  </p>
+                </div>
+
+                <div>
+                  <p className="text-xs font-semibold text-[#8091A5]">سجلها</p>
+                  <p className="text-sm font-semibold text-[#142033]">
+                    {getPaymentCreatorName(payment)}
                   </p>
                 </div>
 
@@ -943,10 +991,11 @@ export const ContractPaymentsTabRedesigned = ({
           payment_number,
           reference_number,
           notes,
+          created_by,
           created_at,
           invoice_id,
           contract_id,
-          invoice:invoices!invoice_id(invoice_number, invoice_date, due_date)
+          invoice:invoices!invoice_id(invoice_number, invoice_month, invoice_date, due_date)
         `)
         .eq('company_id', companyId);
 
@@ -970,7 +1019,44 @@ export const ContractPaymentsTabRedesigned = ({
       const { data, error } = await query;
 
       if (error) throw error;
-      return (data || []) as Payment[];
+      const rawPayments = (data || []) as Payment[];
+      const creatorIds = Array.from(new Set(
+        rawPayments
+          .map((payment) => payment.created_by)
+          .filter((value): value is string => Boolean(value))
+      ));
+
+      if (creatorIds.length === 0) return rawPayments;
+
+      const profilesById = new Map<string, PaymentCreatorProfile>();
+
+      const { data: profilesByUserId } = await supabase
+        .from('profiles')
+        .select('id,user_id,first_name,last_name,first_name_ar,last_name_ar,email')
+        .in('user_id', creatorIds);
+
+      (profilesByUserId || []).forEach((profile) => {
+        if (profile.user_id) profilesById.set(profile.user_id, profile as PaymentCreatorProfile);
+      });
+
+      const missingCreatorIds = creatorIds.filter((id) => !profilesById.has(id));
+      if (missingCreatorIds.length > 0) {
+        const { data: profilesByProfileId } = await supabase
+          .from('profiles')
+          .select('id,user_id,first_name,last_name,first_name_ar,last_name_ar,email')
+          .in('id', missingCreatorIds);
+
+        (profilesByProfileId || []).forEach((profile) => {
+          profilesById.set(profile.id, profile as PaymentCreatorProfile);
+        });
+      }
+
+      return rawPayments.map((payment) => ({
+        ...payment,
+        created_by_name: formatProfileName(
+          payment.created_by ? profilesById.get(payment.created_by) : null
+        ),
+      }));
     },
     enabled: showAllPayments || invoiceIds.length > 0,
     staleTime: 30000, // Cache for 30 seconds
@@ -1472,6 +1558,7 @@ export const ContractPaymentsTabRedesigned = ({
                             <th>تاريخ الاستحقاق</th>
                             <th>طريقة الدفع</th>
                             <th>رقم المرجع</th>
+                            <th>سجلها</th>
                             <th>المبلغ</th>
                           </tr>
                         </thead>
@@ -1495,13 +1582,14 @@ export const ContractPaymentsTabRedesigned = ({
                               '<td>' + dueDate + '</td>' +
                               '<td style="text-align: center;"><span class="' + method.cssClass + '">' + method.label + '</span></td>' +
                               '<td>' + (payment.reference_number || '-') + '</td>' +
+                              '<td>' + getPaymentCreatorName(payment) + '</td>' +
                               '<td class="amount-cell">' + formatCurrency(payment.amount || 0) + '</td>' +
                             '</tr>';
                           }).join('')}
                         </tbody>
                         <tfoot>
                           <tr style="background: #1e3a5f; color: white;">
-                            <td colspan="7" style="text-align: left; font-weight: bold; border-color: #1e3a5f;">الإجمالي</td>
+                            <td colspan="8" style="text-align: left; font-weight: bold; border-color: #1e3a5f;">الإجمالي</td>
                             <td style="font-weight: bold; border-color: #1e3a5f;">${formatCurrency(totalPaid)}</td>
                           </tr>
                         </tfoot>
@@ -1638,6 +1726,7 @@ export const ContractPaymentsTabRedesigned = ({
                         <th className="py-3 px-4 text-right text-sm font-semibold text-neutral-700">تاريخ الاستحقاق</th>
                         <th className="py-3 px-4 text-right text-sm font-semibold text-neutral-700">المبلغ</th>
                         <th className="py-3 px-4 text-right text-sm font-semibold text-neutral-700">الحالة</th>
+                        <th className="py-3 px-4 text-right text-sm font-semibold text-neutral-700">سجلها</th>
                         <th className="py-3 px-4 text-right text-sm font-semibold text-neutral-700">ملاحظات</th>
                       </tr>
                     </thead>

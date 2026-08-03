@@ -20,6 +20,8 @@ import { usePaymentOperations } from '@/hooks/business/usePaymentOperations';
 import { FeatureTourButton, FeatureTourDialog, type FeatureTourContent } from '@/components/common/FeatureTourGuide';
 import {
   buildInvoiceMonthCutoffFilter,
+  getInvoiceBillingDate,
+  isActiveInvoice,
   isInvoiceInCurrentOrPastMonth,
   sortInvoicesByBillingMonth,
 } from '@/utils/invoiceBillingMonth';
@@ -80,6 +82,50 @@ interface QuickPaymentDialogProps {
   onSuccess?: () => void;
   allowEmployeeWorkspacePayments?: boolean;
 }
+
+const parseDateOnly = (value?: string | null) => {
+  if (!value) return null;
+  const date = new Date(`${value}T00:00:00`);
+  return Number.isNaN(date.getTime()) ? null : date;
+};
+
+const getTodayDateString = () => new Date().toISOString().split('T')[0];
+
+const getMonthStart = (date: Date) => new Date(date.getFullYear(), date.getMonth(), 1);
+
+const formatShortArabicDate = (value?: string | null) => {
+  const date = parseDateOnly(value);
+  return date ? date.toLocaleDateString('ar-QA') : '-';
+};
+
+const formatInvoiceMonth = (invoice: Invoice) => {
+  const billingDate = parseDateOnly(getInvoiceBillingDate(invoice));
+  if (!billingDate) return 'غير محدد';
+
+  return billingDate.toLocaleDateString('ar-QA', {
+    month: 'long',
+    year: 'numeric',
+  });
+};
+
+const getFutureInvoiceWarning = (invoice: Invoice, paymentDateValue = getTodayDateString()) => {
+  const paymentDate = parseDateOnly(paymentDateValue);
+  if (!paymentDate) return null;
+
+  const billingDate = parseDateOnly(getInvoiceBillingDate(invoice));
+  const dueDate = parseDateOnly(invoice.due_date);
+  const paymentMonth = getMonthStart(paymentDate);
+
+  if (billingDate && getMonthStart(billingDate) > paymentMonth) {
+    return `شهر الفاتورة ${formatInvoiceMonth(invoice)} بعد تاريخ الدفع الحالي. تأكد أن تسجيل الدفعة المبكرة مقصود.`;
+  }
+
+  if (dueDate && dueDate > paymentDate) {
+    return `تاريخ الاستحقاق ${formatShortArabicDate(invoice.due_date)} لم يحن بعد. هذه دفعة مبكرة لهذه الفاتورة.`;
+  }
+
+  return null;
+};
 
 export function QuickPaymentDialog({
   open,
@@ -189,10 +235,10 @@ export function QuickPaymentDialog({
       const { data, error } = await query.order('invoice_date', { ascending: true });
 
       if (error) throw error;
-      const availableInvoices = sortInvoicesByBillingMonth(data || []);
+      const availableInvoices = sortInvoicesByBillingMonth((data || []).filter(isActiveInvoice));
       setInvoices(availableInvoices);
       
-      if (data && data.length === 0) {
+      if (availableInvoices.length === 0) {
         toast({
           title: 'لا توجد فواتير مستحقة',
           description: 'هذا العميل ليس لديه فواتير غير مدفوعة',
@@ -249,6 +295,16 @@ export function QuickPaymentDialog({
     
     return selectedFutureOrCurrent && hasUnselectedOverdue;
   }, [selectedInvoices, overdueInvoices]);
+
+  const selectedFutureInvoiceWarnings = useMemo(() => {
+    const paymentDate = getTodayDateString();
+    return selectedInvoices
+      .map((invoice) => ({
+        invoice,
+        warning: getFutureInvoiceWarning(invoice, paymentDate),
+      }))
+      .filter((item): item is { invoice: Invoice; warning: string } => Boolean(item.warning));
+  }, [selectedInvoices]);
 
   const hiddenInvoicesCount = invoices.length - filteredInvoices.length;
 
@@ -308,6 +364,16 @@ export function QuickPaymentDialog({
     try {
       const paymentDate = new Date().toISOString().split('T')[0];
       const paymentNumber = `PAY-${Date.now()}`;
+      const futureWarnings = selectedInvoices
+        .map((invoice) => getFutureInvoiceWarning(invoice, paymentDate))
+        .filter(Boolean);
+
+      if (futureWarnings.length > 0) {
+        toast({
+          title: 'تنبيه: توجد فواتير غير مستحقة بعد',
+          description: `هناك ${futureWarnings.length} فاتورة سيتم تسجيل دفعتها قبل تاريخها. راجع شهر الفاتورة وتاريخ الاستحقاق قبل الاعتماد النهائي.`,
+        });
+      }
       
       const paymentTypeMap: Record<string, 'cash' | 'bank_transfer' | 'check' | 'credit_card' | 'debit_card'> = {
         'cash': 'cash',
@@ -652,10 +718,17 @@ export function QuickPaymentDialog({
                         const isOverdue = invoice.due_date ? new Date(invoice.due_date) < new Date() : false;
                         const isSelected = selectedInvoices.some(i => i.id === invoice.id);
                         const balanceDue = invoice.balance_due ?? invoice.total_amount;
+                        const futureWarning = getFutureInvoiceWarning(invoice);
                         return (
                           <div
                             key={invoice.id}
-                            className={`p-3 cursor-pointer transition-colors ${isSelected ? 'bg-green-50 border-r-4 border-r-green-500' : 'hover:bg-accent'}`}
+                            className={`p-3 cursor-pointer transition-colors ${
+                              isSelected
+                                ? 'bg-green-50 border-r-4 border-r-green-500'
+                                : futureWarning
+                                  ? 'bg-amber-50/60 hover:bg-amber-50'
+                                  : 'hover:bg-accent'
+                            }`}
                             onClick={() => toggleInvoiceSelection(invoice)}
                           >
                             <div className="flex items-center gap-3">
@@ -668,9 +741,16 @@ export function QuickPaymentDialog({
                               <div className="flex-1">
                                 <div className="flex items-center justify-between">
                                   <div>
-                                    <div className="font-medium text-sm">{invoice.invoice_number}</div>
-                                    <div className="text-xs text-muted-foreground">
-                                      استحقاق: {invoice.due_date ? new Date(invoice.due_date).toLocaleDateString('ar-EG') : '-'}
+                                    <div className="font-medium text-sm" dir="ltr">{invoice.invoice_number}</div>
+                                    <div className="mt-2 grid gap-2 text-xs sm:grid-cols-2">
+                                      <div className="rounded-md border border-slate-200 bg-white px-2 py-1">
+                                        <span className="block text-muted-foreground">شهر الفاتورة</span>
+                                        <span className="font-semibold text-slate-900">{formatInvoiceMonth(invoice)}</span>
+                                      </div>
+                                      <div className="rounded-md border border-slate-200 bg-white px-2 py-1">
+                                        <span className="block text-muted-foreground">تاريخ الاستحقاق</span>
+                                        <span className="font-semibold text-slate-900">{formatShortArabicDate(invoice.due_date)}</span>
+                                      </div>
                                     </div>
                                   </div>
                                   <div className="text-left">
@@ -678,6 +758,12 @@ export function QuickPaymentDialog({
                                     {isOverdue && <Badge variant="destructive" className="text-xs">متأخر</Badge>}
                                   </div>
                                 </div>
+                                {futureWarning && (
+                                  <div className="mt-3 flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                                    <AlertTriangle className="mt-0.5 h-4 w-4 flex-shrink-0 text-amber-600" />
+                                    <span>{futureWarning}</span>
+                                  </div>
+                                )}
                               </div>
                             </div>
                           </div>
@@ -700,22 +786,52 @@ export function QuickPaymentDialog({
                 )}
 
                 {selectedInvoices.length > 0 && (
-                  <div className="p-4 bg-green-50 rounded-lg border border-green-200">
-                    <div className="flex items-center justify-between mb-3">
-                      <span className="font-medium text-green-800">
-                        تم تحديد {selectedInvoices.length} فاتورة
-                      </span>
-                      <span className="text-xl font-bold text-green-700">
-                        {getTotalSelectedAmount().toFixed(2)} ر.ق
-                      </span>
+                  <div className="space-y-3">
+                    {selectedFutureInvoiceWarnings.length > 0 && (
+                      <div className="rounded-lg border-2 border-amber-300 bg-amber-50 p-4">
+                        <div className="flex items-start gap-3">
+                          <AlertTriangle className="h-6 w-6 flex-shrink-0 text-amber-600" />
+                          <div className="space-y-2">
+                            <p className="font-bold text-amber-900">تنبيه: تم اختيار فواتير غير مستحقة بعد</p>
+                            <p className="text-sm leading-6 text-amber-800">
+                              هذه الفواتير سيظهر أنها دفعات مبكرة. راجع شهر الفاتورة وتاريخ الاستحقاق قبل المتابعة.
+                            </p>
+                            <div className="space-y-1">
+                              {selectedFutureInvoiceWarnings.slice(0, 3).map(({ invoice, warning }) => (
+                                <div key={invoice.id} className="rounded-md bg-white/80 px-3 py-2 text-xs text-amber-900">
+                                  <span className="font-semibold" dir="ltr">{invoice.invoice_number}</span>
+                                  <span className="mx-1">-</span>
+                                  <span>{warning}</span>
+                                </div>
+                              ))}
+                              {selectedFutureInvoiceWarnings.length > 3 && (
+                                <p className="text-xs font-semibold text-amber-800">
+                                  + {selectedFutureInvoiceWarnings.length - 3} فواتير إضافية تحتاج مراجعة
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="p-4 bg-green-50 rounded-lg border border-green-200">
+                      <div className="flex items-center justify-between mb-3">
+                        <span className="font-medium text-green-800">
+                          تم تحديد {selectedInvoices.length} فاتورة
+                        </span>
+                        <span className="text-xl font-bold text-green-700">
+                          {getTotalSelectedAmount().toFixed(2)} ر.ق
+                        </span>
+                      </div>
+                      <Button 
+                        className="w-full bg-green-600 hover:bg-green-700"
+                        onClick={() => setReadyToPay(true)}
+                      >
+                        <Check className="h-4 w-4 ml-2" />
+                        متابعة للدفع
+                      </Button>
                     </div>
-                    <Button 
-                      className="w-full bg-green-600 hover:bg-green-700"
-                      onClick={() => setReadyToPay(true)}
-                    >
-                      <Check className="h-4 w-4 ml-2" />
-                      متابعة للدفع
-                    </Button>
                   </div>
                 )}
               </div>
@@ -732,8 +848,13 @@ export function QuickPaymentDialog({
 
                 <div className="bg-slate-50 rounded-lg p-3 space-y-2 max-h-32 overflow-y-auto">
                   {selectedInvoices.map((invoice) => (
-                    <div key={invoice.id} className="flex justify-between items-center text-sm">
-                      <span>{invoice.invoice_number}</span>
+                    <div key={invoice.id} className="flex justify-between items-start gap-3 text-sm">
+                      <span>
+                        <span className="block" dir="ltr">{invoice.invoice_number}</span>
+                        <span className="block text-xs text-muted-foreground">
+                          شهر الفاتورة: {formatInvoiceMonth(invoice)} · الاستحقاق: {formatShortArabicDate(invoice.due_date)}
+                        </span>
+                      </span>
                       <span className="font-medium">{(invoice.balance_due ?? invoice.total_amount).toFixed(2)} ر.ق</span>
                     </div>
                   ))}

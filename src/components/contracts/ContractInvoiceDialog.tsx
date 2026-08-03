@@ -12,6 +12,7 @@ import { useCurrentCompanyId } from '@/hooks/useUnifiedCompanyAccess';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 import { useTourGuide } from '@/components/tour-guide';
 import type { Contract } from '@/types/contracts';
+import { buildInvoiceMonthRangeFilter, isActiveInvoice } from '@/utils/invoiceBillingMonth';
 
 interface ContractInvoiceDialogProps {
   open: boolean;
@@ -60,17 +61,13 @@ export const ContractInvoiceDialog = ({
       if (!companyId || !contract?.id) return null;
       const { data, error } = await supabase
         .from('invoices')
-        .select('id, invoice_number, status, total_amount')
+        .select('id, invoice_number, status, payment_status, total_amount, invoice_month, invoice_date')
         .eq('company_id', companyId)
         .eq('contract_id', contract.id)
-        .gte('invoice_date', monthStart)
-        .lt('invoice_date', nextMonthStart)
-        .not('status', 'in', '(cancelled,canceled,void,voided,deleted)')
-        .order('created_at', { ascending: true })
-        .limit(1)
-        .maybeSingle();
+        .or(buildInvoiceMonthRangeFilter(monthStart, nextMonthStart))
+        .order('created_at', { ascending: true });
       if (error) throw error;
-      return data;
+      return data?.find(isActiveInvoice) ?? null;
     },
     enabled: open && Boolean(companyId && contract?.id && invoiceMonth),
   });
@@ -103,16 +100,15 @@ export const ContractInvoiceDialog = ({
       if (error) throw error;
 
       if (!invoiceId) {
-        const { data: duplicate } = await supabase
+        const { data: duplicates, error: duplicateError } = await supabase
           .from('invoices')
-          .select('invoice_number')
+          .select('invoice_number, status, payment_status, invoice_month, invoice_date')
           .eq('company_id', companyId)
           .eq('contract_id', contract.id)
-          .gte('invoice_date', monthStart)
-          .lt('invoice_date', nextMonthStart)
-          .not('status', 'in', '(cancelled,canceled,void,voided,deleted)')
-          .limit(1)
-          .maybeSingle();
+          .or(buildInvoiceMonthRangeFilter(monthStart, nextMonthStart))
+          .order('created_at', { ascending: true });
+        if (duplicateError) throw duplicateError;
+        const duplicate = duplicates?.find(isActiveInvoice);
         if (duplicate) {
           toast.info(`الفاتورة ${duplicate.invoice_number} موجودة لهذا الشهر`);
           return;

@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { formatCustomerName } from '@/utils/formatCustomerName';
-import { getInvoiceBillingMonthKey, getLocalMonthKey } from '@/utils/invoiceBillingMonth';
+import { getInvoiceBillingMonthKey, getLocalMonthKey, isActiveInvoice } from '@/utils/invoiceBillingMonth';
 
 export interface MonthlyCollectionItem {
   contract_id: string;
@@ -31,7 +31,15 @@ export interface MonthlyCollectionStats {
 interface MonthlyCollectionInternalItem extends MonthlyCollectionItem {
   billing_month: string | null;
   is_current_month: boolean;
+  is_due_current_month: boolean;
 }
+
+const getDateMonthKey = (value?: string | null): string | null => {
+  if (!value) return null;
+  const date = new Date(`${value}T00:00:00`);
+  if (Number.isNaN(date.getTime())) return null;
+  return getLocalMonthKey(date);
+};
 
 // Updated: 2026-01-31 - Fixed payment status display
 export const useMonthlyCollections = () => {
@@ -55,7 +63,7 @@ export const useMonthlyCollections = () => {
   });
 
   const { data: collections = [], isLoading, refetch } = useQuery({
-    queryKey: ['monthly-collections', 'v2', profile?.id],
+    queryKey: ['monthly-collections', 'v3-current-due-month', profile?.id],
     queryFn: async () => {
       if (!profile?.id || !profile.company_id) return [];
 
@@ -97,7 +105,6 @@ export const useMonthlyCollections = () => {
         .eq('company_id', profile.company_id)
         .eq('contracts.assigned_to_profile_id', profile.id)
         .eq('contracts.status', 'active')
-        .neq('status', 'cancelled')
         .order('due_date', { ascending: true });
 
       if (error) throw error;
@@ -107,7 +114,7 @@ export const useMonthlyCollections = () => {
       console.log('📅 Current month:', currentMonthKey);
       
       // تحويل جميع البيانات أولاً
-      const allInvoices = (data || []).map(inv => {
+      const allInvoices = (data || []).filter(isActiveInvoice).map(inv => {
         const contract = inv.contracts as any;
         const customer = contract.customers;
         const customerName = formatCustomerName(customer);
@@ -122,6 +129,8 @@ export const useMonthlyCollections = () => {
         // invoice_month is the canonical accounting period; due_date is only a payment deadline.
         const billingMonth = getInvoiceBillingMonthKey(inv);
         const isCurrentMonth = billingMonth === currentMonthKey;
+        const dueMonth = getDateMonthKey(inv.due_date || inv.invoice_date);
+        const isDueCurrentMonth = dueMonth === currentMonthKey;
         
         console.log('🔍 Invoice check:', {
           invoice_number: inv.invoice_number,
@@ -129,8 +138,10 @@ export const useMonthlyCollections = () => {
           due_date: inv.due_date,
           invoice_date: inv.invoice_date,
           billing_month: billingMonth,
+          due_month: dueMonth,
           current_month: currentMonthKey,
           isCurrentMonth,
+          isDueCurrentMonth,
           amount: inv.total_amount,
           paid_amount: inv.paid_amount,
           status: inv.payment_status
@@ -151,11 +162,14 @@ export const useMonthlyCollections = () => {
           is_paid: isPaid,
           billing_month: billingMonth,
           is_current_month: isCurrentMonth,
+          is_due_current_month: isDueCurrentMonth,
         } as MonthlyCollectionInternalItem;
       });
 
-      const currentMonthInvoicesCount = allInvoices.filter((i: any) => i.is_current_month).length;
-      const totalForCurrentMonth = allInvoices.filter((i: any) => i.is_current_month).reduce((sum, inv) => sum + inv.amount, 0);
+      const currentMonthInvoicesCount = allInvoices.filter((i: any) => i.is_current_month && i.is_due_current_month).length;
+      const totalForCurrentMonth = allInvoices
+        .filter((i: any) => i.is_current_month && i.is_due_current_month)
+        .reduce((sum, inv) => sum + inv.amount, 0);
       
       console.log('📅 Total invoices:', allInvoices.length);
       console.log('📅 Current month invoices:', currentMonthInvoicesCount);
@@ -186,32 +200,29 @@ export const useMonthlyCollections = () => {
     enabled: !!profile?.id
   });
 
-  // فلترة الفواتير غير المدفوعة للعرض في القائمة (جميع الفواتير غير المدفوعة)
-  const unpaidCollections = collections.filter(c => c.status !== 'paid');
+  // فلترة الفواتير غير المدفوعة للعرض في القائمة: شهر الفاتورة الحالي وتاريخ استحقاقها في الشهر الحالي فقط.
+  const currentMonthDueInvoices = collections.filter(
+    (c: any) => c.is_current_month && c.is_due_current_month
+  );
 
-  // فلترة فواتير الشهر الحالي فقط للإحصائيات
-  const currentMonthInvoices = collections.filter((c: any) => c.is_current_month);
-
-  // Monthly cards must always represent the current month. Historical overdue
-  // invoices remain in the collection list, but must not inflate this metric.
-  const invoicesForStats = currentMonthInvoices;
+  const unpaidCollections = currentMonthDueInvoices.filter(c => c.status !== 'paid');
 
   console.log('📊 Using invoices for stats:', {
-    currentMonthCount: currentMonthInvoices.length,
+    currentMonthCount: currentMonthDueInvoices.length,
     unpaidCount: unpaidCollections.length,
-    usingCurrentMonth: currentMonthInvoices.length > 0
+    usingCurrentMonth: currentMonthDueInvoices.length > 0
   });
 
   const stats: MonthlyCollectionStats = {
-    totalDue: invoicesForStats.reduce((sum, item) => sum + item.amount, 0),
-    totalCollected: invoicesForStats.reduce((sum, item) => sum + item.paid_amount, 0),
+    totalDue: currentMonthDueInvoices.reduce((sum, item) => sum + item.amount, 0),
+    totalCollected: currentMonthDueInvoices.reduce((sum, item) => sum + item.paid_amount, 0),
     totalPending: 0, // سيتم حسابه بعد قليل
     collectionRate: 0,
-    paidCount: invoicesForStats.filter(c => c.status === 'paid').length,
-    pendingCount: invoicesForStats.filter(c => c.status !== 'paid').length
+    paidCount: currentMonthDueInvoices.filter(c => c.status === 'paid').length,
+    pendingCount: currentMonthDueInvoices.filter(c => c.status !== 'paid').length
   };
 
-  stats.totalPending = invoicesForStats.reduce(
+  stats.totalPending = currentMonthDueInvoices.reduce(
     (sum, item) => sum + Math.max(0, item.amount - item.paid_amount),
     0
   );
@@ -226,7 +237,7 @@ export const useMonthlyCollections = () => {
     totalCollected: stats.totalCollected,
     totalPending: stats.totalPending,
     collectionRate: stats.collectionRate,
-    invoicesUsedForStats: invoicesForStats.length,
+    invoicesUsedForStats: currentMonthDueInvoices.length,
     unpaidCollectionsCount: unpaidCollections.length
   });
 

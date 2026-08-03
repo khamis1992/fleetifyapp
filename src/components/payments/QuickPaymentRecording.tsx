@@ -14,6 +14,7 @@ import { useFinanceAccessGuard } from '@/hooks/finance/useFinanceAccessGuard';
 import { useBanks } from '@/hooks/useTreasury';
 import { PaymentReceipt } from './PaymentReceipt';
 import { generateReceiptPDF, downloadPDF, generateReceiptHTML, downloadHTML, numberToArabicWords, generateReceiptNumber, formatReceiptDate } from '@/utils/receiptGenerator';
+import { getInvoiceBillingDate, isActiveInvoice } from '@/utils/invoiceBillingMonth';
 
 interface Customer {
   id: string;
@@ -35,6 +36,7 @@ interface Contract {
 interface Invoice {
   id: string;
   invoice_number: string;
+  invoice_month: string | null;
   invoice_date: string;
   due_date: string | null;
   total_amount: number;
@@ -111,7 +113,7 @@ const formatShortArabicDate = (value?: string | null) => {
 };
 
 const formatInvoiceMonth = (invoice: Invoice) => {
-  const invoiceDate = parseDateOnly(invoice.invoice_date);
+  const invoiceDate = parseDateOnly(getInvoiceBillingDate(invoice));
   if (!invoiceDate) return 'غير محدد';
 
   return invoiceDate.toLocaleDateString('ar-QA', {
@@ -124,7 +126,7 @@ const getFutureInvoiceWarning = (invoice: Invoice, paymentDateValue = getTodayDa
   const paymentDate = parseDateOnly(paymentDateValue);
   if (!paymentDate) return null;
 
-  const invoiceDate = parseDateOnly(invoice.invoice_date);
+  const invoiceDate = parseDateOnly(getInvoiceBillingDate(invoice));
   const dueDate = parseDateOnly(invoice.due_date);
   const paymentMonth = getMonthStart(paymentDate);
 
@@ -614,6 +616,7 @@ export function QuickPaymentRecording({ onStepChange }: QuickPaymentRecordingPro
         .select(`
           id,
           invoice_number,
+          invoice_month,
           invoice_date,
           due_date,
           total_amount,
@@ -638,7 +641,7 @@ export function QuickPaymentRecording({ onStepChange }: QuickPaymentRecordingPro
 
       if (error) throw error;
 
-      setInvoices(data || []);
+      setInvoices((data || []).filter(isActiveInvoice));
     } catch (error) {
       console.error('Error fetching invoices:', error);
       toast({
@@ -1333,6 +1336,7 @@ export function QuickPaymentRecording({ onStepChange }: QuickPaymentRecordingPro
         .select(`
           id,
           invoice_number,
+          invoice_month,
           invoice_date,
           due_date,
           total_amount,
@@ -1363,8 +1367,9 @@ export function QuickPaymentRecording({ onStepChange }: QuickPaymentRecordingPro
 
       if (error) throw error;
 
-      setInvoices(data || []);
-      if (data && data.length === 0) {
+      const availableInvoices = (data || []).filter(isActiveInvoice);
+      setInvoices(availableInvoices);
+      if (availableInvoices.length === 0) {
         toast({
           title: 'لا توجد فواتير مستحقة',
           description: 'لم يتبقى فواتير غير مدفوعة لهذا العميل',
@@ -1734,6 +1739,7 @@ export function QuickPaymentRecording({ onStepChange }: QuickPaymentRecordingPro
                             .select(`
                               id,
                               invoice_number,
+                              invoice_month,
                               invoice_date,
                               due_date,
                               total_amount,

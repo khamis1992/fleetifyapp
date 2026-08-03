@@ -81,6 +81,14 @@ describe("daily audit agent invoice month selection", () => {
         created_at: "2026-08-21T00:00:00.000Z",
       },
       {
+        id: "inactive-canonical",
+        invoice_month: "2026-09-01",
+        invoice_date: "2026-09-01",
+        status: "inactive",
+        payment_status: "unpaid",
+        created_at: "2026-08-21T12:00:00.000Z",
+      },
+      {
         id: "conflicting-month",
         invoice_month: "2026-10-01",
         invoice_date: "2026-09-01",

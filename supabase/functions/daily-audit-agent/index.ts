@@ -1846,7 +1846,7 @@ function isCompletedPayment(status: unknown) {
 }
 
 function isCancelledStatus(status: unknown) {
-  return ["cancelled", "canceled", "void", "voided", "deleted"].includes(String(status || "").toLowerCase());
+  return ["cancelled", "canceled", "void", "voided", "deleted", "inactive"].includes(String(status || "").toLowerCase());
 }
 
 function isInactivePaymentStatus(status: unknown) {

@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import {
   buildInvoiceMonthCutoffFilter,
+  buildInvoiceMonthRangeFilter,
   getInvoiceBillingDate,
   getInvoiceBillingMonthKey,
   getNextLocalMonthStart,
   isInvoiceInCurrentOrPastMonth,
+  isActiveInvoice,
   sortInvoicesByBillingMonth,
 } from '@/utils/invoiceBillingMonth';
 
@@ -50,6 +52,21 @@ describe('invoice billing month rules', () => {
     expect(buildInvoiceMonthCutoffFilter(augustThird)).toBe(
       'invoice_month.lt.2026-09-01,and(invoice_month.is.null,invoice_date.lt.2026-09-01)',
     );
+  });
+
+  it('builds a canonical one-month filter with invoice_date fallback only', () => {
+    expect(buildInvoiceMonthRangeFilter('2026-08-01', '2026-09-01')).toBe(
+      'and(invoice_month.gte.2026-08-01,invoice_month.lt.2026-09-01),' +
+      'and(invoice_month.is.null,invoice_date.gte.2026-08-01,invoice_date.lt.2026-09-01)',
+    );
+  });
+
+  it('excludes invoices deactivated by either invoice status field', () => {
+    expect(isActiveInvoice({ status: 'sent', payment_status: 'unpaid' })).toBe(true);
+    expect(isActiveInvoice({ status: null, payment_status: null })).toBe(true);
+    expect(isActiveInvoice({ status: 'cancelled', payment_status: 'unpaid' })).toBe(false);
+    expect(isActiveInvoice({ status: 'sent', payment_status: 'voided' })).toBe(false);
+    expect(isActiveInvoice({ status: 'inactive', payment_status: 'unpaid' })).toBe(false);
   });
 
   it('sorts by the canonical billing month without mutating the source array', () => {
