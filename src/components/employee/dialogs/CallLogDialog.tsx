@@ -133,6 +133,9 @@ export const CallLogDialog: React.FC<CallLogDialogProps> = ({
   });
 
   const [isRecording, setIsRecording] = useState(false);
+  const [microphonePermission, setMicrophonePermission] = useState<
+    PermissionState | 'unknown' | 'unsupported'
+  >('unknown');
   const [recordingBlob, setRecordingBlob] = useState<Blob | null>(null);
   const [recordingUrl, setRecordingUrl] = useState<string | null>(null);
   const [recordingSeconds, setRecordingSeconds] = useState(0);
@@ -197,6 +200,31 @@ export const CallLogDialog: React.FC<CallLogDialogProps> = ({
     stopMediaStream();
     if (recordingUrl) URL.revokeObjectURL(recordingUrl);
   }, [recordingUrl]);
+
+  React.useEffect(() => {
+    if (!open) return undefined;
+    if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === 'undefined') {
+      setMicrophonePermission('unsupported');
+      return undefined;
+    }
+
+    let permissionStatus: PermissionStatus | null = null;
+    const readPermission = async () => {
+      if (!navigator.permissions?.query) return;
+      try {
+        permissionStatus = await navigator.permissions.query({ name: 'microphone' as PermissionName });
+        setMicrophonePermission(permissionStatus.state);
+        permissionStatus.onchange = () => setMicrophonePermission(permissionStatus?.state || 'unknown');
+      } catch {
+        setMicrophonePermission('unknown');
+      }
+    };
+    void readPermission();
+
+    return () => {
+      if (permissionStatus) permissionStatus.onchange = null;
+    };
+  }, [open]);
 
   const buildAINotes = (result: CallAIResult) => {
     const sections = [`ملخص المكالمة:\n${result.analysis.summary}`];
@@ -289,6 +317,7 @@ export const CallLogDialog: React.FC<CallLogDialogProps> = ({
           channelCount: 1,
         },
       });
+      setMicrophonePermission('granted');
       mediaStreamRef.current = stream;
 
       const preferredMimeType = [
@@ -335,7 +364,12 @@ export const CallLogDialog: React.FC<CallLogDialogProps> = ({
     } catch (error) {
       stopMediaStream();
       const denied = error instanceof DOMException && error.name === 'NotAllowedError';
-      toast.error(denied ? 'يجب السماح باستخدام الميكروفون لتسجيل المكالمة' : 'تعذر بدء التسجيل الصوتي');
+      if (denied) setMicrophonePermission('denied');
+      toast.error(
+        denied
+          ? 'تعذر الوصول إلى الميكروفون، ويمكنك حفظ المكالمة بدون تسجيل صوتي'
+          : 'تعذر بدء التسجيل الصوتي، ويمكنك حفظ الملاحظات دون تسجيل',
+      );
     }
   };
 
@@ -367,12 +401,8 @@ export const CallLogDialog: React.FC<CallLogDialogProps> = ({
       if (!user?.id || !user.profile?.id || !companyId) {
         throw new Error('تعذر تحديد المستخدم أو الشركة');
       }
-      if (!recordingBlob) {
-        throw new Error('يجب تسجيل المكالمة قبل الحفظ');
-      }
-
       const now = new Date();
-      const recordingMimeType = recordingBlob.type || 'audio/webm';
+      const recordingMimeType = recordingBlob?.type || 'audio/webm';
       const recordingExtension: Record<string, string> = {
         'audio/webm': 'webm',
         'audio/ogg': 'ogg',
@@ -381,18 +411,22 @@ export const CallLogDialog: React.FC<CallLogDialogProps> = ({
         'audio/wav': 'wav',
       };
       const extension = recordingExtension[recordingMimeType] || 'webm';
-      const recordingPath = `${companyId}/${user.id}/${contract.id}/${crypto.randomUUID()}.${extension}`;
+      const recordingPath = recordingBlob
+        ? `${companyId}/${user.id}/${contract.id}/${crypto.randomUUID()}.${extension}`
+        : null;
 
-      const { error: recordingUploadError } = await supabase.storage
-        .from('call-recordings')
-        .upload(recordingPath, recordingBlob, {
-          contentType: recordingMimeType,
-          cacheControl: '3600',
-          upsert: false,
-        });
+      if (recordingBlob && recordingPath) {
+        const { error: recordingUploadError } = await supabase.storage
+          .from('call-recordings')
+          .upload(recordingPath, recordingBlob, {
+            contentType: recordingMimeType,
+            cacheControl: '3600',
+            upsert: false,
+          });
 
-      if (recordingUploadError) {
-        throw new Error(`تعذر رفع تسجيل المكالمة: ${recordingUploadError.message}`);
+        if (recordingUploadError) {
+          throw new Error(`تعذر رفع تسجيل المكالمة: ${recordingUploadError.message}`);
+        }
       }
 
       const actionRequiredByPurpose: Record<CallLogFormData['call_purpose'], 'payment' | 'renewal' | 'none'> = {
@@ -412,7 +446,9 @@ export const CallLogDialog: React.FC<CallLogDialogProps> = ({
         communication_type: 'phone',
         communication_date: now.toISOString().slice(0, 10),
         communication_time: now.toISOString().slice(11, 19),
-        duration_minutes: Math.max(1, Math.ceil(recordingSeconds / 60)),
+        duration_minutes: recordingBlob
+          ? Math.max(1, Math.ceil(recordingSeconds / 60))
+          : null,
         employee_id: user.id,
         notes: `${data.call_purpose} - ${data.call_outcome}\nنوع المكالمة: ${data.call_type}\n${data.notes}`,
         action_required: actionRequiredByPurpose[data.call_purpose],
@@ -421,14 +457,16 @@ export const CallLogDialog: React.FC<CallLogDialogProps> = ({
         follow_up_date: data.follow_up_required ? data.follow_up_date || null : null,
         follow_up_time: null,
         follow_up_status: data.follow_up_required ? 'pending' : null,
-        attachments: [{
+        attachments: recordingPath ? [{
           type: 'call_recording',
           bucket: 'call-recordings',
           path: recordingPath,
           mime_type: recordingMimeType,
           duration_seconds: recordingSeconds,
-        }],
-        transcription_status: previewAIResult ? 'completed' : 'pending',
+        }] : [],
+        transcription_status: recordingBlob
+          ? (previewAIResult ? 'completed' : 'pending')
+          : 'not_requested',
         transcript_text: previewAIResult?.transcript || null,
         ai_summary: previewAIResult?.analysis.summary || null,
         ai_analysis: previewAIResult?.analysis || {},
@@ -443,12 +481,16 @@ export const CallLogDialog: React.FC<CallLogDialogProps> = ({
         .single();
 
       if (commError) {
-        await supabase.storage.from('call-recordings').remove([recordingPath]);
+        if (recordingPath) {
+          await supabase.storage.from('call-recordings').remove([recordingPath]);
+        }
         throw commError;
       }
       const communication = insertedCommunication as CustomerCommunicationRow | null;
       if (!communication) {
-        await supabase.storage.from('call-recordings').remove([recordingPath]);
+        if (recordingPath) {
+          await supabase.storage.from('call-recordings').remove([recordingPath]);
+        }
         throw new Error('Communication record was not returned');
       }
 
@@ -479,14 +521,16 @@ export const CallLogDialog: React.FC<CallLogDialogProps> = ({
             .delete()
             .eq('id', communication.id)
             .eq('company_id', companyId);
-          await supabase.storage.from('call-recordings').remove([recordingPath]);
+          if (recordingPath) {
+            await supabase.storage.from('call-recordings').remove([recordingPath]);
+          }
           throw followUpError;
         }
       }
 
       let analysisData = previewAIResult;
       let analysisError: string | null = null;
-      if (!analysisData) {
+      if (recordingBlob && !analysisData) {
         const response = await supabase.functions.invoke<CallAIResult>(
           'analyze-call-recording',
           { body: { communicationId: communication.id } },
@@ -525,10 +569,6 @@ export const CallLogDialog: React.FC<CallLogDialogProps> = ({
   });
 
   const onSubmit = async (data: CallLogFormData) => {
-    if (!recordingBlob) {
-      toast.error('يجب تسجيل المكالمة قبل الحفظ');
-      return;
-    }
     setIsSubmitting(true);
     try {
       await logCallMutation.mutateAsync(data);
@@ -768,7 +808,7 @@ export const CallLogDialog: React.FC<CallLogDialogProps> = ({
             <div className="space-y-3 rounded-xl border border-slate-200 bg-slate-50 p-4">
               <div className="flex items-center justify-between gap-3">
                 <div>
-                  <p className="text-sm font-semibold text-slate-800">تسجيل المكالمة *</p>
+                  <p className="text-sm font-semibold text-slate-800">تسجيل المكالمة <span className="font-normal text-slate-500">(اختياري)</span></p>
                   <p className="mt-1 text-xs text-slate-500">
                     يسجل صوت الميكروفون؛ تأكد من موافقة العميل وتحدث بصوت مسموع.
                   </p>
@@ -809,6 +849,17 @@ export const CallLogDialog: React.FC<CallLogDialogProps> = ({
                   <Mic className="ml-2 h-4 w-4" />
                   بدء تسجيل المكالمة
                 </Button>
+              )}
+
+              {(microphonePermission === 'denied' || microphonePermission === 'unsupported') && !recordingBlob && (
+                <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+                  <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+                  <p>
+                    {microphonePermission === 'denied'
+                      ? 'الميكروفون محظور لهذا الموقع. يمكنك السماح به من إعدادات الموقع أو حفظ المكالمة بالملاحظات فقط.'
+                      : 'التسجيل الصوتي غير متاح في هذا المتصفح. ما زال بإمكانك حفظ المكالمة بالملاحظات.'}
+                  </p>
+                </div>
               )}
 
               {isAnalyzingPreview && (
@@ -914,7 +965,7 @@ export const CallLogDialog: React.FC<CallLogDialogProps> = ({
               </Button>
               <Button
                 type="submit"
-                disabled={isSubmitting || isRecording || isAnalyzingPreview || !recordingBlob}
+                disabled={isSubmitting || isRecording || isAnalyzingPreview}
                 className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700"
               >
                 {isSubmitting ? (
