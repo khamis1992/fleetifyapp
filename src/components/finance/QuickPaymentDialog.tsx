@@ -4,7 +4,6 @@
  */
 import { useState, useRef, useMemo, useEffect } from 'react';
 import { Check, X, Loader2, MessageCircle, CheckCircle, FileText, Download, AlertTriangle, ChevronDown } from 'lucide-react';
-import { startOfMonth, endOfMonth, addMonths, isBefore, isWithinInterval } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -19,6 +18,11 @@ import { generateReceiptHTML, downloadHTML, numberToArabicWords, generateReceipt
 import { useQueryClient } from '@tanstack/react-query';
 import { usePaymentOperations } from '@/hooks/business/usePaymentOperations';
 import { FeatureTourButton, FeatureTourDialog, type FeatureTourContent } from '@/components/common/FeatureTourGuide';
+import {
+  buildInvoiceMonthCutoffFilter,
+  isInvoiceInCurrentOrPastMonth,
+  sortInvoicesByBillingMonth,
+} from '@/utils/invoiceBillingMonth';
 
 const quickPaymentTour = {
   title: 'جولة الدفعة السريعة',
@@ -36,6 +40,7 @@ interface Invoice {
   id: string;
   invoice_number: string;
   invoice_date: string;
+  invoice_month: string | null;
   due_date: string | null;
   total_amount: number;
   balance_due: number | null;
@@ -71,6 +76,7 @@ interface QuickPaymentDialogProps {
   customerName: string;
   customerPhone: string | null;
   contractId?: string | null;
+  allowedContractIds?: string[];
   onSuccess?: () => void;
   allowEmployeeWorkspacePayments?: boolean;
 }
@@ -82,6 +88,7 @@ export function QuickPaymentDialog({
   customerName,
   customerPhone,
   contractId,
+  allowedContractIds,
   onSuccess,
   allowEmployeeWorkspacePayments = false,
 }: QuickPaymentDialogProps) {
@@ -108,13 +115,17 @@ export function QuickPaymentDialog({
   const [readyToPay, setReadyToPay] = useState(false);
   const [showAllInvoices, setShowAllInvoices] = useState(false);
   const [activeTour, setActiveTour] = useState<FeatureTourContent | null>(null);
+  const allowedContractIdsKey = useMemo(
+    () => Array.from(new Set(allowedContractIds || [])).sort().join(','),
+    [allowedContractIds],
+  );
 
   // Load invoices when dialog opens
   useEffect(() => {
     if (open && customerId && companyId) {
       loadCustomerInvoices();
     }
-  }, [open, customerId, companyId, contractId]);
+  }, [open, customerId, companyId, contractId, allowedContractIdsKey, allowEmployeeWorkspacePayments]);
 
   // Reset state when dialog closes
   useEffect(() => {
@@ -132,6 +143,15 @@ export function QuickPaymentDialog({
   const loadCustomerInvoices = async () => {
     if (!companyId) return;
 
+    const employeeContractIds = allowedContractIdsKey ? allowedContractIdsKey.split(',') : [];
+    if (allowEmployeeWorkspacePayments && allowedContractIds !== undefined) {
+      if (employeeContractIds.length === 0 || (contractId && !employeeContractIds.includes(contractId))) {
+        setInvoices([]);
+        setSelectedInvoices([]);
+        return;
+      }
+    }
+
     setLoadingInvoices(true);
     try {
       let query = supabase
@@ -140,6 +160,7 @@ export function QuickPaymentDialog({
           id,
           invoice_number,
           invoice_date,
+          invoice_month,
           due_date,
           total_amount,
           balance_due,
@@ -157,16 +178,19 @@ export function QuickPaymentDialog({
         .eq('company_id', companyId)
         .eq('customer_id', customerId)
         .in('payment_status', ['unpaid', 'partial', 'overdue', 'pending'])
-        .lte('due_date', new Date().toISOString().split('T')[0]);  // ✅ فواتير مستحقة حتى اليوم فقط
+        .or(buildInvoiceMonthCutoffFilter(new Date()));
 
       if (contractId) {
         query = query.eq('contract_id', contractId);
+      } else if (allowEmployeeWorkspacePayments && allowedContractIds !== undefined) {
+        query = query.in('contract_id', employeeContractIds);
       }
 
-      const { data, error } = await query.order('due_date', { ascending: true });
+      const { data, error } = await query.order('invoice_date', { ascending: true });
 
       if (error) throw error;
-      setInvoices(data || []);
+      const availableInvoices = sortInvoicesByBillingMonth(data || []);
+      setInvoices(availableInvoices);
       
       if (data && data.length === 0) {
         toast({
@@ -186,18 +210,12 @@ export function QuickPaymentDialog({
     }
   };
 
-  // Filter invoices
+  // Defensive client-side check using the same accounting-month rule as the query.
   const filteredInvoices = useMemo(() => {
     if (showAllInvoices) return invoices;
-    
+
     const now = new Date();
-    const currentMonthStart = startOfMonth(now);
-    const nextMonthEnd = endOfMonth(addMonths(now, 1));
-    
-    return invoices.filter(invoice => {
-      const dueDate = invoice.due_date ? new Date(invoice.due_date) : new Date(invoice.invoice_date);
-      return isBefore(dueDate, now) || isWithinInterval(dueDate, { start: currentMonthStart, end: nextMonthEnd });
-    });
+    return invoices.filter((invoice) => isInvoiceInCurrentOrPastMonth(invoice, now));
   }, [invoices, showAllInvoices]);
 
   const overdueInvoices = useMemo(() => {
@@ -298,65 +316,6 @@ export function QuickPaymentDialog({
         'other': 'credit_card',
         'credit_card': 'credit_card'
       };
-
-      // ✅ معالجة حالة عدم وجود فواتير - إنشاء فاتورة تلقائياً
-      if (selectedInvoices.length === 0) {
-        // البحث عن عقد نشط للعميل
-        let activeContractQuery = supabase
-          .from('contracts')
-          .select('id, contract_number, monthly_amount')
-          .eq('customer_id', customerId)
-          .eq('company_id', companyId)
-          .eq('status', 'active');
-
-        if (contractId) {
-          activeContractQuery = activeContractQuery.eq('id', contractId);
-        }
-
-        const { data: activeContracts, error: contractError } = await activeContractQuery
-          .order('created_at', { ascending: false })
-          .limit(1);
-
-        if (contractError || !activeContracts || activeContracts.length === 0) {
-          throw new Error('لا يوجد عقد نشط للعميل. يرجى إنشاء فاتورة أولاً.');
-        }
-
-        const activeContract = activeContracts[0];
-        
-        // إنشاء فاتورة تلقائياً للدفعة
-        const { generateInvoiceNumber } = await import('@/utils/createInvoiceForPayment');
-        const invoiceNumber = await generateInvoiceNumber(companyId);
-        
-        const paymentDate = new Date().toISOString().split('T')[0];
-        
-        const { data: newInvoice, error: invoiceError } = await supabase
-          .from('invoices')
-          .insert({
-            company_id: companyId,
-            customer_id: customerId,
-            contract_id: activeContract.id,
-            invoice_number: invoiceNumber,
-            invoice_date: paymentDate,
-            due_date: paymentDate,
-            total_amount: amount,
-            paid_amount: 0,
-            balance_due: amount,
-            payment_status: 'unpaid',
-            status: 'draft',
-            invoice_type: 'rental',
-            notes: 'تم إنشاء هذه الفاتورة تلقائياً عند تسجيل دفعة بدون فاتورة',
-          })
-          .select()
-          .single();
-
-        if (invoiceError) {
-          throw new Error(`فشل في إنشاء الفاتورة: ${invoiceError.message}`);
-        }
-
-        // إضافة الفاتورة الجديدة إلى القائمة المحددة
-        selectedInvoices.push(newInvoice as any);
-        console.log('✅ تم إنشاء فاتورة تلقائياً:', invoiceNumber);
-      }
 
       const contractIds = [...new Set(selectedInvoices.map(inv => inv.contract_id).filter((id): id is string => id !== null))];
       const invoiceNumbers = selectedInvoices.map(inv => inv.invoice_number).join(', ');

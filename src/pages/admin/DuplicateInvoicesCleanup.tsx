@@ -8,6 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 import { UnifiedInvoiceService } from '@/services/UnifiedInvoiceService';
+import { getInvoiceBillingMonthKey } from '@/utils/invoiceBillingMonth';
 
 interface DuplicateInvoice {
   id: string;
@@ -54,7 +55,7 @@ export default function DuplicateInvoicesCleanup() {
         const { data, error } = await supabase
           .from('invoices')
           .select(`
-            id, invoice_number, invoice_date, due_date, total_amount,
+            id, invoice_number, invoice_date, invoice_month, due_date, total_amount,
             invoice_type, currency, customer_id, contract_id, status,
             payment_status, paid_amount, journal_entry_id, created_at,
             contracts (contract_number)
@@ -74,8 +75,8 @@ export default function DuplicateInvoicesCleanup() {
 
       const grouped = new Map<string, DuplicateGroup>();
       for (const invoice of allInvoices) {
-        const invoiceDate = String(invoice.due_date || invoice.invoice_date || '');
-        const invoiceMonth = invoiceDate.slice(0, 7);
+        const invoiceDate = String(invoice.invoice_date || '');
+        const invoiceMonth = getInvoiceBillingMonthKey(invoice);
         if (!invoiceMonth || !invoice.contract_id) continue;
 
         const key = [

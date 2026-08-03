@@ -97,9 +97,20 @@ interface Payment {
   contract_id?: string;
   invoice?: {
     invoice_number: string;
+    invoice_date?: string | null;
     due_date: string | null;
   };
 }
+
+type PaymentDisplayGroup = {
+  id: string;
+  payments: Payment[];
+  totalAmount: number;
+  isBatch: boolean;
+  paymentDate: string | null;
+  paymentMethod: string;
+  status: string;
+};
 
 interface CustomerInfo {
   name: string;
@@ -183,6 +194,202 @@ const getPaymentMethodInfo = (method: string) => {
     other: { label: 'أخرى', icon: CreditCard, color: 'from-slate-500 to-slate-600', bg: 'bg-slate-50' },
   };
   return methods[method] || methods.other;
+};
+
+const getInvoiceMonthDate = (payment: Payment) => (
+  payment.invoice?.invoice_date
+  || payment.invoice?.due_date
+  || payment.payment_date
+  || null
+);
+
+const ENGLISH_MONTHS: Record<string, number> = {
+  january: 1,
+  jan: 1,
+  february: 2,
+  feb: 2,
+  march: 3,
+  mar: 3,
+  april: 4,
+  apr: 4,
+  may: 5,
+  june: 6,
+  jun: 6,
+  july: 7,
+  jul: 7,
+  august: 8,
+  aug: 8,
+  september: 9,
+  sep: 9,
+  sept: 9,
+  october: 10,
+  oct: 10,
+  november: 11,
+  nov: 11,
+  december: 12,
+  dec: 12,
+};
+
+const ARABIC_MONTHS: Record<string, number> = {
+  يناير: 1,
+  فبراير: 2,
+  مارس: 3,
+  أبريل: 4,
+  ابريل: 4,
+  مايو: 5,
+  يونيو: 6,
+  يوليو: 7,
+  أغسطس: 8,
+  اغسطس: 8,
+  سبتمبر: 9,
+  أكتوبر: 10,
+  اكتوبر: 10,
+  نوفمبر: 11,
+  ديسمبر: 12,
+};
+
+const toMonthStartDate = (year: number, month: number) =>
+  `${year}-${String(month).padStart(2, '0')}-01`;
+
+const getPaymentYearFallback = (payment: Payment) => {
+  const source = payment.payment_date || payment.created_at;
+  const date = source ? new Date(source) : null;
+  const year = date && !Number.isNaN(date.getTime()) ? date.getFullYear() : new Date().getFullYear();
+  return year;
+};
+
+const inferDueDateFromPaymentText = (payment: Payment): string | null => {
+  const text = [
+    payment.notes,
+    payment.reference_number,
+    payment.payment_number,
+  ].filter(Boolean).join(' ');
+
+  if (!text) return null;
+
+  const numericMonthYear = text.match(/(?:^|[^\d])(\d{1,2})\s*[-/]\s*(20\d{2})(?:[^\d]|$)/);
+  if (numericMonthYear) {
+    const month = Number(numericMonthYear[1]);
+    const year = Number(numericMonthYear[2]);
+    if (month >= 1 && month <= 12) return toMonthStartDate(year, month);
+  }
+
+  const lowerText = text.toLowerCase();
+  const englishMonth = Object.entries(ENGLISH_MONTHS).find(([label]) => {
+    const pattern = new RegExp(`(^|[^a-z])${label}([^a-z]|$)`, 'i');
+    return pattern.test(lowerText);
+  });
+  if (englishMonth) {
+    return toMonthStartDate(getPaymentYearFallback(payment), englishMonth[1]);
+  }
+
+  const arabicMonth = Object.entries(ARABIC_MONTHS).find(([label]) => text.includes(label));
+  if (arabicMonth) {
+    return toMonthStartDate(getPaymentYearFallback(payment), arabicMonth[1]);
+  }
+
+  return null;
+};
+
+const getPaymentDueDate = (payment: Payment) => (
+  payment.invoice?.due_date
+  || payment.invoice?.invoice_date
+  || inferDueDateFromPaymentText(payment)
+  || null
+);
+
+const formatInvoiceMonthLabel = (payment: Payment) => {
+  const value = getInvoiceMonthDate(payment);
+  if (!value) return 'شهر غير محدد';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return 'شهر غير محدد';
+  return format(date, 'MMMM yyyy', { locale: ar });
+};
+
+const formatInvoiceMonthNumeric = (payment: Payment) => {
+  const value = getInvoiceMonthDate(payment);
+  if (!value) return '-';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '-';
+  return format(date, 'MM/yyyy');
+};
+
+const getPaymentBatchKey = (payment: Payment) => {
+  if (!payment.payment_number || !payment.invoice_id || payment.payment_status === 'cancelled') return null;
+  const match = payment.payment_number.match(/^(PAY-\d{10,})-\d+$/);
+  if (!match) return null;
+  const notes = payment.notes || '';
+  const looksLikeInvoiceBatch =
+    notes.includes('دفعة لفاتورة') ||
+    notes.includes('Ø¯ÙØ¹Ø© Ù„ÙØ§ØªÙˆØ±Ø©');
+  if (!looksLikeInvoiceBatch) return null;
+  return [
+    match[1],
+    payment.payment_date || '',
+    payment.payment_method || '',
+    payment.payment_status || '',
+  ].join('|');
+};
+
+const buildPaymentDisplayGroups = (payments: Payment[]): PaymentDisplayGroup[] => {
+  const batchBuckets = new Map<string, Payment[]>();
+  const singles: PaymentDisplayGroup[] = [];
+
+  payments.forEach((payment) => {
+    const batchKey = getPaymentBatchKey(payment);
+    if (!batchKey) {
+      singles.push({
+        id: payment.id,
+        payments: [payment],
+        totalAmount: payment.amount || 0,
+        isBatch: false,
+        paymentDate: payment.payment_date || null,
+        paymentMethod: payment.payment_method,
+        status: payment.payment_status,
+      });
+      return;
+    }
+
+    batchBuckets.set(batchKey, [...(batchBuckets.get(batchKey) || []), payment]);
+  });
+
+  const batchGroups = Array.from(batchBuckets.entries()).flatMap(([key, groupPayments]) => {
+    if (groupPayments.length < 2) {
+      const payment = groupPayments[0];
+      return [{
+        id: payment.id,
+        payments: [payment],
+        totalAmount: payment.amount || 0,
+        isBatch: false,
+        paymentDate: payment.payment_date || null,
+        paymentMethod: payment.payment_method,
+        status: payment.payment_status,
+      }];
+    }
+
+    const firstPayment = groupPayments[0];
+    const sortedPayments = [...groupPayments].sort((a, b) => {
+      const aTime = new Date(getInvoiceMonthDate(a) || a.payment_date || '').getTime();
+      const bTime = new Date(getInvoiceMonthDate(b) || b.payment_date || '').getTime();
+      return (Number.isFinite(aTime) ? aTime : 0) - (Number.isFinite(bTime) ? bTime : 0);
+    });
+
+    return [{
+      id: key,
+      payments: sortedPayments,
+      totalAmount: sortedPayments.reduce((sum, payment) => sum + (payment.amount || 0), 0),
+      isBatch: true,
+      paymentDate: firstPayment.payment_date || null,
+      paymentMethod: firstPayment.payment_method,
+      status: firstPayment.payment_status,
+    }];
+  });
+
+  return [...singles, ...batchGroups].sort((a, b) => {
+    const aTime = new Date(a.paymentDate || '').getTime();
+    const bTime = new Date(b.paymentDate || '').getTime();
+    return (Number.isFinite(bTime) ? bTime : 0) - (Number.isFinite(aTime) ? aTime : 0);
+  });
 };
 
 // ===== Metrics Cards Component =====
@@ -325,6 +532,11 @@ const PaymentCard = ({
               </Badge>
             </div>
             <p className="text-sm text-neutral-500">{methodInfo.label}</p>
+            {payment.invoice_id && (
+              <p className="mt-1 text-xs font-semibold text-[#173A63]">
+                شهر الفاتورة: {formatInvoiceMonthLabel(payment)}
+              </p>
+            )}
           </div>
         </div>
       </div>
@@ -411,7 +623,14 @@ const PaymentTableRow = ({
           </div>
           <div className="min-w-[150px] space-y-2">
             <p className="font-semibold text-neutral-900">{payment.invoice?.invoice_number || '-'}</p>
-            <p className="text-xs text-neutral-500">{methodInfo.label}</p>
+            <div className="space-y-1">
+              <p className="text-xs text-neutral-500">{methodInfo.label}</p>
+              {payment.invoice_id && (
+                <Badge variant="outline" className="border-[#B8D3EA] bg-[#EEF5FB] text-[#173A63]">
+                  شهر الفاتورة: {formatInvoiceMonthLabel(payment)}
+                </Badge>
+              )}
+            </div>
             {payment.payment_status === 'completed' ? (
               <Button
                 size="sm"
@@ -431,6 +650,18 @@ const PaymentTableRow = ({
         </div>
       </td>
 
+      {/* Invoice Month */}
+      <td className="py-4 px-4">
+        {payment.invoice_id ? (
+          <div>
+            <p className="text-sm font-bold text-[#173A63]">{formatInvoiceMonthLabel(payment)}</p>
+            <p className="text-xs text-neutral-500" dir="ltr">{formatInvoiceMonthNumeric(payment)}</p>
+          </div>
+        ) : (
+          <span className="text-neutral-400">-</span>
+        )}
+      </td>
+
       {/* Payment Date */}
       <td className="py-4 px-4">
         <p className="text-sm text-neutral-900" dir="ltr">
@@ -446,8 +677,8 @@ const PaymentTableRow = ({
       {/* Due Date */}
       <td className="py-4 px-4">
         <p className="text-sm text-neutral-900" dir="ltr">
-          {payment.invoice?.due_date
-            ? format(new Date(payment.invoice.due_date), 'dd/MM/yyyy', { locale: ar })
+          {getPaymentDueDate(payment)
+            ? format(new Date(getPaymentDueDate(payment) as string), 'dd/MM/yyyy', { locale: ar })
             : '-'}
         </p>
       </td>
@@ -476,6 +707,105 @@ const PaymentTableRow = ({
         ) : (
           <span className="text-neutral-400">-</span>
         )}
+      </td>
+    </tr>
+  );
+};
+
+const PaymentBatchTableRow = ({
+  group,
+  formatCurrency,
+  onCancelPayment,
+}: {
+  group: PaymentDisplayGroup;
+  formatCurrency: (amount: number) => string;
+  onCancelPayment: (payment: Payment) => void;
+}) => {
+  const statusInfo = getPaymentStatusInfo(group.status);
+  const StatusIcon = statusInfo.icon;
+  const methodInfo = getPaymentMethodInfo(group.paymentMethod);
+  const MethodIcon = methodInfo.icon;
+  const activePayments = group.payments.filter((payment) => payment.payment_status === 'completed');
+
+  return (
+    <tr className="border-b border-[#DDE5EF] bg-[#F8FBFE]">
+      <td colSpan={7} className="p-4">
+        <div className="rounded-xl border border-[#B8D3EA] bg-white shadow-sm">
+          <div className="grid gap-3 border-b border-[#E6EDF5] bg-[#EEF5FB] p-4 lg:grid-cols-[1fr_auto] lg:items-center">
+            <div className="flex items-start gap-3">
+              <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-white text-[#173A63] shadow-sm">
+                <MethodIcon className="h-5 w-5" />
+              </div>
+              <div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <h3 className="text-base font-black text-[#142033]">
+                    دفعة مجمعة غطّت {group.payments.length} فواتير
+                  </h3>
+                  <Badge className={cn("gap-1.5 border-0", statusInfo.bgColor, statusInfo.textColor)}>
+                    <StatusIcon className="h-3 w-3" />
+                    {statusInfo.label}
+                  </Badge>
+                </div>
+                <p className="mt-1 text-sm text-[#5B6B7E]">
+                  تاريخ الدفع: <span dir="ltr">{group.paymentDate ? format(new Date(group.paymentDate), 'dd/MM/yyyy') : '-'}</span>
+                  {' '}· الطريقة: {methodInfo.label}
+                </p>
+              </div>
+            </div>
+
+            <div className="rounded-lg border border-[#DDE5EF] bg-white px-4 py-3 text-left">
+              <p className="text-xs font-semibold text-[#5B6B7E]">إجمالي الدفعة المجمعة</p>
+              <p className="text-xl font-black text-[#142033]">{formatCurrency(group.totalAmount)}</p>
+            </div>
+          </div>
+
+          <div className="divide-y divide-[#EEF2F6]">
+            {group.payments.map((payment) => (
+              <div key={payment.id} className="grid gap-3 px-4 py-3 md:grid-cols-[1.3fr_1fr_1fr_auto] md:items-center">
+                <div>
+                  <p className="font-bold text-[#142033]">{payment.invoice?.invoice_number || '-'}</p>
+                  <p className="mt-1 text-xs text-[#5B6B7E]">
+                    رقم الدفعة: <span className="font-mono" dir="ltr">{payment.payment_number || '-'}</span>
+                  </p>
+                </div>
+
+                <div>
+                  <p className="text-xs font-semibold text-[#8091A5]">شهر الفاتورة</p>
+                  <p className="font-bold text-[#173A63]">{formatInvoiceMonthLabel(payment)}</p>
+                  <p className="text-xs text-[#8091A5]" dir="ltr">{formatInvoiceMonthNumeric(payment)}</p>
+                </div>
+
+                <div>
+                  <p className="text-xs font-semibold text-[#8091A5]">تاريخ الاستحقاق</p>
+                  <p className="text-sm font-semibold text-[#142033]" dir="ltr">
+                    {getPaymentDueDate(payment) ? format(new Date(getPaymentDueDate(payment) as string), 'dd/MM/yyyy') : '-'}
+                  </p>
+                </div>
+
+                <div className="flex items-center justify-between gap-3 md:justify-end">
+                  <p className="text-base font-black text-[#142033]">{formatCurrency(payment.amount || 0)}</p>
+                  {payment.payment_status === 'completed' && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => onCancelPayment(payment)}
+                      className="h-8 rounded-lg border-red-200 px-3 text-red-600 hover:bg-red-50 hover:text-red-700"
+                    >
+                      <XCircle className="ml-1 h-4 w-4" />
+                      إلغاء
+                    </Button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {activePayments.length > 1 && (
+            <div className="border-t border-[#E6EDF5] bg-[#FCFDFE] px-4 py-2 text-xs leading-6 text-[#5B6B7E]">
+              لإلغاء العملية كاملة يجب إلغاء كل دفعة مرتبطة بالفواتير أعلاه، لأن كل فاتورة لها قيد دفع مستقل.
+            </div>
+          )}
+        </div>
       </td>
     </tr>
   );
@@ -616,7 +946,7 @@ export const ContractPaymentsTabRedesigned = ({
           created_at,
           invoice_id,
           contract_id,
-          invoice:invoices!invoice_id(invoice_number, due_date)
+          invoice:invoices!invoice_id(invoice_number, invoice_date, due_date)
         `)
         .eq('company_id', companyId);
 
@@ -675,7 +1005,7 @@ export const ContractPaymentsTabRedesigned = ({
     }
 
     const getDueSortTime = (payment: Payment) => {
-      const sourceDate = payment.invoice?.due_date || payment.payment_date;
+      const sourceDate = getPaymentDueDate(payment) || payment.payment_date;
       const time = new Date(sourceDate).getTime();
       return Number.isFinite(time) ? time : Number.MAX_SAFE_INTEGER;
     };
@@ -698,6 +1028,11 @@ export const ContractPaymentsTabRedesigned = ({
 
     return filtered;
   }, [payments, searchQuery, statusFilter, methodFilter, sortOption]);
+
+  const paymentDisplayGroups = useMemo(
+    () => buildPaymentDisplayGroups(filteredAndSortedPayments),
+    [filteredAndSortedPayments]
+  );
 
   const handleCancelClick = (payment: Payment) => {
     setSelectedPayment(payment);
@@ -1132,6 +1467,7 @@ export const ContractPaymentsTabRedesigned = ({
                           <tr>
                             <th style="width: 35px;">م</th>
                             <th>رقم الفاتورة</th>
+                            <th>شهر الفاتورة</th>
                             <th>تاريخ الدفع</th>
                             <th>تاريخ الاستحقاق</th>
                             <th>طريقة الدفع</th>
@@ -1149,10 +1485,12 @@ export const ContractPaymentsTabRedesigned = ({
                             };
                             const method = methodLabels[payment.payment_method] || { label: payment.payment_method || '-', cssClass: '' };
                             const paymentDate = payment.payment_date ? new Date(payment.payment_date).toLocaleDateString('en-GB') : '-';
-                            const dueDate = payment.invoice?.due_date ? new Date(payment.invoice.due_date).toLocaleDateString('en-GB') : '-';
+                            const invoiceMonth = formatInvoiceMonthNumeric(payment);
+                            const dueDate = getPaymentDueDate(payment) ? new Date(getPaymentDueDate(payment) as string).toLocaleDateString('en-GB') : '-';
                             return '<tr>' +
                               '<td style="text-align: center;">' + (idx + 1) + '</td>' +
                               '<td>' + (payment.invoice?.invoice_number || '-') + '</td>' +
+                              '<td>' + invoiceMonth + '</td>' +
                               '<td>' + paymentDate + '</td>' +
                               '<td>' + dueDate + '</td>' +
                               '<td style="text-align: center;"><span class="' + method.cssClass + '">' + method.label + '</span></td>' +
@@ -1163,7 +1501,7 @@ export const ContractPaymentsTabRedesigned = ({
                         </tbody>
                         <tfoot>
                           <tr style="background: #1e3a5f; color: white;">
-                            <td colspan="6" style="text-align: left; font-weight: bold; border-color: #1e3a5f;">الإجمالي</td>
+                            <td colspan="7" style="text-align: left; font-weight: bold; border-color: #1e3a5f;">الإجمالي</td>
                             <td style="font-weight: bold; border-color: #1e3a5f;">${formatCurrency(totalPaid)}</td>
                           </tr>
                         </tfoot>
@@ -1259,7 +1597,7 @@ export const ContractPaymentsTabRedesigned = ({
             {/* View Mode Toggle & Results Count */}
             <div className="flex items-center justify-between">
               <p className="text-sm text-neutral-500">
-                عرض {filteredAndSortedPayments.length} من {payments.length} دفعة
+                عرض {filteredAndSortedPayments.length} دفعة ضمن {paymentDisplayGroups.length} عملية
               </p>
             </div>
 
@@ -1295,6 +1633,7 @@ export const ContractPaymentsTabRedesigned = ({
                     <thead>
                       <tr className="border-b border-[#DDE5EF] bg-[#F7FAFD]">
                         <th className="py-3 px-4 text-right text-sm font-semibold text-neutral-700">الفاتورة / الطريقة</th>
+                        <th className="py-3 px-4 text-right text-sm font-semibold text-neutral-700">شهر الفاتورة</th>
                         <th className="py-3 px-4 text-right text-sm font-semibold text-neutral-700">تاريخ الدفع</th>
                         <th className="py-3 px-4 text-right text-sm font-semibold text-neutral-700">تاريخ الاستحقاق</th>
                         <th className="py-3 px-4 text-right text-sm font-semibold text-neutral-700">المبلغ</th>
@@ -1303,13 +1642,22 @@ export const ContractPaymentsTabRedesigned = ({
                       </tr>
                     </thead>
                     <tbody>
-                      {filteredAndSortedPayments.map((payment) => (
-                        <PaymentTableRow
-                          key={payment.id}
-                          payment={payment}
-                          formatCurrency={formatCurrency}
-                          onCancel={() => handleCancelClick(payment)}
-                        />
+                      {paymentDisplayGroups.map((group) => (
+                        group.isBatch ? (
+                          <PaymentBatchTableRow
+                            key={group.id}
+                            group={group}
+                            formatCurrency={formatCurrency}
+                            onCancelPayment={handleCancelClick}
+                          />
+                        ) : (
+                          <PaymentTableRow
+                            key={group.payments[0].id}
+                            payment={group.payments[0]}
+                            formatCurrency={formatCurrency}
+                            onCancel={() => handleCancelClick(group.payments[0])}
+                          />
+                        )
                       ))}
                     </tbody>
                   </table>

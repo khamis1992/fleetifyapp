@@ -39,6 +39,26 @@ type DailyLogSummary = {
   legal_referrals?: boolean;
   report_exported?: boolean;
   contract_activity?: DailyContractActivitySummary | null;
+  communications?: {
+    phone_calls?: DailyCommunicationItem[];
+  } | null;
+};
+
+type DailyCommunicationItem = {
+  id?: string;
+  customerName?: string;
+  customer_name?: string;
+  contractNumber?: string | null;
+  contract_number?: string | null;
+  outcome?: string;
+  purpose?: string;
+  summary?: string;
+  followUpDate?: string | null;
+  follow_up_date?: string | null;
+  durationMinutes?: number | null;
+  duration_minutes?: number | null;
+  occurredAt?: string | null;
+  occurred_at?: string | null;
 };
 
 type DailyContractActivityItem = {
@@ -634,6 +654,7 @@ function DailyCloseoutReport({
   const checklist = log.checklist || {};
   const summary = log.summary || {};
   const activityItems = activity?.items || [];
+  const communicationItems = summary.communications?.phone_calls || [];
 
   const resultCells = [
     ['وعود بالدفع', numberValue(summary.payment_promises)],
@@ -726,7 +747,28 @@ function DailyCloseoutReport({
           </div>
         </ReportSection>
 
-        <ReportSection ordinal="رابعاً" title="أهم الحالات والإجراءات المنفذة">
+        <ReportSection ordinal="رابعاً" title="نتائج الاتصالات وملخصاتها">
+          <ReportTable headers={['رقم العقد', 'اسم العميل', 'الغرض', 'النتيجة', 'الملخص', 'المتابعة']}>
+            {communicationItems.length > 0 ? communicationItems.slice(0, 10).map((item, index) => (
+              <TableRow key={item.id || index}>
+                <TableCell className="border border-[#CFD8E3] font-bold">{item.contractNumber || item.contract_number || '-'}</TableCell>
+                <TableCell className="border border-[#CFD8E3] font-bold">{item.customerName || item.customer_name || '-'}</TableCell>
+                <TableCell className="border border-[#CFD8E3] font-bold">{item.purpose || '-'}</TableCell>
+                <TableCell className="border border-[#CFD8E3] font-bold">{item.outcome || '-'}</TableCell>
+                <TableCell className="border border-[#CFD8E3] font-bold">{item.summary || '-'}</TableCell>
+                <TableCell className="border border-[#CFD8E3] font-bold">{item.followUpDate || item.follow_up_date || '-'}</TableCell>
+              </TableRow>
+            )) : (
+              <TableRow>
+                <TableCell colSpan={6} className="h-12 border border-[#CFD8E3] text-center font-black text-[#6A7688]">
+                  لا توجد مكالمات محفوظة في هذا الإقفال.
+                </TableCell>
+              </TableRow>
+            )}
+          </ReportTable>
+        </ReportSection>
+
+        <ReportSection ordinal="خامساً" title="أهم الحالات والإجراءات المنفذة">
           <ReportTable headers={['رقم العقد', 'اسم العميل', 'الإجراء المنفذ', 'النتيجة / المبلغ', 'المتابعة القادمة']}>
             {Array.from({ length: 4 }).map((_, index) => (
               <TableRow key={index}>
@@ -740,7 +782,7 @@ function DailyCloseoutReport({
           </ReportTable>
         </ReportSection>
 
-        <ReportSection ordinal="خامساً" title="نشاط العقود والملفات المحتسب من النظام">
+        <ReportSection ordinal="سادساً" title="نشاط العقود والملفات المحتسب من النظام">
           {activityLoading && (
             <div className="mb-2 rounded-lg border border-sky-200 bg-sky-50 px-3 py-2 text-xs font-bold text-sky-800">
               جارٍ تحديث تفاصيل تعديلات العقود والدفعات والمستندات من النظام...

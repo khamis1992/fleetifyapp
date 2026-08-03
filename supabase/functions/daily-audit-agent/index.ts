@@ -6,6 +6,12 @@ import {
   LONGCAT_CHAT_COMPLETIONS_URL,
   LONGCAT_MODEL,
 } from "../_shared/longcat.ts";
+import {
+  invoiceBillingMonth,
+  invoiceContractBillingMonthKey,
+  isInvoiceOutsideContractBillingMonths,
+  selectExistingInvoiceForMonth,
+} from "./invoice-month.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -778,7 +784,7 @@ async function canonicalizeUniformContractScheduleGraph(
   const [{ data: invoices, error: invoiceError }, { data: schedules, error: scheduleError }] = await Promise.all([
     supabase
       .from("invoices")
-      .select("id, invoice_date, due_date, total_amount, paid_amount, balance_due, status, payment_status")
+      .select("id, invoice_month, invoice_date, due_date, total_amount, paid_amount, balance_due, status, payment_status, created_at")
       .eq("company_id", companyId)
       .eq("contract_id", contractId),
     supabase
@@ -793,10 +799,11 @@ async function canonicalizeUniformContractScheduleGraph(
   const activeInvoices = (invoices || []).filter((invoice: any) =>
     !isCancelledStatus(invoice.status) && !isCancelledStatus(invoice.payment_status)
   );
-  const invoiceByMonth = new Map<string, any>();
+  const invoiceByMonth = new Map<string, any[]>();
   for (const invoice of activeInvoices) {
-    const key = toMonthStart(String(invoice.invoice_date || invoice.due_date || ""));
-    if (isIsoDate(key) && !invoiceByMonth.has(key)) invoiceByMonth.set(key, invoice);
+    const key = invoiceBillingMonth(invoice);
+    if (!isIsoDate(key)) continue;
+    invoiceByMonth.set(key, [...(invoiceByMonth.get(key) || []), invoice]);
   }
 
   const activeSchedules = (schedules || []).filter((schedule: any) => !isCancelledStatus(schedule.status));
@@ -854,7 +861,10 @@ async function canonicalizeUniformContractScheduleGraph(
 
   for (let index = 0; index < missingMonths.length; index += 1) {
     const item = missingMonths[index];
-    const invoice = invoiceByMonth.get(item.month);
+    const invoice = selectExistingInvoiceForMonth(
+      invoiceByMonth.get(item.month) || [],
+      item.month,
+    );
     if (!invoice) continue;
     const paidAmount = roundMoney(Number(invoice.paid_amount || 0));
     const totalAmount = roundMoney(Number(invoice.total_amount || monthlyAmount));
@@ -996,9 +1006,7 @@ async function repairScheduleInvoiceLinks(
   const scheduleCountByInvoiceId = new Map<string, number>();
 
   for (const invoice of activeInvoices) {
-    // Key invoices by their actual billing month (invoice_date), not the due
-    // date: invoices dated in month M but due in M+1 belong to month M.
-    const key = contractMonthKey(invoice.contract_id, invoice.invoice_date || invoice.due_date);
+    const key = invoiceContractBillingMonthKey(invoice);
     if (!key) continue;
     invoicesByContractMonth.set(key, [...(invoicesByContractMonth.get(key) || []), invoice]);
   }
@@ -1016,7 +1024,7 @@ async function repairScheduleInvoiceLinks(
     const expectedInvoices = invoicesByContractMonth.get(contractMonthKey(schedule.contract_id, scheduleMonth) || "") || [];
     const expectedInvoice = expectedInvoices.length === 1 ? expectedInvoices[0] : null;
     const linkedInvoice = schedule.invoice_id ? invoiceById.get(schedule.invoice_id) : null;
-    const linkedMonth = linkedInvoice ? toMonthStart(String(linkedInvoice.invoice_date || linkedInvoice.due_date)) : null;
+    const linkedMonth = linkedInvoice ? invoiceBillingMonth(linkedInvoice) : null;
     const duplicateLink = schedule.invoice_id && (scheduleCountByInvoiceId.get(schedule.invoice_id) || 0) > 1;
     const wrongLink = Boolean(expectedInvoice && schedule.invoice_id && schedule.invoice_id !== expectedInvoice.id);
     const dateMismatch = Boolean(linkedInvoice && linkedMonth && linkedMonth !== scheduleMonth);
@@ -1135,10 +1143,7 @@ async function cleanupDuplicateContractMonthInvoices(
   const grouped = new Map<string, any[]>();
 
   for (const invoice of activeInvoices) {
-    // Group by the actual billing month (invoice_date). Contracts that issue
-    // an invoice dated in month M with a due date in month M+1 must not be
-    // flagged as duplicates of the following month's invoice.
-    const key = contractMonthKey(invoice.contract_id, invoice.invoice_date || invoice.due_date);
+    const key = invoiceContractBillingMonthKey(invoice);
     if (!key) continue;
     grouped.set(key, [...(grouped.get(key) || []), invoice]);
   }
@@ -1205,13 +1210,11 @@ async function cleanupOutsideContractInvoices(
     const contract: any = contractsById.get(invoice.contract_id);
     if (!contract?.start_date || !contract?.end_date) continue;
 
-    // Compare billing months, not raw due dates. An invoice issued for the
-    // final contract month often falls due a few days after the end date and
-    // is legitimately inside the contract period.
-    const invoiceMonth = toMonthStart(String(invoice.invoice_date || invoice.due_date || ""));
-    const startMonth = toMonthStart(String(contract.start_date));
-    const endMonth = toMonthStart(String(contract.end_date));
-    if (!isIsoDate(invoiceMonth) || (invoiceMonth >= startMonth && invoiceMonth <= endMonth)) continue;
+    if (!isInvoiceOutsideContractBillingMonths(
+      invoice,
+      contract.start_date,
+      contract.end_date,
+    )) continue;
 
     const safeToCancel =
       !invoice.journal_entry_id &&
@@ -1397,17 +1400,20 @@ async function findExistingInvoiceForMonth(supabase: any, companyId: string, con
   const nextMonth = addMonths(monthStart, 1);
   const { data, error } = await supabase
     .from("invoices")
-    .select("id")
+    .select("id, invoice_month, invoice_date, status, payment_status, created_at")
     .eq("company_id", companyId)
     .eq("contract_id", contractId)
-    // Match by due month OR by billing month (invoice_date): invoices dated
-    // in month M but due in M+1 still count as that month's invoice.
-    .or(`and(due_date.gte.${monthStart},due_date.lt.${nextMonth}),and(invoice_date.gte.${monthStart},invoice_date.lt.${nextMonth})`)
-    .limit(1)
-    .maybeSingle();
+    // invoice_month is canonical; invoice_date is retained only as a legacy
+    // fallback. due_date is a payment deadline and must never identify the
+    // billing month.
+    .or(`and(invoice_month.gte.${monthStart},invoice_month.lt.${nextMonth}),and(invoice_month.is.null,invoice_date.gte.${monthStart},invoice_date.lt.${nextMonth})`)
+    .order("invoice_month", { ascending: true, nullsFirst: false })
+    .order("invoice_date", { ascending: true })
+    .order("created_at", { ascending: true })
+    .order("id", { ascending: true });
 
   if (error) throw error;
-  return data?.id || null;
+  return selectExistingInvoiceForMonth(data || [], monthStart)?.id || null;
 }
 
 async function linkScheduleInvoice(supabase: any, companyId: string, scheduleId: string, invoiceId: string) {
@@ -1546,7 +1552,7 @@ async function loadInvoicesForContracts(
   for (const ids of chunk(cleanContractIds, 100)) {
     const { data, error } = await supabase
       .from("invoices")
-      .select("id, company_id, contract_id, invoice_number, invoice_date, due_date, total_amount, subtotal, paid_amount, balance_due, status, payment_status, journal_entry_id, updated_at")
+      .select("id, company_id, contract_id, invoice_number, invoice_month, invoice_date, due_date, total_amount, subtotal, paid_amount, balance_due, status, payment_status, journal_entry_id, created_at, updated_at")
       .eq("company_id", companyId)
       .in("contract_id", ids)
       .limit(limit);
@@ -1558,7 +1564,7 @@ async function loadInvoicesForContracts(
   for (const ids of chunk(cleanInvoiceIds, 100)) {
     const { data, error } = await supabase
       .from("invoices")
-      .select("id, company_id, contract_id, invoice_number, invoice_date, due_date, total_amount, subtotal, paid_amount, balance_due, status, payment_status, journal_entry_id, updated_at")
+      .select("id, company_id, contract_id, invoice_number, invoice_month, invoice_date, due_date, total_amount, subtotal, paid_amount, balance_due, status, payment_status, journal_entry_id, created_at, updated_at")
       .eq("company_id", companyId)
       .in("id", ids)
       .limit(limit);
@@ -1578,7 +1584,7 @@ async function loadInvoicesByIds(supabase: any, companyId: string, invoiceIds: s
   for (const ids of chunk(Array.from(new Set(invoiceIds.filter(Boolean))), 100)) {
     const { data, error } = await supabase
       .from("invoices")
-      .select("id, company_id, contract_id, invoice_number, invoice_date, due_date, total_amount, subtotal, paid_amount, balance_due, status, payment_status, journal_entry_id")
+      .select("id, company_id, contract_id, invoice_number, invoice_month, invoice_date, due_date, total_amount, subtotal, paid_amount, balance_due, status, payment_status, journal_entry_id, created_at")
       .eq("company_id", companyId)
       .in("id", ids);
 

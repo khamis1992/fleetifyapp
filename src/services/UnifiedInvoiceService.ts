@@ -11,6 +11,7 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import { logger } from '@/lib/logger';
+import { getInvoiceBillingMonthKey } from '@/utils/invoiceBillingMonth';
 
 // =====================================================
 // Types & Interfaces
@@ -516,6 +517,7 @@ class UnifiedInvoiceServiceClass {
         id,
         invoice_number,
         invoice_date,
+        invoice_month,
         due_date,
         total_amount,
         payment_status,
@@ -537,8 +539,9 @@ class UnifiedInvoiceServiceClass {
     const groupedInvoices = new Map<string, typeof invoices>();
 
     for (const invoice of invoices) {
-      const month = getMonthIdentifier(invoice.due_date || invoice.invoice_date);
-      const key = `${invoice.contract_id}-${month}`;
+      const month = getInvoiceBillingMonthKey(invoice);
+      if (!month || !invoice.contract_id) continue;
+      const key = `${invoice.contract_id}|${month}`;
 
       if (!groupedInvoices.has(key)) {
         groupedInvoices.set(key, []);
@@ -562,13 +565,13 @@ class UnifiedInvoiceServiceClass {
 
     for (const [key, group] of groupedInvoices) {
       if (group.length > 1) {
-        const [contractId, month] = key.split('-').slice(0, 2);
+        const [contractId, month] = key.split('|');
         const contractNumber = (group[0].contracts as any)?.contract_number || 'N/A';
 
         duplicates.push({
           contract_id: contractId,
           contract_number: contractNumber,
-          invoice_month: `${key.split('-')[1]}-${key.split('-')[2]}`,
+          invoice_month: month,
           invoices: group.map(inv => ({
             id: inv.id,
             invoice_number: inv.invoice_number,

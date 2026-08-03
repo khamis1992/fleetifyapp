@@ -7,6 +7,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { getEligibleEmployeeProfileIds } from '@/services/employeeAssignmentEligibility';
+import { formatCustomerName } from '@/utils/formatCustomerName';
 import type { 
   EmployeeContract, 
   ContractStats, 
@@ -185,21 +186,7 @@ export const useEmployeeContracts = (
         const customer = contract.customers;
         const violationStats = violationStatsByContract.get(contract.id) || { count: 0, total: 0 };
         
-        // Build customer name with priority: Arabic names > Company name > English names
-        let customerName = 'غير محدد';
-        if (customer) {
-          if (customer.company_name_ar) {
-            customerName = customer.company_name_ar;
-          } else if (customer.first_name_ar && customer.last_name_ar) {
-            customerName = `${customer.first_name_ar} ${customer.last_name_ar}`;
-          } else if (customer.first_name_ar) {
-            customerName = customer.first_name_ar;
-          } else if (customer.first_name && customer.last_name) {
-            customerName = `${customer.first_name} ${customer.last_name}`;
-          } else if (customer.first_name) {
-            customerName = customer.first_name;
-          }
-        }
+        const customerName = formatCustomerName(customer, { preferArabic: true });
 
         return {
           id: contract.id,

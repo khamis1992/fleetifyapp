@@ -509,6 +509,7 @@ export const CallLogDialog: React.FC<CallLogDialogProps> = ({
       queryClient.invalidateQueries({ queryKey: ['employee-contracts'] });
       queryClient.invalidateQueries({ queryKey: ['employee-tasks'] });
       queryClient.invalidateQueries({ queryKey: ['employee-performance'] });
+      queryClient.invalidateQueries({ queryKey: ['employee-daily-activity-metrics'] });
       
       setSavedCommunicationId(communication.id);
       setAIResult(analysisData);

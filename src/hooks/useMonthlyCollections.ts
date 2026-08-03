@@ -1,8 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { startOfMonth, format } from 'date-fns';
 import { formatCustomerName } from '@/utils/formatCustomerName';
+import { getInvoiceBillingMonthKey, getLocalMonthKey } from '@/utils/invoiceBillingMonth';
 
 export interface MonthlyCollectionItem {
   contract_id: string;
@@ -26,6 +26,11 @@ export interface MonthlyCollectionStats {
   collectionRate: number;
   paidCount: number;
   pendingCount: number;
+}
+
+interface MonthlyCollectionInternalItem extends MonthlyCollectionItem {
+  billing_month: string | null;
+  is_current_month: boolean;
 }
 
 // Updated: 2026-01-31 - Fixed payment status display
@@ -55,7 +60,7 @@ export const useMonthlyCollections = () => {
       if (!profile?.id || !profile.company_id) return [];
 
       const today = new Date();
-      const currentMonthStart = startOfMonth(today);
+      const currentMonthKey = getLocalMonthKey(today);
 
       // جلب جميع الفواتير للعقود المخصصة للموظف فقط
       // استخدام inner join للتأكد من جلب العقود المخصصة فقط
@@ -70,6 +75,7 @@ export const useMonthlyCollections = () => {
           payment_status,
           due_date,
           invoice_date,
+          invoice_month,
           contract_id,
           contracts!inner (
             id,
@@ -98,7 +104,7 @@ export const useMonthlyCollections = () => {
       
       console.log('📊 Total invoices fetched for employee:', data?.length);
       console.log('👤 Employee profile ID:', profile.id);
-      console.log('📅 Current month start:', format(currentMonthStart, 'yyyy-MM-dd'));
+      console.log('📅 Current month:', currentMonthKey);
       
       // تحويل جميع البيانات أولاً
       const allInvoices = (data || []).map(inv => {
@@ -113,17 +119,17 @@ export const useMonthlyCollections = () => {
         else if (inv.paid_amount && inv.paid_amount > 0 && inv.paid_amount < inv.total_amount) status = 'partially_paid';
         else if (new Date(inv.due_date || inv.invoice_date) < new Date() && !isPaid) status = 'overdue';
 
-        // تحديد شهر الفاتورة
-        const invoiceDate = new Date(inv.due_date || inv.invoice_date);
-        const invoiceMonthStart = startOfMonth(invoiceDate);
-        const isCurrentMonth = invoiceMonthStart.getTime() === currentMonthStart.getTime();
+        // invoice_month is the canonical accounting period; due_date is only a payment deadline.
+        const billingMonth = getInvoiceBillingMonthKey(inv);
+        const isCurrentMonth = billingMonth === currentMonthKey;
         
         console.log('🔍 Invoice check:', {
           invoice_number: inv.invoice_number,
+          invoice_month: inv.invoice_month,
           due_date: inv.due_date,
           invoice_date: inv.invoice_date,
-          invoiceMonthStart: format(invoiceMonthStart, 'yyyy-MM-dd'),
-          currentMonthStart: format(currentMonthStart, 'yyyy-MM-dd'),
+          billing_month: billingMonth,
+          current_month: currentMonthKey,
           isCurrentMonth,
           amount: inv.total_amount,
           paid_amount: inv.paid_amount,
@@ -141,9 +147,11 @@ export const useMonthlyCollections = () => {
           paid_amount: inv.paid_amount || 0,
           status,
           due_date: inv.due_date || inv.invoice_date,
+          payment_date: undefined,
           is_paid: isPaid,
-          is_current_month: isCurrentMonth, // علامة لتحديد إذا كانت الفاتورة تخص الشهر الحالي
-        } as MonthlyCollectionItem & { is_current_month?: boolean };
+          billing_month: billingMonth,
+          is_current_month: isCurrentMonth,
+        } as MonthlyCollectionInternalItem;
       });
 
       const currentMonthInvoicesCount = allInvoices.filter((i: any) => i.is_current_month).length;
@@ -158,7 +166,7 @@ export const useMonthlyCollections = () => {
         
         // تجميع الفواتير حسب الشهر
         const invoicesByMonth = allInvoices.reduce((acc: any, inv: any) => {
-          const month = format(startOfMonth(new Date(inv.due_date)), 'yyyy-MM');
+          const month = inv.billing_month || 'unknown';
           acc[month] = (acc[month] || 0) + 1;
           return acc;
         }, {});
@@ -167,7 +175,7 @@ export const useMonthlyCollections = () => {
         console.log('📋 Sample invoices (first 5):', allInvoices.slice(0, 5).map((inv: any) => ({
           invoice: inv.invoice_number,
           due_date: inv.due_date,
-          month: format(startOfMonth(new Date(inv.due_date)), 'yyyy-MM'),
+          month: inv.billing_month,
           amount: inv.amount
         })));
       }

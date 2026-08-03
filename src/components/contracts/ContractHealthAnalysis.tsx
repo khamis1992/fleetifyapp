@@ -19,6 +19,8 @@ import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import type { Contract } from '@/types/contracts';
 import type { Invoice } from '@/types/finance.types';
+import { getInvoiceBillingDate, getInvoiceBillingMonthKey } from '@/utils/invoiceBillingMonth';
+import { getExpectedContractInvoiceCount } from '@/utils/contractInvoiceExpectations';
 
 type ContractPaymentRow = {
   id: string;
@@ -149,6 +151,7 @@ type PaymentScheduleLike = {
 };
 
 type InvoiceDateLike = {
+  invoice_month?: string | null;
   invoice_date?: string | null;
   due_date?: string | null;
 };
@@ -233,7 +236,7 @@ export const ContractHealthAnalysis: React.FC<{
 
       let invoicesQuery = supabase
         .from('invoices')
-        .select('id, contract_id, invoice_number, invoice_date, due_date, total_amount, paid_amount, balance_due, status, payment_status, journal_entry_id, created_at, updated_at')
+        .select('id, contract_id, invoice_number, invoice_date, invoice_month, due_date, total_amount, paid_amount, balance_due, status, payment_status, journal_entry_id, created_at, updated_at')
         .eq('company_id', contract.company_id)
         .order('due_date', { ascending: true });
 
@@ -244,7 +247,7 @@ export const ContractHealthAnalysis: React.FC<{
       const invoicesResult = await invoicesQuery;
 
       if (invoicesResult.error) throw invoicesResult.error;
-      const invoices = (invoicesResult.data || []) as ContractHealthInvoice[];
+      const invoices = (invoicesResult.data || []) as unknown as ContractHealthInvoice[];
       const invoiceIds = invoices.map((invoice) => invoice.id).filter(Boolean);
 
       let paymentsQuery = supabase
@@ -874,8 +877,16 @@ function buildContractHealthMetrics({
     : 0;
   const activeSchedules = getUniquePaymentSchedulesByMonth(paymentSchedules, startDate, endDate);
   const activeSchedulesForLinks = getActivePaymentSchedulesForPeriod(paymentSchedules, startDate, endDate);
-  const expectedInvoices = Math.max(activeSchedules.length, expectedByMonths, expectedByAmount);
-  const invoicesInsideContract = activeInvoices.filter((invoice) => isMonthInsideContract(invoice.invoice_date || invoice.due_date, startDate, endDate));
+  const expectedInvoices = getExpectedContractInvoiceCount({
+    hasCompleteContractTerm: Boolean(startDate && endDate),
+    contractTermMonths: expectedByMonths,
+    activeScheduleMonths: activeSchedules.length,
+    amountBasedInstallments: expectedByAmount,
+  });
+  const invoicesInsideContract = activeInvoices.filter((invoice) => {
+    const billingDate = getInvoiceBillingDate(invoice);
+    return billingDate ? isMonthInsideContract(billingDate, startDate, endDate) : false;
+  });
   const invoiceById = new Map(activeInvoices.map((invoice) => [invoice.id, invoice]));
   const invoiceByInvoiceMonth = new Map<string, Invoice>();
   for (const invoice of invoicesInsideContract) {
@@ -905,9 +916,13 @@ function buildContractHealthMetrics({
     return map;
   }, new Map<string, ContractPaymentRow[]>());
   const outsideInvoices = activeInvoices
-    .filter((invoice) => !isMonthInsideContract(invoice.invoice_date || invoice.due_date, startDate, endDate))
+    .filter((invoice) => {
+      const billingDate = getInvoiceBillingDate(invoice);
+      return billingDate ? !isMonthInsideContract(billingDate, startDate, endDate) : true;
+    })
     .map((invoice) => {
-      const nextDueDate = clampDateToContract(invoice.invoice_date || invoice.due_date, contract.start_date, contract.end_date);
+      const billingDate = getInvoiceBillingDate(invoice);
+      const nextDueDate = clampDateToContract(billingDate, contract.start_date, contract.end_date);
       const linkedPayments = linkedPaymentsByInvoiceId.get(invoice.id) || [];
       return {
         id: invoice.id,
@@ -915,7 +930,7 @@ function buildContractHealthMetrics({
         invoice_date: invoice.invoice_date || null,
         due_date: invoice.due_date || null,
         total_amount: Number(invoice.total_amount || 0),
-        reason: isBefore(invoice.invoice_date || invoice.due_date, startDate) ? 'before_start' : 'after_end',
+        reason: isBefore(billingDate, startDate) ? 'before_start' : 'after_end',
         target_month_has_invoice: nextDueDate ? invoiceMonths.has(getMonthKey(nextDueDate)) : false,
         has_linked_payments: linkedPayments.length > 0,
         has_journal_entry: Boolean(invoice.journal_entry_id),
@@ -1491,7 +1506,7 @@ async function getCurrentActiveInvoiceMonthKeys(contract: Contract, paymentSched
 
   let invoicesQuery = supabase
     .from('invoices')
-    .select('id, invoice_date, due_date, status, payment_status')
+    .select('id, invoice_date, invoice_month, due_date, status, payment_status')
     .eq('company_id', contract.company_id);
 
   invoicesQuery = scheduleInvoiceIds.length
@@ -1504,7 +1519,8 @@ async function getCurrentActiveInvoiceMonthKeys(contract: Contract, paymentSched
   const invoiceMonthsSet = new Set<string>();
   for (const invoice of (data || [])) {
     if (isCancelled(invoice.status) || isCancelled(invoice.payment_status)) continue;
-    if (!isMonthInsideContract(invoice.due_date || invoice.invoice_date, startDate, endDate)) continue;
+    const billingDate = getInvoiceBillingDate(invoice);
+    if (!billingDate || !isMonthInsideContract(billingDate, startDate, endDate)) continue;
     const monthKey = getInvoiceMonthKey(invoice);
     if (monthKey !== 'unknown') invoiceMonthsSet.add(monthKey);
   }
@@ -1520,7 +1536,7 @@ async function getCurrentContractInvoices(contract: Contract, paymentSchedules: 
 
   let invoicesQuery = supabase
     .from('invoices')
-    .select('id, contract_id, invoice_number, invoice_date, due_date, total_amount, subtotal, paid_amount, balance_due, status, payment_status, journal_entry_id, created_at, updated_at')
+    .select('id, contract_id, invoice_number, invoice_date, invoice_month, due_date, total_amount, subtotal, paid_amount, balance_due, status, payment_status, journal_entry_id, created_at, updated_at')
     .eq('company_id', contract.company_id)
     .order('invoice_date', { ascending: true });
 
@@ -1530,7 +1546,7 @@ async function getCurrentContractInvoices(contract: Contract, paymentSchedules: 
 
   const { data, error } = await invoicesQuery;
   if (error) throw error;
-  return (data || []) as ContractHealthInvoice[];
+  return (data || []) as unknown as ContractHealthInvoice[];
 }
 
 async function getCurrentContractPaymentSchedules(contract: Contract) {
@@ -1629,21 +1645,19 @@ function getActiveContractInvoicesForPeriod(contract: Contract, invoices: Invoic
 
   return invoices.filter((invoice) => {
     if (isCancelled(invoice.status) || isCancelled(invoice.payment_status)) return false;
-    return isMonthInsideContract(invoice.invoice_date || invoice.due_date, startDate, endDate);
+    const billingDate = getInvoiceBillingDate(invoice);
+    return billingDate ? isMonthInsideContract(billingDate, startDate, endDate) : false;
   });
 }
 
 function getInvoiceMonthKey(invoice: InvoiceDateLike) {
-  return getMonthKey(invoice.invoice_date || invoice.due_date);
+  return getInvoiceBillingMonthKey(invoice) ?? 'unknown';
 }
 
 function getInvoiceMonthKeys(invoice: InvoiceDateLike) {
   const keys = new Set<string>();
-  const invoiceDateKey = getMonthKey(invoice.invoice_date);
-  const dueDateKey = getMonthKey(invoice.due_date);
-
-  if (invoiceDateKey !== 'unknown') keys.add(invoiceDateKey);
-  if (dueDateKey !== 'unknown') keys.add(dueDateKey);
+  const invoiceMonthKey = getInvoiceMonthKey(invoice);
+  if (invoiceMonthKey !== 'unknown') keys.add(invoiceMonthKey);
 
   return keys;
 }
@@ -2733,17 +2747,19 @@ async function createMissingInvoicesFromActiveSchedules({
   if (linkedInvoiceIds.length > 0) {
     const { data: linkedInvoices, error: linkedInvoicesError } = await supabase
       .from('invoices')
-      .select('id, invoice_date, due_date, status, payment_status')
+      .select('id, invoice_date, invoice_month, due_date, status, payment_status')
       .in('id', linkedInvoiceIds)
       .eq('company_id', contract.company_id);
 
     if (linkedInvoicesError) throw linkedInvoicesError;
 
     for (const invoice of linkedInvoices || []) {
+      const billingDate = getInvoiceBillingDate(invoice);
       if (
         !isCancelled(invoice.status)
         && !isCancelled(invoice.payment_status)
-        && isMonthInsideContract(invoice.due_date || invoice.invoice_date, normalizeDate(contract.start_date), normalizeDate(contract.end_date))
+        && !!billingDate
+        && isMonthInsideContract(billingDate, normalizeDate(contract.start_date), normalizeDate(contract.end_date))
       ) {
         const monthKey = getInvoiceMonthKey(invoice);
         activeLinkedInvoiceMonthsById.set(
@@ -2946,7 +2962,7 @@ async function findExistingActiveInvoiceForMonth(contract: Contract, invoiceDate
   const monthKey = getMonthKey(invoiceDate);
   const { data, error } = await supabase
     .from('invoices')
-    .select('id, invoice_date, due_date, status, payment_status')
+    .select('id, invoice_date, invoice_month, due_date, status, payment_status')
     .eq('contract_id', contract.id)
     .eq('company_id', contract.company_id)
     .order('invoice_date', { ascending: true });
@@ -2963,7 +2979,7 @@ async function findAnyExistingInvoiceForMonth(contract: Contract, invoiceDate: s
   const monthKey = getMonthKey(invoiceDate);
   const { data, error } = await supabase
     .from('invoices')
-    .select('id, invoice_date, due_date, status, payment_status')
+    .select('id, invoice_date, invoice_month, due_date, status, payment_status')
     .eq('contract_id', contract.id)
     .eq('company_id', contract.company_id)
     .order('invoice_date', { ascending: true });

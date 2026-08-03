@@ -7,7 +7,7 @@
  */
 
 import { type CSSProperties, type ElementType, type ReactNode, useState, useMemo, useCallback, useEffect, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { motion, AnimatePresence, type Variants } from 'framer-motion';
@@ -110,6 +110,7 @@ import { ContractDocuments } from './ContractDocuments';
 import { ContractHealthAnalysis } from './ContractHealthAnalysis';
 import { OfficialContractView } from './OfficialContractView';
 import { formatCustomerName } from '@/utils/formatCustomerName';
+import { getInvoiceBillingMonthKey } from '@/utils/invoiceBillingMonth';
 import { cn } from '@/lib/utils';
 import { format, differenceInDays } from 'date-fns';
 import { ar } from 'date-fns/locale';
@@ -775,6 +776,18 @@ type ContractTrafficViolation = Database['public']['Tables']['traffic_violations
   description?: string | null;
 };
 
+const CONTRACT_DETAIL_TAB_VALUES = new Set([
+  'health',
+  'financial',
+  'vehicle',
+  'violations',
+  'documents',
+  'contract',
+]);
+
+const getInitialContractTab = (tab: string | null) =>
+  tab && CONTRACT_DETAIL_TAB_VALUES.has(tab) ? tab : 'health';
+
 const ContractTopbarActions = ({
   contract,
   onRenew,
@@ -946,11 +959,7 @@ const isActiveFinancialPayment = (payment: ContractFinancialPayment) => {
 };
 
 const getInvoiceMonthKey = (invoice: Invoice) => {
-  const source = invoice.due_date || invoice.invoice_date || invoice.created_at;
-  if (!source) return 'unknown';
-  const date = new Date(source);
-  if (Number.isNaN(date.getTime())) return String(source).slice(0, 7);
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+  return getInvoiceBillingMonthKey(invoice) ?? 'unknown';
 };
 
 const buildFinancialAIDiagnosis = ({
@@ -2195,6 +2204,7 @@ const ContractDetailsPageRedesigned = () => {
   const { t } = useFleetifyTranslation("ui");
   const { contractNumber } = useParams<{ contractNumber: string }>();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { toast } = useToast();
   const { startTour } = useTourGuide();
   const queryClient = useQueryClient();
@@ -2203,7 +2213,8 @@ const ContractDetailsPageRedesigned = () => {
   const autoSyncedContractIds = useRef<Set<string>>(new Set());
 
   // State
-  const [activeTab, setActiveTab] = useState('health');
+  const requestedTab = searchParams.get('tab');
+  const [activeTab, setActiveTab] = useState(() => getInitialContractTab(requestedTab));
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
   const [isPayDialogOpen, setIsPayDialogOpen] = useState(false);
   const [isPreviewDialogOpen, setIsPreviewDialogOpen] = useState(false);
@@ -2227,6 +2238,11 @@ const ContractDetailsPageRedesigned = () => {
   const [isCancelInvoiceDialogOpen, setIsCancelInvoiceDialogOpen] = useState(false);
   const [quickCrmNote, setQuickCrmNote] = useState('');
   const [quickCrmStatus, setQuickCrmStatus] = useState<'answered' | 'no_answer' | 'busy'>('answered');
+
+  useEffect(() => {
+    const nextTab = getInitialContractTab(requestedTab);
+    setActiveTab((currentTab) => (currentTab === nextTab ? currentTab : nextTab));
+  }, [requestedTab]);
 
   // Fetch contract data with caching
   const { data: contract, isLoading, error } = useQuery({
@@ -2539,7 +2555,7 @@ const ContractDetailsPageRedesigned = () => {
 
   const customerName = useMemo(() => {
     if (!contract?.customer) return 'غير محدد';
-    return formatCustomerName(contract.customer);
+    return formatCustomerName(contract.customer, { preferArabic: true });
   }, [contract?.customer]);
 
   const vehicleName = useMemo(() => {
