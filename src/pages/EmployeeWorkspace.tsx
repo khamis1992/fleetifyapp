@@ -3101,7 +3101,10 @@ export const EmployeeWorkspace: React.FC = () => {
                                       size="sm"
                                       variant="outline"
                                       className="h-8 gap-1 rounded-lg border-[#E2E8F0] bg-white px-2.5 text-[10px] font-bold text-[#173A63] hover:bg-[#EEF5FB] sm:h-9 sm:px-3 sm:text-xs"
-                                      onClick={() => { window.location.href = `tel:${contract.customer_phone}`; }}
+                                      onClick={() => {
+                                        setSelectedContractId(contract.id);
+                                        setShowCallDialog(true);
+                                      }}
                                     >
                                       <Phone className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                                       اتصال
@@ -3818,7 +3821,10 @@ export const EmployeeWorkspace: React.FC = () => {
 
       <CallLogDialog
         open={showCallDialog}
-        onOpenChange={setShowCallDialog}
+        onOpenChange={(open) => {
+          setShowCallDialog(open);
+          if (!open) setSelectedContractId(undefined);
+        }}
         contracts={contractsForDialogs}
         preselectedContractId={selectedContractId}
       />

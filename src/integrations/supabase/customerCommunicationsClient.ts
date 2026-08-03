@@ -20,17 +20,37 @@ export interface CustomerCommunicationRow {
   follow_up_time: string | null;
   follow_up_status: 'pending' | 'completed' | 'cancelled' | null;
   attachments: unknown;
+  transcription_status: 'not_requested' | 'pending' | 'processing' | 'completed' | 'failed';
+  transcript_text: string | null;
+  ai_summary: string | null;
+  ai_analysis: unknown;
+  transcription_error: string | null;
+  transcription_completed_at: string | null;
   created_at: string | null;
   updated_at: string | null;
 }
 
 export type CustomerCommunicationInsert = Omit<
   CustomerCommunicationRow,
-  'id' | 'created_at' | 'updated_at'
+  | 'id'
+  | 'created_at'
+  | 'updated_at'
+  | 'transcription_status'
+  | 'transcript_text'
+  | 'ai_summary'
+  | 'ai_analysis'
+  | 'transcription_error'
+  | 'transcription_completed_at'
 > & {
   id?: string;
   created_at?: string | null;
   updated_at?: string | null;
+  transcription_status?: CustomerCommunicationRow['transcription_status'];
+  transcript_text?: string | null;
+  ai_summary?: string | null;
+  ai_analysis?: unknown;
+  transcription_error?: string | null;
+  transcription_completed_at?: string | null;
 };
 
 interface CustomerCommunicationsDatabase {
