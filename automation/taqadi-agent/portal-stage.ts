@@ -2,6 +2,7 @@ import type { PortalObservation } from './portal-observer';
 
 export type TaqadiPortalStage =
   | 'login'
+  | 'home'
   | 'case_classification'
   | 'case_details'
   | 'parties'
@@ -35,6 +36,7 @@ export interface TaqadiPortalPosition {
 
 const stageLabels: Record<TaqadiPortalStage, string> = {
   login: 'تسجيل الدخول',
+  home: 'الصفحة الرئيسية لتقاضي',
   case_classification: 'تصنيف الدعوى',
   case_details: 'تفاصيل الدعوى',
   parties: 'أطراف الدعوى',
@@ -74,8 +76,14 @@ export function inferPortalStage(
     ...observation.activeTabs,
     ...observation.buttons,
     ...observation.dialogs,
+    ...(observation.activePanels || []),
     ...visibleControls.map((control) => control.label),
   ].join(' '));
+  const activeWizardText = normalizeArabic(
+    (observation.activeWizardSteps || []).join(' '),
+  );
+  const hasActiveWizardText = (...values: string[]) =>
+    includesAny(activeWizardText, values);
   // معرفات الحقول تُجمع من كل الضوابط بما فيها المخفية — حقول Kendo الحقيقية
   // (tempctype_*) تختبئ خلف ودجات ظاهرة، ومعرفها أقوى دليل على المرحلة.
   const controlIds = new Set(
@@ -116,7 +124,17 @@ export function inferPortalStage(
     [hasType('password'), 9, 'password_field'],
     [hasText('تسجيل الدخول', 'توثيق', 'اسم المستخدم'), 3, 'login_text'],
   ]);
+  add('home', [
+    [observation.pageKind === 'home', 14, 'authenticated_home'],
+    [
+      observation.pageKind === 'home'
+        && hasText('إنشاء دعوى', 'إدارة الدعاوى', 'لوحة المهام'),
+      4,
+      'home_navigation',
+    ],
+  ]);
   add('case_classification', [
+    [hasActiveWizardText('نوع الدعوى'), 14, 'active_wizard_step'],
     [hasControl('tempctype_court'), 7, 'litigation_degree_control'],
     [hasControl('tempctype_category'), 5, 'case_type_control'],
     [hasControl('tempctype_type'), 5, 'case_subtype_control'],
@@ -126,6 +144,7 @@ export function inferPortalStage(
     [hasText('درجة التقاضي', 'تصنيف الدعوى'), 3, 'classification_text'],
   ]);
   add('case_details', [
+    [hasActiveWizardText('تفاصيل الدعوى'), 14, 'active_wizard_step'],
     [hasControl('facts'), 10, 'facts_control'],
     [hasControl('applicantReferenceNo'), 4, 'case_title_control'],
     [hasControl('tempCostOrders0.description'), 4, 'claim_amount_control'],
@@ -139,6 +158,7 @@ export function inferPortalStage(
       'اضافة اطراف',
     ]));
   add('parties', [
+    [hasActiveWizardText('أطراف الدعوى', 'اطراف الدعوى'), 14, 'active_wizard_step'],
     [hasControl('category', 'type', 'priority'), 6, 'party_dialog_controls'],
     // زر «إضافة طرف» دليل مباشر على صفحة الأطراف (ظهر في فشل job 2306577d)
     [hasAddPartyButton, 8, 'add_party_button'],
@@ -152,6 +172,7 @@ export function inferPortalStage(
     4, 'party_grid_headers'],
   ]);
   add('documents', [
+    [hasActiveWizardText('المستندات'), 14, 'active_wizard_step'],
     [hasType('file'), 9, 'file_input'],
     [hasText('مستندات الدعوى', 'نوع المستند', 'ارفاق', 'إرفاق', 'رفع ملف'),
     6, 'documents_text'],
@@ -170,6 +191,7 @@ export function inferPortalStage(
     7, 'active_documents_tab'],
   ]);
   add('review', [
+    [hasActiveWizardText('ملخص الدعوى', 'مراجعة الدعوى'), 14, 'active_wizard_step'],
     [hasText('مراجعة الدعوى', 'ملخص الدعوى', 'اعتماد نهائي'), 7, 'review_text'],
     [matches.has('caseTitle'), 3, 'case_title_match'],
     [matches.has('defendantName'), 3, 'defendant_match'],

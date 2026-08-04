@@ -719,7 +719,7 @@ describe('TaqadiPortal classification fields', () => {
               if (event.key !== 'Enter') return;
               document.body.dataset.enterPressed = 'true';
               document.querySelector('.modal').style.display = 'none';
-              document.querySelector('#dashboard').style.display = 'block';
+              document.querySelector('#main').style.display = 'block';
             });
           </script>
           <div class="modal">
@@ -744,7 +744,7 @@ describe('TaqadiPortal classification fields', () => {
               onclick="document.body.dataset.loginClicked='true'"
             >تسجيل الدخول</button>
           </div>
-          <nav id="dashboard" style="display:none">ادارة الدعاوى</nav>
+          <nav id="main" style="display:none">ادارة الدعاوى</nav>
         `,
       });
     });
@@ -753,7 +753,7 @@ describe('TaqadiPortal classification fields', () => {
     await portal.ensureAuthenticated(async () => undefined);
 
     expect(await page.locator('.modal').isVisible()).toBe(false);
-    expect(await page.locator('#dashboard').isVisible()).toBe(true);
+    expect(await page.locator('#main').isVisible()).toBe(true);
     expect(await page.locator('body').getAttribute('data-enter-pressed')).toBe(
       'true',
     );
@@ -771,6 +771,7 @@ describe('TaqadiPortal classification fields', () => {
 
   it('starts login through the Tawtheeq card instead of the password form', async () => {
     let waitingForLogin = false;
+    await page.goto('about:blank');
     await page.route('**/*', async (route) => {
       await route.fulfill({
         contentType: 'text/html; charset=utf-8',
@@ -809,6 +810,42 @@ describe('TaqadiPortal classification fields', () => {
       await page.locator('body').getAttribute('data-password-login'),
     ).toBeNull();
     await page.unroute('**/*');
+  }, 10_000);
+
+  it('does not treat an intermediate NAS prompt as an authenticated session', async () => {
+    const originalLoginTimeout = agentConfig.loginTimeoutMs;
+    agentConfig.loginTimeoutMs = 600;
+
+    try {
+      await page.goto('about:blank');
+      await page.route('**/*', async (route) => {
+        await route.fulfill({
+          contentType: 'text/html; charset=utf-8',
+          body: `
+            <section id="tawtheeq-card">
+              <strong>&#1578;&#1608;&#1579;&#1610;&#1602; TAWTHEEQ</strong>
+              <p>&#1575;&#1604;&#1583;&#1582;&#1608;&#1604; &#1593;&#1576;&#1585; &#1575;&#1604;&#1606;&#1592;&#1575;&#1605; &#1575;&#1604;&#1608;&#1591;&#1606;&#1610;</p>
+              <button
+                type="button"
+                onclick="
+                  history.replaceState({}, '', '/itc/nas/user/prompt');
+                  document.body.innerHTML = '<main id=nas-prompt>NAS account prompt</main>';
+                "
+              >&#1605;&#1578;&#1575;&#1576;&#1593;&#1577;</button>
+            </section>
+          `,
+        });
+      });
+
+      const portal = new TaqadiPortal(page);
+      await expect(
+        portal.ensureAuthenticated(async () => undefined),
+      ).rejects.toMatchObject({ code: 'LOGIN_REQUIRED' });
+      expect(page.url()).toContain('/itc/nas/user/prompt');
+    } finally {
+      agentConfig.loginTimeoutMs = originalLoginTimeout;
+      await page.unroute('**/*');
+    }
   }, 10_000);
 
   it('accepts a redirect to NAS while waiting for the Tawtheeq card', async () => {
@@ -1017,18 +1054,27 @@ describe('TaqadiPortal classification fields', () => {
     await page.setContent(`
       <script>
         window.renderIdentityNumber = () => {
-          document.querySelector('#identity-number-slot').innerHTML =
+          document.querySelector('#party-editor #identity-number-slot').innerHTML =
             '<label for="residencyCardNumber">رقم البطاقة *</label>'
             + '<input id="residencyCardNumber">';
-          document.querySelector('#firstName').value = '';
-          document.querySelector('#lastName').value = '';
-          document.querySelector('#priority').value = '1';
+          document.querySelector('#party-editor #firstName').value = '';
+          document.querySelector('#party-editor #lastName').value = '';
+          document.querySelector('#party-editor #priority').value = '1';
         };
       </script>
       <section id="background-form">
         <label for="type">صفة الطرف</label>
         <select id="type"><option>محامي</option></select>
       </section>
+      <div id="stale-representative-editor" class="modal" style="display:none">
+        <input id="firstName" value="خميس">
+        <input id="lastName" value="الجبر">
+        <input id="residencyCardNumber" value="">
+        <input id="mobileNo" value="97466707063">
+        <input id="email" value="Khamis-1992@hotmail.com">
+        <input id="addresses0.address" value="الدوحة - قطر">
+        <input id="priority" value="1">
+      </div>
       <div class="tab-pane active" data-tabpane-name="case_party_grid">
         <button
           type="button"
@@ -1079,7 +1125,7 @@ describe('TaqadiPortal classification fields', () => {
         <input id="priority">
         <button
           type="button"
-          onclick="this.dataset.saved='true'; document.querySelector('.tab-pane table').innerHTML='<tr role=&quot;row&quot;><td>'+document.querySelector('#firstName').value+' '+document.querySelector('#lastName').value+'</td><td>شخص طبيعي</td><td>المدعى عليه</td><td>'+document.querySelector('#priority').value+'</td></tr>'; this.closest('.modal').style.display='none'"
+          onclick="this.dataset.saved='true'; document.querySelector('.tab-pane table').innerHTML='<tr role=&quot;row&quot;><td>'+document.querySelector('#party-editor #firstName').value+' '+document.querySelector('#party-editor #lastName').value+'</td><td>شخص طبيعي</td><td>المدعى عليه</td><td>'+document.querySelector('#party-editor #priority').value+'</td></tr>'; this.closest('.modal').style.display='none'"
         >حفظ</button>
       </div>
     `);
@@ -1093,12 +1139,12 @@ describe('TaqadiPortal classification fields', () => {
                   ?.querySelector('input.k-formatted-value');
                 if (formatted) formatted.value = String(value);
                 const address = document.querySelector(
-                  '#addresses0\\\\.address'
+                  '#party-editor #addresses0\\\\.address'
                 );
                 if (element.id === 'mobileNo' && address) {
                   address.value = '';
-                  document.querySelector('#firstName').value = '';
-                  document.querySelector('#lastName').value = '';
+                  document.querySelector('#party-editor #firstName').value = '';
+                  document.querySelector('#party-editor #lastName').value = '';
                 }
               },
               trigger: () => undefined,
@@ -1142,7 +1188,7 @@ describe('TaqadiPortal classification fields', () => {
       await page.locator('#party-editor [id="nationality"]').inputValue(),
     ).toBe('سودان');
     expect(
-      await page.locator('#residencyCardNumber').inputValue(),
+      await page.locator('#party-editor #residencyCardNumber').inputValue(),
     ).toBe('12345678901');
     expect(
       await page.locator('#party-editor [id="firstName"]').inputValue(),
@@ -1346,6 +1392,7 @@ describe('TaqadiPortal classification fields', () => {
   });
 
   it('opens case management when Taqadi omits the Arabic hamza', async () => {
+    await page.goto('about:blank');
     await page.setContent(`
       <nav>
         <a
@@ -1364,5 +1411,61 @@ describe('TaqadiPortal classification fields', () => {
     await portal.openNewCase();
 
     expect(await page.locator('body').getAttribute('data-opened')).toBe('true');
+  });
+
+  it('never searches case-management menus on an expired login page', async () => {
+    await page.route('https://taqadi.sjc.gov.qa/itc/login**', async (route) => {
+      await route.fulfill({
+        contentType: 'text/html; charset=utf-8',
+        body: `
+          <main>
+            <form>
+              <input id="username" name="username">
+              <input id="password" name="password" type="password">
+            </form>
+          </main>
+        `,
+      });
+    });
+    await page.goto('https://taqadi.sjc.gov.qa/itc/login');
+
+    const portal = new TaqadiPortal(page);
+    await expect(portal.openNewCase()).rejects.toMatchObject({
+      code: 'LOGIN_REQUIRED',
+    });
+    expect(page.url()).not.toContain('caseinfo/create');
+    await page.unroute('**/*');
+  });
+
+  it('opens the verified create route without depending on menu labels', async () => {
+    await page.route('https://taqadi.sjc.gov.qa/itc/home**', async (route) => {
+      await route.fulfill({
+        contentType: 'text/html; charset=utf-8',
+        body: `
+          <header id="header">Taqadi</header>
+          <aside id="left-panel">Authenticated user</aside>
+          <main id="main"></main>
+          <form id="logout-form"></form>
+          <script>
+            const renderRoute = () => {
+              if (!location.hash.includes('/itc/f/caseinfo/create')) return;
+              document.querySelector('#main').innerHTML =
+                '<label for="tempctype_court">&#1583;&#1585;&#1580;&#1577; &#1575;&#1604;&#1578;&#1602;&#1575;&#1590;&#1610;</label>'
+                + '<select id="tempctype_court"><option>1</option></select>';
+            };
+            window.addEventListener('hashchange', renderRoute);
+            renderRoute();
+          </script>
+        `,
+      });
+    });
+    await page.goto('https://taqadi.sjc.gov.qa/itc/home');
+
+    const portal = new TaqadiPortal(page);
+    await portal.openNewCase();
+
+    expect(page.url()).toContain('#/itc/f/caseinfo/create');
+    expect(await page.locator('#tempctype_court').isVisible()).toBe(true);
+    await page.unroute('**/*');
   });
 });

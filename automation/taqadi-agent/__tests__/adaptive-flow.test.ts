@@ -16,6 +16,20 @@ const position = (
 });
 
 describe('adaptive Taqadi flow planning', () => {
+  it('recovers from the authenticated home page by opening a new case', () => {
+    expect(planPortalAction(position({
+      stage: 'home',
+      label: 'الصفحة الرئيسية لتقاضي',
+      confidence: 'high',
+      score: 18,
+      evidence: ['authenticated_home'],
+    }))).toMatchObject({
+      action: 'open_new_case',
+      expectedStage: 'case_classification',
+      safeToRun: true,
+    });
+  });
+
   it('plans one action from the page that is actually visible', () => {
     expect(planPortalAction(position({
       stage: 'parties',

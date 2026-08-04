@@ -18,6 +18,29 @@ details never contain field values, only control identities and `hasValue`
 flags. Existing party and document handlers remain idempotent so resuming does
 not intentionally create duplicate rows.
 
+Version 1.1 adds three guarantees learned from live filing traces:
+
+- The authenticated `/itc/home` route is a first-class state. During a safe
+  pre-submission resume, the worker opens the create-case SPA route instead of
+  stopping with an unknown-page message.
+- Page identity must remain stable across consecutive DOM observations. The
+  selected wizard percentage/step and visible content pane outrank labels from
+  hidden panes and permanent navigation.
+- Party fields are read only from the currently visible dialog. Hidden old
+  dialogs may reuse the same input ids, but can no longer be mistaken for the
+  defendant. Grid and dialog readiness also replace fixed ten-second sleeps.
+
+Version 1.2 hardens the authentication boundary:
+
+- NAS callbacks and account-selection prompts are intermediate states, never
+  proof that the Taqadi session is authenticated.
+- A filing starts only after the worker verifies the `/itc/home` shell. If the
+  portal redirects back to `/itc/login`, the worker reports a login problem
+  instead of searching that page for case-management menus.
+- New cases use the verified SPA create route first. The documented
+  case-management menu is an authenticated fallback only, and every path must
+  end with visible classification controls before the workflow proceeds.
+
 ## Setup
 
 1. Apply migration `20260728120000_taqadi_filing_automation.sql`.

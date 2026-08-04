@@ -213,4 +213,35 @@ describe('semantic Taqadi page inference', () => {
     );
     expect(result.score || 0).toBeGreaterThanOrEqual(8);
   });
+
+  it('recognizes the authenticated home page instead of requesting a human', () => {
+    const result = inferPortalStage(observation({
+      url: 'https://taqadi.sjc.gov.qa/itc/home',
+      pageKind: 'home',
+      buttons: ['لوحة المهام', 'إنشاء دعوى'],
+      links: ['إدارة الدعاوى'],
+    }));
+
+    expect(result).toMatchObject({
+      stage: 'home',
+      confidence: 'high',
+    });
+    expect(result.evidence).toContain('authenticated_home');
+  });
+
+  it('uses the selected 60 percent wizard marker to recognize documents', () => {
+    const result = inferPortalStage(observation({
+      headings: ['دعوى', 'المستندات'],
+      activeWizardSteps: ['60% المستندات'],
+      buttons: ['إضافة وثيقة', 'مسح الفلاتر', 'التالي'],
+      activePanels: ['case_documents_grid المستندات'],
+      controls: [],
+    }));
+
+    expect(result).toMatchObject({
+      stage: 'documents',
+      confidence: 'high',
+    });
+    expect(result.evidence).toContain('active_wizard_step');
+  });
 });

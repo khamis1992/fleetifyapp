@@ -28,6 +28,12 @@ export interface PortalObservation {
   validationMessages: string[];
   controls: ObservedControl[];
   knownValueMatches: string[];
+  /** High-level shell identity, independent from the current wizard step. */
+  pageKind?: 'login' | 'account_prompt' | 'home' | 'case_wizard' | 'unknown';
+  /** Visible wizard step selected by Taqadi (for example 60% / المستندات). */
+  activeWizardSteps?: string[];
+  /** Identity/text of the currently rendered content pane, excluding side navigation. */
+  activePanels?: string[];
 }
 
 const unique = (values: string[]) =>
@@ -64,6 +70,7 @@ export async function observeTaqadiPage(
         .map(text)
         .filter(Boolean)
         .slice(0, limit);
+    const normalized = (value: string) => value.replace(/\s+/g, ' ').trim();
     const labelFor = (element: Element) => {
       const control = element as HTMLInputElement;
       const ariaLabel = control.getAttribute('aria-label');
@@ -145,6 +152,67 @@ export async function observeTaqadiPage(
         typeof value === 'string' && value.length > 0 && bodyText.includes(value))
       .map(([key]) => key);
 
+    const currentUrl = window.location.href;
+    const hasCaseWizardUrl = /#\/itc\/f\/caseinfo\/create/i.test(currentUrl);
+    const activePanels = Array.from(document.querySelectorAll(
+      '.tab-pane.active, [data-tabpane-name].active, '
+      + '[role="tabpanel"][aria-hidden="false"], .k-content.k-state-active',
+    ))
+      .filter(visible)
+      .map((element) => {
+        const identity = [
+          element.id,
+          element.getAttribute('data-tabpane-name'),
+          text(element.querySelector('h1, h2, h3, legend, .panel-title')),
+        ].filter(Boolean).join(' ');
+        return normalized(identity || text(element).slice(0, 180));
+      })
+      .filter(Boolean)
+      .slice(0, 20);
+
+    // The case wizard keeps all step names in the DOM. Only the selected
+    // marker (class/aria state or highlighted percentage circle) identifies
+    // the page that the user can actually see.
+    const wizardCandidates = Array.from(document.querySelectorAll(
+      '[aria-current="step"], [class*="step"], [class*="wizard"] li, '
+      + '[class*="progress"] li, [class*="progress"] [class*="item"]',
+    )).filter(visible);
+    const activeWizardSteps = wizardCandidates
+      .filter((element) => {
+        const className = String(element.getAttribute('class') || '').toLowerCase();
+        const ariaCurrent = element.getAttribute('aria-current');
+        const ariaSelected = element.getAttribute('aria-selected');
+        if (ariaCurrent === 'step' || ariaSelected === 'true') return true;
+        if (/(^|\s)(active|current|selected|in-progress|k-state-selected)(\s|$)/.test(className)) {
+          return true;
+        }
+        const percentage = normalized(text(element)).match(/(?:^|\s)(0|20|40|60|80|100)%/);
+        if (!percentage) return false;
+        const circle = element.querySelector(
+          '[class*="circle"], [class*="percent"], [class*="number"], .active, .current',
+        ) as HTMLElement | null;
+        if (!circle || !visible(circle)) return false;
+        const style = window.getComputedStyle(circle);
+        const background = style.backgroundColor;
+        return background !== 'rgba(0, 0, 0, 0)'
+          && background !== 'transparent'
+          && background !== 'rgb(169, 169, 169)';
+      })
+      .map((element) => normalized(text(element)))
+      .filter(Boolean)
+      .slice(0, 10);
+
+    const hasPassword = controls.some((control) => control.type === 'password');
+    const pageKind = /\/nas\/user\/prompt/i.test(currentUrl)
+      ? 'account_prompt'
+      : (/\/login(?:[/?#]|$)/i.test(currentUrl) || hasPassword)
+        ? 'login'
+        : hasCaseWizardUrl || activeWizardSteps.length > 0
+          ? 'case_wizard'
+          : /\/itc\/home(?:[/?#]|$)/i.test(currentUrl)
+            ? 'home'
+            : 'unknown';
+
     return {
       title: document.title || '',
       headings: visibleTexts('h1, h2, h3, [role="heading"]', 40),
@@ -170,6 +238,9 @@ export async function observeTaqadiPage(
       ),
       controls,
       knownValueMatches,
+      pageKind,
+      activeWizardSteps,
+      activePanels,
     };
   }, knownValues);
 
@@ -185,6 +256,9 @@ export async function observeTaqadiPage(
     validationMessages: unique(snapshot.validationMessages),
     controls: snapshot.controls,
     knownValueMatches: snapshot.knownValueMatches,
+    pageKind: snapshot.pageKind as PortalObservation['pageKind'],
+    activeWizardSteps: unique(snapshot.activeWizardSteps),
+    activePanels: unique(snapshot.activePanels),
   };
 }
 

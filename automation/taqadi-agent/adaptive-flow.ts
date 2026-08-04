@@ -4,6 +4,7 @@ import type {
 } from './portal-stage';
 
 export type AdaptivePortalAction =
+  | 'open_new_case'
   | 'configure_case'
   | 'fill_case_details'
   | 'process_parties'
@@ -13,6 +14,7 @@ export type AdaptivePortalAction =
   | 'request_human';
 
 const nextStage: Partial<Record<TaqadiPortalStage, TaqadiPortalStage>> = {
+  home: 'case_classification',
   case_classification: 'case_details',
   case_details: 'parties',
   parties: 'documents',
@@ -21,6 +23,7 @@ const nextStage: Partial<Record<TaqadiPortalStage, TaqadiPortalStage>> = {
 
 const actionByStage: Record<TaqadiPortalStage, AdaptivePortalAction> = {
   login: 'wait_for_login',
+  home: 'open_new_case',
   case_classification: 'configure_case',
   case_details: 'fill_case_details',
   parties: 'process_parties',
@@ -79,6 +82,7 @@ export function planPortalAction(
 
 const stageOrder: TaqadiPortalStage[] = [
   'login',
+  'home',
   'case_classification',
   'case_details',
   'parties',

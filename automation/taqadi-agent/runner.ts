@@ -588,7 +588,7 @@ export class TaqadiWorker {
         }
         const plan = planPortalAction(position);
         caseDraftStarted = caseDraftStarted
-          || !['login', 'case_classification', 'unknown']
+          || !['login', 'home', 'case_classification', 'unknown']
             .includes(position.stage);
 
         await this.queue.update(job.id, {
@@ -650,7 +650,17 @@ export class TaqadiWorker {
           );
         }
 
-        if (plan.action === 'configure_case') {
+        if (plan.action === 'open_new_case') {
+          await this.queue.update(job.id, {
+            status: 'filling_case',
+            step: 'open_case',
+            progress: 18,
+            message: 'تم التعرف على الصفحة الرئيسية؛ جاري فتح نموذج الدعوى مباشرة',
+            details: { resumedFromHome: resumeRequested || autoHealAttempts > 0 },
+          });
+          await portal.openNewCase();
+          caseDraftStarted = true;
+        } else if (plan.action === 'configure_case') {
           await this.queue.update(job.id, {
             status: 'filling_case',
             step: 'classification',

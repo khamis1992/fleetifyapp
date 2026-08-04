@@ -100,6 +100,7 @@ Removing them causes "useState is null" / "createContext" errors in production.
 - `chart_of_accounts`: only `is_header = false AND account_level >= 3` can have postings
 - `journal_entry_lines`: each entry must have ≥2 lines, balanced debits/credits
 - Always filter by `company_id` — RLS policies enforce company isolation
+- **Invoice due dates are PREPAID**: `due_date` is ALWAYS the 1st of the invoice's own month (`due_date = date_trunc('month', invoice_month)`). Enforced DB-wide by `trg_enforce_invoice_date_first_of_month` on INSERT/UPDATE — never write a different due date; the legacy "M+1" pattern was migrated away on 2026-08-04 (audit trail: `audit_logs.action = 'invoice_due_date_prepaid_migration'`)
 
 ## Build & Deploy
 

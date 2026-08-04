@@ -6,7 +6,7 @@ import type {
 } from 'playwright';
 import { agentConfig } from './config';
 import { expandFieldLookup } from './selector-overrides';
-import { stageReached } from './adaptive-flow';
+import { stageOrderIndex, stageReached } from './adaptive-flow';
 import {
   observeTaqadiPage,
   summarizeObservation,
@@ -60,6 +60,17 @@ export const defendantFieldValueMatches = (
     const current = normalizeTaqadiPhone(currentValue);
     const expected = normalizeTaqadiPhone(expectedValue);
     return current.length > 0 && current === expected;
+  }
+  if (key === 'email') {
+    return normalizeText(currentValue || '').toLowerCase()
+      === normalizeText(expectedValue).toLowerCase();
+  }
+  if (key === 'address') {
+    const comparable = (value: string) => normalizeText(value)
+      .replace(/[-–—،,]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+    return comparable(currentValue || '') === comparable(expectedValue);
   }
   return normalizeText(currentValue || '') === normalizeText(expectedValue);
 };
@@ -141,9 +152,6 @@ const nationalityForTaqadi = (nationality: string) =>
   taqadiNationalityAliases.get(normalizeArabicText(nationality))
   || nationality;
 
-const partyStabilizationMs = process.env.NODE_ENV === 'test'
-  ? 0
-  : 10_000;
 const maxDropdownOptionCount = 500;
 
 type FieldRoot = Page | Locator;
@@ -211,14 +219,73 @@ export class TaqadiPortal {
     return null;
   }
 
+  private loadingMasks() {
+    return this.page.locator(
+      '.k-loading-mask:visible, .blockUI:visible, '
+      + '.loading-overlay:visible, [aria-busy="true"]:visible',
+    );
+  }
+
+  private async waitForUiReady(timeoutMs = 8_000) {
+    await this.loadingMasks().waitFor({
+      state: 'hidden',
+      timeout: timeoutMs,
+    }).catch(() => undefined);
+  }
+
+  /**
+   * Taqadi frequently redraws controls or briefly places a loading mask over
+   * them. A bounded trial click prevents both intercepted clicks and clicks on
+   * stale nodes; keyboard activation is the safe fallback for a focused
+   * button/link.
+   */
+  private async clickStable(target: Locator, description: string) {
+    let lastError: unknown = null;
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      await this.waitForUiReady();
+      await target.scrollIntoViewIfNeeded().catch(() => undefined);
+      const usable = await target.isVisible().catch(() => false)
+        && await target.isEnabled().catch(() => false);
+      if (!usable) {
+        await this.page.waitForTimeout(180);
+        continue;
+      }
+      try {
+        await target.click({ trial: true, timeout: 3_000 });
+        await target.click({ timeout: 5_000 });
+        await this.waitForUiReady();
+        return;
+      } catch (error) {
+        lastError = error;
+        if (attempt === 1) {
+          await target.focus().catch(() => undefined);
+          await this.page.keyboard.press('Enter').catch(() => undefined);
+          await this.waitForUiReady();
+          return;
+        }
+        await this.page.waitForTimeout(220);
+      }
+    }
+    throw new HumanInterventionError(
+      `تعذر الضغط على «${description}» بعد التحقق من ظهوره`,
+      'TAQADI_CONTROL_NOT_ACTIONABLE',
+      {
+        description,
+        url: this.page.url(),
+        cause: lastError instanceof Error ? lastError.message : String(lastError || ''),
+      },
+    );
+  }
+
   private async clickAny(
     names: string[],
     description: string,
   ): Promise<void> {
     const locators = names.flatMap((name) => [
+      this.page.getByRole('button', { name, exact: true }),
+      this.page.getByRole('link', { name, exact: true }),
       this.page.getByRole('button', { name, exact: false }),
       this.page.getByRole('link', { name, exact: false }),
-      this.page.getByText(name, { exact: false }),
     ]);
     let target = await this.firstVisible(locators);
     if (!target) {
@@ -226,21 +293,44 @@ export class TaqadiPortal {
         'button, a, [role="button"], [role="link"], li',
       );
       const expectedNames = names.map(normalizeArabicText);
-      const candidateCount = Math.min(await candidates.count(), 300);
-      for (let index = 0; index < candidateCount; index += 1) {
-        const candidate = candidates.nth(index);
-        if (!(await candidate.isVisible().catch(() => false))) continue;
-        const candidateText = normalizeArabicText(
-          await candidate.innerText().catch(() => ''),
-        );
-        if (
-          candidateText
-          && expectedNames.some((name) => candidateText.includes(name))
-        ) {
-          target = candidate;
-          break;
-        }
-      }
+      const bestIndex = await candidates.evaluateAll((elements, expected) => {
+        const normalize = (value: string) => value
+          .normalize('NFKD')
+          .replace(/[\u064B-\u065F\u0670]/g, '')
+          .replace(/[أإآٱ]/g, 'ا')
+          .replace(/ى/g, 'ي')
+          .replace(/\s+/g, ' ')
+          .trim()
+          .toLowerCase();
+        const visible = (element: Element) => {
+          const node = element as HTMLElement;
+          const style = window.getComputedStyle(node);
+          const rect = node.getBoundingClientRect();
+          return style.display !== 'none' && style.visibility !== 'hidden'
+            && rect.width > 0 && rect.height > 0;
+        };
+        let best = { index: -1, score: 0 };
+        elements.slice(0, 300).forEach((element, index) => {
+          if (!visible(element)) return;
+          const control = element as HTMLButtonElement;
+          if (control.disabled || element.getAttribute('aria-disabled') === 'true') return;
+          const label = normalize([
+            element.getAttribute('aria-label'),
+            element.getAttribute('title'),
+            element.textContent,
+          ].filter(Boolean).join(' '));
+          if (!label) return;
+          const score = (expected as string[]).reduce((value, name) => {
+            if (label === name) return Math.max(value, 100);
+            if (label.startsWith(name)) return Math.max(value, 80);
+            if (label.includes(name)) return Math.max(value, 50);
+            return value;
+          }, 0) - Math.min(label.length, 120) / 100;
+          if (score > best.score) best = { index, score };
+        });
+        return best.index;
+      }, expectedNames).catch(() => -1);
+      if (bestIndex >= 0) target = candidates.nth(bestIndex);
     }
     if (!target) {
       throw new HumanInterventionError(
@@ -249,7 +339,7 @@ export class TaqadiPortal {
         { expectedLabels: names, url: this.page.url() },
       );
     }
-    await target.click();
+    await this.clickStable(target, description);
   }
 
   private async confirmAccountPromptWithEnterIfNeeded() {
@@ -1132,7 +1222,7 @@ export class TaqadiPortal {
     // (رُصدت دورة كاملة ≈ 28 ثانية في مهمة حقيقية). الآن نقرأ كل الحقول في
     // evaluate واحدة بالمعرفات الحتمية، ولا نملأ إلا الحقول المختلفة فعلاً —
     // الدورة النموذجية تنخفض إلى أقل من ثانية.
-    const deadline = Date.now() + Math.max(agentConfig.actionTimeoutMs, 120_000);
+    const deadline = Date.now() + Math.max(agentConfig.actionTimeoutMs, 20_000);
     let stableSince: number | null = null;
     let latestValues: Record<string, string | null> = {};
 
@@ -1144,26 +1234,46 @@ export class TaqadiPortal {
         // never element ids, so they are never a fallback here.
         ids: field.controlIds.length > 0 ? field.controlIds : [field.key],
       }));
-      return await this.page.evaluate((entries) => {
-        const result: Record<string, string | null> = {};
-        const readById = (id: string): string | null => {
-          const element = document.getElementById(id);
-          if (
-            element
-            && (element instanceof HTMLInputElement
-              || element instanceof HTMLTextAreaElement
-              || element instanceof HTMLSelectElement)
-          ) {
-            return element.value;
+      if (root === this.page) {
+        return await this.page.evaluate((entries) => {
+          const result: Record<string, string | null> = {};
+          const controls = Array.from(document.querySelectorAll('[id]'));
+          for (const entry of entries as Array<{ key: string; ids: string[] }>) {
+            let value: string | null = null;
+            for (const id of entry.ids) {
+              const normalizedId = id.replace(/\./g, '_');
+              const element = controls.find((candidate) =>
+                candidate.id === id || candidate.id === normalizedId);
+              if (
+                element instanceof HTMLInputElement
+                || element instanceof HTMLTextAreaElement
+                || element instanceof HTMLSelectElement
+              ) {
+                value = element.value;
+                break;
+              }
+            }
+            result[entry.key] = value;
           }
-          return null;
-        };
+          return result;
+        }, idMap).catch(() => ({} as Record<string, string | null>));
+      }
+
+      return await (root as Locator).evaluate((container, entries) => {
+        const result: Record<string, string | null> = {};
+        const controls = Array.from(container.querySelectorAll('[id]'));
         for (const entry of entries as Array<{ key: string; ids: string[] }>) {
           let value: string | null = null;
           for (const id of entry.ids) {
-            const byId = readById(id) ?? readById(id.replace(/\./g, '_'));
-            if (byId !== null && byId !== undefined) {
-              value = byId;
+            const normalizedId = id.replace(/\./g, '_');
+            const element = controls.find((candidate) =>
+              candidate.id === id || candidate.id === normalizedId);
+            if (
+              element instanceof HTMLInputElement
+              || element instanceof HTMLTextAreaElement
+              || element instanceof HTMLSelectElement
+            ) {
+              value = element.value;
               break;
             }
           }
@@ -1191,6 +1301,16 @@ export class TaqadiPortal {
     };
 
     do {
+      if (
+        root !== this.page
+        && !(await (root as Locator).isVisible().catch(() => false))
+      ) {
+        throw new HumanInterventionError(
+          'أغلق تقاضي نموذج المدعى عليه أو استبدله أثناء تعبئة البيانات',
+          'DEFENDANT_DIALOG_CHANGED',
+          { url: this.page.url() },
+        );
+      }
       latestValues = await readValuesHybrid();
       for (const field of fields) {
         if (defendantFieldValueMatches(field.key, latestValues[field.key], field.value)) {
@@ -2350,13 +2470,19 @@ export class TaqadiPortal {
     return false;
   }
 
+  private async confirmAccountPromptAndAdoptPortalPage() {
+    // The NAS callback can pause on an account-selection prompt before the
+    // authenticated shell exists. Confirming that prompt is not proof of a
+    // successful login: Taqadi may still bounce back to /itc/login. Always
+    // re-check the resulting page before allowing the filing workflow to run.
+    await this.confirmAccountPromptWithEnterIfNeeded();
+    return this.adoptAuthenticatedPortalPage();
+  }
+
   async ensureAuthenticated(
     onWaitingForLogin: () => Promise<void>,
   ): Promise<void> {
-    if (await this.adoptAuthenticatedPortalPage()) {
-      await this.confirmAccountPromptWithEnterIfNeeded();
-      return;
-    }
+    if (await this.confirmAccountPromptAndAdoptPortalPage()) return;
 
     await this.page.goto(agentConfig.portalUrl, {
       waitUntil: 'domcontentloaded',
@@ -2364,20 +2490,32 @@ export class TaqadiPortal {
     });
     await this.page.waitForTimeout(2_000);
 
-    if (
-      await this.adoptAuthenticatedPortalPage()
-      || (!(await this.looksLoggedOut()) && !(await this.captchaVisible()))
-    ) {
-      await this.confirmAccountPromptWithEnterIfNeeded();
-      return;
-    }
+    if (await this.confirmAccountPromptAndAdoptPortalPage()) return;
 
     await this.page.bringToFront();
     await onWaitingForLogin();
     await this.startTawtheeqLoginIfNeeded();
     const deadline = Date.now() + agentConfig.loginTimeoutMs;
+    let automaticLoginRestarts = 0;
     while (Date.now() < deadline) {
-      await this.page.waitForTimeout(1_000);
+      if (await this.confirmAccountPromptAndAdoptPortalPage()) return;
+
+      // A failed/expired NAS callback can return to the login shell after the
+      // credentials were submitted. Retry the complete Tawtheeq handshake
+      // once; importantly, never interpret the intermediate prompt as an
+      // authenticated application page.
+      if (
+        this.isTaqadiLoginPage()
+        && this.tawtheeqLoginSubmitted
+        && automaticLoginRestarts < 1
+      ) {
+        automaticLoginRestarts += 1;
+        this.tawtheeqCredentialsFilled = false;
+        this.tawtheeqLoginSubmitted = false;
+      }
+      if (this.isTaqadiLoginPage()) {
+        await this.startTawtheeqLoginIfNeeded();
+      }
       await this.continueTawtheeqLoginIfReady();
       const authenticationError = await this.tawtheeqAuthenticationError();
       if (authenticationError) {
@@ -2387,13 +2525,8 @@ export class TaqadiPortal {
           { url: this.page.url() },
         );
       }
-      if (
-        await this.adoptAuthenticatedPortalPage()
-        || (!(await this.looksLoggedOut()) && !(await this.captchaVisible()))
-      ) {
-        await this.confirmAccountPromptWithEnterIfNeeded();
-        return;
-      }
+      if (await this.confirmAccountPromptAndAdoptPortalPage()) return;
+      await this.page.waitForTimeout(500);
     }
 
     throw new HumanInterventionError(
@@ -2409,13 +2542,57 @@ export class TaqadiPortal {
   async detectCurrentPosition(
     payload: FilingPayload,
   ): Promise<TaqadiPortalPosition> {
-    const observation = await observeTaqadiPage(this.page, payload);
-    const position = inferPortalStage(observation);
+    let previous: TaqadiPortalPosition | null = null;
+    let best: TaqadiPortalPosition | null = null;
 
-    return {
-      ...position,
-      url: observation.url,
-      validationMessages: observation.validationMessages,
+    // A single DOM sample is unreliable while Kendo swaps wizard panes. Two
+    // matching samples are cheap (~180ms) and remove the intermittent
+    // "unknown page" handoffs seen when the SPA is still painting.
+    for (let sample = 0; sample < 3; sample += 1) {
+      const observation = await observeTaqadiPage(this.page, payload);
+      const inferred = inferPortalStage(observation);
+      const position: TaqadiPortalPosition = {
+        ...inferred,
+        url: observation.url,
+        validationMessages: observation.validationMessages,
+      };
+
+      if (!best || (position.score || 0) >= (best.score || 0)) best = position;
+      if (previous?.stage === position.stage && position.stage !== 'unknown') {
+        return {
+          ...position,
+          confidence: (
+            previous.confidence === 'high'
+            || position.confidence === 'high'
+            || (position.score || 0) >= 8
+          ) ? 'high' : position.confidence,
+          evidence: [...new Set([
+            ...(previous.evidence || []),
+            ...(position.evidence || []),
+            'stable_observation',
+          ])],
+        };
+      }
+
+      // When the wizard advances between samples, prefer the newer forward
+      // stage instead of the older stage's larger raw score.
+      if (
+        previous
+        && stageOrderIndex(position.stage) > stageOrderIndex(previous.stage)
+      ) best = position;
+      previous = position;
+      if (sample < 2) await this.page.waitForTimeout(180);
+    }
+
+    return best || {
+      stage: 'unknown',
+      label: 'صفحة غير معروفة',
+      confidence: 'low',
+      score: 0,
+      evidence: [],
+      candidates: [],
+      url: this.page.url(),
+      validationMessages: [],
     };
   }
 
@@ -2475,6 +2652,102 @@ export class TaqadiPortal {
   }
 
   async openNewCase() {
+    let currentUrl = this.page.url();
+    const realTaqadiPortal = /https?:\/\/([^.]+\.)*taqadi\.sjc\.gov\.qa/i
+      .test(currentUrl);
+
+    if (realTaqadiPortal) {
+      const authenticated = await this.adoptAuthenticatedPortalPage();
+      if (!authenticated) {
+        throw new HumanInterventionError(
+          'انتهت جلسة تقاضي قبل فتح الدعوى؛ يجب إكمال تسجيل الدخول أولًا',
+          'LOGIN_REQUIRED',
+          {
+            url: currentUrl,
+            requiredActions: ['إكمال تسجيل الدخول عبر توثيق'],
+            resumeSupported: true,
+          },
+        );
+      }
+      currentUrl = this.page.url();
+    }
+
+    const createUrl = realTaqadiPortal
+      ? (() => {
+          const url = new URL('/itc/home', currentUrl);
+          url.hash = '/itc/f/caseinfo/create';
+          return url.toString();
+        })()
+      : null;
+    const classificationVisible = async () => (
+      await this.page.locator('[id^="tempctype_"]').first()
+        .isVisible().catch(() => false)
+      || await this.page.getByText('درجة التقاضي', { exact: false }).first()
+        .isVisible().catch(() => false)
+    );
+
+    // The create screen is a stable SPA route. Opening it directly avoids two
+    // fragile menu clicks and is substantially faster after a resume from the
+    // authenticated home page. The menu remains a fallback for portal builds
+    // that reject direct hash navigation.
+    if (createUrl) {
+      if (/#\/itc\/f\/caseinfo\/create/i.test(currentUrl)) {
+        await this.page.reload({
+          waitUntil: 'domcontentloaded',
+          timeout: 30_000,
+        }).catch(() => undefined);
+      } else {
+        await this.page.goto(createUrl, {
+          waitUntil: 'domcontentloaded',
+          timeout: 30_000,
+        }).catch(() => undefined);
+      }
+      await this.waitForUiReady(10_000);
+      await this.page.waitForFunction(
+        () => Boolean(
+          document.querySelector('[id^="tempctype_"]')
+          || Array.from(document.querySelectorAll('label, h1, h2, h3'))
+            .some((element) => element.textContent?.includes('درجة التقاضي')),
+        ),
+        undefined,
+        { timeout: 8_000 },
+      ).catch(() => undefined);
+      if (await classificationVisible()) return;
+
+      if (await this.looksLoggedOut()) {
+        throw new HumanInterventionError(
+          'أعاد تقاضي الوكيل إلى صفحة الدخول عند محاولة فتح دعوى جديدة',
+          'LOGIN_REQUIRED',
+          {
+            url: this.page.url(),
+            attemptedUrl: createUrl,
+            requiredActions: ['إكمال تسجيل الدخول عبر توثيق'],
+            resumeSupported: true,
+          },
+        );
+      }
+
+      // A partially rendered SPA route occasionally becomes healthy after a
+      // reload. Retry the route itself, not unrelated menu labels.
+      if (await this.isAuthenticatedPortalPage(this.page)) {
+        await this.page.reload({
+          waitUntil: 'domcontentloaded',
+          timeout: 30_000,
+        }).catch(() => undefined);
+        await this.waitForUiReady(10_000);
+        await this.page.waitForFunction(
+          () => Boolean(
+            document.querySelector('[id^="tempctype_"]')
+            || Array.from(document.querySelectorAll('label, h1, h2, h3'))
+              .some((element) => element.textContent?.includes('درجة التقاضي')),
+          ),
+          undefined,
+          { timeout: 8_000 },
+        ).catch(() => undefined);
+        if (await classificationVisible()) return;
+      }
+    }
+
     const clickThrough = async () => {
       await this.page.waitForFunction(
         () => {
@@ -2489,32 +2762,40 @@ export class TaqadiPortal {
         ['إدارة الدعاوى', 'ادارة الدعاوى', 'الدعاوى', 'قيد الدعاوى'],
         'إدارة الدعاوى',
       );
-      await this.page.waitForTimeout(1_000);
       await this.clickAny(
         ['قيد دعوى', 'إقامة دعوى', 'إنشاء دعوى', 'دعوى جديدة'],
         'قيد دعوى جديدة',
       );
-      await this.page.waitForTimeout(1_500);
+      await this.waitForUiReady(10_000);
     };
+
+    // Never search for case-management menu labels on a login, NAS prompt, or
+    // error page. That produced a misleading missing-menu failure even though
+    // the real problem was an unauthenticated session.
+    if (realTaqadiPortal) {
+      const homeUrl = new URL('/itc/home', currentUrl).toString();
+      if (this.page.url() !== homeUrl) {
+        await this.page.goto(homeUrl, {
+          waitUntil: 'domcontentloaded',
+          timeout: 30_000,
+        }).catch(() => undefined);
+        await this.waitForUiReady(10_000);
+      }
+      if (!(await this.isAuthenticatedPortalPage(this.page))) {
+        throw new HumanInterventionError(
+          'تعذر فتح مسار الدعوى لأن جلسة تقاضي لم تعد صالحة',
+          'LOGIN_REQUIRED',
+          { url: this.page.url(), resumeSupported: true },
+        );
+      }
+    }
 
     await clickThrough();
 
     // A blank SPA render leaves the wizard body empty after navigation;
     // reload once and repeat the clicks so the classification form appears.
     // Immediate (non-waiting) visibility checks keep this detection cheap.
-    const rendered = (
-      await this.page
-        .locator('[id^="tempctype_"]')
-        .first()
-        .isVisible()
-        .catch(() => false)
-    ) || (
-      await this.page
-        .getByText('درجة التقاضي', { exact: false })
-        .first()
-        .isVisible()
-        .catch(() => false)
-    );
+    const rendered = await classificationVisible();
     if (rendered) return;
 
     // Only a page that really navigated to the create-case route may reload;
@@ -2529,7 +2810,17 @@ export class TaqadiPortal {
     await this.page
       .reload({ waitUntil: 'domcontentloaded' })
       .catch(() => undefined);
-    await this.page.waitForTimeout(1_500);
+    await this.waitForUiReady(10_000);
+    // The documented menu path is retained only as an authenticated fallback
+    // for portal releases that change or temporarily reject the SPA route.
+    if (realTaqadiPortal && !(await this.isAuthenticatedPortalPage(this.page))) {
+      throw new HumanInterventionError(
+        'تعذر فتح مسار الدعوى لأن جلسة تقاضي لم تعد صالحة',
+        'LOGIN_REQUIRED',
+        { url: this.page.url(), resumeSupported: true },
+      );
+    }
+
     await clickThrough();
   }
 
@@ -2646,6 +2937,61 @@ export class TaqadiPortal {
     ).first();
   }
 
+  private async waitForPartyGridReady(timeoutMs = 15_000) {
+    if (process.env.NODE_ENV === 'test') return;
+    const deadline = Date.now() + timeoutMs;
+    let previousFingerprint = '';
+    let stableReads = 0;
+
+    while (Date.now() < deadline) {
+      await this.waitForUiReady(Math.min(2_000, timeoutMs));
+      const pane = this.partyPane();
+      if (!(await pane.isVisible().catch(() => false))) {
+        await this.page.waitForTimeout(180);
+        continue;
+      }
+      const state = await pane.evaluate((element) => {
+        const visible = (node: Element) => {
+          const style = window.getComputedStyle(node as HTMLElement);
+          const rect = (node as HTMLElement).getBoundingClientRect();
+          return style.display !== 'none' && style.visibility !== 'hidden'
+            && rect.width > 0 && rect.height > 0;
+        };
+        const rows = Array.from(element.querySelectorAll(
+          'tr[role="row"], tbody tr, .party-card',
+        )).filter(visible);
+        const add = Array.from(element.querySelectorAll(
+          'button[title="إضافة طرف"], button[title="button_add_party_1"], button',
+        )).find((node) => visible(node) && /إضافة طرف|button_add_party_1/.test(
+          `${node.getAttribute('title') || ''} ${node.textContent || ''}`,
+        )) as HTMLButtonElement | undefined;
+        const rowText = rows
+          .map((row) => (row.textContent || '').replace(/\s+/g, ' ').trim())
+          .filter(Boolean)
+          .join('|');
+        return {
+          ready: rows.length > 0 || Boolean(add && !add.disabled),
+          fingerprint: `${rows.length}:${rowText}:${add?.disabled ? 'disabled' : 'enabled'}`,
+        };
+      }).catch(() => ({ ready: false, fingerprint: '' }));
+
+      if (state.ready && state.fingerprint === previousFingerprint) {
+        stableReads += 1;
+        if (stableReads >= 2) return;
+      } else {
+        stableReads = state.ready ? 1 : 0;
+        previousFingerprint = state.fingerprint;
+      }
+      await this.page.waitForTimeout(180);
+    }
+
+    throw new HumanInterventionError(
+      'لم يصبح جدول أطراف الدعوى جاهزًا خلال المهلة المحددة',
+      'PARTY_GRID_NOT_READY',
+      { url: this.page.url() },
+    );
+  }
+
   private async activePartyDialog(): Promise<Locator | null> {
     const dialogs = this.page.locator(
       '#modal-dialog:visible, .modal.in:visible, .modal.show:visible, '
@@ -2703,6 +3049,19 @@ export class TaqadiPortal {
       const visible = await this.firstVisible([row]);
       if (visible) return visible;
     }
+    return null;
+  }
+
+  private async waitForPartyRow(
+    values: Array<string | null | undefined>,
+    timeoutMs = 10_000,
+  ): Promise<Locator | null> {
+    const deadline = Date.now() + timeoutMs;
+    do {
+      const row = await this.partyRow(values);
+      if (row) return row;
+      await this.page.waitForTimeout(180);
+    } while (Date.now() < deadline);
     return null;
   }
 
@@ -2811,29 +3170,18 @@ export class TaqadiPortal {
     this.page.on('request', onRequest);
     this.page.on('response', onResponse);
     networkCaptureTimer = setTimeout(stopNetworkCapture, 30_000);
-    await nameCell.click();
-    await this.page.waitForTimeout(1_500);
-
     const partyDialog = this.page.locator(
       '#modal-dialog:has([id="priority"]), '
       + '.modal.in:has([id="priority"]), '
       + '.modal.show:has([id="priority"]), '
       + '[role="dialog"]:has([id="priority"])',
     ).last();
-    if (!(await partyDialog.isVisible().catch(() => false))) {
-      const editButton = await this.firstVisible([
-        row.locator('.k-grid-modify'),
-        row.locator('a, button').filter({ hasText: /تحديث|تعديل/ }),
-        row.locator('[title*="تحديث"], [title*="تعديل"]'),
-      ]);
-      if (!editButton) {
-        stopNetworkCapture();
-        throw new HumanInterventionError(
-          'تم تحديد الطرف لكن لم يجد الوكيل زر تعديل بياناته',
-          'PARTY_EDIT_ACTION_NOT_FOUND',
-          { rowText: await row.innerText().catch(() => ''), url: this.page.url() },
-        );
-      }
+    const editButton = await this.firstVisible([
+      row.locator('.k-grid-modify'),
+      row.locator('a, button').filter({ hasText: /تحديث|تعديل/ }),
+      row.locator('[title*="تحديث"], [title*="تعديل"]'),
+    ]);
+    if (editButton) {
       editDiagnostics = await editButton.evaluate((element) => ({
         tagName: element.tagName,
         className: element.getAttribute('class'),
@@ -2843,9 +3191,40 @@ export class TaqadiPortal {
         rowClassName: element.closest('tr')?.getAttribute('class'),
         rowAriaSelected: element.closest('tr')?.getAttribute('aria-selected'),
       })).catch(() => ({}));
-      await editButton.hover();
-      await this.page.waitForTimeout(400);
-      await editButton.click({ delay: 120 });
+    }
+    // Some Taqadi grids enable editing only after selecting the row. The name
+    // cell may also open the dialog directly, so this replaces the old 1.5s
+    // blind wait with a short result-based check.
+    await this.clickStable(nameCell, 'تحديد الطرف');
+
+    const quickOpen = await partyDialog.waitFor({
+      state: 'visible',
+      timeout: 500,
+    }).then(() => true).catch(() => false);
+    if (!quickOpen) {
+      const fallbackEdit = editButton || await this.firstVisible([
+        row.locator('.k-grid-modify'),
+        row.locator('a, button').filter({ hasText: /تحديث|تعديل/ }),
+        row.locator('[title*="تحديث"], [title*="تعديل"]'),
+      ]);
+      if (!fallbackEdit) {
+        stopNetworkCapture();
+        throw new HumanInterventionError(
+          'تم تحديد الطرف لكن لم يجد الوكيل زر تعديل بياناته',
+          'PARTY_EDIT_ACTION_NOT_FOUND',
+          { rowText: await row.innerText().catch(() => ''), url: this.page.url() },
+        );
+      }
+      editDiagnostics = await fallbackEdit.evaluate((element) => ({
+        tagName: element.tagName,
+        className: element.getAttribute('class'),
+        href: element.getAttribute('href'),
+        onclick: element.getAttribute('onclick'),
+        outerHTML: element.outerHTML,
+        rowClassName: element.closest('tr')?.getAttribute('class'),
+        rowAriaSelected: element.closest('tr')?.getAttribute('aria-selected'),
+      })).catch(() => ({}));
+      await this.clickStable(fallbackEdit, 'تعديل بيانات الطرف');
     }
 
     const opened = await partyDialog.waitFor({
@@ -2923,7 +3302,7 @@ export class TaqadiPortal {
       }
       await this.page.waitForTimeout(250);
     }
-    await addButton.click();
+    await this.clickStable(addButton, description);
     const partyDialog = await this.requireActivePartyDialog(description);
     const category = await this.fieldByLabel(
       ['تصنيف الطرف', 'نوع الشخص'],
@@ -2968,7 +3347,7 @@ export class TaqadiPortal {
         { url: this.page.url() },
       );
     }
-    await save.click();
+    await this.clickStable(save, 'حفظ بيانات الطرف');
     if (dialogRoot) {
       const closed = await dialogRoot.waitFor({
         state: 'hidden',
@@ -3000,7 +3379,7 @@ export class TaqadiPortal {
         timeout: 10_000,
       }).catch(() => undefined);
     }
-    await this.page.waitForTimeout(700);
+    await this.waitForPartyGridReady();
   }
 
   async validateRepresentativeFirst(payload: FilingPayload) {
@@ -3011,7 +3390,7 @@ export class TaqadiPortal {
       state: 'hidden',
       timeout: 10_000,
     }).catch(() => undefined);
-    await this.page.waitForTimeout(partyStabilizationMs);
+    await this.waitForPartyGridReady();
 
     const representativeName = agentConfig.representative.name;
     // The portal may store the representative's full legal name (e.g.
@@ -3021,7 +3400,7 @@ export class TaqadiPortal {
     const lastNameToken = nameParts.length > 1
       ? nameParts[nameParts.length - 1]
       : null;
-    const row = await this.partyRow(
+    const row = await this.waitForPartyRow(
       [representativeName, lastNameToken].filter(Boolean) as string[],
     );
     if (!row) {
@@ -3114,21 +3493,21 @@ export class TaqadiPortal {
         { expectedLabels: ['حفظ'], url: this.page.url() },
       );
     }
-    await save.click();
-    await this.page.waitForTimeout(500);
+    await this.clickStable(save, 'حفظ مسودة الأطراف');
 
     await loadingMasks.waitFor({
       state: 'hidden',
       timeout: 15_000,
     }).catch(() => undefined);
-    await this.page.waitForTimeout(partyStabilizationMs);
+    await this.waitForPartyGridReady();
   }
 
   async validateCompanyParty(payload: FilingPayload) {
-    const company = await this.partyRow([
+    await this.waitForPartyGridReady();
+    const company = await this.waitForPartyRow([
       payload.plaintiff.name,
       payload.plaintiff.commercialRegistration,
-    ]);
+    ], 1_200);
     let partyDialog: Locator;
     if (!company) {
       partyDialog = await this.addPartyEditor('إضافة الشركة');
