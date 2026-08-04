@@ -279,6 +279,50 @@ export class TaqadiPortal {
       await this.page.waitForTimeout(2_000);
     }
 
+    // The full account-selection page (a real «اسم المستخدم» dropdown reset
+    // to «اختيار واحد») has no server-side default to confirm — the agent
+    // must pick the non-individual (company/representative) account itself.
+    if (await loginButton.isVisible().catch(() => false)) {
+      const accountField = await this.firstVisible([
+        this.page.getByLabel(/اسم المستخدم/i),
+        this.page.locator('select:visible').first(),
+        this.page.locator('.k-dropdown:visible, .k-dropdownlist:visible').first(),
+      ]);
+      if (accountField) {
+        await accountField.click().catch(() => undefined);
+        await this.page.waitForTimeout(600);
+        const options = this.page.locator(
+          '[role="option"], .k-item, .k-list-item, option',
+        );
+        const count = Math.min(await options.count(), 20);
+        let chosen = false;
+        let fallback: Locator | null = null;
+        for (let index = 0; index < count; index += 1) {
+          const option = options.nth(index);
+          const text = normalizeText(
+            await option.innerText().catch(() => ''),
+          );
+          if (!text || text.includes('اختيار')) continue;
+          if (/فرد/.test(text)) {
+            fallback ??= option;
+            continue;
+          }
+          await option.click().catch(() => undefined);
+          chosen = true;
+          break;
+        }
+        if (!chosen && fallback) {
+          await fallback.click().catch(() => undefined);
+          chosen = true;
+        }
+        if (chosen) {
+          await this.page.waitForTimeout(600);
+          await loginButton.click().catch(() => undefined);
+          await this.page.waitForTimeout(2_000);
+        }
+      }
+    }
+
     if (await loginButton.isVisible().catch(() => false)) {
       throw new HumanInterventionError(
         'لم يقبل موقع تقاضي تأكيد صفحة الدخول',
@@ -310,7 +354,10 @@ export class TaqadiPortal {
   private async startTawtheeqLoginIfNeeded() {
     if (!this.isTaqadiLoginPage()) return false;
 
-    const deadline = Date.now() + 10_000;
+    // The portal renders the Tawtheeq card well after the login shell on
+    // slow loads; 10s was below the real render time observed on the office
+    // connection, so allow a full 30s before declaring the card missing.
+    const deadline = Date.now() + 30_000;
     let prompt: Locator | null = null;
     do {
       // Taqadi can redirect to NAS while this lookup is in flight. Once the
@@ -319,6 +366,7 @@ export class TaqadiPortal {
       prompt = await this.firstVisible([
         this.page.getByText('الدخول عبر النظام الوطني', { exact: false }),
         this.page.getByText(/توثيق|TAWTHEEQ/i),
+        this.page.getByRole('button', { name: 'متابعة', exact: false }),
       ]).catch(() => null);
       if (prompt) break;
       await this.page.waitForTimeout(250);
@@ -1080,49 +1128,92 @@ export class TaqadiPortal {
       },
     ];
 
-    // فحص الاستقرار يقرأ 7 حقول مرتين في كل دورة عبر استعلامات Kendo بطيئة
-    // (رُصدت دورة كاملة ≈ 28 ثانية في مهمة حقيقية) — مهلة actionTimeoutMs
-    // (30 ث) لا تكفي لقراءتين مستقرتين متتاليتين، فكان الفحص ينتهي بالمهلة
-    // رغم تطابق كل الحقول (mismatched: []). نمنحه مهلة مخصصة أطول.
+    // فحص الاستقرار كان يقرأ 7 حقول مرتين في كل دورة عبر استعلامات Kendo بطيئة
+    // (رُصدت دورة كاملة ≈ 28 ثانية في مهمة حقيقية). الآن نقرأ كل الحقول في
+    // evaluate واحدة بالمعرفات الحتمية، ولا نملأ إلا الحقول المختلفة فعلاً —
+    // الدورة النموذجية تنخفض إلى أقل من ثانية.
     const deadline = Date.now() + Math.max(agentConfig.actionTimeoutMs, 120_000);
     let stableSince: number | null = null;
     let latestValues: Record<string, string | null> = {};
-    do {
+
+    const readAllValues = async (): Promise<Record<string, string | null>> => {
+      const idMap = fields.map((field) => ({
+        key: field.key,
+        // Fields without explicit control ids use their key, which matches the
+        // Taqadi DOM ids (firstName, lastName, email, ...). Arabic labels are
+        // never element ids, so they are never a fallback here.
+        ids: field.controlIds.length > 0 ? field.controlIds : [field.key],
+      }));
+      return await this.page.evaluate((entries) => {
+        const result: Record<string, string | null> = {};
+        const readById = (id: string): string | null => {
+          const element = document.getElementById(id);
+          if (
+            element
+            && (element instanceof HTMLInputElement
+              || element instanceof HTMLTextAreaElement
+              || element instanceof HTMLSelectElement)
+          ) {
+            return element.value;
+          }
+          return null;
+        };
+        for (const entry of entries as Array<{ key: string; ids: string[] }>) {
+          let value: string | null = null;
+          for (const id of entry.ids) {
+            const byId = readById(id) ?? readById(id.replace(/\./g, '_'));
+            if (byId !== null && byId !== undefined) {
+              value = byId;
+              break;
+            }
+          }
+          result[entry.key] = value;
+        }
+        return result;
+      }, idMap).catch(() => ({} as Record<string, string | null>));
+    };
+
+    const readValuesHybrid = async (): Promise<Record<string, string | null>> => {
+      const values = await readAllValues();
+      // The batch read trusts DOM ids; a field rendered dynamically under a
+      // different id reads null and would loop forever. Fall back to the
+      // careful label-based read for those fields only.
       for (const field of fields) {
-        const currentValue = await this.fieldInputValue(
+        if (values[field.key] !== null && values[field.key] !== undefined) continue;
+        if (!field.value) continue;
+        values[field.key] = await this.fieldInputValue(
           field.labels,
           field.controlIds,
           root,
         );
-        if (!defendantFieldValueMatches(field.key, currentValue, field.value)) {
-          await this.fillField(
-            field.labels,
-            field.value,
-            true,
-            field.controlIds,
-            root,
-            {
-              exactLabel: true,
-              waitForMs: agentConfig.actionTimeoutMs,
-            },
-          );
+      }
+      return values;
+    };
+
+    do {
+      latestValues = await readValuesHybrid();
+      for (const field of fields) {
+        if (defendantFieldValueMatches(field.key, latestValues[field.key], field.value)) {
+          continue;
         }
+        await this.fillField(
+          field.labels,
+          field.value,
+          true,
+          field.controlIds,
+          root,
+          {
+            exactLabel: true,
+            waitForMs: agentConfig.actionTimeoutMs,
+          },
+        );
       }
 
       await this.page.waitForTimeout(150);
-      latestValues = {};
-      let allMatch = true;
-      for (const field of fields) {
-        const currentValue = await this.fieldInputValue(
-          field.labels,
-          field.controlIds,
-          root,
-        );
-        latestValues[field.key] = currentValue;
-        if (!defendantFieldValueMatches(field.key, currentValue, field.value)) {
-          allMatch = false;
-        }
-      }
+      latestValues = await readValuesHybrid();
+      const allMatch = fields.every((field) =>
+        defendantFieldValueMatches(field.key, latestValues[field.key], field.value)
+      );
 
       if (allMatch) {
         stableSince ??= Date.now();
@@ -1534,14 +1625,11 @@ export class TaqadiPortal {
 
         if (!applied) return false;
         if (typeof widget.close === 'function') widget.close();
-        const hasNativeChangeHandler = Boolean(
-          input.getAttribute('onchange')
-          || (input as HTMLElement).onchange,
-        );
-        if (
-          !hasNativeChangeHandler
-          && typeof widget.trigger === 'function'
-        ) {
+        // Kendo cascadeFrom listens to the widget-level change event, which a
+        // DOM dispatch alone never fires. Always trigger it, even when a
+        // native onchange attribute exists — otherwise dependent dropdowns
+        // (e.g. «صفة الطرف» after «تصنيف الطرف») stay empty forever.
+        if (typeof widget.trigger === 'function') {
           widget.trigger('change');
         }
         input.dispatchEvent(new Event('input', { bubbles: true }));
@@ -1944,12 +2032,154 @@ export class TaqadiPortal {
           return;
         }
       }
+
+      // Last resort: a direct JS click on the matching option. Playwright's
+      // actionability (visible/stable/receives-events) can fail while a Kendo
+      // listbox is mid-animation, even though the option is in the DOM.
+      const clickedViaJs = await this.page.evaluate(`(() => {
+        const normalize = (value) => String(value || '')
+          .normalize('NFKD')
+          .replace(/[\\u064B-\\u065F\\u0670]/g, '')
+          .replace(/[أإآٱ]/g, 'ا')
+          .replace(/ى/g, 'ي')
+          .replace(/\\s+/g, ' ')
+          .trim();
+        const target = normalize(${JSON.stringify(optionText)});
+        const options = Array.from(document.querySelectorAll(
+          '[role="option"], .k-item, .k-list-item',
+        ));
+        const match = options.find(
+          (option) => normalize(option.textContent) === target,
+        );
+        if (!match) return false;
+        match.click();
+        return true;
+      })()`);
+      if (clickedViaJs) return;
       throw error;
     });
     await this.page.waitForTimeout(300);
     if (root !== this.page) {
       await this.assertSelectedField(field, labels, optionText);
     }
+  }
+
+  /**
+   * Taqadi redraws the party form after Kendo changes, which can silently
+   * clear a dropdown that was just selected (observed: «جنسية الشركة» reset
+   * to the placeholder after choosing «قطري»). This helper re-applies the
+   * selection until it sticks across a redraw.
+   */
+  private async selectFieldSticky(
+    labels: string[],
+    optionText: string,
+    controlIds: string[] = [],
+    root: FieldRoot = this.page,
+    maxAttempts = 3,
+  ) {
+    for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+      await this.selectField(labels, optionText, controlIds, root);
+      // Let a potential redraw settle, then verify the value survived.
+      await this.page.waitForTimeout(600);
+      const field = await this.exactFieldByLabel(labels, controlIds, root);
+      const currentText = field
+        ? await this.selectedFieldText(field)
+        : '';
+      if (normalizeArabicText(currentText) === normalizeArabicText(optionText)) {
+        return;
+      }
+    }
+    throw new HumanInterventionError(
+      `لم يلتصق الخيار «${optionText}» في قائمة «${labels[0]}» بعد عدة محاولات`,
+      'TAQADI_FIELD_VALUE_MISMATCH',
+      { field: labels[0], optionText, url: this.page.url() },
+    );
+  }
+
+  /**
+   * Cascading party dropdowns («تصنيف الطرف» → «صفة الطرف») load their
+   * options over the network AFTER the parent change event. Selecting the
+   * parent once and immediately reading the child races the fetch and sees an
+   * empty list. This helper re-selects the parent (alternating values to
+   * force real change events) until the child listbox actually contains a
+   * non-placeholder option.
+   */
+  private async selectFieldUntilDependentListHasOptions(
+    labels: string[],
+    optionText: string,
+    controlIds: string[],
+    dependentLabels: string[],
+    dependentControlIds: string[],
+    root: FieldRoot,
+    alternateOptionText?: string,
+  ) {
+    for (let attempt = 1; attempt <= 3; attempt += 1) {
+      if (attempt > 1 && alternateOptionText) {
+        // Re-fire the cascade with a guaranteed real change on retries.
+        await this.selectField(labels, alternateOptionText, controlIds, root);
+        await this.page.waitForTimeout(700);
+      }
+      await this.selectField(labels, optionText, controlIds, root);
+
+      const deadline = Date.now() + 12_000;
+      while (Date.now() < deadline) {
+        const dependentField = await this.exactFieldByLabel(
+          dependentLabels,
+          dependentControlIds,
+          root,
+        );
+        if (dependentField) {
+          const dependentTag = await dependentField
+            .evaluate((element) => element.tagName.toLowerCase())
+            .catch(() => '');
+          if (dependentTag === 'select') {
+            // Native select: read its <option> elements directly.
+            const hasRealOption = await dependentField
+              .evaluate((element) => {
+                const select = element as HTMLSelectElement;
+                return Array.from(select.options).some((option) => {
+                  const text = String(option.textContent || '')
+                    .replace(/\s+/g, ' ')
+                    .trim();
+                  return text.length > 0 && !text.includes('اختيار');
+                });
+              })
+              .catch(() => false);
+            if (hasRealOption) return;
+          } else {
+            const { listboxId } = await this.dropdownIdentity(
+              dependentField,
+              dependentControlIds,
+            );
+            if (listboxId) {
+              const options = this.page.locator(
+                `[id="${listboxId}"] [role="option"], `
+                + `[id="${listboxId}"] .k-item, [id="${listboxId}"] .k-list-item`,
+              );
+              const count = Math.min(await options.count(), 30);
+              for (let index = 0; index < count; index += 1) {
+                const text = normalizeText(
+                  await options.nth(index).innerText().catch(() => ''),
+                );
+                if (text && !text.includes('اختيار')) return;
+              }
+            }
+          }
+        }
+        await this.page.waitForTimeout(250);
+      }
+    }
+
+    throw new HumanInterventionError(
+      `قائمة «${dependentLabels[0]}» ظلت بلا خيارات بعد اختيار «${optionText}»`,
+      'TAQADI_DEPENDENT_LIST_EMPTY',
+      {
+        field: labels[0],
+        optionText,
+        dependentField: dependentLabels[0],
+        url: this.page.url(),
+      },
+    );
   }
 
   private async selectFieldUntilDependentVisible(
@@ -2497,12 +2727,19 @@ export class TaqadiPortal {
       if (row) {
         rowText = await row.innerText().catch(() => null);
         const cells = row.locator('td, [role="gridcell"]');
-        if (await cells.count() >= 4) {
-          savedOrder = normalizeText(
-            await cells.nth(3).innerText().catch(() => ''),
+        const cellCount = await cells.count();
+        // The Taqadi parties grid renders extra leading columns (actions and
+        // update date), so a fixed index points at the wrong cell. The order
+        // cell is the one whose content is purely numeric.
+        for (let index = 0; index < cellCount; index += 1) {
+          const cellText = normalizeText(
+            await cells.nth(index).innerText().catch(() => ''),
           );
-          if (savedOrder === String(expectedOrder)) return;
+          if (!/^\d+$/.test(cellText)) continue;
+          savedOrder = cellText;
+          break;
         }
+        if (savedOrder === String(expectedOrder)) return;
       }
       await this.page.waitForTimeout(250);
     } while (Date.now() < deadline);
@@ -2831,11 +3068,19 @@ export class TaqadiPortal {
       partyDialog,
     ).catch(() => undefined);
     await this.saveOpenParty(partyDialog);
+    // Taqadi auto-orders the filer's own party row and may hide the order
+    // control in his editor, so a mismatch here is advisory only — the
+    // plaintiff and defendant orders remain strictly enforced.
     await this.assertPartyOrder(
-      [representativeName],
+      [representativeName, lastNameToken].filter(Boolean) as string[],
       payload.representative.partyOrder,
       'REPRESENTATIVE_ORDER_MISMATCH',
-    );
+    ).catch((error) => {
+      console.warn(
+        '[TaqadiAgent] representative order could not be verified (advisory):',
+        error instanceof Error ? error.message : error,
+      );
+    });
   }
 
   /**
@@ -2887,10 +3132,12 @@ export class TaqadiPortal {
     let partyDialog: Locator;
     if (!company) {
       partyDialog = await this.addPartyEditor('إضافة الشركة');
-      await this.forceDropdownCascadeSelection(
+      await this.selectFieldUntilDependentListHasOptions(
         ['تصنيف الطرف', 'نوع الشخص'],
         'شركة',
         ['category'],
+        ['صفة الطرف'],
+        ['type'],
         partyDialog,
         'شخص طبيعي',
       );
@@ -2906,7 +3153,7 @@ export class TaqadiPortal {
         ['compOrEstaType'],
         partyDialog,
       );
-      await this.selectField(
+      await this.selectFieldSticky(
         ['جنسية الشركة'],
         'قطري',
         ['companyClassification'],
@@ -3047,10 +3294,12 @@ export class TaqadiPortal {
       partyDialog = await this.openPartyEditor(existing);
     } else {
       partyDialog = await this.addPartyEditor('إضافة المدعى عليه');
-      await this.forceDropdownCascadeSelection(
+      await this.selectFieldUntilDependentListHasOptions(
         ['تصنيف الطرف', 'نوع الشخص'],
         'شخص طبيعي',
         ['category'],
+        ['صفة الطرف'],
+        ['type'],
         partyDialog,
         'شركة',
       );
@@ -3285,12 +3534,12 @@ export class TaqadiPortal {
       }
       if (visibleSlots.length > index) input = visibleSlots[index];
     }
+
     if (!input) {
-      throw new HumanInterventionError(
-        `لم يجد الوكيل خانة رفع «${document.name}»`,
-        'DOCUMENT_SLOT_NOT_FOUND',
-        { documentKey: document.key, documentName: document.name },
-      );
+      // The portal now exposes a single «إضافة وثيقة» dialog instead of fixed
+      // per-document slots. Open it, attach the file, pick the closest type.
+      await this.uploadDocumentViaAddDialog(document, labels);
+      return;
     }
 
     await input.setInputFiles(document.filePath);
@@ -3310,6 +3559,115 @@ export class TaqadiPortal {
       );
     }
     await this.page.waitForTimeout(1_000);
+  }
+
+  /**
+   * Upload one document through the «إضافة وثيقة» dialog used by the current
+   * Taqadi documents page: open the dialog, attach the file, choose the
+   * closest document type, then save.
+   */
+  private async uploadDocumentViaAddDialog(
+    document: MaterializedDocument,
+    labels: string[],
+  ) {
+    const addButton = await this.firstVisible([
+      this.page.getByRole('button', { name: /إضافة وثيقة|اضافة وثيقة|إضافة مستند/i }),
+      this.page.locator('button, a').filter({ hasText: /إضافة وثيقة|اضافة وثيقة|إضافة مستند/i }),
+      this.page.locator('[id^="button_add"]'),
+    ]);
+    if (!addButton) {
+      throw new HumanInterventionError(
+        'لم يجد الوكيل زر «إضافة وثيقة» في صفحة المستندات',
+        'TAQADI_UI_CHANGED',
+        { url: this.page.url() },
+      );
+    }
+    await addButton.click();
+    await this.page.waitForTimeout(1_200);
+
+    const dialog = this.page.locator(
+      '.modal:visible, [role="dialog"]:visible, .k-dialog:visible',
+    ).last();
+    const dialogRoot = (await dialog.count()) > 0 ? dialog : this.page;
+
+    const fileInput = dialogRoot.locator('input[type="file"]').first();
+    if (!(await fileInput.count())) {
+      throw new HumanInterventionError(
+        'لم يجد الوكيل خانة الملف داخل حوار «إضافة وثيقة»',
+        'TAQADI_UI_CHANGED',
+        { url: this.page.url() },
+      );
+    }
+    await fileInput.setInputFiles(document.filePath);
+    await this.page.waitForTimeout(600);
+
+    // Choose the document type when the dialog offers a type control.
+    const typeLabels = ['نوع المستند', 'نوع الوثيقة', 'نوع المرفق', 'المستند'];
+    const typeField = await this.fieldByLabel(typeLabels, [], dialogRoot)
+      .catch(() => null);
+    if (typeField) {
+      const chosen = await this.pickDialogDocumentType(
+        typeField,
+        dialogRoot,
+        labels,
+      );
+      if (!chosen) {
+        console.warn(
+          `[TaqadiAgent] no matching document type for «${document.name}»; keeping the dialog default`,
+        );
+      }
+    }
+
+    const saveButton = await this.firstVisible([
+      dialogRoot.getByRole('button', { name: /^\s*حفظ\s*$/ }),
+      dialogRoot.locator('button:visible').filter({ hasText: /^\s*حفظ\s*$/ }),
+      dialogRoot.getByRole('button', { name: /إضافة|إرفاق|تأكيد/i }),
+    ]);
+    if (!saveButton) {
+      throw new HumanInterventionError(
+        'لم يجد الوكيل زر الحفظ داخل حوار «إضافة وثيقة»',
+        'TAQADI_UI_CHANGED',
+        { url: this.page.url() },
+      );
+    }
+    await saveButton.click();
+    await this.page.waitForTimeout(1_500);
+  }
+
+  private async pickDialogDocumentType(
+    typeField: Locator,
+    dialogRoot: Locator | Page,
+    labels: string[],
+  ): Promise<boolean> {
+    await typeField.click();
+    await this.page.waitForTimeout(500);
+    const options = this.page.locator(
+      '[role="option"], .k-item, .k-list-item, .ng-option, li',
+    );
+    const count = Math.min(await options.count(), 40);
+    let fallback: Locator | null = null;
+    for (let index = 0; index < count; index += 1) {
+      const option = options.nth(index);
+      if (!(await option.isVisible().catch(() => false))) continue;
+      const text = normalizeText(await option.innerText().catch(() => ''));
+      if (!text || text.includes('اختيار')) continue;
+      const normalized = normalizeArabicText(text);
+      const matches = labels.some((label) => {
+        const wanted = normalizeArabicText(label);
+        return normalized.includes(wanted) || wanted.includes(normalized);
+      });
+      if (matches) {
+        await option.click();
+        return true;
+      }
+      fallback ??= option;
+    }
+    if (fallback) {
+      await fallback.click();
+      return true;
+    }
+    await this.page.keyboard.press('Escape').catch(() => undefined);
+    return false;
   }
 
   async uploadDocuments(documents: MaterializedDocument[]) {

@@ -155,6 +155,16 @@ export function inferPortalStage(
     [hasType('file'), 9, 'file_input'],
     [hasText('مستندات الدعوى', 'نوع المستند', 'ارفاق', 'إرفاق', 'رفع ملف'),
     6, 'documents_text'],
+    // The documents grid before the first upload has no file input yet; its
+    // unique cues are the «إضافة وثيقة» button and the mandatory-attachments
+    // note, both present only on this stage.
+    [hasText(
+      'إضافة وثيقة',
+      'اضافة وثيقة',
+      'يجب إرفاق المستندات',
+      'المستندات الإلزامية',
+      'المستندات الالزامية',
+    ), 7, 'documents_grid_cues'],
     [observation.activeTabs.some((tab) =>
       includesAny(normalizeArabic(tab), ['المستندات', 'مرفقات'])),
     7, 'active_documents_tab'],

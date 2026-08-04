@@ -7,9 +7,11 @@
  */
 
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Calendar,
+  CheckCheck,
   FileText,
   Loader2,
   MessageSquareReply,
@@ -86,10 +88,12 @@ const formatEmployeeName = (profile?: ProfileLookupRow | null) => {
 
 export function TeamCommunicationLog() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const companyId = user?.profile?.company_id || user?.company?.id;
   const [typeFilter, setTypeFilter] = React.useState<TypeFilter>('all');
   const [employeeFilter, setEmployeeFilter] = React.useState<string>('all');
+  const [showReplied, setShowReplied] = React.useState(false);
   const [playingRecordingId, setPlayingRecordingId] = React.useState<string | null>(null);
   const [replyTarget, setReplyTarget] = React.useState<TeamCommunicationRow | null>(null);
   const [replyTitle, setReplyTitle] = React.useState('');
@@ -114,7 +118,7 @@ export function TeamCommunicationLog() {
 
       const { data: communications, error: commError } = await (supabase as any)
         .from('customer_communications')
-        .select('id,communication_type,communication_date,communication_time,duration_minutes,notes,follow_up_scheduled,follow_up_date,customer_id,contract_id,employee_id,ai_summary,attachments')
+        .select('id,communication_type,communication_date,communication_time,duration_minutes,notes,follow_up_scheduled,follow_up_date,customer_id,contract_id,employee_id,ai_summary,attachments,replied_at')
         .eq('company_id', companyId)
         .order('communication_date', { ascending: false })
         .order('communication_time', { ascending: false })
@@ -195,8 +199,16 @@ export function TeamCommunicationLog() {
   const filteredLog = React.useMemo(() => communications.filter((item) => {
     if (typeFilter !== 'all' && item.communication_type !== typeFilter) return false;
     if (employeeFilter !== 'all' && item.employee_id !== employeeFilter) return false;
+    // العناصر التي رد عليها المدير تُخفى افتراضياً — تظهر فقط عند تفعيل «تم الرد عليها»
+    // أو عند وجود تحديث جديد من الموظف (يصل كسجل مستقل جديد).
+    if (!showReplied && item.replied_at) return false;
     return true;
-  }), [communications, typeFilter, employeeFilter]);
+  }), [communications, typeFilter, employeeFilter, showReplied]);
+
+  const repliedCount = React.useMemo(
+    () => communications.filter((item) => Boolean(item.replied_at)).length,
+    [communications],
+  );
 
   const groupedLog = React.useMemo(() => {
     const groups: Array<{ date: string; items: TeamCommunicationRow[] }> = [];
@@ -260,7 +272,7 @@ export function TeamCommunicationLog() {
       const originalExcerpt = String(replyTarget.notes || '').slice(0, 200);
       const title = replyTitle.trim() || `رد على ${typeLabel}`;
 
-      const { error } = await supabase.from('employee_tasks').insert({
+      const { data: insertedTask, error } = await supabase.from('employee_tasks').insert({
         company_id: companyId,
         title,
         title_ar: title,
@@ -274,14 +286,27 @@ export function TeamCommunicationLog() {
         contract_id: replyTarget.contract_id,
         assigned_to: employeeProfileId,
         assigned_by: data?.managerProfileId || null,
-      });
+      }).select('id').single();
       if (error) throw error;
+
+      // تعليم السجل الأصلي كـ«تم الرد عليه» ليُخفى من السجل افتراضياً،
+      // ويعود للظهور فقط كسجل جديد عند وجود تحديث من الموظف.
+      const { error: markError } = await (supabase as any)
+        .from('customer_communications')
+        .update({
+          replied_at: new Date().toISOString(),
+          replied_task_id: insertedTask?.id || null,
+        })
+        .eq('id', replyTarget.id)
+        .eq('company_id', companyId);
+      if (markError) throw markError;
     },
     onSuccess: () => {
       toast.success('تم إرسال الرد كمهمة للموظف', {
         description: 'ستظهر له في مساحته الشخصية ضمن قسم المهام',
       });
       queryClient.invalidateQueries({ queryKey: ['employee-tasks'] });
+      queryClient.invalidateQueries({ queryKey: ['team-communication-log'] });
       closeReplyDialog();
     },
     onError: (mutationError) => {
@@ -342,6 +367,24 @@ export function TeamCommunicationLog() {
                 ))}
               </SelectContent>
             </Select>
+            {repliedCount > 0 && (
+              <Button
+                type="button"
+                size="sm"
+                variant={showReplied ? 'default' : 'outline'}
+                className={cn(
+                  'h-7 gap-1 rounded-lg px-2.5 text-[10px] font-bold sm:text-xs',
+                  showReplied
+                    ? 'bg-[#059669] text-white hover:bg-[#059669]'
+                    : 'border-[#A7F3D0] text-[#059669]',
+                )}
+                onClick={() => setShowReplied((prev) => !prev)}
+                title="إظهار / إخفاء السجلات التي تم الرد عليها"
+              >
+                <CheckCheck className="h-3 w-3" />
+                تم الرد عليها ({repliedCount})
+              </Button>
+            )}
             <Badge className="rounded-full bg-[#F1F5F9] text-xs font-bold text-[#475569] hover:bg-[#F1F5F9]">
               {filteredLog.length} سجل
             </Badge>
@@ -388,10 +431,17 @@ export function TeamCommunicationLog() {
                     const employeeName = data?.employeeLookup.get(item.employee_id) || 'موظف غير محدد';
                     const hasRecording = Boolean(getCallRecordingPath(item.attachments));
 
+                    const isReplied = Boolean(item.replied_at);
+
                     return (
                       <div
                         key={item.id}
-                        className="rounded-xl border border-[#EEF2F6] bg-[#FBFCFE] p-3"
+                        className={cn(
+                          'rounded-xl border p-3',
+                          isReplied
+                            ? 'border-[#A7F3D0] bg-[#F0FDF4]'
+                            : 'border-[#EEF2F6] bg-[#FBFCFE]',
+                        )}
                       >
                         <div className="flex flex-wrap items-center gap-2">
                           <span className={cn(
@@ -420,9 +470,24 @@ export function TeamCommunicationLog() {
                               {noteParsed.important ? '⭐ ' : ''}{noteParsed.typeLabel}
                             </Badge>
                           )}
-                          <span className="text-xs font-black text-[#142033]">{customerName}</span>
+                          <button
+                            type="button"
+                            disabled={!item.customer_id}
+                            onClick={() => item.customer_id && navigate(`/customers/${item.customer_id}`)}
+                            className="text-xs font-black text-[#142033] underline-offset-2 transition-colors hover:text-[#1D4F7A] hover:underline disabled:cursor-default disabled:hover:text-[#142033] disabled:hover:no-underline"
+                            title="فتح ملف العميل"
+                          >
+                            {customerName}
+                          </button>
                           {contractInfo?.contractNumber && (
-                            <span className="text-xs text-[#8A96A8]">{contractInfo.contractNumber}</span>
+                            <button
+                              type="button"
+                              onClick={() => navigate(`/contracts/${contractInfo.contractNumber}`)}
+                              className="text-xs text-[#8A96A8] underline-offset-2 transition-colors hover:text-[#1D4F7A] hover:underline"
+                              title="فتح العقد"
+                            >
+                              {contractInfo.contractNumber}
+                            </button>
                           )}
                           <span className="text-xs text-[#8A96A8]" dir="ltr">
                             {String(item.communication_time || '').slice(0, 5)}
@@ -435,16 +500,23 @@ export function TeamCommunicationLog() {
                           <Badge className="rounded-md bg-[#F1F5F9] text-[10px] font-bold text-[#475569] hover:bg-[#F1F5F9]">
                             {employeeName}
                           </Badge>
-                          <Button
-                            type="button"
-                            size="sm"
-                            variant="outline"
-                            className="h-6 gap-1 rounded-md border-[#A7F3D0] bg-[#ECFDF5] px-2 text-[10px] font-bold text-[#059669] hover:bg-[#D1FAE5]"
-                            onClick={() => openReplyDialog(item)}
-                          >
-                            <MessageSquareReply className="h-3 w-3" />
-                            رد / مهمة
-                          </Button>
+                          {isReplied ? (
+                            <Badge className="gap-1 rounded-md border border-[#A7F3D0] bg-[#D1FAE5] text-[10px] font-black text-[#047857] hover:bg-[#D1FAE5]">
+                              <CheckCheck className="h-3 w-3" />
+                              تم الرد — أُرسلت كمهمة
+                            </Badge>
+                          ) : (
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              className="h-6 gap-1 rounded-md border-[#A7F3D0] bg-[#ECFDF5] px-2 text-[10px] font-bold text-[#059669] hover:bg-[#D1FAE5]"
+                              onClick={() => openReplyDialog(item)}
+                            >
+                              <MessageSquareReply className="h-3 w-3" />
+                              رد / مهمة
+                            </Button>
+                          )}
                           {hasRecording && (
                             <Button
                               type="button"

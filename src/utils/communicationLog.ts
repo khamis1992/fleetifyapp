@@ -44,6 +44,7 @@ export interface CommunicationLogItem {
   employee_id?: string;
   ai_summary: string | null;
   attachments: unknown;
+  replied_at?: string | null;
 }
 
 export const parseCallNotes = (notes?: string | null) => {
