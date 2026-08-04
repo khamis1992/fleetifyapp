@@ -1030,7 +1030,10 @@ export class TaqadiPortal {
         key: 'address',
         labels: ['العنوان'],
         value: input.address,
-        controlIds: [],
+        // The label alone can resolve to the wrong nearby control in the
+        // Taqadi party dialog; the deterministic control id keeps the
+        // read/verify loop and the write pointed at the same textarea.
+        controlIds: ['addresses0.address', 'address'],
       },
       {
         key: 'phone',
@@ -1622,6 +1625,15 @@ export class TaqadiPortal {
         'TAQADI_UI_CHANGED',
         { expectedLabels: labels, optionText, url: this.page.url() },
       );
+    }
+    // Native <select> elements have no lazy cascade to force; delegate to the
+    // standard path immediately.
+    const tagName = await field.evaluate((element) =>
+      element.tagName.toLowerCase(),
+    );
+    if (tagName === 'select') {
+      await this.selectField(labels, optionText, controlIds, root);
+      return;
     }
     const { controlId } = await this.dropdownIdentity(field, controlIds);
     const backingControl = controlId

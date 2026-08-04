@@ -77,19 +77,24 @@ export function planPortalAction(
   };
 }
 
+const stageOrder: TaqadiPortalStage[] = [
+  'login',
+  'case_classification',
+  'case_details',
+  'parties',
+  'documents',
+  'review',
+];
+
+export function stageOrderIndex(stage: TaqadiPortalStage): number {
+  return stageOrder.indexOf(stage);
+}
+
 export function stageReached(
   actual: TaqadiPortalStage,
   expected: TaqadiPortalStage,
 ) {
-  const order: TaqadiPortalStage[] = [
-    'login',
-    'case_classification',
-    'case_details',
-    'parties',
-    'documents',
-    'review',
-  ];
-  const actualIndex = order.indexOf(actual);
-  const expectedIndex = order.indexOf(expected);
+  const actualIndex = stageOrderIndex(actual);
+  const expectedIndex = stageOrderIndex(expected);
   return actualIndex >= expectedIndex && expectedIndex >= 0;
 }

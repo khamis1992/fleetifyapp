@@ -9,7 +9,7 @@ import {
   installEvaluationRuntime,
   isClosedBrowserError,
 } from './browser-lifecycle';
-import { planPortalAction } from './adaptive-flow';
+import { planPortalAction, stageOrderIndex } from './adaptive-flow';
 import { agentConfig } from './config';
 import { TaqadiQueue } from './database';
 import { captureHealProposal, JobDiagnostics } from './diagnostics';
@@ -569,8 +569,23 @@ export class TaqadiWorker {
 
       let reviewVerified = false;
       let advisorClicksUsed = 0;
+      let highestVerifiedStageIndex = 0;
       for (let cycle = 1; cycle <= 8; cycle += 1) {
-        const position = await portal.detectCurrentPosition(job.payload);
+        let position = await portal.detectCurrentPosition(job.payload);
+        // Anti-flap guard: the Taqadi wizard keeps earlier steps' hidden
+        // controls in the DOM, so a mid-transition observation can score an
+        // earlier stage right after a verified forward transition. Distrust a
+        // backward jump once: wait for the page to settle and re-observe.
+        if (
+          stageOrderIndex(position.stage) >= 0
+          && stageOrderIndex(position.stage) < highestVerifiedStageIndex
+        ) {
+          await new Promise((resolve) => setTimeout(resolve, 1_800));
+          const settled = await portal.detectCurrentPosition(job.payload);
+          if (stageOrderIndex(settled.stage) >= highestVerifiedStageIndex) {
+            position = settled;
+          }
+        }
         const plan = planPortalAction(position);
         caseDraftStarted = caseDraftStarted
           || !['login', 'case_classification', 'unknown']
@@ -688,6 +703,10 @@ export class TaqadiWorker {
             plan.expectedStage,
             job.payload,
             plan.currentStage,
+          );
+          highestVerifiedStageIndex = Math.max(
+            highestVerifiedStageIndex,
+            stageOrderIndex(nextPosition.stage),
           );
           await this.queue.update(job.id, {
             status: 'validating',

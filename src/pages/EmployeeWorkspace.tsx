@@ -230,6 +230,23 @@ const emptyChecklist = (): Record<DailyLogChecklistKey, boolean> => DAILY_LOG_CH
   {} as Record<DailyLogChecklistKey, boolean>,
 );
 
+/**
+ * يفصل وصف المهمة إلى «الطلب الجديد من الإدارة» و«السجل الأصلي»
+ * عندما تكون المهمة منشأة من سجل تواصل الفريق (رد / إسناد مهمة)،
+ * حيث يُحفظ الوصف بالصيغة: «نص الطلب\n\n—\nالسجل الأصلي (النوع بتاريخ ...):\nالنص الأصلي».
+ */
+const splitTaskDescription = (
+  description?: string | null,
+): { request: string; originalMeta: string; original: string } | null => {
+  if (!description) return null;
+  const match = description.match(/\n\n—\nالسجل الأصلي \(([^)]*)\):\n?/);
+  if (!match || match.index === undefined) return null;
+  const request = description.slice(0, match.index).trim();
+  const original = description.slice(match.index + match[0].length).trim();
+  if (!request || !original) return null;
+  return { request, originalMeta: (match[1] || '').trim(), original };
+};
+
 const todayISODate = () => new Date().toISOString().slice(0, 10);
 
 const currentTimeValue = () => {
@@ -4530,9 +4547,54 @@ export const EmployeeWorkspace: React.FC = () => {
           {selectedTask && (
             <div className="space-y-4">
               {selectedTask.description ? (
-                <div className="max-h-56 overflow-y-auto whitespace-pre-wrap rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] p-3 text-sm leading-6 text-gray-800">
-                  {selectedTask.description}
-                </div>
+                (() => {
+                  const parts = splitTaskDescription(selectedTask.description);
+                  if (!parts) {
+                    return (
+                      <div className="max-h-56 overflow-y-auto whitespace-pre-wrap rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] p-3 text-sm leading-6 text-gray-800">
+                        {selectedTask.description}
+                      </div>
+                    );
+                  }
+                  return (
+                    <div className="space-y-3">
+                      {/* الطلب الجديد من الإدارة */}
+                      <div className="rounded-xl border border-[#A7F3D0] bg-[#ECFDF5] p-3">
+                        <div className="mb-1.5 flex items-center gap-2">
+                          <span className="flex h-5 w-5 items-center justify-center rounded-md bg-[#11A37F] text-white">
+                            <ClipboardCheck className="h-3 w-3" />
+                          </span>
+                          <span className="text-[11px] font-black text-[#0D876A]">
+                            المطلوب منك الآن
+                          </span>
+                        </div>
+                        <div className="max-h-40 overflow-y-auto whitespace-pre-wrap pr-1 text-sm font-bold leading-6 text-[#142033]">
+                          {parts.request}
+                        </div>
+                      </div>
+
+                      {/* السجل الأصلي — للمرجعية فقط */}
+                      <div className="rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] p-3">
+                        <div className="mb-1.5 flex flex-wrap items-center gap-2">
+                          <span className="flex h-5 w-5 items-center justify-center rounded-md bg-[#E2E8F0] text-[#64748B]">
+                            <FileText className="h-3 w-3" />
+                          </span>
+                          <span className="text-[11px] font-black text-[#64748B]">
+                            السجل الأصلي — للمرجعية فقط
+                          </span>
+                          {parts.originalMeta && (
+                            <span className="rounded-md bg-[#F1F5F9] px-1.5 py-0.5 text-[10px] font-bold text-[#94A3B8]">
+                              {parts.originalMeta}
+                            </span>
+                          )}
+                        </div>
+                        <div className="max-h-32 overflow-y-auto whitespace-pre-wrap border-r-2 border-[#CBD5E1] pr-3 text-xs leading-5 text-[#64748B]">
+                          {parts.original}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()
               ) : (
                 <p className="rounded-xl border border-dashed border-[#E2E8F0] p-3 text-xs text-gray-400">
                   لا يوجد وصف إضافي لهذه المهمة.
