@@ -16,6 +16,7 @@ import {
   CreditCard,
   FilePlus,
   FileText,
+  ListTodo,
   Search,
   ShieldAlert,
   Target,
@@ -525,6 +526,7 @@ const BentoDashboard: React.FC = () => {
             <QuickAction label="فاتورة جديدة" icon={FilePlus} to="/finance/billing" />
             <QuickAction label="تسجيل دفعة" icon={CreditCard} to="/finance/payments/quick" primary />
             <QuickAction label="عقد جديد" icon={FileText} onClick={() => setShowContractWizard(true)} />
+            <QuickAction label="المهام" icon={ListTodo} to="/tasks" />
             <UnifiedNotificationBell />
           </div>
         </div>

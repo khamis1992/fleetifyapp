@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  getFirstContractBillingMonth,
   invoiceBillingMonth,
   invoiceContractBillingMonthKey,
   isInvoiceOutsideContractBillingMonths,
@@ -60,6 +61,7 @@ describe("daily audit agent invoice month selection", () => {
       "2026-01-15",
       "2026-08-31",
     )).toBe(true);
+    expect(getFirstContractBillingMonth("2026-12-20")).toBe("2027-01-01");
   });
 
   it("uses invoice_month before invoice_date and excludes inactive invoices", () => {

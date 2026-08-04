@@ -1,7 +1,10 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.4";
 
-const DASHBOARD_VERSION = "2026-07-12.4";
+const DASHBOARD_VERSION = "2026-08-03.2";
+const CROSS_RUN_LIFECYCLE_MANAGED_REVIEW_CODES = new Set([
+  "invoice.month_reconciliation_needs_review",
+]);
 const DOMAINS = [
   "contracts",
   "accounting",
@@ -108,6 +111,13 @@ serve(async (req) => {
     if (!isSuperAdmin && (!profileCompanyId || profileCompanyId !== companyId)) {
       return json({ ok: false, error: "Company access denied" }, 403);
     }
+    const canReviewSystemAudit = isSuperAdmin || (roles || []).some(
+      (role: { role: string; company_id: string | null }) =>
+        role.company_id === companyId && ["manager", "company_admin"].includes(role.role),
+    );
+    if (!canReviewSystemAudit) {
+      return json({ ok: false, error: "System audit review access denied" }, 403);
+    }
 
     const { data: companyJobRefs, error: companyJobsError } = await admin
       .from("system_agent_jobs")
@@ -132,6 +142,9 @@ serve(async (req) => {
     const runs = (runRows || []) as AgentRun[];
     const latestRun = runs[0];
     const latestFullRun = runs.find((run) => isFullAudit(run.requested_domains)) || latestRun;
+    const latestCompletedFullRun = runs.find(
+      (run) => run.status === "completed" && isFullAudit(run.requested_domains),
+    ) || null;
     const historyRuns = runs.slice(0, 12);
     const historyRunIds = historyRuns.map((run) => run.id);
 
@@ -139,7 +152,7 @@ serve(async (req) => {
       mainJobsResult,
       historyJobsResult,
       findings,
-      reviewFindings,
+      openReviewFindings,
       appliedRepairsResult,
       rolledBackRepairsResult,
       recentRepairsResult,
@@ -156,7 +169,7 @@ serve(async (req) => {
         .eq("company_id", companyId)
         .in("run_id", historyRunIds),
       loadFindings(admin, latestFullRun.id, companyId),
-      loadReviewFindings(admin, latestFullRun.id, companyId),
+      loadOpenReviewFindings(admin, companyId, latestCompletedFullRun?.id || null),
       admin
         .from("system_agent_repairs")
         .select("id", { count: "exact", head: true })
@@ -185,6 +198,7 @@ serve(async (req) => {
     const mainJobs = (mainJobsResult.data || []) as AgentJob[];
     const historyJobs = (historyJobsResult.data || []) as AgentJob[];
     const findingTotals = summarizeFindings(findings);
+    const openReviewTotals = summarizeFindings(openReviewFindings);
     const mainTotals = summarizeJobs(mainJobs);
     const latestApplyRun = runs.find((run) => run.mode === "apply") || null;
 
@@ -193,12 +207,13 @@ serve(async (req) => {
       companyId,
       generatedAt: new Date().toISOString(),
       dashboardVersion: DASHBOARD_VERSION,
+      reviewSnapshotComplete: Boolean(latestCompletedFullRun),
       overview: {
         totalAppliedRepairs: appliedRepairsResult.count || 0,
         rolledBackRepairs: rolledBackRepairsResult.count || 0,
         latestRepairs: findingTotals.status.repaired || 0,
         verifiedNoChange: findingTotals.status.ignored || 0,
-        pendingReview: (findingTotals.status.review || 0) + (findingTotals.status.detected || 0),
+        pendingReview: (openReviewTotals.status.review || 0) + (openReviewTotals.status.detected || 0),
         automaticRemaining: (findingTotals.status.planned || 0) + (findingTotals.status.repairing || 0),
         failures: (findingTotals.status.failed || 0) + mainJobs.filter((job) => job.status === "failed").length,
         aiDecisions: findingTotals.aiDecisions,
@@ -236,8 +251,8 @@ serve(async (req) => {
         appliedAt: repair.applied_at,
         rolledBackAt: repair.rolled_back_at,
       })),
-      topReviewTypes: findingTotals.topReviewTypes,
-      reviewFindings: reviewFindings.map((finding) => ({
+      topReviewTypes: openReviewTotals.topReviewTypes,
+      reviewFindings: openReviewFindings.map((finding) => ({
         id: finding.id,
         runId: finding.run_id,
         domain: finding.domain,
@@ -294,23 +309,59 @@ async function loadFindings(admin: SupabaseAdminClient, runId: string, companyId
   return findings;
 }
 
-async function loadReviewFindings(admin: SupabaseAdminClient, runId: string, companyId: string): Promise<AgentReviewFinding[]> {
+async function loadOpenReviewFindings(
+  admin: SupabaseAdminClient,
+  companyId: string,
+  latestCompletedFullRunId: string | null,
+): Promise<AgentReviewFinding[]> {
   const findings: AgentReviewFinding[] = [];
   const pageSize = 1_000;
+  const lifecycleManagedCodes = [
+    ...CROSS_RUN_LIFECYCLE_MANAGED_REVIEW_CODES,
+  ].join(",");
   for (let offset = 0; offset < 100_000; offset += pageSize) {
-    const { data, error } = await admin
+    let query = admin
       .from("system_agent_findings")
       .select("id,run_id,domain,code,severity,status,entity_type,entity_id,title,details,evidence,confidence,repair_command,ai_decision,created_at,updated_at")
-      .eq("run_id", runId)
       .eq("company_id", companyId)
-      .in("status", ["review", "detected"])
+      .in("status", ["review", "detected"]);
+    query = latestCompletedFullRunId
+      ? query.or(
+        `run_id.eq.${latestCompletedFullRunId},code.in.(${lifecycleManagedCodes})`,
+      )
+      : query.in("code", [...CROSS_RUN_LIFECYCLE_MANAGED_REVIEW_CODES]);
+    const { data, error } = await query
       .order("updated_at", { ascending: false })
       .range(offset, offset + pageSize - 1);
     if (error) throw error;
     findings.push(...((data || []) as AgentReviewFinding[]));
     if (!data || data.length < pageSize) break;
   }
-  return findings;
+  // Findings emitted by the regular audit worker are snapshots of one full
+  // run. An open row from an older full run is not proof that the issue still
+  // exists, so only the latest full run is authoritative for those codes.
+  // Cross-run findings are included only when their producer explicitly
+  // closes/supersedes earlier rows as part of its lifecycle.
+  const lifecycleScopedFindings = findings.filter(
+    (finding) =>
+      finding.run_id === latestCompletedFullRunId ||
+      CROSS_RUN_LIFECYCLE_MANAGED_REVIEW_CODES.has(finding.code),
+  );
+
+  // Lifecycle-managed producers can still have repeated rows while a problem
+  // remains open. Keep the newest row for each logical entity/month.
+  const unique = new Map<string, AgentReviewFinding>();
+  for (const finding of lifecycleScopedFindings) {
+    const targetMonth = String(finding.evidence?.target_month || "");
+    const key = [
+      finding.code,
+      finding.entity_type,
+      finding.entity_id,
+      targetMonth,
+    ].join(":");
+    if (!unique.has(key)) unique.set(key, finding);
+  }
+  return [...unique.values()];
 }
 
 function summarizeFindings(findings: AgentFinding[]) {
@@ -410,6 +461,7 @@ function emptyDashboard(companyId: string) {
     companyId,
     generatedAt: new Date().toISOString(),
     dashboardVersion: DASHBOARD_VERSION,
+    reviewSnapshotComplete: false,
     overview: {
       totalAppliedRepairs: 0,
       rolledBackRepairs: 0,

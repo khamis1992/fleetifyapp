@@ -39,6 +39,7 @@ interface ContractInputData {
   contract_type?: string
   start_date: string
   end_date: string
+  contract_date?: string
   contract_amount: number | string
   monthly_amount?: number | string
   description?: string | null
@@ -56,6 +57,10 @@ interface ContractCreationResult {
   success: boolean
   contract_id: string
   contract_number?: string
+  billing_graph_created?: boolean
+  schedules_created?: number
+  invoices_created?: number
+  contract_journal_created?: boolean
   journal_entry_id?: string
   journal_entry_number?: string
   warning?: string
@@ -183,11 +188,20 @@ export const useContractCreation = () => {
         }
 
         const contractAmount = Number(inputContractData.contract_amount)
-        if (isNaN(contractAmount) || contractAmount < 0) {
-          throw new Error('مبلغ العقد يجب أن يكون رقماً صحيحاً وأكبر من أو يساوي صفر')
+        if (isNaN(contractAmount) || contractAmount <= 0) {
+          throw new Error('مبلغ العقد يجب أن يكون رقماً صحيحاً وأكبر من صفر')
         }
 
         // التحقق من البيانات المطلوبة مع تسجيل مفصل
+        // Keep one key for the whole logical attempt. React Query may retry the
+        // same object after a lost response; reusing the key makes that replay
+        // return the original contract instead of creating a second graph.
+        const idempotencyKey = typeof inputContractData.idempotency_key === 'string'
+          && inputContractData.idempotency_key.trim()
+          ? inputContractData.idempotency_key.trim()
+          : `contract:${crypto.randomUUID()}`
+        inputContractData.idempotency_key = idempotencyKey
+
         const rpcParams = {
           p_company_id: companyId,
           p_customer_id: inputContractData.customer_id,
@@ -195,12 +209,15 @@ export const useContractCreation = () => {
           p_contract_type: inputContractData.contract_type || 'rental',
           p_start_date: inputContractData.start_date,
           p_end_date: inputContractData.end_date,
+          p_contract_date: inputContractData.contract_date || new Date().toISOString().slice(0, 10),
           p_contract_amount: contractAmount,
           p_monthly_amount: Number(inputContractData.monthly_amount || contractAmount) || contractAmount,
           p_description: inputContractData.description || undefined,
           p_terms: inputContractData.terms || undefined,
           p_cost_center_id: inputContractData.cost_center_id || undefined,
-          p_created_by: inputContractData.created_by || user?.id || undefined
+          p_created_by: inputContractData.created_by || user?.id || undefined,
+          p_created_via: 'web',
+          p_idempotency_key: idempotencyKey,
         }
         
         console.log('📋 [CONTRACT_CREATION] معاملات RPC:', rpcParams)
@@ -243,13 +260,11 @@ export const useContractCreation = () => {
         console.log('🚀 [CONTRACT_CREATION] استخدام الإدخال المباشر في جدول العقود...')
         
         const monthlyAmount = Number(inputContractData.monthly_amount || contractAmount) || contractAmount
-        const vehicleId = inputContractData.vehicle_id === 'none' ? null : inputContractData.vehicle_id
-
         updateStepStatus('activation', 'processing')
-        console.log('[CONTRACT_CREATION] Creating contract through create_contract_with_journal_entry RPC...')
+        console.log('[CONTRACT_CREATION] Creating contract and billing graph atomically...')
 
         const { data: contractRpcResult, error: createError } = await supabase
-          .rpc('create_contract_with_journal_entry', rpcParams)
+          .rpc('create_contract_with_billing_graph_atomic', rpcParams)
 
         // معالجة أخطاء الاتصال بقاعدة البيانات
         if (createError) {
@@ -271,7 +286,7 @@ export const useContractCreation = () => {
         // معالجة عدم وجود استجابة
         const typedResult = (contractRpcResult || {}) as unknown as ContractCreationResult
 
-        if (!typedResult.success || !typedResult.contract_id) {
+        if (!typedResult.success || !typedResult.contract_id || !typedResult.billing_graph_created) {
           const rpcError = typedResult.error || typedResult.errors?.join(', ')
           const errorMessage = rpcError || 'لم يتم إنشاء العقد من قاعدة البيانات'
           console.error('[CONTRACT_CREATION] Contract RPC did not return a successful result:', typedResult)
@@ -285,13 +300,6 @@ export const useContractCreation = () => {
         }
 
         const contractId = typedResult.contract_id
-        const journalEntryId = typedResult.journal_entry_id || null
-        const warnings = [
-          ...(typedResult.warnings || []),
-          ...(typedResult.warning ? [typedResult.warning] : []),
-        ].filter(Boolean)
-        const requiresManualEntry = Boolean(typedResult.requires_manual_entry)
-
         const { data: insertedContract, error: fetchCreatedContractError } = await supabase
           .from('contracts')
           .select('*')
@@ -310,22 +318,6 @@ export const useContractCreation = () => {
 
         console.log('✅ [CONTRACT_CREATION] تم إنشاء العقد بنجاح:', insertedContract)
         
-        // تحديث حالة المركبة إذا تم اختيارها
-        if (vehicleId) {
-          console.log('🚗 [CONTRACT_CREATION] تحديث حالة المركبة إلى مؤجرة...')
-          const { error: vehicleError } = await supabase
-            .from('vehicles')
-            .update({ status: 'rented' })
-            .eq('id', vehicleId)
-            .eq('company_id', companyId)
-          
-          if (vehicleError) {
-            console.warn('⚠️ [CONTRACT_CREATION] فشل في تحديث حالة المركبة:', vehicleError)
-          } else {
-            console.log('✅ [CONTRACT_CREATION] تم تحديث حالة المركبة بنجاح')
-          }
-        }
-
         // تحديد حالة الخطوات بناءً على النتيجة
         updateStepStatus('validation', 'completed')
         updateStepStatus('accounts', 'completed')
@@ -418,7 +410,7 @@ export const useContractCreation = () => {
             condition_report_id: inputContractData.vehicle_condition_report_id,
             company_name: 'الشركة', // Will be fetched from settings in the hook
             created_date: new Date().toISOString(),
-            is_draft: !journalEntryId // Draft if no journal entry was created
+            is_draft: insertedContract.status !== 'active'
           }
           
           console.log('📄 [CONTRACT_CREATION] Document data prepared:', {
@@ -448,148 +440,31 @@ export const useContractCreation = () => {
           // This is part of the improved error handling - contract creation succeeds even if document saving fails
         }
 
-        // ✅ إنشاء الفواتير تلقائياً للعقد الجديد
-        let invoicesCreated = 0
-        try {
-          console.log('📋 [CONTRACT_CREATION] إنشاء الفواتير تلقائياً للعقد...')
+        // Schedules, invoices and their journals were committed with the
+        // contract in one database transaction. A failure would have rolled
+        // the whole RPC back and reached the outer error handler.
+        const invoicesCreated = Number(typedResult.invoices_created || 0)
 
-          // Ensure schedules exist before trying to generate invoices from them.
-          // This keeps behavior non-fatal and aligned with existing error handling.
-          const { error: scheduleError } = await supabase
-            .rpc('generate_payment_schedules_for_contract', {
-              p_contract_id: contractId,
-              p_dry_run: false
-            })
-
-          if (scheduleError) {
-            console.warn('⚠️ [CONTRACT_CREATION] فشل في إنشاء جدول الدفعات قبل الفواتير:', scheduleError)
-          }
-          
-          const { data: invoiceResult, error: invoiceError } = await supabase
-            .rpc('generate_invoices_from_payment_schedule', {
-              p_contract_id: contractId
-            })
-          
-          if (invoiceError) {
-            console.warn('⚠️ [CONTRACT_CREATION] فشل في إنشاء الفواتير عبر RPC:', invoiceError)
-            // محاولة بديلة - إنشاء يدوي
-            try {
-              // حساب عدد الأشهر
-              const startDate = new Date(inputContractData.start_date)
-              const endDate = new Date(inputContractData.end_date)
-              const monthsDiff = (endDate.getFullYear() - startDate.getFullYear()) * 12 + 
-                                 (endDate.getMonth() - startDate.getMonth()) + 1
-              const numberOfInvoices = Math.min(monthsDiff, Math.ceil(contractAmount / monthlyAmount))
-              
-              for (let i = 0; i < numberOfInvoices; i++) {
-                // حساب تاريخ الاستحقاق - أول يوم من الشهر التالي
-                const dueDate = new Date(startDate)
-                dueDate.setMonth(startDate.getMonth() + i + 1)
-                dueDate.setDate(1)
-                
-                const invoiceNumber = `INV-${insertedContract.contract_number}-${String(i + 1).padStart(3, '0')}`
-                
-                // التحقق من عدم وجود الفاتورة
-                const { data: existing } = await supabase
-                  .from('invoices')
-                  .select('id')
-                  .eq('invoice_number', invoiceNumber)
-                  .eq('company_id', companyId)
-                  .maybeSingle()
-                
-                if (!existing) {
-                  const invoiceDate = new Date(dueDate)
-                  invoiceDate.setDate(invoiceDate.getDate() - 5)
-                  
-                  const { error: insertError } = await supabase.from('invoices').insert({
-                    company_id: companyId,
-                    customer_id: inputContractData.customer_id,
-                    contract_id: contractId,
-                    invoice_number: invoiceNumber,
-                    invoice_date: invoiceDate.toISOString().split('T')[0],
-                    due_date: dueDate.toISOString().split('T')[0],
-                    total_amount: monthlyAmount,
-                    subtotal: monthlyAmount,
-                    payment_status: 'unpaid',
-                    status: 'draft',
-                    invoice_type: 'rental',
-                    notes: `فاتورة إيجار شهرية - الشهر ${i + 1} من ${numberOfInvoices}`,
-                  })
-                  
-                  if (!insertError) {
-                    invoicesCreated++
-                  }
-                }
-              }
-              console.log(`✅ [CONTRACT_CREATION] تم إنشاء ${invoicesCreated} فاتورة يدوياً`)
-            } catch (manualError) {
-              console.error('❌ [CONTRACT_CREATION] فشل في إنشاء الفواتير يدوياً:', manualError)
-            }
-          } else {
-            invoicesCreated = invoiceResult || 0
-            console.log(`✅ [CONTRACT_CREATION] تم إنشاء ${invoicesCreated} فاتورة عبر RPC`)
-          }
-        } catch (invoiceGenError) {
-          console.error('❌ [CONTRACT_CREATION] خطأ في إنشاء الفواتير (non-fatal):', invoiceGenError)
-          // لا نفشل عملية إنشاء العقد بسبب فشل إنشاء الفواتير
-        }
-
-        // معالجة حالة القيد المحاسبي - تجربة مستخدم مُحسّنة
         const invoiceMessage = invoicesCreated > 0 ? ` + ${invoicesCreated} فاتورة` : ''
-        
-        if (journalEntryId) {
-          // ✅ نجاح كامل
-          updateStepStatus('activation', 'completed')
-          updateStepStatus('verification', 'completed')
-          updateStepStatus('finalization', 'completed')
-          
-          toast.success(`تم إنشاء العقد والقيد المحاسبي${invoiceMessage} بنجاح ✓`)
-        } else if (requiresManualEntry) {
-          // ⚠️ العقد تم إنشاؤه - القيد يحتاج مراجعة
-          console.log('⚠️ [CONTRACT_CREATION] Contract created, journal entry needs setup')
-          
-          // رسائل مختصرة وواضحة
-          updateStepStatus('activation', 'completed', undefined, ['تم إنشاء العقد بنجاح'])
-          updateStepStatus('verification', 'warning', 'القيد المحاسبي يحتاج إعداد')
-          updateStepStatus('finalization', 'completed')
-          
-          // رسالة نجاح مع تنبيه بسيط
-          toast.success(`تم إنشاء العقد${invoiceMessage} بنجاح ✓`, {
-            description: 'القيد المحاسبي يمكن إضافته لاحقاً',
-            duration: 4000
-          })
-        } else if (warnings.length > 0) {
-          // تحذيرات بسيطة
-          updateStepStatus('activation', 'completed')
-          updateStepStatus('verification', 'completed')
-          updateStepStatus('finalization', 'completed')
-          
-          toast.success(`تم إنشاء العقد${invoiceMessage} بنجاح ✓`)
-        } else {
-          // نجاح (مبلغ صفر)
-          updateStepStatus('activation', 'completed')
-          updateStepStatus('verification', 'completed')
-          updateStepStatus('finalization', 'completed')
-          
-          toast.success(`تم إنشاء العقد${invoiceMessage} بنجاح ✓`)
-        }
+        updateStepStatus('activation', 'completed')
+        updateStepStatus('verification', 'completed')
+        updateStepStatus('finalization', 'completed')
+        toast.success(`تم إنشاء العقد${invoiceMessage} مع القيود المحاسبية بنجاح ✓`)
 
         // تحديث الحالة - العقد ناجح دائماً
         setCreationState(prev => ({ 
           ...prev, 
           contractId, 
           isProcessing: false,
-          hasWarnings: requiresManualEntry,
-          healthStatus: journalEntryId ? 'good' : (requiresManualEntry ? 'warning' : 'good')
+          hasWarnings: false,
+          healthStatus: 'good'
         }))
 
         await logContractStep(contractId, 'enhanced_creation', 'completed', 1, undefined, Date.now() - startTime)
 
         console.log('🎉 [CONTRACT_CREATION] اكتملت العملية المحسنة:', {
           contractId,
-          journalEntryId,
-          warnings,
-          requiresManualEntry,
+          invoicesCreated,
           totalTime: Date.now() - startTime
         })
 
@@ -606,7 +481,7 @@ export const useContractCreation = () => {
           return { 
             id: contractId, 
             contract_number: typedResult.contract_number,
-            status: journalEntryId ? 'active' : 'draft'
+            status: 'active'
           }
         }
 
@@ -755,7 +630,7 @@ export const useContractCreation = () => {
   }
 
   return {
-    createContract: createContractMutation.mutate,
+    createContract: createContractMutation.mutateAsync,
     creationState,
     isCreating: createContractMutation.isPending,
     retryCreation,

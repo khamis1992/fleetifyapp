@@ -40,6 +40,7 @@ import {
   getActiveTaqadiWorker,
   TAQADI_STATUS_LABELS,
 } from './LawsuitPreparation/utils/taqadiAutomation';
+import { TaqadiAgentStartButton } from '@/components/legal/TaqadiAgentStartButton';
 
 type RowPhase =
   | { kind: 'idle' }
@@ -238,8 +239,11 @@ export default function BatchLawsuitFiling() {
       {!workerOnline && (
         <Alert className="border-amber-200 bg-amber-50">
           <AlertCircle className="h-4 w-4 text-amber-700" />
-          <AlertDescription className="text-amber-900">
-            وكيل الأتمتة غير متصل حاليًا. يمكنك إدخال المهام في الطابور الآن وسيبدأ تنفيذها فور تشغيل الوكيل.
+          <AlertDescription className="flex flex-wrap items-center justify-between gap-3 text-amber-900">
+            <span>
+              وكيل الأتمتة غير متصل حاليًا. يمكنك إدخال المهام في الطابور الآن وسيبدأ تنفيذها فور تشغيل الوكيل.
+            </span>
+            <TaqadiAgentStartButton />
           </AlertDescription>
         </Alert>
       )}

@@ -40,6 +40,8 @@ import {
   ScanLine,
   Upload,
   Edit3,
+  Mic,
+  Sparkles,
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -71,6 +73,13 @@ import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { formatCustomerName } from '@/utils/formatCustomerName';
 import { resolveQuickPaymentContractScope } from '@/utils/quickPaymentContractScope';
+import {
+  communicationLogDateFormatter,
+  getCallRecordingPath,
+  parseCallNotes,
+  parseNoteContent,
+  type CommunicationLogItem,
+} from '@/utils/communicationLog';
 import {
   CallLogDialog,
   ScheduleFollowupDialog,
@@ -273,38 +282,7 @@ const humanizeContractOperation = (operationType?: string | null) => {
   return contractOperationLabels[key] || key.replace(/_/g, ' ');
 };
 
-const callOutcomeLabels: Record<string, string> = {
-  answered: 'تم الرد',
-  no_answer: 'لم يتم الرد',
-  busy: 'مشغول',
-  voicemail: 'بريد صوتي',
-  wrong_number: 'رقم خاطئ',
-};
 
-const callPurposeLabels: Record<string, string> = {
-  payment_reminder: 'تذكير بالدفع',
-  contract_renewal: 'تجديد عقد',
-  complaint_resolution: 'معالجة شكوى',
-  general_inquiry: 'استفسار عام',
-  follow_up: 'متابعة',
-  other: 'أخرى',
-};
-
-const parseCallNotes = (notes?: string | null) => {
-  const text = String(notes || '').trim();
-  const [firstLine = '', ...rest] = text.split(/\r?\n/);
-  const [purposeRaw = '', outcomeRaw = ''] = firstLine.split(' - ');
-  const body = rest
-    .filter((line) => !line.trim().startsWith('نوع المكالمة:'))
-    .join('\n')
-    .trim();
-
-  return {
-    purpose: callPurposeLabels[purposeRaw.trim()] || purposeRaw.trim() || 'اتصال',
-    outcome: callOutcomeLabels[outcomeRaw.trim()] || outcomeRaw.trim() || 'غير محدد',
-    body: body || text,
-  };
-};
 
 const formatActivityTime = (value?: string | null) => {
   if (!value) return '';
@@ -366,6 +344,9 @@ export const EmployeeWorkspace: React.FC = () => {
   // from Team Management, even when the employee also has a management role.
   const canUnassignContracts = false;
   const companyId = user?.profile?.company_id || user?.company?.id || '';
+  const canOpenSystemAudit = Boolean(
+    user?.roles?.some((role) => ['manager', 'company_admin', 'super_admin'].includes(role)),
+  );
   const todayLogDate = todayISODate();
   const createContractDocument = useCreateContractDocument();
   const violationProofInputRef = useRef<HTMLInputElement>(null);
@@ -613,6 +594,86 @@ export const EmployeeWorkspace: React.FC = () => {
     },
     enabled: !!workspaceProfile?.id && !!companyId && !!user?.id,
   });
+
+  // سجل التواصل الكامل (مكالمات + ملاحظات) لكل الأيام — يُحمّل عند فتح تبويب «السجل»
+  const [communicationLogFilter, setCommunicationLogFilter] = useState<'all' | 'phone' | 'note'>('all');
+  const [playingRecordingId, setPlayingRecordingId] = useState<string | null>(null);
+
+  const { data: communicationLog = [], isLoading: isCommunicationLogLoading } = useQuery({
+    queryKey: ['employee-communication-log', companyId, user?.id],
+    queryFn: async (): Promise<CommunicationLogItem[]> => {
+      if (!companyId || !user?.id) return [];
+
+      const { data, error } = await (supabase as any)
+        .from('customer_communications')
+        .select('id,communication_type,communication_date,communication_time,duration_minutes,notes,follow_up_scheduled,follow_up_date,customer_id,contract_id,ai_summary,attachments')
+        .eq('company_id', companyId)
+        .eq('employee_id', user.id)
+        .order('communication_date', { ascending: false })
+        .order('communication_time', { ascending: false })
+        .limit(200);
+
+      if (error) throw error;
+      return (data || []) as CommunicationLogItem[];
+    },
+    enabled: activeTab === 'log' && !!companyId && !!user?.id,
+  });
+
+  const communicationLogNames = useMemo(() => {
+    const contractLookup = new Map(contracts.map((contract) => [
+      contract.id,
+      {
+        contractNumber: contract.contract_number || contract.id,
+        customerName: contract.customer_name || 'عميل غير محدد',
+      },
+    ]));
+    const customerLookup = new Map(contracts.map((contract) => [
+      contract.customer_id,
+      contract.customer_name || 'عميل غير محدد',
+    ]));
+    return { contractLookup, customerLookup };
+  }, [contracts]);
+
+  const filteredCommunicationLog = useMemo(() => (
+    communicationLogFilter === 'all'
+      ? communicationLog
+      : communicationLog.filter((item) => item.communication_type === communicationLogFilter)
+  ), [communicationLog, communicationLogFilter]);
+
+  const groupedCommunicationLog = useMemo(() => {
+    const groups: Array<{ date: string; items: CommunicationLogItem[] }> = [];
+    for (const item of filteredCommunicationLog) {
+      const lastGroup = groups[groups.length - 1];
+      if (lastGroup && lastGroup.date === item.communication_date) {
+        lastGroup.items.push(item);
+      } else {
+        groups.push({ date: item.communication_date, items: [item] });
+      }
+    }
+    return groups;
+  }, [filteredCommunicationLog]);
+
+  const handlePlayRecording = async (item: CommunicationLogItem) => {
+    const recordingPath = getCallRecordingPath(item.attachments);
+    if (!recordingPath) return;
+
+    setPlayingRecordingId(item.id);
+    try {
+      const { data, error } = await supabase.storage
+        .from('call-recordings')
+        .createSignedUrl(recordingPath, 3600);
+      if (error) throw error;
+      window.open(data.signedUrl, '_blank', 'noopener,noreferrer');
+    } catch (error) {
+      toast({
+        title: 'تعذر فتح التسجيل الصوتي',
+        description: error instanceof Error ? error.message : undefined,
+        variant: 'destructive',
+      });
+    } finally {
+      setPlayingRecordingId(null);
+    }
+  };
 
   const {
     data: dailyContractActivity = emptyDailyContractActivity,
@@ -1832,6 +1893,21 @@ export const EmployeeWorkspace: React.FC = () => {
     };
   }), [contracts, tasks]);
 
+  const getContractDueBalance = (contract: typeof contracts[number]) =>
+    Number(contract.due_invoice_balance ?? 0);
+
+  const getContractOpenInvoiceBalance = (contract: typeof contracts[number]) =>
+    Number(contract.open_invoice_balance ?? 0);
+
+  const getContractCollectibleInvoiceBalance = (contract: typeof contracts[number]) =>
+    Number(contract.collectible_invoice_balance ?? 0);
+
+  const hasCurrentDueBalance = (contract: typeof contracts[number]) =>
+    getContractDueBalance(contract) > 0;
+
+  const hasCollectibleInvoiceBalance = (contract: typeof contracts[number]) =>
+    getContractCollectibleInvoiceBalance(contract) > 0;
+
   const reportPerformance = useMemo<ReportEmployeePerformance | null>(() => {
     if (!performance) return null;
 
@@ -1846,7 +1922,9 @@ export const EmployeeWorkspace: React.FC = () => {
       company_id: user?.profile?.company_id || user?.company?.id || '',
       assigned_contracts_count: contractStats.totalContracts,
       active_contracts_count: contractStats.activeContracts,
-      contracts_with_balance_count: contracts.filter(contract => contract.balance_due > 0).length,
+      contracts_with_balance_count: contracts.filter(
+        contract => Number(contract.due_invoice_balance ?? 0) > 0,
+      ).length,
       total_contract_value: contracts.reduce((sum, contract) => sum + contract.monthly_amount, 0),
       total_collected: performance.total_collected,
       total_balance_due: contractStats.totalBalanceDue,
@@ -1869,14 +1947,16 @@ export const EmployeeWorkspace: React.FC = () => {
     : null;
 
   const getContractWorkStatus = (contract: typeof contracts[number]): ContractWorkFilter => {
-    const balanceDue = Number(contract.balance_due || 0);
+    const collectibleBalance = getContractCollectibleInvoiceBalance(contract);
+    const openInvoiceBalance = getContractOpenInvoiceBalance(contract);
     const hasSignedContract = signedContractIds.includes(contract.id);
     const hasOpenViolations = (contract.traffic_violation_count || 0) > 0;
     const hasPendingTasks = tasks.some((task) =>
       task.contract_id === contract.id && !['completed', 'cancelled'].includes(task.status)
     );
 
-    if (balanceDue > 0) return 'collection';
+    if (collectibleBalance > 0) return 'collection';
+    if (openInvoiceBalance > 0 || contract.billing_review_required) return 'needs_completion';
     if (hasOpenViolations || !hasSignedContract || hasPendingTasks) return 'needs_completion';
     if (contract.vehicle_returned === true) return 'ready_to_close';
     return 'operational';
@@ -1912,7 +1992,10 @@ export const EmployeeWorkspace: React.FC = () => {
 
     if (existing) {
       existing.contracts.push(contract);
-      existing.totalBalance += contract.balance_due || 0;
+      existing.totalBalance += getContractDueBalance(contract);
+      existing.totalCollectibleBalance += getContractCollectibleInvoiceBalance(contract);
+      existing.totalOpenBalance += getContractOpenInvoiceBalance(contract);
+      existing.billingReviewCount += contract.billing_review_required ? 1 : 0;
       existing.totalMonthly += contract.monthly_amount || 0;
       return groups;
     }
@@ -1922,7 +2005,10 @@ export const EmployeeWorkspace: React.FC = () => {
       customerName: contract.customer_name || 'غير محدد',
       customerPhone: contract.customer_phone || null,
       contracts: [contract],
-      totalBalance: contract.balance_due || 0,
+      totalBalance: getContractDueBalance(contract),
+      totalCollectibleBalance: getContractCollectibleInvoiceBalance(contract),
+      totalOpenBalance: getContractOpenInvoiceBalance(contract),
+      billingReviewCount: contract.billing_review_required ? 1 : 0,
       totalMonthly: contract.monthly_amount || 0,
     });
 
@@ -1933,6 +2019,9 @@ export const EmployeeWorkspace: React.FC = () => {
     customerPhone: string | null;
     contracts: typeof filteredContracts;
     totalBalance: number;
+    totalCollectibleBalance: number;
+    totalOpenBalance: number;
+    billingReviewCount: number;
     totalMonthly: number;
   }>());
   const filteredContractGroupsList = Array.from(filteredContractGroups.values());
@@ -2130,7 +2219,7 @@ export const EmployeeWorkspace: React.FC = () => {
         throw new Error('العقد غير موجود في مساحة العمل الحالية');
       }
 
-      const balanceDue = Number(contract.balance_due || 0);
+      const balanceDue = getContractOpenInvoiceBalance(contract);
       const hasSignedContract = signedContractIds.includes(contract.id);
       const hasOpenViolations = (contract.traffic_violation_count || 0) > 0;
       const hasPendingTasks = tasks.some((task) =>
@@ -2142,6 +2231,9 @@ export const EmployeeWorkspace: React.FC = () => {
       }
       if (balanceDue > 0) {
         throw new Error('لا يمكن إغلاق العقد قبل تصفية الرصيد المستحق');
+      }
+      if (contract.billing_review_required) {
+        throw new Error('لا يمكن إغلاق العقد قبل معالجة مراجعة الفوترة وإنشاء الفواتير القابلة للتحصيل');
       }
       if (hasOpenViolations) {
         throw new Error('لا يمكن إغلاق العقد قبل معالجة المخالفات المرورية المفتوحة');
@@ -2156,23 +2248,12 @@ export const EmployeeWorkspace: React.FC = () => {
         throw new Error('لا يمكن إغلاق العقد قبل تأكيد رجوع المركبة');
       }
 
-      const now = new Date().toISOString();
-      const { data, error } = await supabase
-        .from('contracts')
-        .update({
-          status: 'expired',
-          assignment_notes: `تم إغلاق العقد المكتمل من مساحة الموظف بواسطة ${user.email || user.id} بتاريخ ${now}`,
-          updated_at: now,
-        })
-        .eq('id', contractId)
-        .eq('company_id', companyId)
-        .eq('assigned_to_profile_id', workspaceProfile.id)
-        .eq('status', 'active')
-        .select('id, contract_number')
-        .single();
+      const { error } = await supabase.rpc('employee_close_assigned_contract', {
+        p_contract_id: contractId,
+      });
 
       if (error) throw error;
-      return data;
+      return { id: contract.id, contract_number: contract.contract_number };
     },
     onSuccess: (contract) => {
       toast({
@@ -2555,6 +2636,7 @@ export const EmployeeWorkspace: React.FC = () => {
                 <TabsTrigger value="collections" className="rounded-lg px-3 py-2 text-xs font-bold data-[state=active]:bg-[#142033] data-[state=active]:text-white sm:px-4 sm:py-2.5 sm:text-sm">التحصيل الشهري</TabsTrigger>
                 <TabsTrigger value="contracts" className="rounded-lg px-3 py-2 text-xs font-bold data-[state=active]:bg-[#142033] data-[state=active]:text-white sm:px-4 sm:py-2.5 sm:text-sm">العقود ({contractStats.totalContracts})</TabsTrigger>
                 <TabsTrigger value="tasks" className="rounded-lg px-3 py-2 text-xs font-bold data-[state=active]:bg-[#142033] data-[state=active]:text-white sm:px-4 sm:py-2.5 sm:text-sm">المهام ({taskStats.totalTasks})</TabsTrigger>
+                <TabsTrigger value="log" className="rounded-lg px-3 py-2 text-xs font-bold data-[state=active]:bg-[#142033] data-[state=active]:text-white sm:px-4 sm:py-2.5 sm:text-sm">سجل التواصل</TabsTrigger>
               </TabsList>
             </div>
 
@@ -2591,7 +2673,7 @@ export const EmployeeWorkspace: React.FC = () => {
                           </Badge>
                           <p className="text-[10px] font-bold text-red-600 sm:text-xs">
                             {contract.priority_reason === 'overdue_payment' ? (
-                              <>{formatCurrency(contract.balance_due)}</>
+                              <>{formatCurrency(getContractDueBalance(contract))}</>
                             ) : (
                               <>متأخر {contract.days_overdue} يوم</>
                             )}
@@ -2971,12 +3053,28 @@ export const EmployeeWorkspace: React.FC = () => {
                 </CardHeader>
                 <CardContent className="p-3 sm:p-4">
                   <div className="space-y-3">
-                    {filteredContractGroupsList.length > 0 ? filteredContractGroupsList.map((customerGroup) => (
+                    {filteredContractGroupsList.length > 0 ? filteredContractGroupsList.map((customerGroup) => {
+                      const isGroupFullyPaid = customerGroup.totalBalance <= 0
+                        && customerGroup.totalCollectibleBalance <= 0
+                        && customerGroup.totalOpenBalance <= 0
+                        && customerGroup.billingReviewCount <= 0;
+
+                      return (
                       <section
                         key={customerGroup.customerId}
-                        className="overflow-hidden rounded-xl border border-[#E2E8F0] bg-[#F8FAFC]"
+                        className={cn(
+                          "overflow-hidden rounded-xl border",
+                          isGroupFullyPaid
+                            ? "border-[#A7F3D0] bg-[#F0FDF6]"
+                            : "border-[#E2E8F0] bg-[#F8FAFC]",
+                        )}
                       >
-                        <header className="flex items-center gap-3 border-b border-[#E2E8F0] bg-white px-3 py-2.5 sm:px-4 sm:py-3">
+                        <header className={cn(
+                          "flex items-center gap-3 border-b px-3 py-2.5 sm:px-4 sm:py-3",
+                          isGroupFullyPaid
+                            ? "border-[#D1FAE5] bg-[#ECFDF5]"
+                            : "border-[#E2E8F0] bg-white",
+                        )}>
                           <Avatar className="h-9 w-9 shrink-0 border border-[#E2E8F0] bg-[#F4F8FB] sm:h-10 sm:w-10">
                             <AvatarFallback className="bg-[#EEF5FB] text-sm font-black text-[#173A63]">
                               {customerGroup.customerName?.[0] || 'ع'}
@@ -2990,18 +3088,24 @@ export const EmployeeWorkspace: React.FC = () => {
                               <span>{customerGroup.contracts.length} عقد</span>
                               {customerGroup.customerPhone && <span dir="ltr">{customerGroup.customerPhone}</span>}
                               <span className="text-[#D97706]" dir="ltr">
-                                {formatCurrency(customerGroup.totalBalance)}
+                                {customerGroup.totalBalance > 0
+                                  ? formatCurrency(customerGroup.totalBalance)
+                                  : customerGroup.totalCollectibleBalance > 0
+                                    ? `قابل للتحصيل ${formatCurrency(customerGroup.totalCollectibleBalance)}`
+                                  : customerGroup.totalOpenBalance > 0
+                                    ? `فواتير مستقبلية ${formatCurrency(customerGroup.totalOpenBalance)}`
+                                    : formatCurrency(0)}
                               </span>
                             </div>
                           </div>
-                          {customerGroup.totalBalance > 0 ? (
+                          {customerGroup.totalCollectibleBalance > 0 ? (
                             <Button
                               size="sm"
                               className="h-8 shrink-0 rounded-lg bg-[#11A37F] px-3 text-xs font-bold text-white hover:bg-[#0D876A] sm:px-4"
                               onClick={() => {
                                 const paymentContractId = resolveQuickPaymentContractScope(
                                   customerGroup.contracts
-                                    .filter((contract) => (contract.balance_due || 0) > 0)
+                                    .filter((contract) => hasCollectibleInvoiceBalance(contract))
                                     .map((contract) => contract.id),
                                 );
                                 setSelectedPaymentCustomer({
@@ -3016,9 +3120,36 @@ export const EmployeeWorkspace: React.FC = () => {
                               <DollarSign className="ml-1 h-3.5 w-3.5" />
                               دفعة
                             </Button>
+                          ) : customerGroup.billingReviewCount > 0 && canOpenSystemAudit ? (
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              className="h-8 shrink-0 gap-1.5 rounded-lg border-amber-300 bg-amber-50 px-3 text-xs font-bold text-amber-800 hover:bg-amber-100"
+                              onClick={() => navigate('/tasks?tab=system-audit')}
+                            >
+                              <AlertCircle className="h-3.5 w-3.5" />
+                              مراجعة الفوترة
+                            </Button>
+                          ) : customerGroup.billingReviewCount > 0 ? (
+                            <Badge className="h-7 shrink-0 rounded-lg border border-amber-300 bg-amber-50 px-2.5 text-[10px] font-bold text-amber-800 hover:bg-amber-50 sm:text-xs">
+                              تم رفعها للمشرف
+                            </Badge>
                           ) : (
-                            <Badge className="h-7 shrink-0 rounded-lg border border-[#A7F3D0] bg-[#ECFDF5] px-2.5 text-[10px] font-bold text-[#059669] hover:bg-[#ECFDF5] sm:text-xs">
-                              مدفوع بالكامل
+                            <Badge className={cn(
+                              'h-7 shrink-0 gap-1 rounded-lg px-2.5 text-[10px] font-bold sm:text-xs',
+                              customerGroup.totalOpenBalance > 0
+                                ? 'border border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-50'
+                                : 'border border-transparent bg-[#059669] text-white shadow-sm hover:bg-[#059669]',
+                            )}>
+                              {customerGroup.totalOpenBalance > 0
+                                ? 'فواتير مستقبلية'
+                                : (
+                                  <>
+                                    <CheckCircle className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                                    مدفوع بالكامل
+                                  </>
+                                )}
                             </Badge>
                           )}
                         </header>
@@ -3030,16 +3161,32 @@ export const EmployeeWorkspace: React.FC = () => {
                             const hasSignedContract = signedContractIds.includes(contract.id);
                             const workStatus = getContractWorkStatus(contract);
                             const canCloseCompletedContract = workStatus === 'ready_to_close';
+                            const dueBalance = getContractDueBalance(contract);
+                            const collectibleInvoiceBalance = getContractCollectibleInvoiceBalance(contract);
+                            const openInvoiceBalance = getContractOpenInvoiceBalance(contract);
+                             const hasFutureInvoicesOnly = collectibleInvoiceBalance <= 0 && openInvoiceBalance > 0;
+                             const requiresBillingReview = Boolean(contract.billing_review_required);
+                             const isFullyPaidContract = dueBalance <= 0
+                               && collectibleInvoiceBalance <= 0
+                               && !hasFutureInvoicesOnly
+                               && !requiresBillingReview;
 
-                            return (
-                              <div
-                                key={contract.id}
-                                className="group relative overflow-hidden rounded-xl border border-[#E2E8F0] bg-white transition-all hover:border-[#11A37F]/40 hover:shadow-md"
-                              >
-                                <div className={cn(
-                                  "absolute inset-y-0 right-0 w-1",
-                                  statusStyle.badge.split(' ')[0].replace('-100', '-500'),
-                                )} />
+                             return (
+                               <div
+                                 key={contract.id}
+                                 className={cn(
+                                   "group relative overflow-hidden rounded-xl border transition-all hover:shadow-md",
+                                   isFullyPaidContract
+                                     ? "border-[#A7F3D0] bg-[#F0FDF6] hover:border-[#34D399]"
+                                     : "border-[#E2E8F0] bg-white hover:border-[#11A37F]/40",
+                                 )}
+                               >
+                                 <div className={cn(
+                                   "absolute inset-y-0 right-0 w-1",
+                                   isFullyPaidContract
+                                     ? "bg-[#10B981]"
+                                     : statusStyle.badge.split(' ')[0].replace('-100', '-500'),
+                                 )} />
 
                                 {/* Contract Info */}
                                 <div className="p-3 pr-4 sm:p-4 sm:pr-5">
@@ -3140,25 +3287,49 @@ export const EmployeeWorkspace: React.FC = () => {
                                     {/* Balance */}
                                     <div className="shrink-0 text-left">
                                       <p className="text-[10px] font-bold text-[#7B8798]">
-                                        {(contract.balance_due || 0) > 0 ? 'المستحق' : 'الحالة'}
+                                        {dueBalance > 0
+                                          ? 'المستحق الآن'
+                                          : collectibleInvoiceBalance > 0
+                                            ? 'قابل للتحصيل'
+                                            : hasFutureInvoicesOnly
+                                              ? 'فواتير مستقبلية'
+                                              : requiresBillingReview
+                                                ? 'مراجعة الفوترة'
+                                                : 'الحالة'}
                                       </p>
-                                      <p
-                                        className={cn(
-                                          "mt-0.5 text-sm font-black sm:text-base",
-                                          (contract.balance_due || 0) > 0 ? "text-[#D97706]" : "text-[#059669]",
-                                        )}
-                                        dir={(contract.balance_due || 0) > 0 ? 'ltr' : undefined}
-                                      >
-                                        {(contract.balance_due || 0) > 0
-                                          ? formatCurrency(contract.balance_due || 0)
-                                          : 'مدفوع'}
-                                      </p>
+                                       {isFullyPaidContract ? (
+                                         <span className="mt-1 inline-flex items-center gap-1 rounded-full bg-[#059669] px-2.5 py-1 text-[10px] font-black text-white shadow-sm sm:text-[11px]">
+                                           <CheckCircle className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                                           مدفوع بالكامل
+                                         </span>
+                                       ) : (
+                                         <p
+                                           className={cn(
+                                             "mt-0.5 text-sm font-black sm:text-base",
+                                             "text-[#D97706]",
+                                           )}
+                                           dir={dueBalance > 0 || collectibleInvoiceBalance > 0 || hasFutureInvoicesOnly ? 'ltr' : undefined}
+                                         >
+                                           {dueBalance > 0
+                                             ? formatCurrency(dueBalance)
+                                             : collectibleInvoiceBalance > 0
+                                               ? formatCurrency(collectibleInvoiceBalance)
+                                             : hasFutureInvoicesOnly
+                                               ? formatCurrency(openInvoiceBalance)
+                                               : 'لا توجد فاتورة'}
+                                         </p>
+                                       )}
                                     </div>
                                   </div>
                                 </div>
 
-                                {/* Action Buttons */}
-                                <div className="flex flex-wrap gap-1.5 border-t border-[#F1F5F9] bg-[#F8FAFC] px-3 py-2.5 sm:gap-2 sm:px-4">
+                                 {/* Action Buttons */}
+                                 <div className={cn(
+                                   "flex flex-wrap gap-1.5 border-t px-3 py-2.5 sm:gap-2 sm:px-4",
+                                   isFullyPaidContract
+                                     ? "border-[#D1FAE5] bg-[#ECFDF5]"
+                                     : "border-[#F1F5F9] bg-[#F8FAFC]",
+                                 )}>
                                   {contract.status === 'active' && (
                                     <Button
                                       size="sm"
@@ -3192,7 +3363,7 @@ export const EmployeeWorkspace: React.FC = () => {
                                     {hasSignedContract ? 'نسخة' : 'تصوير'}
                                   </Button>
 
-                                  {contract.status === 'active' && (contract.balance_due || 0) > 0 && (
+                                  {contract.status === 'active' && hasCollectibleInvoiceBalance(contract) && (
                                     <Button
                                       size="sm"
                                       variant="outline"
@@ -3228,7 +3399,7 @@ export const EmployeeWorkspace: React.FC = () => {
                                     </Button>
                                   )}
 
-                                  {contract.status === 'active' && (contract.balance_due || 0) > 0 && (
+                                  {contract.status === 'active' && hasCurrentDueBalance(contract) && (
                                     <Button
                                       size="sm"
                                       variant="outline"
@@ -3256,6 +3427,26 @@ export const EmployeeWorkspace: React.FC = () => {
                                       <Phone className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                                       اتصال
                                     </Button>
+                                  )}
+
+                                  {contract.status === 'active' && contract.billing_review_required && canOpenSystemAudit && (
+                                    <Button
+                                      type="button"
+                                      size="sm"
+                                      variant="outline"
+                                      className="h-8 gap-1 rounded-lg border-amber-300 bg-amber-50 px-2.5 text-[10px] font-bold text-amber-800 hover:bg-amber-100 sm:h-9 sm:px-3 sm:text-xs"
+                                      onClick={() => navigate('/tasks?tab=system-audit')}
+                                    >
+                                      <AlertCircle className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                                      مراجعة الفوترة
+                                    </Button>
+                                  )}
+
+                                  {contract.status === 'active' && contract.billing_review_required && !canOpenSystemAudit && (
+                                    <Badge className="h-8 gap-1 rounded-lg border border-amber-300 bg-amber-50 px-2.5 text-[10px] font-bold text-amber-800 hover:bg-amber-50 sm:h-9 sm:px-3 sm:text-xs">
+                                      <AlertCircle className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                                      تم رفعها للمشرف
+                                    </Badge>
                                   )}
 
                                   {contract.status === 'active' && (
@@ -3330,7 +3521,8 @@ export const EmployeeWorkspace: React.FC = () => {
                           })}
                         </div>
                       </section>
-                    )) : (
+                      );
+                    }) : (
                       <div className="py-12 text-center">
                         <FileText className="mx-auto mb-3 h-12 w-12 text-[#E2E8F0]" />
                         <p className="text-sm text-gray-400">لا توجد عقود مطابقة للبحث</p>
@@ -3422,6 +3614,179 @@ export const EmployeeWorkspace: React.FC = () => {
                 </CardContent>
               </Card>
             </TabsContent>
+
+            <TabsContent value="log" className="mt-0">
+              <Card className="rounded-2xl border-[#DDE5EF] shadow-sm">
+                <CardHeader className="border-b border-[#EEF2F6] p-4">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <CardTitle className="flex items-center gap-2 text-base font-black sm:text-lg">
+                        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#EEF4FA] text-[#1D4F7A]">
+                          <Phone className="h-4 w-4" />
+                        </div>
+                        سجل التواصل
+                      </CardTitle>
+                      <CardDescription className="mt-1 text-xs">
+                        كل المكالمات والملاحظات التي سجلتها مع العملاء — لكل الأيام، مع التسجيلات الصوتية وملخصات الذكاء الاصطناعي.
+                      </CardDescription>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      {([
+                        ['all', 'الكل'],
+                        ['phone', 'مكالمات'],
+                        ['note', 'ملاحظات'],
+                      ] as const).map(([filterKey, filterLabel]) => (
+                        <Button
+                          key={filterKey}
+                          type="button"
+                          size="sm"
+                          variant={communicationLogFilter === filterKey ? 'default' : 'outline'}
+                          className={cn(
+                            'h-7 rounded-lg px-2.5 text-[10px] font-bold sm:text-xs',
+                            communicationLogFilter === filterKey
+                              ? 'bg-[#142033] text-white hover:bg-[#142033]'
+                              : 'border-[#E2E8F0] text-[#475569]',
+                          )}
+                          onClick={() => setCommunicationLogFilter(filterKey)}
+                        >
+                          {filterLabel}
+                        </Button>
+                      ))}
+                      <Badge className="rounded-full bg-[#F1F5F9] text-xs font-bold text-[#475569] hover:bg-[#F1F5F9]">
+                        {filteredCommunicationLog.length} سجل
+                      </Badge>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="p-3 sm:p-4">
+                  {isCommunicationLogLoading ? (
+                    <div className="flex items-center justify-center gap-2 py-10 text-sm text-[#6A7688]">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      جاري تحميل سجل التواصل...
+                    </div>
+                  ) : groupedCommunicationLog.length === 0 ? (
+                    <div className="py-12 text-center">
+                      <Phone className="mx-auto mb-3 h-12 w-12 text-[#E2E8F0]" />
+                      <p className="text-sm text-gray-400">
+                        {communicationLogFilter === 'all'
+                          ? 'لا توجد مكالمات أو ملاحظات مسجلة بعد'
+                          : communicationLogFilter === 'phone'
+                            ? 'لا توجد مكالمات مسجلة بعد'
+                            : 'لا توجد ملاحظات مسجلة بعد'}
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {groupedCommunicationLog.map((group) => (
+                        <div key={group.date}>
+                          <div className="mb-2 flex items-center gap-2">
+                            <Calendar className="h-3.5 w-3.5 text-[#8A9AAF]" />
+                            <span className="text-xs font-black text-[#40516A]">
+                              {communicationLogDateFormatter.format(new Date(`${group.date}T00:00:00`))}
+                            </span>
+                            <span className="text-[10px] font-bold text-[#8A96A8]">({group.items.length})</span>
+                          </div>
+                          <div className="space-y-2">
+                            {group.items.map((item) => {
+                              const isPhoneCall = item.communication_type === 'phone';
+                              const parsed = isPhoneCall ? parseCallNotes(item.notes) : null;
+                              const noteParsed = !isPhoneCall ? parseNoteContent(item.notes) : null;
+                              const contractInfo = item.contract_id
+                                ? communicationLogNames.contractLookup.get(item.contract_id)
+                                : null;
+                              const customerName = contractInfo?.customerName
+                                || communicationLogNames.customerLookup.get(item.customer_id)
+                                || 'عميل غير محدد';
+                               const hasRecording = Boolean(getCallRecordingPath(item.attachments));
+
+                              return (
+                                <div
+                                  key={item.id}
+                                  className="rounded-xl border border-[#EEF2F6] bg-[#FBFCFE] p-3"
+                                >
+                                  <div className="flex flex-wrap items-center gap-2">
+                                    <span className={cn(
+                                      'flex h-7 w-7 shrink-0 items-center justify-center rounded-lg',
+                                      isPhoneCall
+                                        ? 'bg-[#EEF4FA] text-[#1D4F7A]'
+                                        : 'bg-[#FFFBEB] text-[#92400E]',
+                                    )}>
+                                      {isPhoneCall ? <Phone className="h-3.5 w-3.5" /> : <FileText className="h-3.5 w-3.5" />}
+                                    </span>
+                                    {parsed && (
+                                      <Badge variant="outline" className="rounded-md bg-white text-[#1D4F7A]">
+                                        {parsed.outcome}
+                                      </Badge>
+                                    )}
+                                    {noteParsed && (
+                                      <Badge
+                                        variant="outline"
+                                        className={cn(
+                                          'rounded-md',
+                                          noteParsed.important
+                                            ? 'border-[#FDE68A] bg-[#FFFBEB] text-[#92400E]'
+                                            : 'bg-white text-[#92400E]',
+                                        )}
+                                      >
+                                        {noteParsed.important ? '⭐ ' : ''}{noteParsed.typeLabel}
+                                      </Badge>
+                                    )}
+                                    <span className="text-xs font-black text-[#142033]">{customerName}</span>
+                                    {contractInfo?.contractNumber && (
+                                      <span className="text-xs text-[#8A96A8]">{contractInfo.contractNumber}</span>
+                                    )}
+                                    <span className="text-xs text-[#8A96A8]" dir="ltr">
+                                      {String(item.communication_time || '').slice(0, 5)}
+                                    </span>
+                                    {item.duration_minutes ? (
+                                      <span className="text-[10px] font-bold text-[#6A7688]">
+                                        {item.duration_minutes} دقيقة
+                                      </span>
+                                    ) : null}
+                                    {hasRecording && (
+                                      <Button
+                                        type="button"
+                                        size="sm"
+                                        variant="outline"
+                                        className="h-6 gap-1 rounded-md border-[#BFDBFE] bg-[#EFF6FF] px-2 text-[10px] font-bold text-[#1D4ED8] hover:bg-[#DBEAFE]"
+                                        disabled={playingRecordingId === item.id}
+                                        onClick={() => handlePlayRecording(item)}
+                                      >
+                                        {playingRecordingId === item.id
+                                          ? <Loader2 className="h-3 w-3 animate-spin" />
+                                          : <Mic className="h-3 w-3" />}
+                                        التسجيل
+                                      </Button>
+                                    )}
+                                  </div>
+                                  {parsed && (
+                                    <p className="mt-1.5 text-xs font-bold text-[#6A7688]">{parsed.purpose}</p>
+                                  )}
+                                  <p className="mt-1 whitespace-pre-line text-sm font-bold text-[#142033]">
+                                    {parsed ? parsed.body : noteParsed?.body}
+                                  </p>
+                                  {item.ai_summary && (
+                                    <p className="mt-2 flex items-start gap-1.5 rounded-lg bg-[#F5F3FF] p-2 text-xs font-bold text-[#6D28D9]">
+                                      <Sparkles className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                                      {item.ai_summary}
+                                    </p>
+                                  )}
+                                  {item.follow_up_scheduled && item.follow_up_date && (
+                                    <p className="mt-2 text-xs font-black text-[#0D876A]">
+                                      متابعة: {item.follow_up_date}
+                                    </p>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
           </Tabs>
 
         </div>
@@ -3430,7 +3795,7 @@ export const EmployeeWorkspace: React.FC = () => {
         <div className="col-span-12 space-y-4 sm:space-y-5 lg:col-span-4">
 
           {/* Verification Tasks */}
-          <VerificationTasksList limit={5} />
+          <VerificationTasksList limit={5} showSystemAuditLink />
 
           {/* Performance Detailed */}
           <Card className="rounded-2xl border-[#E2E8F0] bg-white shadow-sm">
@@ -3977,6 +4342,7 @@ export const EmployeeWorkspace: React.FC = () => {
         open={showContractWizard}
         onOpenChange={handleContractWizardOpenChange}
         preselectedCustomerId={preselectedContractCustomerId}
+        assignedToProfileId={user?.profile?.id}
       />
 
       <SignedContractScannerDialog
@@ -4056,6 +4422,15 @@ export const EmployeeWorkspace: React.FC = () => {
 
           {selectedWorkspaceContract && (
             <div className="space-y-4">
+              {(() => {
+                const selectedDueBalance = getContractDueBalance(selectedWorkspaceContract);
+                const selectedCollectibleBalance = getContractCollectibleInvoiceBalance(selectedWorkspaceContract);
+                const selectedOpenBalance = getContractOpenInvoiceBalance(selectedWorkspaceContract);
+                const selectedHasFutureInvoicesOnly = selectedCollectibleBalance <= 0 && selectedOpenBalance > 0;
+                const selectedRequiresBillingReview = Boolean(selectedWorkspaceContract.billing_review_required);
+
+                return (
+                  <>
               <div className="rounded-xl border border-[#DDE5EF] bg-[#F8FAFC] p-4">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                   <div>
@@ -4069,20 +4444,38 @@ export const EmployeeWorkspace: React.FC = () => {
                   </div>
                   <Badge className={cn(
                     'w-fit border px-3 py-1 text-xs font-black',
-                    (selectedWorkspaceContract.balance_due || 0) > 0
+                    selectedDueBalance > 0 || selectedCollectibleBalance > 0 || selectedHasFutureInvoicesOnly || selectedRequiresBillingReview
                       ? 'border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-50'
                       : 'border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-50',
                   )}>
-                    {(selectedWorkspaceContract.balance_due || 0) > 0 ? 'يوجد مستحق' : 'مدفوع'}
+                    {selectedDueBalance > 0
+                      ? 'يوجد مستحق'
+                      : selectedCollectibleBalance > 0
+                        ? 'فاتورة قابلة للتحصيل'
+                      : selectedHasFutureInvoicesOnly
+                        ? 'فواتير مستقبلية'
+                        : selectedRequiresBillingReview
+                          ? 'تحتاج مراجعة فوترة'
+                        : 'مدفوع بالكامل'}
                   </Badge>
                 </div>
 
                 <div className="mt-4 grid gap-3 sm:grid-cols-3">
                   <div className="rounded-lg border border-white bg-white p-3 shadow-sm">
-                    <p className="text-xs font-bold text-[#6A7688]">المستحق</p>
+                    <p className="text-xs font-bold text-[#6A7688]">المستحق الآن</p>
                     <p className="mt-1 text-lg font-black text-[#D97706]" dir="ltr">
-                      {formatCurrency(selectedWorkspaceContract.balance_due || 0)}
+                      {formatCurrency(selectedDueBalance)}
                     </p>
+                    {selectedDueBalance <= 0 && selectedCollectibleBalance > 0 && (
+                      <p className="mt-1 text-[11px] font-bold text-amber-700" dir="ltr">
+                        قابل للتحصيل {formatCurrency(selectedCollectibleBalance)}
+                      </p>
+                    )}
+                    {selectedHasFutureInvoicesOnly && (
+                      <p className="mt-1 text-[11px] font-bold text-amber-700" dir="ltr">
+                        فواتير مستقبلية {formatCurrency(selectedOpenBalance)}
+                      </p>
+                    )}
                   </div>
                   <div className="rounded-lg border border-white bg-white p-3 shadow-sm">
                     <p className="text-xs font-bold text-[#6A7688]">المدفوع</p>
@@ -4144,7 +4537,7 @@ export const EmployeeWorkspace: React.FC = () => {
               <div className="rounded-xl border border-[#DDE5EF] bg-[#FBFCFE] p-4">
                 <p className="mb-3 text-sm font-black text-[#142033]">إجراءات الموظف</p>
                 <div className="flex flex-wrap gap-2">
-                  {(selectedWorkspaceContract.balance_due || 0) > 0 && (
+                  {selectedCollectibleBalance > 0 && (
                     <Button
                       className="gap-2 bg-[#11A37F] font-bold text-white hover:bg-[#0D876A]"
                       onClick={() => {
@@ -4161,6 +4554,26 @@ export const EmployeeWorkspace: React.FC = () => {
                       <DollarSign className="h-4 w-4" />
                       تسجيل دفعة
                     </Button>
+                  )}
+                  {selectedRequiresBillingReview && canOpenSystemAudit && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="gap-2 border-amber-300 bg-amber-50 font-bold text-amber-800 hover:bg-amber-100"
+                      onClick={() => {
+                        setShowContractDetailsDialog(false);
+                        navigate('/tasks?tab=system-audit');
+                      }}
+                    >
+                      <AlertCircle className="h-4 w-4" />
+                      فتح مراجعة الفوترة
+                    </Button>
+                  )}
+                  {selectedRequiresBillingReview && !canOpenSystemAudit && (
+                    <Badge className="gap-2 border border-amber-300 bg-amber-50 px-3 py-2 font-bold text-amber-800 hover:bg-amber-50">
+                      <AlertCircle className="h-4 w-4" />
+                      تم رفع مراجعة الفوترة للمشرف
+                    </Badge>
                   )}
                   {selectedWorkspaceContract.customer_phone && (
                     <Button
@@ -4200,7 +4613,7 @@ export const EmployeeWorkspace: React.FC = () => {
                     <FileText className="h-4 w-4" />
                     ملاحظة
                   </Button>
-                  {(selectedWorkspaceContract.balance_due || 0) > 0 && (
+                  {selectedDueBalance > 0 && (
                     <Button
                       variant="outline"
                       className="gap-2 border-[#E2E8F0] font-bold text-[#173A63]"
@@ -4216,6 +4629,9 @@ export const EmployeeWorkspace: React.FC = () => {
                   )}
                 </div>
               </div>
+                  </>
+                );
+              })()}
             </div>
           )}
         </DialogContent>
@@ -4242,6 +4658,12 @@ export const EmployeeWorkspace: React.FC = () => {
           </DialogHeader>
 
           {selectedWorkspaceContract && (
+            (() => {
+              const selectedDueBalance = getContractDueBalance(selectedWorkspaceContract);
+              const selectedOpenBalance = getContractOpenInvoiceBalance(selectedWorkspaceContract);
+              const selectedHasBalance = selectedDueBalance > 0 || selectedOpenBalance > 0;
+
+              return (
             <div className="space-y-3">
               <div className="rounded-lg border border-[#DDE5EF] bg-[#F8FAFC] p-3 text-sm">
                 <div className="flex items-center justify-between gap-3">
@@ -4251,20 +4673,28 @@ export const EmployeeWorkspace: React.FC = () => {
                   <span className="text-[#64748B]">{selectedWorkspaceContract.customer_name || 'عميل غير محدد'}</span>
                 </div>
                 <div className="mt-2 flex items-center justify-between gap-3">
-                  <span className="text-[#64748B]">الرصيد المستحق</span>
+                  <span className="text-[#64748B]">المستحق الآن</span>
                   <span
                     className={cn(
                       'font-black',
-                      (selectedWorkspaceContract.balance_due || 0) > 0 ? 'text-[#A56000]' : 'text-[#0D876A]',
+                      selectedHasBalance ? 'text-[#A56000]' : 'text-[#0D876A]',
                     )}
                     dir="ltr"
                   >
-                    {formatCurrency(selectedWorkspaceContract.balance_due || 0)}
+                    {formatCurrency(selectedDueBalance)}
                   </span>
                 </div>
+                {selectedDueBalance <= 0 && selectedOpenBalance > 0 && (
+                  <div className="mt-2 flex items-center justify-between gap-3 text-xs">
+                    <span className="text-[#64748B]">فواتير مستقبلية</span>
+                    <span className="font-black text-[#A56000]" dir="ltr">
+                      {formatCurrency(selectedOpenBalance)}
+                    </span>
+                  </div>
+                )}
               </div>
 
-              {(selectedWorkspaceContract.balance_due || 0) > 0 && (
+              {selectedHasBalance && (
                 <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm leading-6 text-amber-900">
                   <p className="font-black">نصيحة النظام</p>
                   <p>
@@ -4285,10 +4715,12 @@ export const EmployeeWorkspace: React.FC = () => {
                 />
               </div>
             </div>
+              );
+            })()
           )}
 
           <DialogFooter className="gap-2 sm:justify-between">
-            {(selectedWorkspaceContract?.balance_due || 0) > 0 && (
+            {selectedWorkspaceContract && getContractOpenInvoiceBalance(selectedWorkspaceContract) > 0 && (
               <Button
                 type="button"
                 variant="outline"

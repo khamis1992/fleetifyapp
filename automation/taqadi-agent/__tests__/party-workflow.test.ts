@@ -6,6 +6,9 @@ const payload = {} as FilingPayload;
 
 function createPortal(calls: string[]) {
   return {
+    savePartiesDraft: vi.fn(async () => {
+      calls.push('saveDraft');
+    }),
     validateCompanyParty: vi.fn(async () => {
       calls.push('company');
     }),
@@ -36,6 +39,8 @@ describe('processTaqadiParties', () => {
     });
 
     expect(calls).toEqual([
+      'phase:save_parties_draft',
+      'saveDraft',
       'phase:company_and_defendant',
       'company',
       'defendant:false',
@@ -55,6 +60,7 @@ describe('processTaqadiParties', () => {
       code: 'PARTIES_DIAGNOSTIC_COMPLETE',
     });
     expect(calls).toEqual([
+      'saveDraft',
       'company',
       'defendant:false',
       'representative',

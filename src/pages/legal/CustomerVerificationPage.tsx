@@ -312,6 +312,17 @@ export default function CustomerVerificationPage() {
     mutationFn: async () => {
       if (!task?.customer?.id || !task?.contract?.id || !companyId) throw new Error('بيانات غير مكتملة');
 
+      if (
+        Math.abs(
+          Number(editedData.monthly_rent || 0)
+          - Number(task.contract.monthly_amount || 0),
+        ) > 0.001
+      ) {
+        throw new Error(
+          'لا يمكن تعديل الإيجار لعقد نشط من شاشة التدقيق؛ يلزم ملحق مالي ذري ومعتمد',
+        );
+      }
+
       const nameParts = editedData.customer_name.split(' ');
       const firstName = nameParts[0] || '';
       const lastName = nameParts.slice(1).join(' ') || '';
@@ -331,16 +342,6 @@ export default function CustomerVerificationPage() {
 
       if (customerError) throw customerError;
 
-      // تحديث قيمة الإيجار في العقد
-      const { error: contractError } = await supabase
-        .from('contracts')
-        .update({
-          monthly_amount: editedData.monthly_rent,
-        })
-        .eq('id', task.contract.id)
-        .eq('company_id', companyId);
-
-      if (contractError) throw contractError;
     },
     onSuccess: () => {
       toast.success('تم حفظ التغييرات بنجاح');

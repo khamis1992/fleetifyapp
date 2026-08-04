@@ -97,6 +97,25 @@ type CallAIResult = {
   completedAt: string;
 };
 
+const normalizeAudioMimeType = (value?: string | null) =>
+  (value || 'audio/webm').split(';')[0].trim().toLowerCase() || 'audio/webm';
+
+const getFunctionErrorMessage = async (error: unknown, fallback: string) => {
+  if (!error) return fallback;
+
+  const maybeError = error as { message?: string; context?: unknown };
+  let message = maybeError.message || fallback;
+  const context = maybeError.context;
+
+  if (context instanceof Response) {
+    const payload = await context.clone().json().catch(() => null) as { error?: unknown; message?: unknown } | null;
+    if (typeof payload?.error === 'string') message = payload.error;
+    else if (typeof payload?.message === 'string') message = payload.message;
+  }
+
+  return message;
+};
+
 interface CallLogDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -263,7 +282,7 @@ export const CallLogDialog: React.FC<CallLogDialogProps> = ({
         'audio/mpeg': 'mp3',
         'audio/wav': 'wav',
       };
-      const mimeType = blob.type || 'audio/webm';
+      const mimeType = normalizeAudioMimeType(blob.type);
       const extension = extensionByMimeType[mimeType] || 'webm';
       const body = new FormData();
       body.append('audio', new File([blob], `call-recording.${extension}`, { type: mimeType }));
@@ -276,12 +295,7 @@ export const CallLogDialog: React.FC<CallLogDialogProps> = ({
 
       const { data, error } = await supabase.functions.invoke<CallAIResult>('analyze-call-recording', { body });
       if (error || !data) {
-        let message = error?.message || 'لم يتم إرجاع نتيجة التحليل';
-        const context = error && 'context' in error ? error.context : null;
-        if (context instanceof Response) {
-          const payload = await context.clone().json().catch(() => null) as { error?: unknown } | null;
-          if (typeof payload?.error === 'string') message = payload.error;
-        }
+        const message = await getFunctionErrorMessage(error, 'لم يتم إرجاع نتيجة التحليل');
         throw new Error(message);
       }
       if (analysisRunIdRef.current !== runId) return;
@@ -402,7 +416,7 @@ export const CallLogDialog: React.FC<CallLogDialogProps> = ({
         throw new Error('تعذر تحديد المستخدم أو الشركة');
       }
       const now = new Date();
-      const recordingMimeType = recordingBlob?.type || 'audio/webm';
+      const recordingMimeType = normalizeAudioMimeType(recordingBlob?.type);
       const recordingExtension: Record<string, string> = {
         'audio/webm': 'webm',
         'audio/ogg': 'ogg',
@@ -536,7 +550,9 @@ export const CallLogDialog: React.FC<CallLogDialogProps> = ({
           { body: { communicationId: communication.id } },
         );
         analysisData = response.data || null;
-        analysisError = response.error?.message || null;
+        analysisError = response.error
+          ? await getFunctionErrorMessage(response.error, 'تعذر تحليل التسجيل')
+          : null;
       }
 
       return {
@@ -554,6 +570,8 @@ export const CallLogDialog: React.FC<CallLogDialogProps> = ({
       queryClient.invalidateQueries({ queryKey: ['employee-tasks'] });
       queryClient.invalidateQueries({ queryKey: ['employee-performance'] });
       queryClient.invalidateQueries({ queryKey: ['employee-daily-activity-metrics'] });
+      queryClient.invalidateQueries({ queryKey: ['employee-communication-log'] });
+      queryClient.invalidateQueries({ queryKey: ['team-communication-log'] });
       
       setSavedCommunicationId(communication.id);
       setAIResult(analysisData);
@@ -585,7 +603,7 @@ export const CallLogDialog: React.FC<CallLogDialogProps> = ({
       const { data, error } = await supabase.functions.invoke<CallAIResult>('analyze-call-recording', {
         body: { communicationId: savedCommunicationId },
       });
-      if (error || !data) throw error || new Error('لم يتم إرجاع نتيجة التحليل');
+      if (error || !data) throw new Error(await getFunctionErrorMessage(error, 'لم يتم إرجاع نتيجة التحليل'));
       setAIResult(data);
       toast.success('تم تحليل المكالمة بنجاح');
     } catch (error) {

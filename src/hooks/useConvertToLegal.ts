@@ -513,6 +513,9 @@ export const useConvertToLegal = () => {
   return useMutation({
     mutationFn: async (params: ConvertToLegalParams & { contract: ContractForLegal }) => {
       if (!user?.id) throw new Error('المستخدم غير مصرح له');
+      if (params.contract.status !== 'active') {
+        throw new Error('التحويل للشؤون القانونية متاح للعقد النشط فقط؛ العقد الملغي يحتاج مسار مراجعة قانونية مستقل.');
+      }
       const { data, error } = await supabase.rpc('convert_contract_to_legal_v1', {
         p_company_id: params.contract.company_id,
         p_contract_id: params.contract.id,

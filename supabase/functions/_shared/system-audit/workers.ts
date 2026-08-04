@@ -5,6 +5,7 @@ import {
   canGenerateInvoiceForSchedule,
   dateOnly,
   deriveAttendanceHours,
+  deriveContractFinancialTotals,
   deriveFinancialTotals,
   deriveLegalCaseCosts,
   deriveOneToOneScheduleInvoicePlan,
@@ -62,7 +63,7 @@ async function auditContracts(
   const page = await loadCompanyPage(
     context,
     "contracts",
-    "id,company_id,contract_number,status,contract_amount,total_paid,balance_due,payment_status,start_date,end_date,contract_date,customer_id,vehicle_id",
+    "id,company_id,contract_number,status,monthly_amount,contract_amount,total_paid,balance_due,payment_status,start_date,end_date,contract_date,customer_id,vehicle_id",
     String(context.job.cursor?.lastId || ""),
     Math.min(context.job.batch_size, 100)
   );
@@ -129,7 +130,7 @@ async function auditContracts(
     loadByIds(
       context,
       "payment_accounting_classifications",
-      "payment_id,classification,is_active",
+      "id,payment_id,classification,is_active",
       "payment_id",
       contractPaymentIds
     ),
@@ -210,6 +211,9 @@ async function auditContracts(
     const contractPayments = paymentsByContract.get(contract.id) || [];
     const contractSchedules = schedulesByContract.get(contract.id) || [];
     const activeInvoices = contractInvoices.filter(isActiveInvoice);
+    const activeSchedules = contractSchedules.filter(
+      (schedule) => !isInactiveScheduleStatus(schedule.status)
+    );
     const plannedCancellation = new Set<string>();
     const automaticCancellation = new Set<string>();
 
@@ -233,7 +237,35 @@ async function auditContracts(
       );
     }
 
-    const expectedContract = deriveFinancialTotals(
+    if (
+      isActiveContractStatus(contract.status) &&
+      contract.start_date &&
+      contract.end_date &&
+      contract.end_date >= contract.start_date &&
+      roundMoney(contract.monthly_amount) > 0.01 &&
+      activeInvoices.length === 0 &&
+      activeSchedules.length === 0
+    ) {
+      findings.push(
+        reviewFinding(
+          `contract:${contract.id}:missing-billing-graph`,
+          "contract.missing_billing_graph",
+          "critical",
+          "contract",
+          contract.id,
+          "Active contract has no invoices or payment schedule",
+          "The contract is invisible to schedule-only invoice repair paths. The canonical daily reconciler must create its billing months before payment collection.",
+          {
+            contractNumber: contract.contract_number,
+            startDate: contract.start_date,
+            endDate: contract.end_date,
+            monthlyAmount: roundMoney(contract.monthly_amount),
+          }
+        )
+      );
+    }
+
+    const expectedContract = deriveContractFinancialTotals(
       contract.contract_amount,
       buildCanonicalContractReceiptContributions(
         contract.id,
@@ -302,6 +334,30 @@ async function auditContracts(
           },
         });
       }
+    }
+
+    for (const invoice of activeInvoices) {
+      if (roundMoney(invoice.total_amount) > 0.01) continue;
+      findings.push(
+        reviewFinding(
+          `invoice:${invoice.id}:zero-amount-month-blocker`,
+          "invoice.zero_amount_blocks_billing_month",
+          "critical",
+          "invoice",
+          invoice.id,
+          "Active zero-amount invoice blocks its billing month",
+          "The row is not collectible but reserves the canonical month. The safe generator may repair only a truly empty, unpaid and unposted placeholder; otherwise finance review is required.",
+          {
+            contractId: contract.id,
+            contractNumber: contract.contract_number,
+            invoiceNumber: invoice.invoice_number,
+            invoiceMonth: invoiceMonthKey(invoice),
+            totalAmount: roundMoney(invoice.total_amount),
+            balanceDue: roundMoney(invoice.balance_due),
+            journalEntryId: invoice.journal_entry_id,
+          }
+        )
+      );
     }
 
     for (const invoice of activeInvoices) {
@@ -422,9 +478,6 @@ async function auditContracts(
       }
     }
 
-    const activeSchedules = contractSchedules.filter(
-      (schedule) => !isInactiveScheduleStatus(schedule.status)
-    );
     const duplicateDueGroups = [
       ...groupBy(activeSchedules, (schedule) =>
         dateOnly(schedule.due_date)
@@ -1102,56 +1155,26 @@ async function auditContracts(
               }
             } else {
               const scheduleAmount = Math.max(0, roundMoney(schedule.amount));
-              if (scheduleAmount <= 0.01) {
-                findings.push(
-                  reviewFinding(
-                    `invoice:${effectiveInvoice.id}:zero-schedule-amount-review`,
-                    "invoice.zero_schedule_amount_requires_review",
-                    "high",
-                    "invoice",
-                    effectiveInvoice.id,
-                    "Invoice is linked to a zero-value schedule",
-                    "The schedule amount must be corrected or the invoice cancelled; the agent will not choose between those business outcomes.",
-                    {
-                      invoiceAmount: roundMoney(effectiveInvoice.total_amount),
-                      scheduleAmount,
-                      scheduleId: schedule.id,
-                    }
-                  )
-                );
-              } else {
-                findings.push(
-                  repairFinding({
-                    dedupeKey: `invoice:${effectiveInvoice.id}:schedule-amount`,
-                    code: "invoice.schedule_amount_mismatch",
-                    severity: "high",
-                    entityType: "invoice",
-                    entityId: effectiveInvoice.id,
-                    title:
-                      "Zero-impact invoice amount differs from its schedule",
-                    details:
-                      "The amount can be synchronized because the invoice has no payment or journal impact.",
-                    evidence: {
-                      invoiceAmount: roundMoney(effectiveInvoice.total_amount),
-                      scheduleAmount,
-                      scheduleId: schedule.id,
-                    },
-                    command: "invoice.sync_zero_impact_amount",
-                    expectedBefore: {
-                      subtotal: effectiveInvoice.subtotal,
-                      total_amount: effectiveInvoice.total_amount,
-                      balance_due: effectiveInvoice.balance_due,
-                      payment_status: effectiveInvoice.payment_status,
-                    },
-                    values: {
-                      subtotal: scheduleAmount,
-                      total_amount: scheduleAmount,
-                      balance_due: scheduleAmount,
-                      payment_status: "unpaid",
-                    },
-                  })
-                );
-              }
+              findings.push(
+                reviewFinding(
+                  `invoice:${effectiveInvoice.id}:schedule-amount-review`,
+                  scheduleAmount <= 0.01
+                    ? "invoice.zero_schedule_amount_requires_review"
+                    : "invoice.schedule_amount_mismatch_requires_review",
+                  scheduleAmount <= 0.01 ? "high" : "critical",
+                  "invoice",
+                  effectiveInvoice.id,
+                  scheduleAmount <= 0.01
+                    ? "Invoice is linked to a zero-value schedule"
+                    : "Invoice amount differs from its schedule",
+                  "Invoice amounts are never repriced in place by the agent. A reference journal may exist even when invoice.journal_entry_id is null, so finance must use the canonical cancel-and-reissue or adjustment workflow.",
+                  {
+                    invoiceAmount: roundMoney(effectiveInvoice.total_amount),
+                    scheduleAmount,
+                    scheduleId: schedule.id,
+                  }
+                )
+              );
             }
           }
           const paid = roundMoney(
@@ -3053,7 +3076,9 @@ async function auditInventory(
       "inventory_movement_summary",
       "company_id,item_id,warehouse_id,movement_type,total_quantity,last_movement_date",
       "item_id",
-      itemIds
+      itemIds,
+      true,
+      { cursorField: null, orderFields: ["item_id", "warehouse_id", "movement_type"] }
     );
     const summariesByPair = groupBy(
       summaries,
@@ -3169,7 +3194,9 @@ async function auditInventory(
       "inventory_movement_summary",
       "item_id,warehouse_id,movement_type,total_quantity,last_movement_date",
       "item_id",
-      itemIds
+      itemIds,
+      true,
+      { cursorField: null, orderFields: ["item_id", "warehouse_id", "movement_type"] }
     ),
   ]);
   const existingPairs = new Set(
@@ -4249,7 +4276,11 @@ async function loadByIds(
   columns: string,
   field: string,
   ids: unknown[],
-  filterCompany = true
+  filterCompany = true,
+  pagination: {
+    cursorField: string | null;
+    orderFields: string[];
+  } = { cursorField: "id", orderFields: ["id"] }
 ): Promise<Row[]> {
   if (ids.length === 0) return [];
   const uniqueIds = [
@@ -4261,14 +4292,55 @@ async function loadByIds(
   ];
   const rows: Row[] = [];
   for (let index = 0; index < uniqueIds.length; index += 20) {
-    let query = context.supabase
-      .from(table)
-      .select(columns)
-      .in(field, uniqueIds.slice(index, index + 20));
-    if (filterCompany) query = query.eq("company_id", context.job.company_id);
-    const { data, error } = await query;
-    if (error) throw new Error(`${table}: ${error.message}`);
-    rows.push(...(data || []));
+    const idChunk = uniqueIds.slice(index, index + 20);
+
+    if (pagination.cursorField === null) {
+      let offset = 0;
+      while (true) {
+        let query = context.supabase
+          .from(table)
+          .select(columns)
+          .in(field, idChunk);
+        if (filterCompany) query = query.eq("company_id", context.job.company_id);
+        for (const orderField of pagination.orderFields) {
+          query = query.order(orderField, { ascending: true, nullsFirst: false });
+        }
+        query = query.range(offset, offset + 499);
+
+        const { data, error } = await query;
+        if (error) throw new Error(`${table}: ${error.message}`);
+        const page = (data || []) as Row[];
+        rows.push(...page);
+        if (page.length < 500) break;
+        offset += page.length;
+      }
+      continue;
+    }
+
+    let lastId = "";
+
+    while (true) {
+      let query = context.supabase
+        .from(table)
+        .select(columns)
+        .in(field, idChunk)
+        .order(pagination.cursorField, { ascending: true })
+        .limit(500);
+      if (filterCompany) query = query.eq("company_id", context.job.company_id);
+      if (lastId) query = query.gt(pagination.cursorField, lastId);
+
+      const { data, error } = await query;
+      if (error) throw new Error(`${table}: ${error.message}`);
+      const page = (data || []) as Row[];
+      rows.push(...page);
+
+      if (page.length < 500) break;
+      const nextLastId = String(page.at(-1)?.[pagination.cursorField] || "");
+      if (!nextLastId || nextLastId <= lastId) {
+        throw new Error(`${table}: keyset pagination did not advance`);
+      }
+      lastId = nextLastId;
+    }
   }
   return rows;
 }

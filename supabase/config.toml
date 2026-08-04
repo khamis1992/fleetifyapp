@@ -150,3 +150,19 @@ verify_jwt = true
 # authorization via CONTRACT_SCANNER_SECRET or an authenticated user token.
 [functions.contract-id-scanner]
 verify_jwt = false
+
+# Scheduled internal endpoint. JWT gateway verification is disabled so cron can
+# send x-agent-secret; the function itself requires that secret or service role.
+[functions.process-payment-reminders]
+verify_jwt = false
+
+# Scheduled internal endpoints. The gateway accepts the secret-header request;
+# each function still rejects callers that fail its own service/agent-secret check.
+[functions.generate-monthly-invoices]
+verify_jwt = false
+
+[functions.backfill-historical-invoices]
+verify_jwt = false
+
+[functions.contract-terms-scanner]
+verify_jwt = false

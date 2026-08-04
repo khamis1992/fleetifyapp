@@ -148,6 +148,11 @@ export function QuickPaymentDialog({
     allowEmployeeWorkspacePayments,
   });
   const receiptRef = useRef<HTMLDivElement>(null);
+  const paymentAttemptRef = useRef<{
+    idempotencyKey: string;
+    paymentNumber: string;
+    paymentDate: string;
+  } | null>(null);
   
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loadingInvoices, setLoadingInvoices] = useState(false);
@@ -165,6 +170,14 @@ export function QuickPaymentDialog({
     () => Array.from(new Set(allowedContractIds || [])).sort().join(','),
     [allowedContractIds],
   );
+  const selectedInvoiceIdsKey = useMemo(
+    () => selectedInvoices.map((invoice) => invoice.id).sort().join(','),
+    [selectedInvoices],
+  );
+
+  useEffect(() => {
+    paymentAttemptRef.current = null;
+  }, [customerId, contractId, selectedInvoiceIdsKey, paymentAmount, paymentMethod]);
 
   // Load invoices when dialog opens
   useEffect(() => {
@@ -183,6 +196,7 @@ export function QuickPaymentDialog({
       setShowReceipt(false);
       setReadyToPay(false);
       setShowAllInvoices(false);
+      paymentAttemptRef.current = null;
     }
   }, [open]);
 
@@ -223,7 +237,14 @@ export function QuickPaymentDialog({
         `)
         .eq('company_id', companyId)
         .eq('customer_id', customerId)
-        .in('payment_status', ['unpaid', 'partial', 'overdue', 'pending'])
+        .in('payment_status', [
+          'unpaid',
+          'partial',
+          'partial_paid',
+          'partially_paid',
+          'overdue',
+          'pending',
+        ])
         .or(buildInvoiceMonthCutoffFilter(new Date()));
 
       if (contractId) {
@@ -362,8 +383,14 @@ export function QuickPaymentDialog({
 
     setProcessing(true);
     try {
-      const paymentDate = new Date().toISOString().split('T')[0];
-      const paymentNumber = `PAY-${Date.now()}`;
+      const paymentAttempt = paymentAttemptRef.current ?? {
+        idempotencyKey: crypto.randomUUID(),
+        paymentNumber: `PAY-${Date.now()}`,
+        paymentDate: new Date().toISOString().split('T')[0],
+      };
+      paymentAttemptRef.current = paymentAttempt;
+      const paymentNumber = paymentAttempt.paymentNumber;
+      const paymentDate = paymentAttempt.paymentDate;
       const futureWarnings = selectedInvoices
         .map((invoice) => getFutureInvoiceWarning(invoice, paymentDate))
         .filter(Boolean);
@@ -413,6 +440,7 @@ export function QuickPaymentDialog({
           payment_status: 'completed' as const,
           currency: 'QAR',
           notes: `دفعة لفاتورة ${invoice.invoice_number}`,
+          idempotencyKey: `employee-workspace:${paymentAttempt.idempotencyKey}:${invoice.id}`,
         };
         
         console.log(`Creating payment ${i + 1} for invoice ${invoice.invoice_number}:`, amountToApply);

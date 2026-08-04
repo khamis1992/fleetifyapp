@@ -6,6 +6,7 @@ import {
   canGenerateInvoiceForSchedule,
   dateOnly,
   deriveAttendanceHours,
+  deriveContractFinancialTotals,
   deriveFinancialTotals,
   deriveLegalCaseCosts,
   deriveOneToOneScheduleInvoicePlan,
@@ -133,6 +134,39 @@ describe("system audit agent rules", () => {
         },
       ])
     ).toEqual({ paid: 999.99, balance: 0.01, paymentStatus: "paid" });
+  });
+
+  it("caps contract totals at the contract principal like the canonical recalculation", () => {
+    expect(
+      deriveContractFinancialTotals(55_500, [
+        { amount: 70_900, transaction_type: "receipt", payment_status: "completed" },
+      ])
+    ).toEqual({ paid: 55_500, balance: 0, paymentStatus: "paid" });
+
+    expect(
+      deriveContractFinancialTotals(84_000, [
+        { amount: 48_550, transaction_type: "receipt", payment_status: "completed" },
+      ])
+    ).toEqual({ paid: 48_550, balance: 35_450, paymentStatus: "partial" });
+
+    expect(
+      deriveContractFinancialTotals(63_000, [
+        { amount: 66_600, transaction_type: "receipt", payment_status: "completed" },
+      ])
+    ).toEqual({ paid: 63_000, balance: 0, paymentStatus: "paid" });
+
+    expect(deriveContractFinancialTotals(1_750, [])).toEqual({
+      paid: 0,
+      balance: 1_750,
+      paymentStatus: "unpaid",
+    });
+
+    // A zero-amount contract reports the full uncapped collection.
+    expect(
+      deriveContractFinancialTotals(0, [
+        { amount: 500, transaction_type: "receipt", payment_status: "completed" },
+      ])
+    ).toEqual({ paid: 500, balance: 0, paymentStatus: "paid" });
   });
 
   it("treats invoice billing months inside the contract as in-period", () => {

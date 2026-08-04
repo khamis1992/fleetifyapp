@@ -81,7 +81,7 @@ serve(async (req) => {
       const result = await transcribeAndAnalyze(
         audio,
         audio.name || "call-recording.webm",
-        audio.type || "audio/webm",
+        normalizeAudioMimeType(audio.type),
         context,
         openAIKey,
         requestId,
@@ -125,7 +125,7 @@ serve(async (req) => {
     const result = await transcribeAndAnalyze(
       audioBlob,
       recording.path.split("/").pop() || "call-recording.webm",
-      recording.mime_type || audioBlob.type || "audio/webm",
+      normalizeAudioMimeType(recording.mime_type || audioBlob.type),
       communication.notes || "",
       openAIKey,
       requestId,
@@ -173,6 +173,11 @@ serve(async (req) => {
   }
 });
 
+function normalizeAudioMimeType(value: string | null | undefined) {
+  const baseType = String(value || "audio/webm").split(";")[0].trim().toLowerCase();
+  return baseType || "audio/webm";
+}
+
 async function transcribeAndAnalyze(
   audioBlob: Blob,
   filename: string,
@@ -182,7 +187,7 @@ async function transcribeAndAnalyze(
   requestId: string,
 ) {
   const form = new FormData();
-  form.append("model", Deno.env.get("OPENAI_TRANSCRIPTION_MODEL") || "gpt-transcribe");
+  form.append("model", Deno.env.get("OPENAI_TRANSCRIPTION_MODEL") || "gpt-4o-mini-transcribe");
   form.append("file", new File([audioBlob], filename, { type: mimeType }));
   form.append(
     "prompt",
@@ -213,13 +218,12 @@ async function transcribeAndAnalyze(
     method: "POST",
     headers: { Authorization: `Bearer ${openAIKey}`, "Content-Type": "application/json" },
     body: JSON.stringify({
-      model: Deno.env.get("OPENAI_CALL_ANALYSIS_MODEL") || "gpt-5.6-luna",
-      reasoning: { effort: "none" },
+      model: Deno.env.get("OPENAI_CALL_ANALYSIS_MODEL") || "gpt-4.1-mini",
       instructions: [
         "أنت محلل مكالمات لنظام تأجير سيارات في قطر.",
         "حلل النص فقط ولا تخترع معلومات غير مذكورة.",
         "اكتب جميع الحقول النصية بالعربية، وحافظ على المبالغ والتواريخ بدقة.",
-        "إذا لم يُذكر تاريخ أو مبلغ فأعد null بدلاً من التخمين.",
+        "إذا لم يُذكر تاريخ أو مبلغ فأعد null بدلًا من التخمين.",
       ].join(" "),
       input: `سياق المكالمة وملاحظات الموظف:\n${context || "لا يوجد"}\n\nنص المكالمة:\n${transcript}`,
       text: {

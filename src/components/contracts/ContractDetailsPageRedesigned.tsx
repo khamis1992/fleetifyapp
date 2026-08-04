@@ -110,7 +110,7 @@ import { ContractDocuments } from './ContractDocuments';
 import { ContractHealthAnalysis } from './ContractHealthAnalysis';
 import { OfficialContractView } from './OfficialContractView';
 import { formatCustomerName } from '@/utils/formatCustomerName';
-import { getInvoiceBillingMonthKey } from '@/utils/invoiceBillingMonth';
+import { getInvoiceBillingMonthKey, isActiveInvoice } from '@/utils/invoiceBillingMonth';
 import { cn } from '@/lib/utils';
 import { format, differenceInDays } from 'date-fns';
 import { ar } from 'date-fns/locale';
@@ -439,7 +439,8 @@ const ContractCommandHeader = ({
   const monthlyAmount = Number(contractStats?.monthlyAmount ?? contract.monthly_amount ?? 0);
   const paidPayments = Number(contractStats?.paidPayments ?? 0);
   const totalPayments = Number(contractStats?.totalPayments ?? 0);
-  const balanceDue = contract.balance_due || 0;
+  const balanceDue = Number(contractStats?.outstandingInvoiceTotal ?? contract.balance_due ?? 0);
+  const dueInvoiceBalance = Number(contractStats?.dueInvoiceTotal ?? balanceDue);
   const paidAmount = Math.max(0, totalAmount - balanceDue);
   const paymentProgress = totalAmount > 0 ? Math.min(100, Math.round((paidAmount / totalAmount) * 100)) : 0;
   const assignedEmployeeName = formatAssignedEmployeeName(contract.assigned_employee);
@@ -470,8 +471,8 @@ const ContractCommandHeader = ({
       tone: 'bg-[#EEF5FB] text-[#173A63]',
     },
     {
-      label: 'المتبقي',
-      value: formatCurrency(balanceDue),
+      label: dueInvoiceBalance > 0 ? 'المستحق الآن' : balanceDue > 0 ? 'فواتير مفتوحة' : 'المتبقي',
+      value: formatCurrency(dueInvoiceBalance > 0 ? dueInvoiceBalance : balanceDue),
       icon: AlertTriangle,
       tone: balanceDue > 0 ? 'bg-amber-50 text-amber-700' : 'bg-emerald-50 text-emerald-700',
     },
@@ -687,7 +688,7 @@ const QuickActionsBar = ({
       onClick: onConvertToLegal,
       variant: 'outline' as const,
       className: 'border-violet-300 text-violet-700 hover:bg-violet-50',
-      show: contract.status === 'active' || contract.status === 'cancelled',
+      show: contract.status === 'active',
     },
     {
       label: 'إزالة الإجراء القانوني',
@@ -711,7 +712,9 @@ const QuickActionsBar = ({
       onClick: onReactivate,
       variant: 'default' as const,
       className: 'bg-emerald-500 hover:bg-emerald-600 text-white border-0',
-      show: contract.status === 'cancelled',
+      // Reversing a cancelled contract needs a dedicated accounting command
+      // that restores documents without duplicating invoices or journals.
+      show: false,
     },
   ];
 
@@ -806,8 +809,8 @@ const ContractTopbarActions = ({
   onRemoveLegal: () => void;
 }) => {
   const canRenew = contract.status === 'active';
-  const canReactivate = contract.status === 'cancelled';
-  const canConvertToLegal = contract.status === 'active' || contract.status === 'cancelled';
+  const canReactivate = false;
+  const canConvertToLegal = contract.status === 'active';
   const isLegal = contract.status === 'under_legal_procedure';
 
   return (
@@ -863,7 +866,6 @@ const ContractTopbarActions = ({
   );
 };
 
-const inactiveInvoiceStatuses = new Set(['cancelled', 'void', 'deleted']);
 const paidInvoiceStatuses = new Set(['paid', 'completed', 'cleared']);
 const inactiveScheduleStatuses = new Set(['cancelled', 'void', 'deleted']);
 const paidScheduleStatuses = new Set(['paid', 'completed', 'cleared']);
@@ -890,14 +892,12 @@ const getInvoiceBalance = (invoice: Invoice) => {
 };
 
 const isActiveFinancialInvoice = (invoice: Invoice) => {
-  const status = String(invoice.status || '').toLowerCase();
-  const paymentStatus = String(invoice.payment_status || '').toLowerCase();
-  return !inactiveInvoiceStatuses.has(status) && !inactiveInvoiceStatuses.has(paymentStatus);
+  return isActiveInvoice(invoice);
 };
 
 const isPaidFinancialInvoice = (invoice: Invoice) => {
-  const status = String(invoice.status || '').toLowerCase();
-  const paymentStatus = String(invoice.payment_status || '').toLowerCase();
+  const status = String(invoice.status || '').trim().toLowerCase();
+  const paymentStatus = String(invoice.payment_status || '').trim().toLowerCase();
   return paidInvoiceStatuses.has(status) || paidInvoiceStatuses.has(paymentStatus) || getInvoiceBalance(invoice) <= 1;
 };
 
@@ -2533,8 +2533,24 @@ const ContractDetailsPageRedesigned = () => {
 
     const progressPercentage = Math.max(0, Math.min(100, (daysElapsed / totalDays) * 100));
 
-    const totalAmount = (contract.monthly_amount || 0) * totalMonths;
-    const paidAmount = contract.total_paid || 0;
+    const activeFinancialInvoices = invoices.filter(isActiveFinancialInvoice);
+    const todayKey = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'Asia/Qatar',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }).format(new Date());
+    const invoicesTotal = activeFinancialInvoices.reduce((sum, invoice) => sum + Number(invoice.total_amount || 0), 0);
+    const invoicePaidTotal = activeFinancialInvoices.reduce((sum, invoice) => sum + Number(invoice.paid_amount || 0), 0);
+    const openInvoices = activeFinancialInvoices.filter((invoice) => !isPaidFinancialInvoice(invoice) && getInvoiceBalance(invoice) > 1);
+    const outstandingInvoiceTotal = openInvoices.reduce((sum, invoice) => sum + getInvoiceBalance(invoice), 0);
+    const dueInvoiceTotal = openInvoices.reduce((sum, invoice) => {
+      const dueDate = String(invoice.due_date || '');
+      return !dueDate || dueDate <= todayKey ? sum + getInvoiceBalance(invoice) : sum;
+    }, 0);
+
+    const totalAmount = invoicesTotal > 0 ? invoicesTotal : (contract.monthly_amount || 0) * totalMonths;
+    const paidAmount = invoicePaidTotal > 0 ? invoicePaidTotal : contract.total_paid || 0;
 
     return {
       totalAmount,
@@ -2548,10 +2564,13 @@ const ContractDetailsPageRedesigned = () => {
       progressPercentage,
       paidPayments: monthsElapsed,
       totalPayments: totalMonths,
-      paymentStatus: paidAmount >= totalAmount ? 'completed' : 'pending',
+      paymentStatus: outstandingInvoiceTotal <= 1 ? 'completed' : 'pending',
+      outstandingInvoiceTotal,
+      dueInvoiceTotal,
+      openInvoiceCount: openInvoices.length,
       extraPayments: 0,
     };
-  }, [contract]);
+  }, [contract, invoices]);
 
   const customerName = useMemo(() => {
     if (!contract?.customer) return 'غير محدد';
@@ -2927,9 +2946,13 @@ const ContractDetailsPageRedesigned = () => {
         p_dry_run: false,
       });
       
-      if (scheduleError) {
+      const scheduleFailure = scheduleData && typeof scheduleData === 'object' && !Array.isArray(scheduleData)
+        && (scheduleData as Record<string, unknown>).success === false
+        ? String((scheduleData as Record<string, unknown>).error || 'فشل إنشاء جدول الدفعات')
+        : null;
+      if (scheduleError || scheduleFailure) {
         console.error('Schedule generation error:', scheduleError);
-        throw new Error(`فشل إنشاء جدول الدفعات: ${scheduleError.message || scheduleError.code || 'خطأ غير معروف'}`);
+        throw new Error(`فشل إنشاء جدول الدفعات: ${scheduleFailure || scheduleError?.message || scheduleError?.code || 'خطأ غير معروف'}`);
       }
       
       console.log('Payment schedules created:', scheduleData);
@@ -2950,8 +2973,8 @@ const ContractDetailsPageRedesigned = () => {
       queryClient.invalidateQueries({ queryKey: ['payment-schedules'] });
       
       toast({
-        title: 'تم إنشاء الفواتير بنجاح',
-        description: invoiceCount ? `تم إنشاء ${invoiceCount} فاتورة` : 'تم إنشاء الفواتير',
+        title: invoiceCount ? 'تم إنشاء الفواتير بنجاح' : 'لا توجد فواتير ناقصة',
+        description: invoiceCount ? `تم إنشاء ${invoiceCount} فاتورة` : 'كل أشهر العقد النشطة لها فواتير بالفعل.',
       });
     } catch (error) {
       console.error('Error generating invoices:', error);
@@ -3089,42 +3112,13 @@ const ContractDetailsPageRedesigned = () => {
   }, [contract, companyId, queryClient, toast]);
 
   const executeReactivateContract = useCallback(async () => {
-    if (!contract?.id || !companyId) return;
-
-    setIsReactivating(true);
-    try {
-      const { error: contractError } = await supabase
-        .from('contracts')
-        .update({
-          status: 'active',
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', contract.id)
-        .eq('company_id', companyId);
-
-      if (contractError) throw contractError;
-
-      queryClient.invalidateQueries({ queryKey: ['contract-details'] });
-      queryClient.invalidateQueries({ queryKey: ['contracts'] });
-      queryClient.invalidateQueries({ queryKey: ['vehicles'] });
-
-      toast({
-        title: 'تم إعادة تفعيل العقد',
-        description: `تم إعادة تفعيل العقد #${contract.contract_number} بنجاح`,
-      });
-
-      setIsReactivateDialogOpen(false);
-    } catch (error) {
-      console.error('خطأ في إعادة تفعيل العقد:', error);
-      toast({
-        title: 'خطأ في إعادة تفعيل العقد',
-        description: error instanceof Error ? error.message : 'حدث خطأ غير متوقع',
-        variant: 'destructive',
-      });
-    } finally {
-      setIsReactivating(false);
-    }
-  }, [contract, companyId, queryClient, toast]);
+    toast({
+      title: 'إعادة التفعيل متوقفة محاسبياً',
+      description: 'لا يمكن إعادة عقد ملغي إلى نشط مباشرة. يلزم أمر عكس محاسبي معتمد لمنع تكرار الفواتير والقيود.',
+      variant: 'destructive',
+    });
+    setIsReactivateDialogOpen(false);
+  }, [toast]);
 
   const executeRemoveLegalProcedure = useCallback(async () => {
     if (!contract?.id || !companyId) return;

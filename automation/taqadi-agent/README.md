@@ -61,6 +61,24 @@ npm run taqadi:agent:autostart:status
 npm run taqadi:agent:autostart:uninstall
 ```
 
+## Start button in the ERP
+
+When the worker is offline, the lawsuit preparation and batch filing pages show
+a "تشغيل الوكيل الآن" button. The button opens the custom URL protocol
+`fleetify-taqadi://start`, which Windows resolves on the worker computer and
+runs `windows/start-agent.ps1` — that starts the scheduled task (or the
+supervisor script directly if the task is missing). Register the protocol once
+on each worker computer (HKCU only, no admin rights):
+
+```powershell
+npm run taqadi:agent:launcher:install
+npm run taqadi:agent:launcher:uninstall
+```
+
+The button works only from a browser running on the worker computer itself;
+from any other device nothing happens. `npm run taqadi:agent:start` triggers
+the same start path manually from a terminal.
+
 After a computer restart, sign in to Windows normally. The agent connects
 without opening a terminal. Chrome opens only when a filing requires portal
 interaction or a fresh Taqadi login.
@@ -68,6 +86,11 @@ interaction or a fresh Taqadi login.
 ## Safety behavior
 
 - The worker handles one case at a time.
+- Page navigation uses «التالي» only — the worker never clicks «حفظ ومتابعة».
+  The single page-level «حفظ» happens exactly once on the parties page
+  (`savePartiesDraft`): it pins the case draft and enables the parties grid,
+  then party registration starts. Each party record is still saved from its
+  own dialog's «حفظ» button.
 - Every filing has a database idempotency key.
 - It adds the company and defendant first, then opens and saves the
   representative record last. This order avoids the intermittent rejection

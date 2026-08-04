@@ -144,6 +144,9 @@ export const AddNoteDialog: React.FC<AddNoteDialogProps> = ({
       
       queryClient.invalidateQueries({ queryKey: ['employee-contracts'] });
       queryClient.invalidateQueries({ queryKey: ['employee-performance'] });
+      queryClient.invalidateQueries({ queryKey: ['employee-daily-activity-metrics'] });
+      queryClient.invalidateQueries({ queryKey: ['employee-communication-log'] });
+      queryClient.invalidateQueries({ queryKey: ['team-communication-log'] });
       
       form.reset();
       onOpenChange(false);

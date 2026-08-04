@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { createAuditLog } from '@/hooks/useAuditLog';
+import { calculateCanonicalRenewalEndDate } from '@/utils/contractCalculations';
 
 interface ContractRenewalData {
   contract_id: string;
@@ -12,6 +13,50 @@ interface ContractRenewalData {
   auto_renew?: boolean;
   renewal_period_months?: number;
 }
+
+export interface AutoRenewalFailure {
+  contractId: string;
+  contractNumber: string;
+  message: string;
+}
+
+export interface AutoRenewalBatchResult {
+  eligibleCount: number;
+  renewedContracts: Array<Record<string, unknown>>;
+  failures: AutoRenewalFailure[];
+}
+
+export class AutoRenewalBatchError extends Error {
+  readonly result: AutoRenewalBatchResult;
+
+  constructor(result: AutoRenewalBatchResult) {
+    const failureSummary = result.failures
+      .map((failure) => (
+        `${failure.contractNumber || failure.contractId}: ${failure.message}`
+      ))
+      .join('; ');
+    super(
+      `Auto-renewal failed for ${result.failures.length} contract(s). ${failureSummary}`,
+    );
+    this.name = 'AutoRenewalBatchError';
+    this.result = result;
+  }
+}
+
+const formatLocalDate = (date: Date): string => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+const getErrorMessage = (error: unknown, fallback: string): string => {
+  if (error instanceof Error && error.message) return error.message;
+  if (error && typeof error === 'object' && 'message' in error) {
+    return String((error as { message?: unknown }).message || fallback);
+  }
+  return fallback;
+};
 
 // Hook to get contracts expiring soon
 export const useExpiringContracts = (daysAhead: number = 30) => {
@@ -62,38 +107,27 @@ export const useRenewContract = () => {
       
       if (fetchError) throw fetchError;
       
-      // Create a new contract based on the original
-      const { data: newContract, error } = await supabase
-        .from("contracts")
-        .insert({
-          contract_number: `${originalContract.contract_number}-R${Date.now()}`,
-          contract_date: new Date().toISOString().split('T')[0],
-          start_date: originalContract.end_date,
-          end_date: renewalData.new_end_date,
-          contract_amount: renewalData.new_amount || originalContract.contract_amount,
-          monthly_amount: originalContract.monthly_amount,
-          contract_type: originalContract.contract_type,
-          customer_id: originalContract.customer_id,
-          vehicle_id: originalContract.vehicle_id,
-          cost_center_id: originalContract.cost_center_id,
-          description: `تجديد ${originalContract.description || ''}`,
-          terms: renewalData.renewal_terms || originalContract.terms,
-          status: 'active',
-          company_id: user.profile.company_id,
-          created_by: user.id
-        })
-        .select()
-        .single();
-      
+      const { data: renewalResult, error } = await supabase.rpc(
+        'renew_contract_with_billing_graph_atomic',
+        {
+          p_contract_id: renewalData.contract_id,
+          p_new_end_date: renewalData.new_end_date,
+          p_new_amount: renewalData.new_amount,
+          p_renewal_terms: renewalData.renewal_terms,
+        },
+      );
       if (error) throw error;
-      
-      // Update the original contract status to 'renewed'
-      const { error: updateError } = await supabase
-        .from("contracts")
-        .update({ status: 'renewed' })
-        .eq("id", renewalData.contract_id);
-      
-      if (updateError) throw updateError;
+      const payload = renewalResult as Record<string, unknown> | null;
+      if (!payload?.success || !payload.billing_graph_created || !payload.contract_id) {
+        throw new Error(String(payload?.error || 'لم يكتمل تجديد العقد وشبكة الفوترة'));
+      }
+
+      const { data: newContract, error: newContractError } = await supabase
+        .from('contracts')
+        .select('*')
+        .eq('id', String(payload.contract_id))
+        .single();
+      if (newContractError) throw newContractError;
       
       return { newContract, originalContract };
     },
@@ -146,66 +180,88 @@ export const useAutoRenewContracts = () => {
       if (!user?.profile?.company_id) throw new Error("Company ID is required");
       
       // Get contracts that are expiring in 7 days and have auto-renewal enabled
-      const sevenDaysFromNow = new Date();
+      const today = new Date();
+      const sevenDaysFromNow = new Date(today);
       sevenDaysFromNow.setDate(sevenDaysFromNow.getDate() + 7);
+      const todayDate = formatLocalDate(today);
+      const sevenDaysFromNowDate = formatLocalDate(sevenDaysFromNow);
       
       const { data: contractsToRenew, error: fetchError } = await supabase
         .from("contracts")
         .select("*")
         .eq("company_id", user.profile.company_id)
         .eq("status", "active")
-        .lte("end_date", sevenDaysFromNow.toISOString().split('T')[0]);
+        .eq("auto_renew_enabled", true)
+        .gte("end_date", todayDate)
+        .lte("end_date", sevenDaysFromNowDate);
       
       if (fetchError) throw fetchError;
       
-      const renewedContracts = [];
+      const renewedContracts: Array<Record<string, unknown>> = [];
+      const failures: AutoRenewalFailure[] = [];
       
       for (const contract of contractsToRenew || []) {
-        // Calculate new end date (add same duration)
-        const startDate = new Date(contract.start_date);
-        const endDate = new Date(contract.end_date);
-        const durationDays = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
-        
-        const newEndDate = new Date(contract.end_date);
-        newEndDate.setDate(newEndDate.getDate() + durationDays);
-        
-        // Create renewed contract
-        const { data: newContract, error } = await supabase
-          .from("contracts")
-          .insert({
-            contract_number: `${contract.contract_number}-AR${Date.now()}`,
-            contract_date: new Date().toISOString().split('T')[0],
-            start_date: contract.end_date,
-            end_date: newEndDate.toISOString().split('T')[0],
-            contract_amount: contract.contract_amount,
-            monthly_amount: contract.monthly_amount,
-            contract_type: contract.contract_type,
-            customer_id: contract.customer_id,
-            vehicle_id: contract.vehicle_id,
-            cost_center_id: contract.cost_center_id,
-            description: `تجديد تلقائي ${contract.description || ''}`,
-            terms: contract.terms,
-            status: 'active',
-            company_id: user.profile.company_id,
-            created_by: user.id
-          })
-          .select()
-          .single();
-        
-        if (!error) {
-          // Update original contract
-          await supabase
-            .from("contracts")
-            .update({ status: 'renewed' })
-            .eq("id", contract.id);
+        const contractNumber = contract.contract_number || contract.id;
+
+        try {
+          const newEndDate = calculateCanonicalRenewalEndDate(
+            contract.start_date,
+            contract.end_date,
+          );
+          if (!newEndDate) {
+            throw new Error('Unable to calculate a valid renewal end date');
+          }
           
-          renewedContracts.push(newContract);
+          const { data: renewalResult, error } = await supabase.rpc(
+            'renew_contract_with_billing_graph_atomic',
+            {
+              p_contract_id: contract.id,
+              p_new_end_date: newEndDate,
+              p_new_amount: contract.contract_amount,
+              p_renewal_terms: contract.terms || undefined,
+            },
+          );
+          if (error) throw error;
+
+          const payload = renewalResult as Record<string, unknown> | null;
+          if (!payload?.success || !payload.billing_graph_created || !payload.contract_id) {
+            throw new Error(
+              String(payload?.error || 'The atomic renewal did not create a complete billing graph'),
+            );
+          }
+
+          renewedContracts.push({
+            ...contract,
+            id: String(payload.contract_id),
+            contract_number: String(payload.contract_number || ''),
+            end_date: newEndDate,
+          });
+        } catch (error) {
+          failures.push({
+            contractId: contract.id,
+            contractNumber,
+            message: getErrorMessage(error, 'Unknown auto-renewal error'),
+          });
         }
       }
       
-      return renewedContracts;
+      const result: AutoRenewalBatchResult = {
+        eligibleCount: contractsToRenew?.length || 0,
+        renewedContracts,
+        failures,
+      };
+
+      if (failures.length > 0) {
+        // Earlier contracts may already be committed by the atomic RPC.
+        queryClient.invalidateQueries({ queryKey: ["contracts"] });
+        queryClient.invalidateQueries({ queryKey: ["expiring-contracts"] });
+        throw new AutoRenewalBatchError(result);
+      }
+
+      return result;
     },
-    onSuccess: (renewedContracts) => {
+    onSuccess: (result) => {
+      const renewedContracts = result.renewedContracts;
       queryClient.invalidateQueries({ queryKey: ["contracts"] });
       queryClient.invalidateQueries({ queryKey: ["expiring-contracts"] });
       if (renewedContracts.length > 0) {
@@ -243,17 +299,40 @@ export const useUpdateContractStatus = () => {
       
       if (contractError) throw contractError;
       
-      // Update contract status
-      // Note: Vehicle status is automatically updated by database trigger
-      // (contracts_vehicle_status_update -> update_vehicle_status_from_contract)
-      const { data, error } = await supabase
-        .from("contracts")
-        .update(updateData)
-        .eq("id", contractId)
-        .select()
-        .single();
-      
-      if (error) throw error;
+      let data: any;
+      if (status === 'active') {
+        const activatableStatuses = new Set(['draft', 'pending', 'pending_completion', 'suspended']);
+        if (!activatableStatuses.has(contractData.old_status)) {
+          throw new Error(`لا يمكن تفعيل عقد حالته الحالية ${contractData.old_status || 'غير محددة'}`);
+        }
+        const { data: activationResult, error: activationError } = await supabase.rpc(
+          'activate_contract_with_billing_graph_atomic',
+          { p_contract_id: contractId },
+        );
+        if (activationError) throw activationError;
+        const payload = activationResult as Record<string, unknown> | null;
+        if (!payload?.success || !payload.billing_graph_created) {
+          throw new Error(String(payload?.error || 'لم يكتمل تفعيل العقد وشبكة الفوترة'));
+        }
+
+        const { data: activatedContract, error: fetchError } = await supabase
+          .from('contracts')
+          .select('*')
+          .eq('id', contractId)
+          .single();
+        if (fetchError) throw fetchError;
+        data = activatedContract;
+      } else {
+        // Non-billable lifecycle changes do not create financial obligations.
+        const { data: updatedContract, error } = await supabase
+          .from("contracts")
+          .update(updateData)
+          .eq("id", contractId)
+          .select()
+          .single();
+        if (error) throw error;
+        data = updatedContract;
+      }
       
       // Vehicle status is now handled by database trigger - no manual update needed
       // This prevents the "tuple already modified" error

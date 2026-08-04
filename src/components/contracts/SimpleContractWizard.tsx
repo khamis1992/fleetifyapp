@@ -8,7 +8,7 @@
  * 3. المراجعة والإرسال (Review & Submit)
  */
 
-import React, { CSSProperties, useState, useEffect } from 'react';
+import React, { CSSProperties, useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { z } from 'zod';
 import { toast } from 'sonner';
@@ -49,6 +49,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useCurrentCompanyId } from '@/hooks/useUnifiedCompanyAccess';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 import { systemColorPattern } from '@/lib/design-system/systemColorPattern';
+import { calculateCanonicalBillingMonths } from '@/utils/contractCalculations';
 
 // Import our new components
 import { EnhancedCustomerDialog } from '@/components/customers/EnhancedCustomerForm';
@@ -96,6 +97,7 @@ interface SimpleContractWizardProps {
   onSubmit?: (data: ContractFormData) => Promise<void>;
   preselectedCustomerId?: string;
   preselectedVehicleId?: string;
+  assignedToProfileId?: string;
   showAssistant?: boolean;
   editContract?: any; // Contract to edit (if provided, wizard is in edit mode)
 }
@@ -123,12 +125,6 @@ interface Vehicle {
   status: string | null;
   daily_rate?: number | null;
 }
-
-const getSchedulesCreated = (value: unknown): number => {
-  if (typeof value !== 'object' || value === null || Array.isArray(value)) return 0;
-  const count = (value as Record<string, unknown>).schedules_created;
-  return typeof count === 'number' && Number.isFinite(count) ? count : 0;
-};
 
 // === Step Progress Indicator ===
 const StepIndicator: React.FC<{
@@ -485,7 +481,10 @@ const Step2DetailsPricing: React.FC<{
       const days = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
       if (days > 0 && days !== formData.rental_days) {
         // إعادة حساب إجمالي العقد إذا كان الإيجار الشهري موجود
-        const months = Math.ceil(days / 30);
+        const months = calculateCanonicalBillingMonths(
+          formData.start_date,
+          formData.end_date,
+        );
         const totalAmount = formData.monthly_amount ? formData.monthly_amount * months : formData.contract_amount;
         onUpdate({ 
           rental_days: days,
@@ -619,8 +618,10 @@ const Step2DetailsPricing: React.FC<{
                 value={formData.monthly_amount || ''}
                 onChange={(e) => {
                   const monthlyAmount = Number(e.target.value);
-                  // حساب عدد الأشهر من عدد الأيام
-                  const months = formData.rental_days ? Math.ceil(formData.rental_days / 30) : 1;
+                  const months = calculateCanonicalBillingMonths(
+                    formData.start_date,
+                    formData.end_date,
+                  ) || 1;
                   const totalAmount = monthlyAmount * months;
                   onUpdate({
                     monthly_amount: monthlyAmount,
@@ -649,7 +650,7 @@ const Step2DetailsPricing: React.FC<{
                   <div>
                     <p className="text-sm text-neutral-600">إجمالي قيمة العقد</p>
                     <p className="text-xs text-neutral-500">
-                      {formData.monthly_amount} × {Math.ceil(formData.rental_days / 30)} شهر
+                      {formData.monthly_amount} × {calculateCanonicalBillingMonths(formData.start_date, formData.end_date)} شهر
                     </p>
                   </div>
                 </div>
@@ -878,7 +879,7 @@ const Step3Review: React.FC<{
               <span className="font-medium">المبلغ الإجمالي</span>
               {formData.monthly_amount && formData.rental_days && (
                 <p className="text-xs text-white/70">
-                  {formData.monthly_amount} × {Math.ceil(formData.rental_days / 30)} شهر
+                  {formData.monthly_amount} × {calculateCanonicalBillingMonths(formData.start_date, formData.end_date)} شهر
                 </p>
               )}
             </div>
@@ -918,6 +919,7 @@ export const SimpleContractWizard: React.FC<SimpleContractWizardProps> = ({ open
   onSubmit,
   preselectedCustomerId,
   preselectedVehicleId,
+  assignedToProfileId,
   showAssistant = true,
   editContract, }) => {
   const isEditMode = !!editContract;
@@ -932,6 +934,7 @@ export const SimpleContractWizard: React.FC<SimpleContractWizardProps> = ({ open
   const [isAssistantOpen, setIsAssistantOpen] = useState(false);
   const [customersRefreshKey, setCustomersRefreshKey] = useState(0);
   const [customerSearch, setCustomerSearch] = useState('');
+  const contractCreationKeyRef = useRef<string | null>(null);
 
   // Initialize form data - prioritize editContract over preselected values
   const getInitialFormData = (): Partial<ContractFormData> => {
@@ -1053,7 +1056,7 @@ export const SimpleContractWizard: React.FC<SimpleContractWizardProps> = ({ open
         .from('vehicles')
         .select('id, plate_number, make, model, year, status, daily_rate')
         .eq('company_id', companyId)
-        .in('status', ['available', 'rented']) // Only show relevant vehicles
+        .in('status', isEditMode ? ['available', 'rented'] : ['available'])
         .order('make')
         .limit(200); // Increased limit to show more vehicles
 
@@ -1127,7 +1130,20 @@ export const SimpleContractWizard: React.FC<SimpleContractWizardProps> = ({ open
       } else if (isEditMode && editContract?.id) {
         // Update existing contract
         const newMonthlyAmount = validatedData.monthly_amount;
-        
+        const billingDefinitionChanged =
+          validatedData.customer_id !== String(editContract.customer_id || '')
+          || validatedData.contract_type !== String(editContract.contract_type || '')
+          || validatedData.start_date !== String(editContract.start_date || '').slice(0, 10)
+          || validatedData.end_date !== String(editContract.end_date || '').slice(0, 10)
+          || Math.abs(newMonthlyAmount - Number(editContract.monthly_amount || 0)) > 0.001
+          || Math.abs(validatedData.contract_amount - Number(editContract.contract_amount || 0)) > 0.001;
+
+        if (billingDefinitionChanged) {
+          throw new Error(
+            'تعديل العميل أو شروط الفوترة متوقف من هذه الشاشة لحماية الفواتير والقيود. استخدم مسار تعديل عقد محاسبي ذري ومعتمد.',
+          );
+        }
+
         const { error } = await supabase
           .from('contracts')
           .update({
@@ -1147,171 +1163,43 @@ export const SimpleContractWizard: React.FC<SimpleContractWizardProps> = ({ open
           console.error('Contract update error:', error);
           throw error;
         }
-        
-        // تحديث الفواتير وجدول الدفعات غير المسددة بالقيمة الجديدة
-        if (newMonthlyAmount > 0) {
-          console.log('Updating unpaid invoices and payment schedules with new amount:', newMonthlyAmount);
-          
-          // جلب الفواتير غير المسددة لتحديثها بشكل صحيح
-          const { data: unpaidInvoices, error: fetchError } = await supabase
-            .from('invoices')
-            .select('id, paid_amount, invoice_type')
-            .eq('contract_id', editContract.id)
-            .eq('company_id', companyId)
-            .neq('payment_status', 'paid')
-            .neq('payment_status', 'cancelled');
-          
-          console.log('Found unpaid invoices:', unpaidInvoices, 'Error:', fetchError);
-          
-          if (unpaidInvoices && unpaidInvoices.length > 0) {
-            // تحديث كل فاتورة مع حساب المتبقي بشكل صحيح
-            let updatedCount = 0;
-            for (const invoice of unpaidInvoices) {
-              const paidAmount = invoice.paid_amount || 0;
-              const newBalanceDue = Math.max(0, newMonthlyAmount - paidAmount);
-              
-              const { error: updateError } = await supabase
-                .from('invoices')
-                .update({
-                  subtotal: newMonthlyAmount,
-                  total_amount: newMonthlyAmount,
-                  balance_due: newBalanceDue,
-                })
-                .eq('id', invoice.id)
-                .eq('company_id', companyId);
-              
-              if (!updateError) updatedCount++;
-              else console.error('Error updating invoice:', invoice.id, updateError);
-            }
-            console.log(`Updated ${updatedCount} of ${unpaidInvoices.length} unpaid invoices`);
-          }
-          
-          // تحديث جدول الدفعات غير المسددة
-          const { data: updatedSchedules, error: schedulesError } = await supabase
-            .from('contract_payment_schedules')
-            .update({
-              amount: newMonthlyAmount,
-            })
-            .eq('contract_id', editContract.id)
-            .eq('company_id', companyId)
-            .neq('status', 'paid')
-            .select();
-          
-          if (schedulesError) {
-            console.error('Error updating payment schedules:', schedulesError);
-          } else {
-            console.log('Updated payment schedules:', updatedSchedules?.length || 0);
-          }
-          
-          if ((unpaidInvoices && unpaidInvoices.length > 0) || (updatedSchedules && updatedSchedules.length > 0)) {
-            toast.success('تم تحديث الفواتير وجدول الدفعات بالقيمة الجديدة');
-          }
-          
-          // إذا لم يكن هناك جدول دفعات، قم بإنشائه
-          if (!updatedSchedules || updatedSchedules.length === 0) {
-            // تحقق من وجود جدول دفعات
-            const { data: existingSchedules } = await supabase
-              .from('contract_payment_schedules')
-              .select('id')
-              .eq('contract_id', editContract.id)
-              .eq('company_id', companyId)
-              .limit(1);
-            
-            if (!existingSchedules || existingSchedules.length === 0) {
-              console.log('No payment schedules found, generating new ones...');
-              
-              try {
-                const { data: scheduleResult, error: scheduleError } = await supabase.rpc(
-                  'generate_payment_schedules_for_contract',
-                  {
-                    p_contract_id: editContract.id,
-                    p_dry_run: false
-                  }
-                );
-                
-                if (scheduleError) {
-                  console.error('Error generating payment schedules:', scheduleError);
-                } else {
-                  console.log('Payment schedules created:', scheduleResult);
-                  const schedulesCreated = getSchedulesCreated(scheduleResult);
-                  if (schedulesCreated > 0) {
-                    toast.success(`تم إنشاء ${schedulesCreated} دفعة في جدول الدفعات`);
-                  }
-                }
-              } catch (scheduleErr) {
-                console.error('Error in payment schedule generation:', scheduleErr);
-              }
-            }
-          }
-        }
-        
+
+
         toast.success('تم تحديث العقد بنجاح!');
       } else {
         if (!user?.id) throw new Error('تعذر تحديد المستخدم');
-        // Generate contract number
-        const timestamp = Date.now().toString(36).toUpperCase();
-        const random = Math.random().toString(36).substring(2, 6).toUpperCase();
-        const contractNumber = `C-${timestamp}-${random}`;
-        
-        const { data: newContract, error } = await supabase.from('contracts').insert({
-          company_id: companyId,
-          customer_id: validatedData.customer_id,
-          vehicle_id: validatedData.vehicle_id || null,
-          contract_type: validatedData.contract_type,
-          contract_number: contractNumber,
-          contract_date: validatedData.start_date,
-          start_date: validatedData.start_date,
-          end_date: validatedData.end_date,
-          monthly_amount: validatedData.monthly_amount,
-          contract_amount: validatedData.contract_amount,
-          description: validatedData.notes || null,
-          status: 'active',
-          created_by: user?.id,
-        }).select('id').single();
 
-        if (error) {
-          console.error('Contract insert error:', error);
-          throw error;
+        const { data: creationResult, error } = await supabase.rpc(
+          'create_contract_with_billing_graph_atomic',
+          {
+            p_company_id: companyId,
+            p_customer_id: validatedData.customer_id,
+            p_vehicle_id: validatedData.vehicle_id || undefined,
+            p_contract_type: validatedData.contract_type,
+            p_start_date: validatedData.start_date,
+            p_end_date: validatedData.end_date,
+            p_contract_date: new Date().toISOString().slice(0, 10),
+            p_monthly_amount: validatedData.monthly_amount,
+            p_contract_amount: validatedData.contract_amount,
+            p_description: validatedData.notes || undefined,
+            p_created_by: user.id,
+            p_assigned_to_profile_id: assignedToProfileId || undefined,
+            p_created_via: assignedToProfileId ? 'employee_workspace' : 'web',
+            p_idempotency_key: contractCreationKeyRef.current
+              ?? (contractCreationKeyRef.current = `contract:${crypto.randomUUID()}`),
+          },
+        );
+
+        if (error) throw error;
+        const payload = creationResult as Record<string, unknown> | null;
+        if (!payload?.success || !payload.billing_graph_created || !payload.contract_id) {
+          throw new Error(String(payload?.error || 'لم يكتمل إنشاء العقد وشبكة الفوترة'));
         }
-        
-        // Update vehicle status if vehicle is selected
-        if (validatedData.vehicle_id) {
-          await supabase
-            .from('vehicles')
-            .update({ status: 'rented' })
-            .eq('id', validatedData.vehicle_id)
-            .eq('company_id', companyId);
-        }
-        
-        // إنشاء جدول الدفعات والفواتير تلقائياً
-        if (newContract?.id && validatedData.monthly_amount > 0) {
-          console.log('Creating payment schedules for new contract:', newContract.id);
-          
-          try {
-            const { data: scheduleResult, error: scheduleError } = await supabase.rpc(
-              'generate_payment_schedules_for_contract',
-              {
-                p_contract_id: newContract.id,
-                p_dry_run: false
-              }
-            );
-            
-            if (scheduleError) {
-              console.error('Error generating payment schedules:', scheduleError);
-              // لا نوقف العملية - العقد تم إنشاؤه بنجاح
-            } else {
-              console.log('Payment schedules created:', scheduleResult);
-              const schedulesCreated = getSchedulesCreated(scheduleResult);
-              if (schedulesCreated > 0) {
-                toast.success(`تم إنشاء ${schedulesCreated} دفعة في جدول الدفعات`);
-              }
-            }
-          } catch (scheduleErr) {
-            console.error('Error in payment schedule generation:', scheduleErr);
-          }
-        }
-        
-        toast.success('تم إنشاء العقد بنجاح!');
+
+        toast.success(
+          `تم إنشاء العقد و${Number(payload.invoices_created || 0)} فاتورة وقيودها بنجاح`,
+        );
+        contractCreationKeyRef.current = null;
       }
 
       onOpenChange(false);

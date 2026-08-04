@@ -22,10 +22,23 @@
    https://qwhunliohlkkahbspfiu.supabase.co
    ```
 
-   **SUPABASE_ANON_KEY**
+   **INVOICE_GENERATOR_SECRET**
    ```
-   <your-supabase-anon-key>
+   <a-long-random-secret-matching-the-edge-function-secret>
    ```
+
+   **PAYMENT_REMINDERS_SECRET**
+   ```
+   <a-separate-long-random-secret-matching-the-edge-function-secret>
+   ```
+
+   استخدم السر المخصص للتذكيرات. تدعم الوظيفة `INVOICE_GENERATOR_SECRET`
+   كقيمة احتياطية فقط عندما لا يكون `PAYMENT_REMINDERS_SECRET` مضبوطاً.
+   يجب نشر `process-payment-reminders` بخيار `--no-verify-jwt`؛ المصادقة تتم داخل الوظيفة ولا تعتمد على `anon` JWT.
+
+   أسرار المزود `ULTRAMSG_INSTANCE_ID` و`ULTRAMSG_TOKEN` و`WHATSAPP_REMINDERS_SECRET`
+   تُضبط في Supabase Function secrets، مع تدوير أي token سبق ظهوره في المصدر؛
+   لا تضع هذه القيم في ملفات المشروع أو في طلبات المتصفح.
 
 ---
 
@@ -50,10 +63,14 @@ jobs:
     steps:
       - name: Call Supabase Edge Function
         run: |
-          curl -X POST \
-            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" \
+          set -euo pipefail
+          response=$(curl --fail-with-body --silent --show-error -X POST \
+            -H "x-agent-secret: ${{ secrets.INVOICE_GENERATOR_SECRET }}" \
             -H "Content-Type: application/json" \
-            ${{ secrets.SUPABASE_URL }}/functions/v1/generate-monthly-invoices
+            --data '{}' \
+            ${{ secrets.SUPABASE_URL }}/functions/v1/generate-monthly-invoices)
+          echo "$response"
+          echo "$response" | jq -e '.success == true' >/dev/null
 
       - name: Notify on failure
         if: failure()
@@ -79,10 +96,14 @@ jobs:
     steps:
       - name: Call Supabase Edge Function
         run: |
-          curl -X POST \
-            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" \
+          set -euo pipefail
+          response=$(curl --fail-with-body --silent --show-error -X POST \
+            -H "x-agent-secret: ${{ secrets.PAYMENT_REMINDERS_SECRET }}" \
             -H "Content-Type: application/json" \
-            ${{ secrets.SUPABASE_URL }}/functions/v1/process-payment-reminders
+            --data '{}' \
+            ${{ secrets.SUPABASE_URL }}/functions/v1/process-payment-reminders)
+          echo "$response"
+          echo "$response" | jq -e '(.success == true) and (((.results.errors // []) | length) == 0)' >/dev/null
 
       - name: Notify on failure
         if: failure()
@@ -149,8 +170,10 @@ jobs:
 2. **تحقق من Edge Functions:**
    ```bash
    # تأكد من أن الـ functions منشورة على Supabase
-   curl -X POST \
-     -H "Authorization: Bearer YOUR_ANON_KEY" \
+   curl --fail-with-body --silent --show-error -X POST \
+     -H "x-agent-secret: YOUR_INVOICE_GENERATOR_SECRET" \
+     -H "Content-Type: application/json" \
+     --data '{}' \
      https://qwhunliohlkkahbspfiu.supabase.co/functions/v1/generate-monthly-invoices
    ```
 

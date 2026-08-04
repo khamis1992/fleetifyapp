@@ -8,6 +8,12 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { getEligibleEmployeeProfileIds } from '@/services/employeeAssignmentEligibility';
 import { formatCustomerName } from '@/utils/formatCustomerName';
+import {
+  buildEmployeeContractBillingSummary,
+  fetchContractRowsByKeyset,
+  summarizeEmployeeInvoicesByContract,
+  summarizeEmployeeSchedulesByContract,
+} from '@/utils/employeeContractInvoiceStats';
 import type { 
   EmployeeContract, 
   ContractStats, 
@@ -23,6 +29,18 @@ interface UseEmployeeContractsReturn {
   error: Error | null;
   refetch: () => void;
 }
+
+const CLOSED_PENALTY_STATES = new Set([
+  'paid',
+  'completed',
+  'cleared',
+  'cancelled',
+  'canceled',
+  'void',
+  'voided',
+  'deleted',
+  'inactive',
+]);
 
 export const useEmployeeContracts = (
   filters?: ContractFilters
@@ -59,10 +77,11 @@ export const useEmployeeContracts = (
     error,
     refetch
   } = useQuery({
-    queryKey: ['employee-contracts', 'v4', profile?.id, profile?.is_employee_workspace_eligible, filters],
+    queryKey: ['employee-contracts', 'v6', profile?.id, profile?.is_employee_workspace_eligible, filters],
     queryFn: async () => {
       if (!profile?.id || !profile.company_id) return [];
       if (!profile.is_active || !profile.is_employee_workspace_eligible) return [];
+      const employeeCompanyId = profile.company_id;
 
       let query = supabase
         .from('contracts')
@@ -110,7 +129,7 @@ export const useEmployeeContracts = (
           )
         `)
         .eq('assigned_to_profile_id', profile.id)
-        .eq('company_id', profile.company_id);
+        .eq('company_id', employeeCompanyId);
 
       // Apply filters
       if (filters?.status && filters.status.length > 0) {
@@ -155,23 +174,37 @@ export const useEmployeeContracts = (
 
       const contractIds = (data || [])
         .map((contract) => contract.id)
-        .filter(Boolean);
+        .filter((id): id is string => Boolean(id));
 
       const violationStatsByContract = new Map<string, { count: number; total: number }>();
+      let invoiceStatsByContract = summarizeEmployeeInvoicesByContract([]);
+      let scheduleCoverageByContract = summarizeEmployeeSchedulesByContract([]);
       if (contractIds.length > 0) {
-        const { data: violations, error: violationsError } = await supabase
-          .from('penalties')
-          .select('contract_id, amount, payment_status, status')
-          .eq('company_id', profile.company_id)
-          .in('contract_id', contractIds);
+        const violations = await fetchContractRowsByKeyset(contractIds, async ({
+          contractIds: contractIdChunk,
+          afterId,
+          limit,
+        }) => {
+          let penaltiesQuery = supabase
+            .from('penalties')
+            .select('id, contract_id, amount, payment_status, status')
+            .eq('company_id', employeeCompanyId)
+            .in('contract_id', contractIdChunk)
+            .order('id', { ascending: true })
+            .limit(limit);
 
-        if (violationsError) throw violationsError;
+          if (afterId) penaltiesQuery = penaltiesQuery.gt('id', afterId);
 
-        (violations || []).forEach((violation) => {
+          const { data: page, error: penaltiesError } = await penaltiesQuery;
+          if (penaltiesError) throw penaltiesError;
+          return page || [];
+        });
+
+        violations.forEach((violation) => {
           if (!violation.contract_id) return;
           const paymentStatus = String(violation.payment_status || '').toLowerCase();
           const status = String(violation.status || '').toLowerCase();
-          if (paymentStatus === 'paid' || status === 'cancelled') return;
+          if (CLOSED_PENALTY_STATES.has(paymentStatus) || CLOSED_PENALTY_STATES.has(status)) return;
 
           const current = violationStatsByContract.get(violation.contract_id) || { count: 0, total: 0 };
           violationStatsByContract.set(violation.contract_id, {
@@ -179,12 +212,72 @@ export const useEmployeeContracts = (
             total: current.total + Number(violation.amount || 0),
           });
         });
+
+        const invoices = await fetchContractRowsByKeyset(contractIds, async ({
+          contractIds: contractIdChunk,
+          afterId,
+          limit,
+        }) => {
+          let invoicesQuery = supabase
+            .from('invoices')
+            .select(`
+              id,
+              contract_id,
+              invoice_month,
+              invoice_date,
+              due_date,
+              balance_due,
+              total_amount,
+              paid_amount,
+              payment_status,
+              status
+            `)
+            .eq('company_id', employeeCompanyId)
+            .in('contract_id', contractIdChunk)
+            .order('id', { ascending: true })
+            .limit(limit);
+
+          if (afterId) invoicesQuery = invoicesQuery.gt('id', afterId);
+
+          const { data: page, error: invoicesError } = await invoicesQuery;
+          if (invoicesError) throw invoicesError;
+          return page || [];
+        });
+
+        invoiceStatsByContract = summarizeEmployeeInvoicesByContract(invoices);
+
+        const schedules = await fetchContractRowsByKeyset(contractIds, async ({
+          contractIds: contractIdChunk,
+          afterId,
+          limit,
+        }) => {
+          let schedulesQuery = supabase
+            .from('contract_payment_schedules')
+            .select('id, contract_id, due_date, amount, status')
+            .eq('company_id', employeeCompanyId)
+            .in('contract_id', contractIdChunk)
+            .order('id', { ascending: true })
+            .limit(limit);
+
+          if (afterId) schedulesQuery = schedulesQuery.gt('id', afterId);
+
+          const { data: page, error: schedulesError } = await schedulesQuery;
+          if (schedulesError) throw schedulesError;
+          return page || [];
+        });
+
+        scheduleCoverageByContract = summarizeEmployeeSchedulesByContract(schedules);
       }
 
       // Transform data
       const transformedData: EmployeeContract[] = (data || []).map((contract: any) => {
         const customer = contract.customers;
         const violationStats = violationStatsByContract.get(contract.id) || { count: 0, total: 0 };
+        const invoiceStats = buildEmployeeContractBillingSummary(
+          contract,
+          invoiceStatsByContract.get(contract.id),
+          scheduleCoverageByContract.get(contract.id),
+        );
         
         const customerName = formatCustomerName(customer, { preferArabic: true });
 
@@ -204,6 +297,14 @@ export const useEmployeeContracts = (
           monthly_amount: contract.monthly_amount || 0,
           balance_due: contract.balance_due || 0,
           total_paid: contract.total_paid || 0,
+          due_invoice_balance: invoiceStats.dueBalance,
+          open_invoice_balance: invoiceStats.openBalance,
+          collectible_invoice_balance: invoiceStats.collectibleBalance,
+          future_invoice_balance: invoiceStats.futureBalance,
+          due_invoice_count: invoiceStats.dueCount,
+          open_invoice_count: invoiceStats.openCount,
+          collectible_invoice_count: invoiceStats.collectibleCount,
+          billing_review_required: invoiceStats.billingReviewRequired,
           traffic_violation_count: violationStats.count,
           traffic_violation_total: violationStats.total,
           late_fine_amount: contract.late_fine_amount,
@@ -247,7 +348,7 @@ export const useEmployeeContracts = (
   // Calculate priority contracts
   const priorityContracts = contracts.filter((contract) => {
     // High balance (> 5000 QAR)
-    if (contract.balance_due > 5000) {
+    if ((contract.due_invoice_balance ?? 0) > 5000) {
       return {
         ...contract,
         priority_reason: 'high_balance' as const,
@@ -279,7 +380,7 @@ export const useEmployeeContracts = (
     return null;
   }).filter(Boolean).map((contract) => {
     // Add priority reason to contract
-    if (contract.balance_due > 5000) {
+    if ((contract.due_invoice_balance ?? 0) > 5000) {
       return {
         ...contract,
         priority_reason: 'high_balance' as const,
@@ -306,9 +407,9 @@ export const useEmployeeContracts = (
     activeContracts: contracts.filter(c => c.status === 'active').length,
     expiredContracts: contracts.filter(c => c.status === 'expired').length,
     suspendedContracts: contracts.filter(c => c.status === 'suspended').length,
-    totalBalanceDue: contracts.reduce((sum, c) => sum + (c.balance_due || 0), 0),
-    averageBalance: contracts.length > 0 
-      ? contracts.reduce((sum, c) => sum + (c.balance_due || 0), 0) / contracts.length 
+    totalBalanceDue: contracts.reduce((sum, c) => sum + (c.due_invoice_balance ?? 0), 0),
+    averageBalance: contracts.length > 0
+      ? contracts.reduce((sum, c) => sum + (c.due_invoice_balance ?? 0), 0) / contracts.length
       : 0,
   };
 

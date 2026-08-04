@@ -1,6 +1,8 @@
 -- Close the authorization gap between EmployeeWorkspace and the atomic receipt
 -- command without granting employees broad finance permissions.
 
+BEGIN;
+
 CREATE OR REPLACE FUNCTION public.create_payment_atomic(
   p_company_id uuid,
   p_customer_id uuid,
@@ -93,6 +95,7 @@ BEGIN
       USING ERRCODE = 'P0001';
   END IF;
   IF v_registration_metadata ? 'payment_month'
+     AND jsonb_typeof(v_registration_metadata -> 'payment_month') <> 'null'
      AND COALESCE(v_registration_metadata ->> 'payment_month', '') !~ '^[0-9]{4}-(0[1-9]|1[0-2])$'
   THEN
     RAISE EXCEPTION 'Payment month must use YYYY-MM format'
@@ -712,3 +715,5 @@ REVOKE ALL ON FUNCTION public.create_payment_bank_transaction(uuid)
   FROM PUBLIC, anon, authenticated, service_role;
 GRANT EXECUTE ON FUNCTION public.create_payment_bank_transaction(uuid)
   TO service_role;
+
+COMMIT;

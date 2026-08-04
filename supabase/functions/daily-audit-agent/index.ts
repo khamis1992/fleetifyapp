@@ -7,11 +7,13 @@ import {
   LONGCAT_MODEL,
 } from "../_shared/longcat.ts";
 import {
-  invoiceBillingMonth,
   invoiceContractBillingMonthKey,
   isInvoiceOutsideContractBillingMonths,
-  selectExistingInvoiceForMonth,
 } from "./invoice-month.ts";
+import {
+  buildDailyRotatingRanges,
+  getUtcDayNumber,
+} from "./daily-rotation.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -66,6 +68,7 @@ type CompanyResult = {
 
 type AgentResult = {
   ok: boolean;
+  status: "completed" | "partial";
   mode: "dry_run" | "apply";
   source: "longcat" | "local";
   startedAt: string;
@@ -117,8 +120,17 @@ serve(async (req) => {
       { auth: { persistSession: false } },
     );
 
+    const hasContractSelector = Boolean(body.contractId || body.contractNumber);
     const targetContracts = await loadTargetContracts(supabase, body);
-    const targetCompanyId = targetContracts.length === 1 ? targetContracts[0].company_id : body.companyId;
+    if (hasContractSelector && targetContracts.length === 0) {
+      throw new Error("Requested contract selector did not match any contract");
+    }
+    if (hasContractSelector && targetContracts.length !== 1) {
+      throw new Error("Requested contract selector is ambiguous; include companyId or contractId");
+    }
+    const targetCompanyId = hasContractSelector
+      ? targetContracts[0].company_id
+      : body.companyId;
     const companies = await loadCompanies(supabase, targetCompanyId, maxCompanies);
     const results: CompanyResult[] = [];
 
@@ -134,7 +146,7 @@ serve(async (req) => {
         maxContractsPerCompany,
         maxInvoicesPerCompany,
         maxJournalRepairBatch,
-        targetContractIds: targetContractIds.length > 0 ? targetContractIds : null,
+        targetContractIds: hasContractSelector ? targetContractIds : null,
       }));
     }
 
@@ -144,7 +156,8 @@ serve(async (req) => {
 
     const finishedAt = new Date().toISOString();
     const response: AgentResult = {
-      ok: true,
+      ok: totals.errors === 0,
+      status: totals.errors === 0 ? "completed" : "partial",
       mode: dryRun ? "dry_run" : "apply",
       source: aiSummary ? "longcat" : "local",
       startedAt,
@@ -157,11 +170,12 @@ serve(async (req) => {
 
     await writeAgentAuditLog(supabase, response);
 
-    return jsonResponse(response);
+    return jsonResponse(response, response.status === "partial" ? 207 : 200);
   } catch (error) {
     const finishedAt = new Date().toISOString();
     return jsonResponse({
       ok: false,
+      status: "partial",
       mode: "dry_run",
       source: "local",
       startedAt,
@@ -192,24 +206,59 @@ async function readJson<T>(req: Request): Promise<T> {
 }
 
 async function loadCompanies(supabase: any, companyId: string | undefined, limit: number) {
-  let query = supabase
-    .from("companies")
-    .select("id, name, name_ar, subscription_status, subscription_expires_at")
-    .order("created_at", { ascending: true })
-    .limit(limit);
-
-  if (companyId) query = query.eq("id", companyId);
-
-  const { data, error } = await query;
-  if (error) throw error;
-
   const today = new Date().toISOString().slice(0, 10);
-  return (data || []).filter((company: any) => {
+  const isEligible = (company: any) => {
     const status = String(company.subscription_status || "active").toLowerCase();
     if (status && !["active", "trial", ""].includes(status)) return false;
     if (company.subscription_expires_at && String(company.subscription_expires_at).slice(0, 10) < today) return false;
     return true;
-  });
+  };
+
+  if (companyId) {
+    const { data, error } = await supabase
+      .from("companies")
+      .select("id, name, name_ar, subscription_status, subscription_expires_at")
+      .eq("id", companyId)
+      .limit(1);
+    if (error) throw error;
+    return (data || []).filter(isEligible);
+  }
+
+  // Load every eligible company with stable keyset pagination, then rotate the
+  // bounded daily slice. A fixed `created_at ASC LIMIT 20` permanently starved
+  // every company after the first page.
+  const eligibleCompanies: any[] = [];
+  let afterId: string | null = null;
+  const pageSize = 500;
+  while (true) {
+    let query = supabase
+      .from("companies")
+      .select("id, name, name_ar, subscription_status, subscription_expires_at")
+      .order("id", { ascending: true })
+      .limit(pageSize);
+    if (afterId) query = query.gt("id", afterId);
+
+    const { data, error } = await query;
+    if (error) throw error;
+    const page = data || [];
+    eligibleCompanies.push(...page.filter(isEligible));
+    if (page.length < pageSize) break;
+
+    const nextAfterId = page[page.length - 1]?.id;
+    if (!nextAfterId || nextAfterId === afterId) {
+      throw new Error("Company keyset pagination did not advance");
+    }
+    afterId = nextAfterId;
+  }
+
+  const ranges = buildDailyRotatingRanges(
+    eligibleCompanies.length,
+    limit,
+    getUtcDayNumber(),
+  );
+  return ranges.flatMap((range) =>
+    eligibleCompanies.slice(range.from, range.to + 1)
+  );
 }
 
 async function loadTargetContracts(supabase: any, body: AuditRequest) {
@@ -277,6 +326,25 @@ async function auditCompany({
     errors: [],
   };
 
+  await safeStep(result, "backfill_missing_contract_invoices", async () => {
+    // Missing links and zero-row graphs go through the canonical generator.
+    // Ambiguous/wrong existing links remain review findings for the system
+    // audit gateway; this agent never rewires them with a direct UPDATE.
+    const backfill = await backfillContractInvoices(supabase, company.id, dryRun, maxContractsPerCompany, targetContractIds);
+    result.contracts.invoiceBackfillRuns = backfill.runs;
+    result.contracts.invoiceBackfillCreated = backfill.created;
+    result.contracts.invoiceBackfillSkipped = backfill.skipped;
+    const backfillFailures = backfill.errors.map(
+      (error) => `backfill_missing_contract_invoices: ${error}`,
+    );
+    result.errors.push(...backfillFailures);
+    result.reviewItems.push(...backfillFailures.map(
+      (error) => `فشل إصلاح فوترة تلقائي ويتطلب مراجعة المشرف: ${error}`,
+    ));
+  });
+
+  // Missing invoice graphs are the primary repair objective and must run
+  // before any secondary balance maintenance can consume the Edge deadline.
   await safeStep(result, "recalculate_invoice_balances", async () => {
     result.invoices = await recalculateInvoiceBalances(supabase, company.id, dryRun, maxInvoicesPerCompany, targetContractIds);
   });
@@ -288,23 +356,6 @@ async function auditCompany({
     };
   });
 
-  await safeStep(result, "repair_schedule_invoice_links", async () => {
-    result.contracts.scheduleLinksRepaired = await repairScheduleInvoiceLinks(
-      supabase,
-      company.id,
-      dryRun,
-      maxContractsPerCompany,
-      targetContractIds,
-    );
-  });
-
-  await safeStep(result, "backfill_missing_contract_invoices", async () => {
-    const backfill = await backfillContractInvoices(supabase, company.id, dryRun, maxContractsPerCompany, targetContractIds);
-    result.contracts.invoiceBackfillRuns = backfill.runs;
-    result.contracts.invoiceBackfillCreated = backfill.created;
-    result.contracts.invoiceBackfillSkipped = backfill.skipped;
-  });
-
   await safeStep(result, "reconcile_invoice_amounts_with_schedules", async () => {
     result.contracts.invoiceAmountsReconciled = await reconcileInvoiceAmountsWithSchedules(
       supabase,
@@ -312,6 +363,7 @@ async function auditCompany({
       dryRun,
       maxContractsPerCompany,
       targetContractIds,
+      result.reviewItems,
     );
   });
 
@@ -344,6 +396,7 @@ async function auditCompany({
       dryRun,
       maxContractsPerCompany,
       targetContractIds,
+      result.reviewItems,
     );
   });
 
@@ -410,17 +463,118 @@ async function auditCompany({
   });
 
   await safeStep(result, "surface_review_items_task", async () => {
-    if (!dryRun && result.reviewItems.length > 0) {
-      await upsertDailyAuditReviewTask(supabase, company.id, result.reviewItems);
+    // A contract-targeted run is not a complete company snapshot. It must never replace or close the company-wide review task because doing so
+    // would hide findings from contracts that this invocation did not scan.
+    if (!dryRun && targetContractIds === null) {
+      await reconcileDailyAuditReviewTask(supabase, company.id, result.reviewItems);
     }
   });
 
   return result;
 }
 
-async function upsertDailyAuditReviewTask(supabase: any, companyId: string, reviewItems: string[]) {
+async function reconcileDailyAuditReviewTask(supabase: any, companyId: string, reviewItems: string[]) {
+  // Daily runs intentionally inspect bounded, rotating windows. An empty
+  // window is therefore not proof that findings from another window were
+  // resolved. Daily tasks are additive-only and are closed by a human or by
+  // a separate audit that can prove it inspected a complete snapshot.
+  if (reviewItems.length === 0) return;
+
+  const now = new Date().toISOString();
+  const lifecycleKey = `daily-audit-agent:${companyId}`;
+  const title = `مراجعة ${reviewItems.length} عنصرًا ماليًا رصده وكيل التدقيق اليومي`;
+  const shown = reviewItems.slice(0, 20).map((item) => `- ${item}`).join("\n");
+  const description = `وكيل التدقيق اليومي رصد ${reviewItems.length} عنصرًا يحتاج قرارًا بشريًا:\n${shown}${
+    reviewItems.length > 20 ? `\n- ... و ${reviewItems.length - 20} عنصرًا إضافيًا في سجل التدقيق` : ""
+  }`;
+
+  const { data: existing, error: existingError } = await supabase
+    .from("tasks")
+    .select("id,status,metadata,description,assigned_to,created_by,created_at")
+    .eq("company_id", companyId)
+    .eq("category", "system_audit_review")
+    .in("status", ["pending", "in_progress", "on_hold"])
+    .eq("metadata->>source", "daily_audit_agent")
+    .order("created_at", { ascending: true });
+  if (existingError) throw existingError;
+
+  const openTasks = existing || [];
+  if (openTasks.length > 0) {
+    const [currentTask] = openTasks;
+    const currentMetadata = currentTask.metadata && typeof currentTask.metadata === "object"
+      ? currentTask.metadata
+      : {};
+    const previousReviewItems = Array.isArray(currentMetadata.reviewItems)
+      ? currentMetadata.reviewItems.filter((item: unknown): item is string => typeof item === "string")
+      : [];
+    const accumulatedReviewItems = Array.from(new Set([
+      ...previousReviewItems,
+      ...reviewItems,
+    ]));
+    const newReviewItems = reviewItems.filter((item) => !previousReviewItems.includes(item));
+    const taskUpdate: Record<string, unknown> = {
+      metadata: {
+        ...currentMetadata,
+        source: "daily_audit_agent",
+        dailyAuditTaskKey: lifecycleKey,
+        lifecycleMode: "additive_only",
+        snapshotComplete: false,
+        reviewItems: accumulatedReviewItems,
+        reviewItemCount: accumulatedReviewItems.length,
+        latestReviewItemCount: reviewItems.length,
+        syncedAt: now,
+      },
+      updated_at: now,
+    };
+    // Preserve every prior finding. Pending tasks may append newly observed
+    // items, while tasks already being worked remain textually untouched.
+    if (currentTask.status === "pending" && newReviewItems.length > 0) {
+      const additionalShown = newReviewItems
+        .slice(0, 20)
+        .map((item) => `- ${item}`)
+        .join("\n");
+      const additionalDescription = `Additional findings from the latest rotating audit window:\n${additionalShown}${
+        newReviewItems.length > 20
+          ? `\n- ... and ${newReviewItems.length - 20} more findings retained in task metadata and the audit log`
+          : ""
+      }`;
+      taskUpdate.description = [currentTask.description, additionalDescription]
+        .filter(Boolean)
+        .join("\n\n");
+    }
+
+    const { error: updateError } = await supabase
+      .from("tasks")
+      .update(taskUpdate)
+      .eq("company_id", companyId)
+      .eq("id", currentTask.id);
+    if (updateError) throw updateError;
+
+    const actorId = currentTask.assigned_to || currentTask.created_by;
+    if (actorId) {
+      const { error: activityError } = await supabase.from("task_activity_log").insert({
+        task_id: currentTask.id,
+        user_id: actorId,
+        action: "updated",
+        description: currentTask.status === "pending"
+          ? "حدّث وكيل التدقيق اليومي عناصر المراجعة المعلقة."
+          : "أرفق وكيل التدقيق اليومي نتيجة الفحص الأحدث دون استبدال تفاصيل المهمة الجارية.",
+        new_value: {
+          lifecycleKey,
+          lifecycleMode: "additive_only",
+          snapshotComplete: false,
+          reviewItemCount: accumulatedReviewItems.length,
+          latestReviewItemCount: reviewItems.length,
+          syncedAt: now,
+        },
+      });
+      if (activityError) console.warn("[daily-audit-agent] update task activity log failed", activityError.message);
+    }
+    return;
+  }
+
   // tasks.created_by references profiles.id, so pick an active privileged
-  // profile of this company directly.
+  // profile of this company directly only when a new task is needed.
   const { data: profileRows, error: profileError } = await supabase
     .from("profiles")
     .select("id")
@@ -431,32 +585,8 @@ async function upsertDailyAuditReviewTask(supabase: any, companyId: string, revi
   if (profileError) throw profileError;
 
   const assignee = profileRows?.[0]?.id;
-  if (!assignee) return;
-
-  const now = new Date().toISOString();
-  const title = `مراجعة ${reviewItems.length} عنصرًا ماليًا رصده وكيل التدقيق اليومي`;
-  const shown = reviewItems.slice(0, 20).map((item) => `- ${item}`).join("\n");
-  const description = `وكيل التدقيق اليومي رصد ${reviewItems.length} عنصرًا يحتاج قرارًا بشريًا:\n${shown}${
-    reviewItems.length > 20 ? `\n- ... و ${reviewItems.length - 20} عنصرًا إضافيًا في سجل التدقيق` : ""
-  }`;
-
-  const { data: existing, error: existingError } = await supabase
-    .from("tasks")
-    .select("id")
-    .eq("company_id", companyId)
-    .eq("category", "system_audit_review")
-    .eq("status", "pending")
-    .eq("metadata->>source", "daily_audit_agent")
-    .limit(1);
-  if (existingError) throw existingError;
-
-  if (existing?.length) {
-    const { error: updateError } = await supabase
-      .from("tasks")
-      .update({ title, description, updated_at: now })
-      .eq("id", existing[0].id);
-    if (updateError) throw updateError;
-    return;
+  if (!assignee) {
+    throw new Error("No active manager profile is available for the daily audit review task");
   }
 
   const { error: insertError } = await supabase.from("tasks").insert({
@@ -472,6 +602,10 @@ async function upsertDailyAuditReviewTask(supabase: any, companyId: string, revi
     tags: ["system-audit", "daily-audit-agent", "human-decision"],
     metadata: {
       source: "daily_audit_agent",
+      dailyAuditTaskKey: lifecycleKey,
+      lifecycleMode: "additive_only",
+      snapshotComplete: false,
+      reviewItems,
       reviewItemCount: reviewItems.length,
       syncedAt: now,
     },
@@ -509,24 +643,27 @@ async function recalculateInvoiceBalances(
   }
 
   let fixedBalances = 0;
-  for (const row of drift) {
-    const { error: recalcError } = await supabase.rpc("recalculate_invoice_financial_state", {
-      p_invoice_id: row.invoice_id,
-    });
-
-    if (recalcError) {
-      console.warn("daily-audit-agent canonical invoice recalculation skipped", {
-        invoiceId: row.invoice_id,
-        code: recalcError.code,
-        message: recalcError.message,
-      });
-      continue;
-    }
-
-    fixedBalances += 1;
+  const batchErrors: unknown[] = [];
+  for (const invoiceIds of chunk(drift.map((row: any) => row.invoice_id), 500)) {
+    const { data: batchResult, error: batchError } = await supabase.rpc(
+      "recalculate_invoice_financial_states_batch",
+      {
+        p_company_id: companyId,
+        p_invoice_ids: invoiceIds,
+      },
+    );
+    if (batchError) throw batchError;
+    fixedBalances += Number(batchResult?.fixed || 0);
+    if (Array.isArray(batchResult?.errors)) batchErrors.push(...batchResult.errors);
+  }
+  if (batchErrors.length > 0) {
+    throw new Error(`Canonical invoice recalculation failed for ${batchErrors.length} rows: ${JSON.stringify(batchErrors.slice(0, 5))}`);
   }
 
-  return { scanned: scanned ?? 0, fixedBalances };
+  return {
+    scanned: scanned ?? 0,
+    fixedBalances,
+  };
 }
 
 async function recalculateContractTotals(
@@ -551,35 +688,24 @@ async function recalculateContractTotals(
   const contractRows = contracts || [];
 
   if (!dryRun) {
-    let fixedTotals = 0;
+    const { data: batchResult, error: batchError } = await supabase.rpc(
+      "recalculate_contract_financial_states_batch",
+      {
+        p_company_id: companyId,
+        p_contract_ids: contractRows.map((contract: any) => contract.id),
+      },
+    );
+    if (batchError) throw batchError;
 
-    for (const contract of contractRows) {
-      const { data: canonicalPaid, error: recalcError } = await supabase.rpc("recalculate_contract_financial_state", {
-        p_contract_id: contract.id,
-      });
-
-      if (recalcError) {
-        console.warn("daily-audit-agent canonical contract recalculation skipped", {
-          contractId: contract.id,
-          code: recalcError.code,
-          message: recalcError.message,
-        });
-        continue;
-      }
-
-      const paid = roundMoney(Number(canonicalPaid || 0));
-      const amount = roundMoney(Number(contract.contract_amount || 0));
-      const balance = roundMoney(Math.max(0, amount - paid));
-      const paymentStatus = balance <= 1 ? "paid" : paid > 0 ? "partial" : "unpaid";
-      const changed =
-        Math.abs(Number(contract.total_paid || 0) - paid) > 0.01 ||
-        Math.abs(Number(contract.balance_due || 0) - balance) > 0.01 ||
-        String(contract.payment_status || "").toLowerCase() !== paymentStatus;
-
-      if (changed) fixedTotals += 1;
+    const batchErrors = Array.isArray(batchResult?.errors) ? batchResult.errors : [];
+    if (batchErrors.length > 0) {
+      throw new Error(`Canonical contract recalculation failed for ${batchErrors.length} rows: ${JSON.stringify(batchErrors.slice(0, 5))}`);
     }
 
-    return { scanned: contractRows.length, fixedTotals };
+    return {
+      scanned: contractRows.length,
+      fixedTotals: Number(batchResult?.fixed || 0),
+    };
   }
 
   const contractIds = contractRows.map((contract: any) => contract.id);
@@ -633,425 +759,214 @@ async function backfillContractInvoices(
   limit: number,
   targetContractIds: string[] | null,
 ) {
-  let query = supabase
-    .from("contract_payment_schedules")
-    .select("id, contract_id, due_date")
-    .eq("company_id", companyId)
-    .is("invoice_id", null)
-    .not("status", "eq", "cancelled")
-    .order("due_date", { ascending: true });
-
-  if (targetContractIds?.length) query = query.in("contract_id", targetContractIds);
-  // A row-level limit starved contracts that appeared later in the table.
-  query = query.limit(Math.max(limit, limit * 60));
-
-  const { data: missingRows, error: missingError } = await query;
-  if (missingError) throw missingError;
-
-  const rows = (missingRows || []).filter((row: any) => row.contract_id && row.due_date);
-  const contractIds = Array.from(
-    new Set([
-      ...(targetContractIds || []),
-      ...(missingRows || []).map((row: any) => row.contract_id).filter(Boolean),
-    ])
-  ).slice(0, limit);
-
-  if (dryRun) {
-    return { runs: contractIds.length, created: 0, skipped: Math.max(0, (missingRows || []).length - rows.length) };
+  if (!targetContractIds?.length) {
+    return backfillContractInvoicesWithDurableCursor(
+      supabase,
+      companyId,
+      dryRun,
+      limit,
+    );
   }
 
-  const summary = { runs: 0, created: 0, skipped: 0 };
-
-  for (const row of rows) {
-    summary.runs += 1;
-    try {
-      const invoiceMonth = toMonthStart(String(row.due_date));
-      const existingInvoiceId = await findExistingInvoiceForMonth(supabase, companyId, row.contract_id, invoiceMonth);
-      if (existingInvoiceId) {
-        await linkScheduleInvoice(supabase, companyId, row.id, existingInvoiceId);
-        summary.skipped += 1;
-        continue;
-      }
-
-      const { data: invoiceId, error } = await supabase.rpc("generate_invoice_for_contract_month", {
-        p_contract_id: row.contract_id,
-        p_invoice_month: invoiceMonth,
-      });
-
-      if (error) {
-        if (error.code === "23505") {
-          const duplicateInvoiceId = await findExistingInvoiceForMonth(supabase, companyId, row.contract_id, invoiceMonth);
-          if (duplicateInvoiceId) {
-            await linkScheduleInvoice(supabase, companyId, row.id, duplicateInvoiceId);
-          }
-          summary.skipped += 1;
-          continue;
-        }
-        throw error;
-      }
-
-      if (!invoiceId) {
-        summary.skipped += 1;
-        continue;
-      }
-
-      await linkScheduleInvoice(supabase, companyId, row.id, invoiceId);
-      summary.created += 1;
-    } catch (error) {
-      // One malformed contract must not block every contract behind it.
-      console.error("[daily-audit-agent] invoice backfill row failed", {
-        companyId,
-        contractId: row.contract_id,
-        scheduleId: row.id,
-        error: getErrorMessage(error),
-      });
-      summary.skipped += 1;
-    }
-  }
-
-  // A month can be absent from both invoices and schedules. Complete uniform
-  // monthly contracts before rebuilding their schedules so that this gap is
-  // not invisible to the daily agent.
-  const completedMonths = await completeUniformContractMonths(
+  // Begin with the rotating contract batch. Contracts with no schedules or
+  // invoices are the highest-priority cases and must not wait behind thousands
+  // of sequential schedule-row calls.
+  const auditedContracts = await loadContractsForAudit(
     supabase,
     companyId,
-    contractIds,
-    Math.max(limit, limit * 60),
+    limit,
+    targetContractIds,
+    false,
   );
-  summary.runs += completedMonths.runs;
-  summary.created += completedMonths.created;
-  summary.skipped += completedMonths.skipped;
+  const contractIds = Array.from(new Set(
+    auditedContracts
+      .filter((contract: any) => [
+        "active",
+        "under_legal_procedure",
+      ].includes(String(contract.status || "").toLowerCase()))
+      .map((contract: any) => contract.id)
+      .filter(Boolean),
+  )).slice(0, limit);
 
-  // New invoices can reveal payment schedules that were missing as well.
-  for (const contractId of contractIds) {
-    try {
-      const { error } = await supabase.rpc("generate_payment_schedules_for_contract", {
-        p_contract_id: contractId,
-        p_dry_run: false,
-      });
-      if (error) throw error;
-
-      const graphRepair = await canonicalizeUniformContractScheduleGraph(
-        supabase,
-        companyId,
-        contractId,
-      );
-      if (graphRepair > 0) {
-        console.info("[daily-audit-agent] canonical schedule graph repaired", {
-          companyId,
-          contractId,
-          repaired: graphRepair,
-        });
-      }
-    } catch (error) {
-      console.error("[daily-audit-agent] payment schedule backfill failed", {
-        companyId,
-        contractId,
-        error: getErrorMessage(error),
-      });
-      summary.skipped += 1;
-    }
-  }
-
-  return summary;
-}
-
-async function canonicalizeUniformContractScheduleGraph(
-  supabase: any,
-  companyId: string,
-  contractId: string,
-) {
-  const { data: contract, error: contractError } = await supabase
-    .from("contracts")
-    .select("id, start_date, end_date, monthly_amount, contract_amount")
-    .eq("id", contractId)
-    .eq("company_id", companyId)
-    .maybeSingle();
-  if (contractError) throw contractError;
-  if (!contract) return 0;
-
-  const startMonth = toMonthStart(String(contract.start_date || ""));
-  const endMonth = toMonthStart(String(contract.end_date || ""));
-  const monthlyAmount = roundMoney(Number(contract.monthly_amount || 0));
-  if (!isIsoDate(startMonth) || !isIsoDate(endMonth) || endMonth < startMonth || monthlyAmount <= 0) return 0;
-
-  const expectedMonthCount = monthCountInclusive(startMonth, endMonth);
-  if (
-    expectedMonthCount <= 0
-    || Math.abs(roundMoney(Number(contract.contract_amount || 0)) - roundMoney(expectedMonthCount * monthlyAmount)) > 1
-  ) return 0;
-
-  const [{ data: invoices, error: invoiceError }, { data: schedules, error: scheduleError }] = await Promise.all([
-    supabase
-      .from("invoices")
-      .select("id, invoice_month, invoice_date, due_date, total_amount, paid_amount, balance_due, status, payment_status, created_at")
-      .eq("company_id", companyId)
-      .eq("contract_id", contractId),
-    supabase
-      .from("contract_payment_schedules")
-      .select("id, installment_number, due_date, amount, status, paid_amount, paid_date, invoice_id")
-      .eq("company_id", companyId)
-      .eq("contract_id", contractId),
-  ]);
-  if (invoiceError) throw invoiceError;
-  if (scheduleError) throw scheduleError;
-
-  const activeInvoices = (invoices || []).filter((invoice: any) =>
-    !isCancelledStatus(invoice.status) && !isCancelledStatus(invoice.payment_status)
-  );
-  const invoiceByMonth = new Map<string, any[]>();
-  for (const invoice of activeInvoices) {
-    const key = invoiceBillingMonth(invoice);
-    if (!isIsoDate(key)) continue;
-    invoiceByMonth.set(key, [...(invoiceByMonth.get(key) || []), invoice]);
-  }
-
-  const activeSchedules = (schedules || []).filter((schedule: any) => !isCancelledStatus(schedule.status));
-  const insideByMonth = new Map<string, any>();
-  for (const schedule of activeSchedules) {
-    const key = toMonthStart(String(schedule.due_date || ""));
-    if (key >= startMonth && key <= endMonth && !insideByMonth.has(key)) insideByMonth.set(key, schedule);
-  }
-
-  const expectedMonths = Array.from({ length: expectedMonthCount }, (_, offset) => ({
-    month: addMonths(startMonth, offset),
-    installmentNumber: offset + 1,
-  }));
-  const missingMonths = expectedMonths.filter((item) => !insideByMonth.has(item.month));
-  const safeOutside = activeSchedules.filter((schedule: any) => {
-    const key = toMonthStart(String(schedule.due_date || ""));
-    return (key < startMonth || key > endMonth)
-      && !schedule.invoice_id
-      && Math.abs(Number(schedule.paid_amount || 0)) <= 0.01
-      && String(schedule.status || "").toLowerCase() !== "paid";
-  });
-  const reusableOutside = safeOutside.slice(0, missingMonths.length);
-  const inPeriodSchedules = Array.from(insideByMonth.values());
-  const needsRenumbering = expectedMonths.some((item) => {
-    const schedule = insideByMonth.get(item.month);
-    return schedule && Number(schedule.installment_number) !== item.installmentNumber;
-  });
-  let repaired = 0;
-  const now = new Date().toISOString();
-
-  if (needsRenumbering || reusableOutside.length > 0) {
-    const temporary = [...inPeriodSchedules, ...reusableOutside];
-    for (let index = 0; index < temporary.length; index += 1) {
-      const { error } = await supabase
-        .from("contract_payment_schedules")
-        .update({ installment_number: 20000 + index, updated_at: now })
-        .eq("id", temporary[index].id)
-        .eq("company_id", companyId);
-      if (error) throw error;
-    }
-  }
-
-  for (const item of expectedMonths) {
-    const schedule = insideByMonth.get(item.month);
-    if (!schedule) continue;
-    if (!needsRenumbering && Number(schedule.installment_number) === item.installmentNumber) continue;
-    const { error } = await supabase
-      .from("contract_payment_schedules")
-      .update({ installment_number: item.installmentNumber, updated_at: now })
-      .eq("id", schedule.id)
-      .eq("company_id", companyId);
-    if (error) throw error;
-    repaired += 1;
-  }
-
-  for (let index = 0; index < missingMonths.length; index += 1) {
-    const item = missingMonths[index];
-    const invoice = selectExistingInvoiceForMonth(
-      invoiceByMonth.get(item.month) || [],
-      item.month,
-    );
-    if (!invoice) continue;
-    const paidAmount = roundMoney(Number(invoice.paid_amount || 0));
-    const totalAmount = roundMoney(Number(invoice.total_amount || monthlyAmount));
-    const balance = roundMoney(Math.max(0, totalAmount - paidAmount));
-    const dueDate = new Date(`${item.month}T00:00:00.000Z`);
-    const status = balance <= 1 ? "paid" : paidAmount > 0 ? "partially_paid" : dueDate < new Date() ? "overdue" : "pending";
-    const values = {
-      invoice_id: invoice.id,
-      amount: totalAmount,
-      due_date: item.month,
-      installment_number: item.installmentNumber,
-      status,
-      paid_amount: paidAmount,
-      paid_date: status === "paid" ? (invoice.invoice_date || item.month) : null,
-      description: `Installment ${item.installmentNumber} - ${item.month.slice(0, 7)}`,
-      notes: `Canonical schedule graph repaired by daily audit agent at ${now}`,
-      updated_at: now,
+  if (dryRun) {
+    return {
+      runs: contractIds.length,
+      created: 0,
+      skipped: 0,
+      errors: [] as string[],
     };
-
-    const reusable = reusableOutside[index];
-    const mutation = reusable
-      ? supabase.from("contract_payment_schedules").update(values).eq("id", reusable.id).eq("company_id", companyId)
-      : supabase.from("contract_payment_schedules").insert({ ...values, contract_id: contractId, company_id: companyId });
-    const { error } = await mutation;
-    if (error) throw error;
-    repaired += 1;
   }
 
-  const unusedOutside = safeOutside.slice(reusableOutside.length);
-  if (unusedOutside.length > 0) {
-    const { error } = await supabase
-      .from("contract_payment_schedules")
-      .update({ status: "cancelled", invoice_id: null, updated_at: now })
-      .in("id", unusedOutside.map((schedule: any) => schedule.id))
-      .eq("company_id", companyId);
-    if (error) throw error;
-    repaired += unusedOutside.length;
-  }
+  const summary = {
+    runs: contractIds.length,
+    created: 0,
+    skipped: 0,
+    errors: [] as string[],
+  };
 
-  return repaired;
-}
-
-async function completeUniformContractMonths(
-  supabase: any,
-  companyId: string,
-  contractIds: string[],
-  monthLimit: number,
-) {
-  const summary = { runs: 0, created: 0, skipped: 0 };
-  if (contractIds.length === 0) return summary;
-
-  const { data: contracts, error } = await supabase
-    .from("contracts")
-    .select("id, start_date, end_date, monthly_amount, contract_amount, status")
-    .eq("company_id", companyId)
-    .in("id", contractIds)
-    .in("status", ["active", "under_legal_procedure", "pending", "draft"]);
-
-  if (error) throw error;
-
-  let checkedMonths = 0;
-  for (const contract of contracts || []) {
-    const startMonth = toMonthStart(String(contract.start_date || ""));
-    const endMonth = toMonthStart(String(contract.end_date || ""));
-    const monthlyAmount = roundMoney(Number(contract.monthly_amount || 0));
-    if (!isIsoDate(startMonth) || !isIsoDate(endMonth) || endMonth < startMonth || monthlyAmount <= 0) {
-      summary.skipped += 1;
-      continue;
-    }
-
-    const expectedMonths = monthCountInclusive(startMonth, endMonth);
-    const contractAmount = roundMoney(Number(contract.contract_amount || 0));
-    const expectedAmount = roundMoney(expectedMonths * monthlyAmount);
-
-    // Irregular contracts need an explicit schedule; do not invent equal
-    // installments when their total proves they use another payment model.
-    if (expectedMonths <= 0 || Math.abs(contractAmount - expectedAmount) > 1) {
-      summary.skipped += 1;
-      continue;
-    }
-
-    for (let offset = 0; offset < expectedMonths && checkedMonths < monthLimit; offset += 1) {
-      checkedMonths += 1;
-      summary.runs += 1;
-      const invoiceMonth = addMonths(startMonth, offset);
-
+  // Delegate graph convention, installment count, amounts and idempotency to
+  // the hardened database command. Small concurrent batches keep the edge
+  // invocation bounded while every contract remains transactionally isolated.
+  for (const contractBatch of chunk(contractIds, 5)) {
+    const outcomes = await Promise.all(contractBatch.map(async (contractId) => {
       try {
-        const existingInvoiceId = await findExistingInvoiceForMonth(
-          supabase,
-          companyId,
-          contract.id,
-          invoiceMonth,
+        const { data: createdCount, error } = await supabase.rpc(
+          "generate_invoices_from_payment_schedule",
+          { p_contract_id: contractId },
         );
-        if (existingInvoiceId) {
-          summary.skipped += 1;
-          continue;
-        }
+        if (error) throw error;
+        return { contractId, created: Number(createdCount || 0), error: null };
+      } catch (error) {
+        return { contractId, created: 0, error: getErrorMessage(error) };
+      }
+    }));
 
-        const { data: invoiceId, error: invoiceError } = await supabase.rpc(
-          "generate_invoice_for_contract_month",
-          { p_contract_id: contract.id, p_invoice_month: invoiceMonth },
-        );
-
-        if (invoiceError && invoiceError.code !== "23505") throw invoiceError;
-        if (invoiceId) summary.created += 1;
-        else summary.skipped += 1;
-      } catch (monthError) {
-        console.error("[daily-audit-agent] contract month completion failed", {
+    for (const outcome of outcomes) {
+      summary.created += outcome.created;
+      if (outcome.error) {
+        console.error("[daily-audit-agent] canonical billing graph backfill failed", {
           companyId,
-          contractId: contract.id,
-          invoiceMonth,
-          error: getErrorMessage(monthError),
+          contractId: outcome.contractId,
+          error: outcome.error,
         });
+        summary.errors.push(`contract ${outcome.contractId}: ${outcome.error}`);
+        summary.skipped += 1;
+      } else if (outcome.created === 0) {
         summary.skipped += 1;
       }
     }
-
-    if (checkedMonths >= monthLimit) break;
   }
 
   return summary;
 }
 
-async function repairScheduleInvoiceLinks(
+async function backfillContractInvoicesWithDurableCursor(
   supabase: any,
   companyId: string,
   dryRun: boolean,
   limit: number,
-  targetContractIds: string[] | null,
 ) {
-  const schedules = await loadSchedules(supabase, companyId, limit, targetContractIds);
-  const activeSchedules = schedules.filter((schedule: any) => !isCancelledStatus(schedule.status) && schedule.contract_id && schedule.due_date);
-  const invoiceIds: string[] = Array.from(new Set<string>(activeSchedules.map((schedule: any) => String(schedule.invoice_id)).filter(Boolean)));
-  const contractIds: string[] = Array.from(new Set<string>(activeSchedules.map((schedule: any) => String(schedule.contract_id)).filter(Boolean)));
-  const invoices = await loadInvoicesForContracts(supabase, companyId, contractIds, invoiceIds, limit * 60);
-  const activeInvoices = invoices.filter((invoice: any) => !isCancelledStatus(invoice.status) && !isCancelledStatus(invoice.payment_status));
-  const invoiceById = new Map(activeInvoices.map((invoice: any) => [invoice.id, invoice]));
-  const invoicesByContractMonth = new Map<string, any[]>();
-  const scheduleCountByInvoiceId = new Map<string, number>();
+  const summary = {
+    runs: 0,
+    created: 0,
+    skipped: 0,
+    errors: [] as string[],
+  };
 
-  for (const invoice of activeInvoices) {
-    const key = invoiceContractBillingMonthKey(invoice);
-    if (!key) continue;
-    invoicesByContractMonth.set(key, [...(invoicesByContractMonth.get(key) || []), invoice]);
+  let { data: cursorRow, error: cursorReadError } = await supabase
+    .from("daily_invoice_repair_cursors")
+    .select("last_contract_id, version, cycle_count")
+    .eq("company_id", companyId)
+    .maybeSingle();
+  if (cursorReadError) throw cursorReadError;
+
+  if (!cursorRow && !dryRun) {
+    const { error: cursorCreateError } = await supabase
+      .from("daily_invoice_repair_cursors")
+      .upsert({ company_id: companyId }, {
+        onConflict: "company_id",
+        ignoreDuplicates: true,
+      });
+    if (cursorCreateError) throw cursorCreateError;
+
+    const reread = await supabase
+      .from("daily_invoice_repair_cursors")
+      .select("last_contract_id, version, cycle_count")
+      .eq("company_id", companyId)
+      .single();
+    if (reread.error) throw reread.error;
+    cursorRow = reread.data;
   }
 
-  for (const schedule of activeSchedules) {
-    if (!schedule.invoice_id) continue;
-    scheduleCountByInvoiceId.set(schedule.invoice_id, (scheduleCountByInvoiceId.get(schedule.invoice_id) || 0) + 1);
-  }
+  let currentCursor: string | null = cursorRow?.last_contract_id || null;
+  let cursorVersion = Number(cursorRow?.version || 0);
+  let cycleCount = Number(cursorRow?.cycle_count || 0);
+  let wrappedSinceCheckpoint = false;
+  const seenContractIds = new Set<string>();
 
-  let repaired = 0;
-  const now = new Date().toISOString();
+  while (summary.runs < limit) {
+    const batchLimit = Math.min(5, limit - summary.runs);
+    let query = supabase
+      .from("contracts")
+      .select("id")
+      .eq("company_id", companyId)
+      .in("status", ["active", "under_legal_procedure"])
+      .order("id", { ascending: true })
+      .limit(batchLimit);
+    if (currentCursor) query = query.gt("id", currentCursor);
 
-  for (const schedule of activeSchedules) {
-    const scheduleMonth = toMonthStart(String(schedule.due_date));
-    const expectedInvoices = invoicesByContractMonth.get(contractMonthKey(schedule.contract_id, scheduleMonth) || "") || [];
-    const expectedInvoice = expectedInvoices.length === 1 ? expectedInvoices[0] : null;
-    const linkedInvoice = schedule.invoice_id ? invoiceById.get(schedule.invoice_id) : null;
-    const linkedMonth = linkedInvoice ? invoiceBillingMonth(linkedInvoice) : null;
-    const duplicateLink = schedule.invoice_id && (scheduleCountByInvoiceId.get(schedule.invoice_id) || 0) > 1;
-    const wrongLink = Boolean(expectedInvoice && schedule.invoice_id && schedule.invoice_id !== expectedInvoice.id);
-    const dateMismatch = Boolean(linkedInvoice && linkedMonth && linkedMonth !== scheduleMonth);
+    const { data: rows, error: rowsError } = await query;
+    if (rowsError) throw rowsError;
+    const batch = (rows || []).filter((row: any) =>
+      row.id && !seenContractIds.has(row.id)
+    );
 
-    let nextInvoiceId: string | null | undefined;
-    if (expectedInvoice && (!schedule.invoice_id || wrongLink || duplicateLink || dateMismatch)) {
-      nextInvoiceId = expectedInvoice.id;
-    } else if (!expectedInvoice && linkedInvoice && (wrongLink || duplicateLink || dateMismatch)) {
-      nextInvoiceId = null;
-    } else {
-      continue;
+    if (batch.length === 0) {
+      if (currentCursor && !wrappedSinceCheckpoint) {
+        currentCursor = null;
+        wrappedSinceCheckpoint = true;
+        continue;
+      }
+      break;
     }
+
+    for (const row of batch) seenContractIds.add(row.id);
+    summary.runs += batch.length;
 
     if (!dryRun) {
-      const { error } = await supabase
-        .from("contract_payment_schedules")
-        .update({ invoice_id: nextInvoiceId, updated_at: now })
-        .eq("id", schedule.id)
-        .eq("company_id", companyId);
+      const outcomes = await Promise.all(batch.map(async (row: any) => {
+        try {
+          const { data: createdCount, error } = await supabase.rpc(
+            "generate_invoices_from_payment_schedule",
+            { p_contract_id: row.id },
+          );
+          if (error) throw error;
+          return { contractId: row.id, created: Number(createdCount || 0), error: null };
+        } catch (error) {
+          return { contractId: row.id, created: 0, error: getErrorMessage(error) };
+        }
+      }));
 
-      if (error) throw error;
+      for (const outcome of outcomes) {
+        summary.created += outcome.created;
+        if (outcome.error) {
+          summary.errors.push(`contract ${outcome.contractId}: ${outcome.error}`);
+          summary.skipped += 1;
+        } else if (outcome.created === 0) {
+          summary.skipped += 1;
+        }
+      }
+
+      const batchLastContractId = batch[batch.length - 1].id;
+      const nextVersion = cursorVersion + 1;
+      const nextCycleCount = cycleCount + (wrappedSinceCheckpoint ? 1 : 0);
+      const { data: checkpoint, error: checkpointError } = await supabase
+        .from("daily_invoice_repair_cursors")
+        .update({
+          last_contract_id: batchLastContractId,
+          version: nextVersion,
+          cycle_count: nextCycleCount,
+          last_error_count: outcomes.filter((outcome) => outcome.error).length,
+          last_completed_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .eq("company_id", companyId)
+        .eq("version", cursorVersion)
+        .select("version")
+        .maybeSingle();
+      if (checkpointError) throw checkpointError;
+      if (!checkpoint) {
+        throw new Error("Daily invoice repair cursor changed concurrently; retry safely");
+      }
+      cursorVersion = nextVersion;
+      cycleCount = nextCycleCount;
     }
 
-    repaired += 1;
+    currentCursor = batch[batch.length - 1].id;
+    wrappedSinceCheckpoint = false;
   }
 
-  return repaired;
+  return summary;
 }
 
 async function reconcileInvoiceAmountsWithSchedules(
@@ -1060,6 +975,7 @@ async function reconcileInvoiceAmountsWithSchedules(
   dryRun: boolean,
   limit: number,
   targetContractIds: string[] | null,
+  reviewItems: string[],
 ) {
   const schedules = await loadSchedules(supabase, companyId, limit, targetContractIds);
   const activeSchedules = schedules.filter((schedule: any) => !isCancelledStatus(schedule.status) && schedule.invoice_id);
@@ -1084,38 +1000,28 @@ async function reconcileInvoiceAmountsWithSchedules(
       .filter(Boolean),
   );
 
-  let reconciled = 0;
-  const now = new Date().toISOString();
-
   for (const invoice of invoices) {
     if (isCancelledStatus(invoice.status) || isCancelledStatus(invoice.payment_status)) continue;
-    if (invoice.journal_entry_id || invoicesWithActivePayments.has(invoice.id)) continue;
 
     const scheduleAmount = roundMoney(scheduleAmountsByInvoiceId.get(invoice.id) || 0);
     const invoiceAmount = roundMoney(Number(invoice.total_amount || 0));
     if (Math.abs(scheduleAmount - invoiceAmount) <= 1) continue;
 
-    if (!dryRun) {
-      const { error } = await supabase
-        .from("invoices")
-        .update({
-          total_amount: scheduleAmount,
-          subtotal: scheduleAmount,
-          balance_due: scheduleAmount,
-          paid_amount: 0,
-          payment_status: scheduleAmount <= 1 ? "paid" : "unpaid",
-          updated_at: now,
-        })
-        .eq("id", invoice.id)
-        .eq("company_id", companyId);
-
-      if (error) throw error;
-    }
-
-    reconciled += 1;
+    reviewItems.push(
+      `Invoice ${invoice.invoice_number || invoice.id} differs from its payment schedule (${invoiceAmount} vs ${scheduleAmount}). `
+        + `It was not repriced automatically${
+          invoice.journal_entry_id || invoicesWithActivePayments.has(invoice.id)
+            ? " because it has recorded financial history"
+            : " because a reference journal may exist even when journal_entry_id is null"
+        }.`,
+    );
   }
 
-  return reconciled;
+  // Invoice amounts are accounting source documents. The agent records review
+  // items and uses canonical cancel/reissue or adjustment commands instead of
+  // mutating source amounts in place.
+  void dryRun;
+  return 0;
 }
 
 async function cleanupDuplicateContractMonthInvoices(
@@ -1148,9 +1054,6 @@ async function cleanupDuplicateContractMonthInvoices(
     grouped.set(key, [...(grouped.get(key) || []), invoice]);
   }
 
-  let cancelled = 0;
-  const now = new Date().toISOString();
-
   for (const group of grouped.values()) {
     if (group.length <= 1) continue;
 
@@ -1158,25 +1061,16 @@ async function cleanupDuplicateContractMonthInvoices(
     const [, ...duplicates] = sorted;
 
     for (const invoice of duplicates) {
-      const safeToCancel =
-        !invoice.journal_entry_id &&
-        !invoicesWithActivePayments.has(invoice.id) &&
-        Math.abs(Number(invoice.paid_amount || 0)) <= 0.01 &&
-        Math.abs(Number(invoice.balance_due || 0)) <= 0.01;
-
-      if (!safeToCancel) {
-        reviewItems.push(`Duplicate invoice ${invoice.invoice_number || invoice.id} needs manual review because it has financial impact.`);
-        continue;
-      }
-
-      if (!dryRun) {
-        await cancelInvoiceSoftly(supabase, companyId, invoice.id, now);
-      }
-      cancelled += 1;
+      reviewItems.push(
+        `Duplicate invoice ${invoice.invoice_number || invoice.id} requires canonical reversal/manual review; `
+          + `the daily agent never soft-cancels invoice source documents.`,
+      );
     }
   }
 
-  return cancelled;
+  void dryRun;
+  void invoicesWithActivePayments;
+  return 0;
 }
 
 async function cleanupOutsideContractInvoices(
@@ -1203,9 +1097,6 @@ async function cleanupOutsideContractInvoices(
       .filter(Boolean),
   );
 
-  let cancelled = 0;
-  const now = new Date().toISOString();
-
   for (const invoice of activeInvoices) {
     const contract: any = contractsById.get(invoice.contract_id);
     if (!contract?.start_date || !contract?.end_date) continue;
@@ -1216,24 +1107,15 @@ async function cleanupOutsideContractInvoices(
       contract.end_date,
     )) continue;
 
-    const safeToCancel =
-      !invoice.journal_entry_id &&
-      !invoicesWithActivePayments.has(invoice.id) &&
-      Math.abs(Number(invoice.paid_amount || 0)) <= 0.01 &&
-      Math.abs(Number(invoice.balance_due || 0)) <= 0.01;
-
-    if (!safeToCancel) {
-      reviewItems.push(`Outside-period invoice ${invoice.invoice_number || invoice.id} needs reversal/manual review.`);
-      continue;
-    }
-
-    if (!dryRun) {
-      await cancelInvoiceSoftly(supabase, companyId, invoice.id, now);
-    }
-    cancelled += 1;
+    reviewItems.push(
+      `Outside-period invoice ${invoice.invoice_number || invoice.id} requires canonical reversal/manual review; `
+        + `it was not soft-cancelled automatically.`,
+    );
   }
 
-  return cancelled;
+  void dryRun;
+  void invoicesWithActivePayments;
+  return 0;
 }
 
 async function linkUnlinkedPaymentsToClearInvoices(
@@ -1396,42 +1278,13 @@ async function detectContractOverpayments(
   }).length;
 }
 
-async function findExistingInvoiceForMonth(supabase: any, companyId: string, contractId: string, monthStart: string) {
-  const nextMonth = addMonths(monthStart, 1);
-  const { data, error } = await supabase
-    .from("invoices")
-    .select("id, invoice_month, invoice_date, status, payment_status, created_at")
-    .eq("company_id", companyId)
-    .eq("contract_id", contractId)
-    // invoice_month is canonical; invoice_date is retained only as a legacy
-    // fallback. due_date is a payment deadline and must never identify the
-    // billing month.
-    .or(`and(invoice_month.gte.${monthStart},invoice_month.lt.${nextMonth}),and(invoice_month.is.null,invoice_date.gte.${monthStart},invoice_date.lt.${nextMonth})`)
-    .order("invoice_month", { ascending: true, nullsFirst: false })
-    .order("invoice_date", { ascending: true })
-    .order("created_at", { ascending: true })
-    .order("id", { ascending: true });
-
-  if (error) throw error;
-  return selectExistingInvoiceForMonth(data || [], monthStart)?.id || null;
-}
-
-async function linkScheduleInvoice(supabase: any, companyId: string, scheduleId: string, invoiceId: string) {
-  const { error } = await supabase
-    .from("contract_payment_schedules")
-    .update({ invoice_id: invoiceId, updated_at: new Date().toISOString() })
-    .eq("id", scheduleId)
-    .eq("company_id", companyId);
-
-  if (error) throw error;
-}
-
 async function cleanupCancelledContractZeroInvoices(
   supabase: any,
   companyId: string,
   dryRun: boolean,
   limit: number,
   targetContractIds: string[] | null,
+  reviewItems: string[],
 ) {
   let contractQuery = supabase
     .from("contracts")
@@ -1458,44 +1311,21 @@ async function cleanupCancelledContractZeroInvoices(
 
   if (invoiceError) throw invoiceError;
 
-  const invoiceRows = invoices || [];
-  const invoiceIds = invoiceRows.map((invoice: any) => invoice.id);
-  const payments = await fetchPaymentsForInvoices(supabase, companyId, invoiceIds);
-  const invoicesWithPayments = new Set(
-    payments
-      .filter((payment: any) => !["cancelled", "canceled", "void", "voided", "deleted", "failed", "reversed", "refunded"].includes(String(payment.payment_status || "").toLowerCase()))
-      .map((payment: any) => payment.invoice_id)
-      .filter(Boolean),
-  );
-
-  const safeInvoices = invoiceRows.filter((invoice: any) =>
-    !invoicesWithPayments.has(invoice.id) &&
+  const zeroInvoices = (invoices || []).filter((invoice: any) =>
     Math.abs(Number(invoice.total_amount || 0)) <= 0.01 &&
     Math.abs(Number(invoice.paid_amount || 0)) <= 0.01 &&
     Math.abs(Number(invoice.balance_due || 0)) <= 0.01
   );
 
-  if (dryRun) return safeInvoices.length;
-
-  let cancelled = 0;
-  const now = new Date().toISOString();
-
-  for (const invoice of safeInvoices) {
-    const { error } = await supabase
-      .from("invoices")
-      .update({
-        status: "cancelled",
-        payment_status: "cancelled",
-        updated_at: now,
-      })
-      .eq("id", invoice.id)
-      .eq("company_id", companyId);
-
-    if (error) throw error;
-    cancelled += 1;
+  for (const invoice of zeroInvoices) {
+    reviewItems.push(
+      `Zero invoice ${invoice.id} belongs to a cancelled contract and requires canonical cancellation review; `
+        + `the daily agent did not mutate the source document.`,
+    );
   }
 
-  return cancelled;
+  void dryRun;
+  return 0;
 }
 
 async function loadContractsForAudit(
@@ -1505,23 +1335,47 @@ async function loadContractsForAudit(
   targetContractIds: string[] | null,
   includeCancelled: boolean,
 ) {
-  let query = supabase
-    .from("contracts")
-    .select("id, start_date, end_date, monthly_amount, contract_amount, status")
-    .eq("company_id", companyId)
-    .limit(limit);
-
   if (targetContractIds?.length) {
-    query = query.in("id", targetContractIds);
-  } else if (includeCancelled) {
-    query = query.in("status", ["active", "under_legal_procedure", "pending", "draft", "cancelled", "canceled"]);
-  } else {
-    query = query.in("status", ["active", "under_legal_procedure", "pending", "draft"]);
+    const { data, error } = await supabase
+      .from("contracts")
+      .select("id, start_date, end_date, monthly_amount, contract_amount, status")
+      .eq("company_id", companyId)
+      .in("id", targetContractIds)
+      .order("id", { ascending: true })
+      .limit(limit);
+
+    if (error) throw error;
+    return data || [];
   }
 
-  const { data, error } = await query;
-  if (error) throw error;
-  return data || [];
+  const statuses = includeCancelled
+    ? ["active", "under_legal_procedure", "pending", "draft", "cancelled", "canceled"]
+    : ["active", "under_legal_procedure", "pending", "draft"];
+
+  const { count, error: countError } = await supabase
+    .from("contracts")
+    .select("id", { count: "exact", head: true })
+    .eq("company_id", companyId)
+    .in("status", statuses);
+  if (countError) throw countError;
+
+  const ranges = buildDailyRotatingRanges(count || 0, limit, getUtcDayNumber());
+  const contracts: any[] = [];
+
+  for (const range of ranges) {
+    const { data, error } = await supabase
+      .from("contracts")
+      .select("id, start_date, end_date, monthly_amount, contract_amount, status")
+      .eq("company_id", companyId)
+      .in("status", statuses)
+      .order("id", { ascending: true })
+      .range(range.from, range.to);
+
+    if (error) throw error;
+    contracts.push(...(data || []));
+  }
+
+  return contracts;
 }
 
 async function loadSchedules(supabase: any, companyId: string, limit: number, targetContractIds: string[] | null) {
@@ -1593,39 +1447,6 @@ async function loadInvoicesByIds(supabase: any, companyId: string, invoiceIds: s
   }
 
   return rows;
-}
-
-async function cancelInvoiceSoftly(supabase: any, companyId: string, invoiceId: string, now: string) {
-  const { error } = await supabase
-    .from("invoices")
-    .update({
-      status: "cancelled",
-      payment_status: "cancelled",
-      updated_at: now,
-    })
-    .eq("id", invoiceId)
-    .eq("company_id", companyId);
-
-  if (error) throw error;
-}
-
-async function recalculateSingleInvoiceTotals(supabase: any, companyId: string, invoiceId: string, now: string) {
-  const { data: invoice, error: invoiceError } = await supabase
-    .from("invoices")
-    .select("id, total_amount, paid_amount, balance_due, payment_status, status")
-    .eq("id", invoiceId)
-    .eq("company_id", companyId)
-    .maybeSingle();
-
-  if (invoiceError) throw invoiceError;
-  if (!invoice || isCancelledStatus(invoice.status) || isCancelledStatus(invoice.payment_status)) return false;
-
-  const { error } = await supabase.rpc("recalculate_invoice_financial_state", {
-    p_invoice_id: invoiceId,
-  });
-
-  if (error) throw error;
-  return true;
 }
 
 async function repairPaymentJournalIntegrity(supabase: any, companyId: string, apply: boolean, limit: number) {
@@ -1702,7 +1523,11 @@ async function safeStep(result: CompanyResult, label: string, fn: () => Promise<
   try {
     await fn();
   } catch (error) {
-    result.errors.push(`${label}: ${getErrorMessage(error)}`);
+    const failure = `${label}: ${getErrorMessage(error)}`;
+    result.errors.push(failure);
+    result.reviewItems.push(
+      `فشلت خطوة الوكيل ${label} وتتطلب مراجعة المشرف: ${failure}`,
+    );
   }
 }
 
@@ -1764,14 +1589,14 @@ async function buildAiSummary(
 
 async function writeAgentAuditLog(supabase: any, response: AgentResult) {
   for (const company of response.companies) {
-    await supabase.from("audit_logs").insert({
+    const { error } = await supabase.from("audit_logs").insert({
       company_id: company.companyId,
       action: "daily_audit_agent_run",
       resource_type: "system",
       resource_id: company.companyId,
       entity_name: "Daily Audit Agent",
       severity: company.errors.length > 0 ? "warning" : "info",
-      status: response.mode,
+      status: response.status,
       changes_summary: response.summary.slice(0, 500),
       metadata: {
         mode: response.mode,
@@ -1781,6 +1606,7 @@ async function writeAgentAuditLog(supabase: any, response: AgentResult) {
         company,
       },
     });
+    if (error) throw error;
   }
 }
 
@@ -1828,19 +1654,6 @@ function buildLocalSummary(dryRun: boolean, results: CompanyResult[], totals: Ag
   return `${mode}: reviewed ${results.length} companies. invoice balances: ${totals.invoicesFixed}, contract totals: ${totals.contractsFixed}, schedule links: ${totals.scheduleLinksRepaired}, schedule states synced: ${totals.scheduleStatesSynced}, missing invoices created: ${totals.invoiceBackfillCreated}, invoice amounts: ${totals.invoiceAmountsReconciled}, duplicate invoices cancelled: ${totals.duplicateInvoicesCancelled}, outside invoices cancelled: ${totals.outsideInvoicesCancelled}, cancelled zero invoices: ${totals.cancelledZeroInvoicesCancelled}, unlinked payments linked: ${totals.unlinkedPaymentsLinked}, out-of-period payments repaired: ${totals.outOfPeriodPaymentsRepaired}, payment journal fixes: ${totals.paymentJournalsCreated + totals.paymentJournalsRelinked}.`;
 }
 
-function getInvoiceStatus(balance: number, dueDate: string | null, currentStatus: string | null) {
-  if (balance <= 1) return "paid";
-  if (!dueDate) return currentStatus || "sent";
-
-  const today = new Date();
-  const due = new Date(dueDate);
-  if (!Number.isNaN(due.getTime()) && due < new Date(today.getFullYear(), today.getMonth(), today.getDate())) {
-    return "overdue";
-  }
-
-  return currentStatus === "draft" ? "draft" : "sent";
-}
-
 function isCompletedPayment(status: unknown) {
   return ["completed", "paid", "success", "succeeded"].includes(String(status || "").toLowerCase());
 }
@@ -1851,11 +1664,6 @@ function isCancelledStatus(status: unknown) {
 
 function isInactivePaymentStatus(status: unknown) {
   return ["cancelled", "canceled", "void", "voided", "deleted", "failed", "reversed", "refunded"].includes(String(status || "").toLowerCase());
-}
-
-function contractMonthKey(contractId: string | null | undefined, dateValue: string | null | undefined) {
-  if (!contractId || !dateValue) return "";
-  return `${contractId}:${toMonthStart(String(dateValue))}`;
 }
 
 function invoiceKeepScore(invoice: any, invoicesWithActivePayments: Set<string>) {
@@ -1870,29 +1678,6 @@ function invoiceKeepScore(invoice: any, invoicesWithActivePayments: Set<string>)
 
 function roundMoney(value: number) {
   return Math.round((Number(value) || 0) * 100) / 100;
-}
-
-function toMonthStart(value: string) {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value.slice(0, 10);
-  return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), 1)).toISOString().slice(0, 10);
-}
-
-function addMonths(value: string, months: number) {
-  const date = new Date(`${value}T00:00:00.000Z`);
-  date.setUTCMonth(date.getUTCMonth() + months);
-  return date.toISOString().slice(0, 10);
-}
-
-function isIsoDate(value: string) {
-  return /^\d{4}-\d{2}-\d{2}$/.test(value) && !Number.isNaN(new Date(`${value}T00:00:00.000Z`).getTime());
-}
-
-function monthCountInclusive(startMonth: string, endMonth: string) {
-  const start = new Date(`${startMonth}T00:00:00.000Z`);
-  const end = new Date(`${endMonth}T00:00:00.000Z`);
-  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || end < start) return 0;
-  return ((end.getUTCFullYear() - start.getUTCFullYear()) * 12) + end.getUTCMonth() - start.getUTCMonth() + 1;
 }
 
 function clampInt(value: unknown, min: number, max: number, fallback: number) {

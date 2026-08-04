@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -18,6 +18,7 @@ import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { calculateCanonicalBillingMonths } from '@/utils/contractCalculations';
 
 import { useFleetifyTranslation } from "@/hooks/useTranslation";
 interface Customer {
@@ -73,6 +74,7 @@ const MobileContractWizard: React.FC = () => {
   const queryClient = useQueryClient();
   const [currentStep, setCurrentStep] = useState<Step>(1);
   const [loading, setLoading] = useState(false);
+  const contractCreationKeyRef = useRef<string | null>(null);
 
   const [formData, setFormData] = useState<FormData>({
     customerId: '',
@@ -199,7 +201,7 @@ const MobileContractWizard: React.FC = () => {
       const weeks = Math.ceil(days / 7);
       return (selectedVehicle?.weekly_rate || 0) * weeks;
     } else {
-      const months = Math.ceil(days / 30);
+      const months = calculateCanonicalBillingMonths(formData.startDate, formData.endDate);
       return formData.monthlyAmount * months;
     }
   };
@@ -211,49 +213,39 @@ const MobileContractWizard: React.FC = () => {
     try {
       const companyId = user?.profile?.company_id || user?.company?.id || '';
 
-      // Generate contract number
-      const { data: contractNumData } = await supabase.rpc('generate_contract_number', {
-        company_id_param: companyId,
-      });
-
-      const contractNumber = contractNumData || `CNT-${Date.now()}`;
-
-      // Create contract
-      const { error } = await supabase
-        .from('contracts')
-        .insert({
-          company_id: companyId,
-          contract_number: contractNumber,
-          customer_id: formData.customerId,
-          vehicle_id: formData.vehicleId,
-          contract_date: formData.startDate,
-          start_date: formData.startDate,
-          end_date: formData.endDate,
-          contract_type: formData.contractType,
-          monthly_amount: formData.monthlyAmount,
-          contract_amount: calculateTotalAmount(),
-          auto_renew_enabled: formData.autoRenew,
-          terms: formData.notes,
-          status: 'active',
-          created_via: 'mobile',
-          license_plate: selectedVehicle?.license_plate,
-          make: selectedVehicle?.make,
-          model: selectedVehicle?.model,
-          year: selectedVehicle?.year,
-          vehicle_status: 'rented',
-        });
+      const contractAmount = calculateTotalAmount();
+      const monthlyAmount = formData.contractType === 'monthly'
+        ? formData.monthlyAmount
+        : contractAmount;
+      const { data: creationResult, error } = await supabase.rpc(
+        'create_contract_with_billing_graph_atomic',
+        {
+          p_company_id: companyId,
+          p_customer_id: formData.customerId,
+          p_vehicle_id: formData.vehicleId || undefined,
+          p_contract_type: formData.contractType,
+          p_contract_date: new Date().toISOString().slice(0, 10),
+          p_start_date: formData.startDate,
+          p_end_date: formData.endDate,
+          p_monthly_amount: monthlyAmount,
+          p_contract_amount: contractAmount,
+          p_terms: formData.notes || undefined,
+          p_created_by: user?.id,
+          p_auto_renew_enabled: formData.autoRenew,
+          p_created_via: 'mobile',
+          p_idempotency_key: contractCreationKeyRef.current
+            ?? (contractCreationKeyRef.current = `contract:${crypto.randomUUID()}`),
+        },
+      );
 
       if (error) throw error;
-
-      // Update vehicle status
-      if (formData.vehicleId) {
-        await supabase
-          .from('vehicles')
-          .update({ status: 'rented' })
-          .eq('id', formData.vehicleId);
+      const payload = creationResult as Record<string, unknown> | null;
+      if (!payload?.success || !payload.billing_graph_created) {
+        throw new Error(String(payload?.error || 'لم يكتمل إنشاء العقد وشبكة الفوترة'));
       }
 
-      alert('تم إنشاء العقد بنجاح!');
+      contractCreationKeyRef.current = null;
+      alert(`تم إنشاء العقد و${Number(payload.invoices_created || 0)} فاتورة بنجاح!`);
       navigate('/mobile/contracts');
     } catch (error) {
       console.error('Error creating contract:', error);
@@ -572,7 +564,7 @@ const Step2PricingTerms: React.FC<{
           <div className="flex items-center justify-between mt-2">
             <span className="text-sm text-slate-500">الإجمالي:</span>
             <span className="text-lg font-bold text-teal-600" dir="ltr">
-              QAR {(formData.monthlyAmount * Math.ceil(days / 30)).toLocaleString()}
+              QAR {(formData.monthlyAmount * calculateCanonicalBillingMonths(formData.startDate, formData.endDate)).toLocaleString()}
             </span>
           </div>
         </div>
@@ -795,7 +787,7 @@ const Step4Review: React.FC<{
       const weeks = Math.ceil(days / 7);
       return (selectedVehicle?.weekly_rate || 0) * weeks;
     } else {
-      const months = Math.ceil(days / 30);
+      const months = calculateCanonicalBillingMonths(formData.startDate, formData.endDate);
       return formData.monthlyAmount * months;
     }
   };

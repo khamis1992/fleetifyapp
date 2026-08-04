@@ -1,20 +1,50 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
+import {
+  getDefaultScheduledInvoiceMonth,
+  getInvoiceMonthBounds,
+  normalizeInvoiceMonth,
+} from "./invoice-month.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type, x-agent-secret",
 };
 
-interface Contract {
+type GeneratorRequest = {
+  targetMonth?: string;
+  companyId?: string;
+  sendNotifications?: boolean;
+  afterContractId?: string;
+  batchSize?: number;
+};
+
+const DEFAULT_BATCH_SIZE = 100;
+const MAX_BATCH_SIZE = 200;
+
+type Contract = {
   id: string;
   company_id: string;
   customer_id: string;
   contract_number: string;
-  monthly_amount: number;
-  start_date: string;
-  end_date: string;
-  status: string;
+};
+
+type GenerationResults = {
+  success: number;
+  failed: number;
+  skipped: number;
+  notificationFailed: number;
+  errors: string[];
+};
+
+class HttpError extends Error {
+  constructor(
+    message: string,
+    readonly status: number,
+  ) {
+    super(message);
+  }
 }
 
 serve(async (req) => {
@@ -22,187 +52,266 @@ serve(async (req) => {
     return new Response("ok", { headers: corsHeaders });
   }
 
+  if (req.method !== "POST") {
+    return jsonResponse({ success: false, error: "Method not allowed" }, 405);
+  }
+
   try {
+    authorizeInvoiceGenerator(req);
+
+    const body = await readJson<GeneratorRequest>(req);
+    const invoiceMonth = normalizeInvoiceMonth(
+      body.targetMonth || getDefaultScheduledInvoiceMonth(),
+    );
+    const { monthStart } = getInvoiceMonthBounds(invoiceMonth);
+    const batchSize = parseBatchSize(body.batchSize);
+    const afterContractId = parseCursor(body.afterContractId, "afterContractId");
+
     const supabaseClient = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+      { auth: { persistSession: false } },
     );
 
-    console.log("Starting monthly invoice generation...");
-
-    // Get current date
-    const now = new Date();
-    const currentMonth = now.getMonth() + 1;
-    const currentYear = now.getFullYear();
-
-    // Calculate due date (15 days from now)
-    const dueDate = new Date(now);
-    dueDate.setDate(dueDate.getDate() + 15);
-
-    // Get all active contracts (excluding cancelled ones)
-    const { data: contracts, error: contractsError } = await supabaseClient
-      .from("contracts")
-      .select("*")
-      .eq("status", "active")
-      .neq("status", "cancelled") // استثناء العقود الملغاة بشكل صريح
-      .gte("end_date", now.toISOString().split("T")[0]);
-
-    if (contractsError) {
-      throw new Error(`Error fetching contracts: ${contractsError.message}`);
-    }
-
-    console.log(`Found ${contracts?.length || 0} active contracts`);
-
-    const results = {
+    const contractBatch = await loadEligibleContracts(
+      supabaseClient,
+      monthStart,
+      body.companyId,
+      afterContractId,
+      batchSize,
+    );
+    const contracts = contractBatch.contracts;
+    const results: GenerationResults = {
       success: 0,
       failed: 0,
       skipped: 0,
-      errors: [] as string[],
+      notificationFailed: 0,
+      errors: [],
     };
 
-    for (const contract of contracts || []) {
+    console.log(
+      `Generating canonical invoices for ${invoiceMonth}; ${contracts.length} contracts in this bounded batch`,
+    );
+
+    for (const contract of contracts) {
       try {
-        // فحص إضافي: تخطي العقود الملغاة
-        if (contract.status === 'cancelled') {
-          console.log(`Skipping cancelled contract ${contract.contract_number}`);
-          results.skipped++;
+        // The service-only outcome RPC locks the contract before checking for
+        // an existing invoice. Concurrent workers therefore cannot both claim
+        // creation or send duplicate customer notifications.
+        const { data: rawOutcome, error: generationError } = await supabaseClient.rpc(
+          "generate_invoice_for_contract_month_outcome",
+          {
+            p_contract_id: contract.id,
+            p_invoice_month: monthStart,
+          },
+        );
+
+        if (generationError) {
+          throw generationError;
+        }
+
+        const outcome = rawOutcome && typeof rawOutcome === "object"
+          ? rawOutcome as { invoice_id?: unknown; created?: unknown }
+          : null;
+        const invoiceId = typeof outcome?.invoice_id === "string"
+          ? outcome.invoice_id
+          : "";
+        if (!invoiceId) {
+          throw new Error("Atomic invoice generator returned no invoice id");
+        }
+        if (outcome?.created !== true) {
+          results.skipped += 1;
           continue;
         }
-        
-        // ✅ استخدام الدالة الموحدة للبحث عن فاتورة موجودة أو إنشاء واحدة جديدة
-        const invoiceMonth = `${currentYear}-${String(currentMonth).padStart(2, "0")}-01`;
-        
-        // Check if invoice already exists for this month using due_date
-        const { data: existingInvoice } = await supabaseClient
-          .from("invoices")
-          .select("id, invoice_number")
-          .eq("contract_id", contract.id)
-          .gte("due_date", invoiceMonth)
-          .lt("due_date", `${currentYear}-${String(currentMonth).padStart(2, "0")}-31`)
-          .neq("status", "cancelled")
-          .limit(1);
 
-        if (existingInvoice && existingInvoice.length > 0) {
-          console.log(`Invoice already exists for contract ${contract.contract_number}: ${existingInvoice[0].invoice_number}`);
-          results.skipped++;
-          continue;
+        results.success += 1;
+
+        if (body.sendNotifications !== false) {
+          const notificationSent = await notifyCustomer(
+            supabaseClient,
+            contract,
+            invoiceId,
+          );
+          if (!notificationSent) results.notificationFailed += 1;
         }
-
-        // Generate unique invoice number with sequence
-        const { data: lastInvoice } = await supabaseClient
-          .from("invoices")
-          .select("invoice_number")
-          .eq("company_id", contract.company_id)
-          .like("invoice_number", `INV-${currentYear}${String(currentMonth).padStart(2, "0")}%`)
-          .order("invoice_number", { ascending: false })
-          .limit(1);
-
-        let sequence = 1;
-        if (lastInvoice && lastInvoice.length > 0) {
-          const match = lastInvoice[0].invoice_number.match(/-(\d+)$/);
-          if (match) {
-            sequence = parseInt(match[1], 10) + 1;
-          }
-        }
-
-        const invoiceNumber = `INV-${currentYear}${String(currentMonth).padStart(2, "0")}-${String(sequence).padStart(5, "0")}`;
-
-        // Create invoice with first day of month as invoice_date and due_date
-        const { error: invoiceError } = await supabaseClient
-          .from("invoices")
-          .insert({
-            company_id: contract.company_id,
-            customer_id: contract.customer_id,
-            contract_id: contract.id,
-            invoice_number: invoiceNumber,
-            invoice_date: invoiceMonth, // أول يوم في الشهر
-            due_date: invoiceMonth, // أول يوم في الشهر
-            total_amount: contract.monthly_amount,
-            subtotal: contract.monthly_amount,
-            balance_due: contract.monthly_amount,
-            paid_amount: 0,
-            status: "sent",
-            payment_status: "unpaid",
-            invoice_type: "rental",
-            currency: "QAR",
-            notes: `فاتورة إيجار شهرية - ${currentYear}/${currentMonth} - عقد #${contract.contract_number}`,
-          });
-
-        if (invoiceError) {
-          // Check if it's a duplicate error from the trigger
-          if (invoiceError.message?.includes('فاتورة مكررة') || invoiceError.code === '23505') {
-            console.log(`Invoice already exists (caught by trigger) for contract ${contract.contract_number}`);
-            results.skipped++;
-            continue;
-          }
-          throw new Error(`Error creating invoice: ${invoiceError.message}`);
-        }
-
-        console.log(`Created invoice ${invoiceNumber} for contract ${contract.contract_number}`);
-
-        // Get customer details for notification
-        const { data: customer } = await supabaseClient
-          .from("customers")
-          .select("first_name, last_name, phone")
-          .eq("id", contract.customer_id)
-          .single();
-
-        // Send invoice notification via WhatsApp (if phone exists)
-        if (customer?.phone) {
-          const message = `
-مرحباً ${customer.first_name} ${customer.last_name || ""}،
-
-تم إصدار فاتورة الإيجار الشهرية:
-📄 رقم الفاتورة: ${invoiceNumber}
-💰 المبلغ: ${contract.monthly_amount} ريال
-📅 تاريخ الاستحقاق: ${dueDate.toLocaleDateString("ar-SA")}
-
-يرجى السداد قبل تاريخ الاستحقاق لتجنب غرامات التأخير.
-
-شكراً لتعاملكم معنا.
-          `.trim();
-
-          // Call WhatsApp reminder function
-          await supabaseClient.functions.invoke("send-whatsapp-reminders", {
-            body: {
-              phone: customer.phone,
-              message: message,
-            },
-          });
-        }
-
-        results.success++;
       } catch (error) {
-        console.error(`Error processing contract ${contract.contract_number}:`, error);
-        results.failed++;
-        results.errors.push(`${contract.contract_number}: ${error.message}`);
+        const message = errorMessage(error);
+        console.error(`Invoice generation failed for ${contract.contract_number}:`, error);
+        results.failed += 1;
+        results.errors.push(`${contract.contract_number}: ${message}`);
       }
     }
 
-    console.log("Invoice generation completed:", results);
-
-    return new Response(
-      JSON.stringify({
-        success: true,
-        message: "Monthly invoices generated successfully",
-        results,
-      }),
-      {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 200,
-      }
-    );
+    return jsonResponse({
+      success: results.failed === 0,
+      targetMonth: invoiceMonth,
+      contractsProcessed: contracts.length,
+      results,
+      continuation: {
+        hasMore: contractBatch.hasMore,
+        afterContractId: contractBatch.nextAfterContractId,
+        batchSize,
+      },
+    });
   } catch (error) {
-    console.error("Error in generate-monthly-invoices:", error);
-    return new Response(
-      JSON.stringify({
-        success: false,
-        error: error.message,
-      }),
-      {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 500,
-      }
-    );
+    console.error("generate-monthly-invoices failed:", error);
+    const status = error instanceof HttpError ? error.status : 500;
+    return jsonResponse({ success: false, error: errorMessage(error) }, status);
   }
 });
+
+function authorizeInvoiceGenerator(req: Request) {
+  const configuredSecret = Deno.env.get("INVOICE_GENERATOR_SECRET") || "";
+  const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
+  const authHeader = req.headers.get("authorization") || "";
+  const agentSecret = req.headers.get("x-agent-secret") || "";
+
+  if (configuredSecret && agentSecret === configuredSecret) return;
+  if (serviceRoleKey && authHeader === `Bearer ${serviceRoleKey}`) return;
+
+  throw new HttpError("Unauthorized invoice generator request", 401);
+}
+
+async function readJson<T>(req: Request): Promise<T> {
+  const rawBody = await req.text();
+  if (!rawBody.trim()) return {} as T;
+
+  try {
+    const parsed = JSON.parse(rawBody);
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+      throw new HttpError("Request body must be a JSON object", 400);
+    }
+    return parsed as T;
+  } catch (error) {
+    if (error instanceof HttpError) throw error;
+    throw new HttpError("Invalid JSON request body", 400);
+  }
+}
+
+async function loadEligibleContracts(
+  supabase: any,
+  monthStart: string,
+  companyId?: string,
+  afterContractId: string | null = null,
+  batchSize = DEFAULT_BATCH_SIZE,
+): Promise<{
+  contracts: Contract[];
+  hasMore: boolean;
+  nextAfterContractId: string | null;
+}> {
+  let query = supabase
+    .from("contracts")
+    .select("id, company_id, customer_id, contract_number")
+    .in("status", ["active", "under_legal_procedure"])
+    // New contracts begin canonical billing in the month after their start.
+    // Start-month legacy graphs are repaired by the targeted audit/backfill
+    // path; selecting a target-month starter here would create a false
+    // monthly-job failure because it has no target schedule by design.
+    .lt("start_date", monthStart)
+    .not("end_date", "is", null)
+    .gte("end_date", monthStart)
+    .order("id", { ascending: true })
+    .limit(batchSize + 1);
+
+  if (companyId) query = query.eq("company_id", companyId);
+  if (afterContractId) query = query.gt("id", afterContractId);
+
+  const { data, error } = await query;
+  if (error) throw error;
+
+  const page = (data || []) as Contract[];
+  const hasMore = page.length > batchSize;
+  const contracts = page.slice(0, batchSize);
+  const nextAfterContractId = hasMore
+    ? contracts[contracts.length - 1]?.id || null
+    : null;
+
+  if (hasMore && !nextAfterContractId) {
+    throw new Error("Contract generation continuation cursor did not advance");
+  }
+
+  return { contracts, hasMore, nextAfterContractId };
+}
+
+function parseBatchSize(value: unknown): number {
+  if (value === undefined) return DEFAULT_BATCH_SIZE;
+  if (!Number.isInteger(value) || Number(value) < 1 || Number(value) > MAX_BATCH_SIZE) {
+    throw new HttpError(
+      `batchSize must be an integer between 1 and ${MAX_BATCH_SIZE}`,
+      400,
+    );
+  }
+  return Number(value);
+}
+
+function parseCursor(value: unknown, field: string): string | null {
+  if (value === undefined || value === null || value === "") return null;
+  if (typeof value !== "string" || value.length > 128) {
+    throw new HttpError(`${field} must be a valid cursor`, 400);
+  }
+  return value;
+}
+
+async function notifyCustomer(
+  supabase: any,
+  contract: Contract,
+  invoiceId: string,
+): Promise<boolean> {
+  const [{ data: invoice, error: invoiceError }, { data: customer, error: customerError }] =
+    await Promise.all([
+      supabase
+        .from("invoices")
+        .select("invoice_number, total_amount, due_date")
+        .eq("id", invoiceId)
+        .eq("company_id", contract.company_id)
+        .single(),
+      supabase
+        .from("customers")
+        .select("first_name, last_name, phone")
+        .eq("id", contract.customer_id)
+        .eq("company_id", contract.company_id)
+        .single(),
+    ]);
+
+  if (invoiceError || customerError || !customer?.phone || !invoice) {
+    if (invoiceError || customerError) {
+      console.warn("Invoice notification lookup failed", invoiceError || customerError);
+    }
+    return !invoiceError && !customerError;
+  }
+
+  const customerName = [customer.first_name, customer.last_name].filter(Boolean).join(" ");
+  const message = [
+    `مرحباً ${customerName}،`,
+    "",
+    "تم إصدار فاتورة الإيجار الشهرية:",
+    `رقم الفاتورة: ${invoice.invoice_number}`,
+    `المبلغ: ${invoice.total_amount} ريال`,
+    `تاريخ الاستحقاق: ${invoice.due_date || "-"}`,
+  ].join("\n");
+
+  const { data, error } = await supabase.functions.invoke("send-whatsapp-reminders", {
+    body: { test: true, phone: customer.phone, message },
+  });
+
+  if (error || data?.success !== true) {
+    console.warn(
+      `Invoice ${invoice.invoice_number} was created but notification failed`,
+      error || data?.error || "Provider did not confirm delivery",
+    );
+    return false;
+  }
+
+  return true;
+}
+
+function errorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
+}
+
+function jsonResponse(payload: unknown, status = 200) {
+  return new Response(JSON.stringify(payload), {
+    status,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+}

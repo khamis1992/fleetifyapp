@@ -80,6 +80,7 @@ export interface SystemAuditDashboardData {
   companyId: string;
   generatedAt: string;
   dashboardVersion: string;
+  reviewSnapshotComplete?: boolean;
   overview: {
     totalAppliedRepairs: number;
     rolledBackRepairs: number;
@@ -140,6 +141,7 @@ const reviewTypeLabels: Record<string, string> = {
   "contract.financial_totals_mismatch": "إجماليات العقد المالية غير متطابقة",
   "contract.invalid_period": "فترة عقد غير صحيحة",
   "contract.overpayment": "دفعات أعلى من قيمة العقد",
+  "contract.missing_billing_graph": "العقد بلا جدول أقساط أو شبكة فوترة مكتملة",
   "invoice.active_on_cancelled_contract": "فاتورة نشطة لعقد ملغي",
   "invoice.duplicate_contract_month": "أكثر من فاتورة للشهر نفسه",
   "invoice.outside_contract_period": "فاتورة خارج فترة العقد",
@@ -147,6 +149,9 @@ const reviewTypeLabels: Record<string, string> = {
     "دفعة مباشرة قديمة تتجاوز رصيد الفاتورة",
   "invoice.balance_mismatch": "رصيد الفاتورة غير متطابق",
   "invoice.schedule_amount_mismatch": "مبلغ الفاتورة لا يطابق القسط",
+  "invoice.zero_amount_blocks_billing_month": "فاتورة صفرية تمنع إصدار فاتورة الشهر",
+  "invoice.schedule_amount_mismatch_requires_review": "فرق بين مبلغ الفاتورة والقسط يحتاج مراجعة",
+  "invoice.month_reconciliation_needs_review": "مصالحة فاتورة شهر العقد تحتاج مراجعة مالية",
   "invoice.schedule_amount_mismatch_with_financial_impact":
     "فرق مؤثر بين القسط والفاتورة",
   "invoice.zero_schedule_amount_requires_review": "فاتورة مرتبطة بقسط صفري",
@@ -263,35 +268,76 @@ export function useSyncSystemAuditReviewTasks() {
     retry: 2,
     retryDelay: (attempt) => Math.min(1_000 * 2 ** attempt, 5_000),
     mutationFn: async (dashboard: SystemAuditDashboardData) => {
-      const companyId = user?.profile?.company_id || dashboard.companyId;
+      // The dashboard endpoint has already authorized this exact company.
+      // Never substitute the viewer's profile company (notably for a
+      // super-admin viewing another tenant), or task reconciliation could
+      // archive/create tasks in the wrong tenant.
+      const companyId = dashboard.companyId;
       const profileId = user?.profile?.id;
       if (!companyId || !profileId) {
-        return { created: 0, skipped: 0, archived: 0 };
+        return { created: 0, skipped: 0, archived: 0, refreshed: 0 };
       }
-
       const seeds = buildReviewTaskSeeds(dashboard);
+      // A running/partial first full audit is not authoritative for absence,
+      // so it cannot archive older tasks. It can still upsert the explicitly
+      // returned lifecycle-managed findings (for example the monthly invoice
+      // reconciliation), otherwise a new tenant would never receive a task.
+      const canArchiveStaleTasks = dashboard.reviewSnapshotComplete !== false;
 
       const { data: existingTasks, error: existingError } = await supabase
         .from("tasks")
         .select("id,metadata,status,created_at")
         .eq("company_id", companyId)
         .eq("category", SYSTEM_AUDIT_REVIEW_TASK_CATEGORY)
+        .contains("metadata", { source: "system_audit_agent" })
         .in("status", OPEN_REVIEW_TASK_STATUSES)
         .order("created_at", { ascending: false });
       if (existingError) throw existingError;
 
-      const currentKeys = new Set(seeds.map((seed) => seed.key));
+      const now = new Date();
+      const seedByKey = new Map(seeds.map((seed) => [seed.key, seed]));
+      const currentKeys = new Set(seedByKey.keys());
       const existingKeys = new Set<string>();
       const staleTaskIds: string[] = [];
+      const tasksToRefresh: Array<{ id: string; seed: ReviewTaskSeed }> = [];
 
       for (const task of existingTasks || []) {
         const metadata = task.metadata as Record<string, unknown> | null;
+        if (metadata?.source !== "system_audit_agent") continue;
         const key = canonicalReviewTaskKeyFromMetadata(metadata);
         if (!key || !currentKeys.has(key) || existingKeys.has(key)) {
-          staleTaskIds.push(task.id);
+          if (canArchiveStaleTasks) staleTaskIds.push(task.id);
           continue;
         }
         existingKeys.add(key);
+        const seed = seedByKey.get(key);
+        if (
+          seed &&
+          (metadata?.systemAgentFindingId !== seed.metadata.systemAgentFindingId ||
+            metadata?.runId !== seed.metadata.runId ||
+            metadata?.systemAuditTaskKey !== seed.key)
+        ) {
+          tasksToRefresh.push({ id: task.id, seed });
+        }
+      }
+
+      for (const { id, seed } of tasksToRefresh) {
+        const { error: refreshError } = await supabase
+          .from("tasks")
+          .update({
+            title: seed.title,
+            description: seed.description,
+            priority: seed.priority,
+            metadata: {
+              ...seed.metadata,
+              systemAuditTaskKey: seed.key,
+              source: "system_audit_agent",
+              syncedAt: now.toISOString(),
+            },
+          })
+          .eq("company_id", companyId)
+          .eq("id", id);
+        if (refreshError) throw refreshError;
       }
 
       if (staleTaskIds.length > 0) {
@@ -332,10 +378,10 @@ export function useSyncSystemAuditReviewTasks() {
           created: 0,
           skipped: seeds.length,
           archived: staleTaskIds.length,
+          refreshed: tasksToRefresh.length,
         };
       }
 
-      const now = new Date();
       const dueDate = new Date(
         now.getTime() + 24 * 60 * 60 * 1000
       ).toISOString();
@@ -386,10 +432,11 @@ export function useSyncSystemAuditReviewTasks() {
         created: insertedTasks?.length || 0,
         skipped: seeds.length - newSeeds.length,
         archived: staleTaskIds.length,
+        refreshed: tasksToRefresh.length,
       };
     },
     onSuccess: (result) => {
-      if (result.created > 0 || result.archived > 0) {
+      if (result.created > 0 || result.archived > 0 || result.refreshed > 0) {
         queryClient.invalidateQueries({ queryKey: ["tasks"] });
         queryClient.invalidateQueries({ queryKey: ["task-statistics"] });
         if (result.created > 0) {
@@ -450,7 +497,8 @@ function buildFindingTaskSeed(
     key: findingReviewTaskKey(
       finding.code,
       finding.entityType,
-      finding.entityId
+      finding.entityId,
+      targetMonthFromEvidence(finding.evidence),
     ),
     title: `قرار بشري مطلوب: ${typeLabel}`,
     priority,
@@ -477,6 +525,7 @@ function buildFindingTaskSeed(
       severity: finding.severity,
       entityType: finding.entityType,
       entityId: finding.entityId,
+      targetMonth: targetMonthFromEvidence(finding.evidence),
       evidence: finding.evidence,
       repairCommand: finding.repairCommand,
       aiDecision: finding.aiDecision,
@@ -530,9 +579,17 @@ function buildAggregateReviewSeeds(
 function findingReviewTaskKey(
   code: string,
   entityType: string,
-  entityId: string
+  entityId: string,
+  targetMonth = ""
 ): string {
-  return `finding:${code}:${entityType}:${entityId}`;
+  return `finding:${code}:${entityType}:${entityId}:${targetMonth}`;
+}
+
+function targetMonthFromEvidence(
+  evidence: Record<string, unknown> | null | undefined
+): string {
+  const targetMonth = evidence?.target_month;
+  return typeof targetMonth === "string" ? targetMonth : "";
 }
 
 function canonicalReviewTaskKeyFromMetadata(
@@ -548,7 +605,12 @@ function canonicalReviewTaskKeyFromMetadata(
     return findingReviewTaskKey(
       metadata.code,
       metadata.entityType,
-      metadata.entityId
+      metadata.entityId,
+      typeof metadata.targetMonth === "string"
+        ? metadata.targetMonth
+        : isRecord(metadata.evidence)
+          ? targetMonthFromEvidence(metadata.evidence)
+          : ""
     );
   }
 
@@ -565,6 +627,10 @@ function canonicalReviewTaskKeyFromMetadata(
   return typeof metadata.systemAuditTaskKey === "string"
     ? metadata.systemAuditTaskKey
     : null;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
 }
 
 function priorityFromSeverity(

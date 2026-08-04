@@ -188,7 +188,12 @@ export const usePaymentOperations = (options: PaymentOperationsOptions = {}) => 
         throw new Error('ليس لديك صلاحية تسجيل دفعة مالية');
       }
 
-      await assertFinancialPeriodOpen(companyId, validatedData.payment_date);
+      // The atomic RPC owns the canonical period check. For a keyed retry it
+      // resolves the existing payment before checking whether the period has
+      // since closed, so the client must not reject an otherwise safe retry.
+      if (!data.idempotencyKey) {
+        await assertFinancialPeriodOpen(companyId, validatedData.payment_date);
+      }
 
       const ensurePaymentJournalOrThrow = async (payment: any) => {
         if (autoCreateJournalEntry && payment?.payment_status === 'completed') {
@@ -233,71 +238,58 @@ export const usePaymentOperations = (options: PaymentOperationsOptions = {}) => 
       };
 
       // ========== DUPLICATE PREVENTION LAYER ==========
-      // 1. Check for existing idempotency key (retry detection)
-      if (data.idempotencyKey) {
-        const { data: existingPayment, error: idempotencyError } = await supabase
+      // Keyed attempts are resolved atomically by create_payment_atomic after
+      // authorization and payload comparison. Only unkeyed/manual entries use
+      // the advisory duplicate warning below.
+      // Exclude cancelled payments — they are effectively deleted and should not block re-imports.
+      if (!data.idempotencyKey) {
+        let duplicateCheckQuery = supabase
           .from('payments')
           .select('*')
-          .eq('idempotency_key', data.idempotencyKey)
           .eq('company_id', companyId)
-          .neq('payment_status', 'cancelled')
-          .maybeSingle();
+          .eq('amount', validatedData.amount)
+          .eq('payment_date', validatedData.payment_date)
+          .neq('payment_status', 'cancelled');
 
-        if (existingPayment) {
-          console.log('♻️ [usePaymentOperations] Idempotency key found, returning existing payment:', existingPayment.payment_number);
-          return await ensureLegalCaseLinkOrThrow(existingPayment);
+        // Add customer filter if present
+        if (validatedData.customer_id) {
+          duplicateCheckQuery = duplicateCheckQuery.eq('customer_id', validatedData.customer_id);
         }
-        if (idempotencyError) {
-          console.warn('⚠️ [usePaymentOperations] Idempotency check query failed (non-fatal):', idempotencyError.message);
+
+        // Add invoice filter if present (critical for batch payments)
+        // This is essential to allow multiple payments for different invoices with same amount
+        if (validatedData.invoice_id) {
+          duplicateCheckQuery = duplicateCheckQuery.eq('invoice_id', validatedData.invoice_id);
+        } else if (validatedData.contract_id) {
+          duplicateCheckQuery = duplicateCheckQuery.eq('contract_id', validatedData.contract_id);
+        } else {
+          duplicateCheckQuery = duplicateCheckQuery.is('contract_id', null);
         }
-      }
 
-      // 2. Pre-insert duplicate detection (full history, excluding cancelled)
-      // Exclude cancelled payments — they are effectively deleted and should not block re-imports.
-      let duplicateCheckQuery = supabase
-        .from('payments')
-        .select('*')
-        .eq('company_id', companyId)
-        .eq('amount', validatedData.amount)
-        .eq('payment_date', validatedData.payment_date)
-        .neq('payment_status', 'cancelled');
+        const { data: potentialDuplicates, error: duplicateCheckError } = await duplicateCheckQuery;
 
-      // Add customer filter if present
-      if (validatedData.customer_id) {
-        duplicateCheckQuery = duplicateCheckQuery.eq('customer_id', validatedData.customer_id);
-      }
+        if (!duplicateCheckError && potentialDuplicates && potentialDuplicates.length > 0) {
+          const duplicateInfo = potentialDuplicates.map((p: any) =>
+            `رقم الدفعة: ${p.payment_number} (${new Date(p.created_at).toLocaleTimeString('ar-SA')})`
+          ).join('، ');
 
-      // Add invoice filter if present (critical for batch payments)
-      // This is essential to allow multiple payments for different invoices with same amount
-      if (validatedData.invoice_id) {
-        duplicateCheckQuery = duplicateCheckQuery.eq('invoice_id', validatedData.invoice_id);
-      } else if (validatedData.contract_id) {
-        duplicateCheckQuery = duplicateCheckQuery.eq('contract_id', validatedData.contract_id);
-      } else {
-        duplicateCheckQuery = duplicateCheckQuery.is('contract_id', null);
-      }
-
-      const { data: potentialDuplicates, error: duplicateCheckError } = await duplicateCheckQuery;
-
-      if (!data.idempotencyKey && !duplicateCheckError && potentialDuplicates && potentialDuplicates.length > 0) {
-        const duplicateInfo = potentialDuplicates.map((p: any) =>
-          `رقم الدفعة: ${p.payment_number} (${new Date(p.created_at).toLocaleTimeString('ar-SA')})`
-        ).join('، ');
-
-        throw new Error(
-          `⚠️ تم اكتشاف دفعة مكررة محتملة!\n\n` +
-          `توجد دفعة بنفس المبلغ (${validatedData.amount} ريال) والتاريخ (${validatedData.payment_date}) تم إنشاؤها خلال الساعة الماضية.\n\n` +
-          `الدفع الموجود: ${duplicateInfo}\n\n` +
-          `إذا كنت ترغب في إضافة دفعة جديدة، يرجى تغيير المبلغ أو التاريخ أو الانتظار لمدة ساعة.`
-        );
+          throw new Error(
+            `⚠️ تم اكتشاف دفعة مكررة محتملة!\n\n` +
+            `توجد دفعة بنفس المبلغ (${validatedData.amount} ريال) والتاريخ (${validatedData.payment_date}) تم إنشاؤها خلال الساعة الماضية.\n\n` +
+            `الدفع الموجود: ${duplicateInfo}\n\n` +
+            `إذا كنت ترغب في إضافة دفعة جديدة، يرجى تغيير المبلغ أو التاريخ أو الانتظار لمدة ساعة.`
+          );
+        }
       }
       // ========== END DUPLICATE PREVENTION ==========
 
       // Generate payment number if not provided
       const hasManualPaymentNumber = Boolean(validatedData.payment_number && validatedData.payment_number.length > 0);
-      let paymentNumber = hasManualPaymentNumber
+      let paymentNumber: string | null = hasManualPaymentNumber
         ? validatedData.payment_number!
-        : await generatePaymentNumber(validatedData.type);
+        : data.idempotencyKey
+          ? null
+          : await generatePaymentNumber(validatedData.type);
 
       // Determine transaction_type for database (must be 'payment' or 'receipt')
       const dbTransactionType = validatedData.type === 'receipt' ? 'receipt' : 'payment';
@@ -365,7 +357,11 @@ export const usePaymentOperations = (options: PaymentOperationsOptions = {}) => 
       if (validatedData.bank_id && validatedData.bank_id !== '' && validatedData.bank_id !== 'undefined') {
         paymentData.bank_id = validatedData.bank_id;
       }
-      if (!paymentData.bank_id && ['bank_transfer', 'check', 'credit_card', 'debit_card'].includes(validatedData.payment_method)) {
+      if (
+        !data.idempotencyKey
+        && !paymentData.bank_id
+        && ['bank_transfer', 'check', 'credit_card', 'debit_card'].includes(validatedData.payment_method)
+      ) {
         const { data: defaultBank } = await supabase
           .from('banks')
           .select('id')
@@ -502,7 +498,7 @@ export const usePaymentOperations = (options: PaymentOperationsOptions = {}) => 
       console.log('📝 Final payment data for insert:', JSON.stringify(paymentData, null, 2));
 
 
-      if (paymentData.invoice_id && paymentData.payment_status === 'completed') {
+      if (!data.idempotencyKey && paymentData.invoice_id && paymentData.payment_status === 'completed') {
         const { data: invoice, error: invoiceError } = await supabase
           .from('invoices')
           .select('id,total_amount,paid_amount,payment_status')
@@ -545,24 +541,7 @@ export const usePaymentOperations = (options: PaymentOperationsOptions = {}) => 
       // Insert payment with retry protection for automatically generated numbers.
       let insertedPayment: any = null;
       let error: any = null;
-      const maxInsertAttempts = hasManualPaymentNumber ? 1 : 5;
-      const findIdempotentPayment = async () => {
-        if (!data.idempotencyKey) return null;
-
-        const { data: existingPayment, error: existingMatchError } = await supabase
-          .from('payments')
-          .select('*')
-          .eq('company_id', companyId)
-          .eq('idempotency_key', data.idempotencyKey)
-          .neq('payment_status', 'cancelled')
-          .maybeSingle();
-        if (existingMatchError) {
-          console.warn('⚠️ [usePaymentOperations] Idempotent payment lookup failed:', existingMatchError.message);
-          return null;
-        }
-
-        return existingPayment || null;
-      };
+      const maxInsertAttempts = hasManualPaymentNumber || data.idempotencyKey ? 1 : 5;
 
       for (let attempt = 0; attempt < maxInsertAttempts; attempt += 1) {
         if (attempt > 0) {
@@ -618,20 +597,7 @@ export const usePaymentOperations = (options: PaymentOperationsOptions = {}) => 
           break;
         }
 
-        if (error.code === '23505') {
-          const idempotentPayment = await findIdempotentPayment();
-          if (idempotentPayment) {
-            console.log('♻️ [usePaymentOperations] Idempotent payment found, returning existing payment:', idempotentPayment.payment_number);
-            insertedPayment = await ensureLegalCaseLinkOrThrow(idempotentPayment);
-            error = null;
-            break;
-          }
-
-          // Cancelled payments are immutable audit records. A retry must create a
-          // new payment number and idempotency key rather than reactivate history.
-        }
-
-        if (error.code !== '23505' || hasManualPaymentNumber) {
+        if (error.code !== '23505' || hasManualPaymentNumber || data.idempotencyKey) {
           break;
         }
       }

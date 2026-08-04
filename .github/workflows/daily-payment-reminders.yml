@@ -1,0 +1,117 @@
+name: Daily Payment Reminders
+
+on:
+  schedule:
+    - cron: "0 9 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: daily-payment-reminders
+  cancel-in-progress: false
+
+jobs:
+  process-payment-reminders:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      PAYMENT_REMINDERS_SECRET: ${{ secrets.PAYMENT_REMINDERS_SECRET }}
+    steps:
+      - name: Validate scheduler secrets
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$SUPABASE_URL" || { echo "Missing SUPABASE_URL secret" >&2; exit 1; }
+          test -n "$PAYMENT_REMINDERS_SECRET" || { echo "Missing PAYMENT_REMINDERS_SECRET secret" >&2; exit 1; }
+
+      - name: Process payment reminders
+        shell: bash
+        run: |
+          set -euo pipefail
+          response_file="$(mktemp)"
+          trap 'rm -f "$response_file"' EXIT
+          readonly max_iterations=100
+          readonly batch_size=50
+          process_upcoming=true
+          process_overdue=true
+          upcoming_after_invoice_id=""
+          overdue_after_invoice_id=""
+
+          for ((iteration = 1; iteration <= max_iterations; iteration++)); do
+            echo "Payment reminder batch $iteration/$max_iterations"
+            request_body="$(jq -n \
+              --argjson batchSize "$batch_size" \
+              --argjson processUpcoming "$process_upcoming" \
+              --argjson processOverdue "$process_overdue" \
+              --arg upcomingAfterInvoiceId "$upcoming_after_invoice_id" \
+              --arg overdueAfterInvoiceId "$overdue_after_invoice_id" \
+              '{
+                batchSize: $batchSize,
+                processUpcoming: $processUpcoming,
+                processOverdue: $processOverdue
+               }
+               + (if $upcomingAfterInvoiceId == "" then {} else {upcomingAfterInvoiceId: $upcomingAfterInvoiceId} end)
+               + (if $overdueAfterInvoiceId == "" then {} else {overdueAfterInvoiceId: $overdueAfterInvoiceId} end)')"
+
+            http_status="$(curl --silent --show-error \
+              --output "$response_file" \
+              --write-out '%{http_code}' \
+              --request POST \
+              --header "x-agent-secret: $PAYMENT_REMINDERS_SECRET" \
+              --header 'Content-Type: application/json' \
+              --data "$request_body" \
+              "$SUPABASE_URL/functions/v1/process-payment-reminders")"
+
+            jq . "$response_file"
+            [[ "$http_status" =~ ^2[0-9][0-9]$ ]] || {
+              echo "Payment reminder agent returned HTTP $http_status" >&2
+              exit 1
+            }
+            jq -e '(.success == true) and (((.results.errors // []) | length) == 0)' "$response_file" >/dev/null
+
+            upcoming_has_more="$(jq -r '.continuation.upcoming.hasMore' "$response_file")"
+            overdue_has_more="$(jq -r '.continuation.overdue.hasMore' "$response_file")"
+            [[ "$upcoming_has_more" == "true" || "$upcoming_has_more" == "false" ]] || {
+              echo "Payment reminder agent returned an invalid upcoming continuation flag" >&2
+              exit 1
+            }
+            [[ "$overdue_has_more" == "true" || "$overdue_has_more" == "false" ]] || {
+              echo "Payment reminder agent returned an invalid overdue continuation flag" >&2
+              exit 1
+            }
+
+            if [[ "$process_upcoming" == "true" && "$upcoming_has_more" == "true" ]]; then
+              next_upcoming_cursor="$(jq -er '.continuation.upcoming.afterInvoiceId | strings | select(length > 0)' "$response_file")"
+              [[ "$next_upcoming_cursor" != "$upcoming_after_invoice_id" ]] || {
+                echo "Upcoming reminder continuation cursor did not advance" >&2
+                exit 1
+              }
+              upcoming_after_invoice_id="$next_upcoming_cursor"
+            else
+              process_upcoming=false
+              upcoming_after_invoice_id=""
+            fi
+
+            if [[ "$process_overdue" == "true" && "$overdue_has_more" == "true" ]]; then
+              next_overdue_cursor="$(jq -er '.continuation.overdue.afterInvoiceId | strings | select(length > 0)' "$response_file")"
+              [[ "$next_overdue_cursor" != "$overdue_after_invoice_id" ]] || {
+                echo "Overdue reminder continuation cursor did not advance" >&2
+                exit 1
+              }
+              overdue_after_invoice_id="$next_overdue_cursor"
+            else
+              process_overdue=false
+              overdue_after_invoice_id=""
+            fi
+
+            if [[ "$process_upcoming" == "false" && "$process_overdue" == "false" ]]; then
+              echo "Payment reminders completed"
+              exit 0
+            fi
+          done
+
+          echo "Payment reminders exceeded $max_iterations batches; refusing an unbounded run" >&2
+          exit 1

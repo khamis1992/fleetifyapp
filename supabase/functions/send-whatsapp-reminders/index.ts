@@ -19,8 +19,8 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 // ============================================
 // ULTRAMSG CONFIGURATION
 // ============================================
-const ULTRAMSG_INSTANCE_ID = 'instance148672';
-const ULTRAMSG_TOKEN = 'rls3i8flwugsei1j';
+const ULTRAMSG_INSTANCE_ID = Deno.env.get('ULTRAMSG_INSTANCE_ID') || '';
+const ULTRAMSG_TOKEN = Deno.env.get('ULTRAMSG_TOKEN') || '';
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
@@ -30,6 +30,12 @@ const DAILY_LATE_FEE = 120; // QAR per day
 
 // Reminder types
 type ReminderType = 'pre_due' | 'overdue_day2' | 'final_warning' | 'legal_action';
+
+class HttpError extends Error {
+  constructor(message: string, readonly status: number) {
+    super(message);
+  }
+}
 
 interface Contract {
   id: string;
@@ -233,6 +239,9 @@ async function sendWhatsAppMessage(
   message: string
 ): Promise<{ success: boolean; error?: string; messageId?: string }> {
   try {
+    if (!ULTRAMSG_INSTANCE_ID || !ULTRAMSG_TOKEN) {
+      throw new Error('WhatsApp provider credentials are not configured');
+    }
     const formattedPhone = formatPhone(phone);
     
     console.log(`📞 Sending to: ${formattedPhone}`);
@@ -280,10 +289,19 @@ serve(async (req) => {
         headers: {
           'Access-Control-Allow-Origin': '*',
           'Access-Control-Allow-Methods': 'POST, OPTIONS',
-          'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+          'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-agent-secret',
         }
       });
     }
+
+    if (req.method !== 'POST') {
+      return new Response(JSON.stringify({ success: false, error: 'Method not allowed' }), {
+        status: 405,
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+      });
+    }
+
+    authorizeInternalWhatsAppRequest(req);
 
     const body = await req.json().catch(() => ({}));
     
@@ -295,6 +313,18 @@ serve(async (req) => {
         headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
       });
     }
+
+    // This function is now only a provider adapter for trusted, single-message
+    // commands. The durable process-payment-reminders job owns recipient
+    // selection, cadence and idempotency; retaining a second bulk sender would
+    // bypass those controls and could duplicate customer messages.
+    return new Response(JSON.stringify({
+      success: false,
+      error: 'Legacy bulk sender disabled; use process-payment-reminders',
+    }), {
+      status: 410,
+      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+    });
 
     console.log('🚀 Starting automated reminders...');
 
@@ -466,8 +496,21 @@ serve(async (req) => {
       error: error.message,
       duration: Date.now() - startTime
     }), {
-      status: 500,
+      status: error instanceof HttpError ? error.status : 500,
       headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
     });
   }
 });
+
+function authorizeInternalWhatsAppRequest(req: Request) {
+  const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
+  const configuredSecret = Deno.env.get('WHATSAPP_REMINDERS_SECRET')
+    || Deno.env.get('PAYMENT_REMINDERS_SECRET')
+    || '';
+  const authorization = req.headers.get('authorization') || '';
+  const agentSecret = req.headers.get('x-agent-secret') || '';
+
+  if (serviceRoleKey && authorization === `Bearer ${serviceRoleKey}`) return;
+  if (configuredSecret && agentSecret === configuredSecret) return;
+  throw new HttpError('Unauthorized WhatsApp reminder request', 401);
+}

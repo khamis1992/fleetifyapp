@@ -100,6 +100,8 @@ export function isInvoiceOutsideContractBillingPeriod(
 ): boolean {
   const startDate = dateOnly(start);
   const endDate = dateOnly(end);
+  // Preserve historical graphs that legitimately use the contract start
+  // month. The next-month default applies only when creating a zero-row graph.
   const startMonth = monthKey(startDate);
   const endMonth = monthKey(endDate);
   if (!startDate || !endDate || !startMonth || !endMonth) return false;
@@ -305,6 +307,32 @@ export function deriveFinancialTotals(
     balance,
     paymentStatus: paymentStatusFor(normalizedTotal, paid),
   };
+}
+
+/**
+ * Contract summaries represent principal settled against the contract. Any
+ * collection above the contract value remains in the payment/allocation
+ * ledger for audit and reclassification, so the expected total_paid is capped
+ * at the contract amount. This mirrors
+ * public.recalculate_contract_financial_state and the canonical repair
+ * gateway postcondition; without the cap an overpaid contract re-opens the
+ * same financial_totals_mismatch finding every night and can never verify.
+ */
+export function deriveContractFinancialTotals(
+  contractAmount: unknown,
+  payments: Array<Record<string, unknown>>
+) {
+  const amount = Math.max(0, roundMoney(contractAmount));
+  const canonicalPaid = roundMoney(
+    payments
+      .filter(isReceiptPayment)
+      .reduce((sum, payment) => sum + Number(payment.amount || 0), 0)
+  );
+  const paid = amount > 0.01 ? Math.min(canonicalPaid, amount) : canonicalPaid;
+  const balance = roundMoney(Math.max(0, amount - paid));
+  const paymentStatus =
+    paid <= 0.01 ? "unpaid" : paid >= amount - 0.01 ? "paid" : "partial";
+  return { paid, balance, paymentStatus };
 }
 
 export function buildCanonicalInvoiceReceiptContributions(

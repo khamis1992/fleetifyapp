@@ -232,6 +232,9 @@ describe("employee workspace payment authorization migration", () => {
     expect(atomicPayment).toContain(
       "('cancelled', 'canceled', 'void', 'voided', 'deleted', 'inactive')",
     );
+    expect(atomicPayment).toContain(
+      "jsonb_typeof(v_registration_metadata -> 'payment_month') <> 'null'",
+    );
   });
 
   it("lets an assigned employee complete the internal cash helper path without exposing it directly", () => {

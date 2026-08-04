@@ -339,28 +339,7 @@ export class NotificationService {
 
   private async sendWhatsAppReceipt(receiptData: PaymentReceiptData): Promise<void> {
     if (!receiptData.customerPhone) throw new Error('Customer phone number is missing');
-
-    const message = [
-      `مرحبًا ${receiptData.customerName}،`,
-      `تم استلام دفعتكم بقيمة ${receiptData.amount.toLocaleString()} ر.ق.`,
-      `رقم الدفعة: ${receiptData.paymentNumber}`,
-      `التاريخ: ${receiptData.paymentDate}`,
-      receiptData.contractNumber ? `رقم العقد: ${receiptData.contractNumber}` : null,
-      'شكرًا لتعاملكم معنا.'
-    ].filter(Boolean).join('\n');
-
-    const { data, error } = await supabase.functions.invoke('send-whatsapp-reminders', {
-      body: {
-        test: true,
-        phone: receiptData.customerPhone,
-        message
-      }
-    });
-
-    if (error) throw error;
-
-    const result = data as { success?: boolean; error?: string } | null;
-    if (!result?.success) throw new Error(result?.error || 'WhatsApp delivery failed');
+    throw new Error('إرسال إيصالات واتساب من المتصفح معطل حتى ربط أمر خلفي مقيد برقم الدفعة');
   }
 
   private async sendSMSReceipt(_receiptData: PaymentReceiptData): Promise<void> {

@@ -20,7 +20,6 @@ type SupabaseClient = ReturnType<typeof createClient>;
 const CANONICAL_FINANCE_COMMANDS = new Set([
   "contract.recalculate_totals",
   "invoice.recalculate_balance",
-  "invoice.sync_zero_impact_amount",
   "invoice.cancel_zero_safe",
   "schedule.sync_payment_state",
   "payment.correct_uncompleted_date",

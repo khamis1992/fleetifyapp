@@ -26,6 +26,12 @@ import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 import { usePaymentOperations } from '@/hooks/business/usePaymentOperations';
 import { supabase } from '@/integrations/supabase/client';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { calculateCanonicalBillingMonths } from '@/utils/contractCalculations';
+import type { Database } from '@/integrations/supabase/types';
+
+type CustomerImportRow = Database['public']['Tables']['customers']['Insert'];
+type VehicleImportRow = Database['public']['Tables']['vehicles']['Insert'];
+type ContractImportRow = Database['public']['Tables']['contracts']['Insert'];
 
 interface ImportResult {
   success: number;
@@ -106,7 +112,7 @@ const ImportInner: React.FC = () => {
         { contract_number: 'C-2024-001', customer_id: 'customer-id', vehicle_id: 'vehicle-id', start_date: '2024-01-01', end_date: '2024-12-31', monthly_amount: 1500 }
       ],
       validation: {
-        required: ['contract_number', 'customer_id', 'vehicle_id', 'start_date'],
+        required: ['contract_number', 'customer_id', 'vehicle_id', 'start_date', 'end_date', 'monthly_amount'],
         monthly_amount: 'number'
       }
     },
@@ -200,11 +206,48 @@ const ImportInner: React.FC = () => {
 
       for (let i = 1; i < lines.length; i++) {
         const values = lines[i].split(',').map(v => v.trim());
-        const row: any = { company_id: companyId };
-        
+        const row: Record<string, any> = {};
+        const allowedHeaders = new Set(currentTemplate.fields);
+
+        // A CSV column name is data, not a trusted database column. Only the
+        // fields declared by the selected template may reach an insert.
         headers.forEach((header, index) => {
-          row[header] = values[index] || '';
+          if (allowedHeaders.has(header)) {
+            row[header] = values[index] || '';
+          }
         });
+
+        // CSV input may not choose a tenant, creator, active lifecycle, or
+        // pre-linked accounting rows. Imported contracts are reviewed and
+        // activated later through the atomic billing command.
+        row.company_id = companyId;
+        row.created_by = user?.id;
+        if (activeTab === 'contracts') {
+          const monthlyAmount = Number(String(row.monthly_amount || '').replace(/[^\d.-]/g, ''));
+          const billingMonths = calculateCanonicalBillingMonths(row.start_date, row.end_date);
+          if (!Number.isFinite(monthlyAmount) || monthlyAmount <= 0) {
+            errors.push(`Ø§Ù„Ø³Ø·Ø± ${i}: Ù‚ÙŠÙ…Ø© Ø§Ù„Ø¥ÙŠØ¬Ø§Ø± Ø§Ù„Ø´Ù‡Ø±ÙŠ ØºÙŠØ± ØµØ­ÙŠØ­Ø©`);
+            failedCount++;
+            continue;
+          }
+          if (billingMonths <= 0) {
+            errors.push(`Ø§Ù„Ø³Ø·Ø± ${i}: ØªÙˆØ§Ø±ÙŠØ® Ø§Ù„Ø¹Ù‚Ø¯ ØºÙŠØ± ØµØ­ÙŠØ­Ø©`);
+            failedCount++;
+            continue;
+          }
+
+          const contractAmount = Math.round(monthlyAmount * billingMonths * 100) / 100;
+          row.status = 'draft';
+          row.payment_status = 'pending';
+          row.contract_type = 'rental';
+          row.contract_date = row.start_date;
+          row.monthly_amount = monthlyAmount;
+          row.contract_amount = contractAmount;
+          row.total_paid = 0;
+          row.balance_due = contractAmount;
+          row.journal_entry_id = null;
+          row.created_via = 'csv_import';
+        }
 
         // التحقق من الحقول المطلوبة
         const missingFields = currentTemplate.validation.required?.filter(
@@ -224,17 +267,17 @@ const ImportInner: React.FC = () => {
             case 'customers':
               result = await supabase
                 .from('customers')
-                .insert([row]);
+                .insert([row as CustomerImportRow]);
               break;
             case 'vehicles':
               result = await supabase
                 .from('vehicles')
-                .insert([row]);
+                .insert([row as VehicleImportRow]);
               break;
             case 'contracts':
               result = await supabase
                 .from('contracts')
-                .insert([row]);
+                .insert([row as ContractImportRow]);
               break;
             case 'payments':
               // معالجة خاصة للمدفوعات

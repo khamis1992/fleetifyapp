@@ -420,7 +420,9 @@ export function useUnifiedContractUpload() {
             contract_amount: Number(contract.contract_amount) || 0,
             start_date: contract.start_date,
             end_date: contract.end_date,
-            status: contract.requires_review ? 'under_review' : 'active', // Changed to 'active' to properly set vehicle status
+            // Imported financial terms require explicit review before the
+            // atomic activation command may create invoices and journals.
+            status: 'draft',
             created_by: user?.id,
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString()
@@ -436,9 +438,7 @@ export function useUnifiedContractUpload() {
           }
           
           result.successful++;
-          if (contract.requires_review) {
-            result.contracts_under_review++;
-          }
+          result.contracts_under_review++;
           
         } catch (contractError: any) {
           result.failed++;

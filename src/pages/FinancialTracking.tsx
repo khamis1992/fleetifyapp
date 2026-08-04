@@ -1,5 +1,5 @@
 // @ts-nocheck
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, DollarSign, AlertTriangle, TrendingUp } from 'lucide-react';
 import { toast } from 'sonner';
@@ -69,6 +69,7 @@ const FinancialTrackingInner: React.FC = () => {
   const [newCustomerName, setNewCustomerName] = useState('');
   const [newCustomerRent, setNewCustomerRent] = useState('');
   const [isCreatingCustomer, setIsCreatingCustomer] = useState(false);
+  const quickCustomerRequestKeyRef = useRef<string | null>(null);
   
   // Monthly revenue filter state
   const [selectedMonthFilter, setSelectedMonthFilter] = useState<string>('all'); // 'all' or 'yyyy-MM' format
@@ -711,90 +712,11 @@ const FinancialTrackingInner: React.FC = () => {
       return;
     }
 
-    setIsUpdatingRent(true);
-
-    try {
-      // Step 1: Update the contract's monthly_amount
-      const { error: contractError } = await supabase
-        .from('contracts')
-        .update({ monthly_amount: rentAmount })
-        .eq('customer_id', selectedCustomer.id)
-        .eq('company_id', companyId)
-        .eq('status', 'active');
-
-      if (contractError) {
-        console.error('Error updating contract monthly rent:', contractError);
-        throw contractError;
-      }
-
-      // Step 2: Fetch all existing receipts for this customer
-      // @ts-ignore - Custom table not in generated types
-      const { data: existingReceipts, error: fetchError } = await supabase
-        .from('rental_payment_receipts')
-        .select('*')
-        .eq('customer_id', selectedCustomer.id)
-        .eq('company_id', companyId);
-
-      if (fetchError) {
-        console.error('Error fetching receipts:', fetchError);
-        throw fetchError;
-      }
-
-      // Step 3: Recalculate and update each receipt
-      if (existingReceipts && existingReceipts.length > 0) {
-        const updatePromises = existingReceipts.map(async (receipt: any) => {
-          // Recalculate with new rent amount
-          const newAmountDue = rentAmount + receipt.fine;
-          const newPendingBalance = Math.max(0, newAmountDue - receipt.total_paid);
-          const newPaymentStatus = 
-            newPendingBalance === 0 ? 'paid' : 
-            (receipt.total_paid > 0 ? 'partial' : 'pending');
-
-          // @ts-ignore - Custom table not in generated types
-          return supabase
-            .from('rental_payment_receipts')
-            .update({
-              rent_amount: rentAmount,
-              amount_due: newAmountDue,
-              pending_balance: newPendingBalance,
-              payment_status: newPaymentStatus
-            })
-            .eq('id', receipt.id);
-        });
-
-        const results = await Promise.all(updatePromises);
-        
-        // Check for errors in updates
-        const errors = results.filter(r => r.error);
-        if (errors.length > 0) {
-          console.error('Some receipts failed to update:', errors);
-          toast.error(`تم تحديث ${results.length - errors.length} من ${results.length} سجل دفع`);
-        } else {
-          toast.success(`تم تحديث ${results.length} سجل دفع بنجاح ✅`);
-        }
-      }
-
-      // Step 4: Update local state
-      setSelectedCustomer({
-        ...selectedCustomer,
-        monthly_rent: rentAmount
-      });
-
-      // Step 5: Invalidate queries to refresh data
-      await queryClient.invalidateQueries({ queryKey: ['customers-with-rental', companyId] });
-      await queryClient.invalidateQueries({ queryKey: ['rental-receipts', companyId, selectedCustomer.id] });
-      await queryClient.invalidateQueries({ queryKey: ['customer-payment-totals', companyId, selectedCustomer.id] });
-      await queryClient.invalidateQueries({ queryKey: ['all-rental-receipts', companyId] });
-
-      toast.success(`تم تحديث الإيجار الشهري إلى ${rentAmount.toLocaleString('en-US')} ريال ✅`);
-      setEditingMonthlyRent(false);
-      setNewMonthlyRent('');
-    } catch (error: unknown) {
-      console.error('Error updating monthly rent:', error);
-      toast.error('فشل في تحديث الإيجار الشهري');
-    } finally {
-      setIsUpdatingRent(false);
-    }
+    toast.error(
+      'تعديل الإيجار لعقد نشط متوقف لحماية الفواتير والقيود. أنشئ ملحقًا ماليًا معتمدًا بدل تعديل السعر مباشرة.',
+    );
+    setEditingMonthlyRent(false);
+    setNewMonthlyRent('');
   };
 
   /**
@@ -909,11 +831,14 @@ const FinancialTrackingInner: React.FC = () => {
 
       // Use RPC function to create both customer and contract atomically
       // This bypasses RLS issues by using a database function
-      const { data: result, error: rpcError } = await supabase.rpc('create_customer_with_contract', {
+      const requestKey = quickCustomerRequestKeyRef.current
+        ?? (quickCustomerRequestKeyRef.current = `quick-customer:${crypto.randomUUID()}`);
+      const { data: result, error: rpcError } = await supabase.rpc('create_customer_with_contract_idempotent', {
         p_company_id: companyId,
         p_first_name: firstName,
         p_last_name: lastName,
-        p_monthly_amount: parseFloat(newCustomerRent)
+        p_monthly_amount: parseFloat(newCustomerRent),
+        p_idempotency_key: requestKey,
       });
 
       if (rpcError) {
@@ -924,13 +849,6 @@ const FinancialTrackingInner: React.FC = () => {
           hint: rpcError.hint,
           details: rpcError.details
         });
-        
-        // If RPC function doesn't exist, fall back to manual creation
-        if (rpcError.code === '42883' || rpcError.message?.includes('does not exist')) {
-          console.log('RPC function not found, falling back to manual creation...');
-          await createCustomerManually(firstName, lastName, companyId, parseFloat(newCustomerRent));
-          return;
-        }
         
         throw new Error(
           rpcError.message || 
@@ -951,7 +869,7 @@ const FinancialTrackingInner: React.FC = () => {
           console.log('⚠️ Duplicate customer code detected in RPC result');
           console.log('🔄 Automatically falling back to manual creation with unique code...');
           toast.info('جاري إنشاء العميل برمز فريد...', { duration: 2000 });
-          await createCustomerManually(firstName, lastName, companyId, parseFloat(newCustomerRent));
+          throw new Error('رفض إنشاء عميل أو عقد ثانٍ خارج المعاملة الذرية');
           return;
         }
         
@@ -980,7 +898,7 @@ const FinancialTrackingInner: React.FC = () => {
         
         // If we can't extract customer_id, fall back to manual creation
         console.log('Unable to extract customer_id, falling back to manual creation...');
-        await createCustomerManually(firstName, lastName, companyId, parseFloat(newCustomerRent));
+        throw new Error('لم تعد الدالة بمعرّف العميل');
         return;
       }
 
@@ -1003,6 +921,7 @@ const FinancialTrackingInner: React.FC = () => {
       setShowCreateCustomer(false);
       setNewCustomerName('');
       setNewCustomerRent('');
+      quickCustomerRequestKeyRef.current = null;
 
       toast.success(`تم إنشاء العميل "${firstName} ${lastName}" والعقد بنجاح ✅`);
     } catch (error: unknown) {
@@ -1019,7 +938,7 @@ const FinancialTrackingInner: React.FC = () => {
             errorMessage = 'رمز العميل مكرر. جاري إعادة المحاولة...';
             // Automatically retry with manual creation
             try {
-              await createCustomerManually(firstName, lastName, companyId, parseFloat(newCustomerRent));
+              throw new Error('تعذر إنشاء العميل داخل المعاملة الذرية');
               return; // Success via manual creation
             } catch (retryError: any) {
               errorMessage = retryError?.message || 'فشل إنشاء العميل بعد إعادة المحاولة';
@@ -1056,86 +975,6 @@ const FinancialTrackingInner: React.FC = () => {
       setIsCreatingCustomer(false);
     }
   };
-
-  // Fallback function for manual creation if RPC doesn't exist
-  const createCustomerManually = async (firstName: string, lastName: string, companyId: string, monthlyAmount: number) => {
-    console.log('Manual creation - Step 1: Creating customer without select...');
-    
-    const uniqueCustomerCode = `CUST-${crypto.randomUUID().replaceAll('-', '').slice(0, 16).toUpperCase()}`;
-    const { data: createdCustomers, error: customerError } = await supabase
-      .from('customers')
-      .insert({
-        first_name: firstName,
-        last_name: lastName,
-        customer_type: 'individual',
-        customer_code: uniqueCustomerCode,
-        phone: null,
-        company_id: companyId,
-        is_active: true
-      })
-      .select('id, first_name, last_name');
-
-    if (customerError) throw customerError;
-    const customerData = createdCustomers?.[0] || null;
-
-    // If we still don't have customer data, throw an error
-    if (!customerData) {
-      throw new Error('فشل إنشاء العميل بعد عدة محاولات');
-    }
-
-    console.log('Manual creation - Customer created successfully:', customerData);
-    
-    console.log('Manual creation - Step 2: Creating contract for customer:', customerData.id);
-    
-    // Generate short contract number using utility
-    const { generateShortContractNumber } = await import('@/utils/contractNumberGenerator');
-    const contractNumber = generateShortContractNumber();
-    const startDate = new Date().toISOString().split('T')[0];
-    const endDate = new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().split('T')[0];
-    
-    const { error: contractError } = await supabase
-      .from('contracts')
-      .insert({
-        customer_id: customerData.id,
-        contract_number: contractNumber,
-        contract_date: startDate,
-        start_date: startDate,
-        end_date: endDate,
-        company_id: companyId,
-        contract_type: 'vehicle_rental',
-        monthly_amount: monthlyAmount,
-        status: 'active'
-      });
-
-    if (contractError) {
-      console.error('Manual creation - Contract error:', contractError);
-      // Clean up customer
-      await supabase.from('customers').delete().eq('id', customerData.id).eq('company_id', companyId);
-      // Better error handling for contract errors
-      const contractErrorMessage = contractError.message || contractError.details || 'فشل إنشاء العقد';
-      throw new Error(contractErrorMessage);
-    }
-
-    console.log('Manual creation - Success!');
-    
-    // Create CustomerWithRental object for UI
-    const customerWithRental: CustomerWithRental = {
-      id: customerData.id,
-      name: `${firstName} ${lastName}`,
-      monthly_rent: monthlyAmount
-    };
-
-    // Refresh and select
-    await queryClient.invalidateQueries({ queryKey: ['customers-with-rental', companyId] });
-    setSelectedCustomer(customerWithRental);
-    setSearchTerm(`${firstName} ${lastName}`);
-    setShowCreateCustomer(false);
-    setNewCustomerName('');
-    setNewCustomerRent('');
-
-    toast.success(`تم إنشاء العميل "${firstName} ${lastName}" والعقد بنجاح (الطريقة اليدوية) ✅`);
-  };
-
 
   return (
     <div className="container mx-auto p-4 md:p-6 space-y-6" dir="rtl">
@@ -1270,7 +1109,10 @@ const FinancialTrackingInner: React.FC = () => {
       {/* Create New Customer Dialog */}
       <CreateCustomerDialog
         open={showCreateCustomer}
-        onOpenChange={setShowCreateCustomer}
+        onOpenChange={(nextOpen) => {
+          setShowCreateCustomer(nextOpen);
+          if (!nextOpen) quickCustomerRequestKeyRef.current = null;
+        }}
         customerName={newCustomerName}
         onCustomerNameChange={setNewCustomerName}
         customerRent={newCustomerRent}

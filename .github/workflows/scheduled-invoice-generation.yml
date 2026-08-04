@@ -1,0 +1,100 @@
+name: Scheduled Invoice Generation
+
+on:
+  schedule:
+    # 09:00 UTC on the 28th: generate the next canonical billing month.
+    - cron: "0 9 28 * *"
+  workflow_dispatch:
+    inputs:
+      target_month:
+        description: "Optional target month (YYYY-MM)"
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: scheduled-invoice-generation
+  cancel-in-progress: false
+
+jobs:
+  generate-monthly-invoices:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      INVOICE_GENERATOR_SECRET: ${{ secrets.INVOICE_GENERATOR_SECRET }}
+      TARGET_MONTH: ${{ inputs.target_month || '' }}
+    steps:
+      - name: Validate scheduler secrets
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$SUPABASE_URL" || { echo "Missing SUPABASE_URL secret" >&2; exit 1; }
+          test -n "$INVOICE_GENERATOR_SECRET" || { echo "Missing INVOICE_GENERATOR_SECRET secret" >&2; exit 1; }
+
+      - name: Generate canonical monthly invoices
+        shell: bash
+        run: |
+          set -euo pipefail
+          response_file="$(mktemp)"
+          trap 'rm -f "$response_file"' EXIT
+          readonly max_iterations=100
+          readonly batch_size=100
+          resolved_target_month="$TARGET_MONTH"
+          after_contract_id=""
+
+          for ((iteration = 1; iteration <= max_iterations; iteration++)); do
+            echo "Invoice generation batch $iteration/$max_iterations"
+            request_body="$(jq -n \
+              --arg targetMonth "$resolved_target_month" \
+              --arg afterContractId "$after_contract_id" \
+              --argjson batchSize "$batch_size" \
+              '{batchSize: $batchSize}
+               + (if $targetMonth == "" then {} else {targetMonth: $targetMonth} end)
+               + (if $afterContractId == "" then {} else {afterContractId: $afterContractId} end)')"
+
+            http_status="$(curl --silent --show-error \
+              --output "$response_file" \
+              --write-out '%{http_code}' \
+              --request POST \
+              --header "x-agent-secret: $INVOICE_GENERATOR_SECRET" \
+              --header 'Content-Type: application/json' \
+              --data "$request_body" \
+              "$SUPABASE_URL/functions/v1/generate-monthly-invoices")"
+
+            jq . "$response_file"
+            [[ "$http_status" =~ ^2[0-9][0-9]$ ]] || {
+              echo "Invoice generator returned HTTP $http_status" >&2
+              exit 1
+            }
+            jq -e '(.success == true) and ((.results.failed // 0) == 0)' "$response_file" >/dev/null
+
+            returned_target_month="$(jq -er '.targetMonth | strings | select(length > 0)' "$response_file")"
+            if [[ -n "$resolved_target_month" && "$returned_target_month" != "$resolved_target_month" ]]; then
+              echo "Invoice generator changed target month during continuation" >&2
+              exit 1
+            fi
+            resolved_target_month="$returned_target_month"
+
+            has_more="$(jq -r '.continuation.hasMore' "$response_file")"
+            [[ "$has_more" == "true" || "$has_more" == "false" ]] || {
+              echo "Invoice generator returned an invalid continuation flag" >&2
+              exit 1
+            }
+            if [[ "$has_more" == "false" ]]; then
+              echo "Invoice generation completed for $resolved_target_month"
+              exit 0
+            fi
+
+            next_after_contract_id="$(jq -er '.continuation.afterContractId | strings | select(length > 0)' "$response_file")"
+            [[ "$next_after_contract_id" != "$after_contract_id" ]] || {
+              echo "Invoice generation continuation cursor did not advance" >&2
+              exit 1
+            }
+            after_contract_id="$next_after_contract_id"
+          done
+
+          echo "Invoice generation exceeded $max_iterations batches; refusing an unbounded run" >&2
+          exit 1

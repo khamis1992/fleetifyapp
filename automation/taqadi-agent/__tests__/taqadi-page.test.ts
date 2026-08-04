@@ -1211,6 +1211,39 @@ describe('TaqadiPortal classification fields', () => {
     );
   });
 
+  it('clicks only the exact حفظ button when saving the parties draft', async () => {
+    await page.setContent(`
+      <button
+        type="button"
+        onclick="document.body.dataset.savedAndContinued='true'"
+      >حفظ ومتابعة</button>
+      <button
+        type="button"
+        onclick="document.body.dataset.saved='true'"
+      >حفظ</button>
+    `);
+
+    const portal = new TaqadiPortal(page);
+    await portal.savePartiesDraft();
+
+    expect(await page.locator('body').getAttribute('data-saved')).toBe('true');
+    expect(
+      await page.locator('body').getAttribute('data-saved-and-continued'),
+    ).toBeNull();
+  });
+
+  it('stops when the parties draft save button is missing', async () => {
+    await page.setContent(`
+      <button type="button">حفظ ومتابعة</button>
+      <button type="button">التالي</button>
+    `);
+
+    const portal = new TaqadiPortal(page);
+    await expect(portal.savePartiesDraft()).rejects.toMatchObject({
+      code: 'TAQADI_UI_CHANGED',
+    });
+  });
+
   it('confirms final approval only inside the new confirmation dialog', async () => {
     await page.setContent(`
       <button

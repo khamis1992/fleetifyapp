@@ -5,11 +5,13 @@ import {
 } from './types';
 
 export type PartyWorkflowPhase =
+  | 'save_parties_draft'
   | 'company_and_defendant'
   | 'representative_last';
 
 type PartyWorkflowPortal = Pick<
   TaqadiPortal,
+  | 'savePartiesDraft'
   | 'validateCompanyParty'
   | 'addDefendant'
   | 'validateRepresentativeFirst'
@@ -26,6 +28,11 @@ export async function processTaqadiParties(
   payload: FilingPayload,
   options: PartyWorkflowOptions = {},
 ) {
+  // صفحة الأطراف هي الموضع الوحيد الذي يُحفظ فيه النموذج: الحفظ يثبّت المسودة
+  // ويفعّل جدول الأطراف، ثم يبدأ تسجيل الأطراف بالترتيب المعتاد.
+  await options.onPhase?.('save_parties_draft');
+  await portal.savePartiesDraft();
+
   await options.onPhase?.('company_and_defendant');
   await portal.validateCompanyParty(payload);
   await portal.addDefendant(payload, { continueAfterSave: false });

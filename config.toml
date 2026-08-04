@@ -1,0 +1,165 @@
+project_id = "qwhunliohlkkahbspfiu"
+
+[functions.intelligent-contract-processor]
+verify_jwt = true
+
+[functions.set-browsed-company]
+verify_jwt = true
+
+[functions.send-account-invitation]
+verify_jwt = false
+
+[functions.process-monthly-depreciation]
+verify_jwt = false
+
+[functions.refresh-stats-cache]
+verify_jwt = false
+
+[functions.quotation-approval]
+verify_jwt = false
+
+[functions.legal-ai-api]
+verify_jwt = false
+
+[functions.legal-ai-enhanced]
+verify_jwt = true
+
+[functions.self-learning-ai]
+verify_jwt = true
+
+[functions.intelligent-clarification]
+verify_jwt = true
+
+[functions.clarification-learning]
+verify_jwt = true
+
+[functions.ai-self-evaluation]
+verify_jwt = true
+
+[functions.openai-chat]
+verify_jwt = true
+
+[functions.analyze-call-recording]
+verify_jwt = true
+
+[functions.longcat-chat]
+verify_jwt = true
+
+[functions.transfer-user-company]
+verify_jwt = true
+
+[functions.sync-document-alerts]
+verify_jwt = false
+
+[functions.extract-traffic-violations]
+verify_jwt = true
+
+[functions.scan-invoice]
+verify_jwt = true
+
+[functions.financial-analysis-ai]
+verify_jwt = true
+
+[functions.daily-audit-agent]
+verify_jwt = false
+
+[functions.system-audit-orchestrator]
+verify_jwt = false
+
+[functions.system-audit-worker]
+verify_jwt = false
+
+[functions.system-audit-worker-v8]
+verify_jwt = false
+entrypoint = "./functions/system-audit-worker/index.ts"
+
+[functions.system-audit-orchestrator-v10]
+verify_jwt = false
+entrypoint = "./functions/system-audit-orchestrator/index.ts"
+
+[functions.system-audit-worker-v9]
+verify_jwt = false
+entrypoint = "./functions/system-audit-worker/index.ts"
+
+[functions.system-audit-orchestrator-v11]
+verify_jwt = false
+entrypoint = "./functions/system-audit-orchestrator/index.ts"
+
+[functions.system-audit-worker-v10]
+verify_jwt = false
+entrypoint = "./functions/system-audit-worker/index.ts"
+
+[functions.system-audit-orchestrator-v12]
+verify_jwt = false
+entrypoint = "./functions/system-audit-orchestrator/index.ts"
+
+[functions.system-audit-worker-v11]
+verify_jwt = false
+entrypoint = "./functions/system-audit-worker/index.ts"
+
+[functions.system-audit-orchestrator-v13]
+verify_jwt = false
+entrypoint = "./functions/system-audit-orchestrator/index.ts"
+
+[functions.system-audit-worker-v12]
+verify_jwt = false
+entrypoint = "./functions/system-audit-worker/index.ts"
+
+[functions.system-audit-orchestrator-v14]
+verify_jwt = false
+entrypoint = "./functions/system-audit-orchestrator/index.ts"
+
+[functions.system-audit-dashboard]
+verify_jwt = true
+
+[functions.contract-health-analysis]
+verify_jwt = true
+
+[functions.customer-ai-summary]
+verify_jwt = true
+
+[functions.daily-decision-center]
+verify_jwt = true
+
+[functions.deepseek-ocr]
+verify_jwt = true
+
+[functions.excel-import-ai-review]
+verify_jwt = true
+
+[functions.pdf-ocr]
+verify_jwt = true
+
+[functions.smart-document-generator]
+verify_jwt = true
+
+[functions.traffic-violations-ai-advisor]
+verify_jwt = true
+
+[functions.customer-id-ocr]
+verify_jwt = true
+
+[functions.vehicle-ocr]
+verify_jwt = true
+
+[functions.olmocr]
+verify_jwt = true
+
+# Contract ID scanner: invoked by pg_cron (secret header) and by the app (user JWT).
+# JWT gateway check disabled like daily-audit-agent; the function enforces its own
+# authorization via CONTRACT_SCANNER_SECRET or an authenticated user token.
+[functions.contract-id-scanner]
+verify_jwt = false
+
+# Scheduled internal endpoint. JWT gateway verification is disabled so cron can
+# send x-agent-secret; the function itself requires that secret or service role.
+[functions.process-payment-reminders]
+verify_jwt = false
+
+# Scheduled internal endpoints. The gateway accepts the secret-header request;
+# each function still rejects callers that fail its own service/agent-secret check.
+[functions.generate-monthly-invoices]
+verify_jwt = false
+
+[functions.backfill-historical-invoices]
+verify_jwt = false

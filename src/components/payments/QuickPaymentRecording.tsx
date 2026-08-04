@@ -691,9 +691,13 @@ export function QuickPaymentRecording({ onStepChange }: QuickPaymentRecordingPro
         p_dry_run: false,
       });
       
-      if (scheduleError) {
+      const scheduleFailure = scheduleData && typeof scheduleData === 'object' && !Array.isArray(scheduleData)
+        && (scheduleData as Record<string, unknown>).success === false
+        ? String((scheduleData as Record<string, unknown>).error || 'فشل إنشاء جدول الدفعات')
+        : null;
+      if (scheduleError || scheduleFailure) {
         console.error('❌ Schedule generation error:', scheduleError);
-        throw new Error(`فشل إنشاء جدول الدفعات: ${scheduleError.message || scheduleError.code || 'خطأ غير معروف'}`);
+        throw new Error(`فشل إنشاء جدول الدفعات: ${scheduleFailure || scheduleError?.message || scheduleError?.code || 'خطأ غير معروف'}`);
       }
       
       console.log('✅ Payment schedules created:', scheduleData);
@@ -711,8 +715,8 @@ export function QuickPaymentRecording({ onStepChange }: QuickPaymentRecordingPro
       console.log('✅ Invoices created:', invoiceCount);
       
       toast({
-        title: 'تم إنشاء الفواتير بنجاح',
-        description: invoiceCount ? `تم إنشاء ${invoiceCount} فاتورة` : 'تم إنشاء الفواتير',
+        title: invoiceCount ? 'تم إنشاء الفواتير بنجاح' : 'لا توجد فواتير ناقصة',
+        description: invoiceCount ? `تم إنشاء ${invoiceCount} فاتورة` : 'كل أشهر العقد النشطة لها فواتير بالفعل.',
       });
 
       // Reload invoices for the selected contract
@@ -922,20 +926,21 @@ export function QuickPaymentRecording({ onStepChange }: QuickPaymentRecordingPro
     let reopenedHistoricalPeriods: TemporaryPeriodReopening[] = [];
     try {
       const paymentDate = new Date().toISOString().split('T')[0];
+      const invoicesToProcess: Invoice[] = [...selectedInvoices];
       console.log('Processing payment with:', {
         companyId,
         customerId: selectedCustomer.id,
-        invoiceIds: selectedInvoices.map(i => i.id),
+        invoiceIds: invoicesToProcess.map(i => i.id),
         amount,
         paymentMethod
       });
 
       // ✅ معالجة حالة عدم وجود فواتير - التوزيع التلقائي على الفواتير المستحقة
-      if (selectedInvoices.length === 0) {
+      if (invoicesToProcess.length === 0) {
         console.log('🔄 لم يتم اختيار فواتير - البحث عن الفواتير المستحقة للتوزيع التلقائي...');
         
         // البحث عن جميع الفواتير المستحقة للعميل (مرتبة حسب تاريخ الاستحقاق)
-        const { data: unpaidInvoices, error: invoicesError } = await supabase
+        let unpaidInvoiceQuery = supabase
           .from('invoices')
           .select(`
             *,
@@ -950,29 +955,35 @@ export function QuickPaymentRecording({ onStepChange }: QuickPaymentRecordingPro
           .eq('customer_id', selectedCustomer.id)
           .eq('company_id', companyId)
           .in('payment_status', receivablePaymentStatuses)
-          .neq('status', 'cancelled')
           .order('due_date', { ascending: true });
+
+        if (selectedContract?.id) {
+          unpaidInvoiceQuery = unpaidInvoiceQuery.eq('contract_id', selectedContract.id);
+        }
+
+        const { data: unpaidInvoices, error: invoicesError } = await unpaidInvoiceQuery;
 
         if (invoicesError) {
           console.error('Error fetching unpaid invoices:', invoicesError);
           throw new Error('خطأ في جلب الفواتير المستحقة');
         }
 
-        if (unpaidInvoices && unpaidInvoices.length > 0) {
+        const activeUnpaidInvoices = (unpaidInvoices || []).filter(isActiveInvoice);
+        if (activeUnpaidInvoices.length > 0) {
           // ✅ التوزيع التلقائي: إضافة الفواتير حسب المبلغ المتاح
           let remainingToDistribute = amount;
           
-          for (const invoice of unpaidInvoices) {
+          for (const invoice of activeUnpaidInvoices) {
             if (remainingToDistribute <= 0) break;
             
             const invoiceBalance = (invoice.balance_due ?? invoice.total_amount) || 0;
             if (invoiceBalance <= 0) continue;
             
-            selectedInvoices.push(invoice as any);
+            invoicesToProcess.push(invoice as Invoice);
             remainingToDistribute -= invoiceBalance;
           }
           
-          console.log(`✅ تم اختيار ${selectedInvoices.length} فاتورة للتوزيع التلقائي`);
+          console.log(`✅ تم اختيار ${invoicesToProcess.length} فاتورة للتوزيع التلقائي`);
           
           // تحذير إذا كان المبلغ أكبر من إجمالي الفواتير المستحقة
           if (remainingToDistribute > 0) {
@@ -982,20 +993,22 @@ export function QuickPaymentRecording({ onStepChange }: QuickPaymentRecordingPro
           // لا توجد فواتير مستحقة - البحث عن عقد نشط وإنشاء فاتورة جديدة
           console.log('⚠️ لا توجد فواتير مستحقة - البحث عن عقد نشط...');
           
-          const { data: activeContracts, error: contractError } = await supabase
-            .from('contracts')
-            .select('id, contract_number, monthly_amount')
-            .eq('customer_id', selectedCustomer.id)
-            .eq('company_id', companyId)
-            .eq('status', 'active')
-            .order('created_at', { ascending: false })
-            .limit(1);
+          let activeContract = selectedContract?.status === 'active' ? selectedContract : null;
+          if (!activeContract) {
+            const { data: activeContracts, error: contractError } = await supabase
+              .from('contracts')
+              .select('id, contract_number, monthly_amount, status, start_date, end_date')
+              .eq('customer_id', selectedCustomer.id)
+              .eq('company_id', companyId)
+              .eq('status', 'active')
+              .order('created_at', { ascending: false })
+              .limit(1);
 
-          if (contractError || !activeContracts || activeContracts.length === 0) {
-            throw new Error('لا يوجد عقد نشط للعميل ولا توجد فواتير مستحقة.');
+            if (contractError || !activeContracts || activeContracts.length === 0) {
+              throw new Error('لا يوجد عقد نشط للعميل ولا توجد فواتير مستحقة.');
+            }
+            activeContract = activeContracts[0] as Contract;
           }
-
-          const activeContract = activeContracts[0];
           
           // استخدام الخدمة الموحدة للبحث عن فاتورة موجودة أو إنشاء واحدة جديدة
           const { UnifiedInvoiceService } = await import('@/services/UnifiedInvoiceService');
@@ -1035,10 +1048,12 @@ export function QuickPaymentRecording({ onStepChange }: QuickPaymentRecordingPro
                 )
               `)
               .eq('id', invoiceToUseId)
+              .eq('company_id', companyId)
+              .eq('contract_id', activeContract.id)
               .single();
 
-            if (fullInvoice) {
-              selectedInvoices.push(fullInvoice as any);
+            if (fullInvoice && isActiveInvoice(fullInvoice)) {
+              invoicesToProcess.push(fullInvoice as Invoice);
             } else {
                 throw new Error(`لم يتم العثور على الفاتورة بالمعرف: ${invoiceToUseId}`);
             }
@@ -1047,7 +1062,7 @@ export function QuickPaymentRecording({ onStepChange }: QuickPaymentRecordingPro
       }
 
       if (!historicalCashMode) {
-        const futureWarnings = selectedInvoices
+        const futureWarnings = invoicesToProcess
           .map((invoice) => getFutureInvoiceWarning(invoice, paymentDate))
           .filter(Boolean);
 
@@ -1059,12 +1074,12 @@ export function QuickPaymentRecording({ onStepChange }: QuickPaymentRecordingPro
         }
       }
 
-      const invoiceNumbers = selectedInvoices.map(inv => inv.invoice_number).join(', ');
-      const contractNumbers = selectedInvoices.map(inv => inv.contracts?.contract_number).filter(Boolean).join(', ');
+      const invoiceNumbers = invoicesToProcess.map(inv => inv.invoice_number).join(', ');
+      const contractNumbers = invoicesToProcess.map(inv => inv.contracts?.contract_number).filter(Boolean).join(', ');
 
       console.log('Processing payment for invoices:', invoiceNumbers);
 
-      reopenedHistoricalPeriods = await openClosedPeriodsForHistoricalCash(selectedInvoices, paymentDate);
+      reopenedHistoricalPeriods = await openClosedPeriodsForHistoricalCash(invoicesToProcess, paymentDate);
 
       // Build the complete allocation set before one atomic database call.
       let remainingAmount = amount;
@@ -1076,8 +1091,8 @@ export function QuickPaymentRecording({ onStepChange }: QuickPaymentRecordingPro
         notes: string;
       }> = [];
 
-      for (let i = 0; i < selectedInvoices.length && remainingAmount > 0; i++) {
-        const invoice = selectedInvoices[i];
+      for (let i = 0; i < invoicesToProcess.length && remainingAmount > 0; i++) {
+        const invoice = invoicesToProcess[i];
         const invoiceBalance = invoice.balance_due ?? invoice.total_amount;
         const amountToApply = Math.min(remainingAmount, invoiceBalance);
         const invoicePaymentDate = historicalCashMode
@@ -1130,7 +1145,7 @@ export function QuickPaymentRecording({ onStepChange }: QuickPaymentRecordingPro
       const payment = { id: firstPaymentId };
 
       // استخراج رقم المركبة من أول فاتورة
-      const vehicleNumber = selectedInvoices[0]?.contracts?.vehicles?.plate_number || '';
+      const vehicleNumber = invoicesToProcess[0]?.contracts?.vehicles?.plate_number || '';
 
       // Show success screen
       setPaymentSuccess({
@@ -1144,8 +1159,8 @@ export function QuickPaymentRecording({ onStepChange }: QuickPaymentRecordingPro
         customerPhone: selectedCustomer.phone,
         paymentMethod: paymentMethod,
         paymentDate: historicalCashMode ? 'multiple' : paymentDate,
-        description: selectedInvoices.length > 1 
-          ? `${historicalCashMode ? 'دفعات نقدية تاريخية' : 'دفعة مجمعة'} لـ ${selectedInvoices.length} فاتورة - عقود: ${contractNumbers}`
+        description: invoicesToProcess.length > 1
+          ? `${historicalCashMode ? 'دفعات نقدية تاريخية' : 'دفعة مجمعة'} لـ ${invoicesToProcess.length} فاتورة - عقود: ${contractNumbers}`
           : `دفعة إيجار - عقد رقم ${contractNumbers} - فاتورة ${invoiceNumbers}`,
         vehicleNumber: vehicleNumber,
       });

@@ -91,7 +91,6 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useContractCreation } from "@/hooks/useContractCreation";
 import { useContractDrafts } from "@/hooks/useContractDrafts";
 import { useToast } from "@/hooks/use-toast-mock";
-import { useUpdateContractStatus } from "@/hooks/useContractRenewal";
 import { generateShortContractNumber } from "@/utils/contractNumberGenerator";
 import { formatDateInGregorian } from "@/utils/dateFormatter";
 import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter";
@@ -541,19 +540,7 @@ const ContractListItem = ({
                   </>
                 )}
                 
-                {isCancelled && (
-                  <>
-                    <DropdownMenuItem onClick={() => onReactivate(contract)} disabled={isReactivating}>
-                      <Play className="w-4 h-4 ml-2" />
-                      {isReactivating ? 'جاري التنشيط...' : 'تنشيط العقد'}
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={() => onConvertToLegal(contract)} className="text-purple-600 focus:text-purple-600">
-                      <Scale className="w-4 h-4 ml-2" />
-                      تحويل للقانونية
-                    </DropdownMenuItem>
-                  </>
-                )}
+                {/* Cancelled contracts require a dedicated accounting/legal reversal path. */}
                 
                 {hasLegalStatus && (
                   <DropdownMenuItem onClick={() => onRemoveLegal(contract)} className="text-emerald-600 focus:text-emerald-600">
@@ -781,9 +768,7 @@ const ContractOperationsRow = ({
   onManageStatus,
   onConvertToLegal,
   onRemoveLegal,
-  onReactivate,
   onDeletePermanent,
-  isReactivating,
 }: {
   contract: Contract;
   onView: (c: Contract) => void;
@@ -793,9 +778,7 @@ const ContractOperationsRow = ({
   onManageStatus: (c: Contract) => void;
   onConvertToLegal: (c: Contract) => void;
   onRemoveLegal: (c: Contract) => void;
-  onReactivate: (c: Contract) => void;
   onDeletePermanent: (c: Contract) => void;
-  isReactivating: boolean;
 }) => {
   const { formatCurrency } = useCurrencyFormatter();
   const isActive = contract.status === "active";
@@ -953,19 +936,7 @@ const ContractOperationsRow = ({
                   </DropdownMenuItem>
                 </>
               )}
-              {isCancelled && (
-                <>
-                  <DropdownMenuItem onClick={() => onReactivate(contract)} disabled={isReactivating}>
-                    <Play className="ml-2 h-4 w-4" />
-                    {isReactivating ? "جاري التنشيط..." : "تنشيط العقد"}
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => onConvertToLegal(contract)} className="text-[#7C83F6] focus:text-[#7C83F6]">
-                    <Scale className="ml-2 h-4 w-4" />
-                    تحويل للشؤون القانونية
-                  </DropdownMenuItem>
-                </>
-              )}
+              {/* Cancelled contracts require a dedicated accounting/legal reversal path. */}
               {canPermanentlyDeleteContract(contract.status) && (
                 <>
                   <DropdownMenuSeparator />
@@ -1026,6 +997,7 @@ function ContractsRedesigned() {
   // Refs
   const processedCustomerRef = useRef(false);
   const processedVehicleRef = useRef(false);
+  const contractCreationKeyRef = useRef<string | null>(null);
 
   // Hooks
   const location = useLocation();
@@ -1037,7 +1009,6 @@ function ContractsRedesigned() {
   const { createContract, creationState, retryCreation, resetCreationState } = useContractCreation();
   const contractDrafts = useContractDrafts();
   const { formatCurrency } = useCurrencyFormatter();
-  const { mutateAsync: updateContractStatus, isPending: isReactivating } = useUpdateContractStatus();
 
   // Debounce search
   useEffect(() => {
@@ -1239,8 +1210,10 @@ function ContractsRedesigned() {
         created_by: user?.id,
         contract_date: contractData.contract_date || new Date().toISOString().split("T")[0],
         contract_number: contractData.contract_number || generateShortContractNumber(),
+        idempotency_key: contractCreationKeyRef.current
+          ?? (contractCreationKeyRef.current = `contract:${crypto.randomUUID()}`),
       };
-      createContract(finalData);
+      await createContract(finalData);
     } catch (error) {
       console.error("Error in contract creation:", error);
       setShowCreationProgress(false);
@@ -1249,6 +1222,7 @@ function ContractsRedesigned() {
   }, [user?.id, createContract, resetCreationState]);
 
   const handleCreationComplete = useCallback(() => {
+    contractCreationKeyRef.current = null;
     setShowCreationProgress(false);
     setShowContractWizard(false);
     setPreselectedCustomerId(undefined);
@@ -1274,19 +1248,6 @@ function ContractsRedesigned() {
     setSelectedContract(contract);
     setShowCancellationDialog(true);
   }, []);
-
-  const handleReactivateContract = useCallback(async (contract: any) => {
-    try {
-      await updateContractStatus({
-        contractId: contract.id,
-        status: 'active',
-        reason: 'تم إعادة تنشيط العقد'
-      });
-      refetch();
-    } catch (error) {
-      console.error('Error reactivating contract:', error);
-    }
-  }, [updateContractStatus, refetch]);
 
   const handleRemoveLegalProcedure = useCallback((contract: any) => {
     setSelectedContract(contract);
@@ -1870,9 +1831,7 @@ function ContractsRedesigned() {
                         onManageStatus={handleManageStatus}
                         onConvertToLegal={handleConvertToLegal}
                         onRemoveLegal={handleRemoveLegalProcedure}
-                        onReactivate={handleReactivateContract}
                         onDeletePermanent={handleOpenPermanentDelete}
-                        isReactivating={isReactivating}
                       />
                     ))}
                   </motion.div>
@@ -1959,7 +1918,10 @@ function ContractsRedesigned() {
           open={showContractWizard}
           onOpenChange={(open) => {
             setShowContractWizard(open);
-            if (!open) setContractToEdit(undefined);
+            if (!open) {
+              setContractToEdit(undefined);
+              contractCreationKeyRef.current = null;
+            }
           }}
           onSubmit={contractToEdit ? undefined : handleContractSubmit}
           preselectedCustomerId={preselectedCustomerId}

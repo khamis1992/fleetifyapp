@@ -113,7 +113,7 @@ describe('NotificationService', () => {
     expect(mocks.invoke).not.toHaveBeenCalled();
   });
 
-  it('invokes WhatsApp in single-message mode for an enabled company channel', async () => {
+  it('fails closed instead of sending arbitrary WhatsApp content from the browser', async () => {
     const inserts = buildFromMock([{
       company_id: 'company-1',
       channel_type: 'whatsapp',
@@ -124,14 +124,12 @@ describe('NotificationService', () => {
 
     const result = await service.sendPaymentReceipt('payment-1', 'company-1');
 
-    expect(result.success).toBe(true);
-    expect(result.sentToChannels).toEqual(['whatsapp']);
-    expect(mocks.invoke).toHaveBeenCalledWith('send-whatsapp-reminders', {
-      body: expect.objectContaining({
-        test: true,
-        phone: '55555555'
-      })
-    });
+    expect(result.success).toBe(false);
+    expect(result.sentToChannels).toEqual([]);
+    expect(result.errors).toEqual([expect.objectContaining({
+      channel: 'whatsapp',
+    })]);
+    expect(mocks.invoke).not.toHaveBeenCalled();
     expect(inserts.map(({ table }) => table)).toEqual(['system_logs']);
   });
 });

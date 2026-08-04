@@ -10,6 +10,7 @@ import { useRenewContract } from '@/hooks/useContractRenewal';
 import { useToast } from '@/hooks/use-toast';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 import { useTourGuide } from '@/components/tour-guide';
+import { calculateCanonicalRenewalEndDate } from '@/utils/contractCalculations';
 
 interface ContractRenewalDialogProps {
   open: boolean;
@@ -82,14 +83,10 @@ export const ContractRenewalDialog: React.FC<ContractRenewalDialogProps> = ({
   const calculateSuggestedEndDate = () => {
     if (!contract) return '';
     
-    const startDate = new Date(contract.start_date);
-    const endDate = new Date(contract.end_date);
-    const durationDays = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
-    
-    const suggestedEndDate = new Date(contract.end_date);
-    suggestedEndDate.setDate(suggestedEndDate.getDate() + durationDays);
-    
-    return suggestedEndDate.toISOString().split('T')[0];
+    return calculateCanonicalRenewalEndDate(
+      contract.start_date,
+      contract.end_date,
+    );
   };
 
   const getContractTypeLabel = (type: string) => {

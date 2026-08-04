@@ -51,6 +51,7 @@ import {
   type TaqadiFilingStatus,
 } from '../utils/taqadiAutomation';
 import { decodeDisplayText } from '@/utils/arabicDisplayText';
+import { TaqadiAgentStartButton } from '@/components/legal/TaqadiAgentStartButton';
 
 const activeStatuses = new Set<TaqadiFilingStatus>([
   'queued',
@@ -397,6 +398,19 @@ export function TaqadiAutomationPanel() {
           {workerOnline ? 'الوكيل متصل' : 'الوكيل غير متصل'}
         </Badge>
       </div>
+
+      {!workerOnline && (
+        <Alert className="border-amber-200 bg-amber-50">
+          <WifiOff className="h-4 w-4 text-amber-700" />
+          <AlertDescription className="flex flex-wrap items-center justify-between gap-3 text-amber-900">
+            <span>
+              وكيل الأتمتة متوقف على جهاز المكتب — ستبقى الدعوى في الطابور حتى يعمل.
+              اضغط زر التشغيل من متصفح جهاز المكتب ليبدأ فورًا.
+            </span>
+            <TaqadiAgentStartButton />
+          </AlertDescription>
+        </Alert>
+      )}
 
       {job && (
         <div className="space-y-4 rounded-md border border-slate-200 bg-slate-50 p-4">

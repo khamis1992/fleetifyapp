@@ -156,6 +156,7 @@ const reviewLabels: Record<string, string> = {
   "contract.financial_totals_mismatch": "إجماليات العقد المالية غير متطابقة",
   "contract.invalid_period": "فترة عقد غير صحيحة",
   "contract.overpayment": "دفعات أعلى من قيمة العقد",
+  "contract.missing_billing_graph": "العقد بلا جدول أقساط أو شبكة فوترة مكتملة",
   "invoice.active_on_cancelled_contract": "فاتورة نشطة لعقد ملغي",
   "invoice.duplicate_contract_month": "أكثر من فاتورة للشهر نفسه",
   "invoice.outside_contract_period": "فاتورة خارج فترة العقد",
@@ -163,6 +164,9 @@ const reviewLabels: Record<string, string> = {
     "دفعة مباشرة قديمة تتجاوز رصيد الفاتورة",
   "invoice.balance_mismatch": "رصيد الفاتورة غير متطابق",
   "invoice.schedule_amount_mismatch": "مبلغ الفاتورة لا يطابق القسط",
+  "invoice.zero_amount_blocks_billing_month": "فاتورة صفرية تمنع إصدار فاتورة الشهر",
+  "invoice.schedule_amount_mismatch_requires_review": "فرق بين مبلغ الفاتورة والقسط يحتاج مراجعة",
+  "invoice.month_reconciliation_needs_review": "مصالحة فاتورة شهر العقد تحتاج مراجعة مالية",
   "invoice.schedule_amount_mismatch_with_financial_impact":
     "فرق مؤثر بين القسط والفاتورة",
   "invoice.zero_schedule_amount_requires_review": "فاتورة مرتبطة بقسط صفري",

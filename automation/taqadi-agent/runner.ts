@@ -531,6 +531,15 @@ export class TaqadiWorker {
 
       const updatePartyPhase = async (phase: PartyWorkflowPhase) => {
         if (phase === 'company_and_defendant') return;
+        if (phase === 'save_parties_draft') {
+          await this.queue.update(job.id, {
+            status: 'validating_parties',
+            step: 'save_parties_draft',
+            progress: 44,
+            message: 'جاري حفظ مسودة الدعوى في صفحة الأطراف قبل تسجيل الأطراف',
+          });
+          return;
+        }
         await this.queue.update(job.id, {
           status: 'validating_parties',
           step: 'representative_last',

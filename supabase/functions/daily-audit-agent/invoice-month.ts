@@ -28,6 +28,16 @@ export function toCanonicalInvoiceMonth(value: unknown): string {
   return month >= 1 && month <= 12 ? `${match[1]}-${match[2]}-01` : "";
 }
 
+/** Contract installments start on the first day of the month after handover. */
+export function getFirstContractBillingMonth(value: unknown): string {
+  const startMonth = toCanonicalInvoiceMonth(value);
+  if (!startMonth) return "";
+
+  const year = Number(startMonth.slice(0, 4));
+  const month = Number(startMonth.slice(5, 7));
+  return new Date(Date.UTC(year, month, 1)).toISOString().slice(0, 10);
+}
+
 export function invoiceBillingMonth(invoice: InvoiceMonthCandidate): string {
   return toCanonicalInvoiceMonth(invoice.invoice_month || invoice.invoice_date);
 }
@@ -46,6 +56,8 @@ export function isInvoiceOutsideContractBillingMonths(
   contractEnd: unknown,
 ): boolean {
   const invoiceMonth = invoiceBillingMonth(invoice);
+  // Start-month rows are a supported legacy convention and must not be
+  // auto-cancelled. New zero-row graphs use getFirstContractBillingMonth().
   const startMonth = toCanonicalInvoiceMonth(contractStart);
   const endMonth = toCanonicalInvoiceMonth(contractEnd);
   if (!invoiceMonth || !startMonth || !endMonth) return false;

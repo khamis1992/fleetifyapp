@@ -38,6 +38,14 @@ export interface EmployeeContract {
   monthly_amount: number;
   balance_due: number;
   total_paid: number;
+  due_invoice_balance?: number;
+  open_invoice_balance?: number;
+  collectible_invoice_balance?: number;
+  future_invoice_balance?: number;
+  due_invoice_count?: number;
+  open_invoice_count?: number;
+  collectible_invoice_count?: number;
+  billing_review_required?: boolean;
   traffic_violation_count?: number;
   traffic_violation_total?: number;
   late_fine_amount?: number | null;

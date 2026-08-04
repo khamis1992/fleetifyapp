@@ -276,6 +276,21 @@ export const ContractDetailsDialog: React.FC<ContractDetailsDialogProps> = ({
 
   const handleSave = async () => {
     try {
+      const billable = ['active', 'under_legal_procedure'].includes(
+        String(contract.status || '').toLowerCase(),
+      );
+      const protectedTermsChanged =
+        editData.contract_type !== contract.contract_type
+        || editData.start_date !== contract.start_date
+        || editData.end_date !== contract.end_date
+        || Number(editData.contract_amount) !== Number(contract.contract_amount)
+        || Number(editData.monthly_amount) !== Number(contract.monthly_amount);
+      if (billable && protectedTermsChanged) {
+        throw new Error(
+          'لا يمكن تعديل شروط عقد نشط مباشرة؛ يلزم ملحق مالي ذري ومعتمد',
+        );
+      }
+
       const { error } = await supabase
         .from('contracts')
         .update(editData)

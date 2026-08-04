@@ -65,6 +65,10 @@ import {
   planHistoricalPaymentAllocations,
   resolveHistoricalInvoicePaidAmount,
 } from './excelImportAllocation';
+import {
+  getInvoiceBillingMonthKey,
+  isActiveInvoice,
+} from '@/utils/invoiceBillingMonth';
 
 const excelImportTour = {
   title: 'جولة استيراد دفعات Excel',
@@ -287,11 +291,13 @@ type AccountingPeriodRow = {
 type ImportInvoice = {
   id: string;
   invoice_number: string;
+  invoice_month: string | null;
   invoice_date: string;
   due_date: string | null;
   total_amount: number;
   paid_amount: number | null;
   balance_due: number | null;
+  status: string | null;
   payment_status: string;
 };
 
@@ -852,16 +858,18 @@ const monthKeyToImportLabel = (monthKey: string) => {
   return `${Number(month)}-${year}`;
 };
 
-const sameInvoiceMonth = (invoiceDate: string | null | undefined, monthDate: string) => invoiceDate?.slice(0, 7) === monthDate.slice(0, 7);
-
 const findInvoiceForMonth = (invoices: ImportInvoice[], monthDate: string) =>
-  invoices.find((invoice) => sameInvoiceMonth(invoice.invoice_date, monthDate)) ||
-  invoices.find((invoice) => sameInvoiceMonth(invoice.due_date, monthDate)) ||
+  invoices.find((invoice) =>
+    isActiveInvoice(invoice)
+    && Number(invoice.total_amount || 0) > 0.01
+    && getInvoiceBillingMonthKey(invoice) === monthDate.slice(0, 7)
+  ) ||
   null;
 
 const cacheInvoice = (cache: ApprovalCache, invoice: ImportInvoice) => {
-  if (invoice.invoice_date) cache.invoicesByMonth.set(invoice.invoice_date.slice(0, 7), invoice);
-  if (invoice.due_date) cache.invoicesByMonth.set(invoice.due_date.slice(0, 7), invoice);
+  if (!isActiveInvoice(invoice) || Number(invoice.total_amount || 0) <= 0.01) return;
+  const monthKey = getInvoiceBillingMonthKey(invoice);
+  if (monthKey) cache.invoicesByMonth.set(monthKey, invoice);
 };
 
 const cachePayment = (cache: ApprovalCache, payment: ImportPayment) => {
@@ -936,7 +944,7 @@ const prepareApprovalRows = (rows: ParsedPaymentRow[]): PreparedApprovalRow[] =>
     };
   });
 
-const alignInvoiceDueDateToExcelMonth = async ({
+const alignInvoiceBillingMonthToExcelMonth = async ({
   companyId,
   invoice,
   monthDate,
@@ -945,26 +953,26 @@ const alignInvoiceDueDateToExcelMonth = async ({
   invoice: ImportInvoice;
   monthDate: string;
 }) => {
-  if (!sameInvoiceMonth(invoice.invoice_date, monthDate)) return invoice;
-  if (sameInvoiceMonth(invoice.due_date, monthDate)) return invoice;
+  const canonicalMonth = `${monthDate.slice(0, 7)}-01`;
+  if (invoice.invoice_month?.slice(0, 7) === monthDate.slice(0, 7)) return invoice;
 
   const { data, error } = await supabase
     .from('invoices')
     .update({
-      due_date: monthDate,
+      invoice_month: canonicalMonth,
       updated_at: new Date().toISOString(),
     })
     .eq('id', invoice.id)
     .eq('company_id', companyId)
-    .select('id, invoice_number, invoice_date, due_date, total_amount, paid_amount, balance_due, payment_status')
+    .select('id, invoice_number, invoice_month, invoice_date, due_date, total_amount, paid_amount, balance_due, status, payment_status')
     .single();
 
   if (error) {
-    logSupabaseError('alignInvoiceDueDateToExcelMonth update failed', error);
+    logSupabaseError('alignInvoiceBillingMonthToExcelMonth update failed', error);
     throw error;
   }
 
-  return (data || { ...invoice, due_date: monthDate }) as ImportInvoice;
+  return (data || { ...invoice, invoice_month: canonicalMonth }) as ImportInvoice;
 };
 
 const errorMessage = (error: unknown) => {
@@ -1376,7 +1384,7 @@ const searchContractMatches = async (
 };
 
 const findExistingMonthlyInvoice = async (companyId: string, contractId: string, invoiceDate: string) => {
-  const selectFields = 'id, invoice_number, invoice_date, due_date, total_amount, paid_amount, balance_due, payment_status';
+  const selectFields = 'id, invoice_number, invoice_month, invoice_date, due_date, total_amount, paid_amount, balance_due, status, payment_status';
   const { data, error } = await supabase
     .from('invoices')
     .select(selectFields)
@@ -1436,60 +1444,28 @@ const createOrFindMonthlyInvoice = async ({
   const amount = monthlyRent || contract.monthly_amount || row.remainingAmount || row.paymentAmount || 0;
   if (amount <= 0) throw new Error(`لا يمكن إنشاء فاتورة للشهر ${row.month} بدون قيمة إيجار.`);
 
-  const effectiveInvoiceDate =
-    contractStartDate && contractStartDate.slice(0, 7) === invoiceMonth && contractStartDate > invoiceDate
-      ? contractStartDate
-      : invoiceDate;
-
-  const invoiceNumber = `HIST-${contract.contract_number}-${invoiceDate.slice(0, 7).replace('-', '')}`;
-  const insertPayload = {
-    company_id: companyId,
-    customer_id: contract.customer_id,
-    contract_id: contract.id,
-    invoice_number: invoiceNumber,
-    invoice_date: effectiveInvoiceDate,
-    due_date: effectiveInvoiceDate,
-    invoice_type: 'sales',
-    subtotal: amount,
-    total_amount: amount,
-    paid_amount: 0,
-    balance_due: amount,
-    status: 'draft',
-    payment_status: 'unpaid',
-    currency: 'QAR',
-    notes: `فاتورة إيجار تاريخية مستخرجة من ملف Excel للشهر ${row.month}`,
-  };
-
-  const { data: inserted, error: insertError } = await supabase
-    .from('invoices')
-    .insert(insertPayload)
-    .select('*')
-    .single();
-
-  if (insertError) {
-    logSupabaseError('createOrFindMonthlyInvoice insert failed', insertError);
-    const duplicateInvoice = await findExistingMonthlyInvoice(companyId, contract.id, invoiceDate);
-    if (duplicateInvoice) return { invoice: duplicateInvoice, created: false };
-
-    const message = errorMessage(insertError);
-    if (insertError.code === '23505' || message.includes('مكررة') || message.toLowerCase().includes('duplicate')) {
-      const { data: duplicate, error: duplicateError } = await supabase
-        .from('invoices')
-        .select('*')
-        .eq('company_id', companyId)
-        .eq('invoice_number', invoiceNumber)
-        .order('invoice_date', { ascending: true })
-        .limit(1);
-      if (duplicateError) {
-        logSupabaseError('createOrFindMonthlyInvoice duplicate lookup failed', duplicateError);
-        throw duplicateError;
-      }
-      if (duplicate?.[0]) return { invoice: duplicate[0], created: false };
-    }
-    throw insertError;
+  // Never revive an inactive deterministic HIST-* number or bypass the
+  // database month lock. The canonical command either creates a new active
+  // invoice, repairs a safe empty placeholder, or fails for finance review.
+  const { data: generatedInvoiceId, error: generationError } = await supabase.rpc(
+    'generate_invoice_for_contract_month',
+    { p_contract_id: contract.id, p_invoice_month: invoiceDate },
+  );
+  if (generationError) {
+    logSupabaseError('createOrFindMonthlyInvoice canonical generation failed', generationError);
+    throw generationError;
   }
 
-  return { invoice: inserted as ImportInvoice, created: true };
+  const canonicalInvoice = await findExistingMonthlyInvoice(
+    companyId,
+    contract.id,
+    invoiceDate,
+  );
+  if (!canonicalInvoice) {
+    throw new Error(`لم يُرجع الأمر المالي فاتورة نشطة قابلة للتحصيل للشهر ${row.month}.`);
+  }
+
+  return { invoice: canonicalInvoice, created: Boolean(generatedInvoiceId) };
 };
 
 const buildApprovalSummary = (file: ParsedExcelFile | null) => {
@@ -2737,7 +2713,7 @@ export default function ExcelPaymentImport() {
     const [invoicesResult, paymentsResult, lateFeesResult, penaltiesResult, maintenanceResult] = await Promise.all([
       supabase
         .from('invoices')
-        .select('id, invoice_number, invoice_date, due_date, total_amount, paid_amount, balance_due, payment_status')
+        .select('id, invoice_number, invoice_month, invoice_date, due_date, total_amount, paid_amount, balance_due, status, payment_status')
         .eq('company_id', companyId)
         .eq('contract_id', contract.id)
         .limit(500),
@@ -2889,7 +2865,7 @@ export default function ExcelPaymentImport() {
         if (created) invoicesCreated += 1;
 
         const alignedInvoice = monthDate
-          ? await alignInvoiceDueDateToExcelMonth({ companyId, invoice, monthDate })
+          ? await alignInvoiceBillingMonthToExcelMonth({ companyId, invoice, monthDate })
           : invoice;
         cacheInvoice(approvalCache, alignedInvoice);
 
@@ -2935,7 +2911,7 @@ export default function ExcelPaymentImport() {
         const candidateInvoicesById = new Map<string, { monthKey: string; invoice: ImportInvoice }>();
         const refreshCandidateInvoices = () => {
           approvalCache.invoicesByMonth.forEach((candidateInvoice, cachedMonthKey) => {
-            const candidateMonthKey = candidateInvoice.invoice_date?.slice(0, 7) || cachedMonthKey;
+            const candidateMonthKey = getInvoiceBillingMonthKey(candidateInvoice) || cachedMonthKey;
             if (candidateMonthKey < monthKey) return;
             const existingCandidate = candidateInvoicesById.get(candidateInvoice.id);
             if (!existingCandidate || candidateMonthKey < existingCandidate.monthKey) {

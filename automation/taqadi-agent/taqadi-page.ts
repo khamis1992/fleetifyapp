@@ -2227,7 +2227,7 @@ export class TaqadiPortal {
       payload.classification.applicability,
       ['tempctype_nature'],
     );
-    await this.clickAny(['التالي', 'حفظ ومتابعة'], 'التالي');
+    await this.clickAny(['التالي'], 'التالي');
     await this.page.locator('#facts').waitFor({
       state: 'visible',
       timeout: 8_000,
@@ -2274,7 +2274,7 @@ export class TaqadiPortal {
       false,
       ['totalAmountInText'],
     );
-    await this.clickAny(['حفظ ومتابعة', 'التالي'], 'حفظ بيانات الدعوى');
+    await this.clickAny(['التالي'], 'متابعة بعد تفاصيل الدعوى');
     await this.page.locator('#facts').waitFor({
       state: 'hidden',
       timeout: 8_000,
@@ -2726,6 +2726,47 @@ export class TaqadiPortal {
     );
   }
 
+  /**
+   * صفحة الأطراف هي الصفحة الوحيدة التي يُضغط فيها زر «حفظ» على مستوى الصفحة:
+   * الحفظ يثبّت مسودة الدعوى ويفعّل جدول الأطراف، ثم يبدأ تسجيل الأطراف.
+   * يجب ألا يطابق الزر «حفظ ومتابعة» — المطابقة دقيقة (exact).
+   */
+  async savePartiesDraft() {
+    const loadingMasks = this.page.locator(
+      '.k-loading-mask:visible, .blockUI:visible, '
+      + '.loading-overlay:visible, [aria-busy="true"]:visible',
+    );
+    await loadingMasks.waitFor({
+      state: 'hidden',
+      timeout: 10_000,
+    }).catch(() => undefined);
+
+    const save = await this.firstVisible([
+      this.page.getByRole('button', { name: /^\s*حفظ\s*$/ }),
+      this.page.getByRole('link', { name: /^\s*حفظ\s*$/ }),
+      this.page.locator('button:visible').filter({ hasText: /^\s*حفظ\s*$/ }),
+      this.page.locator('a:visible').filter({ hasText: /^\s*حفظ\s*$/ }),
+      this.page.locator(
+        'input[type="submit"][value="حفظ"], input[type="button"][value="حفظ"]',
+      ),
+    ]);
+    if (!save) {
+      throw new HumanInterventionError(
+        'لم يجد الوكيل زر «حفظ» في صفحة الأطراف قبل تسجيل الأطراف',
+        'TAQADI_UI_CHANGED',
+        { expectedLabels: ['حفظ'], url: this.page.url() },
+      );
+    }
+    await save.click();
+    await this.page.waitForTimeout(500);
+
+    await loadingMasks.waitFor({
+      state: 'hidden',
+      timeout: 15_000,
+    }).catch(() => undefined);
+    await this.page.waitForTimeout(partyStabilizationMs);
+  }
+
   async validateCompanyParty(payload: FilingPayload) {
     const company = await this.partyRow([
       payload.plaintiff.name,
@@ -3082,7 +3123,7 @@ export class TaqadiPortal {
   }
 
   async continueAfterParties() {
-    await this.clickAny(['التالي', 'حفظ ومتابعة'], 'متابعة بعد الأطراف');
+    await this.clickAny(['التالي'], 'متابعة بعد الأطراف');
     await this.page.waitForTimeout(1_000);
   }
 
@@ -3161,7 +3202,7 @@ export class TaqadiPortal {
     for (let index = 0; index < documents.length; index += 1) {
       await this.uploadDocument(documents[index], index);
     }
-    await this.clickAny(['حفظ ومتابعة', 'التالي'], 'متابعة بعد المستندات');
+    await this.clickAny(['التالي'], 'متابعة بعد المستندات');
     await this.page.waitForTimeout(1_500);
   }
 

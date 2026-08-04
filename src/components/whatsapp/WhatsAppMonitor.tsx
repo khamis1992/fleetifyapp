@@ -64,17 +64,13 @@ export const WhatsAppMonitor: React.FC = () => {
 
   // Send test message mutation
   const sendTestMutation = useMutation({
-    mutationFn: async ({ phone, message }: { phone: string; message: string }) => {
-      const { data, error } = await supabase.functions.invoke('send-whatsapp-reminders', {
-        body: {
-          test: true,
-          phone,
-          message,
-        },
-      });
-
-      if (error) throw error;
-      return data;
+    mutationFn: async ({ phone, message }: { phone: string; message: string }): Promise<{
+      success: boolean;
+      error?: string;
+    }> => {
+      void phone;
+      void message;
+      throw new Error('الإرسال اليدوي المباشر معطل أمنياً؛ استخدم مسار التذكيرات التلقائي المعتمد');
     },
     onSuccess: (data) => {
       if (data.success) {
@@ -91,10 +87,8 @@ export const WhatsAppMonitor: React.FC = () => {
 
   // Process queue manually mutation
   const processQueueMutation = useMutation({
-    mutationFn: async () => {
-      const { data, error } = await supabase.functions.invoke('send-whatsapp-reminders');
-      if (error) throw error;
-      return data;
+    mutationFn: async (): Promise<{ sent?: number }> => {
+      throw new Error('المعالجة اليدوية من المتصفح معطلة؛ تتم المعالجة تلقائياً من خدمة الجدولة الآمنة');
     },
     onSuccess: (data) => {
       toast.success(`تم معالجة ${data.sent || 0} تنبيه بنجاح`);

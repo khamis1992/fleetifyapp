@@ -18,7 +18,6 @@ import { toast } from "sonner"
 import { useUnifiedCompanyAccess } from "@/hooks/useUnifiedCompanyAccess"
 import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter"
 import { ResponsivePageActions } from "@/components/ui/responsive-page-actions"
-import { generateShortContractNumber } from "@/utils/contractNumberGenerator"
 import { PageHelp } from "@/components/help";
 import { QuotationsPageHelpContent } from "@/components/help/content";
 
@@ -203,9 +202,6 @@ export default function Quotations() {
       const quotation = quotations?.find(q => q.id === quotationId)
       if (!quotation) throw new Error('Quotation not found')
 
-      // Generate contract number
-      const contractNumber = generateShortContractNumber()
-      
       // Calculate start and end dates
       const startDate = new Date()
       const endDate = new Date()
@@ -218,27 +214,34 @@ export default function Quotations() {
         endDate.setMonth(startDate.getMonth() + quotation.duration)
       }
 
-      // Create contract
-      const { error: contractError } = await supabase
-        .from('contracts')
-        .insert([{
-          contract_number: contractNumber,
-          customer_id: quotation.customer_id,
-          vehicle_id: quotation.vehicle_id,
-          contract_type: 'rental',
-          contract_amount: quotation.total_amount,
-          monthly_amount: quotation.quotation_type === 'monthly' ? quotation.rate_per_unit : 0,
-          start_date: startDate.toISOString().split('T')[0],
-          end_date: endDate.toISOString().split('T')[0],
-          contract_date: new Date().toISOString().split('T')[0],
-          description: quotation.description,
-          terms: quotation.terms,
-          status: 'active',
-          company_id: quotation.company_id,
-          created_by: user?.id
-        }])
+      const monthlyAmount = quotation.quotation_type === 'monthly'
+        ? quotation.rate_per_unit
+        : quotation.total_amount
+      const { data: creationResult, error: contractError } = await supabase.rpc(
+        'create_contract_with_billing_graph_atomic',
+        {
+          p_company_id: quotation.company_id,
+          p_customer_id: quotation.customer_id,
+          p_vehicle_id: quotation.vehicle_id || undefined,
+          p_contract_type: 'rental',
+          p_contract_amount: quotation.total_amount,
+          p_monthly_amount: monthlyAmount,
+          p_start_date: startDate.toISOString().split('T')[0],
+          p_end_date: endDate.toISOString().split('T')[0],
+          p_contract_date: new Date().toISOString().split('T')[0],
+          p_description: quotation.description || undefined,
+          p_terms: quotation.terms || undefined,
+          p_created_by: user?.id,
+          p_created_via: 'sales_quote',
+          p_idempotency_key: `quote-conversion:${quotation.id}`,
+        },
+      )
 
       if (contractError) throw contractError
+      const payload = creationResult as Record<string, unknown> | null
+      if (!payload?.success || !payload.billing_graph_created) {
+        throw new Error(String(payload?.error || 'لم يكتمل إنشاء العقد وشبكة الفوترة'))
+      }
 
       // Update quotation status
       const { error: updateError } = await supabase

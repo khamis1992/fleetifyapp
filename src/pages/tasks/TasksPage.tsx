@@ -37,6 +37,8 @@ import { TaskDetailsSheet } from '@/components/tasks/TaskDetailsSheet';
 import { PersonalReminders } from '@/components/tasks/PersonalReminders';
 import { UserGoals } from '@/components/tasks/UserGoals';
 import { QuickNotes } from '@/components/tasks/QuickNotes';
+import { TeamCommunicationLog } from '@/components/tasks/TeamCommunicationLog';
+import { useRolePermissions } from '@/hooks/useRolePermissions';
 import { MyTasksDashboard } from '@/components/tasks/MyTasksDashboard';
 import { VerificationTasksList } from '@/components/tasks/VerificationTasksList';
 import { SystemAuditAgentDashboard } from '@/components/tasks/SystemAuditAgentDashboard';
@@ -168,6 +170,7 @@ export default function TasksPage() {
   const { data: teamMembers = [] } = useTeamMembers();
   const deleteTask = useDeleteTask();
   const { canReviewFinancialIssues } = useFinancialReviewAccess();
+  const { isAdminOrManager } = useRolePermissions();
 
   const hasActiveFilters = Object.keys(filters).some((key) => filters[key as keyof TaskFilters]);
 
@@ -459,7 +462,10 @@ export default function TasksPage() {
           </TabsContent>
 
           <TabsContent value="notes" className="mt-5">
-            <QuickNotes />
+            <div className="space-y-5">
+              {isAdminOrManager() && <TeamCommunicationLog />}
+              <QuickNotes />
+            </div>
           </TabsContent>
         </Tabs>
 

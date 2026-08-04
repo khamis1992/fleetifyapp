@@ -29,6 +29,13 @@ import { revertContractLegalProcedure } from '@/services/contractLegalProcedureS
 
 type EditableContractStatus = 'active' | 'suspended' | 'cancelled';
 
+const ACTIVATABLE_CONTRACT_STATUSES = new Set([
+  'draft',
+  'pending',
+  'pending_completion',
+  'suspended',
+]);
+
 interface ContractStatusManagementProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -134,7 +141,8 @@ export const ContractStatusManagement: React.FC<ContractStatusManagementProps> =
   const selectedStatus = statusOptions.find((option) => option.value === statusData.status);
   const availableStatuses = isUnderLegalProcedure
     ? statusOptions.filter((option) => option.value === 'active')
-    : statusOptions.filter((option) => option.value !== contract?.status);
+    : statusOptions.filter((option) => option.value !== contract?.status
+      && (option.value !== 'active' || ACTIVATABLE_CONTRACT_STATUSES.has(contract?.status)));
   const reasonRequired = statusData.status === 'suspended'
     || statusData.status === 'cancelled'
     || isUnderLegalProcedure;

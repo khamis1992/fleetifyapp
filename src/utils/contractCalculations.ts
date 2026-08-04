@@ -7,7 +7,78 @@
  * لضمان الاتساق عبر جميع أجزاء التطبيق
  */
 
-import { differenceInDays } from 'date-fns';
+type CalendarDate = {
+  year: number;
+  month: number;
+  day: number;
+};
+
+const parseCalendarDate = (value?: string): CalendarDate | null => {
+  const match = String(value || '').match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (!match) return null;
+
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  const parsed = new Date(Date.UTC(year, month - 1, day));
+  if (
+    parsed.getUTCFullYear() !== year
+    || parsed.getUTCMonth() !== month - 1
+    || parsed.getUTCDate() !== day
+  ) return null;
+
+  return { year, month, day };
+};
+
+/**
+ * Counts the invoice months used by the canonical database billing graph.
+ * New contracts bill from the month after their start through their end month;
+ * a contract contained in one calendar month still has one billing month.
+ */
+export const calculateCanonicalBillingMonths = (
+  startDate?: string,
+  endDate?: string,
+): number => {
+  const start = parseCalendarDate(startDate);
+  const end = parseCalendarDate(endDate);
+  if (!start || !end) return 0;
+
+  const startOrdinal = Date.UTC(start.year, start.month - 1, start.day);
+  const endOrdinal = Date.UTC(end.year, end.month - 1, end.day);
+  if (endOrdinal < startOrdinal) return 0;
+
+  const calendarMonthDifference =
+    (end.year - start.year) * 12 + (end.month - start.month);
+  return Math.max(1, calendarMonthDifference);
+};
+
+const formatUtcDate = (date: Date) => date.toISOString().slice(0, 10);
+
+/** Returns the renewal end date with the same canonical billing-month count. */
+export const calculateCanonicalRenewalEndDate = (
+  originalStartDate?: string,
+  originalEndDate?: string,
+): string => {
+  const billingMonths = calculateCanonicalBillingMonths(
+    originalStartDate,
+    originalEndDate,
+  );
+  const originalEnd = parseCalendarDate(originalEndDate);
+  if (!originalEnd || billingMonths <= 0) return '';
+
+  const renewalStart = new Date(Date.UTC(
+    originalEnd.year,
+    originalEnd.month - 1,
+    originalEnd.day + 1,
+  ));
+  const targetMonthIndex = renewalStart.getUTCMonth() + billingMonths;
+  const targetYear = renewalStart.getUTCFullYear() + Math.floor(targetMonthIndex / 12);
+  const targetMonth = ((targetMonthIndex % 12) + 12) % 12;
+  const lastTargetDay = new Date(Date.UTC(targetYear, targetMonth + 1, 0)).getUTCDate();
+  const targetDay = Math.min(renewalStart.getUTCDate(), lastTargetDay);
+
+  return formatUtcDate(new Date(Date.UTC(targetYear, targetMonth, targetDay)));
+};
 
 /**
  * حساب القيمة الإجمالية للعقد
@@ -41,22 +112,13 @@ export const calculateContractTotalAmount = (contract: {
   }
 
   try {
-    const startDate = new Date(contract.start_date);
-    const endDate = new Date(contract.end_date);
-    
-    // التحقق من صحة التواريخ
-    if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+    const totalMonths = calculateCanonicalBillingMonths(
+      contract.start_date,
+      contract.end_date,
+    );
+    if (totalMonths <= 0) {
       return contract.contract_amount || 0;
     }
-
-    const totalDays = differenceInDays(endDate, startDate);
-    
-    // إذا كانت المدة سالبة أو صفر، استخدم القيمة المخزنة
-    if (totalDays <= 0) {
-      return contract.contract_amount || 0;
-    }
-
-    const totalMonths = Math.ceil(totalDays / 30);
     
     return (contract.monthly_amount || 0) * totalMonths;
   } catch (error) {
@@ -81,20 +143,7 @@ export const calculateContractMonths = (contract: {
   }
 
   try {
-    const startDate = new Date(contract.start_date);
-    const endDate = new Date(contract.end_date);
-    
-    if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
-      return 0;
-    }
-
-    const totalDays = differenceInDays(endDate, startDate);
-    
-    if (totalDays <= 0) {
-      return 0;
-    }
-
-    return Math.ceil(totalDays / 30);
+    return calculateCanonicalBillingMonths(contract.start_date, contract.end_date);
   } catch (error) {
     console.error('Error calculating contract months:', error);
     return 0;

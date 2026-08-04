@@ -1,6 +1,8 @@
 -- Restore the exact pre-migration create_payment_atomic definition and grants
 -- from 20260712052400_atomic_payment_creation_and_bank_linkage.sql.
 
+BEGIN;
+
 CREATE OR REPLACE FUNCTION public.create_payment_atomic(
   p_company_id uuid,
   p_customer_id uuid,
@@ -567,3 +569,5 @@ REVOKE ALL ON FUNCTION public.create_payment_bank_transaction(uuid)
   FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.create_payment_bank_transaction(uuid)
   TO service_role;
+
+COMMIT;

@@ -1570,6 +1570,63 @@ export type Database = {
           },
         ]
       }
+      automated_invoice_reminder_deliveries: {
+        Row: {
+          attempts: number
+          cadence_date: string
+          company_id: string
+          created_at: string
+          id: string
+          invoice_id: string
+          last_error: string | null
+          reminder_type: string
+          sent_at: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          attempts?: number
+          cadence_date: string
+          company_id: string
+          created_at?: string
+          id?: string
+          invoice_id: string
+          last_error?: string | null
+          reminder_type: string
+          sent_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          attempts?: number
+          cadence_date?: string
+          company_id?: string
+          created_at?: string
+          id?: string
+          invoice_id?: string
+          last_error?: string | null
+          reminder_type?: string
+          sent_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "automated_invoice_reminder_deliveries_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "automated_invoice_reminder_deliveries_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       background_jobs: {
         Row: {
           company_id: string
@@ -5054,6 +5111,7 @@ export type Database = {
           created_at: string
           created_by: string | null
           created_via: string | null
+          creation_idempotency_key: string | null
           customer_id: string
           days_overdue: number | null
           description: string | null
@@ -5101,6 +5159,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           created_via?: string | null
+          creation_idempotency_key?: string | null
           customer_id: string
           days_overdue?: number | null
           description?: string | null
@@ -5148,6 +5207,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           created_via?: string | null
+          creation_idempotency_key?: string | null
           customer_id?: string
           days_overdue?: number | null
           description?: string | null
@@ -5398,6 +5458,39 @@ export type Database = {
           upload_type?: string
           uploaded_at?: string
           uploaded_by?: string
+        }
+        Relationships: []
+      }
+      daily_invoice_repair_cursors: {
+        Row: {
+          company_id: string
+          created_at: string
+          cycle_count: number
+          last_completed_at: string | null
+          last_contract_id: string | null
+          last_error_count: number
+          updated_at: string
+          version: number
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          cycle_count?: number
+          last_completed_at?: string | null
+          last_contract_id?: string | null
+          last_error_count?: number
+          updated_at?: string
+          version?: number
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          cycle_count?: number
+          last_completed_at?: string | null
+          last_contract_id?: string | null
+          last_error_count?: number
+          updated_at?: string
+          version?: number
         }
         Relationships: []
       }
@@ -29321,6 +29414,50 @@ export type Database = {
             }
             Returns: Json
           }
+      create_contract_with_billing_graph_atomic: {
+        Args: {
+          p_assigned_to_profile_id?: string
+          p_auto_renew_enabled?: boolean
+          p_company_id: string
+          p_contract_amount?: number
+          p_contract_date?: string
+          p_contract_type?: string
+          p_cost_center_id?: string
+          p_created_by?: string
+          p_created_via?: string
+          p_customer_id: string
+          p_description?: string
+          p_end_date?: string
+          p_idempotency_key?: string
+          p_monthly_amount?: number
+          p_start_date?: string
+          p_terms?: string
+          p_vehicle_id?: string
+        }
+        Returns: Json
+      }
+      claim_automated_invoice_reminder_delivery: {
+        Args: {
+          p_cadence_date: string
+          p_company_id: string
+          p_invoice_id: string
+          p_reminder_type: string
+        }
+        Returns: string
+      }
+      activate_contract_with_billing_graph_atomic: {
+        Args: { p_contract_id: string }
+        Returns: Json
+      }
+      renew_contract_with_billing_graph_atomic: {
+        Args: {
+          p_contract_id: string
+          p_new_amount?: number
+          p_new_end_date: string
+          p_renewal_terms?: string
+        }
+        Returns: Json
+      }
       create_contract_with_journal_entry_enhanced: {
         Args: {
           p_company_id: string
@@ -29822,6 +29959,20 @@ export type Database = {
         }
         Returns: undefined
       }
+      employee_close_assigned_contract: {
+        Args: { p_contract_id: string }
+        Returns: Json
+      }
+      create_customer_with_contract_idempotent: {
+        Args: {
+          p_company_id: string
+          p_first_name: string
+          p_idempotency_key: string
+          p_last_name: string
+          p_monthly_amount: number
+        }
+        Returns: Json
+      }
       encrypt_pii: { Args: { p_plaintext: string }; Returns: string }
       encrypt_sensitive_data: { Args: { data: string }; Returns: string }
       enhanced_bulk_delete_company_accounts: {
@@ -30133,6 +30284,10 @@ export type Database = {
       generate_invoice_for_contract_month: {
         Args: { p_contract_id: string; p_invoice_month: string }
         Returns: string
+      }
+      generate_invoice_for_contract_month_outcome: {
+        Args: { p_contract_id: string; p_invoice_month: string }
+        Returns: Json
       }
       generate_invoices_from_payment_schedule: {
         Args: { p_contract_id: string }
@@ -31812,6 +31967,10 @@ export type Database = {
         Args: { p_contract_id: string }
         Returns: number
       }
+      recalculate_contract_financial_states_batch: {
+        Args: { p_company_id: string; p_contract_ids: string[] }
+        Returns: Json
+      }
       recalculate_financial_consolidation_run: {
         Args: { p_run_id: string }
         Returns: Json
@@ -31820,6 +31979,10 @@ export type Database = {
       recalculate_invoice_financial_state: {
         Args: { p_invoice_id: string }
         Returns: number
+      }
+      recalculate_invoice_financial_states_batch: {
+        Args: { p_company_id: string; p_invoice_ids: string[] }
+        Returns: Json
       }
       recompute_contract_days_overdue: { Args: never; Returns: undefined }
       recompute_invoice_days_overdue: { Args: never; Returns: undefined }

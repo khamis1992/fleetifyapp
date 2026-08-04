@@ -8,6 +8,7 @@ import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
 import {
   ClipboardCheck,
   User,
@@ -17,11 +18,13 @@ import {
   Loader2,
   Phone,
   UserCheck,
+  ShieldCheck,
 } from 'lucide-react';
 
 interface VerificationTasksListProps {
   compact?: boolean;
   limit?: number;
+  showSystemAuditLink?: boolean;
 }
 
 const statusColors = {
@@ -41,9 +44,15 @@ const statusLabels = {
 export const VerificationTasksList: React.FC<VerificationTasksListProps> = ({
   compact = false,
   limit,
+  showSystemAuditLink = false,
 }) => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { data: tasks = [], isLoading } = useMyVerificationTasks();
+  const canOpenSystemAudit = Boolean(
+    showSystemAuditLink
+    && user?.roles?.some((role) => ['manager', 'company_admin', 'super_admin'].includes(role)),
+  );
 
   const displayedTasks = limit ? tasks.slice(0, limit) : tasks;
 
@@ -67,7 +76,7 @@ export const VerificationTasksList: React.FC<VerificationTasksListProps> = ({
       compact && 'border-0 shadow-none'
     )}>
       <CardHeader className={cn('pb-3', compact && 'px-0 pt-0')}>
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-3">
           <CardTitle className="text-lg flex items-center gap-2">
             <div className="rounded-lg bg-[#38BDF8]/10 p-2 text-[#38BDF8]">
               <ClipboardCheck className="h-5 w-5" />
@@ -79,12 +88,31 @@ export const VerificationTasksList: React.FC<VerificationTasksListProps> = ({
               </Badge>
             )}
           </CardTitle>
+          {canOpenSystemAudit && (
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className="shrink-0 gap-2 border-blue-200 bg-white text-blue-800 hover:bg-blue-50"
+              onClick={() => navigate('/tasks?tab=system-audit')}
+            >
+              <ShieldCheck className="h-4 w-4" />
+              مراجعات وكيل النظام
+            </Button>
+          )}
         </div>
       </CardHeader>
 
       <CardContent className={cn(compact && 'px-0 pb-0')}>
         {displayedTasks.length === 0 ? (
           <div className="text-center py-12 text-slate-400">
+            {canOpenSystemAudit && (
+              <div className="mx-auto mb-5 max-w-sm rounded-lg border border-blue-100 bg-blue-50 p-3 text-blue-800">
+                <p className="text-sm font-medium">
+                  هذه القائمة خاصة بمهام التحقق من بيانات العملاء، وليست أعطال الفواتير.
+                </p>
+              </div>
+            )}
             <ClipboardCheck className="h-12 w-12 mx-auto mb-3 opacity-50" />
             <p className="font-medium">لا توجد مهام تدقيق</p>
             <p className="text-sm mt-1">
