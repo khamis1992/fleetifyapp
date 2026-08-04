@@ -422,6 +422,24 @@ export const EmployeeWorkspace: React.FC = () => {
     refetch: refetchCollections
   } = useMonthlyCollections();
 
+  // القيم المعروضة في بطاقة «تحليل الأداء»: إن وُجد سجل محفوظ في
+  // employee_performance يُعتمد عليه، وإلا تُحسب مباشرة من بيانات
+  // التحصيل والمهام الحية (الجدول غير معبأ حالياً فتظهر البطاقة أصفاراً).
+  const displayCollectionRate = performance
+    ? Math.round(performance.collection_rate)
+    : Math.round(collectionStats.collectionRate || 0);
+  const displayCompletionRate = performance
+    ? Math.round(performance.followup_completion_rate)
+    : Math.round(taskStats.completionRate || 0);
+  const displayPerformanceScore = performance
+    ? Math.round(performance.performance_score)
+    : Math.round((displayCollectionRate + displayCompletionRate) / 2);
+  const displayGradeLabelAr = performanceGrade?.label_ar
+    ?? (displayPerformanceScore >= 85 ? 'ممتاز'
+      : displayPerformanceScore >= 70 ? 'جيد'
+      : displayPerformanceScore >= 50 ? 'متوسط'
+      : 'ضعيف');
+
   const openWorkspaceContractDetails = (contractId?: string | null, contractNumber?: string | null) => {
     const targetContract = contracts.find((contract) => (
       (contractId && contract.id === contractId)
@@ -3934,14 +3952,14 @@ export const EmployeeWorkspace: React.FC = () => {
                     <circle cx="50" cy="50" r="42" fill="none" stroke="#E2E8F0" strokeWidth="8" />
                     <circle
                       cx="50" cy="50" r="42" fill="none"
-                      stroke={(performance?.performance_score ?? 0) >= 80 ? '#059669' : (performance?.performance_score ?? 0) >= 60 ? '#D97706' : '#DC2626'}
+                      stroke={displayPerformanceScore >= 80 ? '#059669' : displayPerformanceScore >= 60 ? '#D97706' : '#DC2626'}
                       strokeWidth="8"
                       strokeLinecap="round"
-                      strokeDasharray={`${(performance?.performance_score || 0) * 2.64} 264`}
+                      strokeDasharray={`${displayPerformanceScore * 2.64} 264`}
                     />
                   </svg>
                   <div className="absolute inset-0 flex flex-col items-center justify-center">
-                    <span className="text-2xl font-black text-[#142033]">{performance ? Math.round(performance.performance_score) : 0}</span>
+                    <span className="text-2xl font-black text-[#142033]">{displayPerformanceScore}</span>
                     <span className="text-[10px] font-bold text-[#6A7688]">نقطة</span>
                   </div>
                 </div>
@@ -3951,12 +3969,12 @@ export const EmployeeWorkspace: React.FC = () => {
                 <div className="space-y-1.5">
                   <div className="flex justify-between text-xs">
                     <span className="font-bold text-[#6A7688]">نسبة التحصيل</span>
-                    <span className="font-black text-[#142033]">{performance ? Math.round(performance.collection_rate) : 0}%</span>
+                    <span className="font-black text-[#142033]">{displayCollectionRate}%</span>
                   </div>
                   <div className="h-2 w-full overflow-hidden rounded-full bg-[#F1F5F9]">
                     <div
                       className="h-full rounded-full bg-gradient-to-l from-[#11A37F] to-[#059669] transition-all"
-                      style={{ width: `${performance?.collection_rate || 0}%` }}
+                      style={{ width: `${displayCollectionRate}%` }}
                     />
                   </div>
                 </div>
@@ -3964,12 +3982,12 @@ export const EmployeeWorkspace: React.FC = () => {
                 <div className="space-y-1.5">
                   <div className="flex justify-between text-xs">
                     <span className="font-bold text-[#6A7688]">إنجاز المهام</span>
-                    <span className="font-black text-[#142033]">{performance ? Math.round(performance.followup_completion_rate) : 0}%</span>
+                    <span className="font-black text-[#142033]">{displayCompletionRate}%</span>
                   </div>
                   <div className="h-2 w-full overflow-hidden rounded-full bg-[#F1F5F9]">
                     <div
                       className="h-full rounded-full bg-gradient-to-l from-[#3B82F6] to-[#1D4ED8] transition-all"
-                      style={{ width: `${performance?.followup_completion_rate || 0}%` }}
+                      style={{ width: `${displayCompletionRate}%` }}
                     />
                   </div>
                 </div>
@@ -3977,7 +3995,7 @@ export const EmployeeWorkspace: React.FC = () => {
 
               <div className="rounded-xl bg-[#F8FAFC] p-3">
                 <p className="text-xs leading-relaxed text-[#6A7688]">
-                  أداؤك هذا الشهر {performanceGrade?.label_ar === 'ممتاز' ? 'رائع!' : 'جيد.'} استمر في متابعة العملاء المتأخرين لتحسين نسبة التحصيل لديك.
+                  أداؤك هذا الشهر {displayGradeLabelAr === 'ممتاز' ? 'رائع!' : `${displayGradeLabelAr}.`} استمر في متابعة العملاء المتأخرين لتحسين نسبة التحصيل لديك.
                 </p>
               </div>
             </CardContent>

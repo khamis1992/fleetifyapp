@@ -265,17 +265,25 @@ export class TaqadiPortal {
     ]);
     if (!accountPrompt) return;
 
-    // Taqadi keeps the correct account as the server-side default. Opening the
-    // account list can change that default, so confirm the prompt exactly as a
-    // user pressing Enter without touching the dropdown.
+    // Taqadi keeps the correct account as the server-side default. Confirm
+    // with Enter exactly like a user — without opening the dropdown, which
+    // would change that default. When Enter leaves the prompt open (the
+    // dropdown had keyboard focus and swallowed the key), fall back to
+    // clicking the login button directly; the server-side default is still
+    // untouched either way.
     await this.page.keyboard.press('Enter');
     await this.page.waitForTimeout(2_000);
 
     if (await loginButton.isVisible().catch(() => false)) {
+      await loginButton.click().catch(() => undefined);
+      await this.page.waitForTimeout(2_000);
+    }
+
+    if (await loginButton.isVisible().catch(() => false)) {
       throw new HumanInterventionError(
-        'لم يقبل موقع تقاضي تأكيد صفحة الدخول بزر Enter',
+        'لم يقبل موقع تقاضي تأكيد صفحة الدخول',
         'TAQADI_OPTION_UNSTABLE',
-        { action: 'press_enter_without_account_selection', url: this.page.url() },
+        { action: 'confirm_account_prompt', url: this.page.url() },
       );
     }
   }
@@ -1606,17 +1614,18 @@ export class TaqadiPortal {
 
   /**
    * Cascading dropdowns (e.g. «تصنيف الطرف» → «صفة الطرف») only load their
-   * dependent options when the portal observes a change event. When the
-   * parent already displays the wanted value, the normal select shortcut
-   * returns early and the dependent list stays empty forever. This helper
-   * forces the cascade through the Kendo widget API: pick a different option,
-   * fire change, then pick the wanted option and fire change again.
+   * dependent options when the portal observes a real change. When the parent
+   * already displays the wanted value, the normal select shortcut returns
+   * early and the dependent list stays empty forever. This helper forces the
+   * cascade through real dropdown clicks: choose the alternate option, wait
+   * for the redraw, then choose the wanted one.
    */
   private async forceDropdownCascadeSelection(
     labels: string[],
     optionText: string,
     controlIds: string[] = [],
     root: FieldRoot = this.page,
+    alternateOptionText?: string,
   ) {
     const field = await this.fieldByLabel(labels, controlIds, root);
     if (!field) {
@@ -1646,60 +1655,16 @@ export class TaqadiPortal {
       await this.selectField(labels, optionText, controlIds, root);
       return;
     }
-    if (!backingControl) {
-      await this.selectField(labels, optionText, controlIds, root);
-      return;
-    }
 
-    const args = JSON.stringify({ optionText });
-    const fired = (await backingControl.evaluate(`(function() {
-      const args = ${args};
-      const pageWindow = window;
-      const jq = pageWindow.jQuery || pageWindow.$;
-      if (!jq) return false;
-      const widget = jq(this).data('kendoDropDownList') || jq(this).data('kendoComboBox');
-      if (!widget || !widget.dataSource) return false;
-      const normalize = (value) => String(value || '')
-        .normalize('NFKD')
-        .replace(/[\\u064B-\\u065F\\u0670]/g, '')
-        .replace(/[أإآٱ]/g, 'ا')
-        .replace(/ى/g, 'ي')
-        .replace(/\\s+/g, ' ')
-        .trim();
-      const expected = normalize(args.optionText);
-      const textField = widget.options && widget.options.dataTextField || 'text';
-      const valueField = widget.options && widget.options.dataValueField || 'value';
-      const read = (item, fieldName) => {
-        if (!item) return undefined;
-        return typeof item.get === 'function' ? item.get(fieldName) : item[fieldName];
-      };
-      let items = [];
-      try { items = Array.from(widget.dataSource.data() || []); } catch { items = []; }
-      if (!items.length && typeof widget.dataSource.read === 'function') {
-        widget.dataSource.read();
-        try { items = Array.from(widget.dataSource.data() || []); } catch { items = []; }
-      }
-      if (!items.length) return false;
-      const target = items.find((item) => normalize(read(item, textField)) === expected);
-      const alternate = items.find((item) => {
-        const text = normalize(read(item, textField));
-        return text && text !== expected;
-      });
-      if (!target) return false;
-      if (alternate) {
-        widget.value(read(alternate, valueField));
-        widget.trigger('change');
-      }
-      widget.value(read(target, valueField));
-      widget.trigger('change');
-      return true;
-    }).call(this)`)) as boolean;
-
-    if (!fired) {
-      await this.selectField(labels, optionText, controlIds, root);
-      return;
+    // The wanted value is already displayed, so the cascade never fired and
+    // the dependent list is empty. Pick the alternate option through the real
+    // dropdown click path, let the portal redraw, then pick the wanted one.
+    if (alternateOptionText) {
+      await this.selectField(labels, alternateOptionText, controlIds, root);
+      await this.page.waitForTimeout(900);
     }
-    await this.page.waitForTimeout(700);
+    await this.selectField(labels, optionText, controlIds, root);
+    await this.page.waitForTimeout(400);
   }
 
   private async selectField(
@@ -2280,25 +2245,62 @@ export class TaqadiPortal {
   }
 
   async openNewCase() {
-    await this.page.waitForFunction(
-      () => {
-        const text = document.body?.innerText || '';
-        return text.includes('إدارة الدعاوى')
-          || text.includes('ادارة الدعاوى');
-      },
-      undefined,
-      { timeout: 15_000 },
-    ).catch(() => undefined);
-    await this.clickAny(
-      ['إدارة الدعاوى', 'ادارة الدعاوى', 'الدعاوى', 'قيد الدعاوى'],
-      'إدارة الدعاوى',
+    const clickThrough = async () => {
+      await this.page.waitForFunction(
+        () => {
+          const text = document.body?.innerText || '';
+          return text.includes('إدارة الدعاوى')
+            || text.includes('ادارة الدعاوى');
+        },
+        undefined,
+        { timeout: 15_000 },
+      ).catch(() => undefined);
+      await this.clickAny(
+        ['إدارة الدعاوى', 'ادارة الدعاوى', 'الدعاوى', 'قيد الدعاوى'],
+        'إدارة الدعاوى',
+      );
+      await this.page.waitForTimeout(1_000);
+      await this.clickAny(
+        ['قيد دعوى', 'إقامة دعوى', 'إنشاء دعوى', 'دعوى جديدة'],
+        'قيد دعوى جديدة',
+      );
+      await this.page.waitForTimeout(1_500);
+    };
+
+    await clickThrough();
+
+    // A blank SPA render leaves the wizard body empty after navigation;
+    // reload once and repeat the clicks so the classification form appears.
+    // Immediate (non-waiting) visibility checks keep this detection cheap.
+    const rendered = (
+      await this.page
+        .locator('[id^="tempctype_"]')
+        .first()
+        .isVisible()
+        .catch(() => false)
+    ) || (
+      await this.page
+        .getByText('درجة التقاضي', { exact: false })
+        .first()
+        .isVisible()
+        .catch(() => false)
     );
-    await this.page.waitForTimeout(1_000);
-    await this.clickAny(
-      ['قيد دعوى', 'إقامة دعوى', 'إنشاء دعوى', 'دعوى جديدة'],
-      'قيد دعوى جديدة',
-    );
+    if (rendered) return;
+
+    // Only a page that really navigated to the create-case route may reload;
+    // a still-untouched landing page just retries the clicks.
+    const reachedCreateRoute = await this.page
+      .getByText('إنشاء دعوى', { exact: false })
+      .first()
+      .isVisible()
+      .catch(() => false);
+    if (!reachedCreateRoute) return;
+
+    await this.page
+      .reload({ waitUntil: 'domcontentloaded' })
+      .catch(() => undefined);
     await this.page.waitForTimeout(1_500);
+    await clickThrough();
   }
 
   async configureCase(payload: FilingPayload) {
@@ -2775,7 +2777,16 @@ export class TaqadiPortal {
     await this.page.waitForTimeout(partyStabilizationMs);
 
     const representativeName = agentConfig.representative.name;
-    const row = await this.partyRow([representativeName]);
+    // The portal may store the representative's full legal name (e.g.
+    // «خميس هاشم الجبر») while the configured short name is «خميس الجبر».
+    // Match the full name first, then the last name token as a fallback.
+    const nameParts = representativeName.split(/\s+/).filter(Boolean);
+    const lastNameToken = nameParts.length > 1
+      ? nameParts[nameParts.length - 1]
+      : null;
+    const row = await this.partyRow(
+      [representativeName, lastNameToken].filter(Boolean) as string[],
+    );
     if (!row) {
       throw new HumanInterventionError(
         `لم يجد الوكيل الطرف الإلزامي «${representativeName}» لمراجعته أولًا`,
@@ -2881,6 +2892,7 @@ export class TaqadiPortal {
         'شركة',
         ['category'],
         partyDialog,
+        'شخص طبيعي',
       );
       await this.selectField(
         ['صفة الطرف'],
@@ -3040,6 +3052,7 @@ export class TaqadiPortal {
         'شخص طبيعي',
         ['category'],
         partyDialog,
+        'شركة',
       );
       await this.selectField(
         ['صفة الطرف'],
