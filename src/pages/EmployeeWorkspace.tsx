@@ -8,6 +8,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { customerCommunicationsClient } from '@/integrations/supabase/customerCommunicationsClient';
 import { 
   ArrowRight, 
   RefreshCw, 
@@ -333,6 +334,9 @@ export const EmployeeWorkspace: React.FC = () => {
   const [preselectedContractCustomerId, setPreselectedContractCustomerId] = useState<string | undefined>();
   const [selectedBulkContractIds, setSelectedBulkContractIds] = useState<string[]>([]);
   const [completingTaskId, setCompletingTaskId] = useState<string | null>(null);
+  const [selectedTask, setSelectedTask] = useState<any | null>(null);
+  const [taskReplyText, setTaskReplyText] = useState('');
+  const [completeAfterReply, setCompleteAfterReply] = useState(true);
   const [dailyLogForm, setDailyLogForm] = useState<DailyLogFormState | null>(null);
   const [contractCancellationReason, setContractCancellationReason] = useState('');
   const [selectedPaymentCustomer, setSelectedPaymentCustomer] = useState<{
@@ -1684,6 +1688,67 @@ export const EmployeeWorkspace: React.FC = () => {
     }
   };
 
+  const openTaskDetails = (task: any) => {
+    setSelectedTask(task);
+    setTaskReplyText('');
+    setCompleteAfterReply(true);
+  };
+
+  const taskReplyMutation = useMutation({
+    mutationFn: async () => {
+      if (!selectedTask) throw new Error('تعذر تحديد المهمة');
+      if (!taskReplyText.trim()) throw new Error('اكتب نص الرد أولاً');
+      if (!user?.id || !companyId) throw new Error('تعذر تحديد المستخدم أو الشركة');
+      if (!selectedTask.customer_id) throw new Error('المهمة غير مرتبطة بعميل');
+
+      const now = new Date();
+      const { error } = await customerCommunicationsClient
+        .from('customer_communications')
+        .insert({
+          customer_id: selectedTask.customer_id,
+          company_id: companyId,
+          contract_id: selectedTask.contract_id || null,
+          communication_type: 'note',
+          communication_date: now.toISOString().slice(0, 10),
+          communication_time: now.toISOString().slice(11, 19),
+          duration_minutes: null,
+          employee_id: user.id,
+          notes: `[رد على مهمة] ${taskReplyText.trim()}\n—\nالمهمة: ${selectedTask.title_ar || selectedTask.title}`,
+          action_required: 'none',
+          action_description: null,
+          follow_up_scheduled: false,
+          follow_up_date: null,
+          follow_up_time: null,
+          follow_up_status: null,
+          attachments: [],
+        } as never);
+      if (error) throw error;
+
+      if (completeAfterReply) {
+        await completeTask(selectedTask.id);
+      }
+    },
+    onSuccess: () => {
+      toast({
+        title: 'تم إرسال الرد',
+        description: 'سيظهر ردك في سجل تواصل الفريق لدى الإدارة',
+      });
+      queryClient.invalidateQueries({ queryKey: ['team-communication-log'] });
+      queryClient.invalidateQueries({ queryKey: ['employee-communication-log'] });
+      queryClient.invalidateQueries({ queryKey: ['employee-tasks'] });
+      refetchTasks();
+      refetchPerformance();
+      setSelectedTask(null);
+    },
+    onError: (error: unknown) => {
+      toast({
+        title: 'فشل إرسال الرد',
+        description: error instanceof Error ? error.message : 'حدث خطأ أثناء الإرسال',
+        variant: 'destructive',
+      });
+    },
+  });
+
   // Quick Actions Configuration
   const quickActions = [
     {
@@ -2704,8 +2769,17 @@ export const EmployeeWorkspace: React.FC = () => {
                       {todayTasks.map((task) => (
                         <div
                           key={task.id}
+                          role="button"
+                          tabIndex={0}
+                          onClick={() => openTaskDetails(task)}
+                          onKeyDown={(event) => {
+                            if (event.key === 'Enter' || event.key === ' ') {
+                              event.preventDefault();
+                              openTaskDetails(task);
+                            }
+                          }}
                           className={cn(
-                            "flex items-center gap-3 rounded-xl border p-3 transition-all",
+                            "flex cursor-pointer items-center gap-3 rounded-xl border p-3 transition-all",
                             task.status === 'completed'
                               ? "border-[#F1F5F9] bg-[#F8FAFC] opacity-60"
                               : "border-[#E2E8F0] bg-white hover:border-[#11A37F]/40 hover:shadow-sm"
@@ -2732,19 +2806,35 @@ export const EmployeeWorkspace: React.FC = () => {
                             </div>
                           </div>
                           {task.status !== 'completed' && (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="h-8 shrink-0 rounded-lg border-[#E2E8F0] text-xs hover:border-[#11A37F]/30 hover:bg-[#ECFDF5] hover:text-[#059669]"
-                              onClick={() => handleCompleteTask(task.id)}
-                              disabled={completingTaskId === task.id}
-                            >
-                              {completingTaskId === task.id ? (
-                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                              ) : (
-                                'إنجاز'
-                              )}
-                            </Button>
+                            <div className="flex shrink-0 items-center gap-1.5">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-8 rounded-lg border-[#DBEAFE] text-xs text-[#1D4F7A] hover:bg-[#EFF6FF]"
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                  openTaskDetails(task);
+                                }}
+                              >
+                                فتح
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-8 rounded-lg border-[#E2E8F0] text-xs hover:border-[#11A37F]/30 hover:bg-[#ECFDF5] hover:text-[#059669]"
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                  handleCompleteTask(task.id);
+                                }}
+                                disabled={completingTaskId === task.id}
+                              >
+                                {completingTaskId === task.id ? (
+                                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                ) : (
+                                  'إنجاز'
+                                )}
+                              </Button>
+                            </div>
                           )}
                         </div>
                       ))}
@@ -3557,8 +3647,17 @@ export const EmployeeWorkspace: React.FC = () => {
                     {tasks.map((task) => (
                       <div
                         key={task.id}
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => openTaskDetails(task)}
+                        onKeyDown={(event) => {
+                          if (event.key === 'Enter' || event.key === ' ') {
+                            event.preventDefault();
+                            openTaskDetails(task);
+                          }
+                        }}
                         className={cn(
-                          "flex items-center gap-3 rounded-xl border p-3 transition-all",
+                          "flex cursor-pointer items-center gap-3 rounded-xl border p-3 transition-all",
                           task.status === 'completed'
                             ? "border-[#F1F5F9] bg-[#F8FAFC] opacity-60"
                             : "border-[#E2E8F0] bg-white hover:border-[#11A37F]/40 hover:shadow-sm"
@@ -3597,7 +3696,10 @@ export const EmployeeWorkspace: React.FC = () => {
                               size="sm"
                               variant="outline"
                               className="h-8 rounded-lg border-[#E2E8F0] text-[10px] hover:border-[#11A37F]/30 hover:bg-[#ECFDF5] hover:text-[#059669] sm:text-xs"
-                              onClick={() => handleCompleteTask(task.id)}
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                handleCompleteTask(task.id);
+                              }}
                               disabled={completingTaskId === task.id}
                             >
                               {completingTaskId === task.id ? (
@@ -4404,6 +4506,94 @@ export const EmployeeWorkspace: React.FC = () => {
         contracts={contractsForDialogs}
         preselectedContractId={selectedContractId}
       />
+
+      {/* Task details + reply (support-ticket style) */}
+      <Dialog
+        open={Boolean(selectedTask)}
+        onOpenChange={(open) => {
+          if (!open && !taskReplyMutation.isPending) setSelectedTask(null);
+        }}
+      >
+        <DialogContent dir="rtl" className="max-h-[90vh] overflow-y-auto sm:max-w-[560px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-right">
+              <CheckCircle className="h-5 w-5 text-[#11A37F]" />
+              {selectedTask?.title_ar || selectedTask?.title}
+            </DialogTitle>
+            <DialogDescription className="text-right">
+              {[selectedTask?.customer_name, selectedTask?.scheduled_date]
+                .filter(Boolean)
+                .join(' — ')}
+            </DialogDescription>
+          </DialogHeader>
+
+          {selectedTask && (
+            <div className="space-y-4">
+              {selectedTask.description ? (
+                <div className="max-h-56 overflow-y-auto whitespace-pre-wrap rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] p-3 text-sm leading-6 text-gray-800">
+                  {selectedTask.description}
+                </div>
+              ) : (
+                <p className="rounded-xl border border-dashed border-[#E2E8F0] p-3 text-xs text-gray-400">
+                  لا يوجد وصف إضافي لهذه المهمة.
+                </p>
+              )}
+
+              {selectedTask.status !== 'completed' && selectedTask.customer_id && (
+                <div className="space-y-2">
+                  <Label htmlFor="task-reply" className="text-sm font-bold text-[#142033]">
+                    ردك (يظهر لدى الإدارة في سجل تواصل الفريق)
+                  </Label>
+                  <Textarea
+                    id="task-reply"
+                    value={taskReplyText}
+                    onChange={(event) => setTaskReplyText(event.target.value)}
+                    placeholder="اكتب ردك أو ما تم تنفيذه..."
+                    className="min-h-[96px] rounded-xl border-[#E2E8F0] text-sm"
+                    disabled={taskReplyMutation.isPending}
+                  />
+                  <label className="flex cursor-pointer items-center gap-2 text-xs font-medium text-gray-600">
+                    <input
+                      type="checkbox"
+                      checked={completeAfterReply}
+                      onChange={(event) => setCompleteAfterReply(event.target.checked)}
+                      className="h-4 w-4 rounded border-[#E2E8F0] accent-[#11A37F]"
+                    />
+                    إنجاز المهمة تلقائياً بعد إرسال الرد
+                  </label>
+                </div>
+              )}
+
+              <div className="flex items-center justify-end gap-2 border-t border-[#F1F5F9] pt-3">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="rounded-lg"
+                  onClick={() => setSelectedTask(null)}
+                  disabled={taskReplyMutation.isPending}
+                >
+                  إغلاق
+                </Button>
+                {selectedTask.status !== 'completed' && selectedTask.customer_id && (
+                  <Button
+                    type="button"
+                    className="rounded-lg bg-[#11A37F] text-white hover:bg-[#0E8F6E]"
+                    disabled={!taskReplyText.trim() || taskReplyMutation.isPending}
+                    onClick={() => taskReplyMutation.mutate()}
+                  >
+                    {taskReplyMutation.isPending ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      'إرسال الرد'
+                    )}
+                  </Button>
+                )}
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
 
       <Dialog
         open={showContractDetailsDialog}

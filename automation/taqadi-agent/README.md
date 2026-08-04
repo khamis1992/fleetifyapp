@@ -83,6 +83,21 @@ After a computer restart, sign in to Windows normally. The agent connects
 without opening a terminal. Chrome opens only when a filing requires portal
 interaction or a fresh Taqadi login.
 
+## Watchdog (self-healing)
+
+Logon kills and unexpected session ends can stop the supervisor silently.
+Install the watchdog once on the worker computer; it runs
+`start-agent.ps1` every 5 minutes and only acts when the agent health
+endpoint is down:
+
+```powershell
+npm run taqadi:agent:watchdog:install
+npm run taqadi:agent:watchdog:uninstall
+```
+
+With the watchdog installed the agent restarts automatically within minutes
+of any unexpected stop, and the ERP start button becomes only a backup.
+
 ## Safety behavior
 
 - The worker handles one case at a time.

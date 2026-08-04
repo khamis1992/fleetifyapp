@@ -112,6 +112,8 @@
     "taqadi:agent:start": "powershell -NoProfile -ExecutionPolicy Bypass -File automation/taqadi-agent/windows/start-agent.ps1",
     "taqadi:agent:launcher:install": "powershell -NoProfile -ExecutionPolicy Bypass -File automation/taqadi-agent/windows/register-start-protocol.ps1",
     "taqadi:agent:launcher:uninstall": "powershell -NoProfile -ExecutionPolicy Bypass -File automation/taqadi-agent/windows/register-start-protocol.ps1 -Uninstall",
+    "taqadi:agent:watchdog:install": "powershell -NoProfile -ExecutionPolicy Bypass -File automation/taqadi-agent/windows/install-watchdog.ps1",
+    "taqadi:agent:watchdog:uninstall": "powershell -NoProfile -ExecutionPolicy Bypass -File automation/taqadi-agent/windows/install-watchdog.ps1 -Uninstall",
     "taqadi:inspect": "tsx automation/taqadi-agent/inspect-form.ts",
     "taqadi:inspect-details": "tsx automation/taqadi-agent/inspect-case-details.ts",
     "taqadi:inspect-parties": "tsx automation/taqadi-agent/inspect-parties.ts",

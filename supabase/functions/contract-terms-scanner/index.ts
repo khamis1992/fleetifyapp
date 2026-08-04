@@ -65,6 +65,16 @@ serve(async (req) => {
       { auth: { persistSession: false, autoRefreshToken: false } },
     );
 
+    // Batch mode: find contracts whose stored terms disagree with their
+    // billing graph, scan each signed document, and auto-apply high-confidence
+    // corrections. Intended for the nightly cron; no input needed.
+    if (body.mode === "batch") {
+      const maxDocs = Math.min(Math.max(Number(body.maxDocuments) || 4, 1), 10);
+      const autoApply = body.autoApply !== false;
+      const results = await processBatch(supabase, maxDocs, autoApply);
+      return json({ success: true, ...results });
+    }
+
     // Pages mode: the caller rasterizes the PDF and sends page images.
     if (body.mode === "pages") {
       if (!body.contractDocumentId || !Array.isArray(body.pages) || body.pages.length === 0) {
@@ -79,8 +89,9 @@ serve(async (req) => {
       }
       const terms = await extractTermsWithLlm(text);
       const proposal = buildProposal(doc, contract, terms);
-      await storeProposal(supabase, doc, contract, terms, text, "pending");
-      return json({ success: true, ...proposal });
+      const proposalId = await storeProposal(supabase, doc, contract, terms, text, "pending");
+      const applied = await maybeAutoApply(supabase, proposalId, terms, true);
+      return json({ success: true, ...proposal, autoApply: applied });
     }
 
     const doc = await loadDocument(supabase, body);
@@ -107,9 +118,15 @@ serve(async (req) => {
 
     const terms = await extractTermsWithLlm(text);
     const proposal = buildProposal(doc, contract, terms);
-    await storeProposal(supabase, doc, contract, terms, text, "pending");
+    const proposalId = await storeProposal(supabase, doc, contract, terms, text, "pending");
+    const applied = await maybeAutoApply(
+      supabase,
+      proposalId,
+      terms,
+      body.autoApply === true,
+    );
 
-    return json({ success: true, ...proposal });
+    return json({ success: true, ...proposal, autoApply: applied });
   } catch (error) {
     console.error("contract-terms-scanner error:", error);
     return json(
@@ -181,8 +198,60 @@ async function extractDocumentText(
     String(doc.mime_type || "").includes("pdf") ||
     String(doc.file_path || "").toLowerCase().endsWith(".pdf");
 
-  if (isPdf) return await extractPdfTextLayer(buffer);
+  if (isPdf) {
+    const textLayer = await extractPdfTextLayer(buffer);
+    if (textLayer.trim().length >= MIN_TEXT_LAYER_LENGTH) return textLayer;
+
+    // Scanned PDF: rasterize pages server-side (OffscreenCanvas when the
+    // runtime provides it) and OCR the images.
+    const pageImages = await rasterizePdfPages(buffer);
+    if (pageImages.length > 0) {
+      return await ocrRasterizedPages(
+        pageImages.map((imageBase64, index) => ({
+          pageNumber: index + 1,
+          imageBase64,
+        })),
+      );
+    }
+    return textLayer;
+  }
   return await detectTextWithGoogleVision(arrayBufferToBase64(buffer));
+}
+
+/** Best-effort server-side PDF rasterization; empty when OffscreenCanvas is unavailable. */
+async function rasterizePdfPages(buffer: ArrayBuffer): Promise<string[]> {
+  if (typeof OffscreenCanvas === "undefined") return [];
+  try {
+    const task = pdfjs.getDocument({
+      data: new Uint8Array(buffer),
+      isEvalSupported: false,
+      disableFontFace: true,
+      useSystemFonts: true,
+    });
+    const pdf = await task.promise;
+    const images: string[] = [];
+    const maxPages = Math.min(pdf.numPages, 12);
+
+    for (let pageNumber = 1; pageNumber <= maxPages; pageNumber++) {
+      const page = await pdf.getPage(pageNumber);
+      const viewport = page.getViewport({ scale: 1.6 });
+      const canvas = new OffscreenCanvas(
+        Math.ceil(viewport.width),
+        Math.ceil(viewport.height),
+      );
+      const context = canvas.getContext("2d");
+      if (!context) break;
+      await page.render({ canvasContext: context, viewport }).promise;
+      const blob = await canvas.convertToBlob({ type: "image/png" });
+      images.push(arrayBufferToBase64(await blob.arrayBuffer()));
+      page.cleanup();
+    }
+    await pdf.destroy();
+    return images;
+  } catch (error) {
+    console.warn("server-side PDF rasterization unavailable:", error);
+    return [];
+  }
 }
 
 async function extractPdfTextLayer(buffer: ArrayBuffer): Promise<string> {
@@ -355,7 +424,7 @@ async function storeProposal(
   terms: ExtractedTerms | null,
   rawText: string,
   status: "pending" | "failed",
-) {
+): Promise<string | null> {
   const proposal = buildProposal(
     doc,
     contract,
@@ -392,10 +461,147 @@ async function storeProposal(
     .eq("status", "pending")
     .maybeSingle();
 
-  const { error } = existing
-    ? await supabase.from("contract_terms_scan_proposals").update(row).eq("id", existing.id)
-    : await supabase.from("contract_terms_scan_proposals").insert(row);
+  const { data: saved, error } = existing
+    ? await supabase
+        .from("contract_terms_scan_proposals")
+        .update(row)
+        .eq("id", existing.id)
+        .select("id")
+        .single()
+    : await supabase
+        .from("contract_terms_scan_proposals")
+        .insert(row)
+        .select("id")
+        .single();
   if (error) throw error;
+  return saved?.id ?? existing?.id ?? null;
+}
+
+/**
+ * Nightly batch: contracts whose stored amount disagrees with the canonical
+ * billing-month graph AND have a signed document get scanned. High-confidence
+ * self-consistent extractions are applied automatically through the gated
+ * apply command; everything else stays pending for human review.
+ */
+async function processBatch(
+  supabase: SupabaseClient,
+  maxDocuments: number,
+  autoApply: boolean,
+) {
+  const { data: candidates, error } = await supabase.rpc(
+    "contract_terms_scan_batch_candidates",
+    { p_limit: maxDocuments },
+  );
+  if (error) throw error;
+
+  const results: Array<Record<string, unknown>> = [];
+  let appliedCount = 0;
+  let pendingCount = 0;
+  let failedCount = 0;
+
+  for (const candidate of candidates ?? []) {
+    try {
+      const { data: doc } = await supabase
+        .from("contract_documents")
+        .select("id, company_id, contract_id, document_type, document_name, file_path, mime_type")
+        .eq("id", candidate.document_id)
+        .single();
+      if (!doc) {
+        failedCount += 1;
+        continue;
+      }
+
+      const contract = await loadContract(supabase, doc);
+      const text = await extractDocumentText(supabase, doc);
+      if (!text || text.trim().length < MIN_TEXT_LAYER_LENGTH) {
+        failedCount += 1;
+        results.push({
+          contractId: doc.contract_id,
+          outcome: "no_text_layer",
+        });
+        continue;
+      }
+
+      const terms = await extractTermsWithLlm(text);
+      const proposal = buildProposal(doc, contract, terms);
+      const proposalId = await storeProposal(supabase, doc, contract, terms, text, "pending");
+      const applied = await maybeAutoApply(supabase, proposalId, terms, autoApply);
+
+      if (applied.applied) appliedCount += 1;
+      else pendingCount += 1;
+      results.push({
+        contractId: doc.contract_id,
+        contractNumber: contract.contract_number,
+        outcome: applied.applied ? "auto_applied" : proposal.outcome,
+        extractedMonthly: terms.monthly_amount,
+        extractedTotal: terms.total_amount,
+        confidence: terms.confidence,
+        applyResult: applied.applied ? applied.result : undefined,
+        skippedReason: applied.applied ? undefined : applied.reason,
+      });
+    } catch (error) {
+      failedCount += 1;
+      results.push({
+        contractId: candidate.contract_id,
+        outcome: "error",
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
+  }
+
+  return {
+    scanned: (candidates ?? []).length,
+    autoApplied: appliedCount,
+    pendingReview: pendingCount,
+    failed: failedCount,
+    results,
+  };
+}
+
+/**
+ * Auto-apply only when the extraction is high-confidence, internally
+ * consistent (monthly x duration ~= total), and evidenced by verbatim quotes.
+ * Anything weaker stays pending — the agent never guesses financial terms.
+ */
+async function maybeAutoApply(
+  supabase: SupabaseClient,
+  proposalId: string | null,
+  terms: ExtractedTerms,
+  autoApply: boolean,
+): Promise<{ applied: boolean; reason?: string; result?: unknown }> {
+  if (!autoApply) return { applied: false, reason: "auto_apply_disabled" };
+  if (!proposalId) return { applied: false, reason: "no_proposal" };
+
+  const consistencyOk =
+    terms.monthly_amount !== null &&
+    terms.monthly_amount > 0 &&
+    terms.start_date !== null &&
+    terms.end_date !== null &&
+    terms.duration_months !== null &&
+    terms.duration_months >= 1 &&
+    terms.confidence >= 0.9 &&
+    terms.evidence.length >= 1 &&
+    (terms.total_amount === null ||
+      terms.total_amount <= 0 ||
+      Math.abs(terms.total_amount - terms.monthly_amount * terms.duration_months) <=
+        Math.max(1, terms.monthly_amount * 0.02));
+
+  if (!consistencyOk) {
+    return { applied: false, reason: "confidence_or_consistency_below_threshold" };
+  }
+
+  const { data, error } = await supabase.rpc("apply_contract_terms_scan_proposal", {
+    p_proposal_id: proposalId,
+    p_decision_notes: "Auto-applied by contract-terms-scanner (high-confidence signed-document extraction)",
+  });
+  if (error) {
+    return { applied: false, reason: `apply_failed: ${error.message}` };
+  }
+  const applyErrors = (data as Record<string, unknown> | null)?.errors;
+  if (Array.isArray(applyErrors) && applyErrors.length > 0) {
+    return { applied: false, reason: "apply_errors", result: data };
+  }
+  return { applied: true, result: data };
 }
 
 function toNumberOrNull(value: unknown): number | null {
