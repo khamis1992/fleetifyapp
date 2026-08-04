@@ -1601,6 +1601,95 @@ export class TaqadiPortal {
     return '';
   }
 
+  /**
+   * Cascading dropdowns (e.g. «تصنيف الطرف» → «صفة الطرف») only load their
+   * dependent options when the portal observes a change event. When the
+   * parent already displays the wanted value, the normal select shortcut
+   * returns early and the dependent list stays empty forever. This helper
+   * forces the cascade through the Kendo widget API: pick a different option,
+   * fire change, then pick the wanted option and fire change again.
+   */
+  private async forceDropdownCascadeSelection(
+    labels: string[],
+    optionText: string,
+    controlIds: string[] = [],
+    root: FieldRoot = this.page,
+  ) {
+    const field = await this.fieldByLabel(labels, controlIds, root);
+    if (!field) {
+      throw new HumanInterventionError(
+        `لم يجد الوكيل قائمة «${labels[0]}»`,
+        'TAQADI_UI_CHANGED',
+        { expectedLabels: labels, optionText, url: this.page.url() },
+      );
+    }
+    const { controlId } = await this.dropdownIdentity(field, controlIds);
+    const backingControl = controlId
+      ? await this.backingControlForField(field, controlId, root)
+      : null;
+    const currentText = normalizeText(
+      await this.readDropdownCurrentText(field, backingControl),
+    );
+    if (normalizeArabicText(currentText) !== normalizeArabicText(optionText)) {
+      await this.selectField(labels, optionText, controlIds, root);
+      return;
+    }
+    if (!backingControl) {
+      await this.selectField(labels, optionText, controlIds, root);
+      return;
+    }
+
+    const args = JSON.stringify({ optionText });
+    const fired = (await backingControl.evaluate(`(function() {
+      const args = ${args};
+      const pageWindow = window;
+      const jq = pageWindow.jQuery || pageWindow.$;
+      if (!jq) return false;
+      const widget = jq(this).data('kendoDropDownList') || jq(this).data('kendoComboBox');
+      if (!widget || !widget.dataSource) return false;
+      const normalize = (value) => String(value || '')
+        .normalize('NFKD')
+        .replace(/[\\u064B-\\u065F\\u0670]/g, '')
+        .replace(/[أإآٱ]/g, 'ا')
+        .replace(/ى/g, 'ي')
+        .replace(/\\s+/g, ' ')
+        .trim();
+      const expected = normalize(args.optionText);
+      const textField = widget.options && widget.options.dataTextField || 'text';
+      const valueField = widget.options && widget.options.dataValueField || 'value';
+      const read = (item, fieldName) => {
+        if (!item) return undefined;
+        return typeof item.get === 'function' ? item.get(fieldName) : item[fieldName];
+      };
+      let items = [];
+      try { items = Array.from(widget.dataSource.data() || []); } catch { items = []; }
+      if (!items.length && typeof widget.dataSource.read === 'function') {
+        widget.dataSource.read();
+        try { items = Array.from(widget.dataSource.data() || []); } catch { items = []; }
+      }
+      if (!items.length) return false;
+      const target = items.find((item) => normalize(read(item, textField)) === expected);
+      const alternate = items.find((item) => {
+        const text = normalize(read(item, textField));
+        return text && text !== expected;
+      });
+      if (!target) return false;
+      if (alternate) {
+        widget.value(read(alternate, valueField));
+        widget.trigger('change');
+      }
+      widget.value(read(target, valueField));
+      widget.trigger('change');
+      return true;
+    }).call(this)`)) as boolean;
+
+    if (!fired) {
+      await this.selectField(labels, optionText, controlIds, root);
+      return;
+    }
+    await this.page.waitForTimeout(700);
+  }
+
   private async selectField(
     labels: string[],
     optionText: string,
@@ -2775,7 +2864,7 @@ export class TaqadiPortal {
     let partyDialog: Locator;
     if (!company) {
       partyDialog = await this.addPartyEditor('إضافة الشركة');
-      await this.selectField(
+      await this.forceDropdownCascadeSelection(
         ['تصنيف الطرف', 'نوع الشخص'],
         'شركة',
         ['category'],
@@ -2934,7 +3023,7 @@ export class TaqadiPortal {
       partyDialog = await this.openPartyEditor(existing);
     } else {
       partyDialog = await this.addPartyEditor('إضافة المدعى عليه');
-      await this.selectField(
+      await this.forceDropdownCascadeSelection(
         ['تصنيف الطرف', 'نوع الشخص'],
         'شخص طبيعي',
         ['category'],
