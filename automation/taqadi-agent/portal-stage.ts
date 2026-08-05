@@ -7,7 +7,9 @@ export type TaqadiPortalStage =
   | 'case_details'
   | 'parties'
   | 'documents'
+  | 'fees'
   | 'review'
+  | 'receipt'
   | 'unknown';
 
 export interface PortalStageSignals {
@@ -16,6 +18,7 @@ export interface PortalStageSignals {
   caseDetails: boolean;
   parties: boolean;
   documents: boolean;
+  fees?: boolean;
   review: boolean;
 }
 
@@ -41,7 +44,9 @@ const stageLabels: Record<TaqadiPortalStage, string> = {
   case_details: 'تفاصيل الدعوى',
   parties: 'أطراف الدعوى',
   documents: 'مستندات الدعوى',
+  fees: 'تفاصيل الرسوم',
   review: 'مراجعة الدعوى',
+  receipt: 'إيصال قيد الدعوى',
   unknown: 'صفحة غير معروفة',
 };
 
@@ -190,6 +195,10 @@ export function inferPortalStage(
       includesAny(normalizeArabic(tab), ['المستندات', 'مرفقات'])),
     7, 'active_documents_tab'],
   ]);
+  add('fees', [
+    [hasActiveWizardText('تفاصيل الرسوم'), 14, 'active_wizard_step'],
+    [hasText('تفاصيل الرسوم', 'قيمة الرسوم', 'رسوم الدعوى'), 7, 'fees_text'],
+  ]);
   add('review', [
     [hasActiveWizardText('ملخص الدعوى', 'مراجعة الدعوى'), 14, 'active_wizard_step'],
     [hasText('مراجعة الدعوى', 'ملخص الدعوى', 'اعتماد نهائي'), 7, 'review_text'],
@@ -197,6 +206,10 @@ export function inferPortalStage(
     [matches.has('defendantName'), 3, 'defendant_match'],
     [matches.has('contractNumber'), 3, 'contract_match'],
     [matches.size === 3, 4, 'all_case_values_match'],
+  ]);
+  add('receipt', [
+    [observation.pageKind === 'receipt', 20, 'filing_receipt'],
+    [hasText('إشعار تقديم الطلب', 'إيصال طلب قيد دعوى'), 8, 'receipt_text'],
   ]);
 
   const candidates = scored
@@ -243,6 +256,7 @@ export function classifyPortalStage(
     ['case_details', signals.caseDetails],
     ['parties', signals.parties],
     ['documents', signals.documents],
+    ['fees', Boolean(signals.fees)],
     ['case_classification', signals.classification],
     ['review', signals.review],
   ];

@@ -15,6 +15,7 @@ import type {
 
 const PDF_HEADER = Buffer.from('%PDF-');
 const MAX_DOCUMENT_BYTES = 20 * 1024 * 1024;
+const TAQADI_NORMALIZED_MARKER_VERSION = 'taqadi-raster-v1';
 
 const safeName = (value: string) =>
   value
@@ -145,6 +146,104 @@ async function renderImagePdf(
   );
 }
 
+async function normalizePdfForTaqadi(
+  browser: Browser,
+  sourcePath: string,
+) {
+  const markerPath = `${sourcePath}.${TAQADI_NORMALIZED_MARKER_VERSION}`;
+  if (await fs.stat(markerPath).catch(() => null)) return;
+
+  const [{ getDocument }, { createCanvas }] = await Promise.all([
+    import('pdfjs-dist/legacy/build/pdf.mjs'),
+    import('@napi-rs/canvas'),
+  ]);
+  const source = await fs.readFile(sourcePath);
+  const pdf = await getDocument({
+    data: new Uint8Array(source),
+    isEvalSupported: false,
+    useSystemFonts: true,
+  }).promise;
+
+  const pageImages: string[] = [];
+  try {
+    for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber += 1) {
+      const pdfPage = await pdf.getPage(pageNumber);
+      const viewport = pdfPage.getViewport({ scale: 2 });
+      const canvas = createCanvas(
+        Math.ceil(viewport.width),
+        Math.ceil(viewport.height),
+      );
+      const canvasContext = canvas.getContext('2d');
+      await pdfPage.render({
+        canvas,
+        canvasContext,
+        viewport,
+      }).promise;
+      pageImages.push(
+        `data:image/jpeg;base64,${canvas.toBuffer('image/jpeg', 90).toString('base64')}`,
+      );
+      pdfPage.cleanup();
+    }
+  } finally {
+    await pdf.destroy();
+  }
+
+  const page = await browser.newPage({
+    viewport: { width: 1240, height: 1754 },
+  });
+  const normalizedPath = `${sourcePath}.normalized.tmp.pdf`;
+  try {
+    const pages = pageImages
+      .map((dataUrl) => `<section><img src="${dataUrl}" alt="" /></section>`)
+      .join('');
+    await page.setContent(
+      `<!doctype html>
+        <html>
+          <head>
+            <meta charset="utf-8" />
+            <style>
+              @page { size: A4; margin: 0; }
+              html, body { margin: 0; padding: 0; }
+              section {
+                width: 210mm;
+                height: 297mm;
+                break-after: page;
+                display: grid;
+                place-items: center;
+                overflow: hidden;
+              }
+              section:last-child { break-after: auto; }
+              img { display: block; width: 100%; height: 100%; object-fit: contain; }
+            </style>
+          </head>
+          <body>${pages}</body>
+        </html>`,
+      { waitUntil: 'load', timeout: 60_000 },
+    );
+    await page.pdf({
+      path: normalizedPath,
+      format: 'A4',
+      printBackground: true,
+      preferCSSPageSize: true,
+      margin: { top: '0', right: '0', bottom: '0', left: '0' },
+    });
+  } finally {
+    await page.close();
+  }
+
+  const normalizedStat = await fs.stat(normalizedPath);
+  if (
+    normalizedStat.size < 500
+    || normalizedStat.size > MAX_DOCUMENT_BYTES
+    || !(await isPdf(normalizedPath))
+  ) {
+    await fs.unlink(normalizedPath).catch(() => undefined);
+    throw new Error('Normalized PDF is invalid or exceeds 20 MB');
+  }
+  await fs.rename(normalizedPath, sourcePath);
+  await fs.writeFile(markerPath, TAQADI_NORMALIZED_MARKER_VERSION, 'utf8');
+}
+
 async function materializeOne(
   browser: Browser,
   document: FilingDocument,
@@ -217,7 +316,8 @@ export async function materializeFilingDocuments(
         throw new Error(`Required document is not ready: ${document.name}`);
       }
 
-      const fileName = `${String(index + 1).padStart(2, '0')}_${safeName(document.name)}.pdf`;
+      const fileStem = `${String(index + 1).padStart(2, '0')}_${safeName(document.name)}`;
+      const fileName = `${fileStem}.pdf`;
       const outputPath = path.join(jobDir, fileName);
       const existingStat = await fs.stat(outputPath).catch(() => null);
       const reusable = Boolean(
@@ -236,6 +336,12 @@ export async function materializeFilingDocuments(
       if (!(await isPdf(outputPath))) {
         throw new Error(`Generated file is not a valid PDF: ${document.name}`);
       }
+      if (document.key === 'violationsEvidence') {
+        await normalizePdfForTaqadi(browser, outputPath).catch((error) => {
+          const message = error instanceof Error ? error.message : String(error);
+          throw new Error(`Failed to normalize "${document.name}" for Taqadi: ${message}`);
+        });
+      }
       const stat = await fs.stat(outputPath);
       if (stat.size < 500) {
         throw new Error(`Generated PDF is empty: ${document.name}`);
@@ -252,8 +358,26 @@ export async function materializeFilingDocuments(
       });
 
       if (document.key === 'memo') {
-        const wordFileName = `${String(index + 1).padStart(2, '0')}_${safeName(document.name)}_Word.docx`;
+        // Taqadi requires the PDF and Word memo copies to have the exact same
+        // base file name; only their extensions may differ.
+        const wordFileName = `${fileStem}.docx`;
         const wordOutputPath = path.join(jobDir, wordFileName);
+        const legacyWordOutputPath = path.join(jobDir, `${fileStem}_Word.docx`);
+        const obsoleteBinaryWordOutputPath = path.join(jobDir, `${fileStem}_Word.doc`);
+        const currentWordStat = await fs.stat(wordOutputPath).catch(() => null);
+        if (!currentWordStat) {
+          const legacyWordStat = await fs.stat(legacyWordOutputPath)
+            .catch(() => null);
+          const reusableLegacyWord = Boolean(
+            legacyWordStat
+            && legacyWordStat.size >= 500
+            && legacyWordStat.size <= MAX_DOCUMENT_BYTES
+            && await isMemoWordFile(legacyWordOutputPath).catch(() => false),
+          );
+          if (reusableLegacyWord) {
+            await fs.rename(legacyWordOutputPath, wordOutputPath);
+          }
+        }
         const wordStat = await fs.stat(wordOutputPath).catch(() => null);
         const reusableWord = Boolean(
           wordStat
@@ -275,6 +399,19 @@ export async function materializeFilingDocuments(
         if (finalWordStat.size > MAX_DOCUMENT_BYTES) {
           throw new Error(`Word document exceeds 20 MB: ${document.name}`);
         }
+
+        // A previous agent version produced a second `_Word.doc` copy. Once
+        // the matching DOCX is valid, remove stale variants so retries cannot
+        // accidentally upload a memo whose base name differs from the PDF.
+        await Promise.all(
+          [legacyWordOutputPath, obsoleteBinaryWordOutputPath].map(async (legacyPath) => {
+            await fs.unlink(legacyPath).catch((error: NodeJS.ErrnoException) => {
+              if (error.code !== 'ENOENT') {
+                throw error;
+              }
+            });
+          }),
+        );
 
         results.push({
           key: 'memoWord',

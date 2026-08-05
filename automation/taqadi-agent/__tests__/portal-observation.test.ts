@@ -96,6 +96,36 @@ describe('semantic Taqadi page inference', () => {
     });
   });
 
+  it('recognizes the filing receipt after final approval', () => {
+    const result = inferPortalStage(observation({
+      pageKind: 'receipt',
+      headings: ['إشعار تقديم الطلب'],
+      buttons: ['عرض الدعوى', 'طباعة'],
+      activePanels: ['إيصال طلب قيد دعوى رقم المرجع 20260010935'],
+    }));
+
+    expect(result).toMatchObject({
+      stage: 'receipt',
+      confidence: 'high',
+    });
+    expect(result.evidence).toContain('filing_receipt');
+  });
+
+  it('recognizes the fee details step between documents and final review', () => {
+    const result = inferPortalStage(observation({
+      headings: ['دعوى'],
+      links: ['المستندات', 'تفاصيل الرسوم', 'ملخص الدعوى', 'التالي'],
+      activePanels: ['tab-437-pane fee_details تفاصيل الرسوم'],
+      activeWizardSteps: ['تفاصيل الرسوم'],
+    }));
+
+    expect(result).toMatchObject({
+      stage: 'fees',
+      confidence: 'high',
+    });
+    expect(result.evidence).toContain('active_wizard_step');
+  });
+
   it('returns unknown instead of guessing from a generic next button', () => {
     expect(inferPortalStage(observation({}))).toMatchObject({
       stage: 'unknown',

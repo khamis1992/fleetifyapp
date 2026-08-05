@@ -90,12 +90,84 @@ describe('Taqadi memo Word materialization', () => {
       mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
     });
     expect(documents[1].filePath).toMatch(/\.docx$/i);
+    expect(path.parse(documents[1].filePath).name).toBe(
+      path.parse(documents[0].filePath).name,
+    );
     expect(
       await isValidDocxBuffer(await fs.readFile(documents[1].filePath)),
     ).toBe(true);
-  }, 30_000);
+
+    const legacyWordPath = path.join(
+      path.dirname(documents[1].filePath),
+      `${path.parse(documents[1].filePath).name}_Word.docx`,
+    );
+    const obsoleteBinaryWordPath = path.join(
+      path.dirname(documents[1].filePath),
+      `${path.parse(documents[1].filePath).name}_Word.doc`,
+    );
+    await fs.rename(documents[1].filePath, legacyWordPath);
+    await fs.writeFile(obsoleteBinaryWordPath, Buffer.alloc(600, 1));
+
+    const retriedDocuments = await materializeFilingDocuments(job);
+    expect(path.parse(retriedDocuments[1].filePath).name).toBe(
+      path.parse(retriedDocuments[0].filePath).name,
+    );
+    await expect(fs.stat(retriedDocuments[1].filePath)).resolves.toBeDefined();
+    await expect(fs.stat(legacyWordPath)).rejects.toMatchObject({
+      code: 'ENOENT',
+    });
+    await expect(fs.stat(obsoleteBinaryWordPath)).rejects.toMatchObject({
+      code: 'ENOENT',
+    });
+  }, 45_000);
 
   it('rejects empty memo HTML instead of producing a fake Word file', async () => {
     await expect(createMemoDocxBuffer('   ')).rejects.toThrow('Memo HTML is empty');
   });
+});
+
+describe('Taqadi PDF normalization', () => {
+  it('rasterizes Ministry of Interior evidence before portal upload', async () => {
+    const jobId = `moi-pdf-test-${process.pid}-${Date.now()}`;
+    const jobDir = path.join(agentConfig.jobsDir, jobId);
+    createdJobDirs.push(jobDir);
+    const job = {
+      id: jobId,
+      payload: {
+        documents: [{
+          key: 'violationsEvidence',
+          name: 'Ministry of Interior violations evidence',
+          required: true,
+          ready: true,
+          url: null,
+          htmlContent: `
+            <!doctype html>
+            <html><body>
+              <h1>Traffic violations</h1>
+              <a href="https://example.com/interactive-link">Source link</a>
+            </body></html>
+          `,
+          mimeType: 'text/html',
+        }],
+      },
+    } as FilingJob;
+
+    const [document] = await materializeFilingDocuments(job);
+    const markerPath = `${document.filePath}.taqadi-raster-v1`;
+    await expect(fs.stat(markerPath)).resolves.toBeDefined();
+
+    const { getDocument } = await import('pdfjs-dist/legacy/build/pdf.mjs');
+    const pdf = await getDocument({
+      data: new Uint8Array(await fs.readFile(document.filePath)),
+      isEvalSupported: false,
+      useSystemFonts: true,
+    }).promise;
+    try {
+      expect(pdf.numPages).toBe(1);
+      const page = await pdf.getPage(1);
+      expect(await page.getAnnotations()).toHaveLength(0);
+    } finally {
+      await pdf.destroy();
+    }
+  }, 45_000);
 });

@@ -125,7 +125,36 @@ try {
         -PassThru
 
       Set-Content -LiteralPath $agentPidPath -Value $agent.Id -Encoding ASCII
-      $agent.WaitForExit()
+      $healthGraceDeadline = (Get-Date).AddSeconds(45)
+      $missingHealthChecks = 0
+      while (-not $agent.HasExited) {
+        Start-Sleep -Seconds 5
+        $agent.Refresh()
+        if ($agent.HasExited) {
+          break
+        }
+
+        if ((Get-Date) -lt $healthGraceDeadline) {
+          continue
+        }
+
+        if (Get-AgentHealth) {
+          $missingHealthChecks = 0
+          continue
+        }
+
+        $missingHealthChecks += 1
+        if ($missingHealthChecks -lt 6) {
+          continue
+        }
+
+        Write-SupervisorLog (
+          'The Taqadi agent process is alive but its health endpoint has been unavailable for 30 seconds; terminating the hung process.'
+        )
+        Stop-Process -Id $agent.Id -Force -ErrorAction SilentlyContinue
+        $agent.WaitForExit(10000) | Out-Null
+        break
+      }
       Write-SupervisorLog (
         'The Taqadi agent exited with code {0}; restarting in 15 seconds.' `
           -f $agent.ExitCode

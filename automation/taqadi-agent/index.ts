@@ -44,21 +44,42 @@ healthServer.listen(agentConfig.healthPort, '127.0.0.1', () => {
 });
 
 let stopping = false;
+let fatalStopping = false;
+const stopWorkerWithin = async (timeoutMs: number) => {
+  await Promise.race([
+    worker.stop().catch(() => undefined),
+    new Promise<void>((resolve) => setTimeout(resolve, timeoutMs)),
+  ]);
+};
+
 const shutdown = async () => {
   if (stopping) return;
   stopping = true;
   console.log('[TaqadiAgent] shutting down...');
   healthServer.close();
-  await worker.stop();
+  await stopWorkerWithin(10_000);
   process.exit(0);
+};
+
+const fatalExit = async (source: string, error: unknown) => {
+  if (fatalStopping) return;
+  fatalStopping = true;
+  const normalizedError = error instanceof Error
+    ? error
+    : new Error(String(error));
+  console.error(`[TaqadiAgent] ${source}:`, normalizedError);
+  healthServer.close();
+  await stopWorkerWithin(10_000);
+  process.exit(1);
 };
 
 process.on('SIGINT', () => void shutdown());
 process.on('SIGTERM', () => void shutdown());
-
-worker.start().catch(async (error) => {
-  console.error('[TaqadiAgent] fatal error:', error);
-  await worker.stop().catch(() => undefined);
-  healthServer.close();
-  process.exit(1);
+process.on('uncaughtException', (error) => {
+  void fatalExit('uncaught exception', error);
 });
+process.on('unhandledRejection', (error) => {
+  void fatalExit('unhandled rejection', error);
+});
+
+worker.start().catch((error) => void fatalExit('fatal worker error', error));

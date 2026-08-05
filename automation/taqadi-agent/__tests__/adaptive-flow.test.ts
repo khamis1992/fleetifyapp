@@ -82,4 +82,18 @@ describe('adaptive Taqadi flow planning', () => {
     expect(stageReached('review', 'documents')).toBe(true);
     expect(stageReached('case_details', 'parties')).toBe(false);
   });
+
+  it('recovers an already-issued receipt without submitting again', () => {
+    expect(planPortalAction(position({
+      stage: 'receipt',
+      label: 'إيصال قيد الدعوى',
+      confidence: 'high',
+      score: 20,
+      evidence: ['filing_receipt'],
+    }))).toMatchObject({
+      action: 'recover_receipt',
+      expectedStage: null,
+      safeToRun: true,
+    });
+  });
 });

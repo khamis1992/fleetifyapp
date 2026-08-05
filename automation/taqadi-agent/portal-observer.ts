@@ -29,7 +29,13 @@ export interface PortalObservation {
   controls: ObservedControl[];
   knownValueMatches: string[];
   /** High-level shell identity, independent from the current wizard step. */
-  pageKind?: 'login' | 'account_prompt' | 'home' | 'case_wizard' | 'unknown';
+  pageKind?:
+    | 'login'
+    | 'account_prompt'
+    | 'home'
+    | 'case_wizard'
+    | 'receipt'
+    | 'unknown';
   /** Visible wizard step selected by Taqadi (for example 60% / المستندات). */
   activeWizardSteps?: string[];
   /** Identity/text of the currently rendered content pane, excluding side navigation. */
@@ -203,7 +209,12 @@ export async function observeTaqadiPage(
       .slice(0, 10);
 
     const hasPassword = controls.some((control) => control.type === 'password');
-    const pageKind = /\/nas\/user\/prompt/i.test(currentUrl)
+    const isFilingReceipt = /إشعار تقديم الطلب/.test(bodyText)
+      && /إيصال طلب قيد دعوى/.test(bodyText)
+      && /رقم المرجع/.test(bodyText);
+    const pageKind = isFilingReceipt
+      ? 'receipt'
+      : /\/nas\/user\/prompt/i.test(currentUrl)
       ? 'account_prompt'
       : (/\/login(?:[/?#]|$)/i.test(currentUrl) || hasPassword)
         ? 'login'

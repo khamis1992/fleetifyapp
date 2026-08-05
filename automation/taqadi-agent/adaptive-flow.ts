@@ -9,7 +9,9 @@ export type AdaptivePortalAction =
   | 'fill_case_details'
   | 'process_parties'
   | 'upload_documents'
+  | 'continue_fees'
   | 'verify_review'
+  | 'recover_receipt'
   | 'wait_for_login'
   | 'request_human';
 
@@ -18,7 +20,8 @@ const nextStage: Partial<Record<TaqadiPortalStage, TaqadiPortalStage>> = {
   case_classification: 'case_details',
   case_details: 'parties',
   parties: 'documents',
-  documents: 'review',
+  documents: 'fees',
+  fees: 'review',
 };
 
 const actionByStage: Record<TaqadiPortalStage, AdaptivePortalAction> = {
@@ -28,7 +31,9 @@ const actionByStage: Record<TaqadiPortalStage, AdaptivePortalAction> = {
   case_details: 'fill_case_details',
   parties: 'process_parties',
   documents: 'upload_documents',
+  fees: 'continue_fees',
   review: 'verify_review',
+  receipt: 'recover_receipt',
   unknown: 'request_human',
 };
 
@@ -87,7 +92,9 @@ const stageOrder: TaqadiPortalStage[] = [
   'case_details',
   'parties',
   'documents',
+  'fees',
   'review',
+  'receipt',
 ];
 
 export function stageOrderIndex(stage: TaqadiPortalStage): number {

@@ -720,7 +720,38 @@ export class TaqadiWorker {
             message: `جاري التحقق من ${documents.length} مستند ورفعها إلى تقاضي`,
             details: { documentCount: documents.length },
           });
-          const documentUpload = await portal.uploadDocuments(documents);
+          const documentUpload = await portal.uploadDocuments(
+            documents,
+            async (documentProgress) => {
+              const completedCount = documentProgress.phase === 'started'
+                ? documentProgress.index
+                : documentProgress.index + 1;
+              const phaseLabel = {
+                started: 'جاري رفع',
+                uploaded: 'تم رفع',
+                skipped: 'تم تجاوز',
+                already_present: 'موجود مسبقًا',
+              }[documentProgress.phase];
+              await this.queue.update(job.id, {
+                status: 'uploading_documents',
+                step: `document_${documentProgress.index + 1}_of_${documentProgress.total}`,
+                progress: Math.min(
+                  77,
+                  68 + Math.floor((completedCount / documentProgress.total) * 9),
+                ),
+                message: `${phaseLabel} المستند ${documentProgress.index + 1} من ${documentProgress.total}: ${documentProgress.document.name}`,
+                details: {
+                  documentPhase: documentProgress.phase,
+                  documentIndex: documentProgress.index + 1,
+                  documentTotal: documentProgress.total,
+                  documentKey: documentProgress.document.key,
+                  documentName: documentProgress.document.name,
+                  fileName: documentProgress.document.fileName,
+                  outcome: documentProgress.outcome || null,
+                },
+              });
+            },
+          );
           await this.queue.update(job.id, {
             status: 'uploading_documents',
             step: 'documents_complete',
@@ -734,6 +765,14 @@ export class TaqadiWorker {
               alreadyPresentDocuments: documentUpload.alreadyPresent,
             },
           });
+        } else if (plan.action === 'continue_fees') {
+          await this.queue.update(job.id, {
+            status: 'reviewing',
+            step: 'fees_review',
+            progress: 82,
+            message: 'جاري التحقق من صفحة تفاصيل الرسوم والانتقال إلى ملخص الدعوى',
+          });
+          await portal.continueAfterFees();
         } else if (plan.action === 'verify_review') {
           await this.queue.update(job.id, {
             status: 'reviewing',
@@ -744,6 +783,25 @@ export class TaqadiWorker {
           await portal.verifyReview(job.payload);
           reviewVerified = true;
           break;
+        } else if (plan.action === 'recover_receipt') {
+          await this.queue.update(job.id, {
+            status: 'submitting',
+            step: 'receipt_recovery',
+            progress: 98,
+            message: 'تم العثور على إيصال تقاضي؛ جاري استخراج الرقم المرجعي وتحديث القضية',
+          });
+          const result = await portal.readReceipt();
+          await this.uploadScreenshot(job, 'filing-receipt', 'receipt')
+            .catch((error) => {
+              console.warn('[TaqadiAgent] receipt screenshot failed:', error);
+            });
+          await this.queue.complete(job.id, result);
+          await this.diagnostics.discardTracing();
+          this.setRuntime('idle', null, null);
+          console.log(
+            `[TaqadiAgent] recovered filed job ${job.id}: ${result.referenceNumber || result.caseNumber}`,
+          );
+          return;
         }
 
         if (plan.expectedStage) {

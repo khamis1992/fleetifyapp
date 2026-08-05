@@ -1,3 +1,4 @@
+import { copyFile, stat } from 'node:fs/promises';
 import path from 'node:path';
 import type {
   Locator,
@@ -44,8 +45,27 @@ export interface DocumentUploadSummary {
   }>;
 }
 
+export type DocumentUploadProgress = {
+  phase: 'started' | 'uploaded' | 'skipped' | 'already_present';
+  index: number;
+  total: number;
+  document: {
+    key: string;
+    name: string;
+    fileName: string;
+  };
+  outcome?: DocumentUploadOutcome;
+};
+
 const normalizeText = (value: string) =>
   value.replace(/\s+/g, ' ').trim();
+
+// Taqadi's upload endpoint intermittently rejects long Arabic filenames even
+// when the PDF itself is valid. Keep the descriptive Fleetify name in the job,
+// but use a short deterministic filename for the affected portal upload.
+const portalUploadFileNames: Record<string, string> = {
+  violationsEvidence: '09_MOI_violations.pdf',
+};
 
 const normalizeNumerals = (value: string) =>
   value
@@ -2637,6 +2657,28 @@ export class TaqadiPortal {
     return loginFormVisible && caseControls === 0;
   }
 
+  private async throwIfSessionExpired(interruptedContext: string) {
+    if (!(await this.looksLoggedOut())) return;
+
+    // Tawtheeq may complete in a second tab while the original portal tab is
+    // redirected to login. Adopt the authenticated tab before asking for help.
+    if (await this.adoptAuthenticatedPortalPage()) return;
+
+    throw new HumanInterventionError(
+      `انتهت جلسة تقاضي أثناء ${interruptedContext}. أكمل تسجيل الدخول عبر توثيق ثم تابع من مسودة الدعوى الحالية.`,
+      'LOGIN_REQUIRED',
+      {
+        url: this.page.url(),
+        interruptedContext,
+        resumeSupported: true,
+        requiredActions: [
+          'إكمال تسجيل الدخول عبر توثيق',
+          'فتح مسودة الدعوى الحالية',
+        ],
+      },
+    );
+  }
+
   private async isAuthenticatedPortalPage(page: Page) {
     if (page.isClosed()) return false;
     const url = page.url().toLowerCase();
@@ -3149,6 +3191,7 @@ export class TaqadiPortal {
     let stableReads = 0;
 
     while (Date.now() < deadline) {
+      await this.throwIfSessionExpired('انتظار جدول أطراف الدعوى');
       await this.waitForUiReady(Math.min(2_000, timeoutMs));
       const pane = this.partyPane();
       if (!(await pane.isVisible().catch(() => false))) {
@@ -3263,6 +3306,7 @@ export class TaqadiPortal {
   ): Promise<Locator | null> {
     const deadline = Date.now() + timeoutMs;
     do {
+      await this.throwIfSessionExpired('انتظار حفظ طرف الدعوى');
       const row = await this.partyRow(values);
       if (row) return row;
       await this.page.waitForTimeout(180);
@@ -3423,6 +3467,7 @@ export class TaqadiPortal {
     let refreshed = false;
 
     do {
+      await this.throwIfSessionExpired('التحقق من ترتيب أطراف الدعوى');
       await this.waitForUiReady(1_000);
       const gridRecord = await this.partyGridRecord(values);
       if (gridRecord) {
@@ -4320,10 +4365,175 @@ export class TaqadiPortal {
     await this.page.waitForTimeout(1_000);
   }
 
+  private async localDocumentFile(document: MaterializedDocument) {
+    const portalFileName = portalUploadFileNames[document.key];
+    const portalFilePath = portalFileName
+      ? path.join(path.dirname(document.filePath), portalFileName)
+      : document.filePath;
+    if (portalFilePath !== document.filePath) {
+      const [sourceFile, portalFile] = await Promise.all([
+        stat(document.filePath).catch(() => null),
+        stat(portalFilePath).catch(() => null),
+      ]);
+      if (!sourceFile?.isFile()) {
+        throw new HumanInterventionError(
+          `تعذر قراءة ملف «${document.name}» قبل رفعه إلى تقاضي`,
+          'DOCUMENT_LOCAL_FILE_UNREADABLE',
+          {
+            documentKey: document.key,
+            documentName: document.name,
+            filePath: document.filePath,
+          },
+        );
+      }
+      if (!portalFile?.isFile() || portalFile.size !== sourceFile.size) {
+        await copyFile(document.filePath, portalFilePath);
+      }
+    }
+
+    let localFileSize = 0;
+    try {
+      const localFile = await stat(portalFilePath);
+      localFileSize = localFile.isFile() ? localFile.size : 0;
+    } catch (error) {
+      throw new HumanInterventionError(
+        `تعذر قراءة ملف «${document.name}» قبل رفعه إلى تقاضي`,
+        'DOCUMENT_LOCAL_FILE_UNREADABLE',
+        {
+          documentKey: document.key,
+          documentName: document.name,
+          filePath: portalFilePath,
+          cause: error instanceof Error ? error.message : String(error),
+        },
+      );
+    }
+    if (localFileSize <= 0) {
+      throw new HumanInterventionError(
+        `ملف «${document.name}» فارغ ولا يمكن رفعه إلى تقاضي`,
+        'DOCUMENT_LOCAL_FILE_EMPTY',
+        {
+          documentKey: document.key,
+          documentName: document.name,
+          filePath: portalFilePath,
+        },
+      );
+    }
+
+    return {
+      path: portalFilePath,
+      name: path.basename(portalFilePath),
+      size: localFileSize,
+    };
+  }
+
+  private async attachDocumentFile(
+    input: Locator,
+    document: MaterializedDocument,
+  ) {
+    const localFile = await this.localDocumentFile(document);
+
+    await input.setInputFiles(localFile.path, {
+      timeout: Math.max(agentConfig.actionTimeoutMs, 45_000),
+    });
+    const browserFile = await input.evaluate((element) => {
+      const file = (element as HTMLInputElement).files?.[0];
+      return file ? { name: file.name, size: file.size } : null;
+    }).catch(() => null);
+
+    // Kendo uploads immediately, then clears or replaces the native input.
+    // The visible upload state and Save button become the source of truth.
+    return browserFile || localFile;
+  }
+
+  private async documentDialogSaveButton(dialogRoot: Locator | Page) {
+    return this.firstVisible([
+      dialogRoot.locator('.modal-footer button.btn-primary:visible')
+        .filter({ hasText: /^\s*حفظ\s*$/ }),
+      dialogRoot.getByRole('button', { name: /^\s*حفظ\s*$/ }),
+      dialogRoot.locator('button:visible').filter({ hasText: /^\s*حفظ\s*$/ }),
+      dialogRoot.getByRole('button', { name: /إضافة|إرفاق|تأكيد/i }),
+    ]);
+  }
+
+  private visibleDocumentDialogs() {
+    return this.page.locator(
+      '.modal:visible, [role="dialog"]:visible, .k-dialog:visible',
+    );
+  }
+
+  private async hasOpenDocumentDialog() {
+    const dialogs = this.visibleDocumentDialogs();
+    const count = Math.min(await dialogs.count(), 10);
+    for (let index = 0; index < count; index += 1) {
+      const dialog = dialogs.nth(index);
+      const hasFileInput = await dialog.locator('input[type="file"]')
+        .count().catch(() => 0) > 0;
+      const text = normalizeText(await dialog.innerText().catch(() => ''));
+      const isDocumentDialog = /إضافة\s+(وثيقة|مستند)/i.test(text);
+      const isLoadingShell = await dialog.locator([
+        '.k-loading-mask',
+        '.k-loading-image',
+        '.loading-overlay',
+        '.spinner-border',
+        '.blockUI',
+      ].join(', ')).count().catch(() => 0) > 0;
+      if (hasFileInput || isDocumentDialog || isLoadingShell) return true;
+    }
+    return false;
+  }
+
+  private async waitForDocumentDialogReady(timeoutMs: number) {
+    const visibleDialogs = this.visibleDocumentDialogs();
+    const dialog = visibleDialogs
+      .filter({ has: this.page.locator('input[type="file"]') })
+      .last();
+    const fileInput = dialog.locator('input[type="file"]').first();
+
+    try {
+      // Taqadi first displays a loading shell and injects the upload controls
+      // later. Waiting for the real input prevents treating that shell as ready.
+      await fileInput.waitFor({ state: 'attached', timeout: timeoutMs });
+      await dialog.waitFor({ state: 'visible', timeout: timeoutMs });
+    } catch (error) {
+      const visibleDialogTexts = (await visibleDialogs.allTextContents()
+        .catch(() => []))
+        .map((text) => normalizeText(text))
+        .filter(Boolean)
+        .slice(-5);
+      const loadingOverlayVisible = await this.page.locator([
+        '.k-loading-mask:visible',
+        '.k-loading-image:visible',
+        '.loading-overlay:visible',
+        '.spinner-border:visible',
+        '.blockUI:visible',
+      ].join(', ')).count().catch(() => 0) > 0;
+
+      throw new HumanInterventionError(
+        'لم تصبح نافذة «إضافة وثيقة» جاهزة لرفع الملف ضمن المهلة',
+        'DOCUMENT_DIALOG_NOT_READY',
+        {
+          timeoutMs,
+          loadingOverlayVisible,
+          visibleDialogTexts,
+          url: this.page.url(),
+          cause: error instanceof Error ? error.message : String(error),
+        },
+      );
+    }
+
+    return { dialog, fileInput };
+  }
+
   private async uploadDocument(
     document: MaterializedDocument,
   ): Promise<DocumentUploadOutcome> {
     const labels = documentLabels[document.key] || [document.name];
+    if (await this.hasOpenDocumentDialog()) {
+      return this.uploadDocumentViaAddDialog(
+        document,
+        documentTypeLabels[document.key] || labels,
+      );
+    }
     let input: Locator | null = null;
 
     for (const label of labels) {
@@ -4382,22 +4592,7 @@ export class TaqadiPortal {
       );
     }
 
-    await input.setInputFiles(document.filePath);
-    const selectedFile = await input.evaluate((element) => {
-      const file = (element as HTMLInputElement).files?.[0];
-      return file ? { name: file.name, size: file.size } : null;
-    });
-    if (!selectedFile || selectedFile.size <= 0) {
-      throw new HumanInterventionError(
-        `لم يثبت تقاضي اختيار ملف «${document.name}» داخل خانة الرفع`,
-        'DOCUMENT_FILE_NOT_ATTACHED',
-        {
-          documentKey: document.key,
-          documentName: document.name,
-          selectedFile,
-        },
-      );
-    }
+    const selectedFile = await this.attachDocumentFile(input, document);
     await this.page.waitForTimeout(250);
     return {
       status: 'uploaded',
@@ -4410,91 +4605,64 @@ export class TaqadiPortal {
 
   /**
    * Upload one document through the «إضافة وثيقة» dialog used by the current
-   * Taqadi documents page: open the dialog, attach the file, choose the
-   * closest document type, then save.
+   * Taqadi documents page: open the dialog, choose the closest document type,
+   * attach the file, then save. Taqadi validates uploads against the type that
+   * is selected at attachment time, so changing the type afterwards silently
+   * discards non-memo files and leaves Save disabled.
    */
   private async uploadDocumentViaAddDialog(
     document: MaterializedDocument,
     labels: string[],
   ): Promise<DocumentUploadOutcome> {
-    const addButton = await this.firstVisible([
-      this.page.getByRole('button', { name: /إضافة وثيقة|اضافة وثيقة|إضافة مستند/i }),
-      this.page.locator('button, a').filter({ hasText: /إضافة وثيقة|اضافة وثيقة|إضافة مستند/i }),
-      this.page.locator('[id^="button_add"]'),
-    ]);
-    if (!addButton) {
-      throw new HumanInterventionError(
-        'لم يجد الوكيل زر «إضافة وثيقة» في صفحة المستندات',
-        'TAQADI_UI_CHANGED',
-        { url: this.page.url() },
-      );
+    const hasOpenDialog = await this.hasOpenDocumentDialog();
+    if (!hasOpenDialog) {
+      const addButton = await this.firstVisible([
+        this.page.getByRole('button', { name: /إضافة وثيقة|اضافة وثيقة|إضافة مستند/i }),
+        this.page.locator('button, a').filter({ hasText: /إضافة وثيقة|اضافة وثيقة|إضافة مستند/i }),
+        this.page.locator('[id^="button_add"]'),
+      ]);
+      if (!addButton) {
+        throw new HumanInterventionError(
+          'لم يجد الوكيل زر «إضافة وثيقة» في صفحة المستندات',
+          'TAQADI_UI_CHANGED',
+          { url: this.page.url() },
+        );
+      }
+      await this.clickStable(addButton, 'فتح نافذة إضافة وثيقة');
     }
-    await addButton.click();
 
-    const dialog = this.page.locator(
-      '.modal:visible, [role="dialog"]:visible, .k-dialog:visible',
-    ).last();
-    await dialog.waitFor({ state: 'visible', timeout: 4_000 })
-      .catch(() => undefined);
-    const hasDialog = (await dialog.count()) > 0
-      && await dialog.isVisible().catch(() => false);
-    const dialogRoot = hasDialog ? dialog : this.page;
-
-    const fileInput = dialogRoot.locator('input[type="file"]').first();
-    if (!(await fileInput.count())) {
-      throw new HumanInterventionError(
-        'لم يجد الوكيل خانة الملف داخل حوار «إضافة وثيقة»',
-        'TAQADI_UI_CHANGED',
-        { url: this.page.url() },
-      );
-    }
-    await fileInput.setInputFiles(document.filePath);
-    const selectedFile = await fileInput.evaluate((element) => {
-      const file = (element as HTMLInputElement).files?.[0];
-      return file ? { name: file.name, size: file.size } : null;
-    });
-    if (!selectedFile || selectedFile.size <= 0) {
-      throw new HumanInterventionError(
-        `لم يثبت تقاضي اختيار ملف «${document.name}» داخل نافذة إضافة الوثيقة`,
-        'DOCUMENT_FILE_NOT_ATTACHED',
-        {
-          documentKey: document.key,
-          documentName: document.name,
-          selectedFile,
-        },
-      );
-    }
-    // Choose the document type when the dialog offers a type control.
+    const { dialog, fileInput } = await this.waitForDocumentDialogReady(
+      Math.max(agentConfig.actionTimeoutMs, 45_000),
+    );
+    const dialogRoot = dialog;
+    const localFile = await this.localDocumentFile(document);
+    // Select the type before attaching the file. The dialog defaults to
+    // «المذكرة الشارحة», which is valid only for the two memo copies.
     const typeLabels = ['نوع المستند', 'نوع الوثيقة', 'نوع المرفق', 'المستند'];
     const typeField = await this.fieldByLabel(typeLabels, [], dialogRoot)
       .catch(() => null);
     if (typeField) {
-      const chosen = await this.pickDialogDocumentType(
+      await this.pickDialogDocumentType(
         typeField,
         dialogRoot,
         labels,
       );
-      if (!chosen) {
-        console.warn(
-          `[TaqadiAgent] no matching document type for «${document.name}»; keeping the dialog default`,
-        );
-      }
     }
 
-    const saveButton = await this.firstVisible([
-      dialogRoot.getByRole('button', { name: /^\s*حفظ\s*$/ }),
-      dialogRoot.locator('button:visible').filter({ hasText: /^\s*حفظ\s*$/ }),
-      dialogRoot.getByRole('button', { name: /إضافة|إرفاق|تأكيد/i }),
-    ]);
-    if (!saveButton) {
-      throw new HumanInterventionError(
-        'لم يجد الوكيل زر الحفظ داخل حوار «إضافة وثيقة»',
-        'TAQADI_UI_CHANGED',
-        { url: this.page.url() },
-      );
-    }
+    const dialogText = normalizeText(await dialogRoot.innerText().catch(() => ''));
+    const completedFileVisible = await dialogRoot.locator(
+      '.k-file-success:visible, .k-file-complete:visible',
+    ).count().catch(() => 0) > 0;
+    const expectedFileAlreadyUploaded = dialogText.includes(localFile.name)
+      && (completedFileVisible || /(^|\s)(تم|مكتمل|100\s*%|complete)(\s|$)/i
+        .test(dialogText));
+    const selectedFile = expectedFileAlreadyUploaded
+      ? localFile
+      : await this.attachDocumentFile(fileInput, document);
 
+    let saveButton: Locator | null = null;
     let rejectionReason = '';
+    let uploadStatus = '';
     for (let attempt = 0; attempt < 120; attempt += 1) {
       const errorMessages = await dialogRoot.locator([
         '.k-file-error:visible',
@@ -4503,23 +4671,44 @@ export class TaqadiPortal {
         '.alert-danger:visible',
         '.text-danger:visible',
       ].join(', ')).allTextContents().catch(() => []);
-      const uploadStatus = normalizeText(
-        (await dialogRoot.locator('.k-upload-status-total:visible')
-          .allTextContents().catch(() => [])).join(' '),
-      );
+      uploadStatus = normalizeText((await dialogRoot.locator([
+        '.k-upload-status-total:visible',
+        '.k-progress-status:visible',
+        '.k-file-status:visible',
+      ].join(', ')).allTextContents().catch(() => [])).join(' '));
       const statusIsError = /خط[اأ]|فشل|تعذر|غير مقبول|invalid|error|failed/i
         .test(uploadStatus);
       rejectionReason = normalizeText([
         ...errorMessages,
         statusIsError ? uploadStatus : '',
       ].filter(Boolean).join(' '));
-      if (rejectionReason || await saveButton.isEnabled().catch(() => false)) {
+      saveButton = await this.documentDialogSaveButton(dialogRoot);
+      const saveEnabled = saveButton
+        ? await saveButton.isEnabled().catch(() => false)
+        : false;
+      const completedClassVisible = await dialogRoot.locator(
+        '.k-file-success:visible, .k-file-complete:visible',
+      ).count().catch(() => 0) > 0;
+      const uploadCompleted = completedClassVisible
+        || /(^|\s)(تم|مكتمل|اكتمل|100\s*%|complete|uploaded)(\s|$)/i
+          .test(uploadStatus);
+      const uploadInProgress = !uploadCompleted
+        && /جار[يى]|قيد الرفع|uploading|progress/i.test(uploadStatus);
+      if (rejectionReason || (saveEnabled && !uploadInProgress)) {
         break;
       }
       await this.page.waitForTimeout(250);
     }
 
-    if (!(await saveButton.isEnabled().catch(() => false))) {
+    saveButton = await this.documentDialogSaveButton(dialogRoot);
+    if (!saveButton || !(await saveButton.isEnabled().catch(() => false))) {
+      // Capture diagnostics while the :visible dialog locator still resolves.
+      const selectedType = typeField
+        ? await this.selectedFieldText(typeField).catch(() => '')
+        : '';
+      const finalDialogText = normalizeText(
+        await dialogRoot.innerText().catch(() => ''),
+      );
       const closeButton = await this.firstVisible([
         dialogRoot.getByRole('button', { name: /^\s*إغلاق\s*$/ }),
         dialogRoot.getByRole('button', { name: /^\s*إلغاء\s*$/ }),
@@ -4534,7 +4723,7 @@ export class TaqadiPortal {
         .catch(() => undefined);
 
       const reason = rejectionReason
-        || 'رفض تقاضي الملف بعد اختياره؛ غالبًا بسبب الحجم أو قيود الملف';
+        || `لم يفعّل تقاضي زر الحفظ بعد إرفاق الملف (النوع: ${selectedType || 'غير ظاهر'}؛ حالة الرفع: ${uploadStatus || 'غير ظاهرة'})`;
       console.warn(
         `[TaqadiAgent] skipped rejected document «${document.name}»: ${reason}`,
       );
@@ -4544,19 +4733,40 @@ export class TaqadiPortal {
         name: document.name,
         fileName: selectedFile.name,
         sizeBytes: selectedFile.size,
-        reason,
+        reason: finalDialogText && !rejectionReason
+          ? `${reason}؛ محتوى النافذة: ${finalDialogText.slice(0, 500)}`
+          : reason,
       };
     }
-    await saveButton.click();
+    await this.clickStable(saveButton, `حفظ مستند ${document.name}`);
     const uploadedRow = this.page.locator('tr:visible').filter({
       hasText: selectedFile.name,
     }).first();
-    await Promise.race([
-      hasDialog
-        ? dialog.waitFor({ state: 'hidden', timeout: 5_000 })
-        : this.page.waitForTimeout(400),
-      uploadedRow.waitFor({ state: 'visible', timeout: 5_000 }),
-    ]).catch(() => undefined);
+    const confirmationDeadline = Date.now() + 15_000;
+    let saveConfirmed = false;
+    do {
+      const dialogClosed = !(await dialog.isVisible().catch(() => false));
+      const rowVisible = await uploadedRow.isVisible().catch(() => false);
+      if (dialogClosed || rowVisible) {
+        saveConfirmed = true;
+        break;
+      }
+      await this.page.waitForTimeout(250);
+    } while (Date.now() < confirmationDeadline);
+
+    if (!saveConfirmed) {
+      throw new HumanInterventionError(
+        `ضغط الوكيل زر حفظ «${document.name}» لكن تقاضي لم يغلق النافذة ولم يعرض المستند في القائمة`,
+        'DOCUMENT_SAVE_NOT_CONFIRMED',
+        {
+          documentKey: document.key,
+          documentName: document.name,
+          fileName: selectedFile.name,
+          uploadStatus,
+          url: this.page.url(),
+        },
+      );
+    }
     return {
       status: 'uploaded',
       key: document.key,
@@ -4570,10 +4780,52 @@ export class TaqadiPortal {
     typeField: Locator,
     dialogRoot: Locator | Page,
     labels: string[],
-  ): Promise<boolean> {
+  ): Promise<void> {
+    const expectedLabels = labels
+      .map((label) => normalizeText(label))
+      .filter(Boolean);
+    const expectedNormalized = expectedLabels.map(normalizeArabicText);
+    const optionMatches = (optionText: string) => {
+      const normalized = normalizeArabicText(optionText);
+      return expectedNormalized.some((wanted) => (
+        normalized === wanted
+        || normalized.includes(wanted)
+        || wanted.includes(normalized)
+      ));
+    };
+    const currentSelection = await this.selectedFieldText(typeField);
+    if (optionMatches(currentSelection)) return;
+
+    const tagName = await typeField.evaluate((element) =>
+      element.tagName.toLowerCase(),
+    );
+    if (tagName === 'select') {
+      const nativeOptions = await typeField.locator('option').allTextContents();
+      const matchingOption = nativeOptions
+        .map(normalizeText)
+        .find((optionText) => optionText && optionMatches(optionText));
+      if (!matchingOption) {
+        throw new HumanInterventionError(
+          `نوع المستند المطلوب «${expectedLabels.join(' أو ')}» غير موجود في قائمة تقاضي`,
+          'DOCUMENT_TYPE_NOT_FOUND',
+          {
+            expectedTypes: expectedLabels,
+            availableTypes: nativeOptions.map(normalizeText).filter(Boolean),
+            url: this.page.url(),
+          },
+        );
+      }
+      await typeField.selectOption({ label: matchingOption });
+      await this.assertSelectedField(
+        typeField,
+        ['نوع المستند'],
+        matchingOption,
+      );
+      return;
+    }
+
     const { listboxId } = await this.dropdownIdentity(typeField, []);
-    await typeField.click();
-    await this.page.waitForTimeout(500);
+    await this.clickStable(typeField, 'فتح قائمة نوع المستند');
     const options = listboxId
       ? this.page.locator(
         `[id="${listboxId}"] [role="option"], `
@@ -4587,34 +4839,45 @@ export class TaqadiPortal {
         + '.k-list-container:visible .k-item, '
         + '.ng-dropdown-panel:visible .ng-option',
       );
-    const count = Math.min(await options.count(), 40);
-    let fallback: Locator | null = null;
-    for (let index = 0; index < count; index += 1) {
-      const option = options.nth(index);
-      if (!(await option.isVisible().catch(() => false))) continue;
-      const text = normalizeText(await option.innerText().catch(() => ''));
-      if (!text || text.includes('اختيار')) continue;
-      const normalized = normalizeArabicText(text);
-      const matches = labels.some((label) => {
-        const wanted = normalizeArabicText(label);
-        return normalized.includes(wanted) || wanted.includes(normalized);
-      });
-      if (matches) {
+    const deadline = Date.now() + 12_000;
+    const availableOptions = new Set<string>();
+    while (Date.now() < deadline) {
+      const count = Math.min(await options.count(), maxDropdownOptionCount);
+      for (let index = 0; index < count; index += 1) {
+        const option = options.nth(index);
+        const optionText = normalizeText(
+          await option.innerText().catch(() => ''),
+        );
+        if (!optionText || optionText.includes('اختيار')) continue;
+        availableOptions.add(optionText);
+        if (!(await option.isVisible().catch(() => false))) continue;
+        if (!optionMatches(optionText)) continue;
+
         await option.evaluate((element) => (element as HTMLElement).click());
-        return true;
+        await this.assertSelectedField(
+          typeField,
+          ['نوع المستند'],
+          optionText,
+        );
+        return;
       }
-      fallback ??= option;
-    }
-    if (fallback) {
-      await fallback.evaluate((element) => (element as HTMLElement).click());
-      return true;
+      await this.page.waitForTimeout(250);
     }
     await this.page.keyboard.press('Escape').catch(() => undefined);
-    return false;
+    throw new HumanInterventionError(
+      `نوع المستند المطلوب «${expectedLabels.join(' أو ')}» لم يظهر في قائمة تقاضي`,
+      'DOCUMENT_TYPE_NOT_FOUND',
+      {
+        expectedTypes: expectedLabels,
+        availableTypes: [...availableOptions],
+        listboxId,
+        url: this.page.url(),
+      },
+    );
   }
 
   private async documentAlreadyUploaded(document: MaterializedDocument) {
-    const fileName = path.basename(document.filePath);
+    const fileName = (await this.localDocumentFile(document)).name;
     const matchingRows = this.page.locator('tr:visible').filter({
       hasText: fileName,
     });
@@ -4623,6 +4886,7 @@ export class TaqadiPortal {
 
   async uploadDocuments(
     documents: MaterializedDocument[],
+    onProgress?: (progress: DocumentUploadProgress) => Promise<void> | void,
   ): Promise<DocumentUploadSummary> {
     const summary: DocumentUploadSummary = {
       uploaded: [],
@@ -4630,19 +4894,50 @@ export class TaqadiPortal {
       alreadyPresent: [],
     };
     const mandatoryFailures: DocumentUploadOutcome[] = [];
+    const emitProgress = async (progress: DocumentUploadProgress) => {
+      console.log(
+        `[TaqadiAgent] document ${progress.index + 1}/${progress.total} `
+        + `${progress.phase}: ${progress.document.fileName} (${progress.document.key})`,
+      );
+      await Promise.resolve(onProgress?.(progress)).catch((error) => {
+        console.warn('[TaqadiAgent] document progress update failed:', error);
+      });
+    };
     for (let index = 0; index < documents.length; index += 1) {
       const document = documents[index];
+      const progressDocument = {
+        key: document.key,
+        name: document.name,
+        fileName: path.basename(document.filePath),
+      };
+      await emitProgress({
+        phase: 'started',
+        index,
+        total: documents.length,
+        document: progressDocument,
+      });
       if (await this.documentAlreadyUploaded(document)) {
         summary.alreadyPresent.push({
-          key: document.key,
-          name: document.name,
-          fileName: path.basename(document.filePath),
+          ...progressDocument,
+        });
+        await emitProgress({
+          phase: 'already_present',
+          index,
+          total: documents.length,
+          document: progressDocument,
         });
         continue;
       }
       const outcome = await this.uploadDocument(document);
       summary[outcome.status === 'uploaded' ? 'uploaded' : 'skipped']
         .push(outcome);
+      await emitProgress({
+        phase: outcome.status,
+        index,
+        total: documents.length,
+        document: progressDocument,
+        outcome,
+      });
       if (outcome.status === 'skipped' && mandatoryMemoKeys.has(document.key)) {
         mandatoryFailures.push(outcome);
       }
@@ -4662,22 +4957,49 @@ export class TaqadiPortal {
         },
       );
     }
+    if (summary.skipped.length > 0) {
+      const skippedNames = summary.skipped
+        .map((failure) => `«${failure.name}»: ${failure.reason || 'سبب غير معروف'}`)
+        .join('، ');
+      throw new HumanInterventionError(
+        `تمت محاولة رفع بقية الحزمة، لكن لن يعتمد الوكيل دعوى ناقصة. المستندات التي لم يقبلها تقاضي: ${skippedNames}`,
+        'DOCUMENT_BUNDLE_INCOMPLETE',
+        {
+          uploadedDocuments: summary.uploaded,
+          skippedDocuments: summary.skipped,
+          alreadyPresentDocuments: summary.alreadyPresent,
+        },
+      );
+    }
     await this.clickAny(['التالي'], 'متابعة بعد المستندات');
     await this.page.waitForTimeout(1_500);
     return summary;
   }
 
   async verifyReview(payload: FilingPayload) {
+    const expandAll = this.page.getByText('توسيع الكل', { exact: true })
+      .filter({ visible: true })
+      .first();
+    if (await expandAll.isVisible().catch(() => false)) {
+      await expandAll.click();
+      await this.page.waitForTimeout(500);
+    }
+
     const bodyText = normalizeText(
       await this.page.locator('body').innerText(),
     );
+    const comparable = (value: string) => normalizeArabicText(value)
+      .replace(/[^\p{L}\p{N}]+/gu, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+    const comparableBodyText = comparable(bodyText);
     const requiredValues = [
       payload.case.title,
       payload.defendant.fullName,
       payload.contract.number,
     ];
     const missing = requiredValues.filter(
-      (value) => !bodyText.includes(normalizeText(value)),
+      (value) => !comparableBodyText.includes(comparable(value)),
     );
     const reviewAmounts = numericValuesInText(bodyText);
     const claimAmountMatches = reviewAmounts.some(
@@ -4696,6 +5018,11 @@ export class TaqadiPortal {
         },
       );
     }
+  }
+
+  async continueAfterFees() {
+    await this.clickAny(['التالي'], 'متابعة بعد تفاصيل الرسوم');
+    await this.page.waitForTimeout(1_500);
   }
 
   async submitFinal(
@@ -4745,7 +5072,7 @@ export class TaqadiPortal {
       }
 
       await this.page.waitForFunction(
-        () => /تم بنجاح|رقم الطلب|رقم الدعوى|الرقم المرجعي/.test(
+        () => /تم بنجاح|رقم الطلب|رقم الدعوى|الرقم المرجعي|رقم المرجع|إيصال طلب قيد دعوى/.test(
           document.body.innerText,
         ),
         undefined,
@@ -4758,6 +5085,10 @@ export class TaqadiPortal {
       );
     }
 
+    return this.readReceipt();
+  }
+
+  async readReceipt(): Promise<FilingResult> {
     const confirmationText = normalizeText(
       await this.page.locator('body').innerText(),
     );
@@ -4767,11 +5098,14 @@ export class TaqadiPortal {
     ]);
     const referenceNumber = this.extractValue(confirmationText, [
       /الرقم المرجعي\s*[:：]?\s*([A-Z0-9\u0660-\u0669/-]+)/i,
+      /رقم المرجع\s*[:：]?\s*([A-Z0-9\u0660-\u0669/-]+)/i,
       /رقم الطلب\s*[:：]?\s*([A-Z0-9\u0660-\u0669/-]+)/i,
       /Reference\s*[:：]?\s*([A-Z0-9/-]+)/i,
     ]) || caseNumber;
     const feesText = this.extractValue(confirmationText, [
       /(?:الرسوم|قيمة الرسوم)\s*[:：]?\s*([0-9\u0660-\u0669,.]+)/i,
+      /رسوم تسليم طلب رفع دعوى\s*([0-9\u0660-\u0669,.]+)/i,
+      /المجموع\s*:?\s*\[?ريال قطري\]?\s*([0-9\u0660-\u0669,.]+)/i,
     ]);
     const courtFees = feesText
       ? Number(
