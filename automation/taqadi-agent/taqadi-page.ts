@@ -267,11 +267,20 @@ export class TaqadiPortal {
 
   private async firstVisible(locators: Locator[]): Promise<Locator | null> {
     for (const locator of locators) {
-      const count = await locator.count();
-      for (let index = 0; index < count; index += 1) {
-        const candidate = locator.nth(index);
-        if (await candidate.isVisible().catch(() => false)) return candidate;
-      }
+      // Taqadi keeps stale hidden dialogs and controls in the DOM. Find the
+      // visible candidate in one browser evaluation instead of issuing one
+      // Playwright round trip for every stale element.
+      const visibleIndex = await locator.evaluateAll((elements) =>
+        elements.findIndex((element) => {
+          const node = element as HTMLElement;
+          const style = window.getComputedStyle(node);
+          const rect = node.getBoundingClientRect();
+          return style.display !== 'none'
+            && style.visibility !== 'hidden'
+            && rect.width > 0
+            && rect.height > 0;
+        })).catch(() => -1);
+      if (visibleIndex >= 0) return locator.nth(visibleIndex);
     }
     return null;
   }
@@ -4842,22 +4851,49 @@ export class TaqadiPortal {
     const deadline = Date.now() + 12_000;
     const availableOptions = new Set<string>();
     while (Date.now() < deadline) {
-      const count = Math.min(await options.count(), maxDropdownOptionCount);
-      for (let index = 0; index < count; index += 1) {
-        const option = options.nth(index);
-        const optionText = normalizeText(
-          await option.innerText().catch(() => ''),
-        );
-        if (!optionText || optionText.includes('اختيار')) continue;
-        availableOptions.add(optionText);
-        if (!(await option.isVisible().catch(() => false))) continue;
-        if (!optionMatches(optionText)) continue;
+      // Kendo leaves hidden copies of the listbox in the DOM every time the
+      // upload dialog is reopened. Reading each option through Playwright
+      // turns those copies into hundreds of browser round trips. Read the
+      // whole list in one browser evaluation and act only on a visible match.
+      const optionSnapshots = await options.evaluateAll((elements) => {
+        const visibleOptions: Array<{
+          index: number;
+          text: string;
+          visible: true;
+        }> = [];
+        elements.forEach((element, index) => {
+          const node = element as HTMLElement;
+          const style = window.getComputedStyle(node);
+          const rect = node.getBoundingClientRect();
+          const visible = style.display !== 'none'
+            && style.visibility !== 'hidden'
+            && rect.width > 0
+            && rect.height > 0;
+          if (!visible) return;
+          visibleOptions.push({
+            index,
+            text: (node.innerText || node.textContent || '')
+              .replace(/\s+/g, ' ')
+              .trim(),
+            visible: true,
+          });
+        });
+        return visibleOptions;
+      }).catch(() => []);
 
-        await option.evaluate((element) => (element as HTMLElement).click());
+      for (const snapshot of optionSnapshots) {
+        if (!snapshot.text || snapshot.text.includes('اختيار')) continue;
+        availableOptions.add(snapshot.text);
+      }
+      const matchingOption = optionSnapshots.find((snapshot) =>
+        optionMatches(snapshot.text));
+      if (matchingOption) {
+        await options.nth(matchingOption.index)
+          .evaluate((element) => (element as HTMLElement).click());
         await this.assertSelectedField(
           typeField,
           ['نوع المستند'],
-          optionText,
+          matchingOption.text,
         );
         return;
       }

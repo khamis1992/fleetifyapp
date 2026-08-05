@@ -27,7 +27,7 @@ export const FIXED_DEFENDANT_CONTACT = Object.freeze({
 });
 
 export const agentConfig = {
-  version: '1.6.21',
+  version: '1.6.22',
   workerId: process.env.TAQADI_WORKER_ID
     || `${os.hostname()}-taqadi`,
   hostname: os.hostname(),
@@ -43,6 +43,7 @@ export const agentConfig = {
   loginTimeoutMs: numberFromEnv('TAQADI_LOGIN_TIMEOUT_MS', 10 * 60_000),
   actionTimeoutMs: numberFromEnv('TAQADI_ACTION_TIMEOUT_MS', 30_000),
   finalApproval: booleanFromEnv('TAQADI_FINAL_APPROVAL', true),
+  traceSnapshots: booleanFromEnv('TAQADI_TRACE_SNAPSHOTS', false),
   stopAfterParties: booleanFromEnv('TAQADI_STOP_AFTER_PARTIES', false),
   headless: booleanFromEnv('TAQADI_HEADLESS', false),
   healthPort: numberFromEnv('TAQADI_HEALTH_PORT', 4317),

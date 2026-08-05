@@ -1576,6 +1576,65 @@ describe('TaqadiPortal classification fields', () => {
     );
   }, 15_000);
 
+  it('ignores accumulated hidden Kendo listboxes without serial option reads', async () => {
+    const hiddenListboxes = Array.from({ length: 40 }, (_, listboxIndex) => `
+      <ul id="documentType_listbox" style="display:none">
+        ${Array.from({ length: 10 }, (_, optionIndex) => `
+          <li role="option" class="k-item">Hidden ${listboxIndex}-${optionIndex}</li>
+        `).join('')}
+      </ul>
+    `).join('');
+
+    await page.setContent(`
+      <button
+        type="button"
+        onclick="document.querySelector('#document-dialog').style.display='block'"
+      >إضافة وثيقة</button>
+      <div id="document-dialog" class="modal" role="dialog" style="display:none">
+        <input type="file">
+        <label for="documentType">نوع المستند</label>
+        <div
+          id="documentType"
+          role="combobox"
+          aria-owns="documentType_listbox"
+        ><span class="k-input">المذكرة الشارحة</span></div>
+        <button
+          type="button"
+          onclick="this.closest('.modal').style.display='none'"
+        >حفظ</button>
+      </div>
+      ${hiddenListboxes}
+      <ul id="documentType_listbox">
+        <li
+          role="option"
+          class="k-item"
+          onclick="document.querySelector('#documentType .k-input').textContent='حافظة المستندات'"
+        >حافظة المستندات</li>
+      </ul>
+      <button
+        type="button"
+        onclick="document.body.dataset.continued='true'"
+      >التالي</button>
+    `);
+
+    const portal = new TaqadiPortal(page);
+    const startedAt = Date.now();
+    await portal.uploadDocuments([{
+      key: 'contract',
+      name: 'عقد الإيجار',
+      filePath: uploadFixturePath,
+      mimeType: 'application/pdf',
+    }]);
+
+    expect(Date.now() - startedAt).toBeLessThan(3_000);
+    expect(
+      await page.locator('#documentType .k-input').innerText(),
+    ).toBe('حافظة المستندات');
+    expect(await page.locator('body').getAttribute('data-continued')).toBe(
+      'true',
+    );
+  }, 10_000);
+
   it('stops before save when the mapped document type is unavailable', async () => {
     await page.setContent(`
       <button

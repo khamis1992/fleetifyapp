@@ -29,8 +29,8 @@ export class JobDiagnostics {
     if (this.tracingContext === context) return;
     await this.discardTracing();
     await context.tracing.start({
-      screenshots: true,
-      snapshots: true,
+      screenshots: agentConfig.traceSnapshots,
+      snapshots: agentConfig.traceSnapshots,
       title: `taqadi-${job.id}`,
     });
     this.tracingContext = context;

@@ -723,9 +723,8 @@ export class TaqadiWorker {
           const documentUpload = await portal.uploadDocuments(
             documents,
             async (documentProgress) => {
-              const completedCount = documentProgress.phase === 'started'
-                ? documentProgress.index
-                : documentProgress.index + 1;
+              if (documentProgress.phase === 'started') return;
+              const completedCount = documentProgress.index + 1;
               const phaseLabel = {
                 started: 'جاري رفع',
                 uploaded: 'تم رفع',

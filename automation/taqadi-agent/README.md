@@ -185,6 +185,12 @@ ordering, and claim-amount checks stay fully deterministic.
 Set `TAQADI_STOP_AFTER_PARTIES=true` only for diagnostics. Production must use
 `TAQADI_STOP_AFTER_PARTIES=false` and `TAQADI_FINAL_APPROVAL=true`.
 
+Full Playwright screenshots and DOM snapshots are disabled during normal jobs
+to avoid slowing every browser action and generating very large trace files.
+Set `TAQADI_TRACE_SNAPSHOTS=true` temporarily only when diagnosing a portal
+regression; failure screenshots and the current accessibility snapshot remain
+available while it is disabled.
+
 ## Canary check
 
 `npm run taqadi:agent:canary` queues a dry-run that clones the most recently
