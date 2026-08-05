@@ -27,7 +27,7 @@ export const FIXED_DEFENDANT_CONTACT = Object.freeze({
 });
 
 export const agentConfig = {
-  version: '1.2.0',
+  version: '1.6.9',
   workerId: process.env.TAQADI_WORKER_ID
     || `${os.hostname()}-taqadi`,
   hostname: os.hostname(),
@@ -72,11 +72,18 @@ export const agentConfig = {
     email: process.env.TAQADI_REPRESENTATIVE_EMAIL || '',
     address: process.env.TAQADI_REPRESENTATIVE_ADDRESS || 'الدوحة قطر',
     nationality: process.env.TAQADI_REPRESENTATIVE_NATIONALITY || 'تونسي',
+    identityType: process.env.TAQADI_REPRESENTATIVE_ID_TYPE || 'رخصة مقيم',
+    identityNumber: process.env.TAQADI_REPRESENTATIVE_ID_NUMBER
+      || process.env.TAQADI_TAWTHEEQ_USERNAME
+      || '',
   },
   defendantDefaults: {
     ...FIXED_DEFENDANT_CONTACT,
   },
   company: {
+    phone: process.env.TAQADI_COMPANY_PHONE
+      || process.env.TAQADI_REPRESENTATIVE_PHONE
+      || '',
     email: process.env.TAQADI_COMPANY_EMAIL || '',
     address: process.env.TAQADI_COMPANY_ADDRESS || '',
     country: process.env.TAQADI_COMPANY_COUNTRY || 'قطر',
@@ -103,6 +110,7 @@ export function findCorruptedConfigValues(
     ['TAQADI_REPRESENTATIVE_NAME', config.representative.name],
     ['TAQADI_REPRESENTATIVE_ADDRESS', config.representative.address],
     ['TAQADI_REPRESENTATIVE_NATIONALITY', config.representative.nationality],
+    ['TAQADI_REPRESENTATIVE_ID_TYPE', config.representative.identityType],
     ['TAQADI_DEFENDANT_ADDRESS', config.defendantDefaults.address],
     ['TAQADI_COMPANY_ADDRESS', config.company.address],
     ['TAQADI_COMPANY_COUNTRY', config.company.country],
@@ -138,7 +146,14 @@ export function assertAgentConfig() {
   if (!agentConfig.representative.email) {
     missing.push('TAQADI_REPRESENTATIVE_EMAIL');
   }
+  if (!agentConfig.representative.identityType) {
+    missing.push('TAQADI_REPRESENTATIVE_ID_TYPE');
+  }
+  if (!agentConfig.representative.identityNumber) {
+    missing.push('TAQADI_REPRESENTATIVE_ID_NUMBER');
+  }
   if (!agentConfig.company.email) missing.push('TAQADI_COMPANY_EMAIL');
+  if (!agentConfig.company.phone) missing.push('TAQADI_COMPANY_PHONE');
   if (!agentConfig.company.address) missing.push('TAQADI_COMPANY_ADDRESS');
   if (!agentConfig.company.bankNameAr) {
     missing.push('TAQADI_COMPANY_BANK_NAME_AR');

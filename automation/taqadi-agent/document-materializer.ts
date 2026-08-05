@@ -2,6 +2,11 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { chromium, type Browser } from 'playwright';
 import { agentConfig } from './config';
+import {
+  createMemoDocxBuffer,
+  isValidDocxBuffer,
+  MEMO_DOCX_MIME,
+} from './memo-docx';
 import type {
   FilingDocument,
   FilingJob,
@@ -9,9 +14,12 @@ import type {
 } from './types';
 
 const PDF_HEADER = Buffer.from('%PDF-');
+const MAX_DOCUMENT_BYTES = 20 * 1024 * 1024;
 
 const safeName = (value: string) =>
   value
+    // Windows file names cannot contain ASCII control characters.
+    // eslint-disable-next-line no-control-regex
     .replace(/[<>:"/\\|?*\u0000-\u001f]/g, '-')
     .replace(/\s+/g, ' ')
     .trim()
@@ -26,6 +34,11 @@ async function isPdf(filePath: string) {
   } finally {
     await handle.close();
   }
+}
+
+async function isMemoWordFile(filePath: string) {
+  const buffer = await fs.readFile(filePath);
+  return isValidDocxBuffer(buffer);
 }
 
 function authenticatedStorageUrl(url: string) {
@@ -167,6 +180,28 @@ async function materializeOne(
   );
 }
 
+async function memoHtml(document: FilingDocument) {
+  if (document.htmlContent?.trim()) return document.htmlContent;
+  if (!document.url) {
+    throw new Error('Memo HTML is required to generate the Word copy');
+  }
+
+  const { buffer, contentType } = await fetchBuffer(document.url);
+  if (contentType.includes('text/html')) return buffer.toString('utf8');
+  throw new Error(
+    'Memo Word copy requires the original HTML source; the available source is not HTML',
+  );
+}
+
+async function materializeMemoWord(
+  document: FilingDocument,
+  outputPath: string,
+) {
+  const html = await memoHtml(document);
+  const buffer = await createMemoDocxBuffer(html);
+  await fs.writeFile(outputPath, buffer);
+}
+
 export async function materializeFilingDocuments(
   job: FilingJob,
 ): Promise<MaterializedDocument[]> {
@@ -188,7 +223,7 @@ export async function materializeFilingDocuments(
       const reusable = Boolean(
         existingStat
         && existingStat.size >= 500
-        && existingStat.size <= 20 * 1024 * 1024
+        && existingStat.size <= MAX_DOCUMENT_BYTES
         && await isPdf(outputPath).catch(() => false),
       );
       if (!reusable) {
@@ -205,7 +240,7 @@ export async function materializeFilingDocuments(
       if (stat.size < 500) {
         throw new Error(`Generated PDF is empty: ${document.name}`);
       }
-      if (stat.size > 20 * 1024 * 1024) {
+      if (stat.size > MAX_DOCUMENT_BYTES) {
         throw new Error(`PDF exceeds 20 MB: ${document.name}`);
       }
 
@@ -215,6 +250,39 @@ export async function materializeFilingDocuments(
         filePath: outputPath,
         mimeType: 'application/pdf',
       });
+
+      if (document.key === 'memo') {
+        const wordFileName = `${String(index + 1).padStart(2, '0')}_${safeName(document.name)}_Word.docx`;
+        const wordOutputPath = path.join(jobDir, wordFileName);
+        const wordStat = await fs.stat(wordOutputPath).catch(() => null);
+        const reusableWord = Boolean(
+          wordStat
+          && wordStat.size >= 500
+          && wordStat.size <= MAX_DOCUMENT_BYTES
+          && await isMemoWordFile(wordOutputPath).catch(() => false),
+        );
+        if (!reusableWord) {
+          await materializeMemoWord(document, wordOutputPath).catch((error) => {
+            const message = error instanceof Error ? error.message : String(error);
+            throw new Error(`Failed to prepare Word copy of "${document.name}": ${message}`);
+          });
+        }
+
+        if (!(await isMemoWordFile(wordOutputPath))) {
+          throw new Error(`Generated file is not a valid Word document: ${document.name}`);
+        }
+        const finalWordStat = await fs.stat(wordOutputPath);
+        if (finalWordStat.size > MAX_DOCUMENT_BYTES) {
+          throw new Error(`Word document exceeds 20 MB: ${document.name}`);
+        }
+
+        results.push({
+          key: 'memoWord',
+          name: `${document.name} (Word)`,
+          filePath: wordOutputPath,
+          mimeType: MEMO_DOCX_MIME,
+        });
+      }
     }
     return results;
   } finally {

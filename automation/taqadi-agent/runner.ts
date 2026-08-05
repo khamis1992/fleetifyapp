@@ -69,7 +69,6 @@ export class TaqadiWorker {
   private readonly diagnostics = new JobDiagnostics();
   private context: BrowserContext | null = null;
   private page: Page | null = null;
-  private retryCookies: Parameters<BrowserContext['addCookies']>[0] = [];
   private readonly trackedPages = new WeakSet<Page>();
   private stopping = false;
   private heartbeatTimer: NodeJS.Timeout | null = null;
@@ -208,16 +207,6 @@ export class TaqadiWorker {
         acceptDownloads: true,
       },
     );
-    const retryCookies = this.retryCookies;
-    this.retryCookies = [];
-    if (retryCookies.length > 0) {
-      await context.addCookies(retryCookies).catch((error) => {
-        console.warn(
-          '[TaqadiAgent] could not restore retry session cookies:',
-          error,
-        );
-      });
-    }
     this.context = context;
     this.page = null;
     context.setDefaultTimeout(agentConfig.actionTimeoutMs);
@@ -257,12 +246,31 @@ export class TaqadiWorker {
     throw new Error('Unable to open the Taqadi browser session');
   }
 
-  private async resetBrowserContext() {
+  private async prepareBrowserForPortalRetry() {
     const context = this.context;
-    if (!context) return;
-    this.retryCookies = await context.cookies().catch(() => []);
-    this.forgetBrowserContext(context);
-    await context.close().catch(() => undefined);
+    const page = this.page;
+    if (
+      !context
+      || !this.browserContextIsConnected(context)
+      || !page
+      || page.isClosed()
+    ) return;
+
+    await page.bringToFront().catch(() => undefined);
+    const homeUrl = new URL('/itc/home', agentConfig.portalUrl).toString();
+    await page.goto(homeUrl, {
+      waitUntil: 'domcontentloaded',
+      timeout: 30_000,
+    }).catch(async (error) => {
+      console.warn(
+        '[TaqadiAgent] could not return the existing tab to the portal home before retry:',
+        error,
+      );
+      await page.reload({
+        waitUntil: 'domcontentloaded',
+        timeout: 30_000,
+      }).catch(() => undefined);
+    });
   }
 
   private async screenshot(job: FilingJob, name: string) {
@@ -491,7 +499,7 @@ export class TaqadiWorker {
         status: 'validating',
         step: 'materialize_documents',
         progress: 5,
-        message: 'جاري تحويل حزمة الدعوى إلى ملفات PDF قابلة للرفع',
+        message: 'جاري تجهيز ملفات الدعوى، بما فيها نسختا PDF وWord من المذكرة',
       });
       const documents = await materializeFilingDocuments(job);
 
@@ -530,13 +538,30 @@ export class TaqadiWorker {
       this.setRuntime('busy', job.id, null);
 
       const updatePartyPhase = async (phase: PartyWorkflowPhase) => {
-        if (phase === 'company_and_defendant') return;
         if (phase === 'save_parties_draft') {
           await this.queue.update(job.id, {
             status: 'validating_parties',
             step: 'save_parties_draft',
             progress: 44,
             message: 'جاري حفظ مسودة الدعوى في صفحة الأطراف قبل تسجيل الأطراف',
+          });
+          return;
+        }
+        if (phase === 'company') {
+          await this.queue.update(job.id, {
+            status: 'validating_parties',
+            step: 'company_party',
+            progress: 48,
+            message: 'جاري التحقق من بيانات شركة العراف وحفظها كمدعٍ بالترتيب الأول',
+          });
+          return;
+        }
+        if (phase === 'defendant') {
+          await this.queue.update(job.id, {
+            status: 'validating_parties',
+            step: 'defendant_party',
+            progress: 54,
+            message: 'تم حفظ الشركة؛ جاري إضافة المدعى عليه والتحقق من بياناته',
           });
           return;
         }
@@ -695,7 +720,20 @@ export class TaqadiWorker {
             message: `جاري التحقق من ${documents.length} مستند ورفعها إلى تقاضي`,
             details: { documentCount: documents.length },
           });
-          await portal.uploadDocuments(documents);
+          const documentUpload = await portal.uploadDocuments(documents);
+          await this.queue.update(job.id, {
+            status: 'uploading_documents',
+            step: 'documents_complete',
+            progress: 78,
+            message: documentUpload.skipped.length > 0
+              ? `تم رفع المستندات المتاحة وتجاوز ${documentUpload.skipped.length} ملف رفضه تقاضي`
+              : 'تم رفع جميع المستندات المتاحة إلى تقاضي',
+            details: {
+              uploadedDocuments: documentUpload.uploaded,
+              skippedDocuments: documentUpload.skipped,
+              alreadyPresentDocuments: documentUpload.alreadyPresent,
+            },
+          });
         } else if (plan.action === 'verify_review') {
           await this.queue.update(job.id, {
             status: 'reviewing',
@@ -816,10 +854,11 @@ export class TaqadiWorker {
             previousErrorDetails: error.details,
             portalAttempt,
             retryDelayMs,
+            browserPreserved: true,
           },
         });
         await this.diagnostics.discardTracing();
-        await this.resetBrowserContext();
+        await this.prepareBrowserForPortalRetry();
         await sleep(retryDelayMs);
         return this.process(job, nextAttempt);
       }

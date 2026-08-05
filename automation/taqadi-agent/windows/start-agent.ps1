@@ -3,7 +3,7 @@ param(
   [string]$Uri = ''
 )
 
-$ErrorActionPreference = 'Continue'
+$ErrorActionPreference = 'Stop'
 $ProgressPreference = 'SilentlyContinue'
 
 $taskName = 'Fleetify Taqadi Agent'
@@ -35,9 +35,21 @@ try {
 $task = Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue
 if ($task) {
   $source = if ($Uri -ne '') { $Uri } else { 'manual' }
-  Write-LauncherLog ('Start requested ({0}); starting scheduled task.' -f $source)
-  Start-ScheduledTask -TaskName $taskName
-  exit 0
+  try {
+    if ($task.State -eq 'Disabled') {
+      Write-LauncherLog ('Start requested ({0}); enabling the disabled scheduled task.' -f $source)
+      Enable-ScheduledTask -TaskName $taskName | Out-Null
+    }
+
+    Write-LauncherLog ('Start requested ({0}); starting scheduled task.' -f $source)
+    Start-ScheduledTask -TaskName $taskName
+    exit 0
+  } catch {
+    Write-LauncherLog (
+      'Scheduled task could not be started; falling back to the direct supervisor: {0}' `
+        -f $_.Exception.Message
+    )
+  }
 }
 
 if (Test-Path -LiteralPath $runnerScript) {

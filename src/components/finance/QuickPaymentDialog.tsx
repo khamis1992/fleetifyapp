@@ -381,6 +381,18 @@ export function QuickPaymentDialog({
       return;
     }
 
+    // لا يُقبل مبلغ يتجاوز رصيد الفواتير المحددة — الزيادة غير المطبقة كانت
+    // تُفقد سابقًا من السجلات بينما يعرض الإيصال المبلغ كاملًا.
+    const totalSelectedBalance = getTotalSelectedAmount();
+    if (amount > totalSelectedBalance + 0.01) {
+      toast({
+        title: 'المبلغ أكبر من المستحق',
+        description: `المبلغ المدخل (${amount.toFixed(2)} ر.ق) يتجاوز إجمالي رصيد الفواتير المحددة (${totalSelectedBalance.toFixed(2)} ر.ق). عدّل المبلغ أو حدّد فواتير إضافية.`,
+        variant: 'destructive',
+      });
+      return;
+    }
+
     setProcessing(true);
     try {
       const paymentAttempt = paymentAttemptRef.current ?? {
@@ -420,6 +432,7 @@ export function QuickPaymentDialog({
       let remainingAmount = amount;
       let firstPaymentId: string | null = null;
       let paymentsCreated = 0;
+      let totalRecorded = 0;
 
       for (let i = 0; i < selectedInvoices.length && remainingAmount > 0; i++) {
         const invoice = selectedInvoices[i];
@@ -459,6 +472,7 @@ export function QuickPaymentDialog({
         
         if (!firstPaymentId) firstPaymentId = payment.id;
         paymentsCreated++;
+        totalRecorded += amountToApply;
 
         remainingAmount -= amountToApply;
       }
@@ -490,7 +504,7 @@ export function QuickPaymentDialog({
       setPaymentSuccess({
         paymentId: payment.id,
         receiptNumber: generateReceiptNumber(),
-        amount: amount,
+        amount: totalRecorded,
         invoiceNumber: selectedInvoices.length > 1 
           ? `${selectedInvoices.length} فواتير` 
           : selectedInvoices[0].invoice_number,
@@ -514,7 +528,7 @@ export function QuickPaymentDialog({
 
       toast({
         title: 'تم تسجيل الدفعة بنجاح ✅',
-        description: `تم تسجيل دفعة بمبلغ ${amount.toFixed(2)} ر.ق`,
+        description: `تم تسجيل دفعة بمبلغ ${totalRecorded.toFixed(2)} ر.ق`,
       });
 
       onSuccess?.();

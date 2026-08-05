@@ -1224,14 +1224,14 @@ export function LawsuitPreparationProvider({
       toast.info('جاري تجهيز المذكرة بصيغة Word...');
       
       const { dynamicImportWithRetry } = await import('@/utils/lazyWithRetry');
-      const { downloadHtmlAsWord } = await dynamicImportWithRetry(() => import('@/utils/document-export'));
+      const { downloadHtmlAsDocx } = await dynamicImportWithRetry(() => import('@/utils/document-export'));
       
       // Prepare filename
       const customerName = formatCustomerName(state.customer) || 'عميل';
-      const fileName = `المذكرة_الشارحة_${customerName}_${state.contract?.contract_number || ''}.doc`;
+      const fileName = `المذكرة_الشارحة_${customerName}_${state.contract?.contract_number || ''}.docx`;
       
       // Download using the utility function
-      await downloadHtmlAsWord(memoHtml, fileName);
+      await downloadHtmlAsDocx(memoHtml, fileName);
       
       toast.success('تم تحميل المذكرة بصيغة Word بنفس تنسيق المعاينة');
     } catch (error) {

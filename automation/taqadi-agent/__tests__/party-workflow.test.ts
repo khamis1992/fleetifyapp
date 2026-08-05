@@ -41,8 +41,9 @@ describe('processTaqadiParties', () => {
     expect(calls).toEqual([
       'phase:save_parties_draft',
       'saveDraft',
-      'phase:company_and_defendant',
+      'phase:company',
       'company',
+      'phase:defendant',
       'defendant:false',
       'phase:representative_last',
       'representative',

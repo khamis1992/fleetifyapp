@@ -29,6 +29,9 @@ function fakePage(closed = false) {
     on: vi.fn(),
     addInitScript: vi.fn(async () => undefined),
     evaluate: vi.fn(async () => undefined),
+    bringToFront: vi.fn(async () => undefined),
+    goto: vi.fn(async () => undefined),
+    reload: vi.fn(async () => undefined),
   } as unknown as Page;
 }
 
@@ -123,65 +126,28 @@ describe('Taqadi browser lifecycle', () => {
     );
   });
 
-  it('fully closes the current context before a portal-flow retry', async () => {
+  it('keeps Chrome open and reuses the current tab for a portal-flow retry', async () => {
     const page = fakePage();
-    const sessionCookies = [{
-      name: 'JSESSIONID',
-      value: 'test-session',
-      domain: 'taqadi.sjc.gov.qa',
-      path: '/',
-      expires: -1,
-      httpOnly: true,
-      secure: true,
-      sameSite: 'Lax' as const,
-    }];
     const context = fakeContext({
       pages: [page],
-      cookies: sessionCookies,
     });
     const worker = new TaqadiWorker() as unknown as {
       context: BrowserContext | null;
       page: Page | null;
-      retryCookies: Parameters<BrowserContext['addCookies']>[0];
-      resetBrowserContext: () => Promise<void>;
+      prepareBrowserForPortalRetry: () => Promise<void>;
     };
     worker.context = context;
     worker.page = page;
 
-    await worker.resetBrowserContext();
+    await worker.prepareBrowserForPortalRetry();
 
-    expect(context.close).toHaveBeenCalledOnce();
-    expect(worker.context).toBeNull();
-    expect(worker.page).toBeNull();
-    expect(worker.retryCookies).toEqual(sessionCookies);
-  });
-
-  it('restores preserved session cookies in the replacement context', async () => {
-    const replacementPage = fakePage();
-    const replacementContext = fakeContext({ pages: [replacementPage] });
-    vi.mocked(chromium.launchPersistentContext)
-      .mockResolvedValueOnce(replacementContext);
-    const sessionCookies = [{
-      name: 'JSESSIONID',
-      value: 'test-session',
-      domain: 'taqadi.sjc.gov.qa',
-      path: '/',
-      expires: -1,
-      httpOnly: true,
-      secure: true,
-      sameSite: 'Lax' as const,
-    }];
-    const worker = new TaqadiWorker() as unknown as {
-      retryCookies: Parameters<BrowserContext['addCookies']>[0];
-      getPage: () => Promise<Page>;
-    };
-    worker.retryCookies = sessionCookies;
-
-    await worker.getPage();
-
-    expect(replacementContext.addCookies).toHaveBeenCalledWith(
-      sessionCookies,
+    expect(context.close).not.toHaveBeenCalled();
+    expect(worker.context).toBe(context);
+    expect(worker.page).toBe(page);
+    expect(page.bringToFront).toHaveBeenCalledOnce();
+    expect(page.goto).toHaveBeenCalledWith(
+      'https://taqadi.sjc.gov.qa/itc/home',
+      expect.objectContaining({ waitUntil: 'domcontentloaded' }),
     );
-    expect(worker.retryCookies).toEqual([]);
   });
 });

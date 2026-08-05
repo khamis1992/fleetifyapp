@@ -8,12 +8,15 @@ const healthyConfig = {
     email: 'rep@example.com',
     address: 'الدوحة قطر',
     nationality: 'تونسي',
+    identityType: 'رخصة مقيم',
+    identityNumber: '29263400736',
   },
   defendantDefaults: {
     email: 'def@example.com',
     address: 'الدوحة قطر',
   },
   company: {
+    phone: '66707063',
     email: 'co@example.com',
     address: 'الدوحة قطر',
     country: 'قطري',

@@ -94,7 +94,9 @@ export interface MaterializedDocument {
   key: string;
   name: string;
   filePath: string;
-  mimeType: 'application/pdf';
+  mimeType:
+    | 'application/pdf'
+    | 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
 }
 
 export interface FilingResult {

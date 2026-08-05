@@ -6,7 +6,8 @@ import {
 
 export type PartyWorkflowPhase =
   | 'save_parties_draft'
-  | 'company_and_defendant'
+  | 'company'
+  | 'defendant'
   | 'representative_last';
 
 type PartyWorkflowPortal = Pick<
@@ -33,8 +34,9 @@ export async function processTaqadiParties(
   await options.onPhase?.('save_parties_draft');
   await portal.savePartiesDraft();
 
-  await options.onPhase?.('company_and_defendant');
+  await options.onPhase?.('company');
   await portal.validateCompanyParty(payload);
+  await options.onPhase?.('defendant');
   await portal.addDefendant(payload, { continueAfterSave: false });
 
   await options.onPhase?.('representative_last');

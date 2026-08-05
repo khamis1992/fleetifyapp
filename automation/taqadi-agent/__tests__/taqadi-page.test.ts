@@ -16,6 +16,7 @@ describe('TaqadiPortal classification fields', () => {
   let browser: Browser;
   let page: Page;
   let uploadFixturePath: string;
+  let wordUploadFixturePath: string;
 
   beforeAll(async () => {
     browser = await chromium.launch({ headless: true });
@@ -28,11 +29,20 @@ describe('TaqadiPortal classification fields', () => {
       uploadFixturePath,
       Buffer.from('%PDF-1.4\n% Fleetify upload fixture\n'),
     );
+    wordUploadFixturePath = path.join(
+      os.tmpdir(),
+      `fleetify-taqadi-upload-${process.pid}.docx`,
+    );
+    await fs.writeFile(
+      wordUploadFixturePath,
+      Buffer.from('PK Word fixture'),
+    );
   });
 
   afterAll(async () => {
     await browser.close();
     await fs.unlink(uploadFixturePath).catch(() => undefined);
+    await fs.unlink(wordUploadFixturePath).catch(() => undefined);
   });
 
   it('finds selects next to unbound Bootstrap labels', async () => {
@@ -431,7 +441,11 @@ describe('TaqadiPortal classification fields', () => {
       >
         <label for="priority">الترتيب حسب صحيفة الدعوى</label>
         <span class="k-widget k-numerictextbox">
-          <input class="k-formatted-value k-input" value="1">
+          <input
+            class="k-formatted-value k-input"
+            value="1"
+            oninput="document.querySelector('#party-editor #priority').value=this.value"
+          >
           <input id="priority" type="hidden" value="1">
         </span>
         <label for="mobileNo">رقم الجوال</label>
@@ -442,8 +456,22 @@ describe('TaqadiPortal classification fields', () => {
         <input id="address">
         <label for="nationality">الجنسية</label>
         <select id="nationality">
-          <option>${agentConfig.representative.nationality}</option>
+          <option>قطر</option>
+          <option>تونس</option>
         </select>
+        <label for="proofOfIdentity">نوع البطاقة</label>
+        <select
+          id="proofOfIdentity"
+          onchange="document.querySelector('#representative-identity').innerHTML='<label for=&quot;identityNo&quot;>رقم الهوية</label><input id=&quot;identityNo&quot;>'; document.querySelector('#party-editor #priority').value='1'; document.querySelector('#party-editor .k-formatted-value').value='1'"
+        >
+          <option value="">اختيار واحد</option>
+          <option>رخصة مقيم</option>
+        </select>
+        <div id="representative-identity"></div>
+        <label for="firstName">الاسم الأول</label>
+        <input id="firstName" value="خميس">
+        <label for="lastName">اسم العائلة</label>
+        <input id="lastName" value="الجبر">
         <button
           type="button"
           onclick="this.dataset.saved='true'; document.querySelector('[data-party-order]').textContent=document.querySelector('#party-editor .k-formatted-value').value; this.closest('.modal').style.display='none'"
@@ -465,17 +493,25 @@ describe('TaqadiPortal classification fields', () => {
     expect(
       await page.locator('tr[role="row"]').getAttribute('data-selected'),
     ).toBe('true');
-    expect(await page.locator('#mobileNo').inputValue()).toBe(
-      agentConfig.representative.phone,
-    );
+    const expectedPhone = agentConfig.representative.phone.startsWith('974')
+      ? agentConfig.representative.phone
+      : `974${agentConfig.representative.phone}`;
+    expect(await page.locator('#mobileNo').inputValue()).toBe(expectedPhone);
     expect(await page.locator('#email').inputValue()).toBe(
       agentConfig.representative.email,
+    );
+    expect(await page.locator('#nationality').inputValue()).toBe('تونس');
+    expect(await page.locator('#proofOfIdentity').inputValue()).toBe(
+      'رخصة مقيم',
+    );
+    expect(await page.locator('#identityNo').inputValue()).toBe(
+      agentConfig.representative.identityNumber,
     );
     expect(
       await page.locator('#party-editor button', { hasText: 'حفظ' })
         .getAttribute('data-saved'),
     ).toBe('true');
-  });
+  }, 15_000);
 
   it('fills the visible Kendo numeric input when stale controls share an id', async () => {
     await page.setContent(`
@@ -603,7 +639,15 @@ describe('TaqadiPortal classification fields', () => {
   it('waits for the commercial-register field created by Taqadi refresh', async () => {
     await page.setContent(`
       <script>
-        window.renderCommercialRegister = () => {
+        window.crIssuerCommits = 0;
+        window.renderCommercialRegister = (select) => {
+          window.crIssuerCommits += 1;
+          if (window.crIssuerCommits === 1) {
+            setTimeout(() => {
+              select.value = '';
+            }, 20);
+            return;
+          }
           document.querySelector('#commercial-register-slot').innerHTML =
             '<label for="officialRegistrationNumber">'
             + 'رقم السجل التجاري *</label>'
@@ -632,8 +676,9 @@ describe('TaqadiPortal classification fields', () => {
         <label for="crIssuedBy">رقم السجل التجاري أو قيد المنشأة صادر عن</label>
         <select
           id="crIssuedBy"
-          onchange="setTimeout(window.renderCommercialRegister, 100)"
+          onchange="setTimeout(() => window.renderCommercialRegister(this), 100)"
         >
+          <option value="">اختيار واحد</option>
           <option>وزارة التجارة والصناعة</option>
         </select>
         <div id="commercial-register-slot"></div>
@@ -657,6 +702,8 @@ describe('TaqadiPortal classification fields', () => {
         <select id="country"><option>${agentConfig.company.country}</option></select>
         <label for="addresses0.address">العنوان</label>
         <input id="addresses0.address">
+        <label for="mobileNo">رقم الهاتف المحمول</label>
+        <input id="mobileNo">
         <label for="email">البريد الإلكتروني</label>
         <input id="email">
         <label for="priority">الترتيب حسب صحيفة الدعوى</label>
@@ -686,6 +733,9 @@ describe('TaqadiPortal classification fields', () => {
     expect(
       await page.locator('#officialRegistrationNumber').inputValue(),
     ).toBe('146832');
+    expect(await page.evaluate(() => (
+      window as Window & { crIssuerCommits: number }
+    ).crIssuerCommits)).toBe(2);
     expect(await page.locator('#name').inputValue()).toBe(
       'شركة العراف لتأجير السيارات',
     );
@@ -701,12 +751,15 @@ describe('TaqadiPortal classification fields', () => {
     expect(await page.locator('#email').inputValue()).toBe(
       agentConfig.company.email,
     );
+    expect(await page.locator('#mobileNo').inputValue()).toBe(
+      `974${agentConfig.company.phone}`,
+    );
     expect(await page.locator('[id="addresses0.address"]').inputValue()).toBe(
       agentConfig.company.address,
     );
     expect(await page.locator('#priority').inputValue()).toBe('1');
     expect(await page.locator('#tempTransalationReq2').isChecked()).toBe(true);
-  });
+  }, 15_000);
 
   it('confirms the account prompt with Enter without selecting a role', async () => {
     await page.route('**/*', async (route) => {
@@ -1055,8 +1108,9 @@ describe('TaqadiPortal classification fields', () => {
       <script>
         window.renderIdentityNumber = () => {
           document.querySelector('#party-editor #identity-number-slot').innerHTML =
-            '<label for="residencyCardNumber">رقم البطاقة *</label>'
-            + '<input id="residencyCardNumber">';
+            '<input id="tempIdentityNo" type="hidden" value="">'
+            + '<label for="identityNo">رقم البطاقة *</label>'
+            + '<input id="identityNo">';
           document.querySelector('#party-editor #firstName').value = '';
           document.querySelector('#party-editor #lastName').value = '';
           document.querySelector('#party-editor #priority').value = '1';
@@ -1188,7 +1242,7 @@ describe('TaqadiPortal classification fields', () => {
       await page.locator('#party-editor [id="nationality"]').inputValue(),
     ).toBe('سودان');
     expect(
-      await page.locator('#party-editor #residencyCardNumber').inputValue(),
+      await page.locator('#party-editor #identityNo').inputValue(),
     ).toBe('12345678901');
     expect(
       await page.locator('#party-editor [id="firstName"]').inputValue(),
@@ -1255,7 +1309,291 @@ describe('TaqadiPortal classification fields', () => {
     expect(await page.locator('body').getAttribute('data-continued')).toBe(
       'true',
     );
-  });
+  }, 15_000);
+
+  it('keeps the PDF and Word memo copies in separate upload slots', async () => {
+    await page.setContent(`
+      <section id="memo-uploads">
+        <div class="document-row">
+          <span>مرفق 1</span>
+          <input id="memo-pdf" type="file">
+        </div>
+        <div class="document-row">
+          <span>مرفق 2</span>
+          <input id="memo-word" type="file">
+        </div>
+        <button
+          type="button"
+          onclick="document.body.dataset.continued='true'"
+        >التالي</button>
+      </section>
+    `);
+
+    const portal = new TaqadiPortal(page);
+    const summary = await portal.uploadDocuments([
+      {
+        key: 'memo',
+        name: 'المذكرة الشارحة',
+        filePath: uploadFixturePath,
+        mimeType: 'application/pdf',
+      },
+      {
+        key: 'memoWord',
+        name: 'المذكرة الشارحة (Word)',
+        filePath: wordUploadFixturePath,
+        mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      },
+    ]);
+
+    expect(
+      await page.locator('#memo-pdf').evaluate(
+        (element) => (element as HTMLInputElement).files?.[0]?.name || '',
+      ),
+    ).toBe(path.basename(uploadFixturePath));
+    expect(
+      await page.locator('#memo-word').evaluate(
+        (element) => (element as HTMLInputElement).files?.[0]?.name || '',
+      ),
+    ).toBe(path.basename(wordUploadFixturePath));
+    expect(summary.uploaded.map((document) => document.key)).toEqual([
+      'memo',
+      'memoWord',
+    ]);
+    expect(await page.locator('body').getAttribute('data-continued')).toBe(
+      'true',
+    );
+  }, 15_000);
+
+  it('chooses a document type only from the dropdown owned by its dialog', async () => {
+    await page.setContent(`
+      <ul id="navigation">
+        <li onclick="document.body.dataset.decoyClicked='true'">القائمة الرئيسية</li>
+      </ul>
+      <button
+        type="button"
+        onclick="document.querySelector('#document-dialog').style.display='block'"
+      >إضافة وثيقة</button>
+      <div id="document-dialog" class="modal" role="dialog" style="display:none">
+        <input type="file">
+        <label for="documentType">نوع المستند</label>
+        <select id="documentType">
+          <option value="memo">المذكرة الشارحة</option>
+          <option value="portfolio">حافظة المستندات</option>
+        </select>
+        <button
+          type="button"
+          onclick="this.closest('.modal').style.display='none'"
+        >حفظ</button>
+      </div>
+      <ul id="documentType_listbox">
+        <li
+          role="option"
+          class="k-item"
+          onclick="document.body.dataset.ownedOptionClicked='true'"
+        >حافظة المستندات</li>
+      </ul>
+      <button
+        type="button"
+        onclick="document.body.dataset.continued='true'"
+      >التالي</button>
+    `);
+
+    const portal = new TaqadiPortal(page);
+    await portal.uploadDocuments([{
+      key: 'claims',
+      name: 'كشف المطالبات المالية',
+      filePath: uploadFixturePath,
+      mimeType: 'application/pdf',
+    }]);
+
+    expect(
+      await page.locator('body').getAttribute('data-owned-option-clicked'),
+    ).toBe('true');
+    expect(
+      await page.locator('body').getAttribute('data-decoy-clicked'),
+    ).toBeNull();
+    expect(await page.locator('body').getAttribute('data-continued')).toBe(
+      'true',
+    );
+  }, 10_000);
+
+  it('waits through the Kendo uploading status until save becomes available', async () => {
+    await page.setContent(`
+      <button
+        type="button"
+        onclick="
+          document.querySelector('#document-dialog').style.display='block';
+          setTimeout(() => {
+            document.querySelector('#upload-status').textContent='تم تحميل الملف';
+            document.querySelector('#save-document').disabled=false;
+          }, 400);
+        "
+      >إضافة وثيقة</button>
+      <div id="document-dialog" class="modal" role="dialog" style="display:none">
+        <input type="file">
+        <strong id="upload-status" class="k-upload-status-total">
+          جاري تحميل الملف...
+        </strong>
+        <button
+          id="save-document"
+          type="button"
+          disabled
+          onclick="document.body.dataset.saved='true'; this.closest('.modal').style.display='none'"
+        >حفظ</button>
+        <button type="button">إغلاق</button>
+      </div>
+      <button
+        type="button"
+        onclick="document.body.dataset.continued='true'"
+      >التالي</button>
+    `);
+
+    const portal = new TaqadiPortal(page);
+    const summary = await portal.uploadDocuments([{
+      key: 'claims',
+      name: 'كشف المطالبات المالية',
+      filePath: uploadFixturePath,
+      mimeType: 'application/pdf',
+    }]);
+
+    expect(summary.uploaded).toHaveLength(1);
+    expect(summary.skipped).toHaveLength(0);
+    expect(await page.locator('body').getAttribute('data-saved')).toBe('true');
+    expect(await page.locator('body').getAttribute('data-continued')).toBe('true');
+  }, 10_000);
+
+  it('skips a file rejected by Taqadi and uploads the remaining files', async () => {
+    await page.setContent(`
+      <button
+        id="add-document"
+        type="button"
+        onclick="
+          const attempt = Number(document.body.dataset.uploadAttempt || '0') + 1;
+          document.body.dataset.uploadAttempt = String(attempt);
+          document.querySelector('#document-dialog').style.display = 'block';
+          document.querySelector('#upload-error').style.display = attempt === 1 ? 'block' : 'none';
+          document.querySelector('#save-document').disabled = attempt === 1;
+        "
+      >إضافة وثيقة</button>
+      <div id="document-dialog" class="modal" role="dialog" style="display:none">
+        <input type="file">
+        <label for="documentType">نوع المستند</label>
+        <select id="documentType">
+          <option value="general">نوع عام</option>
+        </select>
+        <div id="upload-error" class="k-file-error" style="display:none">
+          حجم الملف أكبر من الحد المسموح
+        </div>
+        <button
+          id="close-document"
+          type="button"
+          onclick="document.body.dataset.closed='true'; this.closest('.modal').style.display='none'"
+        >إغلاق</button>
+        <button
+          id="save-document"
+          type="button"
+          onclick="document.body.dataset.saved='true'; this.closest('.modal').style.display='none'"
+        >حفظ</button>
+      </div>
+      <ul id="documentType_listbox">
+        <li role="option" class="k-item">نوع عام</li>
+      </ul>
+      <button
+        type="button"
+        onclick="document.body.dataset.continued='true'"
+      >التالي</button>
+    `);
+
+    const portal = new TaqadiPortal(page);
+    const summary = await portal.uploadDocuments([
+      {
+        key: 'large-traffic-report',
+        name: 'تقرير المخالفات الكبير',
+        filePath: uploadFixturePath,
+        mimeType: 'application/pdf',
+      },
+      {
+        key: 'remaining-document',
+        name: 'المستند التالي',
+        filePath: uploadFixturePath,
+        mimeType: 'application/pdf',
+      },
+    ]);
+
+    expect(summary.skipped).toHaveLength(1);
+    expect(summary.skipped[0]).toMatchObject({
+      key: 'large-traffic-report',
+      status: 'skipped',
+    });
+    expect(summary.uploaded).toHaveLength(1);
+    expect(summary.uploaded[0]).toMatchObject({
+      key: 'remaining-document',
+      status: 'uploaded',
+    });
+    expect(await page.locator('body').getAttribute('data-closed')).toBe('true');
+    expect(await page.locator('body').getAttribute('data-saved')).toBe('true');
+    expect(await page.locator('body').getAttribute('data-continued')).toBe(
+      'true',
+    );
+  }, 20_000);
+
+  it('tries the remaining documents before reporting a rejected mandatory memo', async () => {
+    await page.setContent(`
+      <button
+        id="add-document"
+        type="button"
+        onclick="
+          const attempt = Number(document.body.dataset.uploadAttempt || '0') + 1;
+          document.body.dataset.uploadAttempt = String(attempt);
+          document.querySelector('#document-dialog').style.display='block';
+          document.querySelector('#upload-error').style.display = attempt === 1 ? 'block' : 'none';
+          document.querySelector('#save-document').disabled = attempt === 1;
+        "
+      >إضافة وثيقة</button>
+      <div id="document-dialog" class="modal" role="dialog" style="display:none">
+        <input type="file">
+        <div id="upload-error" class="k-file-error">صيغة الملف غير مقبولة</div>
+        <button
+          type="button"
+          onclick="this.closest('.modal').style.display='none'"
+        >إغلاق</button>
+        <button
+          id="save-document"
+          type="button"
+          disabled
+          onclick="document.body.dataset.saved='true'; this.closest('.modal').style.display='none'"
+        >حفظ</button>
+      </div>
+      <button
+        type="button"
+        onclick="document.body.dataset.continued='true'"
+      >التالي</button>
+    `);
+
+    const portal = new TaqadiPortal(page);
+    await expect(portal.uploadDocuments([
+      {
+        key: 'memoWord',
+        name: 'المذكرة الشارحة (Word)',
+        filePath: wordUploadFixturePath,
+        mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      },
+      {
+        key: 'remaining-document',
+        name: 'المستند التالي',
+        filePath: uploadFixturePath,
+        mimeType: 'application/pdf',
+      },
+    ])).rejects.toMatchObject({
+      code: 'MANDATORY_MEMO_DOCUMENT_REJECTED',
+      details: {
+        uploadedDocuments: [{ key: 'remaining-document' }],
+      },
+    });
+    expect(await page.locator('body').getAttribute('data-upload-attempt')).toBe('2');
+    expect(await page.locator('body').getAttribute('data-saved')).toBe('true');
+    expect(await page.locator('body').getAttribute('data-continued')).toBeNull();
+  }, 10_000);
 
   it('clicks only the exact حفظ button when saving the parties draft', async () => {
     await page.setContent(`
@@ -1411,6 +1749,96 @@ describe('TaqadiPortal classification fields', () => {
     await portal.openNewCase();
 
     expect(await page.locator('body').getAttribute('data-opened')).toBe('true');
+  });
+
+  it('retypes a text field when Taqadi clears its first committed value', async () => {
+    await page.setContent(`
+      <div id="party-editor">
+        <label for="firstName">الاسم الأول</label>
+        <input id="firstName">
+      </div>
+      <script>
+        const firstName = document.querySelector('#firstName');
+        firstName.addEventListener('change', () => {
+          const commits = Number(firstName.dataset.commits || '0') + 1;
+          firstName.dataset.commits = String(commits);
+          if (commits === 1) {
+            setTimeout(() => {
+              firstName.value = '';
+            }, 20);
+          }
+        });
+      </script>
+    `);
+
+    const portal = new TaqadiPortal(page) as unknown as {
+      fillField: (
+        labels: string[],
+        value: string,
+        required: boolean,
+        controlIds: string[],
+        root: Locator,
+      ) => Promise<void>;
+    };
+    await portal.fillField(
+      ['الاسم الأول', 'الاسم'],
+      'مراد',
+      true,
+      ['firstName', 'partyFirstName'],
+      page.locator('#party-editor'),
+    );
+
+    expect(await page.locator('#firstName').inputValue()).toBe('مراد');
+    expect(await page.locator('#firstName').getAttribute('data-commits')).toBe('2');
+  });
+
+  it('commits TinyMCE content to the hidden Taqadi textarea', async () => {
+    await page.setContent(`
+      <textarea id="caseDetails" required></textarea>
+      <iframe
+        id="caseDetails_ifr"
+        srcdoc="<body id='tinymce' contenteditable='true'></body>"
+      ></iframe>
+      <script>
+        const textarea = document.querySelector('#caseDetails');
+        const frame = document.querySelector('#caseDetails_ifr');
+        window.tinymce = {
+          get: () => ({
+            getContent: () => frame.contentDocument.body.innerHTML,
+            save: () => {
+              textarea.value = frame.contentDocument.body.innerHTML;
+            },
+            fire: (eventName) => {
+              textarea.dataset.editorEvents = [
+                textarea.dataset.editorEvents || '',
+                eventName,
+              ].filter(Boolean).join(',');
+            },
+          }),
+          triggerSave: () => {
+            textarea.dataset.triggerSaved = 'true';
+          },
+        };
+      </script>
+    `);
+
+    const portal = new TaqadiPortal(page) as unknown as {
+      fillRichText: (controlId: string, value: string) => Promise<void>;
+    };
+    await portal.fillRichText(
+      'caseDetails',
+      'إلزام المدعى عليه بسداد قيمة المطالبة',
+    );
+
+    expect(await page.locator('#caseDetails').inputValue()).toContain(
+      'إلزام المدعى عليه',
+    );
+    expect(await page.locator('#caseDetails').getAttribute(
+      'data-editor-events',
+    )).toContain('change');
+    expect(await page.locator('#caseDetails').getAttribute(
+      'data-trigger-saved',
+    )).toBe('true');
   });
 
   it('never searches case-management menus on an expired login page', async () => {

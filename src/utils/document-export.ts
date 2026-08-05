@@ -151,7 +151,7 @@ function parseHtmlToSections(html: string): ParsedSection[] {
  * @param htmlContent محتوى HTML
  * @returns Document object من مكتبة docx
  */
-async function createDocxDocumentFromHtml(htmlContent: string): Promise<any> {
+export async function createDocxDocumentFromHtml(htmlContent: string): Promise<any> {
   // استيراد المكتبة
   const docxModule = await import('docx');
   

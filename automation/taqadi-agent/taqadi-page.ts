@@ -1,3 +1,4 @@
+import path from 'node:path';
 import type {
   Locator,
   Page,
@@ -23,6 +24,25 @@ import {
   type FilingResult,
   type MaterializedDocument,
 } from './types';
+
+type DocumentUploadOutcome = {
+  status: 'uploaded' | 'skipped';
+  key: string;
+  name: string;
+  fileName: string;
+  sizeBytes: number;
+  reason?: string;
+};
+
+export interface DocumentUploadSummary {
+  uploaded: DocumentUploadOutcome[];
+  skipped: DocumentUploadOutcome[];
+  alreadyPresent: Array<{
+    key: string;
+    name: string;
+    fileName: string;
+  }>;
+}
 
 const normalizeText = (value: string) =>
   value.replace(/\s+/g, ' ').trim();
@@ -131,6 +151,7 @@ const taqadiNationalityAliases = new Map(
     ['سريلانكي', 'سريلانكا'],
     ['سوداني', 'سودان'],
     ['سوري', 'الجمهورية العربية السورية'],
+    ['تونسي', 'تونس'],
     ['صومالي', 'الصومال'],
     ['عراقي', 'العراق'],
     ['عماني', 'سلطنة عمان'],
@@ -185,6 +206,7 @@ const fieldControlSelector = [
 
 const documentLabels: Record<string, string[]> = {
   memo: ['المذكرة الشارحة', 'مذكرة شارحة'],
+  memoWord: ['المذكرة الشارحة', 'مذكرة شارحة'],
   claims: ['كشف المطالبات المالية', 'كشف المطالبة المالية'],
   contract: ['عقد الإيجار', 'نسخة عقد الإيجار', 'العقد'],
   violationsEvidence: [
@@ -198,6 +220,21 @@ const documentLabels: Record<string, string[]> = {
   representativeId: ['البطاقة الشخصية', 'هوية المفوض', 'هوية الممثل'],
   ibanCertificate: ['شهادة IBAN', 'رقم الحساب الدولي', 'الآيبان'],
 };
+
+const documentTypeLabels: Record<string, string[]> = {
+  memo: ['المذكرة الشارحة'],
+  memoWord: ['المذكرة الشارحة'],
+  claims: ['حافظة المستندات'],
+  contract: ['حافظة المستندات'],
+  violationsEvidence: ['حافظة المستندات'],
+  violations: ['حافظة المستندات'],
+  docsList: ['حافظة المستندات'],
+  commercialRegister: ['سجل تجاري'],
+  representativeId: ['بطاقة شخصية'],
+  ibanCertificate: ['رقم الحساب الدولي (IBAN)', 'رقم الحساب الدولي'],
+};
+
+const mandatoryMemoKeys = new Set(['memo', 'memoWord']);
 
 export class TaqadiPortal {
   private lastPriorityDiagnostics: Record<string, unknown> | null = null;
@@ -220,9 +257,12 @@ export class TaqadiPortal {
   }
 
   private loadingMasks() {
+    // Do not treat every aria-busy widget as a page-level blocker. Taqadi
+    // leaves aria-busy=true on dormant Kendo controls, which previously added
+    // the full timeout before and after every party field.
     return this.page.locator(
       '.k-loading-mask:visible, .blockUI:visible, '
-      + '.loading-overlay:visible, [aria-busy="true"]:visible',
+      + '.loading-overlay:visible',
     );
   }
 
@@ -884,6 +924,7 @@ export class TaqadiPortal {
     root: FieldRoot = this.page,
     options: FieldLookupOptions = {},
   ) {
+    const fieldStartedAt = Date.now();
     if (!value) {
       if (required) {
         throw new HumanInterventionError(
@@ -1059,36 +1100,110 @@ export class TaqadiPortal {
       }
       fillTarget = editable;
     }
-    await fillTarget.fill(value).catch((error) => {
+    let savedValue: string | null = null;
+    let lastInputError: unknown = null;
+
+    // The dynamic party form listens to real key events and may redraw an
+    // input after blur. Playwright's fill() only emits an input event, which
+    // made Taqadi clear names such as firstName while a dependent refresh was
+    // finishing. Type like a user, then reacquire the live input and require
+    // the value to remain stable before moving on.
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      await this.waitForUiReady(900);
+
+      let currentTarget = attempt === 0 ? fillTarget : null;
+      if (!currentTarget) {
+        const currentField = await this.fieldByLabel(
+          labels,
+          controlIds,
+          root,
+          options,
+        );
+        if (currentField) {
+          const currentTagName = await currentField.evaluate((element) =>
+            element.tagName.toLowerCase()
+          ).catch(() => '');
+          currentTarget = ['input', 'textarea'].includes(currentTagName)
+            ? currentField
+            : await this.firstVisible([
+              currentField.locator(
+                'input.k-formatted-value, input.k-input:not([type="hidden"]), '
+                + 'input:not([type="hidden"]), textarea',
+              ),
+            ]);
+        }
+      }
+
+      if (!currentTarget) break;
+
+      try {
+        if (attempt === 0) {
+          // Keep the fast path for ordinary fields. If the portal rejects the
+          // synthetic input event, the next attempt uses full keyboard events.
+          await currentTarget.fill(value);
+        } else {
+          await currentTarget.click({ timeout: 5_000 });
+          await currentTarget.press('Control+A');
+          await currentTarget.pressSequentially(value, { delay: 15 });
+        }
+        await currentTarget.press('Tab');
+      } catch (error) {
+        lastInputError = error;
+        await this.page.waitForTimeout(180);
+        continue;
+      }
+
+      await this.waitForUiReady(900);
+      let stable = true;
+      for (let sample = 0; sample < 2; sample += 1) {
+        if (sample > 0) await this.page.waitForTimeout(100);
+        savedValue = await this.fieldInputValue(labels, controlIds, root);
+        if (
+          savedValue === null
+          || normalizeText(savedValue) !== normalizeText(value)
+        ) {
+          stable = false;
+          break;
+        }
+      }
+      if (stable) {
+        console.info(
+          `[TaqadiAgent] field stable: ${labels[0]} (${Date.now() - fieldStartedAt}ms)`,
+        );
+        return;
+      }
+
+      await this.page.waitForTimeout(220);
+    }
+
+    if (lastInputError && savedValue === null) {
       throw new HumanInterventionError(
         `تعذر إدخال قيمة حقل «${labels[0]}» في تقاضي`,
         'TAQADI_FIELD_INPUT_FAILED',
         {
           expectedLabels: labels,
           controlIds,
-          cause: error instanceof Error ? error.message : String(error),
-          url: this.page.url(),
-        },
-      );
-    });
-    await fillTarget.press('Tab').catch(() => undefined);
-    const savedValue = await fillTarget.inputValue().catch(() => null);
-    if (
-      savedValue !== null
-      && normalizeText(savedValue) !== normalizeText(value)
-    ) {
-      throw new HumanInterventionError(
-        `لم يحتفظ تقاضي بقيمة حقل «${labels[0]}» بعد إدخالها`,
-        'TAQADI_FIELD_VALUE_MISMATCH',
-        {
-          expectedValue: value,
-          savedValue,
-          expectedLabels: labels,
-          controlIds,
+          cause: lastInputError instanceof Error
+            ? lastInputError.message
+            : String(lastInputError),
           url: this.page.url(),
         },
       );
     }
+
+    throw new HumanInterventionError(
+      `لم يحتفظ تقاضي بقيمة حقل «${labels[0]}» بعد إدخالها`,
+      'TAQADI_FIELD_VALUE_MISMATCH',
+      {
+        expectedValue: value,
+        savedValue,
+        expectedLabels: labels,
+        controlIds,
+        inputStrategy: 'keyboard_commit_with_live_reacquisition',
+        attempts: 3,
+        url: this.page.url(),
+      },
+    );
   }
 
   private async fieldInputValue(
@@ -1134,7 +1249,7 @@ export class TaqadiPortal {
     return input.inputValue().catch(() => null);
   }
 
-  private async fillStableDefendantRequiredFields(
+  private async fillStableNaturalPersonRequiredFields(
     input: {
       firstName: string;
       lastName: string;
@@ -1147,7 +1262,13 @@ export class TaqadiPortal {
       partyOrder: string;
     },
     root: FieldRoot,
+    options: {
+      partyLabel?: string;
+      dialogChangedCode?: string;
+      unstableFieldsCode?: string;
+    } = {},
   ) {
+    const partyLabel = options.partyLabel || 'المدعى عليه';
     const fields: Array<{
       key: string;
       labels: string[];
@@ -1158,13 +1279,13 @@ export class TaqadiPortal {
         key: 'firstName',
         labels: ['الاسم الأول', 'الاسم'],
         value: input.firstName,
-        controlIds: [],
+        controlIds: ['firstName', 'partyFirstName'],
       },
       {
         key: 'lastName',
         labels: ['اسم العائلة', 'الاسم الأخير'],
         value: input.lastName,
-        controlIds: [],
+        controlIds: ['lastName', 'familyName'],
       },
       {
         key: 'identityNumber',
@@ -1208,7 +1329,7 @@ export class TaqadiPortal {
         key: 'email',
         labels: ['البريد الإلكتروني', 'البريد الالكتروني'],
         value: input.email,
-        controlIds: [],
+        controlIds: ['email', 'emailAddress'],
       },
       {
         key: 'partyOrder',
@@ -1239,21 +1360,30 @@ export class TaqadiPortal {
           const result: Record<string, string | null> = {};
           const controls = Array.from(document.querySelectorAll('[id]'));
           for (const entry of entries as Array<{ key: string; ids: string[] }>) {
-            let value: string | null = null;
-            for (const id of entry.ids) {
+            const candidates = entry.ids.flatMap((id) => {
               const normalizedId = id.replace(/\./g, '_');
-              const element = controls.find((candidate) =>
+              return controls.filter((candidate) =>
                 candidate.id === id || candidate.id === normalizedId);
-              if (
-                element instanceof HTMLInputElement
-                || element instanceof HTMLTextAreaElement
-                || element instanceof HTMLSelectElement
-              ) {
-                value = element.value;
-                break;
-              }
-            }
-            result[entry.key] = value;
+            }).filter((element): element is HTMLInputElement
+              | HTMLTextAreaElement | HTMLSelectElement => (
+              element instanceof HTMLInputElement
+              || element instanceof HTMLTextAreaElement
+              || element instanceof HTMLSelectElement
+            ));
+            const visible = (element: HTMLElement) => {
+              const style = window.getComputedStyle(element);
+              const rect = element.getBoundingClientRect();
+              return style.display !== 'none'
+                && style.visibility !== 'hidden'
+                && rect.width > 0
+                && rect.height > 0;
+            };
+            const preferred = candidates.find((element) =>
+              visible(element) && element.value.trim().length > 0)
+              || candidates.find((element) => element.value.trim().length > 0)
+              || candidates.find((element) => visible(element))
+              || candidates[0];
+            result[entry.key] = preferred?.value ?? null;
           }
           return result;
         }, idMap).catch(() => ({} as Record<string, string | null>));
@@ -1263,21 +1393,30 @@ export class TaqadiPortal {
         const result: Record<string, string | null> = {};
         const controls = Array.from(container.querySelectorAll('[id]'));
         for (const entry of entries as Array<{ key: string; ids: string[] }>) {
-          let value: string | null = null;
-          for (const id of entry.ids) {
+          const candidates = entry.ids.flatMap((id) => {
             const normalizedId = id.replace(/\./g, '_');
-            const element = controls.find((candidate) =>
+            return controls.filter((candidate) =>
               candidate.id === id || candidate.id === normalizedId);
-            if (
-              element instanceof HTMLInputElement
-              || element instanceof HTMLTextAreaElement
-              || element instanceof HTMLSelectElement
-            ) {
-              value = element.value;
-              break;
-            }
-          }
-          result[entry.key] = value;
+          }).filter((element): element is HTMLInputElement
+            | HTMLTextAreaElement | HTMLSelectElement => (
+            element instanceof HTMLInputElement
+            || element instanceof HTMLTextAreaElement
+            || element instanceof HTMLSelectElement
+          ));
+          const visible = (element: HTMLElement) => {
+            const style = window.getComputedStyle(element);
+            const rect = element.getBoundingClientRect();
+            return style.display !== 'none'
+              && style.visibility !== 'hidden'
+              && rect.width > 0
+              && rect.height > 0;
+          };
+          const preferred = candidates.find((element) =>
+            visible(element) && element.value.trim().length > 0)
+            || candidates.find((element) => element.value.trim().length > 0)
+            || candidates.find((element) => visible(element))
+            || candidates[0];
+          result[entry.key] = preferred?.value ?? null;
         }
         return result;
       }, idMap).catch(() => ({} as Record<string, string | null>));
@@ -1306,8 +1445,8 @@ export class TaqadiPortal {
         && !(await (root as Locator).isVisible().catch(() => false))
       ) {
         throw new HumanInterventionError(
-          'أغلق تقاضي نموذج المدعى عليه أو استبدله أثناء تعبئة البيانات',
-          'DEFENDANT_DIALOG_CHANGED',
+          `أغلق تقاضي نموذج ${partyLabel} أو استبدله أثناء تعبئة البيانات`,
+          options.dialogChangedCode || 'DEFENDANT_DIALOG_CHANGED',
           { url: this.page.url() },
         );
       }
@@ -1358,8 +1497,8 @@ export class TaqadiPortal {
       }));
 
     throw new HumanInterventionError(
-      'لم يحتفظ تقاضي بجميع البيانات المطلوبة للمدعى عليه',
-      'TAQADI_DEFENDANT_FIELDS_UNSTABLE',
+      `لم يحتفظ تقاضي بجميع البيانات المطلوبة لـ${partyLabel}`,
+      options.unstableFieldsCode || 'TAQADI_DEFENDANT_FIELDS_UNSTABLE',
       {
         mismatched,
         firstNamePresent: Boolean(latestValues.firstName),
@@ -1408,7 +1547,73 @@ export class TaqadiPortal {
     const body = this.page.frameLocator(`#${controlId}_ifr`).locator('body');
     await body.waitFor({ state: 'visible', timeout: 10_000 });
     await body.fill(value);
+    await body.dispatchEvent('input');
+    await body.dispatchEvent('change');
     await body.press('Tab');
+
+    const committedValue = await this.page.evaluate(
+      ({ id, fallbackValue }) => {
+        type TinyEditor = {
+          fire?: (eventName: string) => void;
+          getContent?: () => string;
+          nodeChanged?: () => void;
+          save?: () => void;
+          setDirty?: (dirty: boolean) => void;
+        };
+        type TinyMce = {
+          activeEditor?: TinyEditor;
+          get?: (editorId: string) => TinyEditor | null;
+          triggerSave?: () => void;
+        };
+
+        const pageWindow = window as typeof window & { tinymce?: TinyMce };
+        const textarea = document.getElementById(id);
+        if (!(textarea instanceof HTMLTextAreaElement)) return null;
+
+        const editor = pageWindow.tinymce?.get?.(id)
+          || pageWindow.tinymce?.activeEditor
+          || null;
+        const frame = document.getElementById(`${id}_ifr`);
+        const frameBody = frame instanceof HTMLIFrameElement
+          ? frame.contentDocument?.body
+          : null;
+        const editorContent = editor?.getContent?.()
+          || frameBody?.innerHTML
+          || fallbackValue;
+
+        editor?.setDirty?.(true);
+        editor?.nodeChanged?.();
+        editor?.fire?.('input');
+        editor?.fire?.('change');
+        editor?.fire?.('blur');
+        editor?.save?.();
+        pageWindow.tinymce?.triggerSave?.();
+
+        // Some Taqadi builds display TinyMCE correctly but leave the backing
+        // textarea empty. The browser validator and final form submit both
+        // read this textarea, so commit the editor HTML explicitly.
+        textarea.value = textarea.value.trim()
+          ? textarea.value
+          : editorContent;
+        textarea.dispatchEvent(new Event('input', { bubbles: true }));
+        textarea.dispatchEvent(new Event('change', { bubbles: true }));
+        textarea.dispatchEvent(new Event('blur', { bubbles: true }));
+        return textarea.value;
+      },
+      { id: controlId, fallbackValue: value },
+    );
+    const committedText = String(committedValue || '')
+      .replace(/<[^>]+>/g, ' ')
+      .replace(/&nbsp;/gi, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+    if (!committedText) {
+      throw new HumanInterventionError(
+        `لم يحتفظ تقاضي بقيمة المحرر «${controlId}» في حقل الإرسال`,
+        'TAQADI_RICH_TEXT_COMMIT_FAILED',
+        { controlId, url: this.page.url() },
+      );
+    }
   }
 
   private async selectedFieldText(field: Locator): Promise<string> {
@@ -2865,7 +3070,7 @@ export class TaqadiPortal {
   }
 
   async fillCaseDetails(payload: FilingPayload) {
-    await this.selectField(
+    await this.selectFieldSticky(
       ['نوع المطالبة'],
       'قيمة المطالبة',
       ['tempCostOrders0.type'],
@@ -3065,25 +3270,171 @@ export class TaqadiPortal {
     return null;
   }
 
+  private async refreshPartyGrid(timeoutMs = 8_000) {
+    if (process.env.NODE_ENV === 'test') return false;
+
+    const pane = this.partyPane();
+    if (!(await pane.isVisible().catch(() => false))) return false;
+
+    const refreshed = await pane.evaluate(async (element, waitMs) => {
+      type KendoDataSource = {
+        read?: () => unknown;
+      };
+      type KendoGrid = {
+        dataSource?: KendoDataSource;
+        one?: (eventName: string, callback: () => void) => void;
+      };
+      type JQueryAccessor = (target: Element) => {
+        data: (key: string) => unknown;
+      };
+
+      const browserWindow = window as unknown as {
+        jQuery?: JQueryAccessor;
+        $?: JQueryAccessor;
+      };
+      const jq = browserWindow.jQuery || browserWindow.$;
+      const candidates = [
+        element,
+        ...Array.from(element.querySelectorAll('.k-grid, [data-role="grid"]')),
+      ];
+      const grid = jq
+        ? candidates
+          .map((candidate) => jq(candidate).data('kendoGrid') as KendoGrid)
+          .find((candidate) => Boolean(candidate?.dataSource?.read))
+        : null;
+
+      if (grid?.dataSource?.read) {
+        await new Promise<void>((resolve) => {
+          let settled = false;
+          const finish = () => {
+            if (settled) return;
+            settled = true;
+            resolve();
+          };
+          grid.one?.('dataBound', finish);
+          grid.dataSource?.read?.();
+          window.setTimeout(finish, waitMs);
+        });
+        return true;
+      }
+
+      const refresh = element.querySelector(
+        '.k-pager-refresh, [title*="تحديث"], [title*="إعادة تحميل"]',
+      );
+      if (refresh instanceof HTMLElement) {
+        refresh.click();
+        return true;
+      }
+      return false;
+    }, Math.max(1_000, timeoutMs - 500)).catch(() => false);
+
+    if (refreshed) {
+      await this.waitForUiReady(timeoutMs);
+      await this.page.waitForTimeout(180);
+    }
+    return refreshed;
+  }
+
+  private async partyGridRecord(
+    values: Array<string | null | undefined>,
+  ): Promise<{ savedOrder: string | null; rowText: string } | null> {
+    const expectedValues = values.filter(Boolean) as string[];
+    if (expectedValues.length === 0) return null;
+
+    const pane = this.partyPane();
+    if (!(await pane.isVisible().catch(() => false))) return null;
+
+    return pane.evaluate((element, expected) => {
+      type PartyRecord = Record<string, unknown> & {
+        toJSON?: () => Record<string, unknown>;
+      };
+      type KendoDataSource = {
+        view?: () => PartyRecord[];
+        data?: () => PartyRecord[];
+      };
+      type KendoGrid = {
+        dataSource?: KendoDataSource;
+      };
+      type JQueryAccessor = (target: Element) => {
+        data: (key: string) => unknown;
+      };
+
+      const normalize = (value: unknown) => String(value || '')
+        .replace(/\s+/g, ' ')
+        .trim()
+        .toLowerCase();
+      const browserWindow = window as unknown as {
+        jQuery?: JQueryAccessor;
+        $?: JQueryAccessor;
+      };
+      const jq = browserWindow.jQuery || browserWindow.$;
+      if (!jq) return null;
+
+      const candidates = [
+        element,
+        ...Array.from(element.querySelectorAll('.k-grid, [data-role="grid"]')),
+      ];
+      const grid = candidates
+        .map((candidate) => jq(candidate).data('kendoGrid') as KendoGrid)
+        .find((candidate) => Boolean(candidate?.dataSource));
+      const records = grid?.dataSource?.view?.()
+        || grid?.dataSource?.data?.()
+        || [];
+
+      for (const sourceRecord of Array.from(records)) {
+        const record = typeof sourceRecord.toJSON === 'function'
+          ? sourceRecord.toJSON()
+          : sourceRecord;
+        const searchable = [
+          record.name,
+          record.fullName,
+          record.displayName,
+          record.identityNo,
+          record.registrationNo,
+          record.crNo,
+          record.officialRegistrationNumber,
+        ].filter(Boolean).join(' ');
+        const normalizedSearchable = normalize(searchable);
+        if (!expected.some((value) =>
+          normalizedSearchable.includes(normalize(value)))) continue;
+
+        return {
+          savedOrder: record.priority === null
+            || record.priority === undefined
+            ? null
+            : String(record.priority),
+          rowText: searchable,
+        };
+      }
+      return null;
+    }, expectedValues).catch(() => null);
+  }
+
   private async assertPartyOrder(
     values: Array<string | null | undefined>,
     expectedOrder: number,
     errorCode: string,
   ) {
+    const startedAt = Date.now();
     const deadline = Date.now() + 10_000;
     let savedOrder: string | null = null;
     let rowText: string | null = null;
+    let partyFound = false;
+    let refreshed = false;
 
     do {
-      await this.page.locator(
-        '.k-loading-mask:visible, .blockUI:visible, '
-        + '.loading-overlay:visible, [aria-busy="true"]:visible',
-      ).waitFor({
-        state: 'hidden',
-        timeout: 2_000,
-      }).catch(() => undefined);
+      await this.waitForUiReady(1_000);
+      const gridRecord = await this.partyGridRecord(values);
+      if (gridRecord) {
+        partyFound = true;
+        rowText = gridRecord.rowText;
+        savedOrder = normalizeNumerals(gridRecord.savedOrder || '');
+        if (savedOrder === String(expectedOrder)) return;
+      }
+
       const row = await this.partyRow(values);
       if (row) {
+        partyFound = true;
         rowText = await row.innerText().catch(() => null);
         const cells = row.locator('td, [role="gridcell"]');
         const cellCount = await cells.count();
@@ -3100,8 +3451,28 @@ export class TaqadiPortal {
         }
         if (savedOrder === String(expectedOrder)) return;
       }
+
+      if (!partyFound && !refreshed && Date.now() - startedAt >= 1_000) {
+        refreshed = await this.refreshPartyGrid();
+        continue;
+      }
       await this.page.waitForTimeout(250);
     } while (Date.now() < deadline);
+
+    if (!partyFound) {
+      throw new HumanInterventionError(
+        `لم يحفظ تقاضي الطرف «${values.find(Boolean) || 'المطلوب'}» بعد إغلاق نموذج الإضافة`,
+        errorCode.replace(/_ORDER_MISMATCH$/, '_NOT_SAVED'),
+        {
+          expectedOrder,
+          savedOrder,
+          rowText,
+          gridRefreshed: refreshed,
+          priorityDiagnostics: this.lastPriorityDiagnostics,
+          url: this.page.url(),
+        },
+      );
+    }
 
     throw new HumanInterventionError(
       `حفظ تقاضي ترتيب الطرف بالقيمة «${savedOrder || 'غير ظاهرة'}» بدل «${expectedOrder}»`,
@@ -3383,13 +3754,7 @@ export class TaqadiPortal {
   }
 
   async validateRepresentativeFirst(payload: FilingPayload) {
-    await this.page.locator(
-      '.k-loading-mask:visible, .blockUI:visible, '
-      + '.loading-overlay:visible, [aria-busy="true"]:visible',
-    ).waitFor({
-      state: 'hidden',
-      timeout: 10_000,
-    }).catch(() => undefined);
+    await this.waitForUiReady(2_000);
     await this.waitForPartyGridReady();
 
     const representativeName = agentConfig.representative.name;
@@ -3412,40 +3777,122 @@ export class TaqadiPortal {
     }
     const partyDialog = await this.openPartyEditor(row);
 
-    await this.fillField(
-      ['الترتيب حسب الصحيفة', 'ترتيب الطرف', 'الترتيب'],
-      String(payload.representative.partyOrder),
-      false,
-      ['priority'],
-      partyDialog,
-    );
-    await this.fillField(
-      ['رقم الجوال', 'الجوال', 'الهاتف'],
-      agentConfig.representative.phone,
-      false,
-      ['mobileNo', 'phoneNo', 'phone', 'mobile'],
-      partyDialog,
-    );
-    await this.fillField(
-      ['البريد الإلكتروني'],
-      agentConfig.representative.email,
-      false,
-      ['email', 'emailAddress'],
-      partyDialog,
-    );
-    await this.fillField(
-      ['العنوان'],
-      agentConfig.representative.address,
-      false,
-      ['address'],
-      partyDialog,
-    );
-    await this.selectField(
+    const identityTypeLabels = [
+      'نوع البطاقة',
+      'نوع الهوية',
+      'نوع الوثيقة',
+      'نوع إثبات الهوية',
+    ];
+    const identityTypeControlIds = [
+      'proofOfIdentity',
+      'idType',
+      'identityType',
+      'documentType',
+    ];
+    const identityNumberLabels = [
+      'رقم الهوية',
+      'رقم البطاقة',
+      'الرقم الشخصي',
+      'رقم رخصة المقيم',
+    ];
+    const identityNumberControlIds = [
+      'tempIdentityNo',
+      'identityNo',
+      'idNumber',
+      'identityNumber',
+      'residencyCardNumber',
+      'proofOfIdentityNo',
+    ];
+
+    // Nationality and identity type redraw the lower half of Taqadi's form.
+    // Complete them first, then reconcile every required scalar field so an
+    // AJAX redraw cannot silently restore order 1 or clear the identity.
+    await this.selectFieldUntilDependentVisible(
       ['الجنسية'],
-      agentConfig.representative.nationality,
+      nationalityForTaqadi(agentConfig.representative.nationality),
+      ['nationality'],
+      identityTypeLabels,
+      identityTypeControlIds,
+      partyDialog,
+    );
+    await this.selectFieldUntilDependentVisible(
+      identityTypeLabels,
+      identityTypeForTaqadi(
+        agentConfig.representative.identityType,
+        agentConfig.representative.identityNumber,
+      ),
+      identityTypeControlIds,
+      identityNumberLabels,
+      identityNumberControlIds,
+      partyDialog,
+    );
+    await this.selectFieldSticky(
+      ['الجنسية'],
+      nationalityForTaqadi(agentConfig.representative.nationality),
       ['nationality'],
       partyDialog,
-    ).catch(() => undefined);
+    );
+    await this.selectFieldSticky(
+      identityTypeLabels,
+      identityTypeForTaqadi(
+        agentConfig.representative.identityType,
+        agentConfig.representative.identityNumber,
+      ),
+      identityTypeControlIds,
+      partyDialog,
+    );
+    await this.fillStableNaturalPersonRequiredFields(
+      {
+        firstName: nameParts[0],
+        lastName: lastNameToken || nameParts[0],
+        identityNumber: agentConfig.representative.identityNumber,
+        identityNumberLabels,
+        identityNumberControlIds,
+        address: agentConfig.representative.address,
+        phone: phoneForTaqadi(agentConfig.representative.phone),
+        email: agentConfig.representative.email,
+        partyOrder: String(payload.representative.partyOrder),
+      },
+      partyDialog,
+      {
+        partyLabel: 'ممثل الشركة',
+        dialogChangedCode: 'REPRESENTATIVE_DIALOG_CHANGED',
+        unstableFieldsCode: 'TAQADI_REPRESENTATIVE_FIELDS_UNSTABLE',
+      },
+    );
+    for (const selection of [
+      {
+        labels: ['الجنسية'],
+        controlIds: ['nationality'],
+        expected: nationalityForTaqadi(agentConfig.representative.nationality),
+      },
+      {
+        labels: identityTypeLabels,
+        controlIds: identityTypeControlIds,
+        expected: identityTypeForTaqadi(
+          agentConfig.representative.identityType,
+          agentConfig.representative.identityNumber,
+        ),
+      },
+    ]) {
+      const field = await this.fieldByLabel(
+        selection.labels,
+        selection.controlIds,
+        partyDialog,
+      );
+      if (!field) {
+        throw new HumanInterventionError(
+          `لم يجد الوكيل حقل «${selection.labels[0]}» عند المراجعة النهائية لممثل الشركة`,
+          'TAQADI_UI_CHANGED',
+          { expectedLabels: selection.labels, url: this.page.url() },
+        );
+      }
+      await this.assertSelectedField(
+        field,
+        selection.labels,
+        selection.expected,
+      );
+    }
     await this.saveOpenParty(partyDialog);
     // Taqadi auto-orders the filer's own party row and may hide the order
     // control in his editor, so a mismatch here is advisory only — the
@@ -3468,14 +3915,7 @@ export class TaqadiPortal {
    * يجب ألا يطابق الزر «حفظ ومتابعة» — المطابقة دقيقة (exact).
    */
   async savePartiesDraft() {
-    const loadingMasks = this.page.locator(
-      '.k-loading-mask:visible, .blockUI:visible, '
-      + '.loading-overlay:visible, [aria-busy="true"]:visible',
-    );
-    await loadingMasks.waitFor({
-      state: 'hidden',
-      timeout: 10_000,
-    }).catch(() => undefined);
+    await this.waitForUiReady(2_000);
 
     const save = await this.firstVisible([
       this.page.getByRole('button', { name: /^\s*حفظ\s*$/ }),
@@ -3495,10 +3935,7 @@ export class TaqadiPortal {
     }
     await this.clickStable(save, 'حفظ مسودة الأطراف');
 
-    await loadingMasks.waitFor({
-      state: 'hidden',
-      timeout: 15_000,
-    }).catch(() => undefined);
+    await this.waitForUiReady(3_000);
     await this.waitForPartyGridReady();
   }
 
@@ -3538,7 +3975,7 @@ export class TaqadiPortal {
         ['companyClassification'],
         partyDialog,
       );
-      await this.selectField(
+      await this.selectFieldSticky(
         ['رقم السجل التجاري أو قيد المنشأة صادر عن'],
         'وزارة التجارة والصناعة',
         ['crIssuedBy'],
@@ -3552,7 +3989,14 @@ export class TaqadiPortal {
         ],
         payload.plaintiff.commercialRegistration,
         true,
-        ['crNo', 'crNumber', 'commercialRegistrationNo', 'registrationNo'],
+        [
+          'identityNo',
+          'officialRegistrationNumber',
+          'crNo',
+          'crNumber',
+          'commercialRegistrationNo',
+          'registrationNo',
+        ],
         partyDialog,
         {
           exactLabel: true,
@@ -3625,6 +4069,13 @@ export class TaqadiPortal {
         agentConfig.company.address,
         true,
         ['addresses0.address'],
+        partyDialog,
+      );
+      await this.fillField(
+        ['رقم الهاتف المحمول', 'رقم الجوال', 'الجوال', 'الهاتف'],
+        phoneForTaqadi(agentConfig.company.phone),
+        true,
+        ['mobileNo'],
         partyDialog,
       );
       await this.fillField(
@@ -3787,7 +4238,7 @@ export class TaqadiPortal {
     );
     // Taqadi redraws several previously completed fields after Kendo changes.
     // Reconcile the whole required defendant form before saving.
-    await this.fillStableDefendantRequiredFields(
+    await this.fillStableNaturalPersonRequiredFields(
       {
         firstName: payload.defendant.firstName
           || payload.defendant.fullName,
@@ -3871,8 +4322,7 @@ export class TaqadiPortal {
 
   private async uploadDocument(
     document: MaterializedDocument,
-    index: number,
-  ) {
+  ): Promise<DocumentUploadOutcome> {
     const labels = documentLabels[document.key] || [document.name];
     let input: Locator | null = null;
 
@@ -3885,7 +4335,12 @@ export class TaqadiPortal {
       for (let containerIndex = 0; containerIndex < containerCount; containerIndex += 1) {
         const container = containers.nth(containerIndex);
         if (!(await container.isVisible().catch(() => false))) continue;
-        input = container.locator('input[type="file"]').first();
+        const candidate = container.locator('input[type="file"]').first();
+        const alreadySelected = await candidate.evaluate(
+          (element) => Boolean((element as HTMLInputElement).files?.length),
+        ).catch(() => false);
+        if (alreadySelected) continue;
+        input = candidate;
         break;
       }
       if (input) break;
@@ -3897,6 +4352,10 @@ export class TaqadiPortal {
       const inputCount = Math.min(await inputs.count(), 100);
       for (let inputIndex = 0; inputIndex < inputCount; inputIndex += 1) {
         const candidate = inputs.nth(inputIndex);
+        const alreadySelected = await candidate.evaluate(
+          (element) => Boolean((element as HTMLInputElement).files?.length),
+        ).catch(() => false);
+        if (alreadySelected) continue;
         const slotVisible = await candidate.evaluate((element) => {
           const slot = element.closest(
             'tr, section, article, .row, .form-group, .document-row',
@@ -3911,14 +4370,16 @@ export class TaqadiPortal {
         }).catch(() => false);
         if (slotVisible) visibleSlots.push(candidate);
       }
-      if (visibleSlots.length > index) input = visibleSlots[index];
+      input = visibleSlots[0] || null;
     }
 
     if (!input) {
       // The portal now exposes a single «إضافة وثيقة» dialog instead of fixed
       // per-document slots. Open it, attach the file, pick the closest type.
-      await this.uploadDocumentViaAddDialog(document, labels);
-      return;
+      return this.uploadDocumentViaAddDialog(
+        document,
+        documentTypeLabels[document.key] || labels,
+      );
     }
 
     await input.setInputFiles(document.filePath);
@@ -3937,7 +4398,14 @@ export class TaqadiPortal {
         },
       );
     }
-    await this.page.waitForTimeout(1_000);
+    await this.page.waitForTimeout(250);
+    return {
+      status: 'uploaded',
+      key: document.key,
+      name: document.name,
+      fileName: selectedFile.name,
+      sizeBytes: selectedFile.size,
+    };
   }
 
   /**
@@ -3948,7 +4416,7 @@ export class TaqadiPortal {
   private async uploadDocumentViaAddDialog(
     document: MaterializedDocument,
     labels: string[],
-  ) {
+  ): Promise<DocumentUploadOutcome> {
     const addButton = await this.firstVisible([
       this.page.getByRole('button', { name: /إضافة وثيقة|اضافة وثيقة|إضافة مستند/i }),
       this.page.locator('button, a').filter({ hasText: /إضافة وثيقة|اضافة وثيقة|إضافة مستند/i }),
@@ -3962,12 +4430,15 @@ export class TaqadiPortal {
       );
     }
     await addButton.click();
-    await this.page.waitForTimeout(1_200);
 
     const dialog = this.page.locator(
       '.modal:visible, [role="dialog"]:visible, .k-dialog:visible',
     ).last();
-    const dialogRoot = (await dialog.count()) > 0 ? dialog : this.page;
+    await dialog.waitFor({ state: 'visible', timeout: 4_000 })
+      .catch(() => undefined);
+    const hasDialog = (await dialog.count()) > 0
+      && await dialog.isVisible().catch(() => false);
+    const dialogRoot = hasDialog ? dialog : this.page;
 
     const fileInput = dialogRoot.locator('input[type="file"]').first();
     if (!(await fileInput.count())) {
@@ -3978,8 +4449,21 @@ export class TaqadiPortal {
       );
     }
     await fileInput.setInputFiles(document.filePath);
-    await this.page.waitForTimeout(600);
-
+    const selectedFile = await fileInput.evaluate((element) => {
+      const file = (element as HTMLInputElement).files?.[0];
+      return file ? { name: file.name, size: file.size } : null;
+    });
+    if (!selectedFile || selectedFile.size <= 0) {
+      throw new HumanInterventionError(
+        `لم يثبت تقاضي اختيار ملف «${document.name}» داخل نافذة إضافة الوثيقة`,
+        'DOCUMENT_FILE_NOT_ATTACHED',
+        {
+          documentKey: document.key,
+          documentName: document.name,
+          selectedFile,
+        },
+      );
+    }
     // Choose the document type when the dialog offers a type control.
     const typeLabels = ['نوع المستند', 'نوع الوثيقة', 'نوع المرفق', 'المستند'];
     const typeField = await this.fieldByLabel(typeLabels, [], dialogRoot)
@@ -4009,8 +4493,77 @@ export class TaqadiPortal {
         { url: this.page.url() },
       );
     }
+
+    let rejectionReason = '';
+    for (let attempt = 0; attempt < 120; attempt += 1) {
+      const errorMessages = await dialogRoot.locator([
+        '.k-file-error:visible',
+        '.k-file-invalid:visible',
+        '.k-file-validation-message:visible',
+        '.alert-danger:visible',
+        '.text-danger:visible',
+      ].join(', ')).allTextContents().catch(() => []);
+      const uploadStatus = normalizeText(
+        (await dialogRoot.locator('.k-upload-status-total:visible')
+          .allTextContents().catch(() => [])).join(' '),
+      );
+      const statusIsError = /خط[اأ]|فشل|تعذر|غير مقبول|invalid|error|failed/i
+        .test(uploadStatus);
+      rejectionReason = normalizeText([
+        ...errorMessages,
+        statusIsError ? uploadStatus : '',
+      ].filter(Boolean).join(' '));
+      if (rejectionReason || await saveButton.isEnabled().catch(() => false)) {
+        break;
+      }
+      await this.page.waitForTimeout(250);
+    }
+
+    if (!(await saveButton.isEnabled().catch(() => false))) {
+      const closeButton = await this.firstVisible([
+        dialogRoot.getByRole('button', { name: /^\s*إغلاق\s*$/ }),
+        dialogRoot.getByRole('button', { name: /^\s*إلغاء\s*$/ }),
+        dialogRoot.locator('button:visible').filter({ hasText: /^\s*إغلاق\s*$/ }),
+      ]);
+      if (closeButton && await closeButton.isEnabled().catch(() => false)) {
+        await closeButton.click();
+      } else {
+        await this.page.keyboard.press('Escape').catch(() => undefined);
+      }
+      await dialog.waitFor({ state: 'hidden', timeout: 5_000 })
+        .catch(() => undefined);
+
+      const reason = rejectionReason
+        || 'رفض تقاضي الملف بعد اختياره؛ غالبًا بسبب الحجم أو قيود الملف';
+      console.warn(
+        `[TaqadiAgent] skipped rejected document «${document.name}»: ${reason}`,
+      );
+      return {
+        status: 'skipped',
+        key: document.key,
+        name: document.name,
+        fileName: selectedFile.name,
+        sizeBytes: selectedFile.size,
+        reason,
+      };
+    }
     await saveButton.click();
-    await this.page.waitForTimeout(1_500);
+    const uploadedRow = this.page.locator('tr:visible').filter({
+      hasText: selectedFile.name,
+    }).first();
+    await Promise.race([
+      hasDialog
+        ? dialog.waitFor({ state: 'hidden', timeout: 5_000 })
+        : this.page.waitForTimeout(400),
+      uploadedRow.waitFor({ state: 'visible', timeout: 5_000 }),
+    ]).catch(() => undefined);
+    return {
+      status: 'uploaded',
+      key: document.key,
+      name: document.name,
+      fileName: selectedFile.name,
+      sizeBytes: selectedFile.size,
+    };
   }
 
   private async pickDialogDocumentType(
@@ -4018,11 +4571,22 @@ export class TaqadiPortal {
     dialogRoot: Locator | Page,
     labels: string[],
   ): Promise<boolean> {
+    const { listboxId } = await this.dropdownIdentity(typeField, []);
     await typeField.click();
     await this.page.waitForTimeout(500);
-    const options = this.page.locator(
-      '[role="option"], .k-item, .k-list-item, .ng-option, li',
-    );
+    const options = listboxId
+      ? this.page.locator(
+        `[id="${listboxId}"] [role="option"], `
+        + `[id="${listboxId}"] .k-item, `
+        + `[id="${listboxId}"] .k-list-item`,
+      )
+      : this.page.locator(
+        '.k-animation-container:visible [role="option"], '
+        + '.k-animation-container:visible .k-item, '
+        + '.k-list-container:visible [role="option"], '
+        + '.k-list-container:visible .k-item, '
+        + '.ng-dropdown-panel:visible .ng-option',
+      );
     const count = Math.min(await options.count(), 40);
     let fallback: Locator | null = null;
     for (let index = 0; index < count; index += 1) {
@@ -4036,25 +4600,71 @@ export class TaqadiPortal {
         return normalized.includes(wanted) || wanted.includes(normalized);
       });
       if (matches) {
-        await option.click();
+        await option.evaluate((element) => (element as HTMLElement).click());
         return true;
       }
       fallback ??= option;
     }
     if (fallback) {
-      await fallback.click();
+      await fallback.evaluate((element) => (element as HTMLElement).click());
       return true;
     }
     await this.page.keyboard.press('Escape').catch(() => undefined);
     return false;
   }
 
-  async uploadDocuments(documents: MaterializedDocument[]) {
+  private async documentAlreadyUploaded(document: MaterializedDocument) {
+    const fileName = path.basename(document.filePath);
+    const matchingRows = this.page.locator('tr:visible').filter({
+      hasText: fileName,
+    });
+    return (await matchingRows.count()) > 0;
+  }
+
+  async uploadDocuments(
+    documents: MaterializedDocument[],
+  ): Promise<DocumentUploadSummary> {
+    const summary: DocumentUploadSummary = {
+      uploaded: [],
+      skipped: [],
+      alreadyPresent: [],
+    };
+    const mandatoryFailures: DocumentUploadOutcome[] = [];
     for (let index = 0; index < documents.length; index += 1) {
-      await this.uploadDocument(documents[index], index);
+      const document = documents[index];
+      if (await this.documentAlreadyUploaded(document)) {
+        summary.alreadyPresent.push({
+          key: document.key,
+          name: document.name,
+          fileName: path.basename(document.filePath),
+        });
+        continue;
+      }
+      const outcome = await this.uploadDocument(document);
+      summary[outcome.status === 'uploaded' ? 'uploaded' : 'skipped']
+        .push(outcome);
+      if (outcome.status === 'skipped' && mandatoryMemoKeys.has(document.key)) {
+        mandatoryFailures.push(outcome);
+      }
+    }
+    if (mandatoryFailures.length > 0) {
+      const failedNames = mandatoryFailures
+        .map((failure) => `«${failure.name}»: ${failure.reason || 'سبب غير معروف'}`)
+        .join('، ');
+      throw new HumanInterventionError(
+        `رفض تقاضي مستندًا إلزاميًا بعد محاولة رفع بقية الحزمة: ${failedNames}`,
+        'MANDATORY_MEMO_DOCUMENT_REJECTED',
+        {
+          mandatoryFailures,
+          uploadedDocuments: summary.uploaded,
+          skippedDocuments: summary.skipped,
+          alreadyPresentDocuments: summary.alreadyPresent,
+        },
+      );
     }
     await this.clickAny(['التالي'], 'متابعة بعد المستندات');
     await this.page.waitForTimeout(1_500);
+    return summary;
   }
 
   async verifyReview(payload: FilingPayload) {
