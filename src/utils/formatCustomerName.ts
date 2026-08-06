@@ -15,6 +15,7 @@ export interface CustomerNameData {
   company_name?: string | null;
   company_name_ar?: string | null;
   customer_type?: string | null;
+  nationality?: string | null;
   full_name?: string | null; // For cases where only full_name is available
 }
 
@@ -24,6 +25,25 @@ export interface CustomerNameFormatOptions {
 }
 
 const cleanName = (value?: string | null): string => value?.trim() || '';
+
+export const hasArabicText = (value?: string | null): boolean =>
+  /[\u0600-\u06FF]/.test(cleanName(value));
+
+export const getCustomerDataIssues = (
+  customer: CustomerNameData | null | undefined,
+): string[] => {
+  if (!customer) return ['بيانات العميل غير مرتبطة'];
+
+  const isCorporate = customer.customer_type === 'corporate' || customer.customer_type === 'company';
+  const hasArabicName = isCorporate
+    ? hasArabicText(customer.company_name_ar)
+    : hasArabicText(`${customer.first_name_ar || ''} ${customer.last_name_ar || ''}`);
+
+  const issues: string[] = [];
+  if (!hasArabicName) issues.push('الاسم العربي');
+  if (!hasArabicText(customer.nationality)) issues.push('الجنسية العربية');
+  return issues;
+};
 
 export const formatCustomerName = (
   customer: CustomerNameData | null | undefined,

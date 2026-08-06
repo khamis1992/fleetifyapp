@@ -346,9 +346,11 @@ const getPaymentBatchKey = (payment: Payment) => {
   const match = payment.payment_number.match(/^(PAY-\d{10,})-\d+$/);
   if (!match) return null;
   const notes = payment.notes || '';
-  const looksLikeInvoiceBatch =
-    notes.includes('دفعة لفاتورة') ||
-    notes.includes('Ø¯ÙØ¹Ø© Ù„ÙØ§ØªÙˆØ±Ø©');
+  const invoiceBatchNoteMarkers = [
+    'دفعة لفاتورة',
+    'Ø¯ÙØ¹Ø© Ù„ÙØ§ØªÙˆØ±Ø©',
+  ];
+  const looksLikeInvoiceBatch = invoiceBatchNoteMarkers.some((marker) => notes.includes(marker));
   if (!looksLikeInvoiceBatch) return null;
   return [
     match[1],

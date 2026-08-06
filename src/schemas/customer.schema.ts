@@ -1,7 +1,44 @@
 import { z } from 'zod';
 
-// Customer validation schemas
-export const baseCustomerSchema = z.object({
+const hasArabicText = (value?: string | null) => /[\u0600-\u06FF]/.test(String(value || '').trim());
+
+const requireOfficialArabicCustomerData = (data: {
+  customer_type?: 'individual' | 'corporate';
+  first_name_ar?: string;
+  last_name_ar?: string;
+  company_name_ar?: string;
+  nationality?: string;
+}, ctx: z.RefinementCtx) => {
+  const nationality = data.nationality?.trim();
+  if (!hasArabicText(nationality)) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'الجنسية العربية مطلوبة كما في الهوية أو الجواز',
+      path: ['nationality'],
+    });
+  }
+
+  if (data.customer_type === 'individual') {
+    if (!hasArabicText(`${data.first_name_ar || ''} ${data.last_name_ar || ''}`)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'الاسم العربي مطلوب كما في الهوية',
+        path: ['first_name_ar'],
+      });
+    }
+    return;
+  }
+
+  if (!hasArabicText(data.company_name_ar)) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'اسم الشركة بالعربي مطلوب',
+      path: ['company_name_ar'],
+    });
+  }
+};
+
+const baseCustomerShape = {
   customer_type: z.enum(['individual', 'corporate'], {
     required_error: 'نوع العميل مطلوب',
   }),
@@ -26,10 +63,13 @@ export const baseCustomerSchema = z.object({
   address: z.string().optional(),
   city: z.string().optional(),
   country: z.string().optional(),
-});
+};
+
+// Customer validation schemas
+export const baseCustomerSchema = z.object(baseCustomerShape).superRefine(requireOfficialArabicCustomerData);
 
 // Customer creation schema with enhanced validation
-export const createCustomerSchema = baseCustomerSchema.extend({
+export const createCustomerSchema = z.object(baseCustomerShape).extend({
   customer_code: z.string().optional(),
   force_create: z.boolean().default(false),
   context: z.enum(['standalone', 'contract', 'invoice', 'maintenance']).optional(),
@@ -59,10 +99,10 @@ export const createCustomerSchema = baseCustomerSchema.extend({
     message: 'تاريخ الميلاد غير صحيح',
     path: ['date_of_birth']
   }
-);
+).superRefine(requireOfficialArabicCustomerData);
 
 // Customer update schema
-export const updateCustomerSchema = baseCustomerSchema.partial().extend({
+export const updateCustomerSchema = z.object(baseCustomerShape).partial().extend({
   id: z.string().uuid('معرف العميل غير صحيح'),
 });
 

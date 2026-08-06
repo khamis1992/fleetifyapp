@@ -17,6 +17,7 @@ import {
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { getCustomerDataIssues } from '@/utils/formatCustomerName';
 
 interface Customer {
   id: string;
@@ -131,6 +132,15 @@ export const MobileCustomerForm: React.FC = () => {
     if (!formData.phone_number.trim()) {
       newErrors.phone_number = 'رقم الهاتف مطلوب';
     }
+    const customerDataIssues = getCustomerDataIssues({
+      customer_type: 'individual',
+      first_name_ar: formData.first_name.trim(),
+      last_name_ar: formData.last_name.trim(),
+      nationality: formData.nationality.trim(),
+    });
+    if (customerDataIssues.length > 0) {
+      newErrors.form = `استكمل بيانات العميل أولاً: ${customerDataIssues.join('، ')}`;
+    }
 
     // Email validation
     if (formData.email && formData.email.trim()) {
@@ -185,6 +195,9 @@ export const MobileCustomerForm: React.FC = () => {
       const customerData = {
         first_name: formData.first_name.trim(),
         last_name: formData.last_name.trim(),
+        first_name_ar: formData.first_name.trim(),
+        last_name_ar: formData.last_name.trim(),
+        customer_type: 'individual' as const,
         phone: formData.phone_number.trim(),
         alternative_phone: formData.whatsapp_number.trim() || null,
         email: formData.email.trim() || null,

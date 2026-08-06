@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
+import { lawsuitService } from '@/services/LawsuitService';
 import type {
   DocumentState,
   LawsuitPreparationState,
@@ -9,6 +10,7 @@ import {
   TAQADI_DEFAULT_DEFENDANT_ADDRESS,
   TAQADI_DEFAULT_DEFENDANT_EMAIL,
 } from './taqadiDefaults';
+import { getLawsuitClaimAmounts } from './claimAmounts';
 
 export type TaqadiFilingStatus =
   | 'queued'
@@ -45,6 +47,7 @@ export interface TaqadiFilingPayload {
   plaintiff: {
     name: 'شركة العراف لتأجير السيارات';
     commercialRegistration: '146832';
+    establishmentRegistration: '17201586';
     partyOrder: 1;
   };
   representative: {
@@ -253,6 +256,19 @@ export function buildTaqadiFilingPayload(
     throw new Error('بيانات الدعوى غير مكتملة');
   }
 
+  const defendantNameParts = [
+    state.taqadiData.defendant.firstName,
+    state.taqadiData.defendant.middleName,
+    state.taqadiData.defendant.lastName,
+  ].filter((part): part is string => Boolean(part?.trim()));
+  const hasInvalidDefendantName = defendantNameParts.length < 2
+    || defendantNameParts.some((part) => !/[\u0600-\u06FF]/.test(part) || /[A-Za-z]/.test(part));
+  if (hasInvalidDefendantName) {
+    throw new Error(
+      'اسم المدعى عليه يجب أن يكون مسجلًا بالعربية (الاسم الأول واسم العائلة) قبل الإرسال إلى تقاضي',
+    );
+  }
+
   const requiredDocuments = [
     state.documents.memo,
     state.documents.claims,
@@ -279,6 +295,7 @@ export function buildTaqadiFilingPayload(
   }
 
   const { taqadiData, contract } = state;
+  const { taqadiClaimAmount } = getLawsuitClaimAmounts(state.calculations);
   return {
     schemaVersion: '1.0',
     classification: {
@@ -290,6 +307,7 @@ export function buildTaqadiFilingPayload(
     plaintiff: {
       name: 'شركة العراف لتأجير السيارات',
       commercialRegistration: '146832',
+      establishmentRegistration: '17201586',
       partyOrder: 1,
     },
     representative: {
@@ -300,8 +318,8 @@ export function buildTaqadiFilingPayload(
       title: taqadiData.caseTitle,
       facts: taqadiData.facts,
       claims: taqadiData.claims,
-      amount: taqadiData.amount,
-      amountInWords: taqadiData.amountInWords,
+      amount: taqadiClaimAmount,
+      amountInWords: lawsuitService.convertAmountToWords(taqadiClaimAmount),
     },
     defendant: {
       fullName: taqadiData.defendant.fullName,

@@ -167,6 +167,19 @@ describe('buildTaqadiFilingPayload', () => {
     expect(payload.documents.some((document) => document.key === 'violationsEvidence')).toBe(true);
   });
 
+  it('derives the Taqadi claim value from the final cash request', () => {
+    const state = createState(true);
+    state.taqadiData!.amount = 99_999;
+
+    const payload = buildTaqadiFilingPayload(
+      state,
+      'https://app.test/prepare',
+    );
+
+    expect(payload.case.amount).toBe(3000);
+    expect(payload.case.amountInWords).not.toBe('99,999');
+  });
+
   it('rejects an incomplete filing package', () => {
     const state = createState();
     state.documents.contract.status = 'missing';
@@ -174,5 +187,19 @@ describe('buildTaqadiFilingPayload', () => {
 
     expect(() => buildTaqadiFilingPayload(state, 'https://app.test/prepare'))
       .toThrow('مستندات الدعوى غير مكتملة');
+  });
+
+  it('rejects a defendant name containing English fields', () => {
+    const state = createState();
+    state.taqadiData!.defendant = {
+      ...state.taqadiData!.defendant,
+      fullName: 'ATEF MANSOUR NAT EGYPT',
+      firstName: 'ATEF',
+      middleName: 'MANSOUR NAT',
+      lastName: 'EGYPT',
+    };
+
+    expect(() => buildTaqadiFilingPayload(state, 'https://app.test/prepare'))
+      .toThrow('اسم المدعى عليه يجب أن يكون مسجلًا بالعربية');
   });
 });

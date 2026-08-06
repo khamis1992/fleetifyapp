@@ -5,6 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useCustomerDuplicateCheck } from '@/hooks/useCustomerDuplicateCheck';
 import { auditLogger } from '@/lib/auditLogger';
 import type { Database } from '@/integrations/supabase/types';
+import { getCustomerDataIssues } from '@/utils/formatCustomerName';
 import { 
   CreateCustomerData, 
   UpdateCustomerData,
@@ -80,6 +81,7 @@ export const useCustomerOperations = (options: CustomerOperationsOptions = {}) =
         phone: validatedData.phone,
         email: validatedData.email,
         national_id: validatedData.national_id,
+        nationality: validatedData.nationality,
         passport_number: validatedData.passport_number,
         license_number: validatedData.license_number,
         credit_limit: validatedData.credit_limit,
@@ -183,6 +185,15 @@ export const useCustomerOperations = (options: CustomerOperationsOptions = {}) =
 
       // Prepare update data
       const { id: customerId, ...validatedFields } = validatedData;
+      const finalCustomerData = {
+        ...existingCustomer,
+        ...validatedFields,
+      };
+      const customerDataIssues = getCustomerDataIssues(finalCustomerData);
+      if (customerDataIssues.length > 0) {
+        throw new Error(`استكمل بيانات العميل أولاً: ${customerDataIssues.join('، ')}`);
+      }
+
       const dataToUpdate: CustomerUpdate = {
         ...validatedFields,
         updated_at: new Date().toISOString(),

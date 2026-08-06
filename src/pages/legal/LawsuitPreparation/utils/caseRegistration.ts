@@ -10,6 +10,7 @@ import {
   TAQADI_DEFAULT_DEFENDANT_ADDRESS,
   TAQADI_DEFAULT_DEFENDANT_EMAIL,
 } from './taqadiDefaults';
+import { getLawsuitClaimAmounts } from './claimAmounts';
 
 export interface RegisterCaseResult {
   caseId: string;
@@ -92,6 +93,8 @@ async function registerLegalCaseLegacy(
     throw new Error('بيانات غير مكتملة');
   }
   
+  const { taqadiClaimAmount } = getLawsuitClaimAmounts(calculations);
+
   // Check if generated documents are ready
   const generatedDocs = ['memo', 'claims', 'docsList'] as const;
   const readyDocs = generatedDocs.filter(id => documents[id].status === 'ready');
@@ -160,7 +163,7 @@ async function registerLegalCaseLegacy(
       case_type: 'contract_dispute',
       case_status: 'open',
       filing_date: new Date().toISOString(),
-      case_value: calculations.total,
+      case_value: taqadiClaimAmount,
       description: taqadiData?.facts,
       created_by: userId,
     })
@@ -181,7 +184,7 @@ async function registerLegalCaseLegacy(
       case_title: caseTitle,
       facts: taqadiData?.facts || '',
       requests: taqadiData?.claims || '',
-      claim_amount: calculations.total,
+      claim_amount: taqadiClaimAmount,
       claim_amount_words: taqadiData?.amountInWords || '',
       defendant_first_name: nameParts[0] || '',
       defendant_middle_name: nameParts.length > 2 ? nameParts.slice(1, -1).join(' ') : null,
@@ -383,6 +386,7 @@ export async function registerLegalCase(
     throw new Error('Legal case data is incomplete');
   }
 
+  const { taqadiClaimAmount } = getLawsuitClaimAmounts(calculations);
   const requiredDocuments = ['memo', 'claims', 'docsList'] as const;
   const readyCount = requiredDocuments.filter(
     (documentId) => documents[documentId].status === 'ready',
@@ -416,7 +420,7 @@ export async function registerLegalCase(
     p_actor_id: userId,
     p_case_id: result.legal_case.id,
     p_case_title: taqadiData?.caseTitle || null,
-    p_claim_amount: calculations.total,
+    p_claim_amount: taqadiClaimAmount,
     p_claims: taqadiData?.claims || null,
     p_company_id: companyId,
     p_contract_id: contractId,

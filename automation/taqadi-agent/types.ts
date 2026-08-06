@@ -33,6 +33,7 @@ export interface FilingPayload {
   plaintiff: {
     name: string;
     commercialRegistration: string;
+    establishmentRegistration?: string;
     partyOrder: number;
   };
   representative: {

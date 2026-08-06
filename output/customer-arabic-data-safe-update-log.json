@@ -1,0 +1,2110 @@
+{
+  "companyId": "24bc0b21-4e2d-4413-9842-31719a3669f4",
+  "updatedCount": 108,
+  "results": [
+    {
+      "id": "e93c1330-4fca-4c52-bbea-3552411af2f9",
+      "customer_code": "IND-25-0026",
+      "reasons": [
+        "copy_arabic_first_name",
+        "copy_arabic_last_name"
+      ],
+      "patch": {
+        "first_name_ar": "احمد",
+        "last_name_ar": "الطاهر ادريس"
+      },
+      "updated": {
+        "id": "e93c1330-4fca-4c52-bbea-3552411af2f9",
+        "customer_code": "IND-25-0026",
+        "first_name_ar": "احمد",
+        "last_name_ar": "الطاهر ادريس",
+        "company_name_ar": null,
+        "nationality": null,
+        "country": "قطر"
+      }
+    },
+    {
+      "id": "7621ebd0-acd2-45e2-9491-20c473b4485a",
+      "customer_code": "IND-25-0035",
+      "reasons": [
+        "copy_arabic_first_name",
+        "copy_arabic_last_name"
+      ],
+      "patch": {
+        "first_name_ar": "عصام",
+        "last_name_ar": "ابراهيم عبد الله"
+      },
+      "updated": {
+        "id": "7621ebd0-acd2-45e2-9491-20c473b4485a",
+        "customer_code": "IND-25-0035",
+        "first_name_ar": "عصام",
+        "last_name_ar": "ابراهيم عبد الله",
+        "company_name_ar": null,
+        "nationality": null,
+        "country": "قطر"
+      }
+    },
+    {
+      "id": "fb98b7ab-2bad-44c5-b927-d23087c7f376",
+      "customer_code": "IND-25-0045",
+      "reasons": [
+        "copy_arabic_first_name",
+        "copy_arabic_last_name"
+      ],
+      "patch": {
+        "first_name_ar": "مهند",
+        "last_name_ar": "حمودة الظاهر"
+      },
+      "updated": {
+        "id": "fb98b7ab-2bad-44c5-b927-d23087c7f376",
+        "customer_code": "IND-25-0045",
+        "first_name_ar": "مهند",
+        "last_name_ar": "حمودة الظاهر",
+        "company_name_ar": null,
+        "nationality": null,
+        "country": "قطر"
+      }
+    },
+    {
+      "id": "14abf10e-299a-43f3-b4bd-28fafce3aea1",
+      "customer_code": "IND-25-0081",
+      "reasons": [
+        "copy_arabic_first_name",
+        "copy_arabic_last_name"
+      ],
+      "patch": {
+        "first_name_ar": "حمزة",
+        "last_name_ar": "بادو"
+      },
+      "updated": {
+        "id": "14abf10e-299a-43f3-b4bd-28fafce3aea1",
+        "customer_code": "IND-25-0081",
+        "first_name_ar": "حمزة",
+        "last_name_ar": "بادو",
+        "company_name_ar": null,
+        "nationality": "المغرب",
+        "country": "قطر"
+      }
+    },
+    {
+      "id": "286b0804-fdf0-4a56-b71c-90d9e9ce3839",
+      "customer_code": "IND-25-0167",
+      "reasons": [
+        "copy_arabic_first_name",
+        "copy_arabic_last_name"
+      ],
+      "patch": {
+        "first_name_ar": "أمير",
+        "last_name_ar": "عبد الرحمان"
+      },
+      "updated": {
+        "id": "286b0804-fdf0-4a56-b71c-90d9e9ce3839",
+        "customer_code": "IND-25-0167",
+        "first_name_ar": "أمير",
+        "last_name_ar": "عبد الرحمان",
+        "company_name_ar": null,
+        "nationality": "سوداني ",
+        "country": "قطر"
+      }
+    },
+    {
+      "id": "c9f01b28-6c94-4319-a15e-7238be873cbe",
+      "customer_code": "IND-25-0172",
+      "reasons": [
+        "copy_arabic_first_name",
+        "copy_arabic_last_name"
+      ],
+      "patch": {
+        "first_name_ar": "احمد",
+        "last_name_ar": "السيد بابكر"
+      },
+      "updated": {
+        "id": "c9f01b28-6c94-4319-a15e-7238be873cbe",
+        "customer_code": "IND-25-0172",
+        "first_name_ar": "احمد",
+        "last_name_ar": "السيد بابكر",
+        "company_name_ar": null,
+        "nationality": "سوداني",
+        "country": "قطر"
+      }
+    },
+    {
+      "id": "430220d7-3cba-402f-8448-68c2c623de0a",
+      "customer_code": "IND-25-0173",
+      "reasons": [
+        "copy_arabic_first_name",
+        "copy_arabic_last_name"
+      ],
+      "patch": {
+        "first_name_ar": "عبد",
+        "last_name_ar": "العزيز جرفال"
+      },
+      "updated": {
+        "id": "430220d7-3cba-402f-8448-68c2c623de0a",
+        "customer_code": "IND-25-0173",
+        "first_name_ar": "عبد",
+        "last_name_ar": "العزيز جرفال",
+        "company_name_ar": null,
+        "nationality": "تونسي",
+        "country": "قطر"
+      }
+    },
+    {
+      "id": "1b68e99d-7dea-4590-b4fc-ba70a0e91641",
+      "customer_code": "IND-25-0174",
+      "reasons": [
+        "copy_arabic_first_name",
+        "copy_arabic_last_name"
+      ],
+      "patch": {
+        "first_name_ar": "خميس",
+        "last_name_ar": "الجبر"
+      },
+      "updated": {
+        "id": "1b68e99d-7dea-4590-b4fc-ba70a0e91641",
+        "customer_code": "IND-25-0174",
+        "first_name_ar": "خميس",
+        "last_name_ar": "الجبر",
+        "company_name_ar": null,
+        "nationality": null,
+        "country": "قطر"
+      }
+    },
+    {
+      "id": "bd4001ab-41e0-4508-af8d-539734e069a3",
+      "customer_code": "IND-25-0186",
+      "reasons": [
+        "copy_arabic_first_name",
+        "copy_arabic_last_name"
+      ],
+      "patch": {
+        "first_name_ar": "مهدي",
+        "last_name_ar": "أسامة حامد"
+      },
+      "updated": {
+        "id": "bd4001ab-41e0-4508-af8d-539734e069a3",
+        "customer_code": "IND-25-0186",
+        "first_name_ar": "مهدي",
+        "last_name_ar": "أسامة حامد",
+        "company_name_ar": null,
+        "nationality": null,
+        "country": "قطر"
+      }
+    },
+    {
+      "id": "a2e0a9f9-a8d5-42f5-84ee-0d3b40026c02",
+      "customer_code": "IND-25-0191",
+      "reasons": [
+        "copy_arabic_first_name",
+        "copy_arabic_last_name"
+      ],
+      "patch": {
+        "first_name_ar": "عبد",
+        "last_name_ar": "الحنان"
+      },
+      "updated": {
+        "id": "a2e0a9f9-a8d5-42f5-84ee-0d3b40026c02",
+        "customer_code": "IND-25-0191",
+        "first_name_ar": "عبد",
+        "last_name_ar": "الحنان",
+        "company_name_ar": null,
+        "nationality": "بنغالي ",
+        "country": "قطر"
+      }
+    },
+    {
+      "id": "dffed221-b8c3-4662-b758-d4f254edd994",
+      "customer_code": "IND-25-0230",
+      "reasons": [
+        "copy_arabic_first_name",
+        "copy_arabic_last_name"
+      ],
+      "patch": {
+        "first_name_ar": "علا",
+        "last_name_ar": "الدين حسين"
+      },
+      "updated": {
+        "id": "dffed221-b8c3-4662-b758-d4f254edd994",
+        "customer_code": "IND-25-0230",
+        "first_name_ar": "علا",
+        "last_name_ar": "الدين حسين",
+        "company_name_ar": null,
+        "nationality": "تونسي",
+        "country": "قطر"
+      }
+    },
+    {
+      "id": "274d83f7-6220-4fe0-bcd1-e986feabeaa0",
+      "customer_code": "IND-25-0237",
+      "reasons": [
+        "copy_arabic_first_name",
+        "copy_arabic_last_name"
+      ],
+      "patch": {
+        "first_name_ar": "محمد",
+        "last_name_ar": "فوأد شوشان"
+      },
+      "updated": {
+        "id": "274d83f7-6220-4fe0-bcd1-e986feabeaa0",
+        "customer_code": "IND-25-0237",
+        "first_name_ar": "محمد",
+        "last_name_ar": "فوأد شوشان",
+        "company_name_ar": null,
+        "nationality": null,
+        "country": "قطر"
+      }
+    },
+    {
+      "id": "cd68fe4d-3ad4-4da1-9192-15543c26be65",
+      "customer_code": "IND-25-0283",
+      "reasons": [
+        "copy_arabic_first_name",
+        "copy_arabic_last_name"
+      ],
+      "patch": {
+        "first_name_ar": "حمدي",
+        "last_name_ar": "ثانث"
+      },
+      "updated": {
+        "id": "cd68fe4d-3ad4-4da1-9192-15543c26be65",
+        "customer_code": "IND-25-0283",
+        "first_name_ar": "حمدي",
+        "last_name_ar": "ثانث",
+        "company_name_ar": null,
+        "nationality": "مصري",
+        "country": "قطر"
+      }
+    },
+    {
+      "id": "1c0318cc-733c-4352-97bd-3a1c126c16e4",
+      "customer_code": "IND-25-0298",
+      "reasons": [
+        "copy_arabic_first_name",
+        "copy_arabic_last_name"
+      ],
+      "patch": {
+        "first_name_ar": "ادم",
+        "last_name_ar": "صالح جبريل"
+      },
+      "updated": {
+        "id": "1c0318cc-733c-4352-97bd-3a1c126c16e4",
+        "customer_code": "IND-25-0298",
+        "first_name_ar": "ادم",
+        "last_name_ar": "صالح جبريل",
+        "company_name_ar": null,
+        "nationality": "السودان",
+        "country": "قطر"
+      }
+    },
+    {
+      "id": "c2503465-5e50-4908-9207-99b4995abaad",
+      "customer_code": "IND-25-0329",
+      "reasons": [
+        "copy_arabic_first_name",
+        "copy_arabic_last_name"
+      ],
+      "patch": {
+        "first_name_ar": "ايمن",
+        "last_name_ar": "خليفة حمادي"
+      },
+      "updated": {
+        "id": "c2503465-5e50-4908-9207-99b4995abaad",
+        "customer_code": "IND-25-0329",
+        "first_name_ar": "ايمن",
+        "last_name_ar": "خليفة حمادي",
+        "company_name_ar": null,
+        "nationality": "تونس",
+        "country": "قطر"
+      }
+    },
+    {
+      "id": "28ecbfab-8f3d-46b4-b6aa-2a5a81e8f367",
+      "customer_code": "IND-25-0330",
+      "reasons": [
+        "copy_arabic_first_name",
+        "copy_arabic_last_name"
+      ],
+      "patch": {
+        "first_name_ar": "يوسف",
+        "last_name_ar": "العبيدي لخليل"
+      },
+      "updated": {
+        "id": "28ecbfab-8f3d-46b4-b6aa-2a5a81e8f367",
+        "customer_code": "IND-25-0330",
+        "first_name_ar": "يوسف",
+        "last_name_ar": "العبيدي لخليل",
+        "company_name_ar": null,
+        "nationality": null,
+        "country": "قطر"
+      }
+    },
+    {
+      "id": "dbf5781f-02d2-4cd7-8f35-d411739e61b5",
+      "customer_code": "IND-25-0365",
+      "reasons": [
+        "copy_arabic_first_name",
+        "copy_arabic_last_name"
+      ],
+      "patch": {
+        "first_name_ar": "زياد",
+        "last_name_ar": "اليحمدي"
+      },
+      "updated": {
+        "id": "dbf5781f-02d2-4cd7-8f35-d411739e61b5",
+        "customer_code": "IND-25-0365",
+        "first_name_ar": "زياد",
+        "last_name_ar": "اليحمدي",
+        "company_name_ar": null,
+        "nationality": null,
+        "country": "قطر"
+      }
+    },
+    {
+      "id": "6b8e3932-6dc2-48b4-a607-a6b73de78b5d",
+      "customer_code": "IND-25-0479",
+      "reasons": [
+        "translate_country"
+      ],
+      "patch": {
+        "country": "الكويت"
+      },
+      "updated": {
+        "id": "6b8e3932-6dc2-48b4-a607-a6b73de78b5d",
+        "customer_code": "IND-25-0479",
+        "first_name_ar": "عوض",
+        "last_name_ar": "الكريم",
+        "company_name_ar": null,
+        "nationality": "السودان",
+        "country": "الكويت"
+      }
+    },
+    {
+      "id": "24fd54e9-4a99-47a6-b6f1-ad964178c294",
+      "customer_code": "IND-25-0409",
+      "reasons": [
+        "translate_country"
+      ],
+      "patch": {
+        "country": "الكويت"
+      },
+      "updated": {
+        "id": "24fd54e9-4a99-47a6-b6f1-ad964178c294",
+        "customer_code": "IND-25-0409",
+        "first_name_ar": "محمد",
+        "last_name_ar": "العويني",
+        "company_name_ar": null,
+        "nationality": null,
+        "country": "الكويت"
+      }
+    },
+    {
+      "id": "fb961f9f-3e08-41ec-aa3c-a5a8864dd073",
+      "customer_code": "IND-25-0601",
+      "reasons": [
+        "copy_arabic_last_name",
+        "translate_country"
+      ],
+      "patch": {
+        "last_name_ar": "فارس",
+        "country": "الكويت"
+      },
+      "updated": {
+        "id": "fb961f9f-3e08-41ec-aa3c-a5a8864dd073",
+        "customer_code": "IND-25-0601",
+        "first_name_ar": "زييد فاريس",
+        "last_name_ar": "فارس",
+        "company_name_ar": null,
+        "nationality": "تونسي",
+        "country": "الكويت"
+      }
+    },
+    {
+      "id": "fb34f406-8d9f-4d2e-a124-6dd222a2ab27",
+      "customer_code": "IND-25-0598",
+      "reasons": [
+        "translate_country"
+      ],
+      "patch": {
+        "country": "الكويت"
+      },
+      "updated": {
+        "id": "fb34f406-8d9f-4d2e-a124-6dd222a2ab27",
+        "customer_code": "IND-25-0598",
+        "first_name_ar": "سيد",
+        "last_name_ar": "جان",
+        "company_name_ar": null,
+        "nationality": null,
+        "country": "الكويت"
+      }
+    },
+    {
+      "id": "69e29e5a-6ccc-4852-a2ea-3f96f3adffe9",
+      "customer_code": "IND-25-0485",
+      "reasons": [
+        "translate_country"
+      ],
+      "patch": {
+        "country": "الكويت"
+      },
+      "updated": {
+        "id": "69e29e5a-6ccc-4852-a2ea-3f96f3adffe9",
+        "customer_code": "IND-25-0485",
+        "first_name_ar": "أسامة",
+        "last_name_ar": "جريس",
+        "company_name_ar": null,
+        "nationality": null,
+        "country": "الكويت"
+      }
+    },
+    {
+      "id": "f1754391-4a2c-452c-bdfb-5a5b217246e0",
+      "customer_code": "IND-25-0562",
+      "reasons": [
+        "translate_country"
+      ],
+      "patch": {
+        "country": "الكويت"
+      },
+      "updated": {
+        "id": "f1754391-4a2c-452c-bdfb-5a5b217246e0",
+        "customer_code": "IND-25-0562",
+        "first_name_ar": "شيهاب",
+        "last_name_ar": "",
+        "company_name_ar": null,
+        "nationality": "تونسي",
+        "country": "الكويت"
+      }
+    },
+    {
+      "id": "4dded2b5-5426-4563-b6a1-816630923369",
+      "customer_code": "IND-25-0599",
+      "reasons": [
+        "translate_country"
+      ],
+      "patch": {
+        "country": "الكويت"
+      },
+      "updated": {
+        "id": "4dded2b5-5426-4563-b6a1-816630923369",
+        "customer_code": "IND-25-0599",
+        "first_name_ar": "أنور",
+        "last_name_ar": "محمد إبراهيم محمد",
+        "company_name_ar": null,
+        "nationality": "سوداني",
+        "country": "الكويت"
+      }
+    },
+    {
+      "id": "fa6431d8-0ee1-4a49-a9cb-192edf4f413d",
+      "customer_code": "IND-25-0618",
+      "reasons": [
+        "translate_country"
+      ],
+      "patch": {
+        "country": "الكويت"
+      },
+      "updated": {
+        "id": "fa6431d8-0ee1-4a49-a9cb-192edf4f413d",
+        "customer_code": "IND-25-0618",
+        "first_name_ar": "محمد علي سليم",
+        "last_name_ar": null,
+        "company_name_ar": null,
+        "nationality": null,
+        "country": "الكويت"
+      }
+    },
+    {
+      "id": "7f909f17-c4ba-4a1e-b27f-89cb01f4c173",
+      "customer_code": "IND-25-0631",
+      "reasons": [
+        "translate_country"
+      ],
+      "patch": {
+        "country": "الكويت"
+      },
+      "updated": {
+        "id": "7f909f17-c4ba-4a1e-b27f-89cb01f4c173",
+        "customer_code": "IND-25-0631",
+        "first_name_ar": "موسى حيمر",
+        "last_name_ar": null,
+        "company_name_ar": null,
+        "nationality": null,
+        "country": "الكويت"
+      }
+    },
+    {
+      "id": "6570dfa0-f09f-435a-b7dc-6d2151d2fd08",
+      "customer_code": "IND-25-0610",
+      "reasons": [
+        "translate_country"
+      ],
+      "patch": {
+        "country": "الكويت"
+      },
+      "updated": {
+        "id": "6570dfa0-f09f-435a-b7dc-6d2151d2fd08",
+        "customer_code": "IND-25-0610",
+        "first_name_ar": "طارق",
+        "last_name_ar": "التونسي",
+        "company_name_ar": null,
+        "nationality": null,
+        "country": "الكويت"
+      }
+    },
+    {
+      "id": "2fbdd9ed-e9fe-4e4e-a0a0-355d9ce6dc9e",
+      "customer_code": "IND-25-0700",
+      "reasons": [
+        "translate_country"
+      ],
+      "patch": {
+        "country": "الكويت"
+      },
+      "updated": {
+        "id": "2fbdd9ed-e9fe-4e4e-a0a0-355d9ce6dc9e",
+        "customer_code": "IND-25-0700",
+        "first_name_ar": "محمد",
+        "last_name_ar": "نواز",
+        "company_name_ar": null,
+        "nationality": null,
+        "country": "الكويت"
+      }
+    },
+    {
+      "id": "c022d2b1-e993-4cd6-bb9c-5c8a67bf30c7",
+      "customer_code": "IND-25-0698",
+      "reasons": [
+        "translate_country"
+      ],
+      "patch": {
+        "country": "الكويت"
+      },
+      "updated": {
+        "id": "c022d2b1-e993-4cd6-bb9c-5c8a67bf30c7",
+        "customer_code": "IND-25-0698",
+        "first_name_ar": "عماد",
+        "last_name_ar": "العياري",
+        "company_name_ar": null,
+        "nationality": null,
+        "country": "الكويت"
+      }
+    },
+    {
+      "id": "27359728-fad6-4c91-ae4c-0031d0ed10f7",
+      "customer_code": "IND-25-0637",
+      "reasons": [
+        "translate_country"
+      ],
+      "patch": {
+        "country": "الكويت"
+      },
+      "updated": {
+        "id": "27359728-fad6-4c91-ae4c-0031d0ed10f7",
+        "customer_code": "IND-25-0637",
+        "first_name_ar": "كيبروم",
+        "last_name_ar": "",
+        "company_name_ar": null,
+        "nationality": null,
+        "country": "الكويت"
+      }
+    },
+    {
+      "id": "48b9aee7-f4a9-40d8-81ad-cb0547679f2e",
+      "customer_code": "IND-25-0527",
+      "reasons": [
+        "translate_country"
+      ],
+      "patch": {
+        "country": "الكويت"
+      },
+      "updated": {
+        "id": "48b9aee7-f4a9-40d8-81ad-cb0547679f2e",
+        "customer_code": "IND-25-0527",
+        "first_name_ar": "محمود",
+        "last_name_ar": "جاسم الصالح",
+        "company_name_ar": null,
+        "nationality": null,
+        "country": "الكويت"
+      }
+    },
+    {
+      "id": "2a898340-79f6-455f-b2b9-4ab785b94efc",
+      "customer_code": null,
+      "reasons": [
+        "translate_country"
+      ],
+      "patch": {
+        "country": "الكويت"
+      },
+      "updated": {
+        "id": "2a898340-79f6-455f-b2b9-4ab785b94efc",
+        "customer_code": null,
+        "first_name_ar": "مهدي",
+        "last_name_ar": "الشريف",
+        "company_name_ar": null,
+        "nationality": "سوداني",
+        "country": "الكويت"
+      }
+    },
+    {
+      "id": "6d325c05-aa09-4b33-b844-bd2ac0ef7a44",
+      "customer_code": null,
+      "reasons": [
+        "translate_country"
+      ],
+      "patch": {
+        "country": "الكويت"
+      },
+      "updated": {
+        "id": "6d325c05-aa09-4b33-b844-bd2ac0ef7a44",
+        "customer_code": null,
+        "first_name_ar": "ازهري",
+        "last_name_ar": "حكيم",
+        "company_name_ar": null,
+        "nationality": null,
+        "country": "الكويت"
+      }
+    },
+    {
+      "id": "c9b15875-6319-46dd-a134-3e73a6a2990f",
+      "customer_code": null,
+      "reasons": [
+        "translate_country"
+      ],
+      "patch": {
+        "country": "الكويت"
+      },
+      "updated": {
+        "id": "c9b15875-6319-46dd-a134-3e73a6a2990f",
+        "customer_code": null,
+        "first_name_ar": "ايهاب",
+        "last_name_ar": "عبد الله",
+        "company_name_ar": null,
+        "nationality": null,
+        "country": "الكويت"
+      }
+    },
+    {
+      "id": "927ca9ba-562e-459c-88ac-b8a4e44bc7b9",
+      "customer_code": null,
+      "reasons": [
+        "translate_country"
+      ],
+      "patch": {
+        "country": "الكويت"
+      },
+      "updated": {
+        "id": "927ca9ba-562e-459c-88ac-b8a4e44bc7b9",
+        "customer_code": null,
+        "first_name_ar": "فادي",
+        "last_name_ar": "السعيد",
+        "company_name_ar": null,
+        "nationality": "تونسي ",
+        "country": "الكويت"
+      }
+    },
+    {
+      "id": "d1478648-6ffa-4c54-b5e6-f77759e558ac",
+      "customer_code": null,
+      "reasons": [
+        "translate_country"
+      ],
+      "patch": {
+        "country": "الكويت"
+      },
+      "updated": {
+        "id": "d1478648-6ffa-4c54-b5e6-f77759e558ac",
+        "customer_code": null,
+        "first_name_ar": "عبد",
+        "last_name_ar": "العزيز محمد",
+        "company_name_ar": null,
+        "nationality": "السودان",
+        "country": "الكويت"
+      }
+    },
+    {
+      "id": "ed43e6a1-f877-42cf-bc13-800ccb4d98c0",
+      "customer_code": null,
+      "reasons": [
+        "translate_country"
+      ],
+      "patch": {
+        "country": "الكويت"
+      },
+      "updated": {
+        "id": "ed43e6a1-f877-42cf-bc13-800ccb4d98c0",
+        "customer_code": null,
+        "first_name_ar": "وضاح",
+        "last_name_ar": "عبد الله",
+        "company_name_ar": null,
+        "nationality": "سوداني",
+        "country": "الكويت"
+      }
+    },
+    {
+      "id": "e97c22f1-4e31-46f8-a48a-a811c13152fc",
+      "customer_code": null,
+      "reasons": [
+        "translate_country"
+      ],
+      "patch": {
+        "country": "الكويت"
+      },
+      "updated": {
+        "id": "e97c22f1-4e31-46f8-a48a-a811c13152fc",
+        "customer_code": null,
+        "first_name_ar": "وحيد",
+        "last_name_ar": "بوكثير",
+        "company_name_ar": null,
+        "nationality": null,
+        "country": "الكويت"
+      }
+    },
+    {
+      "id": "dc6cfbab-1760-46ae-8f8b-a940e06393ff",
+      "customer_code": null,
+      "reasons": [
+        "translate_country"
+      ],
+      "patch": {
+        "country": "الكويت"
+      },
+      "updated": {
+        "id": "dc6cfbab-1760-46ae-8f8b-a940e06393ff",
+        "customer_code": null,
+        "first_name_ar": "خبيب",
+        "last_name_ar": "رضا السحابي",
+        "company_name_ar": null,
+        "nationality": null,
+        "country": "الكويت"
+      }
+    },
+    {
+      "id": "887b9daa-8941-4b32-abca-5f78426ca3eb",
+      "customer_code": null,
+      "reasons": [
+        "translate_country"
+      ],
+      "patch": {
+        "country": "الكويت"
+      },
+      "updated": {
+        "id": "887b9daa-8941-4b32-abca-5f78426ca3eb",
+        "customer_code": null,
+        "first_name_ar": "انور",
+        "last_name_ar": "جدبيني.",
+        "company_name_ar": null,
+        "nationality": "مغربي",
+        "country": "الكويت"
+      }
+    },
+    {
+      "id": "9ef02989-8409-423e-9620-12cb6871c647",
+      "customer_code": null,
+      "reasons": [
+        "translate_country"
+      ],
+      "patch": {
+        "country": "الكويت"
+      },
+      "updated": {
+        "id": "9ef02989-8409-423e-9620-12cb6871c647",
+        "customer_code": null,
+        "first_name_ar": "هيثم",
+        "last_name_ar": "خليفة بنعلي",
+        "company_name_ar": null,
+        "nationality": null,
+        "country": "الكويت"
+      }
+    },
+    {
+      "id": "e96fe829-00e6-463f-b8d1-8cbb449db271",
+      "customer_code": null,
+      "reasons": [
+        "translate_country"
+      ],
+      "patch": {
+        "country": "الكويت"
+      },
+      "updated": {
+        "id": "e96fe829-00e6-463f-b8d1-8cbb449db271",
+        "customer_code": null,
+        "first_name_ar": "عبد",
+        "last_name_ar": "العزيز سامي",
+        "company_name_ar": null,
+        "nationality": null,
+        "country": "الكويت"
+      }
+    },
+    {
+      "id": "d5f01bab-4846-4da2-869f-a111afbd9e11",
+      "customer_code": null,
+      "reasons": [
+        "translate_country"
+      ],
+      "patch": {
+        "country": "الكويت"
+      },
+      "updated": {
+        "id": "d5f01bab-4846-4da2-869f-a111afbd9e11",
+        "customer_code": null,
+        "first_name_ar": "ياسين",
+        "last_name_ar": "سرحان كمال بن عايد",
+        "company_name_ar": null,
+        "nationality": "تونسي",
+        "country": "الكويت"
+      }
+    },
+    {
+      "id": "f38bb661-42f6-4e1e-b789-b483b0fb2a2b",
+      "customer_code": null,
+      "reasons": [
+        "translate_country"
+      ],
+      "patch": {
+        "country": "الكويت"
+      },
+      "updated": {
+        "id": "f38bb661-42f6-4e1e-b789-b483b0fb2a2b",
+        "customer_code": null,
+        "first_name_ar": "محمد",
+        "last_name_ar": "عبد الله",
+        "company_name_ar": null,
+        "nationality": null,
+        "country": "الكويت"
+      }
+    },
+    {
+      "id": "e374dfb0-3889-4ca8-8473-2eacb1da527f",
+      "customer_code": null,
+      "reasons": [
+        "translate_country"
+      ],
+      "patch": {
+        "country": "الكويت"
+      },
+      "updated": {
+        "id": "e374dfb0-3889-4ca8-8473-2eacb1da527f",
+        "customer_code": null,
+        "first_name_ar": "صدام",
+        "last_name_ar": "مصطفى سعيد",
+        "company_name_ar": null,
+        "nationality": null,
+        "country": "الكويت"
+      }
+    },
+    {
+      "id": "a3662af0-71b3-40c7-825a-e8a09ff1bd2c",
+      "customer_code": null,
+      "reasons": [
+        "translate_country"
+      ],
+      "patch": {
+        "country": "الكويت"
+      },
+      "updated": {
+        "id": "a3662af0-71b3-40c7-825a-e8a09ff1bd2c",
+        "customer_code": null,
+        "first_name_ar": "إبراهيم",
+        "last_name_ar": "خضر",
+        "company_name_ar": null,
+        "nationality": null,
+        "country": "الكويت"
+      }
+    },
+    {
+      "id": "d5f20c8e-55ef-46c8-bcca-468afa4b55c6",
+      "customer_code": null,
+      "reasons": [
+        "translate_country"
+      ],
+      "patch": {
+        "country": "الكويت"
+      },
+      "updated": {
+        "id": "d5f20c8e-55ef-46c8-bcca-468afa4b55c6",
+        "customer_code": null,
+        "first_name_ar": "عقبة",
+        "last_name_ar": "قصعاوي",
+        "company_name_ar": null,
+        "nationality": null,
+        "country": "الكويت"
+      }
+    },
+    {
+      "id": "c5a89a0f-4938-40c5-9157-b9e2adac8038",
+      "customer_code": null,
+      "reasons": [
+        "translate_country"
+      ],
+      "patch": {
+        "country": "الكويت"
+      },
+      "updated": {
+        "id": "c5a89a0f-4938-40c5-9157-b9e2adac8038",
+        "customer_code": null,
+        "first_name_ar": "عثمان",
+        "last_name_ar": "عبيريزة",
+        "company_name_ar": null,
+        "nationality": "مغربي",
+        "country": "الكويت"
+      }
+    },
+    {
+      "id": "1b4054bc-116b-4e34-8ea3-cdcb082f17c4",
+      "customer_code": null,
+      "reasons": [
+        "translate_country"
+      ],
+      "patch": {
+        "country": "الكويت"
+      },
+      "updated": {
+        "id": "1b4054bc-116b-4e34-8ea3-cdcb082f17c4",
+        "customer_code": null,
+        "first_name_ar": "فراس",
+        "last_name_ar": "النصراوي",
+        "company_name_ar": null,
+        "nationality": null,
+        "country": "الكويت"
+      }
+    },
+    {
+      "id": "b13e8b13-0320-4a87-9a46-256c5c85c635",
+      "customer_code": null,
+      "reasons": [
+        "translate_country"
+      ],
+      "patch": {
+        "country": "الكويت"
+      },
+      "updated": {
+        "id": "b13e8b13-0320-4a87-9a46-256c5c85c635",
+        "customer_code": null,
+        "first_name_ar": "مصطفى",
+        "last_name_ar": "بالقايد",
+        "company_name_ar": null,
+        "nationality": null,
+        "country": "الكويت"
+      }
+    },
+    {
+      "id": "1f273304-384c-4bd2-9ce6-9e577009ce01",
+      "customer_code": null,
+      "reasons": [
+        "translate_country"
+      ],
+      "patch": {
+        "country": "الكويت"
+      },
+      "updated": {
+        "id": "1f273304-384c-4bd2-9ce6-9e577009ce01",
+        "customer_code": null,
+        "first_name_ar": "محمد",
+        "last_name_ar": "سرالختم",
+        "company_name_ar": null,
+        "nationality": "سوداني",
+        "country": "الكويت"
+      }
+    },
+    {
+      "id": "4f88ac8c-7975-4abc-bd37-c8894ae36ac1",
+      "customer_code": null,
+      "reasons": [
+        "translate_country"
+      ],
+      "patch": {
+        "country": "الكويت"
+      },
+      "updated": {
+        "id": "4f88ac8c-7975-4abc-bd37-c8894ae36ac1",
+        "customer_code": null,
+        "first_name_ar": "احمد",
+        "last_name_ar": "تاج",
+        "company_name_ar": null,
+        "nationality": null,
+        "country": "الكويت"
+      }
+    },
+    {
+      "id": "33472fcc-4f95-4520-9e72-4409dfdd2d51",
+      "customer_code": null,
+      "reasons": [
+        "translate_country"
+      ],
+      "patch": {
+        "country": "الكويت"
+      },
+      "updated": {
+        "id": "33472fcc-4f95-4520-9e72-4409dfdd2d51",
+        "customer_code": null,
+        "first_name_ar": "انور",
+        "last_name_ar": "الدهبي",
+        "company_name_ar": null,
+        "nationality": null,
+        "country": "الكويت"
+      }
+    },
+    {
+      "id": "0428f7e0-0a86-4fd4-9f1d-5882fdf29479",
+      "customer_code": null,
+      "reasons": [
+        "translate_country"
+      ],
+      "patch": {
+        "country": "الكويت"
+      },
+      "updated": {
+        "id": "0428f7e0-0a86-4fd4-9f1d-5882fdf29479",
+        "customer_code": null,
+        "first_name_ar": "فخري",
+        "last_name_ar": "الدين عثمان",
+        "company_name_ar": null,
+        "nationality": null,
+        "country": "الكويت"
+      }
+    },
+    {
+      "id": "7b424074-f8b9-4456-b27f-699eb83e3821",
+      "customer_code": null,
+      "reasons": [
+        "translate_country"
+      ],
+      "patch": {
+        "country": "الكويت"
+      },
+      "updated": {
+        "id": "7b424074-f8b9-4456-b27f-699eb83e3821",
+        "customer_code": null,
+        "first_name_ar": "امين",
+        "last_name_ar": "محمد شوشان",
+        "company_name_ar": null,
+        "nationality": null,
+        "country": "الكويت"
+      }
+    },
+    {
+      "id": "a4adddb8-5330-444e-9728-b6d51c479d89",
+      "customer_code": null,
+      "reasons": [
+        "translate_country"
+      ],
+      "patch": {
+        "country": "الكويت"
+      },
+      "updated": {
+        "id": "a4adddb8-5330-444e-9728-b6d51c479d89",
+        "customer_code": null,
+        "first_name_ar": "محمد",
+        "last_name_ar": "احمد عمر سماني",
+        "company_name_ar": null,
+        "nationality": null,
+        "country": "الكويت"
+      }
+    },
+    {
+      "id": "ce123be8-018c-4763-b706-3ce2ec8aa26a",
+      "customer_code": null,
+      "reasons": [
+        "translate_country"
+      ],
+      "patch": {
+        "country": "الكويت"
+      },
+      "updated": {
+        "id": "ce123be8-018c-4763-b706-3ce2ec8aa26a",
+        "customer_code": null,
+        "first_name_ar": "مجدي",
+        "last_name_ar": "محمد عباس",
+        "company_name_ar": null,
+        "nationality": null,
+        "country": "الكويت"
+      }
+    },
+    {
+      "id": "508f6e9f-1df5-4c98-b9c9-2afc6e3e0e7f",
+      "customer_code": null,
+      "reasons": [
+        "translate_country"
+      ],
+      "patch": {
+        "country": "الكويت"
+      },
+      "updated": {
+        "id": "508f6e9f-1df5-4c98-b9c9-2afc6e3e0e7f",
+        "customer_code": null,
+        "first_name_ar": "ثامر",
+        "last_name_ar": "محمد السيد",
+        "company_name_ar": null,
+        "nationality": "مصري",
+        "country": "الكويت"
+      }
+    },
+    {
+      "id": "59ea73a6-0790-474a-b7fe-227bdd353550",
+      "customer_code": null,
+      "reasons": [
+        "translate_country"
+      ],
+      "patch": {
+        "country": "الكويت"
+      },
+      "updated": {
+        "id": "59ea73a6-0790-474a-b7fe-227bdd353550",
+        "customer_code": null,
+        "first_name_ar": "حمزة",
+        "last_name_ar": "البشير يانس",
+        "company_name_ar": null,
+        "nationality": "تونسي",
+        "country": "الكويت"
+      }
+    },
+    {
+      "id": "f93d1539-ad78-4a9a-9c07-2130307814ba",
+      "customer_code": null,
+      "reasons": [
+        "translate_country"
+      ],
+      "patch": {
+        "country": "الكويت"
+      },
+      "updated": {
+        "id": "f93d1539-ad78-4a9a-9c07-2130307814ba",
+        "customer_code": null,
+        "first_name_ar": "رمزي",
+        "last_name_ar": "بعزاوي",
+        "company_name_ar": null,
+        "nationality": "تونسي",
+        "country": "الكويت"
+      }
+    },
+    {
+      "id": "e6d82a2b-d683-4183-bc44-0286cf9f9650",
+      "customer_code": null,
+      "reasons": [
+        "translate_country"
+      ],
+      "patch": {
+        "country": "الكويت"
+      },
+      "updated": {
+        "id": "e6d82a2b-d683-4183-bc44-0286cf9f9650",
+        "customer_code": null,
+        "first_name_ar": "محمد",
+        "last_name_ar": "المختار بنباشة",
+        "company_name_ar": null,
+        "nationality": null,
+        "country": "الكويت"
+      }
+    },
+    {
+      "id": "c5b1d57f-8162-4140-bcae-5d667760cac8",
+      "customer_code": null,
+      "reasons": [
+        "translate_country"
+      ],
+      "patch": {
+        "country": "الكويت"
+      },
+      "updated": {
+        "id": "c5b1d57f-8162-4140-bcae-5d667760cac8",
+        "customer_code": null,
+        "first_name_ar": "مروان",
+        "last_name_ar": "باكير",
+        "company_name_ar": null,
+        "nationality": null,
+        "country": "الكويت"
+      }
+    },
+    {
+      "id": "55566f61-357d-459f-a0ed-6093c0fd03a9",
+      "customer_code": null,
+      "reasons": [
+        "translate_country"
+      ],
+      "patch": {
+        "country": "الكويت"
+      },
+      "updated": {
+        "id": "55566f61-357d-459f-a0ed-6093c0fd03a9",
+        "customer_code": null,
+        "first_name_ar": "عصام",
+        "last_name_ar": "المزوغي",
+        "company_name_ar": null,
+        "nationality": null,
+        "country": "الكويت"
+      }
+    },
+    {
+      "id": "1e0a06b1-3bf5-4794-ac2a-50cc0cdce901",
+      "customer_code": null,
+      "reasons": [
+        "translate_country"
+      ],
+      "patch": {
+        "country": "الكويت"
+      },
+      "updated": {
+        "id": "1e0a06b1-3bf5-4794-ac2a-50cc0cdce901",
+        "customer_code": null,
+        "first_name_ar": "محمد",
+        "last_name_ar": "جاسم الصالح",
+        "company_name_ar": null,
+        "nationality": null,
+        "country": "الكويت"
+      }
+    },
+    {
+      "id": "c535b4a9-401b-4c99-a400-453cf9911c54",
+      "customer_code": null,
+      "reasons": [
+        "translate_country"
+      ],
+      "patch": {
+        "country": "الكويت"
+      },
+      "updated": {
+        "id": "c535b4a9-401b-4c99-a400-453cf9911c54",
+        "customer_code": null,
+        "first_name_ar": "عمر",
+        "last_name_ar": "محمد الجمعي مرائحي دولة قطر وزارة الداخلية إدارة المرور",
+        "company_name_ar": null,
+        "nationality": "تونسي",
+        "country": "الكويت"
+      }
+    },
+    {
+      "id": "8fb941d4-5cfd-4d2b-b5d8-3e52691fbd61",
+      "customer_code": null,
+      "reasons": [
+        "translate_country"
+      ],
+      "patch": {
+        "country": "الكويت"
+      },
+      "updated": {
+        "id": "8fb941d4-5cfd-4d2b-b5d8-3e52691fbd61",
+        "customer_code": null,
+        "first_name_ar": "محمد",
+        "last_name_ar": "صالح فرج حامد",
+        "company_name_ar": null,
+        "nationality": "سوداني ",
+        "country": "الكويت"
+      }
+    },
+    {
+      "id": "d2b47721-a882-48a5-aedb-74c9c2c5e490",
+      "customer_code": null,
+      "reasons": [
+        "translate_country"
+      ],
+      "patch": {
+        "country": "الكويت"
+      },
+      "updated": {
+        "id": "d2b47721-a882-48a5-aedb-74c9c2c5e490",
+        "customer_code": null,
+        "first_name_ar": "عصام",
+        "last_name_ar": "احمد عبد الدايم",
+        "company_name_ar": null,
+        "nationality": null,
+        "country": "الكويت"
+      }
+    },
+    {
+      "id": "aa534e45-4865-4cb0-a87f-56c86ff60dfa",
+      "customer_code": null,
+      "reasons": [
+        "translate_country"
+      ],
+      "patch": {
+        "country": "الكويت"
+      },
+      "updated": {
+        "id": "aa534e45-4865-4cb0-a87f-56c86ff60dfa",
+        "customer_code": null,
+        "first_name_ar": "صابر",
+        "last_name_ar": "محمد",
+        "company_name_ar": null,
+        "nationality": "سوداني",
+        "country": "الكويت"
+      }
+    },
+    {
+      "id": "bacc7a09-335d-47cf-8cde-96d08983941d",
+      "customer_code": null,
+      "reasons": [
+        "translate_country"
+      ],
+      "patch": {
+        "country": "الكويت"
+      },
+      "updated": {
+        "id": "bacc7a09-335d-47cf-8cde-96d08983941d",
+        "customer_code": null,
+        "first_name_ar": "محمد",
+        "last_name_ar": "عماد النعماني",
+        "company_name_ar": null,
+        "nationality": null,
+        "country": "الكويت"
+      }
+    },
+    {
+      "id": "3b180987-4880-436e-8088-81e387bea1f7",
+      "customer_code": null,
+      "reasons": [
+        "translate_country"
+      ],
+      "patch": {
+        "country": "الكويت"
+      },
+      "updated": {
+        "id": "3b180987-4880-436e-8088-81e387bea1f7",
+        "customer_code": null,
+        "first_name_ar": "شرف",
+        "last_name_ar": "الدين المجيد",
+        "company_name_ar": null,
+        "nationality": null,
+        "country": "الكويت"
+      }
+    },
+    {
+      "id": "214a553f-0fcc-4469-97bb-a10b26a657d1",
+      "customer_code": null,
+      "reasons": [
+        "translate_country"
+      ],
+      "patch": {
+        "country": "الكويت"
+      },
+      "updated": {
+        "id": "214a553f-0fcc-4469-97bb-a10b26a657d1",
+        "customer_code": null,
+        "first_name_ar": "محمد",
+        "last_name_ar": "سليم",
+        "company_name_ar": null,
+        "nationality": "تونسي ",
+        "country": "الكويت"
+      }
+    },
+    {
+      "id": "fb5ba388-a1cf-4a94-a697-b286cb73bb00",
+      "customer_code": null,
+      "reasons": [
+        "translate_country"
+      ],
+      "patch": {
+        "country": "الكويت"
+      },
+      "updated": {
+        "id": "fb5ba388-a1cf-4a94-a697-b286cb73bb00",
+        "customer_code": null,
+        "first_name_ar": "عمر",
+        "last_name_ar": "محمد الفكي",
+        "company_name_ar": null,
+        "nationality": null,
+        "country": "الكويت"
+      }
+    },
+    {
+      "id": "c816caa5-0b02-4646-b9d6-444f913faff6",
+      "customer_code": null,
+      "reasons": [
+        "translate_country"
+      ],
+      "patch": {
+        "country": "الكويت"
+      },
+      "updated": {
+        "id": "c816caa5-0b02-4646-b9d6-444f913faff6",
+        "customer_code": null,
+        "first_name_ar": "حسن",
+        "last_name_ar": "عبدالوهاب محمد الفكي",
+        "company_name_ar": null,
+        "nationality": "سوداني",
+        "country": "الكويت"
+      }
+    },
+    {
+      "id": "67e414f4-abbf-40d5-8f04-26cd1cf10ef9",
+      "customer_code": null,
+      "reasons": [
+        "translate_country"
+      ],
+      "patch": {
+        "country": "الكويت"
+      },
+      "updated": {
+        "id": "67e414f4-abbf-40d5-8f04-26cd1cf10ef9",
+        "customer_code": null,
+        "first_name_ar": "محمد",
+        "last_name_ar": "شريف عمرو عياش",
+        "company_name_ar": null,
+        "nationality": null,
+        "country": "الكويت"
+      }
+    },
+    {
+      "id": "2d19f226-e109-4ca5-9b3e-452b5bc2a266",
+      "customer_code": null,
+      "reasons": [
+        "translate_country"
+      ],
+      "patch": {
+        "country": "الكويت"
+      },
+      "updated": {
+        "id": "2d19f226-e109-4ca5-9b3e-452b5bc2a266",
+        "customer_code": null,
+        "first_name_ar": "انور",
+        "last_name_ar": "الجنبيني- (حمزة)",
+        "company_name_ar": null,
+        "nationality": null,
+        "country": "الكويت"
+      }
+    },
+    {
+      "id": "af1a4046-27e0-4f0b-96e1-56dd0bbfd372",
+      "customer_code": null,
+      "reasons": [
+        "translate_country"
+      ],
+      "patch": {
+        "country": "الكويت"
+      },
+      "updated": {
+        "id": "af1a4046-27e0-4f0b-96e1-56dd0bbfd372",
+        "customer_code": null,
+        "first_name_ar": "سيف الدين",
+        "last_name_ar": "محمد صالح حسين",
+        "company_name_ar": null,
+        "nationality": "سوداني",
+        "country": "الكويت"
+      }
+    },
+    {
+      "id": "3be1cf24-b0a5-4624-9017-c6a9f939cfc1",
+      "customer_code": null,
+      "reasons": [
+        "translate_country"
+      ],
+      "patch": {
+        "country": "الكويت"
+      },
+      "updated": {
+        "id": "3be1cf24-b0a5-4624-9017-c6a9f939cfc1",
+        "customer_code": null,
+        "first_name_ar": "عبد",
+        "last_name_ar": "الرحيم شاكر",
+        "company_name_ar": null,
+        "nationality": null,
+        "country": "الكويت"
+      }
+    },
+    {
+      "id": "50879efa-ada7-4745-8bce-1ae30a1ec27b",
+      "customer_code": null,
+      "reasons": [
+        "translate_country"
+      ],
+      "patch": {
+        "country": "الكويت"
+      },
+      "updated": {
+        "id": "50879efa-ada7-4745-8bce-1ae30a1ec27b",
+        "customer_code": null,
+        "first_name_ar": "عنتر",
+        "last_name_ar": "علي النمر",
+        "company_name_ar": null,
+        "nationality": null,
+        "country": "الكويت"
+      }
+    },
+    {
+      "id": "b3a547cd-1aca-4184-b4f6-3d9e3490773a",
+      "customer_code": null,
+      "reasons": [
+        "translate_country"
+      ],
+      "patch": {
+        "country": "الكويت"
+      },
+      "updated": {
+        "id": "b3a547cd-1aca-4184-b4f6-3d9e3490773a",
+        "customer_code": null,
+        "first_name_ar": "عمار",
+        "last_name_ar": "عبد العزيز الغزي",
+        "company_name_ar": null,
+        "nationality": null,
+        "country": "الكويت"
+      }
+    },
+    {
+      "id": "01ed42e7-0e9c-477d-b72d-da285f8f7d82",
+      "customer_code": null,
+      "reasons": [
+        "translate_country"
+      ],
+      "patch": {
+        "country": "الكويت"
+      },
+      "updated": {
+        "id": "01ed42e7-0e9c-477d-b72d-da285f8f7d82",
+        "customer_code": null,
+        "first_name_ar": "مراد",
+        "last_name_ar": "المسعودي",
+        "company_name_ar": null,
+        "nationality": "تونسى ",
+        "country": "الكويت"
+      }
+    },
+    {
+      "id": "831a1b5b-af2e-4f16-bd18-4a72e95fe950",
+      "customer_code": null,
+      "reasons": [
+        "translate_country"
+      ],
+      "patch": {
+        "country": "الكويت"
+      },
+      "updated": {
+        "id": "831a1b5b-af2e-4f16-bd18-4a72e95fe950",
+        "customer_code": null,
+        "first_name_ar": "رافي",
+        "last_name_ar": "",
+        "company_name_ar": null,
+        "nationality": null,
+        "country": "الكويت"
+      }
+    },
+    {
+      "id": "0f443207-fb4f-43c4-aed4-67700cdc7a6a",
+      "customer_code": null,
+      "reasons": [
+        "translate_country"
+      ],
+      "patch": {
+        "country": "الكويت"
+      },
+      "updated": {
+        "id": "0f443207-fb4f-43c4-aed4-67700cdc7a6a",
+        "customer_code": null,
+        "first_name_ar": "مجدي",
+        "last_name_ar": "احمد عبدالله",
+        "company_name_ar": null,
+        "nationality": null,
+        "country": "الكويت"
+      }
+    },
+    {
+      "id": "e81d6f3f-b389-4af3-97c8-01aff9eb916e",
+      "customer_code": null,
+      "reasons": [
+        "translate_country"
+      ],
+      "patch": {
+        "country": "الكويت"
+      },
+      "updated": {
+        "id": "e81d6f3f-b389-4af3-97c8-01aff9eb916e",
+        "customer_code": null,
+        "first_name_ar": "غانجا",
+        "last_name_ar": "شودري",
+        "company_name_ar": null,
+        "nationality": "نيبالي",
+        "country": "الكويت"
+      }
+    },
+    {
+      "id": "40307ed1-6858-4071-8e88-38bfc46c63e2",
+      "customer_code": null,
+      "reasons": [
+        "translate_country"
+      ],
+      "patch": {
+        "country": "الكويت"
+      },
+      "updated": {
+        "id": "40307ed1-6858-4071-8e88-38bfc46c63e2",
+        "customer_code": null,
+        "first_name_ar": "محمد",
+        "last_name_ar": "ابراهيم نور غد غول",
+        "company_name_ar": null,
+        "nationality": null,
+        "country": "الكويت"
+      }
+    },
+    {
+      "id": "eaf88a65-5e57-4250-aecc-f875f371d285",
+      "customer_code": "CUST-25-256",
+      "reasons": [
+        "translate_country"
+      ],
+      "patch": {
+        "country": "الكويت"
+      },
+      "updated": {
+        "id": "eaf88a65-5e57-4250-aecc-f875f371d285",
+        "customer_code": "CUST-25-256",
+        "first_name_ar": "محمد",
+        "last_name_ar": "النعماني",
+        "company_name_ar": "",
+        "nationality": null,
+        "country": "الكويت"
+      }
+    },
+    {
+      "id": "c2fa0cd4-3a6b-42c7-ad27-32e878e2b160",
+      "customer_code": "CUST-25-257",
+      "reasons": [
+        "translate_country"
+      ],
+      "patch": {
+        "country": "الكويت"
+      },
+      "updated": {
+        "id": "c2fa0cd4-3a6b-42c7-ad27-32e878e2b160",
+        "customer_code": "CUST-25-257",
+        "first_name_ar": "سعيد",
+        "last_name_ar": "الهلالي",
+        "company_name_ar": null,
+        "nationality": null,
+        "country": "الكويت"
+      }
+    },
+    {
+      "id": "23db7117-f70b-4ec4-bfac-f039a43c1c2e",
+      "customer_code": "CUST-25-258",
+      "reasons": [
+        "translate_country"
+      ],
+      "patch": {
+        "country": "الكويت"
+      },
+      "updated": {
+        "id": "23db7117-f70b-4ec4-bfac-f039a43c1c2e",
+        "customer_code": "CUST-25-258",
+        "first_name_ar": "عبد الرزاق ",
+        "last_name_ar": "الهنديس يس ",
+        "company_name_ar": null,
+        "nationality": "سوري",
+        "country": "الكويت"
+      }
+    },
+    {
+      "id": "23872043-2260-45e8-8275-4745a2b18518",
+      "customer_code": "CUST-25-259",
+      "reasons": [
+        "copy_arabic_first_name",
+        "copy_arabic_last_name",
+        "translate_country"
+      ],
+      "patch": {
+        "first_name_ar": "عميل",
+        "last_name_ar": "تجريبي",
+        "country": "الكويت"
+      },
+      "updated": {
+        "id": "23872043-2260-45e8-8275-4745a2b18518",
+        "customer_code": "CUST-25-259",
+        "first_name_ar": "عميل",
+        "last_name_ar": "تجريبي",
+        "company_name_ar": null,
+        "nationality": null,
+        "country": "الكويت"
+      }
+    },
+    {
+      "id": "f9f75f37-b9f5-4000-82b0-aa24a393689a",
+      "customer_code": "CUST-25-260",
+      "reasons": [
+        "translate_country"
+      ],
+      "patch": {
+        "country": "الكويت"
+      },
+      "updated": {
+        "id": "f9f75f37-b9f5-4000-82b0-aa24a393689a",
+        "customer_code": "CUST-25-260",
+        "first_name_ar": "اختبار",
+        "last_name_ar": "العقد",
+        "company_name_ar": "",
+        "nationality": null,
+        "country": "الكويت"
+      }
+    },
+    {
+      "id": "15b86b20-7392-41f0-a092-554631d59d4f",
+      "customer_code": "IND-25-0261",
+      "reasons": [
+        "translate_country"
+      ],
+      "patch": {
+        "country": "الكويت"
+      },
+      "updated": {
+        "id": "15b86b20-7392-41f0-a092-554631d59d4f",
+        "customer_code": "IND-25-0261",
+        "first_name_ar": "زكرياء",
+        "last_name_ar": "بن احمد",
+        "company_name_ar": null,
+        "nationality": "مغربي",
+        "country": "الكويت"
+      }
+    },
+    {
+      "id": "a1b58312-7ce0-449f-a9c4-0a97603edbd2",
+      "customer_code": "CORP-25-0001",
+      "reasons": [
+        "copy_arabic_company_name",
+        "translate_country"
+      ],
+      "patch": {
+        "company_name_ar": "الاولى للتمويل - MG",
+        "country": "الكويت"
+      },
+      "updated": {
+        "id": "a1b58312-7ce0-449f-a9c4-0a97603edbd2",
+        "customer_code": "CORP-25-0001",
+        "first_name_ar": null,
+        "last_name_ar": null,
+        "company_name_ar": "الاولى للتمويل - MG",
+        "nationality": null,
+        "country": "الكويت"
+      }
+    },
+    {
+      "id": "1d496075-a1ed-40e3-9a0d-da9aff6f361c",
+      "customer_code": "CORP-25-0002",
+      "reasons": [
+        "copy_arabic_company_name",
+        "translate_country"
+      ],
+      "patch": {
+        "company_name_ar": "الأولى للتمويل",
+        "country": "الكويت"
+      },
+      "updated": {
+        "id": "1d496075-a1ed-40e3-9a0d-da9aff6f361c",
+        "customer_code": "CORP-25-0002",
+        "first_name_ar": null,
+        "last_name_ar": null,
+        "company_name_ar": "الأولى للتمويل",
+        "nationality": null,
+        "country": "الكويت"
+      }
+    },
+    {
+      "id": "61372923-3d7c-4c0c-97f0-1636a0dd7c8e",
+      "customer_code": "CORP-25-0003",
+      "reasons": [
+        "copy_arabic_company_name",
+        "translate_country"
+      ],
+      "patch": {
+        "company_name_ar": "الأولى للتمويل - BESTUNE",
+        "country": "الكويت"
+      },
+      "updated": {
+        "id": "61372923-3d7c-4c0c-97f0-1636a0dd7c8e",
+        "customer_code": "CORP-25-0003",
+        "first_name_ar": null,
+        "last_name_ar": null,
+        "company_name_ar": "الأولى للتمويل - BESTUNE",
+        "nationality": null,
+        "country": "الكويت"
+      }
+    },
+    {
+      "id": "7e40d0f1-9a91-45b3-b630-0d46b19b0d22",
+      "customer_code": "CORP-25-0004",
+      "reasons": [
+        "copy_arabic_company_name",
+        "translate_country"
+      ],
+      "patch": {
+        "company_name_ar": "الريادة للسيارات",
+        "country": "الكويت"
+      },
+      "updated": {
+        "id": "7e40d0f1-9a91-45b3-b630-0d46b19b0d22",
+        "customer_code": "CORP-25-0004",
+        "first_name_ar": null,
+        "last_name_ar": null,
+        "company_name_ar": "الريادة للسيارات",
+        "nationality": null,
+        "country": "الكويت"
+      }
+    },
+    {
+      "id": "f816ccf1-1a19-40aa-9f1f-e0db977f2868",
+      "customer_code": "CORP-25-0005",
+      "reasons": [
+        "copy_arabic_company_name",
+        "translate_country"
+      ],
+      "patch": {
+        "company_name_ar": "الطالب",
+        "country": "الكويت"
+      },
+      "updated": {
+        "id": "f816ccf1-1a19-40aa-9f1f-e0db977f2868",
+        "customer_code": "CORP-25-0005",
+        "first_name_ar": null,
+        "last_name_ar": null,
+        "company_name_ar": "الطالب",
+        "nationality": null,
+        "country": "الكويت"
+      }
+    },
+    {
+      "id": "ed2e16f7-0887-49ec-8815-a9a88e8bf63a",
+      "customer_code": "CORP-25-0006",
+      "reasons": [
+        "copy_arabic_company_name",
+        "translate_country"
+      ],
+      "patch": {
+        "company_name_ar": "العطية للسيارات",
+        "country": "الكويت"
+      },
+      "updated": {
+        "id": "ed2e16f7-0887-49ec-8815-a9a88e8bf63a",
+        "customer_code": "CORP-25-0006",
+        "first_name_ar": null,
+        "last_name_ar": null,
+        "company_name_ar": "العطية للسيارات",
+        "nationality": null,
+        "country": "الكويت"
+      }
+    },
+    {
+      "id": "b4143d27-1ca2-472d-bd3c-effff8f9d132",
+      "customer_code": "CORP-25-0007",
+      "reasons": [
+        "translate_country"
+      ],
+      "patch": {
+        "country": "الكويت"
+      },
+      "updated": {
+        "id": "b4143d27-1ca2-472d-bd3c-effff8f9d132",
+        "customer_code": "CORP-25-0007",
+        "first_name_ar": null,
+        "last_name_ar": null,
+        "company_name_ar": null,
+        "nationality": null,
+        "country": "الكويت"
+      }
+    },
+    {
+      "id": "b9c6ea06-acd0-4393-990f-e73032563637",
+      "customer_code": "CUST-26-269",
+      "reasons": [
+        "translate_country"
+      ],
+      "patch": {
+        "country": "الكويت"
+      },
+      "updated": {
+        "id": "b9c6ea06-acd0-4393-990f-e73032563637",
+        "customer_code": "CUST-26-269",
+        "first_name_ar": "راجا",
+        "last_name_ar": "رانا",
+        "company_name_ar": "",
+        "nationality": null,
+        "country": "الكويت"
+      }
+    },
+    {
+      "id": "aa2be5d8-2386-4e2d-978b-d4551d4b73a3",
+      "customer_code": "CUST-26-260",
+      "reasons": [
+        "translate_country"
+      ],
+      "patch": {
+        "country": "الكويت"
+      },
+      "updated": {
+        "id": "aa2be5d8-2386-4e2d-978b-d4551d4b73a3",
+        "customer_code": "CUST-26-260",
+        "first_name_ar": "ياسين ",
+        "last_name_ar": "الزلماطي",
+        "company_name_ar": "",
+        "nationality": null,
+        "country": "الكويت"
+      }
+    },
+    {
+      "id": "7e28b728-2b1e-4ad4-9ff8-989400011400",
+      "customer_code": "HIST-XLS-TARAK-9894",
+      "reasons": [
+        "translate_country"
+      ],
+      "patch": {
+        "country": "الكويت"
+      },
+      "updated": {
+        "id": "7e28b728-2b1e-4ad4-9ff8-989400011400",
+        "customer_code": "HIST-XLS-TARAK-9894",
+        "first_name_ar": "طارق",
+        "last_name_ar": "هملت",
+        "company_name_ar": null,
+        "nationality": null,
+        "country": "الكويت"
+      }
+    },
+    {
+      "id": "ba9628c8-aff8-4ac0-a510-b64c9a754154",
+      "customer_code": "HIST-XLS-SUFIAN-648144",
+      "reasons": [
+        "translate_country"
+      ],
+      "patch": {
+        "country": "الكويت"
+      },
+      "updated": {
+        "id": "ba9628c8-aff8-4ac0-a510-b64c9a754154",
+        "customer_code": "HIST-XLS-SUFIAN-648144",
+        "first_name_ar": "سفيان",
+        "last_name_ar": "المختار الصالح",
+        "company_name_ar": null,
+        "nationality": null,
+        "country": "الكويت"
+      }
+    },
+    {
+      "id": "8b1f4665-32c5-4cff-a369-c473c7b528ae",
+      "customer_code": "HIST-XLS-MAHMOUD-893406",
+      "reasons": [
+        "translate_country"
+      ],
+      "patch": {
+        "country": "الكويت"
+      },
+      "updated": {
+        "id": "8b1f4665-32c5-4cff-a369-c473c7b528ae",
+        "customer_code": "HIST-XLS-MAHMOUD-893406",
+        "first_name_ar": "محمود",
+        "last_name_ar": "جاسم الصالح",
+        "company_name_ar": null,
+        "nationality": null,
+        "country": "الكويت"
+      }
+    },
+    {
+      "id": "bce84d00-5b27-4bca-a071-6f19d2b07590",
+      "customer_code": "HIST-XLS-MEHDI-7038",
+      "reasons": [
+        "translate_country"
+      ],
+      "patch": {
+        "country": "الكويت"
+      },
+      "updated": {
+        "id": "bce84d00-5b27-4bca-a071-6f19d2b07590",
+        "customer_code": "HIST-XLS-MEHDI-7038",
+        "first_name_ar": "مهدي",
+        "last_name_ar": "محمد القاطري",
+        "company_name_ar": null,
+        "nationality": null,
+        "country": "الكويت"
+      }
+    },
+    {
+      "id": "87004aeb-f02a-456d-8160-4f8e0338712f",
+      "customer_code": "HIST-XLS-OMAR-7054",
+      "reasons": [
+        "translate_country"
+      ],
+      "patch": {
+        "country": "الكويت"
+      },
+      "updated": {
+        "id": "87004aeb-f02a-456d-8160-4f8e0338712f",
+        "customer_code": "HIST-XLS-OMAR-7054",
+        "first_name_ar": "عمر",
+        "last_name_ar": "عبد المولى مبروكي",
+        "company_name_ar": null,
+        "nationality": null,
+        "country": "الكويت"
+      }
+    },
+    {
+      "id": "3bca27ed-64d8-44d1-a44b-ba2f6099e03f",
+      "customer_code": "HIST-XLS-MOHSEN-5900",
+      "reasons": [
+        "translate_country"
+      ],
+      "patch": {
+        "country": "الكويت"
+      },
+      "updated": {
+        "id": "3bca27ed-64d8-44d1-a44b-ba2f6099e03f",
+        "customer_code": "HIST-XLS-MOHSEN-5900",
+        "first_name_ar": "محمد عزيز",
+        "last_name_ar": "محسن جلالي",
+        "company_name_ar": null,
+        "nationality": null,
+        "country": "الكويت"
+      }
+    },
+    {
+      "id": "a45a3087-63e1-4797-a911-9129613e8232",
+      "customer_code": "HIST-XLS-HAMZA-7071",
+      "reasons": [
+        "translate_country"
+      ],
+      "patch": {
+        "country": "الكويت"
+      },
+      "updated": {
+        "id": "a45a3087-63e1-4797-a911-9129613e8232",
+        "customer_code": "HIST-XLS-HAMZA-7071",
+        "first_name_ar": "حمزة",
+        "last_name_ar": "زمكيل",
+        "company_name_ar": null,
+        "nationality": null,
+        "country": "الكويت"
+      }
+    },
+    {
+      "id": "a07a44c5-a8ca-4bc9-b7f8-07b87e491fb8",
+      "customer_code": "HIST-XLS-YOSRI-8213",
+      "reasons": [
+        "translate_country"
+      ],
+      "patch": {
+        "country": "الكويت"
+      },
+      "updated": {
+        "id": "a07a44c5-a8ca-4bc9-b7f8-07b87e491fb8",
+        "customer_code": "HIST-XLS-YOSRI-8213",
+        "first_name_ar": "يسري",
+        "last_name_ar": "بوز عيبة",
+        "company_name_ar": null,
+        "nationality": null,
+        "country": "الكويت"
+      }
+    },
+    {
+      "id": "42c92a86-d50d-4a70-a138-d9e4ae51f8b0",
+      "customer_code": "HIST-XLS-ELIAS-706150",
+      "reasons": [
+        "translate_country"
+      ],
+      "patch": {
+        "country": "الكويت"
+      },
+      "updated": {
+        "id": "42c92a86-d50d-4a70-a138-d9e4ae51f8b0",
+        "customer_code": "HIST-XLS-ELIAS-706150",
+        "first_name_ar": "ألياس",
+        "last_name_ar": "يعقوبي",
+        "company_name_ar": null,
+        "nationality": null,
+        "country": "الكويت"
+      }
+    }
+  ]
+}

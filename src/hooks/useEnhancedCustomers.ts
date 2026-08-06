@@ -5,6 +5,7 @@ import { useUnifiedCompanyAccess } from './useUnifiedCompanyAccess';
 import { toast } from 'sonner';
 import { Customer, CustomerFilters, type CustomerFormData } from '@/types/customer';
 import { useCustomerViewContext } from '@/contexts/CustomerViewContext';
+import { getCustomerDataIssues } from '@/utils/formatCustomerName';
 
 export type EnhancedCustomer = Customer;
 
@@ -635,6 +636,11 @@ export const useCreateCustomer = () => {
         is_active: true,
       };
 
+      const customerDataIssues = getCustomerDataIssues(cleanData);
+      if (customerDataIssues.length > 0) {
+        throw new Error(`استكمل بيانات العميل أولاً: ${customerDataIssues.join('، ')}`);
+      }
+
       if (!cleanData.customer_code) {
         const { data: generatedCode, error: codeError } = await supabase.rpc(
           'generate_customer_code',
@@ -744,6 +750,24 @@ export const useUpdateCustomer = () => {
       const cleanData = Object.fromEntries(
         Object.entries(data).filter(([, value]) => value !== undefined)
       ) as CustomerUpdate;
+
+      const { data: existingCustomer, error: fetchError } = await supabase
+        .from('customers')
+        .select('*')
+        .eq('id', id)
+        .eq('company_id', companyId)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      const customerDataIssues = getCustomerDataIssues({
+        ...existingCustomer,
+        ...cleanData,
+      });
+
+      if (customerDataIssues.length > 0) {
+        throw new Error(`استكمل بيانات العميل أولاً: ${customerDataIssues.join('، ')}`);
+      }
 
       // إضافة التحقق من صلاحية الوثائق قبل التحديث
       const today = new Date().toISOString().split('T')[0];

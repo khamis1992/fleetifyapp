@@ -2565,7 +2565,10 @@ export class TaqadiPortal {
       } catch (error) {
         if (
           !(error instanceof HumanInterventionError)
-          || error.code !== 'PARTY_FIELD_SELECTION_MISMATCH'
+          || ![
+            'PARTY_FIELD_SELECTION_MISMATCH',
+            'TAQADI_OPTION_MISSING',
+          ].includes(error.code)
         ) {
           throw error;
         }
@@ -2613,6 +2616,7 @@ export class TaqadiPortal {
     dependentLabels: string[],
     dependentControlIds: string[],
     root: FieldRoot,
+    expectedDependentOption?: string,
     alternateOptionText?: string,
   ) {
     for (let attempt = 1; attempt <= 3; attempt += 1) {
@@ -2625,48 +2629,22 @@ export class TaqadiPortal {
 
       const deadline = Date.now() + 12_000;
       while (Date.now() < deadline) {
-        const dependentField = await this.exactFieldByLabel(
+        const availableOptions = await this.availableDropdownOptions(
           dependentLabels,
           dependentControlIds,
           root,
         );
-        if (dependentField) {
-          const dependentTag = await dependentField
-            .evaluate((element) => element.tagName.toLowerCase())
-            .catch(() => '');
-          if (dependentTag === 'select') {
-            // Native select: read its <option> elements directly.
-            const hasRealOption = await dependentField
-              .evaluate((element) => {
-                const select = element as HTMLSelectElement;
-                return Array.from(select.options).some((option) => {
-                  const text = String(option.textContent || '')
-                    .replace(/\s+/g, ' ')
-                    .trim();
-                  return text.length > 0 && !text.includes('اختيار');
-                });
-              })
-              .catch(() => false);
-            if (hasRealOption) return;
-          } else {
-            const { listboxId } = await this.dropdownIdentity(
-              dependentField,
-              dependentControlIds,
-            );
-            if (listboxId) {
-              const options = this.page.locator(
-                `[id="${listboxId}"] [role="option"], `
-                + `[id="${listboxId}"] .k-item, [id="${listboxId}"] .k-list-item`,
-              );
-              const count = Math.min(await options.count(), 30);
-              for (let index = 0; index < count; index += 1) {
-                const text = normalizeText(
-                  await options.nth(index).innerText().catch(() => ''),
-                );
-                if (text && !text.includes('اختيار')) return;
-              }
-            }
-          }
+        const hasExpectedOption = expectedDependentOption
+          ? availableOptions.some((option) => (
+              normalizeArabicText(option)
+              === normalizeArabicText(expectedDependentOption)
+            ))
+          : availableOptions.some((option) => {
+              const text = normalizeText(option);
+              return text.length > 0 && !text.includes('اختيار');
+            });
+        if (hasExpectedOption) {
+          return;
         }
         await this.page.waitForTimeout(250);
       }
@@ -2869,6 +2847,117 @@ export class TaqadiPortal {
     await this.assertSelectedField(selectedField, labels, optionText);
   }
 
+  /**
+   * Kendo cascades can finish after the immediate field assertion and restore
+   * one of the party dropdowns to its placeholder. Reconcile the complete
+   * dependency chain and require it to remain unchanged across the quiet
+   * window before the form is allowed to save.
+   */
+  private async reconcileStableSelections(
+    selections: Array<{
+      labels: string[];
+      controlIds: string[];
+      expected: string;
+    }>,
+    root: FieldRoot,
+    onRepair?: () => Promise<void>,
+  ) {
+    const deadline = Date.now() + Math.max(agentConfig.actionTimeoutMs, 20_000);
+    const stableWindowMs = 1_800;
+    let stableSince: number | null = null;
+    let lastValues: Record<string, string> = {};
+
+    while (Date.now() < deadline) {
+      await this.waitForUiReady(2_000);
+      let repaired = false;
+      lastValues = {};
+
+      for (const selection of selections) {
+        const field = await this.fieldByLabel(
+          selection.labels,
+          selection.controlIds,
+          root,
+          {
+            exactLabel: true,
+            waitForMs: Math.min(agentConfig.actionTimeoutMs, 3_000),
+          },
+        );
+        const selectedText = field
+          ? await this.selectedFieldText(field)
+          : '';
+        lastValues[selection.labels[0]] = selectedText;
+        if (!field) {
+          stableSince = null;
+          continue;
+        }
+        if (
+          normalizeArabicText(selectedText)
+          === normalizeArabicText(selection.expected)
+        ) continue;
+
+        await this.selectFieldSticky(
+          selection.labels,
+          selection.expected,
+          selection.controlIds,
+          root,
+          4,
+        );
+        repaired = true;
+        stableSince = null;
+      }
+
+      if (repaired && onRepair) {
+        await onRepair();
+      }
+
+      let allMatch = true;
+      for (const selection of selections) {
+        const field = await this.fieldByLabel(
+          selection.labels,
+          selection.controlIds,
+          root,
+          {
+            exactLabel: true,
+            waitForMs: Math.min(agentConfig.actionTimeoutMs, 3_000),
+          },
+        );
+        const selectedText = field
+          ? await this.selectedFieldText(field)
+          : '';
+        lastValues[selection.labels[0]] = selectedText;
+        if (
+          normalizeArabicText(selectedText)
+          !== normalizeArabicText(selection.expected)
+        ) {
+          allMatch = false;
+        }
+      }
+
+      if (allMatch && !repaired) {
+        stableSince ??= Date.now();
+        if (Date.now() - stableSince >= stableWindowMs) return;
+      } else {
+        stableSince = null;
+      }
+      await this.page.waitForTimeout(200);
+    }
+
+    throw new HumanInterventionError(
+      'لم تستقر قوائم بيانات الطرف بعد اكتمال تحديثات تقاضي',
+      'TAQADI_PARTY_SELECTIONS_UNSTABLE',
+      {
+        expected: Object.fromEntries(
+          selections.map((selection) => [
+            selection.labels[0],
+            selection.expected,
+          ]),
+        ),
+        actual: lastValues,
+        url: this.page.url(),
+      },
+    );
+  }
+
   private async availableDropdownOptions(
     labels: string[],
     controlIds: string[],
@@ -2927,6 +3016,54 @@ export class TaqadiPortal {
       return [...new Set(values.map((value) => value.trim()).filter(Boolean))];
     });
     return options;
+  }
+
+  private async resolveDropdownOptionByAliases(
+    labels: string[],
+    controlIds: string[],
+    preferredOption: string,
+    aliases: string[],
+    root: FieldRoot,
+  ): Promise<string> {
+    const expected = [preferredOption, ...aliases]
+      .map(normalizeArabicText)
+      .filter(Boolean);
+    const deadline = Date.now() + Math.min(agentConfig.actionTimeoutMs, 10_000);
+    let availableOptions: string[] = [];
+
+    while (Date.now() < deadline) {
+      availableOptions = await this.availableDropdownOptions(
+        labels,
+        controlIds,
+        root,
+      );
+      const exact = availableOptions.find((option) =>
+        normalizeArabicText(option) === normalizeArabicText(preferredOption));
+      if (exact) return exact;
+
+      const aliasMatch = availableOptions.find((option) => {
+        const normalized = normalizeArabicText(option);
+        return expected.some((candidate) =>
+          normalized.includes(candidate) || candidate.includes(normalized));
+      });
+      if (aliasMatch) return aliasMatch;
+
+      const field = await this.exactFieldByLabel(labels, controlIds, root);
+      await field?.click().catch(() => undefined);
+      await this.page.waitForTimeout(250);
+    }
+
+    throw new HumanInterventionError(
+      `لم يجد الوكيل جهة إصدار مناسبة لإظهار «رقم قيد المنشأة»`,
+      'ESTABLISHMENT_ISSUER_UNAVAILABLE',
+      {
+        field: labels[0],
+        preferredOption,
+        aliases,
+        availableOptions,
+        url: this.page.url(),
+      },
+    );
   }
 
   private async resolveIdentityTypeForParty(
@@ -4124,7 +4261,7 @@ export class TaqadiPortal {
       if (roleField) {
         await this.ensureSelectedField(
           ['صفة الطرف'],
-          'المدعي',
+          'وكيل طبيعي',
           ['type'],
           partyDialog,
         );
@@ -4132,7 +4269,7 @@ export class TaqadiPortal {
       }
       await this.ensureSelectedField(
         ['تصنيف الطرف', 'نوع الشخص'],
-        'المدعي',
+        'وكيل طبيعي',
         ['category'],
         partyDialog,
       );
@@ -4296,6 +4433,24 @@ export class TaqadiPortal {
 
   async validateCompanyParty(payload: FilingPayload) {
     await this.waitForPartyGridReady();
+    const establishmentNumber = payload.plaintiff.establishmentRegistration
+      || agentConfig.company.establishmentNumber;
+    let establishmentIssuer = agentConfig.company.establishmentIssuer;
+    const registrationIssuerLabels = [
+      'رقم السجل التجاري أو قيد المنشأة صادر عن',
+    ];
+    const registrationIssuerControlIds = ['crIssuedBy'];
+    const commercialRegistrationLabels = ['رقم السجل التجاري'];
+    const commercialRegistrationControlIds = ['identityNo'];
+    const establishmentNumberLabels = [
+      'رقم المنشأة',
+      'رقم قيد المنشأة',
+    ];
+    const establishmentNumberControlIds = [
+      'establishmentNo',
+      'establishmentNumber',
+      'officialRegistrationNumber',
+    ];
     const company = await this.waitForPartyRow([
       payload.plaintiff.name,
       payload.plaintiff.commercialRegistration,
@@ -4310,13 +4465,15 @@ export class TaqadiPortal {
         ['صفة الطرف'],
         ['type'],
         partyDialog,
+        'المدعي',
         'شخص طبيعي',
       );
-      await this.selectField(
+      await this.selectFieldSticky(
         ['صفة الطرف'],
         'المدعي',
         ['type'],
         partyDialog,
+        5,
       );
       await this.selectFieldSticky(
         ['نوع الجهات المعنوية', 'نوع الشركة'],
@@ -4330,28 +4487,34 @@ export class TaqadiPortal {
         ['companyClassification'],
         partyDialog,
       );
-      await this.selectFieldSticky(
-        ['رقم السجل التجاري أو قيد المنشأة صادر عن'],
-        'وزارة التجارة والصناعة',
-        ['crIssuedBy'],
+      establishmentIssuer = await this.resolveDropdownOptionByAliases(
+        registrationIssuerLabels,
+        registrationIssuerControlIds,
+        establishmentIssuer,
+        ['وزارة التجارة والصناعة', 'وزارة التجارة', 'التجارة والصناعة'],
+        partyDialog,
+      );
+      await this.selectFieldUntilDependentVisible(
+        registrationIssuerLabels,
+        establishmentIssuer,
+        registrationIssuerControlIds,
+        establishmentNumberLabels,
+        establishmentNumberControlIds,
         partyDialog,
       );
       await this.fillField(
-        [
-          'رقم السجل التجاري',
-          'رقم السجل التجاري أو قيد المنشأة',
-          'رقم قيد المنشأة',
-        ],
+        commercialRegistrationLabels,
         payload.plaintiff.commercialRegistration,
         true,
-        [
-          'identityNo',
-          'officialRegistrationNumber',
-          'crNo',
-          'crNumber',
-          'commercialRegistrationNo',
-          'registrationNo',
-        ],
+        commercialRegistrationControlIds,
+        partyDialog,
+        { exactLabel: true, waitForMs: agentConfig.actionTimeoutMs },
+      );
+      await this.fillField(
+        establishmentNumberLabels,
+        establishmentNumber,
+        true,
+        establishmentNumberControlIds,
         partyDialog,
         {
           exactLabel: true,
@@ -4454,60 +4617,160 @@ export class TaqadiPortal {
       );
     }
 
+    const companyTypeLabels = ['نوع الجهات المعنوية', 'نوع الشركة'];
+    const companyTypeControlIds = ['compOrEstaType'];
+    const companyTypeField = await this.exactFieldByLabel(
+      companyTypeLabels,
+      companyTypeControlIds,
+      partyDialog,
+    );
+    if (!companyTypeField) {
+      await this.selectFieldUntilDependentVisible(
+        ['تصنيف الطرف', 'نوع الشخص'],
+        'شركة',
+        ['category'],
+        companyTypeLabels,
+        companyTypeControlIds,
+        partyDialog,
+      );
+    }
+
+    establishmentIssuer = await this.resolveDropdownOptionByAliases(
+      registrationIssuerLabels,
+      registrationIssuerControlIds,
+      establishmentIssuer,
+      ['وزارة التجارة والصناعة', 'وزارة التجارة', 'التجارة والصناعة'],
+      partyDialog,
+    );
+
+    const refillCompanyFields = async () => {
+      await this.fillField(
+        commercialRegistrationLabels,
+        payload.plaintiff.commercialRegistration,
+        true,
+        commercialRegistrationControlIds,
+        partyDialog,
+        { exactLabel: true, waitForMs: agentConfig.actionTimeoutMs },
+      );
+      await this.fillField(
+        establishmentNumberLabels,
+        establishmentNumber,
+        true,
+        establishmentNumberControlIds,
+        partyDialog,
+        { exactLabel: true, waitForMs: agentConfig.actionTimeoutMs },
+      );
+      await this.fillField(
+        ['اسم الجهة المعنوية', 'اسم الشركة', 'اسم الطرف'],
+        payload.plaintiff.name,
+        true,
+        ['name'],
+        partyDialog,
+      );
+      await this.fillField(
+        ['يمثله', 'ممثل الشركة'],
+        agentConfig.representative.name,
+        false,
+        ['ownerName'],
+        partyDialog,
+      );
+      await this.fillField(
+        ['اسم البنك باللغة العربية'],
+        agentConfig.company.bankNameAr,
+        true,
+        ['bankNameArab', 'bankNameAr', 'arabicBankName'],
+        partyDialog,
+      );
+      await this.fillField(
+        ['اسم البنك باللغة الإنجليزية', 'اسم البنك باللغة الانجليزية'],
+        agentConfig.company.bankNameEn,
+        true,
+        ['bankName', 'bankNameEn', 'englishBankName'],
+        partyDialog,
+      );
+      await this.fillField(
+        ['رقم IBAN', 'IBAN'],
+        agentConfig.company.iban,
+        true,
+        ['iban', 'ibanNo', 'ibanNumber'],
+        partyDialog,
+      );
+      await this.fillField(
+        ['رقم السويفت', 'SWIFT'],
+        agentConfig.company.swift,
+        true,
+        ['swiftNumber', 'swift', 'swiftCode'],
+        partyDialog,
+      );
+      await this.fillField(
+        ['عنوان البنك'],
+        agentConfig.company.bankAddress,
+        true,
+        ['bankAddress'],
+        partyDialog,
+      );
+      await this.fillField(
+        ['العنوان'],
+        agentConfig.company.address,
+        true,
+        ['addresses0.address'],
+        partyDialog,
+      );
+      await this.fillField(
+        ['رقم الهاتف المحمول', 'رقم الجوال', 'الجوال', 'الهاتف'],
+        phoneForTaqadi(agentConfig.company.phone),
+        true,
+        ['mobileNo'],
+        partyDialog,
+      );
+      await this.fillField(
+        ['البريد الإلكتروني', 'البريد الالكتروني'],
+        agentConfig.company.email,
+        true,
+        ['email', 'emailAddress'],
+        partyDialog,
+      );
+    };
+
     // Every one of these Kendo fields can redraw the legal-entity form and
     // reset a previously selected sibling to the placeholder. Reconcile the
     // complete set twice, then assert all values together before saving.
     const companySelections = [
       {
+        labels: ['تصنيف الطرف', 'نوع الشخص'],
+        expected: 'شركة',
+        controlIds: ['category'],
+      },
+      {
         labels: ['صفة الطرف'],
-        option: 'المدعي',
+        expected: 'المدعي',
         controlIds: ['type'],
       },
       {
-        labels: ['نوع الجهات المعنوية', 'نوع الشركة'],
-        option: 'شركة ذات مسؤولية محدودة',
-        controlIds: ['compOrEstaType'],
+        labels: companyTypeLabels,
+        expected: 'شركة ذات مسؤولية محدودة',
+        controlIds: companyTypeControlIds,
       },
       {
         labels: ['جنسية الشركة'],
-        option: 'قطري',
+        expected: 'قطري',
         controlIds: ['companyClassification'],
       },
       {
-        labels: ['رقم السجل التجاري أو قيد المنشأة صادر عن'],
-        option: 'وزارة التجارة والصناعة',
-        controlIds: ['crIssuedBy'],
+        labels: registrationIssuerLabels,
+        expected: establishmentIssuer,
+        controlIds: registrationIssuerControlIds,
       },
     ];
-    for (let pass = 0; pass < 2; pass += 1) {
-      for (const selection of companySelections) {
-        await this.ensureSelectedField(
-          selection.labels,
-          selection.option,
-          selection.controlIds,
-          partyDialog,
-        );
-      }
-    }
-    for (const selection of companySelections) {
-      const field = await this.exactFieldByLabel(
-        selection.labels,
-        selection.controlIds,
-        partyDialog,
-      );
-      if (!field) {
-        throw new HumanInterventionError(
-          `اختفى حقل «${selection.labels[0]}» قبل حفظ الشركة`,
-          'TAQADI_UI_CHANGED',
-          { field: selection.labels[0], url: this.page.url() },
-        );
-      }
-      await this.assertSelectedField(
-        field,
-        selection.labels,
-        selection.option,
-      );
-    }
+    await this.reconcileStableSelections(
+      companySelections,
+      partyDialog,
+      refillCompanyFields,
+    );
+    // Existing drafts may already use the correct issuer while the actual
+    // establishment number is blank or still contains the commercial record.
+    // Always write and verify the authoritative establishment-card value.
+    await refillCompanyFields();
 
     await this.fillField(
       ['الترتيب حسب الصحيفة', 'ترتيب الطرف', 'الترتيب'],
@@ -4531,6 +4794,21 @@ export class TaqadiPortal {
     payload: FilingPayload,
     options: { continueAfterSave?: boolean } = {},
   ) {
+    const defendantNameParts = [
+      payload.defendant.firstName,
+      payload.defendant.middleName,
+      payload.defendant.lastName,
+    ].filter((part): part is string => Boolean(part?.trim()));
+    if (
+      defendantNameParts.length < 2
+      || defendantNameParts.some((part) => !/[\u0600-\u06FF]/.test(part) || /[A-Za-z]/.test(part))
+    ) {
+      throw new HumanInterventionError(
+        'اسم المدعى عليه في حزمة تقاضي ليس عربيًا. حدّث الاسم العربي للعميل ثم أعد تجهيز الدعوى.',
+        'DEFENDANT_ARABIC_NAME_REQUIRED',
+        { fullName: payload.defendant.fullName, url: this.page.url() },
+      );
+    }
     const existing = await this.partyRow([
       payload.defendant.fullName,
       payload.defendant.idNumber,
@@ -4547,13 +4825,15 @@ export class TaqadiPortal {
         ['صفة الطرف'],
         ['type'],
         partyDialog,
+        'المدعى عليه',
         'شركة',
       );
-      await this.selectField(
+      await this.selectFieldSticky(
         ['صفة الطرف'],
         'المدعى عليه',
         ['type'],
         partyDialog,
+        5,
       );
     }
 
@@ -4668,8 +4948,7 @@ export class TaqadiPortal {
     );
     // Taqadi redraws several previously completed fields after Kendo changes.
     // Reconcile the whole required defendant form before saving.
-    await this.fillStableNaturalPersonRequiredFields(
-      {
+    const stableDefendantFields = {
         firstName: payload.defendant.firstName
           || payload.defendant.fullName,
         lastName: payload.defendant.lastName,
@@ -4680,7 +4959,9 @@ export class TaqadiPortal {
         phone: phoneForTaqadi(payload.defendant.phone),
         email: agentConfig.defendantDefaults.email,
         partyOrder: String(taqadiPartyOrder),
-      },
+      };
+    await this.fillStableNaturalPersonRequiredFields(
+      stableDefendantFields,
       partyDialog,
     );
     const finalSelections = [
@@ -4707,28 +4988,16 @@ export class TaqadiPortal {
         expected: defendantIdentityType || payload.defendant.idType,
       },
     ];
-    for (const selection of finalSelections) {
-      const field = await this.fieldByLabel(
-        selection.labels,
-        selection.controlIds,
-        partyDialog,
-      );
-      if (!field) {
-        throw new HumanInterventionError(
-          `لم يجد الوكيل حقل «${selection.labels[0]}» عند المراجعة النهائية`,
-          'TAQADI_UI_CHANGED',
-          {
-            expectedLabels: selection.labels,
-            url: this.page.url(),
-          },
+    await this.reconcileStableSelections(
+      finalSelections,
+      partyDialog,
+      async () => {
+        await this.fillStableNaturalPersonRequiredFields(
+          stableDefendantFields,
+          partyDialog,
         );
-      }
-      await this.assertSelectedField(
-        field,
-        selection.labels,
-        selection.expected,
-      );
-    }
+      },
+    );
     await this.saveOpenParty(partyDialog);
     await this.assertPartyOrder(
       [

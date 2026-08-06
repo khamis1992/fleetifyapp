@@ -117,6 +117,8 @@ export const useEmployeeContracts = (
             company_name_ar,
             customer_type,
             national_id,
+            nationality,
+            country,
             phone,
             email
           ),
@@ -324,6 +326,8 @@ export const useEmployeeContracts = (
             phone: customer.phone,
             email: customer.email,
             national_id: customer.national_id,
+            nationality: customer.nationality,
+            country: customer.country,
             customer_type: customer.customer_type,
           } : null,
           vehicle: contract.vehicles ? {

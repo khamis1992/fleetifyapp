@@ -5,6 +5,7 @@ import type { Database } from "@/integrations/supabase/types"
 import { useAuth } from "@/contexts/AuthContext"
 import { toast } from "sonner"
 import { useCurrentCompanyId } from "@/hooks/useUnifiedCompanyAccess"
+import { getCustomerDataIssues } from "@/utils/formatCustomerName"
 
 interface CSVUploadResults {
   total: number
@@ -16,7 +17,7 @@ interface CSVUploadResults {
 const customerCSVFields = [
   'customer_type', 'first_name', 'last_name', 'first_name_ar', 'last_name_ar',
   'company_name', 'company_name_ar', 'email', 'phone', 'alternative_phone',
-  'national_id', 'passport_number', 'license_number', 'license_expiry',
+  'national_id', 'nationality', 'passport_number', 'license_number', 'license_expiry',
   'address', 'address_ar', 'city', 'country', 'date_of_birth', 'credit_limit',
   'emergency_contact_name', 'emergency_contact_phone', 'notes'
 ] as const
@@ -76,6 +77,7 @@ export function useCSVUpload() {
     phone: 'phone' as const,
     alternative_phone: 'phone' as const,
     national_id: 'text' as const,
+    nationality: 'text' as const,
     passport_number: 'text' as const,
     license_number: 'text' as const,
     license_expiry: 'date' as const,
@@ -194,6 +196,17 @@ export function useCSVUpload() {
       }
     }
 
+    const customerDataIssues = getCustomerDataIssues({
+      customer_type: data.customer_type === 'corporate' ? 'corporate' : 'individual',
+      first_name_ar: data.first_name_ar,
+      last_name_ar: data.last_name_ar,
+      company_name_ar: data.company_name_ar,
+      nationality: data.nationality,
+    })
+    if (customerDataIssues.length > 0) {
+      errors.push(`استكمل بيانات العميل: ${customerDataIssues.join('، ')}`)
+    }
+
     // التحقق من البريد الإلكتروني
     if (data.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) {
       errors.push('تنسيق البريد الإلكتروني غير صحيح')
@@ -232,6 +245,7 @@ export function useCSVUpload() {
     phone: customerData.phone || '',
     alternative_phone: customerData.alternative_phone || undefined,
     national_id: customerData.national_id || undefined,
+    nationality: customerData.nationality || undefined,
     passport_number: customerData.passport_number || undefined,
     license_number: customerData.license_number || undefined,
     license_expiry: customerData.license_expiry || undefined,

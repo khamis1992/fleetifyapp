@@ -392,7 +392,7 @@ async function loadBatchContractState(
 
   // بيانات التقاضي (نفس منطق صفحة التجهيز)
   if (state.contract && state.customer) {
-    const customerName = formatCustomerName(state.customer) || 'غير محدد';
+    const customerName = formatCustomerName(state.customer, { preferArabic: true }) || 'غير محدد';
     const { cashClaimAmount, taqadiClaimAmount } = getLawsuitClaimAmounts(state.calculations);
 
     let factsText = lawsuitService.generateFactsText(

@@ -10,6 +10,23 @@ import {
   EmployeePerformanceGrade,
   PERFORMANCE_GRADES
 } from '@/types/employee-workspace.types';
+import { getCustomerDataIssues as getCustomerRecordDataIssues } from '@/utils/formatCustomerName';
+
+const getReportCustomer = (contract: any) => contract.customer || contract.customers || null;
+
+const getReportCustomerName = (contract: any) => {
+  const customer = getReportCustomer(contract);
+  return contract.customer_name
+    || customer?.company_name_ar
+    || [customer?.first_name_ar, customer?.last_name_ar].filter(Boolean).join(' ').trim()
+    || customer?.company_name
+    || [customer?.first_name, customer?.last_name].filter(Boolean).join(' ').trim()
+    || 'غير محدد';
+};
+
+const getCustomerDataIssues = (contract: any) => {
+  return getCustomerRecordDataIssues(getReportCustomer(contract));
+};
 
 interface EmployeeReportData {
   employeeName: string;
@@ -46,6 +63,9 @@ export const exportEmployeeWorkspaceReport = async (data: EmployeeReportData) =>
     }
 
     const sheets: ExcelSheetData[] = [];
+    const contractsNeedingCustomerData = (contracts || []).filter(
+      contract => getCustomerDataIssues(contract).length > 0,
+    ).length;
 
   // 1. Summary Sheet (ملخص الأداء)
   const summaryData = [
@@ -65,6 +85,7 @@ export const exportEmployeeWorkspaceReport = async (data: EmployeeReportData) =>
     { metric: '--- إحصائيات العقود ---', value: '' },
     { metric: 'إجمالي العقود', value: stats.contractStats.totalContracts },
     { metric: 'العقود النشطة', value: stats.contractStats.activeContracts },
+    { metric: 'عقود تحتاج استكمال بيانات العميل', value: contractsNeedingCustomerData },
     { metric: 'إجمالي المبالغ المستحقة', value: stats.contractStats.totalBalanceDue },
     { metric: '', value: '' }, // Spacer
 
@@ -102,18 +123,27 @@ export const exportEmployeeWorkspaceReport = async (data: EmployeeReportData) =>
   });
 
   // 2. Contracts Sheet (العقود)
-  const contractsData = (contracts || []).map(contract => ({
-    contract_number: contract.contract_number,
-    customer_name: contract.customers?.first_name_ar || contract.customers?.company_name_ar || 'غير محدد',
-    customer_phone: contract.customers?.phone || '',
-    status: translateStatus(contract.status),
-    monthly_amount: contract.monthly_amount || 0,
-    balance_due: contract.balance_due || 0,
-    start_date: contract.start_date || '',
-    end_date: contract.end_date || '',
-    last_payment: contract.last_payment_date || 'لا يوجد',
-    payment_status: (contract.balance_due || 0) > 0 ? 'مستحق' : 'مدفوع',
-  }));
+  const contractsData = (contracts || []).map(contract => {
+    const customer = getReportCustomer(contract);
+    const dataIssues = getCustomerDataIssues(contract);
+    const dueBalance = contract.due_invoice_balance ?? contract.balance_due ?? 0;
+
+    return {
+      contract_number: contract.contract_number,
+      customer_name: getReportCustomerName(contract),
+      customer_phone: contract.customer_phone || customer?.phone || '',
+      customer_nationality: customer?.nationality || '',
+      customer_data_status: dataIssues.length > 0 ? 'يحتاج استكمال' : 'مكتملة',
+      customer_data_issues: dataIssues.join('، '),
+      status: translateStatus(contract.status),
+      monthly_amount: contract.monthly_amount || 0,
+      balance_due: dueBalance,
+      start_date: contract.start_date || '',
+      end_date: contract.end_date || '',
+      last_payment: contract.last_payment_date || 'لا يوجد',
+      payment_status: dueBalance > 0 ? 'مستحق' : 'مدفوع',
+    };
+  });
 
   // Only add contracts sheet if there's data
   if (contractsData.length > 0) {
@@ -124,6 +154,9 @@ export const exportEmployeeWorkspaceReport = async (data: EmployeeReportData) =>
       { header: 'رقم العقد', key: 'contract_number', width: 15 },
       { header: 'اسم العميل', key: 'customer_name', width: 30 },
       { header: 'رقم الهاتف', key: 'customer_phone', width: 15 },
+      { header: 'الجنسية', key: 'customer_nationality', width: 16 },
+      { header: 'حالة بيانات العميل', key: 'customer_data_status', width: 18 },
+      { header: 'البيانات الناقصة', key: 'customer_data_issues', width: 25 },
       { header: 'الحالة', key: 'status', width: 15 },
       { header: 'القيمة الشهرية', key: 'monthly_amount', width: 15 },
       { header: 'الرصيد المستحق', key: 'balance_due', width: 15 },

@@ -7,6 +7,7 @@ import { useUpdateCustomer } from '@/hooks/useCustomers';
 import { convertAllPagesToImages } from '@/services/contractPDFExtractor';
 import type { CustomerFormData } from '@/types/customer';
 import type { Database } from '@/integrations/supabase/types';
+import { getCustomerDataIssues } from '@/utils/formatCustomerName';
 
 type CustomerUpdate = Database['public']['Tables']['customers']['Update'];
 
@@ -328,6 +329,29 @@ export function useBulkApproveIdProposals() {
       // 2) One update per customer — a single failure must not block the rest
       const failedCustomers: string[] = [];
       for (const [customerId, fields] of perCustomer) {
+        const { data: existingCustomer, error: fetchError } = await supabase
+          .from('customers')
+          .select('*')
+          .eq('id', customerId)
+          .maybeSingle();
+
+        if (fetchError || !existingCustomer) {
+          console.error(`Bulk approve: failed to fetch customer ${customerId}:`, fetchError);
+          failedCustomers.push(customerId);
+          continue;
+        }
+
+        const customerDataIssues = getCustomerDataIssues({
+          ...existingCustomer,
+          ...fields,
+        });
+
+        if (customerDataIssues.length > 0) {
+          console.warn(`Bulk approve: skipped customer ${customerId} because official Arabic data is incomplete:`, customerDataIssues);
+          failedCustomers.push(customerId);
+          continue;
+        }
+
         const { error } = await supabase
           .from('customers')
           .update(fields as CustomerUpdate)

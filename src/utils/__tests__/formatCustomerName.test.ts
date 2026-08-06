@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { formatCustomerName } from '@/utils/formatCustomerName';
+import { formatCustomerName, getCustomerDataIssues } from '@/utils/formatCustomerName';
 
 describe('formatCustomerName', () => {
   it('prefers the Arabic name for an individual when requested', () => {
@@ -40,5 +40,50 @@ describe('formatCustomerName', () => {
       first_name_ar: 'أحمد',
       last_name_ar: 'علي',
     })).toBe('Ahmed Ali');
+  });
+});
+
+describe('getCustomerDataIssues', () => {
+  it('does not flag a complete individual customer', () => {
+    expect(getCustomerDataIssues({
+      customer_type: 'individual',
+      first_name_ar: 'أحمد',
+      last_name_ar: 'علي',
+      nationality: 'قطر',
+    })).toEqual([]);
+  });
+
+  it('does not flag a complete company customer', () => {
+    expect(getCustomerDataIssues({
+      customer_type: 'company',
+      company_name_ar: 'شركة النور للتجارة',
+      nationality: 'قطر',
+    })).toEqual([]);
+  });
+
+  it('requires an Arabic legal name', () => {
+    expect(getCustomerDataIssues({
+      customer_type: 'individual',
+      first_name_ar: 'Ahmed',
+      last_name_ar: 'Ali',
+      nationality: 'قطر',
+    })).toContain('الاسم العربي');
+  });
+
+  it('requires Arabic nationality', () => {
+    expect(getCustomerDataIssues({
+      customer_type: 'company',
+      company_name_ar: 'شركة النور للتجارة',
+      nationality: '',
+    })).toContain('الجنسية العربية');
+  });
+
+  it('flags non-Arabic nationality', () => {
+    expect(getCustomerDataIssues({
+      customer_type: 'individual',
+      first_name_ar: 'أحمد',
+      last_name_ar: 'علي',
+      nationality: 'Qatar',
+    })).toContain('الجنسية العربية');
   });
 });

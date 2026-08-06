@@ -65,6 +65,8 @@ export interface EmployeeContract {
     phone?: string | null;
     email?: string | null;
     national_id?: string | null;
+    nationality?: string | null;
+    country?: string | null;
     customer_type?: string | null;
   } | null;
   vehicle?: {

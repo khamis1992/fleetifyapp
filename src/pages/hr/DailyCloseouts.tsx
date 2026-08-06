@@ -162,6 +162,7 @@ const beginningMetricLabels = [
   { key: 'todayTasks', fallbackKey: 'today_tasks', label: 'مهام اليوم', tone: 'bg-[#11A37F]' },
   { key: 'totalDue', fallbackKey: 'total_due', label: 'إجمالي المستحقات', tone: 'bg-[#D99B34]', currency: true },
   { key: 'assignedContracts', fallbackKey: 'assigned_contracts', label: 'العقود المسندة', tone: 'bg-[#1D4F7A]' },
+  { key: 'customerDataIssues', fallbackKey: 'customer_data_issues', label: 'بيانات عملاء ناقصة', tone: 'bg-[#B45309]' },
 ];
 
 const emptyDailyContractActivity: Required<DailyContractActivitySummary> = {
@@ -452,13 +453,14 @@ export default function DailyCloseouts() {
 
   const exportCsv = () => {
     const rows = [
-      ['الموظف', 'التاريخ', 'وقت الإقفال', 'الحالة', 'المحصل', 'المكالمات', 'وعود الدفع', 'المتابعات', 'المعوقات'],
+      ['الموظف', 'التاريخ', 'وقت الإقفال', 'الحالة', 'المحصل', 'بيانات ناقصة', 'المكالمات', 'وعود الدفع', 'المتابعات', 'المعوقات'],
       ...filteredLogs.map((log) => [
         log.employee_name,
         log.log_date,
         formatClosedAt(log.closed_at),
         log.completion_status === 'completed' ? 'مكتمل' : 'غير مكتمل',
         numberValue(log.summary?.total_collected),
+        numberValue(getRecordValue(log.beginning_metrics, 'customerDataIssues', 'customer_data_issues')),
         numberValue(log.summary?.calls_logged),
         numberValue(log.summary?.payment_promises),
         numberValue(log.summary?.followups_scheduled),
@@ -544,6 +546,7 @@ export default function DailyCloseouts() {
                   <TableHead className="text-right">وقت الإقفال</TableHead>
                   <TableHead className="text-right">الحالة</TableHead>
                   <TableHead className="text-right">التحصيل</TableHead>
+                  <TableHead className="text-right">بيانات ناقصة</TableHead>
                   <TableHead className="text-right">المكالمات</TableHead>
                   <TableHead className="text-right">وعود الدفع</TableHead>
                   <TableHead className="text-right">المعوقات</TableHead>
@@ -553,7 +556,7 @@ export default function DailyCloseouts() {
               <TableBody>
                 {filteredLogs.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={8} className="h-32 text-center text-[#64748B]">
+                    <TableCell colSpan={9} className="h-32 text-center text-[#64748B]">
                       لا توجد إقفالات محفوظة لهذا التاريخ.
                     </TableCell>
                   </TableRow>
@@ -572,6 +575,15 @@ export default function DailyCloseouts() {
                       </Badge>
                     </TableCell>
                     <TableCell className="font-black">{formatCurrency(numberValue(log.summary?.total_collected))}</TableCell>
+                    <TableCell>
+                      {numberValue(getRecordValue(log.beginning_metrics, 'customerDataIssues', 'customer_data_issues')) > 0 ? (
+                        <Badge className="border border-amber-200 bg-amber-50 font-black text-amber-800 hover:bg-amber-50">
+                          {numberValue(getRecordValue(log.beginning_metrics, 'customerDataIssues', 'customer_data_issues'))}
+                        </Badge>
+                      ) : (
+                        <span className="text-[#94A3B8]">0</span>
+                      )}
+                    </TableCell>
                     <TableCell>{numberValue(log.summary?.calls_logged)}</TableCell>
                     <TableCell>{numberValue(log.summary?.payment_promises)}</TableCell>
                     <TableCell className="max-w-xs truncate">{log.blockers || 'لا توجد'}</TableCell>

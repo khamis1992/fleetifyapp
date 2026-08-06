@@ -27,7 +27,7 @@ export const FIXED_DEFENDANT_CONTACT = Object.freeze({
 });
 
 export const agentConfig = {
-  version: '1.6.34',
+  version: '1.6.41',
   workerId: process.env.TAQADI_WORKER_ID
     || `${os.hostname()}-taqadi`,
   hostname: os.hostname(),
@@ -77,11 +77,19 @@ export const agentConfig = {
     identityNumber: process.env.TAQADI_REPRESENTATIVE_ID_NUMBER
       || process.env.TAQADI_TAWTHEEQ_USERNAME
       || '',
+    principalName: process.env.TAQADI_REPRESENTATIVE_PRINCIPAL_NAME
+      || 'شركة العراف لتأجير السيارات',
+    guardianType: process.env.TAQADI_REPRESENTATIVE_GUARDIAN_TYPE || 'طبيعي',
+    connectionDegree: process.env.TAQADI_REPRESENTATIVE_CONNECTION_DEGREE || 'أخرى',
   },
   defendantDefaults: {
     ...FIXED_DEFENDANT_CONTACT,
   },
   company: {
+    establishmentNumber: process.env.TAQADI_COMPANY_ESTABLISHMENT_NUMBER
+      || '17201586',
+    establishmentIssuer: process.env.TAQADI_COMPANY_ESTABLISHMENT_ISSUER
+      || 'وزارة التجارة والصناعة',
     phone: process.env.TAQADI_COMPANY_PHONE
       || process.env.TAQADI_REPRESENTATIVE_PHONE
       || '',
@@ -106,7 +114,8 @@ export const agentConfig = {
 export function findCorruptedConfigValues(
   config: Pick<typeof agentConfig, 'representative' | 'company' | 'defendantDefaults'>,
 ): string[] {
-  const corrupted = (value: string) => value.includes('?') && /^[\s?]+$/.test(value);
+  const corrupted = (value: string | undefined) =>
+    typeof value === 'string' && value.includes('?') && /^[\s?]+$/.test(value);
   const checks: Array<[string, string]> = [
     ['TAQADI_REPRESENTATIVE_NAME', config.representative.name],
     ['TAQADI_REPRESENTATIVE_ADDRESS', config.representative.address],
@@ -115,6 +124,7 @@ export function findCorruptedConfigValues(
     ['TAQADI_DEFENDANT_ADDRESS', config.defendantDefaults.address],
     ['TAQADI_COMPANY_ADDRESS', config.company.address],
     ['TAQADI_COMPANY_COUNTRY', config.company.country],
+    ['TAQADI_COMPANY_ESTABLISHMENT_ISSUER', config.company.establishmentIssuer],
     ['TAQADI_COMPANY_BANK_NAME_AR', config.company.bankNameAr],
     ['TAQADI_COMPANY_BANK_COUNTRY', config.company.bankCountry],
   ];
@@ -156,6 +166,12 @@ export function assertAgentConfig() {
   if (!agentConfig.company.email) missing.push('TAQADI_COMPANY_EMAIL');
   if (!agentConfig.company.phone) missing.push('TAQADI_COMPANY_PHONE');
   if (!agentConfig.company.address) missing.push('TAQADI_COMPANY_ADDRESS');
+  if (!agentConfig.company.establishmentNumber) {
+    missing.push('TAQADI_COMPANY_ESTABLISHMENT_NUMBER');
+  }
+  if (!agentConfig.company.establishmentIssuer) {
+    missing.push('TAQADI_COMPANY_ESTABLISHMENT_ISSUER');
+  }
   if (!agentConfig.company.bankNameAr) {
     missing.push('TAQADI_COMPANY_BANK_NAME_AR');
   }

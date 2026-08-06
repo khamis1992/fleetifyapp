@@ -1,0 +1,290 @@
+{
+  "approvedAt": "2026-08-06T11:04:26.037Z",
+  "source": "C:\\Users\\khamis\\Documents\\fleetifyapp\\output\\customer-nationality-ocr-candidates.json",
+  "attempted": 28,
+  "appliedCount": 0,
+  "skippedCount": 28,
+  "applied": [],
+  "skipped": [
+    {
+      "customer_id": "1e0a06b1-3bf5-4794-ac2a-50cc0cdce901",
+      "customer_code": null,
+      "proposal_id": "417de90e-e542-4cbe-b091-4dfdee5a16d5",
+      "status": "partial",
+      "overall_confidence": 0.883,
+      "nationality": "سوريا",
+      "nationality_confidence": 0.85,
+      "source": "proposed_changes"
+    },
+    {
+      "customer_id": "fd0213e8-06f1-46c8-92fd-17e44a918e4b",
+      "customer_code": "IND-25-0134",
+      "proposal_id": "9212b6bb-d08f-4abc-8502-c6f265027f71",
+      "status": "partial",
+      "overall_confidence": 0.87,
+      "nationality": "المغرب",
+      "nationality_confidence": 0.85,
+      "source": "proposed_changes"
+    },
+    {
+      "customer_id": "03d9c06e-7787-47f2-ad60-9ec298eeced2",
+      "customer_code": "IND-25-0008",
+      "proposal_id": "38a82f5f-fb5e-4e8d-b51a-1a8ee98420d6",
+      "status": "partial",
+      "overall_confidence": 0.87,
+      "nationality": "السودان",
+      "nationality_confidence": 0.85,
+      "source": "proposed_changes"
+    },
+    {
+      "customer_id": "4ebd2dcd-33ca-4af6-8c48-d26ec26dcda7",
+      "customer_code": "IND-25-0275",
+      "proposal_id": "9d0caebb-9976-4e72-a7f4-3a10092e4279",
+      "status": "partial",
+      "overall_confidence": 0.85,
+      "nationality": "تونس",
+      "nationality_confidence": 0.85,
+      "source": "proposed_changes"
+    },
+    {
+      "customer_id": "40307ed1-6858-4071-8e88-38bfc46c63e2",
+      "customer_code": null,
+      "proposal_id": "1b7afc18-5e9a-4575-9b8e-e46470c2e8d5",
+      "status": "partial",
+      "overall_confidence": 0.9,
+      "nationality": "باكستان",
+      "nationality_confidence": 0.85,
+      "source": "proposed_changes"
+    },
+    {
+      "customer_id": "a9623607-1f93-4677-9b28-62d457a4468c",
+      "customer_code": "IND-25-0137",
+      "proposal_id": "2554e524-a091-46ef-80b2-fdf7c4f76e22",
+      "status": "partial",
+      "overall_confidence": 0.85,
+      "nationality": "تونس",
+      "nationality_confidence": 0.85,
+      "source": "proposed_changes"
+    },
+    {
+      "customer_id": "e93c1330-4fca-4c52-bbea-3552411af2f9",
+      "customer_code": "IND-25-0026",
+      "proposal_id": "6e94f18f-8866-42ee-8389-f7eb4a49ad65",
+      "status": "partial",
+      "overall_confidence": 0.87,
+      "nationality": "السودان",
+      "nationality_confidence": 0.85,
+      "source": "proposed_changes"
+    },
+    {
+      "customer_id": "5678b272-5c7b-48e5-bbf6-b97932fbd35a",
+      "customer_code": "IND-25-0028",
+      "proposal_id": "21ef9f27-a58c-42a0-bb87-81d8e2ce5849",
+      "status": "partial",
+      "overall_confidence": 0.87,
+      "nationality": "السودان",
+      "nationality_confidence": 0.85,
+      "source": "proposed_changes"
+    },
+    {
+      "customer_id": "3c7f29a6-e2be-4960-934a-3356e0077a07",
+      "customer_code": "IND-25-0129",
+      "proposal_id": "d313cb2b-f776-4e9e-af7c-963f6806555b",
+      "status": "partial",
+      "overall_confidence": 0.87,
+      "nationality": "السودان",
+      "nationality_confidence": 0.85,
+      "source": "proposed_changes"
+    },
+    {
+      "customer_id": "5506bd87-c9db-4ef2-9872-50b982865538",
+      "customer_code": "IND-25-0211",
+      "proposal_id": "e93a049b-6214-485e-a8c6-65413721c288",
+      "status": "partial",
+      "overall_confidence": 0.883,
+      "nationality": "تونس",
+      "nationality_confidence": 0.85,
+      "source": "proposed_changes"
+    },
+    {
+      "customer_id": "8afcc473-3cf9-4953-be64-d0d1aba1002a",
+      "customer_code": "IND-25-0180",
+      "proposal_id": "0a049b1a-c1cf-4c7f-bc17-0f1ca7795a6a",
+      "status": "partial",
+      "overall_confidence": 0.87,
+      "nationality": "نيجيريا",
+      "nationality_confidence": 0.85,
+      "source": "proposed_changes"
+    },
+    {
+      "customer_id": "014b559a-1ea3-43d7-9b62-2c09884933d3",
+      "customer_code": "IND-25-0074",
+      "proposal_id": "6ba1a5e5-9755-4f12-b43c-d0afc85a7025",
+      "status": "partial",
+      "overall_confidence": 0.85,
+      "nationality": "تونس",
+      "nationality_confidence": 0.85,
+      "source": "proposed_changes"
+    },
+    {
+      "customer_id": "bd4001ab-41e0-4508-af8d-539734e069a3",
+      "customer_code": "IND-25-0186",
+      "proposal_id": "bd401751-71f9-4cf0-87ae-833241306ef5",
+      "status": "partial",
+      "overall_confidence": 0.85,
+      "nationality": "السودان",
+      "nationality_confidence": 0.85,
+      "source": "proposed_changes"
+    },
+    {
+      "customer_id": "2ffc6f1c-e29c-4453-ad7b-d7e45ec4807c",
+      "customer_code": "IND-25-0057",
+      "proposal_id": "85cfa6a7-1ef3-4dc1-800b-0e162916a2f4",
+      "status": "partial",
+      "overall_confidence": 0.883,
+      "nationality": "السودان",
+      "nationality_confidence": 0.85,
+      "source": "proposed_changes"
+    },
+    {
+      "customer_id": "170e3842-e033-4321-804f-76260d5c5274",
+      "customer_code": "IND-25-0086",
+      "proposal_id": "d3ba619e-92f1-4e32-8f8c-5f0ef7983b9f",
+      "status": "partial",
+      "overall_confidence": 0.85,
+      "nationality": "تونس",
+      "nationality_confidence": 0.85,
+      "source": "proposed_changes"
+    },
+    {
+      "customer_id": "6abcf964-66d5-4e6c-a791-5ecd432a33e8",
+      "customer_code": "IND-25-0328",
+      "proposal_id": "3cc3f73b-0b9d-48fd-bc06-007102ff8bcc",
+      "status": "partial",
+      "overall_confidence": 0.9,
+      "nationality": "تونسي",
+      "nationality_confidence": 0.85,
+      "source": "proposed_changes"
+    },
+    {
+      "customer_id": "0ecbee2d-ab1d-4486-b526-a12014530bf5",
+      "customer_code": "IND-25-0179",
+      "proposal_id": "3ca10ac6-d51a-4cb0-acaf-465322610c45",
+      "status": "partial",
+      "overall_confidence": 0.85,
+      "nationality": "مصر",
+      "nationality_confidence": 0.85,
+      "source": "proposed_changes"
+    },
+    {
+      "customer_id": "693cb17f-af98-4f2e-b21b-c8271a5b49bc",
+      "customer_code": "IND-25-0289",
+      "proposal_id": "1d2084eb-220b-476b-981d-78fa1a529a3d",
+      "status": "partial",
+      "overall_confidence": 0.893,
+      "nationality": "السودان",
+      "nationality_confidence": 0.85,
+      "source": "proposed_changes"
+    },
+    {
+      "customer_id": "55566f61-357d-459f-a0ed-6093c0fd03a9",
+      "customer_code": null,
+      "proposal_id": "c549701d-13a8-42b5-a9ac-6a5542ad21da",
+      "status": "partial",
+      "overall_confidence": 0.87,
+      "nationality": "تونس",
+      "nationality_confidence": 0.85,
+      "source": "proposed_changes"
+    },
+    {
+      "customer_id": "3be1cf24-b0a5-4624-9017-c6a9f939cfc1",
+      "customer_code": null,
+      "proposal_id": "49b9b5a6-d0e0-47a3-ac13-7bb3dce73ae6",
+      "status": "partial",
+      "overall_confidence": 0.85,
+      "nationality": "السودان",
+      "nationality_confidence": 0.85,
+      "source": "proposed_changes"
+    },
+    {
+      "customer_id": "b3a547cd-1aca-4184-b4f6-3d9e3490773a",
+      "customer_code": null,
+      "proposal_id": "819164b9-aed7-4bf5-9754-2e7f99efee50",
+      "status": "partial",
+      "overall_confidence": 0.87,
+      "nationality": "سوريا",
+      "nationality_confidence": 0.85,
+      "source": "proposed_changes"
+    },
+    {
+      "customer_id": "e97c22f1-4e31-46f8-a48a-a811c13152fc",
+      "customer_code": null,
+      "proposal_id": "b23b1eee-a415-41bd-90ef-3c3acb341f1a",
+      "status": "partial",
+      "overall_confidence": 0.9,
+      "nationality": "جزائري",
+      "nationality_confidence": 0.85,
+      "source": "proposed_changes"
+    },
+    {
+      "customer_id": "1879d8a6-7ebf-4f7e-8420-5a965b5a1baa",
+      "customer_code": "IND-25-0338",
+      "proposal_id": "f5ef19b6-51ef-48bf-9d95-2013bc6d2427",
+      "status": "partial",
+      "overall_confidence": 0.85,
+      "nationality": "السودان",
+      "nationality_confidence": 0.85,
+      "source": "proposed_changes"
+    },
+    {
+      "customer_id": "b13e8b13-0320-4a87-9a46-256c5c85c635",
+      "customer_code": null,
+      "proposal_id": "bc45dd38-16df-409e-90cc-314b90609dab",
+      "status": "partial",
+      "overall_confidence": 0.87,
+      "nationality": "المغرب",
+      "nationality_confidence": 0.85,
+      "source": "proposed_changes"
+    },
+    {
+      "customer_id": "c5b1d57f-8162-4140-bcae-5d667760cac8",
+      "customer_code": null,
+      "proposal_id": "5cc7c212-095d-4c79-8827-779ad0d91fb0",
+      "status": "partial",
+      "overall_confidence": 0.863,
+      "nationality": "تونس",
+      "nationality_confidence": 0.85,
+      "source": "proposed_changes"
+    },
+    {
+      "customer_id": "67e414f4-abbf-40d5-8f04-26cd1cf10ef9",
+      "customer_code": null,
+      "proposal_id": "8c590ad0-5be0-4c81-b957-acbdb9702176",
+      "status": "partial",
+      "overall_confidence": 0.883,
+      "nationality": "الجزائر",
+      "nationality_confidence": 0.85,
+      "source": "proposed_changes"
+    },
+    {
+      "customer_id": "a4adddb8-5330-444e-9728-b6d51c479d89",
+      "customer_code": null,
+      "proposal_id": "89df27f3-6f2f-4cdd-9a75-74cb831e5de3",
+      "status": "partial",
+      "overall_confidence": 0.87,
+      "nationality": "السودان",
+      "nationality_confidence": 0.85,
+      "source": "proposed_changes"
+    },
+    {
+      "customer_id": "3bca27ed-64d8-44d1-a44b-ba2f6099e03f",
+      "customer_code": "HIST-XLS-MOHSEN-5900",
+      "proposal_id": "ca99c195-e36e-4d86-b077-cb5270ce24c7",
+      "status": "partial",
+      "overall_confidence": 0.87,
+      "nationality": "تونس",
+      "nationality_confidence": 0.85,
+      "source": "proposed_changes"
+    }
+  ]
+}

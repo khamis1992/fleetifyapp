@@ -492,7 +492,7 @@ describe('TaqadiPortal classification fields', () => {
               onclick="this.closest('tr').dataset.selected='true'"
             >${agentConfig.representative.name}</td>
             <td>شخص طبيعي</td>
-            <td>المدعي</td>
+            <td>وكيل طبيعي</td>
             <td data-party-order>1</td>
             <td>
               <button
@@ -518,7 +518,20 @@ describe('TaqadiPortal classification fields', () => {
         <label for="type">صفة الطرف</label>
         <select id="type">
           <option>وكيل طبيعي</option>
+          <option>وكيل</option>
           <option>المدعي</option>
+        </select>
+        <label for="relativeName">من؟</label>
+        <input id="relativeName">
+        <label for="guardianType">نوع الوكيل</label>
+        <select id="guardianType">
+          <option value="">اختيار واحد</option>
+          <option>طبيعي</option>
+        </select>
+        <label for="connectionDegree">درجة القرابة</label>
+        <select id="connectionDegree">
+          <option value="">اختيار واحد</option>
+          <option>أخرى</option>
         </select>
         <label for="priority">الترتيب حسب صحيفة الدعوى</label>
         <span class="k-widget k-numerictextbox">
@@ -567,7 +580,7 @@ describe('TaqadiPortal classification fields', () => {
       await page.locator('#party-editor .k-formatted-value').inputValue(),
     ).toBe('1');
     expect(await page.locator('#party-editor #type').inputValue()).toBe(
-      'المدعي',
+      'وكيل طبيعي',
     );
     expect(
       await page.locator('tr[role="row"]').getAttribute('data-selected'),
@@ -728,9 +741,10 @@ describe('TaqadiPortal classification fields', () => {
             return;
           }
           document.querySelector('#commercial-register-slot').innerHTML =
-            '<label for="officialRegistrationNumber">'
-            + 'رقم السجل التجاري *</label>'
-            + '<input id="officialRegistrationNumber">';
+            '<label for="identityNo">رقم السجل التجاري *</label>'
+            + '<input id="identityNo">'
+            + '<label for="establishmentNo">رقم المنشأة *</label>'
+            + '<input id="establishmentNo">';
         };
       </script>
       <div class="tab-pane active" data-tabpane-name="case_party_grid">
@@ -751,7 +765,19 @@ describe('TaqadiPortal classification fields', () => {
           id="compOrEstaType"
           onchange="
             window.companyTypeChanges = (window.companyTypeChanges || 0) + 1;
-            if (window.companyTypeChanges === 1) this.value = '';
+            if (window.companyTypeChanges === 1) {
+              const field = this;
+              const label = field.previousElementSibling;
+              setTimeout(() => {
+                field.value = '';
+                field.style.display = 'none';
+                label.style.display = 'none';
+                setTimeout(() => {
+                  field.style.display = '';
+                  label.style.display = '';
+                }, 3500);
+              }, 1100);
+            }
           "
         >
           <option value="">اختيار واحد</option>
@@ -816,6 +842,7 @@ describe('TaqadiPortal classification fields', () => {
       plaintiff: {
         name: 'شركة العراف لتأجير السيارات',
         commercialRegistration: '146832',
+        establishmentRegistration: '17201586',
         partyOrder: 1,
       },
     } as FilingPayload);
@@ -835,8 +862,11 @@ describe('TaqadiPortal classification fields', () => {
       window as Window & { companyTypeChanges: number }
     ).companyTypeChanges)).toBeGreaterThanOrEqual(2);
     expect(
-      await page.locator('#officialRegistrationNumber').inputValue(),
+      await page.locator('#identityNo').inputValue(),
     ).toBe('146832');
+    expect(
+      await page.locator('#establishmentNo').inputValue(),
+    ).toBe('17201586');
     expect(await page.evaluate(() => (
       window as Window & { crIssuerCommits: number }
     ).crIssuerCommits)).toBe(2);
@@ -863,7 +893,7 @@ describe('TaqadiPortal classification fields', () => {
     );
     expect(await page.locator('#priority').inputValue()).toBe('2');
     expect(await page.locator('#tempTransalationReq2').isChecked()).toBe(true);
-  }, 15_000);
+  }, 25_000);
 
   it('confirms the account prompt with Enter without selecting a role', async () => {
     await page.route('**/*', async (route) => {
@@ -1243,9 +1273,15 @@ describe('TaqadiPortal classification fields', () => {
       </div>
       <div id="party-editor" class="modal" style="display:none">
         <label for="category">تصنيف الطرف</label>
-        <select id="category"><option>شخص طبيعي</option></select>
+        <select
+          id="category"
+          onchange="setTimeout(() => { document.querySelector('#party-editor #type').innerHTML = '<option>اختيار واحد</option><option>المدعى عليه</option>'; }, 650)"
+        >
+          <option>شخص طبيعي</option>
+          <option>شركة</option>
+        </select>
         <label for="type">صفة الطرف</label>
-        <select id="type"><option>المدعى عليه</option></select>
+        <select id="type"><option>اختيار واحد</option></select>
         <label for="firstName">الاسم الأول</label>
         <input id="firstName">
         <label for="lastName">اسم العائلة</label>
@@ -1260,7 +1296,16 @@ describe('TaqadiPortal classification fields', () => {
         <label for="proofOfIdentity">نوع البطاقة</label>
         <select
           id="proofOfIdentity"
-          onchange="setTimeout(window.renderIdentityNumber, 100)"
+          onchange="
+            window.identityTypeChanges = (window.identityTypeChanges || 0) + 1;
+            setTimeout(window.renderIdentityNumber, 100);
+            if (window.identityTypeChanges === 1) {
+              setTimeout(() => {
+                document.querySelector('#party-editor #proofOfIdentity').value = '';
+                document.querySelector('#party-editor #identity-number-slot').innerHTML = '';
+              }, 1100);
+            }
+          "
         >
           <option value="">اختيار واحد</option>
           <option>رخصة مقيم</option>
@@ -1339,6 +1384,9 @@ describe('TaqadiPortal classification fields', () => {
         .locator('#party-editor [id="proofOfIdentity"]')
         .inputValue(),
     ).toBe('رخصة مقيم');
+    expect(await page.evaluate(() => (
+      window as Window & { identityTypeChanges: number }
+    ).identityTypeChanges)).toBeGreaterThanOrEqual(2);
     expect(
       await page.locator('#party-editor [id="gender"]').inputValue(),
     ).toBe('');
@@ -1373,7 +1421,7 @@ describe('TaqadiPortal classification fields', () => {
       delete window.jQuery;
       delete window.$;
     })()`);
-  }, 10_000);
+  }, 20_000);
 
   it('uploads a document only to the visible matching slot', async () => {
     await page.setContent(`

@@ -72,7 +72,11 @@ import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
-import { formatCustomerName } from '@/utils/formatCustomerName';
+import {
+  formatCustomerName,
+  getCustomerDataIssues as getCustomerRecordDataIssues,
+  hasArabicText,
+} from '@/utils/formatCustomerName';
 import { resolveQuickPaymentContractScope } from '@/utils/quickPaymentContractScope';
 import {
   communicationLogDateFormatter,
@@ -130,6 +134,7 @@ type DailyLogFormState = {
   assignedContracts: string;
   totalDue: string;
   priorityCases: string;
+  customerDataIssues: string;
   callsLogged: string;
   answeredCalls: string;
   noAnswerCalls: string;
@@ -148,6 +153,15 @@ type DailyLogFormState = {
   status: 'completed' | 'incomplete';
   incompleteReason: string;
   checklist: Record<DailyLogChecklistKey, boolean>;
+};
+
+type CustomerDataFormState = {
+  customerId: string;
+  customerType: string;
+  firstNameAr: string;
+  lastNameAr: string;
+  companyNameAr: string;
+  nationality: string;
 };
 
 type DailyActivityMetrics = {
@@ -338,6 +352,7 @@ export const EmployeeWorkspace: React.FC = () => {
   const [showConvertToLegalDialog, setShowConvertToLegalDialog] = useState(false);
   const [showContractDetailsDialog, setShowContractDetailsDialog] = useState(false);
   const [showDailyLogDialog, setShowDailyLogDialog] = useState(false);
+  const [customerDataForm, setCustomerDataForm] = useState<CustomerDataFormState | null>(null);
   const [showContractWizard, setShowContractWizard] = useState(false);
   const [signedScanContract, setSignedScanContract] = useState<{
     id: string;
@@ -862,6 +877,7 @@ export const EmployeeWorkspace: React.FC = () => {
     assignedContracts: String(contractStats.totalContracts || 0),
     totalDue: String(contractStats.totalBalanceDue || 0),
     priorityCases: String(priorityContracts.length || 0),
+    customerDataIssues: String(contracts.filter(hasCustomerDataIssues).length || 0),
     callsLogged: String(dailyActivityMetrics.callsLogged),
     answeredCalls: String(dailyActivityMetrics.answeredCalls),
     noAnswerCalls: String(dailyActivityMetrics.noAnswerCalls),
@@ -896,6 +912,7 @@ export const EmployeeWorkspace: React.FC = () => {
       assignedContracts: String(beginningMetrics.assigned_contracts ?? contractStats.totalContracts ?? 0),
       totalDue: String(beginningMetrics.total_due ?? contractStats.totalBalanceDue ?? 0),
       priorityCases: String(beginningMetrics.priority_cases ?? priorityContracts.length ?? 0),
+      customerDataIssues: String(beginningMetrics.customer_data_issues ?? 0),
       callsLogged: String(summary.calls_logged ?? dailyActivityMetrics.callsLogged),
       answeredCalls: String(summary.answered_calls ?? dailyActivityMetrics.answeredCalls),
       noAnswerCalls: String(summary.no_answer_calls ?? dailyActivityMetrics.noAnswerCalls),
@@ -927,6 +944,7 @@ export const EmployeeWorkspace: React.FC = () => {
     dailyLog,
     employeeDisplayName,
     todayLogDate,
+    contracts,
     contractStats.totalContracts,
     contractStats.totalBalanceDue,
     priorityContracts.length,
@@ -973,6 +991,7 @@ export const EmployeeWorkspace: React.FC = () => {
           assigned_contracts: numberValue(form.assignedContracts),
           total_due: numberValue(form.totalDue),
           priority_cases: numberValue(form.priorityCases),
+          customer_data_issues: numberValue(form.customerDataIssues),
           today_tasks: taskStats.todayTasks || 0,
         },
         checklist: form.checklist,
@@ -1584,6 +1603,7 @@ export const EmployeeWorkspace: React.FC = () => {
                 <div class="metric-card" style="--accent:#11a37f"><label>مهام اليوم</label><div>${taskStats.todayTasks || ''}</div></div>
                 <div class="metric-card" style="--accent:#d99b34"><label>إجمالي المستحقات (QAR)</label><div>${formatCurrency(numberValue(form.totalDue))}</div></div>
                 <div class="metric-card" style="--accent:#1d4f7a"><label>العقود المسندة</label><div>${form.assignedContracts}</div></div>
+                <div class="metric-card" style="--accent:#b45309"><label>بيانات عملاء ناقصة</label><div>${form.customerDataIssues}</div></div>
               </div>
             </section>
 
@@ -2008,6 +2028,140 @@ export const EmployeeWorkspace: React.FC = () => {
   const hasCollectibleInvoiceBalance = (contract: typeof contracts[number]) =>
     getContractCollectibleInvoiceBalance(contract) > 0;
 
+  const getCustomerDataIssues = (contract: typeof contracts[number]) => {
+    return getCustomerRecordDataIssues(contract.customer);
+  };
+
+  const hasCustomerDataIssues = (contract: typeof contracts[number]) =>
+    getCustomerDataIssues(contract).length > 0;
+
+  const openCustomerDataDialog = (contract: typeof contracts[number]) => {
+    const customer = contract.customer;
+    if (!customer?.id) {
+      toast({
+        title: 'بيانات العميل غير متاحة',
+        description: 'لا يمكن تحديث البيانات لأن العميل غير مرتبط بالعقد.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setSelectedContractId(contract.id);
+    setCustomerDataForm({
+      customerId: customer.id,
+      customerType: customer.customer_type || 'individual',
+      firstNameAr: customer.first_name_ar || '',
+      lastNameAr: customer.last_name_ar || '',
+      companyNameAr: customer.company_name_ar || '',
+      nationality: customer.nationality || '',
+    });
+  };
+
+  const updateCustomerDataMutation = useMutation({
+    mutationFn: async (form: CustomerDataFormState) => {
+      if (!workspaceProfile?.id || !companyId) {
+        throw new Error('تعذر تحديد الموظف أو الشركة');
+      }
+
+      const assignedContract = contracts.find((contract) =>
+        contract.customer_id === form.customerId
+        && contract.assigned_to_profile_id === workspaceProfile.id
+      );
+
+      if (!assignedContract) {
+        throw new Error('لا يمكن تعديل عميل غير مرتبط بعقد مخصص لك');
+      }
+
+      const firstNameAr = form.firstNameAr.trim();
+      const lastNameAr = form.lastNameAr.trim();
+      const companyNameAr = form.companyNameAr.trim();
+      const nationality = form.nationality.trim();
+      const isCompanyCustomer = ['company', 'corporate'].includes(String(form.customerType || '').toLowerCase());
+
+      if (isCompanyCustomer && !hasArabicText(companyNameAr)) {
+        throw new Error('يرجى إدخال اسم الشركة بالعربي من السجل أو المستند الرسمي');
+      }
+
+      if (!isCompanyCustomer && !hasArabicText(`${firstNameAr} ${lastNameAr}`)) {
+        throw new Error('يرجى إدخال الاسم العربي للعميل من الهوية');
+      }
+
+      if (!hasArabicText(nationality)) {
+        throw new Error('يرجى إدخال الجنسية بالعربي من الهوية أو الجواز');
+      }
+
+      const customerUpdate = isCompanyCustomer
+        ? {
+          company_name_ar: companyNameAr,
+          nationality,
+        }
+        : {
+          first_name_ar: firstNameAr,
+          last_name_ar: lastNameAr,
+          nationality,
+        };
+
+      const { error } = await supabase
+        .from('customers')
+        .update(customerUpdate)
+        .eq('id', form.customerId)
+        .eq('company_id', companyId);
+
+      if (error) throw error;
+
+      const oldValues = {
+        first_name_ar: assignedContract.customer?.first_name_ar || null,
+        last_name_ar: assignedContract.customer?.last_name_ar || null,
+        company_name_ar: assignedContract.customer?.company_name_ar || null,
+        nationality: assignedContract.customer?.nationality || null,
+      };
+
+      const { error: auditError } = await supabase
+        .from('audit_logs')
+        .insert({
+          company_id: companyId,
+          user_id: user?.id || null,
+          user_email: user?.email || null,
+          user_name: [workspaceProfile.first_name, workspaceProfile.last_name].filter(Boolean).join(' ') || user?.email || null,
+          resource_type: 'customer',
+          resource_id: form.customerId,
+          entity_name: assignedContract.customer_name || assignedContract.contract_number || form.customerId,
+          action: 'employee_workspace_customer_data_update',
+          status: 'success',
+          severity: 'info',
+          changes_summary: `تحديث بيانات العميل من مساحة العمل للعقد ${assignedContract.contract_number || assignedContract.id}`,
+          old_values: oldValues,
+          new_values: customerUpdate,
+          metadata: {
+            source: 'employee_workspace',
+            contract_id: assignedContract.id,
+            contract_number: assignedContract.contract_number,
+            assigned_to_profile_id: workspaceProfile.id,
+          },
+        });
+
+      if (auditError) {
+        console.warn('Failed to write customer data audit log', auditError);
+      }
+    },
+    onSuccess: () => {
+      toast({
+        title: 'تم تحديث بيانات العميل',
+        description: 'تم حفظ البيانات الرسمية الناقصة، وسيتم تحديث مساحة العمل.',
+      });
+      setCustomerDataForm(null);
+      queryClient.invalidateQueries({ queryKey: ['employee-contracts'] });
+      queryClient.invalidateQueries({ queryKey: ['monthly-collections'] });
+    },
+    onError: (error: unknown) => {
+      toast({
+        title: 'فشل تحديث بيانات العميل',
+        description: error instanceof Error ? error.message : 'حدث خطأ أثناء الحفظ',
+        variant: 'destructive',
+      });
+    },
+  });
+
   const reportPerformance = useMemo<ReportEmployeePerformance | null>(() => {
     if (!performance) return null;
 
@@ -2055,6 +2209,7 @@ export const EmployeeWorkspace: React.FC = () => {
       task.contract_id === contract.id && !['completed', 'cancelled'].includes(task.status)
     );
 
+    if (hasCustomerDataIssues(contract)) return 'needs_completion';
     if (collectibleBalance > 0) return 'collection';
     if (openInvoiceBalance > 0 || contract.billing_review_required) return 'needs_completion';
     if (hasOpenViolations || !hasSignedContract || hasPendingTasks) return 'needs_completion';
@@ -2096,6 +2251,7 @@ export const EmployeeWorkspace: React.FC = () => {
       existing.totalCollectibleBalance += getContractCollectibleInvoiceBalance(contract);
       existing.totalOpenBalance += getContractOpenInvoiceBalance(contract);
       existing.billingReviewCount += contract.billing_review_required ? 1 : 0;
+      existing.customerDataIssueCount += hasCustomerDataIssues(contract) ? 1 : 0;
       existing.totalMonthly += contract.monthly_amount || 0;
       return groups;
     }
@@ -2109,6 +2265,7 @@ export const EmployeeWorkspace: React.FC = () => {
       totalCollectibleBalance: getContractCollectibleInvoiceBalance(contract),
       totalOpenBalance: getContractOpenInvoiceBalance(contract),
       billingReviewCount: contract.billing_review_required ? 1 : 0,
+      customerDataIssueCount: hasCustomerDataIssues(contract) ? 1 : 0,
       totalMonthly: contract.monthly_amount || 0,
     });
 
@@ -2122,6 +2279,7 @@ export const EmployeeWorkspace: React.FC = () => {
     totalCollectibleBalance: number;
     totalOpenBalance: number;
     billingReviewCount: number;
+    customerDataIssueCount: number;
     totalMonthly: number;
   }>());
   const filteredContractGroupsList = Array.from(filteredContractGroups.values());
@@ -3214,6 +3372,12 @@ export const EmployeeWorkspace: React.FC = () => {
                             <div className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[10px] font-semibold text-[#6A7688] sm:text-xs">
                               <span>{customerGroup.contracts.length} عقد</span>
                               {customerGroup.customerPhone && <span dir="ltr">{customerGroup.customerPhone}</span>}
+                              {customerGroup.customerDataIssueCount > 0 && (
+                                <span className="inline-flex items-center gap-1 rounded-full bg-[#FFFBEB] px-2 py-0.5 font-bold text-[#B45309]">
+                                  <AlertCircle className="h-3 w-3" />
+                                  {customerGroup.customerDataIssueCount} بيانات ناقصة
+                                </span>
+                              )}
                               <span className="text-[#D97706]" dir="ltr">
                                 {customerGroup.totalBalance > 0
                                   ? formatCurrency(customerGroup.totalBalance)
@@ -3293,6 +3457,7 @@ export const EmployeeWorkspace: React.FC = () => {
                             const openInvoiceBalance = getContractOpenInvoiceBalance(contract);
                              const hasFutureInvoicesOnly = collectibleInvoiceBalance <= 0 && openInvoiceBalance > 0;
                              const requiresBillingReview = Boolean(contract.billing_review_required);
+                             const customerDataIssues = getCustomerDataIssues(contract);
                              const isFullyPaidContract = dueBalance <= 0
                                && collectibleInvoiceBalance <= 0
                                && !hasFutureInvoicesOnly
@@ -3369,6 +3534,15 @@ export const EmployeeWorkspace: React.FC = () => {
                                             {contract.traffic_violation_count} مخالفات
                                           </Badge>
                                         ) : null}
+                                        {customerDataIssues.length > 0 ? (
+                                          <Badge
+                                            variant="outline"
+                                            className="h-5 gap-1 border-[#FDE68A] bg-[#FFFBEB] px-1.5 text-[10px] text-[#92400E] sm:h-6 sm:px-2 sm:text-[11px]"
+                                          >
+                                            <AlertCircle className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+                                            بيانات ناقصة
+                                          </Badge>
+                                        ) : null}
                                         {workStatus === 'operational' ? (
                                           <Badge className="h-5 gap-1 border border-[#BFDBFE] bg-[#EFF6FF] px-1.5 text-[10px] text-[#1D4ED8] hover:bg-[#EFF6FF] sm:h-6 sm:px-2 sm:text-[11px]">
                                             <PlayCircle className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
@@ -3406,6 +3580,18 @@ export const EmployeeWorkspace: React.FC = () => {
                                           <span className="flex items-center gap-1" dir="ltr">
                                             <Phone className="h-3 w-3 text-[#8A9AAF]" />
                                             {contract.customer_phone}
+                                          </span>
+                                        )}
+                                        {customerDataIssues.length > 0 && (
+                                          <span className="flex items-center gap-1 font-bold text-[#B45309]">
+                                            <AlertCircle className="h-3 w-3" />
+                                            استكمال: {customerDataIssues.join('، ')}
+                                          </span>
+                                        )}
+                                        {customerDataIssues.length > 0 && hasCurrentDueBalance(contract) && (
+                                          <span className="flex items-center gap-1 font-bold text-[#B45309]">
+                                            <Scale className="h-3 w-3" />
+                                            القانونية بعد الاستكمال
                                           </span>
                                         )}
                                       </div>
@@ -3472,6 +3658,18 @@ export const EmployeeWorkspace: React.FC = () => {
                                     </Button>
                                   )}
 
+                                  {customerDataIssues.length > 0 && (
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      className="h-8 gap-1 rounded-lg border-[#FDE68A] bg-[#FFFBEB] px-2.5 text-[10px] font-bold text-[#92400E] hover:bg-[#FEF3C7] sm:h-9 sm:px-3 sm:text-xs"
+                                      onClick={() => openCustomerDataDialog(contract)}
+                                    >
+                                      <Edit3 className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                                      استكمال البيانات
+                                    </Button>
+                                  )}
+
                                   <Button
                                     size="sm"
                                     variant={hasSignedContract ? 'outline' : 'default'}
@@ -3530,7 +3728,12 @@ export const EmployeeWorkspace: React.FC = () => {
                                     <Button
                                       size="sm"
                                       variant="outline"
-                                      className="h-8 gap-1 rounded-lg border-[#E2E8F0] bg-white px-2.5 text-[10px] font-bold text-[#173A63] hover:bg-[#EEF5FB] sm:h-9 sm:px-3 sm:text-xs"
+                                      className={cn(
+                                        "h-8 gap-1 rounded-lg border-[#E2E8F0] bg-white px-2.5 text-[10px] font-bold text-[#173A63] hover:bg-[#EEF5FB] sm:h-9 sm:px-3 sm:text-xs",
+                                        customerDataIssues.length > 0 && "cursor-not-allowed opacity-60 hover:bg-white",
+                                      )}
+                                      disabled={customerDataIssues.length > 0}
+                                      title={customerDataIssues.length > 0 ? `استكمل بيانات العميل أولاً: ${customerDataIssues.join('، ')}` : undefined}
                                       onClick={() => {
                                         setSelectedContractId(contract.id);
                                         setShowConvertToLegalDialog(true);
@@ -4172,7 +4375,7 @@ export const EmployeeWorkspace: React.FC = () => {
               <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
                 <div className="rounded-xl border border-[#DDE5EF] bg-white p-4">
                   <h3 className="mb-3 text-sm font-black text-[#142033]">مؤشرات بداية اليوم</h3>
-                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-4">
                     <div className="space-y-2">
                       <Label htmlFor="daily-log-contracts">العقود المسندة</Label>
                       <Input
@@ -4198,6 +4401,15 @@ export const EmployeeWorkspace: React.FC = () => {
                         type="number"
                         value={dailyLogForm.priorityCases}
                         onChange={(event) => updateDailyLogField('priorityCases', event.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="daily-log-customer-data">بيانات ناقصة</Label>
+                      <Input
+                        id="daily-log-customer-data"
+                        type="number"
+                        value={dailyLogForm.customerDataIssues}
+                        onChange={(event) => updateDailyLogField('customerDataIssues', event.target.value)}
                       />
                     </div>
                   </div>
@@ -4484,6 +4696,106 @@ export const EmployeeWorkspace: React.FC = () => {
         assignedToProfileId={user?.profile?.id}
       />
 
+      <Dialog
+        open={Boolean(customerDataForm)}
+        onOpenChange={(open) => {
+          if (!open && !updateCustomerDataMutation.isPending) setCustomerDataForm(null);
+        }}
+      >
+        <DialogContent dir="rtl" className="sm:max-w-[520px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-right">
+              <Edit3 className="h-5 w-5 text-[#1D4F7A]" />
+              استكمال بيانات العميل
+            </DialogTitle>
+            <DialogDescription className="text-right">
+              أدخل البيانات كما تظهر في الهوية أو الجواز قبل متابعة الإجراءات الحساسة.
+            </DialogDescription>
+          </DialogHeader>
+
+          {customerDataForm && (
+            <div className="space-y-4">
+              {['company', 'corporate'].includes(String(customerDataForm.customerType || '').toLowerCase()) ? (
+                <div className="space-y-2">
+                  <Label htmlFor="workspace-customer-company-name-ar">اسم الشركة بالعربي</Label>
+                  <Input
+                    id="workspace-customer-company-name-ar"
+                    value={customerDataForm.companyNameAr}
+                    onChange={(event) => setCustomerDataForm((current) =>
+                      current ? { ...current, companyNameAr: event.target.value } : current
+                    )}
+                    placeholder="مثال: شركة النور للتجارة"
+                  />
+                </div>
+              ) : (
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="workspace-customer-first-name-ar">الاسم الأول بالعربي</Label>
+                    <Input
+                      id="workspace-customer-first-name-ar"
+                      value={customerDataForm.firstNameAr}
+                      onChange={(event) => setCustomerDataForm((current) =>
+                        current ? { ...current, firstNameAr: event.target.value } : current
+                      )}
+                      placeholder="مثال: محمد"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="workspace-customer-last-name-ar">اسم العائلة بالعربي</Label>
+                    <Input
+                      id="workspace-customer-last-name-ar"
+                      value={customerDataForm.lastNameAr}
+                      onChange={(event) => setCustomerDataForm((current) =>
+                        current ? { ...current, lastNameAr: event.target.value } : current
+                      )}
+                      placeholder="مثال: أحمد"
+                    />
+                  </div>
+                </div>
+              )}
+              <div className="space-y-2">
+                <Label htmlFor="workspace-customer-nationality">الجنسية</Label>
+                <Input
+                  id="workspace-customer-nationality"
+                  value={customerDataForm.nationality}
+                  onChange={(event) => setCustomerDataForm((current) =>
+                    current ? { ...current, nationality: event.target.value } : current
+                  )}
+                  placeholder="مثال: السودان"
+                />
+              </div>
+              <div className="rounded-xl border border-[#FDE68A] bg-[#FFFBEB] p-3 text-xs font-bold text-[#92400E]">
+                لا تعتمد على التخمين. استخدم الهوية أو الجواز فقط، لأن هذه البيانات تُستخدم في التقاضي والتحصيل.
+              </div>
+            </div>
+          )}
+
+          <DialogFooter className="gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setCustomerDataForm(null)}
+              disabled={updateCustomerDataMutation.isPending}
+            >
+              إلغاء
+            </Button>
+            <Button
+              type="button"
+              className="bg-[#11A37F] font-bold text-white hover:bg-[#0D876A]"
+              disabled={!customerDataForm || updateCustomerDataMutation.isPending}
+              onClick={() => customerDataForm && updateCustomerDataMutation.mutate(customerDataForm)}
+            >
+              {updateCustomerDataMutation.isPending ? (
+                <Loader2 className="ml-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Save className="ml-2 h-4 w-4" />
+              )}
+              حفظ البيانات
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <SignedContractScannerDialog
         open={Boolean(signedScanContract)}
         onOpenChange={(open) => {
@@ -4700,6 +5012,7 @@ export const EmployeeWorkspace: React.FC = () => {
                 const selectedOpenBalance = getContractOpenInvoiceBalance(selectedWorkspaceContract);
                 const selectedHasFutureInvoicesOnly = selectedCollectibleBalance <= 0 && selectedOpenBalance > 0;
                 const selectedRequiresBillingReview = Boolean(selectedWorkspaceContract.billing_review_required);
+                const selectedCustomerDataIssues = getCustomerDataIssues(selectedWorkspaceContract);
 
                 return (
                   <>
@@ -4713,6 +5026,11 @@ export const EmployeeWorkspace: React.FC = () => {
                     <p className="mt-1 text-sm font-bold text-[#40516A]">
                       {selectedWorkspaceContract.customer_name || 'عميل غير محدد'}
                     </p>
+                    {selectedCustomerDataIssues.length > 0 && (
+                      <div className="mt-3 rounded-lg border border-[#FDE68A] bg-[#FFFBEB] px-3 py-2 text-xs font-bold text-[#92400E]">
+                        بيانات العميل تحتاج استكمال: {selectedCustomerDataIssues.join('، ')}
+                      </div>
+                    )}
                   </div>
                   <Badge className={cn(
                     'w-fit border px-3 py-1 text-xs font-black',
@@ -4780,6 +5098,15 @@ export const EmployeeWorkspace: React.FC = () => {
                         {selectedWorkspaceContract.customer_email || '-'}
                       </span>
                     </div>
+                    <div className="flex justify-between gap-3">
+                      <span className="text-[#6A7688]">الجنسية</span>
+                      <span className={cn(
+                        'font-bold',
+                        selectedWorkspaceContract.customer?.nationality ? 'text-[#142033]' : 'text-[#B45309]',
+                      )}>
+                        {selectedWorkspaceContract.customer?.nationality || 'غير مكتملة'}
+                      </span>
+                    </div>
                   </div>
                 </div>
 
@@ -4808,6 +5135,11 @@ export const EmployeeWorkspace: React.FC = () => {
 
               <div className="rounded-xl border border-[#DDE5EF] bg-[#FBFCFE] p-4">
                 <p className="mb-3 text-sm font-black text-[#142033]">إجراءات الموظف</p>
+                {selectedCustomerDataIssues.length > 0 && selectedDueBalance > 0 && (
+                  <div className="mb-3 rounded-lg border border-[#FDE68A] bg-[#FFFBEB] px-3 py-2 text-xs font-bold text-[#92400E]">
+                    التحويل للشؤون القانونية يتطلب استكمال بيانات العميل أولاً.
+                  </div>
+                )}
                 <div className="flex flex-wrap gap-2">
                   {selectedCollectibleBalance > 0 && (
                     <Button
@@ -4825,6 +5157,19 @@ export const EmployeeWorkspace: React.FC = () => {
                     >
                       <DollarSign className="h-4 w-4" />
                       تسجيل دفعة
+                    </Button>
+                  )}
+                  {selectedCustomerDataIssues.length > 0 && (
+                    <Button
+                      variant="outline"
+                      className="gap-2 border-[#FDE68A] bg-[#FFFBEB] font-bold text-[#92400E] hover:bg-[#FEF3C7]"
+                      onClick={() => {
+                        setShowContractDetailsDialog(false);
+                        openCustomerDataDialog(selectedWorkspaceContract);
+                      }}
+                    >
+                      <Edit3 className="h-4 w-4" />
+                      استكمال بيانات العميل
                     </Button>
                   )}
                   {selectedRequiresBillingReview && canOpenSystemAudit && (
@@ -4888,7 +5233,12 @@ export const EmployeeWorkspace: React.FC = () => {
                   {selectedDueBalance > 0 && (
                     <Button
                       variant="outline"
-                      className="gap-2 border-[#E2E8F0] font-bold text-[#173A63]"
+                      className={cn(
+                        "gap-2 border-[#E2E8F0] font-bold text-[#173A63]",
+                        selectedCustomerDataIssues.length > 0 && "cursor-not-allowed opacity-60",
+                      )}
+                      disabled={selectedCustomerDataIssues.length > 0}
+                      title={selectedCustomerDataIssues.length > 0 ? `استكمل بيانات العميل أولاً: ${selectedCustomerDataIssues.join('، ')}` : undefined}
                       onClick={() => {
                         setSelectedContractId(selectedWorkspaceContract.id);
                         setShowContractDetailsDialog(false);

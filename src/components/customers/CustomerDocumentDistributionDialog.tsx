@@ -61,6 +61,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import Tesseract from 'tesseract.js';
+import { getCustomerDataIssues } from '@/utils/formatCustomerName';
 
 import { useFleetifyTranslation } from "@/hooks/useTranslation";
 // استخدام Customer OCR عبر Supabase Edge Function (Google Cloud Vision)
@@ -1146,6 +1147,9 @@ const CustomerDocumentDistributionDialog: React.FC<CustomerDocumentDistributionD
       if (data.dateOfBirth) updateData.date_of_birth = data.dateOfBirth;
       if (data.idExpiry) updateData.national_id_expiry = data.idExpiry;
       if (data.passportNumber) updateData.passport_number = data.passportNumber;
+      if (data.nationalityArabic || data.nationality) {
+        updateData.nationality = data.nationalityArabic || data.nationality;
+      }
 
       // الحقول العربية - تُحدث فقط إذا كانت موجودة في قاعدة البيانات
       // هذه الحقول موجودة في جدول customers حسب DATABASE_REFERENCE.md
@@ -1155,6 +1159,28 @@ const CustomerDocumentDistributionDialog: React.FC<CustomerDocumentDistributionD
       // يمكن إضافتهما لاحقاً كتحسين للنظام
 
       if (Object.keys(updateData).length === 0) {
+        return false;
+      }
+
+      const { data: existingCustomer, error: fetchError } = await supabase
+        .from('customers')
+        .select('*')
+        .eq('id', customerId)
+        .eq('company_id', companyId)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      const customerDataIssues = getCustomerDataIssues({
+        ...existingCustomer,
+        ...updateData,
+      });
+
+      if (customerDataIssues.length > 0) {
+        console.warn('Skipping customer OCR update because official Arabic data is incomplete:', {
+          customerId,
+          customerDataIssues,
+        });
         return false;
       }
 
@@ -1176,6 +1202,22 @@ const CustomerDocumentDistributionDialog: React.FC<CustomerDocumentDistributionD
           if (data.dateOfBirth) englishData.date_of_birth = data.dateOfBirth;
           if (data.idExpiry) englishData.national_id_expiry = data.idExpiry;
           if (data.passportNumber) englishData.passport_number = data.passportNumber;
+          if (data.nationalityArabic || data.nationality) {
+            englishData.nationality = data.nationalityArabic || data.nationality;
+          }
+
+          const retryDataIssues = getCustomerDataIssues({
+            ...existingCustomer,
+            ...englishData,
+          });
+
+          if (retryDataIssues.length > 0) {
+            console.warn('Skipping fallback customer OCR update because official Arabic data is incomplete:', {
+              customerId,
+              retryDataIssues,
+            });
+            return false;
+          }
 
           const { error: retryError } = await supabase
             .from('customers')

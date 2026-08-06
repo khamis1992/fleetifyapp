@@ -3,15 +3,25 @@ const fs = require('fs');
 const path = require('path');
 
 function loadDotEnv() {
-  const envPath = path.join(process.cwd(), '.env');
-  if (!fs.existsSync(envPath)) return;
+  for (const fileName of ['.env', '.env.taqadi-agent']) {
+    const envPath = path.join(process.cwd(), fileName);
+    if (!fs.existsSync(envPath)) continue;
 
-  const text = fs.readFileSync(envPath, 'utf8');
-  for (const line of text.split(/\r?\n/)) {
-    const match = line.match(/^([A-Z0-9_]+)=("?)(.*)\2$/);
-    if (!match) continue;
-    const [, key,, value] = match;
-    if (!process.env[key]) process.env[key] = value;
+    const text = fs.readFileSync(envPath, 'utf8');
+    for (const line of text.split(/\r?\n/)) {
+      const match = line.match(/^([A-Z0-9_]+)=("?)(.*)\2$/);
+      if (!match) continue;
+      const [, key,, value] = match;
+      if (!process.env[key]) process.env[key] = value;
+    }
+  }
+
+  if (!process.env.VITE_SUPABASE_URL && process.env.TAQADI_SUPABASE_URL) {
+    process.env.VITE_SUPABASE_URL = process.env.TAQADI_SUPABASE_URL;
+  }
+
+  if (!process.env.SUPABASE_SERVICE_ROLE_KEY && process.env.TAQADI_SUPABASE_SERVICE_ROLE_KEY) {
+    process.env.SUPABASE_SERVICE_ROLE_KEY = process.env.TAQADI_SUPABASE_SERVICE_ROLE_KEY;
   }
 }
 

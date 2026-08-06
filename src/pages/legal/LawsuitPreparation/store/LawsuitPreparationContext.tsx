@@ -418,7 +418,7 @@ export function LawsuitPreparationProvider({
   
   useEffect(() => {
     if (state.contract && state.calculations && state.customer) {
-      const customerName = formatCustomerName(state.customer) || 'غير محدد';
+      const customerName = formatCustomerName(state.customer, { preferArabic: true }) || 'غير محدد';
       const { cashClaimAmount, taqadiClaimAmount } = getLawsuitClaimAmounts(state.calculations);
       
       let factsText = lawsuitService.generateFactsText(
@@ -971,7 +971,7 @@ export function LawsuitPreparationProvider({
       if (!state.taqadiData || !companyId || !state.contract) return;
       
       const customer = state.customer;
-      const fullName = formatCustomerName(customer);
+      const fullName = formatCustomerName(customer, { preferArabic: true });
       const nameParts = fullName.split(' ');
       
       const lawsuitRecord = {

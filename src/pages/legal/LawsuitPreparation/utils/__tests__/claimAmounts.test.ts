@@ -2,13 +2,13 @@ import { describe, expect, it } from 'vitest';
 import { getLawsuitClaimAmounts } from '../claimAmounts';
 
 describe('getLawsuitClaimAmounts', () => {
-  it('uses the complete final-request total for the Taqadi claim value', () => {
+  it('uses the same cash amount in the final requests and Taqadi claim field', () => {
     expect(getLawsuitClaimAmounts({
       total: 125_200,
       violationsFines: 6_600,
     })).toEqual({
       cashClaimAmount: 118_600,
-      taqadiClaimAmount: 125_200,
+      taqadiClaimAmount: 118_600,
     });
   });
 

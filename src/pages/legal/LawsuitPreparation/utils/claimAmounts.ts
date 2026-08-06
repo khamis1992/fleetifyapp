@@ -17,9 +17,10 @@ export function getLawsuitClaimAmounts(
 ): LawsuitClaimAmounts {
   const total = Math.max(0, Number(calculations.total || 0));
   const violationsFines = Math.max(0, Number(calculations.violationsFines || 0));
+  const finalRequestedAmount = Math.max(0, total - violationsFines);
 
   return {
-    cashClaimAmount: Math.max(0, total - violationsFines),
-    taqadiClaimAmount: total,
+    cashClaimAmount: finalRequestedAmount,
+    taqadiClaimAmount: finalRequestedAmount,
   };
 }

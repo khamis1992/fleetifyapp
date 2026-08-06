@@ -13,7 +13,7 @@ function createState(): LawsuitPreparationState {
   return {
     companyId: 'company-1',
     contractId: 'contract-1',
-    calculations: { total: 1750 },
+    calculations: { total: 1750, violationsFines: 250 },
     documents: {
       memo: readyDocument,
       claims: readyDocument,
@@ -57,6 +57,11 @@ describe('openLegalCase', () => {
       'sync_lawsuit_preparation_to_legal_case_v1',
       'transition_legal_case_workflow_v1',
     ]);
+    expect(rpcMock).toHaveBeenNthCalledWith(
+      2,
+      'sync_lawsuit_preparation_to_legal_case_v1',
+      expect.objectContaining({ p_claim_amount: 1500 }),
+    );
     expect(rpcMock).toHaveBeenLastCalledWith(
       'transition_legal_case_workflow_v1',
       expect.objectContaining({

@@ -51,6 +51,7 @@ import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { CustomerFormWithDuplicateCheck } from './CustomerFormWithDuplicateCheck';
+import { getCustomerDataIssues } from '@/utils/formatCustomerName';
 
 // === Schema ===
 const customerSchema = baseCustomerSchema;
@@ -308,6 +309,13 @@ export const EnhancedCustomerForm: React.FC<EnhancedCustomerFormProps> = ({
 
   const onSubmit = async (data: CustomerFormData) => {
     try {
+      const customerDataIssues = getCustomerDataIssues(data);
+      if (customerDataIssues.length > 0) {
+        toast.error(`استكمل بيانات العميل أولاً: ${customerDataIssues.join('، ')}`);
+        setCurrentStep(0);
+        return;
+      }
+
       // Check for duplicates (only for create mode)
       if (mode === 'create' && hasDuplicates && !forceCreate && showDuplicateCheck) {
         toast.error('يوجد عملاء مشابهين في النظام. يرجى مراجعة التحذيرات.');
@@ -1137,20 +1145,25 @@ const QuickCustomerDialogContent: React.FC<{
       last_name: string | null;
       first_name_ar: string | null; 
       last_name_ar: string | null;
+      nationality: string | null;
       phone: string | null;
       national_id: string | null;
     };
   }>({ checking: false, exists: false });
 
+  const quickHasArabicText = (value?: string | null) => /[\u0600-\u06FF]/.test(String(value || '').trim());
+
   const quickSchema = z.object({
     full_name: z.string().min(2, 'الاسم يجب أن يكون أكثر من حرفين'),
     phone: z.string().min(8, 'رقم الهاتف غير صحيح'),
+    nationality: z.string().min(2, 'الجنسية مطلوبة')
+      .refine(quickHasArabicText, 'الجنسية العربية مطلوبة كما في الهوية أو الجواز'),
     national_id: z.string().min(5, 'الرقم الشخصي غير صحيح'),
   });
 
   const form = useForm({
     resolver: zodResolver(quickSchema),
-    defaultValues: { full_name: '', phone: '', national_id: '' },
+    defaultValues: { full_name: '', phone: '', nationality: '', national_id: '' },
   });
 
   const nationalId = form.watch('national_id');
@@ -1166,7 +1179,7 @@ const QuickCustomerDialogContent: React.FC<{
 
       const { data } = await supabase
         .from('customers')
-        .select('id, first_name, last_name, first_name_ar, last_name_ar, phone, national_id')
+        .select('id, first_name, last_name, first_name_ar, last_name_ar, nationality, phone, national_id')
         .eq('company_id', user.profile.company_id)
         .eq('national_id', nationalId)
         .maybeSingle();
@@ -1196,6 +1209,7 @@ const QuickCustomerDialogContent: React.FC<{
         last_name: ec.last_name,
         first_name_ar: ec.first_name_ar,
         last_name_ar: ec.last_name_ar,
+        nationality: ec.nationality,
         phone: ec.phone,
         national_id: ec.national_id,
         full_name: `${ec.first_name || ec.first_name_ar || ''} ${ec.last_name || ec.last_name_ar || ''}`.trim(),
@@ -1209,6 +1223,17 @@ const QuickCustomerDialogContent: React.FC<{
       const nameParts = data.full_name.trim().split(' ');
       const firstName = nameParts[0] || '';
       const lastName = nameParts.slice(1).join(' ') || '';
+      const customerDataIssues = getCustomerDataIssues({
+        customer_type: 'individual',
+        first_name_ar: firstName,
+        last_name_ar: lastName,
+        nationality: data.nationality,
+      });
+
+      if (customerDataIssues.length > 0) {
+        toast.error(`استكمل بيانات العميل أولاً: ${customerDataIssues.join('، ')}`);
+        return;
+      }
 
       const { data: newCustomer, error } = await supabase
         .from('customers')
@@ -1219,12 +1244,13 @@ const QuickCustomerDialogContent: React.FC<{
           first_name_ar: firstName,
           last_name_ar: lastName,
           phone: data.phone,
+          nationality: data.nationality,
           national_id: data.national_id,
           license_number: data.national_id,
           customer_type: 'individual',
           is_active: true,
         })
-        .select('id, first_name, last_name, first_name_ar, last_name_ar, phone, national_id')
+        .select('id, first_name, last_name, first_name_ar, last_name_ar, phone, nationality, national_id')
         .single();
 
       if (error) throw error;
@@ -1240,6 +1266,7 @@ const QuickCustomerDialogContent: React.FC<{
         first_name_ar: newCustomer.first_name_ar,
         last_name_ar: newCustomer.last_name_ar,
         phone: newCustomer.phone,
+        nationality: newCustomer.nationality,
         national_id: newCustomer.national_id,
         full_name: `${newCustomer.first_name_ar} ${newCustomer.last_name_ar}`.trim(),
       });
@@ -1297,6 +1324,21 @@ const QuickCustomerDialogContent: React.FC<{
 
           <div className="bg-gradient-to-br from-teal-50/50 to-teal-100/30 rounded-xl p-4 border border-teal-200/50 shadow-sm hover:shadow-md transition-shadow">
             <label className="text-sm font-medium text-slate-700 flex items-center gap-2 mb-2">
+              <MapPin className="h-4 w-4 text-teal-600" />
+              الجنسية
+            </label>
+            <Input
+              {...form.register('nationality')}
+              placeholder="أدخل الجنسية كما في الهوية أو الجواز"
+              className="bg-white dark:bg-slate-900 border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all"
+            />
+            {form.formState.errors.nationality && (
+              <p className="text-xs text-red-500 mt-1">{form.formState.errors.nationality.message as string}</p>
+            )}
+          </div>
+
+          <div className="bg-gradient-to-br from-teal-50/50 to-teal-100/30 rounded-xl p-4 border border-teal-200/50 shadow-sm hover:shadow-md transition-shadow">
+            <label className="text-sm font-medium text-slate-700 flex items-center gap-2 mb-2">
               <CreditCard className="h-4 w-4 text-teal-600" />
               الرقم الشخصي
             </label>
@@ -1333,6 +1375,7 @@ const QuickCustomerDialogContent: React.FC<{
                       last_name: ec.last_name,
                       first_name_ar: ec.first_name_ar,
                       last_name_ar: ec.last_name_ar,
+                      nationality: ec.nationality,
                       phone: ec.phone,
                       national_id: ec.national_id,
                       full_name: `${ec.first_name || ec.first_name_ar || ''} ${ec.last_name || ec.last_name_ar || ''}`.trim(),

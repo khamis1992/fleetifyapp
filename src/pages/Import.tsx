@@ -28,6 +28,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { calculateCanonicalBillingMonths } from '@/utils/contractCalculations';
 import type { Database } from '@/integrations/supabase/types';
+import { getCustomerDataIssues } from '@/utils/formatCustomerName';
 
 type CustomerImportRow = Database['public']['Tables']['customers']['Insert'];
 type VehicleImportRow = Database['public']['Tables']['vehicles']['Insert'];
@@ -226,12 +227,12 @@ const ImportInner: React.FC = () => {
           const monthlyAmount = Number(String(row.monthly_amount || '').replace(/[^\d.-]/g, ''));
           const billingMonths = calculateCanonicalBillingMonths(row.start_date, row.end_date);
           if (!Number.isFinite(monthlyAmount) || monthlyAmount <= 0) {
-            errors.push(`Ø§Ù„Ø³Ø·Ø± ${i}: Ù‚ÙŠÙ…Ø© Ø§Ù„Ø¥ÙŠØ¬Ø§Ø± Ø§Ù„Ø´Ù‡Ø±ÙŠ ØºÙŠØ± ØµØ­ÙŠØ­Ø©`);
+            errors.push(`السطر ${i}: قيمة الإيجار الشهري غير صحيحة`);
             failedCount++;
             continue;
           }
           if (billingMonths <= 0) {
-            errors.push(`Ø§Ù„Ø³Ø·Ø± ${i}: ØªÙˆØ§Ø±ÙŠØ® Ø§Ù„Ø¹Ù‚Ø¯ ØºÙŠØ± ØµØ­ÙŠØ­Ø©`);
+            errors.push(`السطر ${i}: تواريخ العقد غير صحيحة`);
             failedCount++;
             continue;
           }
@@ -265,6 +266,14 @@ const ImportInner: React.FC = () => {
           let result;
           switch (activeTab) {
             case 'customers':
+              {
+                const customerDataIssues = getCustomerDataIssues(row as CustomerImportRow);
+                if (customerDataIssues.length > 0) {
+                  errors.push(`السطر ${i}: استكمل بيانات العميل: ${customerDataIssues.join('، ')}`);
+                  failedCount++;
+                  continue;
+                }
+              }
               result = await supabase
                 .from('customers')
                 .insert([row as CustomerImportRow]);
@@ -279,7 +288,7 @@ const ImportInner: React.FC = () => {
                 .from('contracts')
                 .insert([row as ContractImportRow]);
               break;
-            case 'payments':
+            case 'payments': {
               // معالجة خاصة للمدفوعات
               const normalizePaymentType = (type: string) => {
                 const arabicToEnglish: Record<string, string> = {
@@ -323,6 +332,7 @@ const ImportInner: React.FC = () => {
 
               result = { error: null };
               break;
+            }
             default:
               throw new Error('نوع غير مدعوم');
           }

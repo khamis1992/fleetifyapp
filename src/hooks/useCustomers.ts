@@ -10,6 +10,7 @@ import { Customer, CustomerFormData, CustomerFilters } from '@/types/customer';
 import { useMemo } from 'react';
 import { queryKeys } from "@/utils/queryKeys";
 import type { Database } from '@/integrations/supabase/types';
+import { getCustomerDataIssues } from '@/utils/formatCustomerName';
 
 type CustomerInsert = Database['public']['Tables']['customers']['Insert'];
 type CustomerUpdate = Database['public']['Tables']['customers']['Update'];
@@ -352,6 +353,11 @@ export const useCreateCustomer = () => {
         }
       }
 
+      const customerDataIssues = getCustomerDataIssues(customerData);
+      if (customerDataIssues.length > 0) {
+        throw new Error(`استكمل بيانات العميل أولاً: ${customerDataIssues.join('، ')}`);
+      }
+
       // تحديد الشركة للتحقق من التكرارات
       const checkCompanyId = customerData.selectedCompanyId || user?.profile?.company_id || user?.company?.id;
 
@@ -523,6 +529,26 @@ export const useUpdateCustomer = () => {
       const updateData = Object.fromEntries(
         Object.entries(cleanData).filter(([_, value]) => value !== undefined)
       ) as CustomerUpdate;
+
+      const { data: existingCustomer, error: fetchError } = await supabase
+        .from('customers')
+        .select('*')
+        .eq('id', customerId)
+        .single();
+
+      if (fetchError) {
+        console.error('❌ Error fetching customer before update:', fetchError);
+        throw new Error(`فشل في تحديث العميل: ${fetchError.message}`);
+      }
+
+      const customerDataIssues = getCustomerDataIssues({
+        ...existingCustomer,
+        ...updateData,
+      });
+
+      if (customerDataIssues.length > 0) {
+        throw new Error(`استكمل بيانات العميل أولاً: ${customerDataIssues.join('، ')}`);
+      }
       
       console.log('📤 Sending update data to database:', updateData);
       

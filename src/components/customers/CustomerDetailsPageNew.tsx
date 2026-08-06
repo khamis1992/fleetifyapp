@@ -262,7 +262,7 @@ const CustomerDetailsPageNew = () => {
   // Computed
   const customerName = useMemo(() => {
     if (!customer) return 'غير محدد';
-    return formatCustomerName(customer);
+    return formatCustomerName(customer, { preferArabic: true });
   }, [customer]);
 
   const stats = useMemo(() => {
