@@ -11,10 +11,27 @@ import {
   TAQADI_DEFAULT_DEFENDANT_EMAIL,
 } from './taqadiDefaults';
 
-interface RegisterCaseResult {
+export interface RegisterCaseResult {
   caseId: string;
   caseNumber: string;
 }
+
+interface OpenedLegalCaseRow {
+  id?: string;
+  case_status?: string | null;
+  workflow_stage?: string | null;
+}
+
+type TransitionLegalCaseWorkflowRpc = (
+  name: 'transition_legal_case_workflow_v1',
+  args: {
+    p_company_id: string;
+    p_case_id: string;
+    p_target_stage: 'filed';
+    p_reason: string;
+    p_actor_id: string;
+  },
+) => Promise<{ data: OpenedLegalCaseRow | null; error: { message?: string } | null }>;
 
 interface CaseDocument {
   case_id: string;
@@ -413,4 +430,42 @@ export async function registerLegalCase(
     caseId: result.legal_case.id,
     caseNumber: result.legal_case.case_number || result.case_number || '',
   };
+}
+
+export async function openLegalCase(
+  state: LawsuitPreparationState,
+  userId: string,
+): Promise<RegisterCaseResult> {
+  const registeredCase = await registerLegalCase(state, userId);
+  if (!state.companyId) {
+    throw new Error('Legal case company is missing');
+  }
+
+  const workflowClient = supabase as typeof supabase & {
+    rpc: TransitionLegalCaseWorkflowRpc;
+  };
+  const { data: openedCase, error } = await workflowClient.rpc(
+    'transition_legal_case_workflow_v1',
+    {
+      p_company_id: state.companyId,
+      p_case_id: registeredCase.caseId,
+      p_target_stage: 'filed',
+      p_reason: 'تم تأكيد فتح القضية من صفحة تجهيز الدعوى',
+      p_actor_id: userId,
+    },
+  );
+
+  if (error) {
+    throw new Error(`تعذر تغيير حالة القضية إلى مفتوحة: ${error.message || 'خطأ غير معروف'}`);
+  }
+  if (
+    !openedCase ||
+    openedCase.id !== registeredCase.caseId ||
+    openedCase.workflow_stage !== 'filed' ||
+    openedCase.case_status !== 'active'
+  ) {
+    throw new Error('لم تؤكد قاعدة البيانات انتقال القضية إلى الحالة المفتوحة');
+  }
+
+  return registeredCase;
 }

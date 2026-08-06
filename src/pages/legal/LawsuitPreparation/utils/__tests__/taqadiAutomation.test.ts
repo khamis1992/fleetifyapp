@@ -151,7 +151,7 @@ describe('buildTaqadiFilingPayload', () => {
       applicability: 'لا ينطبق',
     });
     expect(payload.plaintiff.partyOrder).toBe(1);
-    expect(payload.representative.partyOrder).toBe(2);
+    expect(payload.representative.partyOrder).toBe(1);
     expect(payload.defendant.email).toBe('khamis-1992@hotmail.com');
     expect(payload.defendant.address).toBe('الدوحة قطر');
     expect(payload.finalApproval).toBe(true);

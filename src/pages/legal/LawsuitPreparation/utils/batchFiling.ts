@@ -39,6 +39,7 @@ import {
   TAQADI_DEFAULT_DEFENDANT_ADDRESS,
   TAQADI_DEFAULT_DEFENDANT_EMAIL,
 } from './taqadiDefaults';
+import { getLawsuitClaimAmounts } from './claimAmounts';
 
 // ==========================================
 // Candidate listing (قائمة العقود المرشحة)
@@ -392,17 +393,17 @@ async function loadBatchContractState(
   // بيانات التقاضي (نفس منطق صفحة التجهيز)
   if (state.contract && state.customer) {
     const customerName = formatCustomerName(state.customer) || 'غير محدد';
-    const claimAmount = state.calculations.total - state.calculations.violationsFines;
+    const { cashClaimAmount, taqadiClaimAmount } = getLawsuitClaimAmounts(state.calculations);
 
     let factsText = lawsuitService.generateFactsText(
       customerName,
       state.contract.start_date,
       `${vehicle?.make || ''} ${vehicle?.model || ''} ${vehicle?.year || ''}`,
-      claimAmount,
+      cashClaimAmount,
     );
 
     const narrativeInput: TaqadiNarrativeInput = {
-      claimAmount,
+      claimAmount: cashClaimAmount,
       violationsCount: state.calculations.violationsCount,
       violationsFines: state.calculations.violationsFines,
       paidTotal: overdueInvoices.reduce(
@@ -436,8 +437,8 @@ async function loadBatchContractState(
       caseTitle: lawsuitService.generateCaseTitle(customerName),
       facts: factsText,
       claims: buildTaqadiClaims(narrativeInput),
-      amount: claimAmount,
-      amountInWords: lawsuitService.convertAmountToWords(claimAmount),
+      amount: taqadiClaimAmount,
+      amountInWords: lawsuitService.convertAmountToWords(taqadiClaimAmount),
       defendant: {
         fullName,
         firstName: nameParts[0] || null,

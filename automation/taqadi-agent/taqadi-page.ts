@@ -158,13 +158,121 @@ const identityTypeForTaqadi = (
   return idType;
 };
 
+type NaturalPartyKind = 'representative' | 'defendant';
+
+export const identityTypeForPartyOptions = (
+  partyKind: NaturalPartyKind,
+  requestedType: string,
+  nationality: string,
+  idNumber: string | null,
+  availableOptions: string[],
+): string | null => {
+  const requested = identityTypeForTaqadi(requestedType, idNumber);
+  const normalizedRequested = normalizeArabicText(requested);
+  const normalizedNationality = normalizeArabicText(
+    nationalityForTaqadi(nationality),
+  );
+  const qatarNational = normalizedNationality === normalizeArabicText('قطر');
+  const residentRequested = [
+    'رخصة مقيم',
+    'رخصة إقامة',
+    'بطاقة مقيم',
+    'هوية مقيم',
+  ].some((value) => normalizeArabicText(value) === normalizedRequested);
+
+  const candidates = qatarNational
+    ? [
+      'بطاقة شخصية',
+      'البطاقة الشخصية',
+      'بطاقة شخصية قطرية',
+      'هوية قطرية',
+      'بطاقة هوية قطرية',
+    ]
+    : [
+      requested,
+      ...(residentRequested
+        ? ['رخصة مقيم', 'رخصة إقامة', 'بطاقة مقيم', 'هوية مقيم']
+        : []),
+    ];
+
+  const usableOptions = availableOptions.filter((option) => {
+    const normalized = normalizeArabicText(option);
+    return normalized
+      && !['اختيار واحد', 'اختر', 'اختيار'].some(
+        (placeholder) => normalized === normalizeArabicText(placeholder),
+      );
+  });
+  for (const candidate of candidates) {
+    const normalizedCandidate = normalizeArabicText(candidate);
+    const exact = usableOptions.find(
+      (option) => normalizeArabicText(option) === normalizedCandidate,
+    );
+    if (exact) return exact;
+  }
+  return null;
+};
+
+const normalizeNationalityKey = (value: string) =>
+  normalizeArabicText(value).toLocaleLowerCase('en-US');
+
 const taqadiNationalityAliases = new Map(
   [
+    ['Algeria', 'الجزائر'],
+    ['Algerian', 'الجزائر'],
+    ['Bangladesh', 'بنغلاديش'],
+    ['Bangladeshi', 'بنغلاديش'],
+    ['Bengali', 'بنغلاديش'],
+    ['Egypt', 'مصر'],
+    ['Egyptian', 'مصر'],
+    ['Emirati', 'الامارات العربية المتحدة'],
+    ['India', 'الهند'],
+    ['Indian', 'الهند'],
+    ['Iraq', 'العراق'],
+    ['Iraqi', 'العراق'],
+    ['Jordan', 'الأردن'],
+    ['Jordanian', 'الأردن'],
+    ['Kuwait', 'الكويت'],
+    ['Kuwaiti', 'الكويت'],
+    ['Lebanon', 'لبنان'],
+    ['Lebanese', 'لبنان'],
+    ['Libya', 'ليبيا'],
+    ['Libyan', 'ليبيا'],
+    ['Morocco', 'المغرب'],
+    ['Moroccan', 'المغرب'],
+    ['Nepal', 'نيبال'],
+    ['Nepali', 'نيبال'],
+    ['Nigeria', 'نيجيريا'],
+    ['Nigerian', 'نيجيريا'],
+    ['Oman', 'سلطنة عمان'],
+    ['Omani', 'سلطنة عمان'],
+    ['Pakistan', 'باكستان'],
+    ['Pakistani', 'باكستان'],
+    ['Palestine', 'دولة فلسطين'],
+    ['Palestinian', 'دولة فلسطين'],
+    ['Philippines', 'الفلبين'],
+    ['Filipino', 'الفلبين'],
+    ['Qatar', 'قطر'],
+    ['Qatari', 'قطر'],
+    ['Saudi', 'السعودية'],
+    ['Saudi Arabia', 'السعودية'],
+    ['Sri Lanka', 'سريلانكا'],
+    ['Sri Lankan', 'سريلانكا'],
+    ['Sudan', 'سودان'],
+    ['Sudanese', 'سودان'],
+    ['Syria', 'الجمهورية العربية السورية'],
+    ['Syrian', 'الجمهورية العربية السورية'],
+    ['Tunisia', 'تونس'],
+    ['Tunisian', 'تونس'],
+    ['UAE', 'الامارات العربية المتحدة'],
+    ['United Arab Emirates', 'الامارات العربية المتحدة'],
+    ['Yemen', 'اليمن'],
+    ['Yemeni', 'اليمن'],
     ['أردني', 'الأردن'],
     ['إماراتي', 'الامارات العربية المتحدة'],
     ['إيراني', 'إيران، جمهورية إيران الإسلامية'],
     ['باكستاني', 'باكستان'],
     ['بنغلاديشي', 'بنغلاديش'],
+    ['بنغالي', 'بنغلاديش'],
     ['تونسي', 'تونس'],
     ['جزائري', 'الجزائر'],
     ['سعودي', 'السعودية'],
@@ -184,14 +292,31 @@ const taqadiNationalityAliases = new Map(
     ['مصري', 'مصر'],
     ['مغربي', 'المغرب'],
     ['نيبالي', 'نيبال'],
+    ['نيجيري', 'نيجيريا'],
     ['هندي', 'الهند'],
     ['يمني', 'اليمن'],
-  ].map(([alias, option]) => [normalizeArabicText(alias), option]),
+  ].map(([alias, option]) => [normalizeNationalityKey(alias), option]),
 );
 
-const nationalityForTaqadi = (nationality: string) =>
-  taqadiNationalityAliases.get(normalizeArabicText(nationality))
-  || nationality;
+const withoutOptionalArabicArticle = (value: string) =>
+  value.replace(/^ال/, '');
+
+export const nationalityForTaqadi = (nationality: string) => {
+  const normalized = normalizeNationalityKey(nationality);
+  const directAlias = taqadiNationalityAliases.get(normalized);
+  if (directAlias) return directAlias;
+
+  // Fleetify may store a country as «السودان» while Taqadi exposes «سودان».
+  // Resolve article-only variants against known portal country names without
+  // using a partial match that could confuse Sudan with South Sudan.
+  const comparable = withoutOptionalArabicArticle(normalized);
+  const canonicalOption = Array.from(taqadiNationalityAliases.values()).find(
+    (option) => withoutOptionalArabicArticle(normalizeArabicText(option))
+      === comparable,
+  );
+
+  return canonicalOption || nationality;
+};
 
 const maxDropdownOptionCount = 500;
 
@@ -255,6 +380,8 @@ const documentTypeLabels: Record<string, string[]> = {
 };
 
 const mandatoryMemoKeys = new Set(['memo', 'memoWord']);
+const taqadiPartyOrder = 1;
+const taqadiCompanyPartyOrder = 2;
 
 export class TaqadiPortal {
   private lastPriorityDiagnostics: Record<string, unknown> | null = null;
@@ -2431,8 +2558,24 @@ export class TaqadiPortal {
     root: FieldRoot = this.page,
     maxAttempts = 3,
   ) {
+    let lastSelectionError: HumanInterventionError | null = null;
     for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
-      await this.selectField(labels, optionText, controlIds, root);
+      try {
+        await this.selectField(labels, optionText, controlIds, root);
+      } catch (error) {
+        if (
+          !(error instanceof HumanInterventionError)
+          || error.code !== 'PARTY_FIELD_SELECTION_MISMATCH'
+        ) {
+          throw error;
+        }
+        // A Kendo redraw can restore the placeholder between the option click
+        // and the immediate assertion. Treat that exact mismatch as the
+        // transient condition this helper exists to recover from.
+        lastSelectionError = error;
+        await this.page.waitForTimeout(350);
+        continue;
+      }
       // Let a potential redraw settle, then verify the value survived.
       await this.page.waitForTimeout(600);
       const field = await this.exactFieldByLabel(labels, controlIds, root);
@@ -2446,7 +2589,12 @@ export class TaqadiPortal {
     throw new HumanInterventionError(
       `لم يلتصق الخيار «${optionText}» في قائمة «${labels[0]}» بعد عدة محاولات`,
       'TAQADI_FIELD_VALUE_MISMATCH',
-      { field: labels[0], optionText, url: this.page.url() },
+      {
+        field: labels[0],
+        optionText,
+        url: this.page.url(),
+        lastSelectedOption: lastSelectionError?.details.selectedOption,
+      },
     );
   }
 
@@ -2684,6 +2832,142 @@ export class TaqadiPortal {
           'إكمال تسجيل الدخول عبر توثيق',
           'فتح مسودة الدعوى الحالية',
         ],
+      },
+    );
+  }
+
+  private async ensureSelectedField(
+    labels: string[],
+    optionText: string,
+    controlIds: string[] = [],
+    root: FieldRoot = this.page,
+  ) {
+    const field = await this.exactFieldByLabel(labels, controlIds, root);
+    if (!field) {
+      throw new HumanInterventionError(
+        `لم يجد الوكيل حقل «${labels[0]}» للتحقق من القيمة «${optionText}»`,
+        'TAQADI_UI_CHANGED',
+        { expectedLabels: labels, optionText, url: this.page.url() },
+      );
+    }
+    const currentText = await this.selectedFieldText(field);
+    if (normalizeArabicText(currentText) !== normalizeArabicText(optionText)) {
+      await this.selectFieldSticky(labels, optionText, controlIds, root);
+    }
+    const selectedField = await this.exactFieldByLabel(
+      labels,
+      controlIds,
+      root,
+    );
+    if (!selectedField) {
+      throw new HumanInterventionError(
+        `اختفى حقل «${labels[0]}» بعد اختيار «${optionText}»`,
+        'TAQADI_UI_CHANGED',
+        { expectedLabels: labels, optionText, url: this.page.url() },
+      );
+    }
+    await this.assertSelectedField(selectedField, labels, optionText);
+  }
+
+  private async availableDropdownOptions(
+    labels: string[],
+    controlIds: string[],
+    root: FieldRoot,
+  ): Promise<string[]> {
+    const field = await this.exactFieldByLabel(labels, controlIds, root);
+    if (!field) return [];
+    const { controlId } = await this.dropdownIdentity(field, controlIds);
+    const backingControl = controlId
+      ? await this.backingControlForField(field, controlId, root)
+      : null;
+    const source = backingControl || field;
+    const options = await source.evaluate((element) => {
+      type DataItem = Record<string, unknown> & {
+        get?: (fieldName: string) => unknown;
+      };
+      type Widget = {
+        options?: { dataTextField?: string };
+        dataSource?: { data?: () => unknown; view?: () => unknown };
+      };
+      type JQuery = {
+        data: (name: string) => Widget | undefined;
+      };
+      type PageWindow = Window & {
+        jQuery?: (target: Element) => JQuery;
+        $?: (target: Element) => JQuery;
+      };
+      const values: string[] = [];
+      if (element instanceof HTMLSelectElement) {
+        values.push(...Array.from(element.options).map(
+          (option) => option.textContent || '',
+        ));
+      }
+      const pageWindow = window as PageWindow;
+      const jq = pageWindow.jQuery || pageWindow.$;
+      const widget = jq
+        ? jq(element).data('kendoDropDownList')
+          || jq(element).data('kendoComboBox')
+        : undefined;
+      const rawItems = widget?.dataSource?.data?.()
+        || widget?.dataSource?.view?.()
+        || [];
+      let items: DataItem[] = [];
+      try {
+        items = Array.from(rawItems as Iterable<DataItem>);
+      } catch {
+        items = [];
+      }
+      const textField = widget?.options?.dataTextField || 'text';
+      for (const item of items) {
+        const value = typeof item.get === 'function'
+          ? item.get(textField)
+          : item[textField];
+        if (typeof value === 'string') values.push(value);
+      }
+      return [...new Set(values.map((value) => value.trim()).filter(Boolean))];
+    });
+    return options;
+  }
+
+  private async resolveIdentityTypeForParty(
+    partyKind: NaturalPartyKind,
+    labels: string[],
+    controlIds: string[],
+    requestedType: string,
+    nationality: string,
+    idNumber: string | null,
+    root: FieldRoot,
+  ): Promise<string> {
+    const deadline = Date.now() + Math.min(agentConfig.actionTimeoutMs, 10_000);
+    let availableOptions: string[] = [];
+    while (Date.now() < deadline) {
+      availableOptions = await this.availableDropdownOptions(
+        labels,
+        controlIds,
+        root,
+      );
+      const resolved = identityTypeForPartyOptions(
+        partyKind,
+        requestedType,
+        nationality,
+        idNumber,
+        availableOptions,
+      );
+      if (resolved) return resolved;
+      const field = await this.exactFieldByLabel(labels, controlIds, root);
+      await field?.click().catch(() => undefined);
+      await this.page.waitForTimeout(250);
+    }
+    const partyLabel = partyKind === 'representative' ? 'خميس' : 'المدعى عليه';
+    throw new HumanInterventionError(
+      `لم يجد الوكيل نوع هوية مناسبًا للطرف «${partyLabel}» ضمن خيارات نافذته`,
+      'PARTY_IDENTITY_TYPE_UNAVAILABLE',
+      {
+        partyKind,
+        requestedType,
+        nationality,
+        availableOptions,
+        url: this.page.url(),
       },
     );
   }
@@ -3807,7 +4091,7 @@ export class TaqadiPortal {
     await this.waitForPartyGridReady();
   }
 
-  async validateRepresentativeFirst(payload: FilingPayload) {
+  async validateRepresentativeFirst() {
     await this.waitForUiReady(2_000);
     await this.waitForPartyGridReady();
 
@@ -3830,6 +4114,30 @@ export class TaqadiPortal {
       );
     }
     const partyDialog = await this.openPartyEditor(row);
+
+    const ensureRepresentativeRole = async () => {
+      const roleField = await this.exactFieldByLabel(
+        ['صفة الطرف'],
+        ['type'],
+        partyDialog,
+      );
+      if (roleField) {
+        await this.ensureSelectedField(
+          ['صفة الطرف'],
+          'المدعي',
+          ['type'],
+          partyDialog,
+        );
+        return;
+      }
+      await this.ensureSelectedField(
+        ['تصنيف الطرف', 'نوع الشخص'],
+        'المدعي',
+        ['category'],
+        partyDialog,
+      );
+    };
+    await ensureRepresentativeRole();
 
     const identityTypeLabels = [
       'نوع البطاقة',
@@ -3869,12 +4177,18 @@ export class TaqadiPortal {
       identityTypeControlIds,
       partyDialog,
     );
+    const representativeIdentityType = await this.resolveIdentityTypeForParty(
+      'representative',
+      identityTypeLabels,
+      identityTypeControlIds,
+      agentConfig.representative.identityType,
+      agentConfig.representative.nationality,
+      agentConfig.representative.identityNumber,
+      partyDialog,
+    );
     await this.selectFieldUntilDependentVisible(
       identityTypeLabels,
-      identityTypeForTaqadi(
-        agentConfig.representative.identityType,
-        agentConfig.representative.identityNumber,
-      ),
+      representativeIdentityType,
       identityTypeControlIds,
       identityNumberLabels,
       identityNumberControlIds,
@@ -3888,10 +4202,7 @@ export class TaqadiPortal {
     );
     await this.selectFieldSticky(
       identityTypeLabels,
-      identityTypeForTaqadi(
-        agentConfig.representative.identityType,
-        agentConfig.representative.identityNumber,
-      ),
+      representativeIdentityType,
       identityTypeControlIds,
       partyDialog,
     );
@@ -3905,11 +4216,11 @@ export class TaqadiPortal {
         address: agentConfig.representative.address,
         phone: phoneForTaqadi(agentConfig.representative.phone),
         email: agentConfig.representative.email,
-        partyOrder: String(payload.representative.partyOrder),
+        partyOrder: String(taqadiPartyOrder),
       },
       partyDialog,
       {
-        partyLabel: 'ممثل الشركة',
+        partyLabel: 'الوكيل الطبيعي',
         dialogChangedCode: 'REPRESENTATIVE_DIALOG_CHANGED',
         unstableFieldsCode: 'TAQADI_REPRESENTATIVE_FIELDS_UNSTABLE',
       },
@@ -3923,10 +4234,7 @@ export class TaqadiPortal {
       {
         labels: identityTypeLabels,
         controlIds: identityTypeControlIds,
-        expected: identityTypeForTaqadi(
-          agentConfig.representative.identityType,
-          agentConfig.representative.identityNumber,
-        ),
+        expected: representativeIdentityType,
       },
     ]) {
       const field = await this.fieldByLabel(
@@ -3947,20 +4255,13 @@ export class TaqadiPortal {
         selection.expected,
       );
     }
+    await ensureRepresentativeRole();
     await this.saveOpenParty(partyDialog);
-    // Taqadi auto-orders the filer's own party row and may hide the order
-    // control in his editor, so a mismatch here is advisory only — the
-    // plaintiff and defendant orders remain strictly enforced.
     await this.assertPartyOrder(
       [representativeName, lastNameToken].filter(Boolean) as string[],
-      payload.representative.partyOrder,
+      taqadiPartyOrder,
       'REPRESENTATIVE_ORDER_MISMATCH',
-    ).catch((error) => {
-      console.warn(
-        '[TaqadiAgent] representative order could not be verified (advisory):',
-        error instanceof Error ? error.message : error,
-      );
-    });
+    );
   }
 
   /**
@@ -4017,7 +4318,7 @@ export class TaqadiPortal {
         ['type'],
         partyDialog,
       );
-      await this.selectField(
+      await this.selectFieldSticky(
         ['نوع الجهات المعنوية', 'نوع الشركة'],
         'شركة ذات مسؤولية محدودة',
         ['compOrEstaType'],
@@ -4145,11 +4446,72 @@ export class TaqadiPortal {
       }
     } else {
       partyDialog = await this.openPartyEditor(company);
+      await this.ensureSelectedField(
+        ['صفة الطرف'],
+        'المدعي',
+        ['type'],
+        partyDialog,
+      );
+    }
+
+    // Every one of these Kendo fields can redraw the legal-entity form and
+    // reset a previously selected sibling to the placeholder. Reconcile the
+    // complete set twice, then assert all values together before saving.
+    const companySelections = [
+      {
+        labels: ['صفة الطرف'],
+        option: 'المدعي',
+        controlIds: ['type'],
+      },
+      {
+        labels: ['نوع الجهات المعنوية', 'نوع الشركة'],
+        option: 'شركة ذات مسؤولية محدودة',
+        controlIds: ['compOrEstaType'],
+      },
+      {
+        labels: ['جنسية الشركة'],
+        option: 'قطري',
+        controlIds: ['companyClassification'],
+      },
+      {
+        labels: ['رقم السجل التجاري أو قيد المنشأة صادر عن'],
+        option: 'وزارة التجارة والصناعة',
+        controlIds: ['crIssuedBy'],
+      },
+    ];
+    for (let pass = 0; pass < 2; pass += 1) {
+      for (const selection of companySelections) {
+        await this.ensureSelectedField(
+          selection.labels,
+          selection.option,
+          selection.controlIds,
+          partyDialog,
+        );
+      }
+    }
+    for (const selection of companySelections) {
+      const field = await this.exactFieldByLabel(
+        selection.labels,
+        selection.controlIds,
+        partyDialog,
+      );
+      if (!field) {
+        throw new HumanInterventionError(
+          `اختفى حقل «${selection.labels[0]}» قبل حفظ الشركة`,
+          'TAQADI_UI_CHANGED',
+          { field: selection.labels[0], url: this.page.url() },
+        );
+      }
+      await this.assertSelectedField(
+        field,
+        selection.labels,
+        selection.option,
+      );
     }
 
     await this.fillField(
       ['الترتيب حسب الصحيفة', 'ترتيب الطرف', 'الترتيب'],
-      String(payload.plaintiff.partyOrder),
+      String(taqadiCompanyPartyOrder),
       true,
       ['priority'],
       partyDialog,
@@ -4160,7 +4522,7 @@ export class TaqadiPortal {
         payload.plaintiff.name,
         payload.plaintiff.commercialRegistration,
       ],
-      payload.plaintiff.partyOrder,
+      taqadiCompanyPartyOrder,
       'PLAINTIFF_ORDER_MISMATCH',
     );
   }
@@ -4194,6 +4556,13 @@ export class TaqadiPortal {
         partyDialog,
       );
     }
+
+    await this.ensureSelectedField(
+      ['صفة الطرف'],
+      'المدعى عليه',
+      ['type'],
+      partyDialog,
+    );
 
     const identityTypeLabels = [
       'نوع البطاقة',
@@ -4236,13 +4605,20 @@ export class TaqadiPortal {
       identityTypeControlIds,
       partyDialog,
     );
+    let defendantIdentityType: string | null = null;
     if (payload.defendant.idType) {
+      defendantIdentityType = await this.resolveIdentityTypeForParty(
+        'defendant',
+        identityTypeLabels,
+        identityTypeControlIds,
+        payload.defendant.idType,
+        payload.defendant.nationality || '',
+        payload.defendant.idNumber,
+        partyDialog,
+      );
       await this.selectFieldUntilDependentVisible(
         identityTypeLabels,
-        identityTypeForTaqadi(
-          payload.defendant.idType,
-          payload.defendant.idNumber,
-        ),
+        defendantIdentityType,
         identityTypeControlIds,
         identityNumberLabels,
         identityNumberControlIds,
@@ -4262,7 +4638,7 @@ export class TaqadiPortal {
     );
     await this.fillField(
       ['الترتيب حسب الصحيفة', 'ترتيب الطرف', 'الترتيب'],
-      '3',
+      String(taqadiPartyOrder),
       true,
       ['priority'],
       partyDialog,
@@ -4303,7 +4679,7 @@ export class TaqadiPortal {
         address: agentConfig.defendantDefaults.address,
         phone: phoneForTaqadi(payload.defendant.phone),
         email: agentConfig.defendantDefaults.email,
-        partyOrder: '3',
+        partyOrder: String(taqadiPartyOrder),
       },
       partyDialog,
     );
@@ -4328,10 +4704,7 @@ export class TaqadiPortal {
       {
         labels: identityTypeLabels,
         controlIds: identityTypeControlIds,
-        expected: identityTypeForTaqadi(
-          payload.defendant.idType,
-          payload.defendant.idNumber,
-        ),
+        expected: defendantIdentityType || payload.defendant.idType,
       },
     ];
     for (const selection of finalSelections) {
@@ -4362,7 +4735,7 @@ export class TaqadiPortal {
         payload.defendant.fullName,
         payload.defendant.idNumber,
       ],
-      3,
+      taqadiPartyOrder,
       'DEFENDANT_ORDER_MISMATCH',
     );
     if (options.continueAfterSave === false) return;

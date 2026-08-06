@@ -183,8 +183,8 @@ export const UnifiedNotificationBell: React.FC<UnifiedNotificationBellProps> = (
         </Button>
       </PopoverTrigger>
       
-      <PopoverContent 
-        className="w-96 p-0 shadow-lg border-border"
+      <PopoverContent
+        className="w-[calc(100vw-1.5rem)] max-w-96 p-0 shadow-lg border-border"
         align="end"
         side="bottom"
         sideOffset={8}

@@ -48,7 +48,7 @@ export interface TaqadiFilingPayload {
     partyOrder: 1;
   };
   representative: {
-    partyOrder: 2;
+    partyOrder: 1;
     validateBeforeOtherParties: true;
   };
   case: {
@@ -293,7 +293,7 @@ export function buildTaqadiFilingPayload(
       partyOrder: 1,
     },
     representative: {
-      partyOrder: 2,
+      partyOrder: 1,
       validateBeforeOtherParties: true,
     },
     case: {

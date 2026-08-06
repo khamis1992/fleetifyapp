@@ -52,6 +52,8 @@ const sleep = (milliseconds: number) =>
   new Promise((resolve) => setTimeout(resolve, milliseconds));
 
 const MAX_PORTAL_ATTEMPTS = 5;
+const STALE_JOB_RECOVERY_INTERVAL_MS = 30_000;
+const STALE_JOB_THRESHOLD_SECONDS = 90;
 
 // Auto-heal retries per job: a verified session override gets exactly one
 // chance to prove itself; a second failure goes back to the human flow.
@@ -72,6 +74,7 @@ export class TaqadiWorker {
   private readonly trackedPages = new WeakSet<Page>();
   private stopping = false;
   private heartbeatTimer: NodeJS.Timeout | null = null;
+  private lastStaleRecoveryAt = 0;
 
   readonly runtime: WorkerRuntimeState = {
     status: 'offline',
@@ -84,19 +87,7 @@ export class TaqadiWorker {
     await fs.mkdir(agentConfig.jobsDir, { recursive: true });
     await fs.mkdir(agentConfig.chromeProfileDir, { recursive: true });
 
-    await this.queue.recoverInterruptedJobs().then((recovery) => {
-      if (recovery.requeued > 0 || recovery.needsHuman > 0) {
-        console.log(
-          '[TaqadiAgent] restart recovery:',
-          JSON.stringify(recovery),
-        );
-      }
-    }).catch((error) => {
-      console.warn(
-        '[TaqadiAgent] restart recovery is unavailable; continuing:',
-        error,
-      );
-    });
+    await this.recoverStaleJobs('startup');
 
     this.runtime.status = 'idle';
     await this.queue.heartbeat('idle', null, this.runtimeMetadata());
@@ -118,6 +109,13 @@ export class TaqadiWorker {
 
     while (!this.stopping) {
       try {
+        if (
+          this.runtime.currentJobId === null
+          && Date.now() - this.lastStaleRecoveryAt >= STALE_JOB_RECOVERY_INTERVAL_MS
+        ) {
+          await this.recoverStaleJobs('periodic');
+        }
+
         const job = await this.queue.claimNext();
         if (!job) {
           this.setRuntime('idle', null, null);
@@ -133,6 +131,28 @@ export class TaqadiWorker {
         console.error('[TaqadiAgent] worker loop failed:', error);
         await sleep(Math.max(agentConfig.pollIntervalMs, 5_000));
       }
+    }
+  }
+
+  private async recoverStaleJobs(trigger: 'startup' | 'periodic') {
+    try {
+      const recovery = await this.queue.recoverInterruptedJobs(
+        STALE_JOB_THRESHOLD_SECONDS,
+      );
+      this.lastStaleRecoveryAt = Date.now();
+      if (recovery.requeued > 0 || recovery.needsHuman > 0) {
+        console.log(
+          `[TaqadiAgent] ${trigger} stale-job recovery:`,
+          JSON.stringify(recovery),
+        );
+      }
+    } catch (error) {
+      // Retry soon after connectivity returns instead of waiting for a restart.
+      this.lastStaleRecoveryAt = Date.now() - STALE_JOB_RECOVERY_INTERVAL_MS + 5_000;
+      console.warn(
+        `[TaqadiAgent] ${trigger} stale-job recovery is unavailable; continuing:`,
+        error,
+      );
     }
   }
 
@@ -552,7 +572,7 @@ export class TaqadiWorker {
             status: 'validating_parties',
             step: 'company_party',
             progress: 48,
-            message: 'جاري التحقق من بيانات شركة العراف وحفظها كمدعٍ بالترتيب الأول',
+            message: 'جاري التحقق من بيانات شركة العراف وحفظها كمدعٍ بالترتيب الثاني',
           });
           return;
         }

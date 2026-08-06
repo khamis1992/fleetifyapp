@@ -134,7 +134,7 @@ of any unexpected stop, and the ERP start button becomes only a backup.
   representative record last. This order avoids the intermittent rejection
   observed when Taqadi edits the representative before adding the other
   parties.
-- Company order is 1, representative order is 2, and defendant order is 3.
+- Company order is 2; Khamees and the defendant each use order 1.
 - The defendant email is always `khamis-1992@hotmail.com` and the address is
   always `الدوحة قطر`.
 - An 11-digit foreign passport identifier is entered as `رخصة مقيم`, and

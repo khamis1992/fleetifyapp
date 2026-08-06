@@ -27,7 +27,7 @@ export const FIXED_DEFENDANT_CONTACT = Object.freeze({
 });
 
 export const agentConfig = {
-  version: '1.6.22',
+  version: '1.6.34',
   workerId: process.env.TAQADI_WORKER_ID
     || `${os.hostname()}-taqadi`,
   hostname: os.hostname(),
@@ -72,8 +72,8 @@ export const agentConfig = {
     phone: process.env.TAQADI_REPRESENTATIVE_PHONE || '',
     email: process.env.TAQADI_REPRESENTATIVE_EMAIL || '',
     address: process.env.TAQADI_REPRESENTATIVE_ADDRESS || 'الدوحة قطر',
-    nationality: process.env.TAQADI_REPRESENTATIVE_NATIONALITY || 'تونسي',
-    identityType: process.env.TAQADI_REPRESENTATIVE_ID_TYPE || 'رخصة مقيم',
+    nationality: process.env.TAQADI_REPRESENTATIVE_NATIONALITY || 'قطر',
+    identityType: process.env.TAQADI_REPRESENTATIVE_ID_TYPE || 'بطاقة شخصية',
     identityNumber: process.env.TAQADI_REPRESENTATIVE_ID_NUMBER
       || process.env.TAQADI_TAWTHEEQ_USERNAME
       || '',

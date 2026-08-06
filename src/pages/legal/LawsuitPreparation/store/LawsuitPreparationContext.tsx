@@ -11,7 +11,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 import { calculateDelinquencyAmounts } from '@/utils/calculateDelinquencyAmounts';
 import { generateDocument as generateDocumentUtil } from '../utils/documentGenerators';
-import { registerLegalCase } from '../utils/caseRegistration';
+import { openLegalCase, registerLegalCase } from '../utils/caseRegistration';
 import { exportDocumentsAsZip } from '../utils/zipExport';
 import { selectLegalContractDocument } from '../utils/contractDocumentSelection';
 import { getCurrentLegalCase } from '../utils/taqadiFiling';
@@ -29,6 +29,7 @@ import {
   buildTaqadiClaims,
   type TaqadiNarrativeInput,
 } from '../utils/taqadiNarrative';
+import { getLawsuitClaimAmounts } from '../utils/claimAmounts';
 import { lawsuitService } from '@/services/LawsuitService';
 import { formatCustomerName } from '@/utils/formatCustomerName';
 import { renderOfficialInvoicePdfBlob } from '@/utils/renderOfficialInvoicePdf';
@@ -418,18 +419,18 @@ export function LawsuitPreparationProvider({
   useEffect(() => {
     if (state.contract && state.calculations && state.customer) {
       const customerName = formatCustomerName(state.customer) || 'غير محدد';
-      const claimAmount = state.calculations.total - state.calculations.violationsFines;
+      const { cashClaimAmount, taqadiClaimAmount } = getLawsuitClaimAmounts(state.calculations);
       
       let factsText = lawsuitService.generateFactsText(
         customerName,
         state.contract.start_date,
         `${state.vehicle?.make || ''} ${state.vehicle?.model || ''} ${state.vehicle?.year || ''}`,
-        claimAmount
+        cashClaimAmount
       );
 
       // الفروع الحتمية: سداد جزئي، مخالفات، إعذار قانوني، حيازة المركبة، انتهاء العقد
       const narrativeInput: TaqadiNarrativeInput = {
-        claimAmount,
+        claimAmount: cashClaimAmount,
         violationsCount: state.calculations.violationsCount,
         violationsFines: state.calculations.violationsFines,
         paidTotal: state.overdueInvoices.reduce(
@@ -478,8 +479,8 @@ export function LawsuitPreparationProvider({
           caseTitle: lawsuitService.generateCaseTitle(customerName),
           facts: factsText,
           claims: claimsText,
-          amount: claimAmount,
-          amountInWords: lawsuitService.convertAmountToWords(claimAmount),
+          amount: taqadiClaimAmount,
+          amountInWords: lawsuitService.convertAmountToWords(taqadiClaimAmount),
           
           // بيانات المدعى عليه
           defendant: {
@@ -1316,9 +1317,19 @@ export function LawsuitPreparationProvider({
 
     dispatch({ type: 'MARK_CASE_OPENED_START' });
     try {
-      const legalCase = await registerLegalCase(state, user.id);
+      const legalCase = await openLegalCase(state, user.id);
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: ['lawsuit-legal-case', companyId, state.contractId],
+        }),
+        queryClient.invalidateQueries({
+          queryKey: ['legal-case-workflow', companyId, legalCase.caseId],
+        }),
+        queryClient.invalidateQueries({ queryKey: ['legal-cases'] }),
+        queryClient.invalidateQueries({ queryKey: ['legal-case-stats'] }),
+      ]);
       dispatch({ type: 'MARK_CASE_OPENED_COMPLETE' });
-      toast.success('The legal case was opened successfully');
+      toast.success('تم فتح القضية وتحديث حالتها بنجاح');
       setTimeout(() => navigate('/legal/cases?view=cases'), 1500);
       return legalCase;
     } catch (error) {
@@ -1326,7 +1337,7 @@ export function LawsuitPreparationProvider({
       toast.error(error instanceof Error ? error.message : 'Failed to open the legal case');
       throw error;
     }
-  }, [state, user, companyId, navigate]);
+  }, [state, user, companyId, navigate, queryClient]);
 
   // Check Taqadi server on mount
   useEffect(() => {

@@ -7,8 +7,8 @@ const healthyConfig = {
     phone: '66707063',
     email: 'rep@example.com',
     address: 'الدوحة قطر',
-    nationality: 'تونسي',
-    identityType: 'رخصة مقيم',
+    nationality: 'قطر',
+    identityType: 'بطاقة شخصية',
     identityNumber: '29263400736',
   },
   defendantDefaults: {

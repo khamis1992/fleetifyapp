@@ -639,7 +639,7 @@ export function QuickPaymentDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto" dir="rtl">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto max-sm:w-[calc(100vw-1rem)] max-sm:max-w-none" dir="rtl">
         <DialogHeader>
           <div className="flex items-start justify-between gap-3">
             <DialogTitle className="flex items-center gap-2">

@@ -2504,13 +2504,13 @@ export const EmployeeWorkspace: React.FC = () => {
       {/* --- Compact Header --- */}
       <header className="sticky top-0 z-40 border-b border-[#E2E8F0] bg-white/95 backdrop-blur-md">
         <div className="mx-auto max-w-7xl px-3 sm:px-4 lg:px-6">
-          <div className="flex h-14 items-center justify-between gap-3 sm:h-16">
-            <div className="flex min-w-0 items-center gap-3">
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#11A37F] to-[#0D876A] text-white shadow-sm sm:h-10 sm:w-10">
+          <div className="flex h-14 items-center justify-between gap-1 sm:h-16 sm:gap-3">
+            <div className="flex min-w-0 items-center gap-2 sm:gap-3">
+              <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-[#11A37F] to-[#0D876A] text-white shadow-sm sm:h-10 sm:w-10 sm:rounded-xl">
                 <Briefcase className="h-4 w-4 sm:h-5 sm:w-5" />
               </div>
               <div className="min-w-0">
-                <h1 className="truncate text-base font-black sm:text-lg">مساحة عملي</h1>
+                <h1 className="truncate whitespace-nowrap text-sm font-black sm:text-lg">مساحة عملي</h1>
                 <p className="hidden truncate text-xs text-[#6A7688] sm:block">
                   {user?.email?.split('@')[0]}
                 </p>
@@ -2536,8 +2536,10 @@ export const EmployeeWorkspace: React.FC = () => {
               </div>
             </div>
 
-            <div className="flex items-center gap-1.5 sm:gap-2">
-              <NotificationBell />
+            <div className="flex items-center gap-1 sm:gap-2">
+              <span className="flex items-center max-sm:[&_button]:h-8 max-sm:[&_button]:w-8 max-sm:[&_button]:px-0">
+                <NotificationBell />
+              </span>
               <Button
                 variant="ghost"
                 size="icon"
@@ -2571,7 +2573,7 @@ export const EmployeeWorkspace: React.FC = () => {
       {/* --- Quick Actions Bar --- */}
       <div className="border-b border-[#E2E8F0] bg-white">
         <div className="mx-auto max-w-7xl px-3 sm:px-4 lg:px-6">
-          <div className="flex gap-2 overflow-x-auto py-2.5 scrollbar-hide sm:gap-3 sm:py-3">
+          <div className="flex gap-2 overflow-x-auto py-2.5 scrollbar-hide max-sm:gap-1.5 max-sm:py-2 sm:gap-3 sm:py-3">
             {quickActions.map((action) => {
               const Icon = action.icon;
               return (
@@ -2580,11 +2582,11 @@ export const EmployeeWorkspace: React.FC = () => {
                   type="button"
                   onClick={action.onClick}
                   className={cn(
-                    "flex shrink-0 items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-bold transition-all active:scale-95 sm:px-5 sm:py-3 sm:text-sm",
+                    "flex shrink-0 items-center gap-1.5 rounded-xl px-3 py-2 text-[10px] font-bold transition-all active:scale-95 max-sm:gap-1 max-sm:px-2.5 max-sm:py-1.5 sm:gap-2 sm:px-5 sm:py-3 sm:text-sm",
                     action.className
                   )}
                 >
-                  <Icon className="h-4 w-4" />
+                  <Icon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                   <span className="whitespace-nowrap">{action.label}</span>
                 </button>
               );
@@ -2593,7 +2595,7 @@ export const EmployeeWorkspace: React.FC = () => {
         </div>
       </div>
 
-      <div className="mx-auto max-w-7xl px-3 py-4 sm:px-4 sm:py-5 lg:px-6">
+      <div className="mx-auto max-w-7xl px-3 pb-24 pt-4 sm:px-4 sm:py-5 lg:px-6">
 
         {/* --- Daily Log Card --- */}
         <Card className={cn(
@@ -2674,7 +2676,7 @@ export const EmployeeWorkspace: React.FC = () => {
               <div className="flex items-start justify-between">
                 <div className="min-w-0">
                   <p className="text-[11px] font-bold text-[#6A7688] sm:text-xs">المستحقات</p>
-                  <h3 className="mt-1 break-words text-lg font-black text-[#142033] sm:text-2xl">{formatCurrency(collectionStats.totalPending)}</h3>
+                   <h3 className="mt-1 whitespace-nowrap text-sm font-black leading-tight text-[#142033] sm:text-2xl">{formatCurrency(collectionStats.totalPending)}</h3>
                   <p className="mt-1 text-[10px] font-bold text-[#D97706] sm:text-xs">هذا الشهر</p>
                 </div>
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#FEF3C7] text-[#D97706] sm:h-12 sm:w-12">
@@ -2891,24 +2893,24 @@ export const EmployeeWorkspace: React.FC = () => {
             {/* View: Monthly Collections */}
             <TabsContent value="collections" className="space-y-4 mt-0 sm:space-y-5">
               {/* Stats Cards */}
-              <div className="grid grid-cols-3 gap-3 sm:gap-4">
+              <div className="grid grid-cols-3 gap-2 sm:gap-4">
                 <Card className="rounded-2xl border-[#E2E8F0] bg-white shadow-sm">
-                  <CardContent className="p-3 sm:p-4">
+                  <CardContent className="p-2.5 sm:p-4">
                     <p className="text-[10px] font-bold text-[#6A7688] sm:text-xs">المستهدف</p>
-                    <h3 className="mt-1 text-sm font-black text-[#142033] sm:text-xl">{formatCurrency(collectionStats.totalDue)}</h3>
+                    <h3 className="mt-1 whitespace-nowrap text-sm font-black text-[#142033] sm:text-xl">{formatCurrency(collectionStats.totalDue)}</h3>
                   </CardContent>
                 </Card>
                 <Card className="rounded-2xl border-[#A7F3D0] bg-gradient-to-l from-[#ECFDF5] to-white shadow-sm">
-                  <CardContent className="p-3 sm:p-4">
+                  <CardContent className="p-2.5 sm:p-4">
                     <p className="text-[10px] font-bold text-[#059669] sm:text-xs">تم تحصيله</p>
-                    <h3 className="mt-1 text-sm font-black text-[#059669] sm:text-xl">{formatCurrency(collectionStats.totalCollected)}</h3>
+                    <h3 className="mt-1 whitespace-nowrap text-sm font-black text-[#059669] sm:text-xl">{formatCurrency(collectionStats.totalCollected)}</h3>
                     <Progress value={collectionStats.collectionRate} className="mt-2 h-1 bg-[#D1FAE5]" />
                   </CardContent>
                 </Card>
                 <Card className="rounded-2xl border-[#FDE68A] bg-gradient-to-l from-[#FFFBEB] to-white shadow-sm">
-                  <CardContent className="p-3 sm:p-4">
+                  <CardContent className="p-2.5 sm:p-4">
                     <p className="text-[10px] font-bold text-[#D97706] sm:text-xs">المتبقي</p>
-                    <h3 className="mt-1 text-sm font-black text-[#D97706] sm:text-xl">{formatCurrency(collectionStats.totalPending)}</h3>
+                    <h3 className="mt-1 whitespace-nowrap text-sm font-black text-[#D97706] sm:text-xl">{formatCurrency(collectionStats.totalPending)}</h3>
                   </CardContent>
                 </Card>
               </div>
@@ -4046,7 +4048,7 @@ export const EmployeeWorkspace: React.FC = () => {
 
       {/* --- Dialogs --- */}
       <Dialog open={showDailyLogDialog} onOpenChange={setShowDailyLogDialog}>
-        <DialogContent className="max-h-[92vh] overflow-y-auto sm:max-w-5xl">
+        <DialogContent className="max-h-[92vh] overflow-y-auto max-sm:w-[calc(100vw-1rem)] max-sm:max-w-none sm:max-w-5xl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-xl font-black text-[#142033]">
               <ClipboardCheck className="h-5 w-5 text-[#11A37F]" />
@@ -4206,7 +4208,7 @@ export const EmployeeWorkspace: React.FC = () => {
                     <h3 className="text-sm font-black text-[#142033]">نتائج مختصرة</h3>
                     <span className="text-xs font-bold text-[#6A7688]">تُحتسب تلقائيًا من نشاط اليوم داخل النظام</span>
                   </div>
-                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                  <div className="grid grid-cols-2 gap-2 sm:gap-3 sm:grid-cols-4">
                     {[
                       ['callsLogged', 'المكالمات'],
                       ['answeredCalls', 'تم الرد'],
@@ -4549,7 +4551,7 @@ export const EmployeeWorkspace: React.FC = () => {
           if (!open && !taskReplyMutation.isPending) setSelectedTask(null);
         }}
       >
-        <DialogContent dir="rtl" className="max-h-[90vh] overflow-y-auto sm:max-w-[560px]">
+        <DialogContent dir="rtl" className="max-h-[90vh] overflow-y-auto max-sm:w-[calc(100vw-1rem)] max-sm:max-w-none sm:max-w-[560px]">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-right">
               <CheckCircle className="h-5 w-5 text-[#11A37F]" />
@@ -4679,7 +4681,7 @@ export const EmployeeWorkspace: React.FC = () => {
         open={showContractDetailsDialog}
         onOpenChange={setShowContractDetailsDialog}
       >
-        <DialogContent dir="rtl" className="max-h-[90vh] overflow-y-auto sm:max-w-[760px]">
+        <DialogContent dir="rtl" className="max-h-[90vh] overflow-y-auto max-sm:w-[calc(100vw-1rem)] max-sm:max-w-none sm:max-w-[760px]">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-right">
               <Briefcase className="h-5 w-5 text-[#1D4F7A]" />
@@ -4915,7 +4917,7 @@ export const EmployeeWorkspace: React.FC = () => {
           if (!open) setContractCancellationReason('');
         }}
       >
-        <DialogContent dir="rtl" className="sm:max-w-[540px]">
+        <DialogContent dir="rtl" className="max-sm:w-[calc(100vw-1rem)] max-sm:max-w-none sm:max-w-[540px]">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-right">
               <XCircle className="h-5 w-5 text-red-600" />
@@ -5041,7 +5043,7 @@ export const EmployeeWorkspace: React.FC = () => {
       </Dialog>
 
       <Dialog open={canUnassignContracts && showBulkUnassignDialog} onOpenChange={setShowBulkUnassignDialog}>
-        <DialogContent className="sm:max-w-[520px]">
+        <DialogContent className="max-sm:w-[calc(100vw-1rem)] max-sm:max-w-none sm:max-w-[520px]">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <XCircle className="h-5 w-5 text-red-600" />

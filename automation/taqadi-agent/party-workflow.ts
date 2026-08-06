@@ -40,7 +40,7 @@ export async function processTaqadiParties(
   await portal.addDefendant(payload, { continueAfterSave: false });
 
   await options.onPhase?.('representative_last');
-  await portal.validateRepresentativeFirst(payload);
+  await portal.validateRepresentativeFirst();
 
   if (options.stopAfterParties) {
     throw new HumanInterventionError(

@@ -9,7 +9,11 @@ import {
   type Page,
 } from 'playwright';
 import { agentConfig } from '../config';
-import { TaqadiPortal } from '../taqadi-page';
+import {
+  identityTypeForPartyOptions,
+  nationalityForTaqadi,
+  TaqadiPortal,
+} from '../taqadi-page';
 import type { FilingPayload } from '../types';
 
 describe('TaqadiPortal classification fields', () => {
@@ -17,6 +21,48 @@ describe('TaqadiPortal classification fields', () => {
   let page: Page;
   let uploadFixturePath: string;
   let wordUploadFixturePath: string;
+
+  it('normalizes nationality country names without confusing South Sudan', () => {
+    expect(nationalityForTaqadi('السودان')).toBe('سودان');
+    expect(nationalityForTaqadi('سوداني')).toBe('سودان');
+    expect(nationalityForTaqadi('جنوب السودان')).toBe('جنوب السودان');
+    expect(nationalityForTaqadi('قطري')).toBe('قطر');
+    expect(nationalityForTaqadi('Kuwait')).toBe('الكويت');
+    expect(nationalityForTaqadi('kuwaiti')).toBe('الكويت');
+    expect(nationalityForTaqadi('Nigerian')).toBe('نيجيريا');
+    expect(nationalityForTaqadi('بنغالي')).toBe('بنغلاديش');
+  });
+
+  it('resolves identity types from each party own available options', () => {
+    expect(identityTypeForPartyOptions(
+      'representative',
+      'رخصة مقيم',
+      'قطر',
+      '29263400736',
+      ['اختيار واحد', 'بطاقة شخصية'],
+    )).toBe('بطاقة شخصية');
+    expect(identityTypeForPartyOptions(
+      'defendant',
+      'جواز سفر',
+      'سوداني',
+      '12345678901',
+      ['اختيار واحد', 'رخصة مقيم'],
+    )).toBe('رخصة مقيم');
+    expect(identityTypeForPartyOptions(
+      'defendant',
+      'رخصة مقيم',
+      'قطر',
+      '28801200831',
+      ['اختيار واحد', 'بطاقة شخصية قطرية'],
+    )).toBe('بطاقة شخصية قطرية');
+    expect(identityTypeForPartyOptions(
+      'representative',
+      'رخصة مقيم',
+      'قطر',
+      '29263400736',
+      ['اختيار واحد', 'رخصة مقيم'],
+    )).toBeNull();
+  });
 
   beforeAll(async () => {
     browser = await chromium.launch({ headless: true });
@@ -465,6 +511,15 @@ describe('TaqadiPortal classification fields', () => {
         role="dialog"
         aria-hidden="true"
       >
+        <label for="category">تصنيف الطرف</label>
+        <select id="category">
+          <option>شخص طبيعي</option>
+        </select>
+        <label for="type">صفة الطرف</label>
+        <select id="type">
+          <option>وكيل طبيعي</option>
+          <option>المدعي</option>
+        </select>
         <label for="priority">الترتيب حسب صحيفة الدعوى</label>
         <span class="k-widget k-numerictextbox">
           <input
@@ -491,7 +546,7 @@ describe('TaqadiPortal classification fields', () => {
           onchange="document.querySelector('#representative-identity').innerHTML='<label for=&quot;identityNo&quot;>رقم الهوية</label><input id=&quot;identityNo&quot;>'; document.querySelector('#party-editor #priority').value='1'; document.querySelector('#party-editor .k-formatted-value').value='1'"
         >
           <option value="">اختيار واحد</option>
-          <option>رخصة مقيم</option>
+          <option>بطاقة شخصية</option>
         </select>
         <div id="representative-identity"></div>
         <label for="firstName">الاسم الأول</label>
@@ -506,16 +561,14 @@ describe('TaqadiPortal classification fields', () => {
     `);
 
     const portal = new TaqadiPortal(page);
-    await portal.validateRepresentativeFirst({
-      representative: {
-        partyOrder: 2,
-        validateBeforeOtherParties: true,
-      },
-    } as FilingPayload);
+    await portal.validateRepresentativeFirst();
 
     expect(
       await page.locator('#party-editor .k-formatted-value').inputValue(),
-    ).toBe('2');
+    ).toBe('1');
+    expect(await page.locator('#party-editor #type').inputValue()).toBe(
+      'المدعي',
+    );
     expect(
       await page.locator('tr[role="row"]').getAttribute('data-selected'),
     ).toBe('true');
@@ -526,9 +579,9 @@ describe('TaqadiPortal classification fields', () => {
     expect(await page.locator('#email').inputValue()).toBe(
       agentConfig.representative.email,
     );
-    expect(await page.locator('#nationality').inputValue()).toBe('تونس');
+    expect(await page.locator('#nationality').inputValue()).toBe('قطر');
     expect(await page.locator('#proofOfIdentity').inputValue()).toBe(
-      'رخصة مقيم',
+      'بطاقة شخصية',
     );
     expect(await page.locator('#identityNo').inputValue()).toBe(
       agentConfig.representative.identityNumber,
@@ -694,11 +747,27 @@ describe('TaqadiPortal classification fields', () => {
         <label for="type">صفة الطرف</label>
         <select id="type"><option>المدعي</option></select>
         <label for="compOrEstaType">نوع الجهات المعنوية</label>
-        <select id="compOrEstaType">
+        <select
+          id="compOrEstaType"
+          onchange="
+            window.companyTypeChanges = (window.companyTypeChanges || 0) + 1;
+            if (window.companyTypeChanges === 1) this.value = '';
+          "
+        >
+          <option value="">اختيار واحد</option>
           <option>شركة ذات مسؤولية محدودة</option>
         </select>
         <label for="companyClassification">جنسية الشركة</label>
-        <select id="companyClassification"><option>قطري</option></select>
+        <select
+          id="companyClassification"
+          onchange="
+            window.companyNationalityChanges = (window.companyNationalityChanges || 0) + 1;
+            if (window.companyNationalityChanges === 1) this.value = '';
+          "
+        >
+          <option value="">اختيار واحد</option>
+          <option>قطري</option>
+        </select>
         <label for="crIssuedBy">رقم السجل التجاري أو قيد المنشأة صادر عن</label>
         <select
           id="crIssuedBy"
@@ -753,9 +822,18 @@ describe('TaqadiPortal classification fields', () => {
 
     expect(await page.locator('#category').inputValue()).toBe('شركة');
     expect(await page.locator('#type').inputValue()).toBe('المدعي');
+    expect(await page.locator('#companyClassification').inputValue()).toBe(
+      'قطري',
+    );
+    expect(await page.evaluate(() => (
+      window as Window & { companyNationalityChanges: number }
+    ).companyNationalityChanges)).toBeGreaterThanOrEqual(2);
     expect(await page.locator('#compOrEstaType').inputValue()).toBe(
       'شركة ذات مسؤولية محدودة',
     );
+    expect(await page.evaluate(() => (
+      window as Window & { companyTypeChanges: number }
+    ).companyTypeChanges)).toBeGreaterThanOrEqual(2);
     expect(
       await page.locator('#officialRegistrationNumber').inputValue(),
     ).toBe('146832');
@@ -783,7 +861,7 @@ describe('TaqadiPortal classification fields', () => {
     expect(await page.locator('[id="addresses0.address"]').inputValue()).toBe(
       agentConfig.company.address,
     );
-    expect(await page.locator('#priority').inputValue()).toBe('1');
+    expect(await page.locator('#priority').inputValue()).toBe('2');
     expect(await page.locator('#tempTransalationReq2').isChecked()).toBe(true);
   }, 15_000);
 
@@ -1284,6 +1362,9 @@ describe('TaqadiPortal classification fields', () => {
         .locator('#party-editor [id="addresses0.address"]')
         .inputValue(),
     ).toBe('الدوحة قطر');
+    expect(
+      await page.locator('#party-editor [id="priority"]').inputValue(),
+    ).toBe('1');
     expect(
       await page.locator('#party-editor button', { hasText: 'حفظ' })
         .getAttribute('data-saved'),
