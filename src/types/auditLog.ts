@@ -98,9 +98,10 @@ export interface CreateAuditLogParams {
 }
 
 export interface AuditLogFilters {
-  action?: AuditAction | AuditAction[];
+  action?: string | string[];
   resource_type?: AuditResourceType | AuditResourceType[];
   user_id?: string;
+  user_search?: string;
   company_id?: string;
   status?: AuditStatus;
   severity?: AuditSeverity;

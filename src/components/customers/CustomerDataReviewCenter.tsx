@@ -29,7 +29,9 @@ import {
   RotateCw,
   ZoomIn,
   ZoomOut,
+  PencilLine,
 } from 'lucide-react';
+import { Input } from '@/components/ui/input';
 import {
   useAllPendingIdProposals,
   useRespondToIdProposal,
@@ -58,6 +60,7 @@ const METHOD_META: Record<ProposedFieldChange['method'], { label: string; icon: 
   normalized: { label: 'تطبيع', icon: <BookOpen className="h-3 w-3" /> },
   dictionary: { label: 'قاموس', icon: <BookOpen className="h-3 w-3" /> },
   llm: { label: 'ذكاء اصطناعي', icon: <Brain className="h-3 w-3" /> },
+  manual: { label: 'تعديل يدوي', icon: <PencilLine className="h-3 w-3" /> },
 };
 
 const HIGH_CONFIDENCE_THRESHOLD = 0.9;
@@ -86,14 +89,24 @@ function FieldRow({
   change,
   checked,
   onToggle,
+  value,
+  onValueChange,
 }: {
   change: ProposedFieldChange;
   checked: boolean;
   onToggle: () => void;
+  value: string;
+  onValueChange: (value: string) => void;
 }) {
+  const wasEdited = value.trim() !== change.proposed_value.trim();
   return (
-    <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-neutral-100 bg-[#FAFBFC] p-3 transition-colors hover:border-[#9FDCCB]">
-      <Checkbox checked={checked} onCheckedChange={onToggle} className="mt-1" />
+    <div className="flex items-start gap-3 rounded-lg border border-neutral-100 bg-[#FAFBFC] p-3 transition-colors hover:border-[#9FDCCB]">
+      <Checkbox
+        checked={checked}
+        onCheckedChange={onToggle}
+        className="mt-1"
+        aria-label={`اعتماد ${FIELD_LABELS[change.field] || change.field}`}
+      />
       <div className="flex-1 space-y-1">
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-sm font-semibold text-[#142033]">
@@ -110,13 +123,31 @@ function FieldRow({
             <span className="block text-xs text-red-500">الحالي</span>
             <span className="text-red-800">{change.current_value || '— فارغ —'}</span>
           </div>
-          <div className="rounded-md bg-green-50 px-2 py-1">
-            <span className="block text-xs text-green-600">من البطاقة</span>
-            <span className="font-semibold text-green-900">{change.proposed_value}</span>
+          <div className="rounded-md bg-green-50 px-2 py-1.5">
+            <div className="mb-1 flex items-center justify-between gap-2">
+              <span className="block text-xs text-green-700">
+                {wasEdited ? 'القيمة اليدوية المعتمدة' : 'من البطاقة - قابل للتعديل'}
+              </span>
+              {wasEdited && (
+                <button
+                  type="button"
+                  className="text-xs font-semibold text-[#173A63] hover:underline"
+                  onClick={() => onValueChange(change.proposed_value)}
+                >
+                  استعادة قراءة البطاقة
+                </button>
+              )}
+            </div>
+            <Input
+              value={value}
+              onChange={(event) => onValueChange(event.target.value)}
+              className="h-9 border-green-200 bg-white font-semibold text-green-950"
+              aria-label={`تعديل ${FIELD_LABELS[change.field] || change.field}`}
+            />
           </div>
         </div>
       </div>
-    </label>
+    </div>
   );
 }
 
@@ -255,7 +286,7 @@ function ProposalRow({
   isSubmitting,
 }: {
   proposal: CustomerIdProposalWithContext;
-  onApply: (acceptedFields: string[]) => void;
+  onApply: (acceptedFields: string[], manualValues: Record<string, string>) => void;
   onReject: () => void;
   isSubmitting: boolean;
 }) {
@@ -267,6 +298,11 @@ function ProposalRow({
           .filter((c) => c.confidence >= HIGH_CONFIDENCE_THRESHOLD)
           .map((c) => c.field),
       ),
+  );
+  const [editedValues, setEditedValues] = React.useState<Record<string, string>>(
+    () => Object.fromEntries(
+      proposal.proposed_changes.map((change) => [change.field, change.proposed_value]),
+    ),
   );
 
   const highConfCount = proposal.proposed_changes.filter(
@@ -347,6 +383,11 @@ function ProposalRow({
               change={change}
               checked={selected.has(change.field)}
               onToggle={() => toggle(change.field)}
+              value={editedValues[change.field] ?? change.proposed_value}
+              onValueChange={(value) => {
+                setEditedValues((current) => ({ ...current, [change.field]: value }));
+                setSelected((current) => new Set(current).add(change.field));
+              }}
             />
           ))}
           <div className="flex justify-end gap-2 pt-1">
@@ -356,8 +397,13 @@ function ProposalRow({
             </Button>
             <Button
               size="sm"
-              onClick={() => onApply(Array.from(selected))}
-              disabled={isSubmitting || selected.size === 0 || !hasEvidence}
+              onClick={() => onApply(Array.from(selected), editedValues)}
+              disabled={
+                isSubmitting
+                || selected.size === 0
+                || !hasEvidence
+                || Array.from(selected).some((field) => !editedValues[field]?.trim())
+              }
               className="gap-1 bg-[#0D876A] hover:bg-[#0D876A]/90"
             >
               <CheckCircle2 className="h-4 w-4" />
@@ -401,8 +447,11 @@ export function CustomerDataReviewCenter() {
     (proposal) => !proposal.evidence_image_path,
   ).length;
 
-  const handleApply = (proposal: CustomerIdProposal) => (acceptedFields: string[]) => {
-    respond.mutate({ proposal, acceptedFields });
+  const handleApply = (proposal: CustomerIdProposal) => (
+    acceptedFields: string[],
+    manualValues: Record<string, string>,
+  ) => {
+    respond.mutate({ proposal, acceptedFields, manualValues });
   };
 
   const handleReject = (proposal: CustomerIdProposal) => () => {

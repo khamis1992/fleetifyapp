@@ -43,6 +43,7 @@ import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { useTourGuide } from '@/components/tour-guide';
 import { systemColorPattern } from '@/lib/design-system/systemColorPattern';
 import { isWorkspaceOnlyEmployee } from '@/lib/workspaceAccess';
+import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 
 import { useFleetifyTranslation } from "@/hooks/useTranslation";
 
@@ -77,6 +78,7 @@ const itemAccents: Record<string, string> = {
   tasks: sidebarColors.alert,
   'dispatch-permits': sidebarColors.water,
   reports: sidebarColors.success,
+  'audit-logs': sidebarColors.alert,
   settings: sidebarColors.focus,
 };
 // === Types ===
@@ -94,6 +96,7 @@ interface NavItem {
   href?: string;
   children?: SubItem[];
   category?: string;
+  requiresAdmin?: boolean;
 }
 
 interface BentoSidebarProps {
@@ -222,6 +225,14 @@ const navigation: NavItem[] = [
     category: 'tools',
   },
   {
+    id: 'audit-logs',
+    label: 'سجل التدقيق',
+    icon: FileCheck,
+    href: '/settings/audit-logs',
+    category: 'tools',
+    requiresAdmin: true,
+  },
+  {
     id: 'settings',
     label: 'الإعدادات',
     icon: Settings,
@@ -254,6 +265,7 @@ const BentoSidebar: React.FC<BentoSidebarProps> = ({
   isMobile = false, onCloseMobile }) => {
   const { t } = useFleetifyTranslation("ui");
   const { user, signOut } = useAuth();
+  const { hasCompanyAdminAccess, hasGlobalAccess } = useUnifiedCompanyAccess();
   const isWorkspaceLocked = isWorkspaceOnlyEmployee(user);
   const location = useLocation();
   const navigate = useNavigate();
@@ -272,7 +284,8 @@ const BentoSidebar: React.FC<BentoSidebarProps> = ({
   const scrollStorageKey = isMobile ? 'fleetify:bento-sidebar-scroll:mobile' : 'fleetify:bento-sidebar-scroll:desktop';
   const scrollRestoreKey = `${scrollStorageKey}:restore`;
 
-  const visibleNavigation = isWorkspaceLocked ? workspaceOnlyNavigation : navigation;
+  const visibleNavigation = (isWorkspaceLocked ? workspaceOnlyNavigation : navigation)
+    .filter((item) => !item.requiresAdmin || hasCompanyAdminAccess || hasGlobalAccess);
   const groupedVisibleNavigation = visibleNavigation.reduce((acc, item) => {
     const category = item.category || 'main';
     if (!acc[category]) acc[category] = [];

@@ -120,6 +120,14 @@ export function useAuditLogs(filters?: AuditLogFilters, enabled = true) {
           query = query.eq('user_id', filters.user_id);
         }
 
+        if (filters.user_search?.trim()) {
+          const employeeSearch = filters.user_search.trim();
+          query = query.or(
+            `user_name.ilike.%${employeeSearch}%,` +
+            `user_email.ilike.%${employeeSearch}%`
+          );
+        }
+
         if (filters.status) {
           query = query.eq('status', filters.status);
         }
@@ -133,7 +141,10 @@ export function useAuditLogs(filters?: AuditLogFilters, enabled = true) {
         }
 
         if (filters.date_to) {
-          query = query.lte('created_at', filters.date_to);
+          const dateTo = filters.date_to.length === 10
+            ? `${filters.date_to}T23:59:59.999Z`
+            : filters.date_to;
+          query = query.lte('created_at', dateTo);
         }
 
         if (filters.search) {

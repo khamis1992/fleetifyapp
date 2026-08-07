@@ -109,6 +109,7 @@ import {
 } from '@/types/employee-workspace.types';
 import type { ContractForLegal } from '@/hooks/useConvertToLegal';
 import { useCreateContractDocument } from '@/hooks/useContractDocuments';
+import { EmployeeLegalReviewPanel } from '@/components/employee-workspace/EmployeeLegalReviewPanel';
 
 type DailyLogChecklistKey =
   | 'workspace_opened'
@@ -2754,6 +2755,8 @@ export const EmployeeWorkspace: React.FC = () => {
       </div>
 
       <div className="mx-auto max-w-7xl px-3 pb-24 pt-4 sm:px-4 sm:py-5 lg:px-6">
+
+        <EmployeeLegalReviewPanel profileId={workspaceProfile?.id} />
 
         {/* --- Daily Log Card --- */}
         <Card className={cn(

@@ -40,12 +40,22 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import {
   Select,
   SelectContent,
@@ -60,6 +70,14 @@ import type { ContractForLegal } from '@/hooks/useConvertToLegal';
 import { useDelinquentCustomers, type DelinquentCustomer } from '@/hooks/useDelinquentCustomers';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
+import { useRolePermissions } from '@/hooks/useRolePermissions';
+import {
+  latestLegalEmployeeReviewByContract,
+  type LegalTransferEmployeeReview,
+  useCompanyLegalTransferEmployeeReviews,
+  useOverrideLegalEmployeeReview,
+  useRequestLegalEmployeeReview,
+} from '@/hooks/useLegalTransferEmployeeReviews';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
 import { revertContractLegalProcedure } from '@/services/contractLegalProcedureService';
@@ -112,6 +130,17 @@ type CandidateItem = {
 };
 
 const activeLegalStatuses = ['open', 'pending', 'active', 'under_review', 'on_hold'];
+const employeeReviewStatusMeta: Record<string, { label: string; className: string }> = {
+  awaiting_assignment: { label: 'بانتظار تعيين موظف', className: 'border-slate-200 bg-slate-50 text-slate-700' },
+  pending: { label: 'بانتظار تدقيق الموظف', className: 'border-amber-200 bg-amber-50 text-amber-800' },
+  in_progress: { label: 'قيد تدقيق الموظف', className: 'border-blue-200 bg-blue-50 text-blue-800' },
+  corrections_required: { label: 'تحتاج تصحيح', className: 'border-rose-200 bg-rose-50 text-rose-700' },
+  deferred: { label: 'مؤجلة بواسطة الموظف', className: 'border-slate-200 bg-slate-50 text-slate-700' },
+  employee_rejected: { label: 'غير مناسبة للتحويل', className: 'border-rose-200 bg-rose-50 text-rose-700' },
+  employee_approved: { label: 'معتمدة من الموظف', className: 'border-emerald-200 bg-emerald-50 text-emerald-700' },
+  manager_overridden: { label: 'تجاوز إداري معتمد', className: 'border-violet-200 bg-violet-50 text-violet-700' },
+  cancelled: { label: 'طلب ملغي', className: 'border-slate-200 bg-slate-50 text-slate-600' },
+};
 const delinquencyWorkflowStages = ['preparation', 'filed', 'hearings', 'reserved_for_judgment'];
 const activeWorkflowStages = [
   'preparation',
@@ -1209,8 +1238,20 @@ const FinancialDelinquencyPage: React.FC = () => {
   const [convertDialogOpen, setConvertDialogOpen] = useState(false);
   const [removingItem, setRemovingItem] = useState<QueueItem | null>(null);
   const [isRemovingLegal, setIsRemovingLegal] = useState(false);
+  const [reviewCandidate, setReviewCandidate] = useState<CandidateItem | null>(null);
+  const [reviewReason, setReviewReason] = useState('');
+  const [overrideReview, setOverrideReview] = useState<LegalTransferEmployeeReview | null>(null);
+  const [overrideReason, setOverrideReason] = useState('');
 
   const isCompanyReady = !!companyId && !isInitializing && !isAuthenticating;
+  const { isAdminOrManager } = useRolePermissions();
+  const requestEmployeeReview = useRequestLegalEmployeeReview();
+  const overrideEmployeeReview = useOverrideLegalEmployeeReview();
+  const { data: employeeReviews = [] } = useCompanyLegalTransferEmployeeReviews();
+  const employeeReviewByContract = useMemo(
+    () => latestLegalEmployeeReviewByContract(employeeReviews),
+    [employeeReviews],
+  );
 
   const { data: legalQueue = [], isLoading: queueLoading, isFetching: queueFetching } = useQuery({
     queryKey: ['manual-legal-delinquency-queue', companyId],
@@ -1524,8 +1565,36 @@ const FinancialDelinquencyPage: React.FC = () => {
       return;
     }
 
+    const review = employeeReviewByContract.get(candidate.contract.id);
+    if (!review || !['employee_approved', 'manager_overridden'].includes(review.status)) {
+      toast.error('يجب اعتماد الموظف المسؤول قبل التحويل القانوني');
+      return;
+    }
+
     setSelectedContract(candidate.contract);
     setConvertDialogOpen(true);
+  };
+
+  const sendEmployeeReview = async () => {
+    if (!companyId || !reviewCandidate?.contract?.id) return;
+    await requestEmployeeReview.mutateAsync({
+      companyId,
+      contractId: reviewCandidate.contract.id,
+      reason: reviewReason.trim() || 'يرجى تدقيق بيانات العميل والعقد قبل التحويل القانوني.',
+    });
+    setReviewCandidate(null);
+    setReviewReason('');
+  };
+
+  const submitManagerOverride = async () => {
+    if (!companyId || !overrideReview || !overrideReason.trim()) return;
+    await overrideEmployeeReview.mutateAsync({
+      companyId,
+      reviewId: overrideReview.id,
+      reason: overrideReason.trim(),
+    });
+    setOverrideReview(null);
+    setOverrideReason('');
   };
 
   const removeLegalProcedure = async () => {
@@ -2085,6 +2154,16 @@ const FinancialDelinquencyPage: React.FC = () => {
                       ? aiInsightByCandidateKey.get(`number:${candidate.contractNumber}`)
                       : undefined);
                   const candidateContractNumber = candidate.contract?.contract_number;
+                  const employeeReview = candidate.contract?.id
+                    ? employeeReviewByContract.get(candidate.contract.id)
+                    : undefined;
+                  const reviewApproved = Boolean(
+                    employeeReview
+                    && ['employee_approved', 'manager_overridden'].includes(employeeReview.status),
+                  );
+                  const reviewMeta = employeeReview
+                    ? employeeReviewStatusMeta[employeeReview.status]
+                    : undefined;
                   const RecommendationIcon = candidateAIInsight?.recommendation === 'legal'
                     ? Scale
                     : candidateAIInsight?.recommendation === 'settlement'
@@ -2120,6 +2199,12 @@ const FinancialDelinquencyPage: React.FC = () => {
                             {!candidate.canConvert && (
                               <Badge className="bg-amber-100 text-amber-700 hover:bg-amber-100">
                                 يحتاج ربط بعقد
+                              </Badge>
+                            )}
+                            {reviewMeta && (
+                              <Badge variant="outline" className={reviewMeta.className}>
+                                <ClipboardCheck className="ml-1 h-3 w-3" />
+                                {reviewMeta.label}
                               </Badge>
                             )}
                             {candidateAIInsight && (
@@ -2220,14 +2305,46 @@ const FinancialDelinquencyPage: React.FC = () => {
                       </div>
 
                       <div className="flex flex-col gap-2 sm:flex-row lg:flex-col">
-                        <Button
-                          disabled={!candidate.canConvert}
-                          onClick={() => openConvertDialog(candidate)}
-                          className="gap-2 rounded-xl bg-[#22C7A1] text-white hover:bg-[#1BAA8A]"
-                        >
-                          <Gavel className="h-4 w-4" />
-                          تحويل قانوني
-                        </Button>
+                        {reviewApproved ? (
+                          <Button
+                            disabled={!candidate.canConvert}
+                            onClick={() => openConvertDialog(candidate)}
+                            className="gap-2 rounded-xl bg-[#22C7A1] text-white hover:bg-[#1BAA8A]"
+                          >
+                            <Gavel className="h-4 w-4" />
+                            تحويل قانوني
+                          </Button>
+                        ) : (
+                          <Button
+                            disabled={!candidate.canConvert || requestEmployeeReview.isPending || employeeReview?.status === 'pending'}
+                            onClick={() => {
+                              setReviewCandidate(candidate);
+                              setReviewReason(employeeReview?.employee_notes || '');
+                            }}
+                            className="gap-2 rounded-xl bg-[#1D4F7A] text-white hover:bg-[#173A63]"
+                          >
+                            <ClipboardCheck className="h-4 w-4" />
+                            {employeeReview?.status === 'pending'
+                              ? 'بانتظار الموظف'
+                              : employeeReview
+                                ? 'إعادة إرسال للتدقيق'
+                                : 'إرسال للموظف للتدقيق'}
+                          </Button>
+                        )}
+                        {employeeReview && !reviewApproved && isAdminOrManager() && (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => {
+                              setOverrideReview(employeeReview);
+                              setOverrideReason('');
+                            }}
+                            className="gap-2 rounded-xl border-amber-300 bg-amber-50 text-amber-800 hover:bg-amber-100"
+                          >
+                            <ShieldCheck className="h-4 w-4" />
+                            تجاوز إداري
+                          </Button>
+                        )}
                         {candidate.contract?.id && candidateContractNumber && (
                           <Button
                             variant="outline"
@@ -2248,6 +2365,78 @@ const FinancialDelinquencyPage: React.FC = () => {
           </TabsContent>
         </Tabs>
       </div>
+
+      <Dialog
+        open={Boolean(reviewCandidate)}
+        onOpenChange={(open) => !open && !requestEmployeeReview.isPending && setReviewCandidate(null)}
+      >
+        <DialogContent dir="rtl" className="max-w-lg text-right">
+          <DialogHeader className="text-right">
+            <DialogTitle className="flex items-center gap-2">
+              <ClipboardCheck className="h-5 w-5 text-[#1D4F7A]" />
+              إرسال العقد للموظف للتدقيق
+            </DialogTitle>
+            <DialogDescription className="text-right leading-6">
+              سيظهر العقد {reviewCandidate?.contractNumber || ''} في مساحة الموظف المسؤول، ولن يسمح النظام بتحويله قانونياً قبل وصول قراره.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2 py-2">
+            <Label htmlFor="employee-review-reason">تعليمات الفريق القانوني</Label>
+            <Textarea
+              id="employee-review-reason"
+              value={reviewReason}
+              onChange={(event) => setReviewReason(event.target.value)}
+              placeholder="مثال: تأكد من صحة الاسم والهوية وآخر دفعة وحالة المركبة..."
+              className="min-h-28"
+            />
+          </div>
+          <DialogFooter className="gap-2">
+            <Button type="button" variant="outline" onClick={() => setReviewCandidate(null)} disabled={requestEmployeeReview.isPending}>
+              إلغاء
+            </Button>
+            <Button type="button" onClick={sendEmployeeReview} disabled={requestEmployeeReview.isPending} className="gap-2 bg-[#1D4F7A] text-white hover:bg-[#173A63]">
+              {requestEmployeeReview.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+              إرسال للتدقيق
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={Boolean(overrideReview)}
+        onOpenChange={(open) => !open && !overrideEmployeeReview.isPending && setOverrideReview(null)}
+      >
+        <DialogContent dir="rtl" className="max-w-lg text-right">
+          <DialogHeader className="text-right">
+            <DialogTitle className="flex items-center gap-2 text-amber-900">
+              <ShieldCheck className="h-5 w-5" />
+              تجاوز تدقيق الموظف
+            </DialogTitle>
+            <DialogDescription className="text-right leading-6">
+              هذا الإجراء متاح للمدير فقط، وسيُسجل اسم المدير والسبب في سجل العقد.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2 py-2">
+            <Label htmlFor="employee-review-override-reason">سبب التجاوز الإلزامي</Label>
+            <Textarea
+              id="employee-review-override-reason"
+              value={overrideReason}
+              onChange={(event) => setOverrideReason(event.target.value)}
+              placeholder="اشرح لماذا يجب متابعة التحويل دون اعتماد الموظف..."
+              className="min-h-28"
+            />
+          </div>
+          <DialogFooter className="gap-2">
+            <Button type="button" variant="outline" onClick={() => setOverrideReview(null)} disabled={overrideEmployeeReview.isPending}>
+              تراجع
+            </Button>
+            <Button type="button" onClick={submitManagerOverride} disabled={overrideEmployeeReview.isPending || !overrideReason.trim()} className="gap-2 bg-amber-600 text-white hover:bg-amber-700">
+              {overrideEmployeeReview.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+              اعتماد التجاوز
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <ConvertToLegalDialog
         open={convertDialogOpen}

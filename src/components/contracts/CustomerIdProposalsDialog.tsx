@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { ScanLine, CheckCircle2, XCircle, Sparkles, BookOpen, Brain, AlertTriangle } from 'lucide-react';
+import { ScanLine, CheckCircle2, XCircle, Sparkles, BookOpen, Brain, AlertTriangle, PencilLine } from 'lucide-react';
 import {
   useCustomerIdProposals,
   useRespondToIdProposal,
@@ -34,6 +34,7 @@ const METHOD_META: Record<ProposedFieldChange['method'], { label: string; icon: 
   normalized: { label: 'تطبيع', icon: <BookOpen className="h-3 w-3" /> },
   dictionary: { label: 'قاموس الأسماء', icon: <BookOpen className="h-3 w-3" /> },
   llm: { label: 'ذكاء اصطناعي', icon: <Brain className="h-3 w-3" /> },
+  manual: { label: 'تعديل يدوي', icon: <PencilLine className="h-3 w-3" /> },
 };
 
 function ConfidenceBadge({ confidence }: { confidence: number }) {

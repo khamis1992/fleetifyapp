@@ -6,7 +6,7 @@ import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 import { useUpdateCustomer } from '@/hooks/useCustomers';
 import { convertAllPagesToImages, convertPDFToImage } from '@/services/contractPDFExtractor';
 import type { CustomerFormData } from '@/types/customer';
-import type { Database } from '@/integrations/supabase/types';
+import type { Database, Json } from '@/integrations/supabase/types';
 import { getCustomerDataIssues } from '@/utils/formatCustomerName';
 
 type CustomerUpdate = Database['public']['Tables']['customers']['Update'];
@@ -16,7 +16,7 @@ export interface ProposedFieldChange {
   current_value: string | null;
   proposed_value: string;
   confidence: number;
-  method: 'ocr' | 'normalized' | 'dictionary' | 'llm';
+  method: 'ocr' | 'normalized' | 'dictionary' | 'llm' | 'manual';
 }
 
 export interface CustomerIdProposal {
@@ -38,6 +38,7 @@ export interface CustomerIdProposal {
   evidence_image_bucket?: string | null;
   evidence_image_path?: string | null;
   evidence_label?: string | null;
+  extracted_data?: Record<string, unknown> | null;
   overall_confidence: number | null;
   created_at: string;
   updated_at?: string;
@@ -143,9 +144,11 @@ export function usePendingIdScanCount(contractId?: string) {
     mutationFn: async ({
       proposal,
       acceptedFields,
+      manualValues = {},
     }: {
       proposal: CustomerIdProposal;
       acceptedFields: string[] | null; // null = reject all
+      manualValues?: Record<string, string>;
     }) => {
       if (!user) throw new Error('المستخدم غير مسجل');
 
@@ -164,7 +167,12 @@ export function usePendingIdScanCount(contractId?: string) {
 
       const acceptedChanges = proposal.proposed_changes.filter((c) =>
         acceptedFields.includes(c.field),
-      );
+      ).map((change) => {
+        const manualValue = manualValues[change.field]?.trim();
+        return manualValue && manualValue !== change.proposed_value
+          ? { ...change, proposed_value: manualValue, confidence: 1, method: 'manual' as const }
+          : change;
+      });
       if (acceptedChanges.length === 0) {
         throw new Error('لم يتم تحديد أي حقول');
       }
@@ -179,9 +187,27 @@ export function usePendingIdScanCount(contractId?: string) {
       await updateCustomer.mutateAsync({ customerId: proposal.customer_id, data: updateData });
 
       const allAccepted = acceptedChanges.length === proposal.proposed_changes.length;
+      const finalChanges = proposal.proposed_changes.map((change) =>
+        acceptedChanges.find((accepted) => accepted.field === change.field) || change,
+      );
+      const appliedManualValues = Object.fromEntries(
+        acceptedChanges
+          .filter((change) => change.method === 'manual')
+          .map((change) => [change.field, change.proposed_value]),
+      );
       const { error } = await proposalsTable()
         .update({
           status: allAccepted ? 'accepted' : 'partial',
+          proposed_changes: finalChanges as unknown as Json,
+          extracted_data: ({
+            ...(proposal.extracted_data || {}),
+            manual_review: {
+              original_proposed_changes: proposal.proposed_changes,
+              applied_values: appliedManualValues,
+              reviewed_by: user.id,
+              reviewed_at: new Date().toISOString(),
+            },
+          }) as unknown as Json,
           reviewed_by: user.id,
           reviewed_at: new Date().toISOString(),
         })

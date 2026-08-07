@@ -350,6 +350,16 @@ export const PRIMARY_NAVIGATION: NavSection[] = [
     icon: BarChart3,
   },
 
+  // --- Tools & System: Audit Logs ---
+  {
+    id: 'audit-logs',
+    name: 'سجل التدقيق',
+    name_en: 'Audit Logs',
+    href: '/settings/audit-logs',
+    icon: FileCheck,
+    requiresAdmin: true,
+  },
+
   // --- Tools & System: Settings ---
   {
     id: 'settings',
