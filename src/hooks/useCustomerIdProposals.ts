@@ -40,6 +40,7 @@ export interface CustomerIdProposal {
   evidence_label?: string | null;
   overall_confidence: number | null;
   created_at: string;
+  updated_at?: string;
 }
 
 // Table types were added to src/integrations/supabase/types.ts alongside the
@@ -171,6 +172,8 @@ export function usePendingIdScanCount(contractId?: string) {
       const updateData = Object.fromEntries(
         acceptedChanges.map((c) => [c.field, c.proposed_value]),
       ) as Partial<CustomerFormData>;
+      if (updateData.first_name_ar) updateData.first_name = updateData.first_name_ar;
+      if (updateData.last_name_ar) updateData.last_name = updateData.last_name_ar;
 
       // Apply through the standard customer update flow (cache + logging)
       await updateCustomer.mutateAsync({ customerId: proposal.customer_id, data: updateData });
@@ -297,25 +300,89 @@ export function useScanContractDocumentsForId(contractId?: string) {
   });
 }
 
+type NameAuditProposal = CustomerIdProposal & {
+  customers: {
+    first_name: string | null;
+    last_name: string | null;
+    first_name_ar: string | null;
+    last_name_ar: string | null;
+  } | null;
+};
+
+const normalizeNameForAudit = (value: string) => value
+  .normalize('NFKC')
+  .replace(/[\u064B-\u065F\u0670\u0640]/g, '')
+  .replace(/[إأآ]/g, 'ا')
+  .replace(/ى/g, 'ي')
+  .replace(/ة/g, 'ه')
+  .replace(/[^\u0600-\u06FF\s]/g, ' ')
+  .replace(/\s+/g, ' ')
+  .trim();
+
+const isPlausibleAuditedName = (value: string) => {
+  const words = value.split(/\s+/).filter(Boolean);
+  return words.length >= 2 && words.length <= 7 && words.every((word) => /^[\u0600-\u06FF]+$/.test(word));
+};
+
+export interface AuditedNameCandidate {
+  firstName: string;
+  lastName: string;
+  confidence: number;
+  proposalIds: string[];
+}
+
+export function selectAuditedNameCandidate(
+  candidates: AuditedNameCandidate[],
+): AuditedNameCandidate | null {
+  const ranked = [...candidates].sort((a, b) =>
+    b.confidence - a.confidence || b.proposalIds.length - a.proposalIds.length);
+  const best = ranked[0];
+  const runnerUp = ranked[1];
+  const hasUnresolvedTie = !!runnerUp &&
+    runnerUp.confidence === best?.confidence &&
+    runnerUp.proposalIds.length === best?.proposalIds.length;
+
+  return best && best.confidence >= 0.95 && !hasUnresolvedTie ? best : null;
+}
+
+/**
+ * Re-scan every contract document, then automatically apply only a uniquely
+ * supported Arabic name with confidence >= 95%. Tied/conflicting readings
+ * remain pending for human review with their evidence image.
+ */
 export function useScanAllPendingContractDocumentsForId() {
   const queryClient = useQueryClient();
   const { companyId } = useUnifiedCompanyAccess();
+  const { user } = useAuth();
+  const updateCustomer = useUpdateCustomer();
 
   return useMutation({
     mutationFn: async () => {
       if (!companyId) throw new Error('بيانات الشركة غير مكتملة');
 
-      const { data: documents, error } = await supabase
-        .from('contract_documents')
-        .select('id, contract_id, document_type, document_name, file_path, mime_type')
-        .eq('company_id', companyId)
-        .in('document_type', SCANNABLE_TYPES)
-        .eq('id_scan_status', 'pending')
-        .not('file_path', 'is', null)
-        .order('created_at', { ascending: true })
-        .limit(50);
+      const documents: Array<{
+        id: string;
+        contract_id: string | null;
+        document_type: string;
+        document_name: string;
+        file_path: string | null;
+        mime_type: string | null;
+      }> = [];
+      const pageSize = 500;
+      for (let from = 0; ; from += pageSize) {
+        const { data, error } = await supabase
+          .from('contract_documents')
+          .select('id, contract_id, document_type, document_name, file_path, mime_type')
+          .eq('company_id', companyId)
+          .in('document_type', SCANNABLE_TYPES)
+          .not('file_path', 'is', null)
+          .order('created_at', { ascending: true })
+          .range(from, from + pageSize - 1);
+        if (error) throw error;
+        documents.push(...(data || []));
+        if (!data || data.length < pageSize) break;
+      }
 
-      if (error) throw error;
       if (!documents?.length) return { scanned: 0, proposals: 0, failed: 0 };
 
       let proposals = 0;
@@ -365,15 +432,101 @@ export function useScanAllPendingContractDocumentsForId() {
         }
       }
 
-      return { scanned: documents.length, proposals, failed };
+      const { data: pendingRows, error: proposalError } = await proposalsTable()
+        .select('*, customers(first_name, last_name, first_name_ar, last_name_ar)')
+        .eq('company_id', companyId)
+        .in('status', ['pending', 'partial']);
+      if (proposalError) throw proposalError;
+
+      const byCustomer = new Map<string, NameAuditProposal[]>();
+      for (const proposal of (pendingRows || []) as unknown as NameAuditProposal[]) {
+        if (!proposal.evidence_image_path) continue;
+        const nameChanges = proposal.proposed_changes.filter((change) =>
+          change.field === 'first_name_ar' || change.field === 'last_name_ar');
+        if (!nameChanges.length) continue;
+        const list = byCustomer.get(proposal.customer_id) || [];
+        list.push(proposal);
+        byCustomer.set(proposal.customer_id, list);
+      }
+
+      let namesUpdated = 0;
+      let namesNeedingReview = 0;
+      for (const [customerId, customerProposals] of byCustomer) {
+        const current = customerProposals[0]?.customers;
+        if (!current) continue;
+
+        const candidates = new Map<string, AuditedNameCandidate>();
+
+        for (const proposal of customerProposals) {
+          const firstChange = proposal.proposed_changes.find((change) => change.field === 'first_name_ar');
+          const lastChange = proposal.proposed_changes.find((change) => change.field === 'last_name_ar');
+          const nameChanges = [firstChange, lastChange].filter(Boolean) as ProposedFieldChange[];
+          const firstName = firstChange?.proposed_value || current.first_name_ar || '';
+          const lastName = lastChange?.proposed_value || current.last_name_ar || '';
+          const fullName = `${firstName} ${lastName}`.trim();
+          const key = normalizeNameForAudit(fullName);
+          if (!key || !isPlausibleAuditedName(fullName)) continue;
+          const confidence = Math.min(...nameChanges.map((change) => change.confidence));
+          const existing = candidates.get(key);
+          candidates.set(key, {
+            firstName,
+            lastName,
+            confidence: Math.max(existing?.confidence || 0, confidence),
+            proposalIds: [...(existing?.proposalIds || []), proposal.id],
+          });
+        }
+
+        const best = selectAuditedNameCandidate([...candidates.values()]);
+        if (!best) {
+          namesNeedingReview++;
+          continue;
+        }
+
+        try {
+          await updateCustomer.mutateAsync({
+            customerId,
+            data: {
+              first_name_ar: best.firstName,
+              last_name_ar: best.lastName,
+              first_name: best.firstName,
+              last_name: best.lastName,
+            },
+          });
+
+          const now = new Date().toISOString();
+          for (const proposal of customerProposals.filter((item) => best.proposalIds.includes(item.id))) {
+            const onlyNameFields = proposal.proposed_changes.every((change) =>
+              change.field === 'first_name_ar' || change.field === 'last_name_ar');
+            await proposalsTable()
+              .update({
+                status: onlyNameFields ? 'accepted' : 'partial',
+                reviewed_by: user?.id || null,
+                reviewed_at: now,
+              })
+              .eq('id', proposal.id)
+              .eq('company_id', companyId);
+          }
+          namesUpdated++;
+        } catch (customerError) {
+          namesNeedingReview++;
+          console.error(`Automatic name audit failed for customer ${customerId}:`, customerError);
+        }
+      }
+
+      return { scanned: documents.length, proposals, failed, namesUpdated, namesNeedingReview };
     },
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ['customer-id-proposals'] });
       queryClient.invalidateQueries({ queryKey: ['contract-documents'] });
       if (result.scanned === 0) {
-        toast.info('لا توجد عقود معلقة للمسح');
+        toast.info('لا توجد مستندات عقود قابلة للتدقيق');
       } else {
-        toast.success(`تم مسح ${result.scanned} مستند، وتم إنشاء ${result.proposals} مقترح`);
+        toast.success(
+          `تم تدقيق ${result.scanned} مستند وتحديث أسماء ${result.namesUpdated || 0} عميل تلقائياً`,
+        );
+        if ((result.namesNeedingReview || 0) > 0) {
+          toast.info(`${result.namesNeedingReview} عميل يحتاج مراجعة بشرية بسبب تعارض أو انخفاض الثقة`);
+        }
         if (result.failed > 0) toast.warning(`تعذر مسح ${result.failed} مستند`);
       }
     },
@@ -557,6 +710,8 @@ export function useBulkApproveIdProposals() {
 
         const fields = perCustomer.get(proposal.customer_id) || {};
         for (const change of accepted) fields[change.field] = change.proposed_value;
+        if (fields.first_name_ar) fields.first_name = fields.first_name_ar;
+        if (fields.last_name_ar) fields.last_name = fields.last_name_ar;
         perCustomer.set(proposal.customer_id, fields);
         perProposal.set(proposal.id, {
           accepted: accepted.length,

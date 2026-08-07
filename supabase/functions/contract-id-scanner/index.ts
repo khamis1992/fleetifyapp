@@ -60,6 +60,8 @@ interface ExtractedIdData {
   idExpiry?: string;
   nationality?: string;
   nationalityArabic?: string;
+  nameArabicOccurrences?: number;
+  nameCrossScriptConsistent?: boolean;
 }
 
 interface ProposedChange {
@@ -342,50 +344,63 @@ async function processRasterizedPages(
 
   if (error || !doc) throw new Error("Document not found");
 
-  let idPageFound = false;
+  const evidencePages: Array<{
+    page: { pageNumber: number; imageBase64: string; evidenceImagePath?: string };
+    ocr: OcrResult;
+  }> = [];
 
   for (const page of pages.slice(0, 20)) {
     const ocr = await detectTextWithGoogleVision(page.imageBase64);
-    const text = ocr.text;
-    if (!text) continue;
-
-    if (!looksLikeIdCard(text)) continue;
-
-    idPageFound = true;
-    try {
-      const outcome = await buildAndStoreProposal(
-        supabase,
-        doc as ContractDocumentRow,
-        text,
-        page.pageNumber,
-        {
-          imagePath: page.evidenceImagePath || null,
-          crop: null,
-          label: null,
-        },
-        ocr.annotations,
-      );
-      if (outcome === "proposal_created") {
-        await markDocument(supabase, doc.id, "proposal_created");
-        return { outcome, pageNumber: page.pageNumber };
-      }
-    } catch (error) {
-      // e.g. orphaned document (contract/customer deleted) — mark and stop
-      console.error(`❌ Failed to build proposal for document ${doc.id}:`, error);
-      await markDocument(
-        supabase,
-        doc.id,
-        "failed",
-        error instanceof Error ? error.message : String(error),
-      );
-      return { outcome: "failed" };
+    if (ocr.text && looksLikeCustomerIdentityEvidence(ocr.text)) {
+      evidencePages.push({ page, ocr });
     }
   }
 
-  // Re-scan found nothing to propose — clear any stale pending proposal
-  await deletePendingProposal(supabase, doc.id);
-  await markDocument(supabase, doc.id, idPageFound ? "no_changes" : "no_id_card");
-  return { outcome: idPageFound ? "no_changes" : "no_id_card" };
+  if (evidencePages.length === 0) {
+    await deletePendingProposal(supabase, doc.id);
+    await markDocument(supabase, doc.id, "no_id_card");
+    return { outcome: "no_id_card" };
+  }
+
+  try {
+    // A matching name from the contract party section and the ID-card page
+    // becomes repeated evidence; conflicting readings stay low-confidence.
+    const combinedText = evidencePages.map(({ ocr }) => ocr.text).join("\n");
+    const extracted = extractIdData(combinedText);
+    const evidencePage = evidencePages.find(({ ocr }) =>
+      extracted.nameArabic &&
+      normalizeArabic(ocr.text).includes(normalizeArabic(extracted.nameArabic))
+    ) || evidencePages.find(({ ocr }) => looksLikeIdCard(ocr.text)) || evidencePages[0];
+
+    const outcome = await buildAndStoreProposal(
+      supabase,
+      doc as ContractDocumentRow,
+      combinedText,
+      evidencePage.page.pageNumber,
+      {
+        imagePath: evidencePage.page.evidenceImagePath || null,
+        crop: null,
+        label: extracted.nameArabic || null,
+      },
+      evidencePage.ocr.annotations,
+    );
+    if (outcome !== "proposal_created") await deletePendingProposal(supabase, doc.id);
+    await markDocument(
+      supabase,
+      doc.id,
+      outcome === "proposal_created" ? "proposal_created" : "no_changes",
+    );
+    return { outcome, pageNumber: evidencePage.page.pageNumber };
+  } catch (error) {
+    console.error(`Failed to compare contract and ID names for document ${doc.id}:`, error);
+    await markDocument(
+      supabase,
+      doc.id,
+      "failed",
+      error instanceof Error ? error.message : String(error),
+    );
+    return { outcome: "failed" };
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -408,7 +423,7 @@ async function scanDocumentImage(
 
     const ocr = await detectTextWithGoogleVision(imageBase64);
     const text = ocr.text;
-    if (!text || !looksLikeIdCard(text)) {
+    if (!text || !looksLikeCustomerIdentityEvidence(text)) {
       await deletePendingProposal(supabase, doc.id);
       await markDocument(supabase, doc.id, "no_id_card");
       return "no_id_card";
@@ -566,6 +581,17 @@ function looksLikeIdCard(text: string): boolean {
       text,
     );
   return hasElevenDigitId && hasIdKeywords;
+}
+
+function looksLikeContractPartyIdentity(text: string): boolean {
+  const hasElevenDigitId = /\b\d{11}\b/.test(text);
+  const hasPartyLabel = /الطرف\s*الثاني|المستأجر|اسم\s*المستأجر/i.test(text);
+  const hasIdentityLabel = /بطاقة|الرقم\s*الشخصي|رقم\s*الهوية|الجنسية/i.test(text);
+  return hasElevenDigitId && hasPartyLabel && hasIdentityLabel;
+}
+
+function looksLikeCustomerIdentityEvidence(text: string): boolean {
+  return looksLikeIdCard(text) || looksLikeContractPartyIdentity(text);
 }
 
 // ---------------------------------------------------------------------------
@@ -756,6 +782,48 @@ function sanitizeArabicNameCandidate(value: string): string {
   return normalized.slice(0, end).trim().replace(/[\s:،,.-]+$/g, "");
 }
 
+function isPlausibleArabicPersonName(value: string): boolean {
+  const words = value.split(/\s+/).filter(Boolean);
+  if (words.length < 2 || words.length > 7) return false;
+  return words.every((word) =>
+    /^[\u0600-\u06FF]+$/.test(word) && !ARABIC_LABEL_WORDS.has(word)
+  );
+}
+
+function extractArabicNameCandidates(cleanText: string): string[] {
+  const candidates: string[] = [];
+  const patterns = [
+    /الاسم\s*[:\.]?\s*([؀-ۿ][؀-ۿ\s]{3,80}?)(?=\s+[A-Za-z]|\s*\d|$)/g,
+    /(?:الطرف\s*الثاني|المستأجر|اسم\s*المستأجر)\s*[:\.]?\s*([؀-ۿ][؀-ۿ\s]{3,80}?)(?=\s*(?:الجنسية|بطاقة|الرقم|رقم|رخصة|جوال|هاتف|العنوان|ويمثل|$))/g,
+  ];
+  for (const pattern of patterns) {
+    for (const match of cleanText.matchAll(pattern)) {
+      const candidate = sanitizeArabicNameCandidate(match[1]);
+      if (isPlausibleArabicPersonName(candidate)) candidates.push(candidate);
+    }
+  }
+  return candidates;
+}
+
+function selectArabicNameConsensus(candidates: string[]): {
+  name?: string;
+  occurrences: number;
+} {
+  const grouped = new Map<string, { value: string; count: number }>();
+  for (const candidate of candidates) {
+    const key = normalizeArabic(candidate);
+    const current = grouped.get(key);
+    grouped.set(key, {
+      value: current?.value || candidate,
+      count: (current?.count || 0) + 1,
+    });
+  }
+  const best = [...grouped.values()].sort((a, b) =>
+    b.count - a.count || b.value.split(/\s+/).length - a.value.split(/\s+/).length
+  )[0];
+  return best ? { name: best.value, occurrences: best.count } : { occurrences: 0 };
+}
+
 function extractIdData(text: string): ExtractedIdData {
   const data: ExtractedIdData = {};
   const lines = text.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
@@ -874,20 +942,18 @@ function extractIdData(text: string): ExtractedIdData {
     if (data.name) break;
   }
 
-  // --- Arabic name: inline after الاسم label (any Arabic content incl. Farsi yeh) ---
-  const nameArMatch = cleanText.match(/الاسم\s*[:\.]?\s*([؀-ۿ][؀-ۿ\s]{3,60}?)(?=\s+[A-Za-z]|\s*\d|$)/);
-  if (nameArMatch) {
-    const fullName = sanitizeArabicNameCandidate(nameArMatch[1]);
-    if (!ARABIC_LABEL_WORDS.has(fullName.split(/\s+/)[0])) {
-      data.nameArabic = fullName;
-      const parts = fullName.split(/\s+/).filter(Boolean);
-      if (parts.length >= 2) {
-        data.firstNameArabic = parts[0];
-        data.lastNameArabic = parts.slice(1).join(" ");
-      } else if (parts.length === 1) {
-        data.firstNameArabic = parts[0];
-      }
-    }
+  // --- Arabic name: collect every ID-card occurrence and prefer consensus. ---
+  const arabicConsensus = selectArabicNameConsensus(extractArabicNameCandidates(cleanText));
+  if (arabicConsensus.name) {
+    const fullName = arabicConsensus.name;
+    data.nameArabic = fullName;
+    data.nameArabicOccurrences = arabicConsensus.occurrences;
+    const parts = fullName.split(/\s+/).filter(Boolean);
+    data.firstNameArabic = parts[0];
+    data.lastNameArabic = parts.slice(1).join(" ");
+    const englishWordCount = data.name?.split(/\s+/).filter(Boolean).length || 0;
+    data.nameCrossScriptConsistent = !englishWordCount ||
+      Math.abs(parts.length - englishWordCount) <= 1;
   }
 
   return data;
@@ -1092,14 +1158,21 @@ async function buildAndStoreProposal(
     !!extracted.nameArabic &&
     normalizeArabic(`${customer.first_name_ar || ""} ${customer.last_name_ar || ""}`) ===
       normalizeArabic(extracted.nameArabic);
-  const identityConfirmed = nationalIdMatches || arabicNameMatches;
+  if (
+    customer.national_id &&
+    extracted.nationalId &&
+    customer.national_id !== extracted.nationalId
+  ) {
+    throw new Error("Scanned identity number does not match the contract customer");
+  }
+  const identityConfirmed = nationalIdMatches ||
+    (!customer.national_id && arabicNameMatches);
 
   // Confidence levels: corroborated by identity confirmation vs raw pattern match
-  const CONF_EN_NAME = identityConfirmed ? 0.95 : 0.85;
   const CONF_NATIONALITY = identityConfirmed ? 0.9 : 0.85;
 
   // --- National ID (highest value field) ---
-  if (differs(customer.national_id, extracted.nationalId)) {
+  if (!customer.national_id && extracted.nationalId && identityConfirmed) {
     changes.push({
       field: "national_id",
       current_value: customer.national_id,
@@ -1110,7 +1183,11 @@ async function buildAndStoreProposal(
   }
 
   // --- ID expiry ---
-  if (extracted.idExpiry && customer.national_id_expiry !== extracted.idExpiry) {
+  if (
+    identityConfirmed &&
+    extracted.idExpiry &&
+    customer.national_id_expiry !== extracted.idExpiry
+  ) {
     changes.push({
       field: "national_id_expiry",
       current_value: customer.national_id_expiry,
@@ -1121,7 +1198,11 @@ async function buildAndStoreProposal(
   }
 
   // --- Date of birth ---
-  if (extracted.dateOfBirth && customer.date_of_birth !== extracted.dateOfBirth) {
+  if (
+    identityConfirmed &&
+    extracted.dateOfBirth &&
+    customer.date_of_birth !== extracted.dateOfBirth
+  ) {
     changes.push({
       field: "date_of_birth",
       current_value: customer.date_of_birth,
@@ -1133,7 +1214,7 @@ async function buildAndStoreProposal(
 
   // --- Nationality ---
   const proposedNationality = extracted.nationalityArabic || extracted.nationality;
-  if (differs(customer.nationality, proposedNationality)) {
+  if (identityConfirmed && differs(customer.nationality, proposedNationality)) {
     changes.push({
       field: "nationality",
       current_value: customer.nationality,
@@ -1143,30 +1224,38 @@ async function buildAndStoreProposal(
     });
   }
 
-  // --- Arabic name (with smart correction) ---
+  // --- Arabic official name ---
   // Compare the FULL name, not each part: "محمد عزيز / محسن جلالي" and
   // "محمد / عزيز محسن جلالي" are the same person — proposing a reshuffle is noise.
-  if (extracted.nameArabic) {
-    const correction = await correctArabicName(extracted.nameArabic);
-    evidenceLabel = correction.name || evidenceLabel;
+  if (
+    identityConfirmed &&
+    extracted.nameArabic &&
+    isPlausibleArabicPersonName(extracted.nameArabic)
+  ) {
+    const proposedArabicName = sanitizeArabicNameCandidate(extracted.nameArabic);
+    const occurrenceConfidence = (extracted.nameArabicOccurrences || 0) >= 2 ? 0.95 : 0.85;
+    const nameConfidence = extracted.nameCrossScriptConsistent === false
+      ? Math.min(occurrenceConfidence, 0.75)
+      : occurrenceConfidence;
+    evidenceLabel = proposedArabicName;
     const currentFullAr = normalizeArabic(
       `${customer.first_name_ar || ""} ${customer.last_name_ar || ""}`,
     );
-    const proposedFullAr = normalizeArabic(correction.name);
+    const proposedFullAr = normalizeArabic(proposedArabicName);
     const fullNameMatches = currentFullAr === proposedFullAr;
 
-    if (!fullNameMatches && correction.confidence >= MIN_PROPOSAL_CONFIDENCE) {
-      const correctedParts = correction.name.split(/\s+/).filter(Boolean);
-      const proposedFirstAr = correctedParts[0];
-      const proposedLastAr = correctedParts.slice(1).join(" ") || null;
+    if (!fullNameMatches && nameConfidence >= MIN_PROPOSAL_CONFIDENCE) {
+      const proposedParts = proposedArabicName.split(/\s+/).filter(Boolean);
+      const proposedFirstAr = proposedParts[0];
+      const proposedLastAr = proposedParts.slice(1).join(" ") || null;
 
       if (differs(customer.first_name_ar, proposedFirstAr)) {
         changes.push({
           field: "first_name_ar",
           current_value: customer.first_name_ar,
           proposed_value: proposedFirstAr,
-          confidence: correction.confidence,
-          method: correction.method,
+          confidence: nameConfidence,
+          method: "ocr",
         });
       }
       if (proposedLastAr && differs(customer.last_name_ar, proposedLastAr)) {
@@ -1174,40 +1263,15 @@ async function buildAndStoreProposal(
           field: "last_name_ar",
           current_value: customer.last_name_ar,
           proposed_value: proposedLastAr,
-          confidence: correction.confidence,
-          method: correction.method,
-        });
-      }
-    }
-  }
-
-  // --- English name (same full-name comparison) ---
-  if (extracted.name) {
-    const currentFullEn = `${customer.first_name || ""} ${customer.last_name || ""}`
-      .trim().toUpperCase();
-    const proposedFullEn = extracted.name.trim().toUpperCase();
-
-    if (currentFullEn !== proposedFullEn) {
-      if (extracted.firstName && differs(customer.first_name, extracted.firstName)) {
-        changes.push({
-          field: "first_name",
-          current_value: customer.first_name,
-          proposed_value: extracted.firstName,
-          confidence: CONF_EN_NAME,
-          method: "ocr",
-        });
-      }
-      if (extracted.lastName && differs(customer.last_name, extracted.lastName)) {
-        changes.push({
-          field: "last_name",
-          current_value: customer.last_name,
-          proposed_value: extracted.lastName,
-          confidence: CONF_EN_NAME,
+          confidence: nameConfidence,
           method: "ocr",
         });
       }
     }
   }
+
+  // English OCR is supporting evidence only. The customer table's canonical
+  // individual-name fields are Arabic, so English text must never overwrite them.
 
   // Keep only confident proposals
   const confidentChanges = changes.filter(

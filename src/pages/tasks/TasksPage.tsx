@@ -83,6 +83,7 @@ import {
   IdCard,
 } from 'lucide-react';
 import { CustomerDataReviewCenter } from '@/components/customers/CustomerDataReviewCenter';
+import { useScanAllPendingContractDocumentsForId } from '@/hooks/useCustomerIdProposals';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
 
@@ -169,6 +170,7 @@ export default function TasksPage() {
   const { data: stats } = useTaskStatistics();
   const { data: teamMembers = [] } = useTeamMembers();
   const deleteTask = useDeleteTask();
+  const customerNameAudit = useScanAllPendingContractDocumentsForId();
   const { canReviewFinancialIssues } = useFinancialReviewAccess();
   const { isAdminOrManager } = useRolePermissions();
 
@@ -188,6 +190,15 @@ export default function TasksPage() {
     if (!taskToDelete) return;
     await deleteTask.mutateAsync(taskToDelete);
     setTaskToDelete(null);
+  };
+
+  const isCustomerVerificationTab = activeTab === 'verification' || activeTab === 'data-review';
+  const handleRefresh = () => {
+    if (isCustomerVerificationTab) {
+      customerNameAudit.mutate();
+      return;
+    }
+    void refetch();
   };
 
   const statsCards = [
@@ -272,12 +283,19 @@ export default function TasksPage() {
             <div className="flex flex-col gap-2 sm:flex-row">
               <Button
                 variant="outline"
-                onClick={() => refetch()}
+                onClick={handleRefresh}
                 className="h-11 gap-2 rounded-lg border-[#E5EAF1] bg-white"
-                disabled={isFetching}
+                disabled={isCustomerVerificationTab ? customerNameAudit.isPending : isFetching}
               >
-                <RefreshCw className={cn('h-4 w-4', isFetching && 'animate-spin')} />
-                تحديث
+                <RefreshCw
+                  className={cn(
+                    'h-4 w-4',
+                    (isCustomerVerificationTab ? customerNameAudit.isPending : isFetching) && 'animate-spin',
+                  )}
+                />
+                {isCustomerVerificationTab && customerNameAudit.isPending
+                  ? 'جارٍ تدقيق العقود...'
+                  : 'تحديث'}
               </Button>
               <Button
                 onClick={openNewTask}

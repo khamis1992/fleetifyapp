@@ -27,7 +27,7 @@ export const FIXED_DEFENDANT_CONTACT = Object.freeze({
 });
 
 export const agentConfig = {
-  version: '1.6.41',
+  version: '1.6.42',
   workerId: process.env.TAQADI_WORKER_ID
     || `${os.hostname()}-taqadi`,
   hostname: os.hostname(),

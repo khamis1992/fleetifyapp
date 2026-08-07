@@ -449,18 +449,8 @@ export function CustomerDataReviewCenter() {
               disabled={scanAll.isPending}
               className="gap-2"
             >
-              <ScanLine className={scanAll.isPending ? 'h-4 w-4 animate-pulse' : 'h-4 w-4'} />
-              مسح العقود المعلقة
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => refetch()}
-              disabled={isFetching}
-              className="gap-2"
-            >
-              <RefreshCw className={isFetching ? 'h-4 w-4 animate-spin' : 'h-4 w-4'} />
-              تحديث
+              <RefreshCw className={scanAll.isPending ? 'h-4 w-4 animate-spin' : 'h-4 w-4'} />
+              {scanAll.isPending ? 'جارٍ تدقيق العقود...' : 'تحديث وتدقيق جميع العقود'}
             </Button>
             <Button
               size="sm"

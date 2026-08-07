@@ -381,7 +381,7 @@ const documentTypeLabels: Record<string, string[]> = {
 
 const mandatoryMemoKeys = new Set(['memo', 'memoWord']);
 const taqadiPartyOrder = 1;
-const taqadiCompanyPartyOrder = 2;
+const taqadiCompanyPartyOrder = 1;
 
 export class TaqadiPortal {
   private lastPriorityDiagnostics: Record<string, unknown> | null = null;

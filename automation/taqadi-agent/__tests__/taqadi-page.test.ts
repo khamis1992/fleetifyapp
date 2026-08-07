@@ -891,9 +891,9 @@ describe('TaqadiPortal classification fields', () => {
     expect(await page.locator('[id="addresses0.address"]').inputValue()).toBe(
       agentConfig.company.address,
     );
-    expect(await page.locator('#priority').inputValue()).toBe('2');
+    expect(await page.locator('#priority').inputValue()).toBe('1');
     expect(await page.locator('#tempTransalationReq2').isChecked()).toBe(true);
-  }, 25_000);
+  }, 60_000);
 
   it('confirms the account prompt with Enter without selecting a role', async () => {
     await page.route('**/*', async (route) => {

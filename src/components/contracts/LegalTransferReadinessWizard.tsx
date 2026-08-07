@@ -4,6 +4,7 @@ import {
   AlertCircle,
   Banknote,
   Camera,
+  CircleMinus,
   Check,
   CheckCircle2,
   ChevronLeft,
@@ -14,6 +15,7 @@ import {
   Loader2,
   Pencil,
   ReceiptText,
+  RotateCcw,
   Scale,
   ShieldCheck,
   TrafficCone,
@@ -185,6 +187,8 @@ export function LegalTransferReadinessWizard({
   const [editedInvoiceAmount, setEditedInvoiceAmount] = React.useState('');
   const [invoiceEditReason, setInvoiceEditReason] = React.useState('');
   const [isCorrectingInvoice, setIsCorrectingInvoice] = React.useState(false);
+  const [excludedInvoiceIds, setExcludedInvoiceIds] = React.useState<Set<string>>(new Set());
+  const [invoiceExclusionReasons, setInvoiceExclusionReasons] = React.useState<Record<string, string>>({});
 
   const {
     data: existingCase,
@@ -213,6 +217,22 @@ export function LegalTransferReadinessWizard({
     () => invoices.reduce((sum, invoice) => sum + Number(invoice.balance_due || 0), 0),
     [invoices],
   );
+  const includedInvoices = React.useMemo(
+    () => invoices.filter((invoice) => !excludedInvoiceIds.has(invoice.id)),
+    [excludedInvoiceIds, invoices],
+  );
+  const excludedInvoices = React.useMemo(
+    () => invoices.filter((invoice) => excludedInvoiceIds.has(invoice.id)),
+    [excludedInvoiceIds, invoices],
+  );
+  const includedInvoiceOutstanding = React.useMemo(
+    () => includedInvoices.reduce((sum, invoice) => sum + Number(invoice.balance_due || 0), 0),
+    [includedInvoices],
+  );
+  const excludedInvoiceOutstanding = invoiceOutstanding - includedInvoiceOutstanding;
+  const hasMissingExclusionReason = excludedInvoices.some(
+    (invoice) => !invoiceExclusionReasons[invoice.id]?.trim(),
+  );
   const completedPayments = React.useMemo(
     () =>
       payments
@@ -239,6 +259,8 @@ export function LegalTransferReadinessWizard({
     setNotes('');
     setPriority('high');
     setCaseType('payment_collection');
+    setExcludedInvoiceIds(new Set());
+    setInvoiceExclusionReasons({});
     setVehicleDisposition(
       contract?.vehicle_returned || ['cancelled', 'closed'].includes(contract?.status || '')
         ? 'returned'
@@ -248,15 +270,15 @@ export function LegalTransferReadinessWizard({
 
   React.useEffect(() => {
     if (!open || !readiness) return;
-    const defaultClaim =
-      invoiceOutstanding > 0
-        ? invoiceOutstanding + Number(contract?.late_fine_amount || 0)
-        : Number(contract?.balance_due || 0) + Number(contract?.late_fine_amount || 0);
+    const defaultClaim = invoices.length > 0
+      ? includedInvoiceOutstanding + Number(contract?.late_fine_amount || 0)
+      : Number(contract?.balance_due || 0) + Number(contract?.late_fine_amount || 0);
     setClaimAmount(defaultClaim.toFixed(2));
   }, [
     contract?.balance_due,
     contract?.late_fine_amount,
-    invoiceOutstanding,
+    includedInvoiceOutstanding,
+    invoices.length,
     open,
     readiness,
   ]);
@@ -362,6 +384,24 @@ export function LegalTransferReadinessWizard({
     setInvoiceEditReason('');
   };
 
+  const toggleInvoiceExclusion = (invoiceId: string) => {
+    setFinancialReviewed(false);
+    setExcludedInvoiceIds((current) => {
+      const next = new Set(current);
+      if (next.has(invoiceId)) {
+        next.delete(invoiceId);
+        setInvoiceExclusionReasons((reasons) => {
+          const updated = { ...reasons };
+          delete updated[invoiceId];
+          return updated;
+        });
+      } else {
+        next.add(invoiceId);
+      }
+      return next;
+    });
+  };
+
   const saveInvoiceCorrection = async () => {
     if (!contract || !editingInvoice || !user?.id) return;
     const amount = Number(editedInvoiceAmount);
@@ -395,7 +435,9 @@ export function LegalTransferReadinessWizard({
   };
 
   const canContinue = () => {
-    if (step === 0) return financialReviewed && Number(claimAmount) >= 0;
+    if (step === 0) {
+      return financialReviewed && !hasMissingExclusionReason && Number(claimAmount) >= 0;
+    }
     if (step === 1) return Boolean(readiness?.signed_contract_ready);
     if (step === 2) return violationsReviewed;
     if (step === 3) return violations.length === 0 || Boolean(readiness?.violation_proof_ready);
@@ -404,6 +446,10 @@ export function LegalTransferReadinessWizard({
 
   const completeTransfer = async () => {
     if (!contract || !user?.id || !readiness) return;
+    if (hasMissingExclusionReason) {
+      toast.error('اكتب سبب استبعاد كل فاتورة قبل إكمال التحويل');
+      return;
+    }
     if (
       !financialReviewed
       || !readiness.signed_contract_ready
@@ -415,6 +461,12 @@ export function LegalTransferReadinessWizard({
     }
 
     try {
+      const excludedInvoiceAudit = excludedInvoices.map((invoice) => ({
+        invoice_id: invoice.id,
+        invoice_number: invoice.invoice_number,
+        balance_due: Number(invoice.balance_due || 0),
+        reason: invoiceExclusionReasons[invoice.id].trim(),
+      }));
       await callRpc('complete_legal_transfer_readiness_v1', {
         p_company_id: contract.company_id,
         p_contract_id: contract.id,
@@ -422,6 +474,10 @@ export function LegalTransferReadinessWizard({
           financial_reviewed: true,
           claim_amount: Number(claimAmount),
           accounting_invoice_balance: invoiceOutstanding,
+          included_invoice_balance: includedInvoiceOutstanding,
+          excluded_invoice_balance: excludedInvoiceOutstanding,
+          included_invoice_ids: includedInvoices.map((invoice) => invoice.id),
+          excluded_invoices: excludedInvoiceAudit,
           completed_payments: completedPayments,
           financial_notes: financialNotes.trim(),
           signed_contract_ready: true,
@@ -438,7 +494,14 @@ export function LegalTransferReadinessWizard({
       await convertMutation.mutateAsync({
         contractId: contract.id,
         contract,
-        notes,
+        notes: [
+          notes.trim(),
+          excludedInvoiceAudit.length > 0
+            ? `الفواتير المستبعدة من المطالبة:\n${excludedInvoiceAudit
+                .map((invoice) => `- ${invoice.invoice_number}: ${invoice.balance_due} ر.ق - ${invoice.reason}`)
+                .join('\n')}`
+            : '',
+        ].filter(Boolean).join('\n\n'),
         priority,
         caseType,
         vehicleReturned: vehicleDisposition === 'returned',
@@ -465,10 +528,21 @@ export function LegalTransferReadinessWizard({
         </AlertDescription>
       </Alert>
 
-      <div className="grid gap-3 sm:grid-cols-3">
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <div className="rounded-lg border border-[#DDE5EF] bg-white p-4">
           <p className="text-xs font-bold text-[#6A7688]">رصيد الفواتير القائم</p>
           <p className="mt-1 text-lg font-black text-[#142033]">{formatCurrency(invoiceOutstanding)}</p>
+        </div>
+        <div className="rounded-lg border border-[#BFEBDD] bg-[#E9FBF6] p-4">
+          <p className="text-xs font-bold text-[#0D6B55]">رصيد الفواتير المشمول بالمطالبة</p>
+          <p className="mt-1 text-lg font-black text-[#0D876A]">
+            {formatCurrency(includedInvoiceOutstanding)}
+          </p>
+          {excludedInvoices.length > 0 && (
+            <p className="mt-1 text-xs text-[#B42318]">
+              مستبعد: {formatCurrency(excludedInvoiceOutstanding)}
+            </p>
+          )}
         </div>
         <div className="rounded-lg border border-[#DDE5EF] bg-white p-4">
           <p className="text-xs font-bold text-[#6A7688]">الدفعات المكتملة</p>
@@ -484,10 +558,28 @@ export function LegalTransferReadinessWizard({
 
       <Card className="rounded-lg border-[#DDE5EF] shadow-none">
         <CardHeader className="border-b border-[#EEF2F6] pb-3">
-          <CardTitle className="flex items-center gap-2 text-base">
-            <ReceiptText className="h-4 w-4 text-[#1D4F7A]" />
-            الفواتير التي تكوّن المطالبة
-          </CardTitle>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <ReceiptText className="h-4 w-4 text-[#1D4F7A]" />
+              الفواتير التي تكوّن المطالبة
+            </CardTitle>
+            {excludedInvoices.length > 0 && (
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                className="gap-1 border-[#B8C6D8]"
+                onClick={() => {
+                  setExcludedInvoiceIds(new Set());
+                  setInvoiceExclusionReasons({});
+                  setFinancialReviewed(false);
+                }}
+              >
+                <RotateCcw className="h-3.5 w-3.5" />
+                إعادة كل الفواتير
+              </Button>
+            )}
+          </div>
         </CardHeader>
         <CardContent className="max-h-64 space-y-2 overflow-y-auto p-3">
           {invoices.length === 0 ? (
@@ -495,41 +587,101 @@ export function LegalTransferReadinessWizard({
               لا توجد فواتير فعالة مرتبطة بالعقد.
             </p>
           ) : (
-            invoices.map((invoice) => (
-              <div
-                key={invoice.id}
-                className="grid gap-2 rounded-lg border border-[#E5EAF1] bg-[#F8FAFC] p-3 sm:grid-cols-[1fr_auto_auto]"
-              >
-                <div>
-                  <p className="font-bold text-[#142033]">{invoice.invoice_number}</p>
-                  <p className="mt-1 text-xs text-[#6A7688]">
-                    {invoice.invoice_date} · {statusLabel(invoice.payment_status)}
-                  </p>
-                </div>
-                <div className="text-right sm:text-left">
-                  <p className="text-xs text-[#6A7688]">الإجمالي / المتبقي</p>
-                  <p className="font-black text-[#142033]">
-                    {formatCurrency(invoice.total_amount)} / {formatCurrency(invoice.balance_due)}
-                  </p>
-                </div>
-                {invoice.can_edit_amount ? (
+            invoices.map((invoice) => {
+              const isExcluded = excludedInvoiceIds.has(invoice.id);
+              return (
+                <div
+                  key={invoice.id}
+                  className={cn(
+                    'grid gap-3 rounded-lg border p-3 transition-colors sm:grid-cols-[1fr_auto_auto_auto]',
+                    isExcluded
+                      ? 'border-[#F2B8B5] bg-[#FFF7F6]'
+                      : 'border-[#BFEBDD] bg-[#F7FFFC]',
+                  )}
+                >
+                  <div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className={cn('font-bold', isExcluded ? 'text-[#8A3028] line-through' : 'text-[#142033]')}>
+                        {invoice.invoice_number}
+                      </p>
+                      <Badge
+                        variant="outline"
+                        className={cn(
+                          isExcluded
+                            ? 'border-[#F2B8B5] bg-white text-[#B42318]'
+                            : 'border-[#BFEBDD] bg-white text-[#0D6B55]',
+                        )}
+                      >
+                        {isExcluded ? 'مستبعدة' : 'مشمولة'}
+                      </Badge>
+                    </div>
+                    <p className="mt-1 text-xs text-[#6A7688]">
+                      {invoice.invoice_date} · {statusLabel(invoice.payment_status)}
+                    </p>
+                  </div>
+                  <div className="text-right sm:text-left">
+                    <p className="text-xs text-[#6A7688]">الإجمالي / المتبقي</p>
+                    <p className="font-black text-[#142033]">
+                      {formatCurrency(invoice.total_amount)} / {formatCurrency(invoice.balance_due)}
+                    </p>
+                  </div>
+                  {invoice.can_edit_amount ? (
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      className="gap-1"
+                      onClick={() => openInvoiceEditor(invoice)}
+                    >
+                      <Pencil className="h-3.5 w-3.5" />
+                      تصحيح
+                    </Button>
+                  ) : (
+                    <Badge variant="outline" className="w-fit border-[#DDE5EF] text-[#6A7688]">
+                      محمي محاسبيًا
+                    </Badge>
+                  )}
                   <Button
                     type="button"
                     size="sm"
                     variant="outline"
-                    className="gap-1"
-                    onClick={() => openInvoiceEditor(invoice)}
+                    className={cn(
+                      'gap-1',
+                      isExcluded
+                        ? 'border-[#BFEBDD] text-[#0D6B55] hover:bg-[#E9FBF6]'
+                        : 'border-[#F2B8B5] text-[#B42318] hover:bg-[#FFF0EE]',
+                    )}
+                    onClick={() => toggleInvoiceExclusion(invoice.id)}
                   >
-                    <Pencil className="h-3.5 w-3.5" />
-                    تصحيح
+                    {isExcluded ? <RotateCcw className="h-3.5 w-3.5" /> : <CircleMinus className="h-3.5 w-3.5" />}
+                    {isExcluded ? 'إعادة للمطالبة' : 'استبعاد'}
                   </Button>
-                ) : (
-                  <Badge variant="outline" className="w-fit border-[#DDE5EF] text-[#6A7688]">
-                    محمي محاسبيًا
-                  </Badge>
-                )}
-              </div>
-            ))
+                  {isExcluded && (
+                    <div className="space-y-1 sm:col-span-4">
+                      <Label htmlFor={`invoice-exclusion-${invoice.id}`} className="text-xs text-[#8A3028]">
+                        سبب الاستبعاد <span className="text-[#B42318]">*</span>
+                      </Label>
+                      <Input
+                        id={`invoice-exclusion-${invoice.id}`}
+                        value={invoiceExclusionReasons[invoice.id] || ''}
+                        onChange={(event) => {
+                          setFinancialReviewed(false);
+                          setInvoiceExclusionReasons((current) => ({
+                            ...current,
+                            [invoice.id]: event.target.value,
+                          }));
+                        }}
+                        placeholder="مثال: الفاتورة لا تخص مدة المطالبة القانونية"
+                        className={cn(
+                          'bg-white',
+                          !invoiceExclusionReasons[invoice.id]?.trim() && 'border-[#E17B72]',
+                        )}
+                      />
+                    </div>
+                  )}
+                </div>
+              );
+            })
           )}
         </CardContent>
       </Card>
@@ -596,10 +748,20 @@ export function LegalTransferReadinessWizard({
         </div>
       </div>
 
+      {hasMissingExclusionReason && (
+        <Alert className="border-[#F2B8B5] bg-[#FFF7F6]">
+          <AlertCircle className="h-4 w-4 text-[#B42318]" />
+          <AlertDescription className="text-[#8A3028]">
+            يجب كتابة سبب استبعاد كل فاتورة حتى يتم توثيقه في سجل التحويل القانوني.
+          </AlertDescription>
+        </Alert>
+      )}
+
       <Label className="flex cursor-pointer items-start gap-3 rounded-lg border border-[#BFEBDD] bg-[#E9FBF6] p-4">
         <Checkbox
           checked={financialReviewed}
           onCheckedChange={(checked) => setFinancialReviewed(checked === true)}
+          disabled={hasMissingExclusionReason}
           className="mt-0.5"
         />
         <span>
@@ -828,6 +990,18 @@ export function LegalTransferReadinessWizard({
         <p className="mt-1 text-2xl font-black text-[#142033]">
           {formatCurrency(Number(claimAmount || 0))}
         </p>
+        {excludedInvoices.length > 0 && (
+          <div className="mt-3 border-t border-[#DDE5EF] pt-3 text-xs leading-6 text-[#8A3028]">
+            <p className="font-black">
+              تم استبعاد {excludedInvoices.length} فاتورة بقيمة {formatCurrency(excludedInvoiceOutstanding)}
+            </p>
+            {excludedInvoices.map((invoice) => (
+              <p key={invoice.id}>
+                {invoice.invoice_number}: {invoiceExclusionReasons[invoice.id]}
+              </p>
+            ))}
+          </div>
+        )}
         {violations.length > 0 && (
           <p className="mt-2 text-xs leading-5 text-[#6A7688]">
             المخالفات بقيمة {formatCurrency(violationTotal)} محفوظة مع إثباتها وتُعرض في الملف
