@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+﻿/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -71,6 +71,7 @@ import { useDelinquentCustomers, type DelinquentCustomer } from '@/hooks/useDeli
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 import { useRolePermissions } from '@/hooks/useRolePermissions';
+import { useTeamMembers } from '@/hooks/useTasks';
 import {
   latestLegalEmployeeReviewByContract,
   type LegalTransferEmployeeReview,
@@ -191,6 +192,7 @@ const normalizeContractForLegal = (contract: any): ContractForLegal => ({
   end_date: contract.end_date,
   status: contract.status || 'active',
   vehicle_returned: contract.vehicle_returned ?? null,
+  assigned_to_profile_id: contract.assigned_to_profile_id ?? null,
   customer: contract.customers
     ? {
         id: contract.customers.id,
@@ -354,6 +356,7 @@ const fetchLegalQueue = async (companyId: string): Promise<QueueItem[]> => {
       balance_due,
       late_fine_amount,
       days_overdue,
+      assigned_to_profile_id,
       license_plate,
       make,
       model,
@@ -548,6 +551,7 @@ const fetchRentCandidates = async (companyId: string, searchTerm: string): Promi
       balance_due,
       late_fine_amount,
       days_overdue,
+      assigned_to_profile_id,
       license_plate,
       make,
       model,
@@ -739,6 +743,7 @@ const fetchTrafficCandidates = async (companyId: string): Promise<CandidateItem[
         balance_due,
         late_fine_amount,
         days_overdue,
+        assigned_to_profile_id,
         license_plate,
         make,
         model,
@@ -1240,6 +1245,7 @@ const FinancialDelinquencyPage: React.FC = () => {
   const [isRemovingLegal, setIsRemovingLegal] = useState(false);
   const [reviewCandidate, setReviewCandidate] = useState<CandidateItem | null>(null);
   const [reviewReason, setReviewReason] = useState('');
+  const [reviewAssigneeId, setReviewAssigneeId] = useState('');
   const [overrideReview, setOverrideReview] = useState<LegalTransferEmployeeReview | null>(null);
   const [overrideReason, setOverrideReason] = useState('');
 
@@ -1248,6 +1254,7 @@ const FinancialDelinquencyPage: React.FC = () => {
   const requestEmployeeReview = useRequestLegalEmployeeReview();
   const overrideEmployeeReview = useOverrideLegalEmployeeReview();
   const { data: employeeReviews = [] } = useCompanyLegalTransferEmployeeReviews();
+  const { data: teamMembers = [] } = useTeamMembers();
   const employeeReviewByContract = useMemo(
     () => latestLegalEmployeeReviewByContract(employeeReviews),
     [employeeReviews],
@@ -1581,9 +1588,11 @@ const FinancialDelinquencyPage: React.FC = () => {
       companyId,
       contractId: reviewCandidate.contract.id,
       reason: reviewReason.trim() || 'يرجى تدقيق بيانات العميل والعقد قبل التحويل القانوني.',
+      assigneeProfileId: reviewAssigneeId || null,
     });
     setReviewCandidate(null);
     setReviewReason('');
+    setReviewAssigneeId('');
   };
 
   const submitManagerOverride = async () => {
@@ -2316,16 +2325,21 @@ const FinancialDelinquencyPage: React.FC = () => {
                           </Button>
                         ) : (
                           <Button
-                            disabled={!candidate.canConvert || requestEmployeeReview.isPending || employeeReview?.status === 'pending'}
+                            disabled={!candidate.canConvert || requestEmployeeReview.isPending}
                             onClick={() => {
                               setReviewCandidate(candidate);
                               setReviewReason(employeeReview?.employee_notes || '');
+                              setReviewAssigneeId(
+                                employeeReview?.assigned_to_profile_id
+                                || candidate.contract?.assigned_to_profile_id
+                                || '',
+                              );
                             }}
                             className="gap-2 rounded-xl bg-[#1D4F7A] text-white hover:bg-[#173A63]"
                           >
                             <ClipboardCheck className="h-4 w-4" />
                             {employeeReview?.status === 'pending'
-                              ? 'بانتظار الموظف'
+                              ? 'تغيير الموظف'
                               : employeeReview
                                 ? 'إعادة إرسال للتدقيق'
                                 : 'إرسال للموظف للتدقيق'}
@@ -2374,13 +2388,48 @@ const FinancialDelinquencyPage: React.FC = () => {
           <DialogHeader className="text-right">
             <DialogTitle className="flex items-center gap-2">
               <ClipboardCheck className="h-5 w-5 text-[#1D4F7A]" />
-              إرسال العقد للموظف للتدقيق
+              {reviewCandidate?.contract?.id && employeeReviewByContract.get(reviewCandidate.contract.id)
+                ? 'تغيير الموظف المسؤول عن التدقيق'
+                : 'إرسال العقد للموظف للتدقيق'}
             </DialogTitle>
             <DialogDescription className="text-right leading-6">
-              سيظهر العقد {reviewCandidate?.contractNumber || ''} في مساحة الموظف المسؤول، ولن يسمح النظام بتحويله قانونياً قبل وصول قراره.
+              سيظهر العقد {reviewCandidate?.contractNumber || ''} في مساحة الموظف المختار، ولن يسمح النظام بتحويله قانونياً قبل وصول قراره.
+              {reviewCandidate?.contract?.id && employeeReviewByContract.get(reviewCandidate.contract.id)
+                ? ' إعادة الإرسال ستحدّث الموظف المعيّن للطلب الحالي.'
+                : ''}
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-2 py-2">
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label htmlFor="employee-review-assignee">الموظف المسؤول عن التدقيق</Label>
+              <Select value={reviewAssigneeId} onValueChange={setReviewAssigneeId}>
+                <SelectTrigger id="employee-review-assignee" className="h-11 rounded-xl border-slate-200 bg-[#F6F8FB]">
+                  <SelectValue placeholder="اختر الموظف..." />
+                </SelectTrigger>
+                <SelectContent align="end" className="max-h-64">
+                  {teamMembers.map((member: any) => {
+                    const memberName = [
+                      member.first_name_ar || member.first_name,
+                      member.last_name_ar || member.last_name,
+                    ].filter(Boolean).join(' ') || 'موظف';
+                    return (
+                      <SelectItem key={member.id} value={member.id}>
+                        {memberName}
+                        {member.id === reviewCandidate?.contract?.assigned_to_profile_id
+                          ? ' (المسؤول الحالي عن العقد)'
+                          : ''}
+                      </SelectItem>
+                    );
+                  })}
+                </SelectContent>
+              </Select>
+              {!reviewAssigneeId && (
+                <p className="text-xs leading-5 text-amber-700">
+                  إذا لم تختر موظفاً سيُرسل الطلب للموظف المسند للعقد تلقائياً، أو يبقى بانتظار التعيين إن لم يوجد.
+                </p>
+              )}
+            </div>
+            <div className="space-y-2">
             <Label htmlFor="employee-review-reason">تعليمات الفريق القانوني</Label>
             <Textarea
               id="employee-review-reason"
@@ -2389,6 +2438,7 @@ const FinancialDelinquencyPage: React.FC = () => {
               placeholder="مثال: تأكد من صحة الاسم والهوية وآخر دفعة وحالة المركبة..."
               className="min-h-28"
             />
+            </div>
           </div>
           <DialogFooter className="gap-2">
             <Button type="button" variant="outline" onClick={() => setReviewCandidate(null)} disabled={requestEmployeeReview.isPending}>
@@ -2396,7 +2446,9 @@ const FinancialDelinquencyPage: React.FC = () => {
             </Button>
             <Button type="button" onClick={sendEmployeeReview} disabled={requestEmployeeReview.isPending} className="gap-2 bg-[#1D4F7A] text-white hover:bg-[#173A63]">
               {requestEmployeeReview.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-              إرسال للتدقيق
+              {reviewCandidate?.contract?.id && employeeReviewByContract.get(reviewCandidate.contract.id)
+                ? 'حفظ الموظف'
+                : 'إرسال للتدقيق'}
             </Button>
           </DialogFooter>
         </DialogContent>

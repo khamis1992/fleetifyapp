@@ -151,15 +151,17 @@ export function useRequestLegalEmployeeReview() {
   const queryClient = useQueryClient();
   const { user } = useAuth();
   return useMutation({
-    mutationFn: async ({ companyId, contractId, reason }: {
+    mutationFn: async ({ companyId, contractId, reason, assigneeProfileId }: {
       companyId: string;
       contractId: string;
       reason?: string;
+      assigneeProfileId?: string | null;
     }) => callReviewRpc<LegalTransferEmployeeReview>('request_legal_transfer_employee_review_v1', {
       p_company_id: companyId,
       p_contract_id: contractId,
       p_reason: reason || null,
       p_actor_id: user?.id || null,
+      p_assignee_profile_id: assigneeProfileId || null,
     }),
     onSuccess: (review) => {
       queryClient.invalidateQueries({ queryKey: ['legal-transfer-employee-reviews'] });

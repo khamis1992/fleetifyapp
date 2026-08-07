@@ -8,6 +8,12 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
+import {
+  deriveAuditChangesSummary,
+  deriveAuditEntityName,
+  getAuditResourceAliases,
+  normalizeAuditResourceType,
+} from '@/utils/auditLogEnrichment';
 import type { 
   AuditLog, 
   CreateAuditLogParams, 
@@ -15,7 +21,75 @@ import type {
   AuditAction,
   AuditResourceType 
 } from '@/types/auditLog';
-import { toast } from 'sonner';
+type AuditProfileLookup = {
+  user_id: string;
+  first_name: string | null;
+  last_name: string | null;
+  first_name_ar: string | null;
+  last_name_ar: string | null;
+  email: string;
+};
+
+const getProfileDisplayName = (profile?: AuditProfileLookup) => {
+  if (!profile) return null;
+
+  const arabicName = [profile.first_name_ar, profile.last_name_ar]
+    .filter(Boolean)
+    .join(' ')
+    .trim();
+  const latinName = [profile.first_name, profile.last_name]
+    .filter(Boolean)
+    .join(' ')
+    .trim();
+
+  return arabicName || latinName || profile.email || null;
+};
+
+const enrichAuditLogs = async (logs: AuditLog[], companyId?: string | null) => {
+  const missingUserIds = Array.from(new Set(
+    logs
+      .filter((log) => log.user_id && (!log.user_name || !log.user_email))
+      .map((log) => log.user_id)
+      .filter(Boolean) as string[]
+  ));
+
+  const profilesByUserId = new Map<string, AuditProfileLookup>();
+
+  if (missingUserIds.length > 0) {
+    let profilesQuery = supabase
+      .from('profiles')
+      .select('user_id,first_name,last_name,first_name_ar,last_name_ar,email')
+      .in('user_id', missingUserIds);
+
+    if (companyId) {
+      profilesQuery = profilesQuery.eq('company_id', companyId);
+    }
+
+    const { data: profiles, error } = await profilesQuery;
+
+    if (error) {
+      console.warn('Failed to enrich audit log users:', error);
+    } else {
+      (profiles || []).forEach((profile) => {
+        profilesByUserId.set(profile.user_id, profile);
+      });
+    }
+  }
+
+  return logs.map((log) => {
+    const profile = log.user_id ? profilesByUserId.get(log.user_id) : undefined;
+    const enrichedLog: AuditLog = {
+      ...log,
+      resource_type: normalizeAuditResourceType(log.resource_type) as AuditResourceType,
+      user_name: log.user_name || getProfileDisplayName(profile) || undefined,
+      user_email: log.user_email || profile?.email || undefined,
+      entity_name: deriveAuditEntityName(log) || undefined,
+      changes_summary: deriveAuditChangesSummary(log) || undefined,
+    };
+
+    return enrichedLog;
+  });
+};
 
 /**
  * Hook to create audit logs
@@ -109,10 +183,17 @@ export function useAuditLogs(filters?: AuditLogFilters, enabled = true) {
         }
 
         if (filters.resource_type) {
+          const resourceTypes = Array.isArray(filters.resource_type)
+            ? filters.resource_type
+            : [filters.resource_type];
+          const expandedResourceTypes = Array.from(new Set(
+            resourceTypes.flatMap((resourceType) => getAuditResourceAliases(resourceType))
+          ));
+
           if (Array.isArray(filters.resource_type)) {
-            query = query.in('resource_type', filters.resource_type);
+            query = query.in('resource_type', expandedResourceTypes);
           } else {
-            query = query.eq('resource_type', filters.resource_type);
+            query = query.in('resource_type', expandedResourceTypes);
           }
         }
 
@@ -164,7 +245,7 @@ export function useAuditLogs(filters?: AuditLogFilters, enabled = true) {
         throw error;
       }
 
-      return data as AuditLog[];
+      return enrichAuditLogs((data || []) as AuditLog[], companyId);
     },
     enabled,
   });

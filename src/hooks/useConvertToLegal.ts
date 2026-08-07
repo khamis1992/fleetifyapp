@@ -31,6 +31,7 @@ export interface ContractForLegal {
   end_date: string;
   status: string;
   vehicle_returned?: boolean | null;
+  assigned_to_profile_id?: string | null;
   customer?: {
     id: string;
     first_name?: string | null;

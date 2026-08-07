@@ -1,5 +1,6 @@
 import {
   CheckCircle,
+  Clock,
   Download,
   FileText,
   Shield,
@@ -73,7 +74,7 @@ export const getAuditStatusPresentation = (status?: string | null) => {
   }
 
   return {
-    StatusIcon: FileText,
+    StatusIcon: Clock,
     statusColor: 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300',
   };
 };
@@ -118,3 +119,97 @@ export const getAuditLogStats = (logs: AuditLog[]) => ({
       .filter(Boolean)
   ).size,
 });
+
+const arabicActionLabels: Record<string, string> = {
+  create: 'إنشاء',
+  update: 'تحديث',
+  delete: 'حذف',
+  approve: 'اعتماد',
+  reject: 'رفض',
+  cancel: 'إلغاء',
+  archive: 'أرشفة',
+  restore: 'استعادة',
+  export: 'تصدير',
+  import: 'استيراد',
+  login: 'تسجيل دخول',
+  logout: 'تسجيل خروج',
+  failed_login: 'محاولة دخول فاشلة',
+  data_export: 'تصدير بيانات',
+  daily_audit_agent_run: 'تشغيل وكيل التدقيق اليومي',
+  payment_created: 'إنشاء دفعة',
+  payment_updated: 'تحديث دفعة',
+  payment_deleted: 'حذف دفعة',
+  contract_created: 'إنشاء عقد',
+  contract_updated: 'تحديث عقد',
+  contract_deleted: 'حذف عقد',
+  customer_created: 'إنشاء عميل',
+  customer_updated: 'تحديث عميل',
+  customer_deleted: 'حذف عميل',
+};
+
+export const getAuditActionLabel = (action: string) => {
+  const normalizedAction = action
+    .trim()
+    .toLowerCase()
+    .replace(/^payments_/, 'payment_')
+    .replace(/^invoices_/, 'invoice_')
+    .replace(/^journal_entries_/, 'journal_entry_')
+    .replace(/^contracts_/, 'contract_')
+    .replace(/^customers_/, 'customer_')
+    .replace(/^employees_/, 'employee_')
+    .replace(/^vehicles_/, 'vehicle_');
+  if (!normalizedAction) return 'إجراء غير معروف';
+  if (arabicActionLabels[normalizedAction]) return arabicActionLabels[normalizedAction];
+
+  if (normalizedAction.endsWith('_created')) return 'إنشاء سجل';
+  if (normalizedAction.endsWith('_updated')) return 'تحديث سجل';
+  if (normalizedAction.endsWith('_deleted')) return 'حذف سجل';
+
+  return action;
+};
+
+const arabicResourceLabels: Record<string, string> = {
+  payments: 'دفعة',
+  invoices: 'فاتورة',
+  contracts: 'عقد',
+  customers: 'عميل',
+  vehicles: 'مركبة',
+  employees: 'موظف',
+  journal_entries: 'قيد يومية',
+  contract: 'عقد',
+  customer: 'عميل',
+  vehicle: 'مركبة',
+  invoice: 'فاتورة',
+  payment: 'دفعة',
+  employee: 'موظف',
+  user: 'مستخدم',
+  company: 'شركة',
+  maintenance: 'صيانة',
+  penalty: 'مخالفة',
+  journal_entry: 'قيد يومية',
+  account: 'حساب',
+  role: 'دور',
+  permission: 'صلاحية',
+  system: 'النظام',
+  other: 'أخرى',
+};
+
+export const getAuditResourceLabel = (resourceType?: string | null) => {
+  const normalized = (resourceType || '').trim().toLowerCase();
+  return arabicResourceLabels[normalized] || resourceType || 'غير محدد';
+};
+
+export const getAuditStatusLabel = (status?: string | null) => {
+  const normalized = (status || 'pending').trim().toLowerCase();
+  if (normalized === 'success') return 'ناجح';
+  if (normalized === 'failed') return 'فشل';
+  return 'قيد الانتظار';
+};
+
+export const getAuditSeverityLabel = (severity?: string | null) => {
+  const normalized = (severity || 'medium').trim().toLowerCase();
+  if (normalized === 'low') return 'منخفضة';
+  if (normalized === 'high') return 'عالية';
+  if (normalized === 'critical') return 'حرجة';
+  return 'متوسطة';
+};

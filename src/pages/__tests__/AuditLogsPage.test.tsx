@@ -2,8 +2,12 @@ import { describe, expect, it } from 'vitest';
 import { FileText, User } from 'lucide-react';
 
 import {
+  getAuditActionLabel,
   getAuditActionPresentation,
   getAuditLogStats,
+  getAuditResourceLabel,
+  getAuditSeverityLabel,
+  getAuditStatusLabel,
   getAuditUserInitials,
 } from '../auditLogPresentation';
 import type { AuditLog } from '@/types/auditLog';
@@ -38,5 +42,12 @@ describe('getAuditActionPresentation', () => {
       failed: 1,
       employees: 2,
     });
+  });
+
+  it('renders audit values in Arabic for the redesigned page', () => {
+    expect(getAuditActionLabel('daily_audit_agent_run')).toBe('تشغيل وكيل التدقيق اليومي');
+    expect(getAuditResourceLabel('journal_entry')).toBe('قيد يومية');
+    expect(getAuditStatusLabel('success')).toBe('ناجح');
+    expect(getAuditSeverityLabel('critical')).toBe('حرجة');
   });
 });

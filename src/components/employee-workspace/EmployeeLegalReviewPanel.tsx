@@ -1,15 +1,20 @@
 import * as React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   AlertCircle,
   CalendarClock,
   CheckCircle2,
+  CircleMinus,
   ClipboardCheck,
-  FileText,
+  Eye,
+  FileUp,
   Loader2,
+  Pencil,
+  ReceiptText,
   Scale,
   ShieldCheck,
 } from 'lucide-react';
+import { toast } from 'sonner';
 
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
@@ -29,6 +34,8 @@ import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Textarea } from '@/components/ui/textarea';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
+import { useCreateContractDocument } from '@/hooks/useContractDocuments';
+import { supabase } from '@/integrations/supabase/client';
 import {
   type LegalEmployeeReviewDecision,
   type LegalTransferEmployeeReview,
@@ -36,6 +43,40 @@ import {
   useRespondToLegalEmployeeReview,
 } from '@/hooks/useLegalTransferEmployeeReviews';
 import { cn } from '@/lib/utils';
+
+type ReviewInvoice = {
+  id: string;
+  invoice_number: string;
+  invoice_date: string | null;
+  due_date: string | null;
+  total_amount: number;
+  paid_amount: number | null;
+  balance_due: number | null;
+  status: string | null;
+  payment_status: string | null;
+  journal_entry_id: string | null;
+};
+
+const isInvoiceEditable = (invoice: ReviewInvoice) =>
+  !invoice.journal_entry_id
+  && Number(invoice.paid_amount || 0) <= 0.01
+  && !['cancelled', 'canceled', 'void', 'voided', 'deleted', 'paid'].includes(
+    String(invoice.status || '').toLowerCase(),
+  )
+  && !['cancelled', 'canceled', 'void', 'voided', 'paid', 'partial'].includes(
+    String(invoice.payment_status || '').toLowerCase(),
+  );
+
+const isInvoiceCancelled = (invoice: ReviewInvoice) =>
+  ['cancelled', 'canceled', 'void', 'voided', 'deleted'].includes(
+    String(invoice.status || '').toLowerCase(),
+  );
+
+// Cancellation goes through the canonical journal-reversal path on the server,
+// so unpaid invoices with posted journals can still be cancelled here.
+const isInvoiceCancellable = (invoice: ReviewInvoice) =>
+  !isInvoiceCancelled(invoice)
+  && !['paid', 'partial'].includes(String(invoice.payment_status || '').toLowerCase());
 
 const checklistItems = [
   ['identity_verified', 'الهوية والاسم', 'طابقت الاسم والرقم الشخصي مع البطاقة والعقد.'],
@@ -84,16 +125,107 @@ function formFromReview(review: LegalTransferEmployeeReview): ReviewForm {
 }
 
 export function EmployeeLegalReviewPanel({ profileId }: { profileId?: string | null }) {
-  const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { formatCurrency } = useCurrencyFormatter();
   const { data: reviews = [], isLoading } = useMyLegalTransferEmployeeReviews(profileId);
   const respond = useRespondToLegalEmployeeReview();
+  const createDocument = useCreateContractDocument();
+  const contractFileInputRef = React.useRef<HTMLInputElement>(null);
   const [selected, setSelected] = React.useState<LegalTransferEmployeeReview | null>(null);
   const [form, setForm] = React.useState<ReviewForm | null>(null);
+  const [isViewingContract, setIsViewingContract] = React.useState(false);
+  const [editingInvoice, setEditingInvoice] = React.useState<ReviewInvoice | null>(null);
+  const [editedInvoiceAmount, setEditedInvoiceAmount] = React.useState('');
+  const [cancellingInvoice, setCancellingInvoice] = React.useState<ReviewInvoice | null>(null);
+  const [invoiceActionReason, setInvoiceActionReason] = React.useState('');
+  const [isInvoiceActionPending, setIsInvoiceActionPending] = React.useState(false);
+
+  const { data: contractDocuments = [] } = useQuery({
+    queryKey: ['legal-review-contract-documents', selected?.contract_id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('contract_documents')
+        .select('id, document_name, document_type, file_path, mime_type, created_at')
+        .eq('contract_id', selected!.contract_id)
+        .in('document_type', ['signed_contract', 'signed_contract_image'])
+        .not('file_path', 'is', null)
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: Boolean(selected?.contract_id),
+  });
+  const contractCopy = contractDocuments[0];
+
+  const { data: contractInvoices = [], refetch: refetchInvoices } = useQuery({
+    queryKey: ['legal-review-contract-invoices', selected?.contract_id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('invoices')
+        .select('id, invoice_number, invoice_date, due_date, total_amount, paid_amount, balance_due, status, payment_status, journal_entry_id')
+        .eq('contract_id', selected!.contract_id)
+        .eq('company_id', selected!.company_id)
+        .order('invoice_date', { ascending: true });
+      if (error) throw error;
+      return (data || []) as ReviewInvoice[];
+    },
+    enabled: Boolean(selected?.contract_id && selected?.company_id),
+  });
+  const activeInvoices = contractInvoices.filter((invoice) =>
+    !['cancelled', 'canceled', 'void', 'voided', 'deleted'].includes(
+      String(invoice.status || '').toLowerCase(),
+    ),
+  );
+  const liveInvoiceBalance = activeInvoices.reduce(
+    (sum, invoice) => sum + Math.max(Number(invoice.balance_due || 0), 0),
+    0,
+  );
 
   const openReview = (review: LegalTransferEmployeeReview) => {
     setSelected(review);
     setForm(formFromReview(review));
+  };
+
+  const viewContractCopy = async () => {
+    if (!contractCopy?.file_path) return;
+    setIsViewingContract(true);
+    try {
+      const { data, error } = await supabase.storage
+        .from('contract-documents')
+        .createSignedUrl(contractCopy.file_path, 3600);
+      if (error || !data?.signedUrl) throw error || new Error('تعذر إنشاء رابط المعاينة');
+      window.open(data.signedUrl, '_blank', 'noopener,noreferrer');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'تعذر فتح نسخة العقد');
+    } finally {
+      setIsViewingContract(false);
+    }
+  };
+
+  const uploadContractCopy = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(event.target.files || []);
+    event.target.value = '';
+    if (!selected || files.length === 0) return;
+    try {
+      for (const file of files) {
+        const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+        await createDocument.mutateAsync({
+          contract_id: selected.contract_id,
+          document_type: isPdf ? 'signed_contract' : 'signed_contract_image',
+          document_name: isPdf ? 'نسخة العقد الموقعة' : `صورة العقد الموقعة - ${file.name}`,
+          file,
+          notes: 'رفعت أثناء تدقيق الموظف قبل التحويل القانوني',
+          is_required: true,
+          suppressSuccessToast: true,
+        });
+      }
+      await queryClient.invalidateQueries({
+        queryKey: ['legal-review-contract-documents', selected.contract_id],
+      });
+      toast.success('تم حفظ نسخة العقد ضمن مستندات العقد');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'تعذر رفع نسخة العقد');
+    }
   };
 
   const submitDecision = async (decision: LegalEmployeeReviewDecision) => {
@@ -120,6 +252,64 @@ export function EmployeeLegalReviewPanel({ profileId }: { profileId?: string | n
     });
     setSelected(null);
     setForm(null);
+  };
+
+  const saveInvoiceCorrection = async () => {
+    if (!selected || !editingInvoice) return;
+    const amount = Number(editedInvoiceAmount);
+    if (!Number.isFinite(amount) || amount <= 0) {
+      toast.error('أدخل مبلغًا صحيحًا أكبر من صفر');
+      return;
+    }
+    if (!invoiceActionReason.trim()) {
+      toast.error('اكتب سبب التصحيح');
+      return;
+    }
+    setIsInvoiceActionPending(true);
+    try {
+      const { error } = await (supabase.rpc as any)('legal_transfer_update_invoice_amount_v1', {
+        p_company_id: selected.company_id,
+        p_contract_id: selected.contract_id,
+        p_invoice_id: editingInvoice.id,
+        p_new_total: amount,
+        p_reason: invoiceActionReason.trim(),
+      });
+      if (error) throw error;
+      setEditingInvoice(null);
+      setInvoiceActionReason('');
+      await refetchInvoices();
+      toast.success('تم تصحيح مبلغ الفاتورة وتسجيل العملية في سجل التدقيق');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'تعذر تصحيح مبلغ الفاتورة');
+    } finally {
+      setIsInvoiceActionPending(false);
+    }
+  };
+
+  const cancelInvoice = async () => {
+    if (!selected || !cancellingInvoice) return;
+    if (!invoiceActionReason.trim()) {
+      toast.error('اكتب سبب إلغاء الفاتورة');
+      return;
+    }
+    setIsInvoiceActionPending(true);
+    try {
+      const { error } = await (supabase.rpc as any)('legal_transfer_cancel_invoice_v1', {
+        p_company_id: selected.company_id,
+        p_contract_id: selected.contract_id,
+        p_invoice_id: cancellingInvoice.id,
+        p_reason: invoiceActionReason.trim(),
+      });
+      if (error) throw error;
+      setCancellingInvoice(null);
+      setInvoiceActionReason('');
+      await refetchInvoices();
+      toast.success('تم إلغاء الفاتورة غير المستحقة وتسجيل العملية في سجل التدقيق');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'تعذر إلغاء الفاتورة');
+    } finally {
+      setIsInvoiceActionPending(false);
+    }
   };
 
   if (!isLoading && reviews.length === 0) return null;
@@ -209,10 +399,19 @@ export function EmployeeLegalReviewPanel({ profileId }: { profileId?: string | n
               <section className="space-y-3">
                 <div className="flex items-center justify-between gap-2">
                   <h3 className="font-black text-[#142033]">بيانات العميل القابلة للتصحيح</h3>
-                  <Button type="button" size="sm" variant="outline" onClick={() => navigate(`/contracts/${selected.contracts?.contract_number}`)} className="gap-1">
-                    <FileText className="h-4 w-4" />
-                    تفاصيل العقد
-                  </Button>
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={viewContractCopy}
+                      disabled={!contractCopy || isViewingContract}
+                      className="gap-1"
+                    >
+                      {isViewingContract ? <Loader2 className="h-4 w-4 animate-spin" /> : <Eye className="h-4 w-4" />}
+                      نسخة العقد
+                    </Button>
+                  </div>
                 </div>
                 <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                   {[
@@ -234,12 +433,54 @@ export function EmployeeLegalReviewPanel({ profileId }: { profileId?: string | n
                     </div>
                   ))}
                 </div>
+
+                <div className={cn(
+                  'flex flex-wrap items-center justify-between gap-3 rounded-lg border p-3',
+                  contractCopy ? 'border-emerald-200 bg-emerald-50/60' : 'border-amber-200 bg-amber-50',
+                )}>
+                  <div className="flex items-center gap-2 text-sm">
+                    {contractCopy ? (
+                      <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600" />
+                    ) : (
+                      <AlertCircle className="h-4 w-4 shrink-0 text-amber-600" />
+                    )}
+                    <span className={contractCopy ? 'font-bold text-emerald-900' : 'font-bold text-amber-900'}>
+                      {contractCopy
+                        ? `نسخة العقد محفوظة: ${contractCopy.document_name}`
+                        : 'لا توجد نسخة موقعة من العقد في المستندات'}
+                    </span>
+                  </div>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={() => contractFileInputRef.current?.click()}
+                    disabled={createDocument.isPending}
+                    className="gap-1.5 bg-white"
+                  >
+                    {createDocument.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileUp className="h-4 w-4" />}
+                    {contractCopy ? 'رفع نسخة أحدث' : 'رفع نسخة العقد'}
+                  </Button>
+                  <input
+                    ref={contractFileInputRef}
+                    type="file"
+                    accept="application/pdf,image/*"
+                    multiple
+                    className="hidden"
+                    onChange={uploadContractCopy}
+                  />
+                </div>
               </section>
 
               <section className="grid gap-3 sm:grid-cols-3">
                 <div className="rounded-lg border border-[#DDE5EF] bg-[#F8FAFC] p-3">
-                  <p className="text-xs text-[#6A7688]">رصيد الفواتير عند الطلب</p>
-                  <p className="mt-1 font-black text-[#142033]">{formatCurrency(Number(selected.request_snapshot?.invoice_balance || 0))}</p>
+                  <p className="text-xs text-[#6A7688]">رصيد الفواتير الحالي</p>
+                  <p className="mt-1 font-black text-[#142033]">{formatCurrency(liveInvoiceBalance)}</p>
+                  {Number(selected.request_snapshot?.invoice_balance || 0) !== liveInvoiceBalance && (
+                    <p className="mt-0.5 text-[10px] text-[#9A5A00]">
+                      كان {formatCurrency(Number(selected.request_snapshot?.invoice_balance || 0))} عند إرسال الطلب
+                    </p>
+                  )}
                 </div>
                 <div className="rounded-lg border border-[#DDE5EF] bg-[#F8FAFC] p-3">
                   <p className="text-xs text-[#6A7688]">رصيد العقد</p>
@@ -251,6 +492,94 @@ export function EmployeeLegalReviewPanel({ profileId }: { profileId?: string | n
                     <CalendarClock className="h-4 w-4 text-[#9A5A00]" />
                     {new Date(selected.due_at).toLocaleDateString('ar-QA')}
                   </p>
+                </div>
+              </section>
+
+              <section className="space-y-2">
+                <div className="flex items-center justify-between gap-2">
+                  <h3 className="flex items-center gap-2 font-black text-[#142033]">
+                    <ReceiptText className="h-4 w-4 text-[#1D4F7A]" />
+                    فواتير العقد
+                  </h3>
+                  <span className="text-xs text-[#6A7688]">
+                    الفواتير الملغاة أو المصححة تُسجل باسمك وسببها في سجل التدقيق
+                  </span>
+                </div>
+                <div className="max-h-56 space-y-2 overflow-y-auto">
+                  {contractInvoices.length === 0 ? (
+                    <p className="rounded-lg border border-dashed border-[#DDE5EF] p-4 text-center text-sm text-[#6A7688]">
+                      لا توجد فواتير مرتبطة بهذا العقد.
+                    </p>
+                  ) : (
+                    contractInvoices.map((invoice) => {
+                      const editable = isInvoiceEditable(invoice);
+                      const cancellable = isInvoiceCancellable(invoice);
+                      const cancelled = isInvoiceCancelled(invoice);
+                      return (
+                        <div
+                          key={invoice.id}
+                          className={cn(
+                            'grid gap-2 rounded-lg border p-3 sm:grid-cols-[1fr_auto_auto]',
+                            cancelled ? 'border-[#E2E8F0] bg-[#F8FAFC] opacity-70' : 'border-[#DDE5EF] bg-white',
+                          )}
+                        >
+                          <div className="min-w-0">
+                            <p className={cn('truncate font-bold text-[#142033]', cancelled && 'line-through')}>
+                              {invoice.invoice_number}
+                            </p>
+                            <p className="mt-0.5 text-xs text-[#6A7688]">
+                              {invoice.invoice_date || '-'} · {cancelled ? 'ملغاة' : String(invoice.payment_status || invoice.status || '')}
+                            </p>
+                          </div>
+                          <div className="text-left">
+                            <p className="text-xs text-[#6A7688]">الإجمالي / المتبقي</p>
+                            <p className="font-black text-[#142033]">
+                              {formatCurrency(Number(invoice.total_amount || 0))} / {formatCurrency(Number(invoice.balance_due || 0))}
+                            </p>
+                          </div>
+                          {editable || cancellable ? (
+                            <div className="flex gap-1.5">
+                              {editable && (
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant="outline"
+                                  className="gap-1"
+                                  onClick={() => {
+                                    setEditingInvoice(invoice);
+                                    setEditedInvoiceAmount(String(invoice.total_amount || 0));
+                                    setInvoiceActionReason('');
+                                  }}
+                                >
+                                  <Pencil className="h-3.5 w-3.5" />
+                                  تصحيح
+                                </Button>
+                              )}
+                              {cancellable && (
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant="outline"
+                                  className="gap-1 border-[#F2B8B5] text-[#B42318] hover:bg-[#FFF0EE]"
+                                  onClick={() => {
+                                    setCancellingInvoice(invoice);
+                                    setInvoiceActionReason('');
+                                  }}
+                                >
+                                  <CircleMinus className="h-3.5 w-3.5" />
+                                  إلغاء
+                                </Button>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="self-center text-xs text-[#94A3B8]">
+                              {cancelled ? 'ملغاة' : 'محمية محاسبياً'}
+                            </span>
+                          )}
+                        </div>
+                      );
+                    })
+                  )}
                 </div>
               </section>
 
@@ -314,6 +643,88 @@ export function EmployeeLegalReviewPanel({ profileId }: { profileId?: string | n
             >
               {respond.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
               تم التصحيح وجاهز للقانونية
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={Boolean(editingInvoice)}
+        onOpenChange={(open) => !open && !isInvoiceActionPending && setEditingInvoice(null)}
+      >
+        <DialogContent dir="rtl" className="max-w-md text-right">
+          <DialogHeader className="text-right">
+            <DialogTitle>تصحيح مبلغ الفاتورة</DialogTitle>
+            <DialogDescription className="text-right leading-6">
+              {editingInvoice?.invoice_number} · يُسجل النظام القيمة السابقة والجديدة واسمك في سجل التدقيق.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label htmlFor="review-invoice-amount">المبلغ الصحيح</Label>
+              <Input
+                id="review-invoice-amount"
+                type="number"
+                min="0.01"
+                step="0.01"
+                value={editedInvoiceAmount}
+                onChange={(event) => setEditedInvoiceAmount(event.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="review-invoice-reason">سبب التصحيح</Label>
+              <Textarea
+                id="review-invoice-reason"
+                value={invoiceActionReason}
+                onChange={(event) => setInvoiceActionReason(event.target.value)}
+                placeholder="اشرح سبب اختلاف مبلغ الفاتورة..."
+              />
+            </div>
+          </div>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setEditingInvoice(null)} disabled={isInvoiceActionPending}>
+              إلغاء
+            </Button>
+            <Button onClick={saveInvoiceCorrection} disabled={isInvoiceActionPending} className="bg-[#0D876A] text-white hover:bg-[#0A6E57]">
+              {isInvoiceActionPending && <Loader2 className="ml-2 h-4 w-4 animate-spin" />}
+              حفظ التصحيح
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={Boolean(cancellingInvoice)}
+        onOpenChange={(open) => !open && !isInvoiceActionPending && setCancellingInvoice(null)}
+      >
+        <DialogContent dir="rtl" className="max-w-md text-right">
+          <DialogHeader className="text-right">
+            <DialogTitle className="text-[#B42318]">إلغاء فاتورة غير مستحقة</DialogTitle>
+            <DialogDescription className="text-right leading-6">
+              {cancellingInvoice?.invoice_number} · بقيمة {formatCurrency(Number(cancellingInvoice?.total_amount || 0))}.
+              ستُعلّم الفاتورة كملغاة ويُسجل اسمك والسبب في سجل التدقيق، ولن تُحذف نهائياً.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2 py-2">
+            <Label htmlFor="review-cancel-reason">سبب الإلغاء (إلزامي)</Label>
+            <Textarea
+              id="review-cancel-reason"
+              value={invoiceActionReason}
+              onChange={(event) => setInvoiceActionReason(event.target.value)}
+              placeholder="مثال: الفاتورة أُنشئت عن فترة خارج مدة العقد..."
+            />
+          </div>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setCancellingInvoice(null)} disabled={isInvoiceActionPending}>
+              تراجع
+            </Button>
+            <Button
+              onClick={cancelInvoice}
+              disabled={isInvoiceActionPending || !invoiceActionReason.trim()}
+              className="bg-[#B42318] text-white hover:bg-[#912018]"
+            >
+              {isInvoiceActionPending && <Loader2 className="ml-2 h-4 w-4 animate-spin" />}
+              تأكيد الإلغاء
             </Button>
           </DialogFooter>
         </DialogContent>

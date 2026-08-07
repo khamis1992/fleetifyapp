@@ -6,6 +6,10 @@ const migrationSource = readFileSync(
   resolve(process.cwd(), 'supabase/migrations/20260807200941_legal_transfer_employee_review_workflow.sql'),
   'utf8',
 );
+const assigneeMigrationSource = readFileSync(
+  resolve(process.cwd(), 'supabase/migrations/20260807215827_legal_review_manual_assignee.sql'),
+  'utf8',
+);
 const delinquencySource = readFileSync(
   resolve(process.cwd(), 'src/pages/legal/FinancialDelinquency.tsx'),
   'utf8',
@@ -43,5 +47,12 @@ describe('legal transfer employee review workflow', () => {
     expect(panelSource).toContain('تدقيق وتصحيح');
     expect(panelSource).toContain('تم التصحيح وجاهز للقانونية');
     expect(panelSource).toContain('قائمة التحقق الإلزامية');
+  });
+
+  it('lets the legal team choose the reviewing employee manually', () => {
+    expect(delinquencySource).toContain('الموظف المسؤول عن التدقيق');
+    expect(delinquencySource).toContain('reviewAssigneeId');
+    expect(delinquencySource).toContain('المسؤول الحالي عن العقد');
+    expect(assigneeMigrationSource).toContain('p_assignee_profile_id');
   });
 });

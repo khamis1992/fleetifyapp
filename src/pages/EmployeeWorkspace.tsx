@@ -101,7 +101,6 @@ import {
 import { ExportButton } from '@/components/shared/ExportButton';
 import { exportEmployeeWorkspaceReport } from '@/utils/exports/employeeReport';
 import { NotificationBell } from '@/components/notifications/NotificationBell';
-import { VerificationTasksList } from '@/components/tasks/VerificationTasksList';
 import {
   getPerformanceGrade as getReportPerformanceGrade,
   type EmployeePerformance as ReportEmployeePerformance,
@@ -4138,9 +4137,6 @@ export const EmployeeWorkspace: React.FC = () => {
 
         {/* --- Sidebar (Right) --- */}
         <div className="col-span-12 space-y-4 sm:space-y-5 lg:col-span-4">
-
-          {/* Verification Tasks */}
-          <VerificationTasksList limit={5} showSystemAuditLink />
 
           {/* Performance Detailed */}
           <Card className="rounded-2xl border-[#E2E8F0] bg-white shadow-sm">

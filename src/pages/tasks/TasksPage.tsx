@@ -80,7 +80,6 @@ import {
   Sparkles,
   ShieldCheck,
   WalletCards,
-  IdCard,
 } from 'lucide-react';
 import { CustomerDataReviewCenter } from '@/components/customers/CustomerDataReviewCenter';
 import { useScanAllPendingContractDocumentsForId } from '@/hooks/useCustomerIdProposals';
@@ -96,8 +95,14 @@ type TabType =
   | 'notes'
   | 'verification'
   | 'financial-reviews'
-  | 'data-review'
   | 'system-audit';
+
+// Legacy links used ?tab=data-review before the data-review center was merged
+// into the verification tab.
+const normalizeTabParam = (tab: string | null): TabType | null => {
+  if (tab === 'data-review') return 'verification';
+  return tab as TabType | null;
+};
 
 const taskTheme = systemColorPattern.colors;
 
@@ -134,7 +139,7 @@ const statusStyles: Record<Task['status'], { color: string; bg: string }> = {
 export default function TasksPage() {
   const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
-  const tabFromUrl = searchParams.get('tab') as TabType | null;
+  const tabFromUrl = normalizeTabParam(searchParams.get('tab'));
   const [activeTab, setActiveTab] = React.useState<TabType>(tabFromUrl || 'my-tasks');
   const [viewMode, setViewMode] = React.useState<ViewMode>('kanban');
   const [filters, setFilters] = React.useState<TaskFilters>({});
@@ -192,7 +197,7 @@ export default function TasksPage() {
     setTaskToDelete(null);
   };
 
-  const isCustomerVerificationTab = activeTab === 'verification' || activeTab === 'data-review';
+  const isCustomerVerificationTab = activeTab === 'verification';
   const handleRefresh = () => {
     if (isCustomerVerificationTab) {
       customerNameAudit.mutate();
@@ -235,8 +240,7 @@ export default function TasksPage() {
   const tabItems = [
     { id: 'my-tasks' as TabType, label: 'مهامي', icon: User },
     { id: 'all' as TabType, label: 'كل المهام', icon: ListTodo },
-    { id: 'verification' as TabType, label: 'مهام التدقيق', icon: ClipboardCheck },
-    { id: 'data-review' as TabType, label: 'مراجعة البيانات', icon: IdCard },
+    { id: 'verification' as TabType, label: 'مهام التدقيق ومراجعة البيانات', icon: ClipboardCheck },
     ...(canReviewFinancialIssues
       ? [{ id: 'financial-reviews' as TabType, label: 'مراجعات مالية', icon: WalletCards }]
       : []),
@@ -456,13 +460,7 @@ export default function TasksPage() {
 
           <TabsContent value="verification" className="mt-5 space-y-5">
             <CustomerDataReviewCenter />
-            <VerificationTasksList />
           </TabsContent>
-
-          <TabsContent value="data-review" className="mt-5">
-            <CustomerDataReviewCenter />
-          </TabsContent>
-
 
           <TabsContent value="financial-reviews" className="mt-5">
             <FinancialReviewTasksPanel />
