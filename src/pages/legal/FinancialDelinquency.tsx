@@ -123,6 +123,7 @@ const activeWorkflowStages = [
   'enforcement',
   'collection',
 ];
+const openedWorkflowStages = activeWorkflowStages.filter((stage) => stage !== 'preparation');
 
 const REQUIRED_COMPANY_LEGAL_DOCUMENTS = [
   { type: 'commercial_register', name: 'السجل التجاري' },
@@ -485,6 +486,18 @@ const fetchLegalQueue = async (companyId: string): Promise<QueueItem[]> => {
       missingDocuments,
     };
   });
+};
+
+const fetchOpenedLegalCasesCount = async (companyId: string): Promise<number> => {
+  const { count, error } = await supabase
+    .from('legal_cases')
+    .select('id', { count: 'exact', head: true })
+    .eq('company_id', companyId)
+    .in('case_status', activeLegalStatuses)
+    .in('workflow_stage', openedWorkflowStages);
+
+  if (error) throw error;
+  return count ?? 0;
 };
 
 const fetchRentCandidates = async (companyId: string, searchTerm: string): Promise<CandidateItem[]> => {
@@ -1209,6 +1222,16 @@ const FinancialDelinquencyPage: React.FC = () => {
     staleTime: 1000 * 60,
   });
 
+  const { data: openedLegalCasesCount = 0, isFetching: openedCasesFetching } = useQuery({
+    queryKey: ['opened-legal-cases-count', companyId],
+    queryFn: () => {
+      if (!companyId) throw new Error('Company not ready');
+      return fetchOpenedLegalCasesCount(companyId);
+    },
+    enabled: isCompanyReady,
+    staleTime: 1000 * 60,
+  });
+
   const shouldLoadCandidates = activeTab === 'search' && isCompanyReady;
 
   const { data: rentCandidates = [], isFetching: rentSearching } = useQuery({
@@ -1427,12 +1450,11 @@ const FinancialDelinquencyPage: React.FC = () => {
 
   const queueStats = useMemo(() => {
     const totalRentalValue = legalQueue.reduce((sum, item) => sum + item.overdueRent, 0);
-    const inPreparation = legalQueue.filter((item) => !item.workflowStage || item.workflowStage === 'preparation').length;
     const missingRequirements = legalQueue.filter((item) => item.missingDocuments.length > 0).length;
     const readyForCourt = legalQueue.filter(
       (item) => (!item.workflowStage || item.workflowStage === 'preparation') && item.missingDocuments.length === 0
     ).length;
-    return { total: legalQueue.length, totalRentalValue, inPreparation, missingRequirements, readyForCourt };
+    return { total: legalQueue.length, totalRentalValue, missingRequirements, readyForCourt };
   }, [legalQueue]);
 
   const delinquencyAIInsights = useMemo(
@@ -1487,6 +1509,7 @@ const FinancialDelinquencyPage: React.FC = () => {
 
   const refreshAll = () => {
     queryClient.invalidateQueries({ queryKey: ['manual-legal-delinquency-queue'] });
+    queryClient.invalidateQueries({ queryKey: ['opened-legal-cases-count'] });
     queryClient.invalidateQueries({ queryKey: ['legal-delinquency-rent-candidates'] });
     queryClient.invalidateQueries({ queryKey: ['legal-delinquency-traffic-candidates'] });
     queryClient.invalidateQueries({ queryKey: ['contract-details'] });
@@ -1567,10 +1590,10 @@ const FinancialDelinquencyPage: React.FC = () => {
               <Button
                 variant="outline"
                 onClick={refreshAll}
-                disabled={queueFetching || rentSearching || trafficSearching}
+                disabled={queueFetching || openedCasesFetching || rentSearching || trafficSearching}
                 className="gap-2 rounded-xl border-slate-200 bg-white"
               >
-                <RefreshCw className={cn('h-4 w-4', (queueFetching || rentSearching || trafficSearching) && 'animate-spin')} />
+                <RefreshCw className={cn('h-4 w-4', (queueFetching || openedCasesFetching || rentSearching || trafficSearching) && 'animate-spin')} />
                 تحديث
               </Button>
               <Button
@@ -1615,11 +1638,11 @@ const FinancialDelinquencyPage: React.FC = () => {
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-semibold text-[#94A3B8]">قيد التجهيز</p>
-                  <p className="mt-2 text-2xl font-bold text-[#020617]">{queueStats.inPreparation}</p>
+                  <p className="text-sm font-semibold text-[#94A3B8]">القضايا المفتوحة</p>
+                  <p className="mt-2 text-2xl font-bold text-[#020617]">{openedLegalCasesCount}</p>
                 </div>
-                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#FB6B7A]/10 text-[#FB6B7A]">
-                  <AlertTriangle className="h-5 w-5" />
+                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#173A63]/10 text-[#173A63]">
+                  <FolderOpen className="h-5 w-5" />
                 </div>
               </div>
             </CardContent>

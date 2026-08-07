@@ -30,6 +30,11 @@ import {
   type TaqadiNarrativeInput,
 } from '../utils/taqadiNarrative';
 import { getLawsuitClaimAmounts } from '../utils/claimAmounts';
+import {
+  buildContractDocumentStoragePath,
+  getLegalDocumentUploadRoute,
+  validateLegalDocumentFile,
+} from '../utils/documentUploadRouting';
 import { lawsuitService } from '@/services/LawsuitService';
 import { formatCustomerName } from '@/utils/formatCustomerName';
 import { renderOfficialInvoicePdfBlob } from '@/utils/renderOfficialInvoicePdf';
@@ -651,55 +656,132 @@ export function LawsuitPreparationProvider({
   }, [state.documents, state.trafficViolations, generateDocument]);
   
   const uploadDocument = useCallback(async (docId: keyof DocumentsState, file: File) => {
-    if (!companyId || !contractId) return;
+    if (!companyId || !contractId) {
+      toast.error('تعذر تحديد الشركة أو العقد');
+      return;
+    }
     
     dispatch({ type: 'UPLOAD_DOCUMENT_START', payload: { docId } });
     
     try {
-      // Use 'documents' bucket for all uploads (standard bucket name)
-      const bucketName = 'documents';
-      
-      const fileName = `contracts/${companyId}/${contractId}/${Date.now()}-${file.name}`;
-      const { error: uploadError } = await supabase.storage
-        .from(bucketName)
-        .upload(fileName, file);
-      
-      if (uploadError) throw uploadError;
-      
-      const { data: urlData } = supabase.storage
-        .from(bucketName)
-        .getPublicUrl(fileName);
-      
-      // If it's a contract document, save to contract_documents table
-      if (docId === 'contract') {
-        const { error: dbError } = await supabase
+      const route = getLegalDocumentUploadRoute(docId);
+      if (!route) {
+        throw new Error('هذا المستند يُنشأ من النظام ولا يقبل رفع ملف يدوي');
+      }
+      validateLegalDocumentFile(file, route);
+
+      if (route.destination === 'company') {
+        const uploadedDocument = await lawsuitService.uploadLegalDocument(
+          companyId,
+          route.documentType,
+          file,
+          undefined,
+          `رُفع من حافظة تجهيز الدعوى للعقد ${state.contract?.contract_number || contractId}`,
+          user?.id,
+        );
+        const nextCompanyDocuments = [
+          ...state.companyDocuments.filter(
+            (document) => document.document_type !== route.documentType,
+          ),
+          uploadedDocument,
+        ];
+
+        dispatch({ type: 'SET_COMPANY_DOCUMENTS', payload: nextCompanyDocuments });
+        dispatch({
+          type: 'UPLOAD_DOCUMENT_SUCCESS',
+          payload: { docId, url: uploadedDocument.file_url },
+        });
+        queryClient.setQueryData(
+          ['company-legal-documents', companyId],
+          nextCompanyDocuments,
+        );
+      } else {
+        const filePath = buildContractDocumentStoragePath({
+          companyId,
+          contractId,
+          documentType: route.documentType,
+          fileName: file.name,
+        });
+        const { error: uploadError } = await supabase.storage
+          .from(route.bucket)
+          .upload(filePath, file, {
+            contentType: file.type || undefined,
+            upsert: false,
+          });
+
+        if (uploadError) throw uploadError;
+
+        const { data: savedDocument, error: dbError } = await supabase
           .from('contract_documents')
           .insert({
             contract_id: contractId,
             company_id: companyId,
-            file_path: fileName,
+            file_path: filePath,
             document_name: file.name,
-            document_type: 'signed_contract',
-            mime_type: file.type,
-          });
-        
-        if (dbError) {
-          console.error('Failed to save contract document to database:', dbError);
-          // Continue anyway - file is uploaded
+            original_filename: file.name,
+            document_type: route.documentType,
+            mime_type: file.type || null,
+            file_size: file.size,
+            is_required: true,
+            notes: `رُفع من حافظة تجهيز الدعوى: ${state.documents[docId].name}`,
+            uploaded_by: user?.id || null,
+          })
+          .select('id, document_name, mime_type')
+          .single();
+
+        if (dbError || !savedDocument) {
+          await supabase.storage.from(route.bucket).remove([filePath]);
+          throw dbError || new Error('تعذر ربط الملف بالعقد');
         }
+
+        const { data: signedUrlData, error: signedUrlError } = await supabase.storage
+          .from(route.bucket)
+          .createSignedUrl(filePath, 3600);
+        if (signedUrlError || !signedUrlData?.signedUrl) {
+          throw signedUrlError || new Error('تعذر إنشاء رابط معاينة الملف');
+        }
+
+        dispatch({
+          type: 'UPLOAD_DOCUMENT_SUCCESS',
+          payload: { docId, url: signedUrlData.signedUrl },
+        });
+
+        if (docId === 'violationsEvidence') {
+          dispatch({
+            type: 'SET_VIOLATION_EVIDENCE_DOCUMENTS',
+            payload: [
+              {
+                id: savedDocument.id,
+                name: savedDocument.document_name,
+                url: signedUrlData.signedUrl,
+                mimeType: savedDocument.mime_type,
+              },
+              ...state.violationEvidenceDocuments,
+            ],
+          });
+        }
+
+        await Promise.all([
+          queryClient.invalidateQueries({
+            queryKey: ['contract-document', contractId, companyId],
+          }),
+          queryClient.invalidateQueries({
+            queryKey: ['contract-violation-evidence-documents', contractId, companyId],
+          }),
+          queryClient.invalidateQueries({ queryKey: ['contract-documents', contractId] }),
+        ]);
       }
-      
-      dispatch({ 
-        type: 'UPLOAD_DOCUMENT_SUCCESS', 
-        payload: { docId, url: urlData.publicUrl } 
+
+      toast.success(`تم رفع ${state.documents[docId].name} وحفظه في مكانه الصحيح`);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'فشل رفع الملف';
+      dispatch({
+        type: 'UPLOAD_DOCUMENT_ERROR',
+        payload: { docId, error: message },
       });
-    } catch (error: any) {
-      dispatch({ 
-        type: 'UPLOAD_DOCUMENT_ERROR', 
-        payload: { docId, error: error.message } 
-      });
+      toast.error(message);
     }
-  }, [companyId, contractId]);
+  }, [companyId, contractId, queryClient, state.companyDocuments, state.contract?.contract_number, state.documents, state.violationEvidenceDocuments, user?.id]);
   
   const registerCase = useCallback(async () => {
     if (!user?.id) {
@@ -733,7 +815,7 @@ export function LawsuitPreparationProvider({
     const remainingAmount = totalAmount - paidAmount;
     
     const customerName = customer 
-      ? `${customer.first_name || ''} ${customer.last_name || ''}`.trim() 
+      ? formatCustomerName(customer)
       : 'غير محدد';
     
     const formattedDate = invoice.invoice_date 

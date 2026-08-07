@@ -191,6 +191,14 @@ type TaqadiAutomationDatabase = {
         Args: { p_company_id: string; p_job_id: string };
         Returns: TaqadiFilingJob;
       };
+      refresh_taqadi_filing_job_payload_v1: {
+        Args: {
+          p_company_id: string;
+          p_job_id: string;
+          p_payload: TaqadiFilingPayload;
+        };
+        Returns: TaqadiFilingJob;
+      };
       resume_taqadi_filing_job_v1: {
         Args: { p_company_id: string; p_job_id: string };
         Returns: TaqadiFilingJob;
@@ -440,7 +448,31 @@ export async function getActiveTaqadiWorker() {  const { data, error } = await a
   return data as unknown as TaqadiAutomationWorker | null;
 }
 
-export async function retryTaqadiFilingJob(companyId: string, jobId: string) {
+export async function refreshTaqadiFilingJobPayload(
+  companyId: string,
+  jobId: string,
+  payload: TaqadiFilingPayload,
+) {
+  const { data, error } = await callAutomationRpc(
+    'refresh_taqadi_filing_job_payload_v1',
+    {
+      p_company_id: companyId,
+      p_job_id: jobId,
+      p_payload: payload,
+    },
+  );
+  if (error) throw error;
+  return data as unknown as TaqadiFilingJob;
+}
+
+export async function retryTaqadiFilingJob(
+  companyId: string,
+  jobId: string,
+  refreshedPayload?: TaqadiFilingPayload,
+) {
+  if (refreshedPayload) {
+    await refreshTaqadiFilingJobPayload(companyId, jobId, refreshedPayload);
+  }
   const { data, error } = await callAutomationRpc(
     'retry_taqadi_filing_job_v1',
     {

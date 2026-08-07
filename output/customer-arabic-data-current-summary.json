@@ -1,20 +1,24 @@
 {
-  "generatedAt": "2026-08-06T15:41:34.718Z",
+  "generatedAt": "2026-08-06T20:20:49.917Z",
   "companyId": "24bc0b21-4e2d-4413-9842-31719a3669f4",
   "csvPath": "C:\\Users\\khamis\\Documents\\fleetifyapp\\output\\customer-arabic-data-current-audit.csv",
   "activeCsvPath": "C:\\Users\\khamis\\Documents\\fleetifyapp\\output\\customer-arabic-data-active-issues.csv",
   "summaryPath": "C:\\Users\\khamis\\Documents\\fleetifyapp\\output\\customer-arabic-data-current-summary.json",
   "total_customers": 269,
   "total_contracts": 291,
-  "customers_with_issues": 176,
-  "active_contract_customers_with_issues": 23,
+  "customers_with_issues": 200,
+  "active_contract_customers_with_issues": 32,
   "missing_arabic_name": 2,
   "missing_arabic_nationality": 176,
+  "signed_document_name_mismatch": 26,
+  "pending_id_scan_proposals": 0,
+  "partially_reviewed_id_scan_proposals": 65,
   "arabic_name_issue_samples": [
     {
       "customer_id": "0f70409b-a1be-4d15-a120-babdc4d1aaa8",
       "name": "BADREDINE KHELFI",
       "name_ar": "Badredine Khalfi",
+      "signed_document_name": "",
       "nationality": "",
       "phone": "77754754",
       "contracts": "C-ALF-0106",
@@ -29,6 +33,7 @@
       "customer_id": "b4143d27-1ca2-472d-bd3c-effff8f9d132",
       "name": "Doha marketing",
       "name_ar": "",
+      "signed_document_name": "",
       "nationality": "",
       "phone": "",
       "contracts": "",
@@ -40,11 +45,155 @@
       ]
     }
   ],
+  "signed_document_name_mismatch_samples": [
+    {
+      "customer_id": "8d6ff2ab-2a6a-4d2a-bbfd-2ed2b5bba89f",
+      "name": "عبد المنعم حسن حمدي",
+      "name_ar": "عبد المنعم حسن حمدي",
+      "signed_document_name": "علي المنعم حسن حمدي",
+      "nationality": "",
+      "phone": "70184904",
+      "contracts": "AGR-202504-400949",
+      "active_contracts": "AGR-202504-400949",
+      "active_contracts_count": 1,
+      "issues": [
+        "missing_arabic_nationality",
+        "signed_document_name_mismatch"
+      ]
+    },
+    {
+      "customer_id": "b8ecb837-e5d6-4fd2-8714-a8ecf515f45e",
+      "name": "عبد الغفور درار",
+      "name_ar": "عبد الغفور درار",
+      "signed_document_name": "علي الغفور درار دولة قطر وزارة الداخلية",
+      "nationality": "جزائري",
+      "phone": "77122519",
+      "contracts": "AGR-202504-408522",
+      "active_contracts": "",
+      "active_contracts_count": 0,
+      "issues": [
+        "signed_document_name_mismatch"
+      ]
+    },
+    {
+      "customer_id": "39f0b65c-1880-428b-99b8-6881ad6b12ce",
+      "name": "ياسر الصادق",
+      "name_ar": "ياسر الصادق نصر الدين ابو القاسم",
+      "signed_document_name": "الصادق نصر الدين ابو القاسم",
+      "nationality": "سوداني ",
+      "phone": "55990635",
+      "contracts": "AGR-202504-417240",
+      "active_contracts": "",
+      "active_contracts_count": 0,
+      "issues": [
+        "signed_document_name_mismatch"
+      ]
+    },
+    {
+      "customer_id": "1879d8a6-7ebf-4f7e-8420-5a965b5a1baa",
+      "name": "مجدي بخيت",
+      "name_ar": "مجدي بخيت",
+      "signed_document_name": "موسى بخيت اسماعين حماد",
+      "nationality": "السودان",
+      "phone": "50246458",
+      "contracts": "C-ALF-0018",
+      "active_contracts": "C-ALF-0018",
+      "active_contracts_count": 1,
+      "issues": [
+        "signed_document_name_mismatch"
+      ]
+    },
+    {
+      "customer_id": "3be1cf24-b0a5-4624-9017-c6a9f939cfc1",
+      "name": "ABDEL RAHIM MOHAMED",
+      "name_ar": "عبد الرحيم شاكر",
+      "signed_document_name": "علي الرحيم شاكر احمد محمد",
+      "nationality": "السودان",
+      "phone": "31310330",
+      "contracts": "LTO202417; C-ALF-0033; C-ALF-0086",
+      "active_contracts": "C-ALF-0033; C-ALF-0086",
+      "active_contracts_count": 2,
+      "issues": [
+        "signed_document_name_mismatch"
+      ]
+    },
+    {
+      "customer_id": "59ea73a6-0790-474a-b7fe-227bdd353550",
+      "name": "حمزة البشير يانس",
+      "name_ar": "حمزة البشير يانس",
+      "signed_document_name": "حمد",
+      "nationality": "تونسي",
+      "phone": "55260218",
+      "contracts": "C-ALF-0051",
+      "active_contracts": "C-ALF-0051",
+      "active_contracts_count": 1,
+      "issues": [
+        "signed_document_name_mismatch"
+      ]
+    },
+    {
+      "customer_id": "1e0a06b1-3bf5-4794-ac2a-50cc0cdce901",
+      "name": "محمود جاسم الصالح",
+      "name_ar": "محمد جاسم الصالح",
+      "signed_document_name": "محمد",
+      "nationality": "سوريا",
+      "phone": "30531131",
+      "contracts": "AGR-202504-409871; CON-25-NTZ8FK; C-ALF-0053",
+      "active_contracts": "C-ALF-0053",
+      "active_contracts_count": 1,
+      "issues": [
+        "signed_document_name_mismatch"
+      ]
+    },
+    {
+      "customer_id": "c535b4a9-401b-4c99-a400-453cf9911c54",
+      "name": "عمر مرايحي",
+      "name_ar": "عمر محمد الجمعي مرائحي دولة قطر وزارة الداخلية إدارة المرور",
+      "signed_document_name": "محمد الجمعي مرائحي دولة قطر وزارة الداخلية إدارة المرور",
+      "nationality": "تونسي",
+      "phone": "31299557",
+      "contracts": "C-ALF-0056",
+      "active_contracts": "C-ALF-0056",
+      "active_contracts_count": 1,
+      "issues": [
+        "signed_document_name_mismatch"
+      ]
+    },
+    {
+      "customer_id": "67e414f4-abbf-40d5-8f04-26cd1cf10ef9",
+      "name": "محمد الشريف",
+      "name_ar": "محمد شريف عمرو عياش",
+      "signed_document_name": "شريف عمرو عياش",
+      "nationality": "الجزائر",
+      "phone": "66036491",
+      "contracts": "C-ALF-0067",
+      "active_contracts": "",
+      "active_contracts_count": 0,
+      "issues": [
+        "signed_document_name_mismatch"
+      ]
+    },
+    {
+      "customer_id": "c816caa5-0b02-4646-b9d6-444f913faff6",
+      "name": "حسن الفكي",
+      "name_ar": "حسن عبدالوهاب محمد الفكي",
+      "signed_document_name": "عبدالوهاب محمد الفكي",
+      "nationality": "سوداني",
+      "phone": "51060253",
+      "contracts": "C-ALF-0072",
+      "active_contracts": "C-ALF-0072",
+      "active_contracts_count": 1,
+      "issues": [
+        "signed_document_name_mismatch"
+      ]
+    }
+  ],
   "active_issue_samples": [
     {
       "customer_id": "0f70409b-a1be-4d15-a120-babdc4d1aaa8",
       "name": "BADREDINE KHELFI",
       "name_ar": "Badredine Khalfi",
+      "signed_document_name": "",
       "nationality": "",
       "phone": "77754754",
       "contracts": "C-ALF-0106",
@@ -56,9 +205,151 @@
       ]
     },
     {
+      "customer_id": "8d6ff2ab-2a6a-4d2a-bbfd-2ed2b5bba89f",
+      "name": "عبد المنعم حسن حمدي",
+      "name_ar": "عبد المنعم حسن حمدي",
+      "signed_document_name": "علي المنعم حسن حمدي",
+      "nationality": "",
+      "phone": "70184904",
+      "contracts": "AGR-202504-400949",
+      "active_contracts": "AGR-202504-400949",
+      "active_contracts_count": 1,
+      "issues": [
+        "missing_arabic_nationality",
+        "signed_document_name_mismatch"
+      ]
+    },
+    {
+      "customer_id": "1879d8a6-7ebf-4f7e-8420-5a965b5a1baa",
+      "name": "مجدي بخيت",
+      "name_ar": "مجدي بخيت",
+      "signed_document_name": "موسى بخيت اسماعين حماد",
+      "nationality": "السودان",
+      "phone": "50246458",
+      "contracts": "C-ALF-0018",
+      "active_contracts": "C-ALF-0018",
+      "active_contracts_count": 1,
+      "issues": [
+        "signed_document_name_mismatch"
+      ]
+    },
+    {
+      "customer_id": "3be1cf24-b0a5-4624-9017-c6a9f939cfc1",
+      "name": "ABDEL RAHIM MOHAMED",
+      "name_ar": "عبد الرحيم شاكر",
+      "signed_document_name": "علي الرحيم شاكر احمد محمد",
+      "nationality": "السودان",
+      "phone": "31310330",
+      "contracts": "LTO202417; C-ALF-0033; C-ALF-0086",
+      "active_contracts": "C-ALF-0033; C-ALF-0086",
+      "active_contracts_count": 2,
+      "issues": [
+        "signed_document_name_mismatch"
+      ]
+    },
+    {
+      "customer_id": "59ea73a6-0790-474a-b7fe-227bdd353550",
+      "name": "حمزة البشير يانس",
+      "name_ar": "حمزة البشير يانس",
+      "signed_document_name": "حمد",
+      "nationality": "تونسي",
+      "phone": "55260218",
+      "contracts": "C-ALF-0051",
+      "active_contracts": "C-ALF-0051",
+      "active_contracts_count": 1,
+      "issues": [
+        "signed_document_name_mismatch"
+      ]
+    },
+    {
+      "customer_id": "1e0a06b1-3bf5-4794-ac2a-50cc0cdce901",
+      "name": "محمود جاسم الصالح",
+      "name_ar": "محمد جاسم الصالح",
+      "signed_document_name": "محمد",
+      "nationality": "سوريا",
+      "phone": "30531131",
+      "contracts": "AGR-202504-409871; CON-25-NTZ8FK; C-ALF-0053",
+      "active_contracts": "C-ALF-0053",
+      "active_contracts_count": 1,
+      "issues": [
+        "signed_document_name_mismatch"
+      ]
+    },
+    {
+      "customer_id": "c535b4a9-401b-4c99-a400-453cf9911c54",
+      "name": "عمر مرايحي",
+      "name_ar": "عمر محمد الجمعي مرائحي دولة قطر وزارة الداخلية إدارة المرور",
+      "signed_document_name": "محمد الجمعي مرائحي دولة قطر وزارة الداخلية إدارة المرور",
+      "nationality": "تونسي",
+      "phone": "31299557",
+      "contracts": "C-ALF-0056",
+      "active_contracts": "C-ALF-0056",
+      "active_contracts_count": 1,
+      "issues": [
+        "signed_document_name_mismatch"
+      ]
+    },
+    {
+      "customer_id": "c816caa5-0b02-4646-b9d6-444f913faff6",
+      "name": "حسن الفكي",
+      "name_ar": "حسن عبدالوهاب محمد الفكي",
+      "signed_document_name": "عبدالوهاب محمد الفكي",
+      "nationality": "سوداني",
+      "phone": "51060253",
+      "contracts": "C-ALF-0072",
+      "active_contracts": "C-ALF-0072",
+      "active_contracts_count": 1,
+      "issues": [
+        "signed_document_name_mismatch"
+      ]
+    },
+    {
+      "customer_id": "b47e2bfd-5b7f-4ca2-9c49-5185cf9df9b3",
+      "name": "يحيى السخري ناي",
+      "name_ar": "يحيى السخري ناي",
+      "signed_document_name": "علي هلال الصخري الجنسية تونسي",
+      "nationality": "تونسي",
+      "phone": "50447989",
+      "contracts": "LTO2024316; 330; C-ALF-0076",
+      "active_contracts": "C-ALF-0076",
+      "active_contracts_count": 1,
+      "issues": [
+        "signed_document_name_mismatch"
+      ]
+    },
+    {
+      "customer_id": "2a898340-79f6-455f-b2b9-4ab785b94efc",
+      "name": "مهدي الشريف",
+      "name_ar": "مهدي الشريف",
+      "signed_document_name": "فهد الشريف عبد الرحيم يوسف",
+      "nationality": "سوداني",
+      "phone": "66549444",
+      "contracts": "C-ALF-0085",
+      "active_contracts": "C-ALF-0085",
+      "active_contracts_count": 1,
+      "issues": [
+        "signed_document_name_mismatch"
+      ]
+    },
+    {
+      "customer_id": "bd4001ab-41e0-4508-af8d-539734e069a3",
+      "name": "مهدي أسامة حامد",
+      "name_ar": "مهدي أسامة حامد",
+      "signed_document_name": "فهد اسامه المهدي حامد",
+      "nationality": "السودان",
+      "phone": "30138501",
+      "contracts": "LTO2024263",
+      "active_contracts": "LTO2024263",
+      "active_contracts_count": 1,
+      "issues": [
+        "signed_document_name_mismatch"
+      ]
+    },
+    {
       "customer_id": "026837b5-eb48-46b4-a4ec-40afce9a1945",
       "name": "شرفي العبد الله",
       "name_ar": "شرفي عبد الله",
+      "signed_document_name": "",
       "nationality": "",
       "phone": "77517797",
       "contracts": "AGR-202504-399591",
@@ -69,22 +360,10 @@
       ]
     },
     {
-      "customer_id": "8d6ff2ab-2a6a-4d2a-bbfd-2ed2b5bba89f",
-      "name": "عبد المنعم حسن حمدي",
-      "name_ar": "عبد المنعم حسن حمدي",
-      "nationality": "",
-      "phone": "70184904",
-      "contracts": "AGR-202504-400949",
-      "active_contracts": "AGR-202504-400949",
-      "active_contracts_count": 1,
-      "issues": [
-        "missing_arabic_nationality"
-      ]
-    },
-    {
       "customer_id": "fb5ba388-a1cf-4a94-a697-b286cb73bb00",
       "name": "عمر محمد الفكي",
       "name_ar": "عمر محمد الفكي",
+      "signed_document_name": "",
       "nationality": "",
       "phone": "50055884",
       "contracts": "AGR-202504-405141",
@@ -98,6 +377,7 @@
       "customer_id": "2911e46f-1579-4c0b-ac2a-2ba7792d1279",
       "name": "محمد محمد أحمد محمد",
       "name_ar": "محمد محمد أحمد محمد",
+      "signed_document_name": "",
       "nationality": "",
       "phone": "70007983",
       "contracts": "AGR-202504-424958",
@@ -111,6 +391,7 @@
       "customer_id": "6d325c05-aa09-4b33-b844-bd2ac0ef7a44",
       "name": "ازهري حكيم",
       "name_ar": "ازهري حكيم",
+      "signed_document_name": "",
       "nationality": "",
       "phone": "55578515",
       "contracts": "C-ALF-0005",
@@ -124,6 +405,7 @@
       "customer_id": "4f88ac8c-7975-4abc-bd37-c8894ae36ac1",
       "name": "احمد تاج",
       "name_ar": "احمد تاج",
+      "signed_document_name": "",
       "nationality": "",
       "phone": "31001958",
       "contracts": "C-ALF-0044; C-ALF-0006",
@@ -137,6 +419,7 @@
       "customer_id": "c9b15875-6319-46dd-a134-3e73a6a2990f",
       "name": "ايهاب عبد الله",
       "name_ar": "ايهاب عبد الله",
+      "signed_document_name": "",
       "nationality": "",
       "phone": "74488904",
       "contracts": "LTO2024130; LTO2024244; C-ALF-0008",
@@ -150,6 +433,7 @@
       "customer_id": "dc6cfbab-1760-46ae-8f8b-a940e06393ff",
       "name": "خبيب رضا السحباني",
       "name_ar": "خبيب رضا السحابي",
+      "signed_document_name": "",
       "nationality": "",
       "phone": "72202682",
       "contracts": "C-ALF-0015",
@@ -163,6 +447,7 @@
       "customer_id": "e374dfb0-3889-4ca8-8473-2eacb1da527f",
       "name": "صدام مصطفى سعيد",
       "name_ar": "صدام مصطفى سعيد",
+      "signed_document_name": "",
       "nationality": "",
       "phone": "77068310",
       "contracts": "C-ALF-0027",
@@ -176,6 +461,7 @@
       "customer_id": "d5f20c8e-55ef-46c8-bcca-468afa4b55c6",
       "name": "عقبة قصعاوي",
       "name_ar": "عقبة قصعاوي",
+      "signed_document_name": "",
       "nationality": "",
       "phone": "50409220",
       "contracts": "C-ALF-0030",
@@ -189,6 +475,7 @@
       "customer_id": "a3662af0-71b3-40c7-825a-e8a09ff1bd2c",
       "name": "إبراهيم خضر",
       "name_ar": "إبراهيم خضر",
+      "signed_document_name": "",
       "nationality": "",
       "phone": "33750040",
       "contracts": "C-ALF-0031",
@@ -202,6 +489,7 @@
       "customer_id": "7b424074-f8b9-4456-b27f-699eb83e3821",
       "name": "امين محمد شوشان",
       "name_ar": "امين محمد شوشان",
+      "signed_document_name": "",
       "nationality": "",
       "phone": "50131342",
       "contracts": "C-ALF-0036",
@@ -215,6 +503,7 @@
       "customer_id": "33472fcc-4f95-4520-9e72-4409dfdd2d51",
       "name": "انور الدهبي",
       "name_ar": "انور الدهبي",
+      "signed_document_name": "",
       "nationality": "",
       "phone": "50234083",
       "contracts": "C-ALF-0042",
@@ -228,6 +517,7 @@
       "customer_id": "ce123be8-018c-4763-b706-3ce2ec8aa26a",
       "name": "مجدي محمد عباس",
       "name_ar": "مجدي محمد عباس",
+      "signed_document_name": "",
       "nationality": "",
       "phone": "33557425",
       "contracts": "C-ALF-0054",
@@ -241,101 +531,11 @@
       "customer_id": "24fd54e9-4a99-47a6-b6f1-ad964178c294",
       "name": "محمد العويني",
       "name_ar": "محمد العويني",
+      "signed_document_name": "",
       "nationality": "",
       "phone": "66816813",
       "contracts": "AGR-202502-0426; C-ALF-0069",
       "active_contracts": "C-ALF-0069",
-      "active_contracts_count": 1,
-      "issues": [
-        "missing_arabic_nationality"
-      ]
-    },
-    {
-      "customer_id": "bacc7a09-335d-47cf-8cde-96d08983941d",
-      "name": "محمد عماد النعماني",
-      "name_ar": "محمد عماد النعماني",
-      "nationality": "",
-      "phone": "51230549",
-      "contracts": "C-ALF-0070",
-      "active_contracts": "C-ALF-0070",
-      "active_contracts_count": 1,
-      "issues": [
-        "missing_arabic_nationality"
-      ]
-    },
-    {
-      "customer_id": "0f443207-fb4f-43c4-aed4-67700cdc7a6a",
-      "name": "مجدي احمد عبدالله",
-      "name_ar": "مجدي احمد عبدالله",
-      "nationality": "",
-      "phone": "33613081",
-      "contracts": "C-ALF-0100",
-      "active_contracts": "C-ALF-0100",
-      "active_contracts_count": 1,
-      "issues": [
-        "missing_arabic_nationality"
-      ]
-    },
-    {
-      "customer_id": "85edef2e-ee24-42fe-8fd6-a598366ea13d",
-      "name": "مهدي حسني",
-      "name_ar": "مهدي حسني",
-      "nationality": "",
-      "phone": "30180684",
-      "contracts": "C-ALF-0104",
-      "active_contracts": "C-ALF-0104",
-      "active_contracts_count": 1,
-      "issues": [
-        "missing_arabic_nationality"
-      ]
-    },
-    {
-      "customer_id": "aa2be5d8-2386-4e2d-978b-d4551d4b73a3",
-      "name": "ياسين  الزلماطي",
-      "name_ar": "ياسين  الزلماطي",
-      "nationality": "",
-      "phone": "55315381",
-      "contracts": "CON-26-X698L2",
-      "active_contracts": "CON-26-X698L2",
-      "active_contracts_count": 1,
-      "issues": [
-        "missing_arabic_nationality"
-      ]
-    },
-    {
-      "customer_id": "42c92a86-d50d-4a70-a138-d9e4ae51f8b0",
-      "name": "ألياس يعقوبي",
-      "name_ar": "ألياس يعقوبي",
-      "nationality": "",
-      "phone": "70704543",
-      "contracts": "HIST-XLS-B70-706150",
-      "active_contracts": "HIST-XLS-B70-706150",
-      "active_contracts_count": 1,
-      "issues": [
-        "missing_arabic_nationality"
-      ]
-    },
-    {
-      "customer_id": "28ecbfab-8f3d-46b4-b6aa-2a5a81e8f367",
-      "name": "يوسف العبيدي لخليل",
-      "name_ar": "يوسف العبيدي لخليل",
-      "nationality": "",
-      "phone": "72119703",
-      "contracts": "LTO2024261",
-      "active_contracts": "LTO2024261",
-      "active_contracts_count": 1,
-      "issues": [
-        "missing_arabic_nationality"
-      ]
-    },
-    {
-      "customer_id": "7621ebd0-acd2-45e2-9491-20c473b4485a",
-      "name": "عصام ابراهيم عبد الله",
-      "name_ar": "عصام ابراهيم عبد الله",
-      "nationality": "",
-      "phone": "30777645",
-      "contracts": "LTO2024341",
-      "active_contracts": "LTO2024341",
       "active_contracts_count": 1,
       "issues": [
         "missing_arabic_nationality"

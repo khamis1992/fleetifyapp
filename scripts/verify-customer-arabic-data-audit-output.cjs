@@ -33,6 +33,12 @@ if (path.resolve(summary.activeCsvPath || '') !== path.resolve(activeCsvPath)) {
   fail(`Active CSV path mismatch. Expected ${activeCsvPath}, got ${summary.activeCsvPath || 'empty'}`);
 }
 
+for (const key of ['signed_document_name_mismatch', 'pending_id_scan_proposals', 'partially_reviewed_id_scan_proposals']) {
+  if (typeof summary[key] !== 'number') {
+    fail(`Summary is missing numeric field: ${key}`);
+  }
+}
+
 const csvBuffer = fs.readFileSync(activeCsvPath);
 const hasBom = csvBuffer[0] === 0xEF && csvBuffer[1] === 0xBB && csvBuffer[2] === 0xBF;
 if (!hasBom) {
@@ -45,7 +51,7 @@ if (/[\u00D8\u00D9\u00C3\u00C2]/.test(csvText)) {
 }
 
 const header = csvText.replace(/^\uFEFF/, '').split(/\r?\n/, 1)[0] || '';
-for (const column of ['issues_ar', 'required_action', 'active_contracts']) {
+for (const column of ['issues_ar', 'required_action', 'active_contracts', 'signed_document_name']) {
   if (!header.split(',').includes(column)) {
     fail(`Active customer issues CSV is missing required column: ${column}`);
   }

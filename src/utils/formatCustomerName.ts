@@ -79,15 +79,9 @@ export const formatCustomerName = (
     const lastNameAr = cleanName(customer.last_name_ar);
     const fullNameAr = `${firstNameAr} ${lastNameAr}`.trim();
 
-    if (options.preferArabic) {
-      if (fullNameAr) return fullNameAr;
-      if (fallbackName) return fallbackName;
-      if (fullNameEn) return fullNameEn;
-    } else {
-      if (fullNameEn) return fullNameEn;
-      if (fullNameAr) return fullNameAr;
-      if (fallbackName) return fallbackName;
-    }
+    if (fullNameAr) return fullNameAr;
+    if (fallbackName) return fallbackName;
+    if (fullNameEn) return fullNameEn;
 
     // Fallback
     return customer.full_name || 'عميل بدون اسم';

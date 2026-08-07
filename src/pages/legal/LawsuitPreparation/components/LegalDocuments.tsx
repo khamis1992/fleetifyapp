@@ -24,6 +24,10 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useFleetifyTranslation } from '@/hooks/useTranslation';
 import { useLawsuitPreparationContext, type DocumentState, type DocumentsState } from '../store';
+import {
+  getLegalDocumentUploadRoute,
+  isUploadableDocumentId,
+} from '../utils/documentUploadRouting';
 import { printHtmlDocumentAsPdf } from '../utils/printHtmlDocument';
 
 const baseMandatoryDocIds: (keyof DocumentsState)[] = [
@@ -73,6 +77,45 @@ function downloadDocument(document: DocumentState) {
   window.open(document.url, '_blank');
 }
 
+function DocumentUploadControl({
+  document,
+  onUpload,
+  compact = false,
+}: {
+  document: DocumentState;
+  onUpload: (file: File) => void | Promise<void>;
+  compact?: boolean;
+}) {
+  const isReady = document.status === 'ready';
+  const uploadRoute = getLegalDocumentUploadRoute(document.id as keyof DocumentsState);
+  const label = isReady
+    ? document.id === 'violationsEvidence' ? 'إضافة ملف' : 'تغيير الملف'
+    : 'رفع الملف';
+
+  return (
+    <label
+      className={`lawsuit-upload-button${compact ? ' is-compact' : ''}${document.isUploading ? ' is-disabled' : ''}`}
+      title={uploadRoute?.scopeLabel}
+    >
+      <input
+        type="file"
+        accept={uploadRoute?.destination === 'company'
+          ? '.pdf,application/pdf'
+          : '.pdf,.jpg,.jpeg,.png,.webp,.doc,.docx'}
+        aria-label={`رفع ${document.name}`}
+        onChange={(event) => {
+          const file = event.target.files?.[0];
+          event.currentTarget.value = '';
+          if (file) void onUpload(file);
+        }}
+        disabled={document.isUploading}
+      />
+      {document.isUploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+      {document.isUploading ? 'جارٍ الرفع' : label}
+    </label>
+  );
+}
+
 function DocumentLedgerRow({
   document,
   index,
@@ -91,6 +134,7 @@ function DocumentLedgerRow({
   const { t } = useFleetifyTranslation('ui');
   const isReady = document.status === 'ready';
   const isWorking = document.status === 'generating' || document.isUploading;
+  const uploadRoute = getLegalDocumentUploadRoute(document.id as keyof DocumentsState);
 
   return (
     <div className={`lawsuit-document-row is-${document.status}`}>
@@ -99,6 +143,7 @@ function DocumentLedgerRow({
       <div className="lawsuit-document-main">
         <strong>{document.name}</strong>
         <span>{document.description}</span>
+        {uploadRoute && <small className="lawsuit-document-destination">{uploadRoute.scopeLabel}</small>}
         {(document.error || document.uploadError) && <small>{document.error?.message || document.uploadError}</small>}
       </div>
       <Badge className={`lawsuit-doc-status is-${document.status}`}>
@@ -148,19 +193,7 @@ function DocumentLedgerRow({
           </Button>
         )}
         {onUpload && (
-          <label className="lawsuit-upload-button">
-            <input
-              type="file"
-              accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
-              onChange={(event) => {
-                const file = event.target.files?.[0];
-                if (file) onUpload(file);
-              }}
-              disabled={document.isUploading}
-            />
-            {document.isUploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-            {isReady ? 'تغيير' : 'رفع'}
-          </label>
+          <DocumentUploadControl document={document} onUpload={onUpload} />
         )}
       </div>
     </div>
@@ -231,7 +264,9 @@ export function LegalDocuments() {
               document={doc}
               index={index}
               onGenerate={doc.category === 'generated' ? () => actions.generateDocument(doc.id as keyof DocumentsState) : undefined}
-              onUpload={doc.category === 'contract' ? (file) => actions.uploadDocument(doc.id as keyof DocumentsState, file) : undefined}
+              onUpload={isUploadableDocumentId(doc.id as keyof DocumentsState)
+                ? (file) => actions.uploadDocument(doc.id as keyof DocumentsState, file)
+                : undefined}
               onDownloadPdf={doc.id === 'memo' ? actions.downloadMemoPdf : undefined}
               onDownloadDocx={doc.id === 'memo' ? actions.downloadMemoDocx : undefined}
             />
@@ -242,9 +277,43 @@ export function LegalDocuments() {
       {missingDocs.length > 0 && (
         <section className="lawsuit-missing-panel">
           <AlertCircle className="h-5 w-5" />
-          <div>
+          <div className="lawsuit-missing-content">
             <strong>النواقص الحالية</strong>
-            <span>{missingDocs.map((doc) => doc.name).join('، ')}</span>
+            <span>أكمل الملفات من هنا، وسيحفظ كل ملف تلقائيًا في الحافظة المرتبطة به.</span>
+            <div className="lawsuit-missing-list">
+              {missingDocs.map((doc) => {
+                const uploadable = isUploadableDocumentId(doc.id as keyof DocumentsState);
+                const route = getLegalDocumentUploadRoute(doc.id as keyof DocumentsState);
+                return (
+                  <div className="lawsuit-missing-item" key={doc.id}>
+                    <div>
+                      <strong>{doc.name}</strong>
+                      <small>{route?.scopeLabel || 'يُنشأ تلقائيًا من بيانات القضية'}</small>
+                    </div>
+                    {uploadable ? (
+                      <DocumentUploadControl
+                        document={doc}
+                        compact
+                        onUpload={(file) => actions.uploadDocument(doc.id as keyof DocumentsState, file)}
+                      />
+                    ) : (
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        onClick={() => actions.generateDocument(doc.id as keyof DocumentsState)}
+                        disabled={doc.status === 'generating'}
+                      >
+                        {doc.status === 'generating'
+                          ? <Loader2 className="h-4 w-4 animate-spin" />
+                          : <FileText className="h-4 w-4" />}
+                        توليد المستند
+                      </Button>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </section>
       )}

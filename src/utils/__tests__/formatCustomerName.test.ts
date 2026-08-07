@@ -32,14 +32,14 @@ describe('formatCustomerName', () => {
     })).toBe('أحمد علي');
   });
 
-  it('keeps the existing English-first behavior by default', () => {
+  it('prefers the Arabic individual name by default', () => {
     expect(formatCustomerName({
       customer_type: 'individual',
       first_name: 'Ahmed',
       last_name: 'Ali',
       first_name_ar: 'أحمد',
       last_name_ar: 'علي',
-    })).toBe('Ahmed Ali');
+    })).toBe('أحمد علي');
   });
 });
 

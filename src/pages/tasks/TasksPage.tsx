@@ -436,7 +436,8 @@ export default function TasksPage() {
             </TaskPanel>
           </TabsContent>
 
-          <TabsContent value="verification" className="mt-5">
+          <TabsContent value="verification" className="mt-5 space-y-5">
+            <CustomerDataReviewCenter />
             <VerificationTasksList />
           </TabsContent>
 

@@ -71,10 +71,13 @@ interface ProposedChange {
 }
 
 interface ScannerRequest {
-  mode?: "batch" | "document" | "pages";
+  mode?: "batch" | "document" | "pages" | "proposal_evidence";
   limit?: number;
   contractDocumentId?: string;
-  pages?: Array<{ pageNumber: number; imageBase64: string }>;
+  proposalId?: string;
+  imageBase64?: string;
+  evidenceImagePath?: string;
+  pages?: Array<{ pageNumber: number; imageBase64: string; evidenceImagePath?: string }>;
 }
 
 interface ContractDocumentRow {
@@ -85,6 +88,28 @@ interface ContractDocumentRow {
   document_name: string;
   file_path: string | null;
   mime_type: string | null;
+}
+
+interface OcrAnnotation {
+  description?: string;
+  boundingPoly?: { vertices?: Array<{ x?: number; y?: number }> };
+}
+
+interface OcrResult {
+  text: string;
+  annotations: OcrAnnotation[];
+}
+
+interface NameEvidence {
+  imagePath?: string | null;
+  crop?: {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+    rotation?: 0 | 90 | 180 | 270;
+  } | null;
+  label?: string | null;
 }
 
 // ---------------------------------------------------------------------------
@@ -125,7 +150,19 @@ serve(async (req) => {
 
     let result: unknown;
 
-    if (mode === "pages") {
+    if (mode === "proposal_evidence") {
+      if (!body.proposalId || !body.imageBase64 || !body.evidenceImagePath) {
+        throw new Error(
+          "proposal_evidence mode requires proposalId, imageBase64 and evidenceImagePath",
+        );
+      }
+      result = await processProposalEvidence(
+        supabase,
+        body.proposalId,
+        body.imageBase64,
+        body.evidenceImagePath,
+      );
+    } else if (mode === "pages") {
       if (!body.contractDocumentId || !body.pages?.length) {
         throw new Error("pages mode requires contractDocumentId and pages[]");
       }
@@ -167,6 +204,9 @@ async function authorize(req: Request): Promise<void> {
   if (expected && secret === expected) return;
 
   const authHeader = req.headers.get("Authorization");
+  const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  if (serviceRoleKey && authHeader === `Bearer ${serviceRoleKey}`) return;
+
   if (authHeader) {
     const userClient = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
@@ -178,6 +218,61 @@ async function authorize(req: Request): Promise<void> {
   }
 
   throw new Error("Unauthorized");
+}
+
+async function processProposalEvidence(
+  supabase: SupabaseClient,
+  proposalId: string,
+  imageBase64: string,
+  evidenceImagePath: string,
+) {
+  const { data: proposal, error } = await supabase
+    .from("customer_id_scan_proposals")
+    .select("id, status, proposed_changes, extracted_data")
+    .eq("id", proposalId)
+    .in("status", ["pending", "partial"])
+    .single();
+
+  if (error || !proposal) throw new Error("Open proposal not found");
+
+  const ocr = await detectTextWithGoogleVision(imageBase64);
+  if (!ocr.text) throw new Error("No text detected on the proposal page");
+
+  const changes = Array.isArray(proposal.proposed_changes)
+    ? proposal.proposed_changes as ProposedChange[]
+    : [];
+  const proposedValue = (field: string) =>
+    changes.find((change) => change.field === field)?.proposed_value || "";
+  const extracted = (proposal.extracted_data || {}) as ExtractedIdData;
+  const candidates = [
+    `${proposedValue("first_name_ar")} ${proposedValue("last_name_ar")}`.trim(),
+    extracted.nameArabic || "",
+    `${proposedValue("first_name")} ${proposedValue("last_name")}`.trim(),
+    extracted.name || "",
+  ].filter(Boolean);
+
+  let crop: NameEvidence["crop"] = null;
+  let label: string | null = candidates[0] || null;
+  for (const candidate of candidates) {
+    crop = findNameEvidenceCrop(ocr.annotations, candidate);
+    if (crop) {
+      label = candidate;
+      break;
+    }
+  }
+
+  const { error: updateError } = await supabase
+    .from("customer_id_scan_proposals")
+    .update({
+      evidence_image_bucket: "contract-documents",
+      evidence_image_path: evidenceImagePath,
+      evidence_crop: crop,
+      evidence_label: label,
+    })
+    .eq("id", proposalId);
+
+  if (updateError) throw updateError;
+  return { outcome: "evidence_saved", cropFound: !!crop, label };
 }
 
 // ---------------------------------------------------------------------------
@@ -237,7 +332,7 @@ async function processSingleDocument(supabase: SupabaseClient, documentId: strin
 async function processRasterizedPages(
   supabase: SupabaseClient,
   documentId: string,
-  pages: Array<{ pageNumber: number; imageBase64: string }>,
+  pages: Array<{ pageNumber: number; imageBase64: string; evidenceImagePath?: string }>,
 ) {
   const { data: doc, error } = await supabase
     .from("contract_documents")
@@ -250,7 +345,8 @@ async function processRasterizedPages(
   let idPageFound = false;
 
   for (const page of pages.slice(0, 20)) {
-    const text = await detectTextWithGoogleVision(page.imageBase64);
+    const ocr = await detectTextWithGoogleVision(page.imageBase64);
+    const text = ocr.text;
     if (!text) continue;
 
     if (!looksLikeIdCard(text)) continue;
@@ -262,6 +358,12 @@ async function processRasterizedPages(
         doc as ContractDocumentRow,
         text,
         page.pageNumber,
+        {
+          imagePath: page.evidenceImagePath || null,
+          crop: null,
+          label: null,
+        },
+        ocr.annotations,
       );
       if (outcome === "proposal_created") {
         await markDocument(supabase, doc.id, "proposal_created");
@@ -304,14 +406,26 @@ async function scanDocumentImage(
     const buffer = await file.arrayBuffer();
     const imageBase64 = arrayBufferToBase64(buffer);
 
-    const text = await detectTextWithGoogleVision(imageBase64);
+    const ocr = await detectTextWithGoogleVision(imageBase64);
+    const text = ocr.text;
     if (!text || !looksLikeIdCard(text)) {
       await deletePendingProposal(supabase, doc.id);
       await markDocument(supabase, doc.id, "no_id_card");
       return "no_id_card";
     }
 
-    const outcome = await buildAndStoreProposal(supabase, doc, text, null);
+    const outcome = await buildAndStoreProposal(
+      supabase,
+      doc,
+      text,
+      null,
+      {
+        imagePath: doc.file_path,
+        crop: null,
+        label: null,
+      },
+      ocr.annotations,
+    );
     if (outcome !== "proposal_created") {
       await deletePendingProposal(supabase, doc.id);
     }
@@ -337,7 +451,7 @@ async function scanDocumentImage(
 // Google Vision text detection
 // ---------------------------------------------------------------------------
 
-async function detectTextWithGoogleVision(imageBase64: string): Promise<string> {
+async function detectTextWithGoogleVision(imageBase64: string): Promise<OcrResult> {
   const apiKey = Deno.env.get("GOOGLE_VISION_API_KEY");
   if (!apiKey) throw new Error("Google Vision API key not configured");
 
@@ -368,11 +482,77 @@ async function detectTextWithGoogleVision(imageBase64: string): Promise<string> 
   }
 
   const data = await response.json();
-  return (
-    data.responses?.[0]?.fullTextAnnotation?.text ||
-    data.responses?.[0]?.textAnnotations?.[0]?.description ||
-    ""
-  );
+  const annotations = (data.responses?.[0]?.textAnnotations || []) as OcrAnnotation[];
+  return {
+    text: data.responses?.[0]?.fullTextAnnotation?.text || annotations[0]?.description || "",
+    annotations,
+  };
+}
+
+function normalizeForEvidence(value: string): string {
+  return value
+    .replace(/[\u064B-\u065F\u0670\u0640]/g, "")
+    .replace(/[إأآا]/g, "ا")
+    .replace(/ى/g, "ي")
+    .replace(/ة/g, "ه")
+    .replace(/[^\u0600-\u06FF0-9A-Za-z]+/g, " ")
+    .trim()
+    .replace(/\s+/g, " ")
+    .toLowerCase();
+}
+
+function annotationBox(annotation: OcrAnnotation) {
+  const vertices = annotation.boundingPoly?.vertices || [];
+  const xs = vertices.map((v) => Number(v.x || 0));
+  const ys = vertices.map((v) => Number(v.y || 0));
+  if (xs.length === 0 || ys.length === 0) return null;
+  const minX = Math.min(...xs);
+  const minY = Math.min(...ys);
+  const maxX = Math.max(...xs);
+  const maxY = Math.max(...ys);
+  if (maxX <= minX || maxY <= minY) return null;
+  return { x: minX, y: minY, width: maxX - minX, height: maxY - minY };
+}
+
+function findNameEvidenceCrop(
+  annotations: OcrAnnotation[],
+  extractedName?: string | null,
+): NameEvidence["crop"] {
+  if (!extractedName) return null;
+  const tokens = normalizeForEvidence(extractedName).split(" ").filter((token) => token.length > 1);
+  if (tokens.length === 0) return null;
+
+  const matchedAnnotations = annotations
+    .slice(1)
+    .filter((annotation) => {
+      const text = normalizeForEvidence(annotation.description || "");
+      return text && tokens.includes(text);
+    });
+  const matchedBoxes = matchedAnnotations
+    .map(annotationBox)
+    .filter(Boolean) as Array<{ x: number; y: number; width: number; height: number }>;
+
+  if (matchedBoxes.length === 0) return null;
+  const minX = Math.min(...matchedBoxes.map((box) => box.x));
+  const minY = Math.min(...matchedBoxes.map((box) => box.y));
+  const maxX = Math.max(...matchedBoxes.map((box) => box.x + box.width));
+  const maxY = Math.max(...matchedBoxes.map((box) => box.y + box.height));
+  const padding = 100;
+  const firstVertices = matchedAnnotations[0]?.boundingPoly?.vertices || [];
+  const topLeft = firstVertices[0];
+  const topRight = firstVertices[1];
+  const edgeX = Number(topRight?.x || 0) - Number(topLeft?.x || 0);
+  const edgeY = Number(topRight?.y || 0) - Number(topLeft?.y || 0);
+  const rotation = Math.abs(edgeY) > Math.abs(edgeX)
+    ? (edgeY >= 0 ? 270 : 90)
+    : (edgeX < 0 ? 180 : 0);
+  return {
+    x: Math.max(0, minX - padding),
+    y: Math.max(0, minY - padding),
+    width: Math.max(1, maxX - minX + padding * 2),
+    height: Math.max(1, maxY - minY + padding * 2),
+    rotation,
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -555,6 +735,27 @@ function isPlausibleExpiry(isoDate: string): boolean {
  * Extract structured ID data from raw OCR text.
  * Uses line-aware label/value pairing first, flat regexes as fallback.
  */
+function sanitizeArabicNameCandidate(value: string): string {
+  const normalized = value.trim().replace(/\s+/g, " ");
+  const stopPhrases = [
+    "\u062f\u0648\u0644\u0629 \u0642\u0637\u0631",
+    "\u0648\u0632\u0627\u0631\u0629 \u0627\u0644\u062f\u0627\u062e\u0644\u064a\u0629",
+    "\u0648\u0632\u0627\u0631\u0629",
+    "\u0627\u0644\u062f\u0627\u062e\u0644\u064a\u0629",
+    "\u0625\u062f\u0627\u0631\u0629 \u0627\u0644\u0645\u0631\u0648\u0631",
+    "\u0627\u062f\u0627\u0631\u0629 \u0627\u0644\u0645\u0631\u0648\u0631",
+    "\u0627\u0644\u062c\u0646\u0633\u064a\u0629",
+    "\u0627\u0644\u0645\u0647\u0646\u0629",
+    "\u062a\u0627\u0631\u064a\u062e \u0627\u0644\u0645\u064a\u0644\u0627\u062f",
+  ];
+  let end = normalized.length;
+  for (const phrase of stopPhrases) {
+    const index = normalized.indexOf(phrase);
+    if (index >= 0) end = Math.min(end, index);
+  }
+  return normalized.slice(0, end).trim().replace(/[\s:،,.-]+$/g, "");
+}
+
 function extractIdData(text: string): ExtractedIdData {
   const data: ExtractedIdData = {};
   const lines = text.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
@@ -676,7 +877,7 @@ function extractIdData(text: string): ExtractedIdData {
   // --- Arabic name: inline after الاسم label (any Arabic content incl. Farsi yeh) ---
   const nameArMatch = cleanText.match(/الاسم\s*[:\.]?\s*([؀-ۿ][؀-ۿ\s]{3,60}?)(?=\s+[A-Za-z]|\s*\d|$)/);
   if (nameArMatch) {
-    const fullName = nameArMatch[1].trim();
+    const fullName = sanitizeArabicNameCandidate(nameArMatch[1]);
     if (!ARABIC_LABEL_WORDS.has(fullName.split(/\s+/)[0])) {
       data.nameArabic = fullName;
       const parts = fullName.split(/\s+/).filter(Boolean);
@@ -849,6 +1050,8 @@ async function buildAndStoreProposal(
   doc: ContractDocumentRow,
   rawText: string,
   pageNumber: number | null,
+  evidence: NameEvidence = {},
+  annotations: OcrAnnotation[] = [],
 ): Promise<"proposal_created" | "no_changes"> {
   // Get the contract's customer
   const { data: contract, error: contractError } = await supabase
@@ -873,6 +1076,7 @@ async function buildAndStoreProposal(
 
   const extracted = extractIdData(rawText);
   const changes: ProposedChange[] = [];
+  let evidenceLabel = evidence.label || extracted.nameArabic || extracted.name || null;
 
   const differs = (current: string | null, proposed?: string) =>
     !!proposed &&
@@ -944,6 +1148,7 @@ async function buildAndStoreProposal(
   // "محمد / عزيز محسن جلالي" are the same person — proposing a reshuffle is noise.
   if (extracted.nameArabic) {
     const correction = await correctArabicName(extracted.nameArabic);
+    evidenceLabel = correction.name || evidenceLabel;
     const currentFullAr = normalizeArabic(
       `${customer.first_name_ar || ""} ${customer.last_name_ar || ""}`,
     );
@@ -1026,6 +1231,10 @@ async function buildAndStoreProposal(
     extracted_data: extracted,
     raw_text: rawText.substring(0, 5000),
     overall_confidence: overallConfidence,
+    evidence_image_bucket: "contract-documents",
+    evidence_image_path: evidence.imagePath || doc.file_path,
+    evidence_crop: evidence.crop || findNameEvidenceCrop(annotations, evidenceLabel),
+    evidence_label: evidenceLabel,
   };
 
   // Replace any existing pending proposal for this document (re-scan case)

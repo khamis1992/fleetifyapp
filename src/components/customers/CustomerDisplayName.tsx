@@ -1,6 +1,7 @@
 import React from 'react';
 import { Customer } from '@/types/customer';
 import { Badge } from '@/components/ui/badge';
+import { formatCustomerName } from '@/utils/formatCustomerName';
 
 interface CustomerDisplayNameProps {
   customer: Customer;
@@ -13,27 +14,9 @@ export const CustomerDisplayName: React.FC<CustomerDisplayNameProps> = ({
   customer,
   showStatus = false,
   showBadges = true,
-  className = ""
+  className = '',
 }) => {
-  const getDisplayName = () => {
-    if (customer.customer_type === 'individual') {
-      // Prefer primary name fields (first_name, last_name), fallback to _ar fields
-      const firstName = customer.first_name || customer.first_name_ar || '';
-      const lastName = customer.last_name || customer.last_name_ar || '';
-      return `${firstName} ${lastName}`.trim() || 'غير محدد';
-    } else {
-      // For companies, prefer primary name field
-      return customer.company_name || customer.company_name_ar || 'غير محدد';
-    }
-  };
-
-  const getSecondaryName = () => {
-    // Secondary name is no longer needed since we prioritize primary fields
-    return null;
-  };
-
-  const primaryName = getDisplayName();
-  const secondaryName = getSecondaryName();
+  const primaryName = formatCustomerName(customer);
 
   return (
     <div className={`flex items-center justify-between w-full ${className}`}>
@@ -41,18 +24,13 @@ export const CustomerDisplayName: React.FC<CustomerDisplayNameProps> = ({
         <div className="font-medium truncate" dir="auto">
           {primaryName}
         </div>
-        {secondaryName && (
-          <div className="text-sm text-muted-foreground truncate" dir="auto">
-            {secondaryName}
-          </div>
-        )}
         {showStatus && customer.phone && (
           <div className="text-xs text-muted-foreground">
             {customer.phone}
           </div>
         )}
       </div>
-      
+
       {showBadges && (
         <div className="flex gap-1 ml-2 flex-shrink-0">
           {customer.is_blacklisted && (

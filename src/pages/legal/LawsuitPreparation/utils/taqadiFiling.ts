@@ -33,6 +33,18 @@ type TransitionWorkflowRpc = (
     p_actor_id: string | null;
   },
 ) => PromiseLike<{ error: { message: string } | null }>;
+type ReopenLegalCaseRpc = (
+  name: 'reopen_legal_case_v1',
+  args: {
+    p_company_id: string;
+    p_case_id: string;
+    p_target_stage: 'preparation';
+    p_reason: string;
+  },
+) => PromiseLike<{
+  data: LawsuitLegalCase | null;
+  error: { message: string; code?: string } | null;
+}>;
 
 const asRecord = (value: unknown): UnknownRecord | null =>
   value && typeof value === 'object' && !Array.isArray(value)
@@ -112,6 +124,41 @@ export async function getCurrentLegalCase(
 
   if (error) throw error;
   return selectCurrentLegalCase((data ?? []) as LawsuitLegalCase[]);
+}
+
+export function isLegalCaseReopenable(legalCase: LawsuitLegalCase | null | undefined) {
+  return Boolean(
+    legalCase
+    && ['closed', 'cancelled'].includes(legalCase.workflow_stage ?? ''),
+  );
+}
+
+export async function reopenLegalCaseForPreparation(
+  companyId: string,
+  caseId: string,
+  reason: string,
+) {
+  const normalizedReason = reason.trim();
+  if (normalizedReason.length < 10) {
+    throw new Error('اكتب سبب إعادة الفتح بما لا يقل عن 10 أحرف');
+  }
+
+  const reopenLegalCase = supabase.rpc as unknown as ReopenLegalCaseRpc;
+  const { data, error } = await reopenLegalCase('reopen_legal_case_v1', {
+    p_company_id: companyId,
+    p_case_id: caseId,
+    p_target_stage: 'preparation',
+    p_reason: normalizedReason,
+  });
+
+  if (error) {
+    if (error.code === '42501' || error.message.includes('Manager permission')) {
+      throw new Error('تحتاج صلاحية مدير لإعادة فتح القضية');
+    }
+    throw new Error(error.message);
+  }
+  if (!data) throw new Error('لم تُرجع قاعدة البيانات حالة القضية بعد إعادة فتحها');
+  return data;
 }
 
 interface RecordTaqadiFilingInput {

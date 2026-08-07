@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   extractTaqadiFilingDetails,
+  isLegalCaseReopenable,
   selectCurrentLegalCase,
   type LawsuitLegalCase,
 } from '../taqadiFiling';
@@ -52,5 +53,19 @@ describe('taqadi filing helpers', () => {
     const active = legalCase('active', 'active', '2026-07-20T10:00:00Z');
 
     expect(selectCurrentLegalCase([closed, active])?.id).toBe('active');
+  });
+
+  it('allows only closed or cancelled workflow stages to be reopened', () => {
+    const cancelled = legalCase('cancelled', 'cancelled', '2026-08-07T10:00:00Z');
+    const closed = legalCase('closed', 'closed', '2026-08-07T10:00:00Z');
+    const active = legalCase('active', 'active', '2026-08-07T10:00:00Z');
+    cancelled.workflow_stage = 'cancelled';
+    closed.workflow_stage = 'closed';
+    active.workflow_stage = 'preparation';
+
+    expect(isLegalCaseReopenable(cancelled)).toBe(true);
+    expect(isLegalCaseReopenable(closed)).toBe(true);
+    expect(isLegalCaseReopenable(active)).toBe(false);
+    expect(isLegalCaseReopenable(null)).toBe(false);
   });
 });

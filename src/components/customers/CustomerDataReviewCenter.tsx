@@ -26,15 +26,21 @@ import {
   Brain,
   Sparkles,
   Zap,
+  RotateCw,
+  ZoomIn,
+  ZoomOut,
 } from 'lucide-react';
 import {
   useAllPendingIdProposals,
   useRespondToIdProposal,
   useBulkApproveIdProposals,
+  useScanAllPendingContractDocumentsForId,
+  useBackfillProposalEvidence,
   type CustomerIdProposal,
   type CustomerIdProposalWithContext,
   type ProposedFieldChange,
 } from '@/hooks/useCustomerIdProposals';
+import { supabase } from '@/integrations/supabase/client';
 
 const FIELD_LABELS: Record<string, string> = {
   first_name: 'الاسم الأول (إنجليزي)',
@@ -114,6 +120,134 @@ function FieldRow({
   );
 }
 
+function EvidencePreview({ proposal }: { proposal: CustomerIdProposalWithContext }) {
+  const imagePath = proposal.evidence_image_path;
+  const bucket = proposal.evidence_image_bucket || 'contract-documents';
+  const [croppedUrl, setCroppedUrl] = React.useState<string | null>(null);
+  const [manualRotation, setManualRotation] = React.useState(0);
+  const [zoom, setZoom] = React.useState(1);
+  const imageUrl = React.useMemo(() => {
+    if (!imagePath) return null;
+    return supabase.storage.from(bucket).getPublicUrl(imagePath).data.publicUrl;
+  }, [bucket, imagePath]);
+
+  React.useEffect(() => {
+    setCroppedUrl(null);
+    setManualRotation(0);
+    setZoom(1);
+    if (!imageUrl || !proposal.evidence_crop) return;
+
+    const image = new Image();
+    image.crossOrigin = 'anonymous';
+    image.onload = () => {
+      try {
+        const crop = proposal.evidence_crop!;
+        const source = document.createElement('canvas');
+        source.width = Math.max(1, Math.round(crop.width));
+        source.height = Math.max(1, Math.round(crop.height));
+        const sourceContext = source.getContext('2d');
+        if (!sourceContext) return;
+        sourceContext.drawImage(
+          image,
+          crop.x,
+          crop.y,
+          crop.width,
+          crop.height,
+          0,
+          0,
+          source.width,
+          source.height,
+        );
+
+        const rotation = crop.rotation || 0;
+        const canvas = document.createElement('canvas');
+        const swapDimensions = rotation === 90 || rotation === 270;
+        canvas.width = swapDimensions ? source.height : source.width;
+        canvas.height = swapDimensions ? source.width : source.height;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+        if (rotation === 90) {
+          ctx.translate(canvas.width, 0);
+          ctx.rotate(Math.PI / 2);
+        } else if (rotation === 180) {
+          ctx.translate(canvas.width, canvas.height);
+          ctx.rotate(Math.PI);
+        } else if (rotation === 270) {
+          ctx.translate(0, canvas.height);
+          ctx.rotate(-Math.PI / 2);
+        }
+        ctx.drawImage(source, 0, 0);
+        setCroppedUrl(canvas.toDataURL('image/png'));
+      } catch (error) {
+        console.warn('Failed to crop evidence image:', error);
+      }
+    };
+    image.src = imageUrl;
+  }, [imageUrl, proposal.evidence_crop]);
+
+  if (!imageUrl) {
+    return (
+      <div className="rounded-lg border border-dashed border-[#DDE5EF] bg-[#FAFBFC] p-4 text-sm text-[#64748B]">
+        لا توجد قصاصة محفوظة لهذا المقترح. أعد مسح العقد من زر المسح الجماعي لتوليد دليل بصري عند توفره.
+      </div>
+    );
+  }
+
+  return (
+    <div className="rounded-lg border border-[#DDE5EF] bg-[#F8FAFC] p-3">
+      <div className="mb-2 flex items-center justify-between gap-2 text-xs text-[#64748B]">
+        <span>{proposal.evidence_crop ? 'صورة الاسم من المستند' : 'صفحة الاسم من المستند'}</span>
+        {proposal.evidence_label && <Badge variant="outline">{proposal.evidence_label}</Badge>}
+      </div>
+      <div className="mb-2 flex items-center gap-1" dir="ltr">
+        <Button
+          type="button"
+          variant="outline"
+          size="icon"
+          className="h-8 w-8"
+          title="تدوير الصورة"
+          onClick={() => setManualRotation((value) => (value + 90) % 360)}
+        >
+          <RotateCw className="h-4 w-4" />
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          size="icon"
+          className="h-8 w-8"
+          title="تكبير الصورة"
+          onClick={() => setZoom((value) => Math.min(2.5, value + 0.25))}
+        >
+          <ZoomIn className="h-4 w-4" />
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          size="icon"
+          className="h-8 w-8"
+          title="تصغير الصورة"
+          onClick={() => setZoom((value) => Math.max(0.5, value - 0.25))}
+        >
+          <ZoomOut className="h-4 w-4" />
+        </Button>
+      </div>
+      <div className="flex max-h-[32rem] min-h-56 items-center justify-center overflow-auto rounded-md border bg-white p-2">
+        <img
+          src={croppedUrl || imageUrl}
+          alt="قصاصة الاسم من المستند"
+          className="max-w-full origin-center object-contain transition-transform"
+          style={{ transform: `rotate(${manualRotation}deg) scale(${zoom})` }}
+        />
+      </div>
+      {proposal.evidence_crop && (
+        <p className="mt-2 text-xs text-[#64748B]">
+          تم حفظ إحداثيات موضع الاسم للمراجعة البصرية. في حال لم تظهر القصاصة بدقة، افتح المستند الأصلي من رابط العقد.
+        </p>
+      )}
+    </div>
+  );
+}
+
 function ProposalRow({
   proposal,
   onApply,
@@ -138,6 +272,7 @@ function ProposalRow({
   const highConfCount = proposal.proposed_changes.filter(
     (c) => c.confidence >= HIGH_CONFIDENCE_THRESHOLD,
   ).length;
+  const hasEvidence = Boolean(proposal.evidence_image_path);
 
   const toggle = (field: string) => {
     setSelected((prev) => {
@@ -200,6 +335,12 @@ function ProposalRow({
       {/* Expanded field diff */}
       {expanded && (
         <div className="space-y-3 border-t border-neutral-100 p-4">
+          <EvidencePreview proposal={proposal} />
+          {!hasEvidence && (
+            <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+              يجب تجهيز صورة الاسم من المستند قبل اعتماد أي تعديل.
+            </div>
+          )}
           {proposal.proposed_changes.map((change) => (
             <FieldRow
               key={change.field}
@@ -216,7 +357,7 @@ function ProposalRow({
             <Button
               size="sm"
               onClick={() => onApply(Array.from(selected))}
-              disabled={isSubmitting || selected.size === 0}
+              disabled={isSubmitting || selected.size === 0 || !hasEvidence}
               className="gap-1 bg-[#0D876A] hover:bg-[#0D876A]/90"
             >
               <CheckCircle2 className="h-4 w-4" />
@@ -230,15 +371,24 @@ function ProposalRow({
 }
 
 export function CustomerDataReviewCenter() {
-  const { data: proposals = [], isLoading, refetch, isFetching } = useAllPendingIdProposals();
+  const {
+    data: proposals = [],
+    error: proposalsError,
+    isError: hasProposalsError,
+    isLoading,
+    refetch,
+    isFetching,
+  } = useAllPendingIdProposals();
   const respond = useRespondToIdProposal();
   const bulkApprove = useBulkApproveIdProposals();
+  const scanAll = useScanAllPendingContractDocumentsForId();
+  const backfillEvidence = useBackfillProposalEvidence();
   const [confirmBulkOpen, setConfirmBulkOpen] = React.useState(false);
 
   const bulkStats = React.useMemo(() => {
     let fields = 0;
     let affectedProposals = 0;
-    for (const p of proposals) {
+    for (const p of proposals.filter((proposal) => proposal.evidence_image_path)) {
       const high = p.proposed_changes.filter((c) => c.confidence >= HIGH_CONFIDENCE_THRESHOLD);
       if (high.length > 0) {
         fields += high.length;
@@ -247,6 +397,9 @@ export function CustomerDataReviewCenter() {
     }
     return { fields, affectedProposals };
   }, [proposals]);
+  const missingEvidenceCount = proposals.filter(
+    (proposal) => !proposal.evidence_image_path,
+  ).length;
 
   const handleApply = (proposal: CustomerIdProposal) => (acceptedFields: string[]) => {
     respond.mutate({ proposal, acceptedFields });
@@ -273,6 +426,32 @@ export function CustomerDataReviewCenter() {
             </div>
           </div>
           <div className="flex flex-wrap gap-2">
+            {missingEvidenceCount > 0 && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => backfillEvidence.mutate(proposals)}
+                disabled={backfillEvidence.isPending}
+                className="gap-2 border-amber-300 bg-amber-50 text-amber-900 hover:bg-amber-100"
+              >
+                <ScanLine
+                  className={backfillEvidence.isPending ? 'h-4 w-4 animate-pulse' : 'h-4 w-4'}
+                />
+                {backfillEvidence.isPending
+                  ? 'جارٍ تجهيز الصور...'
+                  : `تجهيز صور المراجعة (${missingEvidenceCount})`}
+              </Button>
+            )}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => scanAll.mutate()}
+              disabled={scanAll.isPending}
+              className="gap-2"
+            >
+              <ScanLine className={scanAll.isPending ? 'h-4 w-4 animate-pulse' : 'h-4 w-4'} />
+              مسح العقود المعلقة
+            </Button>
             <Button
               variant="outline"
               size="sm"
@@ -300,6 +479,26 @@ export function CustomerDataReviewCenter() {
       {isLoading ? (
         <div className="flex items-center justify-center py-16">
           <RefreshCw className="h-8 w-8 animate-spin text-[#173A63]" />
+        </div>
+      ) : hasProposalsError ? (
+        <div className="rounded-xl border border-red-200 bg-red-50 px-5 py-8 text-center">
+          <XCircle className="mx-auto mb-3 h-10 w-10 text-red-500" />
+          <p className="font-semibold text-red-900">تعذر تحميل مهام تدقيق البيانات</p>
+          <p className="mt-1 text-sm text-red-700">
+            {proposalsError instanceof Error
+              ? proposalsError.message
+              : 'تحقق من صلاحيات المستخدم ثم أعد المحاولة.'}
+          </p>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="mt-4 border-red-200 bg-white text-red-800 hover:bg-red-100"
+            onClick={() => refetch()}
+          >
+            <RefreshCw className="ml-2 h-4 w-4" />
+            إعادة المحاولة
+          </Button>
         </div>
       ) : proposals.length === 0 ? (
         <div className="rounded-xl border border-dashed border-[#C8D4E2] bg-[#FAFBFC] py-16 text-center">

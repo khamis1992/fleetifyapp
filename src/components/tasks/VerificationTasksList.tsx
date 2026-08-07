@@ -81,7 +81,7 @@ export const VerificationTasksList: React.FC<VerificationTasksListProps> = ({
             <div className="rounded-lg bg-[#38BDF8]/10 p-2 text-[#38BDF8]">
               <ClipboardCheck className="h-5 w-5" />
             </div>
-            مهام التدقيق
+            مهام التحقق المعيّنة
             {tasks.length > 0 && (
               <Badge variant="secondary" className="rounded-md bg-[#F6F8FB] text-slate-600">
                 {tasks.length}
@@ -114,9 +114,9 @@ export const VerificationTasksList: React.FC<VerificationTasksListProps> = ({
               </div>
             )}
             <ClipboardCheck className="h-12 w-12 mx-auto mb-3 opacity-50" />
-            <p className="font-medium">لا توجد مهام تدقيق</p>
+            <p className="font-medium">لا توجد مهام تحقق معيّنة</p>
             <p className="text-sm mt-1">
-              عندما يتم إرسال مهمة تدقيق لك ستظهر هنا
+              عندما يتم تعيين مهمة تحقق لموظف ستظهر هنا
             </p>
           </div>
         ) : (

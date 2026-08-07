@@ -147,13 +147,21 @@ class LawsuitService {
     documentType: LegalDocumentType,
     file: File,
     expiryDate?: string,
-    notes?: string
+    notes?: string,
+    uploadedBy?: string,
   ): Promise<CompanyLegalDocument> {
     // رفع الملف إلى Storage
-    const fileName = `${companyId}/${documentType}_${Date.now()}.pdf`;
+    const safeFileName = file.name
+      .normalize('NFKC')
+      .replace(/[^\p{L}\p{N}._-]+/gu, '_')
+      .replace(/^[_\.]+|[_\.]+$/g, '') || 'document';
+    const fileName = `${companyId}/${documentType}/${Date.now()}-${crypto.randomUUID()}-${safeFileName}`;
     const { data: uploadData, error: uploadError } = await supabase.storage
       .from('legal-documents')
-      .upload(fileName, file);
+      .upload(fileName, file, {
+        contentType: file.type || 'application/pdf',
+        upsert: false,
+      });
 
     if (uploadError) throw uploadError;
 
@@ -161,13 +169,6 @@ class LawsuitService {
     const { data: urlData } = supabase.storage
       .from('legal-documents')
       .getPublicUrl(fileName);
-
-    // إلغاء تفعيل المستند القديم إن وجد
-    await supabase
-      .from('company_legal_documents')
-      .update({ is_active: false })
-      .eq('company_id', companyId)
-      .eq('document_type', documentType);
 
     // إدراج المستند الجديد
     const { data, error } = await supabase
@@ -181,11 +182,32 @@ class LawsuitService {
         expiry_date: expiryDate || null,
         notes: notes || null,
         is_active: true,
+        uploaded_by: uploadedBy || null,
       })
       .select()
       .single();
 
-    if (error) throw error;
+    if (error || !data) {
+      await supabase.storage.from('legal-documents').remove([uploadData.path]);
+      throw error || new Error('تعذر حفظ بيانات المستند القانوني');
+    }
+
+    // إلغاء تفعيل النسخ القديمة بعد حفظ النسخة الجديدة بنجاح.
+    const { error: deactivateError } = await supabase
+      .from('company_legal_documents')
+      .update({ is_active: false })
+      .eq('company_id', companyId)
+      .eq('document_type', documentType)
+      .neq('id', data.id);
+
+    if (deactivateError) {
+      await supabase
+        .from('company_legal_documents')
+        .update({ is_active: false })
+        .eq('id', data.id);
+      throw deactivateError;
+    }
+
     return data as CompanyLegalDocument;
   }
 

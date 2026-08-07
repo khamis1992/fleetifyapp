@@ -6230,6 +6230,10 @@ export type Database = {
           created_at: string
           customer_id: string | null
           error: string | null
+          evidence_crop: Json | null
+          evidence_image_bucket: string
+          evidence_image_path: string | null
+          evidence_label: string | null
           extracted_data: Json | null
           id: string
           overall_confidence: number | null
@@ -6248,6 +6252,10 @@ export type Database = {
           created_at?: string
           customer_id?: string | null
           error?: string | null
+          evidence_crop?: Json | null
+          evidence_image_bucket?: string
+          evidence_image_path?: string | null
+          evidence_label?: string | null
           extracted_data?: Json | null
           id?: string
           overall_confidence?: number | null
@@ -6266,6 +6274,10 @@ export type Database = {
           created_at?: string
           customer_id?: string | null
           error?: string | null
+          evidence_crop?: Json | null
+          evidence_image_bucket?: string
+          evidence_image_path?: string | null
+          evidence_label?: string | null
           extracted_data?: Json | null
           id?: string
           overall_confidence?: number | null

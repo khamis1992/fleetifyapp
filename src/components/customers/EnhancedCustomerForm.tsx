@@ -309,7 +309,14 @@ export const EnhancedCustomerForm: React.FC<EnhancedCustomerFormProps> = ({
 
   const onSubmit = async (data: CustomerFormData) => {
     try {
-      const customerDataIssues = getCustomerDataIssues(data);
+      const submitData: CustomerFormData = data.customer_type === 'individual'
+        ? {
+            ...data,
+            first_name: data.first_name_ar?.trim() || undefined,
+            last_name: data.last_name_ar?.trim() || undefined,
+          }
+        : data;
+      const customerDataIssues = getCustomerDataIssues(submitData);
       if (customerDataIssues.length > 0) {
         toast.error(`استكمل بيانات العميل أولاً: ${customerDataIssues.join('، ')}`);
         setCurrentStep(0);
@@ -328,16 +335,16 @@ export const EnhancedCustomerForm: React.FC<EnhancedCustomerFormProps> = ({
         // Update existing customer
         result = await updateCustomer.mutateAsync({
           id: editingCustomer.id,
-          ...data,
+          ...submitData,
           // Keep empty strings for optional fields (schema expects string, not null)
-          email: data.email || undefined,
-          notes: data.notes || undefined,
-          passport_number: data.passport_number || undefined,
+          email: submitData.email || undefined,
+          notes: submitData.notes || undefined,
+          passport_number: submitData.passport_number || undefined,
         });
       } else {
         // Create new customer
         result = await createCustomer.mutateAsync({
-          ...data,
+          ...submitData,
           force_create: forceCreate
         });
         
@@ -428,46 +435,53 @@ export const EnhancedCustomerForm: React.FC<EnhancedCustomerFormProps> = ({
 
       {/* Individual Fields */}
       {customerType === 'individual' && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="bg-gradient-to-br from-teal-50/50 to-teal-100/30 rounded-xl p-4 border border-teal-200/50 shadow-sm hover:shadow-md transition-shadow">
-            <FormField
-              control={form.control}
-              name="first_name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="text-slate-700 font-medium">الاسم الأول *</FormLabel>
-                  <FormControl>
-                    <Input 
-                      {...field} 
-                      placeholder="أدخل الاسم الأول" 
-                      className="bg-white dark:bg-slate-900 border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all"
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div className="rounded-xl border border-teal-200/50 bg-gradient-to-br from-teal-50/50 to-teal-100/30 p-4 shadow-sm transition-shadow hover:shadow-md">
+              <FormField
+                control={form.control}
+                name="first_name_ar"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="font-medium text-slate-700">الاسم الأول بالعربية *</FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        value={field.value || ''}
+                        dir="rtl"
+                        placeholder="أدخل الاسم الأول كما في المستند الرسمي"
+                        className="border-teal-200/50 bg-white transition-all hover:border-teal-300 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 dark:bg-slate-900"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <div className="rounded-xl border border-teal-200/50 bg-gradient-to-br from-teal-50/50 to-teal-100/30 p-4 shadow-sm transition-shadow hover:shadow-md">
+              <FormField
+                control={form.control}
+                name="last_name_ar"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="font-medium text-slate-700">بقية الاسم بالعربية *</FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        value={field.value || ''}
+                        dir="rtl"
+                        placeholder="أدخل بقية الاسم كما في المستند الرسمي"
+                        className="border-teal-200/50 bg-white transition-all hover:border-teal-300 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 dark:bg-slate-900"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
           </div>
 
-          <div className="bg-gradient-to-br from-teal-50/50 to-teal-100/30 rounded-xl p-4 border border-teal-200/50 shadow-sm hover:shadow-md transition-shadow">
-            <FormField
-              control={form.control}
-              name="last_name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="text-slate-700 font-medium">اسم العائلة *</FormLabel>
-                  <FormControl>
-                    <Input
-                      {...field}
-                      placeholder="أدخل اسم العائلة"
-                      className="bg-white dark:bg-slate-900 border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all"
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
         </div>
       )}
 

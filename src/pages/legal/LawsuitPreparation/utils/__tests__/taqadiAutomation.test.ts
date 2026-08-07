@@ -169,7 +169,8 @@ describe('buildTaqadiFilingPayload', () => {
 
   it('derives the Taqadi claim value from the final cash request', () => {
     const state = createState(true);
-    state.taqadiData!.amount = 99_999;
+    if (!state.taqadiData) throw new Error('Expected Taqadi data');
+    state.taqadiData.amount = 99_999;
 
     const payload = buildTaqadiFilingPayload(
       state,
@@ -191,8 +192,9 @@ describe('buildTaqadiFilingPayload', () => {
 
   it('rejects a defendant name containing English fields', () => {
     const state = createState();
-    state.taqadiData!.defendant = {
-      ...state.taqadiData!.defendant,
+    if (!state.taqadiData) throw new Error('Expected Taqadi data');
+    state.taqadiData.defendant = {
+      ...state.taqadiData.defendant,
       fullName: 'ATEF MANSOUR NAT EGYPT',
       firstName: 'ATEF',
       middleName: 'MANSOUR NAT',
@@ -201,5 +203,23 @@ describe('buildTaqadiFilingPayload', () => {
 
     expect(() => buildTaqadiFilingPayload(state, 'https://app.test/prepare'))
       .toThrow('اسم المدعى عليه يجب أن يكون مسجلًا بالعربية');
+  });
+
+  it('accepts a two-part Arabic defendant name', () => {
+    const state = createState();
+    if (!state.taqadiData) throw new Error('Expected Taqadi data');
+    state.taqadiData.defendant = {
+      ...state.taqadiData.defendant,
+      fullName: 'عاطف منصور',
+      firstName: 'عاطف',
+      middleName: null,
+      lastName: 'منصور',
+    };
+
+    const payload = buildTaqadiFilingPayload(state, 'https://app.test/prepare');
+
+    expect(payload.defendant.fullName).toBe('عاطف منصور');
+    expect(payload.defendant.firstName).toBe('عاطف');
+    expect(payload.defendant.lastName).toBe('منصور');
   });
 });

@@ -47,6 +47,45 @@ function customerArabicName(customer) {
   return [customer.first_name_ar, customer.last_name_ar].filter(Boolean).join(' ').trim();
 }
 
+function normalizeArabic(value) {
+  return String(value || '')
+    .replace(/[\u064B-\u065F\u0670]/g, '')
+    .replace(/[إأآا]/g, 'ا')
+    .replace(/ى/g, 'ي')
+    .replace(/ة/g, 'ه')
+    .replace(/[^\u0600-\u06FF0-9A-Za-z]+/g, ' ')
+    .trim()
+    .replace(/\s+/g, ' ');
+}
+
+function proposalChanges(proposal) {
+  return Array.isArray(proposal.proposed_changes) ? proposal.proposed_changes : [];
+}
+
+function signedDocumentNameProposal(proposal) {
+  const changes = proposalChanges(proposal)
+    .filter((change) => ['first_name_ar', 'last_name_ar', 'company_name_ar'].includes(change.field));
+  if (changes.length === 0) return null;
+
+  const proposedName = [
+    changes.find((change) => change.field === 'first_name_ar')?.proposed_value,
+    changes.find((change) => change.field === 'last_name_ar')?.proposed_value,
+  ].filter(Boolean).join(' ').trim()
+    || changes.find((change) => change.field === 'company_name_ar')?.proposed_value
+    || '';
+
+  if (!proposedName) return null;
+
+  return {
+    proposedName,
+    fields: changes.map((change) => change.field).join('; '),
+    confidence: Math.max(...changes.map((change) => Number(change.confidence || 0))),
+    proposal_id: proposal.id,
+    contract_id: proposal.contract_id,
+    contract_document_id: proposal.contract_document_id,
+  };
+}
+
 function csvValue(value) {
   return `"${String(value ?? '').replace(/"/g, '""')}"`;
 }
@@ -54,27 +93,32 @@ function csvValue(value) {
 function issueLabel(issue) {
   if (issue === 'missing_arabic_name') return 'الاسم العربي الرسمي ناقص أو غير عربي';
   if (issue === 'missing_arabic_nationality') return 'الجنسية العربية ناقصة أو غير عربية';
+  if (issue === 'signed_document_name_mismatch') return 'اسم العميل لا يطابق مستند العقد/الهوية الممسوح';
   return issue;
 }
 
 function requiredAction(issues) {
   const actions = [];
   if (issues.includes('missing_arabic_name')) {
-    actions.push('استكمال الاسم العربي الرسمي من الهوية أو الجواز');
+    actions.push('استكمال الاسم العربي الرسمي من الهوية أو العقد الموقع');
   }
   if (issues.includes('missing_arabic_nationality')) {
     actions.push('استكمال الجنسية بالعربي من مستند رسمي');
+  }
+  if (issues.includes('signed_document_name_mismatch')) {
+    actions.push('مراجعة مقترح ماسح مستندات العقد واعتماد الاسم المطابق للمستند الرسمي');
   }
   return actions.join('؛ ');
 }
 
 function buildIssueCsv(rows) {
   return [
-    'customer_id,name,name_ar,nationality,phone,contracts,active_contracts,issues,issues_ar,required_action',
+    'customer_id,name,name_ar,signed_document_name,nationality,phone,contracts,active_contracts,issues,issues_ar,required_action',
     ...rows.map((row) => [
       row.customer_id,
       row.name,
       row.name_ar,
+      row.signed_document_name,
       row.nationality,
       row.phone,
       row.contracts,
@@ -114,6 +158,10 @@ function compareIssueRows(a, b) {
   const bMissingName = b.issues.includes('missing_arabic_name') ? 0 : 1;
   if (aMissingName !== bMissingName) return aMissingName - bMissingName;
 
+  const aMismatch = a.issues.includes('signed_document_name_mismatch') ? 0 : 1;
+  const bMismatch = b.issues.includes('signed_document_name_mismatch') ? 0 : 1;
+  if (aMismatch !== bMismatch) return aMismatch - bMismatch;
+
   return String(a.active_contracts || a.contracts || a.name).localeCompare(
     String(b.active_contracts || b.contracts || b.name),
     'ar'
@@ -121,7 +169,7 @@ function compareIssueRows(a, b) {
 }
 
 async function main() {
-  const [customers, contracts] = await Promise.all([
+  const [customers, contracts, proposals] = await Promise.all([
     selectAll(
       'customers',
       'id,first_name,last_name,first_name_ar,last_name_ar,company_name,company_name_ar,customer_type,nationality,phone,company_id',
@@ -131,6 +179,11 @@ async function main() {
       'contracts',
       'id,contract_number,customer_id,status,company_id',
       (query) => query.eq('company_id', companyId)
+    ),
+    selectAll(
+      'customer_id_scan_proposals',
+      'id,customer_id,contract_id,contract_document_id,status,proposed_changes,overall_confidence,company_id',
+      (query) => query.eq('company_id', companyId).in('status', ['pending', 'partial'])
     ),
   ]);
 
@@ -142,10 +195,26 @@ async function main() {
     contractsByCustomer.get(contract.customer_id).push(contract);
   }
 
+  const nameProposalsByCustomer = new Map();
+  for (const proposal of proposals) {
+    if (!proposal.customer_id) continue;
+    const nameProposal = signedDocumentNameProposal(proposal);
+    if (!nameProposal) continue;
+    const list = nameProposalsByCustomer.get(proposal.customer_id) || [];
+    list.push(nameProposal);
+    nameProposalsByCustomer.set(proposal.customer_id, list);
+  }
+
   const issueRows = customers.flatMap((customer) => {
     const issues = [];
-    if (!hasArabicText(customerArabicName(customer))) issues.push('missing_arabic_name');
+    const currentArabicName = customerArabicName(customer);
+    if (!hasArabicText(currentArabicName)) issues.push('missing_arabic_name');
     if (!hasArabicText(customer.nationality)) issues.push('missing_arabic_nationality');
+
+    const signedNameProposal = (nameProposalsByCustomer.get(customer.id) || [])
+      .find((proposal) => normalizeArabic(proposal.proposedName) !== normalizeArabic(currentArabicName));
+    if (signedNameProposal) issues.push('signed_document_name_mismatch');
+
     if (issues.length === 0) return [];
 
     const customerContracts = contractsByCustomer.get(customer.id) || [];
@@ -153,7 +222,8 @@ async function main() {
     return [{
       customer_id: customer.id,
       name: customerName(customer),
-      name_ar: customerArabicName(customer),
+      name_ar: currentArabicName,
+      signed_document_name: signedNameProposal?.proposedName || '',
       nationality: customer.nationality || '',
       phone: customer.phone || '',
       contracts: customerContracts.map((contract) => contract.contract_number).join('; '),
@@ -183,8 +253,14 @@ async function main() {
     active_contract_customers_with_issues: issueRows.filter((row) => row.active_contracts_count > 0).length,
     missing_arabic_name: issueRows.filter((row) => row.issues.includes('missing_arabic_name')).length,
     missing_arabic_nationality: issueRows.filter((row) => row.issues.includes('missing_arabic_nationality')).length,
+    signed_document_name_mismatch: issueRows.filter((row) => row.issues.includes('signed_document_name_mismatch')).length,
+    pending_id_scan_proposals: proposals.filter((proposal) => proposal.status === 'pending').length,
+    partially_reviewed_id_scan_proposals: proposals.filter((proposal) => proposal.status === 'partial').length,
     arabic_name_issue_samples: issueRows
       .filter((row) => row.issues.includes('missing_arabic_name'))
+      .slice(0, 10),
+    signed_document_name_mismatch_samples: issueRows
+      .filter((row) => row.issues.includes('signed_document_name_mismatch'))
       .slice(0, 10),
     active_issue_samples: issueRows
       .filter((row) => row.active_contracts_count > 0)

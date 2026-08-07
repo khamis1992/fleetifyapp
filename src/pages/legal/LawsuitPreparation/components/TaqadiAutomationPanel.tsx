@@ -13,6 +13,7 @@ import {
   Paperclip,
   Play,
   RefreshCw,
+  RotateCcw,
   ShieldCheck,
   Wifi,
   WifiOff,
@@ -20,6 +21,15 @@ import {
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
 import {
   Collapsible,
   CollapsibleContent,
@@ -33,10 +43,16 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Progress } from '@/components/ui/progress';
+import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 import { useLawsuitPreparationContext } from '../store';
-import { getCurrentLegalCase } from '../utils/taqadiFiling';
 import {
+  getCurrentLegalCase,
+  isLegalCaseReopenable,
+  reopenLegalCaseForPreparation,
+} from '../utils/taqadiFiling';
+import {
+  buildTaqadiFilingPayload,
   cancelTaqadiFilingJob,
   getActiveTaqadiWorker,
   getLatestTaqadiFilingJob,
@@ -74,6 +90,11 @@ const resumableStatuses = new Set<TaqadiFilingStatus>([
   'failed',
   'needs_human',
   'waiting_login',
+  'cancelled',
+]);
+
+const freshRetryStatuses = new Set<TaqadiFilingStatus>([
+  'failed',
   'cancelled',
 ]);
 
@@ -153,6 +174,8 @@ export function TaqadiAutomationPanel() {
   const { state, actions } = useLawsuitPreparationContext();
   const queryClient = useQueryClient();
   const { companyId, contractId, documents, trafficViolations, ui } = state;
+  const [reopenDialogOpen, setReopenDialogOpen] = useState(false);
+  const [reopenReason, setReopenReason] = useState('');
 
   const requiredReady = useMemo(() => {
     const required = [
@@ -289,11 +312,12 @@ export function TaqadiAutomationPanel() {
   const retryMutation = useMutation({
     mutationFn: async () => {
       if (!companyId || !job) throw new Error('تعذر تحديد عملية الرفع');
-      return retryTaqadiFilingJob(companyId, job.id);
+      const refreshedPayload = buildTaqadiFilingPayload(state, window.location.href);
+      return retryTaqadiFilingJob(companyId, job.id, refreshedPayload);
     },
     onSuccess: async () => {
-      toast.success('تمت إعادة الدعوى إلى طابور الرفع');
-      await jobQuery.refetch();
+      toast.success('تم تحديث حزمة الدعوى وإعادتها إلى طابور الرفع');
+      await Promise.all([jobQuery.refetch(), eventsQuery.refetch()]);
     },
     onError: (error: Error) => toast.error(error.message),
   });
@@ -326,18 +350,71 @@ export function TaqadiAutomationPanel() {
     onError: (error: Error) => toast.error(error.message),
   });
 
+  const reopenCaseMutation = useMutation({
+    mutationFn: async () => {
+      if (!companyId || !legalCase) throw new Error('تعذر تحديد القضية المراد إعادة فتحها');
+      return reopenLegalCaseForPreparation(companyId, legalCase.id, reopenReason);
+    },
+    onSuccess: async () => {
+      toast.success('تمت إعادة القضية إلى مرحلة تجهيز الملف');
+      setReopenDialogOpen(false);
+      setReopenReason('');
+      await Promise.all([
+        legalCaseQuery.refetch(),
+        jobQuery.refetch(),
+        queryClient.invalidateQueries({ queryKey: ['legal-cases'] }),
+        queryClient.invalidateQueries({ queryKey: ['legal-case-workflow', companyId, legalCase?.id] }),
+      ]);
+    },
+    onError: (error: Error) => toast.error(error.message),
+  });
+
   const isActive = Boolean(job && activeStatuses.has(job.status));
   const requiresSubmissionVerification = job?.error_code === 'SUBMISSION_UNCERTAIN';
   const reachedAttemptLimit = Boolean(
     job && job.attempt_count >= job.max_attempts,
   );
   const canExplicitlyRestart = job?.status === 'cancelled';
+  const canReopenLegalCase = isLegalCaseReopenable(legalCase);
+  const requiresFreshPackage = Boolean(
+    job
+    && (
+      freshRetryStatuses.has(job.status)
+      || job.current_step === 'preflight'
+    ),
+  );
+  const legalCaseAllowsStart = Boolean(
+    !legalCase
+    || legalCase.workflow_stage === 'preparation'
+    || (
+      legalCase.workflow_stage === 'filed'
+      && !legalCase.case_reference
+    ),
+  );
+  const isCheckingStartState = legalCaseQuery.isLoading
+    || Boolean(legalCase && jobQuery.isLoading);
   const canStart = Boolean(
-    (!legalCase || legalCase.workflow_stage === 'preparation')
+    legalCaseAllowsStart
     && requiredReady
     && !isActive
-    && !job,
+    && !job
+    && !isCheckingStartState,
   );
+  const startBlockReason = useMemo(() => {
+    if (isCheckingStartState) return 'جاري التحقق من حالة القضية وطابور الرفع...';
+    if (!requiredReady) return 'أكمل جميع المستندات الإلزامية قبل إضافة الدعوى إلى الطابور.';
+    if (job || isActive) return null;
+    if (legalCase?.case_reference) {
+      return `الدعوى مرفوعة مسبقًا في تقاضي بالمرجع ${legalCase.case_reference}.`;
+    }
+    if (['closed', 'cancelled'].includes(legalCase?.workflow_stage ?? '')) {
+      return 'القضية مغلقة أو ملغاة. أعد فتحها قبل إرسالها إلى تقاضي.';
+    }
+    if (!legalCaseAllowsStart) {
+      return 'القضية تجاوزت مرحلة الرفع ولا يمكن إضافتها إلى طابور تقاضي مرة أخرى.';
+    }
+    return null;
+  }, [isActive, isCheckingStartState, job, legalCase, legalCaseAllowsStart, requiredReady]);
   const assistanceEvent = [...(eventsQuery.data ?? [])]
     .reverse()
     .find((event) => event.details?.resumeSupported === true);
@@ -408,6 +485,26 @@ export function TaqadiAutomationPanel() {
               اضغط زر التشغيل من متصفح جهاز المكتب ليبدأ فورًا.
             </span>
             <TaqadiAgentStartButton />
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {canReopenLegalCase && (
+        <Alert className="border-amber-300 bg-amber-50">
+          <RotateCcw className="h-4 w-4 text-amber-700" />
+          <AlertDescription className="flex flex-wrap items-center justify-between gap-3 text-amber-950">
+            <span>
+              هذه القضية ملغاة في النظام. أعد فتحها إلى مرحلة تجهيز الملف قبل إرسالها إلى تقاضي.
+            </span>
+            <Button
+              type="button"
+              variant="outline"
+              className="border-amber-300 bg-white text-amber-900 hover:bg-amber-100"
+              onClick={() => setReopenDialogOpen(true)}
+            >
+              <RotateCcw className="h-4 w-4" />
+              إعادة فتح القضية
+            </Button>
           </AlertDescription>
         </Alert>
       )}
@@ -605,11 +702,11 @@ export function TaqadiAutomationPanel() {
         </div>
       )}
 
-      {!requiredReady && (
+      {startBlockReason && !job && !canReopenLegalCase && (
         <Alert className="mt-4 border-amber-200 bg-amber-50">
           <AlertCircle className="h-4 w-4 text-amber-700" />
           <AlertDescription className="text-amber-950">
-            أكمل جميع المستندات الإلزامية قبل إضافة الدعوى إلى الطابور.
+            {startBlockReason}
           </AlertDescription>
         </Alert>
       )}
@@ -625,6 +722,7 @@ export function TaqadiAutomationPanel() {
               await Promise.all([legalCaseQuery.refetch(), jobQuery.refetch()]);
             }}
             disabled={!canStart || ui.isTaqadiAutomating}
+            title={startBlockReason ?? undefined}
             className="lawsuit-primary-command"
           >
             {ui.isTaqadiAutomating
@@ -641,12 +739,31 @@ export function TaqadiAutomationPanel() {
           </Button>
         )}
 
-        {job && !isActive && resumableStatuses.has(job.status) && !requiresSubmissionVerification && (
+        {job && !isActive && requiresFreshPackage && !requiresSubmissionVerification && (
+          <Button
+            type="button"
+            size="lg"
+            onClick={() => retryMutation.mutate()}
+            disabled={
+              retryMutation.isPending
+              || canReopenLegalCase
+              || (reachedAttemptLimit && !canExplicitlyRestart)
+            }
+            className="lawsuit-primary-command"
+          >
+            {retryMutation.isPending
+              ? <Loader2 className="h-4 w-4 animate-spin" />
+              : <RefreshCw className="h-4 w-4" />}
+            تحديث الحزمة وإعادة من البداية
+          </Button>
+        )}
+
+        {job && !isActive && resumableStatuses.has(job.status) && !requiresFreshPackage && !requiresSubmissionVerification && (
           <Button
             type="button"
             size="lg"
             onClick={() => resumeMutation.mutate()}
-            disabled={resumeMutation.isPending || !workerOnline}
+            disabled={resumeMutation.isPending || !workerOnline || canReopenLegalCase}
             className="lawsuit-primary-command"
           >
             {resumeMutation.isPending
@@ -679,10 +796,11 @@ export function TaqadiAutomationPanel() {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start" className="rounded-lg border-[#E5EAF1]">
-              {retryableStatuses.has(job.status) && !requiresSubmissionVerification && (
+              {retryableStatuses.has(job.status) && !requiresFreshPackage && !requiresSubmissionVerification && (
                 <DropdownMenuItem
                   disabled={
                     retryMutation.isPending
+                    || canReopenLegalCase
                     || (reachedAttemptLimit && !canExplicitlyRestart)
                   }
                   onSelect={() => retryMutation.mutate()}
@@ -722,6 +840,49 @@ export function TaqadiAutomationPanel() {
       {ui.taqadiAutomationStatus && (
         <p className="mt-3 text-xs text-slate-500">{ui.taqadiAutomationStatus}</p>
       )}
+
+      <Dialog open={reopenDialogOpen} onOpenChange={setReopenDialogOpen}>
+        <DialogContent className="max-w-lg" dir="rtl">
+          <DialogHeader>
+            <DialogTitle>إعادة فتح القضية</DialogTitle>
+            <DialogDescription>
+              ستعود القضية إلى مرحلة تجهيز الملف، مع الاحتفاظ بسجل الإلغاء وتوثيق سبب إعادة الفتح.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2 py-2">
+            <Label htmlFor="legal-case-reopen-reason">سبب إعادة الفتح</Label>
+            <Textarea
+              id="legal-case-reopen-reason"
+              value={reopenReason}
+              onChange={(event) => setReopenReason(event.target.value)}
+              placeholder="مثال: تم إلغاء القضية بالخطأ وتحتاج إلى استكمال التجهيز والرفع"
+              rows={4}
+              autoFocus
+            />
+            <p className="text-xs text-slate-500">الحد الأدنى 10 أحرف. يتطلب هذا الإجراء صلاحية مدير.</p>
+          </div>
+          <DialogFooter className="gap-2 sm:justify-start">
+            <Button
+              type="button"
+              onClick={() => reopenCaseMutation.mutate()}
+              disabled={reopenReason.trim().length < 10 || reopenCaseMutation.isPending}
+            >
+              {reopenCaseMutation.isPending
+                ? <Loader2 className="h-4 w-4 animate-spin" />
+                : <RotateCcw className="h-4 w-4" />}
+              اعتماد إعادة الفتح
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setReopenDialogOpen(false)}
+              disabled={reopenCaseMutation.isPending}
+            >
+              إلغاء
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </section>
   );
 }
