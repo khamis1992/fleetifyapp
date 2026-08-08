@@ -457,20 +457,57 @@ async function reviewAndStore(
       userParts.push({ type: "image_url", image_url: { url: imageDataUrl } });
     }
 
-    const raw = await callKimiJson<AiVerdict>([
-      {
-        role: "system",
-        content:
-          "أنت مدقق بيانات في نظام إدارة تأجير سيارات قطري. مهمتك الحكم على مقترحات تعديل بيانات مستخرجة بالـ OCR من عقود وبطاقات شخصية. عند إرفاق صورة، قارن القيم بالصورة مباشرة ولا تعتمد على نص OCR وحده. أجب بصيغة JSON فقط بالمفاتيح: verdict (correct|incorrect|uncertain)، confidence (0-1)، reasoning (جملة عربية قصيرة). اعتبر المقترح correct فقط إذا كان الدليل يؤكد القيمة المقترحة بوضوح. إذا كان الدليل غامضاً اختر uncertain. إذا أثبت الدليل قيمة مختلفة اختر incorrect.",
-      },
-      { role: "user", content: userParts },
-    ], { vision: usedVision });
+    try {
+      let raw: AiVerdict | null = null;
+      try {
+        raw = await callKimiJson<AiVerdict>([
+          {
+            role: "system",
+            content:
+              "أنت مدقق بيانات في نظام إدارة تأجير سيارات قطري. مهمتك الحكم على مقترحات تعديل بيانات مستخرجة بالـ OCR من عقود وبطاقات شخصية. عند إرفاق صورة، قارن القيم بالصورة مباشرة ولا تعتمد على نص OCR وحده. أجب بصيغة JSON فقط بالمفاتيح: verdict (correct|incorrect|uncertain)، confidence (0-1)، reasoning (جملة عربية قصيرة). اعتبر المقترح correct فقط إذا كان الدليل يؤكد القيمة المقترحة بوضوح. إذا كان الدليل غامضاً اختر uncertain. إذا أثبت الدليل قيمة مختلفة اختر incorrect.",
+          },
+          { role: "user", content: userParts },
+        ], { vision: usedVision });
+      } catch (visionError) {
+        // No vision model on this account — retry with OCR text only.
+        if (
+          usedVision &&
+          visionError instanceof Error &&
+          visionError.message.includes("unavailable")
+        ) {
+          usedVision = false;
+          raw = await callKimiJson<AiVerdict>([
+            {
+              role: "system",
+              content:
+                "أنت مدقق بيانات في نظام إدارة تأجير سيارات قطري. مهمتك الحكم على مقترحات تعديل بيانات مستخرجة بالـ OCR من عقود وبطاقات شخصية. أجب بصيغة JSON فقط بالمفاتيح: verdict (correct|incorrect|uncertain)، confidence (0-1)، reasoning (جملة عربية قصيرة). اعتبر المقترح correct فقط إذا كان النص يؤكد القيمة المقترحة بوضوح. إذا كان غامضاً اختر uncertain. إذا أثبت قيمة مختلفة اختر incorrect.",
+            },
+            { role: "user", content: userParts.filter((part) => part.type === "text") },
+          ]);
+        } else {
+          throw visionError;
+        }
+      }
 
-    verdict = {
-      verdict: raw?.verdict === "correct" || raw?.verdict === "incorrect" ? raw.verdict : "uncertain",
-      confidence: Math.min(Math.max(Number(raw?.confidence) || 0, 0), 1),
-      reasoning: String(raw?.reasoning || "").substring(0, 500),
-    };
+      verdict = {
+        verdict: raw?.verdict === "correct" || raw?.verdict === "incorrect" ? raw.verdict : "uncertain",
+        confidence: Math.min(Math.max(Number(raw?.confidence) || 0, 0), 1),
+        reasoning: String(raw?.reasoning || "").substring(0, 500),
+      };
+    } catch (modelError) {
+      // Without a configured key the model layer cannot answer; keep the
+      // proposal pending with a clear note instead of failing the batch.
+      if (modelError instanceof Error && modelError.message.includes("API key not configured")) {
+        verdict = {
+          verdict: "uncertain",
+          confidence: 0,
+          reasoning: "النموذج غير مفعّل بعد — يلزم ضبط مفتاح Kimi في أسرار Supabase.",
+        };
+        usedVision = false;
+      } else {
+        throw modelError;
+      }
+    }
   }
 
   // 3) Conditional auto-approval: agent says correct + OCR >= 95% per change

@@ -59,7 +59,9 @@ export const supabase = createClient<Database>(supabaseConfig.url, supabaseConfi
             ? 30000
             : requestUrl.includes('/functions/v1/excel-import-ai-review')
               ? 90000
-              : 10000;
+              : requestUrl.includes('/functions/v1/customer-proposal-ai-reviewer')
+                ? 120000
+                : 10000;
           const controller = new AbortController();
           timeoutId = setTimeout(() => controller.abort(), timeoutMs);
           

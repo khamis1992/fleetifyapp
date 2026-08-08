@@ -575,7 +575,7 @@ export function CustomerDataReviewCenter() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => aiReview.mutate(Math.min(proposals.length || 25, 50))}
+              onClick={() => aiReview.mutate(Math.min(proposals.length || 15, 15))}
               disabled={aiReview.isPending || proposals.length === 0}
               className="gap-2 border-[#C7D2FE] bg-[#EEF2FF] text-[#3730A3] hover:bg-[#E0E7FF]"
             >
