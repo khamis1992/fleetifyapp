@@ -23,6 +23,7 @@ import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
+import { AgentReviewButton, AgentReviewVerdictBadge } from '@/components/ai-agents/AgentReviewButton';
 import { cn, formatCurrency } from '@/lib/utils';
 
 type DailyLogSummary = {
@@ -588,9 +589,12 @@ export default function DailyCloseouts() {
                     <TableCell>{numberValue(log.summary?.payment_promises)}</TableCell>
                     <TableCell className="max-w-xs truncate">{log.blockers || 'لا توجد'}</TableCell>
                     <TableCell>
-                      <Button size="sm" variant="outline" className="rounded-xl border-slate-200" onClick={() => setSelectedLog(log)}>
-                        عرض التفاصيل
-                      </Button>
+                      <div className="flex items-center gap-2">
+                        <Button size="sm" variant="outline" className="rounded-xl border-slate-200" onClick={() => setSelectedLog(log)}>
+                          عرض التفاصيل
+                        </Button>
+                        <AgentReviewVerdictBadge agentType="daily_closeout" entityId={log.id} />
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -630,9 +634,18 @@ export default function DailyCloseouts() {
                   <ClipboardCheck className="h-5 w-5 text-[#22C7A1]" />
                   إقفال يوم {selectedLog.employee_name}
                 </DialogTitle>
-                <DialogDescription>
-                  {selectedLog.log_date}، من {formatTime(selectedLog.start_time)} إلى {formatTime(selectedLog.end_time)}
-                </DialogDescription>
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <DialogDescription>
+                    {selectedLog.log_date}، من {formatTime(selectedLog.start_time)} إلى {formatTime(selectedLog.end_time)}
+                  </DialogDescription>
+                  <AgentReviewButton
+                    agentType="daily_closeout"
+                    body={{ logId: selectedLog.id }}
+                    entityId={selectedLog.id}
+                    label="تدقيق الوكيل للإقفال"
+                    title={`تدقيق إقفال ${selectedLog.employee_name}`}
+                  />
+                </div>
               </DialogHeader>
               <DailyCloseoutReport
                 log={selectedLog}

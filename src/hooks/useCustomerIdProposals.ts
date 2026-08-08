@@ -184,7 +184,6 @@ export function usePendingIdScanCount(contractId?: string) {
  */export function useRespondToIdProposal() {
   const queryClient = useQueryClient();
   const { user } = useAuth();
-  const updateCustomer = useUpdateCustomer();
 
   return useMutation({
     mutationFn: async ({
@@ -233,8 +232,31 @@ export function usePendingIdScanCount(contractId?: string) {
         if (updateData.first_name_ar) updateData.first_name = updateData.first_name_ar;
         if (updateData.last_name_ar) updateData.last_name = updateData.last_name_ar;
 
-        // Apply through the standard customer update flow (cache + logging)
-        await updateCustomer.mutateAsync({ customerId: proposal.customer_id, data: updateData });
+        // Reviewed corrections must not be blocked by unrelated missing data:
+        // only reject an update that would reduce the record's completeness.
+        const { data: existingCustomer, error: fetchError } = await supabase
+          .from('customers')
+          .select('*')
+          .eq('id', proposal.customer_id)
+          .single();
+        if (fetchError || !existingCustomer) throw fetchError || new Error('العميل غير موجود');
+
+        const issuesBefore = getCustomerDataIssues(existingCustomer).length;
+        const issuesAfter = getCustomerDataIssues({
+          ...existingCustomer,
+          ...updateData,
+        }).length;
+        if (issuesAfter > issuesBefore) {
+          throw new Error('لا يمكن تطبيق هذا التعديل لأنه يقلل اكتمال البيانات الرسمية');
+        }
+
+        const { error: updateError } = await supabase
+          .from('customers')
+          .update(updateData as CustomerUpdate)
+          .eq('id', proposal.customer_id)
+          .eq('company_id', proposal.company_id);
+        if (updateError) throw updateError;
+        queryClient.invalidateQueries({ queryKey: ['customers'] });
       }
 
       if (contractChanges.length > 0) {
@@ -441,46 +463,92 @@ export function useScanAllPendingContractDocumentsForId() {
     mutationFn: async () => {
       if (!companyId) throw new Error('بيانات الشركة غير مكتملة');
 
-      const documents: Array<{
+      type ScanTarget = {
         id: string;
         contract_id: string | null;
         document_type: string;
         document_name: string;
         file_path: string | null;
         mime_type: string | null;
-      }> = [];
-      const pageSize = 500;
-      for (let from = 0; ; from += pageSize) {
-        const { data, error } = await supabase
+      };
+
+      // Incremental scan: only documents never scanned before are picked. A
+      // one-time sweep re-checks previously scanned documents of contracts
+      // missing monthly rent (added later), then marks them rent_checked so
+      // they are never picked again.
+      const SCAN_BATCH_LIMIT = 20;
+
+      const { data: pendingDocs, error: pendingError } = await supabase
+        .from('contract_documents')
+        .select('id, contract_id, document_type, document_name, file_path, mime_type, id_scan_status')
+        .eq('company_id', companyId)
+        .in('document_type', SCANNABLE_TYPES)
+        .eq('id_scan_status', 'pending')
+        .not('file_path', 'is', null)
+        .order('created_at', { ascending: true });
+      if (pendingError) throw pendingError;
+
+      const { data: missingRentContracts, error: contractsError } = await supabase
+        .from('contracts')
+        .select('id')
+        .eq('company_id', companyId)
+        .or('monthly_amount.is.null,monthly_amount.eq.0');
+      if (contractsError) throw contractsError;
+
+      const missingRentIds = (missingRentContracts || []).map((c) => c.id);
+      let rentSweepDocs: typeof pendingDocs = [];
+      if (missingRentIds.length > 0) {
+        const { data: sweepDocs, error: sweepError } = await supabase
           .from('contract_documents')
-          .select('id, contract_id, document_type, document_name, file_path, mime_type')
+          .select('id, contract_id, document_type, document_name, file_path, mime_type, id_scan_status')
           .eq('company_id', companyId)
           .in('document_type', SCANNABLE_TYPES)
+          .in('contract_id', missingRentIds)
+          // proposal_created/failed docs were scanned before rent extraction
+          // existed, so they are re-checked exactly once for the rent figure.
+          .in('id_scan_status', ['no_id_card', 'no_changes', 'proposal_created', 'failed'])
           .not('file_path', 'is', null)
-          .order('created_at', { ascending: true })
-          .range(from, from + pageSize - 1);
-        if (error) throw error;
-        documents.push(...(data || []));
-        if (!data || data.length < pageSize) break;
+          .order('created_at', { ascending: true });
+        if (sweepError) throw sweepError;
+        rentSweepDocs = sweepDocs || [];
       }
 
-      if (!documents?.length) return { scanned: 0, proposals: 0, failed: 0 };
+      // Contracts with no readable document cannot be OCR-audited at all —
+      // they are reported so the team knows they need a contract copy upload.
+      let contractsWithoutDocs = 0;
+      if (missingRentIds.length > 0) {
+        const { data: docsOfMissing, error: docsError } = await supabase
+          .from('contract_documents')
+          .select('contract_id')
+          .eq('company_id', companyId)
+          .in('contract_id', missingRentIds)
+          .in('document_type', SCANNABLE_TYPES)
+          .not('file_path', 'is', null);
+        if (docsError) throw docsError;
+        const withDocs = new Set((docsOfMissing || []).map((d) => d.contract_id));
+        contractsWithoutDocs = missingRentIds.filter((id) => !withDocs.has(id)).length;
+      }
+
+      const combined = [...(pendingDocs || []), ...rentSweepDocs];
+      const remaining = combined.length;
+      const documents: ScanTarget[] = combined.slice(0, SCAN_BATCH_LIMIT);
+      const rentSweepDocIds = new Set(rentSweepDocs.map((doc) => doc.id));
+
+      if (!documents.length) return { scanned: 0, proposals: 0, failed: 0, remaining: 0 };
 
       let proposals = 0;
       let failed = 0;
 
       for (const doc of documents) {
+        let outcome: string | undefined;
         try {
           if (doc.mime_type?.startsWith('image/')) {
             const { data, error: fnError } = await supabase.functions.invoke('contract-id-scanner', {
               body: { mode: 'document', contractDocumentId: doc.id },
             });
             if (fnError) throw fnError;
-            if (data?.outcome === 'proposal_created') proposals++;
-            continue;
-          }
-
-          if (doc.mime_type === 'application/pdf') {
+            outcome = data?.outcome;
+          } else if (doc.mime_type === 'application/pdf') {
             const { data: blob, error: dlError } = await supabase.storage
               .from('contract-documents')
               .download(doc.file_path!);
@@ -505,7 +573,21 @@ export function useScanAllPendingContractDocumentsForId() {
               body: { mode: 'pages', contractDocumentId: doc.id, pages },
             });
             if (fnError) throw fnError;
-            if (data?.outcome === 'proposal_created') proposals++;
+            outcome = data?.outcome;
+          }
+          if (outcome === 'proposal_created') proposals++;
+
+          // Rent sweep documents are marked after any definitive outcome so the
+          // next incremental scan never picks them again; failures stay eligible.
+          if (
+            rentSweepDocIds.has(doc.id)
+            && outcome
+            && ['proposal_created', 'no_changes', 'no_id_card'].includes(outcome)
+          ) {
+            await supabase
+              .from('contract_documents')
+              .update({ id_scan_status: 'rent_checked' })
+              .eq('id', doc.id);
           }
         } catch (docError) {
           failed++;
@@ -594,17 +676,60 @@ export function useScanAllPendingContractDocumentsForId() {
         }
       }
 
-      return { scanned: documents.length, proposals, failed, namesUpdated, namesNeedingReview };
+      // New proposals go straight to the Kimi agent, which itself skips any
+      // proposal it has already reviewed — nothing is audited twice.
+      let aiSummary: {
+        reviewed?: number;
+        ready?: number;
+        autoApproved?: number;
+        conflicts?: number;
+        failed?: number;
+      } | null = null;
+      if (proposals > 0) {
+        try {
+          const { data: aiData } = await supabase.functions.invoke('customer-proposal-ai-reviewer', {
+            body: { mode: 'batch', companyId, limit: 15 },
+          });
+          if (aiData?.success) aiSummary = aiData;
+        } catch (aiError) {
+          console.error('Automatic AI review after scan failed:', aiError);
+        }
+      }
+
+      return {
+        scanned: documents.length,
+        proposals,
+        failed,
+        namesUpdated,
+        namesNeedingReview,
+        remaining: Math.max(remaining - documents.length, 0),
+        contractsWithoutDocs,
+        aiSummary,
+      };
     },
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ['customer-id-proposals'] });
       queryClient.invalidateQueries({ queryKey: ['contract-documents'] });
       if (result.scanned === 0) {
-        toast.info('لا توجد مستندات عقود قابلة للتدقيق');
+        toast.info('كل العقود مدققة — لا توجد مستندات جديدة للفحص');
       } else {
         toast.success(
           `تم تدقيق ${result.scanned} مستند وتحديث أسماء ${result.namesUpdated || 0} عميل تلقائياً`,
         );
+        if (result.remaining > 0) {
+          toast.info(`تبقى ${result.remaining} مستنداً — اضغط «تحديث وتدقيق جميع العقود» مجدداً للمتابعة`);
+        }
+        if ((result.contractsWithoutDocs || 0) > 0) {
+          toast.warning(
+            `${result.contractsWithoutDocs} عقداً بقيمة إيجار صفرية وبدون مستند ممسوح — ارفع نسخة العقد لها ليتمكن النظام من قراءة الإيجار`,
+          );
+        }
+        if (result.aiSummary && (result.aiSummary.reviewed || 0) > 0) {
+          toast.success(
+            `راجع الوكيل ${result.aiSummary.reviewed} مقترحاً جديداً: ${result.aiSummary.ready || 0} جاهز للاعتماد` +
+            ((result.aiSummary.autoApproved || 0) > 0 ? `، ${result.aiSummary.autoApproved} اعتمد آلياً` : ''),
+          );
+        }
         if ((result.namesNeedingReview || 0) > 0) {
           toast.info(`${result.namesNeedingReview} عميل يحتاج مراجعة بشرية بسبب تعارض أو انخفاض الثقة`);
         }
@@ -891,13 +1016,16 @@ export function useBulkApproveIdProposals() {
           continue;
         }
 
-        const customerDataIssues = getCustomerDataIssues({
+        // Allow corrections that improve or keep data completeness; only block
+        // updates that would make the official record worse than it already is.
+        const issuesBefore = getCustomerDataIssues(existingCustomer).length;
+        const issuesAfter = getCustomerDataIssues({
           ...existingCustomer,
           ...fields,
-        });
+        }).length;
 
-        if (customerDataIssues.length > 0) {
-          console.warn(`Bulk approve: skipped customer ${customerId} because official Arabic data is incomplete:`, customerDataIssues);
+        if (issuesAfter > issuesBefore) {
+          console.warn(`Bulk approve: skipped customer ${customerId} because the update would reduce data completeness`);
           failedCustomers.push(customerId);
           continue;
         }

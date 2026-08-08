@@ -44,6 +44,7 @@ import {
   type ProposedFieldChange,
 } from '@/hooks/useCustomerIdProposals';
 import { supabase } from '@/integrations/supabase/client';
+import { CustomerMergeProposalsPanel } from '@/components/customers/CustomerMergeProposalsPanel';
 
 const FIELD_LABELS: Record<string, string> = {
   first_name: 'الاسم الأول (إنجليزي)',
@@ -531,6 +532,8 @@ export function CustomerDataReviewCenter() {
 
   return (
     <div className="space-y-4" dir="rtl">
+      <CustomerMergeProposalsPanel />
+
       {/* Header */}
       <div className="rounded-xl border border-[#DDE5EF] bg-white p-5 shadow-sm">
         <div className="flex flex-wrap items-center justify-between gap-3">

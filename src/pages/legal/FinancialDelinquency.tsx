@@ -66,6 +66,8 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { LegalTransferReadinessWizard as ConvertToLegalDialog } from '@/components/contracts/LegalTransferReadinessWizard';
+import { AgentReviewButton, AgentReviewVerdictBadge } from '@/components/ai-agents/AgentReviewButton';
+import { CollectionMessageButton } from '@/components/ai-agents/CollectionMessageButton';
 import type { ContractForLegal } from '@/hooks/useConvertToLegal';
 import { useDelinquentCustomers, type DelinquentCustomer } from '@/hooks/useDelinquentCustomers';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
@@ -2033,6 +2035,18 @@ const FinancialDelinquencyPage: React.FC = () => {
                           <Gavel className="h-4 w-4" />
                           تجهيز الدعوى
                         </Button>
+                        {item.legalCaseId && (
+                          <>
+                            <AgentReviewButton
+                              agentType="legal_case"
+                              body={{ legalCaseId: item.legalCaseId }}
+                              entityId={item.legalCaseId}
+                              label="مراجعة الوكيل للملف"
+                              title={`مراجعة ملف القضية ${item.legalCaseNumber || ''}`}
+                            />
+                            <AgentReviewVerdictBadge agentType="legal_case" entityId={item.legalCaseId} />
+                          </>
+                        )}
                         <Button
                           variant="outline"
                           onClick={() => window.open(`/contracts/${encodeURIComponent(item.contract.contract_number)}`, '_blank', 'noopener,noreferrer')}
@@ -2306,6 +2320,11 @@ const FinancialDelinquencyPage: React.FC = () => {
                                     <Send className="h-4 w-4" />
                                     فتح واتساب
                                   </Button>
+                                  <CollectionMessageButton
+                                    customerId={candidate.customerId}
+                                    contractId={candidate.contract?.id}
+                                    phone={candidate.phone}
+                                  />
                                 </div>
                               </div>
                             </CollapsibleContent>

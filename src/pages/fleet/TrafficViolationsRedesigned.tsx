@@ -41,6 +41,7 @@ import { TrafficViolationsSmartDashboard } from '@/components/fleet/TrafficViola
 import { TrafficViolationsAlertsPanel } from '@/components/fleet/TrafficViolationsAlertsPanel';
 import { TrafficViolationSidePanel } from '@/components/fleet/TrafficViolationSidePanel';
 import { TrafficViolationReportDialog } from '@/components/fleet/TrafficViolationReportDialog';
+import { ViolationInboxDropzone } from '@/components/fleet/ViolationInboxDropzone';
 import { TrafficViolationReminderDialog } from '@/components/fleet/TrafficViolationReminderDialog';
 import { TrafficViolationsAIAdvisor } from '@/components/fleet/TrafficViolationsAIAdvisor';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
@@ -1370,6 +1371,7 @@ export default function TrafficViolationsRedesigned() {
           </TabsContent>
 
           <TabsContent value="import" className="mt-0">
+            <ViolationInboxDropzone />
             <section className="overflow-hidden rounded-[8px] border border-[#DDE5EF] bg-white shadow-[0_18px_42px_-34px_rgba(15,23,42,.58)]">
               <div className="border-b border-[#DDE5EF] bg-[#F8FAFC] p-4">
                 <h2 className="text-lg font-black text-[#020617]">استيراد ملف المخالفات</h2>

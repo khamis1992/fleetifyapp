@@ -146,6 +146,7 @@ async function reviewBatch(supabase: SupabaseClient, companyId: string, limit: n
     .select(PROPOSAL_SELECT)
     .eq("company_id", companyId)
     .in("status", ["pending", "partial"])
+    .is("extracted_data->ai_review", null)
     .order("overall_confidence", { ascending: false })
     .limit(limit);
 
@@ -381,6 +382,29 @@ function identityConfirmed(
   return false;
 }
 
+// Values reach the agent in many surface forms (16/09/2025 vs 2025-09-16,
+// 1,500 vs 1500). Render them in every common form so the model compares the
+// meaning, not the string.
+function describeValueForPrompt(field: string, value: string): string {
+  if (field === "date_of_birth" || field === "national_id_expiry") {
+    const date = new Date(value);
+    if (!Number.isNaN(date.getTime())) {
+      const dd = String(date.getDate()).padStart(2, "0");
+      const mm = String(date.getMonth() + 1).padStart(2, "0");
+      const yyyy = date.getFullYear();
+      return `${value} (أي ${dd}/${mm}/${yyyy} بالصيغة اليومية)`;
+    }
+  }
+  if (field === "monthly_amount") {
+    const amount = Number(value);
+    if (Number.isFinite(amount)) {
+      return `${value} (أي ${amount.toLocaleString("en-US")} ر.ق)`;
+    }
+  }
+  return value;
+}
+
+
 async function reviewAndStore(
   supabase: SupabaseClient,
   proposal: ProposalRow,
@@ -433,7 +457,7 @@ async function reviewAndStore(
     usedVision = imageDataUrl !== null;
 
     const changesText = changes.map((change) =>
-      `- ${FIELD_LABELS[change.field] || change.field}: الحالي «${change.current_value ?? "فارغ"}» → المقترح «${change.proposed_value}» (ثقة ${Math.round(change.confidence * 100)}%)`
+      `- ${FIELD_LABELS[change.field] || change.field}: الحالي «${change.current_value ?? "فارغ"}» → المقترح «${describeValueForPrompt(change.field, change.proposed_value)}» (ثقة ${Math.round(change.confidence * 100)}%)`
     ).join("\n");
 
     const userParts: Array<Record<string, unknown>> = [{
@@ -463,8 +487,8 @@ async function reviewAndStore(
         raw = await callKimiJson<AiVerdict>([
           {
             role: "system",
-            content:
-              "أنت مدقق بيانات في نظام إدارة تأجير سيارات قطري. مهمتك الحكم على مقترحات تعديل بيانات مستخرجة بالـ OCR من عقود وبطاقات شخصية. عند إرفاق صورة، قارن القيم بالصورة مباشرة ولا تعتمد على نص OCR وحده. أجب بصيغة JSON فقط بالمفاتيح: verdict (correct|incorrect|uncertain)، confidence (0-1)، reasoning (جملة عربية قصيرة). اعتبر المقترح correct فقط إذا كان الدليل يؤكد القيمة المقترحة بوضوح. إذا كان الدليل غامضاً اختر uncertain. إذا أثبت الدليل قيمة مختلفة اختر incorrect.",
+          content:
+              "أنت مدقق بيانات في نظام إدارة تأجير سيارات قطري. مهمتك الحكم على مقترحات تعديل بيانات مستخرجة بالـ OCR من عقود وبطاقات شخصية. عند إرفاق صورة، قارن القيم بالصورة مباشرة ولا تعتمد على نص OCR وحده. قارن المعنى لا النص: التواريخ قد تظهر 16/09/2025 أو 2025-09-16 وهي متطابقة إذا كانت نفس اليوم، والأرقام قد تظهر بفواصل آلاف (1,500 = 1500)، والأسماء العربية قد تختلف صورياً (ة/ه، ى/ي، أ/إ) فاعتبرها متطابقة إذا تطابق الاسم بعد التطبيع. أجب بصيغة JSON فقط بالمفاتيح: verdict (correct|incorrect|uncertain)، confidence (0-1)، reasoning (جملة عربية قصيرة). اعتبر المقترح correct فقط إذا كان الدليل يؤكد القيمة المقترحة بوضوح. إذا كان الدليل غامضاً اختر uncertain. إذا أثبت الدليل قيمة مختلفة فعلاً اختر incorrect.",
           },
           { role: "user", content: userParts },
         ], { vision: usedVision });
@@ -479,8 +503,8 @@ async function reviewAndStore(
           raw = await callKimiJson<AiVerdict>([
             {
               role: "system",
-              content:
-                "أنت مدقق بيانات في نظام إدارة تأجير سيارات قطري. مهمتك الحكم على مقترحات تعديل بيانات مستخرجة بالـ OCR من عقود وبطاقات شخصية. أجب بصيغة JSON فقط بالمفاتيح: verdict (correct|incorrect|uncertain)، confidence (0-1)، reasoning (جملة عربية قصيرة). اعتبر المقترح correct فقط إذا كان النص يؤكد القيمة المقترحة بوضوح. إذا كان غامضاً اختر uncertain. إذا أثبت قيمة مختلفة اختر incorrect.",
+            content:
+                "أنت مدقق بيانات في نظام إدارة تأجير سيارات قطري. مهمتك الحكم على مقترحات تعديل بيانات مستخرجة بالـ OCR من عقود وبطاقات شخصية. قارن المعنى لا النص: التواريخ قد تظهر 16/09/2025 أو 2025-09-16 وهي متطابقة إذا كانت نفس اليوم، والأرقام قد تظهر بفواصل آلاف، والأسماء العربية قد تختلف صورياً (ة/ه، ى/ي، أ/إ) فاعتبرها متطابقة بعد التطبيع. أجب بصيغة JSON فقط بالمفاتيح: verdict (correct|incorrect|uncertain)، confidence (0-1)، reasoning (جملة عربية قصيرة). اعتبر المقترح correct فقط إذا كان النص يؤكد القيمة المقترحة بوضوح. إذا كان غامضاً اختر uncertain. إذا أثبت قيمة مختلفة فعلاً اختر incorrect.",
             },
             { role: "user", content: userParts.filter((part) => part.type === "text") },
           ]);

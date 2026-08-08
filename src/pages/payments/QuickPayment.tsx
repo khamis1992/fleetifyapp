@@ -22,6 +22,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { QuickPaymentRecording } from '@/components/payments/QuickPaymentRecording';
+import { PaymentMatchAssistant } from '@/components/ai-agents/PaymentMatchAssistant';
 import { PaymentRegistrationTable } from '@/components/payments/PaymentRegistrationTable';
 import { PaymentStatsCards } from '@/components/payments/PaymentStatsCards';
 import { cn } from '@/lib/utils';
@@ -212,6 +213,8 @@ export default function QuickPayment({ className }: QuickPaymentProps) {
                         <CheckCircle2 className="h-5 w-5" />
                       </div>
                     </div>
+
+                    <PaymentMatchAssistant />
 
                     <div className="space-y-3">
                       {paymentSteps.map((step, index) => {

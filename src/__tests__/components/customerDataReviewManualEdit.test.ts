@@ -27,4 +27,10 @@ describe('customer data review manual editing', () => {
     expect(proposalHookSource).toContain('original_proposed_changes: proposal.proposed_changes');
     expect(proposalHookSource).toContain('applied_values: appliedManualValues');
   });
+
+  it('blocks only updates that reduce data completeness, not unrelated gaps', () => {
+    expect(proposalHookSource).toContain('issuesBefore');
+    expect(proposalHookSource).toContain('issuesAfter');
+    expect(proposalHookSource).toContain('issuesAfter > issuesBefore');
+  });
 });

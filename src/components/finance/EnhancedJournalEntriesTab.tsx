@@ -30,6 +30,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { JournalEntryAiReviewBadge, JournalEntryAiReviewMenuItem } from '@/components/finance/JournalEntryAiReview';
 import {
   Search,
   Filter,
@@ -207,6 +208,7 @@ function JournalEntryCard({
                       غير متوازن
                     </Badge>
                   )}
+                  <JournalEntryAiReviewBadge entryId={entry.id} />
                 </div>
                 <div className="flex items-center gap-4 text-sm text-muted-foreground">
                   <div className="flex items-center gap-1">
@@ -234,6 +236,7 @@ function JournalEntryCard({
                   <Eye className="h-4 w-4 ml-2" />
                   عرض التفاصيل
                 </DropdownMenuItem>
+                <JournalEntryAiReviewMenuItem entryId={entry.id} entryNumber={entry.entry_number} />
                 {entry.status === 'draft' && (
                   <>
                     <DropdownMenuItem onClick={() => onEdit?.(entry)}>

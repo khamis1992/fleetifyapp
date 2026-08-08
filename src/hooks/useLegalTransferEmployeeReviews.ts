@@ -206,10 +206,17 @@ export function useRespondToLegalEmployeeReview() {
       p_contract_updates: contractUpdates,
       p_actor_id: user?.id || null,
     }),
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['legal-transfer-employee-reviews'] });
       queryClient.invalidateQueries({ queryKey: ['employee-contracts'] });
       queryClient.invalidateQueries({ queryKey: ['customers'] });
+      // Fire-and-forget: the verifier agent checks the employee's corrections
+      // against the stored OCR evidence before the legal team relies on them.
+      if (Object.keys(variables.customerUpdates || {}).length > 0) {
+        void supabase.functions
+          .invoke('correction-verifier-agent', { body: { reviewId: variables.reviewId } })
+          .catch((verifyError) => console.warn('Correction verifier failed:', verifyError));
+      }
       toast.success('تم إرسال نتيجة التدقيق إلى الفريق القانوني');
     },
     onError: (error: Error) => toast.error('تعذر حفظ نتيجة التدقيق', { description: error.message }),

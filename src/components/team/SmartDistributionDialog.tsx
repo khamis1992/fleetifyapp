@@ -56,6 +56,7 @@ export const SmartDistributionDialog: React.FC<SmartDistributionDialogProps> = (
   const [distributionPreview, setDistributionPreview] = useState<any>(null);
   const [isCalculating, setIsCalculating] = useState(false);
   const [isDistributing, setIsDistributing] = useState(false);
+  const [isAutoAssigning, setIsAutoAssigning] = useState(false);
 
   // Fetch available employees with capacity
   const { data: employees, isLoading: employeesLoading } = useQuery({
@@ -587,7 +588,38 @@ export const SmartDistributionDialog: React.FC<SmartDistributionDialogProps> = (
               السابق
             </Button>
           )}
-          
+
+          <Button
+            type="button"
+            variant="outline"
+            onClick={async () => {
+              if (!companyId) return;
+              setIsAutoAssigning(true);
+              try {
+                const { data, error } = await supabase.functions.invoke('smart-contract-assigner', {
+                  body: { companyId, mode: 'assign_new' },
+                });
+                if (error) throw error;
+                toast.success(`أسند الوكيل ${data?.assigned || 0} عقداً تلقائياً حسب العبء ونسبة التحصيل`);
+                queryClient.invalidateQueries({ queryKey: ['unassigned-contracts-smart'] });
+                queryClient.invalidateQueries({ queryKey: ['team-stats'] });
+                onOpenChange(false);
+                resetDialog();
+              } catch (assignError) {
+                toast.error(assignError instanceof Error ? assignError.message : 'تعذر التوزيع التلقائي');
+              } finally {
+                setIsAutoAssigning(false);
+              }
+            }}
+            disabled={isCalculating || isDistributing || isAutoAssigning}
+            className="gap-1.5 border-[#C7D2FE] bg-[#EEF2FF] text-[#3730A3] hover:bg-[#E0E7FF]"
+          >
+            {isAutoAssigning
+              ? <Loader2 className="ml-2 h-4 w-4 animate-spin" />
+              : <Sparkles className="ml-2 h-4 w-4" />}
+            توزيع فوري بالوكيل
+          </Button>
+
           <Button
             variant="outline"
             onClick={() => {

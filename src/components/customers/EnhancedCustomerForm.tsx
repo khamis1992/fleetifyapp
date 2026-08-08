@@ -21,6 +21,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { CustomerIdAutofillButton } from '@/components/ai-agents/CustomerIdAutofillButton';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { useCustomerOperations } from '@/hooks/business/useCustomerOperations';
@@ -396,6 +397,25 @@ export const EnhancedCustomerForm: React.FC<EnhancedCustomerFormProps> = ({
         </motion.div>
         <h3 className="text-xl font-bold text-slate-800">البيانات الأساسية</h3>
         <p className="text-slate-500 text-sm">أدخل المعلومات الشخصية والوثائق</p>
+        {customerType === 'individual' && (
+          <div className="mt-3">
+            <CustomerIdAutofillButton
+              onExtract={(result) => {
+                const parts = (result.nameArabic || '').split(/\s+/).filter(Boolean);
+                if (parts.length > 0) form.setValue('first_name_ar', parts[0], { shouldDirty: true });
+                if (parts.length > 1) form.setValue('last_name_ar', parts.slice(1).join(' '), { shouldDirty: true });
+                if (result.nationalId) form.setValue('national_id', result.nationalId, { shouldDirty: true });
+                if (result.nationality) form.setValue('nationality', result.nationality, { shouldDirty: true });
+                if (result.dateOfBirth && !Number.isNaN(new Date(result.dateOfBirth).getTime())) {
+                  form.setValue('date_of_birth', new Date(result.dateOfBirth), { shouldDirty: true });
+                }
+                if (result.idExpiry && !Number.isNaN(new Date(result.idExpiry).getTime())) {
+                  form.setValue('national_id_expiry', new Date(result.idExpiry), { shouldDirty: true });
+                }
+              }}
+            />
+          </div>
+        )}
       </div>
 
       {/* Customer Type */}

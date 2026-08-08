@@ -47,23 +47,36 @@ async function callKimiOnce(
   const apiKey = getKimiApiKey();
   if (!apiKey) throw new Error("Kimi API key not configured");
 
-  const response = await fetch(KIMI_CHAT_COMPLETIONS_URL, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model,
-      messages,
-      temperature: options.temperature ?? 0.1,
-      max_tokens: options.maxTokens ?? 1200,
-      response_format: { type: "json_object" },
-    }),
-  });
+  const request = (temperature: number) =>
+    fetch(KIMI_CHAT_COMPLETIONS_URL, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model,
+        messages,
+        temperature,
+        max_tokens: options.maxTokens ?? 1200,
+        response_format: { type: "json_object" },
+      }),
+    });
+
+  let response = await request(options.temperature ?? 0.1);
 
   if (!response.ok) {
     const errorText = await response.text();
+    // Some Kimi models only accept temperature = 1 — retry once when told so.
+    if (errorText.includes("invalid temperature")) {
+      response = await request(1);
+      if (response.ok) {
+        const okData = await response.json();
+        return okData?.choices?.[0]?.message?.content || "";
+      }
+      const retryText = await response.text();
+      throw new Error(`Kimi API error: ${response.status} ${retryText}`);
+    }
     if (response.status === 404 || errorText.includes("resource_not_found")) {
       throw new KimiModelNotFoundError(model, errorText.substring(0, 200));
     }
