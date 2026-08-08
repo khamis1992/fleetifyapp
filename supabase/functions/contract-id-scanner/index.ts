@@ -62,6 +62,7 @@ interface ExtractedIdData {
   nationalityArabic?: string;
   nameArabicOccurrences?: number;
   nameCrossScriptConsistent?: boolean;
+  monthlyRent?: number;
 }
 
 interface ProposedChange {
@@ -348,15 +349,23 @@ async function processRasterizedPages(
     page: { pageNumber: number; imageBase64: string; evidenceImagePath?: string };
     ocr: OcrResult;
   }> = [];
+  const allPageTexts: string[] = [];
 
   for (const page of pages.slice(0, 20)) {
     const ocr = await detectTextWithGoogleVision(page.imageBase64);
+    if (ocr.text) allPageTexts.push(ocr.text);
     if (ocr.text && looksLikeCustomerIdentityEvidence(ocr.text)) {
       evidencePages.push({ page, ocr });
     }
   }
 
-  if (evidencePages.length === 0) {
+  // The monthly rent lives in the contract body, not the ID page, so it is
+  // searched across every page while identity data stays restricted to the
+  // evidence pages.
+  const fullText = allPageTexts.join("\n");
+  const monthlyRent = extractMonthlyRent(fullText.split(/\r?\n/).map((l) => l.trim()).filter(Boolean));
+
+  if (evidencePages.length === 0 && monthlyRent === undefined) {
     await deletePendingProposal(supabase, doc.id);
     await markDocument(supabase, doc.id, "no_id_card");
     return { outcome: "no_id_card" };
@@ -365,8 +374,13 @@ async function processRasterizedPages(
   try {
     // A matching name from the contract party section and the ID-card page
     // becomes repeated evidence; conflicting readings stay low-confidence.
-    const combinedText = evidencePages.map(({ ocr }) => ocr.text).join("\n");
+    const combinedText = evidencePages.length > 0
+      ? evidencePages.map(({ ocr }) => ocr.text).join("\n")
+      : fullText;
     const extracted = extractIdData(combinedText);
+    if (extracted.monthlyRent === undefined && monthlyRent !== undefined) {
+      extracted.monthlyRent = monthlyRent;
+    }
     const evidencePage = evidencePages.find(({ ocr }) =>
       extracted.nameArabic &&
       normalizeArabic(ocr.text).includes(normalizeArabic(extracted.nameArabic))
@@ -376,13 +390,13 @@ async function processRasterizedPages(
       supabase,
       doc as ContractDocumentRow,
       combinedText,
-      evidencePage.page.pageNumber,
+      evidencePage ? evidencePage.page.pageNumber : null,
       {
-        imagePath: evidencePage.page.evidenceImagePath || null,
+        imagePath: evidencePage?.page.evidenceImagePath || doc.file_path,
         crop: null,
         label: extracted.nameArabic || null,
       },
-      evidencePage.ocr.annotations,
+      evidencePage ? evidencePage.ocr.annotations : [],
     );
     if (outcome !== "proposal_created") await deletePendingProposal(supabase, doc.id);
     await markDocument(
@@ -423,7 +437,10 @@ async function scanDocumentImage(
 
     const ocr = await detectTextWithGoogleVision(imageBase64);
     const text = ocr.text;
-    if (!text || !looksLikeCustomerIdentityEvidence(text)) {
+    const rentFound = text
+      ? extractMonthlyRent(text.split(/\r?\n/).map((l) => l.trim()).filter(Boolean)) !== undefined
+      : false;
+    if (!text || (!looksLikeCustomerIdentityEvidence(text) && !rentFound)) {
       await deletePendingProposal(supabase, doc.id);
       await markDocument(supabase, doc.id, "no_id_card");
       return "no_id_card";
@@ -824,10 +841,51 @@ function selectArabicNameConsensus(candidates: string[]): {
   return best ? { name: best.value, occurrences: best.count } : { occurrences: 0 };
 }
 
+// Labels that mark totals rather than the monthly figure — never accept these.
+const RENT_EXCLUDE_LABEL_RE = /إجمالي|اجمالي|الإجمالي|الاجمالي|الكلية|كامل|سنوي|سنوية|السنوي|التأمين|التامين|الوديعة|deposit|total/i;
+const RENT_LABEL_RE = /(?:قيمة\s+)?(?:الإيجار|الايجار|الأجرة|الاجرة)\s*(?:الشهرية|الشهري)|Monthly\s+(?:Rent|Rental)/i;
+const RENT_AMOUNT_RE = /([0-9]{1,3}(?:,[0-9]{3})+(?:\.[0-9]{1,2})?|[0-9]{3,7}(?:\.[0-9]{1,2})?)/;
+
+function parseRentAmount(raw: string): number | undefined {
+  const value = Number(raw.replace(/,/g, ""));
+  if (!Number.isFinite(value) || value < 100 || value > 100000) return undefined;
+  return value;
+}
+
+function extractMonthlyRent(lines: string[]): number | undefined {
+  const candidates: number[] = [];
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    if (!RENT_LABEL_RE.test(line) || RENT_EXCLUDE_LABEL_RE.test(line)) continue;
+    // Amount may sit on the label line itself or the next line (table layouts).
+    const inlineAmount = line.match(RENT_AMOUNT_RE);
+    if (inlineAmount) {
+      const parsed = parseRentAmount(inlineAmount[1]);
+      if (parsed !== undefined) candidates.push(parsed);
+      continue;
+    }
+    const nextLine = lines[i + 1] || "";
+    const nextAmount = nextLine.match(RENT_AMOUNT_RE);
+    if (nextAmount && !RENT_LABEL_RE.test(nextLine)) {
+      const parsed = parseRentAmount(nextAmount[1]);
+      if (parsed !== undefined) candidates.push(parsed);
+    }
+  }
+  if (candidates.length === 0) return undefined;
+  // Consensus: the most repeated reading wins; ties prefer the first occurrence.
+  const counts = new Map<number, number>();
+  for (const value of candidates) counts.set(value, (counts.get(value) || 0) + 1);
+  return [...counts.entries()].sort((a, b) => b[1] - a[1])[0][0];
+}
+
 function extractIdData(text: string): ExtractedIdData {
   const data: ExtractedIdData = {};
   const lines = text.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
   const cleanText = text.replace(/\s+/g, " ").trim();
+
+  // --- Monthly rent (from the signed contract body) ---
+  const rent = extractMonthlyRent(lines);
+  if (rent !== undefined) data.monthlyRent = rent;
 
   // --- National ID ---
   const idPatterns = [
@@ -1119,10 +1177,11 @@ async function buildAndStoreProposal(
   evidence: NameEvidence = {},
   annotations: OcrAnnotation[] = [],
 ): Promise<"proposal_created" | "no_changes"> {
-  // Get the contract's customer
+  // Get the contract (and its customer) — monthly_amount is needed so the
+  // scanner can recover contracts whose rent was never recorded.
   const { data: contract, error: contractError } = await supabase
     .from("contracts")
-    .select("customer_id")
+    .select("customer_id, monthly_amount, contract_amount")
     .eq("id", doc.contract_id)
     .single();
 
@@ -1272,6 +1331,31 @@ async function buildAndStoreProposal(
 
   // English OCR is supporting evidence only. The customer table's canonical
   // individual-name fields are Arabic, so English text must never overwrite them.
+
+  // --- Contract monthly rent ---
+  // This document belongs to the contract itself, so the rent figure does not
+  // need identity confirmation. Propose when the recorded value is missing or
+  // clearly different; confidence rises when the total divides into whole months.
+  if (extracted.monthlyRent !== undefined) {
+    const currentMonthly = Number(contract.monthly_amount || 0);
+    const totalAmount = Number(contract.contract_amount || 0);
+    const months = totalAmount > 0 ? totalAmount / extracted.monthlyRent : 0;
+    const dividesIntoWholeMonths = months >= 2 && months <= 60 &&
+      Math.abs(months - Math.round(months)) < 0.01;
+    const rentConfidence = dividesIntoWholeMonths ? 0.95 : 0.85;
+    const rentMissing = currentMonthly <= 0;
+    const rentDiffers = !rentMissing && Math.abs(currentMonthly - extracted.monthlyRent) > 1;
+
+    if ((rentMissing || rentDiffers) && rentConfidence >= MIN_PROPOSAL_CONFIDENCE) {
+      changes.push({
+        field: "monthly_amount",
+        current_value: rentMissing ? null : String(currentMonthly),
+        proposed_value: String(extracted.monthlyRent),
+        confidence: rentMissing ? rentConfidence : Math.min(rentConfidence, 0.8),
+        method: "ocr",
+      });
+    }
+  }
 
   // Keep only confident proposals
   const confidentChanges = changes.filter(

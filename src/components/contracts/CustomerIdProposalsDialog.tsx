@@ -1,4 +1,4 @@
-import * as React from 'react';
+﻿import * as React from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -27,6 +27,7 @@ const FIELD_LABELS: Record<string, string> = {
   national_id_expiry: 'تاريخ انتهاء البطاقة',
   nationality: 'الجنسية',
   date_of_birth: 'تاريخ الميلاد',
+  monthly_amount: 'الإيجار الشهري (العقد)',
 };
 
 const METHOD_META: Record<ProposedFieldChange['method'], { label: string; icon: React.ReactNode }> = {

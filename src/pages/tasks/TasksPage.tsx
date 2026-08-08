@@ -40,7 +40,6 @@ import { QuickNotes } from '@/components/tasks/QuickNotes';
 import { TeamCommunicationLog } from '@/components/tasks/TeamCommunicationLog';
 import { useRolePermissions } from '@/hooks/useRolePermissions';
 import { MyTasksDashboard } from '@/components/tasks/MyTasksDashboard';
-import { VerificationTasksList } from '@/components/tasks/VerificationTasksList';
 import { SystemAuditAgentDashboard } from '@/components/tasks/SystemAuditAgentDashboard';
 import { FinancialReviewTasksPanel } from '@/components/tasks/FinancialReviewTasksPanel';
 import { useFinancialReviewAccess } from '@/hooks/useContractFinancialReviews';

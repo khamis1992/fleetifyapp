@@ -50,6 +50,52 @@ const proposalsTable = () => supabase.from('customer_id_scan_proposals');
 
 const SCANNABLE_TYPES = ['identity', 'id_card', 'signed_contract_image', 'signed_contract'];
 
+// Proposal fields that belong to the contract record, not the customer record.
+const CONTRACT_PROPOSAL_FIELDS = new Set(['monthly_amount']);
+
+async function applyContractProposalChanges(
+  proposal: CustomerIdProposal,
+  changes: ProposedFieldChange[],
+  reviewerId: string,
+) {
+  const updates: Record<string, unknown> = {};
+  for (const change of changes) {
+    if (change.field === 'monthly_amount') {
+      const amount = Number(change.proposed_value);
+      if (!Number.isFinite(amount) || amount <= 0) {
+        throw new Error('قيمة الإيجار الشهري المقترحة غير صالحة');
+      }
+      updates.monthly_amount = amount;
+    }
+  }
+  if (Object.keys(updates).length === 0) return;
+
+  const { error } = await supabase
+    .from('contracts')
+    .update({ ...updates, updated_at: new Date().toISOString() })
+    .eq('id', proposal.contract_id)
+    .eq('company_id', proposal.company_id);
+  if (error) throw error;
+
+  await supabase.from('contract_operations_log').insert({
+    contract_id: proposal.contract_id,
+    company_id: proposal.company_id,
+    operation_type: 'contract_fields_updated_from_id_review',
+    operation_details: {
+      proposal_id: proposal.id,
+      applied_fields: changes.map((change) => ({
+        field: change.field,
+        from: change.current_value,
+        to: change.proposed_value,
+        confidence: change.confidence,
+        method: change.method,
+      })),
+    },
+    notes: 'اعتمدت قيم مستخرجة من مستند العقد بعد مراجعة بشرية',
+    performed_by: reviewerId,
+  });
+}
+
 function dataUrlToBlob(dataUrl: string): Blob {
   const [header, base64] = dataUrl.split(',');
   const mime = header.match(/data:(.*?);base64/)?.[1] || 'image/png';
@@ -177,14 +223,23 @@ export function usePendingIdScanCount(contractId?: string) {
         throw new Error('لم يتم تحديد أي حقول');
       }
 
-      const updateData = Object.fromEntries(
-        acceptedChanges.map((c) => [c.field, c.proposed_value]),
-      ) as Partial<CustomerFormData>;
-      if (updateData.first_name_ar) updateData.first_name = updateData.first_name_ar;
-      if (updateData.last_name_ar) updateData.last_name = updateData.last_name_ar;
+      const customerChanges = acceptedChanges.filter((c) => !CONTRACT_PROPOSAL_FIELDS.has(c.field));
+      const contractChanges = acceptedChanges.filter((c) => CONTRACT_PROPOSAL_FIELDS.has(c.field));
 
-      // Apply through the standard customer update flow (cache + logging)
-      await updateCustomer.mutateAsync({ customerId: proposal.customer_id, data: updateData });
+      if (customerChanges.length > 0) {
+        const updateData = Object.fromEntries(
+          customerChanges.map((c) => [c.field, c.proposed_value]),
+        ) as Partial<CustomerFormData>;
+        if (updateData.first_name_ar) updateData.first_name = updateData.first_name_ar;
+        if (updateData.last_name_ar) updateData.last_name = updateData.last_name_ar;
+
+        // Apply through the standard customer update flow (cache + logging)
+        await updateCustomer.mutateAsync({ customerId: proposal.customer_id, data: updateData });
+      }
+
+      if (contractChanges.length > 0) {
+        await applyContractProposalChanges(proposal, contractChanges, user.id);
+      }
 
       const allAccepted = acceptedChanges.length === proposal.proposed_changes.length;
       const finalChanges = proposal.proposed_changes.map((change) =>
@@ -707,6 +762,70 @@ export function useBackfillProposalEvidence() {
 }
 
 /**
+ * Run the Kimi K3 agent over open proposals. The agent only marks proposals
+ * (verified / ready, uncertain, or incorrect); it never applies changes.
+ */
+export function useAiReviewProposals() {
+  const queryClient = useQueryClient();
+  const { companyId } = useUnifiedCompanyAccess();
+
+  return useMutation<
+    {
+      reviewed: number;
+      ready: number;
+      uncertain: number;
+      incorrect: number;
+      failed: number;
+      conflicts?: number;
+      autoApproved?: number;
+    },
+    Error,
+    number | undefined
+  >({
+    mutationFn: async (limit = 25) => {
+      if (!companyId) throw new Error('بيانات الشركة غير مكتملة');
+      const { data, error } = await supabase.functions.invoke('customer-proposal-ai-reviewer', {
+        body: { mode: 'batch', companyId, limit },
+      });
+      if (error) throw error;
+      if (data?.success === false) throw new Error(data.error || 'فشل تدقيق الوكيل');
+      return data as {
+        reviewed: number;
+        ready: number;
+        uncertain: number;
+        incorrect: number;
+        failed: number;
+        conflicts?: number;
+        autoApproved?: number;
+      };
+    },
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: ['customer-id-proposals'] });
+      if (result.reviewed === 0) {
+        toast.info('لا توجد مقترحات معلقة للتدقيق');
+        return;
+      }
+      toast.success(
+        `راجع الوكيل ${result.reviewed} مقترحاً: ${result.ready} جاهز للاعتماد`,
+        {
+          description: [
+            (result.autoApproved || 0) > 0 ? `${result.autoApproved} اعتمد آلياً` : '',
+            (result.conflicts || 0) > 0 ? `${result.conflicts} متعارض بين المستندات` : '',
+            result.uncertain > 0 ? `${result.uncertain} غير مؤكد` : '',
+            result.incorrect > 0 ? `${result.incorrect} غير صحيح` : '',
+            result.failed > 0 ? `${result.failed} فشل` : '',
+          ].filter(Boolean).join(' · ') || undefined,
+        },
+      );
+    },
+    onError: (error) => {
+      console.error('AI proposal review failed:', error);
+      toast.error(error instanceof Error ? error.message : 'فشل تدقيق الوكيل الذكي');
+    },
+  });
+}
+
+/**
  * Bulk-approve: apply every proposed field with confidence >= threshold
  * across all pending proposals. Updates are grouped per customer (one DB
  * write per customer), then each proposal is marked accepted/partial.
@@ -727,6 +846,7 @@ export function useBulkApproveIdProposals() {
 
       // 1) Group accepted fields per customer (latest proposal wins per field)
       const perCustomer = new Map<string, Record<string, string>>();
+      const perContract = new Map<string, { proposal: CustomerIdProposalWithContext; changes: ProposedFieldChange[] }>();
       const perProposal = new Map<string, { accepted: number; total: number }>();
 
       for (const proposal of proposals) {
@@ -734,18 +854,25 @@ export function useBulkApproveIdProposals() {
         const accepted = proposal.proposed_changes.filter((c) => c.confidence >= threshold);
         if (accepted.length === 0) continue;
 
+        const customerAccepted = accepted.filter((c) => !CONTRACT_PROPOSAL_FIELDS.has(c.field));
+        const contractAccepted = accepted.filter((c) => CONTRACT_PROPOSAL_FIELDS.has(c.field));
+
         const fields = perCustomer.get(proposal.customer_id) || {};
-        for (const change of accepted) fields[change.field] = change.proposed_value;
+        for (const change of customerAccepted) fields[change.field] = change.proposed_value;
         if (fields.first_name_ar) fields.first_name = fields.first_name_ar;
         if (fields.last_name_ar) fields.last_name = fields.last_name_ar;
-        perCustomer.set(proposal.customer_id, fields);
+        if (Object.keys(fields).length > 0) perCustomer.set(proposal.customer_id, fields);
+
+        if (contractAccepted.length > 0) {
+          perContract.set(proposal.id, { proposal, changes: contractAccepted });
+        }
         perProposal.set(proposal.id, {
           accepted: accepted.length,
           total: proposal.proposed_changes.length,
         });
       }
 
-      if (perCustomer.size === 0) {
+      if (perCustomer.size === 0 && perContract.size === 0) {
         return { customersUpdated: 0, customersFailed: 0, fieldsApplied: 0, proposalsClosed: 0 };
       }
 
@@ -785,14 +912,27 @@ export function useBulkApproveIdProposals() {
         }
       }
 
-      // 3) Close proposals (accepted if all fields approved, partial otherwise).
-      //    Skip proposals whose customer update failed so they stay pending.
+      // 3) Contract-targeted fields (e.g. monthly rent) update the contract,
+      //    not the customer.
+      const failedContracts: string[] = [];
+      for (const { proposal, changes } of perContract.values()) {
+        try {
+          await applyContractProposalChanges(proposal, changes, user.id);
+        } catch (contractError) {
+          console.error(`Bulk approve: failed to update contract ${proposal.contract_id}:`, contractError);
+          failedContracts.push(proposal.id);
+        }
+      }
+
+      // 4) Close proposals (accepted if all fields approved, partial otherwise).
+      //    Skip proposals whose customer/contract update failed so they stay pending.
       const now = new Date().toISOString();
       let proposalsClosed = 0;
       for (const proposal of proposals) {
         const stats = perProposal.get(proposal.id);
         if (!stats) continue;
         if (failedCustomers.includes(proposal.customer_id)) continue;
+        if (failedContracts.includes(proposal.id)) continue;
         const { error } = await proposalsTable()
           .update({
             status: stats.accepted === stats.total ? 'accepted' : 'partial',

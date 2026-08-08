@@ -1,4 +1,4 @@
-import * as React from 'react';
+﻿import * as React from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -38,6 +38,7 @@ import {
   useBulkApproveIdProposals,
   useScanAllPendingContractDocumentsForId,
   useBackfillProposalEvidence,
+  useAiReviewProposals,
   type CustomerIdProposal,
   type CustomerIdProposalWithContext,
   type ProposedFieldChange,
@@ -53,6 +54,7 @@ const FIELD_LABELS: Record<string, string> = {
   national_id_expiry: 'تاريخ انتهاء البطاقة',
   nationality: 'الجنسية',
   date_of_birth: 'تاريخ الميلاد',
+  monthly_amount: 'الإيجار الشهري (العقد)',
 };
 
 const METHOD_META: Record<ProposedFieldChange['method'], { label: string; icon: React.ReactNode }> = {
@@ -74,6 +76,59 @@ function ConfidenceBadge({ confidence }: { confidence: number }) {
     return <Badge className="bg-yellow-100 text-yellow-800 hover:bg-yellow-100">{percent}%</Badge>;
   }
   return <Badge className="bg-red-100 text-red-800 hover:bg-red-100">{percent}%</Badge>;
+}
+
+interface AiReview {
+  verdict: 'correct' | 'incorrect' | 'uncertain';
+  confidence: number;
+  reasoning: string;
+  model?: string;
+  reviewed_at?: string;
+  label?: string;
+  conflict?: boolean;
+  auto_approved?: boolean;
+  used_vision?: boolean;
+}
+
+function getAiReview(proposal: CustomerIdProposalWithContext): AiReview | null {
+  const review = (proposal.extracted_data as Record<string, unknown> | null)?.ai_review;
+  if (!review || typeof review !== 'object') return null;
+  const value = review as Record<string, unknown>;
+  if (!['correct', 'incorrect', 'uncertain'].includes(String(value.verdict))) return null;
+  return value as unknown as AiReview;
+}
+
+function AiReviewBadge({ review }: { review: AiReview }) {
+  if (review.conflict) {
+    return (
+      <Badge className="gap-1 border border-violet-300 bg-violet-50 text-violet-700 hover:bg-violet-50">
+        <Brain className="h-3 w-3" />
+        تعارض بين المستندات — يحتاج حسمًا
+      </Badge>
+    );
+  }
+  if (review.verdict === 'correct') {
+    return (
+      <Badge className="gap-1 border border-emerald-300 bg-emerald-50 text-emerald-800 hover:bg-emerald-50">
+        <Brain className="h-3 w-3" />
+        {review.used_vision ? 'تم التدقيق بالصورة — جاهز للاعتماد' : 'تم التدقيق — مقترح جاهز للاعتماد'}
+      </Badge>
+    );
+  }
+  if (review.verdict === 'incorrect') {
+    return (
+      <Badge className="gap-1 border border-rose-300 bg-rose-50 text-rose-700 hover:bg-rose-50">
+        <Brain className="h-3 w-3" />
+        الوكيل يرى المقترح غير صحيح
+      </Badge>
+    );
+  }
+  return (
+    <Badge className="gap-1 border border-amber-300 bg-amber-50 text-amber-800 hover:bg-amber-50">
+      <Brain className="h-3 w-3" />
+      الوكيل غير متأكد
+    </Badge>
+  );
 }
 
 function customerDisplayName(p: CustomerIdProposalWithContext): string {
@@ -309,6 +364,7 @@ function ProposalRow({
     (c) => c.confidence >= HIGH_CONFIDENCE_THRESHOLD,
   ).length;
   const hasEvidence = Boolean(proposal.evidence_image_path);
+  const aiReview = getAiReview(proposal);
 
   const toggle = (field: string) => {
     setSelected((prev) => {
@@ -335,6 +391,7 @@ function ProposalRow({
             {proposal.overall_confidence != null && (
               <ConfidenceBadge confidence={proposal.overall_confidence} />
             )}
+            {aiReview && <AiReviewBadge review={aiReview} />}
           </div>
           <div className="mt-0.5 flex flex-wrap items-center gap-2 text-xs text-neutral-500">
             {proposal.contracts?.contract_number && (
@@ -372,6 +429,12 @@ function ProposalRow({
       {expanded && (
         <div className="space-y-3 border-t border-neutral-100 p-4">
           <EvidencePreview proposal={proposal} />
+          {aiReview?.reasoning && (
+            <div className="rounded-lg border border-[#C7D2FE] bg-[#EEF2FF] px-3 py-2 text-sm leading-6 text-[#3730A3]">
+              <span className="font-bold">رأي الوكيل الذكي: </span>
+              {aiReview.reasoning}
+            </div>
+          )}
           {!hasEvidence && (
             <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
               يجب تجهيز صورة الاسم من المستند قبل اعتماد أي تعديل.
@@ -429,7 +492,9 @@ export function CustomerDataReviewCenter() {
   const bulkApprove = useBulkApproveIdProposals();
   const scanAll = useScanAllPendingContractDocumentsForId();
   const backfillEvidence = useBackfillProposalEvidence();
+  const aiReview = useAiReviewProposals();
   const [confirmBulkOpen, setConfirmBulkOpen] = React.useState(false);
+  const [confirmAiBulkOpen, setConfirmAiBulkOpen] = React.useState(false);
 
   const bulkStats = React.useMemo(() => {
     let fields = 0;
@@ -446,6 +511,12 @@ export function CustomerDataReviewCenter() {
   const missingEvidenceCount = proposals.filter(
     (proposal) => !proposal.evidence_image_path,
   ).length;
+
+  const aiReadyProposals = React.useMemo(
+    () => proposals.filter((proposal) =>
+      proposal.evidence_image_path && getAiReview(proposal)?.verdict === 'correct'),
+    [proposals],
+  );
 
   const handleApply = (proposal: CustomerIdProposal) => (
     acceptedFields: string[],
@@ -501,6 +572,27 @@ export function CustomerDataReviewCenter() {
               <RefreshCw className={scanAll.isPending ? 'h-4 w-4 animate-spin' : 'h-4 w-4'} />
               {scanAll.isPending ? 'جارٍ تدقيق العقود...' : 'تحديث وتدقيق جميع العقود'}
             </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => aiReview.mutate(Math.min(proposals.length || 25, 50))}
+              disabled={aiReview.isPending || proposals.length === 0}
+              className="gap-2 border-[#C7D2FE] bg-[#EEF2FF] text-[#3730A3] hover:bg-[#E0E7FF]"
+            >
+              <Brain className={aiReview.isPending ? 'h-4 w-4 animate-pulse' : 'h-4 w-4'} />
+              {aiReview.isPending ? 'الوكيل يراجع...' : 'تدقيق الوكيل (Kimi K3)'}
+            </Button>
+            {aiReadyProposals.length > 0 && (
+              <Button
+                size="sm"
+                onClick={() => setConfirmAiBulkOpen(true)}
+                disabled={bulkApprove.isPending}
+                className="gap-2 bg-[#3730A3] text-white hover:bg-[#312E81]"
+              >
+                <CheckCircle2 className="h-4 w-4" />
+                اعتماد ما وافق عليه الوكيل ({aiReadyProposals.length})
+              </Button>
+            )}
             <Button
               size="sm"
               onClick={() => setConfirmBulkOpen(true)}
@@ -584,6 +676,34 @@ export function CustomerDataReviewCenter() {
               className="bg-[#0D876A] hover:bg-[#0D876A]/90"
             >
               اعتماد الكل
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* AI-approved bulk confirmation */}
+      <AlertDialog open={confirmAiBulkOpen} onOpenChange={setConfirmAiBulkOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>اعتماد ما وافق عليه الوكيل الذكي</AlertDialogTitle>
+            <AlertDialogDescription>
+              سيُطبق كل الحقول المقترحة في {aiReadyProposals.length} مقترحاً حكم عليه الوكيل
+              بأنه صحيح بعد مقارنته بالدليل. تبقى بقية المقترحات معلّقة للمراجعة اليدوية.
+              هل تريد المتابعة؟
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>إلغاء</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                bulkApprove.mutate(
+                  { proposals: aiReadyProposals, threshold: 0 },
+                  { onSettled: () => setConfirmAiBulkOpen(false) },
+                );
+              }}
+              className="bg-[#3730A3] hover:bg-[#312E81]"
+            >
+              اعتماد مقترحات الوكيل
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

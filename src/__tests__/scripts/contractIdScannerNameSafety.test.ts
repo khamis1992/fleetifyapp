@@ -53,4 +53,18 @@ describe('contract ID scanner official-name safety', () => {
       'if (fields.last_name_ar) fields.last_name = fields.last_name_ar',
     );
   });
+
+  it('extracts the monthly rent from the contract body with label guards', () => {
+    expect(scannerSource).toContain('extractMonthlyRent');
+    expect(scannerSource).toContain('RENT_LABEL_RE');
+    expect(scannerSource).toContain('RENT_EXCLUDE_LABEL_RE');
+    expect(scannerSource).toContain('monthly_amount');
+  });
+
+  it('applies contract-targeted proposals to the contracts table, not customers', () => {
+    expect(proposalHookSource).toContain('CONTRACT_PROPOSAL_FIELDS');
+    expect(proposalHookSource).toContain('applyContractProposalChanges');
+    expect(proposalHookSource).toContain("from('contracts')");
+    expect(proposalHookSource).toContain('contract_fields_updated_from_id_review');
+  });
 });
