@@ -7,6 +7,85 @@ CREATE UNIQUE INDEX IF NOT EXISTS uq_invoices_penalty_id
   ON public.invoices(penalty_id)
   WHERE penalty_id IS NOT NULL;
 
+CREATE OR REPLACE FUNCTION public.check_duplicate_monthly_invoice()
+RETURNS trigger
+LANGUAGE plpgsql
+SET search_path TO 'public', 'pg_temp'
+AS $function$
+DECLARE
+  v_invoice_month date;
+  v_existing_invoice_number text;
+BEGIN
+  IF NEW.penalty_id IS NOT NULL THEN
+    RETURN NEW;
+  END IF;
+
+  IF NEW.contract_id IS NULL
+     OR COALESCE(NEW.invoice_month, NEW.invoice_date) IS NULL
+     OR lower(COALESCE(NEW.status, '')) IN (
+       'cancelled', 'canceled', 'void', 'voided', 'deleted', 'inactive'
+     )
+     OR lower(COALESCE(NEW.payment_status, '')) IN (
+       'cancelled', 'canceled', 'void', 'voided', 'deleted', 'inactive'
+     )
+  THEN
+    RETURN NEW;
+  END IF;
+
+  v_invoice_month := date_trunc(
+    'month',
+    COALESCE(NEW.invoice_month, NEW.invoice_date)::timestamp without time zone
+  )::date;
+
+  SELECT invoice.invoice_number
+  INTO v_existing_invoice_number
+  FROM public.invoices invoice
+  WHERE invoice.company_id = NEW.company_id
+    AND invoice.contract_id = NEW.contract_id
+    AND invoice.penalty_id IS NULL
+    AND date_trunc(
+      'month',
+      COALESCE(invoice.invoice_month, invoice.invoice_date)::timestamp without time zone
+    )::date = v_invoice_month
+    AND lower(COALESCE(invoice.status, '')) NOT IN (
+      'cancelled', 'canceled', 'void', 'voided', 'deleted', 'inactive'
+    )
+    AND lower(COALESCE(invoice.payment_status, '')) NOT IN (
+      'cancelled', 'canceled', 'void', 'voided', 'deleted', 'inactive'
+    )
+    AND invoice.id <> COALESCE(
+      NEW.id,
+      '00000000-0000-0000-0000-000000000000'::uuid
+    )
+  ORDER BY invoice.id
+  LIMIT 1;
+
+  IF v_existing_invoice_number IS NOT NULL THEN
+    RAISE EXCEPTION
+      'An active invoice (%) already exists for this contract canonical month %',
+      v_existing_invoice_number,
+      to_char(v_invoice_month, 'YYYY-MM')
+      USING ERRCODE = '23505';
+  END IF;
+
+  RETURN NEW;
+END;
+$function$;
+
+DROP INDEX IF EXISTS public.idx_invoices_unique_contract_month;
+CREATE UNIQUE INDEX idx_invoices_unique_contract_month
+  ON public.invoices USING btree (
+    contract_id,
+    ((date_trunc('month'::text, (COALESCE(invoice_month, invoice_date))::timestamp without time zone))::date)
+  )
+  WHERE (
+    (contract_id IS NOT NULL)
+    AND (COALESCE(invoice_month, invoice_date) IS NOT NULL)
+    AND (penalty_id IS NULL)
+    AND (lower(COALESCE(status, ''::text)) <> ALL (ARRAY['cancelled'::text, 'canceled'::text, 'void'::text, 'voided'::text, 'deleted'::text, 'inactive'::text]))
+    AND (lower(COALESCE(payment_status, ''::text)) <> ALL (ARRAY['cancelled'::text, 'canceled'::text, 'void'::text, 'voided'::text, 'deleted'::text, 'inactive'::text]))
+  );
+
 ALTER TABLE public.penalties
   ADD COLUMN IF NOT EXISTS case_follow_up boolean NOT NULL DEFAULT false,
   ADD COLUMN IF NOT EXISTS case_follow_up_at timestamptz,
@@ -54,7 +133,10 @@ BEGIN
     AND contract.company_id = v_penalty.company_id;
   IF NOT FOUND THEN RETURN NULL; END IF;
 
-  v_invoice_date := COALESCE(v_penalty.penalty_date, CURRENT_DATE);
+  v_invoice_date := GREATEST(
+    date_trunc('month', COALESCE(v_penalty.penalty_date, CURRENT_DATE))::date,
+    date_trunc('month', COALESCE(v_contract.start_date, CURRENT_DATE))::date
+  );
   v_invoice_number := 'TV-' || v_penalty.id::text;
 
   INSERT INTO public.invoices (
@@ -78,7 +160,7 @@ BEGIN
     'sent', 'unpaid', 'service',
     'مخالفة مرورية ' || COALESCE(v_penalty.penalty_number, v_penalty.id::text),
     'QAR', v_penalty.created_by,
-    'traffic-penalty:' || v_penalty.id::text,
+    v_penalty.id,
     now(), now()
   )
   ON CONFLICT (penalty_id) WHERE penalty_id IS NOT NULL DO NOTHING
@@ -225,7 +307,11 @@ BEGIN
       AND NOT EXISTS (SELECT 1 FROM public.invoices invoice WHERE invoice.penalty_id = penalty.id)
     ORDER BY penalty.created_at NULLS LAST, penalty.id
   LOOP
-    PERFORM public.ensure_penalty_contract_invoice(v_penalty_id);
+    BEGIN
+      PERFORM public.ensure_penalty_contract_invoice(v_penalty_id);
+    EXCEPTION WHEN OTHERS THEN
+      RAISE NOTICE 'skip penalty %: %', v_penalty_id, SQLERRM;
+    END;
   END LOOP;
 END;
 $$;
