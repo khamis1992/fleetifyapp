@@ -13057,6 +13057,7 @@ export type Database = {
           paid_amount: number | null
           payment_id: string | null
           payment_status: string
+          penalty_id: string | null
           rejected_at: string | null
           rejected_by: string | null
           scanned_image_url: string | null
@@ -13100,6 +13101,7 @@ export type Database = {
           paid_amount?: number | null
           payment_id?: string | null
           payment_status?: string
+          penalty_id?: string | null
           rejected_at?: string | null
           rejected_by?: string | null
           scanned_image_url?: string | null
@@ -13143,6 +13145,7 @@ export type Database = {
           paid_amount?: number | null
           payment_id?: string | null
           payment_status?: string
+          penalty_id?: string | null
           rejected_at?: string | null
           rejected_by?: string | null
           scanned_image_url?: string | null
@@ -18593,6 +18596,9 @@ export type Database = {
           amount: number
           company_id: string
           company_paid_date: string | null
+          case_follow_up: boolean
+          case_follow_up_at: string | null
+          case_follow_up_source: string | null
           contract_id: string | null
           created_at: string | null
           created_by: string | null
@@ -18616,6 +18622,9 @@ export type Database = {
           amount?: number
           company_id: string
           company_paid_date?: string | null
+          case_follow_up?: boolean
+          case_follow_up_at?: string | null
+          case_follow_up_source?: string | null
           contract_id?: string | null
           created_at?: string | null
           created_by?: string | null
@@ -18639,6 +18648,9 @@ export type Database = {
           amount?: number
           company_id?: string
           company_paid_date?: string | null
+          case_follow_up?: boolean
+          case_follow_up_at?: string | null
+          case_follow_up_source?: string | null
           contract_id?: string | null
           created_at?: string | null
           created_by?: string | null
@@ -31957,6 +31969,21 @@ export type Database = {
         Args: {
           p_actor_id?: string
           p_company_id: string
+          p_customer_name: string
+          p_end_date: string
+          p_notes: string
+          p_reservation_id: string | null
+          p_start_date: string
+          p_status: string
+          p_vehicle_id: string
+        }
+        Returns: Database["public"]["Tables"]["vehicle_reservations"]["Row"]
+      }
+      save_vehicle_reservation_v2: {
+        Args: {
+          p_actor_id?: string
+          p_company_id: string
+          p_customer_id: string
           p_customer_name: string
           p_end_date: string
           p_notes: string

@@ -50,6 +50,8 @@ import { useCurrentCompanyId } from '@/hooks/useUnifiedCompanyAccess';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 import { systemColorPattern } from '@/lib/design-system/systemColorPattern';
 import { calculateCanonicalBillingMonths } from '@/utils/contractCalculations';
+import { assertRentalEligible } from '@/services/rentalEligibilityGuard';
+import { RentalEligibilityBanner, RentalEligibilityNotice } from './RentalEligibilityBanner';
 
 // Import our new components
 import { EnhancedCustomerDialog } from '@/components/customers/EnhancedCustomerForm';
@@ -1125,6 +1127,10 @@ export const SimpleContractWizard: React.FC<SimpleContractWizardProps> = ({ open
     try {
       if (!companyId) throw new Error('تعذر تحديد الشركة');
 
+      if (validatedData.vehicle_id) {
+        await assertRentalEligible({ companyId, vehicleId: validatedData.vehicle_id, customerId: validatedData.customer_id });
+      }
+
       if (onSubmit) {
         await onSubmit(validatedData);
       } else if (isEditMode && editContract?.id) {
@@ -1321,6 +1327,8 @@ export const SimpleContractWizard: React.FC<SimpleContractWizardProps> = ({ open
             "wizard-step-scroll flex-1 overflow-y-auto p-6 transition-all",
             isAssistantOpen ? "w-1/2" : "w-full"
           )}>
+            {currentStep === 0 && <RentalEligibilityNotice className="mb-4" />}
+            <RentalEligibilityBanner companyId={companyId} vehicleId={formData.vehicle_id} customerId={formData.customer_id} className="mb-4" />
             <AnimatePresence mode="wait">
               {renderStep()}
             </AnimatePresence>

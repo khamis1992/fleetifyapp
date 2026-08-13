@@ -7,6 +7,7 @@ import { useEssentialAccountMappings } from './useEssentialAccountMappings'
 import { generateContractPdf } from '@/utils/contractPdfGenerator'
 import { useCreateContractDocument } from './useContractDocuments'
 import { useContractDocumentSaving } from './useContractDocumentSaving'
+import { assertRentalEligible } from '@/services/rentalEligibilityGuard'
 
 export interface ContractCreationStep {
   id: string
@@ -190,6 +191,11 @@ export const useContractCreation = () => {
         const contractAmount = Number(inputContractData.contract_amount)
         if (isNaN(contractAmount) || contractAmount <= 0) {
           throw new Error('مبلغ العقد يجب أن يكون رقماً صحيحاً وأكبر من صفر')
+        }
+
+        if (inputContractData.vehicle_id && inputContractData.vehicle_id !== 'none') {
+          const eligibility = await assertRentalEligible({ companyId, vehicleId: inputContractData.vehicle_id, customerId: inputContractData.customer_id })
+          if (eligibility.level === 'warn') toast.warning(eligibility.message)
         }
 
         // التحقق من البيانات المطلوبة مع تسجيل مفصل

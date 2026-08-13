@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -224,6 +224,24 @@ export const LegalCasesTracking: React.FC = () => {
   });
 
   const { companyId, isAuthenticating, isInitializing } = useUnifiedCompanyAccess();
+  const { data: selectedCasePenalties = [] } = useQuery({
+    queryKey: ['legal-case-unpaid-penalties', selectedCase?.id, selectedCase?.contract_id, selectedCase?.client_id],
+    queryFn: async () => {
+      if (!companyId || (!selectedCase?.contract_id && !selectedCase?.client_id)) return [];
+      let query = supabase
+        .from('penalties')
+        .select('id, penalty_number, amount, payment_status, case_follow_up, case_follow_up_at')
+        .eq('company_id', companyId)
+        .or('payment_status.is.null,payment_status.not.in.(paid,completed)');
+      query = selectedCase.contract_id
+        ? query.eq('contract_id', selectedCase.contract_id)
+        : query.eq('customer_id', selectedCase.client_id!);
+      const { data, error } = await query.order('penalty_date', { ascending: false });
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: Boolean(showCaseDetails && companyId && selectedCase && (selectedCase.contract_id || selectedCase.client_id)),
+  });
   const isLoadingCompany = isAuthenticating || isInitializing;
   const { user } = useAuth();
   
@@ -2076,6 +2094,25 @@ export const LegalCasesTracking: React.FC = () => {
                   <p className="font-medium text-lg text-[#E55B5B]">{formatCurrency(selectedCase.case_value || 0)}</p>
                 </div>
               </div>
+
+              {selectedCasePenalties.length > 0 && (
+                <div className="border-t pt-4" dir="rtl">
+                  <div className="mb-3 flex items-center justify-between gap-3">
+                    <h4 className="font-semibold">المخالفات المرورية غير المسددة</h4>
+                    {selectedCasePenalties.some((penalty) => penalty.case_follow_up) && (
+                      <Badge className="border border-amber-300 bg-amber-100 text-amber-900">محوّلة لمتابعة القضايا</Badge>
+                    )}
+                  </div>
+                  <div className="space-y-2">
+                    {selectedCasePenalties.map((penalty) => (
+                      <div key={penalty.id} className="flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm">
+                        <span>مخالفة {penalty.penalty_number || penalty.id}</span>
+                        <span className="font-bold">{formatCurrency(Number(penalty.amount || 0))}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {(selectedCase.outcome_type || selectedCase.outcome_date || selectedCase.outcome_notes) && (
                 <div className="border-t pt-4">

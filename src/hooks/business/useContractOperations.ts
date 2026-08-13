@@ -4,6 +4,7 @@ import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 import { usePermissions } from '@/hooks/usePermissions';
 import { supabase } from '@/integrations/supabase/client';
 import type { Database } from '@/integrations/supabase/types';
+import { assertRentalEligible } from '@/services/rentalEligibilityGuard';
 
 type Contract = Database['public']['Tables']['contracts']['Row'];
 type ContractInsert = Database['public']['Tables']['contracts']['Insert'];
@@ -97,6 +98,12 @@ export const useContractOperations = (options: ContractOperationsOptions = {}) =
     mutationFn: async (data: CreateContractData) => {
       const activeCompanyId = requireCompanyId();
       console.log('📄 [useContractOperations] Starting contract creation:', data);
+
+      const assignedVehicleId = data.vehicle_id || data.vehicles?.[0]?.vehicle_id;
+      if (assignedVehicleId) {
+        const eligibility = await assertRentalEligible({ companyId: activeCompanyId, vehicleId: assignedVehicleId, customerId: data.customer_id });
+        if (eligibility.level === 'warn') toast.warning(eligibility.message);
+      }
 
       // Check permissions
       if (!canCreateContracts) {
@@ -248,6 +255,12 @@ export const useContractOperations = (options: ContractOperationsOptions = {}) =
       // Check if contract can be updated
       if (existingContract.status === 'cancelled' || existingContract.status === 'expired') {
         throw new Error('لا يمكن تعديل عقد ملغى أو منتهي الصلاحية');
+      }
+
+      const nextVehicleId = data.vehicle_id ?? existingContract.vehicle_id;
+      const nextCustomerId = data.customer_id ?? existingContract.customer_id;
+      if (existingContract.status === 'active' && nextVehicleId) {
+        await assertRentalEligible({ companyId: activeCompanyId, vehicleId: nextVehicleId, customerId: nextCustomerId });
       }
 
       const requestedStartDate = normalizeDateOnly(data.start_date);

@@ -99,6 +99,7 @@ import { supabase, supabaseConfig } from "@/integrations/supabase/client";
 import { EmptyState } from '@/components/ui/EmptyState';
 import { systemColorPattern } from "@/lib/design-system/systemColorPattern";
 import { revertContractLegalProcedure } from '@/services/contractLegalProcedureService';
+import { SeizedActiveContractBanner } from '@/components/contracts/SeizedActiveContractBanner';
 
 const contractsTheme = systemColorPattern.colors;
 const contractsSystemStyle = {
@@ -476,6 +477,8 @@ const ContractListItem = ({
             />
           </div>
 
+          <SeizedActiveContractBanner contractStatus={contract.status} vehicleStatus={contract.vehicle?.status} className="mb-3" />
+
           {/* Contract Details */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 py-3 border-t border-slate-100">
             <div>
@@ -843,6 +846,7 @@ const ContractOperationsRow = ({
                   {getContractAssignedEmployeeName(contract)}
                 </span>
               </div>
+              <SeizedActiveContractBanner contractStatus={contract.status} vehicleStatus={contract.vehicles?.status} className="mt-3" />
               {incompleteReasons.length > 0 && (
                 <div className="mt-3 rounded-[8px] border border-[#FED7AA] bg-[#FFF7ED] px-3 py-2 text-xs font-bold leading-5 text-[#C2410C]">
                   <div className="mb-1 flex items-center gap-1.5 font-black">

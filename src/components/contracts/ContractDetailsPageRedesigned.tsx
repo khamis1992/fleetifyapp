@@ -108,6 +108,7 @@ import { VehiclePickupReturnTabRedesigned } from './VehiclePickupReturnTabRedesi
 import { ContractViolationsTabRedesigned } from './ContractViolationsTabRedesigned';
 import { ContractDocuments } from './ContractDocuments';
 import { ContractHealthAnalysis } from './ContractHealthAnalysis';
+import { SeizedActiveContractBanner } from './SeizedActiveContractBanner';
 import { OfficialContractView } from './OfficialContractView';
 import { formatCustomerName } from '@/utils/formatCustomerName';
 import { getInvoiceBillingMonthKey, isActiveInvoice } from '@/utils/invoiceBillingMonth';
@@ -128,6 +129,7 @@ import { systemColorPattern } from '@/lib/design-system/systemColorPattern';
 import type { PaymentSchedule } from '@/types/payment-schedules';
 import { useTourGuide } from '@/components/tour-guide';
 import { revertContractLegalProcedure } from '@/services/contractLegalProcedureService';
+import { assertContractCanClose } from '@/services/contractPenaltyGuard';
 
 const contractDetailsTheme = systemColorPattern.colors;
 const contractDetailsSystemStyle = {
@@ -3078,6 +3080,7 @@ const ContractDetailsPageRedesigned = () => {
 
     setIsTerminating(true);
     try {
+      await assertContractCanClose(companyId, contract.id);
       const { error: contractError } = await supabase
         .from('contracts')
         .update({
@@ -3271,6 +3274,7 @@ const ContractDetailsPageRedesigned = () => {
       dir="rtl"
     >
       <div className="contract-page-shell mx-auto px-4 sm:px-6">
+        <SeizedActiveContractBanner contractStatus={contract.status} vehicleStatus={contract.vehicle?.status} className="mt-4" />
         <div className="contract-page-topbar">
           <Button variant="ghost" onClick={handleBack} className="contract-topbar-back">
             <ArrowRight className="h-4 w-4" />
