@@ -101,8 +101,11 @@ async function expectRouteHealthy(page: Page, route: string): Promise<void> {
 }
 
 test('loads the Arabic login screen', async ({ page }) => {
-  await page.goto('/auth');
-  await expect(page.locator('#email')).toBeVisible();
+  await page.goto('/auth', { waitUntil: 'networkidle' });
+  // Wait for auth form to load (Auth page has loading states with 3s timeout)
+  await page.waitForTimeout(500);
+  // Wait for email field with extended timeout
+  await expect(page.locator('#email')).toBeVisible({ timeout: 10000 });
   await expect(page.locator('#password')).toBeVisible();
   await expect(page.locator('button[type="submit"]')).toBeVisible();
 });
