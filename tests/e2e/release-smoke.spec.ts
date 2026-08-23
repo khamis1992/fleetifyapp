@@ -100,14 +100,33 @@ async function expectRouteHealthy(page: Page, route: string): Promise<void> {
   }
 }
 
-test('loads the Arabic login screen', async ({ page }) => {
-  await page.goto('/auth', { waitUntil: 'networkidle' });
-  // Wait for auth form to load (Auth page has loading states with 3s timeout)
-  await page.waitForTimeout(500);
-  // Wait for email field with extended timeout
-  await expect(page.locator('#email')).toBeVisible({ timeout: 10000 });
-  await expect(page.locator('#password')).toBeVisible();
-  await expect(page.locator('button[type="submit"]')).toBeVisible();
+test('loads the Arabic login screen', async ({ page, context }) => {
+  // Clear any existing sessions
+  await context.clearCookies();
+  await context.clearPermissions();
+  
+  await page.goto('/auth', { waitUntil: 'domcontentloaded' });
+  
+  // Auth.tsx has a 3s loading timeout before showing form
+  // Wait for either the form or error state to appear
+  await page.waitForFunction(
+    () => {
+      const emailInput = document.querySelector('#email');
+      const errorMsg = document.querySelector('body')?.textContent?.includes('مشكلة في تحميل');
+      return emailInput !== null || errorMsg === true;
+    },
+    { timeout: 15000 }
+  );
+  
+  // If email field exists, proceed with checks
+  const emailField = page.locator('#email');
+  if (await emailField.count() > 0) {
+    await expect(emailField).toBeVisible();
+    await expect(page.locator('#password')).toBeVisible();
+    await expect(page.locator('button[type="submit"]')).toBeVisible();
+  } else {
+    throw new Error('Auth form did not render within timeout');
+  }
 });
 
 test.describe('authenticated release smoke checks', () => {
