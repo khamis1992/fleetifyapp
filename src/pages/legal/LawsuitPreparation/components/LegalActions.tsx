@@ -24,6 +24,7 @@ import {
 import { useLawsuitPreparationContext } from '../store';
 import { LawsuitCaseWorkflowCard } from './LawsuitCaseWorkflowCard';
 import { TaqadiAutomationPanel } from './TaqadiAutomationPanel';
+import { useSignedLeaseValidation } from '@/hooks/legal/useSignedLeaseValidation';
 
 const mandatoryDocIds = ['memo', 'claims', 'docsList', 'contract', 'commercialRegister', 'ibanCertificate', 'representativeId'] as const;
 
@@ -73,13 +74,20 @@ function StationHeader({
 
 export function LegalActions() {
   const { state, actions } = useLawsuitPreparationContext();
-  const { documents, taqadiData, ui } = state;
+  const { documents, taqadiData, ui, contract, companyId } = state;
+  
+  // Check for signed lease verification
+  const { hasSignedLease, hasIdentityMatch, canConvertToLegal, blockingReason } = useSignedLeaseValidation(
+    contract?.id,
+    companyId
+  );
 
   const readyCount = mandatoryDocIds.filter((docId) => documents[docId].status === 'ready').length;
   const allDocumentsReady = readyCount === mandatoryDocIds.length;
   const contractReady = documents.contract.status === 'ready';
   const taqadiReady = Boolean(taqadiData?.caseTitle && taqadiData?.defendant?.fullName);
-  const allReady = allDocumentsReady && contractReady && taqadiReady;
+  // HARD GATE: Must have signed lease and identity match to proceed
+  const allReady = allDocumentsReady && contractReady && taqadiReady && canConvertToLegal;
   const hasDocumentsForZip = mandatoryDocIds.some((docId) => documents[docId].status === 'ready');
 
   return (
@@ -115,6 +123,8 @@ export function LegalActions() {
             </div>
             <ChecklistItem complete={allDocumentsReady} label="المستندات الإلزامية جاهزة" note={`${readyCount}/${mandatoryDocIds.length} مستند جاهز`} />
             <ChecklistItem complete={contractReady} label="عقد الإيجار متوفر" note="يجب وجود نسخة موقعة أو مرفوعة" />
+            <ChecklistItem complete={hasSignedLease} label="عقد موقّع مطابق" note="نسخة العقد الموقع (signed_contract) مرفوعة ومطابقة" />
+            <ChecklistItem complete={hasIdentityMatch} label="تطابق الهوية" note="التحقق من هوية العميل مكتمل" />
             <ChecklistItem complete={taqadiReady} label="بيانات التقاضي مكتملة" note="العنوان، الوقائع، الطلبات، وبيانات المدعى عليه" />
           </div>
         </div>
@@ -125,10 +135,23 @@ export function LegalActions() {
             <span>لن يتم تفعيل قرار فتح القضية بشكل آمن حتى تكتمل المتطلبات أعلاه.</span>
           </div>
         )}
+        
+        {!canConvertToLegal && blockingReason && (
+          <div className="lawsuit-warning-strip" style={{ backgroundColor: '#fef3c7', borderColor: '#f59e0b' }}>
+            <AlertCircle className="h-5 w-5" style={{ color: '#f59e0b' }} />
+            <span>
+              <strong>⛔ حظر التحويل للقانوني:</strong> {blockingReason}. 
+              يجب رفع نسخة العقد الموقع والتحقق من الهوية قبل إعادة الرفع أو التحديث.
+            </span>
+          </div>
+        )}
       </section>
 
       {/* المحطة ② — الرفع الآلي (لوحة وكيل تقاضي بتصميمها الجديد) */}
-      <TaqadiAutomationPanel />
+      <TaqadiAutomationPanel 
+        canConvertToLegal={canConvertToLegal}
+        blockingReason={blockingReason}
+      />
 
       {/* المحطة ③ — الإغلاق والتسجيل */}
       <section className="lawsuit-section-panel">

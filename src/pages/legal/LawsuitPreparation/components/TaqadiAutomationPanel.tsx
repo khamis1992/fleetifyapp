@@ -170,7 +170,13 @@ function agentDecisionReason(event: TaqadiFilingJobEvent): string | null {
   return null;
 }
 
-export function TaqadiAutomationPanel() {
+export function TaqadiAutomationPanel({ 
+  canConvertToLegal = true, 
+  blockingReason 
+}: { 
+  canConvertToLegal?: boolean; 
+  blockingReason?: string;
+}) {
   const { state, actions } = useLawsuitPreparationContext();
   const queryClient = useQueryClient();
   const { companyId, contractId, documents, trafficViolations, ui } = state;
@@ -721,8 +727,8 @@ export function TaqadiAutomationPanel() {
               await actions.startTaqadiAutomation();
               await Promise.all([legalCaseQuery.refetch(), jobQuery.refetch()]);
             }}
-            disabled={!canStart || ui.isTaqadiAutomating}
-            title={startBlockReason ?? undefined}
+            disabled={!canStart || ui.isTaqadiAutomating || !canConvertToLegal}
+            title={!canConvertToLegal ? blockingReason : (startBlockReason ?? undefined)}
             className="lawsuit-primary-command"
           >
             {ui.isTaqadiAutomating
@@ -748,7 +754,9 @@ export function TaqadiAutomationPanel() {
               retryMutation.isPending
               || canReopenLegalCase
               || (reachedAttemptLimit && !canExplicitlyRestart)
+              || !canConvertToLegal
             }
+            title={!canConvertToLegal ? blockingReason : undefined}
             className="lawsuit-primary-command"
           >
             {retryMutation.isPending

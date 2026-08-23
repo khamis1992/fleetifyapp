@@ -517,6 +517,34 @@ export const useConvertToLegal = () => {
       if (params.contract.status !== 'active') {
         throw new Error('التحويل للشؤون القانونية متاح للعقد النشط فقط؛ العقد الملغي يحتاج مسار مراجعة قانونية مستقل.');
       }
+      
+      // Pre-flight check: Verify signed lease and identity before attempting RPC
+      // The RPC will also check, but we want to show a better error message here
+      const [leaseCheck, identityCheck] = await Promise.all([
+        supabase.rpc('check_contract_has_verified_signed_lease_v1', {
+          p_company_id: params.contract.company_id,
+          p_contract_id: params.contract.id,
+        }),
+        supabase.rpc('check_contract_identity_verified_v1', {
+          p_company_id: params.contract.company_id,
+          p_contract_id: params.contract.id,
+        }),
+      ]);
+      
+      if (leaseCheck.error) console.warn('Lease check error:', leaseCheck.error);
+      if (identityCheck.error) console.warn('Identity check error:', identityCheck.error);
+      
+      const hasSignedLease = leaseCheck.data ?? false;
+      const hasIdentityMatch = identityCheck.data ?? false;
+      
+      if (!hasSignedLease) {
+        throw new Error('لا يمكن التحويل للشؤون القانونية: عقد موقّع مطابق غير موجود. يجب رفع نسخة العقد الموقع (signed_contract) أولاً.');
+      }
+      
+      if (!hasIdentityMatch) {
+        throw new Error('لا يمكن التحويل للشؤون القانونية: الهوية غير متحققة. يجب التحقق من هوية العميل أولاً.');
+      }
+      
       const { data, error } = await supabase.rpc('convert_contract_to_legal_v1', {
         p_company_id: params.contract.company_id,
         p_contract_id: params.contract.id,
@@ -536,6 +564,7 @@ export const useConvertToLegal = () => {
       queryClient.invalidateQueries({ queryKey: ['legal-cases'] });
       queryClient.invalidateQueries({ queryKey: ['legal-case-stats'] });
       queryClient.invalidateQueries({ queryKey: ['vehicles'] });
+      queryClient.invalidateQueries({ queryKey: ['signed-lease-validation'] });
       toast.success(`تم التحويل بنجاح - قضية رقم ${data.caseNumber}`);
     },
     onError: (error: Error) => toast.error('فشل في تحويل العقد للشؤون القانونية', { description: error.message }),
