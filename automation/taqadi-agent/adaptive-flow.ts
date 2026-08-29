@@ -109,3 +109,15 @@ export function stageReached(
   const expectedIndex = stageOrderIndex(expected);
   return actualIndex >= expectedIndex && expectedIndex >= 0;
 }
+
+export function shouldSubmitFinalAutomatically(input: {
+  canary: boolean;
+  workerFinalApproval: boolean;
+  jobFinalApproval: boolean;
+  payloadFinalApproval: boolean;
+}) {
+  return !input.canary
+    && input.workerFinalApproval
+    && input.jobFinalApproval
+    && input.payloadFinalApproval;
+}

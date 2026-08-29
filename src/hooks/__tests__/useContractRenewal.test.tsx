@@ -40,7 +40,9 @@ vi.mock('@/hooks/useAuditLog', () => ({
 
 import {
   AutoRenewalBatchError,
+  normalizeContractCancellationImpact,
   useAutoRenewContracts,
+  useUpdateContractStatus,
 } from '../useContractRenewal';
 
 const createWrapper = () => {
@@ -218,5 +220,85 @@ describe('useAutoRenewContracts', () => {
         message: 'database rejected contract-2',
       },
     ]);
+  });
+});
+
+describe('contract cancellation with traffic penalties', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    state.auth.user = {
+      id: 'user-1',
+      profile: { company_id: 'company-1' },
+    };
+  });
+
+  it('normalizes the cancellation impact returned by the database', () => {
+    expect(normalizeContractCancellationImpact({
+      contract_id: 'contract-1',
+      open_penalty_count: 2,
+      open_penalty_amount: '750.50',
+      requires_company_transfer: true,
+      blocked_penalty_count: 0,
+      authorized_to_transfer: true,
+      can_transfer: true,
+    })).toEqual({
+      contractId: 'contract-1',
+      openPenaltyCount: 2,
+      openPenaltyAmount: 750.5,
+      requiresCompanyTransfer: true,
+      blockedPenaltyCount: 0,
+      authorizedToTransfer: true,
+      canTransfer: true,
+    });
+  });
+
+  it('uses the atomic cancellation RPC and passes the explicit company-transfer choice', async () => {
+    const contractQuery: any = {};
+    contractQuery.select = vi.fn(() => contractQuery);
+    contractQuery.eq = vi.fn(() => contractQuery);
+    contractQuery.single = vi.fn().mockResolvedValue({
+      data: {
+        contract_number: 'CTR-001',
+        company_id: 'company-1',
+        vehicle_id: 'vehicle-1',
+        old_status: 'active',
+      },
+      error: null,
+    });
+    state.from.mockReturnValue(contractQuery);
+    state.rpc.mockResolvedValue({
+      data: {
+        status: 'cancelled',
+        transferred_penalty_count: 2,
+        contract: { id: 'contract-1', status: 'cancelled' },
+      },
+      error: null,
+    });
+
+    const { result } = renderHook(() => useUpdateContractStatus(), {
+      wrapper: createWrapper(),
+    });
+
+    await act(async () => {
+      await result.current.mutateAsync({
+        contractId: 'contract-1',
+        companyId: 'company-1',
+        status: 'cancelled',
+        reason: 'إلغاء بطلب الإدارة',
+        transferTrafficViolationsToCompany: true,
+      });
+    });
+
+    expect(state.rpc).toHaveBeenCalledWith(
+      'cancel_contract_with_company_traffic_penalties_v1',
+      {
+        p_company_id: 'company-1',
+        p_contract_id: 'contract-1',
+        p_reason: 'إلغاء بطلب الإدارة',
+        p_transfer_open_penalties_to_company: true,
+        p_actor_id: 'user-1',
+      },
+    );
+    expect(contractQuery.update).toBeUndefined();
   });
 });

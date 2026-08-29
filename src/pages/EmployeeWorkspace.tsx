@@ -109,6 +109,7 @@ import {
 import type { ContractForLegal } from '@/hooks/useConvertToLegal';
 import { useCreateContractDocument } from '@/hooks/useContractDocuments';
 import { EmployeeLegalReviewPanel } from '@/components/employee-workspace/EmployeeLegalReviewPanel';
+import { assertContractCanClose } from '@/services/contractPenaltyGuard';
 
 type DailyLogChecklistKey =
   | 'workspace_opened'
@@ -2487,6 +2488,7 @@ export const EmployeeWorkspace: React.FC = () => {
       if (contract.status !== 'active') {
         throw new Error('يمكن إغلاق العقود النشطة فقط');
       }
+      await assertContractCanClose(companyId, contract.id);
       if (balanceDue > 0) {
         throw new Error('لا يمكن إغلاق العقد قبل تصفية الرصيد المستحق');
       }

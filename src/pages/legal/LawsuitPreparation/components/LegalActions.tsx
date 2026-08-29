@@ -24,6 +24,8 @@ import {
 import { useLawsuitPreparationContext } from '../store';
 import { LawsuitCaseWorkflowCard } from './LawsuitCaseWorkflowCard';
 import { TaqadiAutomationPanel } from './TaqadiAutomationPanel';
+import { useSignedLeaseValidation } from '@/hooks/legal/useSignedLeaseValidation';
+import { getFilingReadiness } from '../utils/filingReadiness';
 
 const mandatoryDocIds = ['memo', 'claims', 'docsList', 'contract', 'commercialRegister', 'ibanCertificate', 'representativeId'] as const;
 
@@ -73,13 +75,22 @@ function StationHeader({
 
 export function LegalActions() {
   const { state, actions } = useLawsuitPreparationContext();
-  const { documents, taqadiData, ui } = state;
+  const { documents, taqadiData, ui, contract, companyId } = state;
 
-  const readyCount = mandatoryDocIds.filter((docId) => documents[docId].status === 'ready').length;
-  const allDocumentsReady = readyCount === mandatoryDocIds.length;
+  // Check for signed lease verification
+  const { hasSignedLease, hasIdentityMatch, canConvertToLegal, blockingReason } = useSignedLeaseValidation(
+    contract?.id,
+    companyId
+  );
+
+  const readiness = getFilingReadiness(state);
+  const readyCount = readiness.documents.ready;
+  const allDocumentsReady = readiness.documents.isComplete;
   const contractReady = documents.contract.status === 'ready';
-  const taqadiReady = Boolean(taqadiData?.caseTitle && taqadiData?.defendant?.fullName);
-  const allReady = allDocumentsReady && contractReady && taqadiReady;
+  const taqadiReady = readiness.taqadiComplete;
+  const preparationReady = readiness.canStartFiling;
+  // HARD GATE: Must have signed lease and identity match to proceed
+  const allReady = preparationReady && canConvertToLegal;
   const hasDocumentsForZip = mandatoryDocIds.some((docId) => documents[docId].status === 'ready');
 
   return (
@@ -93,10 +104,10 @@ export function LegalActions() {
             number={1}
             title="الجاهزية"
             subtitle="تحقق واحد شامل قبل أي إجراء — مستندات وبيانات"
-            state={allReady ? 'done' : 'current'}
+            state={preparationReady ? 'done' : 'current'}
           />
-          <Badge className={allReady ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-100' : 'bg-amber-100 text-amber-700 hover:bg-amber-100'}>
-            {allReady ? 'جاهز للإغلاق' : 'قيد الإعداد'}
+          <Badge className={preparationReady ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-100' : 'bg-amber-100 text-amber-700 hover:bg-amber-100'}>
+            {preparationReady ? 'جاهز لبدء الإجراءات' : 'قيد الإعداد'}
           </Badge>
         </div>
 
@@ -104,8 +115,8 @@ export function LegalActions() {
           <div className="lawsuit-decision-card">
             <FolderCheck className="h-7 w-7" />
             <span>حالة الملف النهائية</span>
-            <strong>{allReady ? 'يمكن فتح القضية الآن' : 'توجد متطلبات ناقصة'}</strong>
-            <p>{allReady ? 'المستندات وبيانات التقاضي جاهزة للتسجيل.' : 'أكمل الحافظة وراجع بيانات التقاضي قبل تسجيل القضية.'}</p>
+            <strong>{preparationReady ? 'يمكن بدء إجراءات رفع الدعوى الآن' : 'توجد متطلبات ناقصة'}</strong>
+            <p>{preparationReady ? 'الحافظة مكتملة؛ سيتولى الوكيل مراجعتها واعتمادها أثناء الرفع.' : 'أكمل الحافظة وراجع بيانات التقاضي قبل بدء الإجراءات.'}</p>
           </div>
 
           <div className="lawsuit-checklist-card">
@@ -113,22 +124,44 @@ export function LegalActions() {
               <ListChecks className="h-5 w-5" />
               <h3>قائمة التحقق</h3>
             </div>
-            <ChecklistItem complete={allDocumentsReady} label="المستندات الإلزامية جاهزة" note={`${readyCount}/${mandatoryDocIds.length} مستند جاهز`} />
+            <ChecklistItem complete={allDocumentsReady} label="المستندات الإلزامية جاهزة" note={`${readyCount}/${readiness.documents.total} مستند جاهز`} />
             <ChecklistItem complete={contractReady} label="عقد الإيجار متوفر" note="يجب وجود نسخة موقعة أو مرفوعة" />
+            <ChecklistItem complete={hasSignedLease} label="عقد موقّع مطابق" note="نسخة العقد الموقع (signed_contract) مرفوعة ومطابقة" />
+            <ChecklistItem complete={hasIdentityMatch} label="تطابق الهوية" note="التحقق من هوية العميل مكتمل" />
             <ChecklistItem complete={taqadiReady} label="بيانات التقاضي مكتملة" note="العنوان، الوقائع، الطلبات، وبيانات المدعى عليه" />
+            <ChecklistItem
+              complete={readiness.profileApproved && readiness.snapshotApprovedAndCurrent}
+              label="مراجعة الوكيل واعتماده"
+              note={readiness.profileApproved && readiness.snapshotApprovedAndCurrent
+                ? 'اعتمد الوكيل النسخة الحديثة المطابقة'
+                : 'تبدأ تلقائياً بعد بدء إجراءات الرفع'}
+            />
           </div>
         </div>
 
-        {!allReady && (
+        {!preparationReady && (
           <div className="lawsuit-warning-strip">
             <AlertCircle className="h-5 w-5" />
-            <span>لن يتم تفعيل قرار فتح القضية بشكل آمن حتى تكتمل المتطلبات أعلاه.</span>
+            <span>{readiness.missingReasons[0] || 'لن يتم تفعيل قرار فتح القضية حتى تكتمل المتطلبات.'}</span>
+          </div>
+        )}
+        
+        {!canConvertToLegal && blockingReason && (
+          <div className="lawsuit-warning-strip" style={{ backgroundColor: '#fef3c7', borderColor: '#f59e0b' }}>
+            <AlertCircle className="h-5 w-5" style={{ color: '#f59e0b' }} />
+            <span>
+              <strong>⛔ حظر التحويل للقانوني:</strong> {blockingReason}. 
+              يجب رفع نسخة العقد الموقع والتحقق من الهوية قبل إعادة الرفع أو التحديث.
+            </span>
           </div>
         )}
       </section>
 
       {/* المحطة ② — الرفع الآلي (لوحة وكيل تقاضي بتصميمها الجديد) */}
-      <TaqadiAutomationPanel />
+      <TaqadiAutomationPanel 
+        canConvertToLegal={canConvertToLegal}
+        blockingReason={blockingReason}
+      />
 
       {/* المحطة ③ — الإغلاق والتسجيل */}
       <section className="lawsuit-section-panel">

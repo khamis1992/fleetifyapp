@@ -43,6 +43,7 @@ import { useStableCompanyId } from '@/contexts/CompanyContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useDashboardStats } from '@/hooks/useDashboardStats';
 import { useDailyDecisionCenter } from '@/hooks/useDailyDecisionCenter';
+import { useFleetStatus } from '@/hooks/useFleetStatus';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
 import { systemColorPattern } from '@/lib/design-system/systemColorPattern';
@@ -58,13 +59,6 @@ const dashboardColors = {
   success: systemColorPattern.colors.success,
   navy: '#173A63',
   amber: '#F59E0B',
-};
-
-type FleetStatus = {
-  available: number;
-  rented: number;
-  maintenance: number;
-  reserved: number;
 };
 
 type MaintenanceItem = {
@@ -221,29 +215,7 @@ const BentoDashboard: React.FC = () => {
   const companyId = rawCompanyId || contextStableId || stableCompanyIdRef.current;
   const isReady = !!companyId;
 
-  const { data: fleetStatus } = useQuery<FleetStatus>({
-    queryKey: ['fleet-status-operations-center', companyId],
-    queryFn: async () => {
-      if (!companyId) return { available: 0, rented: 0, maintenance: 0, reserved: 0 };
-
-      const { data } = await supabase
-        .from('vehicles')
-        .select('status')
-        .eq('company_id', companyId)
-        .eq('is_active', true);
-
-      const counts: FleetStatus = { available: 0, rented: 0, maintenance: 0, reserved: 0 };
-      data?.forEach((vehicle) => {
-        const status = String(vehicle.status || 'available') as keyof FleetStatus;
-        if (status in counts) counts[status] += 1;
-      });
-
-      return counts;
-    },
-    enabled: isReady,
-    staleTime: 2 * 60 * 1000,
-    placeholderData: (previous) => previous,
-  });
+  const { data: fleetStatus } = useFleetStatus();
 
   const { data: maintenanceData = [] } = useQuery<MaintenanceItem[]>({
     queryKey: ['maintenance-operations-center', companyId],
@@ -297,11 +269,7 @@ const BentoDashboard: React.FC = () => {
     placeholderData: (previous) => previous,
   });
 
-  const totalVehicles =
-    (fleetStatus?.available || 0) +
-    (fleetStatus?.rented || 0) +
-    (fleetStatus?.maintenance || 0) +
-    (fleetStatus?.reserved || 0);
+  const totalVehicles = fleetStatus?.total || 0;
   const occupancyRate = totalVehicles > 0 ? Math.round(((fleetStatus?.rented || 0) / totalVehicles) * 100) : 0;
 
   const monthlyRevenue = getStatNumber(stats, ['monthlyRevenue', 'totalRevenue', 'revenue']);

@@ -167,6 +167,7 @@ interface RecordTaqadiFilingInput {
   caseId: string;
   workflowStage?: string | null;
   result: unknown;
+  sourceDocumentId: string;
 }
 
 export async function recordTaqadiFiling({
@@ -175,6 +176,7 @@ export async function recordTaqadiFiling({
   caseId,
   workflowStage,
   result,
+  sourceDocumentId,
 }: RecordTaqadiFilingInput) {
   const filing = extractTaqadiFilingDetails(result);
 
@@ -208,6 +210,7 @@ export async function recordTaqadiFiling({
     status: 'registered',
     submitted_at: now,
     registered_at: now,
+    source_document_id: sourceDocumentId,
   };
   if (filing.caseNumber) preparationUpdates.taqadi_case_number = filing.caseNumber;
   if (filing.referenceNumber) preparationUpdates.taqadi_reference_number = filing.referenceNumber;

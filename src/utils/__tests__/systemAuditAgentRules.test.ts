@@ -845,6 +845,266 @@ describe("system audit agent rules", () => {
     );
   });
 
+  it("does not flag catch-up monthly payments as duplicates when each settles a different invoice", async () => {
+    // Regression guard for the false-positive duplicate detector: a customer
+    // paying 23 overdue months with identical clicks produced 23 payments of
+    // the same amount on the same date for the SAME contract but for DIFFERENT
+    // invoices. Those are legitimate allocations, not duplicates.
+    const catchUpInvoices = Array.from({ length: 3 }, (_, index) => ({
+      id: `invoice-${index + 1}`,
+      company_id: "company-1",
+      contract_id: "contract-1",
+      customer_id: "customer-1",
+      invoice_number: `INV-2026-${String(index + 1).padStart(3, "0")}`,
+      invoice_date: "2026-01-01",
+      due_date: `2026-0${index + 1}-01`,
+      subtotal: 1_800,
+      total_amount: 1_800,
+      paid_amount: 1_800,
+      balance_due: 0,
+      status: "paid",
+      payment_status: "paid",
+      journal_entry_id: `invoice-journal-${index + 1}`,
+    }));
+
+    const catchUpPayments = catchUpInvoices.map((invoice, index) => ({
+      id: `payment-${index + 1}`,
+      company_id: "company-1",
+      contract_id: "contract-1",
+      customer_id: "customer-1",
+      invoice_id: invoice.id,
+      amount: 1_800,
+      payment_date: "2026-07-25",
+      payment_status: "completed",
+      transaction_type: "receipt",
+      journal_entry_id: `payment-journal-${index + 1}`,
+      payment_number: `REC-26-1${String(20 + index).padStart(2, "0")}`,
+      reference_number: null,
+      allocation_status: "unallocated",
+    }));
+
+    const catchUpResult = await runDomainWorker(
+      createWorkerContext("contracts", {
+        contracts: [
+          {
+            id: "contract-1",
+            company_id: "company-1",
+            contract_number: "C-1",
+            status: "active",
+            contract_amount: 64_800,
+            total_paid: 5_400,
+            balance_due: 59_400,
+            payment_status: "partial",
+            start_date: "2026-01-01",
+            end_date: "2028-12-31",
+            contract_date: "2026-01-01",
+            customer_id: "customer-1",
+            vehicle_id: "vehicle-1",
+          },
+        ],
+        invoices: catchUpInvoices,
+        payments: catchUpPayments,
+        contract_payment_schedules: [],
+        payment_allocations: [],
+        payment_accounting_classifications: [],
+      })
+    );
+
+    expect(
+      catchUpResult.findings.map((finding) => finding.code)
+    ).not.toContain("payment.possible_duplicate");
+
+    // The same contract, same date, same amount, SAME invoice twice must
+    // still be flagged as a possible duplicate.
+    const trueDuplicateResult = await runDomainWorker(
+      createWorkerContext("contracts", {
+        contracts: [
+          {
+            id: "contract-1",
+            company_id: "company-1",
+            contract_number: "C-1",
+            status: "active",
+            contract_amount: 3_600,
+            total_paid: 3_600,
+            balance_due: 0,
+            payment_status: "paid",
+            start_date: "2026-01-01",
+            end_date: "2026-12-31",
+            contract_date: "2026-01-01",
+            customer_id: "customer-1",
+            vehicle_id: "vehicle-1",
+          },
+        ],
+        invoices: [
+          {
+            id: "invoice-1",
+            company_id: "company-1",
+            contract_id: "contract-1",
+            customer_id: "customer-1",
+            invoice_number: "INV-1",
+            invoice_date: "2026-02-01",
+            due_date: "2026-02-01",
+            subtotal: 1_800,
+            total_amount: 1_800,
+            paid_amount: 3_600,
+            balance_due: 0,
+            status: "paid",
+            payment_status: "paid",
+            journal_entry_id: "invoice-journal-1",
+          },
+        ],
+        payments: [
+          {
+            id: "payment-1",
+            company_id: "company-1",
+            contract_id: "contract-1",
+            customer_id: "customer-1",
+            invoice_id: "invoice-1",
+            amount: 1_800,
+            payment_date: "2026-07-25",
+            payment_status: "completed",
+            transaction_type: "receipt",
+            journal_entry_id: "payment-journal-1",
+            payment_number: "REC-26-1001",
+            reference_number: null,
+            allocation_status: "unallocated",
+          },
+          {
+            id: "payment-2",
+            company_id: "company-1",
+            contract_id: "contract-1",
+            customer_id: "customer-1",
+            invoice_id: "invoice-1",
+            amount: 1_800,
+            payment_date: "2026-07-25",
+            payment_status: "completed",
+            transaction_type: "receipt",
+            journal_entry_id: "payment-journal-2",
+            payment_number: "REC-26-1002",
+            reference_number: null,
+            allocation_status: "unallocated",
+          },
+        ],
+        contract_payment_schedules: [],
+        payment_allocations: [],
+        payment_accounting_classifications: [],
+      })
+    );
+
+    expect(trueDuplicateResult.findings).toContainEqual(
+      expect.objectContaining({
+        code: "payment.possible_duplicate",
+      })
+    );
+  });
+
+  it("flags real overpayment with contract details and ignores zero-principal contracts", async () => {
+    // A cancelled import with contract_amount = 0 must NOT be reported as
+    // overpaid — every receipt on it previously produced a phantom finding.
+    const zeroPrincipalResult = await runDomainWorker(
+      createWorkerContext("contracts", {
+        contracts: [
+          {
+            id: "contract-1",
+            company_id: "company-1",
+            contract_number: "CANCELLED-IMPORT",
+            status: "cancelled",
+            contract_amount: 0,
+            total_paid: 4_000,
+            balance_due: 0,
+            payment_status: "paid",
+            start_date: "2026-01-01",
+            end_date: "2026-12-31",
+            contract_date: "2026-01-01",
+            customer_id: "customer-1",
+            vehicle_id: "vehicle-1",
+          },
+        ],
+        invoices: [],
+        payments: [
+          {
+            id: "payment-1",
+            company_id: "company-1",
+            contract_id: "contract-1",
+            customer_id: "customer-1",
+            invoice_id: null,
+            amount: 4_000,
+            payment_date: "2026-06-01",
+            payment_status: "completed",
+            transaction_type: "receipt",
+            journal_entry_id: "payment-journal-1",
+            payment_number: "REC-26-1",
+            reference_number: null,
+            allocation_status: "unallocated",
+          },
+        ],
+        contract_payment_schedules: [],
+        payment_allocations: [],
+        payment_accounting_classifications: [],
+      })
+    );
+
+    expect(
+      zeroPrincipalResult.findings.map((finding) => finding.code)
+    ).not.toContain("contract.possible_overpayment");
+
+    // A real overpayment (receipts exceed principal) must surface with
+    // contract number and excess amount for the review queue.
+    const overpaidResult = await runDomainWorker(
+      createWorkerContext("contracts", {
+        contracts: [
+          {
+            id: "contract-1",
+            company_id: "company-1",
+            contract_number: "C-ALF-TEST",
+            status: "active",
+            contract_amount: 55_500,
+            total_paid: 55_500,
+            balance_due: 0,
+            payment_status: "paid",
+            start_date: "2026-01-01",
+            end_date: "2028-12-31",
+            contract_date: "2026-01-01",
+            customer_id: "customer-1",
+            vehicle_id: "vehicle-1",
+          },
+        ],
+        invoices: [],
+        payments: [
+          {
+            id: "payment-1",
+            company_id: "company-1",
+            contract_id: "contract-1",
+            customer_id: "customer-1",
+            invoice_id: null,
+            amount: 92_260,
+            payment_date: "2026-07-01",
+            payment_status: "completed",
+            transaction_type: "receipt",
+            journal_entry_id: "payment-journal-1",
+            payment_number: "REC-26-1",
+            reference_number: null,
+            allocation_status: "unallocated",
+          },
+        ],
+        contract_payment_schedules: [],
+        payment_allocations: [],
+        payment_accounting_classifications: [],
+      })
+    );
+
+    expect(overpaidResult.findings).toContainEqual(
+      expect.objectContaining({
+        code: "contract.possible_overpayment",
+        entityType: "contract",
+        evidence: expect.objectContaining({
+          contractNumber: "C-ALF-TEST",
+          excess: 36_760,
+        }),
+      })
+    );
+  });
+
   it("does not treat a valid historical invoice as invalid only because its contract is cancelled", async () => {
     const result = await runDomainWorker(
       createWorkerContext("contracts", {
@@ -1996,6 +2256,7 @@ describe("system audit agent rules", () => {
     const result = await runDomainWorker(context);
     const finding = result.findings.find(
       (item) => item.entityId === "payment-multiple-banks"
+        && item.code === "accounting.bank_payment_missing_bank_for_reconciliation"
     );
 
     expect(finding).toMatchObject({

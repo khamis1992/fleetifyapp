@@ -42,6 +42,8 @@ import { toast } from 'sonner';
 import { format, parseISO, differenceInDays, addDays } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import { systemColorPattern } from '@/lib/design-system/systemColorPattern';
+import { assertRentalEligible } from '@/services/rentalEligibilityGuard';
+import { RentalEligibilityBanner } from '@/components/contracts/RentalEligibilityBanner';
 
 // ===== Types =====
 interface Vehicle {
@@ -74,6 +76,11 @@ interface Driver {
   phone: string;
   status: 'available' | 'busy' | 'vacation';
   location: string;
+}
+
+interface ReservationCustomer {
+  id: string;
+  name: string;
 }
 
 interface DragState {
@@ -378,6 +385,27 @@ export default function CarRentalScheduler() {
     enabled: !!companyId,
   });
 
+  const { data: reservationCustomers = [] } = useQuery({
+    queryKey: ['scheduler-customers', companyId],
+    queryFn: async (): Promise<ReservationCustomer[]> => {
+      if (!companyId) return [];
+      const { data, error } = await supabase
+        .from('customers')
+        .select('id, first_name, last_name, first_name_ar, last_name_ar, company_name, company_name_ar')
+        .eq('company_id', companyId)
+        .eq('is_active', true)
+        .order('created_at', { ascending: false })
+        .limit(300);
+      if (error) throw error;
+      return (data || []).map((customer) => ({
+        id: customer.id,
+        name: customer.company_name_ar || customer.company_name ||
+          `${customer.first_name_ar || customer.first_name || ''} ${customer.last_name_ar || customer.last_name || ''}`.trim() || 'عميل',
+      }));
+    },
+    enabled: !!companyId,
+  });
+
   // Combine all bookings
   const bookings = useMemo(() => {
     const all: Booking[] = [...contractBookings, ...reservationBookings];
@@ -406,11 +434,15 @@ export default function CarRentalScheduler() {
     mutationFn: async (values: any) => {
       if (!companyId) throw new Error('Company ID not found');
 
-      const { data, error } = await supabase.rpc('save_vehicle_reservation_v1', {
+      const eligibility = await assertRentalEligible({ companyId, vehicleId: values.carId, customerId: values.customerId });
+      if (eligibility.level === 'warn') toast.warning(eligibility.message);
+
+      const { data, error } = await supabase.rpc('save_vehicle_reservation_v2', {
         p_company_id: companyId,
         p_reservation_id: null,
         p_vehicle_id: values.carId,
         p_customer_name: values.customer,
+        p_customer_id: values.customerId,
         p_start_date: values.start,
         p_end_date: format(addDays(new Date(values.start), values.days - 1), 'yyyy-MM-dd'),
         p_status: values.status || 'pending',
@@ -427,7 +459,7 @@ export default function CarRentalScheduler() {
       setModalData(null);
     },
     onError: (error) => {
-      toast.error('فشل في إنشاء الحجز');
+      toast.error(error instanceof Error ? error.message : 'فشل في إنشاء الحجز');
       console.error(error);
     },
   });
@@ -444,11 +476,15 @@ export default function CarRentalScheduler() {
       const reservationId = id.replace('reservation-', '');
       const existing = reservationBookings.find((booking) => booking.id === id);
       if (!existing) throw new Error('Reservation was not found');
-      const { data, error } = await supabase.rpc('save_vehicle_reservation_v1', {
+      if (!existing.customerId) throw new Error('يرجى فتح الحجز وإعادة اختيار العميل قبل التعديل');
+      const eligibility = await assertRentalEligible({ companyId, vehicleId, customerId: existing.customerId });
+      if (eligibility.level === 'warn') toast.warning(eligibility.message);
+      const { data, error } = await supabase.rpc('save_vehicle_reservation_v2', {
         p_company_id: companyId,
         p_reservation_id: reservationId,
         p_vehicle_id: vehicleId,
         p_customer_name: existing.customer,
+        p_customer_id: existing.customerId,
         p_start_date: format(startDate, 'yyyy-MM-dd'),
         p_end_date: format(endDate, 'yyyy-MM-dd'),
         p_status: existing.status,
@@ -738,6 +774,7 @@ export default function CarRentalScheduler() {
       start: formatDateForInput(start),
       days: 1,
       customer: '',
+      customerId: '',
       status: 'confirmed',
       driverId: ''
     });
@@ -763,6 +800,7 @@ export default function CarRentalScheduler() {
       start: formatDateForInput(start),
       days,
       customer: modalData.customer,
+      customerId: modalData.customerId,
       status: modalData.status,
       driverId: modalData.driverId || null,
     });
@@ -1179,13 +1217,18 @@ export default function CarRentalScheduler() {
                   <form onSubmit={saveBooking} className="p-6 space-y-5">
                     <div>
                       <label className="block text-sm font-bold text-slate-700 mb-1.5">العميل</label>
-                      <input 
-                        required 
-                        type="text" 
-                        value={modalData.customer} 
-                        onChange={e => setModalData({...modalData, customer: e.target.value})} 
-                        className="w-full border border-slate-300 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-rose-500 focus:outline-none" 
-                      />
+                      <select
+                        required
+                        value={modalData.customerId || ''}
+                        onChange={(event) => {
+                          const customer = reservationCustomers.find((item) => item.id === event.target.value);
+                          setModalData({ ...modalData, customerId: customer?.id || '', customer: customer?.name || '' });
+                        }}
+                        className="w-full border border-slate-300 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-rose-500 bg-white"
+                      >
+                        <option value="">اختر العميل</option>
+                        {reservationCustomers.map((customer) => <option key={customer.id} value={customer.id}>{customer.name}</option>)}
+                      </select>
                     </div>
                     
                     <div className="grid grid-cols-2 gap-4">
@@ -1213,6 +1256,8 @@ export default function CarRentalScheduler() {
                       </div>
                     </div>
                     
+                    <RentalEligibilityBanner companyId={companyId} vehicleId={modalData.carId} customerId={modalData.customerId} />
+
                     {/* Driver Selection */}
                     <div>
                       <label className="block text-sm font-bold text-slate-700 mb-1.5">السائق (اختياري)</label>

@@ -9,7 +9,12 @@ import {
   installEvaluationRuntime,
   isClosedBrowserError,
 } from './browser-lifecycle';
-import { planPortalAction, stageOrderIndex } from './adaptive-flow';
+import {
+  planPortalAction,
+  shouldSubmitFinalAutomatically,
+  stageOrderIndex,
+  type AdaptivePortalAction,
+} from './adaptive-flow';
 import { agentConfig } from './config';
 import { TaqadiQueue } from './database';
 import { captureHealProposal, JobDiagnostics } from './diagnostics';
@@ -31,6 +36,7 @@ import {
   clearSessionOverrides,
 } from './selector-overrides';
 import { observeTaqadiPage } from './portal-observer';
+import { proposeScraplingHeal } from './scrapling-client';
 import {
   shouldAutoApplyHeal,
   verifySuggestionAgainstObservation,
@@ -59,11 +65,40 @@ const STALE_JOB_THRESHOLD_SECONDS = 90;
 // chance to prove itself; a second failure goes back to the human flow.
 const MAX_AUTO_HEAL_ATTEMPTS = 1;
 
+const guidedActionLabel: Record<AdaptivePortalAction, string> = {
+  open_new_case: 'فتح نموذج دعوى جديد',
+  configure_case: 'تعبئة تصنيف الدعوى والانتقال إلى التفاصيل',
+  fill_case_details: 'تعبئة تفاصيل الدعوى والوقائع والطلبات',
+  process_parties: 'مراجعة أطراف الدعوى وإضافة الأطراف المطلوبة',
+  upload_documents: 'رفع مستندات الدعوى',
+  continue_fees: 'مراجعة الرسوم والانتقال إلى ملخص الدعوى',
+  verify_review: 'مطابقة صفحة المراجعة مع حزمة Fleetify',
+  recover_receipt: 'قراءة إيصال الدعوى وتسجيل رقمها',
+  wait_for_login: 'انتظار تسجيل الدخول',
+  request_human: 'طلب تدخل المستخدم',
+};
+
 export interface WorkerRuntimeState {
   status: 'idle' | 'busy' | 'waiting_login' | 'error' | 'offline';
   currentJobId: string | null;
   lastError: string | null;
   startedAt: string;
+}
+
+export interface BrowserDiagnostics {
+  available: boolean;
+  url?: string;
+  title?: string;
+  pageCount?: number;
+  landmarks?: {
+    smartCardAction: boolean;
+    pinInput: boolean;
+    companyLabel: boolean;
+    visibleRadios: number;
+    companyAccount: boolean;
+    continueAction: boolean;
+    authenticatedShell: boolean;
+  };
 }
 
 export class TaqadiWorker {
@@ -186,6 +221,7 @@ export class TaqadiWorker {
       portalUrl: agentConfig.portalUrl,
       headless: agentConfig.headless,
       finalApproval: agentConfig.finalApproval,
+      scraplingEnabled: agentConfig.scrapling.enabled,
     };
   }
 
@@ -221,6 +257,16 @@ export class TaqadiWorker {
       {
         headless: agentConfig.headless,
         channel: 'chrome',
+        // Playwright disables all Chrome extensions by default. Tawtheeq's
+        // smart-card flow depends on the SConnect extension and its Windows
+        // native host, so keep extension support enabled in this persistent
+        // worker profile. The operator installs SConnect once and the profile
+        // retains it for later filings.
+        ignoreDefaultArgs: [
+          '--disable-extensions',
+          '--disable-component-extensions-with-background-pages',
+          '--disable-component-update',
+        ],
         locale: 'ar-QA',
         viewport: null,
         args: ['--start-maximized'],
@@ -293,6 +339,51 @@ export class TaqadiWorker {
     });
   }
 
+  async browserDiagnostics(): Promise<BrowserDiagnostics> {
+    const page = this.page;
+    if (!page || page.isClosed()) return { available: false };
+
+    const visible = async (selector: string) => page.locator(selector)
+      .first()
+      .isVisible()
+      .catch(() => false);
+    const [
+      title,
+      smartCardAction,
+      pinInput,
+      companyLabel,
+      visibleRadios,
+      companyAccount,
+      continueAction,
+      authenticatedShell,
+    ] = await Promise.all([
+      page.title().catch(() => ''),
+      visible('button:has-text("البطاقة الذكية"), a:has-text("البطاقة الذكية")'),
+      visible('input[type="password"], input[name*="pin" i], input[id*="pin" i]'),
+      visible('text="اختيار الشركة"'),
+      page.locator('input[type="radio"]:visible').count().catch(() => 0),
+      visible(`input[type="radio"][value*="${agentConfig.company.establishmentNumber}"]`),
+      visible('button:has-text("متابعة"), input[type="submit"][value*="متابعة"]'),
+      visible('#main, #left-panel, #header, form#logout-form'),
+    ]);
+
+    return {
+      available: true,
+      url: page.url(),
+      title,
+      pageCount: page.context().pages().filter((candidate) => !candidate.isClosed()).length,
+      landmarks: {
+        smartCardAction,
+        pinInput,
+        companyLabel,
+        visibleRadios,
+        companyAccount,
+        continueAction,
+        authenticatedShell,
+      },
+    };
+  }
+
   private async screenshot(job: FilingJob, name: string) {
     if (!this.page || this.page.isClosed()) return null;
     const directory = path.join(agentConfig.jobsDir, job.id, 'artifacts');
@@ -349,7 +440,16 @@ export class TaqadiWorker {
     // eligible for in-session auto-application, but only through
     // tryAutoApplyHeal's deterministic verification (Level 2).
     let suggestion: HealSuggestion | null = null;
-    if (lookup && proposal.ariaSnapshot) {
+    let suggestionSource: 'scrapling' | 'anthropic' | null = null;
+    if (lookup) {
+      const observation = await observeTaqadiPage(this.page, job.payload)
+        .catch(() => null);
+      if (observation) {
+        suggestion = await proposeScraplingHeal(observation, lookup);
+        if (suggestion) suggestionSource = 'scrapling';
+      }
+    }
+    if (!suggestion && lookup && proposal.ariaSnapshot) {
       suggestion = await proposeSelectorHeal({
         step,
         errorMessage,
@@ -358,6 +458,7 @@ export class TaqadiWorker {
         expectedControlIds: lookup.expectedControlIds,
         ariaSnapshot: proposal.ariaSnapshot,
       });
+      if (suggestion) suggestionSource = 'anthropic';
     }
 
     await this.queue.uploadArtifact({
@@ -371,6 +472,7 @@ export class TaqadiWorker {
         url: proposal.url,
         capturedAt: proposal.capturedAt,
         healSuggestion: suggestion,
+        healSuggestionSource: suggestionSource,
       },
     }).catch((error) => {
       console.warn('[TaqadiAgent] heal proposal upload failed:', error);
@@ -540,16 +642,19 @@ export class TaqadiWorker {
       await portal.ensureAuthenticated(async () => {
         this.setRuntime('waiting_login', job.id, null);
         const tawtheeqAutoLogin = Boolean(
-          agentConfig.tawtheeq.username
-          && agentConfig.tawtheeq.password,
+          agentConfig.tawtheeq.smartCardPin
+          || (
+            agentConfig.tawtheeq.username
+            && agentConfig.tawtheeq.password
+          ),
         );
         await this.queue.update(job.id, {
           status: 'waiting_login',
           step: 'login',
           progress: 15,
           message: tawtheeqAutoLogin
-            ? 'تم فتح توثيق وإدخال بيانات الدخول تلقائيًا؛ أكمل التحقق البشري عند ظهوره'
-            : 'بانتظار تسجيل الدخول كمتقاضٍ فرد في نافذة Chrome',
+            ? 'تم فتح توثيق وسيختار الوكيل البطاقة الذكية وحساب شركة العراف تلقائيًا'
+            : 'بانتظار تسجيل الدخول إلى توثيق في نافذة Chrome',
           details: {
             tawtheeqAutoLogin,
           },
@@ -572,7 +677,16 @@ export class TaqadiWorker {
             status: 'validating_parties',
             step: 'company_party',
             progress: 48,
-            message: 'جاري التحقق من بيانات شركة العراف وحفظها كمدعٍ بالترتيب الثاني',
+            message: 'جاري التحقق من بيانات شركة العراف وحفظها كمدعٍ بالترتيب الأول',
+          });
+          return;
+        }
+        if (phase === 'company_session_party') {
+          await this.queue.update(job.id, {
+            status: 'validating_parties',
+            step: 'company_session_party',
+            progress: 46,
+            message: 'جاري مراجعة الطرف الإلزامي الذي أضافه تقاضي وحذف أي ممثل إضافي سابق',
           });
           return;
         }
@@ -585,18 +699,16 @@ export class TaqadiWorker {
           });
           return;
         }
-        await this.queue.update(job.id, {
-          status: 'validating_parties',
-          step: 'representative_last',
-          progress: 58,
-          message: `تمت إضافة أطراف الدعوى؛ جاري الآن مراجعة ${agentConfig.representative.name} وحفظ بياناته`,
-        });
       };
       const resumeRequested = job.current_step === 'resume_requested';
       // After an auto-heal retry the draft already exists in the portal —
       // re-entering through openNewCase would create a duplicate lawsuit
       // draft, so the adaptive loop re-orients from the live page instead.
-      if (!resumeRequested && autoHealAttempts === 0) {
+      if (
+        !agentConfig.guidedMode
+        && !resumeRequested
+        && autoHealAttempts === 0
+      ) {
         caseDraftStarted = true;
         await this.queue.update(job.id, {
           status: 'filling_case',
@@ -690,6 +802,29 @@ export class TaqadiWorker {
                 ? ['سجّل الدخول', 'افتح مسودة الدعوى الحالية']
                 : ['اترك صفحة مسودة الدعوى المطلوبة مفتوحة ثم تابع من النظام'],
               validationMessages: position.validationMessages,
+              url: position.url,
+            },
+          );
+        }
+
+        const guidedActionApproved = resumeRequested && cycle === 1;
+        if (agentConfig.guidedMode && !guidedActionApproved) {
+          const proposedAction = guidedActionLabel[plan.action];
+          throw new HumanInterventionError(
+            `الوكيل متوقف عند «${position.label}». الخطوة المقترحة: ${proposedAction}.`,
+            'GUIDED_STEP_APPROVAL_REQUIRED',
+            {
+              portalStage: position.stage,
+              portalLabel: position.label,
+              portalConfidence: position.confidence,
+              plannedAction: plan.action,
+              proposedAction,
+              expectedStage: plan.expectedStage,
+              resumeSupported: true,
+              requiredActions: [
+                `راجع صفحة «${position.label}» في تقاضي`,
+                `وافق لتنفيذ: ${proposedAction}`,
+              ],
               url: position.url,
             },
           );
@@ -863,17 +998,26 @@ export class TaqadiWorker {
           console.warn('[TaqadiAgent] review screenshot failed:', error);
         });
 
-      if (
-        canary
-        || !agentConfig.finalApproval
-        || !job.final_approval
-        || !job.payload.finalApproval
-      ) {
+      if (!shouldSubmitFinalAutomatically({
+        canary,
+        workerFinalApproval: agentConfig.finalApproval,
+        jobFinalApproval: job.final_approval,
+        payloadFinalApproval: job.payload.finalApproval,
+      })) {
         throw new HumanInterventionError(
           'الحزمة جاهزة لكن الاعتماد النهائي التلقائي غير مفعّل',
           'FINAL_APPROVAL_DISABLED',
         );
       }
+
+      // Real filing jobs proceed directly from deterministic review validation
+      // to agent-owned approval and the portal's final submission click. Canary
+      // jobs and explicitly disabled jobs never cross this boundary.
+      await this.queue.approveReviewedLegalFile(job, {
+        matched: true,
+        claimAmountMatches: true,
+        expectedClaimAmount: job.payload.case.amount,
+      });
 
       const result = await portal.submitFinal(async () => {
         submissionStarted = true;

@@ -13,7 +13,6 @@ export {
   type DocumentsListData,
   type CriminalComplaintData,
   type ViolationsTransferData,
-  type ExplanatoryMemoData,
   type DocumentPortfolioData,
 
   // Shared constants and helpers
@@ -34,9 +33,6 @@ export {
 
   // Official letter
   generateOfficialLetter,
-
-  // Explanatory memo
-  generateExplanatoryMemoHtml,
 
   // Documents list
   generateDocumentsListHtml,

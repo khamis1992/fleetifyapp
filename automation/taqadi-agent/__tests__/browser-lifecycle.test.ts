@@ -126,6 +126,29 @@ describe('Taqadi browser lifecycle', () => {
     );
   });
 
+  it('launches the persistent Chrome profile with extension support enabled', async () => {
+    const page = fakePage();
+    const context = fakeContext({ pages: [page] });
+    vi.mocked(chromium.launchPersistentContext).mockResolvedValueOnce(context);
+
+    const worker = new TaqadiWorker() as unknown as {
+      getPage: () => Promise<Page>;
+    };
+    await worker.getPage();
+
+    expect(chromium.launchPersistentContext).toHaveBeenCalledWith(
+      expect.stringContaining('chrome-profile'),
+      expect.objectContaining({
+        channel: 'chrome',
+        ignoreDefaultArgs: expect.arrayContaining([
+          '--disable-extensions',
+          '--disable-component-extensions-with-background-pages',
+          '--disable-component-update',
+        ]),
+      }),
+    );
+  });
+
   it('keeps Chrome open and reuses the current tab for a portal-flow retry', async () => {
     const page = fakePage();
     const context = fakeContext({

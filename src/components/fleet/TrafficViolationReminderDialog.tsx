@@ -38,6 +38,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import type { TrafficViolation } from '@/hooks/useTrafficViolations';
 import { sendWhatsAppMessage } from '@/utils/whatsappWebSender';
+import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 
 const DEFAULT_TEST_PHONE = '66707063';
 const UNKNOWN_VALUE = 'غير محدد';
@@ -190,6 +191,7 @@ export const TrafficViolationReminderDialog: React.FC<
   contractDate: propContractDate,
   onSuccess,
 }) => {
+  const { companyId } = useUnifiedCompanyAccess();
   const [dueDays, setDueDays] = useState(7);
   const [isTestMode, setIsTestMode] = useState(true);
   const [testPhone, setTestPhone] = useState(DEFAULT_TEST_PHONE);
@@ -285,12 +287,17 @@ export const TrafficViolationReminderDialog: React.FC<
       setSendProgress({ current: 0, total: targets.length, results: [] });
 
       for (const [index, group] of targets.entries()) {
+        if (!companyId) throw new Error('تعذر تحديد الشركة');
         const phone = isTestMode ? testPhone.trim() : group.customerPhone;
         try {
           const result = await sendWhatsAppMessage({
             phone,
             message: buildReminderMessage(group, dueDays),
             customerName: isTestMode ? 'اختبار تذكير المخالفات' : group.customerName,
+            companyId,
+            purpose: 'traffic_violation_reminder',
+            entityType: 'customer',
+            entityId: group.customerId,
           });
           if (!result.success) throw new Error(result.error || 'فشل إرسال الرسالة.');
           sent += 1;

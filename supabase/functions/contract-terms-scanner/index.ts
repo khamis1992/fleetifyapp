@@ -3,17 +3,17 @@
  *
  * Reads the signed contract document (the legal source of truth) stored in
  * the contract documents tab, extracts the written rent terms with OCR +
- * LLM analysis, and stores a pending proposal whenever the stored contract
- * row disagrees with the signed document.
+ * LLM analysis, compares it with the complete billing graph, and either
+ * applies one evidence-backed payment-free scenario or assigns financial
+ * review with the evidence and blocker attached.
  *
  * Modes:
  *   - { contractId }:          scan the latest signed contract document
  *   - { contractDocumentId }:  scan a specific document row
  *
- * Auth: x-agent-secret (CONTRACT_SCANNER_SECRET) or service-role bearer.
- * Nothing is applied automatically; proposals are human-approved.
+ * Auth: function-specific Vault identity, authenticated user, or service role.
+ * Only verified machine callers may auto-apply a high-confidence scenario.
  */
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.4";
 import * as pdfjs from "npm:pdfjs-dist@4.2.67/legacy/build/pdf.mjs";
 import {
@@ -22,11 +22,16 @@ import {
   LONGCAT_CHAT_COMPLETIONS_URL,
   LONGCAT_MODEL,
 } from "../_shared/longcat.ts";
+import {
+  AgentInvocationContext,
+  authorizeScheduledAgent,
+  finishAgentExecution,
+} from "../_shared/agent.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-agent-secret",
+    "authorization, x-client-info, apikey, content-type, x-agent-id, x-agent-secret",
 };
 
 const SIGNED_DOCUMENT_TYPES = ["signed_contract", "signed_contract_image"];
@@ -48,7 +53,44 @@ type ExtractedTerms = {
   evidence: string[];
 };
 
-serve(async (req) => {
+type BillingGraphSnapshot = {
+  activeScheduleCount: number;
+  activeInvoiceCount: number;
+  missingInvoiceCount: number;
+  firstScheduleMonth: string | null;
+  lastScheduleMonth: string | null;
+  scheduleTotal: number;
+  hasPaymentHistory: boolean;
+};
+
+type ScheduleSnapshotRow = {
+  due_date?: unknown;
+  amount?: unknown;
+  paid_amount?: unknown;
+  paid_date?: unknown;
+  status?: unknown;
+  invoice_id?: unknown;
+};
+
+type InvoiceSnapshotRow = {
+  status?: unknown;
+  payment_status?: unknown;
+  total_amount?: unknown;
+};
+
+type ReconciliationScenario = {
+  eligible: boolean;
+  monthlyAmount: number | null;
+  totalAmount: number | null;
+  startDate: string | null;
+  endDate: string | null;
+  installmentCount: number | null;
+  firstBillingMonth: string | null;
+  lastBillingMonth: string | null;
+  reasons: string[];
+};
+
+Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
@@ -56,22 +98,63 @@ serve(async (req) => {
     return json({ success: false, error: "Method not allowed" }, 405);
   }
 
+  let invocation: AgentInvocationContext | null = null;
+  let executionFailed = false;
   try {
-    authorize(req);
     const body = await req.json().catch(() => ({}));
+    const hasScheduledIdentity = Boolean(
+      req.headers.get("x-agent-id") && req.headers.get("x-agent-secret"),
+    );
+    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+    const isServiceRoleCaller = Boolean(
+      serviceRoleKey && req.headers.get("Authorization") === `Bearer ${serviceRoleKey}`,
+    );
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
       { auth: { persistSession: false, autoRefreshToken: false } },
     );
+    let authorizationCompanyId: string | null = typeof body.companyId === "string"
+      ? body.companyId
+      : null;
+    if (body.contractDocumentId) {
+      const { data: document, error: documentError } = await supabase
+        .from("contract_documents")
+        .select("company_id")
+        .eq("id", String(body.contractDocumentId))
+        .maybeSingle();
+      if (documentError) throw documentError;
+      authorizationCompanyId = document?.company_id || null;
+    } else if (body.contractId) {
+      const { data: contract, error: contractError } = await supabase
+        .from("contracts")
+        .select("company_id")
+        .eq("id", String(body.contractId))
+        .maybeSingle();
+      if (contractError) throw contractError;
+      authorizationCompanyId = contract?.company_id || null;
+    }
+    invocation = await authorizeScheduledAgent(
+      req,
+      "contract-terms-scanner",
+      authorizationCompanyId,
+    );
 
-    // Batch mode: find contracts whose stored terms disagree with their
-    // billing graph, scan each signed document, and auto-apply high-confidence
-    // corrections. Intended for the nightly cron; no input needed.
+    const mayAutoApply = (hasScheduledIdentity || isServiceRoleCaller) &&
+      body.dryRun !== true && body.autoApply !== false;
+
     if (body.mode === "batch") {
+      if (!body.companyId) {
+        return json({ success: false, error: "batch mode requires companyId" }, 400);
+      }
       const maxDocs = Math.min(Math.max(Number(body.maxDocuments) || 4, 1), 10);
-      const autoApply = body.autoApply !== false;
-      const results = await processBatch(supabase, maxDocs, autoApply);
+      const results = await processBatch(
+        supabase,
+        body.companyId,
+        maxDocs,
+        mayAutoApply,
+        typeof body.contractId === "string" ? body.contractId : null,
+      );
       return json({ success: true, ...results });
     }
 
@@ -88,9 +171,18 @@ serve(async (req) => {
         return json({ success: false, outcome: "ocr_empty", documentId: doc.id });
       }
       const terms = await extractTermsWithLlm(text);
-      const proposal = buildProposal(doc, contract, terms);
-      const proposalId = await storeProposal(supabase, doc, contract, terms, text, "pending");
-      const applied = await maybeAutoApply(supabase, proposalId, terms, true);
+      const graph = await loadBillingGraphSnapshot(supabase, contract);
+      const scenario = buildReconciliationScenario(terms, graph);
+      const proposal = buildProposal(doc, contract, terms, graph, scenario);
+      const proposalId = await storeProposal(
+        supabase, doc, contract, terms, text, "pending", graph, scenario,
+      );
+      const applied = await maybeAutoApply(
+        supabase,
+        proposalId,
+        scenario,
+        mayAutoApply,
+      );
       return json({ success: true, ...proposal, autoApply: applied });
     }
 
@@ -117,42 +209,50 @@ serve(async (req) => {
     }
 
     const terms = await extractTermsWithLlm(text);
-    const proposal = buildProposal(doc, contract, terms);
-    const proposalId = await storeProposal(supabase, doc, contract, terms, text, "pending");
+    const graph = await loadBillingGraphSnapshot(supabase, contract);
+    const scenario = buildReconciliationScenario(terms, graph);
+    const proposal = buildProposal(doc, contract, terms, graph, scenario);
+    const proposalId = await storeProposal(
+      supabase, doc, contract, terms, text, "pending", graph, scenario,
+    );
     const applied = await maybeAutoApply(
       supabase,
       proposalId,
-      terms,
-      body.autoApply === true,
+      scenario,
+      mayAutoApply,
     );
 
     return json({ success: true, ...proposal, autoApply: applied });
   } catch (error) {
+    executionFailed = true;
     console.error("contract-terms-scanner error:", error);
+    const message = error instanceof Error ? error.message : String(error);
     return json(
-      { success: false, error: error instanceof Error ? error.message : String(error) },
-      500,
+      { success: false, error: message },
+      message === "Unauthorized" ? 401 : 500,
     );
+  } finally {
+    if (invocation) {
+      const admin = createClient(
+        Deno.env.get("SUPABASE_URL") ?? "",
+        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+      );
+      await finishAgentExecution(
+        admin, invocation, !executionFailed, {},
+        executionFailed ? "contract_terms_scan_failed" : null,
+      ).catch(() => undefined);
+    }
   }
 });
-
-function authorize(req: Request) {
-  const secret = req.headers.get("x-agent-secret") || "";
-  const expected = Deno.env.get("CONTRACT_SCANNER_SECRET") || "";
-  const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
-  const authHeader = req.headers.get("authorization") || "";
-
-  if (expected && secret === expected) return;
-  if (serviceRoleKey && authHeader === `Bearer ${serviceRoleKey}`) return;
-  throw new Error("Unauthorized contract terms scanner request");
-}
 
 async function loadDocument(supabase: SupabaseClient, body: Record<string, unknown>) {
   if (body.contractDocumentId) {
     const { data, error } = await supabase
       .from("contract_documents")
-      .select("id, company_id, contract_id, document_type, document_name, file_path, mime_type")
+      .select("id, company_id, contract_id, document_type, document_name, file_path, mime_type, legal_identity_match_status")
       .eq("id", String(body.contractDocumentId))
+      .in("document_type", SIGNED_DOCUMENT_TYPES)
+      .eq("legal_identity_match_status", "matched")
       .maybeSingle();
     if (error) throw error;
     return data;
@@ -162,9 +262,10 @@ async function loadDocument(supabase: SupabaseClient, body: Record<string, unkno
 
   const { data, error } = await supabase
     .from("contract_documents")
-    .select("id, company_id, contract_id, document_type, document_name, file_path, mime_type")
+    .select("id, company_id, contract_id, document_type, document_name, file_path, mime_type, legal_identity_match_status")
     .eq("contract_id", String(body.contractId))
     .in("document_type", SIGNED_DOCUMENT_TYPES)
+    .eq("legal_identity_match_status", "matched")
     .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();
@@ -368,6 +469,8 @@ function buildProposal(
   doc: Record<string, unknown>,
   contract: Record<string, unknown>,
   terms: ExtractedTerms,
+  graph?: BillingGraphSnapshot,
+  scenario?: ReconciliationScenario,
 ) {
   const current = {
     monthly_amount: Number(contract.monthly_amount ?? 0),
@@ -405,6 +508,14 @@ function buildProposal(
   if (terms.end_date && terms.end_date !== current.end_date) {
     changes.push({ field: "end_date", from: current.end_date, to: terms.end_date });
   }
+  if (graph && graph.missingInvoiceCount > 0) {
+    changes.push({
+      field: "billing_graph",
+      issue: "active_schedules_missing_invoices",
+      missingInvoices: graph.missingInvoiceCount,
+      scenario,
+    });
+  }
 
   return {
     documentId: doc.id,
@@ -424,6 +535,8 @@ async function storeProposal(
   terms: ExtractedTerms | null,
   rawText: string,
   status: "pending" | "failed",
+  graph?: BillingGraphSnapshot,
+  scenario?: ReconciliationScenario,
 ): Promise<string | null> {
   const proposal = buildProposal(
     doc,
@@ -439,6 +552,8 @@ async function storeProposal(
       confidence: 0,
       evidence: [],
     },
+    graph,
+    scenario,
   );
 
   const row = {
@@ -446,7 +561,11 @@ async function storeProposal(
     contract_id: doc.contract_id,
     contract_document_id: doc.id,
     status,
-    extracted_terms: proposal.extractedTerms,
+    extracted_terms: {
+      ...proposal.extractedTerms,
+      billing_graph: graph ?? null,
+      billing_scenario: scenario ?? null,
+    },
     current_terms: proposal.currentTerms,
     proposed_changes: proposal.proposedChanges,
     raw_text: rawText.slice(0, 20000),
@@ -485,12 +604,18 @@ async function storeProposal(
  */
 async function processBatch(
   supabase: SupabaseClient,
+  companyId: string,
   maxDocuments: number,
   autoApply: boolean,
+  targetContractId: string | null,
 ) {
   const { data: candidates, error } = await supabase.rpc(
-    "contract_terms_scan_batch_candidates",
-    { p_limit: maxDocuments },
+    "contract_terms_scan_batch_candidates_v4",
+    {
+      p_company_id: companyId,
+      p_limit: maxDocuments,
+      p_contract_id: targetContractId,
+    },
   );
   if (error) throw error;
 
@@ -503,8 +628,9 @@ async function processBatch(
     try {
       const { data: doc } = await supabase
         .from("contract_documents")
-        .select("id, company_id, contract_id, document_type, document_name, file_path, mime_type")
+        .select("id, company_id, contract_id, document_type, document_name, file_path, mime_type, legal_identity_match_status")
         .eq("id", candidate.document_id)
+        .eq("legal_identity_match_status", "matched")
         .single();
       if (!doc) {
         failedCount += 1;
@@ -523,9 +649,15 @@ async function processBatch(
       }
 
       const terms = await extractTermsWithLlm(text);
-      const proposal = buildProposal(doc, contract, terms);
-      const proposalId = await storeProposal(supabase, doc, contract, terms, text, "pending");
-      const applied = await maybeAutoApply(supabase, proposalId, terms, autoApply);
+      const graph = await loadBillingGraphSnapshot(supabase, contract);
+      const scenario = buildReconciliationScenario(terms, graph);
+      const proposal = buildProposal(doc, contract, terms, graph, scenario);
+      const proposalId = await storeProposal(
+        supabase, doc, contract, terms, text, "pending", graph, scenario,
+      );
+      const applied = await maybeAutoApply(
+        supabase, proposalId, scenario, autoApply,
+      );
 
       if (applied.applied) appliedCount += 1;
       else pendingCount += 1;
@@ -536,6 +668,8 @@ async function processBatch(
         extractedMonthly: terms.monthly_amount,
         extractedTotal: terms.total_amount,
         confidence: terms.confidence,
+        triggerReason: candidate.trigger_reason,
+        scenario,
         applyResult: applied.applied ? applied.result : undefined,
         skippedReason: applied.applied ? undefined : applied.reason,
       });
@@ -566,42 +700,190 @@ async function processBatch(
 async function maybeAutoApply(
   supabase: SupabaseClient,
   proposalId: string | null,
-  terms: ExtractedTerms,
+  scenario: ReconciliationScenario,
   autoApply: boolean,
 ): Promise<{ applied: boolean; reason?: string; result?: unknown }> {
   if (!autoApply) return { applied: false, reason: "auto_apply_disabled" };
   if (!proposalId) return { applied: false, reason: "no_proposal" };
 
-  const consistencyOk =
-    terms.monthly_amount !== null &&
-    terms.monthly_amount > 0 &&
-    terms.start_date !== null &&
-    terms.end_date !== null &&
-    terms.duration_months !== null &&
-    terms.duration_months >= 1 &&
-    terms.confidence >= 0.9 &&
-    terms.evidence.length >= 1 &&
-    (terms.total_amount === null ||
-      terms.total_amount <= 0 ||
-      Math.abs(terms.total_amount - terms.monthly_amount * terms.duration_months) <=
-        Math.max(1, terms.monthly_amount * 0.02));
-
-  if (!consistencyOk) {
-    return { applied: false, reason: "confidence_or_consistency_below_threshold" };
+  if (!scenario.eligible) {
+    const reason = scenario.reasons.join("; ") ||
+      "confidence_or_consistency_below_threshold";
+    await ensureFinancialReviewTask(supabase, proposalId, reason, scenario);
+    return { applied: false, reason };
   }
 
-  const { data, error } = await supabase.rpc("apply_contract_terms_scan_proposal", {
-    p_proposal_id: proposalId,
-    p_decision_notes: "Auto-applied by contract-terms-scanner (high-confidence signed-document extraction)",
-  });
+  const { data, error } = await supabase.rpc(
+    "apply_autonomous_contract_reconciliation_v1",
+    {
+      p_proposal_id: proposalId,
+      p_scenario: scenario,
+    },
+  );
   if (error) {
-    return { applied: false, reason: `apply_failed: ${error.message}` };
-  }
-  const applyErrors = (data as Record<string, unknown> | null)?.errors;
-  if (Array.isArray(applyErrors) && applyErrors.length > 0) {
-    return { applied: false, reason: "apply_errors", result: data };
+    const reason = `apply_failed: ${error.message}`;
+    await ensureFinancialReviewTask(supabase, proposalId, reason, scenario);
+    return { applied: false, reason };
   }
   return { applied: true, result: data };
+}
+
+async function loadBillingGraphSnapshot(
+  supabase: SupabaseClient,
+  contract: Record<string, unknown>,
+): Promise<BillingGraphSnapshot> {
+  const inactive = new Set([
+    "cancelled", "canceled", "void", "voided", "deleted", "inactive",
+  ]);
+  const [{ data: schedules, error: scheduleError },
+    { data: invoices, error: invoiceError },
+    { data: payments, error: paymentError }] = await Promise.all([
+    supabase
+      .from("contract_payment_schedules")
+      .select("due_date,amount,paid_amount,paid_date,status,invoice_id")
+      .eq("company_id", String(contract.company_id))
+      .eq("contract_id", String(contract.id)),
+    supabase
+      .from("invoices")
+      .select("id,status,payment_status,total_amount")
+      .eq("company_id", String(contract.company_id))
+      .eq("contract_id", String(contract.id)),
+    supabase
+      .from("payments")
+      .select("id,payment_status")
+      .eq("company_id", String(contract.company_id))
+      .eq("contract_id", String(contract.id))
+      .limit(1),
+  ]);
+  if (scheduleError) throw scheduleError;
+  if (invoiceError) throw invoiceError;
+  if (paymentError) throw paymentError;
+
+  const activeSchedules = (schedules as ScheduleSnapshotRow[] ?? []).filter((schedule) =>
+    !inactive.has(String(schedule.status ?? "").toLowerCase())
+  );
+  const activeInvoices = (invoices as InvoiceSnapshotRow[] ?? []).filter((invoice) =>
+    Number(invoice.total_amount ?? 0) > 0.01 &&
+    !inactive.has(String(invoice.status ?? "").toLowerCase()) &&
+    !inactive.has(String(invoice.payment_status ?? "").toLowerCase())
+  );
+  const months = activeSchedules
+    .map((schedule) => monthKey(schedule.due_date))
+    .filter((month): month is string => Boolean(month))
+    .sort();
+
+  return {
+    activeScheduleCount: activeSchedules.length,
+    activeInvoiceCount: activeInvoices.length,
+    missingInvoiceCount: activeSchedules.filter((schedule) => !schedule.invoice_id).length,
+    firstScheduleMonth: months[0] ?? null,
+    lastScheduleMonth: months.at(-1) ?? null,
+    scheduleTotal: activeSchedules.reduce(
+      (total, schedule) => total + Number(schedule.amount ?? 0), 0,
+    ),
+    hasPaymentHistory: Boolean(payments?.length) || activeSchedules.some(
+      (schedule) => Number(schedule.paid_amount ?? 0) > 0.01 || Boolean(schedule.paid_date),
+    ),
+  };
+}
+
+function buildReconciliationScenario(
+  terms: ExtractedTerms,
+  graph: BillingGraphSnapshot,
+): ReconciliationScenario {
+  const reasons: string[] = [];
+  const monthly = terms.monthly_amount;
+  const duration = terms.duration_months !== null &&
+      Number.isInteger(terms.duration_months) && terms.duration_months > 0
+    ? terms.duration_months
+    : null;
+  const startDate = terms.start_date;
+  const endDate = terms.end_date;
+  const firstBillingMonth = graph.firstScheduleMonth ??
+    (startDate ? addMonths(monthKey(startDate), 1) : null);
+  const lastBillingMonth = firstBillingMonth && duration
+    ? addMonths(firstBillingMonth, duration - 1)
+    : null;
+  const calculatedTotal = monthly && duration ? roundMoney(monthly * duration) : null;
+  const total = terms.total_amount && terms.total_amount > 0
+    ? roundMoney(terms.total_amount)
+    : calculatedTotal;
+
+  if (!monthly || monthly <= 0) reasons.push("signed monthly amount is missing");
+  if (!startDate || !endDate) reasons.push("signed contract period is incomplete");
+  if (!duration) reasons.push("signed installment duration is missing");
+  if (terms.confidence < 0.9 || terms.evidence.length === 0) {
+    reasons.push("signed-document evidence is below the autonomous threshold");
+  }
+  if (terms.first_period_amount !== null && monthly !== null &&
+      Math.abs(terms.first_period_amount - monthly) > 0.01) {
+    reasons.push("a partial first period requires a dedicated financial schedule");
+  }
+  if (terms.total_amount && calculatedTotal && monthly &&
+      Math.abs(terms.total_amount - calculatedTotal) > Math.max(1, monthly * 0.02)) {
+    reasons.push("written total does not equal monthly amount multiplied by duration");
+  }
+  const signedStartMonth = monthKey(startDate);
+  const signedEndMonth = monthKey(endDate);
+  if (firstBillingMonth && signedStartMonth && firstBillingMonth < signedStartMonth) {
+    reasons.push("first billing month precedes the signed period");
+  }
+  if (lastBillingMonth && signedEndMonth && lastBillingMonth > signedEndMonth) {
+    reasons.push("installment graph extends beyond the signed period");
+  }
+  if (graph.hasPaymentHistory) {
+    reasons.push("protected payment history requires financial review");
+  }
+
+  return {
+    eligible: reasons.length === 0,
+    monthlyAmount: monthly,
+    totalAmount: total,
+    startDate,
+    endDate,
+    installmentCount: duration,
+    firstBillingMonth,
+    lastBillingMonth,
+    reasons,
+  };
+}
+
+async function ensureFinancialReviewTask(
+  supabase: SupabaseClient,
+  proposalId: string,
+  blocker: string,
+  scenario: ReconciliationScenario,
+) {
+  const { error } = await supabase.rpc(
+    "upsert_contract_reconciliation_review_task_v1",
+    {
+      p_proposal_id: proposalId,
+      p_blocker: blocker.slice(0, 2000),
+      p_scenario: scenario,
+    },
+  );
+  if (error) {
+    console.error("Unable to assign contract reconciliation review", {
+      proposalId,
+      error: error.message,
+    });
+  }
+}
+
+function monthKey(value: unknown): string | null {
+  const match = String(value ?? "").match(/^(\d{4})-(\d{2})/);
+  return match ? `${match[1]}-${match[2]}-01` : null;
+}
+
+function addMonths(value: string | null, months: number): string | null {
+  if (!value) return null;
+  const [year, month] = value.split("-").map(Number);
+  const date = new Date(Date.UTC(year, month - 1 + months, 1));
+  return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}-01`;
+}
+
+function roundMoney(value: number): number {
+  return Math.round((value + Number.EPSILON) * 100) / 100;
 }
 
 function toNumberOrNull(value: unknown): number | null {

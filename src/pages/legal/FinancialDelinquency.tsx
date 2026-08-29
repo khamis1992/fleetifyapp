@@ -68,12 +68,14 @@ import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { LegalTransferReadinessWizard as ConvertToLegalDialog } from '@/components/contracts/LegalTransferReadinessWizard';
 import { AgentReviewButton, AgentReviewVerdictBadge } from '@/components/ai-agents/AgentReviewButton';
 import { CollectionMessageButton } from '@/components/ai-agents/CollectionMessageButton';
+import { LegalCaseStageChangeDialog } from '@/components/legal/LegalCaseStageChangeDialog';
 import type { ContractForLegal } from '@/hooks/useConvertToLegal';
 import { useDelinquentCustomers, type DelinquentCustomer } from '@/hooks/useDelinquentCustomers';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 import { useRolePermissions } from '@/hooks/useRolePermissions';
 import { useTeamMembers } from '@/hooks/useTasks';
+import { LEGAL_WORKFLOW_STAGES, type LegalWorkflowStage } from '@/hooks/useLegalCaseWorkflow';
 import {
   latestLegalEmployeeReviewByContract,
   type LegalTransferEmployeeReview,
@@ -87,6 +89,7 @@ import { revertContractLegalProcedure } from '@/services/contractLegalProcedureS
 import { calculateDelinquencyAmounts } from '@/utils/calculateDelinquencyAmounts';
 import { formatCustomerName } from '@/utils/formatCustomerName';
 import { escapeHtml } from '@/utils/htmlSanitizer';
+import { fetchAllRangePages } from '@/utils/fetchAllRangePages';
 import { selectLegalContractDocument } from './LawsuitPreparation/utils/contractDocumentSelection';
 import '@/styles/legal-system.css';
 
@@ -98,7 +101,7 @@ type QueueItem = {
   vehicleLabel: string;
   legalCaseNumber?: string | null;
   legalCaseStatus?: string | null;
-  workflowStage?: string | null;
+  workflowStage?: LegalWorkflowStage | null;
   legalCaseValue: number;
   overdueRent: number;
   lateFees: number;
@@ -144,10 +147,10 @@ const employeeReviewStatusMeta: Record<string, { label: string; className: strin
   manager_overridden: { label: 'تجاوز إداري معتمد', className: 'border-violet-200 bg-violet-50 text-violet-700' },
   cancelled: { label: 'طلب ملغي', className: 'border-slate-200 bg-slate-50 text-slate-600' },
 };
-const delinquencyWorkflowStages = ['preparation', 'filed', 'hearings', 'reserved_for_judgment'];
-const activeWorkflowStages = [
+const activeWorkflowStages: LegalWorkflowStage[] = [
   'preparation',
   'filed',
+  'awaiting_acceptance',
   'hearings',
   'reserved_for_judgment',
   'judgment_issued',
@@ -156,6 +159,25 @@ const activeWorkflowStages = [
   'collection',
 ];
 const openedWorkflowStages = activeWorkflowStages.filter((stage) => stage !== 'preparation');
+const INVOICE_CONTRACT_CHUNK_SIZE = 75;
+const INVOICE_ROW_PAGE_SIZE = 1000;
+const TRAFFIC_CANDIDATE_PAGE_SIZE = 500;
+
+type DelinquencyInvoiceRow = {
+  id: string;
+  invoice_number: string;
+  contract_id: string | null;
+  due_date: string;
+  total_amount: number;
+  paid_amount: number;
+  balance_due: number | null;
+  status: string;
+};
+
+type DelinquencyInvoiceDbRow = Omit<DelinquencyInvoiceRow, 'due_date' | 'paid_amount'> & {
+  due_date: string | null;
+  paid_amount: number | null;
+};
 
 const REQUIRED_COMPANY_LEGAL_DOCUMENTS = [
   { type: 'commercial_register', name: 'السجل التجاري' },
@@ -228,6 +250,39 @@ const normalizeContractForLegal = (contract: any): ContractForLegal => ({
         }
       : undefined,
 });
+
+const fetchDelinquencyInvoices = async (
+  companyId: string,
+  contractIds: string[],
+): Promise<DelinquencyInvoiceRow[]> => {
+  const rows: DelinquencyInvoiceRow[] = [];
+
+  for (let index = 0; index < contractIds.length; index += INVOICE_CONTRACT_CHUNK_SIZE) {
+    const contractIdChunk = contractIds.slice(index, index + INVOICE_CONTRACT_CHUNK_SIZE);
+    if (contractIdChunk.length === 0) continue;
+
+    const chunkRows = await fetchAllRangePages<DelinquencyInvoiceDbRow>(
+      (from, to) => supabase
+        .from('invoices')
+        .select('id, invoice_number, contract_id, due_date, total_amount, paid_amount, balance_due, status')
+        .eq('company_id', companyId)
+        .in('contract_id', contractIdChunk)
+        .neq('status', 'cancelled')
+        .order('id', { ascending: true })
+        .range(from, to),
+      INVOICE_ROW_PAGE_SIZE,
+    );
+    rows.push(...chunkRows.map((row) => ({
+      ...row,
+      // An invoice without a due date is not legally overdue. Keeping it in the
+      // fetched page preserves correct pagination while excluding it by date.
+      due_date: row.due_date || '9999-12-31',
+      paid_amount: Number(row.paid_amount || 0),
+    })));
+  }
+
+  return rows;
+};
 
 const sumUnpaidTrafficViolationsByContract = async (
   companyId: string,
@@ -390,7 +445,7 @@ const fetchLegalQueue = async (companyId: string): Promise<QueueItem[]> => {
     .eq('company_id', companyId)
     .not('contract_id', 'is', null)
     .in('case_status', activeLegalStatuses)
-    .in('workflow_stage', delinquencyWorkflowStages)
+    .in('workflow_stage', activeWorkflowStages)
     .order('created_at', { ascending: false });
 
   if (error) throw error;
@@ -421,7 +476,7 @@ const fetchLegalQueue = async (companyId: string): Promise<QueueItem[]> => {
   if (contractIds.length > 0) {
     const [
       { data: penalties, error: penaltiesError },
-      { data: invoices, error: invoicesError },
+      invoices,
       { data: contractDocuments, error: contractDocumentsError },
     ] = await Promise.all([
       supabase
@@ -431,12 +486,7 @@ const fetchLegalQueue = async (companyId: string): Promise<QueueItem[]> => {
         .in('contract_id', contractIds)
         .neq('payment_status', 'paid')
         .neq('status', 'cancelled'),
-      supabase
-        .from('invoices')
-        .select('id, invoice_number, contract_id, due_date, total_amount, paid_amount, balance_due, status')
-        .eq('company_id', companyId)
-        .in('contract_id', contractIds)
-        .neq('status', 'cancelled'),
+      fetchDelinquencyInvoices(companyId, contractIds),
       supabase
         .from('contract_documents')
         .select('id, contract_id, document_name, document_type, file_path, mime_type')
@@ -445,7 +495,6 @@ const fetchLegalQueue = async (companyId: string): Promise<QueueItem[]> => {
     ]);
 
     if (penaltiesError) throw penaltiesError;
-    if (invoicesError) throw invoicesError;
     if (contractDocumentsError) throw contractDocumentsError;
 
     const fallbackPenalties = new Map<string, number>();
@@ -462,7 +511,7 @@ const fetchLegalQueue = async (companyId: string): Promise<QueueItem[]> => {
       fallbackPenalties
     )).totals;
 
-    (invoices || []).forEach((invoice: any) => {
+    invoices.forEach((invoice) => {
       if (!invoice.contract_id) return;
       invoicesByContract.set(invoice.contract_id, [...(invoicesByContract.get(invoice.contract_id) || []), invoice]);
     });
@@ -510,7 +559,7 @@ const fetchLegalQueue = async (companyId: string): Promise<QueueItem[]> => {
       vehicleLabel: vehicleLabel(contract),
       legalCaseNumber: legalCase?.case_number,
       legalCaseStatus: legalCase?.case_status,
-      workflowStage: legalCase?.workflow_stage,
+      workflowStage: legalCase?.workflow_stage as LegalWorkflowStage | null,
       legalCaseValue: Number(legalCase?.case_value || normalized.balance_due || 0),
       overdueRent,
       lateFees,
@@ -599,13 +648,8 @@ const fetchRentCandidates = async (companyId: string, searchTerm: string): Promi
   let violationsByContract = new Map<string, number>();
 
   if (contractIds.length > 0) {
-    const [{ data: invoices, error: invoicesError }, { data: penalties, error: penaltiesError }] = await Promise.all([
-      supabase
-        .from('invoices')
-        .select('id, invoice_number, contract_id, due_date, total_amount, paid_amount, balance_due, status')
-        .eq('company_id', companyId)
-        .in('contract_id', contractIds)
-        .neq('status', 'cancelled'),
+    const [invoices, { data: penalties, error: penaltiesError }] = await Promise.all([
+      fetchDelinquencyInvoices(companyId, contractIds),
       supabase
         .from('penalties')
         .select('contract_id, amount')
@@ -615,10 +659,9 @@ const fetchRentCandidates = async (companyId: string, searchTerm: string): Promi
         .neq('status', 'cancelled'),
     ]);
 
-    if (invoicesError) throw invoicesError;
     if (penaltiesError) throw penaltiesError;
 
-    (invoices || []).forEach((invoice: any) => {
+    invoices.forEach((invoice) => {
       if (!invoice.contract_id) return;
       invoicesByContract.set(invoice.contract_id, [...(invoicesByContract.get(invoice.contract_id) || []), invoice]);
     });
@@ -694,9 +737,6 @@ const fetchRentCandidates = async (companyId: string, searchTerm: string): Promi
     })
     .filter((candidate) => candidate.overdueRent > 0);
 };
-
-const TRAFFIC_CANDIDATE_PAGE_SIZE = 500;
-const INVOICE_CONTRACT_CHUNK_SIZE = 75;
 
 const fetchTrafficCandidates = async (companyId: string): Promise<CandidateItem[]> => {
   const penalties: any[] = [];
@@ -824,16 +864,9 @@ const fetchTrafficCandidates = async (companyId: string): Promise<CandidateItem[
   if (contractIds.length > 0) {
     for (let index = 0; index < contractIds.length; index += INVOICE_CONTRACT_CHUNK_SIZE) {
       const contractIdChunk = contractIds.slice(index, index + INVOICE_CONTRACT_CHUNK_SIZE);
-      const { data: invoices, error: invoicesError } = await supabase
-        .from('invoices')
-        .select('id, invoice_number, contract_id, due_date, total_amount, paid_amount, balance_due, status')
-        .eq('company_id', companyId)
-        .in('contract_id', contractIdChunk)
-        .neq('status', 'cancelled');
+      const invoices = await fetchDelinquencyInvoices(companyId, contractIdChunk);
 
-      if (invoicesError) throw invoicesError;
-
-      (invoices || []).forEach((invoice: any) => {
+      invoices.forEach((invoice) => {
         if (!invoice.contract_id) return;
         invoicesByContract.set(invoice.contract_id, [
           ...(invoicesByContract.get(invoice.contract_id) || []),
@@ -1005,18 +1038,8 @@ const statusLabel = (status?: string | null) => {
 };
 
 const preparationStageLabel = (stage?: string | null) => {
-  switch (stage) {
-    case 'preparation':
-      return 'مرحلة تجهيز الملف';
-    case 'filed':
-      return 'تم فتحها رسميًا';
-    case 'hearings':
-      return 'جلسات';
-    case 'reserved_for_judgment':
-      return 'محجوزة للحكم';
-    default:
-      return 'مرحلة التحضير القانوني';
-  }
+  return LEGAL_WORKFLOW_STAGES.find((item) => item.value === stage)?.label
+    || 'مرحلة التحضير القانوني';
 };
 
 const getQueueReadiness = (item: QueueItem) => {
@@ -1244,6 +1267,7 @@ const FinancialDelinquencyPage: React.FC = () => {
   const [selectedContract, setSelectedContract] = useState<ContractForLegal | null>(null);
   const [convertDialogOpen, setConvertDialogOpen] = useState(false);
   const [removingItem, setRemovingItem] = useState<QueueItem | null>(null);
+  const [stageChangeItem, setStageChangeItem] = useState<QueueItem | null>(null);
   const [isRemovingLegal, setIsRemovingLegal] = useState(false);
   const [reviewCandidate, setReviewCandidate] = useState<CandidateItem | null>(null);
   const [reviewReason, setReviewReason] = useState('');
@@ -2037,6 +2061,15 @@ const FinancialDelinquencyPage: React.FC = () => {
                         </Button>
                         {item.legalCaseId && (
                           <>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              onClick={() => setStageChangeItem(item)}
+                              className="gap-2 rounded-xl border-[#0F766E]/25 bg-white text-[#0F766E] hover:bg-emerald-50 hover:text-[#115E59]"
+                            >
+                              <RefreshCw className="h-4 w-4" />
+                              تغيير مرحلة الدعوى
+                            </Button>
                             <AgentReviewButton
                               agentType="legal_case"
                               body={{ legalCaseId: item.legalCaseId }}
@@ -2519,6 +2552,20 @@ const FinancialDelinquencyPage: React.FC = () => {
           setActiveTab('queue');
         }}
       />
+
+      {stageChangeItem && companyId && (
+        <LegalCaseStageChangeDialog
+          open
+          onOpenChange={(open) => !open && setStageChangeItem(null)}
+          companyId={companyId}
+          caseId={stageChangeItem.legalCaseId}
+          caseNumber={stageChangeItem.legalCaseNumber}
+          currentStage={stageChangeItem.workflowStage}
+          canOverrideUnsettled={isAdminOrManager()}
+          canCorrectUnfiled={isAdminOrManager()}
+          onChanged={refreshAll}
+        />
+      )}
 
       <AlertDialog open={!!removingItem} onOpenChange={(open) => !open && !isRemovingLegal && setRemovingItem(null)}>
         <AlertDialogContent className="rounded-2xl text-right" dir="rtl">

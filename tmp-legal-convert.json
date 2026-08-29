@@ -1,0 +1,520 @@
+{
+  "ready": 57,
+  "ok": 41,
+  "fail": 16,
+  "results": [
+    {
+      "cn": "LTO2024233",
+      "id": "3731ffc1-9794-4caa-a1ae-c08e1f77c034",
+      "claim": 68000,
+      "tv_n": 8,
+      "ok": true,
+      "step": "convert",
+      "case": "CASE-26-0039"
+    },
+    {
+      "cn": "LTO202456",
+      "id": "53453250-b172-45a9-b377-29a88a06e39f",
+      "claim": 55800,
+      "tv_n": 0,
+      "ok": true,
+      "step": "convert",
+      "case": "CASE-26-0040"
+    },
+    {
+      "cn": "LTO202440",
+      "id": "e39ecd3b-c7a9-4452-bb8c-378e89b657ff",
+      "claim": 69400,
+      "tv_n": 0,
+      "ok": true,
+      "step": "convert",
+      "case": "CASE-26-0041"
+    },
+    {
+      "cn": "C-ALF-0031",
+      "id": "ebdd9adb-4fde-4290-942a-3fc5058e5f94",
+      "claim": 12400,
+      "tv_n": 0,
+      "ok": true,
+      "step": "convert",
+      "case": null
+    },
+    {
+      "cn": "LTO2024177",
+      "id": "9ac9a9b1-e11e-4c36-abf8-bba2cb0a1f94",
+      "claim": 60500,
+      "tv_n": 5,
+      "step": "readiness",
+      "ok": false,
+      "err": "MOI or Metrash traffic violation proof is required"
+    },
+    {
+      "cn": "LTO2024262",
+      "id": "a80e2034-2dbb-4640-83f0-4da636ab97d8",
+      "claim": 65100,
+      "tv_n": 10,
+      "ok": true,
+      "step": "convert",
+      "case": "CASE-26-0042"
+    },
+    {
+      "cn": "LTO2024109",
+      "id": "7754f382-903f-4457-8318-2fdbff770c6d",
+      "claim": 60300,
+      "tv_n": 1,
+      "step": "readiness",
+      "ok": false,
+      "err": "MOI or Metrash traffic violation proof is required"
+    },
+    {
+      "cn": "C-ALF-0050",
+      "id": "c1c899bb-ac04-4837-8512-382b4c32fcde",
+      "claim": 16700,
+      "tv_n": 1,
+      "step": "readiness",
+      "ok": false,
+      "err": "MOI or Metrash traffic violation proof is required"
+    },
+    {
+      "cn": "LTO2024142",
+      "id": "a611e90f-2ac2-4290-b599-b7048ce7338f",
+      "claim": 100700,
+      "tv_n": 11,
+      "ok": true,
+      "step": "convert",
+      "case": "CASE-26-0043"
+    },
+    {
+      "cn": "LTO2024152",
+      "id": "46494410-5599-4c2c-a8ea-499011021c1c",
+      "claim": 85300,
+      "tv_n": 29,
+      "step": "readiness",
+      "ok": false,
+      "err": "MOI or Metrash traffic violation proof is required"
+    },
+    {
+      "cn": "LTO2024252",
+      "id": "4a402c33-2d5b-4aba-99b5-b11ad34456b9",
+      "claim": 56500,
+      "tv_n": 0,
+      "ok": true,
+      "step": "convert",
+      "case": "CASE-26-0044"
+    },
+    {
+      "cn": "LTO20244",
+      "id": "b5a79278-6224-44eb-a6dc-44f3ab851d65",
+      "claim": 62700,
+      "tv_n": 4,
+      "ok": true,
+      "step": "convert",
+      "case": null
+    },
+    {
+      "cn": "LTO2024341",
+      "id": "3c84d55d-5baf-4d59-82fe-fd3583e7f59c",
+      "claim": 10470,
+      "tv_n": 1,
+      "ok": true,
+      "step": "convert",
+      "case": null
+    },
+    {
+      "cn": "C-ALF-0099",
+      "id": "21ee2fd5-f51a-4aab-a433-61a6e6054868",
+      "claim": 22600,
+      "tv_n": 0,
+      "ok": true,
+      "step": "convert",
+      "case": "CASE-26-0045"
+    },
+    {
+      "cn": "CON-25-ZV0RA7",
+      "id": "3e2f872f-d993-4abb-abcf-657cc049b22b",
+      "claim": 43120,
+      "tv_n": 0,
+      "ok": true,
+      "step": "convert",
+      "case": "CASE-26-0046"
+    },
+    {
+      "cn": "LTO2024115",
+      "id": "eff359f1-0241-4f31-879f-86fb5e9d0157",
+      "claim": 14420,
+      "tv_n": 3,
+      "ok": true,
+      "step": "convert",
+      "case": null
+    },
+    {
+      "cn": "C-ALF-0001",
+      "id": "1c4e5129-841b-423b-a3cc-29f44192204f",
+      "claim": 17507,
+      "tv_n": 0,
+      "ok": true,
+      "step": "convert",
+      "case": "CASE-26-0047"
+    },
+    {
+      "cn": "LTO2024156",
+      "id": "9862e3ad-242e-4f62-bc12-5f7bd2a20bbf",
+      "claim": 10820,
+      "tv_n": 0,
+      "ok": true,
+      "step": "convert",
+      "case": null
+    },
+    {
+      "cn": "C-ALF-0066",
+      "id": "28a1edb5-7ec0-43af-9f27-e1a4190c4dfd",
+      "claim": 8200,
+      "tv_n": 0,
+      "ok": true,
+      "step": "convert",
+      "case": null
+    },
+    {
+      "cn": "LTO2024248",
+      "id": "860daa14-26ed-44b5-b314-9b8696bf9d40",
+      "claim": 2649,
+      "tv_n": 0,
+      "ok": true,
+      "step": "convert",
+      "case": null
+    },
+    {
+      "cn": "C-ALF-0027",
+      "id": "d7c54532-b887-48cd-80b8-6ff1556d9f30",
+      "claim": 24200,
+      "tv_n": 0,
+      "ok": true,
+      "step": "convert",
+      "case": null
+    },
+    {
+      "cn": "LTO2024261",
+      "id": "c5502c18-3bbc-45fb-9c15-f125238806d5",
+      "claim": 47470,
+      "tv_n": 2,
+      "ok": true,
+      "step": "convert",
+      "case": null
+    },
+    {
+      "cn": "C-ALF-0100",
+      "id": "2025fd5d-2b34-45d7-a5c5-81e1ccf5a992",
+      "claim": 27800,
+      "tv_n": 2,
+      "ok": true,
+      "step": "convert",
+      "case": null
+    },
+    {
+      "cn": "C-ALF-0070",
+      "id": "6b4f33e5-05ff-4bcc-809a-45a184bd916b",
+      "claim": 8500,
+      "tv_n": 1,
+      "ok": true,
+      "step": "convert",
+      "case": null
+    },
+    {
+      "cn": "C-ALF-0074",
+      "id": "52afdc8a-8e23-44db-9995-0d9966aacf47",
+      "claim": 37100,
+      "tv_n": 1,
+      "ok": true,
+      "step": "convert",
+      "case": null
+    },
+    {
+      "cn": "C-ALF-0018",
+      "id": "9074489e-0ea4-4139-9537-85cf98132ba8",
+      "claim": 43600,
+      "tv_n": 1,
+      "ok": true,
+      "step": "convert",
+      "case": "CASE-26-0048"
+    },
+    {
+      "cn": "CON-26-V1KPVI",
+      "id": "86bb0de4-11ef-4179-b928-10bb22c80bdb",
+      "claim": 38900,
+      "tv_n": 3,
+      "ok": true,
+      "step": "convert",
+      "case": null
+    },
+    {
+      "cn": "C-ALF-0016",
+      "id": "816a43e7-1fe2-4d37-84d9-9d4f4670ef28",
+      "claim": 15450,
+      "tv_n": 5,
+      "ok": true,
+      "step": "convert",
+      "case": null
+    },
+    {
+      "cn": "C-ALF-0054",
+      "id": "a65d7b53-996b-472f-b2d0-d197eddc6beb",
+      "claim": 36750,
+      "tv_n": 7,
+      "ok": true,
+      "step": "convert",
+      "case": null
+    },
+    {
+      "cn": "C-ALF-0101",
+      "id": "94c09721-613a-4ff0-bf09-594e4a418b27",
+      "claim": 27497,
+      "tv_n": 0,
+      "ok": true,
+      "step": "convert",
+      "case": null
+    },
+    {
+      "cn": "C-ALF-0023",
+      "id": "a35bb560-6c2e-4406-8a43-ea2ecea309f8",
+      "claim": 33000,
+      "tv_n": 9,
+      "ok": true,
+      "step": "convert",
+      "case": "CASE-26-0049"
+    },
+    {
+      "cn": "AGR-202504-400949",
+      "id": "cef308de-167c-4387-8e42-b5e75707acf7",
+      "claim": 46800,
+      "tv_n": 0,
+      "ok": true,
+      "step": "convert",
+      "case": "CASE-26-0050"
+    },
+    {
+      "cn": "C-ALF-0015",
+      "id": "424d8b1d-81a6-466b-b488-7960b0147fdf",
+      "claim": 47650,
+      "tv_n": 9,
+      "ok": true,
+      "step": "convert",
+      "case": null
+    },
+    {
+      "cn": "C-ALF-0042",
+      "id": "2f312a61-4cb5-4dae-b168-9d3d9051816b",
+      "claim": 10000,
+      "tv_n": 0,
+      "ok": true,
+      "step": "convert",
+      "case": "CASE-26-0051"
+    },
+    {
+      "cn": "C-ALF-0013",
+      "id": "b9602c5d-5cf0-428b-9de9-9aaa9696758b",
+      "claim": 22200,
+      "tv_n": 3,
+      "ok": true,
+      "step": "convert",
+      "case": null
+    },
+    {
+      "cn": "C-ALF-0072",
+      "id": "d9e205bf-a175-47aa-a05f-45960a11a840",
+      "claim": 21900,
+      "tv_n": 0,
+      "ok": true,
+      "step": "convert",
+      "case": null
+    },
+    {
+      "cn": "C-ALF-0048",
+      "id": "b88a2ae9-b579-4b32-9f88-ec525d528642",
+      "claim": 30980,
+      "tv_n": 7,
+      "step": "readiness",
+      "ok": false,
+      "err": "MOI or Metrash traffic violation proof is required"
+    },
+    {
+      "cn": "CON-25-5FEMJQ",
+      "id": "9cdc0d76-d255-4069-8499-637b633ab0eb",
+      "claim": 31973,
+      "tv_n": 0,
+      "ok": true,
+      "step": "convert",
+      "case": null
+    },
+    {
+      "cn": "C-ALF-0005",
+      "id": "c559e109-9ced-4c96-a50e-bed3032e8b50",
+      "claim": 19292,
+      "tv_n": 0,
+      "step": "convert",
+      "ok": false,
+      "err": "canceling statement due to statement timeout"
+    },
+    {
+      "cn": "C-ALF-0058",
+      "id": "1479ae09-5b28-4d59-ac57-43943e8a37cb",
+      "claim": 57000,
+      "tv_n": 0,
+      "step": "convert",
+      "ok": false,
+      "err": "canceling statement due to statement timeout"
+    },
+    {
+      "cn": "C-ALF-0089",
+      "id": "d736d561-0a3f-490d-a791-36a481268c47",
+      "claim": 23070,
+      "tv_n": 2,
+      "step": "convert",
+      "ok": false,
+      "err": "canceling statement due to statement timeout"
+    },
+    {
+      "cn": "C-ALF-0008",
+      "id": "532213de-004c-4c52-a5e4-c23c47be7f14",
+      "claim": 16100,
+      "tv_n": 0,
+      "ok": true,
+      "step": "convert",
+      "case": "CASE-26-0052"
+    },
+    {
+      "cn": "C-ALF-0056",
+      "id": "f117255b-9ab9-4aea-a1e6-370729a1eb3e",
+      "claim": 22500,
+      "tv_n": 6,
+      "step": "convert",
+      "ok": false,
+      "err": "canceling statement due to statement timeout"
+    },
+    {
+      "cn": "LTO20247",
+      "id": "44002114-5942-44a8-a78d-8f9809aa09cc",
+      "claim": 20720,
+      "tv_n": 6,
+      "step": "convert",
+      "ok": false,
+      "err": "canceling statement due to statement timeout"
+    },
+    {
+      "cn": "C-ALF-0098",
+      "id": "54c07fa9-d3ad-4a63-b8fc-7b2be6713770",
+      "claim": 22564,
+      "tv_n": 4,
+      "step": "convert",
+      "ok": false,
+      "err": "canceling statement due to statement timeout"
+    },
+    {
+      "cn": "C-ALF-0104",
+      "id": "941d135d-fc1d-40ca-a0ca-5309fae2e91b",
+      "claim": 24020,
+      "tv_n": 1,
+      "ok": true,
+      "step": "convert",
+      "case": null
+    },
+    {
+      "cn": "AGR-202504-424958",
+      "id": "fda9b7b5-20ce-4d07-976c-bcab7cfeb4cb",
+      "claim": 24625,
+      "tv_n": 0,
+      "ok": true,
+      "step": "convert",
+      "case": "CASE-26-0053"
+    },
+    {
+      "cn": "C-ALF-0051",
+      "id": "1777c00f-cfa6-4116-9fa1-f9aa9bf0ae84",
+      "claim": 19750,
+      "tv_n": 4,
+      "step": "readiness",
+      "ok": false,
+      "err": "MOI or Metrash traffic violation proof is required"
+    },
+    {
+      "cn": "C-ALF-0106",
+      "id": "abf3ab91-2fd5-43c8-94c2-13e52ac94645",
+      "claim": 56320,
+      "tv_n": 0,
+      "step": "convert",
+      "ok": false,
+      "err": "canceling statement due to statement timeout"
+    },
+    {
+      "cn": "AGR-202504-405141",
+      "id": "9255e5f1-f085-4723-ad32-1d5bbc040212",
+      "claim": 23370,
+      "tv_n": 1,
+      "step": "convert",
+      "ok": false,
+      "err": "canceling statement due to statement timeout"
+    },
+    {
+      "cn": "C-ALF-0036",
+      "id": "70611d75-108f-40e3-84a0-de77ab37981e",
+      "claim": 13373,
+      "tv_n": 0,
+      "step": "convert",
+      "ok": false,
+      "err": "canceling statement due to statement timeout"
+    },
+    {
+      "cn": "C-ALF-0105",
+      "id": "d5b1a8a8-d768-4f5e-8458-588ea581654f",
+      "claim": 37498,
+      "tv_n": 0,
+      "ok": true,
+      "step": "convert",
+      "case": null
+    },
+    {
+      "cn": "LTO2024263",
+      "id": "74b821cd-3952-4285-af17-d17ad7703d5b",
+      "claim": 24520,
+      "tv_n": 0,
+      "ok": true,
+      "step": "convert",
+      "case": "CASE-26-0054"
+    },
+    {
+      "cn": "C-ALF-0033",
+      "id": "ef5ccf81-3b23-4106-b019-f64d9af266ca",
+      "claim": 15040,
+      "tv_n": 0,
+      "ok": true,
+      "step": "convert",
+      "case": "CASE-26-0055"
+    },
+    {
+      "cn": "C-ALF-0046",
+      "id": "e85ab850-fdf7-478b-9616-b187d591dc68",
+      "claim": 20434,
+      "tv_n": 2,
+      "ok": true,
+      "step": "convert",
+      "case": null
+    },
+    {
+      "cn": "C-ALF-0069",
+      "id": "0ff05d9a-da74-4662-a842-1c5fe7dba5e0",
+      "claim": 22588,
+      "tv_n": 2,
+      "ok": true,
+      "step": "convert",
+      "case": null
+    },
+    {
+      "cn": "C-ALF-0030",
+      "id": "fe05eb9e-6530-4e15-b860-4b8e62846f62",
+      "claim": 8200,
+      "tv_n": 0,
+      "step": "convert",
+      "ok": false,
+      "err": "canceling statement due to statement timeout"
+    }
+  ]
+}

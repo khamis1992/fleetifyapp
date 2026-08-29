@@ -12,23 +12,51 @@
  * Body: { companyId } | { mode: "rollback", repairId, actorId? }
  */
 
-import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
 import {
   agentCorsHeaders,
-  authorizeAgent,
+  authorizeScheduledAgent,
   createServiceClient,
   jsonResponse,
   storeAgentReview,
 } from "../_shared/agent.ts";
 
-serve(async (req) => {
+Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: agentCorsHeaders });
 
   try {
-    await authorizeAgent(req);
     const body = await req.json().catch(() => ({}));
     const supabase = createServiceClient();
+    let authorizationCompanyId = typeof body.companyId === "string"
+      ? body.companyId
+      : null;
+    if (!authorizationCompanyId && body.mode === "rollback" && body.repairId) {
+      const { data: repair, error: repairError } = await supabase
+        .from("safe_auto_repairs")
+        .select("company_id")
+        .eq("id", body.repairId)
+        .maybeSingle();
+      if (repairError) throw repairError;
+      authorizationCompanyId = repair?.company_id || null;
+    }
+    await authorizeScheduledAgent(
+      req,
+      "safe-auto-repair",
+      authorizationCompanyId,
+    );
+
+    // This writer was replaced by the versioned system-audit control plane.
+    // Retain only the explicit rollback path for historical repairs; accepting
+    // new repair runs here would reintroduce two autonomous writers over the
+    // same financial rows.
+    if (body.mode !== "rollback") {
+      return jsonResponse({
+        success: false,
+        retired: true,
+        replacement: "system-audit-orchestrator",
+        error: "safe-auto-repair no longer accepts new repair runs",
+      }, 410);
+    }
 
     if (body.mode === "rollback") {
       if (!body.repairId) throw new Error("repairId is required");

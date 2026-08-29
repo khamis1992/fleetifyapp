@@ -18,7 +18,9 @@ const rollback = readFileSync(resolve(
 describe('customer official Arabic data guard migration', () => {
   it('uses real Arabic text and rejects mojibake in SQL artifacts', () => {
     for (const sql of [migration, manualApply]) {
-      expect(sql).toContain("~ '[ء-ي]'");
+      expect(sql).toMatch(
+        /~ '\[ء-ي\]'|chr\(1569\)[\s\S]*chr\(1610\)/,
+      );
       expect(sql).toContain('الجنسية العربية مطلوبة للعميل');
       expect(sql).toContain('اسم الشركة العربي مطلوب للعميل');
       expect(sql).toContain('الاسم العربي الأول والأخير مطلوبان للعميل');

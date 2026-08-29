@@ -14,8 +14,9 @@ const proposalHookSource = readFileSync(
 describe('contract ID scanner official-name safety', () => {
   it('rejects identity-number mismatches before proposing customer changes', () => {
     expect(scannerSource).toContain(
-      'Scanned identity number does not match the contract customer',
+      'LEGAL_IDENTITY_MISMATCH: signed contract party',
     );
+    expect(scannerSource).toContain('does not match defendant');
   });
 
   it('uses repeated Arabic-name evidence and filters authority labels', () => {

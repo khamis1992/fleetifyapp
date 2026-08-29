@@ -62,6 +62,13 @@ describe('TaqadiPortal classification fields', () => {
       '29263400736',
       ['اختيار واحد', 'رخصة مقيم'],
     )).toBeNull();
+    expect(identityTypeForPartyOptions(
+      'defendant',
+      'بطاقة شخصية قطرية',
+      'تونس',
+      '28078801264',
+      ['اختيار واحد', 'جواز سفر', 'وثيقة سفر', 'رخصة مقيم', 'رقم تأشيرة'],
+    )).toBe('رخصة مقيم');
   });
 
   beforeAll(async () => {
@@ -188,7 +195,11 @@ describe('TaqadiPortal classification fields', () => {
             <input id="tempctype_${id}" style="display:none">
           </span>
           <ul id="tempctype_${id}_listbox" class="k-list">
-            <li class="k-item" role="option">${option}</li>
+            <li
+              class="k-item"
+              role="option"
+              onclick="document.querySelector('[aria-owns=tempctype_${id}_listbox] .k-input').textContent = this.textContent"
+            >${option}</li>
           </ul>
         `).join('')}
         <button type="button">التالي</button>
@@ -207,7 +218,7 @@ describe('TaqadiPortal classification fields', () => {
     } as FilingPayload);
 
     expect(await page.getByRole('option').count()).toBe(4);
-  });
+  }, 15_000);
 
   it('waits for delayed remote Kendo options before selecting', async () => {
     const controlId = 'tempCostOrders0.type';
@@ -728,6 +739,66 @@ describe('TaqadiPortal classification fields', () => {
     })()`);
   });
 
+  it('accepts a Taqadi-locked field value instead of typing into it', async () => {
+    // تقاضي يجلب اسم الجهة المعنوية من سجل المنشأة ويقفل الحقل؛ الكتابة
+    // فوقه تفشل بـ «element is not enabled». القيمة المقفلة يجب أن تُقبل
+    // سواء طابقت هدفنا أم كانت الاسم الرسمي الذي جلبته البوابة.
+    await page.setContent(`
+      <div id="party">
+        <label for="name">اسم الجهة المعنوية *</label>
+        <input id="name" disabled value="شركة العراف لتأجير السيارات">
+        <label for="ownerName">يمثله</label>
+        <input id="ownerName" readonly value="خميس هاشم الجبر">
+        <label for="note">ملاحظة</label>
+        <input id="note" value="">
+      </div>
+    `);
+
+    const portal = new TaqadiPortal(page) as unknown as {
+      fillField: (
+        labels: string[],
+        value: string,
+        required: boolean,
+        controlIds: string[],
+        root: Locator,
+      ) => Promise<void>;
+    };
+    const root = page.locator('#party');
+
+    await portal.fillField(
+      ['اسم الجهة المعنوية'],
+      'شركة العراف لتأجير السيارات',
+      true,
+      ['name'],
+      root,
+    );
+    expect(await page.locator('#name').inputValue()).toBe(
+      'شركة العراف لتأجير السيارات',
+    );
+
+    // locked with the portal's own official variant: accepted as-is
+    await portal.fillField(
+      ['يمثله'],
+      'خميس الجبر',
+      true,
+      ['ownerName'],
+      root,
+    );
+    expect(await page.locator('#ownerName').inputValue()).toBe(
+      'خميس هاشم الجبر',
+    );
+
+    // editable field with a wrong value still gets typed into
+    await portal.fillField(
+      ['ملاحظة'],
+      'قيمة جديدة',
+      true,
+      ['note'],
+      root,
+    );
+    expect(await page.locator('#note').inputValue()).toBe('قيمة جديدة');
+  });
+
   it('waits for the commercial-register field created by Taqadi refresh', async () => {
     await page.setContent(`
       <script>
@@ -895,20 +966,12 @@ describe('TaqadiPortal classification fields', () => {
     expect(await page.locator('#tempTransalationReq2').isChecked()).toBe(true);
   }, 60_000);
 
-  it('confirms the account prompt with Enter without selecting a role', async () => {
+  it('selects the Alaraf company in the Taqadi account prompt', async () => {
     await page.route('**/*', async (route) => {
       await route.fulfill({
         contentType: 'text/html; charset=utf-8',
         body: `
           <script>history.replaceState({}, '', '/itc/home')</script>
-          <script>
-            document.addEventListener('keydown', (event) => {
-              if (event.key !== 'Enter') return;
-              document.body.dataset.enterPressed = 'true';
-              document.querySelector('.modal').style.display = 'none';
-              document.querySelector('#main').style.display = 'block';
-            });
-          </script>
           <div class="modal">
             <p>لديك أكثر من نوع حساب في النظام، الرجاء اختيار المستخدم</p>
             <span
@@ -925,12 +988,25 @@ describe('TaqadiPortal classification fields', () => {
                 role="option"
                 onclick="this.closest('.modal').dataset.account='individual'"
               >متقاضي فرد</li>
+              <li
+                class="k-item"
+                role="option"
+                onclick="this.closest('.modal').dataset.account='company'"
+              >شركة العراف لتأجير السيارات 17201586</li>
             </ul>
             <button
               type="button"
-              onclick="document.body.dataset.loginClicked='true'"
+              onclick="
+                document.body.dataset.loginClicked='true';
+                if (document.querySelector('.modal').dataset.account === 'company') {
+                  document.querySelector('.modal').style.display = 'none';
+                  document.querySelector('#main').style.display = 'block';
+                  document.querySelector('#header').style.display = 'block';
+                }
+              "
             >تسجيل الدخول</button>
           </div>
+          <header id="header" style="display:none">العراف لتأجير السيارات</header>
           <nav id="main" style="display:none">ادارة الدعاوى</nav>
         `,
       });
@@ -941,17 +1017,14 @@ describe('TaqadiPortal classification fields', () => {
 
     expect(await page.locator('.modal').isVisible()).toBe(false);
     expect(await page.locator('#main').isVisible()).toBe(true);
-    expect(await page.locator('body').getAttribute('data-enter-pressed')).toBe(
-      'true',
-    );
     expect(await page.locator('body').getAttribute('data-login-clicked')).toBe(
-      null,
+      'true',
     );
     expect(
       await page.locator('#account-field').getAttribute('data-opened'),
-    ).toBe(null);
+    ).toBe('true');
     expect(await page.locator('.modal').getAttribute('data-account')).toBe(
-      null,
+      'company',
     );
     await page.unroute('**/*');
   }, 10_000);
@@ -976,7 +1049,15 @@ describe('TaqadiPortal classification fields', () => {
             <p>الدخول عبر النظام الوطني</p>
             <button
               type="button"
-              onclick="document.body.dataset.tawtheeqLogin='true'; document.querySelector('#password-login').remove(); history.replaceState({}, '', '/itc/home'); document.querySelector('#main').style.display='block'"
+              onclick="
+                document.body.dataset.tawtheeqLogin='true';
+                history.replaceState({}, '', '/authn/qgp-authorization');
+                document.body.innerHTML = \`
+                  <label><input id=company-mode type=radio name=mode>اختيار الشركة</label>
+                  <label><input type=radio name=company value=17201586>17201586 العراف لتأجير السيارات</label>
+                  <button type=button onclick=\&quot;history.replaceState({}, '', '/itc/home'); document.body.innerHTML='<header id=header>العراف لتأجير السيارات</header><main id=main>إدارة الدعاوى</main>'\&quot;>متابعة</button>
+                \`;
+              "
             >متابعة</button>
           </section>
           <main id="main" style="display:none">إدارة الدعاوى</main>
@@ -1067,6 +1148,433 @@ describe('TaqadiPortal classification fields', () => {
     await page.unroute('**/*');
   }, 10_000);
 
+  it('matches the company row inserted by a Tawtheeq company session', async () => {
+    await page.setContent(`
+      <div class="tab-pane active" data-tabpane-name="case_party_grid">
+        <table>
+          <thead>
+            <tr role="row"><th>الاسم</th><th>الفئة</th><th>النوع</th></tr>
+          </thead>
+          <tbody>
+            <tr role="row">
+              <td>العراف لتاجير السيارات</td>
+              <td>شركة</td>
+              <td>المدعي</td>
+              <td>1</td>
+              <td><button title="تعديل">تعديل</button></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    `);
+
+    const portal = new TaqadiPortal(page) as unknown as {
+      partyRow: (values: string[]) => Promise<Locator | null>;
+    };
+    const companyRow = await portal.partyRow([
+      'شركة العراف لتأجير السيارات',
+    ]);
+
+    expect(companyRow).not.toBeNull();
+    expect(await companyRow?.locator('td').first().innerText()).toBe(
+      'العراف لتاجير السيارات',
+    );
+    expect(await page.locator('tbody tr').count()).toBe(1);
+  });
+
+  it('removes a legacy representative and rejects an immutable individual holder', async () => {
+    await page.setContent(`
+      <div class="tab-pane active" data-tabpane-name="case_party_grid">
+        <table>
+          <tbody>
+            <tr role="row" id="portal-holder">
+              <td onclick="this.closest('tr').dataset.selected='true'">عبدالعزيز المحمود</td>
+              <td>شخص طبيعي</td>
+              <td>المدعي</td>
+              <td>1</td>
+              <td>
+                <button class="k-grid-delete" style="display:none">حذف</button>
+                <button
+                  class="k-grid-modify"
+                  onclick="document.querySelector('#party-editor').style.display='block'; document.querySelector('#party-editor').classList.add('in')"
+                >تعديل</button>
+              </td>
+            </tr>
+            <tr role="row" id="legacy-representative">
+              <td>خميس الجبر</td>
+              <td>شخص طبيعي</td>
+              <td>وكيل طبيعي</td>
+              <td>1</td>
+              <td>
+                <button class="k-grid-delete" onclick="this.closest('tr').remove()">حذف</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div id="party-editor" class="modal" style="display:none" role="dialog">
+        <span class="k-widget k-numerictextbox">
+          <input class="k-formatted-value k-input" value="1">
+          <input id="priority" type="hidden" value="1">
+        </span>
+        <button
+          type="button"
+          onclick="this.dataset.saved='true'; this.closest('.modal').style.display='none'"
+        >حفظ</button>
+      </div>
+    `);
+
+    const portal = new TaqadiPortal(page);
+    await expect(portal.reconcileCompanySessionParty()).rejects.toMatchObject({
+      code: 'TAQADI_INDIVIDUAL_ACCOUNT_CONTEXT',
+    });
+
+    expect(await page.locator('#legacy-representative').count()).toBe(0);
+    expect(await page.locator('#portal-holder').getAttribute('data-selected'))
+      .toBeNull();
+    expect(await page.locator('#party-editor button').getAttribute('data-saved'))
+      .toBeNull();
+  });
+
+  it('fires the Tawtheeq company-mode event even when the radio is prechecked', async () => {
+    await page.setContent(`
+      <label>
+        <input
+          id="company-mode"
+          name="account-mode"
+          type="radio"
+          checked
+          onclick="document.body.dataset.companyModeClicked='true'"
+        >
+        اختيار الشركة
+      </label>
+      <button type="button">متابعة</button>
+    `);
+
+    const portal = new TaqadiPortal(page) as unknown as {
+      selectTawtheeqCompanyAccountIfNeeded: () => Promise<boolean>;
+    };
+    await expect(portal.selectTawtheeqCompanyAccountIfNeeded())
+      .resolves.toBe(true);
+
+    expect(await page.locator('body').getAttribute('data-company-mode-clicked'))
+      .toBe('true');
+  });
+
+  it('retries the Tawtheeq company-mode click when the first click is ignored', async () => {
+    // بعد إدخال PIN مباشرة قد تتجاهل صفحة التفويض أول نقرة على راديو
+    // وضع الشركة (الجلسة ما زالت قيد الإتمام). الوكيل يعيد النقر ويعيد
+    // المسح بدل إفشال الدخول من أول تحقق بعد 250ms.
+    await page.setContent(`
+      <label>
+        <input
+          id="company-mode"
+          name="account-mode"
+          type="radio"
+          data-refusals="1"
+          onclick="
+            const input = this;
+            if (Number(input.dataset.refusals) > 0) {
+              input.dataset.refusals = String(Number(input.dataset.refusals) - 1);
+              event.preventDefault();
+              return false;
+            }
+          "
+        >
+        اختيار الشركة
+      </label>
+      <button type="button">متابعة</button>
+    `);
+
+    const portal = new TaqadiPortal(page) as unknown as {
+      selectTawtheeqCompanyAccountIfNeeded: () => Promise<boolean>;
+    };
+    await expect(portal.selectTawtheeqCompanyAccountIfNeeded())
+      .resolves.toBe(true);
+    expect(await page.locator('#company-mode').isChecked()).toBe(true);
+  });
+
+  it('selects the Alaraf company account on the Tawtheeq authentication prompt', async () => {
+    const originalLoginTimeout = agentConfig.loginTimeoutMs;
+    agentConfig.loginTimeoutMs = 3_000;
+
+    try {
+      await page.goto('about:blank');
+      await page.route('**/*', async (route) => {
+        await route.fulfill({
+          contentType: 'text/html; charset=utf-8',
+          body: `
+            <h2>إختيار نوع المصادقة (للفرد أو للشركة)</h2>
+            <span style="display:none">اختيار الشركة</span>
+            <section>
+              <div>فرد <input name="account-mode" type="radio" checked></div>
+              <div>
+                  <input name="account-mode" type="radio" id="company-mode">
+                  <label for="company-mode">اختيار الشركة</label>
+                  <label>
+                    <input name="company" type="radio" value="17201586">
+                    17201586 ALARAF CAR RENTAL العراف لتأجير السيارات
+                  </label>
+                  <label>
+                    <input name="company" type="radio" value="17239257">
+                    17239257 SQUAD CAR WASH سكواد كار واش
+                  </label>
+              </div>
+            </section>
+            <button type="button" onclick="
+              document.body.dataset.companyMode =
+                String(document.querySelector('#company-mode').checked);
+              document.body.dataset.companyAccount =
+                document.querySelector('input[name=company]:checked')?.value || '';
+              history.replaceState({}, '', '/itc/home');
+              document.body.insertAdjacentHTML(
+                'beforeend',
+                '<main id=main>إدارة الدعاوى</main>',
+              );
+            ">متابعة</button>
+          `,
+        });
+      });
+      await page.goto(
+        'https://www.tawtheeq.gov.qa/idp/public/authn/qgp-authorization',
+      );
+
+      const portal = new TaqadiPortal(page) as unknown as {
+        selectTawtheeqCompanyAccountIfNeeded: () => Promise<boolean>;
+      };
+      await expect(portal.selectTawtheeqCompanyAccountIfNeeded())
+        .resolves.toBe(true);
+
+      expect(await page.locator('body').getAttribute('data-company-mode'))
+        .toBe('true');
+      expect(await page.locator('body').getAttribute('data-company-account'))
+        .toBe('17201586');
+    } finally {
+      agentConfig.loginTimeoutMs = originalLoginTimeout;
+      await page.unroute('**/*');
+    }
+  }, 10_000);
+
+  it('re-resolves the Alaraf account after Tawtheeq redraws company mode', async () => {
+    await page.setContent(`
+      <label>
+        <input
+          id="company-mode"
+          name="account-mode"
+          type="radio"
+          onclick="
+            document.querySelector('#accounts').innerHTML =
+              '<label><input name=company type=radio value=17201586>17201586 ALARAF CAR RENTAL العراف لتأجير السيارات</label>';
+          "
+        >
+        اختيار الشركة
+      </label>
+      <div id="accounts">
+        <label>
+          <input name="company" type="radio" value="17201586">
+          17201586 ALARAF CAR RENTAL العراف لتأجير السيارات
+        </label>
+      </div>
+      <button type="button" onclick="
+        document.body.dataset.companyMode =
+          String(document.querySelector('#company-mode').checked);
+        document.body.dataset.companyAccount =
+          document.querySelector('input[name=company]:checked')?.value || '';
+      ">متابعة</button>
+    `);
+
+    const portal = new TaqadiPortal(page) as unknown as {
+      selectTawtheeqCompanyAccountIfNeeded: () => Promise<boolean>;
+    };
+    await expect(portal.selectTawtheeqCompanyAccountIfNeeded())
+      .resolves.toBe(true);
+
+    expect(await page.locator('body').getAttribute('data-company-mode'))
+      .toBe('true');
+    expect(await page.locator('body').getAttribute('data-company-account'))
+      .toBe('17201586');
+  });
+
+  it('does not treat the smart-card PIN handshake as the company account page', async () => {
+    await page.goto('about:blank');
+    await page.route('**/*', async (route) => {
+      await route.fulfill({
+        contentType: 'text/html; charset=utf-8',
+        body: `
+          <main>
+            <h1>مصادقة البطاقة الذكية</h1>
+            <label for="card-pin">الرقم السري للبطاقة</label>
+            <input id="card-pin" type="password">
+          </main>
+        `,
+      });
+    });
+
+    try {
+      await page.goto(
+        'https://www.tawtheeq.gov.qa/idp/public/authn/qgp-authorization',
+      );
+      const portal = new TaqadiPortal(page) as unknown as {
+        selectTawtheeqCompanyAccountIfNeeded: () => Promise<boolean>;
+      };
+
+      await expect(portal.selectTawtheeqCompanyAccountIfNeeded())
+        .resolves.toBe(false);
+    } finally {
+      await page.unroute('**/*');
+    }
+  });
+
+  it('uses the Tawtheeq smart-card option before username and password login', async () => {
+    await page.setContent(`
+      <form id="frm_mobileid_login">
+        <label for="username">اسم المستخدم</label>
+        <input id="username" name="username">
+        <label for="password">كلمة المرور</label>
+        <input id="password" name="password" type="password">
+        <button id="otp-login" type="submit">متابعة</button>
+      </form>
+      <button
+        id="smart-card-login"
+        type="button"
+        onclick="
+          document.body.dataset.smartCardSelected = 'true';
+          history.replaceState({}, '', '/authn/qgp-authorization');
+        "
+      >البطاقة الذكية</button>
+    `);
+
+    const portal = new TaqadiPortal(page) as unknown as {
+      selectTawtheeqSmartCardIfNeeded: () => Promise<boolean>;
+    };
+    await expect(portal.selectTawtheeqSmartCardIfNeeded())
+      .resolves.toBe(true);
+
+    expect(await page.locator('body').getAttribute('data-smart-card-selected'))
+      .toBe('true');
+    expect(await page.locator('#username').inputValue()).toBe('');
+    expect(await page.locator('#password').inputValue()).toBe('');
+  });
+
+  it('enters the smart-card PIN and presses Enter on a web PIN prompt', async () => {
+    const originalPin = agentConfig.tawtheeq.smartCardPin;
+    agentConfig.tawtheeq.smartCardPin = 'test-pin';
+
+    try {
+      await page.setContent(`
+        <button id="smart-card-login" type="button">البطاقة الذكية</button>
+        <script>
+          document.querySelector('#smart-card-login').addEventListener(
+            'click',
+            () => {
+              document.querySelector('#smart-card-login').remove();
+              document.body.insertAdjacentHTML(
+                'beforeend',
+                '<label for="card-pin">الرقم السري للبطاقة</label>'
+                  + '<input id="card-pin" type="password">',
+              );
+              document.querySelector('#card-pin').addEventListener(
+                'keydown',
+                (event) => {
+                  if (event.key === 'Enter') {
+                    document.body.dataset.pinSubmitted = event.target.value;
+                  }
+                },
+              );
+            },
+          );
+        </script>
+      `);
+
+      const portal = new TaqadiPortal(page) as unknown as {
+        selectTawtheeqSmartCardIfNeeded: () => Promise<boolean>;
+        submitTawtheeqSmartCardPinIfReady: () => Promise<boolean>;
+      };
+      await portal.selectTawtheeqSmartCardIfNeeded();
+      await expect(portal.submitTawtheeqSmartCardPinIfReady())
+        .resolves.toBe(true);
+
+      expect(await page.locator('body').getAttribute('data-pin-submitted'))
+        .toBe('test-pin');
+    } finally {
+      agentConfig.tawtheeq.smartCardPin = originalPin;
+    }
+  });
+
+  it('resumes on the Tawtheeq PIN page and clicks its explicit submit button', async () => {
+    const originalPin = agentConfig.tawtheeq.smartCardPin;
+    agentConfig.tawtheeq.smartCardPin = 'test-pin';
+
+    try {
+      await page.route('**/*', async (route) => {
+        await route.fulfill({
+          contentType: 'text/html; charset=utf-8',
+          body: `
+            <form id="pin-dialog-form">
+              <label for="pin">أدخل الرمز السري (PIN)</label>
+              <input id="pin" type="password">
+              <button id="pin-ok-button" type="button"
+                onclick="document.body.dataset.pinSubmitted = document.querySelector('#pin').value">
+                التالي
+              </button>
+            </form>
+          `,
+        });
+      });
+      await page.goto('https://www.tawtheeq.gov.qa/idp/public/authn/smart-card');
+
+      const portal = new TaqadiPortal(page) as unknown as {
+        submitTawtheeqSmartCardPinIfReady: () => Promise<boolean>;
+      };
+      await expect(portal.submitTawtheeqSmartCardPinIfReady())
+        .resolves.toBe(true);
+
+      expect(await page.locator('body').getAttribute('data-pin-submitted'))
+        .toBe('test-pin');
+    } finally {
+      agentConfig.tawtheeq.smartCardPin = originalPin;
+      await page.unroute('**/*');
+    }
+  });
+
+  it('detects the one-time SConnect installation page', async () => {
+    await page.setContent(`
+      <main>
+        <h1>SConnect</h1>
+        <p>Install the Chrome extension and Extension Host to continue.</p>
+      </main>
+    `);
+
+    const portal = new TaqadiPortal(page) as unknown as {
+      tawtheeqSConnectSetupPage: () => Promise<{
+        isExtensionStore: boolean;
+        url: string;
+      }>;
+    };
+
+    await expect(portal.tawtheeqSConnectSetupPage()).resolves.toMatchObject({
+      isExtensionStore: false,
+    });
+  });
+
+  it('does not misclassify the active Tawtheeq PIN form as SConnect setup', async () => {
+    await page.setContent(`
+      <main>
+        <p>SConnect Extension Host install instructions</p>
+        <form id="pin-dialog-form">
+          <input id="pin" type="password">
+          <button id="pin-ok-button">التالي</button>
+        </form>
+      </main>
+    `);
+
+    const portal = new TaqadiPortal(page) as unknown as {
+      tawtheeqSConnectSetupPage: () => Promise<unknown>;
+    };
+
+    await expect(portal.tawtheeqSConnectSetupPage()).resolves.toBeNull();
+  });
+
   it('fills Tawtheeq credentials and submits only after human verification', async () => {
     const originalCredentials = { ...agentConfig.tawtheeq };
     agentConfig.tawtheeq.username = 'test-user';
@@ -1109,7 +1617,7 @@ describe('TaqadiPortal classification fields', () => {
                         document.body.dataset.continueClicked = 'true';
                         history.replaceState({}, '', '/itc/home');
                         document.body.innerHTML =
-                          '<main id="main">ok</main>';
+                          '<header id="header">العراف لتأجير السيارات</header><main id="main">ok</main>';
                       });
 
                     const watcher = setInterval(() => {
@@ -1158,7 +1666,7 @@ describe('TaqadiPortal classification fields', () => {
                           document.body.dataset.continueClicked = 'true';
                           history.replaceState({}, '', '/itc/home');
                           document.body.innerHTML =
-                            '<main id=main>إدارة الدعاوى</main>';
+                            '<header id=header>العراف لتأجير السيارات</header><main id=main>إدارة الدعاوى</main>';
                         \\"
                       >استمر</button>
                     </form>
@@ -1206,10 +1714,16 @@ describe('TaqadiPortal classification fields', () => {
     }
   }, 15_000);
 
-  it('adopts an authenticated Taqadi tab instead of waiting on an old login tab', async () => {
+  it('clears an authenticated Taqadi tab when its company context is unverified', async () => {
     const sharedContext = await browser.newContext();
     const loginPage = await sharedContext.newPage();
     const authenticatedPage = await sharedContext.newPage();
+    await sharedContext.route('**/itc/login', async (route) => {
+      await route.fulfill({
+        contentType: 'text/html; charset=utf-8',
+        body: '<main><p>الدخول عبر النظام الوطني</p></main>',
+      });
+    });
     await authenticatedPage.route('**/itc/home', async (route) => {
       await route.fulfill({
         contentType: 'text/html; charset=utf-8',
@@ -1229,12 +1743,39 @@ describe('TaqadiPortal classification fields', () => {
       </form>
     `);
 
-    const portal = new TaqadiPortal(loginPage) as unknown as { page: Page };
-    await (portal as unknown as TaqadiPortal)
-      .ensureAuthenticated(async () => undefined);
+    const portal = new TaqadiPortal(loginPage) as unknown as {
+      page: Page;
+      confirmAccountPromptAndAdoptPortalPage: () => Promise<boolean>;
+    };
+    await expect(portal.confirmAccountPromptAndAdoptPortalPage())
+      .resolves.toBe(false);
 
     expect(portal.page).toBe(authenticatedPage);
+    expect(authenticatedPage.url()).toContain('/itc/login');
     await sharedContext.close();
+  }, 15_000);
+
+  it('keeps a company session verified from the Taqadi side panel on a lawsuit page', async () => {
+    await page.route('**/itc/home', async (route) => {
+      await route.fulfill({
+        contentType: 'text/html; charset=utf-8',
+        body: `
+          <header id="header">تقاضي</header>
+          <aside id="left-panel">العراف لتأجير السيارات</aside>
+          <main id="main">تصنيف الدعوى</main>
+          <form id="logout-form"></form>
+        `,
+      });
+    });
+    await page.goto(
+      'https://taqadi.sjc.gov.qa/itc/home#/itc/f/caseinfo/create',
+    );
+
+    const portal = new TaqadiPortal(page) as unknown as {
+      confirmAccountPromptAndAdoptPortalPage: () => Promise<boolean>;
+    };
+    await expect(portal.confirmAccountPromptAndAdoptPortalPage())
+      .resolves.toBe(true);
   });
 
   it('selects the defendant role only inside the open party dialog', async () => {
@@ -1401,7 +1942,7 @@ describe('TaqadiPortal classification fields', () => {
     ).toBe('عميل');
     expect(
       await page.locator('#party-editor [id="email"]').inputValue(),
-    ).toBe('khamis-1992@hotmail.com');
+    ).toBe('customer@example.com');
     expect(
       await page.locator('#party-editor [id="mobileNo"]').inputValue(),
     ).toBe('97455555555');
@@ -1409,7 +1950,7 @@ describe('TaqadiPortal classification fields', () => {
       await page
         .locator('#party-editor [id="addresses0.address"]')
         .inputValue(),
-    ).toBe('الدوحة قطر');
+    ).toBe('عنوان العميل المسجل');
     expect(
       await page.locator('#party-editor [id="priority"]').inputValue(),
     ).toBe('1');
@@ -2351,6 +2892,52 @@ describe('TaqadiPortal classification fields', () => {
     } as FilingPayload)).resolves.toBeUndefined();
 
     expect(await page.locator('body').getAttribute('data-expanded')).toBe('true');
+  });
+
+  it('verifies a real Taqadi review that omits the contract number', async () => {
+    // مراجعة تقاضي الحقيقية لا تعرض رقم العقد مطلقًا، وتعرض الموضوع معاد
+    // التنسيق. الهوية تتحقق من الأسماء والمبلغ وكلمات العنوان فقط.
+    await page.setContent(`
+      <h2>معلومات الدعوى في تقاضي</h2>
+      <div>مقدم الطلب: شركة العراف لتأجير السيارات (شركة ذات مسؤولية محدودة)</div>
+      <div>المدعى عليه: بنور رقية</div>
+      <div>نوع الدعوى: المطالبات المالية</div>
+      <div>موضوع الدعوى: إيجار سيارة</div>
+      <div>قيمة الدعوى: 195,140 ريال</div>
+      <p>أبرمت الشركة عقد إيجار سيارة مع المدعى عليه بتاريخ 02/05/2024</p>
+    `);
+
+    const portal = new TaqadiPortal(page);
+    await expect(portal.verifyReview({
+      plaintiff: { name: 'شركة العراف لتأجير السيارات' },
+      case: {
+        title: 'مطالبة مالية-إيجار سيارة-بنور رقية',
+        amount: 195_140,
+      },
+      defendant: { fullName: 'بنور رقية' },
+      contract: { number: 'LTO2024141' },
+    } as FilingPayload)).resolves.toBeUndefined();
+  });
+
+  it('still rejects a review for a different defendant', async () => {
+    await page.setContent(`
+      <div>مقدم الطلب: شركة العراف لتأجير السيارات</div>
+      <div>المدعى عليه: شخص آخر تمامًا</div>
+      <div>قيمة الدعوى: 195,140 ريال</div>
+    `);
+
+    const portal = new TaqadiPortal(page);
+    await expect(portal.verifyReview({
+      plaintiff: { name: 'شركة العراف لتأجير السيارات' },
+      case: {
+        title: 'مطالبة مالية-إيجار سيارة-بنور رقية',
+        amount: 195_140,
+      },
+      defendant: { fullName: 'بنور رقية' },
+      contract: { number: 'LTO2024141' },
+    } as FilingPayload)).rejects.toMatchObject({
+      code: 'REVIEW_MISMATCH',
+    });
   });
 
   it('extracts the real Taqadi filing receipt format', async () => {

@@ -13,15 +13,16 @@
  *   - { companyId, limit?, status? } — review recent unreviewed entries
  */
 
-import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { callKimiJson, KIMI_MODEL } from "../_shared/kimi.ts";
 import {
   agentCorsHeaders,
-  authorizeAgent,
+  authorizeGovernedAgent,
   createServiceClient,
+  finishAgentExecution,
   jsonResponse,
   storeAgentReview,
+  type AgentInvocationContext,
 } from "../_shared/agent.ts";
 
 interface JournalLine {
@@ -38,20 +39,22 @@ interface ReviewResult {
   details: Record<string, unknown>;
 }
 
-serve(async (req) => {
+Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: agentCorsHeaders });
 
+  let invocation: AgentInvocationContext | null = null;
+  const supabase = createServiceClient();
   try {
-    await authorizeAgent(req);
     const body = await req.json().catch(() => ({}));
-    const supabase = createServiceClient();
+    if (!body.companyId) throw new Error("companyId is required");
+    invocation = await authorizeGovernedAgent(req, "journal-entry-ai-reviewer", body.companyId);
 
     if (body.journalEntryId) {
-      const result = await reviewEntry(supabase, body.journalEntryId);
+      const result = await reviewEntry(supabase, body.companyId, body.journalEntryId);
+      await finishAgentExecution(supabase, invocation, true, { reviewed: 1, verdict: result.verdict });
       return jsonResponse({ success: true, ...result });
     }
 
-    if (!body.companyId) throw new Error("companyId is required");
     const { data: entries, error } = await supabase
       .from("journal_entries")
       .select("id")
@@ -63,7 +66,7 @@ serve(async (req) => {
     const summary = { reviewed: 0, passed: 0, warnings: 0, failed: 0, errors: 0 };
     for (const entry of entries || []) {
       try {
-        const result = await reviewEntry(supabase, entry.id);
+        const result = await reviewEntry(supabase, body.companyId, entry.id);
         summary.reviewed++;
         if (result.verdict === "balanced_pass") summary.passed++;
         else if (result.verdict === "warning") summary.warnings++;
@@ -73,18 +76,28 @@ serve(async (req) => {
         console.error(`Journal review failed for ${entry.id}:`, entryError);
       }
     }
+    await finishAgentExecution(supabase, invocation, true, summary);
     return jsonResponse({ success: true, ...summary });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown error";
+    if (invocation) {
+      await finishAgentExecution(supabase, invocation, false, {}, "journal_review_failed")
+        .catch(() => undefined);
+    }
     return jsonResponse({ success: false, error: message }, message === "Unauthorized" ? 401 : 500);
   }
 });
 
-async function reviewEntry(supabase: SupabaseClient, journalEntryId: string): Promise<ReviewResult> {
+async function reviewEntry(
+  supabase: SupabaseClient,
+  companyId: string,
+  journalEntryId: string,
+): Promise<ReviewResult> {
   const { data: entry, error } = await supabase
     .from("journal_entries")
     .select("id, company_id, entry_number, entry_date, description, status, total_debit, total_credit")
     .eq("id", journalEntryId)
+    .eq("company_id", companyId)
     .single();
   if (error || !entry) throw new Error("Journal entry not found");
 
@@ -110,6 +123,7 @@ async function reviewEntry(supabase: SupabaseClient, journalEntryId: string): Pr
   const { data: accounts } = await supabase
     .from("chart_of_accounts")
     .select("id, account_code, account_name, is_header, account_level")
+    .eq("company_id", entry.company_id)
     .in("id", accountIds);
   const accountMap = new Map((accounts || []).map((a) => [a.id, a]));
   for (const line of entryLines) {

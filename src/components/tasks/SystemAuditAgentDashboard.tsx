@@ -14,6 +14,8 @@ import { systemColorPattern } from "@/lib/design-system/systemColorPattern";
 import {
   useSystemAuditDashboard,
   useSyncSystemAuditReviewTasks,
+  useSetSystemAuditAgentControl,
+  useCancelSystemAuditRun,
   type SystemAuditDomain,
   type SystemAuditJobSummary,
   type SystemAuditRunSummary,
@@ -297,6 +299,8 @@ export function SystemAuditAgentDashboard() {
     useSystemAuditDashboard();
   const { mutate: syncReviewTasks, isPending: isSyncingReviewTasks } =
     useSyncSystemAuditReviewTasks();
+  const setAgentControl = useSetSystemAuditAgentControl();
+  const cancelAgentRun = useCancelSystemAuditRun();
   const { data: decisionTasks = [], isLoading: isLoadingDecisionTasks } =
     useTasks({
       category: "system_audit_review",
@@ -392,6 +396,69 @@ export function SystemAuditAgentDashboard() {
     );
 
   const latestRun = data.latestRun;
+  const control = data.control || {
+    companyId: data.companyId,
+    ownerProfileId: null,
+    enabled: true,
+    paused: false,
+    killSwitch: false,
+    pauseReason: null,
+    pausedAt: null,
+    version: 0,
+    updatedAt: null,
+  };
+  const permissions = data.permissions || {
+    canManageAgent: false,
+    canUseKillSwitch: false,
+    canAssignOwner: false,
+  };
+  const isRunActive = ["running", "queued", "retry"].includes(latestRun.status);
+  const updateControl = (
+    next: Partial<{
+      enabled: boolean;
+      paused: boolean;
+      killSwitch: boolean;
+      reason: string;
+      ownerProfileId: string | null;
+    }>
+  ) => {
+    setAgentControl.mutate({
+      companyId: data.companyId,
+      enabled: next.enabled ?? control.enabled,
+      paused: next.paused ?? control.paused,
+      killSwitch: next.killSwitch ?? control.killSwitch,
+      reason: next.reason ?? control.pauseReason ?? undefined,
+      ownerProfileId: Object.prototype.hasOwnProperty.call(next, "ownerProfileId")
+        ? next.ownerProfileId ?? null
+        : control.ownerProfileId,
+    });
+  };
+  const handlePauseToggle = () => {
+    if (control.paused) {
+      updateControl({ paused: false, reason: "تم استئناف الوكيل" });
+      return;
+    }
+    const reason = window.prompt("اكتب سبب إيقاف وكيل التدقيق مؤقتاً:")?.trim();
+    if (!reason) return;
+    updateControl({ paused: true, reason });
+  };
+  const handleKillSwitchToggle = () => {
+    if (control.killSwitch) {
+      if (!window.confirm("هل تريد إلغاء مفتاح الطوارئ والسماح باستئناف الوكيل؟")) return;
+      updateControl({ killSwitch: false, paused: true, reason: "تم إلغاء مفتاح الطوارئ؛ الوكيل ما زال متوقفاً مؤقتاً" });
+      return;
+    }
+    if (!window.confirm("سيوقف مفتاح الطوارئ كل أعمال الوكيل الحالية ويلغي المهام الجارية. هل تريد المتابعة؟")) return;
+    const reason = window.prompt("اكتب سبب تفعيل مفتاح الطوارئ:")?.trim();
+    if (!reason) return;
+    updateControl({ killSwitch: true, paused: true, reason });
+  };
+  const handleCancelRun = () => {
+    if (!window.confirm("هل تريد إلغاء جميع مهام هذا التشغيل؟")) return;
+    const reason = window.prompt("اكتب سبب إلغاء التشغيل الحالي:")?.trim();
+    if (!reason) return;
+    cancelAgentRun.mutate({ companyId: data.companyId, runId: latestRun.id, reason });
+  };
   const latestAppliedRepair = data.recentRepairs.find(
     (repair) => repair.status === "applied"
   );
@@ -570,6 +637,102 @@ export function SystemAuditAgentDashboard() {
               }
               icon={CheckCircle2}
             />
+          </div>
+        </section>
+
+        <section
+          className={cn(
+            "rounded-lg border bg-white p-4 shadow-sm",
+            control.killSwitch && "border-[#FDA4AF] bg-[#FFF1F2]",
+            !control.killSwitch && control.paused && "border-[#FDE68A] bg-[#FFFBEB]"
+          )}
+          style={!control.killSwitch && !control.paused ? { borderColor: colors.border } : undefined}
+          aria-label="التحكم في وكيل التدقيق"
+        >
+          <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+            <div className="flex items-start gap-3">
+              <div className={cn(
+                "flex h-10 w-10 shrink-0 items-center justify-center rounded-lg",
+                control.killSwitch
+                  ? "bg-white text-[#BE123C]"
+                  : control.paused
+                  ? "bg-white text-[#B45309]"
+                  : "bg-[#ECFDF5] text-[#0F766E]"
+              )}>
+                {control.killSwitch || control.paused ? <PauseCircle className="h-5 w-5" /> : <PlayCircle className="h-5 w-5" />}
+              </div>
+              <div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <h3 className="text-sm font-bold text-[#0F172A]">التحكم التشغيلي</h3>
+                  <StatusBadge status={control.killSwitch ? "cancelled" : control.paused ? "queued" : "running"} />
+                </div>
+                <p className="mt-1 text-sm text-[#64748B]">
+                  {control.killSwitch
+                    ? "مفتاح الطوارئ مفعّل، ولا يمكن بدء أو متابعة أي مهمة."
+                    : control.paused
+                    ? `الوكيل متوقف مؤقتاً${control.pauseReason ? `: ${control.pauseReason}` : ""}`
+                    : "الوكيل متاح للتشغيل ويحترم طلبات الإلغاء بين دفعات الإصلاح."}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2">
+              {permissions.canAssignOwner && (
+                <label className="flex h-10 items-center gap-2 rounded-lg border border-[#E5EAF1] bg-white px-3 text-xs text-[#64748B]">
+                  المسؤول
+                  <select
+                    aria-label="مسؤول وكيل التدقيق"
+                    value={control.ownerProfileId || ""}
+                    disabled={setAgentControl.isPending}
+                    onChange={(event) =>
+                      updateControl({ ownerProfileId: event.target.value || null })
+                    }
+                    className="max-w-[180px] bg-transparent font-semibold text-[#0F172A] outline-none"
+                  >
+                    <option value="">غير معيّن</option>
+                    {(data.operators || []).map((operator) => (
+                      <option key={operator.id} value={operator.id}>{operator.displayName}</option>
+                    ))}
+                  </select>
+                </label>
+              )}
+              {permissions.canManageAgent && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="h-10 gap-2 rounded-lg bg-white"
+                  disabled={setAgentControl.isPending || control.killSwitch}
+                  onClick={handlePauseToggle}
+                >
+                  {setAgentControl.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : control.paused ? <PlayCircle className="h-4 w-4" /> : <PauseCircle className="h-4 w-4" />}
+                  {control.paused ? "استئناف" : "إيقاف مؤقت"}
+                </Button>
+              )}
+              {permissions.canManageAgent && isRunActive && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="h-10 gap-2 rounded-lg border-[#F8CBD0] bg-white text-[#BE123C]"
+                  disabled={cancelAgentRun.isPending}
+                  onClick={handleCancelRun}
+                >
+                  {cancelAgentRun.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <XCircle className="h-4 w-4" />}
+                  إلغاء التشغيل
+                </Button>
+              )}
+              {permissions.canUseKillSwitch && (
+                <Button
+                  type="button"
+                  variant={control.killSwitch ? "outline" : "destructive"}
+                  className="h-10 gap-2 rounded-lg"
+                  disabled={setAgentControl.isPending}
+                  onClick={handleKillSwitchToggle}
+                >
+                  <AlertTriangle className="h-4 w-4" />
+                  {control.killSwitch ? "إلغاء الطوارئ" : "إيقاف طارئ"}
+                </Button>
+              )}
+            </div>
           </div>
         </section>
 

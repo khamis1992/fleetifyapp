@@ -1,4 +1,3 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const corsHeaders = {
@@ -32,11 +31,20 @@ interface WebhookResponse {
   details?: any;
 }
 
-serve(async (req) => {
+Deno.serve(async (req) => {
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
   }
+
+  return new Response(
+    JSON.stringify({
+      success: false,
+      error: 'LEGACY_TRAFFIC_FINE_WEBHOOK_RETIRED',
+      message: 'استخدم ingest-traffic-mail أو violation-inbox-processor؛ هذا المسار القديم كان يسمح بربط ضبابي وإنشاء عميل افتراضي.',
+    }),
+    { status: 410, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+  );
 
   try {
     // Verify webhook secret for security (allow both webhook secret and Supabase auth)

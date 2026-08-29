@@ -5,6 +5,7 @@ import { useCompanyFilter } from '@/hooks/useCompanyScope';
 export type LegalWorkflowStage =
   | 'preparation'
   | 'filed'
+  | 'awaiting_acceptance'
   | 'hearings'
   | 'reserved_for_judgment'
   | 'judgment_issued'
@@ -17,6 +18,7 @@ export type LegalWorkflowStage =
 export const LEGAL_WORKFLOW_STAGES: Array<{ value: LegalWorkflowStage; label: string }> = [
   { value: 'preparation', label: 'تجهيز الملف' },
   { value: 'filed', label: 'تم رفع الدعوى' },
+  { value: 'awaiting_acceptance', label: 'بانتظار قبول الدعوى' },
   { value: 'hearings', label: 'الجلسات' },
   { value: 'reserved_for_judgment', label: 'محجوزة للحكم' },
   { value: 'judgment_issued', label: 'صدر الحكم' },
@@ -25,6 +27,17 @@ export const LEGAL_WORKFLOW_STAGES: Array<{ value: LegalWorkflowStage; label: st
   { value: 'collection', label: 'التحصيل' },
   { value: 'closed', label: 'مغلقة نهائياً' },
   { value: 'cancelled', label: 'ملغاة' },
+];
+
+export const REOPENABLE_LEGAL_WORKFLOW_STAGES: LegalWorkflowStage[] = [
+  'preparation',
+  'filed',
+  'awaiting_acceptance',
+  'hearings',
+  'judgment_issued',
+  'appeal',
+  'enforcement',
+  'collection',
 ];
 
 export interface LegalCaseWorkflowData {
@@ -98,11 +111,27 @@ export const useLegalCaseWorkflow = (caseId?: string) => {
     ...query,
     isSaving: mutation.isPending,
     transition: (target: LegalWorkflowStage, reason?: string) => run('transition_legal_case_workflow_v1', { p_target_stage: target, p_reason: reason || null }),
+    correctUnfiled: (reason: string) => {
+      const normalizedReason = reason.trim();
+      if (normalizedReason.length < 10) {
+        return Promise.reject(new Error('اكتب سبب التصحيح بما لا يقل عن 10 أحرف'));
+      }
+      return run('correct_unfiled_legal_case_to_preparation_v1', { p_reason: normalizedReason });
+    },
     recordHearing: (values: Record<string, unknown>) => run('record_legal_case_hearing_v1', values),
     recordJudgment: (values: Record<string, unknown>) => run('record_legal_case_judgment_v1', values),
     recordAppeal: (values: Record<string, unknown>) => run('record_legal_case_appeal_v1', values),
     startEnforcement: (values: Record<string, unknown>) => run('start_legal_case_enforcement_v1', values),
     closeFinal: (reason: string, overrideUnsettled: boolean) => run('close_legal_case_final_v1', { p_reason: reason, p_override_unsettled: overrideUnsettled }),
-    reopen: (target: LegalWorkflowStage, reason: string) => run('reopen_legal_case_v1', { p_target_stage: target, p_reason: reason }),
+    reopen: (target: LegalWorkflowStage, reason: string) => {
+      const normalizedReason = reason.trim();
+      if (!REOPENABLE_LEGAL_WORKFLOW_STAGES.includes(target)) {
+        return Promise.reject(new Error('اختر مرحلة صحيحة لإعادة فتح القضية'));
+      }
+      if (normalizedReason.length < 10) {
+        return Promise.reject(new Error('اكتب سبب إعادة الفتح بما لا يقل عن 10 أحرف'));
+      }
+      return run('reopen_legal_case_v1', { p_target_stage: target, p_reason: normalizedReason });
+    },
   };
 };

@@ -5,7 +5,7 @@
 
 import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import LawsuitPreparationPage from '../index';
@@ -134,57 +134,58 @@ describe('LawsuitPreparation Integration', () => {
   
   it('renders the main components after loading', async () => {
     renderPage();
-    
+
     await waitFor(() => {
       expect(screen.getByText('تجهيز الدعوى القانونية')).toBeInTheDocument();
     });
-    
-    // Check for main components
-    expect(screen.getByText('حافظة المستندات')).toBeInTheDocument();
-    expect(screen.getByText('بيانات التقاضي')).toBeInTheDocument();
+
+    // Check for stepper tabs and checklist items (both may render the same label)
+    expect(screen.getAllByText('حافظة المستندات').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('بيانات التقاضي').length).toBeGreaterThan(0);
+    // And the new checklist panel
+    expect(screen.getByText('ما عليك إكماله')).toBeInTheDocument();
   });
-  
-  it('allows toggling Taqadi data section', async () => {
-    renderPage();
-    
-    await waitFor(() => {
-      expect(screen.getByText('بيانات التقاضي')).toBeInTheDocument();
-    });
-    
-    const taqadiHeader = screen.getByText('بيانات التقاضي');
-    fireEvent.click(taqadiHeader);
-    
-    await waitFor(() => {
-      expect(screen.getByText('بيانات نظام التقاضي')).toBeInTheDocument();
-    });
-  });
-  
-  it('displays generate buttons for mandatory documents', async () => {
+
+  it('unlocks intermediate steps but locks the closing step until filing is ready', async () => {
     renderPage();
 
     await waitFor(() => {
-      expect(screen.getByText('حافظة المستندات')).toBeInTheDocument();
+      expect(screen.getAllByText('بيانات التقاضي').length).toBeGreaterThan(0);
     });
-    fireEvent.click(screen.getByText('حافظة المستندات'));
-    
-    await waitFor(() => {
-      expect(screen.getAllByText('المذكرة الشارحة').length).toBeGreaterThan(0);
-    });
-    
-    const generateButtons = screen.getAllByText('توليد');
-    expect(generateButtons.length).toBeGreaterThan(0);
-  });
-  
-  it('displays action buttons', async () => {
-    renderPage();
-    
-    await waitFor(() => {
-      expect(screen.getByText('الإغلاق والمتابعة')).toBeInTheDocument();
-    });
-    fireEvent.click(screen.getByText('الإغلاق والمتابعة'));
 
-    // التصميم الجديد: زر رئيسي للإغلاق + الأفعال الثانوية في قائمة منسدلة
-    expect(screen.getByText('تأكيد فتح القضية')).toBeInTheDocument();
-    expect(screen.getAllByText('إجراءات إضافية').length).toBeGreaterThan(0);
+    const nav = screen.getByRole('navigation', { name: 'مراحل تجهيز الدعوى' });
+    const buttons = Array.from(nav.querySelectorAll('button'));
+    const taqadiButton = buttons.find((b) => b.textContent?.includes('بيانات التقاضي'));
+    const actionsButton = buttons.find((b) => b.textContent?.includes('الإغلاق والمتابعة'));
+    if (!taqadiButton || !actionsButton) throw new Error('Expected step buttons in the nav');
+
+    // الخطوات الوسطى مفتوحة دائماً (متطلباتها مترابطة بينها)
+    expect(taqadiButton).not.toBeDisabled();
+    // خطوة الإغلاق مقفلة حتى تكتمل شروط canStartFiling
+    expect(actionsButton).toBeDisabled();
+  });
+
+  it('displays document names in the checklist panel', async () => {
+    renderPage();
+
+    await waitFor(() => {
+      expect(screen.getAllByText('حافظة المستندات').length).toBeGreaterThan(0);
+    });
+
+    // قائمة التحقق تتضمن "حافظة المستندات"
+    expect(screen.getAllByText('حافظة المستندات').length).toBeGreaterThan(0);
+  });
+
+  it('offers a single primary CTA and a "More actions" menu', async () => {
+    renderPage();
+
+    await waitFor(() => {
+      expect(screen.getByText('تجهيز الدعوى القانونية')).toBeInTheDocument();
+    });
+
+    // إجراء أساسي واحد واضح
+    expect(screen.getByText('الإجراء التالي')).toBeInTheDocument();
+    // قائمة "المزيد من الإجراءات" متاحة عند الحاجة
+    expect(screen.getByText('المزيد من الإجراءات')).toBeInTheDocument();
   });
 });

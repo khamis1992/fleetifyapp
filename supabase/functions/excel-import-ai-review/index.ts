@@ -1,6 +1,11 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.4";
+import {
+  type AgentInvocationContext,
+  authorizeGovernedAgent,
+  createServiceClient,
+  finishAgentExecution,
+} from "../_shared/agent.ts";
 import { buildLongCatHeaders, getLongCatApiKey, LONGCAT_CHAT_COMPLETIONS_URL, LONGCAT_MODEL } from "../_shared/longcat.ts";
 
 const corsHeaders = {
@@ -25,18 +30,31 @@ interface FileReview {
   riskLevel: "low" | "medium" | "high";
 }
 
-serve(async (req) => {
+Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
+  let invocation: AgentInvocationContext | null = null;
+  let executionFailed = true;
+  let executionSummary: Record<string, unknown> = {};
   try {
     const body = await req.json();
     if (body?.action === "plan") {
-      return jsonResponse(await planExcelImport(req, body));
+      if (!body.companyId) throw new Error("companyId is required");
+      invocation = await authorizeGovernedAgent(req, "excel-import-ai-reviewer", body.companyId);
+      const result = await planExcelImport(req, body);
+      executionSummary = { action: "plan", versionId: result.versionId || null };
+      executionFailed = false;
+      return jsonResponse(result);
     }
     if (body?.action === "complete") {
-      return jsonResponse(await completeExcelImport(req, body));
+      if (!body.companyId) throw new Error("companyId is required");
+      invocation = await authorizeGovernedAgent(req, "excel-import-ai-reviewer", body.companyId);
+      const result = await completeExcelImport(req, body);
+      executionSummary = { action: "complete", versionId: result.versionId || null, status: result.status };
+      executionFailed = false;
+      return jsonResponse(result);
     }
 
     const { session } = body;
@@ -120,6 +138,16 @@ ${JSON.stringify(session)}
       },
       500,
     );
+  } finally {
+    if (invocation) {
+      await finishAgentExecution(
+        createServiceClient(),
+        invocation,
+        !executionFailed,
+        executionSummary,
+        executionFailed ? "excel_import_ai_review_failed" : null,
+      ).catch(() => undefined);
+    }
   }
 });
 

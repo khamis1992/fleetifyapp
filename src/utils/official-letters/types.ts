@@ -38,6 +38,23 @@ export interface ClaimsStatementData {
     fineAmount: number;
   }[];
   totalOverdue: number;
+  /** تعويض اتفاقي لا يدخل إلا إذا كانت القاعدة وبند العقد ومستندها موثقة */
+  contractualCompensation?: {
+    amount: number;
+    clauseNumber?: string;
+  } | null;
+  /** تعويض احتباس المركبة الماضي، محسوب من معدل موثق فقط */
+  retentionCompensation?: {
+    amount: number;
+    days: number;
+    sourceLabel?: string;
+  } | null;
+  /** بنود مصاريف الأضرار المتحقق منها بسند مستند (تُعرض ضمن ملخص المطالبة) */
+  damageCosts?: { description: string; amount: number }[];
+  /** وديعة الضمان المطبقة خصماً من التسوية (بقرار صريح فقط) */
+  securityDepositDeduction?: { amount: number } | null;
+  /** صافي المطالبة بعد الخصم — يطابق صافي مطالبة المذكرة وقيمة تقاضي */
+  netClaimTotal?: number;
   amountInWords: string;
   caseTitle?: string;
 }
@@ -59,7 +76,7 @@ export interface DocumentsListData {
   memoHtml?: string; // المذكرة الشارحة كـ HTML
 }
 
-// واجهة بيانات بلاغ سرقة المركبة
+// واجهة بيانات بلاغ جنائي بالامتناع عن رد المركبة
 export interface CriminalComplaintData {
   customerName: string;
   customerNationality?: string;
@@ -95,34 +112,6 @@ export interface ViolationsTransferData {
 }
 
 /**
- * واجهة بيانات المذكرة الشارحة الموسعة
- */
-export interface ExplanatoryMemoData {
-  caseTitle: string;
-  facts: string;
-  claims: string;
-  amount: number;
-  amountInWords: string;
-  defendantName: string;
-  contractNumber: string;
-  hasViolations?: boolean;
-  // بيانات إضافية للمذكرة المفصلة
-  defendantIdNumber?: string;
-  defendantPhone?: string;
-  contractStartDate?: string;
-  vehiclePlate?: string;
-  vehicleInfo?: string;
-  monthlyRent?: number;
-  daysOverdue?: number;
-  monthsUnpaid?: number;
-  overdueRent?: number;
-  latePenalty?: number;
-  damages?: number;
-  violationsCount?: number;
-  violationsAmount?: number;
-}
-
-/**
  * واجهة بيانات حافظة المستندات
  */
 export interface DocumentPortfolioData {
@@ -133,7 +122,7 @@ export interface DocumentPortfolioData {
   totalAmount: number;
   // المستندات المختلفة
   claimsStatementHtml?: string; // كشف المطالبات المالية - HTML كامل
-  criminalComplaintHtml?: string; // بلاغ سرقة المركبة - HTML كامل
+  criminalComplaintHtml?: string; // بلاغ جنائي بالامتناع عن رد المركبة - HTML كامل
   violationsTransferHtml?: string; // طلب تحويل المخالفات - HTML كامل
   contractImageUrl?: string; // عقد الإيجار - رابط صورة
   ibanImageUrl?: string; // شهادة IBAN - رابط صورة

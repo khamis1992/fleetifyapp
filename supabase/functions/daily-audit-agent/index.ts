@@ -107,6 +107,16 @@ serve(async (req) => {
     authorizeAgent(req);
 
     const body = await readJson<AuditRequest>(req);
+    if (body.dryRun === false) {
+      return new Response(JSON.stringify({
+        ok: false,
+        error: "Legacy daily-audit writer retired",
+        replacement: "system-audit-orchestrator",
+      }), {
+        status: 410,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
     const dryRun = body.dryRun !== false;
     const maxCompanies = clampInt(body.maxCompanies, 1, 50, 10);
     const maxContractsPerCompany = clampInt(body.maxContractsPerCompany, 1, 500, 80);
@@ -433,7 +443,7 @@ async function auditCompany({
   });
 
   await safeStep(result, "detect_contract_overpayments", async () => {
-    const overpaidContracts = await detectContractOverpayments(supabase, company.id, maxContractsPerCompany, targetContractIds);
+    const overpaidContracts = await detectContractOverpayments(supabase, company.id, maxContractsPerCompany, targetContractIds, result.reviewItems);
     if (overpaidContracts > 0) {
       result.reviewItems.push(`${overpaidContracts} contracts have completed payments greater than contract amount and need credit/refund review.`);
     }
@@ -1182,9 +1192,13 @@ async function detectDuplicatePayments(
   limit: number,
   targetContractIds: string[] | null,
 ) {
+  // A duplicate means the SAME invoice (or unallocated bucket) received the
+  // same amount on the same date twice. Grouping by contract alone is wrong:
+  // one monthly payment settles a different invoice each click, so the
+  // contract+date+amount key flags legitimate catch-up payments as duplicates.
   let query = supabase
     .from("payments")
-    .select("id, contract_id, payment_date, amount, payment_status, reference_number")
+    .select("id, contract_id, invoice_id, payment_date, amount, payment_status, reference_number")
     .eq("company_id", companyId)
     .limit(limit * 20);
 
@@ -1198,7 +1212,7 @@ async function detectDuplicatePayments(
 
   for (const payment of data || []) {
     if (isInactivePaymentStatus(payment.payment_status)) continue;
-    const key = `${payment.contract_id || ""}:${payment.payment_date || ""}:${roundMoney(Number(payment.amount || 0))}:${payment.reference_number || ""}`;
+    const key = `${payment.contract_id || ""}:${payment.invoice_id || "unallocated"}:${payment.payment_date || ""}:${roundMoney(Number(payment.amount || 0))}:${payment.reference_number || ""}`;
     if (seen.has(key)) duplicates += 1;
     seen.add(key);
   }
@@ -1258,6 +1272,7 @@ async function detectContractOverpayments(
   companyId: string,
   limit: number,
   targetContractIds: string[] | null,
+  reviewItems: string[],
 ) {
   const contracts = await loadContractsForAudit(supabase, companyId, limit, targetContractIds, true);
   const contractIds = contracts.map((contract: any) => contract.id);
@@ -1271,11 +1286,25 @@ async function detectContractOverpayments(
     paidByContract.set(payment.contract_id, roundMoney((paidByContract.get(payment.contract_id) || 0) + Number(payment.amount || 0)));
   }
 
-  return contracts.filter((contract: any) => {
+  let overpaidCount = 0;
+  for (const contract of contracts) {
+    // A zero/negative principal cannot be overpaid. Most such rows are
+    // cancelled imports (contract_amount = 0) that previously flooded the
+    // review queue with phantom excess.
     const amount = roundMoney(Number(contract.contract_amount || 0));
+    if (amount <= 0.01) continue;
+
     const paid = roundMoney(paidByContract.get(contract.id) || 0);
-    return amount > 0 && paid - amount > 1;
-  }).length;
+    const excess = roundMoney(paid - amount);
+    if (excess <= 1) continue;
+
+    overpaidCount += 1;
+    reviewItems.push(
+      `Contract ${contract.contract_number} collected ${paid} against principal ${amount} (excess ${excess} QAR) — needs reclassification review.`,
+    );
+  }
+
+  return overpaidCount;
 }
 
 async function cleanupCancelledContractZeroInvoices(

@@ -618,9 +618,8 @@ async function calculateDelinquentCustomersDynamically(
       // القواعد:
       // 1. كل فاتورة متأخرة: أيام التأخير × 120 ر.ق
       // 2. الحد الأقصى للغرامة لكل فاتورة: 3,000 ر.ق
-      // 3. جمع غرامات جميع الفواتير غير المدفوعة
-      // 4. عدم حساب الفواتير المستقبلية (due_date >= today)
-      const MAX_LATE_FEE_PER_INVOICE = 3000;
+      // لا يُنشئ سجل المتعثرات تعويضاً قانونياً افتراضياً. القيمة هنا صفر
+      // إلى أن يمر التعويض الاتفاقي عبر الملف القانوني وبند العقد ومستنده.
       let latePenalty = 0;
       
       if (unpaidOverdueInvoices.length > 0) {
@@ -637,8 +636,7 @@ async function calculateDelinquentCustomersDynamically(
           const invoiceDaysOverdue = Math.floor((todayForPenalty.getTime() - invoiceDueDate.getTime()) / (1000 * 60 * 60 * 24));
           
           if (invoiceDaysOverdue > 0) {
-            // حساب الغرامة لهذه الفاتورة مع الحد الأقصى 3000 ر.ق
-            const invoiceLateFee = Math.min(invoiceDaysOverdue * DAILY_LATE_FEE, MAX_LATE_FEE_PER_INVOICE);
+            const invoiceLateFee = invoiceDaysOverdue * DAILY_LATE_FEE;
             latePenalty += invoiceLateFee;
           }
         }

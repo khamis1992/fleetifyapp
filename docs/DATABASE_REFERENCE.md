@@ -1,5 +1,25 @@
 # Fleetify Database Reference
 
+## Legal Memo Evidence Workflow (2026-08-26)
+
+- `legal_case_litigation_profile`: one editable legal profile per company/contract. It records the selected legal path, confirmed end source, renewal, contract clauses, custody/return evidence, security deposit, documented retention rate, Article 262 exception, contractual-compensation evidence, review approval state, and verified defendant service address/email with their source and evidence document. Contractual compensation supports `fixed`, `daily`, `monthly` (once per distinct unpaid due month), and `per_invoice`, but remains disabled unless its signed clause and source document are linked. `defendant_email_status` distinguishes `unknown`, `verified`, and `unavailable`; when `defendant_contact_source = 'customer_record'`, `customers.email` is the canonical defendant email and the profile does not duplicate it. The claimant/representative email must never be substituted for the defendant. Filing preparation no longer requires the owner to approve this row: the trusted Taqadi worker records `approval_source = 'taqadi_agent'`, `approval_job_id`, and `approval_worker_id` only after the live portal review matches the frozen memo and current claim.
+- `legal_case_formal_notices`: formal written notices only. A confirmed delivery requires both a delivery date and a linked proof document; automated `reminder_history` rows are not treated as formal notices.
+- `legal_notice_agent_jobs`: automatic WhatsApp formal-notice ledger. One `payment_demand` is allowed per contract/delinquency cycle; dispatch is autonomous, while `delivery_confirmed` remains false until an Ultramsg delivered/read acknowledgement is stored as a `formal_notice_proof` contract document.
+- `agent_execution_runs` / `agent_execution_mutations`: durable execution identity and immutable before/after/postcondition evidence for writers with `execution_ledger_enabled=true` (initially PDF requests, formal notices, and contract workload assignment). Policy columns on `agent_safety_policies` cap mutations, findings and attempts and expose a kill switch. System-audit findings and repairs are stopped at their configured per-run ceilings.
+- `missing_contract_pdf_upload_tokens`: service-only SHA-256 hashes for opaque, one-use PDF upload links. Claims are nonce-locked for concurrent replay containment; tokens never encode company, customer or contract identifiers.
+- `contract_documents.legal_evidence_state`: `active`, `superseded`, or `quarantined`. Legal filing requires exactly one active identity-matched signed contract. Pending/unverified evidence expires after 24 hours; low-quality OCR cannot be marked matched without exact identity-number evidence.
+- `lawsuit_preparations.source_document_id`: composite foreign key to `(company_id, contract_id, contract_documents.id)`, preventing a filed preparation from citing a signed document owned by another contract or company.
+- `legal_case_damage_costs`: itemized damage/cost evidence. Verified rows require a linked contract document and the legal claim uses the net amount after depreciation and insurance recovery. `financing_burden_damage` records financing burdens causally linked to monetary delay without repeating principal debt; `operational_loss` records proven net loss of use/profit during the reasonable repair period after recovery and is kept separate from pre-handover rent and retention compensation to prevent double recovery.
+- `legal_case_evidence_proposals`: company-scoped review queue for evidence automation. Each row stores the proposed litigation-profile patch, human-readable value, source record/document, confidence, reason, and accept/reject audit fields. Deterministic facts bypass the queue; legal conclusions remain pending until reviewed.
+- `legal_case_memo_snapshots`: immutable, versioned JSONB snapshots used for court-ready regeneration and audit. UPDATE/DELETE are blocked; a later version must be created instead.
+- `freeze_legal_case_memo_snapshot(...)`: authenticated, tenant-isolated RPC that allocates the next version under a transaction lock and freezes the payload. Approval is limited to company managers/admins and atomically updates the litigation profile.
+- Inserts and updates validate that the contract, legal case, and every evidence document belong to the same company and contract. RLS grants authenticated users company-scoped access; anonymous access is revoked.
+- Direct snapshot inserts/updates/deletes are not granted to authenticated clients. Editing the profile, a formal notice, or a damage item invalidates the current legal approval; direct approval without a newer frozen snapshot is rejected. Filing is blocked until the current memo data matches the latest approved snapshot.
+- `calculate_legal_claim_amount_v1(...)` is the database-side canonical claim: due invoices first, then due legacy schedule rows only for months with no valid invoice; cancelled/future rows are excluded. Evidenced contractual compensation, damages, violations, retention, and the security-deposit deduction are applied by the same rules as the page.
+- `finalize_legal_case_filing_v1(...)` locks, revalidates, synchronizes, and transitions the case to `filed` atomically. Direct filed inserts and incomplete direct transitions are rejected by triggers.
+- `repair_legal_preparation_case_v1(...)` is service-role only and repairs one explicitly supplied company/contract. Every changed vehicle link, preparation case value/date, and seeded draft profile is recorded in `legal_filing_repair_audit` for reversible rollback.
+- Migrations: `20260826045722_complete_legal_case_memo_workflow.sql`, `20260826091101_legal_filing_readiness_guards.sql`, `20260826142609_legal_evidence_automation_proposals.sql`; matching rollbacks are stored under `supabase/rollbacks/`.
+
 ## Excel Import Execution Agent (2026-07-15)
 
 - `excel_import_versions`: immutable file identity and approval history per company and contract.
@@ -2289,7 +2309,7 @@ Explicit, service-managed accounting classification for completed receipts that 
 
 ### `contract_documents`
 
-**Columns**: 26
+**Columns**: 34
 
 #### Required Columns
 
@@ -2299,6 +2319,8 @@ Explicit, service-managed accounting classification for completed receipts that 
 | `document_name` | string |
 | `document_type` | string |
 | `id` | string |
+| `id_scan_status` | string |
+| `legal_identity_match_status` | `pending` \| `matched` \| `mismatch` \| `unverified` \| `failed` |
 
 #### Optional Columns
 
@@ -2326,6 +2348,45 @@ Explicit, service-managed accounting classification for completed receipts that 
 | `original_filename` | string | Yes |
 | `processing_status` | 'uploading' | Yes |
 | `processing_error` | string | Yes |
+| `legal_identity_expected_name` | string | Yes |
+| `legal_identity_extracted_name` | string | Yes |
+| `legal_identity_expected_id` | string | Yes |
+| `legal_identity_extracted_id` | string | Yes |
+| `legal_identity_match_reason` | string | Yes |
+| `legal_identity_checked_at` | string | Yes |
+
+**Legal filing safety**: `legal_identity_match_status` records whether the
+tenant named in the signed rental contract matches the contract customer who
+will become the defendant. Taqadi filing is blocked unless the value is
+`matched`; a confirmed mismatch stores both names/identity numbers for review.
+
+---
+
+### `contract_document_canonical_links`
+
+Append-preserving identity bridge for signed documents that remain attached to
+a proven document-only contract alias. `document_id` stays on the source
+contract; `canonical_contract_id` identifies the financial/legal contract that
+may consume the evidence. Confirmed links require the same company, customer,
+normalized plate, start date, contract-number history, and no independent
+financial or legal activity on the alias.
+
+| Column | Type | Nullable |
+|--------|------|----------|
+| `id` | string | No |
+| `company_id` | string | No |
+| `document_id` | string | No |
+| `source_contract_id` | string | No |
+| `canonical_contract_id` | string | No |
+| `link_status` | `proposed` \| `confirmed` \| `rejected` | No |
+| `confidence` | number | No |
+| `match_basis` | Json | No |
+| `linked_by` | string | No |
+| `created_at` | string | No |
+| `updated_at` | string | No |
+
+The service-only `contract_documents_effective_contract_v1` security-invoker
+view exposes `effective_contract_id` without rewriting the original attachment.
 
 ---
 
@@ -3050,6 +3111,11 @@ automatically.
 ---
 
 ### `delinquent_customers`
+
+Operational note: the daily pg_cron job `update-delinquent-customers` must call
+`public.update_delinquent_customers('24bc0b21-4e2d-4413-9842-31719a3669f4'::uuid)`.
+Direct pg_cron sessions do not carry a Supabase service-role JWT, so the
+no-argument call is intentionally rejected by the company-access guard.
 
 **Columns**: 37
 
@@ -10012,7 +10078,7 @@ Key RPCs: `system_agent_create_run`, `system_agent_claim_job`, `system_agent_fin
 - Migration `20260714320000` makes bulk chart deletion reference-aware, copies selected template accounts with their ancestors, processes configured overdue fees idempotently, posts one balanced vehicle-depreciation journal per vehicle and month, and atomically creates the quick customer/contract pair used by `/finance/tracking`. It preserves referenced or non-zero accounts, blocks closed periods, and refuses to invent missing fee rules or depreciation mappings.
 - Migration `20260714330000` adds the missing tenant-isolated invoice dispute workflow, notes, dashboard views, and atomic create/resolve commands used by `/legal/disputes`. Taqadi automation is contacted only when `VITE_TAQADI_AUTOMATION_URL` is configured.
 - Migration `20260714340000` rebuilds legal delinquency from canonical overdue invoice balances, completed payments, recorded late fees, violations, and legal history; it also scopes WhatsApp reminder statistics and report rows to the active company.
-- Daily and resume dispatch use `system-audit-orchestrator-v14` and `system-audit-worker-v12`. Local worker source `2026-07-14.53` audits traffic-violation payments, vehicle-installment and monthly-obligation payment ledgers, canonical rental receipts, unified maintenance journals, finalized payroll accrual/payment journals, purchase-order receipt integrity, and deterministic legal integrity while refusing to guess ambiguous historical cash, bank, legal, warehouse, or duplicate-entry facts. Production remains on worker `2026-07-13.42` until the required migrations are reconciled and deployed.
+- Daily and resume dispatch use `system-audit-orchestrator-v14` and `system-audit-worker-v12`. Local sources are orchestrator `2026-08-27.32` and worker `2026-08-27.55`; they add company-scoped ownership, cooperative pause/cancel/kill checks before persistence and repairs, while retaining the deterministic traffic, installments, rental-receipt, maintenance, payroll, warehouse, and legal audits. Production remains on orchestrator `2026-07-13.31` and worker `2026-07-13.42` until the control-plane migrations and function rollout receive explicit operational approval.
 
 ### Data Records
 

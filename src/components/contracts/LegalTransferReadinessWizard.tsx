@@ -108,6 +108,13 @@ type LegalTransferReadiness = {
   payments: LegalTransferPayment[];
   violations: LegalTransferViolation[];
   signed_contract_ready: boolean;
+  signed_contract_identity_required?: boolean;
+  signed_contract_request?: {
+    id?: string;
+    status?: string;
+    reason?: string;
+    recipient_count?: number;
+  };
   violation_proof_ready: boolean;
   latest_review?: Record<string, unknown>;
 };
@@ -467,7 +474,10 @@ export function LegalTransferReadinessWizard({
         balance_due: Number(invoice.balance_due || 0),
         reason: invoiceExclusionReasons[invoice.id].trim(),
       }));
-      await callRpc('complete_legal_transfer_readiness_v1', {
+      const completion = await callRpc<{
+        blocked?: boolean;
+        message_ar?: string;
+      }>('complete_legal_transfer_readiness_v1', {
         p_company_id: contract.company_id,
         p_contract_id: contract.id,
         p_payload: {
@@ -490,6 +500,12 @@ export function LegalTransferReadinessWizard({
         },
         p_actor_id: user.id,
       });
+      if (completion?.blocked) {
+        throw new Error(
+          completion.message_ar
+          || 'لا توجد نسخة عقد PDF مطابقة للعميل. تم إنشاء طلب واتساب تلقائي للمسؤولين.',
+        );
+      }
 
       await convertMutation.mutateAsync({
         contractId: contract.id,
@@ -797,7 +813,15 @@ export function LegalTransferReadinessWizard({
                 : 'مستند ناقص: نسخة العقد الموقعة'}
             </h3>
             <p className="mt-1 text-sm leading-6 text-[#6A7688]">
-              يجب حفظ نسخة واضحة وكاملة من العقد قبل نقله إلى الشؤون القانونية.
+              {readiness?.signed_contract_ready
+                ? 'تم التحقق أن النسخة تخص العميل نفسه، وليست مرتبطة باللوحة فقط.'
+                : readiness?.signed_contract_request?.status === 'identity_verification_pending'
+                  ? 'توجد نسخة قيد مطابقة اسم وهوية المستأجر، ولن تعتمد قبل انتهاء الفحص.'
+                  : readiness?.signed_contract_request?.status === 'sent'
+                    ? `أرسل الوكيل طلب PDF تلقائياً عبر واتساب إلى ${readiness.signed_contract_request.recipient_count || 3} مسؤولين.`
+                    : readiness?.signed_contract_request?.status
+                      ? `أنشأ الوكيل طلب PDF تلقائياً وسيُرسله إلى ${readiness.signed_contract_request.recipient_count || 3} مسؤولين.`
+                      : 'يجب حفظ نسخة واضحة وكاملة ومطابقة للعميل قبل نقله إلى الشؤون القانونية.'}
             </p>
           </div>
         </div>

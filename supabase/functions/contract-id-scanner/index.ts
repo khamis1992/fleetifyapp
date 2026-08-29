@@ -17,7 +17,6 @@
  *   3. LongCat LLM as a judge only when confidence < 90%
  */
 
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient, SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.57.4";
 import {
   buildLongCatHeaders,
@@ -25,11 +24,22 @@ import {
   LONGCAT_CHAT_COMPLETIONS_URL,
   LONGCAT_MODEL,
 } from "../_shared/longcat.ts";
+import {
+  assessLegalContractIdentity,
+  extractContractTenantIdentity,
+  type ContractTenantIdentity,
+  type LegalContractIdentityAssessment,
+} from "../_shared/legal-contract-identity.ts";
+import {
+  AgentInvocationContext,
+  authorizeScheduledAgent,
+  finishAgentExecution,
+} from "../_shared/agent.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-scanner-secret",
+    "authorization, x-client-info, apikey, content-type, x-agent-id, x-agent-secret",
 };
 
 const GOOGLE_VISION_API_URL = "https://vision.googleapis.com/v1/images:annotate";
@@ -75,6 +85,7 @@ interface ProposedChange {
 
 interface ScannerRequest {
   mode?: "batch" | "document" | "pages" | "proposal_evidence";
+  companyId?: string;
   limit?: number;
   contractDocumentId?: string;
   proposalId?: string;
@@ -135,20 +146,43 @@ const COMMON_ARABIC_NAMES = [
 // Entry point
 // ---------------------------------------------------------------------------
 
-serve(async (req) => {
+Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
+  let invocation: AgentInvocationContext | null = null;
+  let executionFailed = false;
   try {
-    await authorize(req);
-
     const body: ScannerRequest = await req.json().catch(() => ({}));
     const mode = body.mode || "batch";
 
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+    );
+    let authorizationCompanyId: string | null = body.companyId || null;
+    if (body.contractDocumentId) {
+      const { data: document, error: documentError } = await supabase
+        .from("contract_documents")
+        .select("company_id")
+        .eq("id", body.contractDocumentId)
+        .maybeSingle();
+      if (documentError) throw documentError;
+      authorizationCompanyId = document?.company_id || null;
+    } else if (body.proposalId) {
+      const { data: proposal, error: proposalError } = await supabase
+        .from("customer_id_scan_proposals")
+        .select("company_id")
+        .eq("id", body.proposalId)
+        .maybeSingle();
+      if (proposalError) throw proposalError;
+      authorizationCompanyId = proposal?.company_id || null;
+    }
+    invocation = await authorizeScheduledAgent(
+      req,
+      "contract-id-scanner",
+      authorizationCompanyId,
     );
 
     let result: unknown;
@@ -180,13 +214,19 @@ serve(async (req) => {
       }
       result = await processSingleDocument(supabase, body.contractDocumentId);
     } else {
-      result = await processBatch(supabase, Math.min(body.limit || 10, 25));
+      if (!body.companyId) throw new Error("batch mode requires companyId");
+      result = await processBatch(
+        supabase,
+        body.companyId,
+        Math.min(body.limit || 10, 25),
+      );
     }
 
     return new Response(JSON.stringify({ success: true, ...result as object }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error) {
+    executionFailed = true;
     console.error("❌ Contract ID Scanner error:", error);
     const message = error instanceof Error ? error.message : "Unknown error";
     const status = message === "Unauthorized" ? 401 : 500;
@@ -194,34 +234,19 @@ serve(async (req) => {
       status,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
+  } finally {
+    if (invocation) {
+      const admin = createClient(
+        Deno.env.get("SUPABASE_URL") ?? "",
+        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+      );
+      await finishAgentExecution(
+        admin, invocation, !executionFailed, {},
+        executionFailed ? "contract_identity_scan_failed" : null,
+      ).catch(() => undefined);
+    }
   }
 });
-
-// ---------------------------------------------------------------------------
-// Authorization: cron secret OR authenticated user
-// ---------------------------------------------------------------------------
-
-async function authorize(req: Request): Promise<void> {
-  const secret = req.headers.get("x-scanner-secret");
-  const expected = Deno.env.get("CONTRACT_SCANNER_SECRET");
-  if (expected && secret === expected) return;
-
-  const authHeader = req.headers.get("Authorization");
-  const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-  if (serviceRoleKey && authHeader === `Bearer ${serviceRoleKey}`) return;
-
-  if (authHeader) {
-    const userClient = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_ANON_KEY") ?? "",
-      { global: { headers: { Authorization: authHeader } } },
-    );
-    const { data, error } = await userClient.auth.getUser();
-    if (!error && data?.user) return;
-  }
-
-  throw new Error("Unauthorized");
-}
 
 async function processProposalEvidence(
   supabase: SupabaseClient,
@@ -282,13 +307,18 @@ async function processProposalEvidence(
 // Batch mode — pick unprocessed image documents
 // ---------------------------------------------------------------------------
 
-async function processBatch(supabase: SupabaseClient, limit: number) {
+async function processBatch(
+  supabase: SupabaseClient,
+  companyId: string,
+  limit: number,
+) {
   const { data: documents, error } = await supabase
     .from("contract_documents")
     .select("id, company_id, contract_id, document_type, document_name, file_path, mime_type")
     .in("document_type", SCANNABLE_DOCUMENT_TYPES)
     .like("mime_type", "image/%")
     .eq("id_scan_status", "pending")
+    .eq("company_id", companyId)
     .not("file_path", "is", null)
     .order("created_at", { ascending: true })
     .limit(limit);
@@ -365,8 +395,18 @@ async function processRasterizedPages(
   const fullText = allPageTexts.join("\n");
   const monthlyRent = extractMonthlyRent(fullText.split(/\r?\n/).map((l) => l.trim()).filter(Boolean));
 
-  if (evidencePages.length === 0 && monthlyRent === undefined) {
+  const isSignedContract = ["signed_contract", "signed_contract_image"]
+    .includes(doc.document_type);
+  if (evidencePages.length === 0 && monthlyRent === undefined && !isSignedContract) {
     await deletePendingProposal(supabase, doc.id);
+    await recordLegalIdentityAssessment(supabase, doc.id, {
+      status: "unverified",
+      expectedName: null,
+      extractedName: null,
+      expectedId: null,
+      extractedId: null,
+      reason: "No reliable tenant identity evidence was found in the signed contract.",
+    });
     await markDocument(supabase, doc.id, "no_id_card");
     return { outcome: "no_id_card" };
   }
@@ -390,13 +430,14 @@ async function processRasterizedPages(
       supabase,
       doc as ContractDocumentRow,
       combinedText,
-      evidencePage ? evidencePage.page.pageNumber : null,
+      evidencePage?.page.pageNumber ?? null,
       {
         imagePath: evidencePage?.page.evidenceImagePath || doc.file_path,
         crop: null,
         label: extracted.nameArabic || null,
       },
-      evidencePage ? evidencePage.ocr.annotations : [],
+      evidencePage?.ocr.annotations ?? [],
+      fullText,
     );
     if (outcome !== "proposal_created") await deletePendingProposal(supabase, doc.id);
     await markDocument(
@@ -404,7 +445,7 @@ async function processRasterizedPages(
       doc.id,
       outcome === "proposal_created" ? "proposal_created" : "no_changes",
     );
-    return { outcome, pageNumber: evidencePage.page.pageNumber };
+    return { outcome, pageNumber: evidencePage?.page.pageNumber ?? null };
   } catch (error) {
     console.error(`Failed to compare contract and ID names for document ${doc.id}:`, error);
     await markDocument(
@@ -413,6 +454,7 @@ async function processRasterizedPages(
       "failed",
       error instanceof Error ? error.message : String(error),
     );
+    await markLegalIdentityFailedIfPending(supabase, doc.id, error);
     return { outcome: "failed" };
   }
 }
@@ -440,8 +482,19 @@ async function scanDocumentImage(
     const rentFound = text
       ? extractMonthlyRent(text.split(/\r?\n/).map((l) => l.trim()).filter(Boolean)) !== undefined
       : false;
-    if (!text || (!looksLikeCustomerIdentityEvidence(text) && !rentFound)) {
+    const tenantFound = text
+      ? Boolean(extractContractTenantIdentity(text).nameArabic)
+      : false;
+    if (!text || (!looksLikeCustomerIdentityEvidence(text) && !rentFound && !tenantFound)) {
       await deletePendingProposal(supabase, doc.id);
+      await recordLegalIdentityAssessment(supabase, doc.id, {
+        status: "unverified",
+        expectedName: null,
+        extractedName: null,
+        expectedId: null,
+        extractedId: null,
+        reason: "No reliable tenant identity evidence was found in the signed contract.",
+      });
       await markDocument(supabase, doc.id, "no_id_card");
       return "no_id_card";
     }
@@ -457,6 +510,7 @@ async function scanDocumentImage(
         label: null,
       },
       ocr.annotations,
+      text,
     );
     if (outcome !== "proposal_created") {
       await deletePendingProposal(supabase, doc.id);
@@ -475,6 +529,7 @@ async function scanDocumentImage(
       "failed",
       error instanceof Error ? error.message : String(error),
     );
+    await markLegalIdentityFailedIfPending(supabase, doc.id, error);
     return "failed";
   }
 }
@@ -1176,6 +1231,7 @@ async function buildAndStoreProposal(
   pageNumber: number | null,
   evidence: NameEvidence = {},
   annotations: OcrAnnotation[] = [],
+  contractText: string = rawText,
 ): Promise<"proposal_created" | "no_changes"> {
   // Get the contract (and its customer) — monthly_amount is needed so the
   // scanner can recover contracts whose rent was never recorded.
@@ -1203,6 +1259,32 @@ async function buildAndStoreProposal(
   const changes: ProposedChange[] = [];
   let evidenceLabel = evidence.label || extracted.nameArabic || extracted.name || null;
 
+  const expectedArabicName = `${customer.first_name_ar || ""} ${customer.last_name_ar || ""}`.trim();
+  let contractTenant = extractContractTenantIdentity(contractText);
+  if (!contractTenant.nameArabic) {
+    contractTenant = await extractContractTenantWithLongCat(contractText)
+      || contractTenant;
+  }
+  const identityAssessment = assessLegalContractIdentity({
+    expectedName: expectedArabicName,
+    extractedName: contractTenant.nameArabic || extracted.nameArabic,
+    expectedId: customer.national_id,
+    extractedId: contractTenant.identityNumber || extracted.nationalId,
+    authoritativeName: Boolean(contractTenant.nameArabic),
+  });
+  await recordLegalIdentityAssessment(supabase, doc.id, identityAssessment);
+  if (identityAssessment.status === "mismatch") {
+    const extractedParty = identityAssessment.extractedName
+      || identityAssessment.extractedId
+      || "unknown";
+    const expectedParty = identityAssessment.expectedName
+      || identityAssessment.expectedId
+      || "unknown";
+    throw new Error(
+      `LEGAL_IDENTITY_MISMATCH: signed contract party "${extractedParty}" does not match defendant "${expectedParty}"`,
+    );
+  }
+
   const differs = (current: string | null, proposed?: string) =>
     !!proposed &&
     normalizeArabic(String(current || "")) !== normalizeArabic(proposed);
@@ -1217,13 +1299,6 @@ async function buildAndStoreProposal(
     !!extracted.nameArabic &&
     normalizeArabic(`${customer.first_name_ar || ""} ${customer.last_name_ar || ""}`) ===
       normalizeArabic(extracted.nameArabic);
-  if (
-    customer.national_id &&
-    extracted.nationalId &&
-    customer.national_id !== extracted.nationalId
-  ) {
-    throw new Error("Scanned identity number does not match the contract customer");
-  }
   const identityConfirmed = nationalIdMatches ||
     (!customer.national_id && arabicNameMatches);
 
@@ -1413,6 +1488,44 @@ async function buildAndStoreProposal(
   return "proposal_created";
 }
 
+async function extractContractTenantWithLongCat(
+  rawText: string,
+): Promise<ContractTenantIdentity | null> {
+  const apiKey = getLongCatApiKey();
+  if (!apiKey || !rawText.trim()) return null;
+  try {
+    const response = await fetch(LONGCAT_CHAT_COMPLETIONS_URL, {
+      method: "POST",
+      headers: buildLongCatHeaders(apiKey),
+      body: JSON.stringify({
+        model: LONGCAT_MODEL,
+        temperature: 0,
+        messages: [{
+          role: "user",
+          content: `استخرج فقط اسم المستأجر أو الطرف الثاني المكتوب في متن عقد إيجار السيارة، وليس اسم صاحب بطاقة هوية مرفقة ولا اسم الشركة. أعد JSON فقط بالشكل {"nameArabic": string|null, "identityNumber": string|null}. النص:\n${rawText.substring(0, 7000)}`,
+        }],
+      }),
+    });
+    if (!response.ok) return null;
+    const result = await response.json();
+    const content = String(result.choices?.[0]?.message?.content || "");
+    const match = content.match(/\{[\s\S]*\}/);
+    if (!match) return null;
+    const parsed = JSON.parse(match[0]);
+    return {
+      nameArabic: typeof parsed.nameArabic === "string" && parsed.nameArabic.trim()
+        ? parsed.nameArabic.trim()
+        : null,
+      identityNumber: typeof parsed.identityNumber === "string"
+        ? parsed.identityNumber.replace(/[^0-9]/g, "") || null
+        : null,
+    };
+  } catch (error) {
+    console.warn("Failed to extract the contract tenant with LongCat:", error);
+    return null;
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Document status bookkeeping
 // ---------------------------------------------------------------------------
@@ -1434,6 +1547,45 @@ async function deletePendingProposal(
   if (error) {
     console.warn(`⚠️ Failed to delete stale proposal for ${documentId}:`, error);
   }
+}
+
+async function recordLegalIdentityAssessment(
+  supabase: SupabaseClient,
+  documentId: string,
+  assessment: LegalContractIdentityAssessment,
+): Promise<void> {
+  const { error } = await supabase
+    .from("contract_documents")
+    .update({
+      legal_identity_match_status: assessment.status,
+      legal_identity_expected_name: assessment.expectedName,
+      legal_identity_extracted_name: assessment.extractedName,
+      legal_identity_expected_id: assessment.expectedId,
+      legal_identity_extracted_id: assessment.extractedId,
+      legal_identity_match_reason: assessment.reason,
+      legal_identity_checked_at: new Date().toISOString(),
+    })
+    .eq("id", documentId);
+
+  if (error) throw error;
+}
+
+async function markLegalIdentityFailedIfPending(
+  supabase: SupabaseClient,
+  documentId: string,
+  cause: unknown,
+): Promise<void> {
+  const reason = cause instanceof Error ? cause.message : String(cause);
+  const { error } = await supabase
+    .from("contract_documents")
+    .update({
+      legal_identity_match_status: "failed",
+      legal_identity_match_reason: reason.substring(0, 500),
+      legal_identity_checked_at: new Date().toISOString(),
+    })
+    .eq("id", documentId)
+    .eq("legal_identity_match_status", "pending");
+  if (error) console.warn(`Failed to store legal identity failure for ${documentId}:`, error);
 }
 
 /**

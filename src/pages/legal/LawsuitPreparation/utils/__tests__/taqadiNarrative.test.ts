@@ -3,6 +3,7 @@ import {
   buildFactsAdditions,
   buildTaqadiClaims,
   getVehicleCustody,
+  inferTaqadiIdType,
   isContractActive,
   isContractEnded,
   type TaqadiNarrativeInput,
@@ -26,19 +27,26 @@ function baseInput(overrides: Partial<TaqadiNarrativeInput> = {}): TaqadiNarrati
 }
 
 describe('getVehicleCustody', () => {
-  it('returns with_defendant only when the vehicle is rented', () => {
-    expect(getVehicleCustody('rented')).toBe('with_defendant');
-  });
-
-  it('treats known non-rented statuses as returned', () => {
-    expect(getVehicleCustody('available')).toBe('returned');
-    expect(getVehicleCustody('maintenance')).toBe('returned');
+  it('never infers legal custody from operational vehicle status', () => {
+    expect(getVehicleCustody('rented')).toBe('unknown');
+    expect(getVehicleCustody('available')).toBe('unknown');
+    expect(getVehicleCustody('maintenance')).toBe('unknown');
   });
 
   it('returns unknown when status is missing', () => {
     expect(getVehicleCustody(null)).toBe('unknown');
     expect(getVehicleCustody(undefined)).toBe('unknown');
     expect(getVehicleCustody('')).toBe('unknown');
+  });
+});
+
+describe('inferTaqadiIdType', () => {
+  it('classifies an 11-digit resident QID as a Qatari personal ID, not a residence licence', () => {
+    expect(inferTaqadiIdType('28078801264', 'تونس')).toBe('بطاقة شخصية قطرية');
+  });
+
+  it('uses a neutral type for a non-QID identity', () => {
+    expect(inferTaqadiIdType('P1234567', 'تونس')).toBe('هوية أو جواز سفر');
   });
 });
 
@@ -79,7 +87,7 @@ describe('buildFactsAdditions', () => {
     expect(paragraphs[0]).toContain('(1,500)');
   });
 
-  it('cites the reminder log as legal notice with count, channel and last date', () => {
+  it('cites the reminder log as follow-up messages, not a formal notice', () => {
     const paragraphs = buildFactsAdditions(
       baseInput({
         reminders: {
@@ -90,7 +98,8 @@ describe('buildFactsAdditions', () => {
       }),
     );
     expect(paragraphs).toHaveLength(1);
-    expect(paragraphs[0]).toContain('عدد (4) إشعارًا');
+    expect(paragraphs[0]).toContain('عدد (4) من رسائل المتابعة');
+    expect(paragraphs[0]).toContain('دون وصفها بإنذار رسمي');
     expect(paragraphs[0]).toContain('واتساب');
     expect(paragraphs[0]).toContain('الرسائل النصية');
     expect(paragraphs[0]).toContain('01/07/2026');
@@ -100,7 +109,7 @@ describe('buildFactsAdditions', () => {
     const paragraphs = buildFactsAdditions(
       baseInput({ reminders: { count: 2, lastSentDate: null, sendMethods: [] } }),
     );
-    expect(paragraphs[0]).toContain('عدد (2) إشعارًا');
+    expect(paragraphs[0]).toContain('عدد (2) من رسائل المتابعة');
     expect(paragraphs[0]).not.toContain('عبر');
     expect(paragraphs[0]).not.toContain('آخرها');
   });
@@ -108,7 +117,9 @@ describe('buildFactsAdditions', () => {
   it('combines contract end and vehicle retention in one paragraph', () => {
     const paragraphs = buildFactsAdditions(
       baseInput({
-        vehicleStatus: 'rented',
+        vehicleCustody: 'with_defendant',
+        legalPath: 'natural_expiry',
+        terminationDate: '2026-05-31',
         contractEndDate: '2026-05-31',
         contractStatus: 'expired',
       }),
@@ -119,18 +130,18 @@ describe('buildFactsAdditions', () => {
   });
 
   it('notes vehicle retention for an ongoing contract', () => {
-    const paragraphs = buildFactsAdditions(baseInput({ vehicleStatus: 'rented' }));
+    const paragraphs = buildFactsAdditions(baseInput({ vehicleCustody: 'with_defendant' }));
     expect(paragraphs).toEqual(['ولا تزال المركبة محل العقد في حوزة المدعى عليه حتى تاريخه.']);
   });
 
   it('notes that the company received the vehicle back', () => {
-    const paragraphs = buildFactsAdditions(baseInput({ vehicleStatus: 'available' }));
+    const paragraphs = buildFactsAdditions(baseInput({ vehicleCustody: 'returned' }));
     expect(paragraphs).toEqual(['وقد استلمت المدعية المركبة محل العقد من المدعى عليه.']);
   });
 
   it('mentions the contract end alone when vehicle custody is unknown', () => {
     const paragraphs = buildFactsAdditions(
-      baseInput({ contractEndDate: '2026-03-01', contractStatus: 'expired' }),
+      baseInput({ contractEndDate: '2026-03-01', contractStatus: 'expired', legalPath: 'natural_expiry', terminationDate: '2026-03-01' }),
     );
     expect(paragraphs).toHaveLength(1);
     expect(paragraphs[0]).toContain('01/03/2026');
@@ -144,13 +155,13 @@ describe('buildFactsAdditions', () => {
         violationsCount: 1,
         violationsFines: 500,
         reminders: { count: 1, lastSentDate: '2026-06-15', sendMethods: ['whatsapp'] },
-        vehicleStatus: 'rented',
+        vehicleCustody: 'with_defendant',
       }),
     );
     expect(paragraphs).toHaveLength(4);
     expect(paragraphs[0]).toContain('جزءًا');
     expect(paragraphs[1]).toContain('مخالفات مرورية');
-    expect(paragraphs[2]).toContain('إشعارًا');
+    expect(paragraphs[2]).toContain('رسائل المتابعة');
     expect(paragraphs[3]).toContain('حوزة المدعى عليه');
   });
 });
@@ -165,24 +176,28 @@ describe('buildTaqadiClaims', () => {
     );
   });
 
-  it('adds the violations transfer claim when violations exist', () => {
+  it('claims the violations value financially without conditioning on transfer', () => {
     const claims = buildTaqadiClaims(baseInput({ violationsCount: 2, violationsFines: 800 }));
-    expect(claims).toContain('2. الأمر بتحويل المخالفات المرورية المسجلة على المركبة إلى الرقم الشخصي للمدعى عليه.');
+    expect(claims).toContain(
+      'إلزام المدعى عليه بأداء قيمة المخالفات المرورية المسجلة على المركبة والثابتة بالمستخرج الرسمي، دون تعليق طلبات الدعوى على إجراء التحويل الإداري.',
+    );
+    expect(claims).not.toContain('تحويل المخالفات');
   });
 
   it('demands vehicle delivery while it remains with the defendant', () => {
-    const claims = buildTaqadiClaims(baseInput({ vehicleStatus: 'rented' }));
+    const claims = buildTaqadiClaims(baseInput({ vehicleCustody: 'with_defendant' }));
     expect(claims).toContain('إلزام المدعى عليه بتسليم المركبة محل العقد إلى المدعية.');
   });
 
   it('omits the delivery claim once the vehicle is returned', () => {
-    const claims = buildTaqadiClaims(baseInput({ vehicleStatus: 'available' }));
+    const claims = buildTaqadiClaims(baseInput({ vehicleCustody: 'returned' }));
     expect(claims).not.toContain('تسليم المركبة');
   });
 
-  it('omits the termination claim for an already-cancelled contract', () => {
-    const claims = buildTaqadiClaims(baseInput({ contractStatus: 'cancelled' }));
-    expect(claims).not.toContain('فسخ عقد الإيجار');
+  it('uses the documented legal path instead of the operational contract status', () => {
+    const claims = buildTaqadiClaims(baseInput({ contractStatus: 'cancelled', legalPath: 'natural_expiry' }));
+    expect(claims).toContain('ثبوت انتهاء عقد الإيجار بانقضاء مدته');
+    expect(claims).not.toContain('الحكم بفسخ عقد الإيجار.');
   });
 
   it('keeps the termination claim when the status is unknown (legacy behavior)', () => {
@@ -195,7 +210,7 @@ describe('buildTaqadiClaims', () => {
       baseInput({
         violationsCount: 1,
         violationsFines: 300,
-        vehicleStatus: 'rented',
+        vehicleCustody: 'with_defendant',
       }),
     );
     const lines = claims.split('\n');

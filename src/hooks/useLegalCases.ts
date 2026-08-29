@@ -177,6 +177,7 @@ export const useLegalCases = (filters?: UseLegalCasesFilters, enabled: boolean =
           case_reference,
           judge_name,
           notes,
+          tags,
           description,
           contract_id,
           case_direction,

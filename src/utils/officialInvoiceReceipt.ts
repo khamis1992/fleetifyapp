@@ -3,6 +3,20 @@ import { ar } from "date-fns/locale";
 import type { PaymentReceiptProps } from "@/components/payments/PaymentReceipt";
 import { extractCustomerName, extractVehicleNumber } from "@/utils/invoiceHelpers";
 
+interface OfficialInvoiceReceiptInput {
+  source?: string | null;
+  payment_status?: string | null;
+  total_amount?: number | string | null;
+  amount?: number | string | null;
+  paid_amount?: number | string | null;
+  invoice_date?: string | null;
+  due_date?: string | null;
+  description?: string | null;
+  payment_method?: string | null;
+  invoice_number?: string | null;
+  [key: string]: unknown;
+}
+
 export function numberToArabicWords(amount: number): string {
   const arabicOnes = [
     "", "واحد", "اثنان", "ثلاثة", "أربعة", "خمسة", "ستة", "سبعة", "ثمانية", "تسعة",
@@ -83,9 +97,10 @@ function normalizePaymentMethod(method: unknown): PaymentReceiptProps["paymentMe
 }
 
 export function buildOfficialInvoiceReceiptProps(
-  invoice: any,
+  invoice: OfficialInvoiceReceiptInput,
   customerName?: string
 ): PaymentReceiptProps {
+  const isContractualSchedule = invoice.source === "payment_schedule";
   const isPaid = invoice.payment_status === "paid";
   const totalAmount = Number(invoice.total_amount) || Number(invoice.amount) || 0;
   const paidAmount = Number(invoice.paid_amount) || 0;
@@ -93,7 +108,9 @@ export function buildOfficialInvoiceReceiptProps(
   const displayAmount = isPaid ? paidAmount : remainingAmount > 0 ? remainingAmount : totalAmount;
   const invoiceDate = invoice.invoice_date || invoice.due_date || new Date().toISOString();
   const formattedDate = format(new Date(invoiceDate), "dd/MM/yyyy");
-  const description = invoice.description || `فاتورة إيجار شهري - ${format(new Date(invoiceDate), "MMMM yyyy", { locale: ar })}`;
+  const description = invoice.description || (isContractualSchedule
+    ? `استحقاق أجرة تعاقدي عن ${format(new Date(invoiceDate), "MMMM yyyy", { locale: ar })}`
+    : `فاتورة إيجار شهري - ${format(new Date(invoiceDate), "MMMM yyyy", { locale: ar })}`);
 
   return {
     receiptNumber: invoice.invoice_number || "غير محدد",
@@ -105,7 +122,9 @@ export function buildOfficialInvoiceReceiptProps(
     paymentMethod: normalizePaymentMethod(invoice.payment_method),
     documentTitle: isPaid
       ? { ar: "سند قبض", en: "PAYMENT VOUCHER" }
-      : { ar: "فاتورة مستحقة", en: "DUE INVOICE" },
+      : isContractualSchedule
+        ? { ar: "كشف استحقاق تعاقدي", en: "CONTRACTUAL DUE STATEMENT" }
+        : { ar: "فاتورة مستحقة", en: "DUE INVOICE" },
     hidePaymentMethod: !isPaid,
     totalAmount,
     paidAmount,

@@ -19,6 +19,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { calculateCanonicalBillingMonths } from '@/utils/contractCalculations';
+import { assertRentalEligible } from '@/services/rentalEligibilityGuard';
+import { RentalEligibilityBanner, RentalEligibilityNotice } from '@/components/contracts/RentalEligibilityBanner';
 
 import { useFleetifyTranslation } from "@/hooks/useTranslation";
 interface Customer {
@@ -213,6 +215,9 @@ const MobileContractWizard: React.FC = () => {
     try {
       const companyId = user?.profile?.company_id || user?.company?.id || '';
 
+      const eligibility = await assertRentalEligible({ companyId, vehicleId: formData.vehicleId, customerId: formData.customerId });
+      if (eligibility.level === 'warn') alert(eligibility.message);
+
       const contractAmount = calculateTotalAmount();
       const monthlyAmount = formData.contractType === 'monthly'
         ? formData.monthlyAmount
@@ -249,7 +254,7 @@ const MobileContractWizard: React.FC = () => {
       navigate('/mobile/contracts');
     } catch (error) {
       console.error('Error creating contract:', error);
-      alert('فشل إنشاء العقد');
+      alert(error instanceof Error ? error.message : 'فشل إنشاء العقد');
     } finally {
       setLoading(false);
     }
@@ -299,6 +304,13 @@ const MobileContractWizard: React.FC = () => {
 
       {/* Content */}
       <div className="px-4 py-6" style={{ paddingBottom: 'calc(80px + env(safe-area-inset-bottom))' }}>
+        {currentStep === 1 && <RentalEligibilityNotice className="mb-4" />}
+        <RentalEligibilityBanner
+          companyId={user?.profile?.company_id || user?.company?.id}
+          vehicleId={formData.vehicleId}
+          customerId={formData.customerId}
+          className="mb-4"
+        />
         <AnimatePresence mode="wait">
           {currentStep === 1 && (
             <Step1CustomerVehicle

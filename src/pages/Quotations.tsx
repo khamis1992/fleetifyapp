@@ -20,6 +20,7 @@ import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter"
 import { ResponsivePageActions } from "@/components/ui/responsive-page-actions"
 import { PageHelp } from "@/components/help";
 import { QuotationsPageHelpContent } from "@/components/help/content";
+import { assertRentalEligible } from '@/services/rentalEligibilityGuard';
 
 import { useFleetifyTranslation } from "@/hooks/useTranslation";
 interface QuotationFormData {
@@ -201,6 +202,15 @@ export default function Quotations() {
     mutationFn: async (quotationId: string) => {
       const quotation = quotations?.find(q => q.id === quotationId)
       if (!quotation) throw new Error('Quotation not found')
+
+      if (quotation.vehicle_id) {
+        const eligibility = await assertRentalEligible({
+          companyId: quotation.company_id,
+          vehicleId: quotation.vehicle_id,
+          customerId: quotation.customer_id,
+        })
+        if (eligibility.level === 'warn') toast.warning(eligibility.message)
+      }
 
       // Calculate start and end dates
       const startDate = new Date()

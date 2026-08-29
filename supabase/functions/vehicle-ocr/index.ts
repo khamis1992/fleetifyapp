@@ -11,7 +11,7 @@
  */
 
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { authorizeActiveCompanyUser } from "../_shared/privileged-admin.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -48,12 +48,13 @@ interface OCRResponse {
 // Google Cloud Vision API endpoint
 const GOOGLE_VISION_API_URL = 'https://vision.googleapis.com/v1/images:annotate';
 
-serve(async (req) => {
+Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
+    await authorizeActiveCompanyUser(req);
     const { imageBase64 }: OCRRequest = await req.json();
 
     console.log('🚗 Vehicle OCR Request received');
@@ -340,3 +341,5 @@ function calculateConfidence(text: string, data: ExtractedVehicleData): number {
   
   return Math.min(confidence, 1.0);
 }
+
+

@@ -1,4 +1,3 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import {
   createClient,
   type SupabaseClient,
@@ -20,6 +19,10 @@ import {
   systemAuditCorsHeaders,
   systemAuditJson,
 } from "../_shared/system-audit/runtime.ts";
+import {
+  type AgentInvocationContext,
+  finishAgentExecution,
+} from "../_shared/agent.ts";
 
 type OrchestratorRequest = {
   mode?: SystemAuditMode;
@@ -37,21 +40,26 @@ type OrchestratorRequest = {
   waitForDispatch?: boolean;
 };
 
-const ORCHESTRATOR_VERSION = "2026-07-13.31";
+const ORCHESTRATOR_VERSION = "2026-08-27.32";
 
-serve(async (req) => {
+Deno.serve(async (req) => {
   if (req.method === "OPTIONS")
     return new Response("ok", { headers: systemAuditCorsHeaders });
 
-  try {
-    authorizeSystemAgent(req);
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL") || "",
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "",
-      { auth: { persistSession: false, autoRefreshToken: false } }
-    );
+  const supabase = createClient(
+    Deno.env.get("SUPABASE_URL") || "",
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "",
+    { auth: { persistSession: false, autoRefreshToken: false } }
+  );
+  let invocation: AgentInvocationContext | null = null;
+  let executionSucceeded = false;
 
-    if (req.method === "GET") return await getRunStatus(req, supabase);
+  try {
+
+    if (req.method === "GET") {
+      await authorizeSystemAgent(req);
+      return await getRunStatus(req, supabase);
+    }
     if (req.method !== "POST") {
       return systemAuditJson(
         {
@@ -64,6 +72,10 @@ serve(async (req) => {
     }
 
     const body = await readRequestJson<OrchestratorRequest>(req);
+    if (!body.companyId) {
+      return systemAuditJson({ ok: false, error: "companyId is required" }, 400);
+    }
+    invocation = await authorizeSystemAgent(req, body.companyId);
     const mode: SystemAuditMode =
       body.mode || (body.dryRun === false ? "apply" : "dry_run");
     if (!(["dry_run", "apply"] as string[]).includes(mode)) {
@@ -90,6 +102,14 @@ serve(async (req) => {
       maxBatches: clampInteger(body.maxBatchesPerJob, 0, 10_000, 0),
     };
 
+    if (body.companyId) {
+      const blockedResponse = await getBlockedCompanyResponse(
+        supabase,
+        body.companyId
+      );
+      if (blockedResponse) return blockedResponse;
+    }
+
     if (body.resumeOnly) {
       if (!idempotencyKey) {
         return systemAuditJson(
@@ -105,6 +125,7 @@ serve(async (req) => {
       if (existingRunError) throw existingRunError;
       const existingRun = existingRuns?.[0];
       if (!existingRun) {
+        executionSucceeded = true;
         return systemAuditJson({
           ok: true,
           resumeOnly: true,
@@ -123,6 +144,7 @@ serve(async (req) => {
       const dispatch = dispatchJobs(jobIds);
       if (body.waitForDispatch) await dispatch;
       else scheduleBackground(dispatch);
+      executionSucceeded = true;
       return systemAuditJson(
         {
           ok: true,
@@ -163,6 +185,7 @@ serve(async (req) => {
     const dispatch = dispatchJobs(jobIds);
     if (body.waitForDispatch) await dispatch;
     else scheduleBackground(dispatch);
+    executionSucceeded = true;
 
     return systemAuditJson(
       {
@@ -187,8 +210,50 @@ serve(async (req) => {
       },
       getSystemAuditErrorStatus(error)
     );
+  } finally {
+    if (invocation) {
+      try {
+        await finishAgentExecution(
+          supabase,
+          invocation,
+          executionSucceeded,
+          { phase: "orchestrator_dispatch", completed: executionSucceeded },
+          executionSucceeded ? null : "SYSTEM_AUDIT_ORCHESTRATOR_FAILURE",
+        );
+      } catch (finishError) {
+        console.error("Could not close system audit orchestrator invocation", finishError);
+      }
+    }
   }
 });
+
+async function getBlockedCompanyResponse(
+  supabase: SupabaseClient,
+  companyId: string
+): Promise<Response | null> {
+  const { data, error } = await supabase.rpc(
+    "system_agent_get_company_control_v1",
+    { p_company_id: companyId }
+  );
+  if (error) throw error;
+
+  const control = (data || {}) as Record<string, unknown>;
+  const blocked =
+    control.enabled === false ||
+    control.paused === true ||
+    control.killSwitch === true;
+  if (!blocked) return null;
+
+  return systemAuditJson(
+    {
+      ok: false,
+      error: "System audit agent is disabled or paused for this company",
+      control,
+      orchestratorVersion: ORCHESTRATOR_VERSION,
+    },
+    423
+  );
+}
 
 async function loadDispatchableJobs(
   supabase: SupabaseClient,

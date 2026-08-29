@@ -12,7 +12,6 @@ export type {
   DocumentsListData,
   CriminalComplaintData,
   ViolationsTransferData,
-  ExplanatoryMemoData,
   DocumentPortfolioData,
 } from './types';
 
@@ -27,9 +26,6 @@ export { generateOfficialHeader, generateSignatureSection } from './templates';
 
 // Official letter
 export { generateOfficialLetter } from './official-letter';
-
-// Explanatory memo
-export { generateExplanatoryMemoHtml } from './explanatory-memo';
 
 // Documents list
 export { generateDocumentsListHtml } from './documents-list';

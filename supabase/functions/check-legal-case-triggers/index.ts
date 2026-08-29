@@ -2,7 +2,6 @@
 // https://deno.land/manual/getting_started/setup_your_environment
 // This enables autocomplete, go to definition, etc.
 
-import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const corsHeaders = {
@@ -24,11 +23,22 @@ interface AutoCreateTriggerConfig {
   notify_on_auto_create: boolean;
 }
 
-serve(async (req) => {
+Deno.serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
   }
+
+  // Retired: this legacy endpoint created legal cases directly without the
+  // signed-contract, formal-notice and Taqadi readiness gates.
+  return new Response(JSON.stringify({
+    success: false,
+    error: 'Legacy automatic legal-case trigger retired',
+    replacement: 'legal-notice-agent + taqadi-filing-agent',
+  }), {
+    status: 410,
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+  });
 
   try {
     const supabaseClient = createClient(

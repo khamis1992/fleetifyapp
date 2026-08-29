@@ -77,6 +77,7 @@ describe('buildBatchCandidates', () => {
           document_type: 'signed_contract',
           file_path: 'c1/contract.pdf',
           mime_type: 'application/pdf',
+          legal_identity_match_status: 'matched',
         },
         // مستند عقد لعقد آخر — لا يؤثر
         {
@@ -86,6 +87,7 @@ describe('buildBatchCandidates', () => {
           document_type: 'signed_contract',
           file_path: 'c9/contract.pdf',
           mime_type: 'application/pdf',
+          legal_identity_match_status: 'matched',
         },
       ],
     });

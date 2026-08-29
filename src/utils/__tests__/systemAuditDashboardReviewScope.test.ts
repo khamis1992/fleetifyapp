@@ -34,31 +34,25 @@ describe('system audit dashboard open-review scope', () => {
   });
 
   it('ships Arabic labels for the new invoice reconciliation review types', () => {
-    for (const path of [
-      'src/hooks/useSystemAuditDashboard.ts',
-      'src/components/tasks/SystemAuditAgentDashboard.tsx',
-    ]) {
-      const source = read(path);
-      expect(source).toContain('invoice.zero_amount_blocks_billing_month');
-      expect(source).toContain('invoice.schedule_amount_mismatch_requires_review');
-      expect(source).toContain('invoice.month_reconciliation_needs_review');
-      expect(source).toContain('contract.missing_billing_graph');
-    }
+    const source = read('src/components/tasks/SystemAuditAgentDashboard.tsx');
+    expect(source).toContain('invoice.zero_amount_blocks_billing_month');
+    expect(source).toContain('invoice.schedule_amount_mismatch_requires_review');
+    expect(source).toContain('invoice.month_reconciliation_needs_review');
+    expect(source).toContain('contract.missing_billing_graph');
   });
 
-  it('keeps separate tasks per target month and refreshes a task to the current finding', () => {
-    const source = read('src/hooks/useSystemAuditDashboard.ts');
+  it('delegates target-month task identity and refresh to the atomic server-side sync', () => {
+    const hook = read('src/hooks/useSystemAuditDashboard.ts');
+    const migration = read('supabase/migrations/20260827093000_server_side_system_audit_review_task_sync.sql');
 
-    expect(source).toContain('targetMonthFromEvidence(finding.evidence)');
-    expect(source).toContain('targetMonth: targetMonthFromEvidence(finding.evidence)');
-    expect(source).toContain('tasksToRefresh.push({ id: task.id, seed })');
-    expect(source).toContain('metadata?.systemAgentFindingId !== seed.metadata.systemAgentFindingId');
-    expect(source).toContain('const companyId = dashboard.companyId');
-    expect(source).toContain('const canArchiveStaleTasks = dashboard.reviewSnapshotComplete !== false');
-    expect(source).toContain('if (canArchiveStaleTasks) staleTaskIds.push(task.id)');
-    expect(source).not.toContain('if (dashboard.reviewSnapshotComplete === false) {');
-    expect(source).toContain('.contains("metadata", { source: "system_audit_agent" })');
-    expect(source).not.toContain('user?.profile?.company_id || dashboard.companyId');
+    expect(hook).toContain('const companyId = dashboard.companyId');
+    expect(hook).toContain('action: "sync_review_tasks"');
+    expect(hook).not.toContain('user?.profile?.company_id || dashboard.companyId');
+    expect(migration).toContain("COALESCE(finding.evidence->>'target_month', '') AS target_month");
+    expect(migration).toContain("'systemAgentFindingId', snapshot.finding_id");
+    expect(migration).toContain("'targetMonth', snapshot.target_month");
+    expect(migration).toContain("task.metadata->>'systemAgentFindingId' IS DISTINCT FROM snapshot.finding_id::text");
+    expect(migration).toContain('sync_system_audit_review_tasks_v1');
   });
 
   it('keeps the system-audit route visible even when customer verification tasks exist', () => {

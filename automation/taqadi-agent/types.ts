@@ -68,6 +68,7 @@ export interface FilingPayload {
   };
   vehicle: Record<string, unknown> | null;
   documents: FilingDocument[];
+  memoSnapshotId?: string;
   finalApproval: boolean;
   sourceUrl: string;
   // Canary jobs re-run the portal flow up to the parties page and never

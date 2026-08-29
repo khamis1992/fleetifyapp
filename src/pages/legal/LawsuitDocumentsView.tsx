@@ -117,12 +117,12 @@ export default function LawsuitDocumentsView() {
           available: !!savedDocs?.find(d => d.document_type === 'claims_statement')
         },
         {
-          name: 'بلاغ سرقة المركبة',
+          name: 'بلاغ جنائي بالامتناع عن رد المركبة',
           url: savedDocs?.find(d => d.document_type === 'criminal_complaint')?.file_url || null,
           htmlContent: savedDocs?.find(d => d.document_type === 'criminal_complaint')?.html_content || null,
           type: 'html',
           icon: <ShieldAlert className="h-5 w-5" />,
-          description: 'بلاغ سرقة/خيانة أمانة',
+          description: 'بلاغ استثنائي مرتبط بأدلة تسليم وانتهاء ومطالبة بالرد',
           available: !!savedDocs?.find(d => d.document_type === 'criminal_complaint')
         },
         {

@@ -3,12 +3,12 @@
  * معالج حالة تجهيز الدعوى
  */
 
-import type { 
-  LawsuitPreparationState, 
-  LawsuitPreparationAction, 
-  DocumentsState 
+import {
+  DOCUMENT_CONFIG,
+  type LawsuitPreparationState,
+  type LawsuitPreparationAction,
+  type DocumentsState,
 } from './types';
-import { DOCUMENT_CONFIG } from './types';
 
 // ==========================================
 // Initial State Factory
@@ -128,7 +128,22 @@ export function createInitialState(contractId: string | null = null): LawsuitPre
     customer: null,
     vehicle: null,
     overdueInvoices: [],
+    financialClaimSource: {
+      mode: 'none',
+      invoiceCount: 0,
+      scheduleCount: 0,
+      totalCount: 0,
+      outstandingTotal: 0,
+      asOfDate: new Date().toISOString().slice(0, 10),
+    },
     paymentReminders: { count: 0, lastSentDate: null, sendMethods: [] },
+    litigationProfile: null,
+    formalNotices: [],
+    damageCosts: [],
+    contractEvidenceDocuments: [],
+    evidenceProposals: [],
+    memoSnapshots: [],
+    legalCase: null,
     trafficViolations: [],
     violationEvidenceDocuments: [],
     companyDocuments: [],
@@ -206,6 +221,62 @@ export function lawsuitPreparationReducer(
       return {
         ...state,
         paymentReminders: action.payload,
+      };
+    }
+
+    case 'SET_LITIGATION_PROFILE': {
+      return {
+        ...state,
+        litigationProfile: action.payload,
+      };
+    }
+
+    case 'SET_FORMAL_NOTICES': {
+      return {
+        ...state,
+        formalNotices: action.payload,
+      };
+    }
+
+    case 'SET_DAMAGE_COSTS': {
+      return {
+        ...state,
+        damageCosts: action.payload,
+      };
+    }
+
+    case 'SET_FINANCIAL_CLAIM_SOURCE': {
+      return {
+        ...state,
+        financialClaimSource: action.payload,
+      };
+    }
+
+    case 'SET_CONTRACT_EVIDENCE_DOCUMENTS': {
+      return {
+        ...state,
+        contractEvidenceDocuments: action.payload,
+      };
+    }
+
+    case 'SET_EVIDENCE_PROPOSALS': {
+      return {
+        ...state,
+        evidenceProposals: action.payload,
+      };
+    }
+
+    case 'SET_MEMO_SNAPSHOTS': {
+      return {
+        ...state,
+        memoSnapshots: action.payload,
+      };
+    }
+
+    case 'SET_LEGAL_CASE': {
+      return {
+        ...state,
+        legalCase: action.payload,
       };
     }
     
@@ -407,6 +478,10 @@ export function lawsuitPreparationReducer(
             ...state.documents[docId],
             status: 'ready',
             url: action.payload.url,
+            sourceDocumentId: action.payload.sourceDocumentId
+              ?? state.documents[docId].sourceDocumentId,
+            identityVerification: action.payload.identityVerification
+              ?? state.documents[docId].identityVerification,
             isUploading: false,
             uploadError: null,
           },

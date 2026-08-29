@@ -214,7 +214,9 @@ export function useRespondToLegalEmployeeReview() {
       // against the stored OCR evidence before the legal team relies on them.
       if (Object.keys(variables.customerUpdates || {}).length > 0) {
         void supabase.functions
-          .invoke('correction-verifier-agent', { body: { reviewId: variables.reviewId } })
+          .invoke('correction-verifier-agent', {
+            body: { reviewId: variables.reviewId, companyId: variables.companyId },
+          })
           .catch((verifyError) => console.warn('Correction verifier failed:', verifyError));
       }
       toast.success('تم إرسال نتيجة التدقيق إلى الفريق القانوني');

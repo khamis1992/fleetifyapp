@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
@@ -89,6 +90,23 @@ interface PaymentSuccess {
 
 interface QuickPaymentRecordingProps {
   onStepChange?: (step: number) => void;
+}
+
+interface AllocationPreviewLine {
+  invoiceNumber: string;
+  invoiceMonth: string;
+  amountToApply: number;
+  invoiceBalance: number;
+  warning: string | null;
+}
+
+interface AllocationPreview {
+  lines: AllocationPreviewLine[];
+  totalAmount: number;
+  hasFutureMonths: boolean;
+  autoAllocated: boolean;
+  autoCreatedInvoiceNumber: string | null;
+  futureWarnings: string[];
 }
 
 const receivablePaymentStatuses = ['unpaid', 'partial', 'partial_paid', 'partially_paid', 'overdue', 'pending'];
@@ -212,6 +230,8 @@ export function QuickPaymentRecording({ onStepChange }: QuickPaymentRecordingPro
   const [showAllInvoices, setShowAllInvoices] = useState(false);
   const [isGeneratingMissingInvoices, setIsGeneratingMissingInvoices] = useState(false);
   const [historicalCashMode, setHistoricalCashMode] = useState(false);
+  const [allocationPreview, setAllocationPreview] = useState<AllocationPreview | null>(null);
+  const [allocationPreviewOpen, setAllocationPreviewOpen] = useState(false);
   
   // Filter states
   const [dateRange, setDateRange] = useState({ start: '', end: '' });
@@ -875,6 +895,57 @@ export function QuickPaymentRecording({ onStepChange }: QuickPaymentRecordingPro
     }
   };
 
+  // إعادة جلب الفواتير الحالية للتأكد من أن التوزيع المعتمد ما زال صحيحًا.
+  // المعاينة قد أنشأت فاتورة جديدة (autoCreatedInvoiceNumber) أو استخدمت فواتير
+  // موجودة؛ القراءة هنا تلتقط أرصدتها لحظة التنفيذ بدل الاعتماد على نسخة قديمة.
+  const loadInvoicesForAllocation = async (preview: AllocationPreview): Promise<Invoice[]> => {
+    const numbers = preview.lines.map((line) => line.invoiceNumber);
+    if (numbers.length === 0) {
+      throw new Error('لا توجد فواتير في معاينة التوزيع.');
+    }
+
+    const query = supabase
+      .from('invoices')
+      .select(`
+        *,
+        contracts:contract_id (
+          contract_number,
+          vehicle_id,
+          vehicles:vehicle_id (
+            plate_number
+          )
+        )
+      `)
+      .eq('customer_id', selectedCustomer!.id)
+      .eq('company_id', companyId)
+      .in('invoice_number', numbers);
+
+    const { data, error } = await query;
+    if (error) throw error;
+
+    const byNumber = new Map<string, Invoice>((data || []).map((row: any) => [row.invoice_number as string, row as Invoice]));
+    const ordered: Invoice[] = [];
+    for (const number of numbers) {
+      const invoice = byNumber.get(number);
+      if (invoice) ordered.push(invoice);
+    }
+
+    if (ordered.length !== numbers.length) {
+      throw new Error('تغيّرت قائمة الفواتير منذ المعاينة. يرجى إعادة تجهيز الدفعة.');
+    }
+
+    return ordered;
+  };
+
+  const getProcessPaymentErrorMessage = (error: unknown): string => {
+    if (error instanceof Error) return error.message;
+    if (typeof error === 'object' && error !== null) {
+      const errObj = error as { message?: string; code?: string; details?: string };
+      return errObj.message || errObj.details || errObj.code || JSON.stringify(error);
+    }
+    return 'حدث خطأ غير معروف';
+  };
+
   const processPayment = async () => {
     if (!selectedCustomer || !paymentAmount || !companyId) {
       toast({
@@ -922,23 +993,17 @@ export function QuickPaymentRecording({ onStepChange }: QuickPaymentRecordingPro
       return;
     }
 
+    // المرحلة 1: بناء توزيع الدفعة وعرضه للتأكيد قبل أي كتابة على قاعدة البيانات.
     setProcessing(true);
-    let reopenedHistoricalPeriods: TemporaryPeriodReopening[] = [];
     try {
       const paymentDate = new Date().toISOString().split('T')[0];
       const invoicesToProcess: Invoice[] = [...selectedInvoices];
-      console.log('Processing payment with:', {
-        companyId,
-        customerId: selectedCustomer.id,
-        invoiceIds: invoicesToProcess.map(i => i.id),
-        amount,
-        paymentMethod
-      });
 
       // ✅ معالجة حالة عدم وجود فواتير - التوزيع التلقائي على الفواتير المستحقة
+      let autoCreatedInvoiceNumber: string | null = null;
       if (invoicesToProcess.length === 0) {
         console.log('🔄 لم يتم اختيار فواتير - البحث عن الفواتير المستحقة للتوزيع التلقائي...');
-        
+
         // البحث عن جميع الفواتير المستحقة للعميل (مرتبة حسب تاريخ الاستحقاق)
         let unpaidInvoiceQuery = supabase
           .from('invoices')
@@ -972,27 +1037,22 @@ export function QuickPaymentRecording({ onStepChange }: QuickPaymentRecordingPro
         if (activeUnpaidInvoices.length > 0) {
           // ✅ التوزيع التلقائي: إضافة الفواتير حسب المبلغ المتاح
           let remainingToDistribute = amount;
-          
+
           for (const invoice of activeUnpaidInvoices) {
             if (remainingToDistribute <= 0) break;
-            
+
             const invoiceBalance = (invoice.balance_due ?? invoice.total_amount) || 0;
             if (invoiceBalance <= 0) continue;
-            
+
             invoicesToProcess.push(invoice as Invoice);
             remainingToDistribute -= invoiceBalance;
           }
-          
+
           console.log(`✅ تم اختيار ${invoicesToProcess.length} فاتورة للتوزيع التلقائي`);
-          
-          // تحذير إذا كان المبلغ أكبر من إجمالي الفواتير المستحقة
-          if (remainingToDistribute > 0) {
-            console.warn(`⚠️ المبلغ المدفوع (${amount}) أكبر من إجمالي الفواتير المستحقة. الفائض: ${remainingToDistribute}`);
-          }
         } else {
           // لا توجد فواتير مستحقة - البحث عن عقد نشط وإنشاء فاتورة جديدة
           console.log('⚠️ لا توجد فواتير مستحقة - البحث عن عقد نشط...');
-          
+
           let activeContract = selectedContract?.status === 'active' ? selectedContract : null;
           if (!activeContract) {
             const { data: activeContracts, error: contractError } = await supabase
@@ -1009,7 +1069,7 @@ export function QuickPaymentRecording({ onStepChange }: QuickPaymentRecordingPro
             }
             activeContract = activeContracts[0] as Contract;
           }
-          
+
           // استخدام الخدمة الموحدة للبحث عن فاتورة موجودة أو إنشاء واحدة جديدة
           const { UnifiedInvoiceService } = await import('@/services/UnifiedInvoiceService');
           const invoiceResult = await UnifiedInvoiceService.findOrCreateInvoice({
@@ -1025,6 +1085,7 @@ export function QuickPaymentRecording({ onStepChange }: QuickPaymentRecordingPro
 
           if (invoiceResult.success && invoiceResult.invoice) {
             invoiceToUseId = invoiceResult.invoice.id;
+            autoCreatedInvoiceNumber = invoiceResult.invoice.invoice_number;
             console.log('✅ تم العثور على/إنشاء فاتورة:', invoiceResult.invoice.invoice_number, invoiceResult.reason || 'جديدة');
           } else if (invoiceResult.skipped && invoiceResult.existingInvoiceId) {
             invoiceToUseId = invoiceResult.existingInvoiceId;
@@ -1061,18 +1122,72 @@ export function QuickPaymentRecording({ onStepChange }: QuickPaymentRecordingPro
         }
       }
 
-      if (!historicalCashMode) {
-        const futureWarnings = invoicesToProcess
-          .map((invoice) => getFutureInvoiceWarning(invoice, paymentDate))
-          .filter(Boolean);
+      // بناء سطور المعاينة: مبلغ لكل فاتورة وتحذيرات الأشهر المستقبلية
+      let previewRemaining = amount;
+      const previewLines: AllocationPreviewLine[] = [];
 
-        if (futureWarnings.length > 0) {
-          toast({
-            title: 'تنبيه: توجد فواتير غير مستحقة بعد',
-            description: `هناك ${futureWarnings.length} فاتورة سيتم تسجيل دفعتها قبل تاريخها. راجع شهر الفاتورة وتاريخ الاستحقاق قبل الاعتماد النهائي.`,
-          });
-        }
+      for (const invoice of invoicesToProcess) {
+        if (previewRemaining <= 0) break;
+        const invoiceBalance = invoice.balance_due ?? invoice.total_amount;
+        const amountToApply = Math.min(previewRemaining, invoiceBalance);
+        if (amountToApply <= 0) continue;
+
+        previewLines.push({
+          invoiceNumber: invoice.invoice_number,
+          invoiceMonth: formatInvoiceMonth(invoice),
+          amountToApply,
+          invoiceBalance,
+          warning: historicalCashMode ? null : getFutureInvoiceWarning(invoice, paymentDate),
+        });
+        previewRemaining -= amountToApply;
       }
+
+      if (previewLines.length === 0 || previewRemaining > 0.01) {
+        throw new Error('يجب توزيع كامل مبلغ الدفعة على الفواتير قبل الحفظ.');
+      }
+
+      const futureWarnings = previewLines
+        .map((line) => line.warning)
+        .filter(Boolean) as string[];
+
+      setAllocationPreview({
+        lines: previewLines,
+        totalAmount: amount,
+        hasFutureMonths: futureWarnings.length > 0,
+        autoAllocated: selectedInvoices.length === 0,
+        autoCreatedInvoiceNumber,
+        futureWarnings,
+      });
+      setAllocationPreviewOpen(true);
+    } catch (error: unknown) {
+      console.error('Error preparing payment allocation:', JSON.stringify(error, null, 2));
+      const errorMessage = getProcessPaymentErrorMessage(error);
+      toast({
+        title: 'خطأ في تجهيز الدفعة',
+        description: errorMessage,
+        variant: 'destructive',
+      });
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  // المرحلة 2: تنفيذ الدفعة بعد تأكيد المستخدم لتوزيع المعاينة.
+  const confirmPaymentAllocation = async () => {
+    if (!selectedCustomer || !allocationPreview || !companyId) {
+      setAllocationPreviewOpen(false);
+      return;
+    }
+
+    const amount = allocationPreview.totalAmount;
+    setAllocationPreviewOpen(false);
+    setProcessing(true);
+    let reopenedHistoricalPeriods: TemporaryPeriodReopening[] = [];
+    try {
+      const paymentDate = new Date().toISOString().split('T')[0];
+
+      // إعادة جلب الفواتير المختارة/المعينة في المعاينة للحصول على أحدث بياناتها
+      const invoicesToProcess = await loadInvoicesForAllocation(allocationPreview);
 
       const invoiceNumbers = invoicesToProcess.map(inv => inv.invoice_number).join(', ');
       const contractNumbers = invoicesToProcess.map(inv => inv.contracts?.contract_number).filter(Boolean).join(', ');
@@ -1098,7 +1213,7 @@ export function QuickPaymentRecording({ onStepChange }: QuickPaymentRecordingPro
         const invoicePaymentDate = historicalCashMode
           ? getHistoricalPaymentDate(invoice, paymentDate)
           : paymentDate;
-        
+
         if (amountToApply <= 0) continue;
 
         allocations.push({
@@ -1152,9 +1267,9 @@ export function QuickPaymentRecording({ onStepChange }: QuickPaymentRecordingPro
         paymentId: payment.id,
         receiptNumber: generateReceiptNumber(),
         amount: amount,
-        invoiceNumber: selectedInvoices.length > 1 
-          ? `${selectedInvoices.length} فواتير` 
-          : selectedInvoices[0].invoice_number,
+        invoiceNumber: invoicesToProcess.length > 1
+          ? `${invoicesToProcess.length} فواتير`
+          : invoicesToProcess[0].invoice_number,
         customerName: `${selectedCustomer.first_name} ${selectedCustomer.last_name || ''}`.trim(),
         customerPhone: selectedCustomer.phone,
         paymentMethod: paymentMethod,
@@ -2148,6 +2263,91 @@ export function QuickPaymentRecording({ onStepChange }: QuickPaymentRecordingPro
         </CardContent>
       </Card>
       )}
+
+      {/* حوار معاينة توزيع الدفعة قبل الحفظ — يظهر الفواتير والأشهر التي ستُسدد */}
+      <Dialog open={allocationPreviewOpen} onOpenChange={setAllocationPreviewOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Wallet className="h-5 w-5" />
+              تأكيد توزيع الدفعة
+            </DialogTitle>
+            <DialogDescription>
+              ستوزَّع الدفعة بمبلغ {allocationPreview?.totalAmount.toFixed(2)} ر.ق على {allocationPreview?.lines.length} فاتورة كما يلي:
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="max-h-72 overflow-y-auto rounded-md border">
+            <table className="w-full text-sm">
+              <thead className="bg-muted/50 sticky top-0">
+                <tr className="text-right text-xs">
+                  <th className="px-3 py-2 font-medium">شهر الفاتورة</th>
+                  <th className="px-3 py-2 font-medium">رقم الفاتورة</th>
+                  <th className="px-3 py-2 font-medium">المبلغ</th>
+                  <th className="px-3 py-2 font-medium">رصيد الفاتورة</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(allocationPreview?.lines || []).map((line, index) => (
+                  <tr key={`${line.invoiceNumber}-${index}`} className="border-t">
+                    <td className="px-3 py-2">
+                      <div className="flex items-center gap-1">
+                        <span>{line.invoiceMonth}</span>
+                        {line.warning && (
+                          <span title={line.warning} className="text-amber-500">
+                            <AlertTriangle className="h-3.5 w-3.5" />
+                          </span>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-3 py-2 font-mono text-xs">{line.invoiceNumber}</td>
+                    <td className="px-3 py-2 font-semibold text-green-600">{line.amountToApply.toFixed(2)} ر.ق</td>
+                    <td className="px-3 py-2 text-muted-foreground">{line.invoiceBalance.toFixed(2)} ر.ق</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {allocationPreview?.autoAllocated && (
+            <p className="text-xs text-muted-foreground">
+              لم تختر فواتير يدويًا؛ هذه الفواتير اختيرت تلقائيًا حسب أقدم تاريخ استحقاق.
+              {allocationPreview.autoCreatedInvoiceNumber
+                ? ` تم إنشاء فاتورة جديدة: ${allocationPreview.autoCreatedInvoiceNumber}.`
+                : ''}
+            </p>
+          )}
+
+          {allocationPreview?.hasFutureMonths && (
+            <div className="rounded-md bg-amber-50 border border-amber-200 p-3 text-xs text-amber-800 space-y-1">
+              <p className="font-semibold flex items-center gap-1">
+                <AlertTriangle className="h-4 w-4" />
+                تنبيه: دفعات لفواتير لم تستحق بعد
+              </p>
+              {allocationPreview.futureWarnings.slice(0, 3).map((warning, index) => (
+                <p key={index}>{warning}</p>
+              ))}
+              {allocationPreview.futureWarnings.length > 3 && (
+                <p>و {allocationPreview.futureWarnings.length - 3} تنبيهات أخرى.</p>
+              )}
+            </div>
+          )}
+
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setAllocationPreviewOpen(false)} disabled={processing}>
+              مراجعة
+            </Button>
+            <Button onClick={confirmPaymentAllocation} disabled={processing}>
+              {processing ? (
+                <Loader2 className="h-4 w-4 animate-spin ml-2" />
+              ) : (
+                <Check className="h-4 w-4 ml-2" />
+              )}
+              حفظ الدفعة
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

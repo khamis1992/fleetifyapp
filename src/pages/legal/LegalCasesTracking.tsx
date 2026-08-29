@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -140,6 +140,18 @@ const getLegalCaseCustomerName = (legalCase?: LegalCase | null) => {
   return legalCase.client_name || 'غير محدد';
 };
 
+type CancelLegalCasesResult = {
+  cancelled_cases?: number;
+  already_terminal_cases?: number;
+};
+
+const TERMINAL_LEGAL_CASE_STATUSES = new Set(['closed', 'cancelled', 'canceled']);
+const TERMINAL_LEGAL_WORKFLOW_STAGES = new Set(['closed', 'cancelled']);
+
+const isCancellableLegalCase = (legalCase: LegalCase) =>
+  !TERMINAL_LEGAL_CASE_STATUSES.has((legalCase.case_status || '').toLowerCase())
+  && !TERMINAL_LEGAL_WORKFLOW_STAGES.has((legalCase.workflow_stage || '').toLowerCase());
+
 const toDateTimeLocalValue = (value?: string | null) => {
   if (!value) return '';
   const date = new Date(value);
@@ -224,6 +236,24 @@ export const LegalCasesTracking: React.FC = () => {
   });
 
   const { companyId, isAuthenticating, isInitializing } = useUnifiedCompanyAccess();
+  const { data: selectedCasePenalties = [] } = useQuery({
+    queryKey: ['legal-case-unpaid-penalties', selectedCase?.id, selectedCase?.contract_id, selectedCase?.client_id],
+    queryFn: async () => {
+      if (!companyId || (!selectedCase?.contract_id && !selectedCase?.client_id)) return [];
+      let query = supabase
+        .from('penalties')
+        .select('id, penalty_number, amount, payment_status, case_follow_up, case_follow_up_at')
+        .eq('company_id', companyId)
+        .or('payment_status.is.null,payment_status.not.in.(paid,completed)');
+      query = selectedCase.contract_id
+        ? query.eq('contract_id', selectedCase.contract_id)
+        : query.eq('customer_id', selectedCase.client_id!);
+      const { data, error } = await query.order('penalty_date', { ascending: false });
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: Boolean(showCaseDetails && companyId && selectedCase && (selectedCase.contract_id || selectedCase.client_id)),
+  });
   const isLoadingCompany = isAuthenticating || isInitializing;
   const { user } = useAuth();
   
@@ -231,20 +261,25 @@ export const LegalCasesTracking: React.FC = () => {
   const deleteCaseMutation = useMutation({
     mutationFn: async (caseId: string) => {
       if (!companyId) throw new Error('تعذر تحديد الشركة');
-      const { error } = await supabase.rpc('cancel_legal_cases_v1', {
+      const { data, error } = await supabase.rpc('cancel_legal_cases_v1', {
         p_actor_id: user?.id,
         p_case_ids: [caseId],
         p_company_id: companyId,
         p_reason: 'Cancelled from legal case tracking',
       });
       if (error) throw error;
+      return (data || {}) as CancelLegalCasesResult;
     },
-    onSuccess: async () => {
+    onSuccess: async (result) => {
       await Promise.all([
         queryClient.refetchQueries({ queryKey: ['legal-cases'], type: 'active' }),
         queryClient.refetchQueries({ queryKey: ['legal-case-stats'], type: 'active' }),
       ]);
-      toast.success('تم إلغاء القضية مع الاحتفاظ بسجلها');
+      if ((result.cancelled_cases || 0) > 0) {
+        toast.success('تم إلغاء القضية مع الاحتفاظ بسجلها');
+      } else {
+        toast.info('القضية مغلقة أو ملغاة بالفعل، ولم يتم تغيير سجلها');
+      }
       setShowDeleteDialog(false);
       setCaseToDelete(null);
     },
@@ -254,11 +289,11 @@ export const LegalCasesTracking: React.FC = () => {
   });
 
   const bulkDeleteCasesMutation = useMutation({
-    mutationFn: async (caseIds: string[]) => {
-      if (caseIds.length === 0) return;
+    mutationFn: async (caseIds: string[]): Promise<CancelLegalCasesResult> => {
+      if (caseIds.length === 0) return { cancelled_cases: 0, already_terminal_cases: 0 };
       if (!companyId) throw new Error('تعذر تحديد الشركة');
 
-      const { error } = await supabase.rpc('cancel_legal_cases_v1', {
+      const { data, error } = await supabase.rpc('cancel_legal_cases_v1', {
         p_actor_id: user?.id,
         p_case_ids: caseIds,
         p_company_id: companyId,
@@ -266,13 +301,21 @@ export const LegalCasesTracking: React.FC = () => {
       });
 
       if (error) throw error;
+      return (data || {}) as CancelLegalCasesResult;
     },
-    onSuccess: async (_data, caseIds) => {
+    onSuccess: async (result) => {
       await Promise.all([
         queryClient.refetchQueries({ queryKey: ['legal-cases'], type: 'active' }),
         queryClient.refetchQueries({ queryKey: ['legal-case-stats'], type: 'active' }),
       ]);
-      toast.success(`تم إلغاء ${caseIds.length} قضية مع الاحتفاظ بسجلاتها`);
+      const cancelledCount = result.cancelled_cases || 0;
+      const terminalCount = result.already_terminal_cases || 0;
+      if (cancelledCount > 0) {
+        toast.success(`تم إلغاء ${cancelledCount} قضية مع الاحتفاظ بسجلاتها`);
+      }
+      if (terminalCount > 0) {
+        toast.info(`تم تجاوز ${terminalCount} قضية لأنها مغلقة أو ملغاة بالفعل`);
+      }
       setSelectedCaseIds([]);
       setShowBulkDeleteDialog(false);
     },
@@ -545,6 +588,10 @@ export const LegalCasesTracking: React.FC = () => {
         phone: customerPhone,
         message,
         customerName,
+        companyId,
+        purpose: 'legal_case_notice',
+        entityType: 'legal_case',
+        entityId: legalCase.id,
       });
       
       toast.success('تم إرسال الإشعار للعميل عبر واتساب');
@@ -552,7 +599,7 @@ export const LegalCasesTracking: React.FC = () => {
       console.error('Error sending case notification:', error);
       toast.error('فشل إرسال الإشعار. يرجى المحاولة مرة أخرى');
     }
-  }, []);
+  }, [companyId]);
 
   const confirmDelete = useCallback(() => {
     if (caseToDelete) {
@@ -847,9 +894,16 @@ export const LegalCasesTracking: React.FC = () => {
   const cases = casesResponse?.data || [];
   const totalCases = casesResponse?.count || 0;
   const totalPages = Math.ceil(totalCases / pageSize);
-  const visibleCaseIds = useMemo(() => cases.map((legalCase) => legalCase.id), [cases]);
-  const allVisibleCasesSelected = visibleCaseIds.length > 0
-    && visibleCaseIds.every((caseId) => selectedCaseIds.includes(caseId));
+  const cancellableVisibleCaseIds = useMemo(
+    () => cases.filter(isCancellableLegalCase).map((legalCase) => legalCase.id),
+    [cases]
+  );
+  const selectedCancellableCaseIds = useMemo(
+    () => selectedCaseIds.filter((caseId) => cancellableVisibleCaseIds.includes(caseId)),
+    [cancellableVisibleCaseIds, selectedCaseIds]
+  );
+  const allVisibleCasesSelected = cancellableVisibleCaseIds.length > 0
+    && cancellableVisibleCaseIds.every((caseId) => selectedCaseIds.includes(caseId));
 
   useEffect(() => {
     setSelectedCaseIds([]);
@@ -866,19 +920,19 @@ export const LegalCasesTracking: React.FC = () => {
   const handleToggleAllVisibleCases = useCallback(() => {
     setSelectedCaseIds((prev) => {
       if (allVisibleCasesSelected) {
-        return prev.filter((caseId) => !visibleCaseIds.includes(caseId));
+        return prev.filter((caseId) => !cancellableVisibleCaseIds.includes(caseId));
       }
 
       const next = new Set(prev);
-      visibleCaseIds.forEach((caseId) => next.add(caseId));
+      cancellableVisibleCaseIds.forEach((caseId) => next.add(caseId));
       return Array.from(next);
     });
-  }, [allVisibleCasesSelected, visibleCaseIds]);
+  }, [allVisibleCasesSelected, cancellableVisibleCaseIds]);
 
   const confirmBulkDelete = useCallback(() => {
-    if (selectedCaseIds.length === 0) return;
-    bulkDeleteCasesMutation.mutate(selectedCaseIds);
-  }, [bulkDeleteCasesMutation, selectedCaseIds]);
+    if (selectedCancellableCaseIds.length === 0) return;
+    bulkDeleteCasesMutation.mutate([...selectedCancellableCaseIds]);
+  }, [bulkDeleteCasesMutation, selectedCancellableCaseIds]);
 
   // Calculate KPI data
   const kpiData = useMemo(() => {
@@ -1297,7 +1351,7 @@ export const LegalCasesTracking: React.FC = () => {
           </Button>
         </div>
         <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
-          {cases.length > 0 && (
+          {cancellableVisibleCaseIds.length > 0 && (
             <Button
               type="button"
               variant="outline"
@@ -1305,10 +1359,10 @@ export const LegalCasesTracking: React.FC = () => {
               className="legal-action-secondary flex min-h-[44px] w-full items-center justify-center gap-2 px-4 py-2.5 text-sm sm:w-auto"
             >
               <CheckCircle2 size={16} />
-              <span>{allVisibleCasesSelected ? 'إلغاء تحديد الكل' : 'تحديد كل المعروض'}</span>
+              <span>{allVisibleCasesSelected ? 'إلغاء تحديد الكل' : 'تحديد القضايا القابلة للإلغاء'}</span>
             </Button>
           )}
-          {selectedCaseIds.length > 0 && (
+          {selectedCancellableCaseIds.length > 0 && (
             <Button
               type="button"
               variant="outline"
@@ -1316,7 +1370,7 @@ export const LegalCasesTracking: React.FC = () => {
               className="flex min-h-[44px] w-full items-center justify-center gap-2 border-red-200 bg-red-50 px-4 py-2.5 text-sm text-red-700 hover:bg-red-100 sm:w-auto"
             >
               <XCircle size={16} />
-              <span>حذف المحدد ({selectedCaseIds.length})</span>
+              <span>إلغاء المحدد ({selectedCancellableCaseIds.length})</span>
             </Button>
           )}
           <Button
@@ -1378,11 +1432,11 @@ export const LegalCasesTracking: React.FC = () => {
         )}
       </AnimatePresence>
 
-      {selectedCaseIds.length > 0 && (
+      {selectedCancellableCaseIds.length > 0 && (
         <div className="flex flex-col gap-3 border-b border-[#E5EAF1] bg-red-50/80 p-4 text-sm sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-2 text-red-700">
             <AlertTriangle className="h-4 w-4" />
-            <span>تم تحديد {selectedCaseIds.length} قضية من السجل الحالي.</span>
+            <span>تم تحديد {selectedCancellableCaseIds.length} قضية قابلة للإلغاء.</span>
           </div>
           <div className="flex gap-2">
             <Button
@@ -1416,9 +1470,9 @@ export const LegalCasesTracking: React.FC = () => {
                 <input
                   type="checkbox"
                   checked={allVisibleCasesSelected}
-                  disabled={cases.length === 0}
+                  disabled={cancellableVisibleCaseIds.length === 0}
                   onChange={handleToggleAllVisibleCases}
-                  aria-label="تحديد كل القضايا المعروضة"
+                  aria-label="تحديد كل القضايا القابلة للإلغاء"
                   className="rounded border-[#CBD5E1] text-[#38BDF8] focus:ring-[#38BDF8]"
                 />
               </TableHead>
@@ -1439,15 +1493,21 @@ export const LegalCasesTracking: React.FC = () => {
                 </TableCell>
               </TableRow>
             ) : cases.length > 0 ? (
-              cases.map((item) => (
-                <TableRow key={item.id} className="group transition-colors hover:bg-[#38BDF8]/5">
+              cases.map((item) => {
+                const isCancellable = isCancellableLegalCase(item as LegalCase);
+                return (
+                  <TableRow key={item.id} className="group transition-colors hover:bg-[#38BDF8]/5">
                   <TableCell className="px-6 py-4">
                     <input
                       type="checkbox"
                       checked={selectedCaseIds.includes(item.id)}
+                      disabled={!isCancellable}
                       onChange={() => handleToggleCaseSelection(item.id)}
-                      aria-label={`تحديد القضية ${item.case_number}`}
-                      className="rounded border-[#CBD5E1] text-[#38BDF8] focus:ring-[#38BDF8]"
+                      aria-label={isCancellable
+                        ? `تحديد القضية ${item.case_number}`
+                        : `القضية ${item.case_number} مغلقة أو ملغاة`}
+                      title={isCancellable ? undefined : 'لا يمكن إلغاء قضية نهائية مرة أخرى'}
+                      className="rounded border-[#CBD5E1] text-[#38BDF8] focus:ring-[#38BDF8] disabled:cursor-not-allowed disabled:opacity-40"
                     />
                   </TableCell>
                   <TableCell className="px-6 py-4 font-semibold text-[#020617]">{item.case_number}</TableCell>
@@ -1551,8 +1611,9 @@ export const LegalCasesTracking: React.FC = () => {
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>
-                </TableRow>
-              ))
+                  </TableRow>
+                );
+              })
             ) : (
               <TableRow>
                 <TableCell colSpan={8} className="py-16 text-center text-[#94A3B8]">
@@ -2076,6 +2137,25 @@ export const LegalCasesTracking: React.FC = () => {
                   <p className="font-medium text-lg text-[#E55B5B]">{formatCurrency(selectedCase.case_value || 0)}</p>
                 </div>
               </div>
+
+              {selectedCasePenalties.length > 0 && (
+                <div className="border-t pt-4" dir="rtl">
+                  <div className="mb-3 flex items-center justify-between gap-3">
+                    <h4 className="font-semibold">المخالفات المرورية غير المسددة</h4>
+                    {selectedCasePenalties.some((penalty) => penalty.case_follow_up) && (
+                      <Badge className="border border-amber-300 bg-amber-100 text-amber-900">محوّلة لمتابعة القضايا</Badge>
+                    )}
+                  </div>
+                  <div className="space-y-2">
+                    {selectedCasePenalties.map((penalty) => (
+                      <div key={penalty.id} className="flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm">
+                        <span>مخالفة {penalty.penalty_number || penalty.id}</span>
+                        <span className="font-bold">{formatCurrency(Number(penalty.amount || 0))}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {(selectedCase.outcome_type || selectedCase.outcome_date || selectedCase.outcome_notes) && (
                 <div className="border-t pt-4">
@@ -2876,7 +2956,7 @@ export const LegalCasesTracking: React.FC = () => {
               تأكيد إلغاء القضايا المحددة
             </AlertDialogTitle>
             <AlertDialogDescription className="text-right">
-              هل أنت متأكد من إلغاء <strong>{selectedCaseIds.length}</strong> قضية محددة؟ ستبقى محفوظة في سجل القضايا.
+              هل أنت متأكد من إلغاء <strong>{selectedCancellableCaseIds.length}</strong> قضية محددة؟ ستبقى محفوظة في سجل القضايا.
               <br />
               هذا الإجراء لا يمكن التراجع عنه.
             </AlertDialogDescription>
@@ -2884,11 +2964,14 @@ export const LegalCasesTracking: React.FC = () => {
           <AlertDialogFooter className="gap-2">
             <AlertDialogCancel disabled={bulkDeleteCasesMutation.isPending}>إلغاء</AlertDialogCancel>
             <AlertDialogAction
-              onClick={confirmBulkDelete}
-              disabled={bulkDeleteCasesMutation.isPending || selectedCaseIds.length === 0}
+              onClick={(event) => {
+                event.preventDefault();
+                confirmBulkDelete();
+              }}
+              disabled={bulkDeleteCasesMutation.isPending || selectedCancellableCaseIds.length === 0}
               className="bg-red-600 hover:bg-red-700"
             >
-              {bulkDeleteCasesMutation.isPending ? 'جاري الإلغاء...' : `إلغاء ${selectedCaseIds.length} قضية`}
+              {bulkDeleteCasesMutation.isPending ? 'جاري الإلغاء...' : `إلغاء ${selectedCancellableCaseIds.length} قضية`}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

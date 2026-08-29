@@ -187,6 +187,22 @@ export class TaqadiQueue {
     return data as FilingJob;
   }
 
+  async approveReviewedLegalFile(
+    job: FilingJob,
+    reviewDetails: Record<string, unknown>,
+  ) {
+    const { data, error } = await this.client.rpc(
+      'approve_taqadi_reviewed_legal_file_v1',
+      {
+        p_job_id: job.id,
+        p_worker_id: agentConfig.workerId,
+        p_review_details: reviewDetails,
+      },
+    );
+    if (error) throw error;
+    return data as Record<string, unknown>;
+  }
+
   async refundLoginAttempt(job: FilingJob) {
     if (job.attempt_count <= 0) return false;
 

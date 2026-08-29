@@ -7,20 +7,25 @@
  * Body: { imageBase64 }  (data-url or raw base64)
  */
 
-import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { callKimiJson, KIMI_VISION_MODEL } from "../_shared/kimi.ts";
 import {
   agentCorsHeaders,
-  authorizeAgent,
+  authorizeGovernedAgent,
+  createServiceClient,
+  finishAgentExecution,
   jsonResponse,
+  type AgentInvocationContext,
 } from "../_shared/agent.ts";
 
-serve(async (req) => {
+Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: agentCorsHeaders });
 
+  let invocation: AgentInvocationContext | null = null;
+  const supabase = createServiceClient();
   try {
-    await authorizeAgent(req);
     const body = await req.json().catch(() => ({}));
+    if (!body.companyId) throw new Error("companyId is required");
+    invocation = await authorizeGovernedAgent(req, "customer-id-autofill-agent", body.companyId);
     const imageBase64 = String(body.imageBase64 || "");
     if (!imageBase64) throw new Error("imageBase64 is required");
 
@@ -62,9 +67,17 @@ serve(async (req) => {
       model: KIMI_VISION_MODEL,
     };
 
+    await finishAgentExecution(supabase, invocation, true, {
+      confidence: result.confidence,
+      nationalIdAccepted: Boolean(result.nationalId),
+    });
     return jsonResponse(result);
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown error";
+    if (invocation) {
+      await finishAgentExecution(supabase, invocation, false, {}, "customer_id_autofill_failed")
+        .catch(() => undefined);
+    }
     return jsonResponse({ success: false, error: message }, message === "Unauthorized" ? 401 : 500);
   }
 });

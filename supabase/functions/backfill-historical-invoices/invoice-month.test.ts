@@ -56,21 +56,25 @@ describe("historical invoice backfill safety", () => {
       "utf8",
     );
 
-    expect(source).toContain("authorizeBackfill(req)");
-    expect(source).toContain("INVOICE_GENERATOR_SECRET");
+    expect(source).toContain("authorizePrivilegedCompanyActor(");
+    expect(source).toContain("authorizeGovernedAgent(");
+    expect(source).not.toContain("authorizeBackfill(req)");
+    expect(source).not.toContain("INVOICE_GENERATOR_SECRET");
     expect(source).toContain("companyId is required");
     expect(source).toContain("body.throughMonth || getCurrentInvoiceMonthInQatar()");
     expect(source).not.toContain("new Date().toISOString().slice(0, 7)");
     expect(source).toContain("hasExplicitContractIds");
     expect(source).toContain("UUID_PATTERN.test(contractId)");
     expect(source).toContain("contractIds must contain valid UUIDs");
+    expect(source).toContain("contractIds cannot contain more than 200 unique ids");
     expect(source).toContain("summarizeContractSelection(");
     expect(source).toContain("if (selection.missing > 0)");
     expect(source).toContain("selection,");
     expect(source).toContain("unavailable or ineligible");
     expect(source).toMatch(/"One or more requested contracts are unavailable or ineligible",\s*400/);
     expect(source).toContain('.eq("company_id", companyId)');
-    expect(source).toContain("error instanceof HttpError ? error.status : 500");
+    expect(source).toContain("error instanceof HttpError || error instanceof PrivilegedAuthError");
+    expect(source).toContain("? error.status");
     expect(source).toContain("generate_payment_schedules_for_contract");
     expect(source).toContain("generate_invoice_for_contract_month_outcome");
     expect(source).toContain("endOfInvoiceMonth(throughMonth)");

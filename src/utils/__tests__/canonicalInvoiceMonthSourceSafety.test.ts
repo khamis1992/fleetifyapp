@@ -127,8 +127,11 @@ describe('canonical invoice-month source safety', () => {
     );
     const config = readSource('supabase/config.toml');
 
-    expect(generator).toContain('authorizeInvoiceGenerator(req)');
-    expect(generator).toContain('INVOICE_GENERATOR_SECRET');
+    expect(generator).toContain('authorizeScheduledAgent');
+    expect(generator).toContain('"generate-monthly-invoices"');
+    expect(generator).toContain('companyId is required');
+    expect(generator).toContain('finishAgentExecution');
+    expect(generator).not.toContain('INVOICE_GENERATOR_SECRET');
     expect(generator).toContain('generate_invoice_for_contract_month_outcome');
     expect(generator).toContain('outcome?.created !== true');
     expect(generator).not.toContain('findActivePositiveInvoiceForMonth');
