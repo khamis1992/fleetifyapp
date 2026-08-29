@@ -157,6 +157,10 @@ BEGIN
     RAISE EXCEPTION 'Amendment vehicle does not belong to the contract company' USING ERRCODE = 'P0001';
   END IF;
 
+  -- The amendment has passed approval, tenant, signature, value and vehicle checks.
+  -- Opt into the billing-graph guard for this transaction only.
+  PERFORM set_config('fleetify.atomic_contract_creation', 'on', true);
+
   UPDATE public.contracts contract
   SET start_date = v_start_date,
       end_date = v_end_date,

@@ -1,6 +1,12 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { getOverdueReminderType } from "./reminder-cadence.ts";
+import { formatArabicInvoiceMonthLabel } from "../_shared/invoice-label.ts";
+import {
+  type AgentInvocationContext,
+  authorizeScheduledAgent,
+  createServiceClient,
+  finishAgentExecution,
+} from "../_shared/agent.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -26,6 +32,7 @@ const MAX_BATCH_SIZE = 200;
 type SupabaseClient = ReturnType<typeof createClient>;
 
 type PaymentReminderRequest = {
+  companyId?: string;
   upcomingAfterInvoiceId?: string;
   overdueAfterInvoiceId?: string;
   processUpcoming?: boolean;
@@ -72,7 +79,7 @@ class HttpError extends Error {
   }
 }
 
-serve(async (req) => {
+Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
@@ -81,10 +88,20 @@ serve(async (req) => {
     return jsonResponse({ success: false, error: "Method not allowed" }, 405);
   }
 
+  const supabaseClient = createServiceClient();
+  let invocation: AgentInvocationContext | null = null;
+  let executionFailed = false;
+  let executionSummary: Record<string, unknown> = {};
   try {
-    authorizePaymentReminders(req);
-
     const body = await readJson<PaymentReminderRequest>(req);
+    if (typeof body.companyId !== "string" || !body.companyId) {
+      throw new HttpError("companyId is required", 400);
+    }
+    invocation = await authorizeScheduledAgent(
+      req,
+      "payment-reminder-agent",
+      body.companyId,
+    );
     const batchSize = parseBatchSize(body.batchSize);
     const processUpcoming = parseProcessFlag(body.processUpcoming, "processUpcoming");
     const processOverdue = parseProcessFlag(body.processOverdue, "processOverdue");
@@ -97,11 +114,6 @@ serve(async (req) => {
       "overdueAfterInvoiceId",
     );
 
-    const supabaseClient = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
-      { auth: { persistSession: false } },
-    );
     const today = getQatarDateOnly(new Date());
     const threeDaysDate = addCalendarDays(today, 3);
     const results: ReminderResults = {
@@ -122,6 +134,7 @@ serve(async (req) => {
       try {
         upcomingBatch = await loadReminderInvoiceBatch(
           supabaseClient,
+          body.companyId,
           "eq",
           threeDaysDate,
           upcomingAfterInvoiceId,
@@ -138,6 +151,7 @@ serve(async (req) => {
       try {
         overdueBatch = await loadReminderInvoiceBatch(
           supabaseClient,
+          body.companyId,
           "lt",
           today,
           overdueAfterInvoiceId,
@@ -176,7 +190,7 @@ serve(async (req) => {
             `عزيزي ${customerName}،`,
             "",
             "لديك فاتورة مستحقة خلال 3 أيام:",
-            `رقم الفاتورة: ${invoice.invoice_number || "-"}`,
+            formatArabicInvoiceMonthLabel(invoice.due_date),
             `المبلغ المستحق: ${outstandingAmount.toFixed(2)} ريال`,
             `تاريخ الاستحقاق: ${invoice.due_date || "-"}`,
             "",
@@ -232,7 +246,7 @@ serve(async (req) => {
             `عزيزي ${customerName}،`,
             "",
             "لديك فاتورة متأخرة عن السداد:",
-            `رقم الفاتورة: ${invoice.invoice_number || "-"}`,
+            formatArabicInvoiceMonthLabel(invoice.due_date),
             `المبلغ المستحق: ${outstandingAmount.toFixed(2)} ريال`,
             `عدد أيام التأخير: ${daysOverdue} يوم`,
             "",
@@ -252,6 +266,11 @@ serve(async (req) => {
     }
 
     const hasErrors = results.errors.length > 0;
+    executionSummary = {
+      remindersSent: results.reminders_sent,
+      overdueNoticesSent: results.overdue_notices_sent,
+      errors: results.errors.length,
+    };
     return jsonResponse({
       success: !hasErrors,
       message: hasErrors
@@ -271,24 +290,26 @@ serve(async (req) => {
       },
     }, hasErrors ? 207 : 200);
   } catch (error) {
+    executionFailed = true;
     const status = error instanceof HttpError ? error.status : 500;
     console.error("process-payment-reminders failed", error);
     return jsonResponse({ success: false, error: errorMessage(error) }, status);
+  } finally {
+    if (invocation) {
+      try {
+        await finishAgentExecution(
+          supabaseClient,
+          invocation,
+          !executionFailed,
+          executionSummary,
+          executionFailed ? "PAYMENT_REMINDER_FAILURE" : null,
+        );
+      } catch (finishError) {
+        console.error("Could not close payment reminder execution", finishError);
+      }
+    }
   }
 });
-
-function authorizePaymentReminders(req: Request) {
-  const configuredSecret = Deno.env.get("PAYMENT_REMINDERS_SECRET")
-    || Deno.env.get("INVOICE_GENERATOR_SECRET")
-    || "";
-  const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
-  const authorization = req.headers.get("authorization") || "";
-  const agentSecret = req.headers.get("x-agent-secret") || "";
-
-  if (configuredSecret && agentSecret === configuredSecret) return;
-  if (serviceRoleKey && authorization === `Bearer ${serviceRoleKey}`) return;
-  throw new HttpError("Unauthorized payment reminders request", 401);
-}
 
 async function readJson<T>(req: Request): Promise<T> {
   const rawBody = await req.text();
@@ -308,6 +329,7 @@ async function readJson<T>(req: Request): Promise<T> {
 
 async function loadReminderInvoiceBatch(
   supabase: SupabaseClient,
+  companyId: string,
   dueOperator: "eq" | "lt",
   dueDate: string,
   afterInvoiceId: string | null,
@@ -326,6 +348,7 @@ async function loadReminderInvoiceBatch(
     `)
     .in("payment_status", COLLECTIBLE_PAYMENT_STATUSES)
     .in("status", ACTIVE_INVOICE_STATUSES)
+    .eq("company_id", companyId)
     .order("id", { ascending: true })
     .limit(batchSize + 1);
 

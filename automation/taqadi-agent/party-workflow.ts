@@ -6,16 +6,16 @@ import {
 
 export type PartyWorkflowPhase =
   | 'save_parties_draft'
+  | 'company_session_party'
   | 'company'
-  | 'defendant'
-  | 'representative_last';
+  | 'defendant';
 
 type PartyWorkflowPortal = Pick<
   TaqadiPortal,
   | 'savePartiesDraft'
+  | 'reconcileCompanySessionParty'
   | 'validateCompanyParty'
   | 'addDefendant'
-  | 'validateRepresentativeFirst'
   | 'continueAfterParties'
 >;
 
@@ -34,19 +34,19 @@ export async function processTaqadiParties(
   await options.onPhase?.('save_parties_draft');
   await portal.savePartiesDraft();
 
+  await options.onPhase?.('company_session_party');
+  await portal.reconcileCompanySessionParty();
+
   await options.onPhase?.('company');
   await portal.validateCompanyParty(payload);
   await options.onPhase?.('defendant');
   await portal.addDefendant(payload, { continueAfterSave: false });
 
-  await options.onPhase?.('representative_last');
-  await portal.validateRepresentativeFirst();
-
   if (options.stopAfterParties) {
     throw new HumanInterventionError(
-      'نجحت تجربة إضافة أطراف الدعوى قبل مراجعة خميس، وتوقف الوكيل قبل مغادرة صفحة الأطراف.',
+      'نجحت تجربة مطابقة الطرف التلقائي والشركة والمدعى عليه، وتوقف الوكيل قبل مغادرة صفحة الأطراف.',
       'PARTIES_DIAGNOSTIC_COMPLETE',
-      { workflowOrder: ['company', 'defendant', 'representative'] },
+      { workflowOrder: ['company_session_party', 'company', 'defendant'] },
     );
   }
 

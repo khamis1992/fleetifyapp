@@ -16,18 +16,15 @@ const booleanFromEnv = (name: string, fallback: boolean) => {
   return value.toLowerCase() === 'true';
 };
 
+const CLAIMANT_EMAIL = 'khamis-1992@hotmail.com';
+
 const dataDir = path.resolve(
   process.env.TAQADI_AGENT_DATA_DIR
     || path.join(process.cwd(), '.taqadi-agent'),
 );
 
-export const FIXED_DEFENDANT_CONTACT = Object.freeze({
-  email: 'khamis-1992@hotmail.com',
-  address: 'الدوحة قطر',
-});
-
 export const agentConfig = {
-  version: '1.6.42',
+  version: '1.7.0',
   workerId: process.env.TAQADI_WORKER_ID
     || `${os.hostname()}-taqadi`,
   hostname: os.hostname(),
@@ -43,8 +40,10 @@ export const agentConfig = {
   loginTimeoutMs: numberFromEnv('TAQADI_LOGIN_TIMEOUT_MS', 10 * 60_000),
   actionTimeoutMs: numberFromEnv('TAQADI_ACTION_TIMEOUT_MS', 30_000),
   finalApproval: booleanFromEnv('TAQADI_FINAL_APPROVAL', true),
+  pauseBeforeFinalApproval: false,
   traceSnapshots: booleanFromEnv('TAQADI_TRACE_SNAPSHOTS', false),
   stopAfterParties: booleanFromEnv('TAQADI_STOP_AFTER_PARTIES', false),
+  guidedMode: booleanFromEnv('TAQADI_GUIDED_MODE', false),
   headless: booleanFromEnv('TAQADI_HEADLESS', false),
   healthPort: numberFromEnv('TAQADI_HEALTH_PORT', 4317),
   dataDir,
@@ -53,6 +52,7 @@ export const agentConfig = {
   tawtheeq: {
     username: process.env.TAQADI_TAWTHEEQ_USERNAME || '',
     password: process.env.TAQADI_TAWTHEEQ_PASSWORD || '',
+    smartCardPin: process.env.TAQADI_SMART_CARD_PIN || '',
   },
   // Optional LLM helpers (Level 2). The selector healer proposes updated
   // selectors; suggestions are auto-applied in-session ONLY after deterministic
@@ -66,11 +66,21 @@ export const agentConfig = {
       || '',
     model: process.env.TAQADI_HEALER_MODEL || 'claude-opus-4-8',
   },
+  // Optional local adaptive-selector memory. Scrapling never navigates the
+  // portal or receives entered values; it only sees a redacted control map.
+  scrapling: {
+    enabled: booleanFromEnv('TAQADI_SCRAPLING_ENABLED', false),
+    baseUrl: process.env.TAQADI_SCRAPLING_URL || 'http://127.0.0.1:4318',
+    token: process.env.TAQADI_SCRAPLING_TOKEN || '',
+    timeoutMs: numberFromEnv('TAQADI_SCRAPLING_TIMEOUT_MS', 2_000),
+    minSimilarity: numberFromEnv('TAQADI_SCRAPLING_MIN_SIMILARITY', 80),
+    maxHtmlBytes: numberFromEnv('TAQADI_SCRAPLING_MAX_HTML_BYTES', 512_000),
+  },
   advisorMaxClicks: numberFromEnv('TAQADI_ADVISOR_MAX_CLICKS', 2),
   representative: {
     name: process.env.TAQADI_REPRESENTATIVE_NAME || 'خميس الجبر',
     phone: process.env.TAQADI_REPRESENTATIVE_PHONE || '',
-    email: process.env.TAQADI_REPRESENTATIVE_EMAIL || '',
+    email: process.env.TAQADI_REPRESENTATIVE_EMAIL || CLAIMANT_EMAIL,
     address: process.env.TAQADI_REPRESENTATIVE_ADDRESS || 'الدوحة قطر',
     nationality: process.env.TAQADI_REPRESENTATIVE_NATIONALITY || 'قطر',
     identityType: process.env.TAQADI_REPRESENTATIVE_ID_TYPE || 'بطاقة شخصية',
@@ -82,9 +92,6 @@ export const agentConfig = {
     guardianType: process.env.TAQADI_REPRESENTATIVE_GUARDIAN_TYPE || 'طبيعي',
     connectionDegree: process.env.TAQADI_REPRESENTATIVE_CONNECTION_DEGREE || 'أخرى',
   },
-  defendantDefaults: {
-    ...FIXED_DEFENDANT_CONTACT,
-  },
   company: {
     establishmentNumber: process.env.TAQADI_COMPANY_ESTABLISHMENT_NUMBER
       || '17201586',
@@ -93,7 +100,7 @@ export const agentConfig = {
     phone: process.env.TAQADI_COMPANY_PHONE
       || process.env.TAQADI_REPRESENTATIVE_PHONE
       || '',
-    email: process.env.TAQADI_COMPANY_EMAIL || '',
+    email: process.env.TAQADI_COMPANY_EMAIL || CLAIMANT_EMAIL,
     address: process.env.TAQADI_COMPANY_ADDRESS || '',
     country: process.env.TAQADI_COMPANY_COUNTRY || 'قطر',
     bankNameAr: process.env.TAQADI_COMPANY_BANK_NAME_AR || '',
@@ -105,6 +112,40 @@ export const agentConfig = {
   },
 };
 
+export interface ScraplingConfigShape {
+  enabled: boolean;
+  baseUrl: string;
+  token: string;
+  minSimilarity: number;
+}
+
+/**
+ * Keep the parser sidecar on the filing workstation. A remote URL would turn
+ * the redacted portal structure into an unnecessary external data flow.
+ */
+export function validateScraplingConfig(
+  config: ScraplingConfigShape,
+): string[] {
+  if (!config.enabled) return [];
+  const errors: string[] = [];
+  if (config.token.trim().length < 24) {
+    errors.push('TAQADI_SCRAPLING_TOKEN must contain at least 24 characters');
+  }
+  if (config.minSimilarity < 70 || config.minSimilarity > 100) {
+    errors.push('TAQADI_SCRAPLING_MIN_SIMILARITY must be between 70 and 100');
+  }
+  try {
+    const url = new URL(config.baseUrl);
+    const localHosts = new Set(['127.0.0.1', 'localhost', '[::1]']);
+    if (url.protocol !== 'http:' || !localHosts.has(url.hostname)) {
+      errors.push('TAQADI_SCRAPLING_URL must be a local loopback HTTP URL');
+    }
+  } catch {
+    errors.push('TAQADI_SCRAPLING_URL must be a valid URL');
+  }
+  return errors;
+}
+
 /**
  * كشف القيم تالفة الترميز في الإعدادات العربية الحرجة.
  * عندما يُحفظ .env.taqadi-agent بترميز ANSI تتحول العربية إلى علامات
@@ -112,7 +153,7 @@ export const agentConfig = {
  * يُستدعى عند الإقلاع فيفشل بسرعة وبرسالة واضحة بدل الفشل داخل البوابة.
  */
 export function findCorruptedConfigValues(
-  config: Pick<typeof agentConfig, 'representative' | 'company' | 'defendantDefaults'>,
+  config: Pick<typeof agentConfig, 'representative' | 'company'>,
 ): string[] {
   const corrupted = (value: string | undefined) =>
     typeof value === 'string' && value.includes('?') && /^[\s?]+$/.test(value);
@@ -121,7 +162,6 @@ export function findCorruptedConfigValues(
     ['TAQADI_REPRESENTATIVE_ADDRESS', config.representative.address],
     ['TAQADI_REPRESENTATIVE_NATIONALITY', config.representative.nationality],
     ['TAQADI_REPRESENTATIVE_ID_TYPE', config.representative.identityType],
-    ['TAQADI_DEFENDANT_ADDRESS', config.defendantDefaults.address],
     ['TAQADI_COMPANY_ADDRESS', config.company.address],
     ['TAQADI_COMPANY_COUNTRY', config.company.country],
     ['TAQADI_COMPANY_ESTABLISHMENT_ISSUER', config.company.establishmentIssuer],
@@ -191,5 +231,10 @@ export function assertAgentConfig() {
     throw new Error(
       `Missing Taqadi agent configuration: ${missing.join(', ')}`,
     );
+  }
+
+  const scraplingErrors = validateScraplingConfig(agentConfig.scrapling);
+  if (scraplingErrors.length > 0) {
+    throw new Error(`Invalid Scrapling configuration: ${scraplingErrors.join('; ')}`);
   }
 }

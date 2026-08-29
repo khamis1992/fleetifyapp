@@ -37,7 +37,7 @@ function AmountTile({ label, value, tone = 'default' }: { label: string; value?:
 
 export function LegalOverview() {
   const { state } = useLawsuitPreparationContext();
-  const { calculations, contract, customer, overdueInvoices, trafficViolations, vehicle } = state;
+  const { calculations, contract, customer, financialClaimSource, overdueInvoices, trafficViolations, vehicle } = state;
 
   if (!contract || !calculations) {
     return (
@@ -109,13 +109,19 @@ export function LegalOverview() {
             <h2>ملخص المطالبة المالية</h2>
             <p>الأرقام المعتمدة لتوليد المذكرة الشارحة وكشف المطالبات.</p>
           </div>
-          <Badge variant="outline">{overdueInvoices.length} فاتورة متأخرة</Badge>
+          <Badge variant="outline">
+            {financialClaimSource.mode === 'payment_schedules'
+              ? `${overdueInvoices.length} استحقاق تعاقدي حالّ`
+              : financialClaimSource.mode === 'hybrid'
+                ? `${overdueInvoices.length} استحقاق من مصدر موحد`
+                : `${overdueInvoices.length} فاتورة متأخرة`}
+          </Badge>
         </div>
 
         <div className="lawsuit-amount-grid">
           <AmountTile label="الإيجار المتأخر" value={calculations.overdueRent} tone="danger" />
-          <AmountTile label="غرامات التأخير" value={calculations.lateFees} tone="warning" />
-          <AmountTile label="رسوم الأضرار" value={calculations.damagesFee} />
+          <AmountTile label="تعويض اتفاقي موثق" value={calculations.lateFees} tone="warning" />
+          <AmountTile label="أضرار ومصاريف مثبتة" value={calculations.damagesFee} />
           <AmountTile label="المخالفات المرورية" value={calculations.violationsFines} tone="danger" />
           <AmountTile label="الإجمالي" value={calculations.total} tone="total" />
         </div>
@@ -124,7 +130,7 @@ export function LegalOverview() {
       <section className="lawsuit-signal-grid">
         <article>
           <Receipt className="h-5 w-5" />
-          <span>الفواتير غير المسددة</span>
+          <span>{financialClaimSource.scheduleCount > 0 ? 'الاستحقاقات غير المسددة' : 'الفواتير غير المسددة'}</span>
           <strong>{overdueInvoices.length}</strong>
           <small>متوسط التأخير {calculations.avgDaysOverdue || 0} يوم</small>
         </article>

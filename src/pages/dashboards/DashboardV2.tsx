@@ -5,6 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 import { useDashboardStats } from '@/hooks/useDashboardStats';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
+import { useFleetStatus } from '@/hooks/useFleetStatus';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
@@ -303,26 +304,8 @@ const DashboardV2: React.FC = () => {
     enabled: !!companyId,
   });
 
-  // Fetch fleet status
-  const { data: fleetStatus } = useQuery({
-    queryKey: ['fleet-status-v2', companyId],
-    queryFn: async () => {
-      if (!companyId) return { available: 0, rented: 0, maintenance: 0 };
-      const { data } = await supabase
-        .from('vehicles')
-        .select('status')
-        .eq('company_id', companyId)
-        .eq('is_active', true);
-      
-      const counts = { available: 0, rented: 0, maintenance: 0, reserved: 0 };
-      data?.forEach((v) => {
-        const status = v.status || 'available';
-        if (counts[status] !== undefined) counts[status]++;
-      });
-      return counts;
-    },
-    enabled: !!companyId,
-  });
+  // Keep every dashboard on the same fleet status definition.
+  const { data: fleetStatus } = useFleetStatus();
 
   // Fetch monthly revenue data
   const { data: revenueData } = useQuery({
@@ -400,7 +383,7 @@ const DashboardV2: React.FC = () => {
     { name: 'محجوز', value: fleetStatus?.reserved || 0, color: '#3b82f6' },
   ], [fleetStatus]);
 
-  const totalVehicles = Object.values(fleetStatus || {}).reduce((a, b) => a + b, 0);
+  const totalVehicles = fleetStatus?.total || 0;
   const occupancyRate = totalVehicles > 0 
     ? Math.round(((fleetStatus?.rented || 0) / totalVehicles) * 100) 
     : 0;

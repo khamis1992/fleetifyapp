@@ -12,7 +12,8 @@ export type AgentType =
   | 'collection_message'
   | 'customer_autofill'
   | 'payment_match'
-  | 'correction_verify';
+  | 'correction_verify'
+  | 'formal_notice';
 
 export interface AgentReview {
   id: string;
@@ -36,6 +37,7 @@ const AGENT_FUNCTION: Record<AgentType, string> = {
   customer_autofill: 'customer-id-autofill-agent',
   payment_match: 'payment-match-agent',
   correction_verify: 'correction-verifier-agent',
+  formal_notice: 'legal-notice-agent',
 };
 
 export function useLatestAgentReview(agentType: AgentType, entityId?: string | null) {
@@ -61,9 +63,16 @@ export function useLatestAgentReview(agentType: AgentType, entityId?: string | n
 
 export function useRunAgentReview(agentType: AgentType) {
   const queryClient = useQueryClient();
+  const { companyId } = useUnifiedCompanyAccess();
   return useMutation({
     mutationFn: async (body: Record<string, unknown>) => {
-      const { data, error } = await supabase.functions.invoke(AGENT_FUNCTION[agentType], { body });
+      const scopedCompanyId = typeof body.companyId === 'string' && body.companyId
+        ? body.companyId
+        : companyId;
+      if (!scopedCompanyId) throw new Error('تعذر تحديد الشركة لتشغيل الوكيل');
+      const { data, error } = await supabase.functions.invoke(AGENT_FUNCTION[agentType], {
+        body: { ...body, companyId: scopedCompanyId },
+      });
       if (error) throw error;
       if (data?.success === false) throw new Error(data.error || 'فشل تشغيل الوكيل');
       return data;

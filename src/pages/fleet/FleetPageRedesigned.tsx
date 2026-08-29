@@ -1647,7 +1647,7 @@ const FleetPageRedesigned: React.FC = () => {
             <div className="relative">
               <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2" style={{ color: fleetTheme.muted }} />
               <Input
-                placeholder="بحث باللوحة، الموديل، VIN..."
+                placeholder="بحث باللوحة، الموديل، رقم الشاصي (VIN)..."
                 value={searchQuery}
                 onChange={(e) => {
                   setSearchQuery(e.target.value);

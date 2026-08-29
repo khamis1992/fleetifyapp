@@ -49,18 +49,36 @@ Version 1.2 hardens the authentication boundary:
    When the repository's local `.env` already contains
    `SUPABASE_SERVICE_ROLE_KEY`, the worker reuses it without duplicating the key.
 4. Complete the representative contact fields.
-5. On Windows, run `npm run taqadi:agent:credentials` once. The username and
-   password are stored with Windows DPAPI under `.taqadi-agent`, not in Git or
-   the environment file.
+5. On Windows, run `npm run taqadi:agent:credentials` and
+   `npm run taqadi:agent:smart-card-pin` once. The credentials and smart-card
+   PIN are stored with Windows DPAPI under `.taqadi-agent`, not in Git or the
+   environment file.
 6. Run `npm run taqadi:agent`.
-7. The worker opens the Tawtheeq card, fills the encrypted credentials, and
-   waits only when reCAPTCHA or another human verification is shown. After the
-   operator completes that verification, the worker clicks Continue itself.
+7. The worker opens Tawtheeq, selects smart-card authentication, enters the
+   encrypted PIN, selects the company account matching establishment number
+   `17201586`, and continues. Username/password remains a compatibility
+   fallback only when the smart-card option is unavailable.
 8. If Taqadi displays the account prompt after login, the worker confirms it
    with Enter without opening or changing the account dropdown.
 
 The Chrome session is stored under `.taqadi-agent/chrome-profile`. Do not share
 that folder or commit it to source control.
+
+### First smart-card setup (SConnect)
+
+The worker uses its own persistent Chrome profile. On the first smart-card
+login, install SConnect **inside the Chrome window opened by the worker**:
+
+1. Install the SConnect Chrome extension when Tawtheeq opens its installation
+   page.
+2. Install the downloaded SConnect Extension Host in Windows.
+3. Return to Tawtheeq and choose `Allow` when SConnect asks for origin access.
+4. Resume the same filing from Fleetify using `متابعة من تقاضي`.
+
+Playwright normally launches Chrome with extensions disabled. The worker
+explicitly removes those launch switches because smart-card authentication
+cannot work without SConnect. Once installed, both the extension state and
+the Tawtheeq origin approval persist in `.taqadi-agent/chrome-profile`.
 
 ## Start automatically with Windows
 
@@ -135,8 +153,8 @@ of any unexpected stop, and the ERP start button becomes only a backup.
   observed when Taqadi edits the representative before adding the other
   parties.
 - Company order is 2; Khamees and the defendant each use order 1.
-- The defendant email is always `khamis-1992@hotmail.com` and the address is
-  always `الدوحة قطر`.
+- The defendant email and service address are taken from the approved filing
+  payload. The agent does not substitute default defendant contact data.
 - An 11-digit foreign passport identifier is entered as `رخصة مقيم`, and
   nationality adjectives are mapped to the country names used by Taqadi.
 - Every attachment is normalized to an A4 PDF before upload.
@@ -176,6 +194,19 @@ Both actions are logged as job events (`auto_heal_applied`,
 `auto_heal_rejected`, `advisor_navigation`, `advisor_rejected`) so the ERP
 panel shows exactly what the agent decided and why. Final approval, party
 ordering, and claim-amount checks stay fully deterministic.
+
+### Optional local Scrapling memory
+
+Scrapling can be enabled as a first, local recovery layer before the external
+LLM selector healer. It receives only a synthetic HTML map of field labels and
+control identities—never entered values, case text, customer identifiers, or
+documents—and it cannot navigate, click, upload, or submit. A returned match
+still passes the same deterministic live-page verification and one-retry limit.
+
+Install and run the loopback service using
+`automation/taqadi-scrapling/README.md`, then set
+`TAQADI_SCRAPLING_ENABLED=true`. If the sidecar is unavailable, the worker
+continues with its existing deterministic and optional Anthropic paths.
 - An error after clicking final approval is never retried automatically. The
   operator must verify Taqadi first to avoid a duplicate lawsuit.
 - After an unexpected Windows restart, stale work before submission is safely

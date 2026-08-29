@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useModuleConfig } from '@/modules/core/hooks';
 import { useDashboardStats, DashboardStats } from '@/hooks/useDashboardStats';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
+import { useFleetStatus } from '@/hooks/useFleetStatus';
 import { useAuth } from '@/contexts/AuthContext';
 import { useStableCompanyId } from '@/contexts/CompanyContext';
 import { useQuery } from '@tanstack/react-query';
@@ -75,29 +76,8 @@ const DashboardLanding: React.FC = () => {
   const companyId = rawCompanyId || contextStableId || stableCompanyIdRef.current;
   const isReady = !!companyId;
 
-  // Fleet Status Query
-  const { data: fleetStatus } = useQuery({
-    queryKey: ['fleet-status-landing', companyId],
-    queryFn: async () => {
-      if (!companyId) return null;
-      const { data } = await supabase
-        .from('vehicles')
-        .select('status')
-        .eq('company_id', companyId)
-        .eq('is_active', true);
-
-      const counts = { available: 0, rented: 0, maintenance: 0, reserved: 0 };
-      data?.forEach((v) => {
-        const status = v.status || 'available';
-        if (counts[status as keyof typeof counts] !== undefined) {
-          counts[status as keyof typeof counts]++;
-        }
-      });
-      return counts;
-    },
-    enabled: isReady,
-    placeholderData: (prev: any) => prev,
-  });
+  // All dashboards share the same canonical operational fleet status query.
+  const { data: fleetStatus } = useFleetStatus();
 
   // Maintenance Query
   const { data: maintenanceData } = useQuery({
@@ -147,8 +127,7 @@ const DashboardLanding: React.FC = () => {
     placeholderData: (prev: any) => prev,
   });
 
-  const totalVehicles = (fleetStatus?.available || 0) + (fleetStatus?.rented || 0) +
-                        (fleetStatus?.maintenance || 0) + (fleetStatus?.reserved || 0);
+  const totalVehicles = fleetStatus?.total || 0;
   const occupancyRate = totalVehicles > 0 ? Math.round((fleetStatus?.rented || 0) / totalVehicles * 100) : 0;
 
   const today = new Date();

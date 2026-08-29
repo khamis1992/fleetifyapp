@@ -18,6 +18,7 @@ import {
   XCircle,
   AlertTriangle,
   FileText,
+  FileSpreadsheet,
   Car,
   Calendar,
   Eye,
@@ -1367,6 +1368,15 @@ function ContractsRedesigned() {
                   عقد جديد
                 </Button>
 
+                <Button
+                  onClick={() => setShowExportDialog(true)}
+                  variant="outline"
+                  className="h-11 rounded-[8px] border-[#22C7A1] bg-[#E8FBF6] px-4 font-black text-[#117C68] hover:bg-[#D7F7EF]"
+                >
+                  <FileSpreadsheet className="ml-2 h-4 w-4" />
+                  تقرير Excel شامل
+                </Button>
+
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="outline" size="default" className="h-11 rounded-[8px] border-[#DDE5EF] px-3">
@@ -1447,6 +1457,15 @@ function ContractsRedesigned() {
                   </Tooltip>
                 </TooltipProvider>
 
+                <Button
+                  onClick={() => setShowExportDialog(true)}
+                  variant="outline"
+                  className="min-h-[44px] rounded-xl border-teal-300 bg-teal-50 font-semibold text-teal-700 hover:bg-teal-100"
+                >
+                  <FileSpreadsheet className="ml-2 h-4 w-4" />
+                  تقرير Excel شامل
+                </Button>
+
                  <DropdownMenu>
                    <DropdownMenuTrigger asChild>
                      <Button variant="outline" size="default" className="rounded-xl border-slate-200 dark:border-slate-700 min-h-[44px]">
@@ -1518,8 +1537,8 @@ function ContractsRedesigned() {
             >
               <OperationsMetric
                 label="إجمالي العقود"
-                value={safeContracts.length}
-                caption={`${sortedContracts.length} ضمن الفلتر الحالي`}
+                value={tabCounts.all}
+                caption="جميع العقود المسجلة"
                 icon={FileText}
                 tone="neutral"
               />
@@ -1567,7 +1586,7 @@ function ContractsRedesigned() {
             />
             <QuickStatCard
               title="حالة العمليات"
-              value={safeContracts.length}
+              value={tabCounts.all}
               icon={FileText}
               color="slate"
               details={[

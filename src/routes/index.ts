@@ -20,6 +20,7 @@ import NotFound from '@/pages/NotFound';
 // Public pages
 const AboutUs = lazy(() => import('@/pages/AboutUs'));
 const Careers = lazy(() => import('@/pages/Careers'));
+const ContractPdfUploadPage = lazy(() => import('@/pages/public/ContractPdfUploadPage'));
 
 // Demo pages - lazy loaded
 const NativeMobileDemo = lazy(() => import('@/pages/NativeMobileDemo'));
@@ -303,6 +304,19 @@ const routeConfigs: RouteConfig[] = [
     description: 'Careers and job openings',
     group: 'public',
     priority: 3,
+  },
+  {
+    path: '/contract-upload',
+    component: ContractPdfUploadPage,
+    lazy: true,
+    exact: true,
+    title: 'رفع نسخة العقد الموقعة',
+    description: 'Secure one-time signed contract PDF upload',
+    group: 'public',
+    priority: 4,
+    protected: false,
+    layout: 'none',
+    seo: { noindex: true, nofollow: true },
   },
 
 

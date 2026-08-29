@@ -7,27 +7,28 @@
  * Body: { customerId } | { contractId }
  */
 
-import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { callKimiJson, KIMI_MODEL } from "../_shared/kimi.ts";
 import {
   agentCorsHeaders,
-  authorizeAgent,
+  authorizeGovernedAgent,
   createServiceClient,
+  finishAgentExecution,
   jsonResponse,
   storeAgentReview,
+  type AgentInvocationContext,
 } from "../_shared/agent.ts";
 
-serve(async (req) => {
+Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: agentCorsHeaders });
 
+  let invocation: AgentInvocationContext | null = null;
+  const supabase = createServiceClient();
   try {
-    await authorizeAgent(req);
     const body = await req.json().catch(() => ({}));
-    if (!body.customerId && !body.contractId) {
-      throw new Error("customerId or contractId is required");
+    if (!body.companyId || (!body.customerId && !body.contractId)) {
+      throw new Error("companyId and customerId or contractId are required");
     }
-
-    const supabase = createServiceClient();
+    invocation = await authorizeGovernedAgent(req, "collection-message-agent", body.companyId);
 
     let customerId = body.customerId as string | undefined;
     let contractId = body.contractId as string | undefined;
@@ -38,6 +39,7 @@ serve(async (req) => {
         .from("contracts")
         .select("id, company_id, customer_id, contract_number, monthly_amount, balance_due, days_overdue")
         .eq("id", contractId)
+        .eq("company_id", body.companyId)
         .single();
       contract = data;
       customerId = data?.customer_id;
@@ -48,6 +50,7 @@ serve(async (req) => {
       .from("customers")
       .select("id, company_id, first_name_ar, last_name_ar, first_name, last_name, phone")
       .eq("id", customerId)
+      .eq("company_id", body.companyId)
       .single();
     if (!customer) throw new Error("Customer not found");
 
@@ -131,9 +134,14 @@ serve(async (req) => {
       model: KIMI_MODEL,
     });
 
+    await finishAgentExecution(supabase, invocation, true, { verdict: result.verdict });
     return jsonResponse({ success: true, ...result });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown error";
+    if (invocation) {
+      await finishAgentExecution(supabase, invocation, false, {}, "collection_message_failed")
+        .catch(() => undefined);
+    }
     return jsonResponse({ success: false, error: message }, message === "Unauthorized" ? 401 : 500);
   }
 });

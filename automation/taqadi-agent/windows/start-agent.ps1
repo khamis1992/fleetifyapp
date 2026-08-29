@@ -8,7 +8,10 @@ $ProgressPreference = 'SilentlyContinue'
 
 $taskName = 'Fleetify Taqadi Agent'
 $repoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..\..')).Path
-$runnerScript = Join-Path $PSScriptRoot 'run-agent.ps1'
+$runnerScript = Join-Path $PSScriptRoot 'agent-runner.ps1'
+if (-not (Test-Path -LiteralPath $runnerScript)) {
+  $runnerScript = Join-Path $PSScriptRoot 'run-agent.ps1'
+}
 $logDir = Join-Path $repoRoot '.taqadi-agent\logs'
 $supervisorLog = Join-Path $logDir 'autostart-supervisor.log'
 $healthUrl = 'http://127.0.0.1:4317/health'

@@ -11,3 +11,23 @@ coverage
 *.spec.tsx
 fleetify-backend
 scripts
+
+# Local runtimes, generated audits, and build artifacts (never needed by Vite)
+.taqadi-agent/
+.tmp*/
+tmp/
+graphify-out/
+reports/
+audit-v2/
+.archive/
+output/
+dist/
+test-results/
+playwright-report/
+*.traineddata
+*.exe
+
+# Backend/desktop automation is deployed separately from the web frontend
+supabase/
+automation/
+docs/

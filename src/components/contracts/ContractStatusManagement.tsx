@@ -23,9 +23,13 @@ import {
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { useUpdateContractStatus } from '@/hooks/useContractRenewal';
+import {
+  useContractCancellationImpact,
+  useUpdateContractStatus,
+} from '@/hooks/useContractRenewal';
 import { cn } from '@/lib/utils';
 import { revertContractLegalProcedure } from '@/services/contractLegalProcedureService';
+import { ContractCancellationImpactPanel } from './ContractCancellationImpactPanel';
 
 type EditableContractStatus = 'active' | 'suspended' | 'cancelled';
 
@@ -130,10 +134,16 @@ export const ContractStatusManagement: React.FC<ContractStatusManagementProps> =
   const queryClient = useQueryClient();
   const updateStatus = useUpdateContractStatus();
   const [isRevertingLegal, setIsRevertingLegal] = React.useState(false);
+  const [transferTrafficViolationsToCompany, setTransferTrafficViolationsToCompany] = React.useState(false);
   const [statusData, setStatusData] = React.useState<{
     status: EditableContractStatus | '';
     reason: string;
   }>({ status: '', reason: '' });
+  const cancellationImpact = useContractCancellationImpact({
+    contractId: contract?.id,
+    companyId: contract?.company_id,
+    enabled: open && statusData.status === 'cancelled',
+  });
 
   const isUnderLegalProcedure = contract?.status === 'under_legal_procedure';
   const isPending = updateStatus.isPending || isRevertingLegal;
@@ -148,14 +158,34 @@ export const ContractStatusManagement: React.FC<ContractStatusManagementProps> =
     || isUnderLegalProcedure;
   const trimmedReason = statusData.reason.trim();
   const reasonIsValid = !reasonRequired || trimmedReason.length >= 5;
+  const cancellationRequiresTransfer = statusData.status === 'cancelled'
+    && cancellationImpact.data?.requiresCompanyTransfer === true;
+  const cancellationIsReady = statusData.status !== 'cancelled' || (
+    !cancellationImpact.isLoading
+    && !cancellationImpact.isFetching
+    && !cancellationImpact.error
+    && (!cancellationRequiresTransfer || (
+      cancellationImpact.data?.blockedPenaltyCount === 0
+      && cancellationImpact.data?.authorizedToTransfer
+      && transferTrafficViolationsToCompany
+    ))
+  );
   const canSubmit = !!statusData.status
     && statusData.status !== contract?.status
     && reasonIsValid
+    && cancellationIsReady
     && !isPending;
 
   React.useEffect(() => {
-    if (open) setStatusData({ status: '', reason: '' });
+    if (open) {
+      setStatusData({ status: '', reason: '' });
+      setTransferTrafficViolationsToCompany(false);
+    }
   }, [open, contract?.id, contract?.status]);
+
+  React.useEffect(() => {
+    if (statusData.status !== 'cancelled') setTransferTrafficViolationsToCompany(false);
+  }, [statusData.status]);
 
   const handleOpenChange = (nextOpen: boolean) => {
     if (!isPending) onOpenChange(nextOpen);
@@ -180,6 +210,8 @@ export const ContractStatusManagement: React.FC<ContractStatusManagementProps> =
           contractId: contract.id,
           status: statusData.status,
           reason: trimmedReason || undefined,
+          companyId: contract.company_id,
+          transferTrafficViolationsToCompany,
         });
       }
 
@@ -322,11 +354,22 @@ export const ContractStatusManagement: React.FC<ContractStatusManagementProps> =
           </div>
 
           {statusData.status === 'cancelled' && (
-            <div className="rounded-md border border-rose-200 bg-rose-50 p-3 text-sm text-rose-800">
-              <div className="flex items-start gap-2">
-                <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
-                <p><strong>تنبيه:</strong> إلغاء العقد إجراء مؤثر وقد يغيّر حالة المركبة والمعاملات المرتبطة.</p>
+            <div className="space-y-3">
+              <div className="rounded-md border border-rose-200 bg-rose-50 p-3 text-sm text-rose-800">
+                <div className="flex items-start gap-2">
+                  <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+                  <p><strong>تنبيه:</strong> إلغاء العقد إجراء مؤثر وقد يغيّر حالة المركبة والمعاملات المرتبطة.</p>
+                </div>
               </div>
+
+              <ContractCancellationImpactPanel
+                impact={cancellationImpact.data}
+                isLoading={cancellationImpact.isLoading || cancellationImpact.isFetching}
+                error={cancellationImpact.error}
+                transferToCompany={transferTrafficViolationsToCompany}
+                onTransferToCompanyChange={setTransferTrafficViolationsToCompany}
+                disabled={isPending}
+              />
             </div>
           )}
 

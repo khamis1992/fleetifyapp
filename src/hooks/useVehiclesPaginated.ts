@@ -52,7 +52,13 @@ export const useVehiclesPaginated = (
 
       // Apply search filter
       if (debouncedSearch) {
-        query = query.or(`plate_number.ilike.%${debouncedSearch}%,make.ilike.%${debouncedSearch}%,model.ilike.%${debouncedSearch}%`);
+        query = query.or(
+          `plate_number.ilike.%${debouncedSearch}%,` +
+          `make.ilike.%${debouncedSearch}%,` +
+          `model.ilike.%${debouncedSearch}%,` +
+          `vin.ilike.%${debouncedSearch}%,` +
+          `vin_number.ilike.%${debouncedSearch}%`
+        );
       }
 
       // Apply status filter

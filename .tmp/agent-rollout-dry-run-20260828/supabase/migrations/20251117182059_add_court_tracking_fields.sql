@@ -1,0 +1,1 @@
+ALTER TABLE legal_cases ADD COLUMN IF NOT EXISTS complaint_number VARCHAR(200); ALTER TABLE legal_cases ADD COLUMN IF NOT EXISTS judge_name VARCHAR(300); CREATE INDEX IF NOT EXISTS idx_legal_cases_complaint_number ON legal_cases(complaint_number);;

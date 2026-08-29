@@ -28,6 +28,7 @@ import {
   getLegalDocumentUploadRoute,
   isUploadableDocumentId,
 } from '../utils/documentUploadRouting';
+import { getCriminalComplaintEligibility } from '../utils/legalCaseWorkflow';
 import { printHtmlDocumentAsPdf } from '../utils/printHtmlDocument';
 
 const baseMandatoryDocIds: (keyof DocumentsState)[] = [
@@ -202,16 +203,19 @@ function DocumentLedgerRow({
 
 export function LegalDocuments() {
   const { state, actions } = useLawsuitPreparationContext();
-  const { documents, overdueInvoices, trafficViolations, ui } = state;
+  const { documents, overdueInvoices, ui } = state;
+  const hasSupportedViolations = (state.calculations?.violationsCount || 0) > 0;
+  const criminalComplaintEligibility = getCriminalComplaintEligibility(state);
 
-  const mandatoryDocIds = trafficViolations.length > 0
+  const mandatoryDocIds = hasSupportedViolations
     ? [...baseMandatoryDocIds, 'violationsEvidence' as const]
     : baseMandatoryDocIds;
   const mandatoryDocs = mandatoryDocIds.map((docId) => documents[docId]);
   const supportingDocs = supportingDocIds
     .map((docId) => documents[docId])
     .filter((doc) => {
-      if (['violations', 'violationsTransfer'].includes(doc.id)) return trafficViolations.length > 0;
+      if (['violations', 'violationsTransfer'].includes(doc.id)) return hasSupportedViolations;
+      if (doc.id === 'criminalComplaint') return criminalComplaintEligibility.eligible;
       return doc.type === 'optional';
     });
 
@@ -238,7 +242,7 @@ export function LegalDocuments() {
         <div className="lawsuit-doc-actions-bar">
           <Button type="button" onClick={actions.downloadInvoicesAsZip} disabled={overdueInvoices.length === 0 || ui.isDownloadingInvoices} variant="outline">
             {ui.isDownloadingInvoices ? <Loader2 className="h-4 w-4 animate-spin" /> : <Package className="h-4 w-4" />}
-            تحميل الفواتير ({overdueInvoices.length})
+            تحميل مستندات الاستحقاق ({overdueInvoices.length})
           </Button>
           <Button type="button" onClick={actions.downloadAllAsZip} disabled={!hasContentForZip || ui.isDownloadingZip}>
             {ui.isDownloadingZip ? <Loader2 className="h-4 w-4 animate-spin" /> : <FolderDown className="h-4 w-4" />}
@@ -346,9 +350,9 @@ export function LegalDocuments() {
                 onChange={(event) => actions.setIncludeCriminalComplaint(event.target.checked)}
                 disabled={documents.criminalComplaint.status !== 'ready'}
               />
-              <span>تضمين بلاغ سرقة المركبة في الحافظة</span>
+              <span>تضمين البلاغ الجنائي بالامتناع عن رد المركبة في الحافظة</span>
             </label>
-            {trafficViolations.length > 0 && (
+            {hasSupportedViolations && (
               <label className={documents.violationsTransfer.status === 'ready' ? '' : 'is-disabled'}>
                 <input
                   type="checkbox"

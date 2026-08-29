@@ -570,7 +570,7 @@ export const LegalComplaintGenerator: React.FC<LegalComplaintGeneratorProps> = (
               <div>شركة العراف لتأجير السيارات ذ.م.م - AL-ARAF CAR RENTAL L.L.C</div>
               <div class="footer-contacts">
                 <span>📞 +974 XXXX XXXX</span>
-                <span>📧 info@alaraf.qa</span>
+                <span>📧 khamis-1992@hotmail.com</span>
                 <span>🌐 www.alaraf.online</span>
               </div>
             </div>

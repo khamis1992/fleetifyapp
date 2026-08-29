@@ -474,9 +474,9 @@ const WhatsAppSettings: React.FC = () => {
                       <Settings className="w-5 h-5 text-teal-600" />
                     </div>
                     <div>
-                      <CardTitle className="text-slate-900">إعدادات Ultramsg</CardTitle>
+                      <CardTitle className="text-slate-900">اتصال واتساب المدار</CardTitle>
                       <CardDescription className="text-slate-600">
-                        أدخل بيانات حساب Ultramsg للاتصال بواتساب
+                        بيانات المزود محفوظة كأسرار خادم ولا تُعرض أو تُحفظ في المتصفح
                       </CardDescription>
                     </div>
                   </div>
@@ -486,9 +486,9 @@ const WhatsAppSettings: React.FC = () => {
                     <div className="space-y-2">
                       <Label className="text-slate-700">{t("instanceId")}</Label>
                       <Input
-                        value={instanceId}
-                        onChange={(e) => setInstanceId(e.target.value)}
-                        placeholder="instance12345"
+                        value="مدار بواسطة الخادم"
+                        readOnly
+                        disabled
                         dir="ltr"
                         className="border-slate-200 focus:border-teal-500 focus:ring-teal-500"
                       />
@@ -496,10 +496,9 @@ const WhatsAppSettings: React.FC = () => {
                     <div className="space-y-2">
                       <Label className="text-slate-700">{t("token")}</Label>
                       <Input
-                        value={token}
-                        onChange={(e) => setToken(e.target.value)}
-                        type="password"
-                        placeholder="••••••••••"
+                        value="غير متاح للمتصفح"
+                        readOnly
+                        disabled
                         dir="ltr"
                         className="border-slate-200 focus:border-teal-500 focus:ring-teal-500"
                       />
@@ -508,11 +507,11 @@ const WhatsAppSettings: React.FC = () => {
 
                   <div className="flex gap-3">
                     <Button
-                      onClick={handleInitialize}
+                      disabled
                       className="bg-teal-500 hover:bg-teal-600"
                     >
                       <Wifi className="w-4 h-4 ml-2" />
-                      اتصال
+                      اتصال الخادم فقط
                     </Button>
                     <Button
                       variant="outline"

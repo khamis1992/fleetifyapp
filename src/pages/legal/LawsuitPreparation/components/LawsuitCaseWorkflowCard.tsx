@@ -1,14 +1,13 @@
 import { useQuery } from '@tanstack/react-query';
-import { AlertCircle, Gavel, Loader2 } from 'lucide-react';
+import { AlertCircle, Loader2 } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { LegalCaseWorkflowPanel } from '@/components/legal/LegalCaseWorkflowPanel';
 import { getCurrentLegalCase } from '../utils/taqadiFiling';
 import { useLawsuitPreparationContext } from '../store';
 
 export function LawsuitCaseWorkflowCard() {
-  const { state, actions } = useLawsuitPreparationContext();
+  const { state } = useLawsuitPreparationContext();
   const { companyId, contractId } = state;
   const legalCaseQuery = useQuery({
     queryKey: ['lawsuit-legal-case', companyId, contractId],
@@ -38,25 +37,13 @@ export function LawsuitCaseWorkflowCard() {
           <div>
             <Badge className="bg-[#EAF2F9] text-[#173A63] hover:bg-[#EAF2F9]">حالة القضية</Badge>
             <h2>سير عمل القضية</h2>
-            <p>يجب تسجيل القضية في النظام أولًا حتى يمكن متابعة مراحلها بعد رفعها في تقاضي.</p>
+            <p>سيُنشئ النظام سجل التجهيز تلقائيًا عند بدء إجراءات رفع الدعوى.</p>
           </div>
         </div>
         <Alert className="border-amber-200 bg-amber-50">
           <AlertCircle className="h-5 w-5 text-amber-700" />
-          <AlertDescription className="flex flex-wrap items-center justify-between gap-3 text-amber-950">
-            <span>لا توجد قضية قانونية مرتبطة بهذا العقد حتى الآن.</span>
-            <Button
-              type="button"
-              size="sm"
-              onClick={async () => {
-                await actions.registerCase();
-                await legalCaseQuery.refetch();
-              }}
-              disabled={state.ui.isRegistering}
-            >
-              {state.ui.isRegistering ? <Loader2 className="h-4 w-4 animate-spin" /> : <Gavel className="h-4 w-4" />}
-              تسجيل القضية
-            </Button>
+          <AlertDescription className="text-amber-950">
+            لا يلزم أي تسجيل يدوي؛ اضغط «بدء إجراءات رفع الدعوى» وسيُنشأ السجل في مرحلة التجهيز تلقائيًا.
           </AlertDescription>
         </Alert>
       </section>
@@ -81,6 +68,8 @@ export function LawsuitCaseWorkflowCard() {
 
       <LegalCaseWorkflowPanel
         caseId={legalCase.id}
+        canMarkFiled={false}
+        filingBlockReason="تُسجّل حالة الرفع تلقائيًا من إيصال تقاضي؛ لا يلزم إجراء يدوي."
         onChanged={() => void legalCaseQuery.refetch()}
       />
     </section>

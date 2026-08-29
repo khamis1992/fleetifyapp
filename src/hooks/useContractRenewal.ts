@@ -43,6 +43,32 @@ export class AutoRenewalBatchError extends Error {
   }
 }
 
+export interface ContractCancellationImpact {
+  contractId: string;
+  openPenaltyCount: number;
+  openPenaltyAmount: number;
+  requiresCompanyTransfer: boolean;
+  blockedPenaltyCount: number;
+  authorizedToTransfer: boolean;
+  canTransfer: boolean;
+}
+
+export const normalizeContractCancellationImpact = (value: unknown): ContractCancellationImpact => {
+  const payload = value && typeof value === 'object'
+    ? value as Record<string, unknown>
+    : {};
+
+  return {
+    contractId: String(payload.contract_id || ''),
+    openPenaltyCount: Number(payload.open_penalty_count || 0),
+    openPenaltyAmount: Number(payload.open_penalty_amount || 0),
+    requiresCompanyTransfer: payload.requires_company_transfer === true,
+    blockedPenaltyCount: Number(payload.blocked_penalty_count || 0),
+    authorizedToTransfer: payload.authorized_to_transfer === true,
+    canTransfer: payload.can_transfer === true,
+  };
+};
+
 const formatLocalDate = (date: Date): string => {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -56,6 +82,41 @@ const getErrorMessage = (error: unknown, fallback: string): string => {
     return String((error as { message?: unknown }).message || fallback);
   }
   return fallback;
+};
+
+export const useContractCancellationImpact = ({
+  contractId,
+  companyId,
+  enabled = true,
+}: {
+  contractId?: string | null;
+  companyId?: string | null;
+  enabled?: boolean;
+}) => {
+  const { user } = useAuth();
+  const resolvedCompanyId = companyId || user?.profile?.company_id || null;
+
+  return useQuery({
+    queryKey: ['contract-cancellation-impact', resolvedCompanyId, contractId],
+    queryFn: async () => {
+      if (!contractId || !resolvedCompanyId) {
+        throw new Error('تعذر تحديد العقد أو الشركة قبل فحص الإلغاء');
+      }
+
+      const { data, error } = await (supabase as any).rpc(
+        'get_contract_cancellation_impact_v1',
+        {
+          p_company_id: resolvedCompanyId,
+          p_contract_id: contractId,
+        },
+      );
+      if (error) throw error;
+      return normalizeContractCancellationImpact(data);
+    },
+    enabled: enabled && !!contractId && !!resolvedCompanyId,
+    staleTime: 0,
+    refetchOnMount: 'always',
+  });
 };
 
 // Hook to get contracts expiring soon
@@ -280,10 +341,18 @@ export const useUpdateContractStatus = () => {
   const { user } = useAuth();
   
   return useMutation({
-    mutationFn: async ({ contractId, status, reason }: { 
-      contractId: string; 
-      status: 'suspended' | 'cancelled' | 'active'; 
-      reason?: string 
+    mutationFn: async ({
+      contractId,
+      status,
+      reason,
+      companyId,
+      transferTrafficViolationsToCompany = false,
+    }: {
+      contractId: string;
+      status: 'suspended' | 'cancelled' | 'active';
+      reason?: string;
+      companyId?: string;
+      transferTrafficViolationsToCompany?: boolean;
     }) => {
       const updateData: any = {
         status,
@@ -293,7 +362,7 @@ export const useUpdateContractStatus = () => {
       // Get contract details first to check if it has a vehicle
       const { data: contractData, error: contractError } = await supabase
         .from("contracts")
-        .select("contract_number, vehicle_id, old_status:status")
+        .select("contract_number, company_id, vehicle_id, old_status:status")
         .eq("id", contractId)
         .single();
       
@@ -322,6 +391,28 @@ export const useUpdateContractStatus = () => {
           .single();
         if (fetchError) throw fetchError;
         data = activatedContract;
+      } else if (status === 'cancelled') {
+        const resolvedCompanyId = companyId || contractData.company_id || user?.profile?.company_id;
+        if (!resolvedCompanyId) {
+          throw new Error('تعذر تحديد الشركة المرتبطة بالعقد');
+        }
+
+        const { data: cancellationResult, error: cancellationError } = await (supabase as any).rpc(
+          'cancel_contract_with_company_traffic_penalties_v1',
+          {
+            p_company_id: resolvedCompanyId,
+            p_contract_id: contractId,
+            p_reason: reason?.trim() || '',
+            p_transfer_open_penalties_to_company: transferTrafficViolationsToCompany,
+            p_actor_id: user?.id || null,
+          },
+        );
+        if (cancellationError) throw cancellationError;
+
+        const payload = cancellationResult && typeof cancellationResult === 'object'
+          ? cancellationResult as Record<string, unknown>
+          : {};
+        data = payload.contract;
       } else {
         // Non-billable lifecycle changes do not create financial obligations.
         const { data: updatedContract, error } = await supabase
@@ -342,6 +433,11 @@ export const useUpdateContractStatus = () => {
     onSuccess: async (result, variables) => {
       // Invalidate only essential queries - don't wait for refetch
       queryClient.invalidateQueries({ queryKey: ["contracts"] });
+      queryClient.invalidateQueries({ queryKey: ["invoices"] });
+      queryClient.invalidateQueries({ queryKey: ["traffic-violations"] });
+      queryClient.invalidateQueries({ queryKey: ["traffic-violations-count"] });
+      queryClient.invalidateQueries({ queryKey: ["traffic-violations-stats"] });
+      queryClient.invalidateQueries({ queryKey: ["contract-cancellation-impact"] });
       
       // Log audit trail (don't await to speed up response)
       createAuditLog(
@@ -370,8 +466,8 @@ export const useUpdateContractStatus = () => {
                         variables.status === 'cancelled' ? 'إلغاء' : 'تفعيل';
       toast.success(`تم ${statusText} العقد بنجاح`);
     },
-    onError: (error) => {
-      toast.error("خطأ في تحديث حالة العقد: " + error.message);
+    onError: (error: unknown) => {
+      toast.error("خطأ في تحديث حالة العقد: " + getErrorMessage(error, 'حدث خطأ غير متوقع'));
     }
   });
 };

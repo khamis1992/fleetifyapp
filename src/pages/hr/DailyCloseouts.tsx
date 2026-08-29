@@ -20,6 +20,7 @@ import { HRMetricCard, HRPageHeader, HRPageShell, HRSectionCard, hrFieldClassNam
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
@@ -143,6 +144,11 @@ const formatClosedAt = (value?: string | null) => {
   return new Date(value).toLocaleTimeString('ar-QA', { hour: '2-digit', minute: '2-digit' });
 };
 
+const formatDateLabel = (value: string) => {
+  const date = new Date(`${value}T00:00:00`);
+  return Number.isNaN(date.getTime()) ? value : format(date, 'd MMM yyyy', { locale: ar });
+};
+
 const DAILY_CLOSEOUT_CHECKLIST = [
   { key: 'workspace_opened', label: 'تم الدخول إلى مساحة عملي والتأكد من ظهور البيانات' },
   { key: 'page_refreshed', label: 'تم الضغط على تحديث في بداية اليوم' },
@@ -213,20 +219,35 @@ const humanizeContractOperation = (operationType?: string | null) => {
 export default function DailyCloseouts() {
   const companyFilter = useCompanyFilter();
   const companyId = companyFilter.company_id;
-  const [selectedDate, setSelectedDate] = useState(getLocalIsoDate);
+  const today = getLocalIsoDate();
+  const [dateFrom, setDateFrom] = useState(today);
+  const [dateTo, setDateTo] = useState(today);
+  const [selectedEmployeeId, setSelectedEmployeeId] = useState('all');
   const [search, setSearch] = useState('');
   const [selectedLog, setSelectedLog] = useState<DailyLogRow | null>(null);
+  const hasMissingDate = !dateFrom || !dateTo;
+  const hasInvalidDateRange = hasMissingDate || dateFrom > dateTo;
+  const isSingleDay = Boolean(dateFrom && dateTo && dateFrom === dateTo);
+  const isDailyOverview = isSingleDay && selectedEmployeeId === 'all';
 
   const logsQuery = useQuery({
-    queryKey: ['employee-daily-closeouts', companyId, selectedDate],
-    enabled: Boolean(companyId),
+    queryKey: ['employee-daily-closeouts', companyId, dateFrom, dateTo, selectedEmployeeId],
+    enabled: Boolean(companyId && dateFrom && dateTo && !hasInvalidDateRange),
     queryFn: async (): Promise<DailyLogRow[]> => {
       if (!companyId) return [];
-      const { data, error } = await (supabase as any)
+      let query = (supabase as any)
         .from('employee_daily_workspace_logs')
         .select('*')
         .eq('company_id', companyId)
-        .eq('log_date', selectedDate)
+        .gte('log_date', dateFrom)
+        .lte('log_date', dateTo);
+
+      if (selectedEmployeeId !== 'all') {
+        query = query.eq('employee_profile_id', selectedEmployeeId);
+      }
+
+      const { data, error } = await query
+        .order('log_date', { ascending: false })
         .order('closed_at', { ascending: false, nullsFirst: false });
 
       if (error) throw error;
@@ -244,7 +265,6 @@ export default function DailyCloseouts() {
         .from('profiles')
         .select('id,user_id,first_name,last_name,email,role,is_active')
         .eq('company_id', companyId)
-        .eq('is_active', true)
         .order('first_name', { ascending: true, nullsFirst: false });
 
       if (error) throw error;
@@ -253,11 +273,14 @@ export default function DailyCloseouts() {
     staleTime: 60_000,
   });
 
-  const logs = logsQuery.data || [];
+  const logs = useMemo(() => logsQuery.data || [], [logsQuery.data]);
   const employees = employeesQuery.data || [];
-  const selectedEmployee = selectedLog
+  const selectedLogEmployee = selectedLog
     ? employees.find((employee) => employee.id === selectedLog.employee_profile_id)
     : null;
+  const filteredEmployee = selectedEmployeeId === 'all'
+    ? null
+    : employees.find((employee) => employee.id === selectedEmployeeId) || null;
 
   const selectedActivityQuery = useQuery({
     queryKey: [
@@ -265,14 +288,14 @@ export default function DailyCloseouts() {
       companyId,
       selectedLog?.id,
       selectedLog?.employee_profile_id,
-      selectedEmployee?.user_id,
+      selectedLogEmployee?.user_id,
       selectedLog?.log_date,
     ],
     enabled: Boolean(companyId && selectedLog?.employee_profile_id && selectedLog?.log_date),
     queryFn: async (): Promise<DailyContractActivitySummary> => {
       if (!companyId || !selectedLog?.employee_profile_id || !selectedLog.log_date) return emptyDailyContractActivity;
 
-      let employeeUserId = selectedEmployee?.user_id || null;
+      let employeeUserId = selectedLogEmployee?.user_id || null;
       if (!employeeUserId) {
         const { data: profile, error: profileError } = await supabase
           .from('profiles')
@@ -419,7 +442,10 @@ export default function DailyCloseouts() {
   const selectedActivity = selectedActivityQuery.data
     || selectedLog?.summary?.contract_activity
     || emptyDailyContractActivity;
-  const workspaceEmployees = employees.filter((employee) => !managerRoles.has(String(employee.role || '').toLowerCase()));
+  const workspaceEmployees = employees.filter((employee) => (
+    employee.is_active !== false
+    && !managerRoles.has(String(employee.role || '').toLowerCase())
+  ));
   const closedEmployeeIds = new Set(logs.filter((log) => log.closed_at).map((log) => log.employee_profile_id));
   const missingEmployees = workspaceEmployees.filter((employee) => !closedEmployeeIds.has(employee.id));
 
@@ -431,7 +457,9 @@ export default function DailyCloseouts() {
 
     return {
       totalEmployees: workspaceEmployees.length,
+      totalCloseouts: logs.length,
       closed: logs.filter((log) => Boolean(log.closed_at)).length,
+      completed: logs.filter((log) => log.completion_status === 'completed').length,
       missing: missingEmployees.length,
       collected,
       calls,
@@ -472,7 +500,13 @@ export default function DailyCloseouts() {
     const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
     const link = document.createElement('a');
     link.href = url;
-    link.download = `employee-daily-closeouts-${selectedDate}.csv`;
+    const employeeSuffix = filteredEmployee
+      ? `-${getEmployeeName(filteredEmployee)
+        .replace(/[\\/:*?"<>|%]+/g, '')
+        .trim()
+        .replace(/\s+/g, '-')}`
+      : '';
+    link.download = `employee-daily-closeouts-${dateFrom}-to-${dateTo}${employeeSuffix}.csv`;
     link.click();
     URL.revokeObjectURL(url);
   };
@@ -487,14 +521,35 @@ export default function DailyCloseouts() {
         icon={ClipboardCheck}
         badge="متابعة الإدارة"
         action={(
-          <div className="flex flex-col gap-2 sm:flex-row">
-            <Input
-              type="date"
-              value={selectedDate}
-              onChange={(event) => setSelectedDate(event.target.value)}
-              className={cn(hrFieldClassName, 'w-full sm:w-44')}
-            />
-            <Button variant="outline" className="h-11 rounded-xl border-slate-200" onClick={() => logsQuery.refetch()}>
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
+            <label className="space-y-1 text-xs font-bold text-[#64748B]">
+              <span>من تاريخ</span>
+              <Input
+                type="date"
+                value={dateFrom}
+                onChange={(event) => setDateFrom(event.target.value)}
+                max={dateTo || undefined}
+                required
+                className={cn(hrFieldClassName, 'w-full sm:w-44')}
+              />
+            </label>
+            <label className="space-y-1 text-xs font-bold text-[#64748B]">
+              <span>إلى تاريخ</span>
+              <Input
+                type="date"
+                value={dateTo}
+                onChange={(event) => setDateTo(event.target.value)}
+                min={dateFrom || undefined}
+                required
+                className={cn(hrFieldClassName, 'w-full sm:w-44')}
+              />
+            </label>
+            <Button
+              variant="outline"
+              className="h-11 rounded-xl border-slate-200"
+              onClick={() => logsQuery.refetch()}
+              disabled={hasInvalidDateRange}
+            >
               <RefreshCw className={cn('ml-2 h-4 w-4', logsQuery.isFetching && 'animate-spin')} />
               تحديث
             </Button>
@@ -503,10 +558,33 @@ export default function DailyCloseouts() {
       />
 
       <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
-        <HRMetricCard title="أقفلوا اليوم" value={`${stats.closed}/${stats.totalEmployees || '-'}`} subtitle="من موظفي مساحة العمل" icon={CheckCircle2} tone="success" />
-        <HRMetricCard title="لم يقفلوا" value={stats.missing} subtitle="يحتاج متابعة قبل نهاية الدوام" icon={UserX} tone={stats.missing > 0 ? 'danger' : 'neutral'} />
-        <HRMetricCard title="إجمالي التحصيل" value={formatCurrency(stats.collected)} subtitle={`${stats.exported} تقرير جاهز للطباعة`} icon={WalletCards} tone="focus" />
-        <HRMetricCard title="نشاط اليوم" value={`${stats.calls} مكالمة`} subtitle={`${stats.incomplete} إقفال غير مكتمل`} icon={Clock} tone="info" />
+        {isDailyOverview ? (
+          <>
+            <HRMetricCard title="أقفلوا اليوم" value={`${stats.closed}/${stats.totalEmployees || '-'}`} subtitle="من موظفي مساحة العمل" icon={CheckCircle2} tone="success" />
+            <HRMetricCard title="لم يقفلوا" value={stats.missing} subtitle="يحتاج متابعة قبل نهاية الدوام" icon={UserX} tone={stats.missing > 0 ? 'danger' : 'neutral'} />
+            <HRMetricCard title="إجمالي التحصيل" value={formatCurrency(stats.collected)} subtitle={`${stats.exported} تقرير جاهز للطباعة`} icon={WalletCards} tone="focus" />
+            <HRMetricCard title="نشاط اليوم" value={`${stats.calls} مكالمة`} subtitle={`${stats.incomplete} إقفال غير مكتمل`} icon={Clock} tone="info" />
+          </>
+        ) : (
+          <>
+            <HRMetricCard
+              title="عدد الإقفالات"
+              value={stats.totalCloseouts}
+              subtitle={filteredEmployee ? getEmployeeName(filteredEmployee) : 'جميع الموظفين'}
+              icon={ClipboardCheck}
+              tone="success"
+            />
+            <HRMetricCard
+              title="الإقفالات المكتملة"
+              value={stats.completed}
+              subtitle={`${stats.incomplete} إقفال غير مكتمل`}
+              icon={CheckCircle2}
+              tone={stats.incomplete > 0 ? 'info' : 'success'}
+            />
+            <HRMetricCard title="إجمالي التحصيل" value={formatCurrency(stats.collected)} subtitle="ضمن الفترة المحددة" icon={WalletCards} tone="focus" />
+            <HRMetricCard title="نشاط الفترة" value={`${stats.calls} مكالمة`} subtitle={`${stats.exported} تقرير جاهز للطباعة`} icon={Clock} tone="info" />
+          </>
+        )}
       </div>
 
       <HRSectionCard>
@@ -514,10 +592,28 @@ export default function DailyCloseouts() {
           <div>
             <h2 className="text-lg font-black text-[#020617]">سجل الإقفالات</h2>
             <p className="mt-1 text-sm text-[#64748B]">
-              {format(new Date(`${selectedDate}T00:00:00`), 'EEEE d MMMM yyyy', { locale: ar })}
+              {hasMissingDate
+                ? 'حدد الفترة الزمنية'
+                : isSingleDay
+                ? format(new Date(`${dateFrom}T00:00:00`), 'EEEE d MMMM yyyy', { locale: ar })
+                : `من ${formatDateLabel(dateFrom)} إلى ${formatDateLabel(dateTo)}`}
             </p>
           </div>
-          <div className="flex flex-col gap-2 sm:flex-row">
+          <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+            <Select value={selectedEmployeeId} onValueChange={setSelectedEmployeeId}>
+              <SelectTrigger className={cn(hrFieldClassName, 'sm:w-64')}>
+                <SelectValue placeholder="اختر الموظف" />
+              </SelectTrigger>
+              <SelectContent dir="rtl">
+                <SelectItem value="all">جميع الموظفين</SelectItem>
+                {employees.map((employee) => (
+                  <SelectItem key={employee.id} value={employee.id}>
+                    {getEmployeeName(employee)}
+                    {employee.is_active === false ? ' (غير نشط)' : ''}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             <div className="relative">
               <Search className="absolute right-3 top-3.5 h-4 w-4 text-[#94A3B8]" />
               <Input
@@ -527,14 +623,29 @@ export default function DailyCloseouts() {
                 className={cn(hrFieldClassName, 'pr-9 sm:w-72')}
               />
             </div>
-            <Button variant="outline" className="h-11 rounded-xl border-slate-200" onClick={exportCsv} disabled={filteredLogs.length === 0}>
+            <Button
+              variant="outline"
+              className="h-11 rounded-xl border-slate-200"
+              onClick={exportCsv}
+              disabled={hasInvalidDateRange || filteredLogs.length === 0}
+            >
               <Download className="ml-2 h-4 w-4" />
               تصدير
             </Button>
           </div>
         </div>
 
-        {isLoading ? (
+        {hasInvalidDateRange ? (
+          <div className="border-t border-red-100 bg-red-50 px-5 py-4 text-sm font-bold text-red-700">
+            {hasMissingDate
+              ? 'حدد تاريخ البداية وتاريخ النهاية لعرض الإقفالات.'
+              : 'تاريخ البداية يجب أن يكون قبل تاريخ النهاية أو مساوياً له.'}
+          </div>
+        ) : logsQuery.isError ? (
+          <div className="border-t border-red-100 bg-red-50 px-5 py-4 text-sm font-bold text-red-700">
+            تعذر تحميل الإقفالات ضمن الفترة المحددة. حاول التحديث مرة أخرى.
+          </div>
+        ) : isLoading ? (
           <div className="p-10">
             <LoadingSpinner />
           </div>
@@ -544,6 +655,7 @@ export default function DailyCloseouts() {
               <TableHeader>
                 <TableRow className="bg-[#F6F8FB]">
                   <TableHead className="text-right">الموظف</TableHead>
+                  <TableHead className="text-right">التاريخ</TableHead>
                   <TableHead className="text-right">وقت الإقفال</TableHead>
                   <TableHead className="text-right">الحالة</TableHead>
                   <TableHead className="text-right">التحصيل</TableHead>
@@ -557,8 +669,8 @@ export default function DailyCloseouts() {
               <TableBody>
                 {filteredLogs.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={9} className="h-32 text-center text-[#64748B]">
-                      لا توجد إقفالات محفوظة لهذا التاريخ.
+                    <TableCell colSpan={10} className="h-32 text-center text-[#64748B]">
+                      لا توجد إقفالات محفوظة ضمن الموظف والفترة المحددين.
                     </TableCell>
                   </TableRow>
                 ) : filteredLogs.map((log) => (
@@ -568,6 +680,9 @@ export default function DailyCloseouts() {
                         <p className="font-black text-[#020617]">{log.employee_name}</p>
                         <p className="text-xs text-[#94A3B8]">{log.team || log.department || 'مساحة العمل'}</p>
                       </div>
+                    </TableCell>
+                    <TableCell>
+                      {formatDateLabel(log.log_date)}
                     </TableCell>
                     <TableCell>{formatClosedAt(log.closed_at)}</TableCell>
                     <TableCell>
@@ -604,7 +719,7 @@ export default function DailyCloseouts() {
         )}
       </HRSectionCard>
 
-      {missingEmployees.length > 0 && (
+      {isDailyOverview && missingEmployees.length > 0 && (
         <HRSectionCard className="border-amber-200 bg-amber-50/40">
           <div className="flex items-start gap-3 p-4">
             <div className="mt-1 flex h-10 w-10 items-center justify-center rounded-2xl bg-amber-100 text-amber-700">

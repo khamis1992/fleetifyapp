@@ -1,10 +1,14 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import {
   getDefaultScheduledInvoiceMonth,
   getInvoiceMonthBounds,
   normalizeInvoiceMonth,
 } from "./invoice-month.ts";
+import {
+  type AgentInvocationContext,
+  authorizeScheduledAgent,
+  createServiceClient,
+  finishAgentExecution,
+} from "../_shared/agent.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -47,7 +51,7 @@ class HttpError extends Error {
   }
 }
 
-serve(async (req) => {
+Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
@@ -56,22 +60,26 @@ serve(async (req) => {
     return jsonResponse({ success: false, error: "Method not allowed" }, 405);
   }
 
+  const supabaseClient = createServiceClient();
+  let invocation: AgentInvocationContext | null = null;
+  let executionFailed = false;
+  let executionSummary: Record<string, unknown> = {};
   try {
-    authorizeInvoiceGenerator(req);
-
     const body = await readJson<GeneratorRequest>(req);
+    if (typeof body.companyId !== "string" || !body.companyId) {
+      throw new HttpError("companyId is required", 400);
+    }
+    invocation = await authorizeScheduledAgent(
+      req,
+      "generate-monthly-invoices",
+      body.companyId,
+    );
     const invoiceMonth = normalizeInvoiceMonth(
       body.targetMonth || getDefaultScheduledInvoiceMonth(),
     );
     const { monthStart } = getInvoiceMonthBounds(invoiceMonth);
     const batchSize = parseBatchSize(body.batchSize);
     const afterContractId = parseCursor(body.afterContractId, "afterContractId");
-
-    const supabaseClient = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
-      { auth: { persistSession: false } },
-    );
 
     const contractBatch = await loadEligibleContracts(
       supabaseClient,
@@ -142,6 +150,13 @@ serve(async (req) => {
       }
     }
 
+    executionSummary = {
+      targetMonth: invoiceMonth,
+      contractsProcessed: contracts.length,
+      created: results.success,
+      failed: results.failed,
+      skipped: results.skipped,
+    };
     return jsonResponse({
       success: results.failed === 0,
       targetMonth: invoiceMonth,
@@ -154,23 +169,26 @@ serve(async (req) => {
       },
     });
   } catch (error) {
+    executionFailed = true;
     console.error("generate-monthly-invoices failed:", error);
     const status = error instanceof HttpError ? error.status : 500;
     return jsonResponse({ success: false, error: errorMessage(error) }, status);
+  } finally {
+    if (invocation) {
+      try {
+        await finishAgentExecution(
+          supabaseClient,
+          invocation,
+          !executionFailed,
+          executionSummary,
+          executionFailed ? "INVOICE_GENERATION_FAILURE" : null,
+        );
+      } catch (finishError) {
+        console.error("Could not close invoice generator execution", finishError);
+      }
+    }
   }
 });
-
-function authorizeInvoiceGenerator(req: Request) {
-  const configuredSecret = Deno.env.get("INVOICE_GENERATOR_SECRET") || "";
-  const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
-  const authHeader = req.headers.get("authorization") || "";
-  const agentSecret = req.headers.get("x-agent-secret") || "";
-
-  if (configuredSecret && agentSecret === configuredSecret) return;
-  if (serviceRoleKey && authHeader === `Bearer ${serviceRoleKey}`) return;
-
-  throw new HttpError("Unauthorized invoice generator request", 401);
-}
 
 async function readJson<T>(req: Request): Promise<T> {
   const rawBody = await req.text();

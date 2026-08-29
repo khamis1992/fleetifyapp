@@ -8,7 +8,7 @@
  */
 
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { authorizeActiveCompanyUser } from "../_shared/privileged-admin.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -33,12 +33,13 @@ interface OCRResponse {
 // OLMOCR API endpoint
 const OLMOCR_API_URL = 'https://api.olmocr.com/v1/ocr';
 
-serve(async (req) => {
+Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
+    await authorizeActiveCompanyUser(req);
     const { imageDataUrls, language = 'ar', preserveLayout = true }: OCRRequest = await req.json();
 
     console.log('📄 OLMOCR Request:', {
@@ -135,3 +136,5 @@ function calculateConfidence(text: string, language: string): number {
   if (/عقد|contract|اتفاقية|إيجار/i.test(text)) c += 0.05;
   return Math.min(c, 1.0);
 }
+
+

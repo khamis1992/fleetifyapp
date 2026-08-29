@@ -1,11 +1,16 @@
-import "https://deno.land/x/xhr@0.1.0/mod.ts";
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.4';
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+import {
+  agentCorsHeaders,
+  AgentInvocationContext,
+  authorizeGovernedAgent,
+  createServiceClient,
+  finishAgentExecution,
+  jsonResponse,
+} from "../_shared/agent.ts";
+import {
+  validateAndFixAmount,
+  validateAndFixDate,
+  validateAndFixPhone,
+} from "./validation.ts";
 
 interface ProcessedContractData {
   customer_name?: string;
@@ -49,16 +54,24 @@ interface ProcessingResult {
   processing_notes: string[];
 }
 
-serve(async (req) => {
+Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+    return new Response(null, { headers: agentCorsHeaders });
   }
 
+  let invocation: AgentInvocationContext | null = null;
   try {
-    const { contract_data, options = {} } = await req.json();
+    const { companyId, contract_data, options = {} } = await req.json();
+    if (!companyId || !contract_data || typeof contract_data !== 'object') {
+      return jsonResponse({ error: 'companyId and contract_data are required' }, 400);
+    }
+    invocation = await authorizeGovernedAgent(
+      req,
+      'intelligent-contract-processor',
+      companyId,
+    );
+    const supabase = createServiceClient();
 
-    console.log('🤖 Processing contract data:', contract_data);
-    
     const result: ProcessingResult = {
       contract_data: { ...contract_data },
       validation_issues: [],
@@ -67,6 +80,8 @@ serve(async (req) => {
       confidence_score: 0.8,
       processing_notes: []
     };
+    let normalizedStartDate: string | undefined;
+    let normalizedEndDate: string | undefined;
 
     // Phone number validation and fixes
     if (contract_data.customer_phone) {
@@ -80,14 +95,16 @@ serve(async (req) => {
             reason: 'تم تنسيق رقم الهاتف ليتوافق مع معايير دول الخليج',
             confidence: 0.9
           });
-          result.contract_data.customer_phone = phoneValidation.cleanPhone;
+          if (options.autoApplyFixes === true) {
+            result.contract_data.customer_phone = phoneValidation.cleanPhone;
+          }
         }
       } else {
         result.validation_issues.push({
           field: 'customer_phone',
-          issue: `رقم الهاتف غير صحيح: ${contract_data.customer_phone}`,
+          issue: 'رقم الهاتف غير صحيح أو ليس رقماً قطرياً واضحاً',
           severity: 'error',
-          suggestion: 'تأكد من أن رقم الهاتف يحتوي على مقدمة دولية صحيحة لدول الخليج'
+          suggestion: 'استخدم رقماً قطرياً من 8 أرقام أو +974 متبوعاً بـ8 أرقام'
         });
         result.is_valid = false;
       }
@@ -96,6 +113,7 @@ serve(async (req) => {
     // Date validation and fixes
     if (contract_data.start_date) {
       const dateValidation = validateAndFixDate(contract_data.start_date);
+      normalizedStartDate = dateValidation.fixedDate;
       if (dateValidation.isValid && dateValidation.needsFix) {
         result.auto_fixes.push({
           field: 'start_date',
@@ -104,12 +122,23 @@ serve(async (req) => {
           reason: 'تم تصحيح تنسيق التاريخ',
           confidence: 0.8
         });
-        result.contract_data.start_date = dateValidation.fixedDate;
+        if (options.autoApplyFixes === true) {
+          result.contract_data.start_date = dateValidation.fixedDate;
+        }
+      } else if (!dateValidation.isValid) {
+        result.validation_issues.push({
+          field: 'start_date',
+          issue: dateValidation.reason || 'تاريخ البداية غير صالح أو ملتبس',
+          severity: 'error',
+          suggestion: 'استخدم YYYY-MM-DD، أو صيغة لا تحتمل أكثر من تفسير',
+        });
+        result.is_valid = false;
       }
     }
 
     if (contract_data.end_date) {
       const dateValidation = validateAndFixDate(contract_data.end_date);
+      normalizedEndDate = dateValidation.fixedDate;
       if (dateValidation.isValid && dateValidation.needsFix) {
         result.auto_fixes.push({
           field: 'end_date',
@@ -118,12 +147,32 @@ serve(async (req) => {
           reason: 'تم تصحيح تنسيق التاريخ',
           confidence: 0.8
         });
-        result.contract_data.end_date = dateValidation.fixedDate;
+        if (options.autoApplyFixes === true) {
+          result.contract_data.end_date = dateValidation.fixedDate;
+        }
+      } else if (!dateValidation.isValid) {
+        result.validation_issues.push({
+          field: 'end_date',
+          issue: dateValidation.reason || 'تاريخ النهاية غير صالح أو ملتبس',
+          severity: 'error',
+          suggestion: 'استخدم YYYY-MM-DD، أو صيغة لا تحتمل أكثر من تفسير',
+        });
+        result.is_valid = false;
       }
     }
 
+    if (normalizedStartDate && normalizedEndDate && normalizedEndDate < normalizedStartDate) {
+      result.validation_issues.push({
+        field: 'end_date',
+        issue: 'تاريخ نهاية العقد يسبق تاريخ البداية',
+        severity: 'error',
+        suggestion: 'راجع تاريخي البداية والنهاية في المستند الأصلي',
+      });
+      result.is_valid = false;
+    }
+
     // Amount validation and fixes
-    if (contract_data.contract_amount) {
+    if (contract_data.contract_amount !== undefined && contract_data.contract_amount !== null) {
       const amountValidation = validateAndFixAmount(contract_data.contract_amount);
       if (amountValidation.isValid && amountValidation.needsFix) {
         result.auto_fixes.push({
@@ -133,12 +182,46 @@ serve(async (req) => {
           reason: 'تم تصحيح تنسيق المبلغ',
           confidence: 0.9
         });
-        result.contract_data.contract_amount = amountValidation.fixedAmount;
+        if (options.autoApplyFixes === true) {
+          result.contract_data.contract_amount = amountValidation.fixedAmount;
+        }
+      } else if (!amountValidation.isValid) {
+        result.validation_issues.push({
+          field: 'contract_amount',
+          issue: 'قيمة العقد غير صالحة',
+          severity: 'error',
+          suggestion: 'أدخل مبلغاً رقمياً موجباً أو صفراً',
+        });
+        result.is_valid = false;
+      }
+    }
+
+    if (contract_data.monthly_amount !== undefined && contract_data.monthly_amount !== null) {
+      const amountValidation = validateAndFixAmount(contract_data.monthly_amount);
+      if (amountValidation.isValid && amountValidation.needsFix) {
+        result.auto_fixes.push({
+          field: 'monthly_amount',
+          original_value: contract_data.monthly_amount,
+          suggested_value: amountValidation.fixedAmount,
+          reason: 'تم تصحيح تنسيق الإيجار الشهري',
+          confidence: 0.9,
+        });
+        if (options.autoApplyFixes === true) {
+          result.contract_data.monthly_amount = amountValidation.fixedAmount;
+        }
+      } else if (!amountValidation.isValid) {
+        result.validation_issues.push({
+          field: 'monthly_amount',
+          issue: 'قيمة الإيجار الشهري غير صالحة',
+          severity: 'error',
+          suggestion: 'أدخل مبلغاً رقمياً موجباً أو صفراً',
+        });
+        result.is_valid = false;
       }
     }
 
     // Apply auto fixes if requested
-    if (options.autoApplyFixes && result.auto_fixes.length > 0) {
+    if (options.autoApplyFixes === true && result.auto_fixes.length > 0) {
       result.processing_notes.push(`تم تطبيق ${result.auto_fixes.length} تصحيحات تلقائية`);
     }
 
@@ -148,21 +231,47 @@ serve(async (req) => {
     
     result.confidence_score = Math.max(0.1, 1.0 - (errorCount * 0.3) - (warningCount * 0.1));
     
-    console.log('✅ Processing completed:', {
+    console.log('Contract processing completed', {
+      companyId,
       isValid: result.is_valid,
       issuesCount: result.validation_issues.length,
       fixesCount: result.auto_fixes.length,
       confidence: result.confidence_score
     });
-
-    return new Response(JSON.stringify(result), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    await finishAgentExecution(supabase, invocation, true, {
+      isValid: result.is_valid,
+      issuesCount: result.validation_issues.length,
+      fixesCount: result.auto_fixes.length,
     });
 
+    return jsonResponse(result);
+
   } catch (error: unknown) {
-    console.error('❌ Error in intelligent-contract-processor:', error);
+    console.error('Contract processing failed', {
+      code: error instanceof Error ? error.name : 'unknown_error',
+    });
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    return new Response(JSON.stringify({ 
+    if (invocation) {
+      try {
+        await finishAgentExecution(
+          createServiceClient(),
+          invocation,
+          false,
+          {},
+          'contract_processing_failed',
+        );
+      } catch (finishError) {
+        console.error('Failed to close contract processor execution', {
+          code: finishError instanceof Error ? finishError.name : 'unknown_error',
+        });
+      }
+    }
+    const status = errorMessage === 'Unauthorized'
+      ? 401
+      : errorMessage === 'Agent disabled or busy'
+      ? 409
+      : 500;
+    return jsonResponse({
       error: errorMessage,
       contract_data: null,
       validation_issues: [],
@@ -170,125 +279,6 @@ serve(async (req) => {
       is_valid: false,
       confidence_score: 0,
       processing_notes: [`خطأ في المعالجة: ${errorMessage}`]
-    }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    }, status);
   }
 });
-
-function validateAndFixPhone(phone: string): { isValid: boolean; needsFix: boolean; cleanPhone?: string } {
-  if (!phone || typeof phone !== 'string') {
-    return { isValid: false, needsFix: false };
-  }
-
-  // Clean the phone number
-  let cleaned = phone.replace(/[\s\-\(\)]/g, '');
-  
-  // GCC phone patterns with better validation
-  const gccPatterns = [
-    // Qatar: +974 or 974 (8 digits)
-    { pattern: /^(\+?974)([0-9]{8})$/, country: 'Qatar', format: '+974$2' },
-    // Kuwait: +965 or 965 (8 digits) or local with 0
-    { pattern: /^(\+?965|0)?([2-9]\d{7})$/, country: 'Kuwait', format: '+965$2' },
-    // Saudi: +966 or 966 (9 digits) or local with 0
-    { pattern: /^(\+?966|0)?(5[0-9]{8})$/, country: 'Saudi', format: '+966$2' },
-    // UAE: +971 or 971 (9 digits) or local with 0
-    { pattern: /^(\+?971|0)?(5[0-9]{8})$/, country: 'UAE', format: '+971$2' },
-    // Oman: +968 or 968 (8 digits)
-    { pattern: /^(\+?968)([0-9]{8})$/, country: 'Oman', format: '+968$2' },
-    // Bahrain: +973 or 973 (8 digits)
-    { pattern: /^(\+?973)([0-9]{8})$/, country: 'Bahrain', format: '+973$2' }
-  ];
-
-  for (const { pattern, format } of gccPatterns) {
-    const match = cleaned.match(pattern);
-    if (match) {
-      const formattedPhone = cleaned.replace(pattern, format);
-      return {
-        isValid: true,
-        needsFix: formattedPhone !== phone,
-        cleanPhone: formattedPhone
-      };
-    }
-  }
-
-  // Check if it's a local number without country code (7-9 digits)
-  if (/^[0-9]{7,9}$/.test(cleaned)) {
-    return {
-      isValid: true,
-      needsFix: true,
-      cleanPhone: `+974${cleaned}` // Default to Qatar if no country code
-    };
-  }
-
-  return { isValid: false, needsFix: false };
-}
-
-function validateAndFixDate(dateStr: string): { isValid: boolean; needsFix: boolean; fixedDate?: string } {
-  if (!dateStr) return { isValid: false, needsFix: false };
-
-  // Try parsing as ISO date first
-  let date = new Date(dateStr);
-  if (!isNaN(date.getTime())) {
-    const isoString = date.toISOString().split('T')[0];
-    return {
-      isValid: true,
-      needsFix: isoString !== dateStr,
-      fixedDate: isoString
-    };
-  }
-
-  // Try common date formats
-  const dateFormats = [
-    /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/, // MM/DD/YYYY or DD/MM/YYYY
-    /^(\d{1,2})-(\d{1,2})-(\d{4})$/, // MM-DD-YYYY or DD-MM-YYYY
-    /^(\d{4})\/(\d{1,2})\/(\d{1,2})$/, // YYYY/MM/DD
-    /^(\d{4})-(\d{1,2})-(\d{1,2})$/, // YYYY-MM-DD
-  ];
-
-  for (const format of dateFormats) {
-    const match = dateStr.match(format);
-    if (match) {
-      const [, p1, p2, p3] = match;
-      // Assume YYYY-MM-DD or DD/MM/YYYY format
-      const year = p3.length === 4 ? p3 : p1;
-      const month = p3.length === 4 ? p1 : p2;
-      const day = p3.length === 4 ? p2 : p1;
-      
-      date = new Date(`${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`);
-      if (!isNaN(date.getTime())) {
-        const isoString = date.toISOString().split('T')[0];
-        return {
-          isValid: true,
-          needsFix: true,
-          fixedDate: isoString
-        };
-      }
-    }
-  }
-
-  return { isValid: false, needsFix: false };
-}
-
-function validateAndFixAmount(amount: any): { isValid: boolean; needsFix: boolean; fixedAmount?: number } {
-  if (typeof amount === 'number' && !isNaN(amount)) {
-    return { isValid: true, needsFix: false };
-  }
-
-  if (typeof amount === 'string') {
-    // Remove currency symbols and spaces
-    const cleaned = amount.replace(/[^\d.-]/g, '');
-    const parsed = parseFloat(cleaned);
-    
-    if (!isNaN(parsed) && parsed >= 0) {
-      return {
-        isValid: true,
-        needsFix: true,
-        fixedAmount: parsed
-      };
-    }
-  }
-
-  return { isValid: false, needsFix: false };
-}

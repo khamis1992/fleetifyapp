@@ -19,14 +19,19 @@
  *   - proposal: { mode: "proposal", proposalId }
  */
 
-import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient, SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { callKimiJson, KIMI_MODEL, KIMI_VISION_MODEL } from "../_shared/kimi.ts";
+import {
+  AgentInvocationContext,
+  authorizeScheduledAgent,
+  createServiceClient,
+  finishAgentExecution,
+} from "../_shared/agent.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-reviewer-secret",
+    "authorization, x-client-info, apikey, content-type, x-agent-id, x-agent-secret",
 };
 
 const MAX_OCR_CHARS = 3500;
@@ -70,18 +75,35 @@ interface AiVerdict {
   reasoning: string;
 }
 
-serve(async (req) => {
+Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
+  let invocation: AgentInvocationContext | null = null;
+  let executionFailed = false;
   try {
-    await authorize(req);
-
     const body = await req.json().catch(() => ({}));
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+    );
+    let authorizationCompanyId = typeof body.companyId === "string"
+      ? body.companyId
+      : null;
+    if (!authorizationCompanyId && body.mode === "proposal" && body.proposalId) {
+      const { data: proposal, error: proposalError } = await supabase
+        .from("customer_id_scan_proposals")
+        .select("company_id")
+        .eq("id", body.proposalId)
+        .maybeSingle();
+      if (proposalError) throw proposalError;
+      authorizationCompanyId = proposal?.company_id || null;
+    }
+    invocation = await authorizeScheduledAgent(
+      req,
+      "customer-proposal-ai-reviewer",
+      authorizationCompanyId,
     );
 
     let result: unknown;
@@ -101,6 +123,7 @@ serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error) {
+    executionFailed = true;
     console.error("❌ Proposal AI reviewer error:", error);
     const message = error instanceof Error ? error.message : "Unknown error";
     const status = message === "Unauthorized" ? 401 : 500;
@@ -108,30 +131,15 @@ serve(async (req) => {
       status,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
+  } finally {
+    if (invocation) {
+      await finishAgentExecution(
+        createServiceClient(), invocation, !executionFailed, {},
+        executionFailed ? "customer_proposal_review_failed" : null,
+      ).catch(() => undefined);
+    }
   }
 });
-
-async function authorize(req: Request): Promise<void> {
-  const secret = req.headers.get("x-reviewer-secret");
-  const expected = Deno.env.get("CONTRACT_SCANNER_SECRET");
-  if (expected && secret === expected) return;
-
-  const authHeader = req.headers.get("Authorization");
-  const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-  if (serviceRoleKey && authHeader === `Bearer ${serviceRoleKey}`) return;
-
-  if (authHeader) {
-    const userClient = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_ANON_KEY") ?? "",
-      { global: { headers: { Authorization: authHeader } } },
-    );
-    const { data, error } = await userClient.auth.getUser();
-    if (!error && data?.user) return;
-  }
-
-  throw new Error("Unauthorized");
-}
 
 // ---------------------------------------------------------------------------
 // Batch / single entry points
@@ -414,12 +422,14 @@ async function reviewAndStore(
     .from("customers")
     .select("first_name_ar, last_name_ar, first_name, last_name, national_id, nationality")
     .eq("id", proposal.customer_id)
+    .eq("company_id", proposal.company_id)
     .single();
 
   const { data: contract } = await supabase
     .from("contracts")
     .select("contract_number, monthly_amount, contract_amount")
     .eq("id", proposal.contract_id)
+    .eq("company_id", proposal.company_id)
     .single();
 
   const changes = proposal.proposed_changes || [];
@@ -553,71 +563,14 @@ async function reviewAndStore(
 async function applyProposal(
   supabase: SupabaseClient,
   proposal: ProposalRow,
-  changes: ProposedChange[],
+  _changes: ProposedChange[],
 ): Promise<boolean> {
-  const customerUpdates: Record<string, unknown> = {};
-  const contractUpdates: Record<string, unknown> = {};
-
-  for (const change of changes) {
-    if (change.field === "monthly_amount") {
-      contractUpdates.monthly_amount = Number(change.proposed_value);
-    } else {
-      customerUpdates[change.field] = change.proposed_value;
-    }
-  }
-  if (customerUpdates.first_name_ar) customerUpdates.first_name = customerUpdates.first_name_ar;
-  if (customerUpdates.last_name_ar) customerUpdates.last_name = customerUpdates.last_name_ar;
-
-  if (Object.keys(customerUpdates).length > 0) {
-    const { error } = await supabase
-      .from("customers")
-      .update(customerUpdates)
-      .eq("id", proposal.customer_id)
-      .eq("company_id", proposal.company_id);
-    if (error) {
-      console.error(`Auto-approval customer update failed for ${proposal.id}:`, error);
-      return false;
-    }
-  }
-
-  if (Object.keys(contractUpdates).length > 0) {
-    const { error } = await supabase
-      .from("contracts")
-      .update(contractUpdates)
-      .eq("id", proposal.contract_id)
-      .eq("company_id", proposal.company_id);
-    if (error) {
-      console.error(`Auto-approval contract update failed for ${proposal.id}:`, error);
-      return false;
-    }
-
-    await supabase.from("contract_operations_log").insert({
-      contract_id: proposal.contract_id,
-      company_id: proposal.company_id,
-      operation_type: "contract_fields_updated_from_id_review",
-      operation_details: {
-        proposal_id: proposal.id,
-        auto_approved: true,
-        applied_fields: changes.map((change) => ({
-          field: change.field,
-          from: change.current_value,
-          to: change.proposed_value,
-        })),
-      },
-      notes: "اعتمد وكيل Kimi تلقائياً قيماً مؤكدة من مستند العقد (ثقة 95%+ وهوية متحققة)",
-      performed_by: null,
-    });
-  }
-
-  const { error: statusError } = await supabase
-    .from("customer_id_scan_proposals")
-    .update({
-      status: "accepted",
-      reviewed_at: new Date().toISOString(),
-    })
-    .eq("id", proposal.id);
-  if (statusError) {
-    console.error(`Auto-approval status update failed for ${proposal.id}:`, statusError);
+  const { data, error } = await supabase.rpc("apply_customer_id_scan_proposal_v1", {
+    p_company_id: proposal.company_id,
+    p_proposal_id: proposal.id,
+  });
+  if (error || data !== true) {
+    console.error(`Atomic proposal application failed for ${proposal.id}:`, error?.code || "not_applied");
     return false;
   }
   return true;
@@ -653,6 +606,7 @@ async function storeVerdict(
         },
       },
     })
-    .eq("id", proposal.id);
+    .eq("id", proposal.id)
+    .eq("company_id", proposal.company_id);
   if (error) throw error;
 }

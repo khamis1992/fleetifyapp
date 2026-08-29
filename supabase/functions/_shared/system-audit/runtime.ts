@@ -5,8 +5,12 @@ import {
   LONGCAT_MODEL,
 } from "../longcat.ts";
 import type { AuditFinding } from "./types.ts";
+import {
+  type AgentInvocationContext,
+  authorizeScheduledAgent,
+} from "../agent.ts";
 
-const SYSTEM_AUDIT_WORKER_VERSION = "2026-07-16.54";
+const SYSTEM_AUDIT_WORKER_VERSION = "2026-08-27.55";
 const SYSTEM_AUDIT_WORKER_FUNCTION = "system-audit-worker-v12";
 
 export class SystemAuditRequestError extends Error {
@@ -22,14 +26,34 @@ export const systemAuditCorsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-agent-secret",
 };
 
-export function authorizeSystemAgent(req: Request) {
+export async function authorizeSystemAgent(
+  req: Request,
+  companyId?: string | null,
+): Promise<AgentInvocationContext | null> {
+  if (req.headers.get("x-agent-id") || req.headers.get("x-agent-secret")) {
+    if (!companyId) {
+      throw new SystemAuditRequestError("companyId is required", 400);
+    }
+    try {
+      return await authorizeScheduledAgent(
+        req,
+        "system-audit-orchestrator",
+        companyId,
+      );
+    } catch {
+      throw new SystemAuditRequestError(
+        "Unauthorized system audit agent request",
+        401,
+      );
+    }
+  }
   const configuredSecret = Deno.env.get("AUDIT_AGENT_SECRET") || "";
   const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
   const authorization = req.headers.get("authorization") || "";
   const suppliedSecret = req.headers.get("x-agent-secret") || "";
 
-  if (configuredSecret && suppliedSecret === configuredSecret) return;
-  if (serviceRoleKey && authorization === `Bearer ${serviceRoleKey}`) return;
+  if (configuredSecret && suppliedSecret === configuredSecret) return null;
+  if (serviceRoleKey && authorization === `Bearer ${serviceRoleKey}`) return null;
   throw new SystemAuditRequestError(
     "Unauthorized system audit agent request",
     401

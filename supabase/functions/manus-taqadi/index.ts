@@ -143,6 +143,15 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  return new Response(
+    JSON.stringify({
+      success: false,
+      error: 'LEGACY_TAQADI_BYPASS_RETIRED',
+      message: 'استخدم وكيل تقاضي المحلي وطابور taqadi_filing_jobs المحكوم.',
+    }),
+    { status: 410, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+  );
+
   try {
     if (!MANUS_API_KEY) {
       throw new Error('MANUS_API_KEY not configured');

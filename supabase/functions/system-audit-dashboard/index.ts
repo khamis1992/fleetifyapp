@@ -1,7 +1,6 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.4";
 
-const DASHBOARD_VERSION = "2026-08-03.2";
+const DASHBOARD_VERSION = "2026-08-27.3";
 const CROSS_RUN_LIFECYCLE_MANAGED_REVIEW_CODES = new Set([
   "invoice.month_reconciliation_needs_review",
 ]);
@@ -70,7 +69,7 @@ type AgentReviewFinding = AgentFinding & {
   updated_at: string;
 };
 
-serve(async (req) => {
+Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return json({ ok: false, error: "Method not allowed" }, 405);
 
@@ -91,6 +90,17 @@ serve(async (req) => {
 
     const body = await readJson(req);
     const requestedCompanyId = typeof body.companyId === "string" ? body.companyId : null;
+    const supportedActions = new Set([
+      "dashboard",
+      "sync_review_tasks",
+      "set_control",
+      "cancel_run",
+    ]);
+    const requestedAction = typeof body.action === "string" ? body.action : "dashboard";
+    if (!supportedActions.has(requestedAction)) {
+      return json({ ok: false, error: "Unsupported dashboard action" }, 400);
+    }
+    const action = requestedAction;
     const [{ data: profile, error: profileError }, { data: roles, error: rolesError }] = await Promise.all([
       admin
         .from("profiles")
@@ -118,6 +128,108 @@ serve(async (req) => {
     if (!canReviewSystemAudit) {
       return json({ ok: false, error: "System audit review access denied" }, 403);
     }
+    const canUseKillSwitch = isSuperAdmin || (roles || []).some(
+      (role: { role: string; company_id: string | null }) =>
+        role.company_id === companyId && role.role === "company_admin",
+    );
+    const permissions = {
+      canManageAgent: canReviewSystemAudit,
+      canUseKillSwitch,
+      canAssignOwner: canReviewSystemAudit,
+    };
+
+    const { data: currentControl, error: controlError } = await admin.rpc(
+      "system_agent_get_company_control_v1",
+      { p_company_id: companyId },
+    );
+    if (controlError) throw controlError;
+
+    if (action === "sync_review_tasks") {
+      const { data: syncResult, error: syncError } = await admin.rpc(
+        "sync_system_audit_review_tasks_v1",
+        { p_company_id: companyId },
+      );
+      if (syncError) throw syncError;
+      return json({ ok: true, companyId, sync: syncResult });
+    }
+
+    if (action === "set_control") {
+      const enabled = typeof body.enabled === "boolean"
+        ? body.enabled
+        : currentControl?.enabled !== false;
+      const paused = typeof body.paused === "boolean"
+        ? body.paused
+        : currentControl?.paused === true;
+      const killSwitch = typeof body.killSwitch === "boolean"
+        ? body.killSwitch
+        : currentControl?.killSwitch === true;
+      const reason = typeof body.reason === "string" ? body.reason.trim().slice(0, 1000) : "";
+      const ownerProfileId = body.ownerProfileId === null
+        ? null
+        : typeof body.ownerProfileId === "string" && body.ownerProfileId
+        ? body.ownerProfileId
+        : typeof currentControl?.ownerProfileId === "string"
+        ? currentControl.ownerProfileId
+        : null;
+
+      if (killSwitch !== (currentControl?.killSwitch === true) && !canUseKillSwitch) {
+        return json({ ok: false, error: "Emergency kill-switch access denied" }, 403);
+      }
+      if ((!enabled || paused || killSwitch) && reason.length < 4) {
+        return json({ ok: false, error: "A reason is required when stopping the agent" }, 400);
+      }
+
+      const { data: updatedControl, error: updateControlError } = await admin.rpc(
+        "system_agent_set_company_control_v1",
+        {
+          p_company_id: companyId,
+          p_enabled: enabled,
+          p_paused: paused,
+          p_kill_switch: killSwitch,
+          p_reason: reason || null,
+          p_owner_profile_id: ownerProfileId,
+          p_actor_user_id: authData.user.id,
+        },
+      );
+      if (updateControlError) throw updateControlError;
+      return json({ ok: true, companyId, control: updatedControl });
+    }
+
+    if (action === "cancel_run") {
+      const runId = typeof body.runId === "string" ? body.runId : "";
+      const reason = typeof body.reason === "string" ? body.reason.trim().slice(0, 1000) : "";
+      if (!runId) return json({ ok: false, error: "runId is required" }, 400);
+      if (reason.length < 4) return json({ ok: false, error: "Cancellation reason is required" }, 400);
+
+      const { data: cancellation, error: cancellationError } = await admin.rpc(
+        "system_agent_request_cancel_v1",
+        {
+          p_run_id: runId,
+          p_company_id: companyId,
+          p_actor_user_id: authData.user.id,
+          p_reason: reason,
+        },
+      );
+      if (cancellationError) throw cancellationError;
+      return json({ ok: true, companyId, cancellation });
+    }
+
+    const { data: operatorRows, error: operatorsError } = await admin
+      .from("profiles")
+      .select("id,first_name,last_name,first_name_ar,last_name_ar,position,position_ar")
+      .eq("company_id", companyId)
+      .eq("is_active", true)
+      .order("first_name")
+      .limit(250);
+    if (operatorsError) throw operatorsError;
+    const operators = (operatorRows || []).map((operator: Record<string, string | null>) => ({
+      id: operator.id,
+      displayName: [
+        operator.first_name_ar || operator.first_name,
+        operator.last_name_ar || operator.last_name,
+      ].filter(Boolean).join(" "),
+      position: operator.position_ar || operator.position,
+    }));
 
     const { data: companyJobRefs, error: companyJobsError } = await admin
       .from("system_agent_jobs")
@@ -129,7 +241,7 @@ serve(async (req) => {
 
     const runIds = [...new Set((companyJobRefs || []).map((job: { run_id: string }) => job.run_id))].slice(0, 60);
     if (runIds.length === 0) {
-      return json(emptyDashboard(companyId));
+      return json(emptyDashboard(companyId, currentControl, permissions, operators));
     }
 
     const { data: runRows, error: runsError } = await admin
@@ -207,6 +319,9 @@ serve(async (req) => {
       companyId,
       generatedAt: new Date().toISOString(),
       dashboardVersion: DASHBOARD_VERSION,
+      control: currentControl,
+      permissions,
+      operators,
       reviewSnapshotComplete: Boolean(latestCompletedFullRun),
       overview: {
         totalAppliedRepairs: appliedRepairsResult.count || 0,
@@ -455,12 +570,20 @@ function isFullAudit(requestedDomains: string[]): boolean {
   return DOMAINS.every((domain) => requestedDomains?.includes(domain));
 }
 
-function emptyDashboard(companyId: string) {
+function emptyDashboard(
+  companyId: string,
+  control: JsonRecord | null,
+  permissions: JsonRecord,
+  operators: JsonRecord[],
+) {
   return {
     ok: true,
     companyId,
     generatedAt: new Date().toISOString(),
     dashboardVersion: DASHBOARD_VERSION,
+    control,
+    permissions,
+    operators,
     reviewSnapshotComplete: false,
     overview: {
       totalAppliedRepairs: 0,

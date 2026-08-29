@@ -619,6 +619,10 @@ export default function CustomerVerificationPage() {
               phone: assignerPhone,
               message,
               customerName: assignerName,
+              companyId,
+              purpose: 'verification_complete',
+              entityType: 'verification_task',
+              entityId: taskId,
             });
           }
         } catch (whatsappError) {

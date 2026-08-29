@@ -9,6 +9,9 @@ function createPortal(calls: string[]) {
     savePartiesDraft: vi.fn(async () => {
       calls.push('saveDraft');
     }),
+    reconcileCompanySessionParty: vi.fn(async () => {
+      calls.push('companySessionParty');
+    }),
     validateCompanyParty: vi.fn(async () => {
       calls.push('company');
     }),
@@ -18,9 +21,6 @@ function createPortal(calls: string[]) {
     ) => {
       calls.push(`defendant:${String(options?.continueAfterSave)}`);
     }),
-    validateRepresentativeFirst: vi.fn(async () => {
-      calls.push('representative');
-    }),
     continueAfterParties: vi.fn(async () => {
       calls.push('continue');
     }),
@@ -28,7 +28,7 @@ function createPortal(calls: string[]) {
 }
 
 describe('processTaqadiParties', () => {
-  it('adds the company and defendant before editing the representative', async () => {
+  it('reviews the portal-owned party before the company and defendant', async () => {
     const calls: string[] = [];
     const portal = createPortal(calls);
 
@@ -41,12 +41,12 @@ describe('processTaqadiParties', () => {
     expect(calls).toEqual([
       'phase:save_parties_draft',
       'saveDraft',
+      'phase:company_session_party',
+      'companySessionParty',
       'phase:company',
       'company',
       'phase:defendant',
       'defendant:false',
-      'phase:representative_last',
-      'representative',
       'continue',
     ]);
   });
@@ -62,9 +62,9 @@ describe('processTaqadiParties', () => {
     });
     expect(calls).toEqual([
       'saveDraft',
+      'companySessionParty',
       'company',
       'defendant:false',
-      'representative',
     ]);
     expect(portal.continueAfterParties).not.toHaveBeenCalled();
   });

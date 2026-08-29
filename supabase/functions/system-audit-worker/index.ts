@@ -1,4 +1,3 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.4";
 import { runDomainWorker } from "../_shared/system-audit/workers.ts";
 import type { AuditFinding, AuditJob } from "../_shared/system-audit/types.ts";
@@ -14,8 +13,20 @@ import {
   triageFindingsWithLongCat,
 } from "../_shared/system-audit/runtime.ts";
 
-const WORKER_VERSION = "2026-07-16.54";
+const WORKER_VERSION = "2026-08-27.55";
 type SupabaseClient = ReturnType<typeof createClient>;
+
+type JobControlAction = "pause" | "cancel" | "lease_invalid";
+
+class JobControlStop extends Error {
+  constructor(
+    readonly action: JobControlAction,
+    readonly controlReason: string
+  ) {
+    super(controlReason);
+    this.name = "JobControlStop";
+  }
+}
 
 const CANONICAL_FINANCE_COMMANDS = new Set([
   "contract.recalculate_totals",
@@ -102,14 +113,14 @@ const BANK_PAYMENT_INTEGRITY_COMMANDS = new Set([
   "accounting.assign_single_active_bank",
 ]);
 
-serve(async (req) => {
+Deno.serve(async (req) => {
   if (req.method === "OPTIONS")
     return new Response("ok", { headers: systemAuditCorsHeaders });
 
   let supabase: SupabaseClient | null = null;
   let job: AuditJob | null = null;
   try {
-    authorizeSystemAgent(req);
+    await authorizeSystemAgent(req);
     const body = await readRequestJson<{ jobId?: string }>(req);
     if (!body.jobId)
       return systemAuditJson({ ok: false, error: "jobId is required" }, 400);
@@ -140,19 +151,25 @@ serve(async (req) => {
     }
     job = claimedJob as AuditJob;
 
+    await assertJobMayContinue(supabase, job);
+
     const batch = await runDomainWorker({ supabase, job, now: new Date() });
+    await assertJobMayContinue(supabase, job);
     const findings = dedupeFindings(batch.findings);
     const aiDecisions =
       job.settings?.includeAiTriage === false ||
       Number(job.processed_batches || 0) > 1
         ? new Map<string, Record<string, unknown>>()
         : await triageFindingsWithLongCat(findings);
+    await assertJobMayContinue(supabase, job);
     const outcome = await persistAndRepairFindings(
       supabase,
       job,
       findings,
-      aiDecisions
+      aiDecisions,
+      () => assertJobMayContinue(supabase as SupabaseClient, job as AuditJob)
     );
+    await assertJobMayContinue(supabase, job);
     const maxBatches = Number(job.settings?.maxBatches || 0);
     const hasMore =
       batch.hasMore &&
@@ -197,6 +214,39 @@ serve(async (req) => {
     });
   } catch (error) {
     const message = getErrorMessage(error);
+    if (error instanceof JobControlStop && supabase && job?.id && job.lease_token) {
+      const cleanup =
+        error.action === "pause"
+          ? await supabase.rpc("system_agent_finish_job", {
+              p_job_id: job.id,
+              p_lease_token: job.lease_token,
+              p_success: true,
+              p_has_more: true,
+              p_cursor: job.cursor || {},
+              p_stats: job.stats || {},
+              p_error: null,
+            })
+          : error.action === "cancel"
+          ? await supabase.rpc("system_agent_cancel_claimed_job_v1", {
+              p_job_id: job.id,
+              p_lease_token: job.lease_token,
+              p_reason: error.controlReason,
+            })
+          : { error: null };
+
+      return systemAuditJson(
+        {
+          ok: true,
+          skipped: true,
+          jobId: job.id,
+          reason: error.controlReason,
+          controlAction: error.action,
+          cleanupError: cleanup.error?.message || null,
+          workerVersion: WORKER_VERSION,
+        },
+        202
+      );
+    }
     if (supabase && job?.id && job.lease_token) {
       await supabase.rpc("system_agent_finish_job", {
         p_job_id: job.id,
@@ -224,7 +274,8 @@ async function persistAndRepairFindings(
   supabase: SupabaseClient,
   job: AuditJob,
   findings: AuditFinding[],
-  aiDecisions: Map<string, Record<string, unknown>>
+  aiDecisions: Map<string, Record<string, unknown>>,
+  assertMayContinue: () => Promise<void>
 ) {
   let repaired = 0;
   let verified = 0;
@@ -260,10 +311,12 @@ async function persistAndRepairFindings(
   const savedByKey = await persistFindingRows(
     supabase,
     job.run_id,
-    findingRows
+    findingRows,
+    assertMayContinue
   );
 
   for (const finding of findings) {
+    await assertMayContinue();
     const saved = savedByKey.get(finding.dedupeKey);
     if (!saved)
       throw new Error(`Persisted finding was not found: ${finding.dedupeKey}`);
@@ -347,6 +400,7 @@ async function persistAndRepairFindings(
         .eq("id", saved.id);
       continue;
     }
+    await assertMayContinue();
     const { data: repairResult, error: repairError } = await supabase.rpc(
       repairRpc,
       {
@@ -394,10 +448,12 @@ async function persistAndRepairFindings(
 async function persistFindingRows(
   supabase: SupabaseClient,
   runId: string,
-  rows: Array<Record<string, unknown>>
+  rows: Array<Record<string, unknown>>,
+  assertMayContinue: () => Promise<void>
 ): Promise<Map<string, { id: string; status: string }>> {
   const savedByKey = new Map<string, { id: string; status: string }>();
   for (let index = 0; index < rows.length; index += 50) {
+    await assertMayContinue();
     const chunk = rows.slice(index, index + 50);
     const { error: insertError } = await supabase
       .from("system_agent_findings")
@@ -419,6 +475,37 @@ async function persistFindingRows(
     }
   }
   return savedByKey;
+}
+
+async function assertJobMayContinue(
+  supabase: SupabaseClient,
+  job: AuditJob
+): Promise<void> {
+  const { data, error } = await supabase.rpc(
+    "system_agent_get_job_execution_control_v1",
+    {
+      p_job_id: job.id,
+      p_lease_token: job.lease_token,
+    }
+  );
+  if (error) throw error;
+
+  const control = (data || {}) as Record<string, unknown>;
+  if (control.leaseValid !== true) {
+    throw new JobControlStop("lease_invalid", "job_lease_is_no_longer_valid");
+  }
+  if (control.cancelRequested === true || control.killSwitch === true) {
+    throw new JobControlStop(
+      "cancel",
+      String(control.cancelReason || (control.killSwitch ? "company_kill_switch" : "manual_cancel"))
+    );
+  }
+  if (control.enabled === false || control.paused === true) {
+    throw new JobControlStop(
+      "pause",
+      control.enabled === false ? "company_agent_disabled" : "company_agent_paused"
+    );
+  }
 }
 
 function dedupeFindings(findings: AuditFinding[]): AuditFinding[] {

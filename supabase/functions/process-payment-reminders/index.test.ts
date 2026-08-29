@@ -6,6 +6,10 @@ const source = readFileSync(
   resolve(process.cwd(), "supabase/functions/process-payment-reminders/index.ts"),
   "utf8",
 );
+const sharedAgent = readFileSync(
+  resolve(process.cwd(), "supabase/functions/_shared/agent.ts"),
+  "utf8",
+);
 const automatedWorkflows = readFileSync(
   resolve(process.cwd(), "docs/AUTOMATED_WORKFLOWS_SETUP.md"),
   "utf8",
@@ -20,13 +24,16 @@ const supabaseConfig = readFileSync(
 );
 
 describe("process-payment-reminders safety", () => {
-  it("accepts only authenticated POST automation requests", () => {
+  it("accepts only governed per-agent POST automation requests", () => {
     expect(source).toContain('req.method !== "POST"');
-    expect(source).toContain('Deno.env.get("PAYMENT_REMINDERS_SECRET")');
-    expect(source).toContain('Deno.env.get("INVOICE_GENERATOR_SECRET")');
-    expect(source).toContain('req.headers.get("x-agent-secret")');
-    expect(source).toContain('authorization === `Bearer ${serviceRoleKey}`');
-    expect(source).toContain('new HttpError("Unauthorized payment reminders request", 401)');
+    expect(source).toContain('authorizeScheduledAgent');
+    expect(source).toContain('"payment-reminder-agent"');
+    expect(source).toContain('companyId is required');
+    expect(sharedAgent).toContain('req.headers.get("x-agent-secret")');
+    expect(sharedAgent).toContain('req.headers.get("x-agent-id")');
+    expect(source).toContain('finishAgentExecution');
+    expect(source).not.toContain('PAYMENT_REMINDERS_SECRET');
+    expect(source).not.toContain('INVOICE_GENERATOR_SECRET');
     expect(source).not.toContain("SUPABASE_ANON_KEY");
     expect(supabaseConfig).toMatch(
       /\[functions\.process-payment-reminders\]\s*verify_jwt\s*=\s*false/,
@@ -72,6 +79,11 @@ describe("process-payment-reminders safety", () => {
     expect(source).toContain("hasErrors ? 207 : 200");
   });
 
+  it("uses a short Arabic invoice-month label in customer messages", () => {
+    expect(source).toContain('formatArabicInvoiceMonthLabel(invoice.due_date)');
+    expect(source).not.toContain('`رقم الفاتورة: ${invoice.invoice_number || "-"}`');
+  });
+
   it("claims a bounded cadence stage before sending to prevent duplicate messages", () => {
     expect(source).toContain('getOverdueReminderType(daysOverdue)');
     expect(source).toContain('"pre_due_3d"');
@@ -91,15 +103,13 @@ describe("process-payment-reminders safety", () => {
     expect(source).not.toContain("late_fees_applied");
   });
 
-  it("documents agent-secret auth and fails workflows on reported errors", () => {
+  it("marks legacy external-secret workflow examples as retired", () => {
     for (const document of [automatedWorkflows, githubActions]) {
-      expect(document).toContain("PAYMENT_REMINDERS_SECRET");
-      expect(document).toContain("x-agent-secret");
-      expect(document).toContain(".results.errors // []");
+      expect(document).toContain("20260828113000_agent_failure_containment_and_escalation");
+      expect(document).toContain("لا تستخدم أمثلة الأسرار المشتركة");
     }
 
     expect(automatedWorkflows).not.toContain("Bearer YOUR_ANON_KEY");
     expect(automatedWorkflows).toContain("process-payment-reminders --no-verify-jwt");
-    expect(githubActions).not.toContain("secrets.SUPABASE_ANON_KEY");
   });
 });

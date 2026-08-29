@@ -10,7 +10,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { LEGAL_WORKFLOW_STAGES, LegalWorkflowStage, useLegalCaseWorkflow } from '@/hooks/useLegalCaseWorkflow';
+import {
+  LEGAL_WORKFLOW_STAGES,
+  LegalWorkflowStage,
+  REOPENABLE_LEGAL_WORKFLOW_STAGES,
+  useLegalCaseWorkflow,
+} from '@/hooks/useLegalCaseWorkflow';
 import { formatCurrency, cn } from '@/lib/utils';
 import { decodeLegalTaskTitle } from '@/utils/arabicDisplayText';
 
@@ -30,9 +35,19 @@ const actionTitles: Record<Exclude<Action, null>, string> = {
   enforcement: 'بدء التنفيذ', close: 'الإغلاق النهائي', reopen: 'إعادة فتح القضية',
 };
 
-interface Props { caseId: string; onChanged?: (legalCase: Record<string, any>) => void }
+interface Props {
+  caseId: string;
+  onChanged?: (legalCase: Record<string, any>) => void;
+  canMarkFiled?: boolean;
+  filingBlockReason?: string;
+}
 
-export function LegalCaseWorkflowPanel({ caseId, onChanged }: Props) {
+export function LegalCaseWorkflowPanel({
+  caseId,
+  onChanged,
+  canMarkFiled = true,
+  filingBlockReason,
+}: Props) {
   const workflow = useLegalCaseWorkflow(caseId);
   const [action, setAction] = useState<Action>(null);
   const [form, setForm] = useState(initialForm);
@@ -41,6 +56,8 @@ export function LegalCaseWorkflowPanel({ caseId, onChanged }: Props) {
   const stageIndex = LEGAL_WORKFLOW_STAGES.findIndex((item) => item.value === stage);
   const collected = Number(workflow.data?.settlement?.settled_amount || 0);
   const pendingTasks = (workflow.data?.tasks ?? []).filter((task) => !['completed', 'cancelled'].includes(task.status));
+  const normalizedReopenReason = form.reopenReason.trim();
+  const isReopenInvalid = action === 'reopen' && normalizedReopenReason.length < 10;
 
   const refreshParent = async () => {
     const refreshed = await workflow.refetch();
@@ -103,7 +120,7 @@ export function LegalCaseWorkflowPanel({ caseId, onChanged }: Props) {
         <Badge className="bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-50">{LEGAL_WORKFLOW_STAGES.find((item) => item.value === stage)?.label}</Badge>
       </div>
 
-      <div className="grid grid-cols-5 gap-1 sm:grid-cols-10" aria-label="مراحل القضية">
+      <div className="grid grid-cols-5 gap-1 sm:grid-cols-11" aria-label="مراحل القضية">
         {LEGAL_WORKFLOW_STAGES.map((item, index) => (
           <div key={item.value} title={item.label} className="min-w-0 text-center">
             <div className={cn('h-2 rounded-sm', index < stageIndex ? 'bg-emerald-400' : index === stageIndex ? 'bg-indigo-600' : 'bg-slate-200')} />
@@ -125,8 +142,23 @@ export function LegalCaseWorkflowPanel({ caseId, onChanged }: Props) {
       {legalCase.outcome_type && Math.abs(judgmentDifference) > 0.01 && <Alert><AlertDescription>يوجد فرق قدره {formatCurrency(Math.abs(judgmentDifference))} بين قيمة المطالبة ومبلغ الحكم. راجع منطوق الحكم قبل التنفيذ.</AlertDescription></Alert>}
 
       <div className="flex flex-wrap gap-2">
-        {stage === 'preparation' && <Button size="sm" onClick={() => transition('filed', 'تم تسجيل رفع الدعوى')}><PlayCircle className="w-4 h-4 ml-1" />تسجيل رفع الدعوى</Button>}
-        {['filed', 'hearings'].includes(stage) && <Button size="sm" onClick={() => setAction('hearing')}><CalendarDays className="w-4 h-4 ml-1" />إضافة جلسة</Button>}
+        {stage === 'preparation' && (
+          <Button
+            size="sm"
+            onClick={() => transition('filed', 'تم تسجيل رفع الدعوى')}
+            disabled={!canMarkFiled || workflow.isSaving}
+            title={!canMarkFiled ? filingBlockReason : undefined}
+          >
+            <PlayCircle className="w-4 h-4 ml-1" />
+            تسجيل رفع الدعوى
+          </Button>
+        )}
+        {stage === 'filed' && (
+          <Button size="sm" variant="outline" onClick={() => transition('awaiting_acceptance', 'تم تأكيد إيداع الدعوى وبدء انتظار قبول المحكمة')}>
+            بدء انتظار القبول
+          </Button>
+        )}
+        {['awaiting_acceptance', 'hearings'].includes(stage) && <Button size="sm" onClick={() => setAction('hearing')}><CalendarDays className="w-4 h-4 ml-1" />إضافة جلسة</Button>}
         {stage === 'hearings' && <Button size="sm" variant="outline" onClick={() => transition('reserved_for_judgment', 'تم حجز القضية للحكم')}>حجز للحكم</Button>}
         {['reserved_for_judgment', 'appeal', 'judgment_issued'].includes(stage) && <Button size="sm" onClick={() => setAction('judgment')}><Gavel className="w-4 h-4 ml-1" />تسجيل الحكم</Button>}
         {stage === 'judgment_issued' && <Button size="sm" variant="outline" onClick={() => setAction('appeal')}>تسجيل الاستئناف</Button>}
@@ -188,12 +220,15 @@ export function LegalCaseWorkflowPanel({ caseId, onChanged }: Props) {
               {monetaryPending && <label className="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm"><Checkbox checked={form.overrideUnsettled} onCheckedChange={(checked) => setForm({ ...form, overrideUnsettled: checked === true })} /><span>إغلاق إداري رغم وجود مبلغ غير مسدد. يتطلب صلاحية مدير وسبباً مفصلاً.</span></label>}
             </>}
             {action === 'reopen' && <>
-              <Field label="المرحلة التي ستعود إليها"><Select value={form.reopenStage} onValueChange={(value) => setForm({ ...form, reopenStage: value as LegalWorkflowStage })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{LEGAL_WORKFLOW_STAGES.filter((item) => !['closed', 'cancelled'].includes(item.value)).map((item) => <SelectItem key={item.value} value={item.value}>{item.label}</SelectItem>)}</SelectContent></Select></Field>
-              <Field label="سبب إعادة الفتح"><Textarea value={form.reopenReason} onChange={(e) => setForm({ ...form, reopenReason: e.target.value })} placeholder="اكتب سبباً تفصيلياً لا يقل عن 10 أحرف" /></Field>
+              <Field label="المرحلة التي ستعود إليها"><Select value={form.reopenStage} onValueChange={(value) => setForm({ ...form, reopenStage: value as LegalWorkflowStage })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{LEGAL_WORKFLOW_STAGES.filter((item) => REOPENABLE_LEGAL_WORKFLOW_STAGES.includes(item.value)).map((item) => <SelectItem key={item.value} value={item.value}>{item.label}</SelectItem>)}</SelectContent></Select></Field>
+              <Field label="سبب إعادة الفتح">
+                <Textarea value={form.reopenReason} onChange={(e) => setForm({ ...form, reopenReason: e.target.value })} placeholder="اكتب سبباً تفصيلياً لا يقل عن 10 أحرف" aria-invalid={isReopenInvalid} />
+                <p className={cn('text-xs', isReopenInvalid ? 'text-destructive' : 'text-muted-foreground')}>{normalizedReopenReason.length}/10 أحرف على الأقل</p>
+              </Field>
             </>}
             {['hearing', 'appeal', 'enforcement'].includes(action || '') && <Field label="ملاحظات"><Textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} /></Field>}
           </div>
-          <DialogFooter><Button variant="outline" onClick={() => setAction(null)}>إلغاء</Button><Button onClick={submit} disabled={workflow.isSaving}>{workflow.isSaving ? 'جارٍ الحفظ...' : 'اعتماد الإجراء'}</Button></DialogFooter>
+          <DialogFooter><Button variant="outline" onClick={() => setAction(null)}>إلغاء</Button><Button onClick={submit} disabled={workflow.isSaving || isReopenInvalid}>{workflow.isSaving ? 'جارٍ الحفظ...' : 'اعتماد الإجراء'}</Button></DialogFooter>
         </DialogContent>
       </Dialog>
     </section>

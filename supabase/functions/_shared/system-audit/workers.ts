@@ -310,6 +310,47 @@ async function auditContracts(
         })
       );
     }
+
+    // Overpayment review: canonical paid receipts exceed the contract
+    // principal. A zero/negative principal has nothing to exceed, so those
+    // contracts (mostly cancelled imports) are excluded — without this guard
+    // every cancelled contract with any receipt and contract_amount = 0 was
+    // reported as "overpaid", flooding the review queue with ~740K QAR of
+    // phantom excess.
+    const overpaymentPrincipal = roundMoney(contract.contract_amount);
+    const overpaymentRawPaid = roundMoney(
+      buildCanonicalContractReceiptContributions(
+        contract.id,
+        activeInvoices,
+        allPayments,
+        allocations
+      ).reduce(
+        (total, contribution) => total + Number(contribution.amount || 0),
+        0
+      )
+    );
+    if (
+      overpaymentPrincipal > 0.01 &&
+      overpaymentRawPaid - overpaymentPrincipal > 1
+    ) {
+      findings.push(
+        reviewFinding(
+          `contract:${contract.id}:overpayment`,
+          "contract.possible_overpayment",
+          "high",
+          "contract",
+          contract.id,
+          "Contract collected more than its principal",
+          "Completed receipts exceed the contract amount. Excess needs reclassification (credit note, transfer to another contract, or refund) after reviewing non-rent receipts (fines, insurance) and import channels.",
+          {
+            contractNumber: contract.contract_number,
+            contractAmount: overpaymentPrincipal,
+            rawPaidTotal: overpaymentRawPaid,
+            excess: roundMoney(overpaymentRawPaid - overpaymentPrincipal),
+          }
+        )
+      );
+    }
     const invoicesByMonth = groupBy(activeInvoices, invoiceMonthKey);
     for (const [month, monthlyInvoices] of invoicesByMonth.entries()) {
       if (!month || monthlyInvoices.length < 2) continue;
@@ -1240,8 +1281,8 @@ async function auditContracts(
       ),
       (payment) =>
         `${roundMoney(payment.amount)}:${payment.payment_date || ""}:${
-          payment.reference_number || "no-reference"
-        }`
+          payment.invoice_id || "unallocated"
+        }:${payment.reference_number || "no-reference"}`
     );
     for (const [signature, duplicates] of possibleDuplicatePayments.entries()) {
       if (duplicates.length < 2) continue;
@@ -1617,18 +1658,79 @@ async function auditAccounting(
   const page = await loadCompanyPage(
     context,
     "payments",
-    "id,company_id,payment_number,payment_date,payment_status,amount,journal_entry_id,contract_id,invoice_id,payment_method,bank_id,reconciliation_status,reconciled_at",
+    "id,company_id,payment_number,payment_date,payment_status,amount,journal_entry_id,contract_id,customer_id,invoice_id,payment_method,transaction_type,bank_id,reconciliation_status,reconciled_at",
     String(cursor.lastId || "")
   );
+  const paymentIds = page.rows.map((payment) => payment.id);
   const journalIds = page.rows
     .map((row) => row.journal_entry_id)
     .filter(Boolean);
-  const journals = await loadByIds(
+  const invoiceIds = page.rows.map((payment) => payment.invoice_id).filter(Boolean);
+  const [journals, directInvoices, paymentAllocations, classifications] =
+    await Promise.all([
+      loadByIds(
+        context,
+        "journal_entries",
+        "id,company_id,status,entry_date,reference_type,reference_id",
+        "id",
+        journalIds
+      ),
+      loadByIds(
+        context,
+        "invoices",
+        "id,company_id,contract_id,customer_id,invoice_number,status,payment_status",
+        "id",
+        invoiceIds
+      ),
+      loadByIds(
+        context,
+        "payment_allocations",
+        "id,company_id,payment_id,allocation_type,target_id,amount,is_active,voided_at",
+        "payment_id",
+        paymentIds
+      ),
+      loadByIds(
+        context,
+        "payment_accounting_classifications",
+        "id,company_id,payment_id,classification,is_active",
+        "payment_id",
+        paymentIds
+      ),
+    ]);
+  const activeInvoiceAllocations = paymentAllocations.filter(
+    (allocation) =>
+      allocation.is_active === true &&
+      !allocation.voided_at &&
+      allocation.allocation_type === "invoice"
+  );
+  const allocationInvoiceIds = activeInvoiceAllocations
+    .map((allocation) => allocation.target_id)
+    .filter(Boolean);
+  const allocationInvoices = await loadByIds(
     context,
-    "journal_entries",
-    "id,company_id,status,entry_date,reference_type,reference_id",
+    "invoices",
+    "id,company_id,contract_id,customer_id,invoice_number,status,payment_status",
     "id",
-    journalIds
+    allocationInvoiceIds
+  );
+  const invoiceById = new Map(
+    [...directInvoices, ...allocationInvoices].map((invoice) => [
+      invoice.id,
+      invoice,
+    ])
+  );
+  const allocationsByPayment = groupBy(
+    activeInvoiceAllocations,
+    (allocation) => allocation.payment_id
+  );
+  const classifiedAdvancePaymentIds = new Set(
+    classifications
+      .filter(
+        (classification) =>
+          classification.is_active === true &&
+          classification.classification === "customer_advance"
+      )
+      .map((classification) => classification.payment_id)
   );
   const journalById = new Map(journals.map((journal) => [journal.id, journal]));
   const bankTransactions = await loadByIds(
@@ -1655,6 +1757,157 @@ async function auditAccounting(
 
   for (const payment of page.rows) {
     if (!isCompletedPayment(payment.payment_status)) continue;
+    const directInvoice = payment.invoice_id
+      ? invoiceById.get(payment.invoice_id)
+      : null;
+    const activeAllocations = allocationsByPayment.get(payment.id) || [];
+
+    if (payment.invoice_id && !directInvoice) {
+      findings.push(
+        reviewFinding(
+          `payment:${payment.id}:broken-invoice-link`,
+          "payment.broken_invoice_link",
+          "critical",
+          "payment",
+          payment.id,
+          "Completed payment points to a missing or foreign-company invoice",
+          "The invoice relationship must be reconstructed from verified financial evidence.",
+          { invoiceId: payment.invoice_id }
+        )
+      );
+    } else if (directInvoice) {
+      const contractMismatch =
+        Boolean(payment.contract_id) &&
+        Boolean(directInvoice.contract_id) &&
+        payment.contract_id !== directInvoice.contract_id;
+      const customerMismatch =
+        Boolean(payment.customer_id) &&
+        Boolean(directInvoice.customer_id) &&
+        payment.customer_id !== directInvoice.customer_id;
+      if (contractMismatch || customerMismatch) {
+        findings.push(
+          reviewFinding(
+            `payment:${payment.id}:invoice-identity-mismatch`,
+            "payment.invoice_contract_identity_mismatch",
+            "critical",
+            "payment",
+            payment.id,
+            "Payment identity does not match its invoice",
+            "Company, customer, and contract ownership must agree before the relationship can be corrected.",
+            {
+              invoiceId: directInvoice.id,
+              paymentContractId: payment.contract_id,
+              invoiceContractId: directInvoice.contract_id,
+              paymentCustomerId: payment.customer_id,
+              invoiceCustomerId: directInvoice.customer_id,
+              contractMismatch,
+              customerMismatch,
+            }
+          )
+        );
+      } else if (
+        !directInvoice.contract_id &&
+        payment.contract_id &&
+        (!directInvoice.customer_id ||
+          !payment.customer_id ||
+          directInvoice.customer_id === payment.customer_id)
+      ) {
+        findings.push(
+          reviewFinding(
+            `invoice:${directInvoice.id}:missing-contract-from-payment:${payment.id}`,
+            "invoice.missing_contract_with_payment_evidence",
+            "high",
+            "invoice",
+            directInvoice.id,
+            "Invoice has no contract but its payment does",
+            "The payment provides a contract candidate, but financial staff must confirm that it is the only valid source before relinking the invoice.",
+            {
+              paymentId: payment.id,
+              candidateContractId: payment.contract_id,
+              invoiceCustomerId: directInvoice.customer_id,
+              paymentCustomerId: payment.customer_id,
+            }
+          )
+        );
+      }
+    }
+
+    for (const allocation of activeAllocations) {
+      const allocatedInvoice = invoiceById.get(allocation.target_id);
+      if (!allocatedInvoice) {
+        findings.push(
+          reviewFinding(
+            `payment-allocation:${allocation.id}:broken-invoice-target`,
+            "payment.allocation_broken_invoice_target",
+            "critical",
+            "payment_allocation",
+            allocation.id,
+            "Active payment allocation points to a missing invoice",
+            "The append-preserving allocation ledger must be repaired through the canonical allocation workflow.",
+            { paymentId: payment.id, targetInvoiceId: allocation.target_id }
+          )
+        );
+        continue;
+      }
+
+      const contractMismatch =
+        Boolean(payment.contract_id) &&
+        Boolean(allocatedInvoice.contract_id) &&
+        payment.contract_id !== allocatedInvoice.contract_id;
+      const customerMismatch =
+        Boolean(payment.customer_id) &&
+        Boolean(allocatedInvoice.customer_id) &&
+        payment.customer_id !== allocatedInvoice.customer_id;
+      if (contractMismatch || customerMismatch) {
+        findings.push(
+          reviewFinding(
+            `payment-allocation:${allocation.id}:identity-mismatch`,
+            "payment.allocation_contract_identity_mismatch",
+            "critical",
+            "payment_allocation",
+            allocation.id,
+            "Payment allocation crosses contract or customer ownership",
+            "The active allocation must be voided and replaced only after the intended invoice is verified.",
+            {
+              paymentId: payment.id,
+              invoiceId: allocatedInvoice.id,
+              paymentContractId: payment.contract_id,
+              invoiceContractId: allocatedInvoice.contract_id,
+              paymentCustomerId: payment.customer_id,
+              invoiceCustomerId: allocatedInvoice.customer_id,
+              contractMismatch,
+              customerMismatch,
+            }
+          )
+        );
+      }
+    }
+
+    if (
+      isReceiptPayment(payment) &&
+      !payment.invoice_id &&
+      activeAllocations.length === 0 &&
+      !classifiedAdvancePaymentIds.has(payment.id) &&
+      !payment.contract_id
+    ) {
+      findings.push(
+        reviewFinding(
+          `payment:${payment.id}:unallocated-without-contract`,
+          "payment.completed_unallocated_without_contract",
+          "high",
+          "payment",
+          payment.id,
+          "Completed receipt has no allocation or contract context",
+          "The receipt may be a customer advance, but it must not be classified or linked without verified customer and accounting evidence.",
+          {
+            amount: roundMoney(payment.amount),
+            paymentDate: payment.payment_date,
+            customerId: payment.customer_id,
+          }
+        )
+      );
+    }
+
     if (!payment.journal_entry_id) {
       findings.push(
         reviewFinding(
@@ -3585,12 +3838,18 @@ async function auditLegal(context: WorkerContext): Promise<WorkerBatchResult> {
   const page = await loadCompanyPage(
     context,
     "legal_cases",
-    "id,company_id,case_number,case_status,contract_id,total_costs,legal_fees,court_fees,other_expenses,outcome_date,outcome_type"
+    "id,company_id,case_number,case_status,client_id,contract_id,total_costs,legal_fees,court_fees,other_expenses,outcome_date,outcome_type"
   );
   const caseIds = page.rows.map((row) => row.id);
   const contractIds = page.rows.map((row) => row.contract_id).filter(Boolean);
   const [contracts, payments, repaymentPlans] = await Promise.all([
-    loadByIds(context, "contracts", "id,company_id,status", "id", contractIds),
+    loadByIds(
+      context,
+      "contracts",
+      "id,company_id,customer_id,status",
+      "id",
+      contractIds
+    ),
     loadByIds(
       context,
       "legal_case_payments",
@@ -3659,6 +3918,32 @@ async function auditLegal(context: WorkerContext): Promise<WorkerBatchResult> {
     const contract = legalCase.contract_id
       ? contractById.get(legalCase.contract_id)
       : null;
+    if (
+      contract &&
+      (legalCase.company_id !== contract.company_id ||
+        (legalCase.client_id &&
+          contract.customer_id &&
+          legalCase.client_id !== contract.customer_id))
+    ) {
+      findings.push(
+        reviewFinding(
+          `legal-case:${legalCase.id}:contract-party-mismatch`,
+          "legal.case_contract_party_mismatch",
+          "critical",
+          "legal_case",
+          legalCase.id,
+          "Legal case party does not match its contract",
+          "The case company and client must match the linked contract before filing or collection continues.",
+          {
+            contractId: contract.id,
+            caseCompanyId: legalCase.company_id,
+            contractCompanyId: contract.company_id,
+            caseClientId: legalCase.client_id,
+            contractCustomerId: contract.customer_id,
+          }
+        )
+      );
+    }
     if (
       contract &&
       ["open", "active", "pending", "on_hold", "under_review"].includes(

@@ -52,6 +52,8 @@ import { useQuery } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 import { systemColorPattern } from '@/lib/design-system/systemColorPattern';
+import { TrafficMailSyncControl } from '@/components/fleet/TrafficMailSyncControl';
+import { useRolePermissions } from '@/hooks/useRolePermissions';
 
 // Lazy load heavy components for better performance
 const TrafficViolationForm = lazy(() =>
@@ -71,6 +73,7 @@ export default function TrafficViolationsRedesigned() {
   const navigate = useNavigate();
   const violationTheme = systemColorPattern.colors;
   const companyId = useCurrentCompanyId();
+  const rolePermissions = useRolePermissions();
   
   // State Management
   const [searchTerm, setSearchTerm] = useState('');
@@ -889,6 +892,9 @@ export default function TrafficViolationsRedesigned() {
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
+            {(rolePermissions.isSuperAdmin() || rolePermissions.isAdminOrManager()) && (
+              <TrafficMailSyncControl companyId={companyId} onSynced={() => refetch()} />
+            )}
             <Button variant="outline" onClick={() => refetch()} className="h-11 rounded-[8px] border-[#DDE5EF] font-black">
               <RefreshCw className="ml-2 h-4 w-4" />
               تحديث

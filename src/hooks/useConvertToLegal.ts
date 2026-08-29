@@ -506,6 +506,8 @@ type ConvertLegalResult = {
   legal_case: { id: string };
   case_number: string;
   total_case_value: number;
+  blocked?: boolean;
+  message_ar?: string;
 };
 
 export const useConvertToLegal = () => {
@@ -556,6 +558,12 @@ export const useConvertToLegal = () => {
       });
       if (error) throw error;
       const result = data as unknown as ConvertLegalResult;
+      if (result?.blocked) {
+        throw new Error(
+          result.message_ar
+          || 'لا توجد نسخة عقد PDF مطابقة للعميل. تم إنشاء طلب واتساب تلقائي للمسؤولين.',
+        );
+      }
       return { legalCase: result.legal_case, caseNumber: result.case_number, totalCaseValue: Number(result.total_case_value || 0) };
     },
     onSuccess: (data) => {

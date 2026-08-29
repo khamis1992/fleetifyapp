@@ -10,7 +10,10 @@ $ProgressPreference = 'SilentlyContinue'
 
 $taskName = 'Fleetify Taqadi Agent'
 $repoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..\..')).Path
-$runnerScript = Join-Path $PSScriptRoot 'run-agent.ps1'
+$runnerScript = Join-Path $PSScriptRoot 'agent-runner.ps1'
+if (-not (Test-Path -LiteralPath $runnerScript)) {
+  $runnerScript = Join-Path $PSScriptRoot 'run-agent.ps1'
+}
 $envPath = Join-Path $repoRoot '.env.taqadi-agent'
 $tsxCli = Join-Path $repoRoot 'node_modules\tsx\dist\cli.mjs'
 $healthUrl = 'http://127.0.0.1:4317/health'

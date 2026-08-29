@@ -1,5 +1,13 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.4";
+import {
+  type AgentInvocationContext,
+  authorizeGovernedAgent,
+  createServiceClient,
+  finishAgentExecution,
+} from "../_shared/agent.ts";
+import {
+  authorizePrivilegedCompanyActor,
+  PrivilegedAuthError,
+} from "../_shared/privileged-admin.ts";
 import {
   endOfInvoiceMonth,
   getCurrentInvoiceMonthInQatar,
@@ -51,26 +59,41 @@ class HttpError extends Error {
   }
 }
 
-serve(async (req) => {
+Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
 
+  const supabase = createServiceClient();
+  let invocation: AgentInvocationContext | null = null;
+  let executionFailed = false;
+  let failureCode: string | null = null;
+  let executionSummary: Record<string, unknown> = {};
   try {
     if (req.method !== "POST") throw new HttpError("Method not allowed", 405);
-    authorizeBackfill(req);
 
     const body = await readJson<BackfillRequest>(req);
     const companyId = String(body.companyId || "").trim();
     if (!companyId) {
       throw new HttpError("companyId is required for historical backfill", 400);
     }
+    await authorizePrivilegedCompanyActor(
+      req,
+      companyId,
+      ["company_admin", "manager", "accountant"],
+      supabase,
+    );
+    invocation = await authorizeGovernedAgent(
+      req,
+      "historical-invoice-backfill",
+      companyId,
+    );
 
     const throughMonth = normalizeInvoiceMonth(
       body.throughMonth || getCurrentInvoiceMonthInQatar(),
     );
     const dryRun = body.dryRun !== false;
-    const maxContracts = clampInt(body.maxContracts, 1, 5_000, 1_000);
+    const maxContracts = clampInt(body.maxContracts, 1, 200, 100);
     const hasExplicitContractIds = body.contractIds !== undefined;
     if (hasExplicitContractIds && !Array.isArray(body.contractIds)) {
       throw new HttpError("contractIds must be an array", 400, {
@@ -111,11 +134,6 @@ serve(async (req) => {
       throw new HttpError("afterContractId cannot be combined with contractIds", 400);
     }
 
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL") || "",
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "",
-      { auth: { autoRefreshToken: false, persistSession: false } },
-    );
     const contractPage = await loadContracts(
       supabase,
       companyId,
@@ -237,6 +255,14 @@ serve(async (req) => {
     );
 
     const partial = summary.errors > 0 || contractPage.truncated;
+    executionFailed = partial;
+    failureCode = partial ? "HISTORICAL_INVOICE_BACKFILL_PARTIAL" : null;
+    executionSummary = {
+      dryRun,
+      throughMonth,
+      ...summary,
+      truncated: contractPage.truncated,
+    };
     return jsonResponse({
       success: !partial,
       status: partial ? "partial" : "completed",
@@ -251,26 +277,35 @@ serve(async (req) => {
       results,
     }, partial ? 207 : 200);
   } catch (error) {
-    const status = error instanceof HttpError ? error.status : 500;
+    executionFailed = true;
+    failureCode = failureCode || "HISTORICAL_INVOICE_BACKFILL_FAILURE";
+    const status = error instanceof HttpError || error instanceof PrivilegedAuthError
+      ? error.status
+      : errorMessage(error) === "Unauthorized"
+      ? 401
+      : 500;
     console.error("backfill-historical-invoices failed", error);
     return jsonResponse({
       success: false,
       error: errorMessage(error),
       ...(error instanceof HttpError && error.details ? error.details : {}),
     }, status);
+  } finally {
+    if (invocation) {
+      try {
+        await finishAgentExecution(
+          supabase,
+          invocation,
+          !executionFailed,
+          executionSummary,
+          failureCode,
+        );
+      } catch (finishError) {
+        console.error("Could not close historical backfill execution", finishError);
+      }
+    }
   }
 });
-
-function authorizeBackfill(req: Request) {
-  const configuredSecret = Deno.env.get("INVOICE_GENERATOR_SECRET") || "";
-  const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
-  const authorization = req.headers.get("authorization") || "";
-  const agentSecret = req.headers.get("x-agent-secret") || "";
-
-  if (configuredSecret && agentSecret === configuredSecret) return;
-  if (serviceRoleKey && authorization === `Bearer ${serviceRoleKey}`) return;
-  throw new HttpError("Unauthorized historical backfill request", 401);
-}
 
 async function readJson<T>(req: Request): Promise<T> {
   const text = await req.text();

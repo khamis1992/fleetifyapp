@@ -4,6 +4,7 @@ import { toast } from 'sonner';
 import type { LawsuitPreparationState, DocumentsState } from '../store';
 import { formatCustomerName } from '@/utils/formatCustomerName';
 import { renderOfficialInvoicePdfBlob } from '@/utils/renderOfficialInvoicePdf';
+import { getCriminalComplaintEligibility } from './legalCaseWorkflow';
 
 interface ContentRefs {
   memoHtml: string | null;
@@ -39,10 +40,18 @@ function getGeneratedDocumentHtml(
   return null;
 }
 
-function shouldIncludeGeneratedDocument(state: LawsuitPreparationState, docId: keyof DocumentsState): boolean {
+export function shouldIncludeGeneratedDocument(state: LawsuitPreparationState, docId: keyof DocumentsState): boolean {
   const document = state.documents[docId];
   if (document.status !== 'ready') return false;
-  if (docId === 'violations') return state.trafficViolations.length > 0;
+  if (docId === 'violations') return Number(state.calculations?.violationsCount || 0) > 0;
+  if (docId === 'violationsTransfer') {
+    return state.ui.includeViolationsTransfer
+      && Number(state.calculations?.violationsCount || 0) > 0;
+  }
+  if (docId === 'criminalComplaint') {
+    return state.ui.includeCriminalComplaint
+      && getCriminalComplaintEligibility(state).eligible;
+  }
   return true;
 }
 
@@ -184,7 +193,12 @@ async function addGeneratedDocuments(
 async function addInvoices(zip: JSZip, folderName: string, state: LawsuitPreparationState): Promise<void> {
   if (!state.overdueInvoices.length) return;
 
-  const invoicesFolder = zip.folder(`${folderName}/الفواتير`);
+  const containsScheduleClaims = state.overdueInvoices.some(
+    (invoice) => invoice.source === 'payment_schedule',
+  );
+  const invoicesFolder = zip.folder(
+    `${folderName}/${containsScheduleClaims ? 'مستندات الاستحقاق' : 'الفواتير'}`,
+  );
   if (!invoicesFolder) return;
 
   const customerName = formatCustomerName(state.customer) || undefined;
@@ -194,7 +208,8 @@ async function addInvoices(zip: JSZip, folderName: string, state: LawsuitPrepara
 
     try {
       const pdfBlob = await renderOfficialInvoicePdfBlob(invoice, customerName);
-      const fileName = `فاتورة_${safeFileName(invoice.invoice_number || String(index + 1))}.pdf`;
+      const filePrefix = invoice.source === 'payment_schedule' ? 'استحقاق_تعاقدي' : 'فاتورة';
+      const fileName = `${filePrefix}_${safeFileName(invoice.invoice_number || String(index + 1))}.pdf`;
       invoicesFolder.file(fileName, pdfBlob);
     } catch (error) {
       console.error(`[ZIP Export] Error adding invoice ${invoice.invoice_number}:`, error);
@@ -292,8 +307,43 @@ export async function exportDocumentsAsZip(
   }
 }
 
+/**
+ * يبني حزمة المستندات كملف بدون تحميلها — للأرشفة التلقائية في سجل القضية.
+ */
+export async function buildDocumentsZipBlob(
+  state: LawsuitPreparationState,
+  contentRefs: ContentRefs
+): Promise<{ blob: Blob; fileName: string }> {
+  const { contract, customer } = state;
+
+  if (!contract) {
+    throw new Error('بيانات العقد غير متوفرة');
+  }
+
+  const customerName = formatCustomerName(customer) || 'عميل';
+  const folderName = safeFileName(`دعوى_${customerName}_${contract.contract_number}`);
+  const zip = new JSZip();
+
+  let fileIndex = 1;
+  zip.file(`${folderName}/${String(fileIndex).padStart(2, '0')}_ملخص_الدعوى.txt`, generateCaseSummary(state));
+  fileIndex++;
+
+  const generatedResult = await addGeneratedDocuments(zip, folderName, state, contentRefs, fileIndex);
+  fileIndex = generatedResult.nextIndex;
+
+  await addInvoices(zip, folderName, state);
+  fileIndex = await addExternalDocuments(zip, folderName, state, fileIndex);
+
+  if (fileIndex === 2 && !state.overdueInvoices.length) {
+    throw new Error('لا توجد مستندات جاهزة للتحميل داخل الحافظة');
+  }
+
+  const blob = await zip.generateAsync({ type: 'blob' });
+  return { blob, fileName: `${folderName}.zip` };
+}
+
 export function generateCaseSummary(state: LawsuitPreparationState): string {
-  const { contract, customer, calculations, taqadiData, overdueInvoices, trafficViolations, documents } = state;
+  const { contract, customer, calculations, taqadiData, overdueInvoices, documents } = state;
 
   if (!contract) return '';
 
@@ -313,11 +363,11 @@ export function generateCaseSummary(state: LawsuitPreparationState): string {
 
 المطالبات المالية:
 - إيجار متأخر: ${(calculations?.overdueRent || 0).toLocaleString('en-US')} ر.ق
-- غرامات تأخير: ${(calculations?.lateFees || 0).toLocaleString('en-US')} ر.ق
-- مخالفات مرورية: ${(calculations?.violationsFines || 0).toLocaleString('en-US')} ر.ق (${calculations?.violationsCount || trafficViolations.length} مخالفة)
+- تعويض اتفاقي موثق: ${(calculations?.lateFees || 0).toLocaleString('en-US')} ر.ق
+- مخالفات مرورية مدعومة بمستخرج رسمي: ${(calculations?.violationsFines || 0).toLocaleString('en-US')} ر.ق (${calculations?.violationsCount || 0} مخالفة)
 - إجمالي المطالبة: ${(calculations?.total || 0).toLocaleString('en-US')} ر.ق
 
-الفواتير المتأخرة: ${overdueInvoices.length} فاتورة
+الاستحقاقات الحالّة الداخلة في المطالبة: ${overdueInvoices.length}
 عنوان الدعوى: ${taqadiData?.caseTitle || ''}
 
 المستندات الجاهزة:

@@ -216,6 +216,10 @@ ${customerNames}${moreText}
             phone: employee.phone,
             message,
             customerName: employeeName,
+            companyId,
+            purpose: 'verification_task',
+            entityType: 'employee',
+            entityId: employee.id,
           });
           if (result.success) {
             whatsappResults.sent++;

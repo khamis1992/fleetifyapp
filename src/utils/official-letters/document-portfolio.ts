@@ -24,7 +24,7 @@ export function generateDocumentPortfolioHtml(data: DocumentPortfolioData): stri
     documentsList.push({ title: 'كشف المطالبات المالية', pageNum: pageNum++ });
   }
   if (data.criminalComplaintHtml) {
-    documentsList.push({ title: 'بلاغ سرقة المركبة', pageNum: pageNum++ });
+    documentsList.push({ title: 'بلاغ جنائي بالامتناع عن رد المركبة', pageNum: pageNum++ });
   }
   if (data.violationsTransferHtml) {
     documentsList.push({ title: 'طلب تحويل المخالفات', pageNum: pageNum++ });
@@ -50,7 +50,7 @@ export function generateDocumentPortfolioHtml(data: DocumentPortfolioData): stri
     claimsBody = bodyMatch ? bodyMatch[1] : data.claimsStatementHtml;
   }
 
-  // استخراج الأنماط ومحتوى body من بلاغ سرقة المركبة
+  // استخراج الأنماط ومحتوى body من البلاغ الجنائي بالامتناع عن رد المركبة
   let complaintStyles = '';
   let complaintBody = '';
   
@@ -370,11 +370,11 @@ export function generateDocumentPortfolioHtml(data: DocumentPortfolioData): stri
   ` : ''}
   
   ${data.criminalComplaintHtml ? `
-  <!-- بلاغ سرقة المركبة -->
+  <!-- بلاغ جنائي بالامتناع عن رد المركبة -->
   <div class="page-break"></div>
   <div class="doc-page">
     <div class="doc-header">
-      <h2>بلاغ سرقة المركبة</h2>
+      <h2>بلاغ جنائي بالامتناع عن رد المركبة</h2>
       <span class="doc-number">مستند رقم ${[data.contractImageUrl, data.claimsStatementHtml].filter(Boolean).length + 1}</span>
     </div>
     <div class="doc-content complaint-content">

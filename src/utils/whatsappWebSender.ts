@@ -1,430 +1,105 @@
-/**
- * WhatsApp Sender Utility with Ultramsg API
- * ==========================================
- * Purpose: Send WhatsApp messages via Ultramsg API
- * API Documentation: https://docs.ultramsg.com/
- * Dashboard: https://user.ultramsg.com/
- */
+import { supabase } from '@/integrations/supabase/client';
 
-interface SendWhatsAppParams {
+export interface SendWhatsAppParams {
   phone: string;
   message: string;
   customerName?: string;
+  companyId: string;
+  purpose:
+    | 'legal_case_notice'
+    | 'traffic_violation_reminder'
+    | 'verification_task'
+    | 'verification_complete'
+    | 'payment_reminder_manual'
+    | 'payment_reminder_test';
+  entityType: 'legal_case' | 'customer' | 'employee' | 'verification_task' | 'contract' | 'company';
+  entityId: string;
+  requestId?: string;
 }
 
-interface UltramsgConfig {
-  instanceId: string;
-  token: string;
-}
-
-interface UltramsgResponse {
-  sent: string;
-  message: string;
-  id?: string;
-  error?: string;
-}
-
-// ============================================
-// ULTRAMSG FIXED CONFIGURATION - DO NOT CHANGE
-// ============================================
-const ULTRAMSG_INSTANCE_ID = 'instance148672';
-const ULTRAMSG_TOKEN = 'rls3i8flwugsei1j';
-
-// ============================================
-// DEBUG: Enable console logging for WhatsApp operations
-// ============================================
-const ENABLE_DEBUG_LOGS = true;
-
-/**
- * Get Ultramsg configuration (fixed values)
- */
-export const getUltramsgConfig = (): UltramsgConfig => {
-  return {
-    instanceId: ULTRAMSG_INSTANCE_ID,
-    token: ULTRAMSG_TOKEN,
-  };
-};
-
-// ... existing code ...
-
-/**
- * Format phone number for WhatsApp
- * Removes all non-digit characters and ensures international format
- */
 export const formatPhoneForWhatsApp = (phone: string): string => {
   if (!phone) return '';
-  
-  // Remove all non-digits
   let cleaned = phone.replace(/\D/g, '');
-  
-  // If starts with 00, remove it
-  if (cleaned.startsWith('00')) {
-    cleaned = cleaned.substring(2);
-  }
-  
-  // If doesn't start with country code, assume Qatar (974)
-  if (!cleaned.startsWith('974') && cleaned.length === 8) {
-    cleaned = '974' + cleaned;
-  }
-  
+  if (cleaned.startsWith('00')) cleaned = cleaned.substring(2);
+  if (!cleaned.startsWith('974') && cleaned.length === 8) cleaned = '974' + cleaned;
   return cleaned;
 };
 
-/**
- * Send single WhatsApp message via Ultramsg API
- * https://docs.ultramsg.com/api/post/messages/chat
- */
-export const sendWhatsAppMessage = async ({ phone, message, customerName }: SendWhatsAppParams): Promise<{
-  success: boolean;
-  error?: string;
-  messageId?: string;
-}> => {
-  const config = getUltramsgConfig();
-  
-  if (!config?.instanceId || !config?.token) {
-    console.error('❌ Ultramsg not configured. Please set Instance ID and Token.');
-    return { 
-      success: false, 
-      error: 'Ultramsg غير مُعد. يرجى إدخال Instance ID و Token في الإعدادات.' 
-    };
-  }
-
-  const formattedPhone = formatPhoneForWhatsApp(phone);
-  
-  if (ENABLE_DEBUG_LOGS) {
-    console.log(`🚀 [WHATSAPP] Attempting to send to ${formattedPhone} (${customerName})`);
-    console.log(`📝 [WHATSAPP] Message length: ${message.length}`);
-  }
-
-  if (!formattedPhone || formattedPhone.length < 8) {
-    console.error(`❌ [WHATSAPP] Invalid phone number: ${phone} -> ${formattedPhone}`);
-    return { success: false, error: 'رقم الهاتف غير صحيح' };
-  }
-  
-  try {
-    const url = `https://api.ultramsg.com/${config.instanceId}/messages/chat`;
-    const body = new URLSearchParams({
-      token: config.token,
-      to: formattedPhone,
-      body: message,
-    });
-
-    if (ENABLE_DEBUG_LOGS) {
-      console.log(`🌐 [WHATSAPP] POST ${url}`);
-    }
-
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body: body,
-    });
-
-    const data: UltramsgResponse = await response.json();
-    
-    if (ENABLE_DEBUG_LOGS) {
-      console.log(`📩 [WHATSAPP] Response:`, data);
-    }
-
-    if (data.sent === 'true' || data.sent === true as any) {
-      console.log(`✅ [WHATSAPP] Message sent to ${customerName || phone}:`, {
-        messageId: data.id,
-        phone: formattedPhone,
-      });
-      return { success: true, messageId: data.id };
-    } else {
-      console.error(`❌ [WHATSAPP] Failed to send to ${customerName || phone}:`, data);
-      return { 
-        success: false, 
-        error: data.error || data.message || 'فشل في إرسال الرسالة' 
-      };
-    }
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : 'خطأ في الاتصال';
-    console.error(`❌ [WHATSAPP] Network error sending to ${customerName || phone}:`, error);
-    return { success: false, error: errorMessage };
-  }
-};
-
-/**
- * Send document via WhatsApp using Ultramsg API
- * https://docs.ultramsg.com/api/post/messages/document
- */
-interface SendWhatsAppDocumentParams {
-  phone: string;
-  documentBase64: string; // Base64 encoded PDF
-  filename: string;
-  caption?: string;
-  customerName?: string;
-}
-
-export const sendWhatsAppDocument = async ({
+export const sendWhatsAppMessage = async ({
   phone,
-  documentBase64,
-  filename,
-  caption,
-  customerName
-}: SendWhatsAppDocumentParams): Promise<{
-  success: boolean;
-  error?: string;
-  messageId?: string;
-}> => {
-  console.log('🚀 [WHATSAPP DOC] Starting sendWhatsAppDocument...');
-  console.log('🚀 [WHATSAPP DOC] Phone:', phone);
-  console.log('🚀 [WHATSAPP DOC] Filename:', filename);
-  console.log('🚀 [WHATSAPP DOC] Base64 length:', documentBase64?.length || 0);
-
+  message,
+  companyId,
+  purpose,
+  entityType,
+  entityId,
+  requestId = crypto.randomUUID(),
+}: SendWhatsAppParams): Promise<{ success: boolean; error?: string; messageId?: string }> => {
   const formattedPhone = formatPhoneForWhatsApp(phone);
-  console.log('🚀 [WHATSAPP DOC] Formatted phone:', formattedPhone);
-
-  if (!formattedPhone || formattedPhone.length < 8) {
-    console.error(`❌ [WHATSAPP DOC] Invalid phone number: ${phone}`);
+  if (!/^974[3-7]\d{7}$/.test(formattedPhone)) {
     return { success: false, error: 'رقم الهاتف غير صحيح' };
   }
-
-  const config = getUltramsgConfig();
-
-  if (!config?.instanceId || !config?.token) {
-    console.error('❌ [WHATSAPP DOC] Ultramsg not configured');
-    return { success: false, error: 'Ultramsg غير مُعد' };
+  if (!companyId || !purpose || !entityType || !entityId || !message.trim()) {
+    return { success: false, error: 'بيانات أمر الإرسال غير مكتملة' };
   }
-
-  // إزالة بادئة data: إذا وجدت
-  let base64Data = documentBase64;
-  if (base64Data.startsWith('data:')) {
-    base64Data = base64Data.split(',')[1] || base64Data;
-  }
-
-  console.log('🚀 [WHATSAPP DOC] Cleaned base64 length:', base64Data.length);
-  console.log('🚀 [WHATSAPP DOC] Starts with:', base64Data.substring(0, 30) + '...');
-
-  // الطريقة الأولى: محاولة استخدام Edge Function (يفضل لتجنب CORS)
   try {
-    console.log('🚀 [WHATSAPP DOC] Method 1: Trying Edge Function...');
-    const { supabase } = await import('@/integrations/supabase/client');
-
-    console.log('🚀 [WHATSAPP DOC] Calling Edge Function send-whatsapp-document...');
-    console.log('🚀 [WHATSAPP DOC] Payload size:', Math.round(base64Data.length / 1024), 'KB');
-
-    const { data, error } = await supabase.functions.invoke('send-whatsapp-document', {
+    const { data, error } = await supabase.functions.invoke('send-whatsapp-reminders', {
       body: {
         phone: formattedPhone,
-        documentBase64: documentBase64,
-        filename: filename,
-        caption: caption || '',
+        message,
+        companyId,
+        purpose,
+        entityType,
+        entityId,
+        requestId,
       },
     });
-
-    console.log('🚀 [WHATSAPP DOC] Edge Function returned');
-    console.log('🚀 [WHATSAPP DOC] Data:', data);
-    console.log('🚀 [WHATSAPP DOC] Error:', error);
-
-    if (!error && data?.success) {
-      console.log(`✅ [WHATSAPP DOC] Document sent via Edge Function!`, {
-        messageId: data.messageId,
-        method: data.method,
-        filename,
-      });
-      return { success: true, messageId: data.messageId };
-    } else {
-      console.warn(`⚠️ [WHATSAPP DOC] Edge Function failed, trying direct API...`, error || data);
+    if (error || !data?.success) {
+      return { success: false, error: data?.error || error?.message || 'فشل في إرسال الرسالة' };
     }
-  } catch (edgeFunctionError) {
-    console.warn('⚠️ [WHATSAPP DOC] Edge Function exception:', edgeFunctionError);
-  }
-
-  // الطريقة الثانية: إرسال مباشر عبر Ultramsg API (Fallback)
-  console.log('🚀 [WHATSAPP DOC] Method 2: Trying direct Ultramsg API...');
-
-  try {
-    const url = `https://api.ultramsg.com/${config.instanceId}/messages/document`;
-    const body = new URLSearchParams({
-      token: config.token,
-      to: formattedPhone,
-      filename: filename,
-      document: documentBase64, // استخدام base64 كامل مع data:
-      caption: caption || '',
-    });
-
-    console.log('🚀 [WHATSAPP DOC] POST to:', url);
-    console.log('🚀 [WHATSAPP DOC] Form data keys:', Array.from(body.keys()));
-
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body: body,
-    });
-
-    const responseData: UltramsgResponse = await response.json();
-
-    console.log('🚀 [WHATSAPP DOC] Direct API Response:', responseData);
-
-    if (responseData.sent === 'true' || responseData.sent === true as any || responseData.id) {
-      console.log(`✅ [WHATSAPP DOC] Document sent via direct API!`, {
-        messageId: responseData.id,
-        filename,
-      });
-      return { success: true, messageId: responseData.id };
-    } else {
-      console.error(`❌ [WHATSAPP DOC] Direct API failed:`, responseData);
-      return {
-        success: false,
-        error: responseData.error || responseData.message || 'فشل في إرسال المستند'
-      };
-    }
-  } catch (directApiError) {
-    console.error('❌ [WHATSAPP DOC] Direct API exception:', directApiError);
-    const errorMessage = directApiError instanceof Error ? directApiError.message : 'خطأ في الاتصال';
-    return { success: false, error: errorMessage };
+    return { success: true, messageId: data.messageId };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'خطأ في الاتصال',
+    };
   }
 };
 
-/**
- * Send image via WhatsApp using Ultramsg API
- * https://docs.ultramsg.com/api/post/messages/image
- * أبسط من PDF ولا يحتاج Edge Function
- */
-interface SendWhatsAppImageParams {
-  phone: string;
-  imageBase64: string; // Base64 encoded image (data:image/jpeg;base64,...)
-  caption?: string;
-  customerName?: string;
-}
-
-export const sendWhatsAppImage = async ({
-  phone,
-  imageBase64,
-  caption,
-  customerName
-}: SendWhatsAppImageParams): Promise<{
+export const sendWhatsAppDocument = async (): Promise<{
   success: boolean;
   error?: string;
   messageId?: string;
-}> => {
-  const config = getUltramsgConfig();
-  const formattedPhone = formatPhoneForWhatsApp(phone);
-  
-  console.log('🖼️ [WHATSAPP IMG] Starting sendWhatsAppImage...');
-  console.log('🖼️ [WHATSAPP IMG] Phone:', formattedPhone);
-  console.log('🖼️ [WHATSAPP IMG] Image size:', Math.round(imageBase64.length / 1024), 'KB');
+}> => ({
+  success: false,
+  error: 'إرسال مستندات واتساب القديم متوقف حتى توفير مسار تسليم مدقق وخاص.',
+});
 
-  if (!formattedPhone || formattedPhone.length < 8) {
-    console.error(`❌ [WHATSAPP IMG] Invalid phone number: ${phone}`);
-    return { success: false, error: 'رقم الهاتف غير صحيح' };
-  }
-
-  // التحقق من حجم الصورة (الحد الأقصى 6.5 ميجابايت)
-  if (imageBase64.length > 6500000) {
-    console.error(`❌ [WHATSAPP IMG] Image too large: ${Math.round(imageBase64.length / 1024)} KB`);
-    return { success: false, error: 'حجم الصورة كبير جداً (الحد الأقصى 6.5 ميجابايت)' };
-  }
-  
-  try {
-    const url = `https://api.ultramsg.com/${config.instanceId}/messages/image`;
-    
-    console.log('🖼️ [WHATSAPP IMG] Sending to:', url);
-    
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body: new URLSearchParams({
-        token: config.token,
-        to: formattedPhone,
-        image: imageBase64,
-        caption: caption || '',
-      }),
-    });
-
-    const data: UltramsgResponse = await response.json();
-    
-    console.log('🖼️ [WHATSAPP IMG] Response:', data);
-
-    if (data.sent === 'true' || data.sent === true as any || data.id) {
-      console.log(`✅ [WHATSAPP IMG] Image sent to ${customerName || phone}`);
-      return { success: true, messageId: data.id };
-    } else {
-      console.error(`❌ [WHATSAPP IMG] Failed:`, data);
-      return { 
-        success: false, 
-        error: data.error || data.message || 'فشل في إرسال الصورة'
-      };
-    }
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : 'خطأ في الاتصال';
-    console.error(`❌ [WHATSAPP IMG] Error:`, error);
-    return { success: false, error: errorMessage };
-  }
-};
-
-/**
- * Send multiple WhatsApp messages with delay
- */
-export const sendBulkWhatsAppMessages = async (
-  messages: SendWhatsAppParams[],
-  delayMs: number = 2000
-): Promise<{ sent: number; failed: number; total: number; errors: string[] }> => {
-  let sentCount = 0;
-  let failedCount = 0;
-  const errors: string[] = [];
-  
-  for (let i = 0; i < messages.length; i++) {
-    const msg = messages[i];
-    
-    try {
-      const result = await sendWhatsAppMessage(msg);
-      
-      if (result.success) {
-        sentCount++;
-      } else {
-        failedCount++;
-        errors.push(`${msg.customerName || msg.phone}: ${result.error}`);
-      }
-      
-      // Log progress
-      console.log(`📨 Progress: ${i + 1}/${messages.length} - ${msg.customerName || msg.phone} - ${result.success ? '✅' : '❌'}`);
-      
-      // Wait before next message (except for last one)
-      if (i < messages.length - 1) {
-        await new Promise(resolve => setTimeout(resolve, delayMs));
-      }
-    } catch (error) {
-      failedCount++;
-      const errorMsg = error instanceof Error ? error.message : 'خطأ غير معروف';
-      errors.push(`${msg.customerName || msg.phone}: ${errorMsg}`);
-      console.error(`❌ Failed to send to ${msg.customerName || msg.phone}:`, error);
-    }
-  }
-  
-  return {
-    sent: sentCount,
-    failed: failedCount,
-    total: messages.length,
-    errors,
-  };
-};
-
-/**
- * Test Ultramsg connection by sending a test message
- */
-export const testUltramsgConnection = async (testPhone: string): Promise<{
+export const sendWhatsAppImage = async (): Promise<{
   success: boolean;
   error?: string;
-}> => {
-  return sendWhatsAppMessage({
-    phone: testPhone,
-    message: '✅ رسالة اختبار من نظام Fleetify - الاتصال يعمل بنجاح!',
-    customerName: 'Test',
-  });
+  messageId?: string;
+}> => ({
+  success: false,
+  error: 'إرسال صور واتساب القديم متوقف حتى توفير مسار تسليم مدقق وخاص.',
+});
+
+export const sendBulkWhatsAppMessages = async (
+  messages: SendWhatsAppParams[],
+  delayMs = 2000,
+): Promise<{ sent: number; failed: number; total: number; errors: string[] }> => {
+  let sent = 0;
+  const errors: string[] = [];
+  for (let index = 0; index < messages.length; index += 1) {
+    const result = await sendWhatsAppMessage(messages[index]);
+    if (result.success) sent += 1;
+    else errors.push(`${messages[index].customerName || 'المستلم'}: ${result.error || 'فشل الإرسال'}`);
+    if (index < messages.length - 1 && delayMs > 0) {
+      await new Promise((resolve) => window.setTimeout(resolve, delayMs));
+    }
+  }
+  return { sent, failed: messages.length - sent, total: messages.length, errors };
 };
 
-/**
- * Generate WhatsApp message from template and contract data
- */
 export const generateWhatsAppMessage = (
   template: string,
   variables: {

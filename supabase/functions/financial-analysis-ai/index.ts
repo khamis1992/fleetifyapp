@@ -1,5 +1,5 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { authorizeActiveCompanyUser } from "../_shared/privileged-admin.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.4';
 import { buildLongCatHeaders, getLongCatApiKey, LONGCAT_CHAT_COMPLETIONS_URL, LONGCAT_MODEL } from "../_shared/longcat.ts";
 
@@ -8,12 +8,13 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-serve(async (req) => {
+Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
+    await authorizeActiveCompanyUser(req);
     const { analysisData, companyType, language = 'ar', userId } = await req.json();
     
     console.log('Request body received:', { 
@@ -195,3 +196,5 @@ function extractUrgentActions(analysis: string): string[] {
     'تحديث مراكز التكلفة'
   ];
 }
+
+

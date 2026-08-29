@@ -8,36 +8,39 @@
  * Body: { reviewId }  (legal_transfer_employee_reviews.id)
  */
 
-import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { callKimiJson, KIMI_MODEL } from "../_shared/kimi.ts";
 import {
   agentCorsHeaders,
-  authorizeAgent,
+  authorizeGovernedAgent,
   createServiceClient,
+  finishAgentExecution,
   jsonResponse,
   storeAgentReview,
+  type AgentInvocationContext,
 } from "../_shared/agent.ts";
 
-serve(async (req) => {
+Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: agentCorsHeaders });
 
+  let invocation: AgentInvocationContext | null = null;
+  const supabase = createServiceClient();
   try {
-    await authorizeAgent(req);
     const body = await req.json().catch(() => ({}));
-    if (!body.reviewId) throw new Error("reviewId is required");
-
-    const supabase = createServiceClient();
+    if (!body.companyId || !body.reviewId) throw new Error("companyId and reviewId are required");
+    invocation = await authorizeGovernedAgent(req, "correction-verifier-agent", body.companyId);
 
     const { data: review, error } = await supabase
       .from("legal_transfer_employee_reviews")
       .select("id, company_id, contract_id, customer_id, corrected_fields, employee_decision")
       .eq("id", body.reviewId)
+      .eq("company_id", body.companyId)
       .single();
     if (error || !review) throw new Error("Review not found");
 
     const corrected = (review.corrected_fields || {}) as Record<string, any>;
     const customerUpdates = (corrected.customer || {}) as Record<string, string>;
     if (Object.keys(customerUpdates).length === 0) {
+      await finishAgentExecution(supabase, invocation, true, { verdict: "nothing_to_verify" });
       return jsonResponse({ success: true, verdict: "nothing_to_verify", summary: "لا توجد تصحيحات بيانات للتحقق منها" });
     }
 
@@ -106,9 +109,14 @@ serve(async (req) => {
       model: KIMI_MODEL,
     });
 
+    await finishAgentExecution(supabase, invocation, true, { verdict: result.verdict });
     return jsonResponse({ success: true, ...result });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown error";
+    if (invocation) {
+      await finishAgentExecution(supabase, invocation, false, {}, "correction_verification_failed")
+        .catch(() => undefined);
+    }
     return jsonResponse({ success: false, error: message }, message === "Unauthorized" ? 401 : 500);
   }
 });

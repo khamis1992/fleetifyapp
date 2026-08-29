@@ -1140,7 +1140,7 @@ export async function downloadTemplateAsDocx(
     new Paragraph({
       children: [
         new TextRun({
-          text: 'هاتف: 31411919 | البريد الإلكتروني: info@alaraf.qa',
+          text: 'هاتف: 31411919 | البريد الإلكتروني: khamis-1992@hotmail.com',
           size: 18,
           font: 'Arial',
           rightToLeft: true

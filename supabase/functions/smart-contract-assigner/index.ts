@@ -10,41 +10,55 @@
  * Body: { companyId, mode?: "assign_new" | "rebalance", limit? }
  */
 
-import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
 import {
   agentCorsHeaders,
-  authorizeAgent,
+  authorizeScheduledAgent,
   createServiceClient,
+  finishAgentExecution,
   jsonResponse,
+  recordAgentMutation,
+  type AgentInvocationContext,
 } from "../_shared/agent.ts";
 
 const COLD_DAYS = 14;
 const REBALANCE_CAP = 10;
 
-serve(async (req) => {
+Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: agentCorsHeaders });
 
+  const supabase = createServiceClient();
+  let invocation: AgentInvocationContext | null = null;
   try {
-    await authorizeAgent(req);
     const body = await req.json().catch(() => ({}));
     if (!body.companyId) throw new Error("companyId is required");
+    invocation = await authorizeScheduledAgent(req, "smart-contract-assigner", body.companyId);
 
-    const supabase = createServiceClient();
     const mode = body.mode === "rebalance" ? "rebalance" : "assign_new";
 
     const employees = await loadEligibleEmployees(supabase, body.companyId);
     if (employees.length === 0) {
+      await finishAgentExecution(supabase, invocation, true, { assigned: 0, reason: "no_eligible_employees" });
       return jsonResponse({ success: true, assigned: 0, note: "no eligible employees" });
     }
 
     const result = mode === "rebalance"
-      ? await rebalance(supabase, body.companyId, employees, Number(body.limit) || REBALANCE_CAP)
-      : await assignNew(supabase, body.companyId, employees, Number(body.limit) || 25);
+      ? await rebalance(supabase, body.companyId, employees, clampLimit(body.limit, REBALANCE_CAP), invocation)
+      : await assignNew(supabase, body.companyId, employees, clampLimit(body.limit, 25), invocation);
 
+    await finishAgentExecution(supabase, invocation, true, { mode, ...result });
     return jsonResponse({ success: true, mode, ...result });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown error";
+    if (invocation) {
+      try {
+        await finishAgentExecution(supabase, invocation, false, {
+          error: message.slice(0, 500),
+        }, "CONTRACT_ASSIGNMENT_FAILURE");
+      } catch (finishError) {
+        console.error("Could not close contract assignment execution run", finishError);
+      }
+    }
     return jsonResponse({ success: false, error: message }, message === "Unauthorized" ? 401 : 500);
   }
 });
@@ -135,6 +149,7 @@ async function assignNew(
   companyId: string,
   employees: EmployeeScore[],
   limit: number,
+  invocation: AgentInvocationContext,
 ) {
   const { data: unassigned, error } = await supabase
     .from("contracts")
@@ -155,18 +170,31 @@ async function assignNew(
       .sort((a, b) => (a.liveWorkload * 10 - a.collectionRate / 10) - (b.liveWorkload * 10 - b.collectionRate / 10))[0];
     if (!best) break;
 
-    const { error: updateError } = await supabase
+    const { data: updated, error: updateError } = await supabase
       .from("contracts")
       .update({ assigned_to_profile_id: best.profileId, updated_at: new Date().toISOString() })
       .eq("id", contract.id)
-      .is("assigned_to_profile_id", null);
-    if (updateError) continue;
+      .eq("company_id", companyId)
+      .is("assigned_to_profile_id", null)
+      .select("id,assigned_to_profile_id")
+      .maybeSingle();
+    if (updateError || !updated) continue;
 
     workload.set(best.profileId, (workload.get(best.profileId) || 0) + 1);
     await logAssignment(
       supabase, companyId, contract.id, null, best.profileId,
       `إسناد تلقائي للعقد ${contract.contract_number} حسب العبء ونسبة التحصيل`,
     );
+    await recordAgentMutation(supabase, invocation, {
+      operation: "assign_contract_owner",
+      entityType: "contract",
+      entityId: contract.id,
+      idempotencyKey: `assign:${contract.id}:${best.profileId}`,
+      beforeState: { assigned_to_profile_id: null },
+      afterState: { assigned_to_profile_id: updated.assigned_to_profile_id },
+      postcondition: { persisted: updated.assigned_to_profile_id === best.profileId },
+      verified: updated.assigned_to_profile_id === best.profileId,
+    });
     assigned++;
   }
 
@@ -178,6 +206,7 @@ async function rebalance(
   companyId: string,
   employees: EmployeeScore[],
   limit: number,
+  invocation: AgentInvocationContext,
 ) {
   if (employees.length < 2) return { moved: 0 };
 
@@ -223,12 +252,15 @@ async function rebalance(
       if ((recentComms || 0) > 0) continue;
 
       const target = underloaded.sort((a, b) => a.workload - b.workload)[0];
-      const { error: updateError } = await supabase
+      const { data: updated, error: updateError } = await supabase
         .from("contracts")
         .update({ assigned_to_profile_id: target.profileId, updated_at: new Date().toISOString() })
         .eq("id", contract.id)
-        .eq("assigned_to_profile_id", source.profileId);
-      if (updateError) continue;
+        .eq("company_id", companyId)
+        .eq("assigned_to_profile_id", source.profileId)
+        .select("id,assigned_to_profile_id")
+        .maybeSingle();
+      if (updateError || !updated) continue;
 
       target.workload++;
       source.workload--;
@@ -236,9 +268,25 @@ async function rebalance(
         supabase, companyId, contract.id, source.profileId, target.profileId,
         `إعادة توازن ليلية: نقل العقد البارد ${contract.contract_number} (لا نشاط منذ ${COLD_DAYS} يوم)`,
       );
+      await recordAgentMutation(supabase, invocation, {
+        operation: "rebalance_contract_owner",
+        entityType: "contract",
+        entityId: contract.id,
+        idempotencyKey: `rebalance:${contract.id}:${source.profileId}:${target.profileId}`,
+        beforeState: { assigned_to_profile_id: source.profileId },
+        afterState: { assigned_to_profile_id: updated.assigned_to_profile_id },
+        postcondition: { persisted: updated.assigned_to_profile_id === target.profileId },
+        verified: updated.assigned_to_profile_id === target.profileId,
+      });
       moved++;
     }
   }
 
   return { moved };
+}
+
+function clampLimit(value: unknown, maximum: number) {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) return maximum;
+  return Math.min(maximum, Math.max(1, Math.trunc(parsed)));
 }

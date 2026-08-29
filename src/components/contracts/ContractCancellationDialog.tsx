@@ -14,10 +14,14 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { AlertTriangle, XCircle, Loader2, Car, ChevronDown, ChevronUp } from 'lucide-react';
-import { useUpdateContractStatus } from '@/hooks/useContractRenewal';
+import {
+  useContractCancellationImpact,
+  useUpdateContractStatus,
+} from '@/hooks/useContractRenewal';
 import { useCreateContractVehicleReturn } from '@/hooks/useContractVehicleReturn';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { ContractCancellationImpactPanel } from './ContractCancellationImpactPanel';
 
 interface ContractCancellationDialogProps {
   open: boolean;
@@ -31,6 +35,7 @@ export const ContractCancellationDialog: React.FC<ContractCancellationDialogProp
   contract
 }) => {
   const [cancellationReason, setCancellationReason] = React.useState('');
+  const [transferTrafficViolationsToCompany, setTransferTrafficViolationsToCompany] = React.useState(false);
   const [recordVehicleCondition, setRecordVehicleCondition] = React.useState(false);
   const [showVehicleSection, setShowVehicleSection] = React.useState(false);
   
@@ -42,13 +47,25 @@ export const ContractCancellationDialog: React.FC<ContractCancellationDialogProp
   
   const updateContractStatus = useUpdateContractStatus();
   const createVehicleReturn = useCreateContractVehicleReturn();
+  const cancellationImpact = useContractCancellationImpact({
+    contractId: contract?.id,
+    companyId: contract?.company_id,
+    enabled: open,
+  });
 
   const isProcessing = updateContractStatus.isPending || createVehicleReturn.isPending;
+  const requiresCompanyTransfer = cancellationImpact.data?.requiresCompanyTransfer === true;
+  const cancellationIsBlocked = requiresCompanyTransfer && (
+    cancellationImpact.data?.blockedPenaltyCount !== 0
+    || !cancellationImpact.data?.authorizedToTransfer
+    || !transferTrafficViolationsToCompany
+  );
 
   // Reset state when dialog closes
   React.useEffect(() => {
     if (!open) {
       setCancellationReason('');
+      setTransferTrafficViolationsToCompany(false);
       setRecordVehicleCondition(false);
       setShowVehicleSection(false);
       setVehicleCondition('good');
@@ -56,7 +73,7 @@ export const ContractCancellationDialog: React.FC<ContractCancellationDialogProp
       setOdometerReading(undefined);
       setDamagesNotes('');
     }
-  }, [open]);
+  }, [open, contract?.id]);
 
   // Don't render anything if dialog is closed
   if (!open) {
@@ -64,8 +81,8 @@ export const ContractCancellationDialog: React.FC<ContractCancellationDialogProp
   }
 
   const handleCancellation = async () => {
-    if (!cancellationReason.trim()) {
-      toast.error('يرجى إدخال سبب الإلغاء');
+    if (cancellationReason.trim().length < 5) {
+      toast.error('يرجى إدخال سبب إلغاء واضح من 5 أحرف على الأقل');
       return;
     }
     
@@ -92,7 +109,9 @@ export const ContractCancellationDialog: React.FC<ContractCancellationDialogProp
       await updateContractStatus.mutateAsync({
         contractId: contract.id,
         status: 'cancelled',
-        reason: cancellationReason.trim()
+        reason: cancellationReason.trim(),
+        companyId: contract.company_id,
+        transferTrafficViolationsToCompany,
       });
       
       onOpenChange(false);
@@ -155,6 +174,15 @@ export const ContractCancellationDialog: React.FC<ContractCancellationDialogProp
             </div>
           </div>
 
+          <ContractCancellationImpactPanel
+            impact={cancellationImpact.data}
+            isLoading={cancellationImpact.isLoading || cancellationImpact.isFetching}
+            error={cancellationImpact.error}
+            transferToCompany={transferTrafficViolationsToCompany}
+            onTransferToCompanyChange={setTransferTrafficViolationsToCompany}
+            disabled={isProcessing}
+          />
+
           {/* Cancellation Reason */}
           <div className="space-y-2">
             <Label htmlFor="cancellation_reason" className="text-slate-700">
@@ -169,6 +197,9 @@ export const ContractCancellationDialog: React.FC<ContractCancellationDialogProp
               className="resize-none"
               disabled={isProcessing}
             />
+            {cancellationReason.trim().length > 0 && cancellationReason.trim().length < 5 && (
+              <p className="text-xs text-red-600">اكتب سببًا واضحًا من 5 أحرف على الأقل.</p>
+            )}
           </div>
 
           {/* Vehicle Condition Toggle */}
@@ -287,7 +318,14 @@ export const ContractCancellationDialog: React.FC<ContractCancellationDialogProp
           <Button 
             variant="destructive" 
             onClick={handleCancellation}
-            disabled={isProcessing || !cancellationReason.trim()}
+            disabled={
+              isProcessing
+              || cancellationImpact.isLoading
+              || cancellationImpact.isFetching
+              || !!cancellationImpact.error
+              || cancellationIsBlocked
+              || cancellationReason.trim().length < 5
+            }
           >
             {isProcessing ? (
               <>

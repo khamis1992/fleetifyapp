@@ -57,6 +57,8 @@ export const supabase = createClient<Database>(supabaseConfig.url, supabaseConfi
         try {
           const timeoutMs = isAuthRequest
             ? 30000
+            : requestUrl.includes('/rest/v1/rpc/restart_taqadi_filing_job_v2')
+              ? 60000
             : requestUrl.includes('/functions/v1/excel-import-ai-review')
               ? 90000
               : requestUrl.includes('/functions/v1/customer-proposal-ai-reviewer')
