@@ -21,6 +21,9 @@ export interface RentalGuardResult {
   level: RentalGuardLevel;
   message: string;
   messages: string[];
+  hardBlockMessages: string[];
+  violationMessages: string[];
+  canOverrideUnpaidViolations: boolean;
   vehiclePenalties: PenaltySummary;
   customerPenalties: PenaltySummary;
   trafficViolationsPath?: string;
@@ -54,15 +57,17 @@ const formatQar = (amount: number) => new Intl.NumberFormat('ar-QA', {
 export function evaluateRentalEligibility(input: RentalGuardInput): RentalGuardResult {
   const vehiclePenalties = summarizeUnpaid(input.vehiclePenalties);
   const customerPenalties = summarizeUnpaid(input.customerPenalties);
-  const blocks: string[] = [];
+  const hardBlocks: string[] = [];
+  const violationBlocks: string[] = [];
+  const violationMessages: string[] = [];
   const warnings: string[] = [];
 
   if (!input.vehicle) {
-    blocks.push('لا يمكن بدء الإيجار: المركبة غير موجودة أو لا تنتمي إلى الشركة');
+    hardBlocks.push('لا يمكن بدء الإيجار: المركبة غير موجودة أو لا تنتمي إلى الشركة');
   } else {
     const blockedStatus = input.vehicle.status && HARD_BLOCKED_STATUSES[input.vehicle.status];
     if (blockedStatus) {
-      blocks.push(`لا يمكن تأجير هذه المركبة لأنها ${blockedStatus}`);
+      hardBlocks.push(`لا يمكن تأجير هذه المركبة لأنها ${blockedStatus}`);
     } else if (input.vehicle.status === 'municipality') {
       warnings.push('تنبيه: المركبة محجوزة لدى البلدية. راجع حالتها قبل بدء الإيجار');
     }
@@ -70,8 +75,9 @@ export function evaluateRentalEligibility(input: RentalGuardInput): RentalGuardR
 
   if (vehiclePenalties.count > 0) {
     const message = `على المركبة ${vehiclePenalties.count} مخالفة غير مسددة بإجمالي ${formatQar(vehiclePenalties.total)} ر.ق`;
+    violationMessages.push(message);
     if (exceedsPenaltyThreshold(vehiclePenalties)) {
-      blocks.push(`لا يمكن تأجير هذه المركبة: ${message.replace('على المركبة ', '')}`);
+      violationBlocks.push(`لا يمكن تأجير هذه المركبة: ${message.replace('على المركبة ', '')}`);
     } else {
       warnings.push(`تنبيه: ${message}`);
     }
@@ -79,15 +85,20 @@ export function evaluateRentalEligibility(input: RentalGuardInput): RentalGuardR
 
   if (customerPenalties.count > 0) {
     const message = `العميل عليه ${customerPenalties.count} مخالفة غير مسددة بإجمالي ${formatQar(customerPenalties.total)} ر.ق`;
-    blocks.push(`لا يمكن بدء الإيجار: ${message}`);
+    violationMessages.push(message);
+    violationBlocks.push(`لا يمكن بدء الإيجار: ${message}`);
   }
 
+  const blocks = [...hardBlocks, ...violationBlocks];
   const messages = blocks.length > 0 ? blocks : warnings;
   const level: RentalGuardLevel = blocks.length > 0 ? 'block' : warnings.length > 0 ? 'warn' : 'allow';
   return {
     level,
     message: messages.join(' — '),
     messages,
+    hardBlockMessages: hardBlocks,
+    violationMessages,
+    canOverrideUnpaidViolations: hardBlocks.length === 0 && violationMessages.length > 0,
     vehiclePenalties,
     customerPenalties,
     trafficViolationsPath: vehiclePenalties.count || customerPenalties.count
@@ -144,8 +155,12 @@ export async function assertRentalEligible(params: {
   companyId: string;
   vehicleId: string | null | undefined;
   customerId?: string | null;
+  allowUnpaidViolationOverride?: boolean;
 }): Promise<RentalGuardResult> {
   const result = await checkRentalEligibility(params);
-  if (result.level === 'block') throw new Error(result.message);
+  const acceptedViolationOnlyBlock = result.level === 'block'
+    && result.canOverrideUnpaidViolations
+    && params.allowUnpaidViolationOverride === true;
+  if (result.level === 'block' && !acceptedViolationOnlyBlock) throw new Error(result.message);
   return result;
 }

@@ -1,33 +1,33 @@
-node_modules
-.git
+/node_modules/
+/.git/
 *.log
 .env.local
 .DS_Store
-coverage
-.vscode
+/coverage/
+/.vscode/
 *.test.ts
 *.test.tsx
 *.spec.ts
 *.spec.tsx
-fleetify-backend
-scripts
+/fleetify-backend/
+/scripts/
 
 # Local runtimes, generated audits, and build artifacts (never needed by Vite)
-.taqadi-agent/
-.tmp*/
-tmp/
-graphify-out/
-reports/
-audit-v2/
-.archive/
-output/
-dist/
-test-results/
-playwright-report/
+/.taqadi-agent/
+/.tmp*/
+/tmp/
+/graphify-out/
+/reports/
+/audit-v2/
+/.archive/
+/output/
+/dist/
+/test-results/
+/playwright-report/
 *.traineddata
 *.exe
 
 # Backend/desktop automation is deployed separately from the web frontend
-supabase/
-automation/
-docs/
+/supabase/
+/automation/
+/docs/

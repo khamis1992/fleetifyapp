@@ -1196,9 +1196,13 @@ async function detectDuplicatePayments(
   // same amount on the same date twice. Grouping by contract alone is wrong:
   // one monthly payment settles a different invoice each click, so the
   // contract+date+amount key flags legitimate catch-up payments as duplicates.
+  // The same-import signature now uses the BILLING MONTH instead of the exact
+  // payment date: the cancelled-contracts file and Payment-By-Client recorded
+  // different payment dates for the same source month, letting duplicates
+  // slip past a date±1day comparison.
   let query = supabase
     .from("payments")
-    .select("id, contract_id, invoice_id, payment_date, amount, payment_status, reference_number")
+    .select("id, contract_id, invoice_id, payment_date, amount, payment_status, reference_number, notes")
     .eq("company_id", companyId)
     .limit(limit * 20);
 
@@ -1215,6 +1219,61 @@ async function detectDuplicatePayments(
     const key = `${payment.contract_id || ""}:${payment.invoice_id || "unallocated"}:${payment.payment_date || ""}:${roundMoney(Number(payment.amount || 0))}:${payment.reference_number || ""}`;
     if (seen.has(key)) duplicates += 1;
     seen.add(key);
+  }
+
+  // Same-source-month duplicate: two imported payments (PAY-XLS / PBC / xls)
+  // for the same contract and the same source month whose combined amount
+  // exceeds the month's rent (monthly_amount) signal a double import even
+  // when payment dates differ by weeks.
+  const monthlyRentByContract = new Map<string, number>();
+  const monthAgg = new Map<string, { total: number; count: number }>();
+
+  for (const payment of data || []) {
+    if (isInactivePaymentStatus(payment.payment_status)) continue;
+    if (!payment.contract_id) continue;
+    const paymentNumber = String(payment.payment_number || "");
+    const isImported = paymentNumber.startsWith("PAY-XLS-")
+      || paymentNumber.startsWith("PBC-")
+      || String(payment.reference_number || "").startsWith("xls:");
+    if (!isImported) continue;
+
+    const notes = String(payment.notes || "");
+    const monthMatch = notes.match(/شهر\s+(\d{1,2})-(\d{4})/);
+    let sourceMonth: string | null = null;
+    if (monthMatch) {
+      const month = monthMatch[1].padStart(2, "0");
+      sourceMonth = `${monthMatch[2]}-${month}`;
+    } else {
+      sourceMonth = String(payment.payment_date || "").slice(0, 7);
+    }
+
+    const aggKey = `${payment.contract_id}:${sourceMonth}`;
+    const agg = monthAgg.get(aggKey) || { total: 0, count: 0 };
+    agg.total = roundMoney(agg.total + Number(payment.amount || 0));
+    agg.count += 1;
+    monthAgg.set(aggKey, agg);
+  }
+
+  if (monthAgg.size > 0) {
+    const contractIds = Array.from(new Set(
+      Array.from(monthAgg.keys()).map((key) => key.split(":")[0])
+    ));
+    const { data: contractRows } = await supabase
+      .from("contracts")
+      .select("id, monthly_amount")
+      .eq("company_id", companyId)
+      .in("id", contractIds);
+    for (const contract of contractRows || []) {
+      monthlyRentByContract.set(contract.id, roundMoney(Number(contract.monthly_amount || 0)));
+    }
+
+    for (const [aggKey, agg] of monthAgg.entries()) {
+      if (agg.count < 2) continue;
+      const [contractId, sourceMonth] = aggKey.split(":");
+      const monthlyRent = monthlyRentByContract.get(contractId) || 0;
+      if (monthlyRent <= 0) continue;
+      if (agg.total - monthlyRent > 1) duplicates += 1;
+    }
   }
 
   return duplicates;

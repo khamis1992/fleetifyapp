@@ -917,7 +917,7 @@ export function QuickPaymentRecording({ onStepChange }: QuickPaymentRecordingPro
         )
       `)
       .eq('customer_id', selectedCustomer!.id)
-      .eq('company_id', companyId)
+      .eq('company_id', companyId!)
       .in('invoice_number', numbers);
 
     const { data, error } = await query;

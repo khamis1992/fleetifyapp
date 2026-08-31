@@ -109,6 +109,33 @@ describe('legal case workflow', () => {
       'بريد المدعى عليه موثق كغير متوفر؛ لا يمنع تثبيت المذكرة، لكنه يمنع الرفع الآلي إلى تقاضي.',
     );
   });
+
+  it('warns about missing formal notice without inventing service through the lawsuit', () => {
+    const state = {
+      contract: null,
+      customer: null,
+      vehicle: null,
+      litigationProfile: profile({
+        defendant_email_status: 'verified',
+        defendant_email: 'customer@example.test',
+        vehicle_custody: 'with_defendant',
+      }),
+      formalNotices: [],
+      calculations: null,
+      overdueInvoices: [],
+      documents: { contract: {} },
+      damageCosts: [],
+      trafficViolations: [],
+      violationEvidenceDocuments: [],
+    } as unknown as LawsuitPreparationState;
+
+    const readiness = evaluateLegalCaseReadiness(state);
+    expect(readiness.warnings).toContain(
+      'لا يوجد إعذار سابق أو استثناء موثق؛ لن تنسب المذكرة أي تبليغ غير ثابت، وتبقى آثار الإعذار والتعويض عن التأخر خاضعة لما يثبت قانوناً.',
+    );
+    expect(readiness.warnings.join(' ')).not.toContain('اعتبار إعلان صحيفة الدعوى');
+  });
+
   it('uses natural expiry only when the elapsed end date is supported and confirmed', () => {
     const valid = resolveLegalPath(profile({
       rescission_strategy: 'natural_expiry',

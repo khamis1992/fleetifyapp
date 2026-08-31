@@ -75,11 +75,9 @@ const FinanceHub: React.FC = () => {
 
       const [paymentsResult, invoicesResult] = await Promise.all([
         supabase
-          .from('payments')
+          .from('active_revenue_payments_v1')
           .select('amount, payment_date, customer_id')
           .eq('company_id', companyId)
-          .eq('transaction_type', 'receipt')
-          .in('payment_status', ['completed', 'paid', 'confirmed'])
           .gte('payment_date', firstMonth.toISOString().slice(0, 10)),
         supabase
           .from('invoices')
@@ -111,7 +109,8 @@ const FinanceHub: React.FC = () => {
 
       const customerRevenue = new Map<string, number>();
       for (const payment of paymentsResult.data || []) {
-        const bucket = monthlyBuckets.get(payment.payment_date.slice(0, 7));
+        const paymentMonth = payment.payment_date ? payment.payment_date.slice(0, 7) : null;
+        const bucket = paymentMonth ? monthlyBuckets.get(paymentMonth) : null;
         if (bucket) bucket.revenue += Number(payment.amount || 0);
         if (payment.customer_id) {
           customerRevenue.set(

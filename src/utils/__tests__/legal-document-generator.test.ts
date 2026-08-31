@@ -175,14 +175,25 @@ describe('explanatory memo structure (approved template)', () => {
     expect(memo).not.toContain('طلب أصلي: إصدار أمر بتحويل جميع المخالفات المرورية');
   });
 
-  it('keeps the judicial notice request without adding an expert appointment request', () => {
+  it('does not invent a notice and adds the expedited-enforcement request', () => {
     const memo = generateLegalComplaintHTML(lawsuitData);
 
-    expect(memo).toContain('اعتبار إعلان صحيفة الدعوى المتضمنة التكليف الصريح بالسداد ورد المركبة إعذاراً من تاريخ الإعلان');
+    expect(memo).not.toContain('اعتبار إعلان صحيفة الدعوى');
     expect(memo).not.toContain('وتطلب المدعية احتياطياً اعتبار إعلان صحيفة الدعوى');
     expect(memo).not.toContain('ندب خبير حسابي وفني');
+    expect(memo).toContain('شمول الحكم بالنفاذ المعجل');
+    expect(memo).toContain('من قانون التنفيذ القضائي رقم <strong>(4)</strong> لسنة 2024');
     expect(memo).toContain('التوقيع: __________________');
     expect(memo).toContain('التاريخ:');
+  });
+
+  it('includes the revised jurisdiction and evidence sections', () => {
+    const memo = generateLegalComplaintHTML(lawsuitData);
+
+    expect(memo).toContain('أولاً: الاختصاص القضائي');
+    expect(memo).toContain('المادة (7) من قانون رقم (21) لسنة 2021');
+    expect(memo).toContain('خامساً: الإثبات والرد على الدفوع');
+    expect(memo).toContain('سادساً: الطلبات');
   });
 
   it('repeats the footer on every printed page without consuming a final page', () => {
@@ -264,7 +275,7 @@ describe('explanatory memo structure (approved template)', () => {
     expect(memo).toContain('المواد 256 و263 و268');
     expect(memo).toContain('الأعباء التمويلية المرتبطة سببياً بالتأخر');
     expect(memo).toContain('فوات الانتفاع وصافي الكسب خلال مدة إصلاح المركبة المعقولة بعد استردادها');
-    expect(memo).toContain('دون تكرار أصل الدين ضمن التعويض');
+    expect(memo).toContain('دون تكرار أصل الدين أو الجمع بينه وبين تعويض اتفاقي عن الضرر ذاته');
     expect(memo).toContain('دون ازدواج مع تعويض الاحتباس');
   });
 
@@ -284,6 +295,34 @@ describe('explanatory memo structure (approved template)', () => {
 
     expect(memo).toContain('1,200 ريال × 3 شهر استحقاق غير مسدد');
     expect(memo).toContain('بواقع <strong>(1,200 ريال)</strong> عن كل شهر استحقاق غير مسدد');
+  });
+
+  it('renders clause 13.3 and its fixed QAR 2,000 penalty in the memo', () => {
+    const clauseText = 'في حال مخالفة الطرف الثاني لأي من بنود هذا العقد يحق للطرف الأول إنهاء العقد دون الحاجة إلى إنذار أو إخطار من قبل الطرف الأول، كما يترتب على الطرف الثاني غرامة 2000 ريال في حال إلغاء العقد بسبب مخالفته لأحد البنود.';
+    const memo = generateLegalComplaintHTML({
+      ...lawsuitData,
+      customer: {
+        ...lawsuitData.customer,
+        overdue_amount: 24_150,
+        violations_amount: 500,
+        violations_count: 1,
+      },
+      contractualCompensation: {
+        amount: 2_000,
+        clauseNumber: '13.3',
+        clauseText,
+        method: 'fixed',
+        rate: 2_000,
+        units: 1,
+      },
+      damages: undefined,
+    });
+
+    expect(memo).toContain('صافي المطالبة حتى تاريخ إعداد الكشف</td>\n            <td class="amount" style="font-size: 15px; color: white;">26,650');
+    expect(memo).toContain('الغرامة العقدية بوصفها تعويضاً اتفاقياً');
+    expect(memo).toContain('البند رقم (13.3)');
+    expect(memo).toContain(clauseText);
+    expect(memo).toContain('مبلغ ثابت قدره 2,000 ريال قطري');
   });
 
   it('quantifies retention compensation when a documented daily rate exists', () => {
@@ -333,13 +372,14 @@ describe('explanatory memo structure (approved template)', () => {
     expect(memo).toContain('قيمة صافي الأجرة المستحقة حتى <strong>01/08/2026</strong>');
     expect(memo).toContain('بواقع <strong>(1,500 ريال قطري)</strong> شهرياً');
     expect(memo).toContain('أو نسبتها عن جزء الشهر وفق العقد');
-    expect(memo).toContain('عدم اعتبار الرد قد تم إلا بتحرير محضر تسليم فعلي');
+    expect(memo).toContain('ولا يعتد بالرد إلا بما يثبت انتقال الحيازة فعلياً');
     expect(memo).toContain('من اليوم التالي للتاريخ الذي يصير فيه الفسخ منتجاً لآثاره');
     expect(memo).toContain('قيمة إصلاح الأضرار غير الناتجة عن الاستعمال المألوف');
     expect(memo).toContain('فوات الانتفاع وصافي الكسب خلال مدة إصلاح المركبة المعقولة بعد استردادها');
-    expect(memo).toContain('وفق المادة (268) من القانون المدني');
+    expect(memo).toContain('وفق المواد <strong>(256)</strong> و<strong>(263)</strong> و(268) من القانون المدني');
     expect(memo).toContain('القيمة السوقية للمركبة وقت وجوب ردها');
-    expect(memo).toContain('financial-request-item::before');
+    expect(memo).toMatch(/\.request-item::before\s*\{\s*display:\s*none/);
+    expect(memo).not.toContain('content: counter(request)');
   });
 
   it('omits unsupported consequential requests when their evidence-gated amounts are absent', () => {

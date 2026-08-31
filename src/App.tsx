@@ -16,6 +16,7 @@ import { CompanyContextProvider } from '@/contexts/CompanyContext';
 import { FABProvider } from '@/contexts/FABContext';
 import { FinanceProvider } from '@/contexts/FinanceContext';
 import { AIChatProvider } from '@/contexts/AIChatContext';
+import { RentalViolationOverrideProvider } from '@/contexts/RentalViolationOverrideContext';
 
 // UI Components
 import { Toaster } from '@/components/ui/toaster';
@@ -284,9 +285,10 @@ const App: React.FC = () => {
             <AuthProvider>
               <CompanyContextProvider>
                 <AIChatProvider>
-                  <FABProvider>
-                    <FinanceProvider>
-                      <MobileOptimizationProvider>
+                  <RentalViolationOverrideProvider>
+                    <FABProvider>
+                      <FinanceProvider>
+                        <MobileOptimizationProvider>
                         <PerformanceMonitor>
                           <RouteProvider routes={routeConfigs}>
                             <RouteErrorBoundary>
@@ -324,9 +326,10 @@ const App: React.FC = () => {
 
                         {/* Security Headers */}
                         <SecurityHeaders />
-                      </MobileOptimizationProvider>
-                    </FinanceProvider>
-                  </FABProvider>
+                        </MobileOptimizationProvider>
+                      </FinanceProvider>
+                    </FABProvider>
+                  </RentalViolationOverrideProvider>
                 </AIChatProvider>
               </CompanyContextProvider>
             </AuthProvider>

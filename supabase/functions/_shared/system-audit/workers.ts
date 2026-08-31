@@ -2703,7 +2703,7 @@ async function auditFleet(context: WorkerContext): Promise<WorkerBatchResult> {
     loadByIds(
       context,
       "contracts",
-      "id,vehicle_id,status,start_date,end_date",
+      "id,vehicle_id,status,start_date,end_date,vehicle_returned",
       "vehicle_id",
       vehicleIds
     ),
@@ -2890,10 +2890,19 @@ async function auditFleet(context: WorkerContext): Promise<WorkerBatchResult> {
     }
 
     const hasActiveContract = (contractsByVehicle.get(vehicle.id) || []).some(
-      (contract) =>
-        isActiveContractStatus(contract.status) &&
-        (!contract.start_date || contract.start_date <= today) &&
-        (!contract.end_date || contract.end_date >= today)
+      (contract) => {
+        const status = normalizeStatus(contract.status);
+        const isOccupyingStatus =
+          status === "active" ||
+          status === "suspended" ||
+          status === "under_legal_procedure";
+        return (
+          isOccupyingStatus &&
+          contract.vehicle_returned !== true &&
+          String(contract.start_date || "") <= today &&
+          String(contract.end_date || "") >= today
+        );
+      }
     );
     const hasOpenMaintenance = (
       maintenanceByVehicle.get(vehicle.id) || []

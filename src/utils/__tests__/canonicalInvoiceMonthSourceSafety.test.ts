@@ -293,10 +293,12 @@ describe('canonical invoice-month source safety', () => {
     );
 
     expect(contractCreation).not.toContain("await supabase.from('invoices').insert");
-    expect(contractCreation).toContain(".rpc('create_contract_with_billing_graph_atomic'");
+    expect(contractCreation).toContain(".rpc('create_contract_with_violation_override_atomic'");
+    expect(contractCreation).toContain('p_accept_unpaid_violations: acceptedUnpaidViolations');
     expect(contractCreation).not.toContain(".rpc('create_contract_with_journal_entry'");
     expect(contractCreation).not.toContain(".rpc('generate_invoices_from_payment_schedule'");
-    expect(wizard).toContain("'create_contract_with_billing_graph_atomic'");
+    expect(wizard).toContain("'create_contract_with_violation_override_atomic'");
+    expect(wizard).toContain('p_accept_unpaid_violations: acceptedUnpaidViolations');
     expect(wizard).not.toContain("supabase.from('contracts').insert");
     expect(wizard).not.toContain("'generate_payment_schedules_for_contract'");
   });
@@ -304,12 +306,14 @@ describe('canonical invoice-month source safety', () => {
   it('does not leave known active contract writers outside the atomic command', () => {
     const mobile = readSource('src/pages/mobile/MobileContractWizard.tsx');
     const quotations = readSource('src/pages/Quotations.tsx');
+    const salesQuoteConversion = readSource('src/hooks/useQuoteToContract.ts');
     const financialTracking = readSource('src/pages/FinancialTracking.tsx');
     const smartUpload = readSource('src/hooks/useUnifiedContractUpload.ts');
     const csvImport = readSource('src/pages/Import.tsx');
 
-    for (const source of [mobile, quotations]) {
-      expect(source).toContain("'create_contract_with_billing_graph_atomic'");
+    for (const source of [mobile, quotations, salesQuoteConversion]) {
+      expect(source).toContain("'create_contract_with_violation_override_atomic'");
+      expect(source).toContain('p_accept_unpaid_violations:');
       expect(source).not.toContain(".from('contracts')\n        .insert");
     }
     expect(financialTracking).toContain("supabase.rpc('create_customer_with_contract_idempotent'");

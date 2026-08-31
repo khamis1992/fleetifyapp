@@ -132,6 +132,8 @@ export function createInitialState(contractId: string | null = null): LawsuitPre
       mode: 'none',
       invoiceCount: 0,
       scheduleCount: 0,
+      legalAccrualCount: 0,
+      legalAccrualAmount: 0,
       totalCount: 0,
       outstandingTotal: 0,
       asOfDate: new Date().toISOString().slice(0, 10),

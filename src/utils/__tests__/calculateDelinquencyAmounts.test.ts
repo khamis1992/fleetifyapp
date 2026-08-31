@@ -8,6 +8,27 @@ const invoices = [
 const referenceDate = new Date('2026-08-21T00:00:00');
 
 describe('calculateDelinquencyAmounts', () => {
+  it('does not apply contractual delay compensation to legal-only rent accrual', () => {
+    const result = calculateDelinquencyAmounts([{
+      id: 'legal-accrual',
+      due_date: '2026-08-01',
+      total_amount: 1500,
+      paid_amount: 0,
+      source: 'legal_accrual',
+    }], [], {
+      referenceDate: new Date(2026, 7, 30),
+      contractualCompensation: {
+        enabled: true,
+        method: 'monthly',
+        rate: 1200,
+      },
+    });
+
+    expect(result.overdueRent).toBe(1500);
+    expect(result.lateFees).toBe(0);
+    expect(result.contractualCompensationUnits).toBe(0);
+  });
+
   afterEach(() => vi.useRealTimers());
   it('defaults every non-invoice claim component to zero', () => {
     const result = calculateDelinquencyAmounts(invoices, [], { referenceDate });

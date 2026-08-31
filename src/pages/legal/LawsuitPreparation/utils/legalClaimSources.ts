@@ -14,6 +14,8 @@ interface InvoiceClaimRow {
   balance_due: number | null;
   payment_status?: string | null;
   status?: string | null;
+  invoice_type?: string | null;
+  penalty_id?: string | null;
 }
 
 interface PaymentScheduleClaimRow {
@@ -26,12 +28,19 @@ interface PaymentScheduleClaimRow {
   status: string;
 }
 
+export interface LegalClaimBreakdown {
+  legal_extension_rent_amount?: number | string | null;
+  extension_start_date?: string | null;
+  rent_cutoff_date?: string | null;
+}
+
 export interface LegalClaimProjection {
   rows: OverdueInvoice[];
   summary: FinancialClaimSourceSummary;
 }
 
 const toNumber = (value: number | null | undefined) => Number(value || 0);
+const roundCurrency = (value: number) => Math.round((value + Number.EPSILON) * 100) / 100;
 
 const monthKey = (value: string | null | undefined): string | null => {
   if (!value) return null;
@@ -44,9 +53,21 @@ const invoiceOutstanding = (invoice: InvoiceClaimRow): number => {
   return Math.max(0, toNumber(invoice.total_amount) - toNumber(invoice.paid_amount));
 };
 
-const excludedStatuses = new Set(['cancelled', 'canceled', 'voided', 'reversed']);
+const excludedStatuses = new Set([
+  'cancelled',
+  'canceled',
+  'void',
+  'voided',
+  'reversed',
+  'deleted',
+]);
 const isExcludedStatus = (value: string | null | undefined) =>
   excludedStatuses.has((value || '').trim().toLowerCase());
+
+const isRentalInvoice = (invoice: InvoiceClaimRow) => (
+  invoice.penalty_id == null
+  && invoice.invoice_type?.trim().toLowerCase() === 'sales'
+);
 
 /** تاريخ يوم العمل القانوني في قطر، بصرف النظر عن منطقة جهاز المشغل. */
 export function getQatarBusinessDate(value = new Date()): string {
@@ -77,6 +98,7 @@ export function resolveLegalClaimProjection(
       typeof invoice.due_date === 'string' && invoice.due_date <= asOfDate
     ))
     .filter((invoice) => !isExcludedStatus(invoice.status) && !isExcludedStatus(invoice.payment_status))
+    .filter(isRentalInvoice)
     .filter((invoice) => invoiceOutstanding(invoice) > 0)
     .map((invoice) => {
       const outstanding = invoiceOutstanding(invoice);
@@ -134,6 +156,8 @@ export function resolveLegalClaimProjection(
       mode,
       invoiceCount,
       scheduleCount,
+      legalAccrualCount: 0,
+      legalAccrualAmount: 0,
       totalCount: rows.length,
       outstandingTotal: rows.reduce(
         (sum, row) => sum + Math.max(0, toNumber(row.total_amount) - toNumber(row.paid_amount)),
@@ -144,15 +168,79 @@ export function resolveLegalClaimProjection(
   };
 }
 
+/** يضيف الأجرة الممتدة قانونياً كسطر مستقل، بلا تحويلها إلى فاتورة محاسبية. */
+export function appendLegalAccrualToProjection(
+  projection: LegalClaimProjection,
+  breakdown: LegalClaimBreakdown | null,
+  asOfDate: string,
+): LegalClaimProjection {
+  const amount = Math.max(0, Number(breakdown?.legal_extension_rent_amount || 0));
+  if (amount <= 0) return projection;
+
+  const startDate = breakdown?.extension_start_date || asOfDate;
+  const cutoffDate = breakdown?.rent_cutoff_date || asOfDate;
+  const accrualRow: OverdueInvoice = {
+    id: `legal-accrual:${startDate}:${cutoffDate}`,
+    invoice_number: `أجرة تعاقدية مستمرة حتى ${cutoffDate}`,
+    due_date: startDate,
+    total_amount: amount,
+    paid_amount: 0,
+    source: 'legal_accrual',
+    source_reference: 'calculate_legal_claim_breakdown_v3',
+    invoice_month: startDate,
+  };
+  const rows = [...projection.rows, accrualRow]
+    .sort((left, right) => left.due_date.localeCompare(right.due_date));
+
+  return {
+    rows,
+    summary: {
+      ...projection.summary,
+      mode: projection.summary.mode === 'none' ? 'legal_accrual' : 'composite',
+      legalAccrualCount: 1,
+      legalAccrualAmount: amount,
+      totalCount: rows.length,
+      outstandingTotal: roundCurrency(projection.summary.outstandingTotal + amount),
+    },
+  };
+}
+
+interface LegalClaimBreakdownRpcResult {
+  data: unknown;
+  error: { message: string } | null;
+}
+
+type LegalClaimBreakdownRpc = (
+  fn: 'calculate_legal_claim_breakdown_v3' | 'calculate_legal_claim_breakdown_v2',
+  args: { p_company_id: string; p_contract_id: string; p_as_of_date: string },
+) => PromiseLike<LegalClaimBreakdownRpcResult>;
+
+const isMissingRpcError = (message: string) => {
+  const normalized = message.toLowerCase();
+  return normalized.includes('calculate_legal_claim_breakdown_v3')
+    && (normalized.includes('does not exist') || normalized.includes('schema cache'));
+};
+
 export async function loadLegalClaimProjection(
   contractId: string,
   companyId: string,
   asOfDate = getQatarBusinessDate(),
 ): Promise<LegalClaimProjection> {
-  const [invoiceResult, scheduleResult] = await Promise.all([
+  const callLegalClaimBreakdown = supabase.rpc.bind(supabase) as unknown as LegalClaimBreakdownRpc;
+  const loadBreakdown = async () => {
+    const args = {
+      p_company_id: companyId,
+      p_contract_id: contractId,
+      p_as_of_date: asOfDate,
+    };
+    const v3 = await callLegalClaimBreakdown('calculate_legal_claim_breakdown_v3', args);
+    if (!v3.error || !isMissingRpcError(v3.error.message)) return v3;
+    return callLegalClaimBreakdown('calculate_legal_claim_breakdown_v2', args);
+  };
+  const [invoiceResult, scheduleResult, breakdownResult] = await Promise.all([
     supabase
       .from('invoices')
-      .select('id, invoice_number, due_date, invoice_month, total_amount, paid_amount, balance_due, payment_status, status')
+      .select('id, invoice_number, due_date, invoice_month, total_amount, paid_amount, balance_due, payment_status, status, invoice_type, penalty_id')
       .eq('contract_id', contractId)
       .eq('company_id', companyId)
       .lte('due_date', asOfDate),
@@ -162,14 +250,21 @@ export async function loadLegalClaimProjection(
       .eq('contract_id', contractId)
       .eq('company_id', companyId)
       .lte('due_date', asOfDate),
+    loadBreakdown(),
   ]);
 
   if (invoiceResult.error) throw invoiceResult.error;
   if (scheduleResult.error) throw scheduleResult.error;
+  if (breakdownResult.error) throw breakdownResult.error;
 
-  return resolveLegalClaimProjection(
+  const projection = resolveLegalClaimProjection(
     (invoiceResult.data || []) as InvoiceClaimRow[],
     (scheduleResult.data || []) as PaymentScheduleClaimRow[],
+    asOfDate,
+  );
+  return appendLegalAccrualToProjection(
+    projection,
+    (breakdownResult.data || null) as LegalClaimBreakdown | null,
     asOfDate,
   );
 }

@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { getQatarBusinessDate, resolveLegalClaimProjection } from '../legalClaimSources';
+import {
+  appendLegalAccrualToProjection,
+  getQatarBusinessDate,
+  resolveLegalClaimProjection,
+} from '../legalClaimSources';
 
 describe('resolveLegalClaimProjection', () => {
   it('uses the Qatar calendar date at the UTC day boundary', () => {
@@ -19,7 +23,7 @@ describe('resolveLegalClaimProjection', () => {
 
   it('does not duplicate a month represented by an invoice', () => {
     const result = resolveLegalClaimProjection([
-      { id: 'i1', invoice_number: 'INV-1', due_date: '2026-01-01', invoice_month: '2026-01-01', total_amount: 1500, paid_amount: 0, balance_due: 1500 },
+      { id: 'i1', invoice_number: 'INV-1', due_date: '2026-01-01', invoice_month: '2026-01-01', total_amount: 1500, paid_amount: 0, balance_due: 1500, invoice_type: 'sales', penalty_id: null },
     ], [
       { id: 's1', installment_number: 1, due_date: '2026-01-26', amount: 1500, paid_amount: 0, invoice_id: null, status: 'overdue' },
       { id: 's2', installment_number: 2, due_date: '2026-02-26', amount: 1500, paid_amount: 0, invoice_id: null, status: 'overdue' },
@@ -31,8 +35,8 @@ describe('resolveLegalClaimProjection', () => {
 
   it('excludes paid and future records', () => {
     const result = resolveLegalClaimProjection([
-      { id: 'paid', invoice_number: 'PAID', due_date: '2026-01-01', invoice_month: '2026-01-01', total_amount: 1500, paid_amount: 1500, balance_due: 0 },
-      { id: 'future', invoice_number: 'FUTURE', due_date: '2026-09-01', invoice_month: '2026-09-01', total_amount: 1500, paid_amount: 0, balance_due: 1500 },
+      { id: 'paid', invoice_number: 'PAID', due_date: '2026-01-01', invoice_month: '2026-01-01', total_amount: 1500, paid_amount: 1500, balance_due: 0, invoice_type: 'sales', penalty_id: null },
+      { id: 'future', invoice_number: 'FUTURE', due_date: '2026-09-01', invoice_month: '2026-09-01', total_amount: 1500, paid_amount: 0, balance_due: 1500, invoice_type: 'sales', penalty_id: null },
     ], [], '2026-08-26');
 
     expect(result.rows).toEqual([]);
@@ -50,6 +54,8 @@ describe('resolveLegalClaimProjection', () => {
         paid_amount: 0,
         balance_due: 1500,
         status: 'cancelled',
+        invoice_type: 'sales',
+        penalty_id: null,
       },
     ], [
       { id: 'valid', installment_number: 3, due_date: '2026-03-01', amount: 1500, paid_amount: 0, invoice_id: null, status: 'overdue' },
@@ -58,5 +64,130 @@ describe('resolveLegalClaimProjection', () => {
 
     expect(result.rows).toHaveLength(1);
     expect(result.rows[0]).toMatchObject({ source: 'payment_schedule', source_reference: 'valid' });
+  });
+
+  it('excludes unknown, void, and deleted invoice rows from a legal rent claim', () => {
+    const result = resolveLegalClaimProjection([
+      {
+        id: 'unknown',
+        invoice_number: 'UNKNOWN',
+        due_date: '2026-01-01',
+        invoice_month: '2026-01-01',
+        total_amount: 1500,
+        paid_amount: 0,
+        balance_due: 1500,
+        invoice_type: null,
+        penalty_id: null,
+      },
+      {
+        id: 'void',
+        invoice_number: 'VOID',
+        due_date: '2026-02-01',
+        invoice_month: '2026-02-01',
+        total_amount: 1500,
+        paid_amount: 0,
+        balance_due: 1500,
+        invoice_type: 'sales',
+        penalty_id: null,
+        status: 'void',
+      },
+      {
+        id: 'deleted',
+        invoice_number: 'DELETED',
+        due_date: '2026-03-01',
+        invoice_month: '2026-03-01',
+        total_amount: 1500,
+        paid_amount: 0,
+        balance_due: 1500,
+        invoice_type: 'sales',
+        penalty_id: null,
+        payment_status: 'deleted',
+      },
+    ], [], '2026-08-26');
+
+    expect(result.rows).toEqual([]);
+    expect(result.summary.outstandingTotal).toBe(0);
+  });
+
+  it('excludes penalty-linked and non-rent service invoices from overdue rent', () => {
+    const result = resolveLegalClaimProjection([
+      {
+        id: 'rent',
+        invoice_number: 'RENT-1',
+        due_date: '2026-01-01',
+        invoice_month: '2026-01-01',
+        total_amount: 1500,
+        paid_amount: 0,
+        balance_due: 1500,
+        invoice_type: 'sales',
+        penalty_id: null,
+      },
+      {
+        id: 'penalty',
+        invoice_number: 'PEN-1',
+        due_date: '2026-01-01',
+        invoice_month: '2026-01-01',
+        total_amount: 500,
+        paid_amount: 0,
+        balance_due: 500,
+        invoice_type: 'service',
+        penalty_id: 'penalty-1',
+      },
+      {
+        id: 'service',
+        invoice_number: 'SERVICE-1',
+        due_date: '2026-02-01',
+        invoice_month: '2026-02-01',
+        total_amount: 300,
+        paid_amount: 0,
+        balance_due: 300,
+        invoice_type: 'service',
+        penalty_id: null,
+      },
+    ], [], '2026-08-26');
+
+    expect(result.rows).toHaveLength(1);
+    expect(result.rows[0].source_reference).toBe('rent');
+    expect(result.summary.outstandingTotal).toBe(1500);
+  });
+
+  it('adds legal rent continuation once without mutating accounting invoices', () => {
+    const base = resolveLegalClaimProjection([{
+      id: 'i1',
+      invoice_number: 'INV-1',
+      due_date: '2026-01-01',
+      invoice_month: '2026-01-01',
+      total_amount: 1500,
+      paid_amount: 0,
+      balance_due: 1500,
+      invoice_type: 'sales',
+      penalty_id: null,
+    }], [], '2026-08-30');
+
+    const result = appendLegalAccrualToProjection(base, {
+      legal_extension_rent_amount: 1451.61,
+      extension_start_date: '2026-08-01',
+      rent_cutoff_date: '2026-08-30',
+    }, '2026-08-30');
+
+    expect(result.rows).toHaveLength(2);
+    expect(result.rows[1]).toMatchObject({
+      source: 'legal_accrual',
+      total_amount: 1451.61,
+      paid_amount: 0,
+    });
+    expect(result.summary).toMatchObject({
+      mode: 'composite',
+      legalAccrualCount: 1,
+      legalAccrualAmount: 1451.61,
+      outstandingTotal: 2951.61,
+    });
+  });
+
+  it('does not add an empty legal accrual row', () => {
+    const base = resolveLegalClaimProjection([], [], '2026-08-30');
+    expect(appendLegalAccrualToProjection(base, {
+      legal_extension_rent_amount: 0,
+    }, '2026-08-30')).toBe(base);
   });
 });

@@ -359,7 +359,7 @@ export function evaluateLegalCaseReadiness(
         && profile.notice_exception_document_id,
     );
     if (!hasFormalDemand && !hasNoticeException) {
-      warnings.push('لا يوجد إعذار سابق أو استثناء موثق؛ ستطلب الصياغة اعتبار إعلان صحيفة الدعوى إعذاراً من تاريخ الإعلان.');
+      warnings.push('لا يوجد إعذار سابق أو استثناء موثق؛ لن تنسب المذكرة أي تبليغ غير ثابت، وتبقى آثار الإعذار والتعويض عن التأخر خاضعة لما يثبت قانوناً.');
     } else if (hasFormalDemand) {
       strengths.push('يوجد تكليف سابق موثق بالسداد أو الرد.');
     } else {

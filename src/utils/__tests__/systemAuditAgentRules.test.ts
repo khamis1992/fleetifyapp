@@ -451,6 +451,16 @@ describe("system audit agent rules", () => {
         hasActiveReservation: true,
       })
     ).toBe("street_52");
+
+    expect(
+      deriveVehicleStatus({
+        currentStatus: "maintenance",
+        isActive: true,
+        hasActiveContract: false,
+        hasOpenMaintenance: false,
+        hasActiveReservation: false,
+      })
+    ).toBe("available");
   });
 
   it("rebuilds stock from inbound, outbound, and adjustment movements", () => {

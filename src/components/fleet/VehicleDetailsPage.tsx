@@ -53,6 +53,10 @@ import { format, differenceInDays } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import type { Vehicle } from '@/hooks/useVehicles';
 import { useQueryClient } from '@tanstack/react-query';
+import {
+  isContractInCurrentPeriod,
+  isContractOccupyingVehicle,
+} from '@/utils/vehicleOperationalStatus';
 
 const vehicleTheme = {
   text: systemColorPattern.colors.text,
@@ -240,7 +244,9 @@ const VehicleDetailsPage = () => {
   const vehicleStats = useMemo(() => {
     if (!vehicle) return null;
 
-    const activeContracts = contracts.filter(c => c.status === 'active').length;
+    const activeContracts = contracts.filter(
+      (contract) => contract.status === 'active' && isContractInCurrentPeriod(contract),
+    ).length;
     const totalRevenue = contracts.reduce((sum, c) => sum + (c.total_paid || 0), 0);
 
     return {
@@ -413,7 +419,7 @@ const VehicleDetailsPage = () => {
     '--vehicle-details-success': vehicleTheme.success,
   } as CSSProperties;
 
-  const primaryContract = contracts.find((contract) => contract.status === 'active') || contracts[0];
+  const primaryContract = contracts.find((contract) => isContractOccupyingVehicle(contract));
   const pendingViolations = violations.filter((violation) => {
     const status = violation.payment_status || violation.status;
     return status !== 'paid' && status !== 'settled';

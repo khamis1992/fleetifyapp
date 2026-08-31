@@ -114,7 +114,7 @@ describe('buildFactsAdditions', () => {
     expect(paragraphs[0]).not.toContain('آخرها');
   });
 
-  it('combines contract end and vehicle retention in one paragraph', () => {
+  it('records the supported contract end without inventing continued custody', () => {
     const paragraphs = buildFactsAdditions(
       baseInput({
         vehicleCustody: 'with_defendant',
@@ -126,12 +126,13 @@ describe('buildFactsAdditions', () => {
     );
     expect(paragraphs).toHaveLength(1);
     expect(paragraphs[0]).toContain('31/05/2026');
-    expect(paragraphs[0]).toContain('في حوزة المدعى عليه');
+    expect(paragraphs[0]).toContain('دون أن يسدد المدعى عليه مستحقاته');
+    expect(paragraphs[0]).not.toContain('في حوزة المدعى عليه');
   });
 
-  it('notes vehicle retention for an ongoing contract', () => {
+  it('does not turn a custody selection into an unsupported fact paragraph', () => {
     const paragraphs = buildFactsAdditions(baseInput({ vehicleCustody: 'with_defendant' }));
-    expect(paragraphs).toEqual(['ولا تزال المركبة محل العقد في حوزة المدعى عليه حتى تاريخه.']);
+    expect(paragraphs).toEqual([]);
   });
 
   it('notes that the company received the vehicle back', () => {
@@ -148,7 +149,7 @@ describe('buildFactsAdditions', () => {
     expect(paragraphs[0]).toContain('دون أن يسدد المدعى عليه مستحقاته');
   });
 
-  it('orders paragraphs: payment, violations, notice, then vehicle/contract', () => {
+  it('orders supported paragraphs without appending an unsupported custody statement', () => {
     const paragraphs = buildFactsAdditions(
       baseInput({
         paidTotal: 1000,
@@ -158,11 +159,11 @@ describe('buildFactsAdditions', () => {
         vehicleCustody: 'with_defendant',
       }),
     );
-    expect(paragraphs).toHaveLength(4);
+    expect(paragraphs).toHaveLength(3);
     expect(paragraphs[0]).toContain('جزءًا');
     expect(paragraphs[1]).toContain('مخالفات مرورية');
     expect(paragraphs[2]).toContain('رسائل المتابعة');
-    expect(paragraphs[3]).toContain('حوزة المدعى عليه');
+    expect(paragraphs.join(' ')).not.toContain('حوزة المدعى عليه');
   });
 });
 

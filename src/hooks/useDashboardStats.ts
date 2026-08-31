@@ -207,13 +207,14 @@ export const useDashboardStats = () => {
 
       // Vehicle rental revenue (if vehicles module enabled)
       // ✅ تحسين: حساب الإيرادات الفعلية من المدفوعات المستلمة (موحد مع التقارير المالية)
+      // ✅ يستخدم الرؤية الكانونية active_revenue_payments_v1 لاستبعاد دفعات العقود الملغاة
+      //    حتى لا تضخم استيرادات تاريخية إيراد الشهر الجاري
       if (isVehiclesEnabled) {
         // الإيرادات الفعلية = المدفوعات المستلمة في الشهر الحالي
         const { data: currentMonthPayments } = await supabase
-          .from('payments')
-          .select('amount, payment_status')
+          .from('active_revenue_payments_v1')
+          .select('amount')
           .eq('company_id', company_id)
-          .in('payment_status', ['completed', 'paid', 'confirmed'])
           .gte('payment_date', firstDayOfMonth.toISOString().split('T')[0])
           .lte('payment_date', lastDayOfMonth.toISOString().split('T')[0])
           .abortSignal(signal!);
@@ -236,10 +237,9 @@ export const useDashboardStats = () => {
 
         // حساب إيرادات الشهر السابق للمقارنة
         const { data: prevMonthPayments } = await supabase
-          .from('payments')
-          .select('amount, payment_status')
+          .from('active_revenue_payments_v1')
+          .select('amount')
           .eq('company_id', company_id)
-          .in('payment_status', ['completed', 'paid', 'confirmed'])
           .gte('payment_date', firstDayPrevMonth.toISOString().split('T')[0])
           .lte('payment_date', lastDayPrevMonth.toISOString().split('T')[0])
           .abortSignal(signal!);

@@ -63,15 +63,17 @@ export interface OverdueInvoice {
   total_amount: number | null;
   paid_amount: number | null;
   /** المصدر المحاسبي الفعلي للسطر؛ الاستحقاق التعاقدي يستخدم فقط عند غياب فاتورة للشهر نفسه. */
-  source?: 'invoice' | 'payment_schedule';
+  source?: 'invoice' | 'payment_schedule' | 'legal_accrual';
   source_reference?: string | null;
   invoice_month?: string | null;
 }
 
 export interface FinancialClaimSourceSummary {
-  mode: 'none' | 'invoices' | 'payment_schedules' | 'hybrid';
+  mode: 'none' | 'invoices' | 'payment_schedules' | 'hybrid' | 'legal_accrual' | 'composite';
   invoiceCount: number;
   scheduleCount: number;
+  legalAccrualCount: number;
+  legalAccrualAmount: number;
   totalCount: number;
   outstandingTotal: number;
   asOfDate: string;

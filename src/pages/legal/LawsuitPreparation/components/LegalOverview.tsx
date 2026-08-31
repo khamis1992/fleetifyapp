@@ -110,11 +110,15 @@ export function LegalOverview() {
             <p>الأرقام المعتمدة لتوليد المذكرة الشارحة وكشف المطالبات.</p>
           </div>
           <Badge variant="outline">
-            {financialClaimSource.mode === 'payment_schedules'
-              ? `${overdueInvoices.length} استحقاق تعاقدي حالّ`
-              : financialClaimSource.mode === 'hybrid'
-                ? `${overdueInvoices.length} استحقاق من مصدر موحد`
-                : `${overdueInvoices.length} فاتورة متأخرة`}
+            {financialClaimSource.mode === 'legal_accrual'
+              ? 'أجرة تعاقدية مستمرة'
+              : financialClaimSource.mode === 'composite'
+                ? `${overdueInvoices.length} استحقاق محاسبي وقانوني موحد`
+                : financialClaimSource.mode === 'payment_schedules'
+                  ? `${overdueInvoices.length} استحقاق تعاقدي حالّ`
+                  : financialClaimSource.mode === 'hybrid'
+                    ? `${overdueInvoices.length} استحقاق من مصدر موحد`
+                    : `${overdueInvoices.length} فاتورة متأخرة`}
           </Badge>
         </div>
 

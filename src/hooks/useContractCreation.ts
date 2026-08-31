@@ -7,7 +7,8 @@ import { useEssentialAccountMappings } from './useEssentialAccountMappings'
 import { generateContractPdf } from '@/utils/contractPdfGenerator'
 import { useCreateContractDocument } from './useContractDocuments'
 import { useContractDocumentSaving } from './useContractDocumentSaving'
-import { assertRentalEligible } from '@/services/rentalEligibilityGuard'
+import { useRentalViolationOverride } from '@/contexts/RentalViolationOverrideContext'
+import { RentalEligibilityConfirmationCancelledError } from '@/contexts/rentalViolationOverrideErrors'
 
 export interface ContractCreationStep {
   id: string
@@ -79,6 +80,7 @@ export const useContractCreation = () => {
   const queryClient = useQueryClient()
   const { mutateAsync: createDocument } = useCreateContractDocument()
   const { saveDocuments, isProcessing: isDocumentSaving } = useContractDocumentSaving()
+  const { confirmRentalEligibility } = useRentalViolationOverride()
   const { 
     mappingStatus, 
     hasMissingMappings, 
@@ -193,9 +195,15 @@ export const useContractCreation = () => {
           throw new Error('مبلغ العقد يجب أن يكون رقماً صحيحاً وأكبر من صفر')
         }
 
+        let acceptedUnpaidViolations = false
         if (inputContractData.vehicle_id && inputContractData.vehicle_id !== 'none') {
-          const eligibility = await assertRentalEligible({ companyId, vehicleId: inputContractData.vehicle_id, customerId: inputContractData.customer_id })
-          if (eligibility.level === 'warn') toast.warning(eligibility.message)
+          const confirmation = await confirmRentalEligibility({
+            companyId,
+            vehicleId: inputContractData.vehicle_id,
+            customerId: inputContractData.customer_id,
+          })
+          if (!confirmation) throw new RentalEligibilityConfirmationCancelledError()
+          acceptedUnpaidViolations = confirmation.acceptedUnpaidViolations
         }
 
         // التحقق من البيانات المطلوبة مع تسجيل مفصل
@@ -224,6 +232,7 @@ export const useContractCreation = () => {
           p_created_by: inputContractData.created_by || user?.id || undefined,
           p_created_via: 'web',
           p_idempotency_key: idempotencyKey,
+          p_accept_unpaid_violations: acceptedUnpaidViolations,
         }
         
         console.log('📋 [CONTRACT_CREATION] معاملات RPC:', rpcParams)
@@ -270,7 +279,7 @@ export const useContractCreation = () => {
         console.log('[CONTRACT_CREATION] Creating contract and billing graph atomically...')
 
         const { data: contractRpcResult, error: createError } = await supabase
-          .rpc('create_contract_with_billing_graph_atomic', rpcParams)
+          .rpc('create_contract_with_violation_override_atomic', rpcParams)
 
         // معالجة أخطاء الاتصال بقاعدة البيانات
         if (createError) {
@@ -494,6 +503,10 @@ export const useContractCreation = () => {
         return createdContractData
 
       } catch (error: unknown) {
+        if (error instanceof RentalEligibilityConfirmationCancelledError) {
+          setCreationState(prev => ({ ...prev, isProcessing: false, canRetry: false }))
+          throw error
+        }
         console.error('❌ [CONTRACT_CREATION] فشلت العملية:', error)
 
         // معالجة محسنة للأخطاء وتسجيلها
@@ -558,6 +571,7 @@ export const useContractCreation = () => {
       console.log('✅ [CONTRACT_CREATION] تم إنشاء العقد بنجاح:', data)
     },
     onError: (error: unknown) => {
+      if (error instanceof RentalEligibilityConfirmationCancelledError) return
       const errorMessage = error instanceof Error ? error.message : 'فشل في إنشاء العقد'
       console.error('❌ [CONTRACT_CREATION] فشل في الطفرة:', error)
 

@@ -51,6 +51,8 @@ import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 import { systemColorPattern } from '@/lib/design-system/systemColorPattern';
 import { calculateCanonicalBillingMonths } from '@/utils/contractCalculations';
 import { assertRentalEligible } from '@/services/rentalEligibilityGuard';
+import { useRentalViolationOverride } from '@/contexts/RentalViolationOverrideContext';
+import { RentalEligibilityConfirmationCancelledError } from '@/contexts/rentalViolationOverrideErrors';
 import { RentalEligibilityBanner, RentalEligibilityNotice } from './RentalEligibilityBanner';
 
 // Import our new components
@@ -925,6 +927,7 @@ export const SimpleContractWizard: React.FC<SimpleContractWizardProps> = ({ open
   showAssistant = true,
   editContract, }) => {
   const isEditMode = !!editContract;
+  const { confirmRentalEligibility } = useRentalViolationOverride();
   const { user } = useAuth();
   const companyId = useCurrentCompanyId();
   const [currentStep, setCurrentStep] = useState(0);
@@ -1127,8 +1130,21 @@ export const SimpleContractWizard: React.FC<SimpleContractWizardProps> = ({ open
     try {
       if (!companyId) throw new Error('تعذر تحديد الشركة');
 
-      if (validatedData.vehicle_id) {
-        await assertRentalEligible({ companyId, vehicleId: validatedData.vehicle_id, customerId: validatedData.customer_id });
+      let acceptedUnpaidViolations = false;
+      if (validatedData.vehicle_id && !onSubmit && !isEditMode) {
+        const confirmation = await confirmRentalEligibility({
+          companyId,
+          vehicleId: validatedData.vehicle_id,
+          customerId: validatedData.customer_id,
+        });
+        if (!confirmation) return;
+        acceptedUnpaidViolations = confirmation.acceptedUnpaidViolations;
+      } else if (validatedData.vehicle_id && isEditMode) {
+        await assertRentalEligible({
+          companyId,
+          vehicleId: validatedData.vehicle_id,
+          customerId: validatedData.customer_id,
+        });
       }
 
       if (onSubmit) {
@@ -1176,7 +1192,7 @@ export const SimpleContractWizard: React.FC<SimpleContractWizardProps> = ({ open
         if (!user?.id) throw new Error('تعذر تحديد المستخدم');
 
         const { data: creationResult, error } = await supabase.rpc(
-          'create_contract_with_billing_graph_atomic',
+          'create_contract_with_violation_override_atomic',
           {
             p_company_id: companyId,
             p_customer_id: validatedData.customer_id,
@@ -1193,6 +1209,7 @@ export const SimpleContractWizard: React.FC<SimpleContractWizardProps> = ({ open
             p_created_via: assignedToProfileId ? 'employee_workspace' : 'web',
             p_idempotency_key: contractCreationKeyRef.current
               ?? (contractCreationKeyRef.current = `contract:${crypto.randomUUID()}`),
+            p_accept_unpaid_violations: acceptedUnpaidViolations,
           },
         );
 
@@ -1210,6 +1227,7 @@ export const SimpleContractWizard: React.FC<SimpleContractWizardProps> = ({ open
 
       onOpenChange(false);
     } catch (error: any) {
+      if (error instanceof RentalEligibilityConfirmationCancelledError) return;
       console.error('Error saving contract:', error);
       toast.error(error?.message || (isEditMode ? 'فشل في تحديث العقد' : 'فشل في إنشاء العقد'));
     } finally {

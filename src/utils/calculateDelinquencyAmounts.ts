@@ -14,6 +14,8 @@ export interface OverdueInvoice {
   total_amount: number;
   paid_amount: number;
   balance_due?: number | null;
+  /** الأجرة القانونية المستمرة ليست فاتورة ولا تُنشئ تعويض تأخير اتفاقياً بذاتها. */
+  source?: 'invoice' | 'payment_schedule' | 'legal_accrual';
 }
 
 export interface TrafficViolation {
@@ -154,6 +156,8 @@ export function calculateDelinquencyAmounts(
   const invoiceLateFees: DelinquencyCalculationResult['invoiceLateFees'] = [];
   let overdueRent = 0;
   let totalDaysOverdue = 0;
+  let chargeableDaysOverdue = 0;
+  let chargeableInvoiceCount = 0;
   let lateFees = 0;
   const chargeableMonths = new Set<string>();
   const monthlyChargeInvoiceIndexes: number[] = [];
@@ -176,7 +180,12 @@ export function calculateDelinquencyAmounts(
     const daysOverdue = Math.max(0, calendarDayNumber(today) - calendarDayNumber(dueDate));
     
     let invoiceLateFee = 0;
-    if (contractualCompensation?.enabled) {
+    const allowsContractualCompensation = invoice.source !== 'legal_accrual';
+    if (allowsContractualCompensation) {
+      chargeableDaysOverdue += daysOverdue;
+      chargeableInvoiceCount += 1;
+    }
+    if (contractualCompensation?.enabled && allowsContractualCompensation) {
       if (contractualCompensation.method === 'daily') {
         invoiceLateFee = daysOverdue * contractualCompensation.rate;
       } else if (contractualCompensation.method === 'per_invoice') {
@@ -252,11 +261,11 @@ export function calculateDelinquencyAmounts(
   const contractualCompensationUnits = !contractualCompensation?.enabled || lateFees <= 0
     ? 0
     : contractualCompensation.method === 'daily'
-      ? totalDaysOverdue
+      ? chargeableDaysOverdue
       : contractualCompensation.method === 'monthly'
         ? chargeableMonths.size
         : contractualCompensation.method === 'per_invoice'
-          ? overdueInvoicesCount
+          ? chargeableInvoiceCount
           : 1;
 
   return {

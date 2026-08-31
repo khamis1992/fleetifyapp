@@ -20,7 +20,8 @@ import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter"
 import { ResponsivePageActions } from "@/components/ui/responsive-page-actions"
 import { PageHelp } from "@/components/help";
 import { QuotationsPageHelpContent } from "@/components/help/content";
-import { assertRentalEligible } from '@/services/rentalEligibilityGuard';
+import { useRentalViolationOverride } from '@/contexts/RentalViolationOverrideContext';
+import { RentalEligibilityConfirmationCancelledError } from '@/contexts/rentalViolationOverrideErrors';
 
 import { useFleetifyTranslation } from "@/hooks/useTranslation";
 interface QuotationFormData {
@@ -49,6 +50,7 @@ export default function Quotations() {
   const { filter, companyId, hasGlobalAccess, getQueryKey } = useUnifiedCompanyAccess()
   const { formatCurrency } = useCurrencyFormatter()
   const queryClient = useQueryClient()
+  const { confirmRentalEligibility } = useRentalViolationOverride()
   
   const { register, handleSubmit, watch, reset, setValue } = useForm<QuotationFormData>({
     defaultValues: {
@@ -203,13 +205,15 @@ export default function Quotations() {
       const quotation = quotations?.find(q => q.id === quotationId)
       if (!quotation) throw new Error('Quotation not found')
 
+      let acceptedUnpaidViolations = false
       if (quotation.vehicle_id) {
-        const eligibility = await assertRentalEligible({
+        const confirmation = await confirmRentalEligibility({
           companyId: quotation.company_id,
           vehicleId: quotation.vehicle_id,
           customerId: quotation.customer_id,
         })
-        if (eligibility.level === 'warn') toast.warning(eligibility.message)
+        if (!confirmation) throw new RentalEligibilityConfirmationCancelledError()
+        acceptedUnpaidViolations = confirmation.acceptedUnpaidViolations
       }
 
       // Calculate start and end dates
@@ -228,7 +232,7 @@ export default function Quotations() {
         ? quotation.rate_per_unit
         : quotation.total_amount
       const { data: creationResult, error: contractError } = await supabase.rpc(
-        'create_contract_with_billing_graph_atomic',
+        'create_contract_with_violation_override_atomic',
         {
           p_company_id: quotation.company_id,
           p_customer_id: quotation.customer_id,
@@ -244,6 +248,7 @@ export default function Quotations() {
           p_created_by: user?.id,
           p_created_via: 'sales_quote',
           p_idempotency_key: `quote-conversion:${quotation.id}`,
+          p_accept_unpaid_violations: acceptedUnpaidViolations,
         },
       )
 
@@ -266,6 +271,7 @@ export default function Quotations() {
       toast.success('تم تحويل عرض السعر إلى عقد بنجاح')
     },
     onError: (error) => {
+      if (error instanceof RentalEligibilityConfirmationCancelledError) return
       console.error('Error converting quotation:', error)
       toast.error('حدث خطأ أثناء تحويل عرض السعر')
     }

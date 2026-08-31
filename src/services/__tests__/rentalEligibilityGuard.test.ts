@@ -13,6 +13,8 @@ describe('evaluateRentalEligibility', () => {
     const result = evaluateRentalEligibility({ vehicle: vehicle('street_52') });
     expect(result.level).toBe('block');
     expect(result.message).toContain('شارع 52');
+    expect(result.canOverrideUnpaidViolations).toBe(false);
+    expect(result.hardBlockMessages).toHaveLength(1);
   });
 
   it('blocks a vehicle held at a police station regardless of penalty amount', () => {
@@ -22,12 +24,15 @@ describe('evaluateRentalEligibility', () => {
     });
     expect(result.level).toBe('block');
     expect(result.message).toContain('مركز الشرطة');
+    expect(result.canOverrideUnpaidViolations).toBe(false);
   });
 
   it('warns for unpaid vehicle penalties below both thresholds', () => {
     const result = evaluateRentalEligibility({ vehicle: vehicle(), vehiclePenalties: [penalty(100)] });
     expect(result.level).toBe('warn');
     expect(result.vehiclePenalties).toEqual({ count: 1, total: 100 });
+    expect(result.canOverrideUnpaidViolations).toBe(true);
+    expect(result.violationMessages[0]).toContain('على المركبة');
   });
 
   it('blocks when unpaid vehicle amount reaches the threshold', () => {
@@ -36,6 +41,8 @@ describe('evaluateRentalEligibility', () => {
       vehiclePenalties: [penalty(UNPAID_PENALTY_BLOCK_AMOUNT_QAR)],
     });
     expect(result.level).toBe('block');
+    expect(result.canOverrideUnpaidViolations).toBe(true);
+    expect(result.hardBlockMessages).toEqual([]);
   });
 
   it('blocks when unpaid customer count reaches the threshold and reports count and total', () => {
@@ -46,6 +53,7 @@ describe('evaluateRentalEligibility', () => {
     expect(result.level).toBe('block');
     expect(result.message).toContain('3 مخالفة');
     expect(result.customerPenalties.total).toBe(75);
+    expect(result.canOverrideUnpaidViolations).toBe(true);
   });
 
   it('blocks for any unpaid customer penalty below the vehicle thresholds', () => {
@@ -56,6 +64,21 @@ describe('evaluateRentalEligibility', () => {
     expect(result.level).toBe('block');
     expect(result.message).toContain('العميل عليه 1 مخالفة');
     expect(result.customerPenalties.total).toBe(25);
+    expect(result.canOverrideUnpaidViolations).toBe(true);
+  });
+
+  it('allows an explicit override for the reported vehicle and customer violation totals', () => {
+    const result = evaluateRentalEligibility({
+      vehicle: vehicle(),
+      vehiclePenalties: Array.from({ length: 11 }, (_, index) => penalty(index === 0 ? 700 : 400)),
+      customerPenalties: Array.from({ length: 8 }, (_, index) => penalty(index === 0 ? 1_500 : 1_000)),
+    });
+
+    expect(result.level).toBe('block');
+    expect(result.vehiclePenalties).toEqual({ count: 11, total: 4_700 });
+    expect(result.customerPenalties).toEqual({ count: 8, total: 8_500 });
+    expect(result.hardBlockMessages).toEqual([]);
+    expect(result.canOverrideUnpaidViolations).toBe(true);
   });
 
   it('allows paid and completed penalties only', () => {

@@ -13,7 +13,7 @@ import {
   triageFindingsWithLongCat,
 } from "../_shared/system-audit/runtime.ts";
 
-const WORKER_VERSION = "2026-08-27.55";
+const WORKER_VERSION = "2026-08-31.56";
 type SupabaseClient = ReturnType<typeof createClient>;
 
 type JobControlAction = "pause" | "cancel" | "lease_invalid";

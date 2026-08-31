@@ -34,7 +34,6 @@ const INACTIVE_SCHEDULE_STATUSES = new Set([
   "inactive",
 ]);
 const PROTECTED_VEHICLE_STATUSES = new Set([
-  "maintenance",
   "accident",
   "stolen",
   "police_station",
@@ -523,12 +522,13 @@ export function deriveVehicleStatus(input: {
   hasOpenMaintenance: boolean;
   hasActiveReservation: boolean;
 }): string | null {
+  if (input.isActive === false) return "out_of_service";
   if (isProtectedVehicleStatus(input.currentStatus)) return null;
   if (input.hasOpenMaintenance) return "maintenance";
   if (input.hasActiveContract) return "rented";
   if (input.hasActiveReservation) return "street_52";
   if (normalizeStatus(input.currentStatus) === "street_52") return null;
-  return input.isActive === false ? "out_of_service" : "available";
+  return "available";
 }
 
 export function deriveStockOnHand(

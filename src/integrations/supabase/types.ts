@@ -27987,6 +27987,30 @@ export type Database = {
       }
     }
     Views: {
+      active_revenue_payments_v1: {
+        Row: {
+          amount: number | null
+          company_id: string | null
+          contract_id: string | null
+          contract_number: string | null
+          contract_status: string | null
+          created_at: string | null
+          currency: string | null
+          customer_id: string | null
+          id: string | null
+          invoice_id: string | null
+          payment_date: string | null
+          payment_method: string | null
+          payment_number: string | null
+          payment_status: string | null
+          payment_type: string | null
+          transaction_type:
+            | Database["public"]["Enums"]["transaction_type"]
+            | null
+          vendor_id: string | null
+        }
+        Relationships: []
+      }
       ab_test_comparison: {
         Row: {
           avg_click_rate: number | null
@@ -30693,6 +30717,29 @@ export type Database = {
           }
       create_contract_with_billing_graph_atomic: {
         Args: {
+          p_assigned_to_profile_id?: string
+          p_auto_renew_enabled?: boolean
+          p_company_id: string
+          p_contract_amount?: number
+          p_contract_date?: string
+          p_contract_type?: string
+          p_cost_center_id?: string
+          p_created_by?: string
+          p_created_via?: string
+          p_customer_id: string
+          p_description?: string
+          p_end_date?: string
+          p_idempotency_key?: string
+          p_monthly_amount?: number
+          p_start_date?: string
+          p_terms?: string
+          p_vehicle_id?: string
+        }
+        Returns: Json
+      }
+      create_contract_with_violation_override_atomic: {
+        Args: {
+          p_accept_unpaid_violations?: boolean
           p_assigned_to_profile_id?: string
           p_auto_renew_enabled?: boolean
           p_company_id: string

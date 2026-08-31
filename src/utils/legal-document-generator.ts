@@ -336,11 +336,15 @@ export function generateLegalComplaintHTML(data: LegalDocumentData): string {
     0,
     documentedDamages - paymentDelayDamage - operationalLoss,
   );
-  const contractualCompensationFormula = data.contractualCompensation?.method === 'monthly'
+  const contractualCompensationFormula = data.contractualCompensation?.method === 'fixed'
+    && Number(data.contractualCompensation.rate) > 0
+    ? `مبلغ ثابت قدره ${formatQar(Number(data.contractualCompensation.rate))} ريال قطري`
+    : data.contractualCompensation?.method === 'monthly'
     && Number(data.contractualCompensation.rate) > 0
     && Number(data.contractualCompensation.units) > 0
     ? `${formatQar(Number(data.contractualCompensation.rate))} ريال × ${Number(data.contractualCompensation.units)} شهر استحقاق غير مسدد`
     : `وفق البند رقم (${data.contractualCompensation?.clauseNumber}) من العقد`;
+  const contractualCompensationClauseText = data.contractualCompensation?.clauseText?.trim() || '';
 
   // وديعة الضمان: تُخصم فقط بقرار صريح، وبحد أقصى قيمة المطالبة
   const depositAmount = data.securityDeposit?.amount || 0;
@@ -718,26 +722,12 @@ export function generateLegalComplaintHTML(data: LegalDocumentData): string {
     }
     
     /* Requests List */
-    .requests-list {
-      counter-reset: request;
-    }
     .request-item {
       margin-bottom: 10px;
-      padding-right: 25px;
+      padding-right: 0;
       position: relative;
     }
     .request-item::before {
-      content: counter(request) ".";
-      counter-increment: request;
-      position: absolute;
-      right: 0;
-      font-weight: bold;
-      color: #1e3a5f;
-    }
-    .financial-request-item {
-      padding-right: 0;
-    }
-    .financial-request-item::before {
       display: none;
     }
     
@@ -966,9 +956,19 @@ export function generateLegalComplaintHTML(data: LegalDocumentData): string {
       ` : ''}
     </div>
 
+    <!-- Section: Jurisdiction -->
+    <div class="section">
+      <div class="section-title">أولاً: الاختصاص القضائي</div>
+      <div class="section-content">
+        <p>
+          تختص محكمة الاستثمار والتجارة بنظر هذه الدعوى عملاً بالمادة (7) من قانون رقم (21) لسنة 2021 بإصدار قانون إنشاء محكمة الاستثمار والتجارة، باعتبار النزاع ناشئاً عن عقد تجاري يتعلق بتأجير مركبة، وينعقد الاختصاص المكاني لمحاكم دولة قطر وفقاً للعقد والقواعد المقررة قانوناً.
+        </p>
+      </div>
+    </div>
+
     <!-- Section 1: Facts -->
     <div class="section">
-      <div class="section-title">أولاً: الوقائع</div>
+      <div class="section-title">ثانياً: الوقائع</div>
       <div class="section-content">
         <p>
           1. أبرمت المدعية مع المدعى عليه عقد إيجار المركبة رقم <strong>(${contractInfo.contract_number})</strong> بتاريخ <strong>${contractStartDate}</strong>${contractEndDate ? `، لمدة تنتهي اتفاقًا بتاريخ <strong>${contractEndDate}</strong>` : ''}، وبأجرة شهرية مقدارها <strong>(${formatQar(contractInfo.monthly_rent)})</strong> ريال قطري، وذلك وفق عقد الإيجار المرفق.
@@ -1001,7 +1001,7 @@ export function generateLegalComplaintHTML(data: LegalDocumentData): string {
         ` : ''}
         ${reminderCount > 0 ? `
         <p>
-          7. وجهت المدعية إلى المدعى عليه عدد <strong>(${reminderCount})</strong> من مطالبات السداد${reminderMethods.length > 0 ? ` عبر ${reminderMethods.join(' و')}` : ''}${reminderLastDate ? `، وكان آخرها بتاريخ <strong>${reminderLastDate}</strong>` : ''}، إلا أنه لم يبادر إلى تسوية المديونية.
+          7. أرسلت المدعية إلى المدعى عليه عدد <strong>(${reminderCount})</strong> من رسائل المتابعة بالسداد${reminderMethods.length > 0 ? ` عبر ${reminderMethods.join(' و')}` : ''}${reminderLastDate ? `، وكان آخرها بتاريخ <strong>${reminderLastDate}</strong>` : ''}، وذلك دون وصفها بإنذار رسمي ما لم يثبت وصول إنذار مستقل بالمستندات.
         </p>
         ` : ''}
         ${deliveredNotices.length > 0 ? `
@@ -1065,7 +1065,7 @@ export function generateLegalComplaintHTML(data: LegalDocumentData): string {
 
     <!-- Section 2: Financial Claims -->
     <div class="section">
-      <div class="section-title">ثانياً: البيان الحسابي للمطالبة</div>
+      <div class="section-title">ثالثاً: البيان الحسابي للمطالبة</div>
       <table>
         <thead>
           <tr>
@@ -1154,13 +1154,13 @@ export function generateLegalComplaintHTML(data: LegalDocumentData): string {
 
     <!-- Section: Legal Basis -->
     <div class="section">
-      <div class="section-title">ثالثاً: الأساس القانوني</div>
+      <div class="section-title">رابعاً: الأساس القانوني</div>
       <div class="section-content">
-        <p>تستند هذه الدعوى إلى أحكام <strong>القانون المدني القطري رقم (22) لسنة 2004</strong>، وفيما يلي:</p>
+        <p>تستند هذه الدعوى إلى أحكام <strong>القانون المدني القطري رقم (22) لسنة 2004</strong>، وقانون إنشاء محكمة الاستثمار والتجارة رقم (21) لسنة 2021، وقانون التنفيذ القضائي رقم (4) لسنة 2024، وذلك على النحو الآتي:</p>
 
         <div class="legal-article">
           <strong>1. القوة الملزمة للعقد وحسن النية (المادتان 171 و172):</strong>
-          تقرر المادة (171) أن العقد شريعة المتعاقدين، وتوجب المادة (172) تنفيذه طبقاً لما اشتمل عليه وبطريقة تتفق مع حسن النية. وقد نفذت المدعية التزامها بوضع المركبة تحت تصرف المدعى عليه، بينما أخل هو بالتزاماته المقابلة.
+          تقرر المادة (171) أن العقد شريعة المتعاقدين، وتوجب المادة (172) تنفيذه طبقاً لما اشتمل عليه وبطريقة تتفق مع حسن النية. والثابت من المستندات قيام العلاقة العقدية، في حين تخلف المدعى عليه عن الوفاء بكامل الأجرة المستحقة.
         </div>
         <div class="legal-article">
           <strong>2. الالتزام بسداد الأجرة (المادة 607):</strong>
@@ -1172,11 +1172,11 @@ export function generateLegalComplaintHTML(data: LegalDocumentData): string {
             ? 'ينتهي الإيجار بانقضاء المدة المحددة له في العقد دون حاجة إلى تنبيه بالإخلاء، ما لم يوجد اتفاق على امتداده، وقد ثبت انقضاء المدة وعدم التجديد بالمستندات المرفقة.'
             : effectiveTerminationPath === 'documented'
               ? `ورد الشرط الفاسخ بعبارة صريحة في البند رقم (${data.terminationClause?.number}) من العقد، وثبت وصول الإنذار وانقضاء مهلته دون تنفيذ؛ ومن ثم تطلب المدعية ثبوت الانفساخ، واحتياطياً الفسخ القضائي وفق المادة (183).`
-              : `تجيز المادة (183) طلب فسخ العقد عند عدم وفاء الطرف الآخر بالتزامه بعد إعذاره، مع التعويض إن كان له مقتضى. ${data.noticeException ? `وتعرض المدعية الحالة الموثقة الآتية للنظر في انطباق المادة (262): ${data.noticeException.reason}.` : deliveredNotices.length > 0 ? 'وقد ثبت التكليف السابق بالسداد أو الرد بالمستندات.' : 'وتطلب المدعية احتياطياً ترتيب أثر الإعذار من تاريخ إعلان صحيفة الدعوى المتضمنة التكليف الصريح بالتنفيذ.'}`}
+              : `تجيز المادة (183) طلب فسخ العقد عند عدم وفاء الطرف الآخر بالتزامه، مع التعويض إن كان له مقتضى، وذلك بعد الإعذار على الوجه المقرر قانوناً. وإذ يتعلق الإخلال بالتزام جوهري ومتجدد هو سداد الأجرة، تتمسك المدعية بطلب الفسخ وترتيب آثاره من التاريخ الذي تحدده المحكمة.${data.noticeException ? ` وتعرض المدعية الحالة الموثقة الآتية للنظر في انطباق المادة (262): ${data.noticeException.reason}.` : deliveredNotices.length > 0 ? ' وقد ثبت التكليف السابق بالسداد أو الرد بالمستندات.' : ''}`}
         </div>
         <div class="legal-article">
-          <strong>4. رد المركبة (المواد 616 و617 و618):</strong>
-          توجب المادة (616) رد العين المؤجرة وملحقاتها عند انتهاء الإيجار، وتنظم المادتان (617) و(618) حالة الرد ومصروفاته. ويلتزم المدعى عليه برد المركبة مع مفاتيحها ومستنداتها بالحالة القانونية الواجبة، مع مراعاة الاستعمال المعتاد.
+          <strong>4. رد المركبة وتعويض التأخر في ردها (المواد 616 و617 و618):</strong>
+          تقضي المادة (616) بأن المستأجر يلتزم برد العين المؤجرة عند انتهاء الإيجار، فإذا أبقاها تحت يده دون حق التزم بأن يدفع للمؤجر تعويضاً يراعى في تقديره القيمة الإيجارية وما أصاب المؤجر من ضرر، مع مراعاة أحكام المادتين (617) و(618) بشأن حالة الرد ومصروفاته.
         </div>
         ${custody === 'with_defendant' ? `
         <div class="legal-article">
@@ -1194,7 +1194,7 @@ export function generateLegalComplaintHTML(data: LegalDocumentData): string {
         </div>` : ''}
         ${paymentDelayDamage > 0 ? `<div class="legal-article">
           <strong>${custody === 'with_defendant' ? '8' : '7'}. التعويض عن التأخر في سداد المبالغ المستحقة (المواد 256 و263 و268):</strong>
-          تقضي المادة (256) بالتعويض عن الضرر الناشئ عن عدم التنفيذ أو التأخر فيه، وتحدد المادة (263) نطاقه بما لحق الدائن من خسارة وما فاته من كسب متى كان ذلك نتيجة طبيعية للإخلال، وتجيز المادة (268) للمحكمة عند ثبوت ضرر ناشئ عن التأخر في الوفاء بالدين النقدي بعد الإعذار أن تقضي بتعويض تراعى فيه مقتضيات العدالة. وقد حصرت المدعية طلبها في الضرر الفعلي المباشر المثبت بالمستندات، بما في ذلك الأعباء التمويلية التي ثبتت صلتها بالتأخر، دون إدخال أصل الدين أو الأقساط ذاتها مرتين، بإجمالي (${formatQar(paymentDelayDamage)}) ريال قطري${deliveredNotices.length > 0 ? ' من تاريخ الإعذار الثابت بالمستندات' : '، على أن يبدأ أثر التأخر من تاريخ الإعذار الثابت قانوناً، واحتياطياً من تاريخ إعلان صحيفة الدعوى المتضمنة التكليف الصريح بالسداد'}.
+          تقضي المادة (256) بالتعويض عن الضرر الناشئ عن عدم التنفيذ أو التأخر فيه، وتحدد المادة (263) نطاقه بما لحق الدائن من خسارة وما فاته من كسب متى كان ذلك نتيجة طبيعية للإخلال، وتجيز المادة (268) للمحكمة عند ثبوت ضرر ناشئ عن التأخر في الوفاء بالدين النقدي بعد الإعذار أن تقضي بتعويض تراعى فيه مقتضيات العدالة. وقد حصرت المدعية طلبها في الضرر الفعلي المباشر المثبت بالمستندات، بما في ذلك الأعباء التمويلية التي ثبتت صلتها بالتأخر، دون إدخال أصل الدين أو الأقساط ذاتها مرتين، بإجمالي (${formatQar(paymentDelayDamage)}) ريال قطري${deliveredNotices.length > 0 ? ' من تاريخ الإعذار الثابت بالمستندات' : '، على أن يبدأ أثر التأخر من تاريخ الإعذار الثابت قانوناً'}.
         </div>` : ''}
         ${operationalLoss > 0 ? `<div class="legal-article">
           <strong>${custody === 'with_defendant' ? '9' : '8'}. فوات الانتفاع خلال مدة الإصلاح بعد الاسترداد (المادتان 256 و263):</strong>
@@ -1202,14 +1202,24 @@ export function generateLegalComplaintHTML(data: LegalDocumentData): string {
         </div>` : ''}
         ${latePenalty > 0 ? `<div class="legal-article">
           <strong>${custody === 'with_defendant' ? (operationalLoss > 0 ? '10' : '9') : (operationalLoss > 0 ? '9' : '8')}. التعويض الاتفاقي:</strong>
-          تتمسك المدعية بالتعويض الاتفاقي الثابت في البند رقم (${data.contractualCompensation?.clauseNumber}) من العقد وفق طريقة الحساب الواردة فيه (${contractualCompensationFormula})، بإجمالي (${formatQar(latePenalty)}) ريال قطري، وذلك في الحدود التي تجيزها أحكام المواد (265) إلى (268)، ومع خضوعه لرقابة المحكمة وضوابط التعويض الاتفاقي، ودون جمعه مع تعويض آخر عن الضرر ذاته.
+          تتمسك المدعية بالغرامة العقدية بوصفها تعويضاً اتفاقياً ثابتاً في البند رقم (${data.contractualCompensation?.clauseNumber}) من العقد${contractualCompensationClauseText ? `، ونصه: «${contractualCompensationClauseText}»` : ''}، وفق طريقة الحساب الواردة فيه (${contractualCompensationFormula})، بإجمالي (${formatQar(latePenalty)}) ريال قطري، وذلك في الحدود التي تجيزها أحكام القانون، مع خضوعه لرقابة المحكمة وفق المادتين (266) و(267)، ودون جمعه مع تعويض آخر عن الضرر ذاته.
         </div>` : ''}
+      </div>
+    </div>
+
+    <!-- Section: Evidence -->
+    <div class="section">
+      <div class="section-title">خامساً: الإثبات والرد على الدفوع</div>
+      <div class="section-content">
+        <p>
+          تلتزم المدعية بإثبات العقد والدين وعناصر الضرر بالمستندات، بينما يقع على المدعى عليه إثبات ما يدعيه من سداد أو رد فعلي للمركبة أو انتقال للحيازة. وتحتفظ المدعية بحقها في تقديم ما يستجد من كشوف وإيصالات ومحاضر رسمية رداً على أي دفع يثار أثناء نظر الدعوى.
+        </p>
       </div>
     </div>
 
     <!-- Section: Requests -->
     <div class="section">
-      <div class="section-title">رابعاً: الطلبات</div>
+      <div class="section-title">سادساً: الطلبات</div>
       <div class="section-content">
         <p>لذلك، تلتمس المدعية من المحكمة الموقرة الحكم بما يلي:</p>
         <div class="requests-list">

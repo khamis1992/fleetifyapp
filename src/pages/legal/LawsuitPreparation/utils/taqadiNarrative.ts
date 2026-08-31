@@ -78,13 +78,9 @@ export function inferTaqadiIdType(
   return nationalId?.trim() ? 'هوية أو جواز سفر' : 'غير محدد';
 }
 
-/**
- * يحدد حيازة المركبة من حالتها:
- * - rented  → ما زالت مع المدعى عليه
- * - available / maintenance / أي حالة أخرى معروفة → عادت للشركة
- * - لا مركبة أو لا حالة → غير معروف (لا يُذكر في الصحيفة)
- */
-export function getVehicleCustody(_vehicleStatus: string | null | undefined): VehicleCustody {
+/** لا تُستنتج الحيازة القانونية من الحالة التشغيلية للمركبة. */
+export function getVehicleCustody(vehicleStatus: string | null | undefined): VehicleCustody {
+  void vehicleStatus;
   return 'unknown';
 }
 
@@ -103,13 +99,16 @@ export function isContractEnded(
 
 /**
  * يبني الفقرات التكميلية للوقائع (تُلحق بالنص الأساسي المعتمد).
- * الترتيب: السداد الجزئي → المخالفات → الإعذار → حيازة المركبة/انتهاء العقد.
+ * الترتيب: السداد الجزئي → المخالفات → الإعذار → انتهاء العقد أو الرد الموثق.
+ * لا تنسب الصحيفة استمرار الحيازة للمدعى عليه كواقعة مستقلة لمجرد اختيارها
+ * في الملف القانوني؛ يظل أثرها محصوراً في الطلبات المشروطة بالرد والاحتباس.
  */
 export function buildFactsAdditions(input: TaqadiNarrativeInput): string[] {
   const today = input.today ?? new Date();
   const custody = input.vehicleCustody ?? 'unknown';
+  const effectiveEndDate = input.terminationDate || input.contractEndDate;
   const ended = input.legalPath === 'natural_expiry'
-    && isContractEnded(input.terminationDate || input.contractEndDate, today);
+    && isContractEnded(effectiveEndDate, today);
   const paragraphs: string[] = [];
 
   // 1) المدفوعات الجزئية
@@ -145,18 +144,13 @@ export function buildFactsAdditions(input: TaqadiNarrativeInput): string[] {
     paragraphs.push(`كما ثبت بملف القضية توجيه عدد (${input.formalNoticeCount}) من الإنذارات أو المطالبات الكتابية المؤيدة بإثبات الوصول.`);
   }
 
-  // 4) حيازة المركبة وانتهاء العقد
-  if (ended && custody === 'with_defendant') {
+  // 4) انتهاء العقد أو الرد؛ لا تُنشأ واقعة استمرار حيازة غير مؤيدة تلقائياً.
+  if (ended && effectiveEndDate) {
     paragraphs.push(
-      `وانتهت مدة عقد الإيجار بتاريخ ${formatDate(input.terminationDate || input.contractEndDate!)}، ولا تزال المركبة محل العقد في حوزة المدعى عليه وفق بيانات الملف القانوني.`,
+      `وانتهت مدة عقد الإيجار بتاريخ ${formatDate(effectiveEndDate)} دون أن يسدد المدعى عليه مستحقاته.`,
     );
-  } else if (custody === 'with_defendant') {
-    paragraphs.push('ولا تزال المركبة محل العقد في حوزة المدعى عليه حتى تاريخه.');
-  } else if (ended && custody === 'unknown') {
-    paragraphs.push(
-      `وانتهت مدة عقد الإيجار بتاريخ ${formatDate(input.contractEndDate!)} دون أن يسدد المدعى عليه مستحقاته.`,
-    );
-  } else if (custody === 'returned') {
+  }
+  if (custody === 'returned') {
     paragraphs.push('وقد استلمت المدعية المركبة محل العقد من المدعى عليه.');
   }
 

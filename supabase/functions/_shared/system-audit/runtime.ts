@@ -10,7 +10,7 @@ import {
   authorizeScheduledAgent,
 } from "../agent.ts";
 
-const SYSTEM_AUDIT_WORKER_VERSION = "2026-08-27.55";
+const SYSTEM_AUDIT_WORKER_VERSION = "2026-08-31.56";
 const SYSTEM_AUDIT_WORKER_FUNCTION = "system-audit-worker-v12";
 
 export class SystemAuditRequestError extends Error {

@@ -3,6 +3,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import type { SalesQuote } from '@/hooks/useSalesQuotes';
 import { addDays, addMonths } from 'date-fns';
+import { useRentalViolationOverride } from '@/contexts/RentalViolationOverrideContext';
+import { RentalEligibilityConfirmationCancelledError } from '@/contexts/rentalViolationOverrideErrors';
 
 /**
  * Hook for converting sales quotes to rental contracts
@@ -11,6 +13,7 @@ import { addDays, addMonths } from 'date-fns';
 export const useQuoteToContract = () => {
   const [isConverting, setIsConverting] = useState(false);
   const { toast } = useToast();
+  const { confirmRentalEligibility } = useRentalViolationOverride();
 
   /**
    * Convert a sales quote to a rental contract
@@ -73,6 +76,13 @@ export const useQuoteToContract = () => {
         throw new Error('Vehicle is not available for rental');
       }
 
+      const confirmation = await confirmRentalEligibility({
+        companyId: quote.company_id,
+        vehicleId,
+        customerId: quote.customer_id,
+      });
+      if (!confirmation) throw new RentalEligibilityConfirmationCancelledError();
+
       // 3. Get current user
       const { data: userData } = await supabase.auth.getUser();
       if (!userData?.user) throw new Error('User not authenticated');
@@ -108,42 +118,8 @@ export const useQuoteToContract = () => {
       const totalAmount = baseAmount + additionalCosts;
       const securityDeposit = totalAmount * 0.2; // 20% security deposit
 
-      // 5. Generate contract number
-      const { data: contractNumber, error: numberError } = await supabase
-        .rpc('generate_contract_number', { company_id_param: quote.company_id });
-
-      if (numberError) throw numberError;
-
-      // 6. Create contract
-      const { data: contract, error: contractError } = await supabase
-        .from('contracts')
-        .insert({
-          company_id: quote.company_id,
-          contract_number: contractNumber,
-          contract_date: startDate,
-          customer_id: quote.customer_id,
-          vehicle_id: vehicleId,
-          
-          // Contract dates
-          start_date: startDate,
-          end_date: endDate,
-          
-          // Rental details
-          contract_type: rentalType,
-          
-          // Financial
-          contract_amount: totalAmount,
-          monthly_amount: rentalType === 'monthly' ? totalAmount / duration : 0,
-          total_paid: 0,
-          balance_due: totalAmount,
-          
-          // Status
-          status: 'draft',
-          payment_status: 'pending',
-          
-          // Metadata
-          description: `Created from Quote ${quote.quote_number}`,
-          terms: JSON.stringify({
+      // 5. Create the canonical contract and billing graph atomically.
+      const terms = JSON.stringify({
             insurance_type: rentalOptions?.insurance_type || 'basic',
             include_driver: rentalOptions?.include_driver || false,
             include_gps: rentalOptions?.include_gps || false,
@@ -151,24 +127,37 @@ export const useQuoteToContract = () => {
             delivery_address: rentalOptions?.delivery_address || null,
             security_deposit: securityDeposit,
             quote_notes: quote.notes || null,
-          }),
-          created_via: 'sales_quote',
-          created_by: userData.user.id,
-        })
-        .select()
-        .single();
+          });
+      const { data: creationResult, error: contractError } = await supabase.rpc(
+        'create_contract_with_violation_override_atomic',
+        {
+          p_company_id: quote.company_id,
+          p_customer_id: quote.customer_id,
+          p_vehicle_id: vehicleId,
+          p_contract_type: rentalType,
+          p_start_date: startDate,
+          p_end_date: endDate,
+          p_contract_date: startDate,
+          p_contract_amount: totalAmount,
+          p_monthly_amount: rentalType === 'monthly' ? totalAmount / duration : totalAmount,
+          p_description: `Created from Quote ${quote.quote_number}`,
+          p_terms: terms,
+          p_created_by: userData.user.id,
+          p_created_via: 'sales_quote',
+          p_idempotency_key: `sales-quote-conversion:${quote.id}`,
+          p_accept_unpaid_violations: confirmation.acceptedUnpaidViolations,
+        },
+      );
 
       if (contractError) throw contractError;
+      const payload = creationResult as Record<string, unknown> | null;
+      if (!payload?.success || !payload.contract_id || !payload.billing_graph_created) {
+        throw new Error(String(payload?.error || 'لم يكتمل إنشاء العقد وشبكة الفوترة'));
+      }
+      const contractId = String(payload.contract_id);
+      const contractNumber = String(payload.contract_number || contractId);
 
-      // 7. Update vehicle status
-      const { error: vehicleUpdateError } = await supabase
-        .from('vehicles')
-        .update({ status: 'reserved_employee' })
-        .eq('id', vehicleId);
-
-      if (vehicleUpdateError) throw vehicleUpdateError;
-
-      // 8. Update quote status
+      // 6. Update quote status
       const { error: quoteUpdateError } = await supabase
         .from('sales_quotes')
         .update({ 
@@ -186,12 +175,15 @@ export const useQuoteToContract = () => {
 
       return {
         success: true,
-        contractId: contract.id,
+        contractId,
       };
-    } catch (err: any) {
+    } catch (err: unknown) {
+      if (err instanceof RentalEligibilityConfirmationCancelledError) {
+        return { success: false };
+      }
       console.error('Error converting quote to contract:', err);
       
-      const errorMessage = err.message || 'فشل تحويل العرض إلى عقد';
+      const errorMessage = err instanceof Error ? err.message : 'فشل تحويل العرض إلى عقد';
       
       toast({
         title: 'خطأ',

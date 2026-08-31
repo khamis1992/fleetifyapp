@@ -322,10 +322,9 @@ const DashboardV2: React.FC = () => {
 
       const [paymentsResult, contractsResult] = await Promise.all([
         supabase
-          .from('payments')
+          .from('active_revenue_payments_v1')
           .select('amount, payment_date')
           .eq('company_id', companyId)
-          .in('payment_status', ['completed', 'paid', 'confirmed'])
           .gte('payment_date', firstMonth.toISOString().slice(0, 10)),
         supabase
           .from('contracts')
