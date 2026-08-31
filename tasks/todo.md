@@ -12,8 +12,8 @@ The wrapper creates the full contract billing graph (invoices + journals) and ha
 - [x] Persist the live wrapper + rental-guard propagation in repo migrations
 - [x] Raise `statement_timeout` / `lock_timeout` to 60s on the override RPC and the inner billing-graph RPC
 - [x] Apply the timeout ALTER to production and verify `proconfig`
-- [ ] Commit, push, open PR
-- [ ] Run migration/source-safety tests
+- [x] Commit, push, open PR
+- [x] Run migration/source-safety tests (43 passed)
 
 ## Review
 
