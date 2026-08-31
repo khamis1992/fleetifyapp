@@ -212,7 +212,12 @@ export const useContractCreation = () => {
           p_contract_date: inputContractData.contract_date || new Date().toISOString().slice(0, 10),
           p_contract_amount: contractAmount,
           p_monthly_amount: Number(inputContractData.monthly_amount || contractAmount) || contractAmount,
-          p_description: inputContractData.description || undefined,
+          p_description:
+            (typeof inputContractData.description === 'string' && inputContractData.description.trim()
+              ? inputContractData.description
+              : typeof inputContractData.notes === 'string' && inputContractData.notes.trim()
+                ? inputContractData.notes
+                : undefined) || undefined,
           p_terms: inputContractData.terms || undefined,
           p_cost_center_id: inputContractData.cost_center_id || undefined,
           p_created_by: inputContractData.created_by || user?.id || undefined,
@@ -264,8 +269,31 @@ export const useContractCreation = () => {
         updateStepStatus('activation', 'processing')
         console.log('[CONTRACT_CREATION] Creating contract and billing graph atomically...')
 
-        const { data: contractRpcResult, error: createError } = await supabase
+        let { data: contractRpcResult, error: createError } = await supabase
           .rpc('create_contract_with_violation_override_atomic', rpcParams)
+
+        // A lost response after insert can retry with the same key. The row
+        // trigger may have filled cost_center_id; treat that replay as success.
+        if (createError?.code === '23505' && idempotencyKey) {
+          const { data: existingByKey } = await supabase
+            .from('contracts')
+            .select('*')
+            .eq('company_id', companyId)
+            .eq('creation_idempotency_key', idempotencyKey)
+            .maybeSingle()
+
+          if (existingByKey?.id) {
+            console.warn('[CONTRACT_CREATION] Replaying existing contract for idempotency key', existingByKey.contract_number)
+            contractRpcResult = {
+              success: true,
+              contract_id: existingByKey.id,
+              contract_number: existingByKey.contract_number,
+              billing_graph_created: true,
+              idempotent_replay: true,
+            }
+            createError = null
+          }
+        }
 
         // معالجة أخطاء الاتصال بقاعدة البيانات
         if (createError) {
