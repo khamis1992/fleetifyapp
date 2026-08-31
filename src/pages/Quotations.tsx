@@ -218,7 +218,7 @@ export default function Quotations() {
         ? quotation.rate_per_unit
         : quotation.total_amount
       const { data: creationResult, error: contractError } = await supabase.rpc(
-        'create_contract_with_billing_graph_atomic',
+        'create_contract_with_violation_override_atomic',
         {
           p_company_id: quotation.company_id,
           p_customer_id: quotation.customer_id,
@@ -234,6 +234,7 @@ export default function Quotations() {
           p_created_by: user?.id,
           p_created_via: 'sales_quote',
           p_idempotency_key: `quote-conversion:${quotation.id}`,
+          p_accept_unpaid_violations: false,
         },
       )
 

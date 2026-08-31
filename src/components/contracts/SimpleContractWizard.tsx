@@ -1170,7 +1170,7 @@ export const SimpleContractWizard: React.FC<SimpleContractWizardProps> = ({ open
         if (!user?.id) throw new Error('تعذر تحديد المستخدم');
 
         const { data: creationResult, error } = await supabase.rpc(
-          'create_contract_with_billing_graph_atomic',
+          'create_contract_with_violation_override_atomic',
           {
             p_company_id: companyId,
             p_customer_id: validatedData.customer_id,
@@ -1187,6 +1187,7 @@ export const SimpleContractWizard: React.FC<SimpleContractWizardProps> = ({ open
             p_created_via: assignedToProfileId ? 'employee_workspace' : 'web',
             p_idempotency_key: contractCreationKeyRef.current
               ?? (contractCreationKeyRef.current = `contract:${crypto.randomUUID()}`),
+            p_accept_unpaid_violations: false,
           },
         );
 

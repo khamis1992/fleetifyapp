@@ -29448,6 +29448,29 @@ export type Database = {
         }
         Returns: Json
       }
+      create_contract_with_violation_override_atomic: {
+        Args: {
+          p_accept_unpaid_violations?: boolean
+          p_assigned_to_profile_id?: string
+          p_auto_renew_enabled?: boolean
+          p_company_id: string
+          p_contract_amount?: number
+          p_contract_date?: string
+          p_contract_type?: string
+          p_cost_center_id?: string
+          p_created_by?: string
+          p_created_via?: string
+          p_customer_id: string
+          p_description?: string
+          p_end_date?: string
+          p_idempotency_key?: string
+          p_monthly_amount?: number
+          p_start_date?: string
+          p_terms?: string
+          p_vehicle_id?: string
+        }
+        Returns: Json
+      }
       claim_automated_invoice_reminder_delivery: {
         Args: {
           p_cadence_date: string
