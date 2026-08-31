@@ -13,17 +13,25 @@ const baseCustomer = {
   national_id: '29012345678',
 };
 
+const rentInvoice = <T extends Record<string, unknown>>(invoice: T) => ({
+  invoice_type: 'sales',
+  penalty_id: null,
+  payment_status: 'pending',
+  status: 'sent',
+  ...invoice,
+});
+
 describe('buildBatchCandidates', () => {
   it('groups overdue remaining amounts per contract and sorts by debt', () => {
     const candidates = buildBatchCandidates({
       invoices: [
-        { contract_id: 'c1', total_amount: 1000, paid_amount: 0 },
-        { contract_id: 'c1', total_amount: 1000, paid_amount: 400 },
-        { contract_id: 'c2', total_amount: 5000, paid_amount: 0 },
+        rentInvoice({ contract_id: 'c1', total_amount: 1000, paid_amount: 0 }),
+        rentInvoice({ contract_id: 'c1', total_amount: 1000, paid_amount: 400 }),
+        rentInvoice({ contract_id: 'c2', total_amount: 5000, paid_amount: 0 }),
         // مسددة بالكامل — لا تُحسب
-        { contract_id: 'c2', total_amount: 500, paid_amount: 500 },
+        rentInvoice({ contract_id: 'c2', total_amount: 500, paid_amount: 500 }),
         // بلا عقد — تُستبعد
-        { contract_id: null, total_amount: 9000, paid_amount: 0 },
+        rentInvoice({ contract_id: null, total_amount: 9000, paid_amount: 0 }),
       ],
       contracts: [
         { id: 'c1', contract_number: 'C-101', status: 'active', customer_id: 'cust-1' },
@@ -45,7 +53,7 @@ describe('buildBatchCandidates', () => {
 
   it('excludes contracts with no overdue remaining balance', () => {
     const candidates = buildBatchCandidates({
-      invoices: [{ contract_id: 'c1', total_amount: 100, paid_amount: 100 }],
+      invoices: [rentInvoice({ contract_id: 'c1', total_amount: 100, paid_amount: 100 })],
       contracts: [{ id: 'c1', contract_number: 'C-101', status: 'active', customer_id: null }],
       customers: [],
       documents: [],
@@ -55,7 +63,7 @@ describe('buildBatchCandidates', () => {
 
   it('flags missing national id and missing signed contract', () => {
     const candidates = buildBatchCandidates({
-      invoices: [{ contract_id: 'c1', total_amount: 1000, paid_amount: 0 }],
+      invoices: [rentInvoice({ contract_id: 'c1', total_amount: 1000, paid_amount: 0 })],
       contracts: [{ id: 'c1', contract_number: 'C-101', status: 'active', customer_id: 'cust-2' }],
       customers: [{ ...baseCustomer, id: 'cust-2', national_id: null }],
       documents: [],
@@ -66,7 +74,7 @@ describe('buildBatchCandidates', () => {
 
   it('detects a signed contract via the shared document selection rules', () => {
     const candidates = buildBatchCandidates({
-      invoices: [{ contract_id: 'c1', total_amount: 1000, paid_amount: 0 }],
+      invoices: [rentInvoice({ contract_id: 'c1', total_amount: 1000, paid_amount: 0 })],
       contracts: [{ id: 'c1', contract_number: 'C-101', status: 'active', customer_id: 'cust-1' }],
       customers: [baseCustomer],
       documents: [
@@ -94,7 +102,7 @@ describe('buildBatchCandidates', () => {
 
   it('ignores document rows without a file path when checking the signed contract', () => {
     const candidates = buildBatchCandidates({
-      invoices: [{ contract_id: 'c1', total_amount: 1000, paid_amount: 0 }],
+      invoices: [rentInvoice({ contract_id: 'c1', total_amount: 1000, paid_amount: 0 })],
       contracts: [{ id: 'c1', contract_number: 'C-101', status: 'active', customer_id: 'cust-1' }],
       customers: [baseCustomer],
       documents: [
@@ -113,7 +121,7 @@ describe('buildBatchCandidates', () => {
 
   it('falls back to a placeholder when the customer is missing', () => {
     const candidates = buildBatchCandidates({
-      invoices: [{ contract_id: 'c1', total_amount: 1000, paid_amount: 0 }],
+      invoices: [rentInvoice({ contract_id: 'c1', total_amount: 1000, paid_amount: 0 })],
       contracts: [{ id: 'c1', contract_number: 'C-101', status: 'active', customer_id: null }],
       customers: [],
       documents: [],

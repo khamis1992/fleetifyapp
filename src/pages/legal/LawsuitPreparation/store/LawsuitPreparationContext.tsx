@@ -30,6 +30,7 @@ import {
   type TaqadiNarrativeInput,
 } from '../utils/taqadiNarrative';
 import { getLawsuitClaimAmounts } from '../utils/claimAmounts';
+import { isClaimableRentalInvoice } from '../utils/legalClaimInvoiceFilter';
 import {
   buildContractDocumentStoragePath,
   getLegalDocumentUploadRoute,
@@ -193,6 +194,7 @@ export function LawsuitPreparationProvider({
       if (error) throw error;
       
       const filtered = (data || [])
+        .filter(isClaimableRentalInvoice)
         .filter((inv) => Boolean(inv.due_date) && Number(inv.total_amount || 0) - Number(inv.paid_amount || 0) > 0)
         .map((inv) => ({
           id: inv.id,

@@ -40,6 +40,7 @@ import {
   TAQADI_DEFAULT_DEFENDANT_EMAIL,
 } from './taqadiDefaults';
 import { getLawsuitClaimAmounts } from './claimAmounts';
+import { isClaimableRentalInvoice } from './legalClaimInvoiceFilter';
 
 // ==========================================
 // Candidate listing (قائمة العقود المرشحة)
@@ -60,6 +61,10 @@ interface CandidateInvoiceRow {
   contract_id: string | null;
   total_amount: number | null;
   paid_amount: number | null;
+  invoice_type?: string | null;
+  penalty_id?: string | null;
+  payment_status?: string | null;
+  status?: string | null;
 }
 
 interface CandidateContractRow {
@@ -94,6 +99,7 @@ export function buildBatchCandidates(input: {
 }): BatchCandidate[] {
   const remainingByContract = new Map<string, { count: number; total: number }>();
   for (const invoice of input.invoices) {
+    if (!isClaimableRentalInvoice(invoice)) continue;
     const remaining = Number(invoice.total_amount || 0) - Number(invoice.paid_amount || 0);
     if (remaining <= 0 || !invoice.contract_id) continue;
     const entry = remainingByContract.get(invoice.contract_id) ?? { count: 0, total: 0 };
@@ -137,7 +143,7 @@ export async function listBatchCandidates(companyId: string): Promise<BatchCandi
 
   const { data: invoices, error: invoicesError } = await supabase
     .from('invoices')
-    .select('contract_id, total_amount, paid_amount')
+    .select('contract_id, total_amount, paid_amount, invoice_type, penalty_id, payment_status, status')
     .eq('company_id', companyId)
     .lt('due_date', today)
     .not('contract_id', 'is', null);
@@ -238,12 +244,13 @@ async function loadBatchContractState(
   const today = new Date().toISOString().split('T')[0];
   const { data: invoiceRows, error: invoicesError } = await supabase
     .from('invoices')
-    .select('id, invoice_number, due_date, total_amount, paid_amount')
+    .select('id, invoice_number, due_date, total_amount, paid_amount, invoice_type, penalty_id, payment_status, status')
     .eq('contract_id', contractId)
     .eq('company_id', companyId)
     .lt('due_date', today);
   if (invoicesError) throw invoicesError;
   const overdueInvoices: OverdueInvoice[] = (invoiceRows ?? [])
+    .filter(isClaimableRentalInvoice)
     .filter((invoice) => Boolean(invoice.due_date)
       && Number(invoice.total_amount || 0) - Number(invoice.paid_amount || 0) > 0)
     .map((invoice) => ({
