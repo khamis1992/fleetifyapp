@@ -148,6 +148,7 @@ type MatchedContract = {
   start_date: string;
   end_date: string;
   status: string;
+  created_via: string | null;
   customers?: {
     id: string;
     first_name: string | null;
@@ -1147,6 +1148,7 @@ const contractMatchSelect = `
   start_date,
   end_date,
   status,
+  created_via,
   customers:customer_id (
     id,
     first_name,
@@ -1174,6 +1176,16 @@ const fetchContractCandidates = async (companyId: string) => {
 
   if (error) throw error;
   return (data || []) as MatchedContract[];
+};
+
+/**
+ * Calculate contract duration in days
+ */
+const getContractDurationDays = (contract: MatchedContract): number => {
+  const start = new Date(contract.start_date);
+  const end = new Date(contract.end_date);
+  const durationMs = end.getTime() - start.getTime();
+  return Math.max(0, Math.floor(durationMs / (1000 * 60 * 60 * 24)));
 };
 
 const scoreContractMatch = (contract: MatchedContract, file: ParsedExcelFile) => {
@@ -1256,6 +1268,34 @@ const scoreContractMatch = (contract: MatchedContract, file: ParsedExcelFile) =>
     reasons.push('العقد نشط حاليًا.');
   }
 
+  // Duration-based scoring (prefer longer contracts)
+  const durationDays = getContractDurationDays(contract);
+  if (durationDays >= 365) {
+    score += 50;
+    reasons.push('عقد طويل الأمد (سنة أو أكثر).');
+  } else if (durationDays >= 90) {
+    score += 20;
+    reasons.push('عقد متوسط المدة (3 أشهر أو أكثر).');
+  }
+
+  // Heavily penalize short-duration cancelled stubs
+  if (durationDays <= 3 && contract.status === 'cancelled') {
+    score -= 500;
+    reasons.push('عقد ملغي قصير الأمد (3 أيام أو أقل) - غير مناسب للمطابقة.');
+  }
+
+  // Prefer desktop_folder_import contracts (trusted historical data)
+  if (contract.created_via === 'desktop_folder_import') {
+    score += 25;
+    reasons.push('عقد مستورد من بيانات تاريخية موثوقة.');
+  }
+
+  // Prefer contracts under legal procedure
+  if (contract.status === 'under_legal_procedure') {
+    score += 15;
+    reasons.push('عقد تحت إجراءات قانونية.');
+  }
+
   return {
     score,
     reasons: reasons.length ? reasons : ['لا توجد مؤشرات كافية للمطابقة.'],
@@ -1298,7 +1338,22 @@ const analyzeContractMatch = async (
   }).sort((a, b) => b.score - a.score);
 
   const viableMatches = scored.filter((item) => isAutomaticContractMatch(item.score));
-  const best = viableMatches[0] || null;
+  let best = viableMatches[0] || null;
+
+  // Hard filter: prevent matching to short-duration contracts when longer alternatives exist
+  if (best) {
+    const bestDuration = getContractDurationDays(best.contract);
+    if (bestDuration <= 3) {
+      // Find a longer contract with positive score
+      const longerAlternative = scored.find((item) => 
+        item.score > 0 && getContractDurationDays(item.contract) > 3
+      );
+      if (longerAlternative) {
+        best = longerAlternative;
+      }
+    }
+  }
+
   const alternatives = scored.filter((item) => item.score > 0).slice(0, 3).map((item) => ({
     contract: item.contract,
     confidence: Math.min(100, Math.max(0, item.score)),
