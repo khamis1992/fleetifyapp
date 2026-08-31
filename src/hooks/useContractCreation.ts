@@ -218,6 +218,7 @@ export const useContractCreation = () => {
           p_created_by: inputContractData.created_by || user?.id || undefined,
           p_created_via: 'web',
           p_idempotency_key: idempotencyKey,
+          p_accept_unpaid_violations: false,
         }
         
         console.log('📋 [CONTRACT_CREATION] معاملات RPC:', rpcParams)
@@ -264,7 +265,7 @@ export const useContractCreation = () => {
         console.log('[CONTRACT_CREATION] Creating contract and billing graph atomically...')
 
         const { data: contractRpcResult, error: createError } = await supabase
-          .rpc('create_contract_with_billing_graph_atomic', rpcParams)
+          .rpc('create_contract_with_violation_override_atomic', rpcParams)
 
         // معالجة أخطاء الاتصال بقاعدة البيانات
         if (createError) {

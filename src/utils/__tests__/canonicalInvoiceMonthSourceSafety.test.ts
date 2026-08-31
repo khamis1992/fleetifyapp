@@ -290,10 +290,12 @@ describe('canonical invoice-month source safety', () => {
     );
 
     expect(contractCreation).not.toContain("await supabase.from('invoices').insert");
-    expect(contractCreation).toContain(".rpc('create_contract_with_billing_graph_atomic'");
+    expect(contractCreation).toContain(".rpc('create_contract_with_violation_override_atomic'");
+    expect(contractCreation).toContain('p_accept_unpaid_violations: false');
     expect(contractCreation).not.toContain(".rpc('create_contract_with_journal_entry'");
     expect(contractCreation).not.toContain(".rpc('generate_invoices_from_payment_schedule'");
-    expect(wizard).toContain("'create_contract_with_billing_graph_atomic'");
+    expect(wizard).toContain("'create_contract_with_violation_override_atomic'");
+    expect(wizard).toContain('p_accept_unpaid_violations: false');
     expect(wizard).not.toContain("supabase.from('contracts').insert");
     expect(wizard).not.toContain("'generate_payment_schedules_for_contract'");
   });
@@ -306,7 +308,8 @@ describe('canonical invoice-month source safety', () => {
     const csvImport = readSource('src/pages/Import.tsx');
 
     for (const source of [mobile, quotations]) {
-      expect(source).toContain("'create_contract_with_billing_graph_atomic'");
+      expect(source).toContain("'create_contract_with_violation_override_atomic'");
+      expect(source).toContain('p_accept_unpaid_violations:');
       expect(source).not.toContain(".from('contracts')\n        .insert");
     }
     expect(financialTracking).toContain("supabase.rpc('create_customer_with_contract_idempotent'");

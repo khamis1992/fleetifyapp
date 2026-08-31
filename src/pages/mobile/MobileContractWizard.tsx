@@ -218,7 +218,7 @@ const MobileContractWizard: React.FC = () => {
         ? formData.monthlyAmount
         : contractAmount;
       const { data: creationResult, error } = await supabase.rpc(
-        'create_contract_with_billing_graph_atomic',
+        'create_contract_with_violation_override_atomic',
         {
           p_company_id: companyId,
           p_customer_id: formData.customerId,
@@ -235,6 +235,7 @@ const MobileContractWizard: React.FC = () => {
           p_created_via: 'mobile',
           p_idempotency_key: contractCreationKeyRef.current
             ?? (contractCreationKeyRef.current = `contract:${crypto.randomUUID()}`),
+          p_accept_unpaid_violations: false,
         },
       );
 
