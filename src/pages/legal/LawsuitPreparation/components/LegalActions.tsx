@@ -80,7 +80,7 @@ export function LegalActions() {
   // Check for signed lease verification
   const { hasSignedLease, hasIdentityMatch, canConvertToLegal, blockingReason } = useSignedLeaseValidation(
     contract?.id,
-    companyId
+    companyId ?? undefined
   );
 
   const readiness = getFilingReadiness(state);

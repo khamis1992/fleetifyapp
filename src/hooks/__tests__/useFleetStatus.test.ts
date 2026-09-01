@@ -10,6 +10,7 @@ describe('summarizeFleetStatus', () => {
       { status: 'available' },
       { status: 'maintenance' },
       { status: 'police_station' },
+      { status: 'reserved_employee' },
       { status: null },
     ])).toEqual({
       available: 2,
@@ -17,11 +18,11 @@ describe('summarizeFleetStatus', () => {
       maintenance: 1,
       outOfService: 0,
       reserved: 0,
-      reservedEmployee: 0,
+      reservedEmployee: 1,
       accident: 0,
       stolen: 0,
       policeStation: 1,
-      total: 6,
+      total: 7,
     });
   });
 

@@ -1178,7 +1178,7 @@ const FleetPageRedesigned: React.FC = () => {
     { label: 'مؤجرة', status: 'rented', count: fleetStatus?.rented || 0 },
     { label: 'صيانة', status: 'maintenance', count: fleetStatus?.maintenance || 0 },
     { label: 'خارج الخدمة', status: 'out_of_service', count: fleetStatus?.outOfService || 0 },
-    { label: 'محجوزة', status: 'reserved_employee', count: fleetStatus?.reserved || 0 },
+    { label: 'محجوزة لموظف', status: 'reserved_employee', count: fleetStatus?.reservedEmployee || 0 },
     { label: 'حادث', status: 'accident', count: fleetStatus?.accident || 0 },
   ];
 

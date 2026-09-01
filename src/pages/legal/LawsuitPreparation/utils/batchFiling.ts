@@ -54,6 +54,7 @@ import {
   getDefendantContact,
   getVerifiedDamageNet,
 } from './legalCaseWorkflow';
+import { isTrafficViolationsOnlyScope } from '@/types/legalClaimScope';
 
 // ==========================================
 // Candidate listing (قائمة العقود المرشحة)
@@ -291,6 +292,20 @@ async function loadBatchContractState(
   state.customer = customer;
   state.vehicle = vehicle;
 
+  const currentLegalCase = await getCurrentLegalCase(companyId, contractId);
+  state.legalCase = currentLegalCase
+    ? {
+        id: currentLegalCase.id,
+        case_number: currentLegalCase.case_number,
+        case_reference: currentLegalCase.case_reference,
+        filing_date: currentLegalCase.filing_date,
+        case_status: currentLegalCase.case_status || 'pending',
+        workflow_stage: currentLegalCase.workflow_stage || 'preparation',
+        claim_scope: currentLegalCase.claim_scope,
+      }
+    : null;
+  const trafficOnlyClaim = isTrafficViolationsOnlyScope(currentLegalCase?.claim_scope);
+
   // المصدر الموحد: الفواتير، ثم الاستحقاقات القديمة غير المفوترة دون ازدواج.
   const claimProjection = await loadLegalClaimProjection(contractId, companyId);
   const overdueInvoices: OverdueInvoice[] = claimProjection.rows;
@@ -461,7 +476,7 @@ async function loadBatchContractState(
 
   // الحسابات المالية
   const profile = state.litigationProfile;
-  const compensation = profile?.contractual_compensation_enabled
+  const compensation = !trafficOnlyClaim && profile?.contractual_compensation_enabled
     && profile.contractual_compensation_method
     && profile.contractual_compensation_document_id
     && profile.contractual_compensation_clause_number?.trim()
@@ -474,9 +489,9 @@ async function loadBatchContractState(
         cap: profile.contractual_compensation_cap,
       }
     : null;
-  const verifiedDamages = getVerifiedDamageNet(state);
+  const verifiedDamages = trafficOnlyClaim ? 0 : getVerifiedDamageNet(state);
   const calculations = calculateDelinquencyAmounts(
-    overdueInvoices.map((invoice) => ({
+    (trafficOnlyClaim ? [] : overdueInvoices).map((invoice) => ({
       id: invoice.id,
       invoice_number: invoice.invoice_number || undefined,
       due_date: invoice.due_date,
@@ -493,8 +508,10 @@ async function loadBatchContractState(
     { documentedDamagesAmount: verifiedDamages, contractualCompensation: compensation },
   );
   const readiness = evaluateLegalCaseReadiness(state);
-  const retention = calculateRetentionClaim(profile, readiness.legalPath);
-  const deposit = profile?.apply_security_deposit
+  const retention = trafficOnlyClaim
+    ? { amount: 0, days: 0, from: null, to: null }
+    : calculateRetentionClaim(profile, readiness.legalPath);
+  const deposit = !trafficOnlyClaim && profile?.apply_security_deposit
     ? Number(profile.security_deposit_amount || 0)
     : 0;
   const total = getLawsuitClaimAmounts(
@@ -519,33 +536,38 @@ async function loadBatchContractState(
       state.contract.start_date,
       `${vehicle?.make || ''} ${vehicle?.model || ''} ${vehicle?.year || ''}`,
       taqadiClaimAmount,
+      state.legalCase?.claim_scope,
     );
 
     const narrativeInput: TaqadiNarrativeInput = {
       claimAmount: taqadiClaimAmount,
       violationsCount: state.calculations!.violationsCount,
       violationsFines: state.calculations!.violationsFines,
-      paidTotal: overdueInvoices.reduce(
+      paidTotal: (trafficOnlyClaim ? [] : overdueInvoices).reduce(
         (sum, invoice) => sum + Number(invoice.paid_amount || 0),
         0,
       ),
-      reminders: state.paymentReminders,
+      reminders: trafficOnlyClaim
+        ? { count: 0, lastSentDate: null, sendMethods: [] }
+        : state.paymentReminders,
       vehicleStatus: vehicle?.status ?? null,
-      vehicleCustody: profile?.vehicle_custody === 'with_defendant'
-        ? 'with_defendant'
-        : profile?.vehicle_custody === 'returned' || profile?.vehicle_custody === 'recovered_by_company'
-          ? 'returned'
-          : 'unknown',
-      contractEndDate: state.contract.end_date,
-      contractStatus: state.contract.status ?? null,
-      legalPath: readiness.legalPath.effectivePath,
-      terminationDate: readiness.legalPath.effectiveTerminationDate,
-      formalNoticeCount: state.formalNotices.filter(
+      vehicleCustody: trafficOnlyClaim
+        ? 'unknown'
+        : profile?.vehicle_custody === 'with_defendant'
+          ? 'with_defendant'
+          : profile?.vehicle_custody === 'returned' || profile?.vehicle_custody === 'recovered_by_company'
+            ? 'returned'
+            : 'unknown',
+      contractEndDate: trafficOnlyClaim ? null : state.contract.end_date,
+      contractStatus: trafficOnlyClaim ? null : state.contract.status ?? null,
+      legalPath: trafficOnlyClaim ? undefined : readiness.legalPath.effectivePath,
+      terminationDate: trafficOnlyClaim ? null : readiness.legalPath.effectiveTerminationDate,
+      formalNoticeCount: (trafficOnlyClaim ? [] : state.formalNotices).filter(
         (notice) => notice.delivery_confirmed && notice.proof_document_id,
       ).length,
       retentionCompensation: retention.amount,
       documentedDamages: calculations.damagesFee,
-      monetaryDelayDamage: state.damageCosts
+      monetaryDelayDamage: (trafficOnlyClaim ? [] : state.damageCosts)
         .filter((cost) => cost.verified && cost.cost_type === 'monetary_delay_damage')
         .reduce((sum, cost) => sum + Math.max(
           0,
@@ -570,7 +592,7 @@ async function loadBatchContractState(
     );
 
     state.taqadiData = {
-      caseTitle: lawsuitService.generateCaseTitle(customerName),
+      caseTitle: lawsuitService.generateCaseTitle(customerName, state.legalCase?.claim_scope),
       facts: factsText,
       claims: buildLegalMemoClaimsText(buildMemoDocumentData(state)),
       amount: taqadiClaimAmount,
@@ -652,6 +674,7 @@ async function resolveLegalCase(
     court_fees: null,
     filing_date: null,
     created_at: null,
+    claim_scope: state.legalCase?.claim_scope ?? 'full_outstanding',
   };
 }
 

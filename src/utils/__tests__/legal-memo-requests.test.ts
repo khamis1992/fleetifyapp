@@ -120,4 +120,35 @@ describe('canonical legal memo requests', () => {
     expect(claims.match(/مبلغ \(2,000 ريال قطري\)/g)).toHaveLength(1);
     expect(claims).not.toContain('عن كل شهر');
   });
+
+  it('limits a traffic-only case to the supported violation amount', () => {
+    const claims = buildLegalMemoClaimsText(baseData({
+      claimScope: 'traffic_violations_only',
+      customer: {
+        ...baseData().customer,
+        overdue_amount: 14_040,
+        late_penalty: 2_000,
+        violations_amount: 6_300,
+        violations_count: 2,
+        total_debt: 22_340,
+      },
+      contractualCompensation: {
+        amount: 2_000,
+        clauseNumber: '13.3',
+        clauseText: 'غرامة عقدية ثابتة',
+        method: 'fixed',
+        rate: 2_000,
+        units: 1,
+      },
+      damages: 1_000,
+    }));
+
+    expect(claims).toContain('مبلغ (6,300 ريال قطري)');
+    expect(claims).toContain('المخالفات المرورية المرتبطة بالعقد فقط');
+    expect(claims).toContain('لا تشمل المطالبة رصيد الأجرة أو غرامات التأخير');
+    expect(claims).not.toContain('فسخ عقد');
+    expect(claims).not.toContain('صافي الأجرة');
+    expect(claims).not.toContain('الغرامة العقدية');
+    expect(claims).not.toContain('قيمة إصلاح');
+  });
 });

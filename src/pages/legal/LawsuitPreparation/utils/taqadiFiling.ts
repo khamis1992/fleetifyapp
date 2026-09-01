@@ -1,5 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
 import type { Database } from '@/integrations/supabase/types';
+import type { LegalClaimScope } from '@/types/legalClaimScope';
 
 const LIVE_CASE_STATUSES = new Set(['open', 'active', 'pending', 'on_hold', 'under_review']);
 
@@ -12,6 +13,7 @@ export interface LawsuitLegalCase {
   court_fees: number | null;
   filing_date: string | null;
   created_at: string | null;
+  claim_scope: LegalClaimScope;
 }
 
 export interface TaqadiFilingDetails {
@@ -116,7 +118,7 @@ export async function getCurrentLegalCase(
 ): Promise<LawsuitLegalCase | null> {
   const { data, error } = await supabase
     .from('legal_cases')
-    .select('id,case_number,case_status,workflow_stage,case_reference,court_fees,filing_date,created_at')
+    .select('id,case_number,case_status,workflow_stage,case_reference,court_fees,filing_date,created_at,claim_scope')
     .eq('company_id', companyId)
     .eq('contract_id', contractId)
     .order('created_at', { ascending: false })

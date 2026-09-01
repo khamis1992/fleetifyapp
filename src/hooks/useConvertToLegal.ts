@@ -7,6 +7,7 @@ import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import type { LegalClaimScope } from '@/types/legalClaimScope';
 
 export interface ConvertToLegalParams {
   contractId: string;
@@ -14,6 +15,7 @@ export interface ConvertToLegalParams {
   priority?: 'low' | 'medium' | 'high' | 'urgent';
   caseType?: 'payment_collection' | 'contract_breach' | 'vehicle_damage' | 'other';
   vehicleReturned?: boolean;
+  claimScope?: LegalClaimScope;
 }
 
 export interface ContractForLegal {
@@ -508,6 +510,7 @@ type ConvertLegalResult = {
   total_case_value: number;
   blocked?: boolean;
   message_ar?: string;
+  claim_scope?: LegalClaimScope;
 };
 
 export const useConvertToLegal = () => {
@@ -516,18 +519,23 @@ export const useConvertToLegal = () => {
   return useMutation({
     mutationFn: async (params: ConvertToLegalParams & { contract: ContractForLegal }) => {
       if (!user?.id) throw new Error('المستخدم غير مصرح له');
-      if (params.contract.status !== 'active') {
-        throw new Error('التحويل للشؤون القانونية متاح للعقد النشط فقط؛ العقد الملغي يحتاج مسار مراجعة قانونية مستقل.');
+      const eligibleStatuses = new Set(['active', 'cancelled', 'canceled', 'closed', 'expired']);
+      if (!eligibleStatuses.has((params.contract.status || '').toLowerCase())) {
+        throw new Error('حالة العقد الحالية لا تسمح بإنشاء مطالبة قانونية.');
       }
       
       // Pre-flight check: Verify signed lease and identity before attempting RPC
       // The RPC will also check, but we want to show a better error message here
+      const callBooleanRpc = supabase.rpc as unknown as (
+        name: string,
+        args: Record<string, unknown>,
+      ) => Promise<{ data: boolean | null; error: { message?: string } | null }>;
       const [leaseCheck, identityCheck] = await Promise.all([
-        supabase.rpc('check_contract_has_verified_signed_lease_v1', {
+        callBooleanRpc('check_contract_has_verified_signed_lease_v1', {
           p_company_id: params.contract.company_id,
           p_contract_id: params.contract.id,
         }),
-        supabase.rpc('check_contract_identity_verified_v1', {
+        callBooleanRpc('check_contract_identity_verified_v1', {
           p_company_id: params.contract.company_id,
           p_contract_id: params.contract.id,
         }),
@@ -547,13 +555,18 @@ export const useConvertToLegal = () => {
         throw new Error('لا يمكن التحويل للشؤون القانونية: الهوية غير متحققة. يجب التحقق من هوية العميل أولاً.');
       }
       
-      const { data, error } = await supabase.rpc('convert_contract_to_legal_v1', {
+      const { data, error } = await (supabase.rpc as unknown as (
+        name: string,
+        args: Record<string, unknown>,
+      ) => Promise<{ data: unknown; error: { message?: string } | null }>)(
+        'convert_contract_to_legal_collection_v2', {
         p_company_id: params.contract.company_id,
         p_contract_id: params.contract.id,
         p_notes: params.notes || '',
         p_priority: params.priority || 'high',
         p_case_type: params.caseType || 'payment_collection',
         p_vehicle_returned: params.vehicleReturned ?? false,
+        p_claim_scope: params.claimScope || 'full_outstanding',
         p_actor_id: user.id,
       });
       if (error) throw error;

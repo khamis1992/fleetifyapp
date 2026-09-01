@@ -4,6 +4,7 @@
  */
 
 import type { LegalDocumentType } from '@/services/LawsuitService';
+import type { LegalClaimScope } from '@/types/legalClaimScope';
 
 // ==========================================
 // Core Domain Types
@@ -285,6 +286,7 @@ export interface LegalCaseSummary {
   filing_date: string | null;
   case_status: string;
   workflow_stage: string;
+  claim_scope: LegalClaimScope;
 }
 
 export interface TrafficViolation {

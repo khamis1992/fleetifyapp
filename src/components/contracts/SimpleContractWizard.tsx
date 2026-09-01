@@ -1026,6 +1026,32 @@ export const SimpleContractWizard: React.FC<SimpleContractWizardProps> = ({ open
                 ? `${c.first_name} ${c.last_name}`.trim()
                 : c.first_name_ar || c.first_name || 'عميل غير مسمى'
         }));
+
+        // The customer details page can open this wizard with a customer ID.
+        // That customer may not be among the 30 most recently created records,
+        // so load it explicitly to keep the preselection visible to the user.
+        if (preselectedCustomerId && !customersWithFullName.some(c => c.id === preselectedCustomerId)) {
+          const { data: preselectedCustomer } = await supabase
+            .from('customers')
+            .select('id, first_name, last_name, first_name_ar, last_name_ar, phone, national_id, customer_type, company_name, company_name_ar')
+            .eq('company_id', companyId)
+            .eq('id', preselectedCustomerId)
+            .eq('is_active', true)
+            .maybeSingle();
+
+          if (preselectedCustomer) {
+            customersWithFullName.unshift({
+              ...preselectedCustomer,
+              full_name: preselectedCustomer.customer_type === 'corporate'
+                ? preselectedCustomer.company_name_ar || preselectedCustomer.company_name || 'شركة غير مسماة'
+                : preselectedCustomer.first_name_ar && preselectedCustomer.last_name_ar
+                  ? `${preselectedCustomer.first_name_ar} ${preselectedCustomer.last_name_ar}`.trim()
+                  : preselectedCustomer.first_name && preselectedCustomer.last_name
+                    ? `${preselectedCustomer.first_name} ${preselectedCustomer.last_name}`.trim()
+                    : preselectedCustomer.first_name_ar || preselectedCustomer.first_name || 'عميل غير مسمى',
+            });
+          }
+        }
         
         // In edit mode, ensure the contract's customer is always included
         if (editContract?.customer_id && !customersWithFullName.find(c => c.id === editContract.customer_id)) {
@@ -1049,7 +1075,7 @@ export const SimpleContractWizard: React.FC<SimpleContractWizardProps> = ({ open
     // Debounce search to avoid too many requests - shorter delay for better UX
     const debounceTimer = setTimeout(fetchCustomers, 150);
     return () => clearTimeout(debounceTimer);
-  }, [companyId, customerSearch, customersRefreshKey, open, editContract?.customer_id]);
+  }, [companyId, customerSearch, customersRefreshKey, open, editContract?.customer_id, preselectedCustomerId]);
 
   // Load vehicles - only when dialog is open
   useEffect(() => {

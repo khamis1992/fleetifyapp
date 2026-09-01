@@ -64,6 +64,7 @@ import {
 import { formatCustomerName } from '@/utils/formatCustomerName';
 import { renderOfficialInvoicePdfBlob } from '@/utils/renderOfficialInvoicePdf';
 import { toast } from 'sonner';
+import { isTrafficViolationsOnlyScope } from '@/types/legalClaimScope';
 
 import { 
   lawsuitPreparationReducer, 
@@ -571,6 +572,7 @@ export function LawsuitPreparationProvider({
         filing_date: row.filing_date,
         case_status: row.case_status || 'draft',
         workflow_stage: row.workflow_stage || 'preparation',
+        claim_scope: row.claim_scope || 'full_outstanding',
       } : null;
       dispatch({ type: 'SET_LEGAL_CASE', payload: legalCase });
       return legalCase;
@@ -582,8 +584,17 @@ export function LawsuitPreparationProvider({
   // Derived Data (Calculations & Taqadi Data)
   // ==========================================
 
+  const trafficOnlyClaim = isTrafficViolationsOnlyScope(state.legalCase?.claim_scope);
+
   /** مكونات موثقة إضافية: مصاريف متحقق منها + وديعة ضمان مطبقة */
   const claimExtras = useMemo(() => {
+    if (trafficOnlyClaim) {
+      return {
+        verifiedDamages: 0,
+        securityDepositDeduction: 0,
+        retentionCompensation: 0,
+      };
+    }
     const verifiedDamages = getVerifiedDamageNetFromCosts(state.damageCosts);
     const deposit = Number(state.litigationProfile?.security_deposit_amount || 0);
     const applyDeposit = Boolean(state.litigationProfile?.apply_security_deposit) && deposit > 0;
@@ -598,11 +609,12 @@ export function LawsuitPreparationProvider({
       securityDepositDeduction: applyDeposit ? deposit : 0,
       retentionCompensation: retention.amount,
     };
-  }, [state.contract?.end_date, state.damageCosts, state.formalNotices, state.litigationProfile]);
+  }, [state.contract?.end_date, state.damageCosts, state.formalNotices, state.litigationProfile, trafficOnlyClaim]);
 
   useEffect(() => {
     if (state.overdueInvoices.length > 0 || state.trafficViolations.length > 0 || claimExtras.verifiedDamages > 0 || claimExtras.retentionCompensation > 0) {
-      const contractualCompensation = state.litigationProfile?.contractual_compensation_enabled
+      const contractualCompensation = !trafficOnlyClaim
+        && state.litigationProfile?.contractual_compensation_enabled
         && state.litigationProfile.contractual_compensation_method
         && Number(state.litigationProfile.contractual_compensation_rate) > 0
         && state.litigationProfile.contractual_compensation_document_id
@@ -617,7 +629,7 @@ export function LawsuitPreparationProvider({
         : null;
 
       const calculations = calculateDelinquencyAmounts(
-        state.overdueInvoices.map(inv => ({
+        (trafficOnlyClaim ? [] : state.overdueInvoices).map(inv => ({
           id: inv.id,
           invoice_number: inv.invoice_number || undefined,
           due_date: inv.due_date,
@@ -669,6 +681,7 @@ export function LawsuitPreparationProvider({
     state.overdueInvoices,
     state.trafficViolations,
     state.violationEvidenceDocuments,
+    trafficOnlyClaim,
   ]);
   
   useEffect(() => {
@@ -682,7 +695,8 @@ export function LawsuitPreparationProvider({
         customerName,
         state.contract.start_date,
         `${state.vehicle?.make || ''} ${state.vehicle?.model || ''} ${state.vehicle?.year || ''}`,
-        taqadiClaimAmount
+        taqadiClaimAmount,
+        state.legalCase?.claim_scope,
       );
 
       // الفروع الحتمية: سداد جزئي، مخالفات، إعذار قانوني، حيازة المركبة، انتهاء العقد
@@ -703,28 +717,34 @@ export function LawsuitPreparationProvider({
         claimAmount: taqadiClaimAmount,
         violationsCount: state.calculations.violationsCount,
         violationsFines: state.calculations.violationsFines,
-        paidTotal: state.overdueInvoices.reduce(
-          (sum, invoice) => sum + Number(invoice.paid_amount || 0),
-          0,
-        ),
-        reminders: state.paymentReminders,
+        paidTotal: trafficOnlyClaim
+          ? 0
+          : state.overdueInvoices.reduce(
+              (sum, invoice) => sum + Number(invoice.paid_amount || 0),
+              0,
+            ),
+        reminders: trafficOnlyClaim
+          ? { count: 0, lastSentDate: null, sendMethods: [] }
+          : state.paymentReminders,
         vehicleStatus: state.vehicle?.status ?? null,
-        vehicleCustody: state.litigationProfile?.vehicle_custody === 'with_defendant'
+        vehicleCustody: trafficOnlyClaim
+          ? 'unknown'
+          : state.litigationProfile?.vehicle_custody === 'with_defendant'
           ? 'with_defendant'
           : ['returned', 'recovered_by_company'].includes(state.litigationProfile?.vehicle_custody || '')
             ? 'returned'
             : 'unknown',
-        contractEndDate: state.contract.end_date,
-        contractStatus: state.contract.status ?? null,
-        legalPath: legalPath.effectivePath,
-        terminationDate: legalPath.effectiveTerminationDate,
-        formalNoticeCount: state.formalNotices.filter(
+        contractEndDate: trafficOnlyClaim ? null : state.contract.end_date,
+        contractStatus: trafficOnlyClaim ? null : state.contract.status ?? null,
+        legalPath: trafficOnlyClaim ? undefined : legalPath.effectivePath,
+        terminationDate: trafficOnlyClaim ? null : legalPath.effectiveTerminationDate,
+        formalNoticeCount: trafficOnlyClaim ? 0 : state.formalNotices.filter(
           (notice) => notice.delivery_confirmed && Boolean(notice.delivered_on) && Boolean(notice.proof_document_id),
         ).length,
-        retentionCompensation: state.calculations.retentionCompensation,
-        documentedDamages: state.calculations.damagesFee,
-        monetaryDelayDamage,
-        contractualCompensation: state.calculations.lateFees,
+        retentionCompensation: trafficOnlyClaim ? 0 : state.calculations.retentionCompensation,
+        documentedDamages: trafficOnlyClaim ? 0 : state.calculations.damagesFee,
+        monetaryDelayDamage: trafficOnlyClaim ? 0 : monetaryDelayDamage,
+        contractualCompensation: trafficOnlyClaim ? 0 : state.calculations.lateFees,
       };
 
       const additions = buildFactsAdditions(narrativeInput);
@@ -760,7 +780,7 @@ export function LawsuitPreparationProvider({
       dispatch({
         type: 'UPDATE_TAQADI_DATA',
         payload: {
-          caseTitle: lawsuitService.generateCaseTitle(customerName),
+          caseTitle: lawsuitService.generateCaseTitle(customerName, state.legalCase?.claim_scope),
           facts: factsText,
           claims: claimsText,
           amount: taqadiClaimAmount,
@@ -812,6 +832,8 @@ export function LawsuitPreparationProvider({
     state.overdueInvoices,
     state.paymentReminders,
     state.vehicle,
+    state.legalCase?.claim_scope,
+    trafficOnlyClaim,
   ]);
   
   // Update loading state
@@ -1934,6 +1956,7 @@ export function LawsuitPreparationProvider({
           court_fees: null,
           filing_date: null,
           created_at: null,
+          claim_scope: state.legalCase?.claim_scope ?? 'full_outstanding',
         };
       }
       const currentStage = legalCase.workflow_stage || 'preparation';

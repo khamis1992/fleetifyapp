@@ -15,7 +15,11 @@
 - `freeze_legal_case_memo_snapshot(...)`: authenticated, tenant-isolated RPC that allocates the next version under a transaction lock and freezes the payload. Approval is limited to company managers/admins and atomically updates the litigation profile.
 - Inserts and updates validate that the contract, legal case, and every evidence document belong to the same company and contract. RLS grants authenticated users company-scoped access; anonymous access is revoked.
 - Direct snapshot inserts/updates/deletes are not granted to authenticated clients. Editing the profile, a formal notice, or a damage item invalidates the current legal approval; direct approval without a newer frozen snapshot is rejected. Filing is blocked until the current memo data matches the latest approved snapshot.
-- `calculate_legal_claim_amount_v1(...)` is the database-side canonical claim: due invoices first, then due legacy schedule rows only for months with no valid invoice; cancelled/future rows are excluded. Evidenced contractual compensation, damages, violations, retention, and the security-deposit deduction are applied by the same rules as the page.
+- `legal_cases.claim_scope` is `full_outstanding` by default or `traffic_violations_only`. The traffic-only scope admits only evidenced unpaid penalties and excludes invoices, contractual compensation/late fines, damages, retention, and security-deposit adjustments from the case value, memo, and Taqadi payload.
+- `complete_legal_transfer_readiness_with_scope_v1(...)` freezes the selected scope in the readiness audit and derives traffic-only amounts from unpaid `penalties` rows after requiring a `violations_proof` document. `convert_contract_to_legal_with_scope_v1(...)` rejects a scope that differs from the latest completed review and persists the scope and final amount on the case and conversion audit.
+- `calculate_legal_claim_amount_v1(...)` is the database-side canonical claim: for traffic-only cases it returns the evidenced unpaid-penalty total; otherwise due invoices are used first, then due legacy schedule rows only for months with no valid invoice. Cancelled/future rows are excluded and evidenced contractual compensation, damages, violations, retention, and the security-deposit deduction are applied by the same rules as the page.
+- `calculate_legal_claim_statement_v4(...)` is the unified transfer/memo statement. It discloses every included and excluded component, uses `penalties` as the authoritative traffic source, excludes legacy `late_fine_amount` unless an evidenced contractual-compensation profile exists, and caps every component at the initial judgment date. `get_legal_transfer_readiness_v2(...)` and `complete_legal_transfer_readiness_v2(...)` use this statement.
+- `convert_contract_to_legal_collection_v2(...)` supports active and cancelled/closed contracts. For cancelled collection cases it creates the legal case while preserving the contract and vehicle state. `legal_claim_snapshots` freezes the transfer value and automatically freezes the accrued value when the initial judgment is recorded.
 - `finalize_legal_case_filing_v1(...)` locks, revalidates, synchronizes, and transitions the case to `filed` atomically. Direct filed inserts and incomplete direct transitions are rejected by triggers.
 - `repair_legal_preparation_case_v1(...)` is service-role only and repairs one explicitly supplied company/contract. Every changed vehicle link, preparation case value/date, and seeded draft profile is recorded in `legal_filing_repair_audit` for reversible rollback.
 - Migrations: `20260826045722_complete_legal_case_memo_workflow.sql`, `20260826091101_legal_filing_readiness_guards.sql`, `20260826142609_legal_evidence_automation_proposals.sql`; matching rollbacks are stored under `supabase/rollbacks/`.
@@ -5412,7 +5416,7 @@ no-argument call is intentionally rejected by the company-access guard.
 
 ### `legal_cases`
 
-**Columns**: 47
+**Columns**: 48
 
 #### Required Columns
 
@@ -5425,6 +5429,7 @@ no-argument call is intentionally rejected by the company-access guard.
 | `company_id` | string |
 | `created_at` | string |
 | `id` | string |
+| `claim_scope` | string |
 | `priority` | string |
 | `updated_at` | string |
 

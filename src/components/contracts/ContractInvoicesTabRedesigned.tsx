@@ -66,9 +66,10 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
-import { format, differenceInDays, isAfter, isBefore } from 'date-fns';
+import { format, differenceInDays } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import type { Invoice } from '@/types/finance.types';
+import { getInvoiceDueStatus } from '@/utils/invoiceDueStatus';
 
 // ===== Animation Variants =====
 const fadeInUp: Variants = {
@@ -126,8 +127,29 @@ interface ContractInvoicesTabRedesignedProps {
 }
 
 // ===== Helper Functions =====
-const getInvoicePaymentStatus = (invoice: Invoice): string =>
-  String(invoice.payment_status || invoice.status || 'unpaid');
+const getInvoicePaymentStatus = (invoice: Invoice): string => {
+  const paymentStatus = String(invoice.payment_status || '').trim().toLowerCase();
+  const invoiceStatus = String(invoice.status || '').trim().toLowerCase();
+  const cancelledStatuses = ['cancelled', 'canceled', 'void', 'voided'];
+
+  if (cancelledStatuses.includes(paymentStatus) || cancelledStatuses.includes(invoiceStatus)) return 'cancelled';
+  if (['paid', 'completed', 'cleared'].includes(paymentStatus)) return 'paid';
+  if (['partial', 'partially_paid'].includes(paymentStatus)) return 'partial';
+
+  const paidAmount = Number(invoice.paid_amount || 0);
+  const totalAmount = Number(invoice.total_amount || 0);
+  if (totalAmount > 0 && paidAmount >= totalAmount) return 'paid';
+  if (paidAmount > 0) return 'partial';
+  return 'unpaid';
+};
+
+const isInvoicePaid = (invoice: Invoice): boolean => {
+  const status = getInvoicePaymentStatus(invoice);
+  if (status === 'paid') return true;
+  return invoice.balance_due != null
+    && Number(invoice.total_amount || 0) > 0
+    && Number(invoice.balance_due) <= 0;
+};
 
 const isInvoiceCancelled = (invoice: Invoice): boolean => {
   const status = String(invoice.status || '').toLowerCase();
@@ -157,8 +179,20 @@ const isInvoiceBulkCancellable = (invoice: Invoice): boolean => {
   );
 };
 
-const getInvoiceStatusInfo = (invoice: Invoice) => {
+const getInvoicePaymentStatusInfo = (invoice: Invoice) => {
   const status = getInvoicePaymentStatus(invoice);
+
+  if (status === 'cancelled') {
+    return {
+      label: 'ملغي',
+      variant: 'outline' as const,
+      bgColor: 'bg-slate-50',
+      textColor: 'text-slate-500',
+      borderColor: 'border-slate-200',
+      iconBg: 'bg-slate-400',
+      icon: XCircle,
+    };
+  }
 
   if (status === 'paid' || status === 'completed') {
     return {
@@ -184,39 +218,61 @@ const getInvoiceStatusInfo = (invoice: Invoice) => {
     };
   }
 
-  if (status === 'overdue') {
+  // Default pending
+  return {
+    label: 'غير مسدد',
+    variant: 'outline' as const,
+    bgColor: 'bg-slate-50',
+    textColor: 'text-slate-700',
+    borderColor: 'border-slate-200',
+    iconBg: 'bg-slate-500',
+    icon: Clock,
+  };
+};
+
+const getInvoiceDueStatusInfo = (invoice: Invoice) => {
+  const dueStatus = getInvoiceDueStatus(invoice.due_date);
+
+  if (dueStatus === 'future') {
     return {
-      label: 'متأخر',
-      variant: 'destructive' as const,
+      value: dueStatus,
+      label: 'مستقبلية',
+      bgColor: 'bg-violet-50',
+      textColor: 'text-violet-700',
+      borderColor: 'border-violet-200',
+      icon: Calendar,
+    };
+  }
+
+  if (dueStatus === 'due_today') {
+    return {
+      value: dueStatus,
+      label: 'مستحقة اليوم',
+      bgColor: 'bg-blue-50',
+      textColor: 'text-blue-700',
+      borderColor: 'border-blue-200',
+      icon: Clock,
+    };
+  }
+
+  if (dueStatus === 'overdue') {
+    return {
+      value: dueStatus,
+      label: 'متأخرة',
       bgColor: 'bg-red-50',
       textColor: 'text-red-700',
       borderColor: 'border-red-200',
-      iconBg: 'bg-red-500',
       icon: AlertTriangle,
     };
   }
 
-  if (status === 'cancelled') {
-    return {
-      label: 'ملغي',
-      variant: 'outline' as const,
-      bgColor: 'bg-slate-50',
-      textColor: 'text-slate-500',
-      borderColor: 'border-slate-200',
-      iconBg: 'bg-slate-400',
-      icon: XCircle,
-    };
-  }
-
-  // Default pending
   return {
-    label: 'مستحق',
-    variant: 'secondary' as const,
-    bgColor: 'bg-blue-50',
-    textColor: 'text-blue-700',
-    borderColor: 'border-blue-200',
-    iconBg: 'bg-blue-500',
-    icon: Clock,
+    value: dueStatus,
+    label: 'بلا تاريخ استحقاق',
+    bgColor: 'bg-slate-50',
+    textColor: 'text-slate-600',
+    borderColor: 'border-slate-200',
+    icon: Calendar,
   };
 };
 
@@ -243,8 +299,7 @@ const InvoiceMetrics = ({
     const totalInvoiced = activeInvoices.reduce((sum, inv) => sum + (inv.total_amount || 0), 0);
     const totalPaid = activeInvoices.reduce((sum, inv) => sum + (inv.paid_amount || 0), 0);
     const totalPending = invoices.reduce((sum, inv) => {
-      const status = getInvoicePaymentStatus(inv);
-      if (status === 'paid' || isInvoiceCancelled(inv)) return sum;
+      if (isInvoicePaid(inv) || isInvoiceCancelled(inv)) return sum;
       return sum + (inv.balance_due || inv.total_amount || 0);
     }, 0);
 
@@ -253,40 +308,42 @@ const InvoiceMetrics = ({
     const totalOverdue = invoices.reduce((sum, inv) => {
       // Skip if paid or cancelled
       const status = getInvoicePaymentStatus(inv);
-      if (status === 'paid' || isInvoiceCancelled(inv)) return sum;
+      if (isInvoicePaid(inv) || isInvoiceCancelled(inv)) return sum;
 
       // Check if there's a balance due
       const balanceDue = inv.balance_due ?? (inv.total_amount || 0) - (inv.paid_amount || 0);
       if (balanceDue <= 0) return sum;
 
       // Check if due date has passed
-      if (inv.due_date && isAfter(today, new Date(inv.due_date))) {
+      const dueStatus = getInvoiceDueStatus(inv.due_date, today);
+      if (dueStatus === 'overdue') {
         return sum + balanceDue;
       }
 
-      // Also include invoices explicitly marked as overdue
-      if (status === 'overdue') {
+      // Fall back to the persisted status only when no usable due date exists.
+      if (dueStatus === 'unscheduled' && status === 'overdue') {
         return sum + balanceDue;
       }
 
       return sum;
     }, 0);
 
-    const paidCount = invoices.filter(inv => getInvoicePaymentStatus(inv) === 'paid').length;
+    const paidCount = invoices.filter(isInvoicePaid).length;
     const pendingCount = invoices.filter(inv =>
-      getInvoicePaymentStatus(inv) !== 'paid' && !isInvoiceCancelled(inv)
+      !isInvoicePaid(inv) && !isInvoiceCancelled(inv)
     ).length;
 
     // Fix overdue count: Include all invoices with balance > 0 and past due date
     const overdueCount = invoices.filter(inv => {
       const status = getInvoicePaymentStatus(inv);
-      if (status === 'paid' || isInvoiceCancelled(inv)) return false;
+      if (isInvoicePaid(inv) || isInvoiceCancelled(inv)) return false;
 
       const balanceDue = inv.balance_due ?? (inv.total_amount || 0) - (inv.paid_amount || 0);
       if (balanceDue <= 0) return false;
 
-      if (inv.due_date && isAfter(today, new Date(inv.due_date))) return true;
-      if (status === 'overdue') return true;
+      const dueStatus = getInvoiceDueStatus(inv.due_date, today);
+      if (dueStatus === 'overdue') return true;
+      if (dueStatus === 'unscheduled' && status === 'overdue') return true;
 
       return false;
     }).length;
@@ -325,9 +382,9 @@ const InvoiceMetrics = ({
       borderColor: 'border-green-200/50',
     },
     {
-      title: 'المستحق',
+      title: 'غير المسدد',
       value: formatCurrency(metrics.totalPending),
-      subtext: `${metrics.pendingCount} فاتورة معلقة`,
+      subtext: `${metrics.pendingCount} فاتورة مفتوحة`,
       icon: Clock,
       color: 'from-blue-500 to-blue-600',
       bgColor: 'bg-blue-50',
@@ -399,10 +456,13 @@ const InvoiceCard = ({
   selectable?: boolean;
   onSelect?: (selected: boolean) => void;
 }) => {
-  const statusInfo = getInvoiceStatusInfo(invoice);
-  const StatusIcon = statusInfo.icon;
+  const paymentStatusInfo = getInvoicePaymentStatusInfo(invoice);
+  const PaymentStatusIcon = paymentStatusInfo.icon;
+  const dueStatusInfo = getInvoiceDueStatusInfo(invoice);
+  const DueStatusIcon = dueStatusInfo.icon;
+  const showDueStatus = !isInvoicePaid(invoice) && !isInvoiceCancelled(invoice);
 
-  const isOverdue = invoice.due_date && isAfter(new Date(), new Date(invoice.due_date)) && invoice.payment_status !== 'paid';
+  const isOverdue = showDueStatus && dueStatusInfo.value === 'overdue';
   const daysUntilDue = invoice.due_date ? differenceInDays(new Date(invoice.due_date), new Date()) : null;
 
   return (
@@ -411,7 +471,7 @@ const InvoiceCard = ({
       whileHover={{ y: -2 }}
       className={cn(
         "rounded-xl border bg-white p-5 shadow-sm transition-colors hover:border-[#173A63]",
-        statusInfo.borderColor,
+        showDueStatus ? dueStatusInfo.borderColor : paymentStatusInfo.borderColor,
         selected && 'border-[#173A63] ring-2 ring-[#173A63]/15'
       )}
     >
@@ -434,9 +494,18 @@ const InvoiceCard = ({
           <div>
             <div className="flex items-center gap-2 mb-1">
               <h3 className="font-bold text-neutral-900 text-lg">{invoice.invoice_number}</h3>
-              <Badge className={cn("text-xs", statusInfo.bgColor, statusInfo.textColor, "border-0")}>
-                {statusInfo.label}
-              </Badge>
+              <div className="flex flex-wrap items-center gap-1.5">
+                <Badge className={cn("gap-1 text-xs", paymentStatusInfo.bgColor, paymentStatusInfo.textColor, "border-0")}>
+                  <PaymentStatusIcon className="h-3 w-3" />
+                  {paymentStatusInfo.label}
+                </Badge>
+                {showDueStatus && (
+                  <Badge className={cn("gap-1 text-xs", dueStatusInfo.bgColor, dueStatusInfo.textColor, "border-0")}>
+                    <DueStatusIcon className="h-3 w-3" />
+                    {dueStatusInfo.label}
+                  </Badge>
+                )}
+              </div>
             </div>
             <p className="text-sm text-neutral-500">{getInvoiceTypeLabel(invoice.invoice_type)}</p>
           </div>
@@ -461,7 +530,7 @@ const InvoiceCard = ({
               <Printer className="w-4 h-4" />
               <span>طباعة</span>
             </DropdownMenuItem>
-            {(invoice.payment_status !== 'paid' && invoice.status !== 'cancelled') && (
+            {showDueStatus && (
               <>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={onCancel} className="gap-2 text-red-600 focus:text-red-600">
@@ -520,7 +589,7 @@ const InvoiceCard = ({
             )} dir="ltr">
               {invoice.due_date ? format(new Date(invoice.due_date), 'dd MMM yyyy', { locale: ar }) : '-'}
             </span>
-            {daysUntilDue !== null && daysUntilDue < 7 && invoice.payment_status !== 'paid' && (
+            {daysUntilDue !== null && daysUntilDue < 7 && showDueStatus && (
               <Badge variant="outline" className={cn(
                 "text-xs",
                 isOverdue ? "border-red-200 text-red-600" : "border-amber-200 text-amber-600"
@@ -543,7 +612,7 @@ const InvoiceCard = ({
           <Eye className="w-4 h-4" />
           <span>معاينة</span>
         </Button>
-        {invoice.payment_status !== 'paid' && invoice.status !== 'cancelled' && (
+        {showDueStatus && (
           <Button
             size="sm"
             onClick={onPay}
@@ -584,10 +653,13 @@ const InvoiceTableRow = ({
   selectable?: boolean;
   onSelect?: (selected: boolean) => void;
 }) => {
-  const statusInfo = getInvoiceStatusInfo(invoice);
-  const StatusIcon = statusInfo.icon;
+  const paymentStatusInfo = getInvoicePaymentStatusInfo(invoice);
+  const PaymentStatusIcon = paymentStatusInfo.icon;
+  const dueStatusInfo = getInvoiceDueStatusInfo(invoice);
+  const DueStatusIcon = dueStatusInfo.icon;
+  const showDueStatus = !isInvoicePaid(invoice) && !isInvoiceCancelled(invoice);
 
-  const isOverdue = invoice.due_date && isAfter(new Date(), new Date(invoice.due_date)) && invoice.payment_status !== 'paid';
+  const isOverdue = showDueStatus && dueStatusInfo.value === 'overdue';
 
   return (
     <tr className={cn(
@@ -658,10 +730,18 @@ const InvoiceTableRow = ({
 
       {/* Status */}
       <td className="py-4 px-4">
-        <Badge className={cn("gap-1.5", statusInfo.bgColor, statusInfo.textColor, "border-0")}>
-          <StatusIcon className="w-3 h-3" />
-          {statusInfo.label}
-        </Badge>
+        <div className="flex flex-wrap items-center gap-1.5">
+          <Badge className={cn("gap-1.5", paymentStatusInfo.bgColor, paymentStatusInfo.textColor, "border-0")}>
+            <PaymentStatusIcon className="h-3 w-3" />
+            {paymentStatusInfo.label}
+          </Badge>
+          {showDueStatus && (
+            <Badge className={cn("gap-1.5", dueStatusInfo.bgColor, dueStatusInfo.textColor, "border-0")}>
+              <DueStatusIcon className="h-3 w-3" />
+              {dueStatusInfo.label}
+            </Badge>
+          )}
+        </div>
       </td>
 
       {/* Actions */}
@@ -675,7 +755,7 @@ const InvoiceTableRow = ({
           >
             <Eye className="w-4 h-4" />
           </Button>
-          {invoice.payment_status !== 'paid' && invoice.status !== 'cancelled' && (
+          {showDueStatus && (
             <>
               <Button
                 size="sm"
@@ -740,8 +820,10 @@ const InvoiceFilters = ({
           <SelectItem value="active">الفواتير الفعالة</SelectItem>
           <SelectItem value="all">جميع الحالات</SelectItem>
           <SelectItem value="paid">مسدد</SelectItem>
-          <SelectItem value="pending">مستحق</SelectItem>
+          <SelectItem value="pending">غير مسدد</SelectItem>
           <SelectItem value="partial">جزئي</SelectItem>
+          <SelectItem value="future">مستقبلية</SelectItem>
+          <SelectItem value="due_today">مستحقة اليوم</SelectItem>
           <SelectItem value="overdue">متأخر</SelectItem>
           <SelectItem value="cancelled">ملغي</SelectItem>
         </SelectContent>
@@ -861,8 +943,15 @@ export const ContractInvoicesTabRedesigned = ({
     } else if (statusFilter !== 'all') {
       filtered = filtered.filter(inv => {
         const status = getInvoicePaymentStatus(inv);
+        if (['future', 'due_today', 'overdue'].includes(statusFilter)) {
+          if (isInvoicePaid(inv) || isInvoiceCancelled(inv)) return false;
+          return getInvoiceDueStatus(inv.due_date) === statusFilter;
+        }
         if (statusFilter === 'partial') {
           return status === 'partial' || status === 'partially_paid';
+        }
+        if (statusFilter === 'pending') {
+          return !isInvoicePaid(inv) && !isInvoiceCancelled(inv);
         }
         return status === statusFilter;
       });
@@ -1733,7 +1822,7 @@ export const ContractInvoicesTabRedesigned = ({
                       <th className="py-3 px-4 text-right text-sm font-semibold text-neutral-700">التاريخ</th>
                       <th className="py-3 px-4 text-right text-sm font-semibold text-neutral-700">المبلغ</th>
                       <th className="py-3 px-4 text-right text-sm font-semibold text-neutral-700">الرصيد</th>
-                      <th className="py-3 px-4 text-right text-sm font-semibold text-neutral-700">الحالة</th>
+                      <th className="py-3 px-4 text-right text-sm font-semibold text-neutral-700">الدفع / الاستحقاق</th>
                       <th className="py-3 px-4 text-right text-sm font-semibold text-neutral-700">الإجراءات</th>
                     </tr>
                   </thead>

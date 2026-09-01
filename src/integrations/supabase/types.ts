@@ -16978,6 +16978,7 @@ export type Database = {
           case_title_ar: string | null
           case_type: string
           case_value: number | null
+          claim_scope: string
           closed_at: string | null
           closure_reason: string | null
           client_email: string | null
@@ -17035,6 +17036,7 @@ export type Database = {
           case_title_ar?: string | null
           case_type?: string
           case_value?: number | null
+          claim_scope?: string
           closed_at?: string | null
           closure_reason?: string | null
           client_email?: string | null
@@ -17092,6 +17094,7 @@ export type Database = {
           case_title_ar?: string | null
           case_type?: string
           case_value?: number | null
+          claim_scope?: string
           closed_at?: string | null
           closure_reason?: string | null
           client_email?: string | null
@@ -30771,6 +30774,13 @@ export type Database = {
       }
       activate_contract_with_billing_graph_atomic: {
         Args: { p_contract_id: string }
+        Returns: Json
+      }
+      reactivate_cancelled_contract_atomic_v1: {
+        Args: {
+          p_accept_unpaid_violations?: boolean
+          p_contract_id: string
+        }
         Returns: Json
       }
       renew_contract_with_billing_graph_atomic: {

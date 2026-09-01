@@ -72,6 +72,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 
 import { Progress } from '@/components/ui/progress';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -130,6 +131,10 @@ import type { PaymentSchedule } from '@/types/payment-schedules';
 import { useTourGuide } from '@/components/tour-guide';
 import { revertContractLegalProcedure } from '@/services/contractLegalProcedureService';
 import { assertContractCanClose } from '@/services/contractPenaltyGuard';
+import {
+  canReactivateCancelledContract,
+  reactivateCancelledContract,
+} from '@/services/contractReactivationService';
 
 const contractDetailsTheme = systemColorPattern.colors;
 const contractDetailsSystemStyle = {
@@ -690,7 +695,7 @@ const QuickActionsBar = ({
       onClick: onConvertToLegal,
       variant: 'outline' as const,
       className: 'border-violet-300 text-violet-700 hover:bg-violet-50',
-      show: contract.status === 'active',
+      show: ['active', 'cancelled', 'canceled', 'closed', 'expired'].includes(contract.status),
     },
     {
       label: 'إزالة الإجراء القانوني',
@@ -714,9 +719,7 @@ const QuickActionsBar = ({
       onClick: onReactivate,
       variant: 'default' as const,
       className: 'bg-emerald-500 hover:bg-emerald-600 text-white border-0',
-      // Reversing a cancelled contract needs a dedicated accounting command
-      // that restores documents without duplicating invoices or journals.
-      show: false,
+      show: canReactivateCancelledContract(contract.status),
     },
   ];
 
@@ -811,8 +814,8 @@ const ContractTopbarActions = ({
   onRemoveLegal: () => void;
 }) => {
   const canRenew = contract.status === 'active';
-  const canReactivate = false;
-  const canConvertToLegal = contract.status === 'active';
+  const canReactivate = canReactivateCancelledContract(contract.status);
+  const canConvertToLegal = ['active', 'cancelled', 'canceled', 'closed', 'expired'].includes(contract.status);
   const isLegal = contract.status === 'under_legal_procedure';
 
   return (
@@ -2234,6 +2237,7 @@ const ContractDetailsPageRedesigned = () => {
   const [isRemovingLegal, setIsRemovingLegal] = useState(false);
   const [isReactivateDialogOpen, setIsReactivateDialogOpen] = useState(false);
   const [isReactivating, setIsReactivating] = useState(false);
+  const [reactivationViolationsAccepted, setReactivationViolationsAccepted] = useState(false);
   const [isCancellingInvoice, setIsCancellingInvoice] = useState(false);
   const [isBulkCancellingInvoices, setIsBulkCancellingInvoices] = useState(false);
   const [invoiceToCancel, setInvoiceToCancel] = useState<Invoice | null>(null);
@@ -2460,6 +2464,15 @@ const ContractDetailsPageRedesigned = () => {
     staleTime: 30000, // Cache for 30 seconds
     gcTime: 300000, // Keep in cache for 5 minutes
   });
+
+  const reactivationViolationTotal = useMemo(
+    () => trafficViolations.reduce(
+      (total, violation) => total + Number(violation.fine_amount || violation.total_amount || 0),
+      0,
+    ),
+    [trafficViolations],
+  );
+  const reactivationHasViolations = trafficViolations.length > 0;
 
   // Vehicle inspections
   const { data: checkInInspections = [] } = useVehicleInspections({
@@ -2898,6 +2911,7 @@ const ContractDetailsPageRedesigned = () => {
   }, []);
 
   const handleReactivate = useCallback(() => {
+    setReactivationViolationsAccepted(false);
     setIsReactivateDialogOpen(true);
   }, []);
 
@@ -3115,13 +3129,54 @@ const ContractDetailsPageRedesigned = () => {
   }, [contract, companyId, queryClient, toast]);
 
   const executeReactivateContract = useCallback(async () => {
-    toast({
-      title: 'إعادة التفعيل متوقفة محاسبياً',
-      description: 'لا يمكن إعادة عقد ملغي إلى نشط مباشرة. يلزم أمر عكس محاسبي معتمد لمنع تكرار الفواتير والقيود.',
-      variant: 'destructive',
-    });
-    setIsReactivateDialogOpen(false);
-  }, [toast]);
+    if (!contract?.id) return;
+    if (reactivationHasViolations && !reactivationViolationsAccepted) {
+      toast({
+        title: 'يلزم تأكيد المخالفات',
+        description: 'راجع تنبيه المخالفات ووافق عليه قبل إعادة تفعيل العقد.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setIsReactivating(true);
+    try {
+      await reactivateCancelledContract({
+        contractId: contract.id,
+        acceptUnpaidViolations: reactivationViolationsAccepted,
+      });
+
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['contract-details'] }),
+        queryClient.invalidateQueries({ queryKey: ['contracts'] }),
+        queryClient.invalidateQueries({ queryKey: ['vehicles'] }),
+        queryClient.invalidateQueries({ queryKey: ['contract-invoices', contract.id] }),
+        queryClient.invalidateQueries({ queryKey: ['payment-schedules'] }),
+      ]);
+
+      toast({
+        title: 'تمت إعادة تفعيل العقد',
+        description: `تم إرجاع العقد #${contract.contract_number} إلى الحالة النشطة مع الحفاظ على مستنداته المالية.`,
+      });
+      setIsReactivateDialogOpen(false);
+      setReactivationViolationsAccepted(false);
+    } catch (error) {
+      console.error('خطأ في إعادة تفعيل العقد:', error);
+      toast({
+        title: 'تعذر إعادة تفعيل العقد',
+        description: error instanceof Error ? error.message : 'حدث خطأ غير متوقع',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsReactivating(false);
+    }
+  }, [
+    contract,
+    queryClient,
+    reactivationHasViolations,
+    reactivationViolationsAccepted,
+    toast,
+  ]);
 
   const executeRemoveLegalProcedure = useCallback(async () => {
     if (!contract?.id || !companyId) return;
@@ -3505,13 +3560,34 @@ const ContractDetailsPageRedesigned = () => {
       </AlertDialog>
 
       {/* Reactivate Dialog */}
-      <AlertDialog open={isReactivateDialogOpen} onOpenChange={setIsReactivateDialogOpen}>
+      <AlertDialog
+        open={isReactivateDialogOpen}
+        onOpenChange={(open) => {
+          setIsReactivateDialogOpen(open);
+          if (!open && !isReactivating) setReactivationViolationsAccepted(false);
+        }}
+      >
         <AlertDialogContent className="rounded-2xl" data-tour="contract-reactivate-dialog">
           <AlertDialogHeader>
             <AlertDialogTitle className="text-emerald-600">إعادة تفعيل العقد</AlertDialogTitle>
             <AlertDialogDescription data-tour="contract-reactivate-warning">
-              هل أنت متأكد من إعادة تفعيل العقد #{contract.contract_number}؟ سيتم تحديث حالة العقد إلى "نشط".
+              هل أنت متأكد من إعادة تفعيل العقد #{contract.contract_number}؟ سيتم تحديث حالته إلى "نشط" مع الحفاظ على الفواتير والدفعات والقيود القائمة دون تكرارها.
             </AlertDialogDescription>
+            {reactivationHasViolations && (
+              <div className="mt-3 rounded-xl border border-amber-300 bg-amber-50 p-4 text-right">
+                <div className="flex items-start gap-3">
+                  <Checkbox
+                    id="accept-reactivation-violations"
+                    checked={reactivationViolationsAccepted}
+                    onCheckedChange={(checked) => setReactivationViolationsAccepted(checked === true)}
+                    disabled={isReactivating}
+                  />
+                  <label htmlFor="accept-reactivation-violations" className="cursor-pointer text-sm font-bold leading-6 text-amber-900">
+                    أوافق على إعادة تفعيل العقد رغم وجود {trafficViolations.length} مخالفة بإجمالي {formatCurrency(reactivationViolationTotal)}، وأقر بأن المخالفات ستبقى مسجلة دون حذف أو تسوية تلقائية.
+                  </label>
+                </div>
+              </div>
+            )}
             <Button
               type="button"
               variant="outline"
@@ -3526,8 +3602,11 @@ const ContractDetailsPageRedesigned = () => {
           <AlertDialogFooter data-tour="contract-reactivate-actions">
             <AlertDialogCancel className="rounded-xl">إلغاء</AlertDialogCancel>
             <AlertDialogAction
-              onClick={executeReactivateContract}
-              disabled={isReactivating}
+              onClick={(event) => {
+                event.preventDefault();
+                void executeReactivateContract();
+              }}
+              disabled={isReactivating || (reactivationHasViolations && !reactivationViolationsAccepted)}
               className="bg-emerald-600 hover:bg-emerald-700 rounded-xl"
               data-tour="contract-reactivate-submit"
             >

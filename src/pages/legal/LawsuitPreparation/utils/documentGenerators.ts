@@ -37,6 +37,7 @@ import type {
   LegalCaseSummary,
   ViolationEvidenceDocument,
 } from '../store';
+import { isTrafficViolationsOnlyScope } from '@/types/legalClaimScope';
 
 // ==========================================
 // Helper Functions
@@ -91,8 +92,9 @@ export function buildMemoDocumentData(
   }
 
   const profile = state.litigationProfile;
+  const trafficOnlyClaim = isTrafficViolationsOnlyScope(state.legalCase?.claim_scope);
 
-  const remainingInvoices = state.overdueInvoices.filter(
+  const remainingInvoices = (trafficOnlyClaim ? [] : state.overdueInvoices).filter(
     (inv) => (inv.total_amount || 0) - (inv.paid_amount || 0) > 0
   );
   const datedInvoices = remainingInvoices
@@ -138,10 +140,10 @@ export function buildMemoDocumentData(
   const retentionClaim = calculateRetentionClaim(profile, readiness.legalPath);
 
   // مصاريف الأضرار: المتحقق منه بسند مستند فقط
-  const verifiedCosts = (state.damageCosts ?? []).filter(
+  const verifiedCosts = (trafficOnlyClaim ? [] : state.damageCosts ?? []).filter(
     (cost) => cost.verified && Boolean(cost.evidence_document_id),
   );
-  const verifiedDamages = getVerifiedDamageNet(state);
+  const verifiedDamages = trafficOnlyClaim ? 0 : getVerifiedDamageNet(state);
 
   return {
     caseNumber: state.legalCase?.case_number || undefined,
@@ -151,6 +153,7 @@ export function buildMemoDocumentData(
     // النسخة الحية تظل مسودة. المرجع الرسمي يثبت داخل لقطة غير قابلة للتعديل
     // ولا يعاد استخدامه مع بيانات لاحقة متغيرة.
     documentReference: `DRAFT-${contract.contract_number}`,
+    claimScope: state.legalCase?.claim_scope || 'full_outstanding',
     customer: {
       customer_name: customerName,
       customer_code: customer?.id || '',
@@ -234,7 +237,7 @@ export function buildMemoDocumentData(
           reason: profile.notice_exception_clause_or_reason,
         }
       : undefined,
-    formalNotices: (state.formalNotices ?? []).map((notice) => ({
+    formalNotices: (trafficOnlyClaim ? [] : state.formalNotices ?? []).map((notice) => ({
       noticeType: notice.notice_type,
       sentOn: notice.sent_on,
       deliveredOn: notice.delivered_on,
@@ -243,13 +246,13 @@ export function buildMemoDocumentData(
       graceDays: notice.grace_period_days,
       methodLabel: NOTICE_METHOD_LABELS[notice.delivery_method] || 'وسيلة مثبتة',
     })),
-    securityDeposit: profile && profile.security_deposit_amount
+    securityDeposit: !trafficOnlyClaim && profile && profile.security_deposit_amount
       ? {
           amount: Number(profile.security_deposit_amount),
           applyToSettlement: Boolean(profile.apply_security_deposit),
         }
       : undefined,
-    retentionRate: profile?.retention_daily_rate
+    retentionRate: !trafficOnlyClaim && profile?.retention_daily_rate
       && profile.retention_rate_source_document_id
       && profile.retention_rate_source_ref
       ? {
@@ -258,8 +261,8 @@ export function buildMemoDocumentData(
           sourceRef: profile.retention_rate_source_ref,
         }
       : undefined,
-    retentionClaim: retentionClaim.amount > 0 ? retentionClaim : undefined,
-    contractualCompensation: readiness.eligibleClaims.contractualCompensation
+    retentionClaim: !trafficOnlyClaim && retentionClaim.amount > 0 ? retentionClaim : undefined,
+    contractualCompensation: !trafficOnlyClaim && readiness.eligibleClaims.contractualCompensation
       ? {
           amount: calculations.lateFees,
           clauseNumber: profile!.contractual_compensation_clause_number!,
@@ -496,7 +499,7 @@ export async function loadCanonicalLawsuitState(
       .order('sent_at', { ascending: false }),
     supabase
       .from('legal_cases')
-      .select('id, case_number, case_reference, filing_date, case_status, workflow_stage')
+      .select('id, case_number, case_reference, filing_date, case_status, workflow_stage, claim_scope')
       .eq('contract_id', contractId)
       .eq('company_id', companyId)
       .order('created_at', { ascending: false })
@@ -576,12 +579,14 @@ export async function loadCanonicalLawsuitState(
     case_number: legalCaseResult.data.case_number || '',
     case_status: legalCaseResult.data.case_status || 'draft',
     workflow_stage: legalCaseResult.data.workflow_stage || 'preparation',
+    claim_scope: legalCaseResult.data.claim_scope || 'full_outstanding',
   } as LegalCaseSummary : null;
   state.memoSnapshots = (snapshotsResult.data || []) as unknown as LegalMemoSnapshot[];
 
-  const verifiedDamages = getVerifiedDamageNet(state);
+  const trafficOnlyClaim = isTrafficViolationsOnlyScope(state.legalCase?.claim_scope);
+  const verifiedDamages = trafficOnlyClaim ? 0 : getVerifiedDamageNet(state);
   const profile = state.litigationProfile;
-  const compensation = profile?.contractual_compensation_enabled
+  const compensation = !trafficOnlyClaim && profile?.contractual_compensation_enabled
     && profile.contractual_compensation_method
     && profile.contractual_compensation_document_id
     && profile.contractual_compensation_clause_number?.trim()
@@ -595,7 +600,7 @@ export async function loadCanonicalLawsuitState(
       }
     : null;
   const calculations = calculateDelinquencyAmounts(
-    state.overdueInvoices.map((invoice) => ({
+    (trafficOnlyClaim ? [] : state.overdueInvoices).map((invoice) => ({
       ...invoice,
       invoice_number: invoice.invoice_number || undefined,
       total_amount: Number(invoice.total_amount || 0),
@@ -610,8 +615,10 @@ export async function loadCanonicalLawsuitState(
     { documentedDamagesAmount: verifiedDamages, contractualCompensation: compensation },
   );
   const readiness = evaluateLegalCaseReadiness(state);
-  const retention = calculateRetentionClaim(profile, readiness.legalPath);
-  const deposit = profile?.apply_security_deposit
+  const retention = trafficOnlyClaim
+    ? { amount: 0, days: 0, from: null, to: null }
+    : calculateRetentionClaim(profile, readiness.legalPath);
+  const deposit = !trafficOnlyClaim && profile?.apply_security_deposit
     ? Number(profile.security_deposit_amount || 0)
     : 0;
   const total = getLawsuitClaimAmounts(
@@ -662,8 +669,9 @@ export function buildClaimsStatementData(
   if (!contract || !calculations) {
     throw new Error('بيانات غير مكتملة');
   }
+  const trafficOnlyClaim = isTrafficViolationsOnlyScope(state.legalCase?.claim_scope);
 
-  const invoicesData = state.overdueInvoices.map((inv) => {
+  const invoicesData = (trafficOnlyClaim ? [] : state.overdueInvoices).map((inv) => {
     const daysLate = Math.floor(
       (new Date().getTime() - new Date(inv.due_date).getTime()) / (1000 * 60 * 60 * 24)
     );
@@ -692,7 +700,7 @@ export function buildClaimsStatementData(
   }));
 
   // مصاريف الأضرار: المتحقق منه بسند مستند فقط (متطابق مع المذكرة)
-  const verifiedCosts = state.damageCosts.filter((cost) => cost.verified);
+  const verifiedCosts = (trafficOnlyClaim ? [] : state.damageCosts).filter((cost) => cost.verified);
   const damageCosts = verifiedCosts.map((cost) => ({
     description: cost.description,
     amount: Math.max(
@@ -704,7 +712,9 @@ export function buildClaimsStatementData(
   }));
 
   // وديعة الضمان: تُخصم فقط بقرار صريح وبحد أقصى قيمة المطالبة قبل الخصم
-  const depositAmount = Number(state.litigationProfile?.security_deposit_amount || 0);
+  const depositAmount = trafficOnlyClaim
+    ? 0
+    : Number(state.litigationProfile?.security_deposit_amount || 0);
   const claimBeforeDeduction =
     calculations.overdueRent
       + calculations.lateFees

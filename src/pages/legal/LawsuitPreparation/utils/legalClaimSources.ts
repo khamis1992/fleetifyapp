@@ -211,13 +211,22 @@ interface LegalClaimBreakdownRpcResult {
 }
 
 type LegalClaimBreakdownRpc = (
-  fn: 'calculate_legal_claim_breakdown_v3' | 'calculate_legal_claim_breakdown_v2',
-  args: { p_company_id: string; p_contract_id: string; p_as_of_date: string },
+  fn: 'calculate_legal_claim_statement_v4' | 'calculate_legal_claim_breakdown_v3' | 'calculate_legal_claim_breakdown_v2',
+  args: {
+    p_company_id: string;
+    p_contract_id: string;
+    p_as_of_date: string;
+    p_claim_scope?: string;
+    p_excluded_invoice_ids?: string[];
+  },
 ) => PromiseLike<LegalClaimBreakdownRpcResult>;
 
 const isMissingRpcError = (message: string) => {
   const normalized = message.toLowerCase();
-  return normalized.includes('calculate_legal_claim_breakdown_v3')
+  return (
+    normalized.includes('calculate_legal_claim_statement_v4')
+    || normalized.includes('calculate_legal_claim_breakdown_v3')
+  )
     && (normalized.includes('does not exist') || normalized.includes('schema cache'));
 };
 
@@ -226,13 +235,25 @@ export async function loadLegalClaimProjection(
   companyId: string,
   asOfDate = getQatarBusinessDate(),
 ): Promise<LegalClaimProjection> {
-  const callLegalClaimBreakdown = supabase.rpc.bind(supabase) as unknown as LegalClaimBreakdownRpc;
+  const callLegalClaimBreakdown: LegalClaimBreakdownRpc = (functionName, args) => (
+    supabase.rpc as unknown as (
+      name: string,
+      parameters: Record<string, unknown>,
+    ) => PromiseLike<LegalClaimBreakdownRpcResult>
+  )(functionName, args);
   const loadBreakdown = async () => {
     const args = {
       p_company_id: companyId,
       p_contract_id: contractId,
       p_as_of_date: asOfDate,
     };
+    const v4 = await callLegalClaimBreakdown('calculate_legal_claim_statement_v4', {
+      ...args,
+      // Empty means: derive the frozen scope from the latest non-cancelled case.
+      p_claim_scope: '',
+      p_excluded_invoice_ids: [],
+    });
+    if (!v4.error || !isMissingRpcError(v4.error.message)) return v4;
     const v3 = await callLegalClaimBreakdown('calculate_legal_claim_breakdown_v3', args);
     if (!v3.error || !isMissingRpcError(v3.error.message)) return v3;
     return callLegalClaimBreakdown('calculate_legal_claim_breakdown_v2', args);

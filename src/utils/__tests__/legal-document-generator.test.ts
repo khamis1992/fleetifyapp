@@ -56,6 +56,43 @@ describe('legal complaint claim total', () => {
     expect(memo).toContain('المخالفات المرورية');
     expect(memo).not.toContain('عدم إدخال قيمة المخالفات المرورية ضمن المطالبة المالية');
   });
+
+  it.each([
+    ['text', generateLegalComplaint],
+    ['html', generateLegalComplaintHTML],
+  ] as const)('uses only QAR 6,300 of violations in a traffic-only %s memo', (_format, generate) => {
+    const memo = generate({
+      ...lawsuitData,
+      claimScope: 'traffic_violations_only',
+      customer: {
+        ...lawsuitData.customer,
+        overdue_amount: 50_500,
+        late_penalty: 2_000,
+        violations_amount: 6_300,
+        violations_count: 2,
+        total_debt: 58_800,
+      },
+      contractualCompensation: {
+        amount: 2_000,
+        clauseNumber: '13.3',
+        clauseText: 'غرامة عقدية ثابتة',
+        method: 'fixed',
+        rate: 2_000,
+        units: 1,
+      },
+      damages: 10_000,
+      securityDeposit: { amount: 5_000, applyToSettlement: true },
+      vehicleCustody: 'with_defendant',
+    });
+
+    expect(memo).toContain('6,300');
+    expect(memo).toContain('المخالفات المرورية فقط');
+    expect(memo).toContain('لا تشمل المطالبة رصيد الأجرة');
+    expect(memo).not.toContain('50,500');
+    expect(memo).not.toContain('غرامة عقدية ثابتة');
+    expect(memo).not.toContain('تعويض احتباس');
+    expect(memo).not.toContain('وديعة الضمان المستخدمة');
+  });
 });
 
 describe('explanatory memo structure (approved template)', () => {

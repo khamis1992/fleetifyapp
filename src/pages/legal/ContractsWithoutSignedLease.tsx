@@ -31,6 +31,24 @@ interface ContractWithoutSignedLease {
   case_status: string | null;
 }
 
+type UntypedViewQueryResult = {
+  data: unknown[] | null;
+  error: unknown;
+};
+
+const queryUntypedView = supabase.from as unknown as (
+  relation: string,
+) => {
+  select: (columns: string) => {
+    eq: (column: string, value: string) => {
+      order: (
+        column: string,
+        options: { ascending: boolean },
+      ) => Promise<UntypedViewQueryResult>;
+    };
+  };
+};
+
 export default function ContractsWithoutSignedLease() {
   const navigate = useNavigate();
   const { companyId } = useUnifiedCompanyAccess();
@@ -41,8 +59,7 @@ export default function ContractsWithoutSignedLease() {
     queryFn: async () => {
       if (!companyId) return [];
 
-      const { data, error } = await supabase
-        .from('legal_contracts_without_signed_lease')
+      const { data, error } = await queryUntypedView('legal_contracts_without_signed_lease')
         .select('*')
         .eq('company_id', companyId)
         .order('created_at', { ascending: false });

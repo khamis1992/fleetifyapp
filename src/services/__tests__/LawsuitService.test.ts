@@ -23,4 +23,19 @@ describe('LawsuitService.generateFactsText', () => {
     expect(facts).not.toContain('وضعت المدعية المركبة تحت تصرف');
     expect(facts).not.toContain('المطالبات الودية المتكررة');
   });
+
+  it('describes a traffic-violations-only claim without rental debt', () => {
+    const facts = lawsuitService.generateFactsText(
+      'عميل تجريبي',
+      '2024-08-26',
+      'GAC GS3',
+      6_300,
+      'traffic_violations_only',
+    );
+
+    expect(facts).toContain('المخالفات المرورية فقط');
+    expect(facts).toContain('6,300 ريال قطري');
+    expect(facts).toContain('لا تشمل المطالبة رصيد الأجرة');
+    expect(facts).not.toContain('امتنع عن سداد الأجرة');
+  });
 });

@@ -1,4 +1,5 @@
 import type { LegalDocumentData, VehicleCustody } from './legal-document-generator';
+import { isTrafficViolationsOnlyScope } from '@/types/legalClaimScope';
 
 export interface LegalMemoRequestSections {
   procedural: string[];
@@ -81,6 +82,16 @@ export function buildLegalMemoRequestSections(
   };
 
   addRequest(procedural, 'قبول الدعوى شكلًا.');
+
+  if (isTrafficViolationsOnlyScope(data.claimScope)) {
+    if (customer.violations_count > 0 && violationsAmount > 0) {
+      addRequest(financial,
+        `إلزام المدعى عليه بأن يؤدي للمدعية مبلغ (${formatQar(violationsAmount)} ريال قطري) قيمة المخالفات المرورية المرتبطة بالعقد فقط، والتي ثبت وقوعها خلال فترة حيازته للمركبة وفق الكشوف الرسمية وأحكام العقد. ولا تشمل المطالبة رصيد الأجرة أو غرامات التأخير أو أي تعويضات أخرى ضمن هذه الدعوى.`,
+      );
+    }
+    addRequest(closing, 'إلزام المدعى عليه بالرسوم والمصاريف ومقابل أتعاب المحاماة.');
+    return { procedural, financial, closing };
+  }
 
   if (effectiveTerminationPath === 'natural_expiry') {
     addRequest(procedural,

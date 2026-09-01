@@ -26,12 +26,16 @@ export function useSignedLeaseValidation(
         return { hasSignedLease: false, hasIdentityMatch: false };
       }
 
+      const callBooleanRpc = supabase.rpc as unknown as (
+        name: string,
+        args: Record<string, unknown>,
+      ) => Promise<{ data: boolean | null; error: { message?: string } | null }>;
       const [leaseResult, identityResult] = await Promise.all([
-        supabase.rpc('check_contract_has_verified_signed_lease_v1', {
+        callBooleanRpc('check_contract_has_verified_signed_lease_v1', {
           p_company_id: companyId,
           p_contract_id: contractId,
         }),
-        supabase.rpc('check_contract_identity_verified_v1', {
+        callBooleanRpc('check_contract_identity_verified_v1', {
           p_company_id: companyId,
           p_contract_id: contractId,
         }),

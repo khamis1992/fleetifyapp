@@ -4,6 +4,7 @@
  */
 
 import { supabase } from '@/integrations/supabase/client';
+import { isTrafficViolationsOnlyScope, type LegalClaimScope } from '@/types/legalClaimScope';
 
 // أنواع المستندات القانونية
 export type LegalDocumentType = 
@@ -519,8 +520,11 @@ class LawsuitService {
   /**
    * توليد عنوان الدعوى
    */
-  generateCaseTitle(customerName: string): string {
+  generateCaseTitle(customerName: string, claimScope?: LegalClaimScope): string {
     const shortName = customerName.split(' ').slice(0, 2).join(' ');
+    if (isTrafficViolationsOnlyScope(claimScope)) {
+      return `مطالبة مخالفات مرورية-${shortName}`.substring(0, 50);
+    }
     return `مطالبة مالية-إيجار سيارة-${shortName}`.substring(0, 50);
   }
 
@@ -531,13 +535,20 @@ class LawsuitService {
     customerName: string,
     contractDate: string,
     vehicleInfo: string,
-    overdueAmount: number
+    overdueAmount: number,
+    claimScope?: LegalClaimScope,
   ): string {
     const formattedDate = new Date(contractDate).toLocaleDateString('en-GB');
     const normalizedVehicleInfo = vehicleInfo.trim();
     const vehicleDescription = normalizedVehicleInfo
       ? `المركبة ${normalizedVehicleInfo}`
       : 'المركبة المبينة بياناتها في عقد الإيجار المرفق';
+
+    if (isTrafficViolationsOnlyScope(claimScope)) {
+      return `بتاريخ ${formattedDate} أبرمت شركة العراف لتأجير السيارات (المدعية) عقد إيجار سيارة مع السيد/ ${customerName} (المدعى عليه) بشأن ${vehicleDescription}.
+
+وثبتت خلال حيازة المدعى عليه للمركبة مخالفات مرورية غير مسددة وفق الكشف الرسمي والمستندات المرفقة، وبلغت قيمتها الإجمالية ${overdueAmount.toLocaleString('en-US')} ريال قطري. وتقتصر هذه المطالبة على المخالفات المرورية فقط، ولا تشمل المطالبة رصيد الأجرة أو غرامات التأخير أو أي تعويضات أخرى.`;
+    }
 
     return `بتاريخ ${formattedDate} أبرمت شركة العراف لتأجير السيارات (المدعية) عقد إيجار سيارة مع السيد/ ${customerName} (المدعى عليه) بشأن ${vehicleDescription}.
 

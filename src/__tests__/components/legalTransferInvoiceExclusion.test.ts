@@ -27,4 +27,13 @@ describe('legal transfer invoice exclusion', () => {
     expect(wizardSource).toContain('excluded_invoice_balance: excludedInvoiceOutstanding');
     expect(wizardSource).toContain('الفواتير المستبعدة من المطالبة');
   });
+
+  it('supports a locked traffic-violations-only claim scope', () => {
+    expect(wizardSource).toContain("changeClaimScope('traffic_violations_only')");
+    expect(wizardSource).toContain('مخالفات مرورية فقط');
+    expect(wizardSource).toContain("claimScope === 'traffic_violations_only'");
+    expect(wizardSource).toContain('complete_legal_transfer_readiness_with_scope_v1');
+    expect(wizardSource).toContain('p_claim_scope: claimScope');
+    expect(wizardSource).toContain('claimScope,');
+  });
 });
