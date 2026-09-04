@@ -111,6 +111,7 @@ import { ContractHealthAnalysis } from './ContractHealthAnalysis';
 import { OfficialContractView } from './OfficialContractView';
 import { formatCustomerName } from '@/utils/formatCustomerName';
 import { getInvoiceBillingMonthKey, isActiveInvoice } from '@/utils/invoiceBillingMonth';
+import { deriveContractPageFinancials } from '@/utils/contractPageFinancials';
 import { cn } from '@/lib/utils';
 import { format, differenceInDays } from 'date-fns';
 import { ar } from 'date-fns/locale';
@@ -441,8 +442,8 @@ const ContractCommandHeader = ({
   const totalPayments = Number(contractStats?.totalPayments ?? 0);
   const balanceDue = Number(contractStats?.outstandingInvoiceTotal ?? contract.balance_due ?? 0);
   const dueInvoiceBalance = Number(contractStats?.dueInvoiceTotal ?? balanceDue);
-  const paidAmount = Math.max(0, totalAmount - balanceDue);
-  const paymentProgress = totalAmount > 0 ? Math.min(100, Math.round((paidAmount / totalAmount) * 100)) : 0;
+  const paidAmount = Number(contractStats?.paidAmount ?? contract.total_paid ?? 0);
+  const paymentProgress = Number(contractStats?.collectionProgress ?? 0);
   const assignedEmployeeName = formatAssignedEmployeeName(contract.assigned_employee);
 
   const summaryItems = [
@@ -490,7 +491,7 @@ const ContractCommandHeader = ({
     },
     {
       label: 'المدفوع',
-      value: formatCurrency(contract.total_paid || 0),
+      value: formatCurrency(paidAmount),
       icon: CheckCircle2,
       tone: 'bg-emerald-50 text-emerald-700',
     },
@@ -1915,7 +1916,7 @@ const FinancialTab = ({
     </TabsList>
 
     <TabsContent value="overview" className="mt-0">
-      <FinancialDashboard contract={contract} formatCurrency={formatCurrency} invoices={invoices} />
+      <FinancialDashboard contract={contract} formatCurrency={formatCurrency} invoices={invoices} payments={payments} />
     </TabsContent>
 
     <TabsContent value="invoices" className="mt-0">
@@ -2351,7 +2352,7 @@ const ContractDetailsPageRedesigned = () => {
 
   // Fetch invoices with caching (including cancelled to show full history)
   const { data: invoices = [] } = useQuery({
-    queryKey: ['contract-invoices', contract?.id, contract?.start_date || null],
+    queryKey: ['contract-invoices', contract?.id, contract?.start_date || null, contract?.contract_number || null],
     queryFn: async () => {
       if (!contract?.id || !companyId) return [];
 
@@ -2375,9 +2376,14 @@ const ContractDetailsPageRedesigned = () => {
         .select('*')
         .eq('company_id', companyId);
 
-      query = scheduleInvoiceIds.length
-        ? query.or(`contract_id.eq.${contract.id},id.in.(${scheduleInvoiceIds.join(',')})`)
-        : query.eq('contract_id', contract.id);
+      const invoiceFilters = [`contract_id.eq.${contract.id}`];
+      if (scheduleInvoiceIds.length) {
+        invoiceFilters.push(`id.in.(${scheduleInvoiceIds.join(',')})`);
+      }
+      if (contract.contract_number) {
+        invoiceFilters.push(`notes.ilike.%${contract.contract_number}%`);
+      }
+      query = invoiceFilters.length > 1 ? query.or(invoiceFilters.join(',')) : query.eq('contract_id', contract.id);
 
       if (contract.start_date) {
         query = query.gte('due_date', `${contract.start_date.slice(0, 7)}-01`);
@@ -2396,7 +2402,7 @@ const ContractDetailsPageRedesigned = () => {
   const invoiceIdsForPayments = useMemo(() => invoices.map((invoice) => invoice.id).filter(Boolean), [invoices]);
 
   const { data: contractPayments = [] } = useQuery({
-    queryKey: ['contract-payments', contract?.id, true, invoiceIdsForPayments.join(','), contract?.start_date || null],
+    queryKey: ['contract-payments', contract?.id, true, invoiceIdsForPayments.join(','), contract?.contract_number || null],
     queryFn: async () => {
       if (!contract?.id || !companyId) return [];
 
@@ -2416,15 +2422,14 @@ const ContractDetailsPageRedesigned = () => {
         `)
         .eq('company_id', companyId);
 
+      const paymentFilters = [`contract_id.eq.${contract.id}`];
       if (invoiceIdsForPayments.length) {
-        query = query.or(`contract_id.eq.${contract.id},invoice_id.in.(${invoiceIdsForPayments.join(',')})`);
-      } else {
-        query = query.eq('contract_id', contract.id);
+        paymentFilters.push(`invoice_id.in.(${invoiceIdsForPayments.join(',')})`);
       }
-
-      if (contract.start_date) {
-        query = query.gte('payment_date', contract.start_date);
+      if (contract.contract_number) {
+        paymentFilters.push(`notes.ilike.%${contract.contract_number}%`);
       }
+      query = paymentFilters.length > 1 ? query.or(paymentFilters.join(',')) : query.eq('contract_id', contract.id);
 
       const { data, error } = await query.order('payment_date', { ascending: false });
 
@@ -2527,50 +2532,31 @@ const ContractDetailsPageRedesigned = () => {
     const daysElapsed = differenceInDays(today, startDate);
     const daysRemaining = differenceInDays(endDate, today);
 
-    const totalMonths = Math.ceil(totalDays / 30);
     const monthsElapsed = Math.max(0, Math.floor(daysElapsed / 30));
     const monthsRemaining = Math.max(0, Math.ceil(daysRemaining / 30));
 
     const progressPercentage = Math.max(0, Math.min(100, (daysElapsed / totalDays) * 100));
 
-    const activeFinancialInvoices = invoices.filter(isActiveFinancialInvoice);
-    const todayKey = new Intl.DateTimeFormat('en-CA', {
-      timeZone: 'Asia/Qatar',
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-    }).format(new Date());
-    const invoicesTotal = activeFinancialInvoices.reduce((sum, invoice) => sum + Number(invoice.total_amount || 0), 0);
-    const invoicePaidTotal = activeFinancialInvoices.reduce((sum, invoice) => sum + Number(invoice.paid_amount || 0), 0);
-    const openInvoices = activeFinancialInvoices.filter((invoice) => !isPaidFinancialInvoice(invoice) && getInvoiceBalance(invoice) > 1);
-    const outstandingInvoiceTotal = openInvoices.reduce((sum, invoice) => sum + getInvoiceBalance(invoice), 0);
-    const dueInvoiceTotal = openInvoices.reduce((sum, invoice) => {
-      const dueDate = String(invoice.due_date || '');
-      return !dueDate || dueDate <= todayKey ? sum + getInvoiceBalance(invoice) : sum;
-    }, 0);
-
-    const totalAmount = invoicesTotal > 0 ? invoicesTotal : (contract.monthly_amount || 0) * totalMonths;
-    const paidAmount = invoicePaidTotal > 0 ? invoicePaidTotal : contract.total_paid || 0;
+    const financials = deriveContractPageFinancials({
+      contract,
+      invoices,
+      payments: contractPayments,
+    });
 
     return {
-      totalAmount,
-      monthlyAmount: contract.monthly_amount || 0,
+      ...financials,
       totalDays,
       daysElapsed,
       daysRemaining,
-      totalMonths,
       monthsElapsed,
       monthsRemaining,
       progressPercentage,
-      paidPayments: monthsElapsed,
-      totalPayments: totalMonths,
-      paymentStatus: outstandingInvoiceTotal <= 1 ? 'completed' : 'pending',
-      outstandingInvoiceTotal,
-      dueInvoiceTotal,
-      openInvoiceCount: openInvoices.length,
+      openInvoiceCount: invoices.filter((invoice) => {
+        return isActiveFinancialInvoice(invoice) && !isPaidFinancialInvoice(invoice) && getInvoiceBalance(invoice) > 1;
+      }).length,
       extraPayments: 0,
     };
-  }, [contract, invoices]);
+  }, [contract, invoices, contractPayments]);
 
   const customerName = useMemo(() => {
     if (!contract?.customer) return 'غير محدد';
