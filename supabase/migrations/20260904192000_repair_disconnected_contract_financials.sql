@@ -159,13 +159,11 @@ BEGIN
           AND due_date > v_contract.end_date;
 
         IF v_current_months > v_expected_months THEN
-          EXECUTE 'ALTER TABLE public.contracts DISABLE TRIGGER USER';
           UPDATE public.contracts
           SET contract_amount = ROUND(v_contract.monthly_amount * v_expected_months, 3),
               updated_at = now()
           WHERE id = v_contract.id
             AND company_id = p_company_id;
-          EXECUTE 'ALTER TABLE public.contracts ENABLE TRIGGER USER';
         END IF;
 
         FOR v_month IN
@@ -196,9 +194,6 @@ BEGIN
       v_recalc_ids := v_recalc_ids || v_contract.id;
     EXCEPTION
       WHEN OTHERS THEN
-        IF NOT p_dry_run THEN
-          EXECUTE 'ALTER TABLE public.contracts ENABLE TRIGGER USER';
-        END IF;
         v_errors := v_errors || jsonb_build_array(
           jsonb_build_object(
             'contract_id', v_contract.id,
@@ -232,7 +227,6 @@ EXCEPTION
   WHEN OTHERS THEN
     PERFORM set_config('app.financial_controls_bypass', v_previous_bypass, true);
     PERFORM set_config('fleetify.atomic_contract_creation', v_previous_atomic, true);
-    EXECUTE 'ALTER TABLE public.contracts ENABLE TRIGGER USER';
     RAISE;
 END;
 $$;
