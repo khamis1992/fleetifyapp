@@ -17,12 +17,14 @@ const excludedStatuses = new Set([
 const isExcludedStatus = (value: string | null | undefined) =>
   excludedStatuses.has((value || '').trim().toLowerCase());
 
-/** Only unpaid rent invoices belong in the rent component of a legal claim. */
+const claimableRentalTypes = new Set(['sales', 'service', 'rental', 'monthly']);
+
+/** Unpaid rent invoices belong in the rent component of a legal claim. */
 export const isClaimableRentalInvoice = (
   invoice: LegalClaimInvoiceClassification,
 ) => (
   invoice.penalty_id == null
-  && invoice.invoice_type?.trim().toLowerCase() === 'sales'
+  && claimableRentalTypes.has((invoice.invoice_type || '').trim().toLowerCase())
   && !isExcludedStatus(invoice.status)
   && !isExcludedStatus(invoice.payment_status)
 );
