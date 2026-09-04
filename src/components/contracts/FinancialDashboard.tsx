@@ -12,7 +12,7 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
 import type { Contract } from '@/types/contracts';
-import { calculateContractTotalAmount } from '@/utils/contractCalculations';
+import { deriveContractPageFinancials } from '@/utils/contractPageFinancials';
 
 interface Invoice {
   id: string;
@@ -23,50 +23,43 @@ interface Invoice {
   status?: string;
 }
 
+interface Payment {
+  amount?: number;
+  payment_status?: string;
+}
+
 interface FinancialDashboardProps {
   contract: Contract;
   formatCurrency: (amount: number) => string;
   invoices?: Invoice[];
+  payments?: Payment[];
 }
 
-export const FinancialDashboard = ({ contract, formatCurrency, invoices = [] }: FinancialDashboardProps) => {
-  // حساب البيانات المالية من الفواتير (مصدر موحد)
+export const FinancialDashboard = ({ contract, formatCurrency, invoices = [], payments = [] }: FinancialDashboardProps) => {
   const financialData = useMemo(() => {
-    const contractAmount = calculateContractTotalAmount(contract);
-    const monthlyAmount = contract.monthly_amount || 0;
-    
-    // حساب المدفوع من الفواتير (نفس طريقة حساب تبويب الفواتير)
-    const totalPaidFromInvoices = invoices.reduce((sum, inv) => sum + (inv.paid_amount || 0), 0);
-    
-    // استخدام المدفوع من الفواتير إذا كانت موجودة، وإلا استخدام قيمة العقد
-    const totalPaid = invoices.length > 0 ? totalPaidFromInvoices : (contract.total_paid || 0);
-    
-    // حساب المتبقي
-    const balanceDue = Math.max(0, contractAmount - totalPaid);
-
-    // نسبة الدفع
-    const paymentPercentage = contractAmount > 0 ? Math.min(100, Math.round((totalPaid / contractAmount) * 100)) : 0;
-
-    // المبالغ الإضافية (إذا تجاوز المدفوع قيمة العقد)
-    const extraPayments = Math.max(0, totalPaid - contractAmount);
-
-    // حالة الدفع
+    const derived = deriveContractPageFinancials({
+      contract,
+      invoices,
+      payments,
+    });
+    const extraPayments = Math.max(0, derived.paidAmount - derived.totalAmount);
     const getPaymentStatus = () => {
-      if (paymentPercentage >= 100) return { label: 'مسدد بالكامل', variant: 'default' as const, color: 'text-green-600', bg: 'bg-green-50' };
-      if (paymentPercentage >= 50) return { label: 'مسدد جزئياً', variant: 'secondary' as const, color: 'text-amber-600', bg: 'bg-amber-50' };
-      return { label: 'مسدد قليلاً', variant: 'secondary' as const, color: 'text-orange-600', bg: 'bg-orange-50' };
+      if (derived.paymentStatus === 'completed') return { label: 'مسدد بالكامل', variant: 'default' as const, color: 'text-green-600', bg: 'bg-green-50' };
+      if (derived.collectionProgress >= 50) return { label: 'مسدد جزئياً', variant: 'secondary' as const, color: 'text-amber-600', bg: 'bg-amber-50' };
+      if (derived.paidAmount > 0) return { label: 'مسدد قليلاً', variant: 'secondary' as const, color: 'text-orange-600', bg: 'bg-orange-50' };
+      return { label: 'غير مسدد', variant: 'secondary' as const, color: 'text-orange-600', bg: 'bg-orange-50' };
     };
 
     return {
-      contractAmount,
-      totalPaid,
-      balanceDue,
-      monthlyAmount,
-      paymentPercentage,
+      contractAmount: derived.totalAmount,
+      totalPaid: derived.paidAmount,
+      balanceDue: derived.balanceDue,
+      monthlyAmount: derived.monthlyAmount,
+      paymentPercentage: derived.collectionProgress,
       extraPayments,
       paymentStatus: getPaymentStatus(),
     };
-  }, [contract, invoices]);
+  }, [contract, invoices, payments]);
 
   // بيانات الرسم البياني الدائري
   const chartData = useMemo(() => {

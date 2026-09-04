@@ -960,7 +960,7 @@ export const ContractPaymentsTabRedesigned = ({
   contractId,
   companyId,
   invoiceIds,
-  contractStartDate,
+  contractStartDate: _contractStartDate,
   formatCurrency,
   contractNumber,
   customerInfo,
@@ -980,7 +980,7 @@ export const ContractPaymentsTabRedesigned = ({
 
   // Fetch payments with caching for better performance
   const { data: payments = [], isLoading } = useQuery({
-    queryKey: ['contract-payments', contractId, showAllPayments, invoiceIds.join(','), contractStartDate || null],
+    queryKey: ['contract-payments', contractId, showAllPayments, invoiceIds.join(','), contractNumber || null],
     queryFn: async () => {
       let query = supabase
         .from('payments')
@@ -1002,18 +1002,17 @@ export const ContractPaymentsTabRedesigned = ({
         .eq('company_id', companyId);
 
       if (showAllPayments) {
+        const paymentFilters = [`contract_id.eq.${contractId}`];
         if (invoiceIds.length) {
-          query = query.or(`contract_id.eq.${contractId},invoice_id.in.(${invoiceIds.join(',')})`);
-        } else {
-          query = query.eq('contract_id', contractId);
+          paymentFilters.push(`invoice_id.in.(${invoiceIds.join(',')})`);
         }
+        if (contractNumber) {
+          paymentFilters.push(`notes.ilike.%${contractNumber}%`);
+        }
+        query = paymentFilters.length > 1 ? query.or(paymentFilters.join(',')) : query.eq('contract_id', contractId);
       } else {
         if (!invoiceIds.length) return [];
         query = query.in('invoice_id', invoiceIds);
-      }
-
-      if (contractStartDate) {
-        query = query.gte('payment_date', contractStartDate);
       }
 
       query = query.order('payment_date', { ascending: false });
