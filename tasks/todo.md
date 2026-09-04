@@ -17,13 +17,14 @@
 - [x] Data repair for LTO2024276 (relink + invoices + recalc)
 - [x] Verify tests and live SQL
 - [x] Generalized repair function + tests
-- [ ] Relink all mislinked migrated payments
-- [ ] Generate invoices for the 11 billable contracts with no invoices
-- [ ] Verify live totals
+- [x] Relink all mislinked migrated payments
+- [x] Generate invoices for the 11 billable contracts with no invoices
+- [x] Verify live totals
 
 ## Review
 
 - Header, dashboard, and stats now use one helper. Empty invoices no longer show 100% collected.
 - Payments/invoices whose notes mention the contract number appear on the page.
-- LTO2024276 live state after repair: 36 invoices / 54,000, paid 2,500, remaining 51,500, status `partial`.
-- Next: apply the same repair across remaining disconnected contracts, not only LTO2024276.
+- Company repair function `repair_disconnected_contract_financials_v1` relinks note-mentioned receipts and builds the missing 36-month invoice graph.
+- Live Al-Araf result: 73 payments relinked, 11 contracts invoiced (396 invoices). Each is 36 × 1,500 = 54,000. LTO2024136 skipped (monthly 0).
+- Paid after FIFO/recalc: LTO202410 7,524 / LTO2024142 7,014 / LTO2024152 4,818 / LTO2024109 1,000 / LTO202456 1,035 / LTO2024276 2,500. Others unpaid.

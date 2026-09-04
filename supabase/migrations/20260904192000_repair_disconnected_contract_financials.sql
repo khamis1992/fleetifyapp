@@ -96,6 +96,27 @@ BEGIN
           updated_at = now()
       WHERE id = v_pay.id
         AND company_id = p_company_id;
+
+      IF EXISTS (
+        SELECT 1
+        FROM public.contracts target
+        WHERE target.id = v_target
+          AND target.status IN ('active', 'under_legal_procedure')
+      ) THEN
+        UPDATE public.payment_allocations allocation
+        SET is_active = false,
+            void_reason = 'Released after relink to mentioned contract',
+            voided_at = now(),
+            notes = COALESCE(allocation.notes || E'\n', '')
+              || 'Released after relink to mentioned contract',
+            updated_at = now()
+        FROM public.invoices invoice
+        WHERE allocation.payment_id = v_pay.id
+          AND allocation.is_active = true
+          AND allocation.allocation_type = 'invoice'
+          AND invoice.id = allocation.target_id
+          AND invoice.contract_id IS DISTINCT FROM v_target;
+      END IF;
     END IF;
   END LOOP;
 
@@ -154,9 +175,25 @@ BEGIN
             updated_at = now()
         WHERE company_id = p_company_id
           AND contract_id = v_contract.id
-          AND status = 'unpaid'
           AND invoice_id IS NULL
-          AND due_date > v_contract.end_date;
+          AND due_date > v_contract.end_date
+          AND lower(COALESCE(status, '')) NOT IN (
+            'cancelled', 'canceled', 'void', 'voided', 'deleted', 'inactive'
+          );
+
+        UPDATE public.contract_payment_schedules
+        SET amount = v_contract.monthly_amount,
+            notes = COALESCE(notes || E'\n', '')
+              || 'Restored rental installment to monthly_amount',
+            updated_at = now()
+        WHERE company_id = p_company_id
+          AND contract_id = v_contract.id
+          AND invoice_id IS NULL
+          AND due_date <= v_contract.end_date
+          AND abs(COALESCE(amount, 0) - v_contract.monthly_amount) > 0.01
+          AND lower(COALESCE(status, '')) NOT IN (
+            'cancelled', 'canceled', 'void', 'voided', 'deleted', 'inactive'
+          );
 
         IF v_current_months > v_expected_months THEN
           UPDATE public.contracts
